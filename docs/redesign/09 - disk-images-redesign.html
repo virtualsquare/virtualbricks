@@ -1,4 +1,4 @@
-<title>Virtualbricks Disk Images Redesign</title>
+<title>Disk Images Redesign</title>
 <meta name="description" content="A proposal for the disk images of Virtualbricks: an Images tab with what each image is and who uses it, an image picker in every machine, and safe dialogs to add, remove, relink, save and merge disks.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -123,6 +123,7 @@
   }
   .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
   .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
 
   /* layout */
   .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
@@ -468,16 +469,18 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Design · revision 2, every decision made</div>
+    <div class="eyebrow">Step 9 &middot; Design &middot; revision 3, implemented</div>
     <h1>Virtualbricks Disk Images Redesign</h1>
     <p class="lede">One place for the disk images of a project, which says what each image is, who uses it and what a change would touch; a disk picker in every machine; and the operations that can lose work made safe or made explicit.</p>
     <ul class="meta">
       <li>branch <b>mg/abandon-glade</b> at 3cbac0e</li>
-      <li>revision 2 · 27 September 2026</li>
-      <li><span class="status">every decision made</span></li>
+      <li>revision 3 &middot; 28 September 2026</li>
+      <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>Mock-ups:</strong> <a href="https://claude.ai/artifact/LAvnLRhXT7qCCV6a6tuenJ">the canvas</a> has today's windows redrawn from the code, two places for the library, two ways to choose an image for a disk, and the dialogs that go with them. Board A is clickable. The board names below refer to it, except I1 and I2, drawn on this page: the Images tab as decided, which the canvas&rsquo;s board B drew before the Bricks and Events tabs took their shape.</p>
-    <p class="revision"><strong>What changed:</strong> revision 2 applies your answers: the recommended one for ten questions, the images of the open project only (<span class="ref">L2</span>&nbsp;S1, the view of all projects waits in &sect;11), and a description beside a file read from <code>&lt;file&gt;.md</code>, as plain text for now (<span class="ref">L12</span>). The Images tab takes the shape the Bricks and Events tabs have had since revision&nbsp;1: a row per image with its menu, and its details in the tab (&sect;3, boards I1 and I2). Its code becomes a package of the main window, and the plan has four steps.</p>
+    <p class="revision"><strong>What changed:</strong> revision 1, of 25 September, waited while the tabs of the main window took their shape. Revision 2 applies your answers: the recommended one for ten questions, the images of the open project only (<span class="ref">L2</span>&nbsp;S1, the view of all projects waits in &sect;11), and a description beside a file read from <code>&lt;file&gt;.md</code>, as plain text for now (<span class="ref">L12</span>). The Images tab takes the shape the Bricks and Events tabs have had since revision&nbsp;1: a row per image with its menu, and its details in the tab (&sect;3, boards I1 and I2). Its code becomes a package of the main window, and the plan has four steps.</p>
+    <p class="revision"><strong>Implemented</strong> in four commits on 27 September 2026, 28142d3 to 609fb21, one per step of <a href="#plan">&sect;9</a>, and a fix, 56fcc0b: a project with two machines or more on private copies of a library image couldn&rsquo;t open. The differences: a dialog doesn&rsquo;t stop the machines, it waits until they are stopped and names them (&ldquo;Stop r1 first.&rdquo;); a Merge can be stopped too, and the image then holds part of the changes, the disk all of them; the jobs of the archive process are <code>write-image</code> and <code>commit-image</code>; Save as a New Image moves the private copy to the trash once the disk uses the new image. The disks of a machine are a module of their own, <code>disks.py</code>, and what a row says about an image is in <code>gui/imageinfo.py</code>, which the picker uses too. <code>qemu-img info</code> runs with <code>-U</code>, since a running machine locks the image it writes to.</p>
+    <p class="revision"><strong>Since then:</strong> <code>gui/windows/</code> went (678ef50): <code>addimage.py</code> and <code>imagedialogs.py</code> are in <code>gui/dialogs/</code>, and <code>imagepicker.py</code> and <code>disks.py</code> are with the panels in <code>gui/mainwindow/bricks/config/</code>, which ends the import cycle of <a href="#code">&sect;8</a>. The private copy of a raw image is made with the format of its image (c1f17d5, <a href="10%20-%20settings-redesign.html">step 10</a>). The rest of <a href="#later">&sect;11</a> is still to come.</p>
   </header>
 
   <div class="layout">
@@ -500,7 +503,7 @@
 
     <main>
       <section id="glance">
-        <h2><span class="num">§1</span>At a glance</h2>
+        <h2><span class="num">&sect;1</span>At a glance</h2>
         <dl class="glance">
           <div><dt>Decided</dt><dd>An <strong>Images tab</strong> in the main window, beside Bricks and Events and in their shape: a row per image that says what it is and who uses it, its menu, and its details in the tab (boards I1 and I2). In each machine, <strong>the disks it has</strong>, each with an image picker and a mode (board D1).</dd></div>
           <div><dt>Library</dt><dd>Each image says its format, the size of the disk, the space it takes, whether its file is there, and which disks use it and how: a private copy, the image itself, running or not. The details also name the other projects that use the same file, from what the Projects window already reads.</dd></div>
@@ -512,27 +515,27 @@
       </section>
 
       <section id="problems">
-        <h2><span class="num">§2</span>What gets in the way today</h2>
+        <h2><span class="num">&sect;2</span>What gets in the way today</h2>
         <p>From the code on this branch; the canvas redraws these windows in its first row.</p>
         <h3>The library</h3>
         <ol>
           <li><strong>Four places manage images:</strong> the Images library window, the three other items of the Disk images menu (Create new image, New image from file, Commit cow image), and three buttons in the Drives tab of every machine.</li>
           <li><strong>The library can't add an image,</strong> only edit one (<code>disklibrary.py</code>). Its edit screen replaces the list in the same window.</li>
           <li><strong>Remove removes at once,</strong> without asking, even an image that disks use; they keep its name, and the next opening of the project reports them.</li>
-          <li><strong>“Used by” and “COWs” count the same thing,</strong> the private copies (<code>set_cell_used_by</code> and <code>set_cell_cows</code>); a machine that uses the image itself isn't counted anywhere. “Master brick” shows the <code>repr()</code> of a disk.</li>
+          <li><strong>&ldquo;Used by&rdquo; and &ldquo;COWs&rdquo; count the same thing,</strong> the private copies (<code>set_cell_used_by</code> and <code>set_cell_cows</code>); a machine that uses the image itself isn't counted anywhere. &ldquo;Master brick&rdquo; shows the <code>repr()</code> of a disk.</li>
           <li><strong>Size is the length of the file,</strong> in KiB, MiB or GiB (<code>Image.get_size</code>): neither the size of the disk the machine sees nor the space the file takes. A missing file shows <code>0B</code> and nothing else.</li>
           <li><strong>Nothing crosses projects:</strong> the library shows the images of the open project, and nothing says which other projects use the same file, or which files of <code>vimages</code> no project uses any more, as the copies an import leaves.</li>
         </ol>
         <h3>Adding and creating</h3>
         <ol start="7">
           <li><strong>Create new image makes the file and stops:</strong> <code>create_image</code> returns its name and path, and nothing adds it to the library, so you add it again with New image from file.</li>
-          <li><strong>Its formats are those of old Qemus:</strong> raw, qcow, qcow2, cow, vmdk and cloop, “Auto” meaning raw. The folder chooser doesn't start in the image folder.</li>
+          <li><strong>Its formats are those of old Qemus:</strong> raw, qcow, qcow2, cow, vmdk and cloop, &ldquo;Auto&rdquo; meaning raw. The folder chooser doesn't start in the image folder.</li>
           <li><strong>New image from file</strong> reads a <code>&lt;file&gt;.vbdescr</code> for the description, and says nothing about the file: format, size, backing file.</li>
         </ol>
         <h3>Using images</h3>
         <ol start="10">
           <li><strong>Changing the path of an image loses the private copies:</strong> the next start finds each private copy on the old path (<code>Disk._ensure_private_image_cow</code>), renames it <code>&lt;vm&gt;_&lt;device&gt;.cow.bak-&lt;date&gt;</code> and makes an empty one, so the machine starts without its changes, with a warning in the log.</li>
-          <li><strong>Commit merges into an image that others may use</strong> without a word: the changes reach every private copy made on it, here and in other projects, which may stop working. Commit asks for a file; “Commit virtual machine changes” logs “not implemented”.</li>
+          <li><strong>Commit merges into an image that others may use</strong> without a word: the changes reach every private copy made on it, here and in other projects, which may stop working. Commit asks for a file; &ldquo;Commit virtual machine changes&rdquo; logs &ldquo;not implemented&rdquo;.</li>
           <li><strong>The Drives tab</strong> has seven rows, <code>hda</code> to <code>mtdblock</code>, each a combo of names and a Private COW check. Nothing says what an image is or whether its file is there; Snapshot mode is a check with no word on what it does.</li>
         </ol>
         <h3>Implementation</h3>
@@ -543,11 +546,11 @@
       </section>
 
       <section id="where">
-        <h2><span class="num">§3</span>Where the library lives</h2>
+        <h2><span class="num">&sect;3</span>Where the library lives</h2>
         <p>The canvas&rsquo;s second row drew the two options of revision&nbsp;1.</p>
         <div class="scroll">
           <table class="wide">
-            <thead><tr><th></th><th>A · Disk Images window</th><th>B · Images tab of the main window</th></tr></thead>
+            <thead><tr><th></th><th>A &middot; Disk Images window</th><th>B &middot; Images tab of the main window</th></tr></thead>
             <tbody>
               <tr><td class="nowrap"><strong>What it is</strong></td><td>A window, as the Projects window: a searchable list and the details of the selected image, Add in the header bar</td><td>A tab beside Bricks and Events, with the same list, a details pane and a toolbar</td></tr>
               <tr><td class="nowrap"><strong>Reached from</strong></td><td>A menu item and the Manage Images item of the picker</td><td>Always on screen, one click away; the picker's Manage Images switches to it</td></tr>
@@ -569,11 +572,11 @@
 </section>
 
       <section id="scope">
-        <h2><span class="num">§4</span>This project and all projects</h2>
+        <h2><span class="num">&sect;4</span>This project and all projects</h2>
         <p>Today the images belong to a project: its <code>project.toml</code> has them, by name and path, and its disks name them. The files are shared: an import copies them to <code>&lt;workspace&gt;/vimages</code>, and several projects can use one file under different names.</p>
         <div class="scroll">
           <table class="wide">
-            <thead><tr><th></th><th>S1 · The project only</th><th>S2 · One library for the workspace</th><th>S3 · The project, and a view of all</th></tr></thead>
+            <thead><tr><th></th><th>S1 &middot; The project only</th><th>S2 &middot; One library for the workspace</th><th>S3 &middot; The project, and a view of all</th></tr></thead>
             <tbody>
               <tr><td class="nowrap"><strong>Model</strong></td><td>As today</td><td>A new <code>library.toml</code> in the workspace; projects name its images</td><td>As today</td></tr>
               <tr><td class="nowrap"><strong>Shows</strong></td><td>The images of the open project</td><td>Every image, once</td><td><em>This project</em> by default; <em>All projects</em>: each file once, the projects and disks that use it, and the files of <code>vimages</code> no project uses</td></tr>
@@ -585,25 +588,25 @@
       </section>
 
       <section id="disks">
-        <h2><span class="num">§5</span>Choosing an image for a disk</h2>
+        <h2><span class="num">&sect;5</span>Choosing an image for a disk</h2>
         <p>The canvas's third row.</p>
         <ul>
-          <li><strong>D1, the disks of the machine</strong> (board D1): only the disks the machine has, each with its device, an image picker, a mode and a menu; Add Disk offers the free devices, <code>hda</code> to <code>mtdblock</code>. Under each disk a line says what the mode does: “r1’s changes are kept in r1_hda.cow, 18 MB, in the project; frr-debian stays as it is.”</li>
-          <li><strong>D2, today's grid</strong> (board D2): the seven rows stay, with the same picker and mode, and the three buttons become Add an Existing Image…, New Empty Disk… and Manage Images…. The smaller change.</li>
+          <li><strong>D1, the disks of the machine</strong> (board D1): only the disks the machine has, each with its device, an image picker, a mode and a menu; Add Disk offers the free devices, <code>hda</code> to <code>mtdblock</code>. Under each disk a line says what the mode does: &ldquo;r1&rsquo;s changes are kept in r1_hda.cow, 18 MB, in the project; frr-debian stays as it is.&rdquo;</li>
+          <li><strong>D2, today's grid</strong> (board D2): the seven rows stay, with the same picker and mode, and the three buttons become Add an Existing Image&hellip;, New Empty Disk&hellip; and Manage Images&hellip;. The smaller change.</li>
         </ul>
         <p><strong>Decided: D1</strong> (<span class="ref">L3</span>). A machine has one or two disks; seven rows hide them among empty ones.</p>
         <h3>In both</h3>
         <ul>
-          <li><strong>The picker</strong> lists the library with the facts of each image, the machines that use it and a warning for a missing file, then Add an Existing Image…, New Empty Disk… and Manage Images…. What it adds is chosen for the disk.</li>
+          <li><strong>The picker</strong> lists the library with the facts of each image, the machines that use it and a warning for a missing file, then Add an Existing Image&hellip;, New Empty Disk&hellip; and Manage Images&hellip;. What it adds is chosen for the disk.</li>
           <li><strong>The mode</strong> replaces the Private COW check: <em>Private copy</em>, the default, or <em>The image itself</em>, which the machine writes and locks while it runs, the lock that exists today.</li>
-          <li><strong>Snapshot mode</strong> stays a setting of the machine, said as what it does: “Forget every change when r1 stops”.</li>
-          <li><strong>The disk menu:</strong> Save as a New Image…, Merge into &lt;image&gt;…, Start Over from &lt;image&gt;… (the private copy goes to the trash and an empty one is made at the next start), Show in Files and Remove Disk.</li>
+          <li><strong>Snapshot mode</strong> stays a setting of the machine, said as what it does: &ldquo;Forget every change when r1 stops&rdquo;.</li>
+          <li><strong>The disk menu:</strong> Save as a New Image&hellip;, Merge into &lt;image&gt;&hellip;, Start Over from &lt;image&gt;&hellip; (the private copy goes to the trash and an empty one is made at the next start), Show in Files and Remove Disk.</li>
           <li><strong>The CD-ROM</strong> stays a file or a drive of the computer, not an image of the library: an ISO file is used as it is, never copied or written (<span class="ref">L10</span>).</li>
         </ul>
       </section>
 
       <section id="dialogs">
-        <h2><span class="num">§6</span>The dialogs</h2>
+        <h2><span class="num">&sect;6</span>The dialogs</h2>
         <p>The canvas's last row; they go with either place and either Drives tab.</p>
         <h3>Add an Existing Image</h3>
         <ul>
@@ -614,7 +617,7 @@
         </ul>
         <h3>New Empty Disk</h3>
         <ul>
-          <li>Name, size in MB or GB, and format: qcow2, the default, or raw (<span class="ref">L8</span>). The file goes in the image folder, under the name, and Change… picks another place.</li>
+          <li>Name, size in MB or GB, and format: qcow2, the default, or raw (<span class="ref">L8</span>). The file goes in the image folder, under the name, and Change&hellip; picks another place.</li>
           <li>The image is added to the library when <code>qemu-img create</code> ends, and from the picker it's chosen for the disk.</li>
         </ul>
         <h3>Remove</h3>
@@ -624,12 +627,12 @@
         </ul>
         <h3>Find the File</h3>
         <ul>
-          <li>For an image whose file is missing. When the image folder has a file of the same name and size it's offered first; else Choose a File….</li>
+          <li>For an image whose file is missing. When the image folder has a file of the same name and size it's offered first; else Choose a File&hellip;.</li>
           <li><strong>The private copies are pointed at the new file</strong> with <code>qemu-img rebase -u</code>, the step the import already does, before the path changes, so no machine loses its changes. The same holds whenever the path of an image changes.</li>
         </ul>
         <h3>Save as a New Image, and Merge</h3>
         <ul>
-          <li><strong>Save as a New Image</strong> writes the image with the disk's changes, standalone, with <code>qemu-img convert</code>, to the image folder, and adds it; <em>Use it for r1’s hda</em>, on by default, gives the disk the new image and an empty private copy. The machine is stopped first.</li>
+          <li><strong>Save as a New Image</strong> writes the image with the disk's changes, standalone, with <code>qemu-img convert</code>, to the image folder, and adds it; <em>Use it for r1&rsquo;s hda</em>, on by default, gives the disk the new image and an empty private copy. The machine is stopped first.</li>
           <li><strong>Merge</strong> writes the disk's changes into the image with <code>qemu-img commit</code>. The dialog lists everything else that uses the image, here and in other projects, says their private copies may stop working, and offers Save as a New Image Instead. Every machine that uses the image is stopped first. Kept behind that warning (<span class="ref">L6</span>).</li>
           <li>Both run in the archive process, with their progress, and can be stopped; a stopped Save leaves no file (<span class="ref">L7</span>).</li>
         </ul>
@@ -638,20 +641,20 @@
       </section>
 
       <section id="kept">
-        <h2><span class="num">§7</span>What each action becomes</h2>
+        <h2><span class="num">&sect;7</span>What each action becomes</h2>
         <div class="scroll">
           <table class="wide">
             <thead><tr><th>Today</th><th>After</th></tr></thead>
             <tbody>
-              <tr><td>Disk images › Images library</td><td>The Images tab</td></tr>
-              <tr><td>Disk images › New image from file; Drives › New image from file</td><td>Add… › Existing Image…, in the library and in the picker</td></tr>
-              <tr><td>Disk images › Create new image; Drives › New (empty) disk image</td><td>Add… › New Empty Disk…, added to the library</td></tr>
-              <tr><td>Disk images › Commit cow image</td><td>The disk menu › Merge into &lt;image&gt;…, beside Save as a New Image…</td></tr>
-              <tr><td>Drives › Configure disk images</td><td>The picker › Manage Images…, which shows the Images tab</td></tr>
-              <tr><td>Library › Edit: path, name, description</td><td>The details: name and description; Find the File… for a missing file</td></tr>
-              <tr><td>Library › Remove, at once</td><td>Remove…, with the disks it touches</td></tr>
-              <tr><td>Drives › seven combos and Private COW</td><td>The disks of the machine, a picker and a mode each (D1)</td></tr>
-              <tr><td>Drives › Snapshot mode</td><td>“Forget every change when the machine stops”</td></tr>
+              <tr><td>Disk images &rsaquo; Images library</td><td>The Images tab</td></tr>
+              <tr><td>Disk images &rsaquo; New image from file; Drives &rsaquo; New image from file</td><td>Add&hellip; &rsaquo; Existing Image&hellip;, in the library and in the picker</td></tr>
+              <tr><td>Disk images &rsaquo; Create new image; Drives &rsaquo; New (empty) disk image</td><td>Add&hellip; &rsaquo; New Empty Disk&hellip;, added to the library</td></tr>
+              <tr><td>Disk images &rsaquo; Commit cow image</td><td>The disk menu &rsaquo; Merge into &lt;image&gt;&hellip;, beside Save as a New Image&hellip;</td></tr>
+              <tr><td>Drives &rsaquo; Configure disk images</td><td>The picker &rsaquo; Manage Images&hellip;, which shows the Images tab</td></tr>
+              <tr><td>Library &rsaquo; Edit: path, name, description</td><td>The details: name and description; Find the File&hellip; for a missing file</td></tr>
+              <tr><td>Library &rsaquo; Remove, at once</td><td>Remove&hellip;, with the disks it touches</td></tr>
+              <tr><td>Drives &rsaquo; seven combos and Private COW</td><td>The disks of the machine, a picker and a mode each (D1)</td></tr>
+              <tr><td>Drives &rsaquo; Snapshot mode</td><td>&ldquo;Forget every change when the machine stops&rdquo;</td></tr>
               <tr><td>Suspend and Resume of a machine</td><td>Unchanged; the snapshot they use shows in the details</td></tr>
             </tbody>
           </table>
@@ -659,7 +662,7 @@
       </section>
 
       <section id="code">
-        <h2><span class="num">§8</span>The code</h2>
+        <h2><span class="num">&sect;8</span>The code</h2>
         <p>What the library knows, without GTK, as the rule of <code>config</code> wants, beside the workspace:</p>
         <figure class="code">
           <figcaption>virtualbricks/config/images.py</figcaption>
@@ -699,7 +702,7 @@
 </section>
 
       <section id="plan">
-        <h2><span class="num">§9</span>Implementation plan</h2>
+        <h2><span class="num">&sect;9</span>Implementation plan</h2>
         <p>Each step leaves the application working and can be committed on its own; the tests go with each step, as for the projects.</p>
         <ol>
           <li><strong>The model, and the fixes that need no new window.</strong> <code>config/images.py</code>; <code>relink</code> with the rebase, used by the edit screen of today's library; Create new image adds what it creates; Remove asks; the columns count the disks right, and the sizes come from <code>qemu-img info</code>.</li>
@@ -710,30 +713,30 @@
       </section>
 
       <section id="decisions">
-        <h2><span class="num">§10</span>Decisions</h2>
+        <h2><span class="num">&sect;10</span>Decisions</h2>
         <div class="scroll">
           <table class="wide">
             <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
             <tbody>
-              <tr><td class="nowrap"><span class="ref">L1</span></td><td>Where the library lives</td><td>A, a window · B, a tab of the main window</td><td>B, in the shape of the Bricks and Events tabs</td></tr>
-              <tr><td class="nowrap"><span class="ref">L2</span></td><td>What the library covers</td><td>S1, the project · S2, one workspace library · S3, the project and a view of all</td><td>S1, for now; S3 later (&sect;11)</td></tr>
-              <tr><td class="nowrap"><span class="ref">L3</span></td><td>The Drives tab</td><td>D1, the disks the machine has · D2, today's seven rows</td><td>D1</td></tr>
-              <tr><td class="nowrap"><span class="ref">L4</span></td><td>Adding a file from outside the workspace</td><td>Copy it to the image folder · use it where it is · ask, copying by default</td><td>Ask, copying by default</td></tr>
-              <tr><td class="nowrap"><span class="ref">L5</span></td><td>Removing an image, and its file</td><td>The file always stays · trash it when it's in the image folder and no other project uses it</td><td>Offer the trash in that case only</td></tr>
-              <tr><td class="nowrap"><span class="ref">L6</span></td><td>Merging a private copy into its image</td><td>Keep it, behind the list of what it touches · drop it, keep Save as a New Image</td><td>Keep it, behind the list</td></tr>
-              <tr><td class="nowrap"><span class="ref">L7</span></td><td>Where Save and Merge run</td><td>The archive process · <code>qemu-img</code> spawned by the application</td><td>The archive process: progress, stop and clean-up are there</td></tr>
-              <tr><td class="nowrap"><span class="ref">L8</span></td><td>Formats of a new disk</td><td>qcow2 and raw · every format of <code>qemu-img</code></td><td>qcow2 and raw; others can still be added from a file</td></tr>
-              <tr><td class="nowrap"><span class="ref">L9</span></td><td>Units of the sizes</td><td>MB and GB (1000), as the Projects window · MiB and GiB (1024), as today</td><td>MB and GB</td></tr>
-              <tr><td class="nowrap"><span class="ref">L10</span></td><td>The CD-ROM</td><td>A file or a drive, as today · an image of the library</td><td>As today</td></tr>
-              <tr><td class="nowrap"><span class="ref">L11</span></td><td>Rename</td><td>The name in the project · the file too</td><td>The name; the file keeps its own</td></tr>
-              <tr><td class="nowrap"><span class="ref">L12</span></td><td>The description beside a file</td><td>Read <code>&lt;file&gt;.vbdescr</code>, as today · ignore it</td><td>Read <code>&lt;file&gt;.md</code> instead, as plain text; Markdown later</td></tr>
+              <tr><td class="nowrap"><span class="ref">L1</span></td><td>Where the library lives</td><td>A, a window &middot; B, a tab of the main window</td><td>B, in the shape of the Bricks and Events tabs</td></tr>
+              <tr><td class="nowrap"><span class="ref">L2</span></td><td>What the library covers</td><td>S1, the project &middot; S2, one workspace library &middot; S3, the project and a view of all</td><td>S1, for now; S3 later (&sect;11)</td></tr>
+              <tr><td class="nowrap"><span class="ref">L3</span></td><td>The Drives tab</td><td>D1, the disks the machine has &middot; D2, today's seven rows</td><td>D1</td></tr>
+              <tr><td class="nowrap"><span class="ref">L4</span></td><td>Adding a file from outside the workspace</td><td>Copy it to the image folder &middot; use it where it is &middot; ask, copying by default</td><td>Ask, copying by default</td></tr>
+              <tr><td class="nowrap"><span class="ref">L5</span></td><td>Removing an image, and its file</td><td>The file always stays &middot; trash it when it's in the image folder and no other project uses it</td><td>Offer the trash in that case only</td></tr>
+              <tr><td class="nowrap"><span class="ref">L6</span></td><td>Merging a private copy into its image</td><td>Keep it, behind the list of what it touches &middot; drop it, keep Save as a New Image</td><td>Keep it, behind the list</td></tr>
+              <tr><td class="nowrap"><span class="ref">L7</span></td><td>Where Save and Merge run</td><td>The archive process &middot; <code>qemu-img</code> spawned by the application</td><td>The archive process: progress, stop and clean-up are there</td></tr>
+              <tr><td class="nowrap"><span class="ref">L8</span></td><td>Formats of a new disk</td><td>qcow2 and raw &middot; every format of <code>qemu-img</code></td><td>qcow2 and raw; others can still be added from a file</td></tr>
+              <tr><td class="nowrap"><span class="ref">L9</span></td><td>Units of the sizes</td><td>MB and GB (1000), as the Projects window &middot; MiB and GiB (1024), as today</td><td>MB and GB</td></tr>
+              <tr><td class="nowrap"><span class="ref">L10</span></td><td>The CD-ROM</td><td>A file or a drive, as today &middot; an image of the library</td><td>As today</td></tr>
+              <tr><td class="nowrap"><span class="ref">L11</span></td><td>Rename</td><td>The name in the project &middot; the file too</td><td>The name; the file keeps its own</td></tr>
+              <tr><td class="nowrap"><span class="ref">L12</span></td><td>The description beside a file</td><td>Read <code>&lt;file&gt;.vbdescr</code>, as today &middot; ignore it</td><td>Read <code>&lt;file&gt;.md</code> instead, as plain text; Markdown later</td></tr>
             </tbody>
           </table>
         </div>
       </section>
 
       <section id="later">
-        <h2><span class="num">§11</span>Later</h2>
+        <h2><span class="num">&sect;11</span>Later</h2>
         <ul>
           <li><strong>The images of all projects</strong> (S3): each file once, the projects and disks that use it, and the files of <code>vimages</code> that no project uses, as the copies an import leaves; a file nobody uses added to this project or moved to the trash.</li>
           <li><strong>The description as Markdown</strong>, rendered in the details as the Readme tab renders the README.</li>

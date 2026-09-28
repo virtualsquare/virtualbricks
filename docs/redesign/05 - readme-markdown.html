@@ -1,0 +1,783 @@
+<title>Markdown in the README</title>
+<meta name="description" content="A proposal for Markdown in the README of a Virtualbricks project: the dialects, a CommonMark subset, where the README is rendered, mock-ups of the windows and an implementation plan.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  /* window mockup */
+  .mock {
+    margin: 18px 0 10px;
+    max-width: 760px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px -18px rgba(10, 30, 25, 0.45);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .mock-bar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 9px 12px;
+    background: var(--code-bg);
+    border-bottom: 1px solid var(--rule);
+  }
+  .mock-bar .title { grid-column: 2; font: 600 14px/1.2 var(--font-head); }
+  .mock-bar .x { grid-column: 3; justify-self: end; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 500 14px/1 var(--font-body); color: var(--muted); background: var(--surface); }
+  .mock-body { padding: 16px; display: grid; gap: 14px; }
+  .mock-form { display: grid; gap: 8px; }
+  .mock-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; align-items: center; }
+  @media (min-width: 560px) { .mock-row { grid-template-columns: 8.5em minmax(0, 1fr); gap: 10px; } }
+  .mock-row > span:first-child { color: var(--muted); }
+  .mock-field {
+    display: block;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 4px 9px;
+    font: 13px/1.5 var(--font-mono);
+    background: var(--ground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .mock-choice { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; }
+  .mock-choice .mock-field { flex: 1 1 12em; }
+  .mock table { font-size: 13.5px; }
+  .mock td, .mock th { padding-block: 6px; }
+  .mock tr.sel td { background: var(--accent-soft); }
+  .mock tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--accent); padding-left: 8px; }
+  .chip {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    font: 500 12px/1 var(--font-mono);
+    padding: 4px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .chip.ok { color: var(--ok); background: var(--ok-soft); }
+  .chip.warn { color: var(--decide); background: var(--decide-soft); }
+  .chip.fail { color: var(--risk); background: var(--risk-soft); }
+  .chip.run { color: var(--accent); background: var(--accent-soft); }
+  .chip.wait { color: var(--muted); background: var(--code-bg); }
+  .mock-progress { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+  .mock-progress .track { height: 8px; border-radius: 4px; background: var(--code-bg); overflow: hidden; }
+  .mock-progress .fill { height: 100%; width: 72%; background: var(--accent); }
+  .mock-log { border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; display: grid; gap: 7px; background: var(--ground); }
+  .mock-log .head { font: 600 13px/1.2 var(--font-head); }
+  .mock-log div.msg { display: grid; grid-template-columns: 5.2em minmax(0, 1fr); gap: 8px; font-size: 13px; }
+  .mock-log .loc { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+  .mock-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  .btn {
+    display: inline-block;
+    font: 500 13.5px/1 var(--font-body);
+    padding: 8px 14px;
+    border-radius: 5px;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .mock-note { font-size: 13px; color: var(--muted); margin: 0 0 18px; }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  /* readme-markdown.html: the dialects, the syntax, the mock-ups */
+  table.syntax td.src { font: 13px/1.5 var(--font-mono); white-space: pre-wrap; color: var(--code-ink); background: var(--code-bg); }
+  table.syntax td.out { min-width: 14em; }
+  table.dialects td:first-child { white-space: nowrap; font-weight: 600; }
+  table.syntax .gtk { box-shadow: none; border-radius: 4px; }
+
+  figure.board { margin: 20px 0 34px; min-width: 0; }
+  figure.board .stage { background: var(--code-bg); border-radius: 10px; padding: 22px 18px; overflow-x: auto; }
+  figure.board .stage > * { margin: 0 auto; }
+  figure.board figcaption { font-size: 14px; line-height: 1.5; color: var(--muted); margin-top: 10px; max-width: 82ch; }
+  figure.board figcaption b.board-name { font: 500 12px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-right: 8px; }
+  .pair { display: flex; gap: 22px; align-items: flex-start; width: max-content; }
+
+  /* a GTK 3 window, Adwaita */
+  .gtk {
+    --w-bg: #f6f5f4; --w-view: #ffffff; --w-ink: #2e3436; --w-dim: #77767b;
+    --w-border: #cdc7c2; --w-hb: #e8e6e3; --w-accent: #3584e4; --w-link: #1b6acb;
+    --w-code: #eeedec; --w-sel: #dfe9f6;
+    font: 13px/1.45 "Cantarell", "Noto Sans", system-ui, sans-serif;
+    color: var(--w-ink); background: var(--w-bg);
+    border: 1px solid #b8b1aa; border-radius: 8px 8px 3px 3px;
+    box-shadow: 0 8px 26px rgba(0,0,0,.20), 0 1px 3px rgba(0,0,0,.12);
+    overflow: hidden; text-align: left;
+  }
+  .gtk * { box-sizing: border-box; }
+  .gtk .hb { display: flex; align-items: center; gap: 6px; min-height: 42px; padding: 6px 8px; background: linear-gradient(#efedeb, var(--w-hb)); border-bottom: 1px solid var(--w-border); }
+  .gtk .hb .ttl { flex: 1; text-align: center; font-weight: 700; line-height: 1.2; }
+  .gtk .hb .ttl small { display: block; font-weight: 400; color: var(--w-dim); font-size: 11.5px; }
+  .gtk .hb .x { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: var(--w-dim); font-size: 14px; }
+  .gtk .menubar { display: flex; gap: 16px; padding: 3px 10px; border-bottom: 1px solid var(--w-border); background: var(--w-bg); }
+  .gtk .btn { display: inline-block; border: 1px solid var(--w-border); border-radius: 5px; background: linear-gradient(#fbfbfa, #eeecea); padding: 3px 11px; line-height: 1.5; white-space: nowrap; }
+  .gtk .btn.suggested { background: linear-gradient(#4a92e8, var(--w-accent)); color: #fff; border-color: #1c6bcf; }
+  .gtk .btn.flat { border-color: transparent; background: none; color: var(--w-dim); }
+  .gtk .btn.on { background: #d9d5d1; box-shadow: inset 0 1px 2px rgba(0,0,0,.18); }
+  .gtk .seg { display: inline-flex; }
+  .gtk .seg .btn { border-radius: 0; margin-left: -1px; }
+  .gtk .seg .btn:first-child { border-radius: 5px 0 0 5px; margin-left: 0; }
+  .gtk .seg .btn:last-child { border-radius: 0 5px 5px 0; }
+  .gtk .tabs { display: flex; padding: 0 8px; border-bottom: 1px solid var(--w-border); background: var(--w-bg); }
+  .gtk .tab { padding: 7px 13px; color: var(--w-dim); }
+  .gtk .tab.on { color: var(--w-ink); box-shadow: inset 0 -3px 0 var(--w-accent); }
+  .gtk .bar { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--w-border); }
+  .gtk .spacer { flex: 1; }
+  .gtk .entry { border: 1px solid var(--w-border); border-radius: 5px; background: var(--w-view); padding: 4px 8px; }
+  .gtk .entry.search { color: var(--w-dim); }
+  .gtk .dim { color: var(--w-dim); }
+  .gtk .bold { font-weight: 700; }
+  .gtk .text { background: var(--w-view); padding: 10px 12px; white-space: pre-wrap; }
+  .gtk .text.boxed { border: 1px solid var(--w-border); border-radius: 3px; }
+  .gtk .caret { display: inline-block; width: 1px; height: 1.1em; background: var(--w-ink); vertical-align: text-bottom; }
+  .gtk .body { padding: 14px 16px; display: grid; gap: 8px; }
+  .gtk .row-label { font-weight: 700; margin-top: 4px; }
+  .gtk .paned { display: grid; grid-template-columns: 220px 1fr; min-height: 380px; }
+  .gtk .paned > .left { border-right: 1px solid var(--w-border); background: var(--w-view); }
+  .gtk .list-row { padding: 8px 10px; border-bottom: 1px solid #ebe8e5; display: grid; gap: 1px; }
+  .gtk .list-row.sel { background: var(--w-sel); }
+  .gtk .list-row .nm { font-weight: 700; }
+  .gtk .list-row .sub { color: var(--w-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gtk .list-row .sub.dimmed { color: var(--w-dim); }
+  .gtk .facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 18px; margin-top: 6px; }
+  .gtk .facts dt { color: var(--w-dim); } .gtk .facts dd { margin: 0; }
+  .gtk .actions { display: flex; gap: 6px; padding: 8px 12px; border-top: 1px solid var(--w-border); }
+  .gtk .popover { position: relative; background: var(--w-view); border: 1px solid #b8b1aa; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.18); padding: 10px 12px; }
+  .gtk .img-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 8px 10px; background: var(--w-view); border: 1px solid var(--w-border); border-radius: 5px; }
+  .gtk .check::before { content: ""; display: inline-block; width: 14px; height: 14px; border: 1px solid #8f8a85; border-radius: 3px; background: var(--w-accent); vertical-align: -2px; margin-right: 7px; box-shadow: inset 0 0 0 3px var(--w-view); }
+
+  /* the README, rendered as a GtkTextView with tags can draw it */
+  .md { background: var(--w-view); padding: 12px 14px; }
+  .md > :first-child { margin-top: 0; }
+  .md h1 { font-size: 1.42em; font-weight: 700; margin: 0.3em 0 0.35em; line-height: 1.25; }
+  .md h2 { font-size: 1.18em; font-weight: 700; margin: 0.8em 0 0.3em; line-height: 1.25; }
+  .md p { margin: 0 0 0.55em; }
+  .md ul, .md ol { margin: 0 0 0.55em; padding-left: 1.5em; }
+  .md li { margin: 0; }
+  .md code { font: 0.92em/1 "DejaVu Sans Mono", "Source Code Pro", monospace; background: var(--w-code); padding: 1px 3px; border-radius: 2px; }
+  .md pre { font: 12px/1.45 "DejaVu Sans Mono", "Source Code Pro", monospace; background: var(--w-code); padding: 7px 10px; margin: 0 0 0.6em; white-space: pre-wrap; }
+  .md blockquote { margin: 0 0 0.55em 1.6em; color: var(--w-dim); }
+  .md blockquote p { margin: 0; }
+  .md a { color: var(--w-link); text-decoration: underline; cursor: pointer; }
+  .md s { color: var(--w-dim); }
+  .md hr { border: 0; border-top: 1px solid var(--w-border); margin: 0.6em 0; }
+  .md.small { font-size: 12px; padding: 10px 12px; }
+  .src-text { font: 13px/1.5 "Cantarell", "Noto Sans", system-ui, sans-serif; }
+
+  .callout { font: 12px/1.3 var(--font-body); color: var(--accent); margin-top: 8px; text-align: left; }
+  .callout b { font-weight: 600; }
+
+  /* revision 2: the floating buttons of the Readme tab */
+  .gtk .overlay { position: relative; }
+  .gtk .float { position: absolute; top: 10px; right: 12px; display: inline-flex; border-radius: 6px; background: rgba(38, 38, 38, 0.78); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); padding: 2px; gap: 2px; }
+  .gtk .float .ib { width: 30px; height: 26px; border-radius: 4px; display: grid; place-items: center; color: #ffffff; }
+  .gtk .float .ib.on { background: rgba(255, 255, 255, 0.24); }
+  .gtk .float .ib svg { width: 16px; height: 16px; }
+  .gtk .float .sep { width: 1px; background: rgba(255, 255, 255, 0.25); margin: 4px 2px; }
+  .gtk .tooltip { position: absolute; top: 44px; right: 40px; background: rgba(20, 20, 20, 0.9); color: #fff; font-size: 12px; padding: 3px 8px; border-radius: 5px; }
+  .gtk .with-margin { padding-right: 86px; }
+  .gtk .clamp4 { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .gtk .popover.anchored::before { content: ""; position: absolute; top: -7px; right: 22px; width: 12px; height: 12px; background: var(--w-view); border-left: 1px solid #b8b1aa; border-top: 1px solid #b8b1aa; transform: rotate(45deg); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 5 &middot; Design &middot; revision 4, implemented</div>
+    <h1>Markdown in the Project README</h1>
+    <p class="lede">A project&rsquo;s README keeps being a plain text file, but what you write in it can have headings, lists, code and links: shown rendered where the README is only read, written as plain text with a preview where it&rsquo;s edited, and left alone in the New Project dialog.</p>
+    <ul class="meta">
+      <li>branch <b>mg/abandon-glade</b> at e203b56</li>
+      <li>revision 4 &middot; 28 September 2026</li>
+      <li><span class="status done">implemented</span></li>
+    </ul>
+    <p class="revision"><strong>What changed:</strong> revision 2 applies your answers. The syntax, the parser, line breaks, links, bare URLs, pictures and the Import dialog are decided as recommended (<span class="ref done">M1</span>, <span class="ref done">M2</span>, <span class="ref done">M3</span>, <span class="ref done">M5</span>, <span class="ref done">M6</span>, <span class="ref done">M7</span>, <span class="ref done">M10</span>). The Readme tab opens on the preview, and two small icon buttons float at its top right to switch to the editor and back; the side-by-side board is gone (<span class="ref done">M4</span>, boards R1 and R2, <a href="#readme-tab">&sect;6</a>). The Projects list keeps the first line on one line, trimmed with &hellip;; the Import dialog shows at most four lines, trimmed the same way (boards P and I). With icon-only buttons, the syntax help becomes a third icon while you write (<span class="ref done">M8</span>, board H). Revision 3 settles the last two: the syntax icon, and the name <code>README</code> (<span class="ref done">M8</span>, <span class="ref done">M9</span>).</p>
+    <p class="revision"><strong>Implemented</strong> in five commits on 26 September 2026, 1ca87d4 to bff0d18, one per step of &sect;7, with these differences. The lowest markdown-it-py is 1.1, Ubuntu 22.04&rsquo;s; the tests pass with 1.1, 3.0 and 4.2. A bare URL is a link when it starts with <code>http</code> or <code>https</code>, up to the punctuation that ends a sentence. The Import dialog shows its four lines with <code>MarkdownLabel</code>, since a GtkLabel limits the lines of each paragraph, not of the whole text; the label can no longer be selected. The Readme tab is a module of its own, <code>ReadmeTab</code>; the editor now wraps its lines, and the syntax icon is <code>dialog-question-symbolic</code>, as Adwaita has no question mark in a circle.</p>
+    <p class="revision"><strong>Since then:</strong> the Readme tab moved with the main window into <code>gui/mainwindow/readme.py</code> (6cd66cf), and the windows of the table in &sect;7 are in <code>gui/dialogs/</code> (678ef50). The disk images redesign reads the description of an image from a <code>&lt;file&gt;.md</code> beside it, as plain text for now (<a href="09%20-%20disk-images-redesign.html">step 9</a>).</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#dialects"><span>2</span>Markdown dialects</a></li>
+        <li><a href="#syntax"><span>3</span>The syntax</a></li>
+        <li><a href="#places"><span>4</span>Where the README shows</a></li>
+        <li><a href="#mockups"><span>5</span>Mock-ups</a></li>
+        <li><a href="#rendering"><span>6</span>Rendering in GTK</a></li>
+        <li><a href="#plan"><span>7</span>Implementation plan</a></li>
+        <li><a href="#tests"><span>8</span>Tests</a></li>
+        <li><a href="#decisions"><span>9</span>Decisions</a></li>
+        <li><a href="#later"><span>10</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Syntax</dt><dd>A <strong>subset of CommonMark</strong>, the core that GitHub, GitLab and most editors share: headings, bold and italic, code, lists, quotes, links and rules. Anything else, as a table or an image, stays as you typed it.</dd></div>
+          <div><dt>Where</dt><dd><strong>Rendered</strong> where the README is only read: the details of the Projects window and the Import dialog. The <strong>Readme tab</strong> opens on the rendered README; two icon buttons floating at its top right switch to the plain text editor and back. The <strong>New Project</strong> dialog stays as it is.</dd></div>
+          <div><dt>File</dt><dd>Still <code>README</code>, still plain text: nothing changes on disk, in archives or in the migration. A README written before reads the same, line by line (<span class="ref done">M3</span>).</dd></div>
+          <div><dt>Code</dt><dd><code>markdown-it-py</code>, a CommonMark parser in pure Python that the distributions package, reads the text; a small renderer draws its tokens in a <code>GtkTextView</code>. No web view.</dd></div>
+        </dl>
+      </section>
+
+      <section id="dialects">
+        <h2><span class="num">&sect;2</span>Markdown dialects</h2>
+        <p>Markdown was a syntax page and a Perl script, with no specification, so every implementation settled the unclear cases its own way. CommonMark pinned the core down; most dialects in use today are CommonMark with extensions.</p>
+        <div class="scroll">
+          <table class="wide dialects">
+            <thead><tr><th>Dialect</th><th>What it is</th><th>Adds to the core</th><th>Used by</th></tr></thead>
+            <tbody>
+              <tr><td>Markdown.pl</td><td>John Gruber&rsquo;s original, 2004: a syntax page and a Perl script, no specification.</td><td>&mdash; it is the core, loosely defined</td><td>The reference for the older implementations.</td></tr>
+              <tr><td>CommonMark</td><td>An exact specification (0.31.2, 2024) with over 600 examples, and reference parsers, <code>cmark</code> and <code>commonmark.js</code>.</td><td>Nothing: it settles the core</td><td>Discourse, Stack Overflow, Matrix clients, VS Code&rsquo;s preview (markdown-it), and the dialects below.</td></tr>
+              <tr><td>GitHub Flavored</td><td>GFM: CommonMark plus extensions, with its own specification (0.29-gfm).</td><td>Tables, task lists, strikethrough, bare URLs as links, some HTML refused</td><td>GitHub, Gitea and Forgejo, most editors and note apps.</td></tr>
+              <tr><td>GitLab Flavored</td><td>GLFM: GFM plus more.</td><td>Math, diagrams, footnotes, references to issues</td><td>GitLab.</td></tr>
+              <tr><td>Pandoc&rsquo;s Markdown</td><td>The richest, meant for documents.</td><td>Footnotes, definition lists, math, citations, four kinds of tables, metadata</td><td>Pandoc, which writes the manual pages of this project; R Markdown and Quarto.</td></tr>
+              <tr><td>Python-Markdown</td><td>Gruber&rsquo;s syntax in Python, with extensions; not CommonMark (a nested list needs four spaces).</td><td>Tables, fenced code, footnotes, as extensions</td><td>MkDocs.</td></tr>
+              <tr><td>MultiMarkdown, Markdown Extra</td><td>Older extensions of Gruber&rsquo;s syntax.</td><td>Tables, footnotes, definition lists, metadata</td><td>Some site generators and note apps.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>What renders the same almost everywhere is CommonMark; GFM is the superset most people meet. A <strong>subset of CommonMark</strong> therefore reads the same here, on GitHub and GitLab, and in any editor&rsquo;s preview (<span class="ref done">M1</span>).</p>
+      </section>
+
+      <section id="syntax">
+        <h2><span class="num">&sect;3</span>The syntax</h2>
+        <p>The parser starts from nothing and enables only these rules, so the list below is exactly what is recognized.</p>
+        <div class="scroll">
+          <table class="wide syntax">
+            <thead><tr><th>What</th><th>You type</th><th>You see</th></tr></thead>
+            <tbody>
+              <tr><td>Headings</td><td class="src"># Lab
+## Addresses
+Title
+=====</td><td class="out"><div class="gtk"><div class="md small"><h1>Lab</h1><h2>Addresses</h2><h1>Title</h1></div></div></td></tr>
+              <tr><td>Paragraphs and lines</td><td class="src">Start the switches.
+Then the routers.
+
+A new paragraph.</td><td class="out"><div class="gtk"><div class="md small"><p>Start the switches.<br>Then the routers.</p><p>A new paragraph.</p></div></div></td></tr>
+              <tr><td>Emphasis</td><td class="src">*italic*, **bold**, ~~struck~~</td><td class="out"><div class="gtk"><div class="md small"><p><i>italic</i>, <b>bold</b>, <s>struck</s></p></div></div></td></tr>
+              <tr><td>Code</td><td class="src">run `vtysh`
+
+```
+show ip ospf neighbor
+```</td><td class="out"><div class="gtk"><div class="md small"><p>run <code>vtysh</code></p><pre>show ip ospf neighbor</pre></div></div></td></tr>
+              <tr><td>Lists</td><td class="src">- r1
+- r2
+  1. first
+  2. second</td><td class="out"><div class="gtk"><div class="md small"><ul><li>r1</li><li>r2<ol><li>first</li><li>second</li></ol></li></ul></div></div></td></tr>
+              <tr><td>Quotes</td><td class="src">&gt; Update the image first.</td><td class="out"><div class="gtk"><div class="md small"><blockquote><p>Update the image first.</p></blockquote></div></div></td></tr>
+              <tr><td>Links</td><td class="src">[BIRD](https://bird.network.cz)
+&lt;https://bird.network.cz&gt;
+https://bird.network.cz</td><td class="out"><div class="gtk"><div class="md small"><p><a>BIRD</a><br><a>https://bird.network.cz</a><br><a>https://bird.network.cz</a></p></div></div></td></tr>
+              <tr><td>Rule</td><td class="src">---</td><td class="out"><div class="gtk"><div class="md small"><hr></div></div></td></tr>
+              <tr><td>A literal mark</td><td class="src">\*not italic\*</td><td class="out"><div class="gtk"><div class="md small"><p>*not italic*</p></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>What stays as you typed it</h3>
+        <p>Tables, task lists, footnotes and raw HTML aren&rsquo;t in the subset: they show as the text you wrote, which is still readable. A picture, <code>![map](map.png)</code>, shows as its text, <i>map</i> (<span class="ref done">M7</span>). A line indented by four spaces stays a line of text, not code, though without its indentation.</p>
+        <h3>A README written before</h3>
+        <p>An old README is plain text, and stays readable rendered: every line stays a line (<span class="ref done">M3</span>), paragraphs stay paragraphs. What changes is what already looked like Markdown: a line that starts with <code>- </code> or <code>1. </code> becomes a list item, <code># </code> a heading, <code>&gt; </code> a quote, a title underlined with <code>===</code> a heading, and <code>*words*</code> italic. Underscores inside names, as <code>vm1_hda</code>, stay underscores.</p>
+      </section>
+
+      <section id="places">
+        <h2><span class="num">&sect;4</span>Where the README shows</h2>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th>Place</th><th>Today</th><th>With this plan</th><th>Board</th></tr></thead>
+            <tbody>
+              <tr><td>New Project dialog</td><td>A plain text box</td><td><strong>Unchanged</strong>, as you asked. Its note gets fixed: it still speaks of &ldquo;your settings for new projects&rdquo;, which went away in e203b56</td><td>N</td></tr>
+              <tr><td>Readme tab of the main window</td><td>A plain text editor, saved as you type</td><td>The README <strong>rendered</strong>, by default. Two icon buttons floating at the top right switch to the <strong>same editor</strong> and back</td><td>R1, R2, H</td></tr>
+              <tr><td>Projects window, the list</td><td>The first line of the README, on one line, trimmed with &hellip;</td><td>The same, without its marks: <code># OSPF lab</code> shows <i>OSPF lab</i></td><td>P</td></tr>
+              <tr><td>Projects window, the details</td><td>The whole README, in a label</td><td>The README <strong>rendered</strong></td><td>P</td></tr>
+              <tr><td>Import dialog</td><td>The first paragraph, however long</td><td>The first paragraph that isn&rsquo;t a heading, <strong>rendered</strong>, in <strong>at most four lines</strong>, trimmed with &hellip; (<span class="ref done">M10</span>)</td><td>I</td></tr>
+              <tr><td>Search in the Projects window</td><td>The text of the README</td><td>Unchanged: it finds what you typed</td><td>&mdash;</td></tr>
+              <tr><td>The file, archives, migration</td><td>Plain text</td><td>Unchanged</td><td>&mdash;</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="mockups">
+        <h2><span class="num">&sect;5</span>Mock-ups</h2>
+        <p>The windows are drawn in GTK 3&rsquo;s Adwaita look, with only what a <code>GtkTextView</code> can draw: a quote is indented and dimmed, without a bar at its side. The same README runs through every board.</p>
+
+        <figure class="board" id="board-r1">
+          <div class="stage">
+            <div class="gtk" style="width: 720px">
+              <div class="hb"><span class="ttl">Virtualbricks<small>ospf-lab</small></span><span class="x">&#x2715;</span></div>
+              <div class="menubar"><span>File</span><span>Settings</span><span>View</span><span>Help</span></div>
+              <div class="tabs"><span class="tab">Bricks</span><span class="tab">Events</span><span class="tab">Running</span><span class="tab">Topology</span><span class="tab on">Readme</span></div>
+              <div class="overlay">
+                <div class="md with-margin" style="min-height: 330px">
+                  <h1>OSPF lab</h1>
+                  <p>Three routers in a ring, <b>area 0</b>, one switch each.<br>Start the switches before the routers.</p>
+                  <h2>Addresses</h2>
+                  <ul><li>r1: <code>10.0.1.1/24</code></li><li>r2: <code>10.0.2.1/24</code></li><li>r3: <code>10.0.3.1/24</code>, the <i>new</i> image</li></ul>
+                  <blockquote><p>Update the others with <code>apt upgrade</code> first.</p></blockquote>
+                  <pre>vtysh -c 'show ip ospf neighbor'</pre>
+                  <p>Notes on OSPF: <a>https://bird.network.cz</a></p>
+                </div>
+                <div class="float"><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.8 2.7l2.5 2.5-7.6 7.6-3.2.7.7-3.2z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.4 4.1l2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></span><span class="ib on"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.3 8s2.6-4.6 6.7-4.6S14.7 8 14.7 8s-2.6 4.6-6.7 4.6S1.3 8 1.3 8z" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2.1" fill="currentColor"/></svg></span></div>
+              </div>
+            </div>
+          </div>
+          <figcaption><b class="board-name">R1 &middot; Readme, the preview</b>What the tab shows when a project opens: the README rendered, which can be selected and copied, not edited. A link opens in your browser. Two icon buttons float over the top right corner: the pencil opens the editor, the eye, which is on, the preview. Their tooltips say Edit and Preview. They stay in the corner when the text scrolls, and a margin as wide as them keeps the text from going under them.</figcaption>
+        </figure>
+
+        <figure class="board" id="board-r2">
+          <div class="stage">
+            <div class="gtk" style="width: 720px">
+              <div class="hb"><span class="ttl">Virtualbricks<small>ospf-lab</small></span><span class="x">&#x2715;</span></div>
+              <div class="menubar"><span>File</span><span>Settings</span><span>View</span><span>Help</span></div>
+              <div class="tabs"><span class="tab">Bricks</span><span class="tab">Events</span><span class="tab">Running</span><span class="tab">Topology</span><span class="tab on">Readme</span></div>
+              <div class="overlay">
+                <div class="text src-text with-margin" style="min-height: 330px"># OSPF lab
+
+Three routers in a ring, **area 0**, one switch each.
+Start the switches before the routers.
+
+## Addresses
+
+- r1: `10.0.1.1/24`
+- r2: `10.0.2.1/24`
+- r3: `10.0.3.1/24`, the *new* image
+
+&gt; Update the others with `apt upgrade` first.
+
+```
+vtysh -c 'show ip ospf neighbor'
+```
+
+Notes on OSPF: https://bird.network.cz<span class="caret"></span></div>
+                <div class="float"><span class="ib on"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.8 2.7l2.5 2.5-7.6 7.6-3.2.7.7-3.2z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.4 4.1l2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.3 8s2.6-4.6 6.7-4.6S14.7 8 14.7 8s-2.6 4.6-6.7 4.6S1.3 8 1.3 8z" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2.1" fill="currentColor"/></svg></span><span class="sep"></span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.2 6.3a1.8 1.8 0 1 1 2.6 1.6c-.6.3-.8.7-.8 1.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".9" fill="currentColor"/></svg></span></div>
+              </div>
+            </div>
+          </div>
+          <figcaption><b class="board-name">R2 &middot; Readme, the editor</b>The editor of today, as it is: plain text, saved 30 seconds after the last change and when you leave the tab. The pencil is on; the eye goes back to the preview, drawn again from the text. While you write, a third icon shows the syntax (board H, <span class="ref done">M8</span>).</figcaption>
+        </figure>
+
+        <figure class="board" id="board-h">
+          <div class="stage">
+            <div class="gtk" style="width: 480px">
+              <div class="overlay">
+                <div class="text src-text with-margin" style="min-height: 300px"># OSPF lab
+
+Three routers in a ring, **area 0**, one switch each.
+Start the switches before the routers.<span class="caret"></span></div>
+                <div class="float"><span class="ib on"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.8 2.7l2.5 2.5-7.6 7.6-3.2.7.7-3.2z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.4 4.1l2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.3 8s2.6-4.6 6.7-4.6S14.7 8 14.7 8s-2.6 4.6-6.7 4.6S1.3 8 1.3 8z" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2.1" fill="currentColor"/></svg></span><span class="sep"></span><span class="ib on"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.2 6.3a1.8 1.8 0 1 1 2.6 1.6c-.6.3-.8.7-.8 1.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".9" fill="currentColor"/></svg></span></div>
+                <div class="popover anchored" style="position: absolute; top: 46px; right: 8px; width: 400px">
+                  <div class="bold" style="margin-bottom: 6px">Markdown</div>
+                  <div style="display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; font-size: 12.5px">
+                    <span style="font-family: monospace"># Heading</span><span class="dim">a heading; ## for a smaller one</span>
+                    <span style="font-family: monospace">*italic* **bold**</span><span class="dim">emphasis; ~~struck~~</span>
+                    <span style="font-family: monospace">`code`</span><span class="dim">code; ``` above and below a block</span>
+                    <span style="font-family: monospace">- item</span><span class="dim">a list; 1. for a numbered one</span>
+                    <span style="font-family: monospace">&gt; quote</span><span class="dim">a quote</span>
+                    <span style="font-family: monospace">[text](https://&hellip;)</span><span class="dim">a link; a bare URL is one too</span>
+                    <span style="font-family: monospace">---</span><span class="dim">a line across</span>
+                  </div>
+                  <div class="dim" style="margin-top: 8px; font-size: 12px">Anything else shows as you typed it.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <figcaption><b class="board-name">H &middot; the syntax, while you write</b>The third icon, shown only in the editor, opens a popover with the whole syntax (<span class="ref done">M8</span>).</figcaption>
+        </figure>
+
+        <figure class="board" id="board-p">
+          <div class="stage">
+            <div class="gtk" style="width: 780px">
+              <div class="hb"><span class="btn">New&hellip;</span><span class="btn">Import&hellip;</span><span class="ttl">Projects</span><span class="x">&#x2715;</span></div>
+              <div class="paned">
+                <div class="left">
+                  <div style="padding: 8px"><div class="entry search">&#x2315; Find a project</div></div>
+                  <div class="list-row sel"><span class="nm">ospf-lab</span><span class="sub">OSPF lab</span><span class="sub dimmed">5 bricks &middot; today</span></div>
+                  <div class="list-row"><span class="nm">dhcp-relay</span><span class="sub">A DHCP server behind a relay, with two clients on different segments and a sniffer</span><span class="sub dimmed">3 bricks &middot; 12 September</span></div>
+                  <div class="list-row"><span class="nm">new_project</span><span class="sub dimmed">No description</span><span class="sub dimmed">empty &middot; 2 September</span></div>
+                </div>
+                <div style="display: grid; grid-template-rows: 1fr auto">
+                  <div style="padding: 14px 18px 8px; display: grid; gap: 6px; align-content: start">
+                    <span class="bold">ospf-lab</span>
+                    <span class="dim">~/.virtualbricks/ospf-lab</span>
+                    <div class="md" style="padding: 4px 0; background: none">
+                      <h1>OSPF lab</h1>
+                      <p>Three routers in a ring, <b>area 0</b>, one switch each.<br>Start the switches before the routers.</p>
+                      <h2>Addresses</h2>
+                      <ul><li>r1: <code>10.0.1.1/24</code></li><li>r2: <code>10.0.2.1/24</code></li><li>r3: <code>10.0.3.1/24</code>, the <i>new</i> image</li></ul>
+                      <p>Notes on OSPF: <a>https://bird.network.cz</a></p>
+                    </div>
+                    <dl class="facts"><dt>Bricks</dt><dd>3 qemu, 2 switch</dd><dt>Images</dt><dd>debian, on this computer</dd><dt>Last used</dt><dd>today, 10:42</dd></dl>
+                  </div>
+                  <div class="actions"><span class="btn suggested">Open</span><span class="btn">Duplicate&hellip;</span><span class="btn">Export&hellip;</span><span class="spacer"></span><span class="btn">&#x22EE;</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <figcaption><b class="board-name">P &middot; Projects window</b>The list shows the first line of each README without its marks, on one line: the heading <code># OSPF lab</code> reads <i>OSPF lab</i>, and a line too long for the row ends with &hellip;, as it does today. The details render the whole README, which scrolls with the rest of the pane when it&rsquo;s long.</figcaption>
+        </figure>
+
+        <figure class="board" id="board-i">
+          <div class="stage">
+            <div class="gtk" style="width: 520px">
+              <div class="hb"><span class="btn">Cancel</span><span class="ttl">Import Project</span><span class="btn suggested">Import</span></div>
+              <div class="body">
+                <span class="dim">~/Downloads/ospf-lab.vbp</span>
+                <span class="row-label">Name</span>
+                <span class="entry">ospf-lab</span>
+                <div class="md" style="padding: 2px 0; background: none"><p class="clamp4">Three routers in a ring, <b>area 0</b>, one switch each.<br>Start the switches before the routers, then the routers one at a time, and wait for the adjacencies before the next: r1 and r2 run <code>bird</code>, r3 runs FRR, so the lab also shows the two talking to each other. Each router has a console with <code>vtysh</code>, and the switches log to the messages window.</p></div>
+                <span class="dim">5 bricks &middot; 3 qemu, 2 switch</span>
+                <span class="row-label">Images</span>
+                <div class="img-row"><span><b>debian</b> <span class="dim">&middot; used by r1.hda, r2.hda, r3.hda</span></span><span class="seg"><span class="btn on">Copy</span><span class="btn">Use a file&hellip;</span><span class="btn">Leave unset</span></span></div>
+                <span class="check" style="margin-top: 6px">Open the project after the import</span>
+              </div>
+            </div>
+          </div>
+          <figcaption><b class="board-name">I &middot; Import dialog</b>The first paragraph that isn&rsquo;t a heading, rendered: the heading repeats the name above it, the paragraph says what the lab is. It takes at most four lines; a longer one ends with &hellip; (<span class="ref done">M10</span>).</figcaption>
+        </figure>
+
+        <figure class="board" id="board-n">
+          <div class="stage">
+            <div class="gtk" style="width: 460px">
+              <div class="hb"><span class="btn">Cancel</span><span class="ttl">New Project</span><span class="btn suggested">Create</span></div>
+              <div class="body">
+                <span class="row-label">Name</span>
+                <span class="entry">ospf-lab</span>
+                <span class="row-label">Description</span>
+                <div class="text boxed src-text" style="min-height: 84px">Three routers in a ring, **area 0**, one switch each.<span class="caret"></span></div>
+                <span class="dim" style="font-size: 12px">Optional; it becomes the README of the project. The project starts with a copy of the settings of the open project.</span>
+              </div>
+            </div>
+          </div>
+          <figcaption><b class="board-name">N &middot; New Project, as it is</b>Plain text, as you asked: what you type becomes the README, and the Readme tab previews it. Only the note under the box changes, to say where the settings of the new project come from since e203b56.</figcaption>
+        </figure>
+      </section>
+
+      <section id="rendering">
+        <h2><span class="num">&sect;6</span>Rendering in GTK</h2>
+        <h3>The parser</h3>
+        <p><code>markdown-it-py</code> is the Python port of markdown-it, the CommonMark parser of VS Code and Discourse: pure Python, no compiled parts, packaged by Debian (<code>python3-markdown-it</code>, 3.0.0 in Debian 13), Ubuntu and Fedora, where <code>rich</code> depends on it. It starts from its <code>zero</code> preset, with every rule off, and enables fifteen: headings of both kinds, lists, quotes, fenced code, rules, emphasis, strikethrough, inline code, links, pictures, <code>&lt;URL&gt;</code> links, escapes, entities and line breaks. HTML stays off. The parser gives a flat list of tokens, which the renderer walks. Tried on this machine with <code>markdown-it-py</code> 3.0.0: a table and raw HTML stay text, a picture gives its text, and <code>vm1_hda</code> keeps its underscores (<span class="ref done">M2</span>).</p>
+        <p>With its <code>breaks</code> option, a new line in a paragraph is a line break, as in GitHub&rsquo;s comments. Without it, CommonMark joins the lines of a paragraph into one, which would run together the lines of the READMEs written before (<span class="ref done">M3</span>).</p>
+        <h3 id="readme-tab">The Readme tab</h3>
+        <p>Two floating buttons are little work in GTK 3, about forty lines:</p>
+        <ul>
+          <li>a <code>GtkOverlay</code> holds a <code>GtkStack</code> with the preview and the editor of today, each in its scrolled window;</li>
+          <li>over its top right corner floats a linked pair of <code>GtkRadioButton</code>s drawn as buttons, each with a 16-pixel symbolic icon of the Adwaita theme, <code>document-edit-symbolic</code> and <code>view-reveal-symbolic</code>, both installed here;</li>
+          <li>the <code>osd</code> style draws them on a translucent dark background, visible over the text in the light and the dark theme;</li>
+          <li>a right margin on both views, as wide as the buttons, keeps any line from going under them;</li>
+          <li>each has a tooltip and an accessible name, Edit and Preview, since it has no text; they can be reached with the keyboard like any button.</li>
+        </ul>
+        <p>The preview is what the tab shows when a project opens; switching to it renders the text of the editor. An empty README shows, in the preview, a dimmed line saying that the pencil writes one. The third icon, the syntax, exists only in the editor (<span class="ref done">M8</span>).</p>
+        <h3>The view</h3>
+        <p>A read-only <code>GtkTextView</code>, <code>MarkdownView</code>, filled from the tokens, draws everything with tags:</p>
+        <ul>
+          <li>headings larger and bold; emphasis, bold and strikethrough;</li>
+          <li>code in the monospace font on a tinted background, a code block as a tinted paragraph with margins;</li>
+          <li>list items with their bullet or number and a hanging indent, nested ones further in;</li>
+          <li>quotes indented and dimmed;</li>
+          <li>links underlined in the link colour, with a hand pointer; a click opens <code>http</code>, <code>https</code> and <code>mailto</code> links with <code>Gtk.show_uri_on_window</code>, and nothing else (<span class="ref done">M5</span>); a bare URL in the text is a link too (<span class="ref done">M6</span>);</li>
+          <li>a rule as a <code>GtkSeparator</code> in the text, at a child anchor.</li>
+        </ul>
+        <p>The colours come from the theme: the link colour, and a dimmed and a tinted colour made from the text colour, looked up again when the theme changes, so the dark theme works. The text can be selected and copied. The Import dialog uses a label: the same tokens make Pango markup, <code>&lt;b&gt;</code>, <code>&lt;i&gt;</code>, <code>&lt;s&gt;</code>, <code>&lt;tt&gt;</code> and <code>&lt;a href&gt;</code>. A web view would bring a browser engine, WebKitGTK, to show a README.</p>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;7</span>Implementation plan</h2>
+        <p>Five steps, each one a commit with its tests, stopping for review after each.</p>
+        <ol>
+          <li><strong>The parser.</strong> A new module, <code>virtualbricks/markdown.py</code>, with no GTK: the parser with its rules, <code>parse(text)</code>, <code>first_line(text)</code>, the plain text of the first line for the Projects list, and <code>first_paragraph(text)</code>, the first paragraph that isn&rsquo;t a heading. <code>markdown-it-py</code> joins the dependencies in <code>pyproject.toml</code> and in the README&rsquo;s list of packages; its lowest version to be checked against Ubuntu 22.04&rsquo;s package.</li>
+          <li><strong>The view.</strong> <code>virtualbricks/gui/markdownview.py</code>: <code>MarkdownView</code>, a read-only <code>GtkTextView</code> with <code>set_markdown(text)</code>, its tags and theme colours, links and rules; and <code>pango_markup(text)</code> for labels.</li>
+          <li><strong>The places that only read.</strong> The Projects window: <code>MarkdownView</code> in the details, <code>first_line</code> in the list, which keeps its one line trimmed with &hellip;. The Import dialog: the first paragraph as Pango markup, in a label of at most four lines that ends with &hellip; (<code>lines</code> and <code>ellipsize</code> of <code>GtkLabel</code>).</li>
+          <li><strong>The Readme tab.</strong> The overlay of <a href="#readme-tab">&sect;6</a>: the preview by default, the two floating icon buttons, and the syntax icon (<span class="ref done">M8</span>). Switching to the preview renders the text of the editor; saving doesn&rsquo;t change. The note of the New Project dialog, fixed.</li>
+          <li><strong>The documentation.</strong> <code>virtualbricks-config(5)</code>: the README of a project is Markdown, with the syntax of &sect;3; <code>virtualbricks-archive(7)</code>: the README member says so; their HTML pages; the README of the sources.</li>
+        </ol>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th>File</th><th>Change</th></tr></thead>
+            <tbody>
+              <tr><td><code>virtualbricks/markdown.py</code></td><td>new: the parser and the plain text of a README</td></tr>
+              <tr><td><code>virtualbricks/gui/markdownview.py</code></td><td>new: <code>MarkdownView</code> and <code>pango_markup</code></td></tr>
+              <tr><td><code>virtualbricks/gui/windows/virtualbricks.py</code></td><td>the Readme tab: Write, Preview and the syntax popover</td></tr>
+              <tr><td><code>virtualbricks/gui/windows/projects.py</code></td><td>the details and the list rows</td></tr>
+              <tr><td><code>virtualbricks/gui/windows/importdialog.py</code></td><td>the first paragraph, rendered</td></tr>
+              <tr><td><code>virtualbricks/gui/windows/projectname.py</code></td><td>the note under the description</td></tr>
+              <tr><td><code>pyproject.toml</code>, <code>README.md</code></td><td>the new dependency</td></tr>
+              <tr><td><code>docs/man/*.md</code>, <code>docs/*.html</code></td><td>the README is Markdown</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="tests">
+        <h2><span class="num">&sect;8</span>Tests</h2>
+        <ul>
+          <li><code>tests/test_markdown.py</code>: each rule of &sect;3 gives its tokens; tables, pictures, HTML and indented lines stay text; lines stay lines; <code>first_line</code> and <code>first_paragraph</code> on headings, lists, empty and old READMEs.</li>
+          <li><code>tests/gui/test_markdownview.py</code>: the text of the buffer and the tags at each place for a README with every element; a click on a link opens it and one on a <code>file:</code> link doesn&rsquo;t; a rule is a separator; the colours follow a change of theme; <code>pango_markup</code> escapes <code>&lt;</code> and <code>&amp;</code>.</li>
+          <li>The windows: the Projects window&rsquo;s rows and details; the Import dialog&rsquo;s paragraph and its four lines; the Readme tab opening on the preview, the two buttons switching, the preview after an edit, the syntax icon only in the editor, and the saving unchanged.</li>
+        </ul>
+        <p>As for the earlier changes, each new test is checked against the code it guards, broken on a copy.</p>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;9</span>Decisions</h2>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommended</th></tr></thead>
+            <tbody>
+              <tr><td class="nowrap"><span class="ref done">M1</span></td><td>The syntax</td><td colspan="2"><strong>Decided:</strong> a subset of CommonMark, &sect;3</td></tr>
+              <tr><td class="nowrap"><span class="ref done">M2</span></td><td>The parser</td><td colspan="2"><strong>Decided:</strong> <code>markdown-it-py</code></td></tr>
+              <tr><td class="nowrap"><span class="ref done">M3</span></td><td>A new line in a paragraph</td><td colspan="2"><strong>Decided:</strong> a line break, so the READMEs written before keep their lines</td></tr>
+              <tr><td class="nowrap"><span class="ref done">M4</span></td><td>The Readme tab</td><td colspan="2"><strong>Decided:</strong> never side by side; the preview by default, two icon buttons floating at the top right to switch (R1, R2)</td></tr>
+              <tr><td class="nowrap"><span class="ref done">M5</span></td><td>Links</td><td colspan="2"><strong>Decided:</strong> <code>http</code>, <code>https</code> and <code>mailto</code> open in the browser, others are text</td></tr>
+              <tr><td class="nowrap"><span class="ref done">M6</span></td><td>A bare URL</td><td colspan="2"><strong>Decided:</strong> a link</td></tr>
+              <tr><td class="nowrap"><span class="ref done">M7</span></td><td>A picture</td><td colspan="2"><strong>Decided:</strong> its text for now</td></tr>
+              <tr><td class="nowrap"><span class="ref done">M8</span></td><td>Help with the syntax</td><td colspan="2"><strong>Decided:</strong> a third icon, in the editor only, with the popover (H)</td></tr>
+              <tr><td class="nowrap"><span class="ref done">M9</span></td><td>The name of the file</td><td colspan="2"><strong>Decided:</strong> <code>README</code>, as today</td></tr>
+              <tr><td class="nowrap"><span class="ref done">M10</span></td><td>What the Import dialog shows</td><td colspan="2"><strong>Decided:</strong> the first paragraph that isn&rsquo;t a heading, in at most four lines, trimmed with &hellip; (I)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;10</span>Later</h2>
+        <ul>
+          <li>Pictures from the project&rsquo;s folder, shown in the preview (<span class="ref done">M7</span> B).</li>
+          <li>GFM&rsquo;s tables and task lists, if READMEs need them.</li>
+          <li>Buttons for bold, italic and lists in the editor.</li>
+          <li>The New Project dialog with the preview too, if you change your mind about it.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>

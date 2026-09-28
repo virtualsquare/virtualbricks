@@ -10,14 +10,18 @@
     --ink: #16211e;
     --muted: #56655f;
     --rule: #d2dbd7;
-    --rule-soft: #e3e9e6;
     --accent: #1b6880;
     --accent-soft: #ddebf0;
-    --warn: #7a4800;
-    --warn-soft: #faeed6;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
     --code-bg: #e8eeec;
     --code-ink: #1c2926;
     --code-c: #66766f;
+    --code-h: #1b6880;
     --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
     --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -30,14 +34,18 @@
       --ink: #e0e7e4;
       --muted: #98a6a0;
       --rule: #29342f;
-      --rule-soft: #1e2724;
       --accent: #6dc3da;
       --accent-soft: #14303a;
-      --warn: #edb45a;
-      --warn-soft: #2a2112;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
       --code-bg: #172120;
       --code-ink: #d5dedb;
       --code-c: #82918b;
+      --code-h: #6dc3da;
     }
   }
   :root[data-theme="dark"] {
@@ -47,93 +55,206 @@
     --ink: #e0e7e4;
     --muted: #98a6a0;
     --rule: #29342f;
-    --rule-soft: #1e2724;
     --accent: #6dc3da;
     --accent-soft: #14303a;
-    --warn: #edb45a;
-    --warn-soft: #2a2112;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
     --code-bg: #172120;
     --code-ink: #d5dedb;
     --code-c: #82918b;
+    --code-h: #6dc3da;
   }
-  body { background: var(--ground); color: var(--ink); font: 16px/1.6 var(--font-body); -webkit-font-smoothing: antialiased; }
-  .page { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 36px 96px; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
   a { color: var(--accent); text-underline-offset: 2px; }
   a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
-  code { font-family: var(--font-mono); font-size: 0.86em; background: var(--code-bg); color: var(--code-ink); padding: 0.06em 0.3em; border-radius: 3px; overflow-wrap: anywhere; }
-  .masthead { display: grid; gap: 14px; padding-bottom: 28px; margin-bottom: 32px; border-bottom: 1px solid var(--rule); }
-  .eyebrow { font: 500 12px/1.2 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
-  h1 { font: 600 clamp(2rem, 5vw, 3rem)/1.05 var(--font-head); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
-  .lede { font-size: 1.12rem; line-height: 1.55; max-width: 66ch; margin: 0; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
   .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
   .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
   .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
   @media (min-width: 1020px) {
-    .layout { grid-template-columns: 200px minmax(0, 1fr); gap: 52px; }
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
     .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
   }
   .toc { font-size: 14px; }
   .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
-  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
-  .toc a { display: block; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
   .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
   @media (max-width: 1019px) {
-    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 18px; }
-    .toc ol { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); column-gap: 20px; }
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
   }
+
+  /* prose */
   main { min-width: 0; }
   section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
   section:last-of-type { border-bottom: 0; }
-  h2 { font: 600 1.75rem/1.15 var(--font-head); margin: 0 0 16px; text-wrap: balance; }
-  h3 { font: 600 1.2rem/1.25 var(--font-head); margin: 28px 0 10px; text-wrap: balance; }
-  p, li { max-width: 72ch; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
   p { margin: 0 0 14px; }
-  ul, ol.steps { margin: 0 0 16px; padding-left: 1.3em; }
-  li { margin-bottom: 6px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
   li::marker { color: var(--muted); }
-  figure.shot { margin: 0 0 28px; display: grid; gap: 10px; }
-  figure.shot img { display: block; width: 100%; max-width: 960px; height: auto; border: 1px solid var(--rule); border-radius: 8px; box-shadow: 0 10px 30px -18px rgba(10, 30, 25, 0.45); }
-  figure.shot figcaption { font-size: 14px; color: var(--muted); max-width: 72ch; }
+
+  /* at a glance */
   .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
   .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
   .glance > div:last-child { border-bottom: 1px solid var(--rule); }
   @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
   .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
   .glance dd { margin: 0; }
-  .scroll { overflow-x: auto; margin: 10px 0 22px; }
-  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
-  th { font: 600 13px/1.3 var(--font-head); letter-spacing: 0.02em; text-align: left; color: var(--muted); padding: 0 14px 8px 0; border-bottom: 1.5px solid var(--rule); vertical-align: bottom; }
-  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
-  td:last-child, th:last-child { padding-right: 0; }
-  td.nowrap { white-space: nowrap; }
-  table.wide { min-width: 720px; }
-  .opt { font: 500 12px/1 var(--font-mono); color: var(--accent); background: var(--accent-soft); padding: 3px 6px; border-radius: 3px; white-space: nowrap; }
-  figure.code { margin: 14px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
   figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
-  pre { margin: 0; padding: 10px 14px 14px; overflow-x: auto; font: 13px/1.58 var(--font-mono); color: var(--code-ink); }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
   pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
   .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  /* messages-window.html: the picture of the window, the path of an event */
+  figure.shot { margin: 0 0 36px; display: grid; gap: 10px; }
+  figure.shot img { display: block; width: 100%; max-width: 960px; height: auto; border: 1px solid var(--rule); border-radius: 8px; box-shadow: 0 10px 30px -18px rgba(10, 30, 25, 0.45); }
+  figure.shot figcaption { font-size: 14px; color: var(--muted); max-width: 72ch; }
   .flow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin: 12px 0 24px; }
   .flow .step { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 16px; display: grid; gap: 4px; }
   .flow .step b { font: 600 1rem/1.3 var(--font-head); }
   .flow .step span { font-size: 14px; color: var(--muted); }
   .flow .step code { font-size: 0.82em; }
   .flow .arrow { justify-self: start; margin-left: 24px; color: var(--muted); font: 500 12px/1 var(--font-mono); padding: 6px 0; }
-  .note { background: var(--warn-soft); border-radius: 6px; padding: 12px 16px; margin: 18px 0; font-size: 15px; }
-  .note b { color: var(--warn); font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 8px; }
-  .footnote { font-size: 13.5px; color: var(--muted); }
 </style>
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Design note · implemented, not committed</div>
+    <div class="eyebrow">Step 3 &middot; Design &middot; revision 2, implemented</div>
     <h1>Messages Window Rewrite</h1>
     <p class="lede">The messages window of Virtualbricks was one text view that grew a line of <code>eventAsText()</code> for every log event. It is now a light console built from structured messages: one line each, the brick it comes from, a symbol for its level, and the rest folded until you ask for it.</p>
     <ul class="meta">
-      <li>branch <b>mg/abandon-glade</b> on 2efeaf1</li>
-      <li><b>1</b> new module, <b>4</b> changed</li>
-      <li>mock-ups: light console, T2 · S2 · N3 · M3 + M4</li>
+      <li>branch <b>mg/abandon-glade</b> at 2efeaf1</li>
+      <li>revision 2 &middot; 28 September 2026</li>
+      <li><span class="status done">implemented</span></li>
     </ul>
+    <p class="revision"><strong>Mock-ups:</strong> <a href="https://claude.ai/artifact/GBXtqzTZ3UZJN6YVmQgxMZ">the canvas</a> has the directions that were weighed, formatted text, a list of messages and a console, dark and light, with the options for the time, the source, the level and long messages. The option names below refer to it.</p>
+    <p class="revision"><strong>What this covers:</strong> the window as it was built from the light console mock-up, with the options T2, S2, N3, M3 and M4 (<a href="#glance">&sect;1</a>): one new module and four changed.</p>
+    <p class="revision"><strong>Implemented</strong> in e1f3b32 on 24 September 2026. The tests followed in 5870ce9, and found that a message folded or unfolded between two others took the hanging indent of a first line, so its other lines were drawn at the left edge; mended there.</p>
+    <p class="revision"><strong>Since then:</strong> the window is called Logs, and File &rsaquo; Logs opens it, where View &rsaquo; Messages did (678ef50). Its module is <code>gui/dialogs/logging.py</code>, since <code>gui/windows/</code> went, and the main window is in <code>gui/mainwindow/</code> (6cd66cf); the parts a message comes from follow the new places (<a href="#model">&sect;6</a>). The bricks are a package, a module each (cc42816), with <code>Process</code> and <code>Brick</code> still in <code>bricks/__init__.py</code>. The warnings of a brick that starts without a setting its program lacks come here too (<a href="10%20-%20settings-redesign.html">step 10</a>).</p>
   </header>
 
   <figure class="shot">
@@ -145,42 +266,42 @@
     <nav class="toc" aria-label="Contents">
       <p class="toc-label">Contents</p>
       <ol>
-        <li><a href="#glance">At a glance</a></li>
-        <li><a href="#line">Reading a line</a></li>
-        <li><a href="#folds">Folds and output</a></li>
-        <li><a href="#filter">The filter</a></li>
-        <li><a href="#window">Following, status, menu</a></li>
-        <li><a href="#model">How it works</a></li>
-        <li><a href="#rendering">Rendering</a></li>
-        <li><a href="#outside">Changes elsewhere</a></li>
-        <li><a href="#behaviour">Behaviour changes</a></li>
-        <li><a href="#later">Limits and next steps</a></li>
-        <li><a href="#files">Files and checks</a></li>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#line"><span>2</span>Reading a line</a></li>
+        <li><a href="#folds"><span>3</span>Folds and output</a></li>
+        <li><a href="#filter"><span>4</span>The filter</a></li>
+        <li><a href="#window"><span>5</span>Following, status, menu</a></li>
+        <li><a href="#model"><span>6</span>How it works</a></li>
+        <li><a href="#rendering"><span>7</span>Rendering</a></li>
+        <li><a href="#outside"><span>8</span>Changes elsewhere</a></li>
+        <li><a href="#behaviour"><span>9</span>Behaviour changes</a></li>
+        <li><a href="#later"><span>10</span>Limits and next steps</a></li>
+        <li><a href="#files"><span>11</span>Files and checks</a></li>
       </ol>
     </nav>
 
     <main>
       <section id="glance">
-        <h2>At a glance</h2>
+        <h2><span class="num">&sect;1</span>At a glance</h2>
         <dl class="glance">
-          <div><dt>Before</dt><dd>A single <code>Gtk.TextBuffer</code>, created at start and shared by every messages window. Each event became a line of <code>2026-09-24T17:47:09+0200 [virtualbricks.bricks.Process#error] …</code>, coloured as a whole by its level. The message started some 60 characters in, the module path hid which brick spoke, a brick's stderr was an error, and there was no filtering.</dd></div>
+          <div><dt>Before</dt><dd>A single <code>Gtk.TextBuffer</code>, created at start and shared by every messages window. Each event became a line of <code>2026-09-24T17:47:09+0200 [virtualbricks.bricks.Process#error] &hellip;</code>, coloured as a whole by its level. The message started some 60 characters in, the module path hid which brick spoke, a brick's stderr was an error, and there was no filtering.</dd></div>
           <div><dt>Now</dt><dd>A list of structured messages, <code>MessageLog</code>, kept by the application. Each window renders it in its own text view, so each window has its own filter and its own open folds.</dd></div>
-          <div><dt>Looks</dt><dd>The light console mock-up, with the chosen options: time as a clock with a line for each day <span class="opt">T2</span>, a symbol per level <span class="opt">S2</span>, the brick or part of Virtualbricks <span class="opt">N3</span>, first line only with the rest on demand <span class="opt">M3</span>, program output as printed <span class="opt">M4</span>. Program output folds too.</dd></div>
+          <div><dt>Looks</dt><dd>The light console mock-up, with the chosen options: time as a clock with a line for each day <span class="ref done">T2</span>, a symbol per level <span class="ref done">S2</span>, the brick or part of Virtualbricks <span class="ref done">N3</span>, first line only with the rest on demand <span class="ref done">M3</span>, program output as printed <span class="ref done">M4</span>. Program output folds too.</dd></div>
           <div><dt>Unchanged</dt><dd>Save and Report a bug write the same text as before. The log file, the terminal output and the error dialogs are untouched, apart from the namespace of four brick messages (<a href="#outside">below</a>).</dd></div>
         </dl>
       </section>
 
       <section id="line">
-        <h2>Reading a line</h2>
+        <h2><span class="num">&sect;2</span>Reading a line</h2>
         <p>Every message is one line of four columns, aligned with tab stops that come from the width of the monospace font. When the first line wraps, the rest of it lines up under the message column.</p>
         <div class="scroll">
           <table class="wide">
             <thead><tr><th>Column</th><th>Shows</th><th>Option</th><th>On hover</th></tr></thead>
             <tbody>
-              <tr><td>Time</td><td><code>17:47:09</code>. A time repeated within the same second is dimmed; a line with the date, <code>THURSDAY 24 SEPTEMBER 2026</code>, starts each day.</td><td><span class="opt">T2</span></td><td>The date and the time to the millisecond: <code>Thursday 24 September 2026, 17:47:09.480</code></td></tr>
-              <tr><td>Source</td><td>A brick or an event: its name in blue, after the image of its type from the main window. Anything else: the part of Virtualbricks in grey, such as <code>Project</code> or <code>Main window</code>. Names over 14 characters end with “…”.</td><td><span class="opt">N3</span></td><td><code>tap0 · tap · stderr · virtualbricks.bricks.Process · pid 41851</code>, or the module of a part</td></tr>
-              <tr><td>Symbol</td><td>The theme's symbolic icon for the level, in its colour: information, warning, error (critical too) and a terminal for program output. Without symbolic icons, a coloured letter: I, W, E, C, ›.</td><td><span class="opt">S2</span></td><td>The level in words</td></tr>
-              <tr><td>Message</td><td>The first line: dark orange for warnings, dark red for errors, bold dark red for critical ones. Then the toggles of its folds.</td><td><span class="opt">M3</span></td><td>—</td></tr>
+              <tr><td>Time</td><td><code>17:47:09</code>. A time repeated within the same second is dimmed; a line with the date, <code>THURSDAY 24 SEPTEMBER 2026</code>, starts each day.</td><td><span class="ref done">T2</span></td><td>The date and the time to the millisecond: <code>Thursday 24 September 2026, 17:47:09.480</code></td></tr>
+              <tr><td>Source</td><td>A brick or an event: its name in blue, after the image of its type from the main window. Anything else: the part of Virtualbricks in grey, such as <code>Project</code> or <code>Main window</code>. Names over 14 characters end with &ldquo;&hellip;&rdquo;.</td><td><span class="ref done">N3</span></td><td><code>tap0 &middot; tap &middot; stderr &middot; virtualbricks.bricks.Process &middot; pid 41851</code>, or the module of a part</td></tr>
+              <tr><td>Symbol</td><td>The theme's symbolic icon for the level, in its colour: information, warning, error (critical too) and a terminal for program output. Without symbolic icons, a coloured letter: I, W, E, C, &rsaquo;.</td><td><span class="ref done">S2</span></td><td>The level in words</td></tr>
+              <tr><td>Message</td><td>The first line: dark orange for warnings, dark red for errors, bold dark red for critical ones. Then the toggles of its folds.</td><td><span class="ref done">M3</span></td><td>&mdash;</td></tr>
             </tbody>
           </table>
         </div>
@@ -188,12 +309,12 @@
       </section>
 
       <section id="folds">
-        <h2>Folds and program output</h2>
+        <h2><span class="num">&sect;3</span>Folds and program output</h2>
         <h3>Folds</h3>
         <ul>
-          <li><strong>Extra lines of a message:</strong> <code>▸ 2 more lines</code> after the first line. Old messages that started their extra lines with a tab lose that tab, because the fold already indents them.</li>
-          <li><strong>A traceback:</strong> <code>▸ traceback, 3 calls</code>, counting the <code>File "…"</code> lines. Opened, it's shown dim under the message column.</li>
-          <li><strong>Extra lines of program output:</strong> the same <code>▸ N more lines</code> toggle.</li>
+          <li><strong>Extra lines of a message:</strong> <code>&#x25b8; 2 more lines</code> after the first line. Old messages that started their extra lines with a tab lose that tab, because the fold already indents them.</li>
+          <li><strong>A traceback:</strong> <code>&#x25b8; traceback, 3 calls</code>, counting the <code>File "&hellip;"</code> lines. Opened, it's shown dim under the message column.</li>
+          <li><strong>Extra lines of program output:</strong> the same <code>&#x25b8; N more lines</code> toggle.</li>
         </ul>
         <p>A click on a toggle opens or closes that fold only; the pointer turns into a hand over toggles. Expand all and Collapse all in the menu act on every message. A toggle label never breaks over two lines: its spaces are non-breaking.</p>
         <h3>Program output</h3>
@@ -201,7 +322,7 @@
       </section>
 
       <section id="filter">
-        <h2>The filter</h2>
+        <h2><span class="num">&sect;4</span>The filter</h2>
         <p>The field in the header bar filters as you type. Its terms combine: a message must match all of them.</p>
         <div class="scroll">
           <table>
@@ -217,26 +338,26 @@
       </section>
 
       <section id="window">
-        <h2>Following, status bar and menu</h2>
+        <h2><span class="num">&sect;5</span>Following, status bar and menu</h2>
         <ul>
           <li><strong>Following</strong> is a toggle button in the header bar, on by default: new messages scroll into view. Scrolling up turns it off, scrolling back to the end turns it on, and so does clicking it. Opening a fold of an older message, when the view can scroll, also turns it off, since that means reading; opening a fold of the last message keeps the end in view.</li>
           <li><strong>The status bar</strong> shows <code>18 messages</code>, or <code>6 of 18 messages</code> with a filter, then the errors in red, the warnings in orange and the lines of program output. The counts are of all messages, not of the filtered ones. On the right: <code>Following the newest</code> or <code>Paused</code>.</li>
-          <li><strong>The menu</strong> has Expand all, Collapse all, Save…, Report a bug… and Clear. Clear empties the messages of every open window, as before. The window closes from the header bar: the old Close button is gone.</li>
+          <li><strong>The menu</strong> has Expand all, Collapse all, Save&hellip;, Report a bug&hellip; and Clear. Clear empties the messages of every open window, as before. The window closes from the header bar: the old Close button is gone.</li>
         </ul>
       </section>
 
       <section id="model">
-        <h2>How it works</h2>
+        <h2><span class="num">&sect;6</span>How it works</h2>
         <p>The path of a log event, from any <code>Logger</code> to every open window:</p>
         <div class="flow">
           <div class="step"><b>Twisted's global log publisher</b><span>The events of every <code>Logger</code> of Virtualbricks.</span></div>
-          <div class="arrow">↓ info and above</div>
+          <div class="arrow">&darr; info and above</div>
           <div class="step"><b>FilteringLogObserver</b><span>Set up by <code>AppLoggerFactory</code> in <code>gui.py</code>, with <code>LogLevelFilterPredicate(LogLevel.info)</code> as before.</span></div>
-          <div class="arrow">↓ GLib.idle_add</div>
+          <div class="arrow">&darr; GLib.idle_add</div>
           <div class="step"><b>MessageLogObserver</b><span>Events may come from any thread; it adds them in the GTK main loop.</span></div>
-          <div class="arrow">↓ entry_from_event()</div>
+          <div class="arrow">&darr; entry_from_event()</div>
           <div class="step"><b>MessageLog</b><span>The application's list: the latest 2,000 entries in a <code>deque</code>, and counters for the status bar. It notifies its listeners with <code>message_added(entry, dropped)</code> and <code>messages_cleared()</code>.</span></div>
-          <div class="arrow">↓ one listener per open window</div>
+          <div class="arrow">&darr; one listener per open window</div>
           <div class="step"><b>ConsoleView</b><span>Renders the entries that match its filter into its own <code>Gtk.TextView</code>. <code>LoggingWindow</code> holds it, with the header bar and the status bar.</span></div>
         </div>
         <h3>An entry</h3>
@@ -261,12 +382,12 @@
         <ol class="steps">
           <li>If <code>log_source</code> is a <code>base.Base</code>, a brick or an event, that's the source, with its type in lower case.</li>
           <li>Else, if it has a <code>brick</code> attribute, as the process of a brick, a plug or a socket do, that brick is the source.</li>
-          <li>Else the namespace names a part, by the longest match: <code>…gui.windows.virtualbricks</code> Main window, <code>…migrate</code> Migration, <code>…config</code> Settings, <code>…project</code> Project, <code>…console</code> Console, <code>…bricks.event</code> Events, <code>…bricks.virtualmachine</code> Virtual machines, <code>…bricks.plug</code> and <code>…bricks.sock</code> Connections, <code>…bricks</code> Bricks, other <code>…gui</code> Windows, the rest of <code>virtualbricks</code> Virtualbricks. A namespace outside Virtualbricks shows its first word, such as Twisted.</li>
+          <li>Else the namespace names a part, by the longest match: <code>&hellip;gui.mainwindow</code> Main window, <code>&hellip;gui.gui</code> Virtualbricks, <code>&hellip;migrate</code> Migration, <code>&hellip;config.workspace</code>, <code>&hellip;config.archive</code> and <code>&hellip;config.importing</code> Project, the rest of <code>&hellip;config</code> Settings, <code>&hellip;console</code> Console, <code>&hellip;bricks.event</code> Events, <code>&hellip;bricks.virtualmachine</code> Virtual machines, <code>&hellip;bricks.plug</code> and <code>&hellip;bricks.sock</code> Connections, <code>&hellip;bricks</code> Bricks, other <code>&hellip;gui</code> Windows, the rest of <code>virtualbricks</code> Virtualbricks. A namespace outside Virtualbricks shows its first word, such as Twisted.</li>
         </ol>
       </section>
 
       <section id="rendering">
-        <h2>Rendering</h2>
+        <h2><span class="num">&sect;7</span>Rendering</h2>
         <ul>
           <li><strong>Columns.</strong> <code>update_geometry()</code> measures the width of a character of the view's font and sets four tab stops: after the time, after the image of the type, after the 14 characters of the source, after the symbol. The tag <code>first</code> gives the first line a negative indent equal to the message column, a hanging indent; the tag <code>more</code> gives the folded lines a left margin at that column. It runs again on <code>style-updated</code>, when the font changes.</li>
           <li><strong>Tags.</strong> One buffer per window, with named tags for every style (<code>day</code>, <code>time</code>, <code>time-repeat</code>, <code>brick</code>, <code>part</code>, <code>warn</code>, <code>error</code>, <code>critical</code>, <code>output</code>, <code>stream</code>, <code>extra</code>, <code>toggle</code>) and for finding things back: <code>source</code>, <code>symbol</code>, <code>toggle-lines</code>, <code>toggle-traceback</code>. Images are pixbufs in the buffer: the symbolic icons, coloured with <code>Gtk.IconInfo.load_symbolic()</code>, and the brick images at 16 pixels, both cached.</li>
@@ -279,13 +400,13 @@
       </section>
 
       <section id="outside">
-        <h2>Changes elsewhere</h2>
+        <h2><span class="num">&sect;8</span>Changes elsewhere</h2>
         <div class="scroll">
           <table class="wide">
             <thead><tr><th>Where</th><th>What</th><th>Why</th></tr></thead>
             <tbody>
               <tr><td><code>bricks/__init__.py</code>, <code>Process</code></td><td><code>outReceived</code> and <code>errReceived</code> log with <code>stream="stdout"</code> or <code>"stderr"</code>. Their levels are unchanged: info and error, with <code>hide_to_user</code> for stderr.</td><td>To tell program output from Virtualbricks' own messages.</td></tr>
-              <tr><td><code>bricks/__init__.py</code>, <code>Brick</code></td><td>“Starting: …”, “Shutting down …”, “Opening console for …” and the message about a missing event log with <code>self.logger</code> instead of the module's logger.</td><td>So their source is the brick, not “Bricks”.</td></tr>
+              <tr><td><code>bricks/__init__.py</code>, <code>Brick</code></td><td>&ldquo;Starting: &hellip;&rdquo;, &ldquo;Shutting down &hellip;&rdquo;, &ldquo;Opening console for &hellip;&rdquo; and the message about a missing event log with <code>self.logger</code> instead of the module's logger.</td><td>So their source is the brick, not &ldquo;Bricks&rdquo;.</td></tr>
               <tr><td><code>gui.py</code></td><td><code>Application</code> creates a <code>MessageLog</code> instead of a <code>Gtk.TextBuffer</code>, and <code>AppLoggerFactory</code> feeds it through a <code>MessageLogObserver</code>. <code>TextBufferObserver</code> and <code>TEXT_TAGS</code> are gone.</td><td>The model replaces the shared buffer.</td></tr>
               <tr><td><code>gui/windows/virtualbricks.py</code></td><td><code>VBGUI(factory, messages=None)</code> keeps <code>self.messages</code>, a new <code>MessageLog</code> when none is given, and opens <code>LoggingWindow(self.messages)</code>.</td><td>It used to pass the buffer.</td></tr>
             </tbody>
@@ -294,41 +415,41 @@
       </section>
 
       <section id="behaviour">
-        <h2>Behaviour changes</h2>
+        <h2><span class="num">&sect;9</span>Behaviour changes</h2>
         <ul>
           <li><strong>Only the latest 2,000 messages are kept.</strong> The old buffer grew for as long as Virtualbricks ran. <code>messages.LIMIT</code> sets the number.</li>
           <li><strong>The console stays light on a dark desktop theme.</strong></li>
           <li><strong>Each window filters and folds on its own.</strong> Clear still empties them all.</li>
           <li><strong>Save and Report a bug</strong> write every message, whatever the filter, in the same format as before.</li>
           <li><strong>In the log file,</strong> the four brick messages above change namespace, for example from <code>virtualbricks.bricks</code> to <code>virtualbricks.bricks.switch.Switch</code>.</li>
-          <li><strong>The window</strong> is titled “Messages” instead of “Virtualbricks logging” and opens at 900 × 560; the old one only had a minimum size of 700 × 450.</li>
+          <li><strong>The window</strong> is titled &ldquo;Messages&rdquo; instead of &ldquo;Virtualbricks logging&rdquo; and opens at 900 &times; 560; the old one only had a minimum size of 700 &times; 450.</li>
         </ul>
       </section>
 
       <section id="later">
-        <h2>Limits and next steps</h2>
+        <h2><span class="num">&sect;10</span>Limits and next steps</h2>
         <ul>
           <li><strong>Consecutive chunks of output</strong> from the same program fold one chunk at a time. Grouping them, or buffering the output of each process by lines, would give one fold per burst.</li>
           <li><strong>A dark palette</strong> taken from the dark console mock-up could follow the desktop theme instead of forcing the light one.</li>
-          <li><strong>The information symbol</strong> is the theme's own; with Adwaita that's a lightbulb, not the circled “i” of the mock-ups.</li>
+          <li><strong>The information symbol</strong> is the theme's own; with Adwaita that's a lightbulb, not the circled &ldquo;i&rdquo; of the mock-ups.</li>
           <li><strong>Keyboard:</strong> folds open with the mouse or with Expand all; there's no key for a single fold yet.</li>
           <li><strong>High-DPI screens:</strong> the images in the buffer are drawn at 16 pixels without scaling, so they are sharp only at scale 1.</li>
         </ul>
       </section>
 
       <section id="files">
-        <h2>Files and checks</h2>
+        <h2><span class="num">&sect;11</span>Files and checks</h2>
         <div class="scroll">
           <table>
             <thead><tr><th>File</th><th>Holds</th></tr></thead>
             <tbody>
               <tr><td><code>virtualbricks/gui/messages.py</code> (new)</td><td><code>Entry</code>, <code>entry_from_event()</code>, <code>describe_source()</code>, <code>part_name()</code>, <code>type_name()</code>, <code>Filter</code> and <code>parse_filter()</code>, <code>MessageLog</code>, <code>MessageLogObserver</code>. No GTK widgets: only <code>GLib.idle_add</code>.</td></tr>
               <tr><td><code>virtualbricks/gui/windows/logging.py</code></td><td>Rewritten: the icon helpers, <code>ConsoleView</code> and <code>LoggingWindow</code>, which keeps the old name and the bug report.</td></tr>
-              <tr><td><code>virtualbricks/gui/gui.py</code>, <code>…/windows/virtualbricks.py</code>, <code>virtualbricks/bricks/__init__.py</code></td><td>The changes <a href="#outside">above</a>.</td></tr>
+              <tr><td><code>virtualbricks/gui/gui.py</code>, <code>&hellip;/windows/virtualbricks.py</code>, <code>virtualbricks/bricks/__init__.py</code></td><td>The changes <a href="#outside">above</a>.</td></tr>
             </tbody>
           </table>
         </div>
-        <p>The existing 403 tests pass, and ruff and black are clean. No tests were added for the new code yet, as agreed. The window was rendered offscreen with a sample session on the repository's environment and on Debian 13's PyGObject 3.50, opened, with folds open and with a filter; and the path from a <code>Logger</code> through the application's observer to an open window, Clear and closing the window were checked by hand.</p>
+        <p>The existing 403 tests pass, and ruff and black are clean. No tests came with this commit, as agreed; they followed in 5870ce9. The window was rendered offscreen with a sample session on the repository's environment and on Debian 13's PyGObject 3.50, opened, with folds open and with a filter; and the path from a <code>Logger</code> through the application's observer to an open window, Clear and closing the window were checked by hand.</p>
         <p class="footnote">The new messages in the window are translatable; the translations hook adds them to the catalogs at the next commit.</p>
       </section>
     </main>

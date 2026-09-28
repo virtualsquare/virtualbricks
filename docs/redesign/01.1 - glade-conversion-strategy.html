@@ -1,0 +1,369 @@
+<title>Glade Conversion Strategy</title>
+<meta name="description" content="The rules followed to turn the Glade files of Virtualbricks into Python code that builds the same GTK 3 widgets.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 1.1 &middot; Design &middot; revision 2, implemented</div>
+    <h1>Glade Conversion Strategy</h1>
+    <p class="lede">The rules for turning the Glade files of Virtualbricks into Python code that builds the same widgets: no XML loaded at run time, and every window a class that can be read, searched and tested as code.</p>
+    <ul class="meta">
+      <li>branch <b>mg/abandon-glade</b> at a51b6d4</li>
+      <li>revision 2 &middot; 28 September 2026</li>
+      <li><span class="status done">implemented</span></li>
+    </ul>
+    <p class="revision"><strong>What changed:</strong> revision 1, of 23 September, was the brief of the conversion, <code>GLADE_CONVERSION_STRATEGY.md</code> at the root of the sources. Revision 2 says how it was applied: 36 files, not five to ten; GTK 3, the version the application runs on; each class keeps its name and its code, where the brief made a new <code>MyDialogUI</code>; the widgets are named by a schema; and the signal handlers are the classes&rsquo; own, with stubs only where no class had one.</p>
+    <p class="revision"><strong>Implemented</strong> in one commit, 9ae3919, on 23 September 2026: the 36 files became 36 modules of <code>gui/windows/</code>, each compared with what Gtk.Builder built from its file. <a href="01.2%20-%20glade-conversion-summary.html">Step 1.2</a> is the report: the structure, the names, each file, the checks.</p>
+    <p class="revision"><strong>Since then:</strong> the modules are in <code>gui/dialogs/</code>, and the panels of the bricks in <code>gui/mainwindow/bricks/config/</code> (678ef50). The pattern of <a href="#pattern">&sect;2</a> is one base class, <code>Window</code>, in <code>gui/dialogs/base.py</code> (972cc11). The redesigns that followed replaced 13 of the modules; step 1.2 says which.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#pattern"><span>2</span>The pattern</a></li>
+        <li><a href="#rules"><span>3</span>Conversion rules</a></li>
+        <li><a href="#quality"><span>4</span>Quality standards</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Input</dt><dd>The 36 Glade files of <code>virtualbricks/gui/data/*.ui</code>, loaded by Gtk.Builder, with the custom widgets of <code>glade-catalog.xml</code>. No <code>.glade</code> files.</dd></div>
+          <div><dt>Output</dt><dd>A Python module per file, with the same name, that creates every widget in GTK 3 code. The <code>.ui</code> files go; git keeps them.</dd></div>
+          <div><dt>Classes</dt><dd>Each module holds the class that used the file, with its name and its code, plus <code>build_ui()</code> and <code>get_root_widget()</code>.</dd></div>
+          <div><dt>Checked</dt><dd>Against Gtk.Builder, widget by widget, property by property, and by running every window (step 1.2, &sect;6).</dd></div>
+        </dl>
+      </section>
+
+      <section id="pattern">
+        <h2><span class="num">&sect;2</span>The pattern</h2>
+        <p>Every converted class follows one pattern: the constructor builds the widgets, <code>get_root_widget()</code> gives the one that is shown, and <code>show()</code> sets it above its parent. The brief had it as a new class per file:</p>
+        <figure class="code">
+          <figcaption>the brief, revision 1</figcaption>
+<pre><code>import gi
+gi.require_version('Gtk', '3.0')  <span class="c"># or 4.0</span>
+from gi.repository import Gtk
+
+class MyDialogUI:
+    def __init__(self):
+        self.build_ui()
+
+    def build_ui(self):
+        <span class="c"># All UI initialization code here</span>
+        pass
+
+    def get_root_widget(self):
+        <span class="c"># Return the main widget for this UI file</span>
+        return self.main_widget
+
+    def show(self, parent=None):
+        if parent is not None:
+            self.get_root_widget().set_transient_for(parent)
+        self.get_root_widget().show()</code></pre>
+        </figure>
+        <p>As applied, the class that loaded the file keeps its name and its code, and only its Gtk.Builder calls change: <code>self.get_object("okButton")</code> becomes <code>self.ok_button</code>, and the call to <code>connect_signals()</code> becomes <code>self.build_ui()</code>. Today the pattern is the base class of every window:</p>
+        <figure class="code">
+          <figcaption>virtualbricks/gui/dialogs/base.py, since 972cc11</figcaption>
+<pre><code>class Window:
+    def __init__(self):
+        self.build_ui()
+
+    def show(self, parent=None):
+        window = self.get_root_widget()
+        if parent is not None:
+            window.set_transient_for(parent)
+        window.show()</code></pre>
+        </figure>
+        <figure class="code">
+          <figcaption>virtualbricks/gui/dialogs/renamedialog.py, shortened</figcaption>
+<pre><code>class RenameDialog(Window):
+    def build_ui(self) -> None:
+        <span class="c">"""Create the widgets, formerly in ``renamedialog.ui``."""</span>
+
+        <span class="c"># dialog (Gtk.Dialog)</span>
+        self.dialog = Gtk.Dialog(
+            width_request=320,
+            title=_("Virtualbricks - Rename brick"),
+            modal=True,
+            window_position=Gtk.WindowPosition.CENTER_ON_PARENT,
+        )
+        <span class="c"># &hellip; every widget of the file, created and packed in code</span>
+        self.ok_button.connect("clicked", self.on_ok_button_clicked)
+
+    def get_root_widget(self) -> Gtk.Dialog:
+        return self.dialog</code></pre>
+        </figure>
+        <p>The brick panels have their own base, <code>ConfigController</code>, with the same two methods; the brief&rsquo;s pattern holds for them too.</p>
+      </section>
+
+      <section id="rules">
+        <h2><span class="num">&sect;3</span>Conversion rules</h2>
+        <h3>Files</h3>
+        <ul>
+          <li><code>my_dialog.ui</code> becomes <code>my_dialog.py</code>, in one package for all of them, then <code>gui/windows/</code>.</li>
+          <li>The modules never import <code>gui.py</code> or <code>dialogs.py</code>, which import them: what they share goes in <code>windows/base.py</code>, and a window that opens another imports it from the package.</li>
+        </ul>
+        <h3>In this order</h3>
+        <ol>
+          <li>The widget hierarchy and its structure.</li>
+          <li>Properties: titles, labels, sizes and the rest.</li>
+          <li>Layout and packing: boxes, grids, notebooks, stacks.</li>
+          <li>Signal handlers, connected to the methods of the class.</li>
+          <li>Custom properties and settings.</li>
+        </ol>
+        <h3>Special handling</h3>
+        <ul>
+          <li><strong>GTK widgets</strong> become their GTK 3 equivalents in Python. GTK 4 was never a target: the application, its reactor and its panels are GTK 3.</li>
+          <li><strong>Signal handlers</strong> keep the names Glade gave them. The class that loaded the file already has them; a stub, with a comment, only where no class does.</li>
+          <li><strong>Custom objects</strong>, the widgets of <code>glade-catalog.xml</code>, are made from <code>virtualbricks.gui.widgets</code> and marked with a comment.</li>
+          <li><strong>Styles</strong>: the one style class of the files, <code>title</code> in <code>confirmdialog.ui</code>, is added to the widget&rsquo;s style context. No file had CSS, which would have become a provider.</li>
+          <li><strong>Names</strong> of widgets follow one schema, <code>&lt;purpose&gt;_&lt;kind&gt;</code>: <code>ok_button</code>, <code>kvm_check</code>, <code>bricks_view</code>. A widget is an attribute only when something reads it after <code>build_ui()</code>; the others are local variables. The schema is in step 1.2, &sect;3.</li>
+        </ul>
+      </section>
+
+      <section id="quality">
+        <h2><span class="num">&sect;4</span>Quality standards</h2>
+        <ul>
+          <li>Every widget is created and packed in code.</li>
+          <li>No XML files in the output: the <code>.ui</code> files and <code>glade-catalog.xml</code> are gone.</li>
+          <li>The code is readable and maintainable: the properties are the keyword arguments of the constructors, in Glade&rsquo;s order.</li>
+          <li>A docstring on <code>build_ui()</code> names the file it replaces, in every generated module; <code>about.py</code> was written by hand.</li>
+          <li>The same windows as before: step 1.2 compares each built tree with Gtk.Builder&rsquo;s.</li>
+        </ul>
+        <p class="footnote">Revision 1 was the brief as written before the conversion; revision 2 follows what the conversion did, and what the code is now.</p>
+      </section>
+    </main>
+  </div>
+</div>

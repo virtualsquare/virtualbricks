@@ -1,0 +1,625 @@
+<title>Topology Tab Redesign</title>
+<meta name="description" content="A proposal for the Topology tab of Virtualbricks: the picture of the lab takes the whole tab, its controls float over it, and it zooms in, out, to 100% and to fit.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  /* window mockup */
+  .mock {
+    margin: 18px 0 10px;
+    max-width: 760px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px -18px rgba(10, 30, 25, 0.45);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .mock-bar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 9px 12px;
+    background: var(--code-bg);
+    border-bottom: 1px solid var(--rule);
+  }
+  .mock-bar .title { grid-column: 2; font: 600 14px/1.2 var(--font-head); }
+  .mock-bar .x { grid-column: 3; justify-self: end; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 500 14px/1 var(--font-body); color: var(--muted); background: var(--surface); }
+  .mock-body { padding: 16px; display: grid; gap: 14px; }
+  .mock-form { display: grid; gap: 8px; }
+  .mock-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; align-items: center; }
+  @media (min-width: 560px) { .mock-row { grid-template-columns: 8.5em minmax(0, 1fr); gap: 10px; } }
+  .mock-row > span:first-child { color: var(--muted); }
+  .mock-field {
+    display: block;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 4px 9px;
+    font: 13px/1.5 var(--font-mono);
+    background: var(--ground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .mock-choice { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; }
+  .mock-choice .mock-field { flex: 1 1 12em; }
+  .mock table { font-size: 13.5px; }
+  .mock td, .mock th { padding-block: 6px; }
+  .mock tr.sel td { background: var(--accent-soft); }
+  .mock tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--accent); padding-left: 8px; }
+  .chip {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    font: 500 12px/1 var(--font-mono);
+    padding: 4px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .chip.ok { color: var(--ok); background: var(--ok-soft); }
+  .chip.warn { color: var(--decide); background: var(--decide-soft); }
+  .chip.fail { color: var(--risk); background: var(--risk-soft); }
+  .chip.run { color: var(--accent); background: var(--accent-soft); }
+  .chip.wait { color: var(--muted); background: var(--code-bg); }
+  .mock-progress { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+  .mock-progress .track { height: 8px; border-radius: 4px; background: var(--code-bg); overflow: hidden; }
+  .mock-progress .fill { height: 100%; width: 72%; background: var(--accent); }
+  .mock-log { border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; display: grid; gap: 7px; background: var(--ground); }
+  .mock-log .head { font: 600 13px/1.2 var(--font-head); }
+  .mock-log div.msg { display: grid; grid-template-columns: 5.2em minmax(0, 1fr); gap: 8px; font-size: 13px; }
+  .mock-log .loc { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+  .mock-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  .btn {
+    display: inline-block;
+    font: 500 13.5px/1 var(--font-body);
+    padding: 8px 14px;
+    border-radius: 5px;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .mock-note { font-size: 13px; color: var(--muted); margin: 0 0 18px; }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  figure.board { margin: 20px 0 34px; min-width: 0; }
+  figure.board .stage { background: var(--code-bg); border-radius: 10px; padding: 22px 18px; overflow-x: auto; }
+  figure.board .stage > * { margin: 0 auto; }
+  figure.board figcaption { font-size: 14px; line-height: 1.5; color: var(--muted); margin-top: 10px; max-width: 82ch; }
+  figure.board figcaption b.board-name { font: 500 12px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-right: 8px; }
+  .pair { display: flex; gap: 22px; align-items: flex-start; width: max-content; }
+
+  /* a GTK 3 window, Adwaita */
+  .gtk {
+    --w-bg: #f6f5f4; --w-view: #ffffff; --w-ink: #2e3436; --w-dim: #77767b;
+    --w-border: #cdc7c2; --w-hb: #e8e6e3; --w-accent: #3584e4; --w-link: #1b6acb;
+    --w-code: #eeedec; --w-sel: #dfe9f6;
+    font: 13px/1.45 "Cantarell", "Noto Sans", system-ui, sans-serif;
+    color: var(--w-ink); background: var(--w-bg);
+    border: 1px solid #b8b1aa; border-radius: 8px 8px 3px 3px;
+    box-shadow: 0 8px 26px rgba(0,0,0,.20), 0 1px 3px rgba(0,0,0,.12);
+    overflow: hidden; text-align: left;
+  }
+  .gtk * { box-sizing: border-box; }
+  .gtk .hb { display: flex; align-items: center; gap: 6px; min-height: 42px; padding: 6px 8px; background: linear-gradient(#efedeb, var(--w-hb)); border-bottom: 1px solid var(--w-border); }
+  .gtk .hb .ttl { flex: 1; text-align: center; font-weight: 700; line-height: 1.2; }
+  .gtk .hb .ttl small { display: block; font-weight: 400; color: var(--w-dim); font-size: 11.5px; }
+  .gtk .hb .x { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: var(--w-dim); font-size: 14px; }
+  .gtk .menubar { display: flex; gap: 16px; padding: 3px 10px; border-bottom: 1px solid var(--w-border); background: var(--w-bg); }
+  .gtk .btn { display: inline-block; border: 1px solid var(--w-border); border-radius: 5px; background: linear-gradient(#fbfbfa, #eeecea); padding: 3px 11px; line-height: 1.5; white-space: nowrap; }
+  .gtk .btn.suggested { background: linear-gradient(#4a92e8, var(--w-accent)); color: #fff; border-color: #1c6bcf; }
+  .gtk .btn.flat { border-color: transparent; background: none; color: var(--w-dim); }
+  .gtk .btn.on { background: #d9d5d1; box-shadow: inset 0 1px 2px rgba(0,0,0,.18); }
+  .gtk .seg { display: inline-flex; }
+  .gtk .seg .btn { border-radius: 0; margin-left: -1px; }
+  .gtk .seg .btn:first-child { border-radius: 5px 0 0 5px; margin-left: 0; }
+  .gtk .seg .btn:last-child { border-radius: 0 5px 5px 0; }
+  .gtk .tabs { display: flex; padding: 0 8px; border-bottom: 1px solid var(--w-border); background: var(--w-bg); }
+  .gtk .tab { padding: 7px 13px; color: var(--w-dim); }
+  .gtk .tab.on { color: var(--w-ink); box-shadow: inset 0 -3px 0 var(--w-accent); }
+  .gtk .bar { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--w-border); }
+  .gtk .spacer { flex: 1; }
+  .gtk .entry { border: 1px solid var(--w-border); border-radius: 5px; background: var(--w-view); padding: 4px 8px; }
+  .gtk .entry.search { color: var(--w-dim); }
+  .gtk .dim { color: var(--w-dim); }
+  .gtk .bold { font-weight: 700; }
+  .gtk .text { background: var(--w-view); padding: 10px 12px; white-space: pre-wrap; }
+  .gtk .text.boxed { border: 1px solid var(--w-border); border-radius: 3px; }
+  .gtk .caret { display: inline-block; width: 1px; height: 1.1em; background: var(--w-ink); vertical-align: text-bottom; }
+  .gtk .body { padding: 14px 16px; display: grid; gap: 8px; }
+  .gtk .row-label { font-weight: 700; margin-top: 4px; }
+  .gtk .paned { display: grid; grid-template-columns: 220px 1fr; min-height: 380px; }
+  .gtk .paned > .left { border-right: 1px solid var(--w-border); background: var(--w-view); }
+  .gtk .list-row { padding: 8px 10px; border-bottom: 1px solid #ebe8e5; display: grid; gap: 1px; }
+  .gtk .list-row.sel { background: var(--w-sel); }
+  .gtk .list-row .nm { font-weight: 700; }
+  .gtk .list-row .sub { color: var(--w-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gtk .list-row .sub.dimmed { color: var(--w-dim); }
+  .gtk .facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 18px; margin-top: 6px; }
+  .gtk .facts dt { color: var(--w-dim); } .gtk .facts dd { margin: 0; }
+  .gtk .actions { display: flex; gap: 6px; padding: 8px 12px; border-top: 1px solid var(--w-border); }
+  .gtk .popover { position: relative; background: var(--w-view); border: 1px solid #b8b1aa; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.18); padding: 10px 12px; }
+  .gtk .img-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 8px 10px; background: var(--w-view); border: 1px solid var(--w-border); border-radius: 5px; }
+  .gtk .check::before { content: ""; display: inline-block; width: 14px; height: 14px; border: 1px solid #8f8a85; border-radius: 3px; background: var(--w-accent); vertical-align: -2px; margin-right: 7px; box-shadow: inset 0 0 0 3px var(--w-view); }
+
+  /* revision 2: the floating buttons of the Readme tab */
+  .gtk .overlay { position: relative; }
+  .gtk .float { position: absolute; top: 10px; right: 12px; display: inline-flex; border-radius: 6px; background: rgba(38, 38, 38, 0.78); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); padding: 2px; gap: 2px; }
+  .gtk .float .ib { width: 30px; height: 26px; border-radius: 4px; display: grid; place-items: center; color: #ffffff; }
+  .gtk .float .ib.on { background: rgba(255, 255, 255, 0.24); }
+  .gtk .float .ib svg { width: 16px; height: 16px; }
+  .gtk .float .sep { width: 1px; background: rgba(255, 255, 255, 0.25); margin: 4px 2px; }
+  .gtk .tooltip { position: absolute; top: 44px; right: 40px; background: rgba(20, 20, 20, 0.9); color: #fff; font-size: 12px; padding: 3px 8px; border-radius: 5px; }
+  .gtk .with-margin { padding-right: 86px; }
+  .gtk .clamp4 { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .gtk .popover.anchored::before { content: ""; position: absolute; top: -7px; right: 22px; width: 12px; height: 12px; background: var(--w-view); border-left: 1px solid #b8b1aa; border-top: 1px solid #b8b1aa; transform: rotate(45deg); }
+
+
+  /* topology-redesign.html */
+  .gtk { --w-edge: rgba(46, 52, 54, 0.62); --w-hover: rgba(53, 132, 228, 0.16); }
+  .gtk.dark {
+    --w-bg: #2d2d2d; --w-view: #1e1e1e; --w-ink: #eeeeec; --w-dim: #9a9996;
+    --w-border: #1b1b1b; --w-hb: #303030; --w-accent: #3584e4; --w-sel: #1e3a5c;
+    --w-edge: rgba(238, 238, 236, 0.55); --w-hover: rgba(120, 174, 237, 0.22);
+    border-color: #0f0f0f;
+  }
+  .gtk.dark .hb { background: linear-gradient(#383838, var(--w-hb)); }
+  .gtk .canvas { position: relative; overflow: hidden; background: var(--w-view); }
+  .scene { position: absolute; left: 0; top: 0; width: 700px; height: 400px; transform-origin: 0 0; }
+  .scene .edges { position: absolute; left: 0; top: 0; overflow: visible; }
+  .scene .edges path { fill: none; stroke: var(--w-edge); stroke-width: 1.7; }
+  .node { position: absolute; width: 64px; display: grid; justify-items: center; gap: 3px; }
+  .node i { width: 64px; height: 64px; background-size: 64px 64px; background-repeat: no-repeat; background-position: center; border-radius: 50%; }
+  .node span { font-size: 12.5px; line-height: 1.2; color: var(--w-ink); white-space: nowrap; }
+  .node.off i { filter: grayscale(1); opacity: 0.5; }
+  .node.off span { color: var(--w-dim); }
+  .node.hover i { background-color: var(--w-hover); box-shadow: 0 0 0 8px var(--w-hover); }
+  .scene.today .node span { margin-top: -21px; font: 11px/1.1 "Times New Roman", "Liberation Serif", serif; color: #000; }
+  .scene.today .edges path { stroke: #000; stroke-width: 1.3; }
+  .node.qemu i { background-image: url(data:image/png;base64,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); }
+  .node.switch i { background-image: url(data:image/png;base64,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); }
+  .node.tap i { background-image: url(data:image/png;base64,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); }
+  .node.router i { background-image: url(data:image/png;base64,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); }
+
+  .gtk .float.tr { top: 10px; right: 12px; }
+  .gtk .float.br { top: auto; bottom: 12px; right: 12px; }
+  .gtk .float.bc { top: auto; bottom: 12px; right: auto; left: 50%; transform: translateX(-50%); }
+  .gtk .float.tl { top: 14px; left: 14px; right: auto; }
+  .gtk .float .ib svg .cut { stroke: #3d3d3d; stroke-width: 1.8; stroke-linecap: round; fill: none; }
+  .gtk .float .ib.on svg .cut { stroke: #5a5a5a; }
+  .gtk .float .ib.lvl { width: auto; min-width: 46px; padding: 0 7px; display: inline-flex; align-items: center; justify-content: center; gap: 2px; font: 600 12.5px/1 "Cantarell", "Noto Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  .gtk .float .ib.lvl svg { width: 12px; height: 12px; }
+  .gtk .float .ib.dis { opacity: 0.38; }
+  .gtk .sb { position: absolute; background: rgba(0, 0, 0, 0.38); border-radius: 3px; }
+  .gtk.dark .sb { background: rgba(255, 255, 255, 0.4); }
+  .gtk .sb.v { right: 3px; width: 6px; }
+  .gtk .sb.h { bottom: 3px; height: 6px; }
+  .gtk .tip { position: absolute; background: rgba(20, 20, 20, 0.9); color: #fff; font-size: 12px; padding: 4px 9px; border-radius: 5px; white-space: nowrap; }
+  .gtk .hand { position: absolute; width: 14px; height: 18px; background: #fff; border: 1.5px solid #222; border-radius: 7px 7px 4px 4px; }
+  .gtk .hint { position: absolute; left: 22px; top: 22px; color: var(--w-dim); }
+  .gtk .menu { position: absolute; top: 48px; right: 10px; min-width: 190px; background: var(--w-view); border: 1px solid #b8b1aa; border-radius: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); padding: 6px 0; }
+  .gtk .menu.small { min-width: 120px; }
+  .gtk .menu.left { top: 48px; left: 44px; right: auto; }
+  .gtk .menu .mh { color: var(--w-dim); font-size: 12px; padding: 4px 14px 2px; }
+  .gtk .menu .mi { display: flex; align-items: center; gap: 9px; padding: 5px 14px; }
+  .gtk .menu .msep { height: 1px; background: var(--w-border); margin: 5px 0; }
+  .gtk .rb { width: 14px; height: 14px; border-radius: 50%; border: 1px solid #8f8a85; background: var(--w-view); }
+  .gtk .rb.on { background: var(--w-accent); border-color: var(--w-accent); box-shadow: inset 0 0 0 4px var(--w-view); }
+  .gtk .bar .save { width: 14px; height: 14px; vertical-align: -2px; color: var(--w-ink); }
+  .gtk .radio::before { content: ""; display: inline-block; width: 13px; height: 13px; border-radius: 50%; border: 1px solid #8f8a85; background: var(--w-view); vertical-align: -2px; margin-right: 6px; }
+  .gtk .radio.on::before { background: var(--w-accent); border-color: var(--w-accent); box-shadow: inset 0 0 0 3.5px var(--w-view); }
+  .bars { display: flex; flex-wrap: wrap; gap: 18px; justify-content: center; }
+  .gtk.barcase { width: 220px; }
+  .gtk.barcase .canvas { height: 196px; }
+  .gtk.barcase p { margin: 0; padding: 7px 10px; font-size: 12.5px; color: var(--w-dim); border-top: 1px solid var(--w-border); }
+  .ladder { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 16px; padding: 0; list-style: none; }
+  .ladder li { margin: 0; font: 500 13px/1 var(--font-mono); font-variant-numeric: tabular-nums; padding: 6px 8px; border-radius: 4px; background: var(--code-bg); }
+  .ladder li.here { background: var(--accent); color: var(--surface); }
+  kbd { font: 500 0.84em/1 var(--font-mono); background: var(--code-bg); border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 0.12em 0.4em; white-space: nowrap; }
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  .ref.open { color: var(--decide); background: var(--decide-soft); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 6 &middot; Design &middot; revision 5, implemented</div>
+    <h1>A Zoomable Topology Tab</h1>
+    <p class="lede">The picture of the lab takes the whole tab. Its controls float over its top right corner, as the Readme tab&rsquo;s do, and it zooms in, out, to 100% and to fit the whole lab.</p>
+    <ul class="meta">
+      <li>branch <b>mg/abandon-glade</b> at 24161e0</li>
+      <li>revision 5 &middot; 28 September 2026</li>
+      <li><span class="status done">implemented</span></li>
+    </ul>
+    <p class="revision"><strong>What changed:</strong> revision 2 applies your first answers. The bar floats at the top right, where the Readme tab has its buttons (<a class="ref done" href="#decisions">T1</a>, board A1), and it shows the zoom level, which goes back to 100% when clicked (<a class="ref done" href="#decisions">T2</a>). Boards B and C, and options A and C of board Z, stay for reference. Revision 3 takes the recommended answer for the other eight (<a class="ref done" href="#decisions">T3</a> to <a class="ref done" href="#decisions">T10</a>): fixed zoom levels, fit never above 100%, the tab opening fitted, the keys, the menu for the layout and the export, drawing with cairo, grey stopped bricks with a tooltip, and PNG, SVG and PDF.</p>
+    <p class="revision"><strong>Implemented</strong> in seven commits, f7f7b3e to bc04ff9, as &sect;6 plans, with two differences. The drawing lives in <code>picture.py</code>, which the view and the export share. And the view measures the names of the bricks, not Graphviz: the Graphviz of the pygraphviz wheels brings its own Pango, which clashes with the one GTK loads, so Graphviz gets no text. The Export Project window no longer leaves Graphviz&rsquo;s old temporary files out of an archive.</p>
+    <p class="revision"><strong>Since then:</strong> the menu of a brick in the picture is the one of the Bricks tab, and a double click on a brick configures it, in the Bricks tab, as that redesign decided (<a href="07%20-%20bricks-redesign.html">step 7</a>, B5); &sect;4 still gives today&rsquo;s start or stop. A virtual machine shows its own icon, when its settings name one (<a href="10%20-%20settings-redesign.html">step 10</a>).</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>The tab today</a></li>
+        <li><a href="#mockups"><span>3</span>Mock-ups</a></li>
+        <li><a href="#zoom"><span>4</span>The zoom</a></li>
+        <li><a href="#drawing"><span>5</span>Drawing the picture</a></li>
+        <li><a href="#plan"><span>6</span>Implementation plan</a></li>
+        <li><a href="#tests"><span>7</span>Tests</a></li>
+        <li><a href="#decisions"><span>8</span>Decisions</a></li>
+        <li><a href="#later"><span>9</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Controls</dt><dd>A dark translucent bar floats over the top right corner, like the Readme tab&rsquo;s buttons: zoom out, the zoom level, zoom in, fit all, and a menu with the layout and the export (<a class="ref done" href="#decisions">T1</a>, <a class="ref done" href="#decisions">T2</a>, <a class="ref done" href="#decisions">T7</a>).</dd></div>
+          <div><dt>Zoom</dt><dd>Zoom in and out go through fixed levels from 10% to 400%. The level button goes back to 100%. Fit all shows the whole lab, never above 100%. The tab opens fitted and stays fitted until you zoom (<a class="ref done" href="#decisions">T3</a>, <a class="ref done" href="#decisions">T4</a>, <a class="ref done" href="#decisions">T5</a>).</dd></div>
+          <div><dt>Mouse, keys</dt><dd>Ctrl and the wheel zoom around the pointer, and a pinch on a touchpad too. Dragging the background moves the picture. <kbd>Ctrl</kbd>+<kbd>+</kbd>, <kbd>Ctrl</kbd>+<kbd>&minus;</kbd>, <kbd>Ctrl</kbd>+<kbd>0</kbd> and <kbd>F</kbd> (<a class="ref done" href="#decisions">T6</a>).</dd></div>
+          <div><dt>Drawing</dt><dd>Graphviz only places the bricks, and Virtualbricks draws them with cairo. Zooming is instant, the picture follows the dark theme, and stopped bricks are grey as in the Bricks list (<a class="ref done" href="#decisions">T8</a>, <a class="ref done" href="#decisions">T9</a>).</dd></div>
+          <div><dt>Export</dt><dd>PNG, SVG or PDF, at 100% and on white, whatever the zoom and the theme (<a class="ref done" href="#decisions">T10</a>).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>The tab today</h2>
+        <figure class="board" id="board-t0"><div class="stage"><div class="gtk" style="width:760px"><div class="hb"><span style="width:24px"></span><span class="ttl">Virtualbricks (project: ospf-lab)</span><span class="x">&#x2715;</span></div><div class="menubar"><span>File</span><span>Settings</span><span>View</span><span>Disk images</span><span>Help</span></div><div class="tabs"><span class="tab">Bricks</span><span class="tab">Events</span><span class="tab">Running</span><span class="tab on">Topology</span><span class="tab">Readme</span></div><div class="bar"><span class="btn"><svg class="save" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 2.5h8.5l2.5 2.5v8.5h-11z" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M5 2.5v3.5h5V2.5M5 13.5V9.5h6v4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg> Export as Image</span><span class="radio on">Expand Horizontally</span><span class="radio">Expand Vertically</span></div><div class="canvas" style="height:302px"><div class="scene today" style="transform:translate(6.0px,4.0px) scale(1.320)"><svg class="edges" viewBox="0 0 700 400" width="700" height="400" aria-hidden="true"><path d="M94 190 C130.0 190 130.0 190 166 190"/><path d="M234 190 C272.5 190 272.5 95 311 95"/><path d="M234 190 C272.5 190 272.5 285 311 285"/><path d="M379 285 C417.5 285 417.5 285 456 285"/><path d="M524 285 C562.5 285 562.5 215 601 215"/><path d="M524 285 C562.5 285 562.5 345 601 345"/></svg><div class="node tap" style="left:28px;top:158px"><i></i><span>tap0</span></div><div class="node switch" style="left:168px;top:158px"><i></i><span>sw1</span></div><div class="node qemu" style="left:313px;top:63px"><i></i><span>vm1</span></div><div class="node router" style="left:313px;top:253px"><i></i><span>r1</span></div><div class="node switch" style="left:458px;top:253px"><i></i><span>sw2</span></div><div class="node qemu" style="left:603px;top:183px"><i></i><span>vm2</span></div><div class="node qemu" style="left:603px;top:313px"><i></i><span>vm3</span></div></div><span class="sb v" style="top:4px;height:62%"></span><span class="sb h" style="left:4px;width:54%"></span></div></div></div><figcaption><b class="board-name">T0 &middot; the tab today</b>A row of controls over a PNG that Graphviz drew at one size, pinned to the top left. The picture is always white and every brick is in colour, running or not; the names sit over the icons, in Graphviz's serif. A lab of seven bricks already needs both scrollbars.</figcaption></figure>
+        <ul>
+          <li>A row of controls takes the top of the page: Export as Image and the two directions of the layout.</li>
+          <li>The picture is a PNG that Graphviz writes in the runtime folder, at one size: there is no zoom, and a lab of a dozen bricks scrolls both ways.</li>
+          <li>It is white in the dark theme, and it shows every brick in colour, running or not.</li>
+          <li>A click picks the brick whose centre is within 50 pixels of it. Two close bricks can both claim the click; the first one listed wins.</li>
+          <li>The export copies that PNG under the name you give: <code>lab.svg</code> is a PNG file.</li>
+          <li>The drawing code takes a scale, but the tab always passes 1.0, and a scale below 1 would fail: it resizes the PNG with fractions of a pixel.</li>
+        </ul>
+      </section>
+
+      <section id="mockups">
+        <h2><span class="num">&sect;3</span>Mock-ups</h2>
+        <p>The same lab in every board: a tap, two switches, a router and three virtual machines, of which the tap, vm2 and vm3 are stopped. The window is GTK 3 with Adwaita, drawn with only what a <code>GtkDrawingArea</code> and an overlay can show.</p>
+        <figure class="board" id="board-a1"><div class="stage"><div class="gtk" style="width:760px"><div class="hb"><span style="width:24px"></span><span class="ttl">Virtualbricks (project: ospf-lab)</span><span class="x">&#x2715;</span></div><div class="menubar"><span>File</span><span>Settings</span><span>View</span><span>Disk images</span><span>Help</span></div><div class="tabs"><span class="tab">Bricks</span><span class="tab">Events</span><span class="tab">Running</span><span class="tab on">Topology</span><span class="tab">Readme</span></div><div class="canvas" style="height:340px"><div class="scene" style="transform:translate(116.5px,20.0px) scale(0.750)"><svg class="edges" viewBox="0 0 700 400" width="700" height="400" aria-hidden="true"><path d="M94 190 C130.0 190 130.0 190 166 190"/><path d="M234 190 C272.5 190 272.5 95 311 95"/><path d="M234 190 C272.5 190 272.5 285 311 285"/><path d="M379 285 C417.5 285 417.5 285 456 285"/><path d="M524 285 C562.5 285 562.5 215 601 215"/><path d="M524 285 C562.5 285 562.5 345 601 345"/></svg><div class="node tap off" style="left:28px;top:158px"><i></i><span>tap0</span></div><div class="node switch" style="left:168px;top:158px"><i></i><span>sw1</span></div><div class="node qemu hover" style="left:313px;top:63px"><i></i><span>vm1</span></div><div class="node router" style="left:313px;top:253px"><i></i><span>r1</span></div><div class="node switch" style="left:458px;top:253px"><i></i><span>sw2</span></div><div class="node qemu off" style="left:603px;top:183px"><i></i><span>vm2</span></div><div class="node qemu off" style="left:603px;top:313px"><i></i><span>vm3</span></div></div><div class="float tr"><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4"/></svg></span><span class="ib lvl">75%</span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4M8 4.8v6.4"/></svg></span><span class="ib on"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.5V3a1.2 1.2 0 0 1 1.2-1.2h2.5M10.5 1.8H13A1.2 1.2 0 0 1 14.2 3v2.5M14.2 10.5V13a1.2 1.2 0 0 1-1.2 1.2h-2.5M5.5 14.2H3A1.2 1.2 0 0 1 1.8 13v-2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="5" y="5" width="6" height="6" rx="1.2" fill="currentColor"/></svg></span><span class="sep"></span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="3" r="1.6" fill="currentColor"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/><circle cx="8" cy="13" r="1.6" fill="currentColor"/></svg></span></div><span class="tip" style="left:397px;top:121px">vm1 &middot; QEMU &middot; running</span></div></div></div><figcaption><b class="board-name">A1 &middot; fitted, the bar at the top right (decided)</b>The picture takes the whole tab. The bar floats where the Readme tab has its buttons: zoom out, the zoom level, zoom in, fit all, then the menu. The tab opens fitted: the fit button is pressed, and the level says what fitting gave. Stopped bricks are grey. The brick under the pointer gets a light disc, the hand pointer and a tooltip.</figcaption></figure>
+        <figure class="board" id="board-a2"><div class="stage"><div class="gtk" style="width:760px"><div class="hb"><span style="width:24px"></span><span class="ttl">Virtualbricks (project: ospf-lab)</span><span class="x">&#x2715;</span></div><div class="menubar"><span>File</span><span>Settings</span><span>View</span><span>Disk images</span><span>Help</span></div><div class="tabs"><span class="tab">Bricks</span><span class="tab">Events</span><span class="tab">Running</span><span class="tab on">Topology</span><span class="tab">Readme</span></div><div class="canvas" style="height:340px"><div class="scene" style="transform:translate(-300.0px,-120.0px) scale(2.000)"><svg class="edges" viewBox="0 0 700 400" width="700" height="400" aria-hidden="true"><path d="M94 190 C130.0 190 130.0 190 166 190"/><path d="M234 190 C272.5 190 272.5 95 311 95"/><path d="M234 190 C272.5 190 272.5 285 311 285"/><path d="M379 285 C417.5 285 417.5 285 456 285"/><path d="M524 285 C562.5 285 562.5 215 601 215"/><path d="M524 285 C562.5 285 562.5 345 601 345"/></svg><div class="node tap off" style="left:28px;top:158px"><i></i><span>tap0</span></div><div class="node switch" style="left:168px;top:158px"><i></i><span>sw1</span></div><div class="node qemu" style="left:313px;top:63px"><i></i><span>vm1</span></div><div class="node router" style="left:313px;top:253px"><i></i><span>r1</span></div><div class="node switch" style="left:458px;top:253px"><i></i><span>sw2</span></div><div class="node qemu off" style="left:603px;top:183px"><i></i><span>vm2</span></div><div class="node qemu off" style="left:603px;top:313px"><i></i><span>vm3</span></div></div><div class="float tr"><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4"/></svg></span><span class="ib lvl">200%</span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4M8 4.8v6.4"/></svg></span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.5V3a1.2 1.2 0 0 1 1.2-1.2h2.5M10.5 1.8H13A1.2 1.2 0 0 1 14.2 3v2.5M14.2 10.5V13a1.2 1.2 0 0 1-1.2 1.2h-2.5M5.5 14.2H3A1.2 1.2 0 0 1 1.8 13v-2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="5" y="5" width="6" height="6" rx="1.2" fill="currentColor"/></svg></span><span class="sep"></span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="3" r="1.6" fill="currentColor"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/><circle cx="8" cy="13" r="1.6" fill="currentColor"/></svg></span></div><span class="sb v" style="top:18%;height:40%"></span><span class="sb h" style="left:21%;width:52%"></span></div></div></div><figcaption><b class="board-name">A2 &middot; zoomed to 200%</b>Five clicks on zoom in from the fitted 75%: 80%, 100%, 125%, 150%, 200%. The fit button is released. The picture scrolls as any GTK view: the wheel, Shift and the wheel, or dragging the background. The icons are 96-pixel PNGs, so above 100% they soften; the lines and the names stay sharp.</figcaption></figure>
+        <figure class="board" id="board-a3"><div class="stage"><div class="gtk" style="width:760px"><div class="hb"><span style="width:24px"></span><span class="ttl">Virtualbricks (project: ospf-lab)</span><span class="x">&#x2715;</span></div><div class="menubar"><span>File</span><span>Settings</span><span>View</span><span>Disk images</span><span>Help</span></div><div class="tabs"><span class="tab">Bricks</span><span class="tab">Events</span><span class="tab">Running</span><span class="tab on">Topology</span><span class="tab">Readme</span></div><div class="canvas" style="height:340px"><div class="scene" style="transform:translate(116.5px,20.0px) scale(0.750)"><svg class="edges" viewBox="0 0 700 400" width="700" height="400" aria-hidden="true"><path d="M94 190 C130.0 190 130.0 190 166 190"/><path d="M234 190 C272.5 190 272.5 95 311 95"/><path d="M234 190 C272.5 190 272.5 285 311 285"/><path d="M379 285 C417.5 285 417.5 285 456 285"/><path d="M524 285 C562.5 285 562.5 215 601 215"/><path d="M524 285 C562.5 285 562.5 345 601 345"/></svg><div class="node tap off" style="left:28px;top:158px"><i></i><span>tap0</span></div><div class="node switch" style="left:168px;top:158px"><i></i><span>sw1</span></div><div class="node qemu" style="left:313px;top:63px"><i></i><span>vm1</span></div><div class="node router" style="left:313px;top:253px"><i></i><span>r1</span></div><div class="node switch" style="left:458px;top:253px"><i></i><span>sw2</span></div><div class="node qemu off" style="left:603px;top:183px"><i></i><span>vm2</span></div><div class="node qemu off" style="left:603px;top:313px"><i></i><span>vm3</span></div></div><div class="float tr"><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4"/></svg></span><span class="ib lvl">75%</span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4M8 4.8v6.4"/></svg></span><span class="ib on"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.5V3a1.2 1.2 0 0 1 1.2-1.2h2.5M10.5 1.8H13A1.2 1.2 0 0 1 14.2 3v2.5M14.2 10.5V13a1.2 1.2 0 0 1-1.2 1.2h-2.5M5.5 14.2H3A1.2 1.2 0 0 1 1.8 13v-2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="5" y="5" width="6" height="6" rx="1.2" fill="currentColor"/></svg></span><span class="sep"></span><span class="ib on"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="3" r="1.6" fill="currentColor"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/><circle cx="8" cy="13" r="1.6" fill="currentColor"/></svg></span></div><div class="menu"><div class="mh">Layout</div><div class="mi"><span class="rb on"></span>Left to Right</div><div class="mi"><span class="rb"></span>Top to Bottom</div><div class="msep"></div><div class="mi">Export as Image&hellip;</div></div></div></div></div><figcaption><b class="board-name">A3 &middot; the menu at the end of the bar</b>What the row above the picture held today, as a GTK popover menu: the direction of the layout, as two choices, and the export. They are rarely used, so the bar stays about zooming.</figcaption></figure>
+        <figure class="board" id="board-a4"><div class="stage"><div class="gtk dark" style="width:760px"><div class="hb"><span style="width:24px"></span><span class="ttl">Virtualbricks (project: ospf-lab)</span><span class="x">&#x2715;</span></div><div class="menubar"><span>File</span><span>Settings</span><span>View</span><span>Disk images</span><span>Help</span></div><div class="tabs"><span class="tab">Bricks</span><span class="tab">Events</span><span class="tab">Running</span><span class="tab on">Topology</span><span class="tab">Readme</span></div><div class="canvas" style="height:340px"><div class="scene" style="transform:translate(116.5px,20.0px) scale(0.750)"><svg class="edges" viewBox="0 0 700 400" width="700" height="400" aria-hidden="true"><path d="M94 190 C130.0 190 130.0 190 166 190"/><path d="M234 190 C272.5 190 272.5 95 311 95"/><path d="M234 190 C272.5 190 272.5 285 311 285"/><path d="M379 285 C417.5 285 417.5 285 456 285"/><path d="M524 285 C562.5 285 562.5 215 601 215"/><path d="M524 285 C562.5 285 562.5 345 601 345"/></svg><div class="node tap off" style="left:28px;top:158px"><i></i><span>tap0</span></div><div class="node switch" style="left:168px;top:158px"><i></i><span>sw1</span></div><div class="node qemu" style="left:313px;top:63px"><i></i><span>vm1</span></div><div class="node router" style="left:313px;top:253px"><i></i><span>r1</span></div><div class="node switch" style="left:458px;top:253px"><i></i><span>sw2</span></div><div class="node qemu off" style="left:603px;top:183px"><i></i><span>vm2</span></div><div class="node qemu off" style="left:603px;top:313px"><i></i><span>vm3</span></div></div><div class="float tr"><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4"/></svg></span><span class="ib lvl">75%</span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4M8 4.8v6.4"/></svg></span><span class="ib on"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.5V3a1.2 1.2 0 0 1 1.2-1.2h2.5M10.5 1.8H13A1.2 1.2 0 0 1 14.2 3v2.5M14.2 10.5V13a1.2 1.2 0 0 1-1.2 1.2h-2.5M5.5 14.2H3A1.2 1.2 0 0 1 1.8 13v-2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="5" y="5" width="6" height="6" rx="1.2" fill="currentColor"/></svg></span><span class="sep"></span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="3" r="1.6" fill="currentColor"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/><circle cx="8" cy="13" r="1.6" fill="currentColor"/></svg></span></div></div></div></div><figcaption><b class="board-name">A4 &middot; the dark theme</b>Drawn by Virtualbricks, the picture takes the colours of the theme: the view&rsquo;s background, the text colour for names and lines. Graphviz&rsquo;s PNG is white in both themes.</figcaption></figure>
+        <figure class="board" id="board-a5"><div class="stage"><div class="gtk" style="width:760px"><div class="hb"><span style="width:24px"></span><span class="ttl">Virtualbricks (project: new_project)</span><span class="x">&#x2715;</span></div><div class="menubar"><span>File</span><span>Settings</span><span>View</span><span>Disk images</span><span>Help</span></div><div class="tabs"><span class="tab">Bricks</span><span class="tab">Events</span><span class="tab">Running</span><span class="tab on">Topology</span><span class="tab">Readme</span></div><div class="canvas" style="height:340px"><div class="hint">No bricks yet. New Brick, in the Bricks tab, adds one.</div><div class="float tr"><span class="ib dis"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4"/></svg></span><span class="ib dis lvl">100%</span><span class="ib dis"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4M8 4.8v6.4"/></svg></span><span class="ib dis"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.5V3a1.2 1.2 0 0 1 1.2-1.2h2.5M10.5 1.8H13A1.2 1.2 0 0 1 14.2 3v2.5M14.2 10.5V13a1.2 1.2 0 0 1-1.2 1.2h-2.5M5.5 14.2H3A1.2 1.2 0 0 1 1.8 13v-2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="5" y="5" width="6" height="6" rx="1.2" fill="currentColor"/></svg></span><span class="sep"></span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="3" r="1.6" fill="currentColor"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/><circle cx="8" cy="13" r="1.6" fill="currentColor"/></svg></span></div></div></div></div><figcaption><b class="board-name">A5 &middot; a project without bricks</b>A dim line instead of GTK&rsquo;s missing-image icon. There is nothing to zoom, so the zoom buttons are insensitive; the menu still sets the layout.</figcaption></figure>
+        <h3>Other places for the controls (<a class="ref done" href="#decisions">T1</a>)</h3>
+        <figure class="board" id="board-b"><div class="stage"><div class="gtk" style="width:760px"><div class="hb"><span style="width:24px"></span><span class="ttl">Virtualbricks (project: ospf-lab)</span><span class="x">&#x2715;</span></div><div class="menubar"><span>File</span><span>Settings</span><span>View</span><span>Disk images</span><span>Help</span></div><div class="tabs"><span class="tab">Bricks</span><span class="tab">Events</span><span class="tab">Running</span><span class="tab on">Topology</span><span class="tab">Readme</span></div><div class="canvas" style="height:340px"><div class="scene" style="transform:translate(116.5px,20.0px) scale(0.750)"><svg class="edges" viewBox="0 0 700 400" width="700" height="400" aria-hidden="true"><path d="M94 190 C130.0 190 130.0 190 166 190"/><path d="M234 190 C272.5 190 272.5 95 311 95"/><path d="M234 190 C272.5 190 272.5 285 311 285"/><path d="M379 285 C417.5 285 417.5 285 456 285"/><path d="M524 285 C562.5 285 562.5 215 601 215"/><path d="M524 285 C562.5 285 562.5 345 601 345"/></svg><div class="node tap off" style="left:28px;top:158px"><i></i><span>tap0</span></div><div class="node switch" style="left:168px;top:158px"><i></i><span>sw1</span></div><div class="node qemu" style="left:313px;top:63px"><i></i><span>vm1</span></div><div class="node router" style="left:313px;top:253px"><i></i><span>r1</span></div><div class="node switch" style="left:458px;top:253px"><i></i><span>sw2</span></div><div class="node qemu off" style="left:603px;top:183px"><i></i><span>vm2</span></div><div class="node qemu off" style="left:603px;top:313px"><i></i><span>vm3</span></div></div><div class="float br"><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4"/></svg></span><span class="ib lvl">75%</span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4M8 4.8v6.4"/></svg></span><span class="ib on"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.5V3a1.2 1.2 0 0 1 1.2-1.2h2.5M10.5 1.8H13A1.2 1.2 0 0 1 14.2 3v2.5M14.2 10.5V13a1.2 1.2 0 0 1-1.2 1.2h-2.5M5.5 14.2H3A1.2 1.2 0 0 1 1.8 13v-2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="5" y="5" width="6" height="6" rx="1.2" fill="currentColor"/></svg></span></div><div class="float tr"><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="3" r="1.6" fill="currentColor"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/><circle cx="8" cy="13" r="1.6" fill="currentColor"/></svg></span></div></div></div></div><figcaption><b class="board-name">B &middot; zoom at the bottom right, the menu at the top</b>Not chosen (<a class="ref done" href="#decisions">T1</a>). As in map applications. The zoom is where the hand goes to move around, but the controls are in two corners, and neither is where the Readme tab has its buttons.</figcaption></figure>
+        <figure class="board" id="board-c"><div class="stage"><div class="gtk" style="width:760px"><div class="hb"><span style="width:24px"></span><span class="ttl">Virtualbricks (project: ospf-lab)</span><span class="x">&#x2715;</span></div><div class="menubar"><span>File</span><span>Settings</span><span>View</span><span>Disk images</span><span>Help</span></div><div class="tabs"><span class="tab">Bricks</span><span class="tab">Events</span><span class="tab">Running</span><span class="tab on">Topology</span><span class="tab">Readme</span></div><div class="canvas" style="height:340px"><div class="scene" style="transform:translate(116.5px,20.0px) scale(0.750)"><svg class="edges" viewBox="0 0 700 400" width="700" height="400" aria-hidden="true"><path d="M94 190 C130.0 190 130.0 190 166 190"/><path d="M234 190 C272.5 190 272.5 95 311 95"/><path d="M234 190 C272.5 190 272.5 285 311 285"/><path d="M379 285 C417.5 285 417.5 285 456 285"/><path d="M524 285 C562.5 285 562.5 215 601 215"/><path d="M524 285 C562.5 285 562.5 345 601 345"/></svg><div class="node tap off" style="left:28px;top:158px"><i></i><span>tap0</span></div><div class="node switch" style="left:168px;top:158px"><i></i><span>sw1</span></div><div class="node qemu" style="left:313px;top:63px"><i></i><span>vm1</span></div><div class="node router" style="left:313px;top:253px"><i></i><span>r1</span></div><div class="node switch" style="left:458px;top:253px"><i></i><span>sw2</span></div><div class="node qemu off" style="left:603px;top:183px"><i></i><span>vm2</span></div><div class="node qemu off" style="left:603px;top:313px"><i></i><span>vm3</span></div></div><div class="float bc"><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4"/></svg></span><span class="ib lvl">75%</span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4M8 4.8v6.4"/></svg></span><span class="ib on"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.5V3a1.2 1.2 0 0 1 1.2-1.2h2.5M10.5 1.8H13A1.2 1.2 0 0 1 14.2 3v2.5M14.2 10.5V13a1.2 1.2 0 0 1-1.2 1.2h-2.5M5.5 14.2H3A1.2 1.2 0 0 1 1.8 13v-2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="5" y="5" width="6" height="6" rx="1.2" fill="currentColor"/></svg></span><span class="sep"></span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="3" r="1.6" fill="currentColor"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/><circle cx="8" cy="13" r="1.6" fill="currentColor"/></svg></span></div></div></div></div><figcaption><b class="board-name">C &middot; one bar at the bottom centre</b>Not chosen. As in image viewers. Centred, the bar covers the middle of a horizontal lab, where the links often are.</figcaption></figure>
+        <h3>How the level shows (<a class="ref done" href="#decisions">T2</a>)</h3>
+        <figure class="board" id="board-z"><div class="stage"><div class="bars"><div class="gtk barcase"><div class="canvas"><div class="float tl"><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4"/></svg></span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M6.6 5.6 8.6 4.6v7"/></svg></span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4M8 4.8v6.4"/></svg></span><span class="ib on"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.5V3a1.2 1.2 0 0 1 1.2-1.2h2.5M10.5 1.8H13A1.2 1.2 0 0 1 14.2 3v2.5M14.2 10.5V13a1.2 1.2 0 0 1-1.2 1.2h-2.5M5.5 14.2H3A1.2 1.2 0 0 1 1.8 13v-2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="5" y="5" width="6" height="6" rx="1.2" fill="currentColor"/></svg></span></div></div><p>A &middot; four icons, one per action</p></div><div class="gtk barcase"><div class="canvas"><div class="float tl"><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4"/></svg></span><span class="ib lvl">75%</span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4M8 4.8v6.4"/></svg></span><span class="ib on"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.5V3a1.2 1.2 0 0 1 1.2-1.2h2.5M10.5 1.8H13A1.2 1.2 0 0 1 14.2 3v2.5M14.2 10.5V13a1.2 1.2 0 0 1-1.2 1.2h-2.5M5.5 14.2H3A1.2 1.2 0 0 1 1.8 13v-2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="5" y="5" width="6" height="6" rx="1.2" fill="currentColor"/></svg></span></div></div><p>B &middot; the level, which sets 100%</p></div><div class="gtk barcase"><div class="canvas"><div class="float tl"><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4"/></svg></span><span class="ib lvl on">75% <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 6.5 8 10l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ib"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="currentColor"/><path class="cut" d="M4.8 8h6.4M8 4.8v6.4"/></svg></span></div><div class="menu small left"><div class="mi">50%</div><div class="mi">100%</div><div class="mi">200%</div><div class="msep"></div><div class="mi">Fit All</div></div></div><p>C &middot; the level opens a menu</p></div></div></div><figcaption><b class="board-name">Z &middot; three ways to show the zoom level</b>B is decided (<a class="ref done" href="#decisions">T2</a>). A shows the four actions and never where you are. B shows the level and still gives 100% in one click: its tooltip says &ldquo;Zoom to 100%&rdquo;. C hides fit all in a menu, one click further than asked.</figcaption></figure>
+      </section>
+
+      <section id="zoom">
+        <h2><span class="num">&sect;4</span>The zoom</h2>
+        <h3>Levels</h3>
+        <p>Zoom in and zoom out step through fixed levels, the ones most applications use (<a class="ref done" href="#decisions">T3</a>):</p>
+        <ul class="ladder"><li>10%</li><li>25%</li><li>33%</li><li>50%</li><li>67%</li><li>80%</li><li class="here">100%</li><li>125%</li><li>150%</li><li>200%</li><li>300%</li><li>400%</li></ul>
+        <p>From a level in between, as after fitting, they go to the next one up or down: from a fitted 75%, zoom in gives 80% and zoom out 67%. Below 10% the names can&rsquo;t be read, so 10% is the floor, for fitting too: a lab too big for 10% scrolls.</p>
+        <h3>Fit all</h3>
+        <p>Fit all picks the zoom that shows the whole lab with a margin of 20 pixels, and centres it. It never goes above 100%: a lab of three bricks stays at its natural size, in the middle of the tab (<a class="ref done" href="#decisions">T4</a>).</p>
+        <p>Fitting is a mode. While the fit button is pressed, the picture fits again when the tab changes size, and when a brick is added, removed or connected. Any other zoom releases it. The tab opens fitted, and so does every project (<a class="ref done" href="#decisions">T5</a>).</p>
+        <h3>Where it zooms from</h3>
+        <p>The buttons and the keys keep the centre of the view in place. Ctrl and the wheel, and a pinch, keep the point under the pointer in place, as maps do.</p>
+        <h3>Mouse and keys</h3>
+        <div class="scroll"><table>
+          <thead><tr><th>Action</th><th>Mouse</th><th>Keys (<a class="ref done" href="#decisions">T6</a>)</th></tr></thead>
+          <tbody>
+            <tr><td>Zoom in, zoom out</td><td>Ctrl and the wheel; a pinch on a touchpad</td><td><kbd>Ctrl</kbd>+<kbd>+</kbd> (and <kbd>Ctrl</kbd>+<kbd>=</kbd>), <kbd>Ctrl</kbd>+<kbd>&minus;</kbd></td></tr>
+            <tr><td>Zoom to 100%</td><td>the level button</td><td><kbd>Ctrl</kbd>+<kbd>0</kbd></td></tr>
+            <tr><td>Fit all</td><td>the fit button</td><td><kbd>F</kbd></td></tr>
+            <tr><td>Move around</td><td>the wheel, Shift and the wheel, dragging the background</td><td>the arrows, Page Up and Page Down</td></tr>
+          </tbody>
+        </table></div>
+        <p>The keys work while the picture has the focus; a click on it gives it the focus. The bricks keep their mouse actions of today: the right button opens a brick&rsquo;s menu and a double click starts or stops it. Only a drag that starts on the background moves the picture.</p>
+        <p>Each button has a tooltip and an accessible name, since it shows no word: Zoom Out, Zoom to 100%, Zoom In, Fit All, and More for the menu.</p>
+      </section>
+
+      <section id="drawing">
+        <h2><span class="num">&sect;5</span>Drawing the picture</h2>
+        <p>The zoom depends on how the picture is drawn (<a class="ref done" href="#decisions">T8</a>). Three ways:</p>
+        <div class="scroll"><table class="wide">
+          <thead><tr><th></th><th>A &middot; a PNG at each zoom</th><th>B &middot; Graphviz places, cairo draws</th><th>C &middot; SVG through librsvg</th></tr></thead>
+          <tbody>
+            <tr><td>How</td><td>Today&rsquo;s code, with Graphviz&rsquo;s <code>dpi</code> set from the zoom</td><td>Graphviz lays the lab out; a <code>GtkDrawingArea</code> draws the icons, names and lines at any zoom</td><td>Graphviz writes an SVG; librsvg draws it at any zoom</td></tr>
+            <tr><td>Each zoom step</td><td class="no">Graphviz runs again and a file is read: a fraction of a second</td><td class="yes">Instant: a cairo transform</td><td class="yes">Instant</td></tr>
+            <tr><td>Dark theme</td><td class="no">White</td><td class="yes">The theme&rsquo;s colours</td><td class="no">Graphviz&rsquo;s colours</td></tr>
+            <tr><td>Stopped bricks grey, hover</td><td class="no">No</td><td class="yes">Yes</td><td class="no">No</td></tr>
+            <tr><td>Export</td><td>PNG</td><td class="yes">PNG, SVG and PDF, from cairo</td><td>PNG, SVG</td></tr>
+            <tr><td>Dependencies</td><td>As today: pygraphviz and Pillow</td><td class="yes">pygraphviz; Pillow no longer needed</td><td class="no">pygraphviz, and <code>gir1.2-rsvg-2.0</code>, not installed here</td></tr>
+            <tr><td>Work</td><td class="yes">Small</td><td>A module that draws, with its tests</td><td>Medium</td></tr>
+          </tbody>
+        </table></div>
+        <p>What this machine says: after <code>layout()</code>, pygraphviz gives every brick&rsquo;s centre and size and every line&rsquo;s curve, in points, and the size of the whole lab. Laying out four bricks took 165 ms with Graphviz 2.42.4. With B that happens once when the lab changes, not at each zoom step. The brick icons are 96-pixel PNGs: sharp up to 100%, softer above. Pillow is only used to read the size of today&rsquo;s PNG.</p>
+        <h3>What B draws (<a class="ref done" href="#decisions">T9</a>)</h3>
+        <ul>
+          <li>Each brick&rsquo;s icon, and its name below it in the theme&rsquo;s text colour. A stopped brick&rsquo;s icon is grey and faded, as in the Bricks list.</li>
+          <li>The links as Graphviz&rsquo;s curves, in the text colour at 60%.</li>
+          <li>The brick under the pointer on a light disc of the accent colour, with the hand pointer and a tooltip: its name, type and status, as the Bricks list shows them.</li>
+          <li>A click hits a brick exactly, by its icon and its name, at any zoom.</li>
+          <li>No files in the runtime folder: the three that Graphviz writes today go.</li>
+        </ul>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;6</span>Implementation plan</h2>
+        <p>With the answers of &sect;8. Each step is a commit with its tests, stopping for review after each.</p>
+        <ol>
+          <li><b>The layout.</b> A module without GTK, <code>virtualbricks/topology.py</code>: from the bricks and the direction, Graphviz&rsquo;s places in points: each brick&rsquo;s centre and size, each link&rsquo;s curve, the size of the lab. The links follow today&rsquo;s rules for plugs and sockets.</li>
+          <li><b>The view.</b> <code>virtualbricks/gui/mainwindow/topologyview.py</code>: a <code>GtkDrawingArea</code> in a scrolled window that draws a layout at a zoom, with the theme&rsquo;s colours. It keeps the levels, fit all and its mode, the brick at a point, the hover and its tooltip, Ctrl and the wheel, the pinch, the drag and the keys.</li>
+          <li><b>The tab.</b> <code>TopologyTab</code> puts the view under an overlay with the bar and its menu, shows the hint of an empty project, and keeps its rules of today: it draws when it shows and again when a brick changes.</li>
+          <li><b>The export.</b> Cairo writes PNG, SVG or PDF, chosen by the file&rsquo;s extension and offered as filters in the file chooser, at 100% and in the light colours.</li>
+          <li><b>The rest.</b> <code>graphics.Topology</code> and <code>Node</code> go, with the temporary files; Pillow leaves <code>pyproject.toml</code>.</li>
+        </ol>
+      </section>
+
+      <section id="tests">
+        <h2><span class="num">&sect;7</span>Tests</h2>
+        <ul>
+          <li>The layout: bricks and links for each kind of plug, both directions, an empty project; with the Graphviz of the machine.</li>
+          <li>The view: the levels up and down from any zoom, the floor and the ceiling, fit all and its mode after a resize and a change, the brick at a point at several zooms, the hover, the zoom around the pointer, the colours of a stopped brick and of the dark theme.</li>
+          <li>The tab: the bar&rsquo;s buttons and what they show, the menu, the keys, the hint, and the bricks&rsquo; menu and double click.</li>
+          <li>The export: a PNG, an SVG and a PDF, each a file of its kind at the lab&rsquo;s size.</li>
+        </ul>
+        <p>As before, each new test is checked against the code it guards, broken on a copy.</p>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;8</span>Decisions</h2>
+        <div class="scroll"><table class="decisions wide">
+          <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommended</th></tr></thead>
+          <tbody>
+            <tr><td><span class="ref done">T1</span></td><td>Where the controls float</td><td>A: one bar at the top right, as in the Readme tab (A1). B: zoom at the bottom right, the menu at the top right (B). C: one bar at the bottom centre (C).</td><td class="rec decided">Decided: A</td></tr>
+            <tr><td><span class="ref done">T2</span></td><td>How the zoom level shows</td><td>A: four icons, without the level. B: the level, a button that sets 100%. C: the level opens a menu of levels and fit (Z).</td><td class="rec decided">Decided: B</td></tr>
+            <tr><td><span class="ref done">T3</span></td><td>The zoom steps</td><td>A: fixed levels from 10% to 400% (&sect;4). B: &times;1.25 or &divide;1.25 at each step.</td><td class="rec decided">Decided: A</td></tr>
+            <tr><td><span class="ref done">T4</span></td><td>Fit all on a small lab</td><td>A: never above 100%. B: fill the tab, up to 400%, with soft icons.</td><td class="rec decided">Decided: A</td></tr>
+            <tr><td><span class="ref done">T5</span></td><td>The zoom when a project opens</td><td>A: fitted, and fitted again after resizes and changes until you zoom. B: 100%, as today. C: the last zoom of the project, kept in <code>state.toml</code>.</td><td class="rec decided">Decided: A</td></tr>
+            <tr><td><span class="ref done">T6</span></td><td>The keys</td><td>A: <kbd>Ctrl</kbd>+<kbd>+</kbd> and <kbd>Ctrl</kbd>+<kbd>&minus;</kbd>, <kbd>Ctrl</kbd>+<kbd>0</kbd> for 100%, <kbd>F</kbd> for fit all. B: the same, with <kbd>Ctrl</kbd>+<kbd>0</kbd> for fit all and <kbd>1</kbd> for 100%. C: no keys.</td><td class="rec decided">Decided: A</td></tr>
+            <tr><td><span class="ref done">T7</span></td><td>The layout and the export</td><td>A: in a menu at the end of the bar (A3). B: two more icons on the bar. C: a row above the picture, as today.</td><td class="rec decided">Decided: A</td></tr>
+            <tr><td><span class="ref done">T8</span></td><td>How the picture is drawn</td><td>A: a Graphviz PNG at each zoom. B: Graphviz places the bricks, cairo draws them. C: Graphviz SVG through librsvg (&sect;5).</td><td class="rec decided">Decided: B</td></tr>
+            <tr><td><span class="ref done">T9</span></td><td>What the picture shows</td><td>A: stopped bricks grey, the brick under the pointer highlighted with a tooltip, names below the icons. B: as today.</td><td class="rec decided">Decided: A</td></tr>
+            <tr><td><span class="ref done">T10</span></td><td>The export</td><td>A: PNG, SVG and PDF, at 100% on white. B: PNG only, at 100%, as today but with the right name. C: what the tab shows, at its zoom and in its theme.</td><td class="rec decided">Decided: A</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;9</span>Later</h2>
+        <ul>
+          <li>The names of the plugs on the links, such as a virtual machine&rsquo;s network cards.</li>
+          <li>Connecting two bricks by dropping one on the other in the picture, as in the Bricks list.</li>
+          <li>Moving bricks by hand, kept in the project.</li>
+          <li>A small overview of a big lab in a corner, showing where the view is.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>

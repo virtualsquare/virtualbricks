@@ -1,0 +1,938 @@
+<title>Glade Conversion Summary</title>
+<meta name="description" content="How the 36 Glade files of Virtualbricks became Python modules: structure, names, each file, the checks, and where each module is now.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  /* the id of each widget, by module */
+  #ids p { font-size: 14px; }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 1.2 &middot; Report &middot; revision 2, implemented</div>
+    <h1>Glade Conversion Summary</h1>
+    <p class="lede">All 36 Glade files of Virtualbricks became Python modules that build the same widgets in code, one module per file, each with the class that used the file, its name and its code. What was converted and how, how it was checked, and where each module is now.</p>
+    <ul class="meta">
+      <li>branch <b>mg/abandon-glade</b> at a51b6d4</li>
+      <li>revision 2 &middot; 28 September 2026</li>
+      <li><span class="status done">implemented</span></li>
+    </ul>
+    <p class="revision"><strong>What changed:</strong> revision 1, of 23 September, was <code>CONVERSION_SUMMARY.md</code> at the root of the sources, written as the conversion ended. Revision 2 adds where each module is today (<a href="#files">&sect;4</a>, <a href="#structure">&sect;2</a>) and what became of the issues it listed (<a href="#notes">&sect;7</a>). The rules it followed are in <a href="01.1%20-%20glade-conversion-strategy.html">step 1.1</a>.</p>
+    <p class="revision"><strong>Implemented</strong> in one commit, 9ae3919, on 23 September 2026, with the wiring of <code>gui.py</code> (<a href="#notes">&sect;7</a>).</p>
+    <p class="revision"><strong>Since then:</strong> <code>gui/windows/</code> went on 27 September (678ef50): the panels of the bricks, with the disks and the image picker of a virtual machine, are in <code>gui/mainwindow/bricks/config/</code>, every other window in <code>gui/dialogs/</code>, and <code>windows/base.py</code> was split between the two. The main window is <code>gui/mainwindow/window.py</code>, with a class per tab (6cd66cf to 24161e0). The redesigns replaced 13 of the 36 modules and rewrote others, as <a href="#files">&sect;4</a> says. The tests of the windows came back with the configuration redesign (<a href="02%20-%20config-redesign.html">step 2</a>), in <code>virtualbricks/tests/gui/</code>.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#structure"><span>2</span>Structure</a></li>
+        <li><a href="#naming"><span>3</span>Naming schema</a></li>
+        <li><a href="#files"><span>4</span>Converted files</a></li>
+        <li><a href="#features"><span>5</span>How the Glade features are converted</a></li>
+        <li><a href="#checks"><span>6</span>Verification</a></li>
+        <li><a href="#notes"><span>7</span>Notes and warnings</a></li>
+        <li><a href="#ids"><span>A</span>Glade ids and attributes</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Converted</dt><dd>The 36 files of <code>virtualbricks/gui/data/*.ui</code>, each into a module of the same name in <code>virtualbricks/gui/windows/</code>. The <code>.ui</code> files were deleted; git keeps them. There were no <code>.glade</code> files.</dd></div>
+          <div><dt>Removed</dt><dd><code>dialogs.py</code>. <code>gui.py</code> kept only what has no counterpart here: the popup menus, the application and the log observers.</dd></div>
+          <div><dt>Checked</dt><dd>Each tree built in code against the one Gtk.Builder built, every signal, every name, and every window run with the old and the new class (<a href="#checks">&sect;6</a>).</dd></div>
+          <div><dt>Today</dt><dd>The windows are in <code>gui/dialogs/</code>, the panels in <code>gui/mainwindow/bricks/config/</code>, the main window in <code>gui/mainwindow/</code>. 13 modules gave way to the redesigns.</dd></div>
+        </dl>
+      </section>
+
+      <section id="structure">
+        <h2><span class="num">&sect;2</span>Structure</h2>
+<p>Each module contains the class(es) that used the <code>.ui</code> file, with the same
+name, the original code and two new methods:</p>
+<ul>
+<li><code>build_ui()</code> creates every widget of the Glade file. A widget is an
+instance attribute only when it is needed after <code>build_ui()</code>: it is the root
+widget, a method of the class (or of its bases/subclasses) uses it, another
+object reads it (<code>gui.window</code>) or it is looked up by name (<code>get_object(&quot;x&quot;)</code>,
+the widget-name tables of the Qemu and Netemu panels). All the other widgets
+are local variables of <code>build_ui()</code>. <code>get_object(name)</code> returns None for
+them. Signals are connected at the end of <code>build_ui()</code>, like
+<code>Gtk.Builder.connect_signals()</code> did after loading.</li>
+<li><code>get_root_widget()</code> returns the main widget (window, dialog or panel).</li>
+</ul>
+<p>The code of the original class is copied with the Gtk.Builder access replaced
+by attributes: <code>self.w.x</code>, <code>self.get_object(&quot;x&quot;)</code>, <code>go(&quot;x&quot;)</code> &rarr; <code>self.x</code>;
+<code>BuilderHelper(...)</code> + <code>connect_signals()</code> &rarr; <code>self.build_ui()</code>.
+<code>get_object(name)</code> is still available for the few lookups by computed name
+(<code>go(param + &quot;_check&quot;)</code> in <code>NetemuConfigController</code>).</p>
+<p><code>windows/base.py</code> holds the Gtk.Builder-free base classes and the shared
+helpers, so that no module imports <code>gui.py</code> (it imports these modules, that
+would be circular):</p>
+<div class="scroll">
+<table>
+<thead>
+<tr>
+<th>base.py</th>
+<th>replaces</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_Window</code>, <code>_Dialog</code>, <code>Window</code></td>
+<td><code>_Window</code>, <code>_Dialog</code>, <code>Window</code>/<code>Base</code> of the removed <code>dialogs.py</code></td>
+</tr>
+<tr>
+<td><code>ConfigController</code></td>
+<td><code>gui.ConfigController</code></td>
+</tr>
+<tr>
+<td><code>StateManager</code>, <code>State</code>, <code>*Control</code>, <code>CompoundPrerequisite</code>, <code>YES</code>/<code>NO</code>/<code>MAYBE</code></td>
+<td>moved from <code>gui.py</code></td>
+</tr>
+<tr>
+<td><code>_PlugMixin</code>, <code>destroy_on_exit</code>, <code>iter_tree_model</code>, <code>VALIDKEY</code></td>
+<td>moved from <code>gui.py</code>/<code>dialogs.py</code></td>
+</tr>
+<tr>
+<td><code>_()</code>, <code>load_pixbuf()</code>, <code>pango_attr_list()</code></td>
+<td>used by the generated code</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Module-level helpers used by a single module (log events, <code>disks_of</code>,
+<code>_HumbleImport</code>, <code>ConfirmOverwriteDialog</code>, &hellip;) are copied into that module.
+Windows that open other windows import them from <code>windows/</code>.</p>
+        <h3>Today</h3>
+        <div class="scroll">
+<table>
+<thead><tr><th>then, in <code>windows/base.py</code></th><th>now</th></tr></thead>
+<tbody>
+<tr><td><code>_Window</code>, <code>_Dialog</code>, <code>Window</code></td><td>One class, <code>Window</code>, in <code>gui/dialogs/base.py</code> (972cc11)</td></tr>
+<tr><td><code>ConfigController</code>, <code>StateManager</code>, <code>State</code>, the <code>*Control</code> classes, <code>CompoundPrerequisite</code>, <code>YES</code>/<code>NO</code>/<code>MAYBE</code>, <code>_PlugMixin</code></td><td><code>gui/mainwindow/bricks/config/base.py</code> (678ef50)</td></tr>
+<tr><td><code>destroy_on_exit</code></td><td>Gone: the dialogs close in their response handlers (5ee4de0)</td></tr>
+<tr><td><code>iter_tree_model</code>, <code>VALIDKEY</code></td><td>Gone</td></tr>
+<tr><td><code>load_pixbuf()</code>, <code>pango_attr_list()</code>, <code>_()</code></td><td><code>gui/graphics.py</code> (115df13), <code>gui/pango.py</code> (bb12a63), <code>virtualbricks.i18n</code></td></tr>
+</tbody>
+</table>
+</div>
+      </section>
+
+      <section id="naming">
+        <h2><span class="num">&sect;3</span>Naming schema</h2>
+<p>Widget attributes are named <code>&lt;purpose&gt;_&lt;kind&gt;</code> in snake_case:</p>
+<div class="scroll">
+<table>
+<thead>
+<tr>
+<th>Widget</th>
+<th>Suffix</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>root <code>Gtk.Dialog</code> / <code>Gtk.Window</code> / <code>Gtk.Assistant</code></td>
+<td><code>dialog</code> / <code>window</code> / <code>assistant</code></td>
+<td><code>self.dialog</code></td>
+</tr>
+<tr>
+<td>root of a brick configuration panel</td>
+<td><code>panel</code></td>
+<td><code>self.panel</code></td>
+</tr>
+<tr>
+<td><code>Button</code>, <code>ToolButton</code>, <code>LinkButton</code></td>
+<td><code>_button</code></td>
+<td><code>ok_button</code>, <code>new_brick_button</code></td>
+</tr>
+<tr>
+<td><code>CheckButton</code> / <code>RadioButton</code> / <code>Switch</code></td>
+<td><code>_check</code> / <code>_radio</code> / <code>_switch</code></td>
+<td><code>kvm_check</code>, <code>dhcp_radio</code>, <code>systray_switch</code></td>
+</tr>
+<tr>
+<td><code>Entry</code> / <code>SpinButton</code> / <code>ComboBox</code></td>
+<td><code>_entry</code> / <code>_spin</code> / <code>_combo</code></td>
+<td><code>brick_name_entry</code>, <code>ram_spin</code>, <code>argv0_combo</code></td>
+</tr>
+<tr>
+<td><code>FileChooserButton</code></td>
+<td><code>_chooser</code></td>
+<td><code>cdrom_chooser</code></td>
+</tr>
+<tr>
+<td><code>Label</code> / <code>Image</code> / <code>ProgressBar</code></td>
+<td><code>_label</code> / <code>_image</code> / <code>_progress</code> (root: <code>progress</code>)</td>
+<td><code>primary_label</code>, <code>topology_image</code></td>
+</tr>
+<tr>
+<td><code>TreeView</code> / <code>TreeViewColumn</code> / cell renderers</td>
+<td><code>_view</code> / <code>_column</code> / <code>_cell</code></td>
+<td><code>bricks_view</code>, <code>name_column</code>, <code>name_cell</code></td>
+</tr>
+<tr>
+<td><code>ListStore</code>, <code>TreeStore</code>, <code>widgets.List</code> / <code>TreeModelFilter</code></td>
+<td><code>_store</code> / <code>_filter</code></td>
+<td><code>bricks_store</code>, <code>running_filter</code></td>
+</tr>
+<tr>
+<td><code>Adjustment</code> / <code>TextBuffer</code> / <code>TextView</code></td>
+<td><code>_adjustment</code> / <code>_buffer</code> / <code>_text</code></td>
+<td><code>probability_adjustment</code>, <code>readme_text</code></td>
+</tr>
+<tr>
+<td><code>Notebook</code> / <code>Stack</code> / <code>Menu</code> / <code>MenuItem</code></td>
+<td><code>_notebook</code> / <code>_stack</code> / <code>_menu</code> / <code>_item</code></td>
+<td><code>main_notebook</code>, <code>file_open_item</code></td>
+</tr>
+<tr>
+<td><code>Box</code> / <code>Grid</code> / <code>Frame</code> / <code>ScrolledWindow</code></td>
+<td><code>_box</code> / <code>_grid</code> / <code>_frame</code> / <code>_scrolled</code></td>
+<td><code>ipconfig_grid</code>, <code>config_frame</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>Local widgets with a signal handler follow the schema too (their name is in
+the handler name); the other local widgets only use snake_case of the Glade
+id (<code>tlbBricks</code> &rarr; <code>tlb_bricks</code>).</li>
+<li>Handlers are <code>on_&lt;widget&gt;_&lt;signal&gt;</code>: <code>on_dialog_response</code>,
+<code>on_ok_button_clicked</code>, <code>on_bricks_view_row_activated</code>.</li>
+<li>The Gtk <code>name</code> property set in Glade is unchanged (<code>NewBrickDialog</code> reads
+it to know the brick type).</li>
+<li><code>VBGUI.wndMain</code> is now <code>VBGUI.window</code>; <code>gui.py</code> was updated.
+<code>ImportDialog.assistant</code> is now the widget itself (the property was removed);
+<code>Freezer.wait_window</code> is now <code>Freezer.window</code>.</li>
+</ul>
+      </section>
+
+      <section id="files">
+        <h2><span class="num">&sect;4</span>Converted files</h2>
+<p>&quot;(dialogs)&quot; and &quot;(gui)&quot; tell in which module the class was before: <code>dialogs.py</code>
+(removed) or <code>gui.py</code>.</p>
+<div class="scroll">
+<table>
+<thead>
+<tr>
+<th>.ui file</th>
+<th>module</th>
+<th>classes (origin)</th>
+<th>root (Glade id)</th>
+<th>notes</th>
+<th>today, under <code>gui/</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>about.ui</td>
+<td>about.py</td>
+<td><code>AboutDialog</code></td>
+<td><code>AboutDialog</code></td>
+<td>Your version, not regenerated.</td>
+<td><code>dialogs/</code></td>
+</tr>
+<tr>
+<td>attachevent.ui</td>
+<td>attachevent.py</td>
+<td><code>AttachEventDialog</code> (dialogs)</td>
+<td><code>AttachEventDialog</code></td>
+<td></td>
+<td>Removed in d20e508: When It Starts and When It Stops in the menu of a brick (step 8)</td>
+</tr>
+<tr>
+<td>brickselection.ui</td>
+<td>brickselection.py</td>
+<td><code>BrickSelectionDialog</code> (dialogs)</td>
+<td><code>BrickSelectionDialog</code></td>
+<td></td>
+<td>Removed in 3c482c2: New Event asks a name and a delay (step 8)</td>
+</tr>
+<tr>
+<td>captureconfig.ui</td>
+<td>captureconfig.py</td>
+<td><code>CaptureConfigController</code> (gui)</td>
+<td><code>grid1</code></td>
+<td></td>
+<td><code>mainwindow/bricks/config/</code></td>
+</tr>
+<tr>
+<td>commitdialog.ui</td>
+<td>commitdialog.py</td>
+<td><code>CommitDialog</code> (new)</td>
+<td><code>CommitImageDialog</code></td>
+<td>&#x26a0; Unused, see below. 5 TODO stubs.</td>
+<td>Removed in 609fb21 (step 9)</td>
+</tr>
+<tr>
+<td>commitimagedialog.ui</td>
+<td>commitimagedialog.py</td>
+<td><code>CommitImageDialog</code> (dialogs)</td>
+<td><code>CommitImageDialog</code></td>
+<td></td>
+<td>Removed in 609fb21: Merge, in the menu of a disk (step 9)</td>
+</tr>
+<tr>
+<td>confirmdialog.ui</td>
+<td>confirmdialog.py</td>
+<td><code>_ConfirmDialog</code>, <code>DeleteBrickConfirmDialog</code>, <code>DeleteEventConfirmDialog</code>, <code>DeleteLinkConfirmDialog</code>, <code>DeleteProjectConfirmDialog</code> (dialogs)</td>
+<td><code>ConfirmDialog</code></td>
+<td><code>on_ConfirmDialog_response</code> stub in the base class, implemented by every subclass.</td>
+<td><code>dialogs/</code></td>
+</tr>
+<tr>
+<td>createimagedialog.ui</td>
+<td>createimagedialog.py</td>
+<td><code>CreateImageDialog</code> (dialogs)</td>
+<td><code>CreateImageDialog</code></td>
+<td></td>
+<td>Removed in 3430701: Add Image, New Empty Disk (step 9)</td>
+</tr>
+<tr>
+<td>disklibrary.ui</td>
+<td>disklibrary.py</td>
+<td><code>DisksLibraryWindow</code> (dialogs)</td>
+<td><code>DisksLibraryWindow</code></td>
+<td></td>
+<td>Removed in 3430701: the Images tab (step 9)</td>
+</tr>
+<tr>
+<td>ethernetdialog.ui</td>
+<td>ethernetdialog.py</td>
+<td><code>BaseEthernetDialog</code>, <code>AddEthernetDialog</code>, <code>EditEthernetDialog</code> (dialogs)</td>
+<td><code>EthernetDialog</code></td>
+<td></td>
+<td><code>dialogs/</code></td>
+</tr>
+<tr>
+<td>eventcommand.ui</td>
+<td>eventcommand.py</td>
+<td><code>ShellCommandDialog</code> (dialogs)</td>
+<td><code>ShellCommandDialog</code></td>
+<td>Uses <code>EventControllerMixin</code> from eventconfig.py.</td>
+<td>Removed in 3c482c2: the editor of actions (step 8)</td>
+</tr>
+<tr>
+<td>eventconfig.ui</td>
+<td>eventconfig.py</td>
+<td><code>EventControllerMixin</code> (dialogs), <code>EventConfigController</code> (gui)</td>
+<td><code>vbox1</code></td>
+<td></td>
+<td>Removed in fb06838: the editor of actions (step 8)</td>
+</tr>
+<tr>
+<td>exportproject.ui</td>
+<td>exportproject.py</td>
+<td><code>ExportProjectDialog</code> (dialogs)</td>
+<td><code>ExportProjectDialog</code></td>
+<td><code>super(Window, self).__init__()</code> &rarr; <code>Window.__init__(self)</code>, same method called.</td>
+<td><code>dialogs/</code>, rewritten (step 4)</td>
+</tr>
+<tr>
+<td>importdialog.ui</td>
+<td>importdialog.py</td>
+<td><code>ImportDialog</code> (dialogs)</td>
+<td><code>ImportDialog</code></td>
+<td>See the Assistant action area below.</td>
+<td><code>dialogs/</code>, rewritten on one page (step 4)</td>
+</tr>
+<tr>
+<td>loadimagedialog.ui</td>
+<td>loadimagedialog.py</td>
+<td><code>LoadImageDialog</code> (dialogs)</td>
+<td><code>LoadImageDialog</code></td>
+<td></td>
+<td>Removed in 3430701: Add Image, Existing Image (step 9)</td>
+</tr>
+<tr>
+<td>logging.ui</td>
+<td>logging.py</td>
+<td><code>LoggingWindow</code> (dialogs)</td>
+<td><code>LoggingWindow</code></td>
+<td></td>
+<td><code>dialogs/</code>, rewritten as a console (step 3)</td>
+</tr>
+<tr>
+<td>netemuconfig.ui</td>
+<td>netemuconfig.py</td>
+<td><code>NetemuConfigController</code> (gui)</td>
+<td><code>netemu_config_panel</code></td>
+<td></td>
+<td><code>mainwindow/bricks/config/</code></td>
+</tr>
+<tr>
+<td>networkcards.ui</td>
+<td>networkcards.py</td>
+<td><code>NetworkCards</code> (new)</td>
+<td><code>window1</code></td>
+<td>&#x26a0; Unused, see below. 2 TODO stubs.</td>
+<td><code>mainwindow/bricks/config/</code>, still unused</td>
+</tr>
+<tr>
+<td>newbrick.ui</td>
+<td>newbrick.py</td>
+<td><code>NewBrickDialog</code> (dialogs)</td>
+<td><code>NewBrickDialog</code></td>
+<td></td>
+<td><code>dialogs/</code></td>
+</tr>
+<tr>
+<td>newevent.ui</td>
+<td>newevent.py</td>
+<td><code>NewEventDialog</code> (dialogs)</td>
+<td><code>NewEventDialog</code></td>
+<td></td>
+<td>Replaced in 3c482c2 by a new New Event, <code>mainwindow/events/newevent.py</code> (step 8)</td>
+</tr>
+<tr>
+<td>progressbardialog.ui</td>
+<td>progressbardialog.py</td>
+<td><code>ProgressBarDialog</code> (dialogs)</td>
+<td><code>ProgressBarDialog</code></td>
+<td></td>
+<td><code>dialogs/</code></td>
+</tr>
+<tr>
+<td>projectlistdialog.ui</td>
+<td>projectlistdialog.py</td>
+<td><code>_ProjectListDialog</code>, <code>OpenProjectDialog</code>, <code>DeleteProjectDialog</code> (dialogs)</td>
+<td><code>ProjectListDialog</code></td>
+<td></td>
+<td>Removed in a1b1887: the Projects window (step 4)</td>
+</tr>
+<tr>
+<td>qemuconfig.ui</td>
+<td>qemuconfig.py</td>
+<td><code>QemuConfigController</code> (gui)</td>
+<td><code>box_vmconfig</code></td>
+<td></td>
+<td><code>mainwindow/bricks/config/</code>; its Drives tab rewritten (step 9)</td>
+</tr>
+<tr>
+<td>renamedialog.ui</td>
+<td>renamedialog.py</td>
+<td><code>RenameDialog</code> (dialogs)</td>
+<td><code>RenameDialog</code></td>
+<td></td>
+<td><code>dialogs/</code></td>
+</tr>
+<tr>
+<td>saveprojectasdialog.ui</td>
+<td>saveprojectasdialog.py</td>
+<td><code>SaveProjectAsDialog</code> (dialogs)</td>
+<td><code>SaveProjectAsDialog</code></td>
+<td></td>
+<td>Removed in a1b1887: Duplicate (step 4)</td>
+</tr>
+<tr>
+<td>settings.ui</td>
+<td>settings.py</td>
+<td><code>SettingsDialog</code> (dialogs)</td>
+<td><code>SettingsDialog</code></td>
+<td></td>
+<td><code>dialogs/</code>, with a tab for the application and one for the project (e203b56)</td>
+</tr>
+<tr>
+<td>simpleentry.ui</td>
+<td>simpleentry.py</td>
+<td><code>SimpleEntryDialog</code>, <code>NewProjectDialog</code>, <code>RenameProjectDialog</code> (dialogs)</td>
+<td><code>SimpleEntryDialog</code></td>
+<td></td>
+<td>Removed in a1b1887: <code>projectname.py</code> (step 4)</td>
+</tr>
+<tr>
+<td>switchconfig.ui</td>
+<td>switchconfig.py</td>
+<td><code>SwitchConfigController</code> (gui)</td>
+<td><code>table</code></td>
+<td></td>
+<td><code>mainwindow/bricks/config/</code></td>
+</tr>
+<tr>
+<td>switchwrapperconfig.ui</td>
+<td>switchwrapperconfig.py</td>
+<td><code>SwitchWrapperConfigController</code> (gui)</td>
+<td><code>table1</code></td>
+<td></td>
+<td><code>mainwindow/bricks/config/</code></td>
+</tr>
+<tr>
+<td>tapconfig.ui</td>
+<td>tapconfig.py</td>
+<td><code>TapConfigController</code> (gui)</td>
+<td><code>table1</code></td>
+<td></td>
+<td><code>mainwindow/bricks/config/</code></td>
+</tr>
+<tr>
+<td>tunnellconfig.ui</td>
+<td>tunnellconfig.py</td>
+<td><code>TunnelListenConfigController</code> (gui)</td>
+<td><code>table1</code></td>
+<td></td>
+<td><code>mainwindow/bricks/config/</code></td>
+</tr>
+<tr>
+<td>tunnelcconfig.ui</td>
+<td>tunnelcconfig.py</td>
+<td><code>TunnelClientConfigController</code> (gui)</td>
+<td><code>table1</code></td>
+<td>Subclass of <code>TunnelListenConfigController</code> with its own <code>build_ui()</code>.</td>
+<td><code>mainwindow/bricks/config/</code></td>
+</tr>
+<tr>
+<td>usbdev.ui</td>
+<td>usbdev.py</td>
+<td><code>UsbDevDialog</code> (dialogs)</td>
+<td><code>UsbDevDialog</code></td>
+<td></td>
+<td><code>dialogs/</code></td>
+</tr>
+<tr>
+<td>userwait.ui</td>
+<td>userwait.py</td>
+<td><code>Freezer</code>, <code>ProgressBar</code> (dialogs)</td>
+<td><code>UserWaitWindow</code></td>
+<td>See translations below.</td>
+<td><code>dialogs/</code></td>
+</tr>
+<tr>
+<td>virtualbricks.ui</td>
+<td>virtualbricks.py</td>
+<td><code>VBGUI</code> with <code>TopologyMixin</code>, <code>ReadmeMixin</code>, <code>_Root</code>, <code>BricksBindingList</code>, <code>EventsBindingList</code>, <code>ProgressBar</code> (gui)</td>
+<td><code>wndMain</code></td>
+<td>&#x26a0; Constructor changed, see below.</td>
+<td><code>mainwindow/window.py</code>, with a class per tab (6cd66cf to 24161e0)</td>
+</tr>
+<tr>
+<td>wireconfig.ui</td>
+<td>wireconfig.py</td>
+<td><code>WireConfigController</code> (gui)</td>
+<td><code>vbox</code></td>
+<td></td>
+<td><code>mainwindow/bricks/config/</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+      </section>
+
+      <section id="features">
+        <h2><span class="num">&sect;5</span>How the Glade features are converted</h2>
+<ul>
+<li><strong>Properties</strong>: passed to the constructor as keyword arguments, in Glade
+order (<code>Gtk.Label(label=_(&quot;Name:&quot;), xalign=0, ...)</code>), enums/flags as
+<code>Gtk.Align.START</code>. <code>Gtk.TreeViewColumn</code>, <code>Gtk.ListStore</code> and <code>widgets.List</code>
+don't accept keyword properties: they use <code>set_properties()</code>.</li>
+<li><strong>Packing</strong>: <code>Gtk.Box</code> &rarr; <code>pack_start</code>/<code>pack_end(child, expand, fill, padding)</code>; a Box child without packing uses <code>add()</code>, like Gtk.Builder, that
+applies the box default <em>expand</em>. <code>Gtk.Grid</code> &rarr; <code>attach()</code>, <code>Gtk.Notebook</code> &rarr;
+<code>append_page(page, tab_label)</code>, <code>Gtk.Stack</code> &rarr; <code>add_titled()</code>/<code>add_named()</code>,
+<code>Gtk.Assistant</code> &rarr; <code>append_page()</code> + <code>set_page_*()</code>, <code>Gtk.Toolbar</code> &rarr;
+<code>insert()</code>, <code>Gtk.ButtonBox</code> secondary children &rarr; <code>set_child_secondary()</code>.
+<code>reorder_child()</code> only where the Glade position differs from the packing
+order.</li>
+<li><strong>Dialog buttons</strong>: <code>add_action_widget(button, Gtk.ResponseType.X)</code> keeps
+the response ids. It packs the button at the end and aligns it to the
+baseline, so the Glade packing and <code>valign</code> are restored right after.</li>
+<li><strong>Tree views and combo boxes</strong>: columns, cell renderers and their
+<code>add_attribute()</code> mappings; list stores with their column types and rows.</li>
+<li><strong>Images</strong>: pixbufs are loaded by <code>load_pixbuf(&quot;name.png&quot;)</code> from
+<code>virtualbricks/gui/data</code>, the same file Gtk.Builder used, with a comment.
+Stock ids and icon names are unchanged.</li>
+<li><strong>Mnemonics and accelerators</strong>: labels keep <code>_</code> and <code>use_underline=True</code>;
+the five menu accelerators of the main window (Ctrl+O, Ctrl+S, Ctrl+Q,
+Ctrl+P, F1) use <code>add_accelerator()</code> with a <code>Gtk.AccelGroup</code> added to
+<code>window</code> (<code>wndMain</code> in Glade).</li>
+<li><strong>Translatable strings</strong>: <code>_(&quot;...&quot;)</code>, domain <code>virtualbricks</code>.</li>
+<li><strong>Custom widgets</strong> from <code>glade-catalog.xml</code> (<code>widgets.TreeView</code>,
+<code>widgets.ComboBox</code>, <code>widgets.List</code>, <code>widgets.CellRendererFormattable</code>,
+<code>widgets.CellRendererBrickIcon</code>) are created from
+<code>virtualbricks.gui.widgets</code> and marked with a comment.</li>
+<li><strong>Placeholders</strong>: <code># TODO: empty Glade placeholder, nothing to create.</code></li>
+<li><strong>Deferred settings</strong>: radio groups whose leader is created later
+(<code>join_group()</code>), default and focus widgets (<code>grab_default()</code>,
+<code>grab_focus()</code>) and accelerators are set after the whole tree is built.</li>
+<li><strong>Signal handlers</strong>: the implementations come from the original classes.
+Stubs (with typed signature and <code>data=None</code>) only where no class defines the
+handler: the two unused files and <code>_ConfirmDialog.on_ConfirmDialog_response</code>
+(implemented by all its subclasses).</li>
+</ul>
+      </section>
+
+      <section id="checks">
+        <h2><span class="num">&sect;6</span>Verification</h2>
+<ul>
+<li><strong>Widget tree</strong>: for every file, the tree built by <code>build_ui()</code> was
+compared with the one built by Gtk.Builder from the <code>.ui</code> file: types, all
+readable properties, packing (child) properties, children order, notebook
+tabs, tree columns and cells, list store contents, dialog response ids,
+assistant pages, accelerators, default and focus widgets. All 35 generated
+modules match. <code>about.py</code> differs only by the version string, set by your
+<code>build_ui()</code>.</li>
+<li><strong>Signals</strong>: every <code>&lt;signal&gt;</code> of every Glade file is connected to a method
+that exists in the class.</li>
+<li><strong>Names</strong>: no widget attribute shadows a method or attribute of its class.</li>
+<li><strong>Behaviour</strong>: every class was constructed and shown (or its configuration
+panel built, including the Qemu one) with the same arguments using the
+original and the new class, with the same result. Name validation,
+radio buttons, sensitivity and response handlers were compared on a few
+dialogs; <code>VBGUI</code> starts and shows the main window.</li>
+<li><strong>Tests</strong>: <code>virtualbricks.tests.test_gui</code> run against the new classes gives
+the same result as the original (14 passed, 3 expected failures) after one
+change to its <code>Readme</code> stub, that fakes <code>get_object(&quot;readme_textview&quot;)</code>:
+the mixin now reads <code>self.readme_textview</code>.</li>
+<li>pyflakes is clean on <code>windows/</code>.</li>
+</ul>
+      </section>
+
+      <section id="notes">
+        <h2><span class="num">&sect;7</span>Notes and warnings</h2>
+<h3>Wiring (done)</h3>
+<p><code>dialogs.py</code> was deleted. From <code>gui.py</code> were removed the copies of what is now
+in this package: <code>ConfigController</code>, <code>_PlugMixin</code>, the state classes
+(<code>State</code>, <code>StateManager</code>, the <code>*Control</code> classes, <code>CompoundPrerequisite</code>,
+<code>YES</code>/<code>NO</code>/<code>MAYBE</code>), <code>ProgressBar</code>, the binding lists, the Qemu cell helpers
+and constants, the unused log events and <code>load_ui()</code>. <code>gui.py</code> imports
+<code>AttachEventDialog</code>, <code>EditEthernetDialog</code>, <code>ProgressBar</code>, <code>RenameDialog</code>,
+<code>VBGUI</code> and the configuration panels from <code>virtualbricks.gui.windows</code>.</p>
+<p>Removed from <code>virtualbricks/tests</code>:</p>
+<ul>
+<li><code>test_dialogs.py</code>: the tests of <code>UsbDevWindow</code> (a class that doesn't exist
+at <code>HEAD</code> either) and of <code>accumulate_data()</code> (a helper only that test used);
+the other tests now use the classes of <code>windows/</code>.</li>
+<li><code>test_gui.py</code> takes the state classes from <code>windows.base</code>.</li>
+</ul>
+<h3>Unused Glade files (converted, then deleted with the rest)</h3>
+<ul>
+<li><code>commitdialog.ui</code>: the class that loaded it (an older <code>CommitImageDialog</code>)
+is commented out in <code>dialogs.py</code>; <code>commitimagedialog.ui</code> replaced it. Only
+the UI is converted, as <code>CommitDialog</code>, with 5 TODO stubs.</li>
+<li><code>networkcards.ui</code>: not referenced by any code (the network cards are in
+<code>qemuconfig.ui</code>). Converted as <code>NetworkCards</code>, with 2 TODO stubs.</li>
+</ul>
+<p>Both can probably be deleted together with their <code>.ui</code> file. <em>Today:</em> <code>commitdialog.py</code> went with the disk images redesign (609fb21); <code>networkcards.py</code> is in <code>gui/mainwindow/bricks/config/</code>, still unused.</p>
+<h3>Differences from Gtk.Builder</h3>
+<ul>
+<li><code>Freezer</code> (userwait.ui) loaded its file without a translation domain, so
+its two strings were never translated; they now use the <code>virtualbricks</code>
+domain.</li>
+<li>Translations go through Python <code>gettext.dgettext(&quot;virtualbricks&quot;, ...)</code>
+instead of the C gettext used by Gtk.Builder, with the same domain as the
+<code>gettext.install()</code> in <code>brickfactory.py</code>.</li>
+<li><code>GtkAssistant</code> has no public accessor for its internal action area in
+GTK 3. Glade only sets default values on it (<code>can_focus=False</code>), so nothing
+is lost. A TODO comment marks the spot. The <code>has_padding</code> packing Glade set
+on it was rejected by GTK anyway (a critical warning when loading the <code>.ui</code>).</li>
+<li><code>importdialog.ui</code> has a toplevel <code>image1</code> that nothing uses; it is not
+created (TODO comment in <code>ImportDialog.build_ui()</code>).</li>
+<li><code>VBGUI</code> now connects its signals at the start of <code>__init__</code> (in
+<code>build_ui()</code>) instead of in the middle. None of its signals can fire during
+the steps in between.</li>
+<li><code>gi.require_version(&quot;Gtk&quot;, &quot;3.0&quot;)</code> before the imports, like <code>about.py</code>:
+pycodestyle reports E402 for it.</li>
+</ul>
+<h3>glade-catalog.xml</h3>
+<ul>
+<li><code>TreeViewColumn</code> is declared in the catalog but not defined in
+<code>widgets.py</code> and not used by any <code>.ui</code> file.</li>
+<li><code>List</code> objects declare a <code>PyObject</code> column in the Glade files; <code>widgets.List</code>
+always creates that single column, so the declaration is not repeated.</li>
+</ul>
+<h3>Existing issues, copied as they are</h3>
+<ul>
+<li><code>EventConfigController.on_action_treeview_key_press_event</code> uses
+<code>self.model</code>, which doesn't exist (it raised AttributeError before too).</li>
+<li><code>VBGUI.on_events_selection_changed</code> uses <code>self.__state_event_config</code>, which
+is never set (no signal is connected to it).</li>
+<li><code>QemuConfigController.on_icon_filechooser_file_set</code> raises
+<code>NotImplementedError</code>.</li>
+<li><code>virtualbricks.tests.test_dialogs.build_model()</code> uses <code>MODEL.keys()[0]</code>
+(Python 2), so 3 tests of <code>TestExportDialog</code> error.</li>
+<li>Some lines copied from <code>gui.py</code> are longer than 79 characters.</li>
+</ul>
+<p><em>Today</em> (28 September):</p>
+<ul>
+<li><code>EventConfigController</code> went with the editor of actions (fb06838), where
+deleting an action works.</li>
+<li><code>VBGUI.on_events_selection_changed</code> went with the Events tab of its own
+(e297d9c).</li>
+<li><code>QemuConfigController.on_icon_chooser_file_set</code> still raises
+<code>NotImplementedError</code> when a file is chosen; OK saves the icon.</li>
+<li><code>test_dialogs.py</code> went with the old tests (8584bba); the new suite has none
+of it.</li>
+<li>black formats the package (ae147e3), with lines of at most 79 characters.</li>
+</ul>
+      </section>
+
+      <section id="ids">
+        <h2><span class="num">&sect;A</span>Glade ids and attributes</h2>
+<p><strong>attachevent.py</strong>: <code>lEvents</code> &rarr; <code>events_store</code>, <code>AttachEventDialog</code> &rarr; <code>dialog</code>, <code>tvStart</code> &rarr; <code>start_view</code>, <code>tvStop</code> &rarr; <code>stop_view</code>, <code>btnStartSelClear</code> &rarr; <code>clear_start_button</code>, <code>btnStopSelClear</code> &rarr; <code>clear_stop_button</code></p>
+<p><strong>brickselection.py</strong>: <code>lBricks</code> &rarr; <code>bricks_store</code>, <code>tmfAdd</code> &rarr; <code>added_filter</code>, <code>tmfAvl</code> &rarr; <code>available_filter</code>, <code>BrickSelectionDialog</code> &rarr; <code>dialog</code>, <code>tvAvailables</code> &rarr; <code>available_view</code>, <code>tvcAvailables</code> &rarr; <code>available_column</code>, <code>crName1</code> &rarr; <code>available_name_cell</code>, <code>tvAdded</code> &rarr; <code>added_view</code>, <code>tvcAdded</code> &rarr; <code>added_column</code>, <code>crName2</code> &rarr; <code>added_name_cell</code>, <code>btnAdd</code> &rarr; <code>add_button</code>, <code>btnRemove</code> &rarr; <code>remove_button</code></p>
+<p><strong>captureconfig.py</strong>: <code>grid1</code> &rarr; <code>panel</code>, <code>combobox1</code> &rarr; <code>sock_combo</code>, <code>combobox2</code> &rarr; <code>interface_combo</code></p>
+<p><strong>commitdialog.py</strong>: <code>CommitImageDialog</code> &rarr; <code>dialog</code></p>
+<p><strong>commitimagedialog.py</strong>: <code>CommitImageDialog</code> &rarr; <code>dialog</code>, <code>stack</code> &rarr; <code>action_stack</code>, <code>cowFileChooserButton</code> &rarr; <code>cow_chooser</code>, <code>disksComboBox</code> &rarr; <code>disks_combo</code>, <code>diskCellRendererText</code> &rarr; <code>disk_cell</code></p>
+<p><strong>confirmdialog.py</strong>: <code>ConfirmDialog</code> &rarr; <code>dialog</code>, <code>primaryLabel</code> &rarr; <code>primary_label</code>, <code>secondaryLabel</code> &rarr; <code>secondary_label</code></p>
+<p><strong>createimagedialog.py</strong>: <code>CreateImageDialog</code> &rarr; <code>dialog</code>, <code>createButton</code> &rarr; <code>create_button</code>, <code>imageNameEntry</code> &rarr; <code>image_name_entry</code>, <code>formatComboBox</code> &rarr; <code>format_combo</code>, <code>sizeSpinButton</code> &rarr; <code>size_spin</code>, <code>unitComboBox</code> &rarr; <code>unit_combo</code>, <code>folderFileChooserButton</code> &rarr; <code>folder_chooser</code></p>
+<p><strong>disklibrary.py</strong>: <code>descriptionTextBuffer</code> &rarr; <code>description_buffer</code>, <code>DisksLibraryWindow</code> &rarr; <code>window</code>, <code>stackWidget</code> &rarr; <code>library_stack</code>, <code>imageListBox</code> &rarr; <code>image_list_box</code>, <code>imagesTreeView</code> &rarr; <code>images_view</code>, <code>nameTreeViewColumn</code> &rarr; <code>name_column</code>, <code>nameCellRendererText</code> &rarr; <code>name_cell</code>, <code>pathTreeViewColumn</code> &rarr; <code>path_column</code>, <code>pathCellRendererText</code> &rarr; <code>path_cell</code>, <code>usedByTreeViewColumn</code> &rarr; <code>used_by_column</code>, <code>usedByCellRendererText</code> &rarr; <code>used_by_cell</code>, <code>masterBrickTreeViewColumn</code> &rarr; <code>master_brick_column</code>, <code>masterBrickCellRendererText</code> &rarr; <code>master_brick_cell</code>, <code>cowsTreeViewColumn</code> &rarr; <code>cows_column</code>, <code>cowsCellRendererText</code> &rarr; <code>cows_cell</code>, <code>sizeTreeViewColumn</code> &rarr; <code>size_column</code>, <code>sizeCellRendererText</code> &rarr; <code>size_cell</code>, <code>editButton</code> &rarr; <code>edit_button</code>, <code>editImageBox</code> &rarr; <code>edit_image_box</code>, <code>pathFileChooserButton</code> &rarr; <code>path_chooser</code>, <code>nameEntry</code> &rarr; <code>name_entry</code>, <code>cancelButton</code> &rarr; <code>cancel_button</code>, <code>closeButton</code> &rarr; <code>close_button</code>, <code>removeButton</code> &rarr; <code>remove_button</code>, <code>saveButton</code> &rarr; <code>save_button</code></p>
+<p><strong>ethernetdialog.py</strong>: <code>netmodel_model</code> &rarr; <code>nic_model_store</code>, <code>sock_model</code> &rarr; <code>sock_store</code>, <code>EthernetDialog</code> &rarr; <code>dialog</code></p>
+<p><strong>eventcommand.py</strong>: <code>actions_liststore</code> &rarr; <code>actions_store</code>, <code>ShellCommandDialog</code> &rarr; <code>dialog</code>, <code>action_treeview</code> &rarr; <code>actions_view</code>, <code>action_cellrenderer</code> &rarr; <code>action_cell</code>, <code>sh_cellrenderer</code> &rarr; <code>shell_cell</code></p>
+<p><strong>eventconfig.py</strong>: <code>actions_liststore</code> &rarr; <code>actions_store</code>, <code>vbox1</code> &rarr; <code>panel</code>, <code>action_treeview</code> &rarr; <code>actions_view</code>, <code>action_cellrenderer</code> &rarr; <code>action_cell</code>, <code>sh_cellrenderer</code> &rarr; <code>shell_cell</code></p>
+<p><strong>exportproject.py</strong>: <code>treestore1</code> &rarr; <code>files_store</code>, <code>ExportProjectDialog</code> &rarr; <code>dialog</code>, <code>treeview1</code> &rarr; <code>files_view</code>, <code>selected_cellrenderer</code> &rarr; <code>selected_cell</code>, <code>icon_cellrenderer</code> &rarr; <code>icon_cell</code>, <code>treeviewcolumn2</code> &rarr; <code>size_column</code>, <code>size_cellrenderer</code> &rarr; <code>size_cell</code>, <code>include_images_checkbutton</code> &rarr; <code>include_images_check</code></p>
+<p><strong>importdialog.py</strong>: <code>liststore1</code> &rarr; <code>save_images_store</code>, <code>liststore2</code> &rarr; <code>map_images_store</code>, <code>ImportDialog</code> &rarr; <code>assistant</code>, <code>intro_page</code> &rarr; <code>intro_grid</code>, <code>prjname_entry</code> &rarr; <code>project_name_entry</code>, <code>filechooserbutton</code> &rarr; <code>archive_chooser</code>, <code>opencheckbutton</code> &rarr; <code>open_check</code>, <code>overwritecheckbutton</code> &rarr; <code>overwrite_check</code>, <code>treeview1</code> &rarr; <code>save_images_view</code>, <code>pathcolumn1</code> &rarr; <code>save_path_column</code>, <code>cellrenderertext2</code> &rarr; <code>save_path_cell</code>, <code>treeview2</code> &rarr; <code>map_images_view</code>, <code>pathcolumn2</code> &rarr; <code>map_path_column</code>, <code>cellrenderertext4</code> &rarr; <code>map_path_cell</code>, <code>projectname_label</code> &rarr; <code>project_name_label</code>, <code>projectpath_label</code> &rarr; <code>project_path_label</code>, <code>imported_label</code> &rarr; <code>imported_images_label</code>, <code>vbox1</code> &rarr; <code>mapped_images_box</code>, <code>cellrenderertoggle1</code> &rarr; <code>save_image_cell</code></p>
+<p><strong>loadimagedialog.py</strong>: <code>descriptionTextBuffer</code> &rarr; <code>description_buffer</code>, <code>LoadImageDialog</code> &rarr; <code>dialog</code>, <code>okButton</code> &rarr; <code>ok_button</code>, <code>imageFileChooserButton</code> &rarr; <code>image_chooser</code>, <code>imageNameEntry</code> &rarr; <code>image_name_entry</code></p>
+<p><strong>logging.py</strong>: <code>LoggingWindow</code> &rarr; <code>window</code>, <code>textview</code> &rarr; <code>messages_text</code>, <code>closeButton</code> &rarr; <code>close_button</code>, <code>clearButton</code> &rarr; <code>clear_button</code>, <code>saveButton</code> &rarr; <code>save_button</code>, <code>reportBugLinkButton</code> &rarr; <code>report_bug_button</code></p>
+<p><strong>netemuconfig.py</strong>: <code>probAdjustment</code> &rarr; <code>probability_adjustment</code>, <code>lState</code> &rarr; <code>states_store</code>, <code>lexState</code> &rarr; <code>other_states_store</code>, <code>netemu_config_panel</code> &rarr; <code>panel</code>, <code>sock0_combobox</code> &rarr; <code>sock0_combo</code>, <code>sock1_combobox</code> &rarr; <code>sock1_combo</code>, <code>cbState</code> &rarr; <code>state_combo</code>, <code>crf1</code> &rarr; <code>state_cell</code>, <code>chanbufsize_spinbutton</code> &rarr; <code>chanbufsize_spin</code>, <code>chanbufsizer_spinbutton</code> &rarr; <code>chanbufsizer_spin</code>, <code>delay_spinbutton</code> &rarr; <code>delay_spin</code>, <code>delayr_spinbutton</code> &rarr; <code>delayr_spin</code>, <code>loss_spinbutton</code> &rarr; <code>loss_spin</code>, <code>lossr_spinbutton</code> &rarr; <code>lossr_spin</code>, <code>bandwidth_spinbutton</code> &rarr; <code>bandwidth_spin</code>, <code>bandwidthr_spinbutton</code> &rarr; <code>bandwidthr_spin</code>, <code>chanbufsize_checkbutton</code> &rarr; <code>chanbufsize_check</code>, <code>delay_checkbutton</code> &rarr; <code>delay_check</code>, <code>loss_checkbutton</code> &rarr; <code>loss_check</code>, <code>bandwidth_checkbutton</code> &rarr; <code>bandwidth_check</code>, <code>labelState</code> &rarr; <code>state_label</code>, <code>cbWeight</code> &rarr; <code>weight_combo</code>, <code>crf11</code> &rarr; <code>weight_cell</code>, <code>weight_spinbutton</code> &rarr; <code>weight_spin</code>, <code>stateEntry</code> &rarr; <code>state_name_entry</code>, <code>time_spinbutton</code> &rarr; <code>time_spin</code></p>
+<p><strong>networkcards.py</strong>: <code>window1</code> &rarr; <code>window</code>, <code>networkcards_treeview</code> &rarr; <code>network_cards_view</code></p>
+<p><strong>newbrick.py</strong>: <code>NewBrickDialog</code> &rarr; <code>dialog</code>, <code>okButton</code> &rarr; <code>ok_button</code>, <code>brickNameEntry</code> &rarr; <code>brick_name_entry</code></p>
+<p><strong>newevent.py</strong>: <code>NewEventDialog</code> &rarr; <code>dialog</code>, <code>start_button</code> &rarr; <code>start_radio</code>, <code>stop_button</code> &rarr; <code>stop_radio</code>, <code>config_button</code> &rarr; <code>config_radio</code>, <code>shell_button</code> &rarr; <code>shell_radio</code>, <code>collation_button</code> &rarr; <code>collation_radio</code></p>
+<p><strong>progressbardialog.py</strong>: <code>ProgressBarDialog</code> &rarr; <code>dialog</code>, <code>progressbar</code> &rarr; <code>progress</code></p>
+<p><strong>projectlistdialog.py</strong>: <code>projectsListstore</code> &rarr; <code>projects_store</code>, <code>ProjectListDialog</code> &rarr; <code>dialog</code>, <code>okButton</code> &rarr; <code>ok_button</code>, <code>projectsTreeView</code> &rarr; <code>projects_view</code>, <code>projectsTreeSelection</code> &rarr; <code>projects_selection</code></p>
+<p><strong>qemuconfig.py</strong>: <code>lArgv0</code> &rarr; <code>argv0_store</code>, <code>lBoot</code> &rarr; <code>boot_store</code>, <code>lCpu</code> &rarr; <code>cpu_store</code>, <code>lDevice</code> &rarr; <code>device_store</code>, <code>lImages</code> &rarr; <code>images_store</code>, <code>lMachine</code> &rarr; <code>machine_store</code>, <code>lSound</code> &rarr; <code>sound_store</code>, <code>plugsmodel</code> &rarr; <code>plugs_store</code>, <code>box_vmconfig</code> &rarr; <code>panel</code>, <code>cbBoot</code> &rarr; <code>boot_combo</code>, <code>crf4</code> &rarr; <code>boot_cell</code>, <code>snapshot_checkbutton</code> &rarr; <code>snapshot_check</code>, <code>rbDeviceen</code> &rarr; <code>device_radio</code>, <code>rbCdromen</code> &rarr; <code>cdrom_image_radio</code>, <code>cbMount</code> &rarr; <code>mount_combo</code>, <code>crf6</code> &rarr; <code>mount_cell</code>, <code>fcCdrom</code> &rarr; <code>cdrom_chooser</code>, <code>virtio_checkbutton</code> &rarr; <code>virtio_check</code>, <code>cbHda</code> &rarr; <code>hda_combo</code>, <code>crf7</code> &rarr; <code>hda_cell</code>, <code>cbHdb</code> &rarr; <code>hdb_combo</code>, <code>crf8</code> &rarr; <code>hdb_cell</code>, <code>cbHdc</code> &rarr; <code>hdc_combo</code>, <code>crf9</code> &rarr; <code>hdc_cell</code>, <code>cbHdd</code> &rarr; <code>hdd_combo</code>, <code>crf10</code> &rarr; <code>hdd_cell</code>, <code>cbFda</code> &rarr; <code>fda_combo</code>, <code>crf11</code> &rarr; <code>fda_cell</code>, <code>cbFdb</code> &rarr; <code>fdb_combo</code>, <code>crf12</code> &rarr; <code>fdb_cell</code>, <code>cbMtdblock</code> &rarr; <code>mtdblock_combo</code>, <code>crf13</code> &rarr; <code>mtdblock_cell</code>, <code>privatehda_checkbutton</code> &rarr; <code>hda_private_check</code>, <code>privatehdb_checkbutton</code> &rarr; <code>hdb_private_check</code>, <code>privatehdc_checkbutton</code> &rarr; <code>hdc_private_check</code>, <code>privatehdd_checkbutton</code> &rarr; <code>hdd_private_check</code>, <code>privatefda_checkbutton</code> &rarr; <code>fda_private_check</code>, <code>privatefdb_checkbutton</code> &rarr; <code>fdb_private_check</code>, <code>privatemtdblock_checkbutton</code> &rarr; <code>mtdblock_private_check</code>, <code>cbArgv0</code> &rarr; <code>argv0_combo</code>, <code>crf1</code> &rarr; <code>argv0_cell</code>, <code>cbCpu</code> &rarr; <code>cpu_combo</code>, <code>crf2</code> &rarr; <code>cpu_cell</code>, <code>cbMachine</code> &rarr; <code>machine_combo</code>, <code>crf3</code> &rarr; <code>machine_cell</code>, <code>cbKvm</code> &rarr; <code>kvm_check</code>, <code>smp_spinint</code> &rarr; <code>smp_spin</code>, <code>cbSound</code> &rarr; <code>sound_combo</code>, <code>crf5</code> &rarr; <code>sound_cell</code>, <code>ram_spinint</code> &rarr; <code>ram_spin</code>, <code>cbKvmsm</code> &rarr; <code>kvmsm_check</code>, <code>siKvmsmem</code> &rarr; <code>kvmsmem_spin</code>, <code>cbNovga</code> &rarr; <code>novga_check</code>, <code>vga_checkbutton</code> &rarr; <code>vga_check</code>, <code>cbVnc</code> &rarr; <code>vnc_check</code>, <code>lblVnc</code> &rarr; <code>vnc_display_label</code>, <code>siVncN</code> &rarr; <code>vnc_display_spin</code>, <code>sdl_checkbutton</code> &rarr; <code>sdl_check</code>, <code>portrait_checkbutton</code> &rarr; <code>portrait_check</code>, <code>cbUsbmode</code> &rarr; <code>usb_check</code>, <code>btnBind</code> &rarr; <code>bind_button</code>, <code>rtc_checkbutton</code> &rarr; <code>rtc_check</code>, <code>cbTdf</code> &rarr; <code>tdf_check</code>, <code>cfg_Qemu_keyboard_text</code> &rarr; <code>keyboard_entry</code>, <code>serial_checkbutton</code> &rarr; <code>serial_check</code>, <code>vlan_treeviewcolumn</code> &rarr; <code>vlan_column</code>, <code>vlan_cellrenderer</code> &rarr; <code>vlan_cell</code>, <code>connection_treeviewcolumn</code> &rarr; <code>connection_column</code>, <code>connection_cellrenderer</code> &rarr; <code>connection_cell</code>, <code>model_treeviewcolumn</code> &rarr; <code>model_column</code>, <code>model_cellrenderer</code> &rarr; <code>model_cell</code>, <code>mac_treeviewcolumn</code> &rarr; <code>mac_column</code>, <code>mac_cellrenderer</code> &rarr; <code>mac_cell</code>, <code>cbKernelen</code> &rarr; <code>kernel_check</code>, <code>cbInitrden</code> &rarr; <code>initrd_check</code>, <code>cbGdb</code> &rarr; <code>gdb_check</code>, <code>fcKernel</code> &rarr; <code>kernel_chooser</code>, <code>fcInitrd</code> &rarr; <code>initrd_chooser</code>, <code>kopt_textbutton</code> &rarr; <code>kernel_options_entry</code>, <code>lblGdbport</code> &rarr; <code>gdb_port_label</code>, <code>siGdbport</code> &rarr; <code>gdb_port_spin</code>, <code>qemuicon</code> &rarr; <code>icon_image</code>, <code>icon_filechooser</code> &rarr; <code>icon_chooser</code>, <code>networkcards_treeview</code> &rarr; <code>network_cards_view</code></p>
+<p><strong>renamedialog.py</strong>: <code>RenameDialog</code> &rarr; <code>dialog</code>, <code>okButton</code> &rarr; <code>ok_button</code>, <code>brickNameEntry</code> &rarr; <code>brick_name_entry</code></p>
+<p><strong>saveprojectasdialog.py</strong>: <code>projectsListstore</code> &rarr; <code>projects_store</code>, <code>SaveProjectAsDialog</code> &rarr; <code>dialog</code>, <code>okButton</code> &rarr; <code>ok_button</code>, <code>projectNameEntry</code> &rarr; <code>project_name_entry</code></p>
+<p><strong>settings.py</strong>: <code>SettingsDialog</code> &rarr; <code>dialog</code>, <code>termEntry</code> &rarr; <code>term_entry</code>, <code>sudoEntry</code> &rarr; <code>sudo_entry</code>, <code>systraySwitch</code> &rarr; <code>systray_switch</code>, <code>warnMissingSwitch</code> &rarr; <code>warn_missing_switch</code>, <code>vdePathFileChooserButton</code> &rarr; <code>vde_path_chooser</code>, <code>usePythonSwitch</code> &rarr; <code>use_python_switch</code>, <code>femalePlugsSwitch</code> &rarr; <code>female_plugs_switch</code>, <code>loopDetectionSwitch</code> &rarr; <code>loop_detection_switch</code>, <code>cowFormatComboBox</code> &rarr; <code>cow_format_combo</code>, <code>qemuPathFileChooserButton</code> &rarr; <code>qemu_path_chooser</code>, <code>enableKsmSwitch</code> &rarr; <code>enable_ksm_switch</code></p>
+<p><strong>simpleentry.py</strong>: <code>SimpleEntryDialog</code> &rarr; <code>dialog</code>, <code>label1</code> &rarr; <code>description_label</code></p>
+<p><strong>switchconfig.py</strong>: <code>table</code> &rarr; <code>panel</code>, <code>ports_spinbutton</code> &rarr; <code>ports_spin</code>, <code>fstp_checkbutton</code> &rarr; <code>fstp_check</code>, <code>hub_checkbutton</code> &rarr; <code>hub_check</code></p>
+<p><strong>switchwrapperconfig.py</strong>: <code>table1</code> &rarr; <code>panel</code>, <code>entry</code> &rarr; <code>path_entry</code></p>
+<p><strong>tapconfig.py</strong>: <code>table1</code> &rarr; <code>panel</code>, <code>nocfg_radiobutton</code> &rarr; <code>nocfg_radio</code>, <code>dhcp_radiobutton</code> &rarr; <code>dhcp_radio</code>, <code>manual_radiobutton</code> &rarr; <code>manual_radio</code>, <code>combobox</code> &rarr; <code>sock_combo</code>, <code>ipconfig_table</code> &rarr; <code>ipconfig_grid</code></p>
+<p><strong>tunnellconfig.py</strong>: <code>table1</code> &rarr; <code>panel</code>, <code>combobox</code> &rarr; <code>sock_combo</code>, <code>port_spinbutton</code> &rarr; <code>port_spin</code></p>
+<p><strong>tunnelcconfig.py</strong>: <code>table1</code> &rarr; <code>panel</code>, <code>combobox</code> &rarr; <code>sock_combo</code>, <code>localport_spinbutton</code> &rarr; <code>local_port_spin</code>, <code>port_spinbutton</code> &rarr; <code>port_spin</code></p>
+<p><strong>usbdev.py</strong>: <code>UsbDevDialog</code> &rarr; <code>dialog</code>, <code>devicesTreeView</code> &rarr; <code>devices_view</code>, <code>selectedCellRendererToggle</code> &rarr; <code>selected_cell</code>, <code>idTreeViewColumn</code> &rarr; <code>id_column</code>, <code>idCellRendererText</code> &rarr; <code>id_cell</code>, <code>descriptionTreeViewColumn</code> &rarr; <code>description_column</code>, <code>descriptionCellRendererText</code> &rarr; <code>description_cell</code></p>
+<p><strong>userwait.py</strong>: <code>UserWaitWindow</code> &rarr; <code>window</code>, <code>progressbar</code> &rarr; <code>progress</code></p>
+<p><strong>virtualbricks.py</strong>: <code>lBricks</code> &rarr; <code>bricks_store</code>, <code>lRunning</code> &rarr; <code>running_filter</code>, <code>lEvents</code> &rarr; <code>events_store</code>, <code>wndMain</code> &rarr; <code>window</code>, <code>btnConfigure</code> &rarr; <code>configure_brick_button</code>, <code>tvBricks</code> &rarr; <code>bricks_view</code>, <code>btnConfigureEvent</code> &rarr; <code>configure_event_button</code>, <code>tvEvents</code> &rarr; <code>events_view</code>, <code>tvJobs</code> &rarr; <code>jobs_view</code>, <code>topology_tb</code> &rarr; <code>topology_vertical_radio</code>, <code>image_topology</code> &rarr; <code>topology_image</code>, <code>readme_textview</code> &rarr; <code>readme_text</code>, <code>configframe</code> &rarr; <code>config_frame</code>, <code>menuSystray</code> &rarr; <code>systray_menu</code>, <code>statusicon</code> &rarr; <code>status_icon</code>, <code>menuFileNew</code> &rarr; <code>file_new_item</code>, <code>menuFileOpen</code> &rarr; <code>file_open_item</code>, <code>menuFileRename</code> &rarr; <code>file_rename_item</code>, <code>menuFileSave</code> &rarr; <code>file_save_item</code>, <code>menuFileSaveAs</code> &rarr; <code>file_save_as_item</code>, <code>menuFileImport</code> &rarr; <code>file_import_item</code>, <code>menuFileExport</code> &rarr; <code>file_export_item</code>, <code>menuFileDelete</code> &rarr; <code>file_delete_item</code>, <code>menuFileQuit</code> &rarr; <code>file_quit_item</code>, <code>menuSettingsPreferences</code> &rarr; <code>settings_preferences_item</code>, <code>menuViewMessages</code> &rarr; <code>view_messages_item</code>, <code>menuImagesCreate</code> &rarr; <code>images_create_item</code>, <code>menuImagesNew</code> &rarr; <code>images_new_item</code>, <code>menuImagesCommit</code> &rarr; <code>images_commit_item</code>, <code>menuImagesLibrary</code> &rarr; <code>images_library_item</code>, <code>menuHelpAbout</code> &rarr; <code>help_about_item</code>, <code>menuSystrayToggle</code> &rarr; <code>systray_toggle_item</code>, <code>menuSystrayClose</code> &rarr; <code>systray_close_item</code>, <code>btnNewBrick</code> &rarr; <code>new_brick_button</code>, <code>btnStartAll</code> &rarr; <code>start_all_button</code>, <code>btnStopAll</code> &rarr; <code>stop_all_button</code>, <code>btnNewEvent</code> &rarr; <code>new_event_button</code>, <code>btnStartAllEvents</code> &rarr; <code>start_all_events_button</code>, <code>btnStopAllEvents</code> &rarr; <code>stop_all_events_button</code>, <code>btnExportTopology</code> &rarr; <code>export_topology_button</code></p>
+<p><strong>wireconfig.py</strong>: <code>vbox</code> &rarr; <code>panel</code>, <code>sock0_combobox</code> &rarr; <code>sock0_combo</code>, <code>sock1_combobox</code> &rarr; <code>sock1_combo</code></p>
+<p class="footnote">The names of the modules replaced since (<a href="#files">&sect;4</a>) are kept, as they were: the others still hold the attributes above, unless a redesign renamed them.</p>
+      </section>
+    </main>
+  </div>
+</div>

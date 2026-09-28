@@ -1,0 +1,1200 @@
+<title>Settings Redesign</title>
+<meta name="description" content="A plan for configuration files that explain themselves, setting names in words, command lines built in plain code, and an icon for every brick and event: the groundwork for the new configuration panels.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; background: var(--accent-soft); }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .chip {
+    display: inline-block;
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.04em;
+    padding: 3px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    vertical-align: 1px;
+    color: var(--risk);
+    background: var(--risk-soft);
+  }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  table.wide { min-width: 720px; }
+  table.names { font-size: 14px; }
+  table.names td { padding-block: 6px; }
+  table.names td:nth-child(1) code { color: var(--muted); background: none; padding: 0; }
+  table.names td:nth-child(2) code { color: var(--accent); font-weight: 500; background: none; padding: 0; }
+  table.names tr.group td {
+    font: 600 14px/1.3 var(--font-head);
+    color: var(--ink);
+    padding-top: 20px;
+    border-bottom: 1.5px solid var(--rule);
+  }
+  table.names tr.group td span { font: 400 13px/1.3 var(--font-body); color: var(--muted); margin-left: 8px; }
+  table.names .gone { color: var(--risk); }
+  table.decisions td:first-child { white-space: nowrap; font-family: var(--font-mono); font-size: 13px; }
+  table.decisions td.rec { color: var(--ok); }
+  table.decisions td.rec.open { color: var(--decide); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+
+  /* the start sequence */
+  ol.flow { list-style: none; padding: 0; margin: 16px 0 22px; counter-reset: stage; display: grid; gap: 0; }
+  ol.flow > li {
+    counter-increment: stage;
+    display: grid;
+    grid-template-columns: 2.4em minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 10px 0;
+    border-top: 1px solid var(--rule);
+    margin: 0;
+    max-width: none;
+  }
+  ol.flow > li:last-child { border-bottom: 1px solid var(--rule); }
+  ol.flow > li::before {
+    content: counter(stage);
+    font: 500 13px/1.6 var(--font-mono);
+    color: var(--accent);
+  }
+  ol.flow b { font-weight: 600; }
+  ol.flow .same { color: var(--muted); }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+</style>
+
+<div class="page">
+
+<header class="masthead">
+  <div class="eyebrow">Step 10 &middot; Design &middot; revision 6, implemented</div>
+  <h1>Virtualbricks Settings Redesign</h1>
+  <p class="lede">Configuration files that explain every key and say which values are defaults; names in words instead of abbreviations of QEMU options; command lines that each brick builds in plain code; and an icon in the configuration of every brick and event. The groundwork for the new configuration panels.</p>
+  <ul class="meta">
+    <li>branch <b>mg/abandon-glade</b> at 0bfd5f7</li>
+    <li>revision 6 &middot; 28 September 2026</li>
+    <li><span class="status done">implemented</span></li>
+  </ul>
+  <p class="revision"><strong>What this covers:</strong> your request of today: comments in the configuration files, with a mark for default values; clearer names in the schemas; a new way to build the command lines and to start the bricks; and an icon for every brick and event, stored and not used yet. The panels come next, in a proposal of their own. The names replace decision D7 of the configuration redesign (&ldquo;keep the field names&rdquo;), as D5 was replaced before it.</p>
+  <p class="revision"><strong>What changed:</strong> revision 2 applies your answers. The files stay at format 1 with no upgrade, since the TOML files haven&rsquo;t been released (&sect;9). Every key has its description on the line above, and only a value at its default has a comment on its own line (&sect;3). <code>qemu_program</code> always names a program and refuses an empty string, which decides C9 (&sect;4). C6 changed with the format. Revision 3: you accepted the recommendation for each of C1&ndash;C8. Revision 4: every supported distribution and every QEMU from 6.2 on, with projects moving between them, for every brick. A new &sect;7, Program versions, built on the programs of the six target distributions, checked in containers. It takes the place of C7 and brings V1&ndash;V5. Revision 5: your answers to V1&ndash;V5. What a program reports decides (V1 A). A setting the installed program lacks is left out and the brick starts, with a warning (V2 B). No helper plugs: you distribute QEMU packages for Ubuntu built with VDE, and with a QEMU without it a card starts unplugged (V3). The audio driver is a setting of <code>settings.toml</code> (V4 B). Netemu falls back to <code>wirefilter</code> (V5 A). Every question is decided, and the plan is six steps.</p>
+  <p class="revision"><strong>Implemented</strong> on 28 September 2026 in six commits, 0a51bf8 to 69809db, one per step of <a href="#plan">&sect;11</a>, with these differences. The <code>audio_driver</code> setting came with step 2, which writes the sound card. The checks that leave out what a program lacks, with their warnings, stayed in <code>command()</code>, where the options are chosen, not in <code>prepare()</code>. The recordings are a file per target, <code>tests/data/programs/&lt;target&gt;.json</code>, and QEMU 9 is Ubuntu 25.04&rsquo;s 9.2.1. The KVM shadow memory goes to QEMU in bytes, which the old code got wrong. Only a virtual machine shows its own icon (71812b0). The checks of step 6 found three bugs, each fixed on its own: the private copy of a raw image (c1f17d5); the socket card of a machine, a <code>ptp://</code> socket for vdeplug4, which every target has, so a card can only be the right end of a Netemu (d5bb1e8); and the rows of an opened project, which showed the defaults (be8059b). On the seven targets every brick ran but the router, whose <code>vde_router</code> no distribution packages. Seen and left for the panels: the QEMU panel is wider than a window 900 pixels wide.</p>
+</header>
+
+<div class="layout">
+
+<nav class="toc" aria-label="Contents">
+  <p class="toc-label">Contents</p>
+  <ol>
+    <li><a href="#glance"><span>1</span>At a glance</a></li>
+    <li><a href="#today"><span>2</span>What gets in the way today</a></li>
+    <li><a href="#comments"><span>3</span>Comments in the files</a></li>
+    <li><a href="#names"><span>4</span>Names</a></li>
+    <li><a href="#icon"><span>5</span>The icon</a></li>
+    <li><a href="#commands"><span>6</span>Command lines</a></li>
+    <li><a href="#versions"><span>7</span>Program versions</a></li>
+    <li><a href="#starting"><span>8</span>Starting a brick</a></li>
+    <li><a href="#format"><span>9</span>Old files and the migration</a></li>
+    <li><a href="#code"><span>10</span>The code</a></li>
+    <li><a href="#plan"><span>11</span>Implementation plan</a></li>
+    <li><a href="#decisions"><span>12</span>Decisions</a></li>
+    <li><a href="#later"><span>13</span>Later</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<section id="glance">
+  <h2><span class="num">&sect;1</span>At a glance</h2>
+  <dl class="glance">
+    <div>
+      <dt>Comments</dt>
+      <dd>Every key Virtualbricks writes has a comment on the line above: what the key is for, its range or its choices, and its default. A value at its default also says <code># default</code> on its own line; a value without it was set. The texts come from the schemas, so every writer adds them: projects, settings, state, imports and migrations.</dd>
+    </div>
+    <div>
+      <dt>Names</dt>
+      <dd>68 keys get names in words: <code>deviceen</code> and <code>cdromen</code> become <code>cdrom = "device"</code>, <code>usbdevlist</code> becomes <code>usb_devices</code>, <code>pon_vbevent</code> becomes <code>on_start</code>. The settings too: <code>cowfmt</code> becomes <code>cow_format</code>. One name everywhere: the key in the file, the attribute in the code, the name in the console. <code>qemu_program</code> can&rsquo;t be empty. The full table is in &sect;4.</dd>
+    </div>
+    <div>
+      <dt>Icon</dt>
+      <dd><code>icon</code> moves from the virtual machines into a configuration that every brick and event shares. It&rsquo;s saved and read; only the virtual machines show it, as today.</dd>
+    </div>
+    <div>
+      <dt>Command lines</dt>
+      <dd>Each brick type builds its command in a <code>command()</code> method that reads top to bottom as the command line does, with a small <code>Command</code> helper. It reads the configuration and the paths it&rsquo;s given, and does nothing else. The keys that don&rsquo;t reach the command line are simply the ones it doesn&rsquo;t mention. <code>command_builder</code> and its rules of <code>"#"</code>, <code>"*"</code> and field names go.</dd>
+    </div>
+    <div>
+      <dt>Versions</dt>
+      <dd>Before a brick starts, Virtualbricks asks the installed program what it has, and the command line uses what that version accepts. A project made on Ubuntu 22.04 with QEMU 6.2 runs on Debian testing with QEMU 11.1, and the other way round when the older program has what the project asks for. A setting the program can&rsquo;t honour is left out, and a warning names it and says how to get it. The same for the VDE programs.</dd>
+    </div>
+    <div>
+      <dt>Starting</dt>
+      <dd>A start runs in stages: the checks and the bricks it plugs into, as today; <code>prepare()</code>, the work the command needs (the private copies of the disks, the key of a tunnel); <code>command()</code>; <code>spawn()</code>. A saved state to resume becomes an option of the start instead of a key of the configuration.</dd>
+    </div>
+    <div>
+      <dt>Format</dt>
+      <dd>The files stay at format 1. The TOML files haven&rsquo;t been released, so the new names replace the old ones without an upgrade. The migration of 2.1 projects and settings writes the new names, and rewrites the console commands of the events.</dd>
+    </div>
+    <div>
+      <dt>Fixed</dt>
+      <dd>Two taps, or two tunnel servers, start with the socket and the name of the last one created. A wire never starts. The kernel command line reaches the kernel in quotes. A tunnel&rsquo;s key goes through a shell with the password in it. Details in &sect;2.</dd>
+    </div>
+  </dl>
+</section>
+
+<section id="today">
+  <h2><span class="num">&sect;2</span>What gets in the way today</h2>
+  <p>From the code at 0bfd5f7. Items marked <span class="chip">checked</span> were reproduced on this machine.</p>
+
+  <h3>Names</h3>
+  <ul>
+    <li>The virtual machine&rsquo;s 53 fields are named after QEMU options or abbreviations: <code>deviceen</code>, <code>cdromen</code>, <code>kvmsm</code>, <code>kvmsmem</code>, <code>vncN</code>, <code>tdf</code>, <code>kopt</code>, <code>noacpi</code>, <code>argv0</code>. The same names are the keys of <code>project.toml</code>, the names of the console&rsquo;s <code>config</code> command and the names the panels pass to <code>brick.set()</code>.</li>
+    <li>A switch with a value beside it comes in four spellings: <code>kernelenbl</code> + <code>kernel</code>, <code>cdromen</code> + <code>cdrom</code>, <code>kvmsm</code> + <code>kvmsmem</code>, <code>vnc</code> + <code>vncN</code>, <code>usbmode</code> + <code>usbdevlist</code>.</li>
+    <li><code>deviceen</code> and <code>cdromen</code> are two booleans for one choice of three: no CD-ROM, a drive of the host, or an image. When both are true the image wins.</li>
+    <li><code>noacpi</code> is a string where <code>"*"</code> means true. <code>stdout</code> is written in every project and never read. <code>loadvm</code> is a key of the configuration that <code>poweron()</code> sets and clears around a start, and every project saves it.</li>
+    <li>The settings have the same kind of names: <code>cowfmt</code>, <code>erroronloop</code>, <code>femaleplugs</code>, <code>qemupath</code>, <code>vdepath</code>, <code>term</code>, <code>systray</code>, <code>show_missing</code>.</li>
+  </ul>
+
+  <h3>Comments</h3>
+  <ul>
+    <li>The files have no comments, and the comments of a hand edit are lost at the next save, as virtualbricks-config(5) says under Writing.</li>
+    <li>The schema already has room for words: <code>FieldInfo</code> has <code>label</code> and <code>help</code>. No field sets them.</li>
+  </ul>
+
+  <h3>Command lines</h3>
+  <ul>
+    <li><code>command_builder</code> maps options to field names or to callables, with rules of its own: <code>"#"</code> before an option skips it, <code>"*"</code> as a value gives the bare option, <code>"*"</code> before an option drops the option and keeps the value, <code>True</code> gives the bare option, <code>None</code> and <code>False</code> skip it. A field that doesn&rsquo;t exist is skipped without a word: six of the switch&rsquo;s entries (<code>--macaddr</code>, <code>-m</code>, <code>-g</code>, <code>--priority</code>, <code>--mgmtmode</code>, <code>--mgmtgroup</code>) and the router&rsquo;s <code>-c configfile</code> name no field.</li>
+    <li><span class="chip">checked</span> Tap, TunnelListen and TunnelConnect put bound methods of the instance into a dictionary of the class, so every instance uses those of the last one created. With tap1 on sw1 and tap2 on sw2, both command lines are <code>-s /run/vb/sw2.ctl tap2</code>; two tunnel servers both get sw2 as well. The tap&rsquo;s dictionary is <code>Brick.command_builder</code> itself.</li>
+    <li><span class="chip">checked</span> A wire never starts: <code>Wire.prog()</code> returns a tuple, and <code>spawnProcess</code> fails with &ldquo;posix_spawnp: path should be string, bytes or os.PathLike, not tuple&rdquo;.</li>
+    <li>Netemu runs <code>vde-netemu</code> from <code>$PATH</code>, not from the <code>vdepath</code> folder.</li>
+    <li>The virtual machine wraps the kernel command line in single quotes, <code>-append 'console=ttyS0'</code>. No shell takes them away, so the kernel receives them.</li>
+    <li>Building a tunnel&rsquo;s command line writes a file: <code>TunnelListen.args()</code> runs <code>os.system("echo PASSWORD | sha1sum &gt;/tmp/tunnel_NAME.key")</code>, through a shell that runs whatever the password contains, into <code>/tmp</code>.</li>
+    <li>The virtual machine&rsquo;s <code>args()</code> returns a Deferred, because it creates the private copies of the disks on the way; the other bricks return lists.</li>
+    <li><span class="chip">checked</span> QEMU 10.0, installed here, refuses five of the options Virtualbricks writes: <code>-soundhw</code>, <code>-no-acpi</code> and <code>-portrait</code> are &ldquo;invalid option&rdquo;, <code>-usbdevice host:&hellip;</code> is &ldquo;not supported anymore&rdquo;, and <code>-sdl</code> is gone from <code>-help</code>. A machine with a sound card, USB devices, the SDL window, the portrait display or ACPI off doesn&rsquo;t start. Ubuntu 22.04&rsquo;s QEMU 6.2 still has all five; &sect;7 says which target has which.</li>
+  </ul>
+
+  <h3>Programs and their versions</h3>
+  <ul>
+    <li><span class="chip">checked</span> The QEMU panel asks the version of <code>qemu-system-x86_64</code> and picks stored lists of machine types and CPU models, of QEMU 2.0, 1.1.2 or 1.0, comparing the versions as strings. QEMU 6.2 to 9.2 get the lists of 2.0, from 2014; 10.0 and 11.1 get those of 1.1.2, from 2012.</li>
+    <li><span class="chip">checked</span> Ubuntu builds QEMU without the <code>vde</code> network backend, on 22.04, 24.04 and 26.04. A virtual machine with a card plugged into a switch doesn&rsquo;t start there. Debian&rsquo;s QEMU has it, and so do the QEMU packages for Ubuntu that you distribute.</li>
+    <li><span class="chip">checked</span> The SDL and GTK windows of QEMU are in the <code>qemu-system-gui</code> package, which <code>qemu-system-x86</code> only recommends. <code>vde_cryptcab</code> is in <code>vde2-cryptcab</code>, apart from <code>vde2</code>.</li>
+    <li><span class="chip">checked</span> The monitor&rsquo;s <code>server,nowait</code> gives &ldquo;short-form boolean option &lsquo;server&rsquo; deprecated&rdquo; on 6.2 and on 10.0.</li>
+    <li><code>vde-netemu</code>, the program of Netemu, is in no distribution. It comes from cnrl.deis.unibo.it, and its package puts its own <code>wirefilter</code> in place of VDE&rsquo;s.</li>
+  </ul>
+
+  <h3>Keys that never reach the command line</h3>
+  <p>Found by changing each key of each type, with its switches on, and comparing today&rsquo;s command lines:</p>
+  <ul>
+    <li>Every brick: the events, <code>pon_vbevent</code> and <code>poff_vbevent</code>, which Virtualbricks runs itself.</li>
+    <li>Virtual machine: <code>icon</code> and <code>stdout</code>. The disks reach it through the paths that the start prepares.</li>
+    <li>Tap: <code>mode</code>, <code>ip</code>, <code>nm</code> and <code>gw</code>. Nothing else reads them either: the panel edits them and the brick&rsquo;s summary shows them, but the address of the interface is never set.</li>
+    <li>Tunnels: <code>password</code>, which goes into the key file. Netemu: the <code>name</code> of a state, which goes to the running emulator over its console. Switch wrapper: <code>path</code>, since it runs nothing.</li>
+  </ul>
+
+  <h3>Other</h3>
+  <ul>
+    <li><code>erroronloop</code> only decides whether a loop is logged: the start is refused either way, and the message says to turn the setting off &ldquo;if you want to start a looped network&rdquo;.</li>
+    <li>Only virtual machines have <code>icon</code>; <code>graphics.brick_icon</code> reads it with <code>getattr</code> and a default for the others. <code>EventConfig</code> shares nothing with <code>BrickConfig</code>.</li>
+  </ul>
+</section>
+
+<section id="comments">
+  <h2><span class="num">&sect;3</span>Comments in the files</h2>
+  <p>A project as Virtualbricks would write it with this plan. A prototype of the writer made this text with the venv&rsquo;s tomlkit 0.15, and tomllib reads it back unchanged.</p>
+  <figure class="code">
+    <figcaption>project.toml</figcaption>
+<pre><code><span class="c"># A Virtualbricks project: its settings, disk images, events and bricks.</span>
+<span class="c"># Virtualbricks writes this file and its comments, and rewrites it while the</span>
+<span class="c"># project is open; see virtualbricks-config(5).</span>
+
+<span class="c"># The version of the layout of this file</span>
+format = 1
+
+<span class="h">[settings]</span>
+<span class="c"># The format of private copies (cow, qcow or qcow2; default "qcow2")</span>
+cow_format = "qcow2"  <span class="c"># default</span>
+<span class="c"># Log an error when links make a loop (default false)</span>
+log_link_loops = false  <span class="c"># default</span>
+<span class="c"># Let plugs go into the socket cards of machines (default false)</span>
+allow_female_plugs = false  <span class="c"># default</span>
+<span class="c"># The folder of the QEMU programs (default "/usr/bin")</span>
+qemu_path = "/usr/bin"  <span class="c"># default</span>
+<span class="c"># The folder of the VDE programs (default "/usr/bin")</span>
+vde_path = "/usr/local/bin"
+
+<span class="h">[events.resize]</span>
+<span class="c"># An image file to show instead of the icon of its type (default empty)</span>
+icon = ""  <span class="c"># default</span>
+<span class="c"># Seconds to wait before the actions run (default 0)</span>
+delay = 5
+<span class="c"># The actions: console or shell commands (default empty)</span>
+actions = [
+    {kind = "vb", command = "vm1 config memory=512"},
+]
+
+<span class="h">[bricks.sw1]</span>
+<span class="c"># A VDE switch</span>
+type = "switch"
+<span class="c"># An image file to show instead of the icon of its type (default empty)</span>
+icon = ""  <span class="c"># default</span>
+<span class="c"># An event to run when the brick starts (default empty)</span>
+on_start = ""  <span class="c"># default</span>
+<span class="c"># An event to run when the brick stops (default empty)</span>
+on_stop = ""  <span class="c"># default</span>
+<span class="c"># Number of ports (1-128; default 32)</span>
+ports = 16
+<span class="c"># Send every packet to every port, as a hub (default false)</span>
+hub_mode = false  <span class="c"># default</span>
+<span class="c"># Run the fast spanning tree protocol (default false)</span>
+fast_spanning_tree = false  <span class="c"># default</span>
+
+<span class="h">[bricks.vm1]</span>
+<span class="c"># A virtual machine, run by QEMU</span>
+type = "qemu"
+<span class="c"># An image file to show instead of the icon of its type (default empty)</span>
+icon = ""  <span class="c"># default</span>
+<span class="c"># An event to run when the brick starts (default empty)</span>
+on_start = "resize"
+<span class="c"># An event to run when the brick stops (default empty)</span>
+on_stop = ""  <span class="c"># default</span>
+<span class="c"># The QEMU program, in the qemu_path folder (default "qemu-system-i386")</span>
+qemu_program = "qemu-system-x86_64"
+<span class="c"># The machine type, as -machine type= takes it; empty for the QEMU default</span>
+<span class="c"># (default empty)</span>
+machine_type = ""  <span class="c"># default</span>
+<span class="c"># The CPU model, as -cpu takes it; empty for the QEMU default (default empty)</span>
+cpu_model = ""  <span class="c"># default</span>
+<span class="c"># Use KVM when the host has it (default false)</span>
+use_kvm = true
+<span class="c"># Virtual CPUs (1-64; default 1)</span>
+cpus = 2
+<span class="c"># Memory in MiB (1-99999; default 64)</span>
+memory = 1024
+<span class="c"># Set the size of the KVM shadow memory (default false)</span>
+use_kvm_shadow_memory = false  <span class="c"># default</span>
+<span class="c"># KVM shadow memory in MiB, with use_kvm_shadow_memory (0-99999; default 1)</span>
+kvm_shadow_memory = 1  <span class="c"># default</span>
+<span class="c"># Boot order as -boot takes it: c the first disk, d the CD-ROM, a the floppy;</span>
+<span class="c"># empty for the QEMU default (default empty)</span>
+boot_order = ""  <span class="c"># default</span>
+<span class="c"># Write the changes to the disks in temporary files, forgotten when the machine</span>
+<span class="c"># stops (default false)</span>
+forget_disk_changes = false  <span class="c"># default</span>
+<span class="c"># Attach the disks as virtio devices (default false)</span>
+virtio_disks = false  <span class="c"># default</span>
+<span class="c"># The CD-ROM (none, image or device; default "none")</span>
+cdrom = "image"
+<span class="c"># An image file for the CD-ROM, with cdrom image (default empty)</span>
+cdrom_image = "/home/alice/Downloads/debian-13.1.0-amd64-netinst.iso"
+<span class="c"># A CD-ROM drive of the host, with cdrom device (default empty)</span>
+cdrom_device = ""  <span class="c"># default</span>
+<span class="c"># No display at all (default false)</span>
+headless = false  <span class="c"># default</span>
+<span class="c"># A standard VGA card instead of the machine's (default false)</span>
+standard_vga = false  <span class="c"># default</span>
+<span class="c"># Show the display over VNC (default false)</span>
+use_vnc = false  <span class="c"># default</span>
+<span class="c"># The VNC display number, with use_vnc (0-500; default 1)</span>
+vnc_display = 1  <span class="c"># default</span>
+<span class="c"># Show the display in an SDL window (default false)</span>
+sdl_window = true
+<span class="c"># The sound card, as ac97; empty for none (default empty)</span>
+sound_card = ""  <span class="c"># default</span>
+<span class="c"># Give the machine USB and the devices of usb_devices (default false)</span>
+use_usb = false  <span class="c"># default</span>
+<span class="c"># USB devices of the host, by vendor and product id (default empty)</span>
+usb_devices = []  <span class="c"># default</span>
+<span class="c"># The keyboard layout, two letters; empty for the default (default empty)</span>
+keyboard_layout = "it"
+<span class="c"># Start the clock of the machine at local time, not UTC (default false)</span>
+clock_local_time = false  <span class="c"># default</span>
+<span class="c"># Correct the drift of the clock of the machine (default false)</span>
+clock_drift_fix = false  <span class="c"># default</span>
+<span class="c"># Connect the serial port to a socket in the runtime folder (default false)</span>
+serial_socket = true
+<span class="c"># Boot a kernel directly (default false)</span>
+use_kernel = false  <span class="c"># default</span>
+<span class="c"># A kernel image, with use_kernel (default empty)</span>
+kernel = ""  <span class="c"># default</span>
+<span class="c"># Load an initial ramdisk, with use_kernel (default false)</span>
+use_initrd = false  <span class="c"># default</span>
+<span class="c"># An initial ramdisk, with use_initrd (default empty)</span>
+initrd = ""  <span class="c"># default</span>
+<span class="c"># The kernel command line, with use_kernel (default empty)</span>
+kernel_command_line = ""  <span class="c"># default</span>
+<span class="c"># Accept a GDB connection (default false)</span>
+use_gdb = false  <span class="c"># default</span>
+<span class="c"># The TCP port for GDB, with use_gdb (1-65535; default 1234)</span>
+gdb_port = 1234  <span class="c"># default</span>
+<span class="c"># Give the machine ACPI (default true)</span>
+acpi = true  <span class="c"># default</span>
+
+<span class="h">[bricks.vm1.disks.hda]</span>
+<span class="c"># The image of the disk, by name (default empty)</span>
+image = "debian-13"
+<span class="c"># Write to a private copy, vm1_hda.cow, not to the image (default false)</span>
+private = true
+
+<span class="h">[bricks.vm1.disks.hdb]</span>
+<span class="c"># The image of the disk, by name (default empty)</span>
+image = ""  <span class="c"># default</span>
+<span class="c"># Write to a private copy, vm1_hdb.cow, not to the image (default false)</span>
+private = false  <span class="c"># default</span>
+
+<span class="h">[[bricks.vm1.nics]]</span>
+<span class="c"># The kind of card: plug, socket or hostonly</span>
+kind = "plug"
+<span class="c"># The socket it's plugged into</span>
+connect = "sw1"
+<span class="c"># The model of the card, as QEMU names it</span>
+model = "virtio-net-pci"
+<span class="c"># The MAC address</span>
+mac = "52:54:00:3f:a1:07"</code></pre>
+  </figure>
+  <p class="footnote">The other five disks, hdc to mtdblock, follow hdb and are left out here.</p>
+
+  <h3>What a comment says</h3>
+  <ul>
+    <li>Above every key, what the key is for, in the words of the schema: the <code>help</code> of <code>field()</code>, unused until now.</li>
+    <li>At the end of it, in parentheses, the range or the choices from the kind of the field, and the default: <code>(1-64; default 1)</code>, <code>(none, image or device; default "none")</code>. An empty string or list is <code>default empty</code>; a default list with items isn&rsquo;t repeated.</li>
+    <li>On the key&rsquo;s own line, <code># default</code> when the value is the field&rsquo;s default, and nothing otherwise: a key without it holds a value that was set. That is the only comment on a key&rsquo;s line.</li>
+    <li>Keys that no schema declares, as <code>format</code>, <code>type</code>, <code>connect</code>, <code>endpoints</code> and the keys of a network card, get a fixed sentence above them and never <code># default</code>.</li>
+    <li>Each file starts with what it is, that Virtualbricks writes it and its comments, and when it rewrites it, then a blank line. There&rsquo;s no date in it, so an unchanged project gives an unchanged file.</li>
+  </ul>
+
+  <h3>Where it goes</h3>
+  <ul>
+    <li>The description is wrapped at 79 columns, the width of the man pages, never splitting a word at a hyphen. The parentheses stay whole: when they don&rsquo;t fit on the last line, they take a line of their own.</li>
+    <li>A value that changes changes only its own line: the description above it doesn&rsquo;t depend on the value, and <code># default</code> comes or goes with it.</li>
+  </ul>
+
+  <h3>Default or set</h3>
+  <p>The mark compares the value with the default of the field when the file is written <span class="ref">C1</span>. Nothing more is stored, so a value equal to its default says <code># default</code> even when you chose it. In exchange, any code that writes a file can add the comments from the data alone: the importer, which rewrites a project&rsquo;s image paths without building its bricks, and the migration. The two other ways, remembering each value you set, or writing defaults as commented-out keys, are in &sect;12.</p>
+
+  <h3>Which files, in which language</h3>
+  <ul>
+    <li><code>settings.toml</code>, <code>state.toml</code> and <code>project.toml</code>. The archive&rsquo;s <code>contents.toml</code> and the job files passed between processes stay bare: no one reads them.</li>
+    <li>Comments you add by hand are still dropped at the next save <span class="ref">C2</span>. The header of each file says so.</li>
+    <li>In English whatever the language of the desktop <span class="ref">C3</span>: projects move between machines in archives, and the key names are English anyway. The new panels can translate the same help texts.</li>
+  </ul>
+
+  <h3>How it&rsquo;s built</h3>
+  <ul>
+    <li><code>schema.py</code>: <code>Kind.describe()</code> gives the range or the choices; <code>notes(cls, data)</code> gives, for each key of a table, its description and whether it&rsquo;s at its default, by the same paths that <code>dump_record()</code> writes, including <code>disks.hda.image</code> and the states of a Netemu.</li>
+    <li><code>projectfile.project_notes(data)</code> walks a project: settings, images, events, and each brick by its type. <code>settings.py</code> does the same for its two files.</li>
+    <li><code>tomlfile.dumps_toml(data, notes=None, header="")</code> writes them. The data stays plain TOML data, so the tests that compare <code>dump_record()</code> with dictionaries don&rsquo;t change.</li>
+  </ul>
+</section>
+
+<section id="names">
+  <h2><span class="num">&sect;4</span>Names</h2>
+  <ul>
+    <li>Words in snake_case, and one name everywhere: the key in the file, the attribute in the code, the name for the console&rsquo;s <code>config</code> command.</li>
+    <li>A switch that turns on the value beside it is <code>use_&lt;thing&gt;</code>, next to <code>&lt;thing&gt;</code>: <code>use_kernel</code> and <code>kernel</code>, <code>use_vnc</code> and <code>vnc_display</code>.</li>
+    <li>Units go in the comment, not in the name: <code>memory = 1024  # Memory in MiB</code>.</li>
+    <li>QEMU&rsquo;s own words stay where they are the words people search for: <code>machine_type</code>, <code>cpu_model</code>, <code>boot_order</code>, <code>initrd</code>, the disk devices <code>hda</code> to <code>mtdblock</code>.</li>
+    <li>A brick&rsquo;s events are <code>on_start</code> and <code>on_stop</code>, as its menu&rsquo;s When It Starts and When It Stops.</li>
+    <li>Keys that already say what they are stay: <code>password</code>, <code>delay</code>, <code>actions</code>, <code>transitions</code>, <code>states</code>, a state&rsquo;s <code>name</code>, an image&rsquo;s <code>path</code> and <code>description</code>, the keys of a network card, <code>workspace</code>, <code>current_project</code>.</li>
+  </ul>
+  <p>Decided as proposed, with <code>qemu_program</code> never empty <span class="ref">C9</span>. The third column is the comment the key gets in the files.</p>
+
+  <div class="scroll">
+  <table class="names wide">
+    <thead><tr><th>Today</th><th>Proposed</th><th>Comment in the file</th></tr></thead>
+    <tbody>
+      <tr class="group"><td colspan="3">Every brick and event</td></tr>
+      <tr><td>&mdash;</td><td><code>icon</code></td><td>An image file to show instead of the icon of its type. Moved from the virtual machine, &sect;5.</td></tr>
+      <tr class="group"><td colspan="3">Every brick</td></tr>
+      <tr><td><code>pon_vbevent</code></td><td><code>on_start</code></td><td>An event to run when the brick starts</td></tr>
+      <tr><td><code>poff_vbevent</code></td><td><code>on_stop</code></td><td>An event to run when the brick stops</td></tr>
+
+      <tr class="group"><td colspan="3">qemu<span>a virtual machine</span></td></tr>
+      <tr><td><code>argv0</code></td><td><code>qemu_program</code></td><td>The QEMU program, in the qemu_path folder. Never empty: the field refuses an empty string, and a file with one gets the default, <code>qemu-system-i386</code>, with a warning. An old project&rsquo;s empty <code>argv0</code> ran qemu-system-x86_64, so the migration writes that.</td></tr>
+      <tr><td><code>machine</code></td><td><code>machine_type</code></td><td>The machine type, as -machine type= takes it; empty for the QEMU default</td></tr>
+      <tr><td><code>cpu</code></td><td><code>cpu_model</code></td><td>The CPU model, as -cpu takes it; empty for the QEMU default</td></tr>
+      <tr><td><code>kvm</code></td><td><code>use_kvm</code></td><td>Use KVM when the host has it</td></tr>
+      <tr><td><code>smp</code></td><td><code>cpus</code></td><td>Virtual CPUs (1-64)</td></tr>
+      <tr><td><code>ram</code></td><td><code>memory</code></td><td>Memory in MiB (1-99999)</td></tr>
+      <tr><td><code>kvmsm</code></td><td><code>use_kvm_shadow_memory</code></td><td>Set the size of the KVM shadow memory</td></tr>
+      <tr><td><code>kvmsmem</code></td><td><code>kvm_shadow_memory</code></td><td>KVM shadow memory in MiB, with use_kvm_shadow_memory (0-99999)</td></tr>
+      <tr><td><code>boot</code></td><td><code>boot_order</code></td><td>Boot order as -boot takes it: c the first disk, d the CD-ROM, a the floppy; empty for the QEMU default</td></tr>
+      <tr><td><code>snapshot</code></td><td><code>forget_disk_changes</code></td><td>Write the changes to the disks in temporary files, forgotten when the machine stops. The panel already says &ldquo;Forget every change when vm1 stops&rdquo;.</td></tr>
+      <tr><td><code>use_virtio</code></td><td><code>virtio_disks</code></td><td>Attach the disks as virtio devices</td></tr>
+      <tr><td><code>cdromen</code>, <code>deviceen</code></td><td><code>cdrom</code></td><td>The CD-ROM (none, image or device). One choice in place of two booleans: <code>"image"</code> when cdromen was true, else <code>"device"</code> when deviceen was, else <code>"none"</code>.</td></tr>
+      <tr><td><code>cdrom</code></td><td><code>cdrom_image</code></td><td>An image file for the CD-ROM, with cdrom image</td></tr>
+      <tr><td><code>device</code></td><td><code>cdrom_device</code></td><td>A CD-ROM drive of the host, with cdrom device</td></tr>
+      <tr><td><code>novga</code></td><td><code>headless</code></td><td>No display at all</td></tr>
+      <tr><td><code>vga</code></td><td><code>standard_vga</code></td><td>A standard VGA card instead of the machine&rsquo;s</td></tr>
+      <tr><td><code>vnc</code></td><td><code>use_vnc</code></td><td>Show the display over VNC</td></tr>
+      <tr><td><code>vncN</code></td><td><code>vnc_display</code></td><td>The VNC display number, with use_vnc (0-500)</td></tr>
+      <tr><td><code>sdl</code></td><td><code>sdl_window</code></td><td>Show the display in an SDL window</td></tr>
+      <tr><td><code>portrait</code></td><td><code>portrait_display</code></td><td>Rotate the display. <span class="gone">Dropped instead</span>: QEMU 8.2 still has <code>-portrait</code>, 10.0 doesn&rsquo;t, and nothing replaces it.</td></tr>
+      <tr><td><code>soundhw</code></td><td><code>sound_card</code></td><td>The sound card, as ac97; empty for none</td></tr>
+      <tr><td><code>usbmode</code></td><td><code>use_usb</code></td><td>Give the machine USB and the devices of usb_devices</td></tr>
+      <tr><td><code>usbdevlist</code></td><td><code>usb_devices</code></td><td>USB devices of the host, by vendor and product id</td></tr>
+      <tr><td><code>keyboard</code></td><td><code>keyboard_layout</code></td><td>The keyboard layout, two letters; empty for the default</td></tr>
+      <tr><td><code>rtc</code></td><td><code>clock_local_time</code></td><td>Start the clock of the machine at local time, not UTC</td></tr>
+      <tr><td><code>tdf</code></td><td><code>clock_drift_fix</code></td><td>Correct the drift of the clock of the machine</td></tr>
+      <tr><td><code>serial</code></td><td><code>serial_socket</code></td><td>Connect the serial port to a socket in the runtime folder</td></tr>
+      <tr><td><code>kernelenbl</code></td><td><code>use_kernel</code></td><td>Boot a kernel directly</td></tr>
+      <tr><td><code>kernel</code></td><td><code>kernel</code></td><td>A kernel image, with use_kernel</td></tr>
+      <tr><td><code>initrdenbl</code></td><td><code>use_initrd</code></td><td>Load an initial ramdisk, with use_kernel</td></tr>
+      <tr><td><code>initrd</code></td><td><code>initrd</code></td><td>An initial ramdisk, with use_initrd</td></tr>
+      <tr><td><code>kopt</code></td><td><code>kernel_command_line</code></td><td>The kernel command line, with use_kernel</td></tr>
+      <tr><td><code>gdb</code></td><td><code>use_gdb</code></td><td>Accept a GDB connection</td></tr>
+      <tr><td><code>gdbport</code></td><td><code>gdb_port</code></td><td>The TCP port for GDB, with use_gdb (1-65535)</td></tr>
+      <tr><td><code>noacpi</code></td><td><code>acpi</code></td><td>Give the machine ACPI. A boolean, true by default; <code>"*"</code> becomes false.</td></tr>
+      <tr><td><code>icon</code></td><td><code>icon</code></td><td>Moves to every brick and event, same key.</td></tr>
+      <tr><td><code>stdout</code></td><td class="gone">dropped</td><td>Never read.</td></tr>
+      <tr><td><code>loadvm</code></td><td class="gone">dropped</td><td>An option of the start, &sect;8.</td></tr>
+      <tr><td><code>hda</code> &hellip; <code>mtdblock</code></td><td><code>hda_image</code> &hellip;</td><td>The image of the disk, by name. The attribute and console name; the file keeps <code>disks.hda.image</code>.</td></tr>
+      <tr><td><code>privatehda</code> &hellip;</td><td><code>hda_private</code> &hellip;</td><td>Write to a private copy, vm1_hda.cow, not to the image. The file keeps <code>disks.hda.private</code>.</td></tr>
+
+      <tr class="group"><td colspan="3">switch</td></tr>
+      <tr><td><code>numports</code></td><td><code>ports</code></td><td>Number of ports (1-128)</td></tr>
+      <tr><td><code>hub</code></td><td><code>hub_mode</code></td><td>Send every packet to every port, as a hub</td></tr>
+      <tr><td><code>fstp</code></td><td><code>fast_spanning_tree</code></td><td>Run the fast spanning tree protocol</td></tr>
+
+      <tr class="group"><td colspan="3">switchwrapper</td></tr>
+      <tr><td><code>path</code></td><td><code>socket_path</code></td><td>The control folder of a switch that another program runs</td></tr>
+
+      <tr class="group"><td colspan="3">tap</td></tr>
+      <tr><td><code>mode</code></td><td><code>address_mode</code></td><td>How the interface gets its address (off, dhcp or manual)</td></tr>
+      <tr><td><code>ip</code></td><td><code>ip_address</code></td><td>The address, with address_mode manual</td></tr>
+      <tr><td><code>nm</code></td><td><code>netmask</code></td><td>The netmask, with address_mode manual</td></tr>
+      <tr><td><code>gw</code></td><td><code>gateway</code></td><td>The default gateway; empty for none</td></tr>
+
+      <tr class="group"><td colspan="3">capture</td></tr>
+      <tr><td><code>iface</code></td><td><code>interface</code></td><td>The interface of the host to capture, as eth0</td></tr>
+
+      <tr class="group"><td colspan="3">tunnellisten<span>the server end</span></td></tr>
+      <tr><td><code>port</code></td><td><code>listen_port</code></td><td>The UDP port to listen on (1-65535)</td></tr>
+      <tr><td><code>password</code></td><td><code>password</code></td><td>The password of the tunnel, in clear text</td></tr>
+
+      <tr class="group"><td colspan="3">tunnelconnect<span>the client end, with a schema of its own instead of the server&rsquo;s</span></td></tr>
+      <tr><td><code>host</code></td><td><code>server_host</code></td><td>The host that runs the server end</td></tr>
+      <tr><td><code>port</code></td><td><code>server_port</code></td><td>The UDP port of the server end (1-65535)</td></tr>
+      <tr><td><code>localport</code></td><td><code>local_port</code></td><td>The local UDP port (1-65535)</td></tr>
+      <tr><td><code>password</code></td><td><code>password</code></td><td>The password of the tunnel, in clear text</td></tr>
+
+      <tr class="group"><td colspan="3">netemu<span>the brick, then each of its states</span></td></tr>
+      <tr><td><code>transperiod</code></td><td><code>transition_period</code></td><td>How often the emulator may change state, in ms (1 or more)</td></tr>
+      <tr><td><code>bandwidth</code></td><td><code>bandwidth</code></td><td>Bytes per second, 0 for no limit; left to right unless bandwidth_symmetric</td></tr>
+      <tr><td><code>bandwidthr</code></td><td><code>bandwidth_right_to_left</code></td><td>Bytes per second from right to left</td></tr>
+      <tr><td><code>bandwidthsymm</code></td><td><code>bandwidth_symmetric</code></td><td>Use bandwidth both ways</td></tr>
+      <tr><td><code>delay</code></td><td><code>delay</code></td><td>One-way delay in ms; left to right unless delay_symmetric</td></tr>
+      <tr><td><code>delayr</code></td><td><code>delay_right_to_left</code></td><td>Delay in ms from right to left</td></tr>
+      <tr><td><code>delaysymm</code></td><td><code>delay_symmetric</code></td><td>Use delay both ways</td></tr>
+      <tr><td><code>chanbufsize</code></td><td><code>buffer_size</code></td><td>Channel buffer in bytes, 0 for no limit; left to right unless buffer_size_symmetric</td></tr>
+      <tr><td><code>chanbufsizer</code></td><td><code>buffer_size_right_to_left</code></td><td>Channel buffer in bytes from right to left</td></tr>
+      <tr><td><code>chanbufsizesymm</code></td><td><code>buffer_size_symmetric</code></td><td>Use buffer_size both ways</td></tr>
+      <tr><td><code>loss</code></td><td><code>loss</code></td><td>Percentage of packets lost; left to right unless loss_symmetric (0-100)</td></tr>
+      <tr><td><code>lossr</code></td><td><code>loss_right_to_left</code></td><td>Percentage of packets lost from right to left (0-100)</td></tr>
+      <tr><td><code>losssymm</code></td><td><code>loss_symmetric</code></td><td>Use loss both ways</td></tr>
+
+      <tr class="group"><td colspan="3">[settings] of a project<span>with <span class="ref">C8</span> A</span></td></tr>
+      <tr><td><code>cowfmt</code></td><td><code>cow_format</code></td><td>The format of private copies (cow, qcow or qcow2)</td></tr>
+      <tr><td><code>erroronloop</code></td><td><code>log_link_loops</code></td><td>Log an error when links make a loop. What it does today, &sect;2.</td></tr>
+      <tr><td><code>femaleplugs</code></td><td><code>allow_female_plugs</code></td><td>Let plugs go into the socket cards of machines</td></tr>
+      <tr><td><code>qemupath</code></td><td><code>qemu_path</code></td><td>The folder of the QEMU programs</td></tr>
+      <tr><td><code>vdepath</code></td><td><code>vde_path</code></td><td>The folder of the VDE programs</td></tr>
+
+      <tr class="group"><td colspan="3">settings.toml<span>with <span class="ref">C8</span> A</span></td></tr>
+      <tr><td><code>term</code></td><td><code>terminal</code></td><td>The terminal that opens the consoles of the bricks</td></tr>
+      <tr><td><code>ksm</code></td><td><code>kernel_samepage_merging</code></td><td>Share equal memory pages between machines (KSM)</td></tr>
+      <tr><td><code>systray</code></td><td><code>tray_icon</code></td><td>Show an icon in the system tray</td></tr>
+      <tr><td><code>show_missing</code></td><td><code>warn_missing_programs</code></td><td>Warn at start about the programs Virtualbricks can&rsquo;t find</td></tr>
+      <tr><td>&mdash;</td><td><code>audio_driver</code></td><td>The audio driver QEMU plays the sound cards through, as alsa, pa or pipewire. New, <span class="ref">V4</span>: <code>alsa</code> by default.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <p class="label">The only changes of structure</p>
+    <p>The CD-ROM choice, <code>acpi</code> as a boolean, <code>qemu_program</code> never empty (a new <code>Str(required=True)</code>), the tunnel client&rsquo;s own schema, and <code>stdout</code>, <code>loadvm</code> and <code>portrait</code> gone. Every other row is a rename: same type, same default, same place in the file. The keys stay flat in each brick&rsquo;s table, as today <span class="ref">C5</span>; the disks and the network cards stay tables of their own.</p>
+  </div>
+</section>
+
+<section id="icon">
+  <h2><span class="num">&sect;5</span>The icon</h2>
+  <ul>
+    <li>A new <code>BaseConfig</code> in <code>base.py</code>, next to <code>Base</code>, with one field: <code>icon = field(Path(), default="", help=&hellip;)</code>. <code>BrickConfig</code> builds on it and adds <code>on_start</code> and <code>on_stop</code>; <code>EventConfig</code> builds on it too.</li>
+    <li>The virtual machine&rsquo;s <code>icon</code> moves there. Same key, same kind, same place in the file: format 1 projects need nothing for it.</li>
+    <li>Nothing new reads it. <code>graphics.brick_icon</code> keeps showing a machine&rsquo;s own icon and the QEMU panel keeps its icon chooser; every other brick and every event keeps the icon of its type. How an icon is chosen, and where it shows, is for the panels.</li>
+    <li>A Netemu keeps its icon on the brick, with its events, not in each state: <code>BRICK_KEYS</code> is the fields of <code>BrickConfig</code>, so the icon follows without a change.</li>
+  </ul>
+</section>
+
+<section id="commands">
+  <h2><span class="num">&sect;6</span>Command lines</h2>
+  <p>Each brick type writes its command line in a method, in the order of the command line, with a helper that leaves out what is off or empty <span class="ref">C4</span>. A key that doesn&rsquo;t reach the command line is one the method doesn&rsquo;t mention. Where versions of a program differ, the method asks what the installed one has, &sect;7.</p>
+
+  <figure class="code">
+    <figcaption>virtualbricks/bricks/command.py, new</figcaption>
+<pre><code>class Command:
+    <span class="c">"""A program and its arguments, in the order of the command line."""</span>
+
+    def __init__(self, program):
+        self.argv = [program]
+
+    def arg(self, *values):
+        <span class="c">"""Arguments as they are."""</span>
+        self.argv.extend(str(value) for value in values)
+
+    def flag(self, option, on):
+        <span class="c">"""The option alone, when on is true."""</span>
+        if on:
+            self.argv.append(option)
+
+    def option(self, option, value):
+        <span class="c">"""The option and its value, unless the value is empty or None."""</span>
+        if value is not None and value != "":
+            self.argv += [option, str(value)]
+
+    def props(self, option, **props):
+        <span class="c">"""The option and its props as name=value,..., without the empty ones."""</span>
+        parts = [f"{name}={value}" for name, value in props.items()
+                 if value is not None and value != ""]
+        if parts:
+            self.argv += [option, ",".join(parts)]</code></pre>
+  </figure>
+
+  <div class="compare">
+    <figure class="code">
+      <figcaption>switch.py, Switch.command()</figcaption>
+<pre><code>def command(self, prepared):
+    config = self.config
+    cmd = Command(abspath_vde("vde_switch"))
+    cmd.flag("-x", config.hub_mode)
+    cmd.option("-n", config.ports)
+    cmd.flag("-F", config.fast_spanning_tree)
+    cmd.option("-s", self.path())
+    cmd.option("-M", self.console())
+    return cmd.argv</code></pre>
+    </figure>
+    <figure class="code">
+      <figcaption>tap.py, Tap.command()</figcaption>
+<pre><code>def command(self, prepared):
+    cmd = Command(abspath_vde("vde_plug2tap"))
+    <span class="c"># this tap's own socket and name</span>
+    cmd.option("-s", socket_path(self.plugs[0]))
+    cmd.arg(self.name)
+    return cmd.argv</code></pre>
+    </figure>
+  </div>
+
+  <figure class="code">
+    <figcaption>virtualmachine.py, VirtualMachine.command(), in part</figcaption>
+<pre><code>def command(self, prepared):
+    config = self.config
+    qemu = prepared.qemu  <span class="c"># what the installed QEMU has, &sect;7</span>
+    cmd = Command(qemu.path)
+    machine_acpi = qemu.machine_has(config.machine_type, "acpi")
+    cmd.props(
+        "-machine",
+        type=config.machine_type,
+        acpi="off" if not config.acpi and machine_acpi else None,
+    )
+    cmd.flag("-no-acpi", not config.acpi and not machine_acpi)
+    cmd.option("-cpu", config.cpu_model)
+    cmd.option("-smp", config.cpus)
+    cmd.option("-m", config.memory)
+    cmd.option("-boot", config.boot_order)
+    cmd.flag("-usb", config.use_usb)
+    cmd.flag("-snapshot", config.forget_disk_changes)
+    cmd.option("-loadvm", prepared.resume)
+    if config.sdl_window and qemu.has_display("sdl"):
+        cmd.arg("-display", "sdl")  <span class="c"># unless prepare() left it out</span>
+    if config.headless:
+        cmd.arg("-display", "none")
+    if config.sound_card:
+        cmd.arg("-audiodev", f"{prepared.audio_driver},id=snd0")  <span class="c"># the setting</span>
+        ...
+    for device, path in prepared.disks:
+        ...
+    if config.use_kernel:
+        cmd.option("-kernel", config.kernel)
+    if config.use_initrd:
+        cmd.option("-initrd", config.initrd)
+    if config.use_kernel and config.kernel:
+        cmd.option("-append", config.kernel_command_line)  <span class="c"># no quotes</span>
+    for index, card in enumerate(self.cards()):
+        device = f"{card.model},mac={card.mac}"
+        if qemu.has_netdev("vde"):
+            cmd.arg("-netdev", f"vde,id=vx{index},sock={card.socket}")
+            device += f",netdev=vx{index}"
+        cmd.arg("-device", device)  <span class="c"># without vde: unplugged, and a warning</span>
+    ...
+    return cmd.argv</code></pre>
+  </figure>
+
+  <ul>
+    <li><code>command(prepared)</code> reads the configuration, the brick&rsquo;s own paths (its socket, its console, the sockets of its plugs) and what <code>prepare()</code> returned, which includes what the installed program has. It reads no file, starts nothing, and returns a list of strings.</li>
+    <li><code>command_builder</code>, <code>build_cmd_line()</code>, <code>args()</code> and <code>prog()</code> go, and so does the virtual machine&rsquo;s <code>default_arg0</code>, the program that an empty <code>argv0</code> meant.</li>
+    <li>Each type is tested with whole command lines, a default brick and one with every switch on, against the recorded programs of every target of &sect;7. Where today&rsquo;s options work, the expected lists are those today&rsquo;s code gives, recorded before the change.</li>
+  </ul>
+
+  <div class="scroll">
+  <table class="wide">
+    <thead><tr><th>Brick</th><th>Today</th><th>With this plan</th></tr></thead>
+    <tbody>
+      <tr><td>tap1 on sw1, tap2 on sw2</td><td><code>-s /run/vb/sw2.ctl tap2</code></td><td><code>-s /run/vb/sw1.ctl tap1</code></td></tr>
+      <tr><td>tunnel server tl1 on sw1</td><td><code>-s /run/vb/sw2.ctl -p 7667</code>, the last server&rsquo;s socket</td><td><code>-s /run/vb/sw1.ctl -p 7667</code></td></tr>
+      <tr><td>wire</td><td>doesn&rsquo;t start: the program is a tuple</td><td><code>dpipe vde_plug SOCKET1 = vde_plug SOCKET2</code>, from vde_path</td></tr>
+      <tr><td>netemu</td><td><code>vde-netemu</code> from <code>$PATH</code></td><td><code>vde-netemu</code> from vde_path</td></tr>
+      <tr><td>qemu, kernel command line</td><td><code>-append 'console=ttyS0'</code></td><td><code>-append console=ttyS0</code></td></tr>
+      <tr><td>qemu, SDL window</td><td><code>-sdl</code>, which 7.2 and later refuse</td><td><code>-display sdl</code>, on every QEMU from 6.2</td></tr>
+      <tr><td>qemu, ACPI off</td><td><code>-no-acpi</code>, which 10.0 and later refuse</td><td><code>acpi=off</code> in the <code>-machine</code> props, where the machine has the property (the pc machines of 6.2 have it)</td></tr>
+      <tr><td>qemu, a USB device</td><td><code>-usbdevice host:046d:c52b</code>, refused</td><td><code>-device usb-host,vendorid=0x046d,productid=0xc52b</code></td></tr>
+      <tr><td>qemu, sound card ac97</td><td><code>-soundhw ac97</code>, which 7.2 and later refuse</td><td><code>-audiodev DRIVER,id=snd0 -device AC97,audiodev=snd0</code>, DRIVER from the <code>audio_driver</code> setting</td></tr>
+      <tr><td>qemu, KVM</td><td><code>-machine accel=kvm:tcg,kvm_shadow_mem=N</code></td><td><code>-accel kvm,kvm-shadow-mem=N -accel tcg</code></td></tr>
+      <tr><td>qemu, monitor and serial</td><td><code>server,nowait</code>, deprecated</td><td><code>server=on,wait=off</code></td></tr>
+      <tr><td>qemu, a card on a switch, a QEMU without VDE</td><td><code>-netdev vde,&hellip;</code>, refused: the machine doesn&rsquo;t start</td><td>the card without a backend, unplugged, and a warning <span class="ref">V3</span></td></tr>
+      <tr><td>qemu, portrait</td><td><code>-portrait</code>, which 10.0 and later refuse</td><td>the key is dropped</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="footnote">Each option on the right was started, paused, on QEMU 6.2 (Ubuntu 22.04, in a container) and on 10.0 (here), as was a card without a backend.</p>
+</section>
+
+<section id="versions">
+  <h2><span class="num">&sect;7</span>Program versions</h2>
+  <p>Virtualbricks supports the QEMU and VDE of six targets, and every major version of QEMU from 6.2 on. A project made on one of them runs on a newer one. One made on a newer target runs on an older one when the older programs can do what it asks: that direction isn&rsquo;t promised, and nothing refuses it for its own sake. The same holds for every brick, not only for virtual machines.</p>
+  <div class="scroll">
+  <table class="wide">
+    <thead><tr><th>Target</th><th>QEMU</th><th><code>vde</code> backend</th><th><code>stream</code>, <code>dgram</code></th><th>Old options it still has</th><th>SDL window</th></tr></thead>
+    <tbody>
+      <tr><td>Ubuntu 22.04</td><td class="nowrap">6.2.0</td><td class="no">no</td><td class="no">no</td><td><code>-soundhw</code> <code>-sdl</code> <code>-no-acpi</code> <code>-portrait</code></td><td>with qemu-system-gui</td></tr>
+      <tr><td>Debian 12 bookworm</td><td class="nowrap">7.2.22</td><td>yes</td><td>yes</td><td><code>-no-acpi</code> <code>-portrait</code></td><td>with qemu-system-gui</td></tr>
+      <tr><td>Ubuntu 24.04</td><td class="nowrap">8.2.2</td><td class="no">no</td><td>yes</td><td><code>-no-acpi</code> <code>-portrait</code></td><td>with qemu-system-gui</td></tr>
+      <tr><td>Debian 13 trixie</td><td class="nowrap">10.0.11</td><td>yes</td><td>yes</td><td>none</td><td>yes, installed here</td></tr>
+      <tr><td>Ubuntu 26.04</td><td class="nowrap">10.2.1</td><td class="no">no</td><td>yes</td><td>none</td><td>with qemu-system-gui</td></tr>
+      <tr><td>Debian testing, sid</td><td class="nowrap">11.1.1</td><td>yes</td><td>yes</td><td>none</td><td>with qemu-system-gui</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="footnote">Checked on 28 September 2026: the five others in podman containers, with <code>qemu-system-x86</code> and <code>vde2</code> installed without recommends; trixie on this machine. <code>-audio</code> exists from 7.2 on; <code>-audiodev help</code> lists the drivers from 7.2 on and answers &ldquo;Help is not available&rdquo; on 6.2. VDE is the same on all six: vde2 2.3.2+r586 (<code>vde_switch</code>, <code>vde_plug2tap</code>, <code>vde_pcapplug</code>, <code>wirefilter</code>, and <code>vde_cryptcab</code> in <code>vde2-cryptcab</code>) and vdeplug4 4.0.1 (<code>vde_plug</code>, <code>dpipe</code>, and plugins such as <code>udp</code>, <code>ptp</code> and <code>tap</code>). No target ships QEMU 9; the rules below don&rsquo;t depend on the number, and the tests cover it with a recording from another distribution, as Fedora 41&rsquo;s 9.1.</p>
+
+  <h3>Principles</h3>
+  <ul>
+    <li>The configuration says what, never how: no option of a program is stored. Values that are the program&rsquo;s own names, as machine types, CPU models, card models and the sound card, are stored as the program names them and checked against the installed one.</li>
+    <li>What the program has, not its version number, decides <span class="ref">V1</span>. Before a start Virtualbricks asks the program, and <code>command()</code> takes the spelling it accepts. The version number serves the messages and the supported range.</li>
+    <li>Newer programs are the supported direction. The tests run every command line against the recorded programs of each target, and recording a new one is how a new QEMU is checked.</li>
+    <li>An older program isn&rsquo;t refused for its version. A setting it lacks is left out, the brick starts, and a warning in the messages window and the log says what, where and how to get it <span class="ref">V2</span>: &ldquo;vm1: QEMU 8.2.2 has no machine type pc-q35-11.1 (machine_type); it starts with the default machine&rdquo;, &ldquo;vm1: no SDL window (sdl_window): install the qemu-system-gui package&rdquo;.</li>
+  </ul>
+
+  <h3>What Virtualbricks asks the programs</h3>
+  <ul>
+    <li>QEMU, once per program file for the session, keyed by its path, size and time, with the questions run side by side: <code>--version</code>, <code>-help</code>, <code>-machine help</code>, <code>-cpu help</code>, <code>-device help</code>, <code>-display help</code>, <code>-audiodev help</code>, <code>-netdev help</code>, <code>-accel help</code>, and <code>-machine TYPE,help</code> for the properties of the machine in use.</li>
+    <li>VDE: which programs are in the vde_path folder, and the options of each where versions could differ. For a Netemu, <code>vde-netemu</code>, or <code>wirefilter</code> without it <span class="ref">V5</span>.</li>
+    <li>A new module, <code>virtualbricks/programs.py</code>, without GTK: <code>qemu_info(path)</code> and <code>vde_info(folder)</code> return Deferreds of what they found, and a parser per question turns an output into data, tested on the recordings. It takes the place of <code>qemu.py</code>, <code>_qemu.py</code> and the three stored lists; the QEMU panel takes its programs, machine types and CPU models from it.</li>
+    <li>The audio driver is the <code>audio_driver</code> setting of <code>settings.toml</code> <span class="ref">V4</span>, since it belongs to the host, not to the project. Its default is <code>alsa</code>, which the QEMU of every target that lists its drivers has built in. The settings window gets a field for it.</li>
+    <li>The warning at start about missing programs names the package to install: <code>vde2-cryptcab</code>, <code>qemu-system-gui</code>, <code>vde-netemu</code>.</li>
+  </ul>
+
+  <h3>How each setting is written</h3>
+  <div class="scroll">
+  <table class="wide">
+    <thead><tr><th>Setting</th><th>Asks</th><th>Written as</th></tr></thead>
+    <tbody>
+      <tr><td><code>sdl_window</code></td><td><code>sdl</code> in <code>-display help</code></td><td><code>-display sdl</code>; without it left out, with a warning: install qemu-system-gui</td></tr>
+      <tr><td><code>acpi = false</code></td><td>the machine&rsquo;s <code>acpi</code> property</td><td><code>acpi=off</code> in <code>-machine</code>; else <code>-no-acpi</code> when <code>-help</code> has it; else left out, with a warning</td></tr>
+      <tr><td><code>sound_card</code></td><td>the card in <code>-device help</code>; the driver in <code>-audiodev help</code>, where it answers</td><td><code>-audiodev DRIVER,id=snd0</code> and <code>-device CARD,audiodev=snd0</code>, DRIVER from <code>audio_driver</code>; without the card or the driver, no sound card and a warning; <code>pcspk</code> as <code>-machine pcspk-audiodev=snd0</code>. The stored names stay those of today: ac97 is the device AC97, es1370 is ES1370.</td></tr>
+      <tr><td><code>use_usb</code>, <code>usb_devices</code></td><td>&mdash;</td><td><code>-usb</code> and <code>-device usb-host,vendorid=0x&hellip;,productid=0x&hellip;</code></td></tr>
+      <tr><td><code>use_kvm</code>, <code>kvm_shadow_memory</code></td><td><code>kvm</code> in <code>-accel help</code></td><td><code>-accel kvm,kvm-shadow-mem=N -accel tcg</code>, so a host without KVM still starts; a QEMU without KVM gets <code>-accel tcg</code> and a warning</td></tr>
+      <tr><td>monitor, <code>serial_socket</code></td><td>&mdash;</td><td><code>server=on,wait=off</code></td></tr>
+      <tr><td>cards on a switch</td><td><code>vde</code> in <code>-netdev help</code></td><td><code>-netdev vde,id=vxN,sock=&hellip;</code>; else the card without a backend, unplugged, with a warning <span class="ref">V3</span></td></tr>
+      <tr><td><code>machine_type</code>, <code>cpu_model</code>, card models</td><td>the lists</td><td>as stored; a name the program doesn&rsquo;t list is left out for the program&rsquo;s default machine or CPU, or the default card model, rtl8139, with a warning</td></tr>
+      <tr><td>everything else</td><td>&mdash;</td><td>as today: the same on every QEMU from 6.2</td></tr>
+      <tr><td>switch, tap, capture, tunnels, wire</td><td>the program exists</td><td>as today: vde2 2.3.2 has the same options on every target</td></tr>
+      <tr><td>Netemu</td><td><code>vde-netemu</code> or <code>wirefilter</code></td><td>the same options for both <span class="ref">V5</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Cards without QEMU&rsquo;s vde backend</h3>
+  <ul>
+    <li>Ubuntu&rsquo;s own QEMU lacks it; the QEMU packages for Ubuntu that you distribute have it <span class="ref">V3</span>. No helper runs between a switch and QEMU.</li>
+    <li>With a QEMU without it, a machine starts with each card that plugs into a switch unplugged: the card without a backend, which QEMU accepts, as a cable pulled out. The warning says that this QEMU can&rsquo;t join a VDE switch. Host-only cards and socket cards of other bricks follow the same rule where they need <code>vde</code>.</li>
+  </ul>
+
+  <h3>Tests that keep it true</h3>
+  <ul>
+    <li>Recordings: the answers of each target&rsquo;s programs to the questions above, in <code>virtualbricks/tests/data/programs/&lt;target&gt;/</code>, made by a script in the same folder that runs podman. A new distribution or a new QEMU is one more run of it.</li>
+    <li>Every brick type&rsquo;s command lines are tested against every recording: a project for any target gives a working command line on every other, with the warnings it should.</li>
+    <li>An integration test, skipped without QEMU, starts the command lines on the installed QEMU, paused, and stops them.</li>
+    <li>A second script starts a sample project in each target&rsquo;s container: the check to run before a release, and after a distribution updates its QEMU.</li>
+  </ul>
+</section>
+
+<section id="starting">
+  <h2><span class="num">&sect;8</span>Starting a brick</h2>
+  <p><code>poweron()</code> runs these stages, each a method a test can call alone:</p>
+  <ol class="flow">
+    <li><div><b>Refuse</b> a brick that isn&rsquo;t configured or connected. <span class="same">As today.</span></div></li>
+    <li><div><b>Start the bricks it plugs into</b>, refusing a loop. <span class="same">As today.</span></div></li>
+    <li><div><b><code>prepare(resume=None)</code></b> returns a Deferred of what the command needs that takes work. Every brick asks its programs what they have (&sect;7, once per program file) and checks its configuration against it; what the program lacks is left out, with a warning. A virtual machine also makes sure of the private copies of its disks and takes the audio driver from the settings; a tunnel writes its key.</div></li>
+    <li><div><b><code>command(prepared)</code></b> returns the command line, &sect;6.</div></li>
+    <li><div><b><code>spawn(argv)</code></b> logs the command, puts <code>sudo</code> in front for a tap or a capture when Virtualbricks isn&rsquo;t root, and spawns the process.</div></li>
+    <li><div><b>Once the process runs</b>, the event of <code>on_start</code>. <span class="same">As today.</span></div></li>
+  </ol>
+  <ul>
+    <li>Resuming a machine passes the state as an option, <code>vm.poweron(resume="virtualbricks")</code>, from the brick menu&rsquo;s Resume. Today it sets <code>config.loadvm</code> and clears it once the machine started, and the key is saved in every project.</li>
+    <li>The tunnel&rsquo;s key is written by <code>prepare()</code> with <code>hashlib</code>, into the runtime folder as <code>&lt;name&gt;.key</code>, readable by you only. It has the same bytes as <code>echo password | sha1sum</code> gives, the SHA-1 in hex, two spaces, a dash and a newline, so a tunnel still works with an older Virtualbricks at the other end. The shell and <code>/tmp</code> go.</li>
+    <li>What happens after a start, besides the events, stays as it is. Setting the tap&rsquo;s address, which nothing does today, would be a stage after the process runs, &sect;13.</li>
+  </ul>
+</section>
+
+<section id="format">
+  <h2><span class="num">&sect;9</span>Old files and the migration</h2>
+  <div class="compare">
+    <figure class="code">
+      <figcaption>today</figcaption>
+<pre><code><span class="h">[bricks.vm1]</span>
+type = "qemu"
+pon_vbevent = "resize"
+argv0 = "qemu-system-x86_64"
+kvm = true
+smp = 2
+ram = 1024
+deviceen = false
+device = ""
+cdromen = true
+cdrom = "/isos/debian-13.iso"
+noacpi = ""
+loadvm = ""
+stdout = ""</code></pre>
+    </figure>
+    <figure class="code">
+      <figcaption>with this plan, comments left out</figcaption>
+<pre><code><span class="h">[bricks.vm1]</span>
+type = "qemu"
+on_start = "resize"
+qemu_program = "qemu-system-x86_64"
+use_kvm = true
+cpus = 2
+memory = 1024
+cdrom = "image"
+cdrom_image = "/isos/debian-13.iso"
+cdrom_device = ""
+acpi = true</code></pre>
+    </figure>
+  </div>
+  <ul>
+    <li>The files stay at format 1. No release has written them yet, so the new names simply replace the old ones, and <code>projectfile.UPGRADES</code> stays empty.</li>
+    <li>A file this branch wrote before the change reads as any file with unknown keys: each old key is reported and dropped, and the new key takes its default. The 2.1 files these projects came from are still where they were, so a project can be converted again.</li>
+    <li>The migration of 2.1 projects writes the new names. <code>RENAMED_KEYS</code> in <code>migrate/convert.py</code>, which already maps <code>basehda</code>, gets the whole table of &sect;4, and the conversion turns <code>cdromen</code> and <code>deviceen</code> into <code>cdrom</code>, <code>noacpi=*</code> into <code>acpi = false</code>, an empty <code>argv0</code> into <code>qemu-system-x86_64</code>, and drops <code>stdout</code>, <code>loadvm</code> and <code>portrait</code>, saying so in its report.</li>
+    <li>It also rewrites the console commands of the events: <code>vm1 config ram=512</code> becomes <code>vm1 config memory=512</code>, by the type of the brick named. A command it can&rsquo;t read, or that names no brick of the project, is kept and reported <span class="ref">C6</span>. Shell commands are left alone.</li>
+    <li>The same goes for the settings: the migration of <code>~/.virtualbricks.conf</code> writes <code>terminal</code>, <code>tray_icon</code> and the others, and a <code>settings.toml</code> of this branch loses its four renamed keys to their defaults, with a line in the log.</li>
+  </ul>
+</section>
+
+<section id="code">
+  <h2><span class="num">&sect;10</span>The code</h2>
+  <div class="scroll">
+  <table class="wide">
+    <thead><tr><th>Module</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><td class="nowrap"><code>base.py</code></td><td><code>BaseConfig</code> with <code>icon</code>.</td></tr>
+      <tr><td class="nowrap"><code>programs.py</code></td><td>New: what the installed QEMU and VDE programs have, &sect;7.</td></tr>
+      <tr><td class="nowrap"><code>qemu.py</code>, <code>_qemu.py</code></td><td>Gone, with <code>gui/data/qemu_specs_*.json</code>.</td></tr>
+      <tr><td class="nowrap"><code>tools.py</code></td><td>The missing programs name their packages.</td></tr>
+      <tr><td class="nowrap"><code>bricks/command.py</code></td><td>New: <code>Command</code>.</td></tr>
+      <tr><td class="nowrap"><code>bricks/__init__.py</code></td><td><code>BrickConfig</code> renamed; <code>poweron()</code> in stages with <code>prepare()</code>, <code>command()</code>, <code>spawn()</code>; <code>command_builder</code>, <code>build_cmd_line()</code>, <code>args()</code>, <code>prog()</code> go.</td></tr>
+      <tr><td class="nowrap"><code>bricks/*.py</code></td><td>Schemas renamed with their help texts; <code>command()</code> on each type, <code>prepare()</code> for the virtual machine and the tunnels; the <code>cbset_</code> methods of the switch and Netemu follow the new names.</td></tr>
+      <tr><td class="nowrap"><code>config/schema.py</code></td><td><code>help</code> used; <code>Kind.describe()</code>; <code>notes()</code>; <code>Str(required=True)</code>, which refuses an empty string.</td></tr>
+      <tr><td class="nowrap"><code>config/tomlfile.py</code></td><td>Comments on the line or above it, and the header.</td></tr>
+      <tr><td class="nowrap"><code>config/projectfile.py</code></td><td><code>project_notes()</code>. The format stays 1.</td></tr>
+      <tr><td class="nowrap"><code>config/settings.py</code></td><td>Renames, the new <code>audio_driver</code>, and comments.</td></tr>
+      <tr><td class="nowrap"><code>config/importing.py</code></td><td>The new names of the machine paths; writes the comments.</td></tr>
+      <tr><td class="nowrap"><code>migrate/</code></td><td><code>RENAMED_KEYS</code> with the table of &sect;4; the CD-ROM, ACPI and program conversions; the events&rsquo; console commands; comments.</td></tr>
+      <tr><td class="nowrap"><code>console.py</code></td><td>Nothing: its names come from the schemas.</td></tr>
+      <tr><td class="nowrap"><code>gui/</code></td><td>The panels and the settings window use the new names; the QEMU panel&rsquo;s CD-ROM radios set <code>cdrom</code>, and its lists come from <code>programs.py</code>; the settings window has the audio driver; <code>brickinfo.py</code>; <code>brickmenu.py</code>&rsquo;s Resume passes <code>resume</code>.</td></tr>
+      <tr><td class="nowrap"><code>tests/data/programs/</code></td><td>New: the recordings of the targets, and the scripts that make them and start a sample project in each.</td></tr>
+      <tr><td class="nowrap"><code>docs/</code></td><td>virtualbricks-config(5) and <code>config-files.html</code>: every key, a COMMENTS section, what the migration converts.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="plan">
+  <h2><span class="num">&sect;11</span>Implementation plan</h2>
+  <p>One commit per step, stopping for your review after each. What the programs have comes first, since the command lines depend on it; the command lines come next, with tests that pin them, so the renames of step 4 run against that net.</p>
+  <div class="scroll">
+  <table class="wide">
+    <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+    <tbody>
+      <tr><td class="nowrap">1 Programs</td><td><code>programs.py</code>; the recordings of the six targets and a QEMU 9, and the script that makes them; the QEMU panel&rsquo;s lists from it; <code>qemu.py</code>, <code>_qemu.py</code> and the stored lists go; missing programs name their packages.</td><td>each parser on each recording; the cache</td></tr>
+      <tr><td class="nowrap">2 Command lines</td><td><code>command.py</code>; <code>command()</code> on every type, choosing by what the program has; the fixes: each brick&rsquo;s own paths (tap, tunnels), the wire&rsquo;s program, Netemu from vde_path, <code>-append</code> without quotes, the options of &sect;7. <code>command_builder</code>, <code>build_cmd_line()</code>, <code>args()</code> and <code>prog()</code> go.</td><td><code>Command</code>; whole command lines of every type on every recording</td></tr>
+      <tr><td class="nowrap">3 Starting</td><td><code>poweron()</code> in stages; <code>prepare()</code> asks the programs and checks the configuration, leaving out what they lack, with its warnings; the disks and the tunnel key there; <code>audio_driver</code> in <code>settings.toml</code> and the settings window; the key with hashlib in the runtime folder; <code>loadvm</code> leaves the configuration and Resume passes it.</td><td><code>prepare()</code> with fake programs and qemu-img, each warning and what it leaves out, the key&rsquo;s bytes, <code>spawn()</code> with a fake reactor</td></tr>
+      <tr><td class="nowrap">4 Names and icon</td><td><code>BaseConfig</code> and <code>icon</code>; every row of &sect;4, <code>qemu_program</code> required; the migration of 2.1 files to the new names, with the events&rsquo; commands; the console, panels, settings window and brick info on the new names; the man page and its HTML twin.</td><td>the migration&rsquo;s conversions; <code>Str(required=True)</code>; existing tests renamed, a mechanical change</td></tr>
+      <tr><td class="nowrap">5 Comments</td><td>A <code>help</code> for every field, <code>Kind.describe()</code>, <code>notes()</code>, <code>project_notes()</code>; <code>tomlfile</code> writes them; every writer: project save and create, settings, state, import, migration. The man page: COMMENTS, and Writing.</td><td>the layout rules (above, wrapping, <code># default</code>, header); a file read back equals its data</td></tr>
+      <tr><td class="nowrap">6 Check</td><td>The integration test here; the sample project in each target&rsquo;s container; the app on Broadway: the QEMU panel (CD-ROM, icon, lists), the settings window, save and reopen; a 2.1 project migrated, with an event that configures a brick.</td><td>&mdash;</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="decisions">
+  <h2><span class="num">&sect;12</span>Decisions</h2>
+  <div class="scroll">
+  <table class="decisions wide">
+    <thead><tr><th></th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>C1</td>
+        <td>What the mark of a value says</td>
+        <td>
+          <p><b>A</b> Equal to the field&rsquo;s default or not, worked out when writing. Nothing to store, and any writer can add it from the data; a value you chose that equals the default reads as default.</p>
+          <p><b>B</b> Remembered per field: the panels and the console mark what you set, the mark is written in the comment and read back with tomlkit. Exact, but the comments become data: a hand edit of a value must also edit its comment, and the importer and the migration have to carry the marks.</p>
+          <p><b>C</b> Defaults written as commented-out keys (<code># memory = 64</code>), set values as keys, as sshd_config does. Exact and read by tomllib, but a project then follows new defaults when Virtualbricks changes them, which undoes D4, every value written.</p>
+        </td>
+        <td class="rec">Decided: A</td>
+      </tr>
+      <tr>
+        <td>C2</td>
+        <td>Comments you write by hand</td>
+        <td>
+          <p><b>A</b> Dropped at the next save, as today; the header of each file says so.</p>
+          <p><b>B</b> Kept: each file read with tomlkit too, and a comment put back beside the same key. It breaks when a key is renamed, and two writers share one comment.</p>
+        </td>
+        <td class="rec">Decided: A</td>
+      </tr>
+      <tr>
+        <td>C3</td>
+        <td>Language of the comments</td>
+        <td>
+          <p><b>A</b> English. <b>B</b> The language of the desktop that saved the file.</p>
+        </td>
+        <td class="rec">Decided: A</td>
+      </tr>
+      <tr>
+        <td>C4</td>
+        <td>How command lines are built</td>
+        <td>
+          <p><b>A</b> A <code>command()</code> method per type with the <code>Command</code> helper.</p>
+          <p><b>B</b> Options declared on the fields, <code>field(Bool(), option=Flag("-snapshot"))</code>, plus code for the rest. The <code>-machine</code> props, the CD-ROM, the clock, the kernel, Netemu&rsquo;s pairs and the network cards each come from several fields, so the virtual machine would be split between the two places.</p>
+        </td>
+        <td class="rec">Decided: A</td>
+      </tr>
+      <tr>
+        <td>C5</td>
+        <td>Layout of a brick&rsquo;s keys</td>
+        <td>
+          <p><b>A</b> Flat, as today; the disks and network cards stay tables.</p>
+          <p><b>B</b> The virtual machine&rsquo;s keys in tables by topic, <code>[bricks.vm1.display]</code>, <code>.kernel</code>, <code>.clock</code>, <code>.cdrom</code>: shorter names, but a table per topic in every machine, grouped after panels still to be designed.</p>
+        </td>
+        <td class="rec">Decided: A</td>
+      </tr>
+      <tr>
+        <td>C6</td>
+        <td>The old names in the console</td>
+        <td>
+          <p><b>A</b> The new names only; the migration rewrites the console commands of 2.1 events. A command stored by this branch with an old name fails when the event runs, and says which key it doesn&rsquo;t know.</p>
+          <p><b>B</b> The old names accepted as well, for a while.</p>
+        </td>
+        <td class="rec">Decided: A</td>
+      </tr>
+      <tr>
+        <td>C7</td>
+        <td>The options QEMU 10 refuses</td>
+        <td>
+          <p>Replaced by &sect;7: the options are chosen by what the installed QEMU has, for every version from 6.2.</p>
+        </td>
+        <td class="rec">Replaced</td>
+      </tr>
+      <tr>
+        <td>C8</td>
+        <td>The settings&rsquo; names</td>
+        <td>
+          <p><b>A</b> Renamed as in &sect;4. <b>B</b> Bricks and events only; the settings keep theirs.</p>
+        </td>
+        <td class="rec">Decided: A</td>
+      </tr>
+      <tr>
+        <td>C9</td>
+        <td>The names themselves</td>
+        <td>
+          <p>As in &sect;4, or with the rows you change.</p>
+        </td>
+        <td class="rec">Decided: &sect;4, with <code>qemu_program</code> never empty</td>
+      </tr>
+      <tr>
+        <td>V1</td>
+        <td>What chooses the options</td>
+        <td>
+          <p><b>A</b> What the installed program says it has: its help, its lists of machines, devices, displays, drivers and backends.</p>
+          <p><b>B</b> Tables by version number. Shorter, but a distribution builds QEMU its own way: Ubuntu leaves out <code>vde</code>, and SDL comes with another package, whatever the number.</p>
+        </td>
+        <td class="rec">Decided: A</td>
+      </tr>
+      <tr>
+        <td>V2</td>
+        <td>A setting the installed program can&rsquo;t do</td>
+        <td>
+          <p><b>A</b> The start stops, with a message that names the brick, the key, the value, the program&rsquo;s version and the package to install when there is one.</p>
+          <p><b>B</b> The brick starts without it, with a warning. The machine then runs differently from the project, without a window or without sound.</p>
+          <p><b>C</b> The command goes to the program as it is, and the program&rsquo;s own error is shown.</p>
+        </td>
+        <td class="rec">Decided: B</td>
+      </tr>
+      <tr>
+        <td>V3</td>
+        <td>Cards on a switch when QEMU has no <code>vde</code> backend, as on every Ubuntu target</td>
+        <td>
+          <p><b>A</b> A helper <code>vde_plug</code> per card and a socket backend QEMU has, once a spike proves a pair that works.</p>
+          <p><b>B</b> The start stops, saying that this QEMU can&rsquo;t join a VDE switch.</p>
+        </td>
+        <td class="rec">Not needed: your QEMU packages for Ubuntu have <code>vde</code>; without it a card starts unplugged, as V2 B</td>
+      </tr>
+      <tr>
+        <td>V4</td>
+        <td>The audio driver of a sound card</td>
+        <td>
+          <p><b>A</b> Chosen at each start from what the QEMU has and what the session runs: pipewire, then pa, then alsa, else none, which keeps the card and makes no sound.</p>
+          <p><b>B</b> A setting in <code>settings.toml</code>, since it belongs to the machine, not to the project.</p>
+        </td>
+        <td class="rec">Decided: B</td>
+      </tr>
+      <tr>
+        <td>V5</td>
+        <td>Netemu where <code>vde-netemu</code> isn&rsquo;t installed</td>
+        <td>
+          <p><b>A</b> <code>wirefilter</code> of vde2, which the legacy Wirefilter brick ran, when its help has the options Netemu uses.</p>
+          <p><b>B</b> <code>vde-netemu</code> only, and a message that names its repository.</p>
+        </td>
+        <td class="rec">Decided: A</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="later">
+  <h2><span class="num">&sect;13</span>Later</h2>
+  <ul>
+    <li>The configuration panels, on the help texts of the schemas; how an icon is chosen for any brick or event, and where it shows.</li>
+    <li>The tap&rsquo;s address: set <code>address_mode</code>, <code>ip_address</code>, <code>netmask</code> and <code>gateway</code> after the process starts, through sudo. Today nothing does.</li>
+    <li>Readable values where QEMU&rsquo;s are cryptic: <code>boot_order</code> as disk, CD-ROM or floppy.</li>
+    <li>What a running brick takes without a restart (the switch&rsquo;s ports, hub mode and FSTP, all of Netemu, a machine&rsquo;s USB devices): a declared list instead of <code>cbset_&lt;name&gt;</code> methods.</li>
+    <li>Notes of your own on a brick, stored as a key, shown in its panel and above its table.</li>
+    <li><code>log_link_loops</code>: a loop always stops a start, so the setting may have no reason to exist.</li>
+    <li>The router has no settings: its <code>-c configfile</code> names nothing.</li>
+    <li>A Programs window that shows what Virtualbricks found: each program, its version, what it lacks and the packages to install.</li>
+    <li>QEMU for other architectures, asked the same way; only <code>qemu-system-x86</code> was recorded.</li>
+    <li>The per-user lock, remembered from the configuration redesign.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+</div>
