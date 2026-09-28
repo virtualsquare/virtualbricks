@@ -256,8 +256,8 @@ Every brick table has a **type**, which is one of **qemu**, **switch**,
 **tunnellisten**, **tunnelconnect** and **router**, and these three keys:
 
 **icon** = *path*, default `""`
-:   An image file to show instead of the icon of the type. Only the panel
-    of a virtual machine sets it, for now.
+:   An image file to show instead of the icon of the type. Only virtual
+    machines show it, for now.
 
 **on_start** = *event*, default `""`
 :   The event that runs when the brick starts.

@@ -50,7 +50,8 @@ def load_pixbuf(name: str) -> GdkPixbuf.Pixbuf:
 
 
 def has_custom_icon(brick):
-    return getattr(brick.config, "icon", "")
+    # every brick has an icon, but only a machine's shows, for now
+    return brick.get_type() == "Qemu" and brick.config.icon
 
 
 def brick_icon(brick):
