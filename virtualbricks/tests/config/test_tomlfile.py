@@ -22,7 +22,7 @@ from twisted.trial import unittest
 
 from virtualbricks.config.tomlfile import DecodeError, dump_toml, load_toml
 from virtualbricks.config import tomlfile
-from virtualbricks.config.tomlfile import dumps_toml, loads_toml
+from virtualbricks.config.tomlfile import Note, dumps_toml, loads_toml
 
 DOCUMENT = {
     "format": 1,
@@ -117,6 +117,130 @@ class TestDumps(unittest.TestCase):
             tomlfile._space_tables("a = 1\n[b]\nx = 1\n[[c]]\n"),
             "a = 1\n\n[b]\nx = 1\n\n[[c]]\n",
         )
+
+
+class TestNotes(unittest.TestCase):
+    """The comments of the keys: above them, and # default beside them."""
+
+    def test_above_the_key(self):
+        notes = {("a",): Note("What a is")}
+        self.assertEqual(dumps_toml({"a": 1}, notes), "# What a is\na = 1\n")
+
+    def test_default(self):
+        notes = {("a",): Note("What a is", default=True)}
+        self.assertEqual(
+            dumps_toml({"a": 1}, notes), "# What a is\na = 1  # default\n"
+        )
+
+    def test_detail_at_the_end(self):
+        notes = {("a",): Note("Ports", "1-128; default 32")}
+        self.assertEqual(
+            dumps_toml({"a": 16}, notes),
+            "# Ports (1-128; default 32)\na = 16\n",
+        )
+
+    def test_wrapped(self):
+        text = " ".join(["word"] * 40)
+        lines = tomlfile.comment_lines(Note(text))
+        # 15 words make 74 columns, and "# " before them 76: one more is 81
+        self.assertEqual(lines[0], " ".join(["word"] * 15))
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(" ".join(lines), text)
+
+    def test_never_at_a_hyphen(self):
+        # "vde-" would still fit on the first line
+        text = "x" * 70 + " vde-netemu-program"
+        self.assertEqual(
+            tomlfile.comment_lines(Note(text)),
+            ["x" * 70, "vde-netemu-program"],
+        )
+
+    def test_detail_whole_on_a_line_of_its_own(self):
+        text = "y" * 70
+        self.assertEqual(
+            tomlfile.comment_lines(Note(text, "default empty")),
+            [text, "(default empty)"],
+        )
+        # it fits on the last line up to the width
+        text = "y" * (77 - len(" (default empty)"))
+        self.assertEqual(
+            tomlfile.comment_lines(Note(text, "default empty")),
+            [text + " (default empty)"],
+        )
+
+    def test_nothing_to_say(self):
+        self.assertEqual(tomlfile.comment_lines(Note("")), [])
+        self.assertEqual(tomlfile.comment_lines(Note("", "x")), ["(x)"])
+        self.assertEqual(dumps_toml({"a": 1}, {("a",): Note("")}), "a = 1\n")
+
+    def test_by_path(self):
+        data = {
+            "t": {"x": 1, "u": {"y": 2}},
+            "l": [{"z": 1, "w": 2, "v": 3}, {"z": 4, "w": 5, "v": 6}],
+        }
+        notes = {
+            ("t", "x"): Note("x"),
+            ("t", "u", "y"): Note("y", default=True),
+            ("l", 1, "z"): Note("the second z"),
+        }
+        self.assertEqual(
+            dumps_toml(data, notes),
+            textwrap.dedent("""\
+                [t]
+                # x
+                x = 1
+
+                [t.u]
+                # y
+                y = 2  # default
+
+                [[l]]
+                z = 1
+                w = 2
+                v = 3
+
+                [[l]]
+                # the second z
+                z = 4
+                w = 5
+                v = 6
+                """),
+        )
+
+    def test_no_note_on_a_table(self):
+        notes = {("t",): Note("a table"), ("l",): Note("tables")}
+        data = {"t": {"x": 1}, "l": [{"a": 1, "b": 2, "c": 3}]}
+        self.assertEqual(dumps_toml(data, notes), dumps_toml(data))
+
+    def test_header(self):
+        text = dumps_toml(
+            {"a": 1}, {("a",): Note("a")}, "Line one\nLine two\n"
+        )
+        self.assertEqual(text, "# Line one\n# Line two\n\n# a\na = 1\n")
+
+    def test_header_before_a_table(self):
+        text = dumps_toml({"t": {"x": 1}}, header="Head")
+        self.assertEqual(text, "# Head\n\n[t]\nx = 1\n")
+
+    def test_read_back(self):
+        notes = {
+            ("format",): Note("The version", default=True),
+            ("events", "boot", "actions"): Note("Actions " * 20, "x"),
+            ("bricks", "vm", "disks", "hda", "image"): Note("i", "d", True),
+            ("bricks", "vm", "nics", 0, "mac"): Note("m", default=True),
+            ("bricks", "vm", "usb_devices"): Note("u", default=True),
+            ("bricks", "wan", "transitions"): Note("t", default=True),
+        }
+        text = dumps_toml(DOCUMENT, notes, "Header")
+        self.assertEqual(loads_toml(text), DOCUMENT)
+        self.assertEqual(text.count("  # default"), 5)
+        self.assertTrue(all(len(line) <= 79 for line in text.splitlines()))
+
+    def test_file(self):
+        path = self.mktemp()
+        dump_toml({"a": 1}, path, {("a",): Note("a", default=True)}, "H")
+        with open(path, encoding="utf-8") as fp:
+            self.assertEqual(fp.read(), "# H\n\n# a\na = 1  # default\n")
 
 
 class TestFiles(unittest.TestCase):

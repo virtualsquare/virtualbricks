@@ -613,7 +613,12 @@ def _image(dev):
     of the brick, which the project files don't have.
     """
 
-    return field(Ref("image"), default="", path=("disks", dev, "image"))
+    return field(
+        Ref("image"),
+        default="",
+        help="The image of the disk, by name",
+        path=("disks", dev, "image"),
+    )
 
 
 def _private(dev):
@@ -630,7 +635,12 @@ def _private(dev):
     top-level ``hda_private = ...`` key instead, a different file format.
     """
 
-    return field(Bool(), default=False, path=("disks", dev, "private"))
+    return field(
+        Bool(),
+        default=False,
+        help="Write to a private copy in the project folder, not the image",
+        path=("disks", dev, "private"),
+    )
 
 
 @define
@@ -642,47 +652,134 @@ class VirtualMachineConfig(bricks.BrickConfig):
     """
 
     # the program and the machine
-    qemu_program = field(Str(required=True), default="qemu-system-i386")
-    machine_type = field(Str(), default="")
-    cpu_model = field(Str(), default="")
-    use_kvm = field(Bool(), default=False)
-    cpus = field(Int(1, 64), default=1)
+    qemu_program = field(
+        Str(required=True),
+        default="qemu-system-i386",
+        help="The QEMU program, in the qemu_path folder",
+    )
+    machine_type = field(
+        Str(),
+        default="",
+        help=(
+            "The machine type, as -machine type= takes it; empty for the QEMU "
+            "default"
+        ),
+    )
+    cpu_model = field(
+        Str(),
+        default="",
+        help="The CPU model, as -cpu takes it; empty for the QEMU default",
+    )
+    use_kvm = field(Bool(), default=False, help="Use KVM when the host has it")
+    cpus = field(Int(1, 64), default=1, help="Virtual CPUs")
     # in MiB
-    memory = field(Int(1, 99999), default=64)
-    use_kvm_shadow_memory = field(Bool(), default=False)
-    kvm_shadow_memory = field(Int(0, 99999), default=1)
+    memory = field(Int(1, 99999), default=64, help="Memory in MiB")
+    use_kvm_shadow_memory = field(
+        Bool(), default=False, help="Set the size of the KVM shadow memory"
+    )
+    kvm_shadow_memory = field(
+        Int(0, 99999),
+        default=1,
+        help="KVM shadow memory in MiB, with use_kvm_shadow_memory",
+    )
     # the boot and the disks
-    boot_order = field(Str(), default="")
-    forget_disk_changes = field(Bool(), default=False)
-    virtio_disks = field(Bool(), default=False)
+    boot_order = field(
+        Str(),
+        default="",
+        help=(
+            "Boot order as -boot takes it: c the first disk, d the CD-ROM, a "
+            "the floppy; empty for the QEMU default"
+        ),
+    )
+    forget_disk_changes = field(
+        Bool(),
+        default=False,
+        help=(
+            "Write the changes to the disks in temporary files, forgotten "
+            "when the machine stops"
+        ),
+    )
+    virtio_disks = field(
+        Bool(), default=False, help="Attach the disks as virtio devices"
+    )
     # the CD-ROM: none, an image file, or a drive of the host
-    cdrom = field(Choice("none", "image", "device"), default="none")
-    cdrom_image = field(Path(), default="")
-    cdrom_device = field(Str(), default="")
+    cdrom = field(
+        Choice("none", "image", "device"), default="none", help="The CD-ROM"
+    )
+    cdrom_image = field(
+        Path(),
+        default="",
+        help="An image file for the CD-ROM, with cdrom image",
+    )
+    cdrom_device = field(
+        Str(), default="", help="A CD-ROM drive of the host, with cdrom device"
+    )
     # the display
-    headless = field(Bool(), default=False)
-    standard_vga = field(Bool(), default=False)
-    use_vnc = field(Bool(), default=False)
-    vnc_display = field(Int(0, 500), default=1)
-    sdl_window = field(Bool(), default=False)
+    headless = field(Bool(), default=False, help="No display at all")
+    standard_vga = field(
+        Bool(),
+        default=False,
+        help="A standard VGA card instead of the machine's",
+    )
+    use_vnc = field(Bool(), default=False, help="Show the display over VNC")
+    vnc_display = field(
+        Int(0, 500), default=1, help="The VNC display number, with use_vnc"
+    )
+    sdl_window = field(
+        Bool(), default=False, help="Show the display in an SDL window"
+    )
     # sound and USB
-    sound_card = field(Str(), default="")
-    use_usb = field(Bool(), default=False)
-    usb_devices = field(ListOf(UsbDeviceKind()), factory=list)
+    sound_card = field(
+        Str(), default="", help="The sound card, as ac97; empty for none"
+    )
+    use_usb = field(
+        Bool(),
+        default=False,
+        help="Give the machine USB and the devices of usb_devices",
+    )
+    usb_devices = field(
+        ListOf(UsbDeviceKind()),
+        factory=list,
+        help="USB devices of the host, by vendor and product id",
+    )
     # the keyboard, the clock and the serial port
-    keyboard_layout = field(Str(), default="")
-    clock_local_time = field(Bool(), default=False)
-    clock_drift_fix = field(Bool(), default=False)
-    serial_socket = field(Bool(), default=False)
+    keyboard_layout = field(
+        Str(),
+        default="",
+        help="The keyboard layout, two letters; empty for the default",
+    )
+    clock_local_time = field(
+        Bool(),
+        default=False,
+        help="Start the clock of the machine at local time, not UTC",
+    )
+    clock_drift_fix = field(
+        Bool(),
+        default=False,
+        help="Correct the drift of the clock of the machine",
+    )
+    serial_socket = field(
+        Bool(),
+        default=False,
+        help="Connect the serial port to a socket in the runtime folder",
+    )
     # booting a kernel directly, and debugging it
-    use_kernel = field(Bool(), default=False)
-    kernel = field(Path(), default="")
-    use_initrd = field(Bool(), default=False)
-    initrd = field(Path(), default="")
-    kernel_command_line = field(Str(), default="")
-    use_gdb = field(Bool(), default=False)
-    gdb_port = field(Int(1, 65535), default=1234)
-    acpi = field(Bool(), default=True)
+    use_kernel = field(Bool(), default=False, help="Boot a kernel directly")
+    kernel = field(Path(), default="", help="A kernel image, with use_kernel")
+    use_initrd = field(
+        Bool(), default=False, help="Load an initial ramdisk, with use_kernel"
+    )
+    initrd = field(
+        Path(), default="", help="An initial ramdisk, with use_initrd"
+    )
+    kernel_command_line = field(
+        Str(), default="", help="The kernel command line, with use_kernel"
+    )
+    use_gdb = field(Bool(), default=False, help="Accept a GDB connection")
+    gdb_port = field(
+        Int(1, 65535), default=1234, help="The TCP port for GDB, with use_gdb"
+    )
+    acpi = field(Bool(), default=True, help="Give the machine ACPI")
     # the disks, one per device of DISK_DEVICES, in the same order
     hda_image = _image("hda")
     hda_private = _private("hda")
@@ -709,6 +806,7 @@ def _get_nick(link):
 class VirtualMachine(bricks.Brick):
 
     type = "Qemu"
+    summary = "A virtual machine, run by QEMU"
     term_command = "unixterm"
     config_factory = VirtualMachineConfig
     process_protocol = bricks.Process

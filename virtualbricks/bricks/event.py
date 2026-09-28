@@ -32,8 +32,14 @@ event_error = "Error in event action. See the log for more " "information"
 @define
 class EventConfig(base.BaseConfig):
 
-    delay = field(Int(), default=0)
-    actions = field(ListOf(EventAction()), factory=list)
+    delay = field(
+        Int(), default=0, help="Seconds to wait before the actions run"
+    )
+    actions = field(
+        ListOf(EventAction()),
+        factory=list,
+        help="The actions: console or shell commands",
+    )
 
 
 class Event(base.Base):

@@ -57,13 +57,18 @@ def write_key(path, password):
 @define
 class TunnelListenConfig(bricks.BrickConfig):
 
-    password = field(Str(), default="")
-    listen_port = field(Int(1, 65535), default=7667)
+    password = field(
+        Str(), default="", help="The password of the tunnel, in clear text"
+    )
+    listen_port = field(
+        Int(1, 65535), default=7667, help="The UDP port to listen on"
+    )
 
 
 class TunnelListen(bricks.Brick):
 
     type = "TunnelListen"
+    summary = "The server end of an encrypted tunnel"
     config_factory = TunnelListenConfig
     connections = "connect"
 

@@ -23,6 +23,10 @@ Reading uses tomllib, or tomli before Python 3.11. Writing uses tomlkit with a
 fixed layout: plain values first, then tables. A list of tables is written as
 ``[[…]]`` blocks, unless its tables are small enough for one line each.
 Files are replaced atomically.
+
+A file can start with a header, and a key written on its own line can have a
+note: its description on the lines above it, and ``# default`` beside it when
+the value is the default. Tables have no notes.
 """
 
 from __future__ import annotations
@@ -31,7 +35,9 @@ import datetime
 import os
 import re
 import tempfile
-from typing import TypeAlias, TypeGuard
+import textwrap
+from collections.abc import Mapping
+from typing import NamedTuple, TypeAlias, TypeGuard
 
 try:
     import tomllib
@@ -43,6 +49,9 @@ from tomlkit import items
 
 __all__ = [
     "DecodeError",
+    "FORMAT_NOTE",
+    "Note",
+    "Notes",
     "Table",
     "Value",
     "dump_toml",
@@ -69,6 +78,27 @@ Table: TypeAlias = dict[str, Value]
 
 # A table with up to this many plain values goes on one line in a list.
 INLINE_KEYS = 2
+# The width of the comments, as that of the man pages.
+WIDTH = 79
+
+
+class Note(NamedTuple):
+    """
+    The comment of a key: its description, and whether its value is the
+    default. The detail, as ``1-128; default 32``, goes in parentheses after
+    the text, which never breaks it.
+    """
+
+    text: str
+    detail: str = ""
+    default: bool = False
+
+
+# The notes of a file, by the path of their key: the keys of the tables, and
+# the index of a table in a list of tables.
+Notes: TypeAlias = Mapping[tuple[str | int, ...], Note]
+
+FORMAT_NOTE = Note("The version of the layout of this file")
 
 
 def loads_toml(text: str) -> Table:
@@ -102,7 +132,7 @@ def _is_block(value: object) -> bool:
     return _is_table_list(value) and not all(map(_fits_inline, value))
 
 
-def _value(value: Value) -> Value | items.Array:
+def _value(value: Value) -> items.Item:
     if _is_table_list(value):
         array = tomlkit.array()
         for table in value:
@@ -111,24 +141,66 @@ def _value(value: Value) -> Value | items.Array:
             array.append(inline)
         array.multiline(True)
         return array
-    return value
+    return tomlkit.item(value)
 
 
-def _fill(container: tomlkit.TOMLDocument | items.Table, data: Table) -> None:
+def comment_lines(note: Note) -> list[str]:
+    """
+    The lines of the comment above a key, without their ``#``: the text
+    wrapped, never at a hyphen, and the detail at the end of the last line,
+    or on a line of its own when it doesn't fit.
+    """
+
+    width = WIDTH - len("# ")
+    lines = textwrap.wrap(
+        note.text, width, break_on_hyphens=False, break_long_words=False
+    )
+    if note.detail:
+        detail = f"({note.detail})"
+        if lines and len(lines[-1]) + len(" ") + len(detail) <= width:
+            lines[-1] += " " + detail
+        else:
+            lines.append(detail)
+    return lines
+
+
+def _add(
+    container: tomlkit.TOMLDocument | items.Table,
+    key: str,
+    value: Value,
+    note: Note | None,
+) -> None:
+    item = _value(value)
+    if note is not None:
+        for line in comment_lines(note):
+            container.add(tomlkit.comment(line))
+        if note.default:
+            item.comment("default")
+            # two spaces before an inline comment, as in Python
+            item.trivia.comment_ws = "  "
+    container.add(key, item)
+
+
+def _fill(
+    container: tomlkit.TOMLDocument | items.Table,
+    data: Table,
+    notes: Notes,
+    path: tuple[str | int, ...],
+) -> None:
     for key, value in data.items():
         if not _is_block(value):
-            container.add(key, _value(value))
+            _add(container, key, value, notes.get(path + (key,)))
     for key, value in data.items():
         if isinstance(value, dict):
             only_tables = bool(value) and all(map(_is_block, value.values()))
             table = tomlkit.table(only_tables)
-            _fill(table, value)
+            _fill(table, value, notes, path + (key,))
             container.add(key, table)
         elif _is_table_list(value) and _is_block(value):
             blocks = tomlkit.aot()
-            for item in value:
+            for index, item in enumerate(value):
                 table = tomlkit.table()
-                _fill(table, item)
+                _fill(table, item, notes, path + (key, index))
                 blocks.append(table)
             container.add(key, blocks)
 
@@ -149,13 +221,26 @@ def _space_tables(text: str) -> str:
     return "\n".join(lines) + "\n"
 
 
-def dumps_toml(data: Table) -> str:
+def dumps_toml(
+    data: Table, notes: Notes | None = None, header: str = ""
+) -> str:
+    """
+    The text of a TOML file: the header, each of its lines as a comment and a
+    blank line after them, then the data with the comments of the notes.
+    """
+
     document = tomlkit.document()
-    _fill(document, data)
+    if header:
+        for line in header.splitlines():
+            document.add(tomlkit.comment(line))
+        document.add(tomlkit.nl())
+    _fill(document, data, notes or {}, ())
     return _space_tables(tomlkit.dumps(document))
 
 
-def dump_toml(data: Table, path: str) -> None:
+def dump_toml(
+    data: Table, path: str, notes: Notes | None = None, header: str = ""
+) -> None:
     """Write the data to path, replacing the file only once it's complete."""
 
     directory = os.path.dirname(os.path.abspath(path))
@@ -164,7 +249,7 @@ def dump_toml(data: Table, path: str) -> None:
     )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fp:
-            fp.write(dumps_toml(data))
+            fp.write(dumps_toml(data, notes, header))
             fp.flush()
             os.fsync(fp.fileno())
         os.replace(tmp, path)

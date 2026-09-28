@@ -29,12 +29,15 @@ from virtualbricks.i18n import _
 class CaptureConfig(bricks.BrickConfig):
 
     # the interface of the host to capture
-    interface = field(Str(), default="")
+    interface = field(
+        Str(), default="", help="The interface of the host to capture, as eth0"
+    )
 
 
 class Capture(bricks.PrivilegedBrick):
 
     type = "Capture"
+    summary = "An interface of the host, whose packets go to a switch"
     config_factory = CaptureConfig
     connections = "connect"
 

@@ -77,8 +77,29 @@ that state doesn\(aqt open.
 Virtualbricks writes a new file next to the old one and renames it over
 the old one once it\(aqs complete, so a crash never leaves a
 half\-written file.
-It writes the whole file each time: comments, key order and formatting
-of a hand edit are not kept.
+It writes the whole file each time, with its own comments: the comments,
+key order and formatting of a hand edit are not kept.
+.SS Comments
+Each file starts with a few lines of comments that say what it is, then
+a blank line.
+Above each key, a comment says what the key is for, and ends in
+parentheses with its range or its choices and its default.
+A value at its default has \f[B]# default\f[R] beside it; a value
+without it was set:
+.IP
+.EX
+# Number of ports (1\-128; default 32)
+ports = 16
+# Send every packet to every port, as a hub (default false)
+hub_mode = false  # default
+.EE
+.PP
+The mark compares the value with the default when the file is written,
+so a value you set to its default is marked too.
+The keys that belong to the layout of the file, as \f[B]format\f[R],
+\f[B]type\f[R] and the connections, have a comment and never the mark;
+tables have none.
+The comments are in English, and at most 79 columns wide.
 .SS Names
 Images, events and bricks are tables keyed by their name.
 A name starts with a letter and contains only letters, digits,
@@ -792,7 +813,8 @@ by you.
 The askpass helper of \f[B]sudo\f[R](8): when it\(aqs set, Virtualbricks
 runs sudo with \f[B]\-A\f[R]; see \f[B]PRIVILEGES\f[R].
 .SH EXAMPLES
-A \f[B]settings.toml\f[R] as Virtualbricks writes it at its first start:
+A \f[B]settings.toml\f[R] as Virtualbricks writes it at its first start,
+without its comments:
 .IP
 .EX
 format = 1
@@ -805,7 +827,8 @@ audio_driver = \(dqalsa\(dq
 .EE
 .PP
 A \f[B]project.toml\f[R] with a virtual machine, two switches connected
-by a network emulator with two states, a tap and an event.
+by a network emulator with two states, a tap and an event, without its
+comments.
 The virtual machine is shortened: Virtualbricks writes all of its keys,
 and the six empty disks.
 .IP

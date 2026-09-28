@@ -377,6 +377,11 @@ class TestRunImport(ImportingTestCase):
         data = self.data()
         self.assertEqual(data["images"]["deb"]["path"], image)
         self.assertEqual(data["settings"]["qemu_path"], "/usr/bin")
+        # written with the header and comments of a project
+        with open(self.workspace._project_file("lab"), encoding="utf-8") as fp:
+            self.assertIn(
+                "# The version of the layout of this file\n", fp.read()
+            )
         cow = os.path.join(folder, "vm_hda.cow")
         staged = cow.replace(
             folder, os.path.join(self.workspace.path, ".importing-lab-x")

@@ -28,15 +28,32 @@ from virtualbricks.i18n import _
 @define
 class TapConfig(bricks.BrickConfig):
 
-    address_mode = field(Choice("off", "dhcp", "manual"), default="off")
-    ip_address = field(IPv4(), default="10.0.0.1")
-    netmask = field(IPv4(), default="255.255.255.0")
-    gateway = field(IPv4(optional=True), default="")
+    address_mode = field(
+        Choice("off", "dhcp", "manual"),
+        default="off",
+        help="How the interface gets its address",
+    )
+    ip_address = field(
+        IPv4(),
+        default="10.0.0.1",
+        help="The address, with address_mode manual",
+    )
+    netmask = field(
+        IPv4(),
+        default="255.255.255.0",
+        help="The netmask, with address_mode manual",
+    )
+    gateway = field(
+        IPv4(optional=True),
+        default="",
+        help="The default gateway; empty for none",
+    )
 
 
 class Tap(bricks.PrivilegedBrick):
 
     type = "Tap"
+    summary = "A tap interface of the host, plugged into a switch"
     config_factory = TapConfig
     connections = "connect"
 

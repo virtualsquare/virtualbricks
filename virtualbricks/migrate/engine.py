@@ -36,14 +36,17 @@ import attr
 from twisted.python import lockfile
 
 from virtualbricks.config.report import ERROR, INFO, WARNING, Report
+from virtualbricks.config.projectfile import write_project_file
 from virtualbricks.config.settings import (
-    FORMAT as SETTINGS_FORMAT,
     AppSettings,
+    AppState,
     ProjectSettings,
     new_project_settings,
+    write_settings,
+    write_state,
 )
-from virtualbricks.config.tomlfile import DecodeError, dump_toml, load_toml
-from virtualbricks.config.schema import dump_record, load_record
+from virtualbricks.config.tomlfile import DecodeError, load_toml
+from virtualbricks.config.schema import load_record
 from virtualbricks import locations
 from virtualbricks.migrate import convert, legacy
 
@@ -205,9 +208,9 @@ def _legacy_settings(path: str) -> tuple[AppSettings, ProjectSettings]:
     return app, project
 
 
-def _write(data: Table, path: str) -> None:
+def _write_project(data: Table, path: str) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    dump_toml(data, path)
+    write_project_file(data, path)
 
 
 def _copy_tree(source: str, destination: str, skip: Collection[str]) -> None:
@@ -336,11 +339,7 @@ class Migration:
         self.project_settings = project
         self.current_project = current
         if not self.dry_run:
-            data: Table = {
-                "format": SETTINGS_FORMAT,
-                **dump_record(app),
-            }
-            _write(data, self.target.settings_file)
+            write_settings(app, self.target.settings_file)
 
     def _migrate_project(self, item: Item) -> None:
         filename = os.path.basename(item.source)
@@ -357,7 +356,7 @@ class Migration:
         if self.dry_run:
             return
         directory = self.target.project_dir(item.name)
-        _write(data, os.path.join(directory, locations.PROJECT_FILE))
+        _write_project(data, os.path.join(directory, locations.PROJECT_FILE))
         if self.target.folder is None or item.kind != "project":
             return
         source = os.path.dirname(item.source)
@@ -371,9 +370,8 @@ class Migration:
         if self.dry_run:
             return
         if self.current_project is not None:
-            state: Table = {"format": SETTINGS_FORMAT}
-            state["current_project"] = self.current_project
-            _write(state, self.target.state_file)
+            state = AppState(current_project=self.current_project)
+            write_state(state, self.target.state_file)
         path = self.target.report_file
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as fp:

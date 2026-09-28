@@ -31,10 +31,12 @@ from virtualbricks.config.schema import dump_record
 from virtualbricks.config.tomlfile import dump_toml, load_toml
 from virtualbricks.config import projectfile
 from virtualbricks.config.projectfile import (
+    HEADER,
     create_project_file,
     devices_for_image,
     image_paths,
     load_project,
+    project_notes,
     read_project_file,
     remap_image,
     resolve as resolve_socket,
@@ -43,7 +45,14 @@ from virtualbricks.config.projectfile import (
     socket_target,
     upgrade_project,
 )
-from virtualbricks.config.tomlfile import dumps_toml, loads_toml
+from virtualbricks.config.tomlfile import (
+    FORMAT_NOTE,
+    Note,
+    comment_lines,
+    dumps_toml,
+    loads_toml,
+)
+from virtualbricks.config import tomlfile
 from virtualbricks.config.settings import use_project
 from virtualbricks.tests import isolate, make_factory, reset_settings
 from virtualbricks.bricks.virtualmachine import UsbDevice
@@ -239,6 +248,123 @@ class TestRoundTrip(ProjectFileTestCase):
         self.assertEqual(
             image.get_path(), os.path.join(directory, "deb.qcow2")
         )
+
+
+def _lines(data, path=()):
+    """The path of each key that is written on a line of its own."""
+
+    for key, value in data.items():
+        if not tomlfile._is_block(value):
+            yield path + (key,)
+        elif isinstance(value, dict):
+            yield from _lines(value, path + (key,))
+        else:
+            for index, item in enumerate(value):
+                yield from _lines(item, path + (key, index))
+
+
+class TestNotes(ProjectFileTestCase):
+    """The comments of a project file."""
+
+    def lab(self):
+        build_lab(self.factory)
+        self.factory.new_brick("tunnelconnect", "tc")
+        return project_document(self.factory, ProjectSettings())
+
+    def test_every_key_has_a_comment(self):
+        data = self.lab()
+        notes = project_notes(data)
+        lines = set(_lines(data))
+        for path in lines:
+            self.assertTrue(comment_lines(notes[path]), path)
+        # the other notes are of tables, which have no comment
+        self.assertEqual(set(notes) - lines, {("bricks", "wan", "states")})
+
+    def test_fixed_notes(self):
+        notes = project_notes(self.lab())
+        self.assertEqual(notes[("format",)], FORMAT_NOTE)
+        self.assertEqual(
+            notes[("bricks", "sw1", "type")], Note("A VDE switch")
+        )
+        self.assertEqual(
+            notes[("bricks", "tap0", "connect")],
+            Note("The socket it's plugged into"),
+        )
+        self.assertEqual(
+            notes[("bricks", "w", "endpoints")].text,
+            "The sockets of its two ends, left and right",
+        )
+        self.assertEqual(
+            notes[("bricks", "vm", "nics", 3, "name")].text,
+            "The name of the socket card, which other bricks plug into",
+        )
+        self.assertNotIn(("bricks", "vm", "nics", 3, "connect"), notes)
+        self.assertNotIn(("bricks", "vm", "nics"), notes)
+
+    def test_every_type_says_what_it_is(self):
+        classes = projectfile._brick_classes()
+        self.assertNotIn("event", classes)
+        for name, cls in classes.items():
+            self.assertTrue(cls.summary, name)
+
+    def test_defaults(self):
+        notes = project_notes(self.lab())
+        self.assertFalse(notes[("bricks", "sw1", "ports")].default)
+        self.assertTrue(notes[("bricks", "sw2", "ports")].default)
+        self.assertTrue(notes[("settings", "vde_path")].default)
+        # the states of a netemu, by their index
+        self.assertTrue(notes[("bricks", "wan", "states", 0, "delay")].default)
+        self.assertFalse(
+            notes[("bricks", "wan", "states", 1, "delay")].default
+        )
+
+    def test_whatever_the_data(self):
+        data = {
+            "format": 1,
+            "settings": "x",
+            "images": {"a": "x"},
+            "events": [],
+            "bricks": {
+                "a": {"type": "nope"},
+                "b": {"type": 1},
+                "c": "x",
+                "d": {"type": "event", "delay": 1},
+                "e": {"type": "qemu", "nics": "x"},
+                "f": {"type": "qemu", "nics": ["x", {"kind": "plug"}]},
+                "g": {"type": "Switch", "ports": 3},
+            },
+        }
+        notes = project_notes(data)
+        self.assertEqual(
+            sorted(path for path in notes if path[0] == "bricks"),
+            [
+                ("bricks", "e", "type"),
+                ("bricks", "f", "nics", 1, "kind"),
+                ("bricks", "f", "type"),
+                ("bricks", "g", "ports"),
+                ("bricks", "g", "type"),
+            ],
+        )
+
+    def test_files(self):
+        path = self.mktemp()
+        create_project_file(path, ProjectSettings())
+        with open(path, encoding="utf-8") as fp:
+            text = fp.read()
+        self.assertTrue(
+            text.startswith(tomlfile.dumps_toml({}, header=HEADER))
+        )
+        self.assertIn(
+            "\n# The version of the layout of this file\nformat = 1\n", text
+        )
+        data = self.lab()
+        save_project(self.factory, ProjectSettings(), path)
+        with open(path, encoding="utf-8") as fp:
+            text = fp.read()
+        self.assertEqual(loads_toml(text), data)
+        self.assertIn("\nports = 16\n", text)
+        self.assertIn("\nhub_mode = false  # default\n", text)
+        self.assertTrue(all(len(line) <= 79 for line in text.splitlines()))
 
 
 class TestUpgrade(ProjectFileTestCase):

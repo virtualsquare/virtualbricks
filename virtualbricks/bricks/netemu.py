@@ -37,6 +37,7 @@ from virtualbricks.config.schema import (
     field_names,
     field_values,
     load_record,
+    notes,
     rename_references,
 )
 from virtualbricks.programs import ProgramError
@@ -55,20 +56,56 @@ class NetemuConfig(bricks.BrickConfig):
     events are keys of the brick and the states are tables without them.
     """
 
-    name = field(Str(), default="default name")
+    name = field(Str(), default="default name", help="The name of the state")
     # each value both ways, or from left to right and from right to left
-    bandwidth = field(Int(), default=125000)
-    bandwidth_right_to_left = field(Int(), default=125000)
-    bandwidth_symmetric = field(Bool(), default=True)
-    delay = field(Int(), default=0)
-    delay_right_to_left = field(Int(), default=0)
-    delay_symmetric = field(Bool(), default=True)
-    buffer_size = field(Int(), default=75000)
-    buffer_size_right_to_left = field(Int(), default=75000)
-    buffer_size_symmetric = field(Bool(), default=True)
-    loss = field(Float(0, 100), default=0.0)
-    loss_right_to_left = field(Float(0, 100), default=0.0)
-    loss_symmetric = field(Bool(), default=True)
+    bandwidth = field(
+        Int(),
+        default=125000,
+        help=(
+            "Bytes per second, 0 for no limit; left to right unless "
+            "bandwidth_symmetric"
+        ),
+    )
+    bandwidth_right_to_left = field(
+        Int(), default=125000, help="Bytes per second from right to left"
+    )
+    bandwidth_symmetric = field(
+        Bool(), default=True, help="Use bandwidth both ways"
+    )
+    delay = field(
+        Int(),
+        default=0,
+        help="One-way delay in ms; left to right unless delay_symmetric",
+    )
+    delay_right_to_left = field(
+        Int(), default=0, help="Delay in ms from right to left"
+    )
+    delay_symmetric = field(Bool(), default=True, help="Use delay both ways")
+    buffer_size = field(
+        Int(),
+        default=75000,
+        help=(
+            "Channel buffer in bytes, 0 for no limit; left to right unless "
+            "buffer_size_symmetric"
+        ),
+    )
+    buffer_size_right_to_left = field(
+        Int(), default=75000, help="Channel buffer in bytes from right to left"
+    )
+    buffer_size_symmetric = field(
+        Bool(), default=True, help="Use buffer_size both ways"
+    )
+    loss = field(
+        Float(0, 100),
+        default=0.0,
+        help="Percentage of packets lost; left to right unless loss_symmetric",
+    )
+    loss_right_to_left = field(
+        Float(0, 100),
+        default=0.0,
+        help="Percentage of packets lost from right to left",
+    )
+    loss_symmetric = field(Bool(), default=True, help="Use loss both ways")
 
 
 BRICK_KEYS = frozenset(field_names(bricks.BrickConfig))
@@ -80,11 +117,23 @@ STATE_KEYS = frozenset(field_names(NetemuConfig)) - BRICK_KEYS
 class NetemuTable(bricks.BrickConfig):
     """The table of a Netemu in the project file."""
 
-    transition_period = field(Int(1), default=100)
-    transitions = field(ListOf(ListOf(Float(0))), factory=lambda: [[0.0]])
+    transition_period = field(
+        Int(1),
+        default=100,
+        help="How often the emulator may change state, in ms",
+    )
+    transitions = field(
+        ListOf(ListOf(Float(0))),
+        factory=lambda: [[0.0]],
+        help=(
+            "The probability of going from each state, a row, to each state, "
+            "a column, at each period"
+        ),
+    )
     states = field(
         ListOf(Record(NetemuConfig, exclude=BRICK_KEYS), min_length=1),
         factory=lambda: [NetemuConfig()],
+        help="The states of the emulator; it starts in the first",
     )
 
 
@@ -166,6 +215,7 @@ class WFProcessProtocol(bricks.VDEProcessProtocol):
 class Netemu(Wire):
 
     type = "Netemu"
+    summary = "A wire that emulates a network link"
     config_factory = NetemuConfig
     process_protocol = WFProcessProtocol
 
@@ -311,6 +361,10 @@ class Netemu(Wire):
             for state in self.markov_manager.states
         ]
         return table
+
+    @classmethod
+    def table_notes(cls, table):
+        return notes(NetemuTable, table)
 
     def load_config_table(self, table, report, where, ignore):
         data = load_record(NetemuTable, table, report, where, ignore=ignore)

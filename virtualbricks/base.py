@@ -38,7 +38,11 @@ class BaseConfig:
 
     # an image file to show instead of the icon of the type; not shown yet
     # but for virtual machines
-    icon = field(Path(), default="")
+    icon = field(
+        Path(),
+        default="",
+        help="An image file to show instead of the icon of its type",
+    )
 
 
 class Base:

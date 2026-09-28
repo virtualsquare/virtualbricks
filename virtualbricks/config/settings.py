@@ -24,7 +24,8 @@ that aren't about a project: the workspace, the terminal, KSM, the tray icon.
 The settings of a project are in its project file: a new project copies those
 of the open project, and while no project is open they have their default
 values. The state, in ``state.toml``, is what the application remembers, such
-as the current project.
+as the current project. Both files start with a header and have a comment
+above every key.
 """
 
 from __future__ import annotations
@@ -48,9 +49,11 @@ from virtualbricks.config.schema import (
     field_names,
     field_values,
     kind_of,
+    notes,
     parse_value,
 )
 from virtualbricks.config.tomlfile import (
+    FORMAT_NOTE,
     DecodeError,
     dump_toml,
     load_toml,
@@ -65,6 +68,18 @@ SettingValue: TypeAlias = str | bool
 
 FORMAT = 1
 COW_FORMATS = ("cow", "qcow", "qcow2")
+SETTINGS_HEADER = """\
+The settings of Virtualbricks that aren't about a project.
+Virtualbricks writes this file and its comments, and rewrites it when the
+settings change and when it quits: a comment added by hand is lost.
+See virtualbricks-config(5).
+"""
+STATE_HEADER = """\
+What Virtualbricks remembers from one run to the next.
+Virtualbricks writes this file and its comments, and rewrites it whenever it
+opens a project: a comment added by hand is lost.
+See virtualbricks-config(5).
+"""
 
 logger = Logger()
 settings_loaded = "Settings loaded from {filename}"
@@ -97,31 +112,74 @@ def check_format(data: Table, report: Report, where: str) -> bool:
 class ProjectSettings:
     """The settings that each project has its own copy of."""
 
-    cow_format: str = field(Choice(*COW_FORMATS), default="qcow2")
-    log_link_loops: bool = field(Bool(), default=False)
-    allow_female_plugs: bool = field(Bool(), default=False)
-    qemu_path: str = field(Path(), default="/usr/bin")
-    vde_path: str = field(Path(), default="/usr/bin")
+    cow_format: str = field(
+        Choice(*COW_FORMATS),
+        default="qcow2",
+        help="The format of private copies",
+    )
+    log_link_loops: bool = field(
+        Bool(), default=False, help="Log an error when links make a loop"
+    )
+    allow_female_plugs: bool = field(
+        Bool(),
+        default=False,
+        help="Let plugs go into the socket cards of machines",
+    )
+    qemu_path: str = field(
+        Path(), default="/usr/bin", help="The folder of the QEMU programs"
+    )
+    vde_path: str = field(
+        Path(), default="/usr/bin", help="The folder of the VDE programs"
+    )
 
 
 @define
 class AppSettings:
     """The settings of the application, which aren't about a project."""
 
-    workspace: str = field(Path(), factory=locations.default_workspace)
-    terminal: str = field(Str(), default="/usr/bin/xterm")
-    kernel_samepage_merging: bool = field(Bool(), default=False)
-    tray_icon: bool = field(Bool(), default=True)
-    warn_missing_programs: bool = field(Bool(), default=True)
+    workspace: str = field(
+        Path(),
+        factory=locations.default_workspace,
+        help="The folder of the projects",
+    )
+    terminal: str = field(
+        Str(),
+        default="/usr/bin/xterm",
+        help="The terminal that opens the consoles of the bricks",
+    )
+    kernel_samepage_merging: bool = field(
+        Bool(),
+        default=False,
+        help="Share equal memory pages between machines, with KSM",
+    )
+    tray_icon: bool = field(
+        Bool(), default=True, help="Show an icon in the system tray"
+    )
+    warn_missing_programs: bool = field(
+        Bool(),
+        default=True,
+        help="Warn at start about the programs Virtualbricks can't find",
+    )
     # the audio driver of QEMU that plays the sound cards of the machines;
     # it's about this computer, not about a project
-    audio_driver: str = field(Str(), default="alsa")
+    audio_driver: str = field(
+        Str(),
+        default="alsa",
+        help=(
+            "The audio driver QEMU plays the sound cards through, as alsa, pa "
+            "or pipewire"
+        ),
+    )
 
 
 @define
 class AppState:
 
-    current_project: str = field(Str(), default=locations.DEFAULT_PROJECT)
+    current_project: str = field(
+        Str(),
+        default=locations.DEFAULT_PROJECT,
+        help="The project that opens at start",
+    )
 
 
 PROJECT_KEYS = frozenset(field_names(ProjectSettings))
@@ -238,9 +296,23 @@ def install() -> None:
         logger.info(settings_installed, filename=_settings_path)
 
 
-def _write(data: Table, path: str) -> None:
+def _write(record: AppSettings | AppState, path: str, header: str) -> None:
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    dump_toml(data, path)
+    data: Table = {"format": FORMAT, **dump_record(record)}
+    file_notes = {("format",): FORMAT_NOTE, **notes(type(record), data)}
+    dump_toml(data, path, file_notes, header)
+
+
+def write_settings(app: AppSettings, path: str) -> None:
+    """Write settings.toml, with its header and comments."""
+
+    _write(app, path, SETTINGS_HEADER)
+
+
+def write_state(state: AppState, path: str) -> None:
+    """Write state.toml, with its header and comments."""
+
+    _write(state, path, STATE_HEADER)
 
 
 def store_settings(path: str | None = None) -> bool:
@@ -251,7 +323,7 @@ def store_settings(path: str | None = None) -> bool:
         logger.warn(not_overwritten, filename=path)
         return False
     try:
-        _write({"format": FORMAT, **dump_record(_app)}, path)
+        write_settings(_app, path)
     except OSError:
         logger.failure(cannot_save, filename=path)
         return False
@@ -281,7 +353,7 @@ def load_state(path: str | None = None) -> Report:
 def store_state(path: str | None = None) -> None:
     path = path or _state_path or locations.state_file()
     try:
-        _write({"format": FORMAT, **dump_record(_state)}, path)
+        write_state(_state, path)
     except OSError:
         logger.failure(cannot_save, filename=path)
 

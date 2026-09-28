@@ -73,10 +73,10 @@ from virtualbricks.config.projectfile import (
     read_project_file,
     remap_image,
     upgrade_project,
+    write_project_file,
 )
 from virtualbricks.config.report import Report
 from virtualbricks.config.settings import get_setting
-from virtualbricks.config.tomlfile import dump_toml
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -381,7 +381,7 @@ class _Import:
         table = data.setdefault("settings", {})
         if isinstance(table, dict):
             table.update(self.job.get("settings", {}))
-        dump_toml(data, project_file)
+        write_project_file(data, project_file)
         self.rebase(data, paths)
         self.unpack()
         if self.tool.name != BSDTAR:

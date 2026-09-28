@@ -22,6 +22,7 @@ from virtualbricks.bricks.command import Command, vde_program
 class Router(bricks.Brick):
 
     type = "Router"
+    summary = "A VDE router"
 
     def get_parameters(self):
         return "Work in progress..."

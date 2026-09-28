@@ -26,10 +26,14 @@ lenient: a problem is reported and, where possible, the default is used.
 A connection names the socket a plug is in: ``"sw1"`` is the only socket of
 the brick sw1 and ``"vm2:sock_eth1"`` is the socket card sock_eth1 of the
 virtual machine vm2.
+
+The file starts with a header and has a comment above every key, see
+:func:`project_notes`.
 """
 
 from __future__ import annotations
 
+import functools
 import os
 import re
 from collections.abc import Callable, Iterator
@@ -47,11 +51,14 @@ from virtualbricks.config.schema import (
     key_of,
     kind_of,
     load_record,
+    notes,
     references,
 )
 from virtualbricks.config.settings import ProjectSettings
 from virtualbricks.config.tomlfile import (
+    FORMAT_NOTE,
     DecodeError,
+    Note,
     dump_toml,
     load_toml,
 )
@@ -66,7 +73,7 @@ if TYPE_CHECKING:  # pragma: no cover
         VMSock,
     )
     from virtualbricks.config.report import Report
-    from virtualbricks.config.tomlfile import Table, Value
+    from virtualbricks.config.tomlfile import Notes, Table, Value
     from virtualbricks.bricks.plug import Plug
     from virtualbricks.bricks.sock import Sock
 
@@ -87,6 +94,24 @@ NIC_KEYS = {
     "hostonly": frozenset(("kind", "model", "mac")),
 }
 DEFAULT_MODEL = "rtl8139"
+HEADER = """\
+A Virtualbricks project: its settings, disk images, events and bricks.
+Virtualbricks writes this file and its comments, and rewrites it while the
+project is open: a comment added by hand is lost.
+See virtualbricks-config(5).
+"""
+# The notes of the keys that no schema declares.
+CONNECTION_NOTES = {
+    "connect": Note("The socket it's plugged into"),
+    "endpoints": Note("The sockets of its two ends, left and right"),
+}
+NIC_NOTES = {
+    "kind": Note("The kind of card: plug, socket or hostonly"),
+    "connect": Note("The socket it's plugged into"),
+    "name": Note("The name of the socket card, which other bricks plug into"),
+    "model": Note("The model of the card, as QEMU names it"),
+    "mac": Note("The MAC address"),
+}
 
 # Steps that rewrite the data of format N into the data of format N + 1.
 UPGRADES: dict[int, Callable[[Table, Report], Table]] = {}
@@ -99,8 +124,16 @@ class ProjectFormatError(Exception):
 @define
 class ImageTable:
 
-    path: str = field(Path(), default="")
-    description: str = field(Str(), default="")
+    path: str = field(
+        Path(),
+        default="",
+        help=(
+            "The image file; a relative path is relative to the project folder"
+        ),
+    )
+    description: str = field(
+        Str(), default="", help="A description of the image"
+    )
 
 
 class Nic(TypedDict, total=False):
@@ -196,16 +229,92 @@ def project_document(
     return data
 
 
+@functools.cache
+def _brick_classes() -> dict[str, type[Brick]]:
+    # the bricks need the settings, which are in this package
+    from virtualbricks.brickfactory import install_brick_types
+    from virtualbricks.bricks import Brick
+
+    # the types include "event", which isn't a brick
+    return {
+        name: cls
+        for name, cls in install_brick_types().items()
+        if issubclass(cls, Brick)
+    }
+
+
+def _nics_notes(table: Table) -> Notes:
+    nics = table.get("nics")
+    if not isinstance(nics, list):
+        return {}
+    return {
+        ("nics", index, key): NIC_NOTES[key]
+        for index, nic in enumerate(nics)
+        if isinstance(nic, dict)
+        for key in nic
+        if key in NIC_NOTES
+    }
+
+
+def _brick_notes(table: Table) -> Notes:
+    brick_type = table.get("type")
+    if not isinstance(brick_type, str):
+        return {}
+    cls = _brick_classes().get(brick_type.lower())
+    if cls is None:
+        return {}
+    result = {("type",): Note(cls.summary), **cls.table_notes(table)}
+    if cls.connections in CONNECTION_NOTES:
+        key = cls.connections
+        result[(key,)] = CONNECTION_NOTES[key]
+    elif cls.connections == "nics":
+        result.update(_nics_notes(table))
+    return result
+
+
+def project_notes(data: Table) -> Notes:
+    """
+    The notes of the keys of the data of a project file: those of the
+    schemas, and the fixed ones of the format, the types of the bricks and
+    their connections. Bricks of unknown types have none.
+    """
+
+    from virtualbricks.bricks.event import EventConfig
+
+    result: dict[tuple[str | int, ...], Note] = {("format",): FORMAT_NOTE}
+
+    def nest(prefix: tuple[str, ...], inner: Notes) -> None:
+        result.update({prefix + path: note for path, note in inner.items()})
+
+    nest(("settings",), notes(ProjectSettings, _table(data, "settings")))
+    sections: list[tuple[str, Callable[[Table], Notes]]] = [
+        ("images", functools.partial(notes, ImageTable)),
+        ("events", functools.partial(notes, EventConfig)),
+        ("bricks", _brick_notes),
+    ]
+    for section, table_notes in sections:
+        for name, table in _table(data, section).items():
+            if isinstance(table, dict):
+                nest((section, name), table_notes(table))
+    return result
+
+
+def write_project_file(data: Table, path: str) -> None:
+    """Write the data of a project file, with its header and comments."""
+
+    dump_toml(data, path, project_notes(data), HEADER)
+
+
 def save_project(
     factory: BrickFactory, project_settings: ProjectSettings, path: str
 ) -> None:
-    dump_toml(project_document(factory, project_settings), path)
+    write_project_file(project_document(factory, project_settings), path)
 
 
 def create_project_file(path: str, project_settings: ProjectSettings) -> None:
     """Write the project file of a new, empty project."""
 
-    dump_toml(
+    write_project_file(
         {"format": FORMAT, "settings": dump_record(project_settings)}, path
     )
 

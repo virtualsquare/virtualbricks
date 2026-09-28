@@ -32,12 +32,17 @@ sock_not_exists = "Socket does not exists: {path}"
 class SwitchWrapperConfig(bricks.BrickConfig):
 
     # the control folder of a switch that another program runs
-    socket_path = field(Path(), default="")
+    socket_path = field(
+        Path(),
+        default="",
+        help="The control folder of a switch that another program runs",
+    )
 
 
 class SwitchWrapper(bricks.Brick):
 
     type = "SwitchWrapper"
+    summary = "A VDE switch that another program runs"
     pid = -1
     config_factory = SwitchWrapperConfig
 

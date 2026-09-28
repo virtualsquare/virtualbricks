@@ -278,12 +278,34 @@ class TestLoadStore(SettingsTestCase):
         self.assertEqual(load_toml(self.path())["format"], 2)
 
     def test_store_error(self):
-        def fail(data, path):
+        def fail(*args):
             raise OSError("disk full")
 
         self.patch(settings, "dump_toml", fail)
         self.assertFalse(store_settings(self.mktemp()))
         self.assertEqual(self.logger.levels(), ["failure"])
+
+    def test_comments(self):
+        load_settings()
+        set_setting("terminal", "/usr/bin/foot")
+        self.assertTrue(store_settings())
+        with open(self.path(), encoding="utf-8") as fp:
+            text = fp.read()
+        self.assertTrue(text.startswith("# " + settings.SETTINGS_HEADER[:20]))
+        self.assertIn(
+            "\n# The version of the layout of this file\nformat = 1\n", text
+        )
+        self.assertIn(
+            "\n# The terminal that opens the consoles of the bricks"
+            ' (default "/usr/bin/xterm")\n'
+            'terminal = "/usr/bin/foot"\n',
+            text,
+        )
+        self.assertIn("\ntray_icon = true  # default\n", text)
+        # the file reads back as its data
+        self.assertEqual(
+            load_toml(self.path()), {"format": 1, **dump_record(settings._app)}
+        )
 
 
 class TestState(SettingsTestCase):
@@ -295,6 +317,14 @@ class TestState(SettingsTestCase):
     def test_set_current_project_stores_it(self):
         load_state()
         set_current_project("lab")
+        with open(locations.state_file(), encoding="utf-8") as fp:
+            text = fp.read()
+        self.assertTrue(text.startswith("# " + settings.STATE_HEADER[:20]))
+        self.assertIn(
+            "# The project that opens at start"
+            ' (default "new_project")\ncurrent_project = "lab"\n',
+            text,
+        )
         self.assertEqual(
             load_toml(locations.state_file()),
             {"format": 1, "current_project": "lab"},
@@ -325,7 +355,7 @@ class TestState(SettingsTestCase):
         self.assertEqual(self.logger.levels(), ["warn"])
 
     def test_store_error(self):
-        def fail(data, path):
+        def fail(*args):
             raise OSError("disk full")
 
         self.patch(settings, "dump_toml", fail)

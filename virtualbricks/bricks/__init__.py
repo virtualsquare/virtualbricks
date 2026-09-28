@@ -44,6 +44,7 @@ from virtualbricks.config.schema import (
     dump_record,
     field,
     load_record,
+    notes,
     parse_value,
 )
 from virtualbricks.config.settings import get_setting
@@ -254,8 +255,12 @@ class TermProtocol(protocol.ProcessProtocol):
 class BrickConfig(base.BaseConfig):
 
     # the events to run when the brick starts and when it stops
-    on_start = field(Ref("event"), default="")
-    on_stop = field(Ref("event"), default="")
+    on_start = field(
+        Ref("event"), default="", help="An event to run when the brick starts"
+    )
+    on_stop = field(
+        Ref("event"), default="", help="An event to run when the brick stops"
+    )
 
 
 class Brick(base.Base):
@@ -267,6 +272,8 @@ class Brick(base.Base):
     _last_status = None
     process_protocol = VDEProcessProtocol
     config_factory = BrickConfig
+    # What the brick is, the comment of its type in the project file.
+    summary = ""
     # How the plugs are saved: "connect", "endpoints", "nics" or None.
     connections = None
 
@@ -365,6 +372,12 @@ class Brick(base.Base):
         """Return the configuration as saved in the project file."""
 
         return dump_record(self.config)
+
+    @classmethod
+    def table_notes(cls, table):
+        """The notes of the keys of the configuration, in its table."""
+
+        return notes(cls.config_factory, table)
 
     def load_config_table(self, table, report, where, ignore):
         """Read the configuration from the table of the project file."""

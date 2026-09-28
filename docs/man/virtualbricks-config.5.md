@@ -78,8 +78,28 @@ doesn't open.
 
 Virtualbricks writes a new file next to the old one and renames it over the
 old one once it's complete, so a crash never leaves a half-written file. It
-writes the whole file each time: comments, key order and formatting of a hand
-edit are not kept.
+writes the whole file each time, with its own comments: the comments, key
+order and formatting of a hand edit are not kept.
+
+## Comments
+
+Each file starts with a few lines of comments that say what it is, then a
+blank line. Above each key, a comment says what the key is for, and ends in
+parentheses with its range or its choices and its default. A value at its
+default has **# default** beside it; a value without it was set:
+
+```
+# Number of ports (1-128; default 32)
+ports = 16
+# Send every packet to every port, as a hub (default false)
+hub_mode = false  # default
+```
+
+The mark compares the value with the default when the file is written, so a
+value you set to its default is marked too. The keys that belong to the
+layout of the file, as **format**, **type** and the connections, have a
+comment and never the mark; tables have none. The comments are in English,
+and at most 79 columns wide.
 
 ## Names
 
@@ -770,7 +790,8 @@ an old project is converted when it's imported.
 
 # EXAMPLES
 
-A **settings.toml** as Virtualbricks writes it at its first start:
+A **settings.toml** as Virtualbricks writes it at its first start, without
+its comments:
 
 ```
 format = 1
@@ -783,8 +804,9 @@ audio_driver = "alsa"
 ```
 
 A **project.toml** with a virtual machine, two switches connected by a
-network emulator with two states, a tap and an event. The virtual machine is
-shortened: Virtualbricks writes all of its keys, and the six empty disks.
+network emulator with two states, a tap and an event, without its comments.
+The virtual machine is shortened: Virtualbricks writes all of its keys, and
+the six empty disks.
 
 ```
 format = 1

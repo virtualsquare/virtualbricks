@@ -23,6 +23,10 @@ A schema is an attrs class whose fields are declared with :func:`field`. The
 kind of a field checks its values, converts them to and from TOML data and
 parses the text typed in the console. Values are checked when an instance is
 created and whenever a field is assigned.
+
+The help of a field says what it's for; with the range or the choices of its
+kind and its default, it's the comment above its key in the files, see
+:func:`notes`.
 """
 
 from __future__ import annotations
@@ -34,11 +38,12 @@ from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, cast
 
 import attr
 
+from virtualbricks.config.tomlfile import Note
 from virtualbricks.nic import MAC_PATTERN
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.config.report import Report
-    from virtualbricks.config.tomlfile import Table, Value
+    from virtualbricks.config.tomlfile import Notes, Table, Value
 
 __all__ = [
     "Bool",
@@ -63,6 +68,7 @@ __all__ = [
     "key_of",
     "kind_of",
     "load_record",
+    "notes",
     "parse_value",
     "references",
     "rename_references",
@@ -110,6 +116,16 @@ class Kind(Generic[T]):
 
     def format(self, value: T) -> str:
         raise NotImplementedError("Kind.format")
+
+    def describe(self) -> str:
+        """The range or the choices of the values, as ``1-128``; or ""."""
+
+        return ""
+
+    def notes(self, data: Value) -> Notes:
+        """The notes of the keys inside the data of a value, by their path."""
+
+        return {}
 
 
 class Bool(Kind[bool]):
@@ -164,6 +180,15 @@ class _Number(Kind[N]):
 
     def format(self, value: N) -> str:
         return str(value)
+
+    def describe(self) -> str:
+        if self.min is not None and self.max is not None:
+            return f"{self.min}-{self.max}"
+        if self.min is not None:
+            return f"{self.min} or more"
+        if self.max is not None:
+            return f"{self.max} or less"
+        return ""
 
 
 class Int(_Number[int]):
@@ -263,6 +288,10 @@ class Choice(Str):
             choices = ", ".join(self.choices)
             raise ValueError(f'"{value}" is not one of {choices}')
 
+    def describe(self) -> str:
+        *others, last = self.choices
+        return f"{', '.join(others)} or {last}" if others else last
+
 
 class Record(Kind[S]):
     """
@@ -290,6 +319,11 @@ class Record(Kind[S]):
 
     def format(self, value: S) -> str:
         return "{…}"
+
+    def notes(self, data: Value) -> Notes:
+        if not isinstance(data, dict):
+            return {}
+        return notes(self.cls, data, exclude=self.exclude)
 
 
 class ListOf(Kind[list[T]]):
@@ -338,6 +372,15 @@ class ListOf(Kind[list[T]]):
 
     def format(self, value: list[T]) -> str:
         return "[" + ", ".join(self.item.format(item) for item in value) + "]"
+
+    def notes(self, data: Value) -> Notes:
+        if not isinstance(data, list):
+            return {}
+        return {
+            (index, *path): note
+            for index, item in enumerate(data)
+            for path, note in self.item.notes(item).items()
+        }
 
 
 @attr.define(frozen=True)
@@ -466,6 +509,49 @@ def field_default(cls_or_obj: object, name: str) -> object:
         if attribute.name == name:
             return _default_of(attribute)
     raise KeyError(name)
+
+
+def _detail(attribute: attr.Attribute[object]) -> str:
+    """The range or the choices of a field and its default, as a note says."""
+
+    kind = field_info(attribute).kind
+    parts = [kind.describe()] if kind.describe() else []
+    default = _default_of(attribute)
+    data = kind.to_data(default)
+    if data == "" or data == []:
+        parts.append("default empty")
+    elif not isinstance(data, (list, dict)):
+        # a table, or a list with items, is left out
+        parts.append(f"default {kind.format(default)}")
+    return "; ".join(parts)
+
+
+def notes(
+    cls: type[object], data: Table, exclude: Collection[str] = ()
+) -> Notes:
+    """
+    The note of each key of the data of an instance of the schema, by its
+    path in the data as :func:`dump_record` writes it: the help of the field,
+    the range or the choices of its kind and its default, and whether the
+    value is the default. The keys inside a record or a list of records have
+    theirs too.
+    """
+
+    result: dict[tuple[str | int, ...], Note] = {}
+    for attribute in fields(cls):
+        if attribute.name in exclude:
+            continue
+        path = _path(attribute)
+        try:
+            value = _lookup(data, path)
+        except KeyError:
+            continue
+        info = field_info(attribute)
+        default = info.kind.to_data(_default_of(attribute))
+        result[path] = Note(info.help, _detail(attribute), value == default)
+        for inner, note in info.kind.notes(value).items():
+            result[path + inner] = note
+    return result
 
 
 def load_record(

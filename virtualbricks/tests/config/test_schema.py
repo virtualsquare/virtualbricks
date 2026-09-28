@@ -41,10 +41,12 @@ from virtualbricks.config.schema import (
     key_of,
     kind_of,
     load_record,
+    notes,
     parse_value,
     rename_references,
 )
 from virtualbricks.config.report import Report
+from virtualbricks.config.tomlfile import Note
 from virtualbricks.config import schema
 from virtualbricks.config.schema import field_info, fields, references
 
@@ -478,3 +480,94 @@ class TestReferences(unittest.TestCase):
         self.assertEqual(machine.event, "boot")
         self.assertFalse(rename_references(machine, "image", "deb", "x"))
         self.assertFalse(rename_references(machine, "event", "deb", "x"))
+
+
+@define
+class Emulator:
+
+    period = field(Int(1), default=100, help="How often")
+    weights = field(ListOf(Float()), factory=lambda: [0.5], help="Weights")
+    states = field(
+        ListOf(Record(Machine, exclude={"boot"})),
+        factory=lambda: [Machine()],
+        help="The states",
+    )
+
+
+class TestNotes(unittest.TestCase):
+    """The comments of the keys, from the schemas."""
+
+    def test_describe(self):
+        self.assertEqual(Int(1, 128).describe(), "1-128")
+        self.assertEqual(Int(1).describe(), "1 or more")
+        self.assertEqual(Int(max=5).describe(), "5 or less")
+        self.assertEqual(Int().describe(), "")
+        self.assertEqual(Float(0, 100).describe(), "0-100")
+        self.assertEqual(Choice("a", "b", "c").describe(), "a, b or c")
+        self.assertEqual(Choice("a", "b").describe(), "a or b")
+        self.assertEqual(Choice("a").describe(), "a")
+        self.assertEqual(Str().describe(), "")
+        self.assertEqual(Bool().describe(), "")
+        self.assertEqual(Kind().notes({"a": 1}), {})
+
+    def test_notes(self):
+        data = dump_record(Machine(ram=128))
+        result = notes(Machine, data)
+        self.assertEqual(
+            result[("name",)], Note("The name", 'default "vm"', True)
+        )
+        self.assertEqual(result[("ram",)], Note("", "1-1024; default 64"))
+        self.assertEqual(
+            result[("loss",)], Note("", "0-100; default 0.0", True)
+        )
+        self.assertEqual(result[("kvm",)], Note("", "default false", True))
+        self.assertEqual(result[("tags",)], Note("", "default empty", True))
+        self.assertEqual(result[("event",)], Note("", "default empty", True))
+
+    def test_by_path(self):
+        data = dump_record(Machine(hda="deb"))
+        result = notes(Machine, data)
+        self.assertEqual(
+            result[("disks", "hda", "image")], Note("", "default empty")
+        )
+        self.assertTrue(result[("disks", "hda", "private")].default)
+        # a record has the notes of its keys, and its own without a default
+        self.assertEqual(result[("boot",)], Note("", "", True))
+        self.assertEqual(
+            result[("boot", "image")], Note("", "default empty", True)
+        )
+        self.assertEqual(len(result), 11)
+
+    def test_list_of_records(self):
+        data = dump_record(Emulator(states=[Machine(), Machine(ram=8)]))
+        result = notes(Emulator, data)
+        self.assertEqual(
+            result[("period",)],
+            Note("How often", "1 or more; default 100", True),
+        )
+        # a default list with items isn't repeated
+        self.assertEqual(result[("weights",)], Note("Weights", "", True))
+        self.assertEqual(result[("states",)], Note("The states", "", False))
+        self.assertTrue(result[("states", 0, "ram")].default)
+        self.assertFalse(result[("states", 1, "ram")].default)
+        # the fields that the records exclude have no notes
+        self.assertNotIn(("states", 0, "boot"), result)
+        self.assertNotIn(("states", 2, "ram"), result)
+
+    def test_missing_keys_and_exclude(self):
+        data = dump_record(Machine())
+        del data["ram"]
+        del data["disks"]["hda"]
+        result = notes(Machine, data, exclude={"kvm"})
+        self.assertNotIn(("ram",), result)
+        self.assertNotIn(("kvm",), result)
+        self.assertNotIn(("disks", "hda", "image"), result)
+        self.assertIn(("name",), result)
+
+    def test_not_tables(self):
+        # nested data that isn't what its kind writes has no notes inside
+        data = {**dump_record(Emulator()), "states": "x"}
+        self.assertEqual(notes(Emulator, data)[("states",)].default, False)
+        self.assertNotIn(("states", 0, "ram"), notes(Emulator, data))
+        data = {**dump_record(Emulator()), "states": ["x"]}
+        self.assertNotIn(("states", 0, "ram"), notes(Emulator, data))

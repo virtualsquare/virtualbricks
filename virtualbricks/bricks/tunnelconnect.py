@@ -27,16 +27,23 @@ from virtualbricks.i18n import _
 @define
 class TunnelConnectConfig(bricks.BrickConfig):
 
-    password = field(Str(), default="")
+    password = field(
+        Str(), default="", help="The password of the tunnel, in clear text"
+    )
     # the host that runs the server end, and its port
-    server_host = field(Str(), default="")
-    server_port = field(Int(1, 65535), default=7667)
-    local_port = field(Int(1, 65535), default=10771)
+    server_host = field(
+        Str(), default="", help="The host that runs the server end"
+    )
+    server_port = field(
+        Int(1, 65535), default=7667, help="The UDP port of the server end"
+    )
+    local_port = field(Int(1, 65535), default=10771, help="The local UDP port")
 
 
 class TunnelConnect(TunnelListen):
 
     type = "TunnelConnect"
+    summary = "The client end of an encrypted tunnel"
     config_factory = TunnelConnectConfig
 
     def get_parameters(self):

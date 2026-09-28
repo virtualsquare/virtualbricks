@@ -27,14 +27,19 @@ from virtualbricks.i18n import _
 @define
 class SwitchConfig(bricks.BrickConfig):
 
-    ports = field(Int(1, 128), default=32)
-    hub_mode = field(Bool(), default=False)
-    fast_spanning_tree = field(Bool(), default=False)
+    ports = field(Int(1, 128), default=32, help="Number of ports")
+    hub_mode = field(
+        Bool(), default=False, help="Send every packet to every port, as a hub"
+    )
+    fast_spanning_tree = field(
+        Bool(), default=False, help="Run the fast spanning tree protocol"
+    )
 
 
 class Switch(bricks.Brick):
 
     type = "Switch"
+    summary = "A VDE switch"
     ports_used = 0
     config_factory = SwitchConfig
 

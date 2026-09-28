@@ -25,6 +25,7 @@ from virtualbricks.i18n import _
 class Wire(bricks.Brick):
 
     type = "Wire"
+    summary = "A wire between two sockets"
     connections = "endpoints"
 
     def __init__(self, factory, name):

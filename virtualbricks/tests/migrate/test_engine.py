@@ -226,6 +226,19 @@ class TestMigrateToFolder(EngineTestCase):
             os.path.join(target.workspace, "lab1", "project.toml")
         )
         self.assertIn("sender", project["bricks"])
+        # the three files have their headers and comments
+        for path, first in (
+            (target.settings_file, "# The settings of Virtualbricks"),
+            (target.state_file, "# What Virtualbricks remembers"),
+            (
+                os.path.join(target.workspace, "lab1", "project.toml"),
+                "# A Virtualbricks project",
+            ),
+        ):
+            with open(path, encoding="utf-8") as fp:
+                text = fp.read()
+            self.assertTrue(text.startswith(first), path)
+            self.assertIn("# The version of the layout of this file\n", text)
         # the per-project settings come from the old settings
         self.assertEqual(project["settings"]["cow_format"], "qcow")
         self.assertIs(project["settings"]["allow_female_plugs"], True)
