@@ -15,6 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import os
 import sys
 
 from twisted.python import usage, lockfile, reflect
@@ -54,6 +55,12 @@ class Options(usage.Options):
     optParameters = [
         ["logfile", "l", None, "Write log messages to file."],
         [
+            "workspace",
+            None,
+            None,
+            "The folder of the projects for this run, instead of the setting.",
+        ],
+        [
             "logger",
             None,
             None,
@@ -71,6 +78,17 @@ class Options(usage.Options):
         """Write log messages to file."""
 
         self["logger"] = _file_logger(arg)
+
+    def opt_workspace(self, arg):
+        """The folder of the projects for this run, instead of the setting."""
+
+        # a folder that isn't there is made, as the workspace of the setting
+        if not arg:
+            raise usage.UsageError("--workspace needs a folder")
+        path = os.path.abspath(os.path.expanduser(arg))
+        if os.path.exists(path) and not os.path.isdir(path):
+            raise usage.UsageError(f"--workspace: {path} is not a folder")
+        self["workspace"] = path
 
     def opt_verbose(self):
         """Increase log verbosity."""

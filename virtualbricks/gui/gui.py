@@ -35,7 +35,6 @@ from twisted.logger import (
 
 from virtualbricks import brickfactory, errors
 from virtualbricks.config.projectfile import ProjectFormatError
-from virtualbricks.config.settings import current_project
 from virtualbricks.config.workspace import projects
 from virtualbricks.gui.mainwindow import VBGUI
 from virtualbricks.gui.messages import MessageLog, MessageLogObserver
@@ -198,7 +197,7 @@ class Application(brickfactory.Application):
         from virtualbricks.migrate import startup_migration
         from virtualbricks.migrate.gui import MigrationWindow
 
-        migration = startup_migration()
+        migration = startup_migration(self.config.get("workspace"))
         if migration is None:
             return None
         window = MigrationWindow(migration=migration)
@@ -213,7 +212,7 @@ class Application(brickfactory.Application):
         without opening a project, it leaves one as the console does.
         """
 
-        name = current_project()
+        name = projects.last_name()
         try:
             projects.open_last(factory)
         except (errors.InvalidNameError, ProjectFormatError) as exc:

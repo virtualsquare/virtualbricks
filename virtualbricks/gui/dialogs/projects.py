@@ -21,7 +21,8 @@ The Projects window: find, open and look after the projects.
 
 A searchable list of the projects, the most recently used first, and the
 details of the selected one with every action: Open, Duplicate, Export,
-Rename, Show in Files and Remove. New and Import are in the header bar.
+Rename, Show in Files and Remove. New and Import are in the header bar, and
+the folder of the workspace under its title.
 The space a project takes is read in the background, for the selected
 project only.
 """
@@ -38,6 +39,7 @@ from twisted.logger import Logger
 
 from virtualbricks import errors
 from virtualbricks.config.workspace import projects
+from virtualbricks.gui import imageinfo
 from virtualbricks.gui.markdownview import MarkdownView
 from virtualbricks.gui.dialogs import projectname
 from virtualbricks.i18n import _
@@ -190,8 +192,12 @@ class ProjectsWindow:
             window_position=Gtk.WindowPosition.CENTER_ON_PARENT,
             destroy_with_parent=True,
         )
+        # the workspace, which the command line can change
         header = Gtk.HeaderBar(
-            visible=True, show_close_button=True, title=_("Projects")
+            visible=True,
+            show_close_button=True,
+            title=_("Projects"),
+            subtitle=imageinfo.short_path(self.workspace.path),
         )
         self.new_button = Gtk.Button(visible=True, label=_("New…"))
         header.pack_start(self.new_button)

@@ -173,7 +173,22 @@ class TestInstall(AppTestCase):
             os.path.join(self.root, ".virtualbricks"),
         )
         self.assertTrue(os.path.isfile(locations.settings_file()))
-        self.assertEqual(current_project(), locations.DEFAULT_PROJECT)
+        self.assertEqual(
+            current_project(get_setting("workspace")),
+            locations.DEFAULT_PROJECT,
+        )
+
+    def test_install_workspace(self):
+        self.app.install_workspace()
+        # the setting's, without one on the command line
+        self.assertEqual(self.manager.path, get_setting("workspace"))
+        app = Application({**CONFIG, "workspace": "/srv/labs"})
+        app.install_workspace()
+        self.assertEqual(self.manager.path, "/srv/labs")
+        # the setting doesn't change
+        self.assertEqual(
+            get_setting("workspace"), os.path.join(self.root, ".virtualbricks")
+        )
 
     def test_install_home(self):
         self.app.install_home()
@@ -199,7 +214,8 @@ class TestMigrate(AppTestCase):
             )
         )
         self.assertEqual(
-            load_toml(locations.state_file())["current_project"], "lab"
+            load_toml(locations.state_file())["workspaces"],
+            [{"path": workspace, "current_project": "lab"}],
         )
         self.assertEqual(
             self.logger.formatted()[-1], "Migration: 1 of 1 projects migrated."
@@ -254,3 +270,24 @@ class TestRun(AppTestCase):
         self.assertEqual(self.manager.current.name, locations.DEFAULT_PROJECT)
         self.assertTrue(os.path.isfile(locations.settings_file()))
         self.assertEqual(self.logger.events, [])
+
+    def test_start_in_the_workspace_of_the_command_line(self):
+        other = os.path.join(self.root, "labs")
+        # its old projects are migrated first, as the setting's would be
+        write_project(other, "lab", CONFIG1)
+        app = Application({**CONFIG, "workspace": other})
+        app.install_locale = lambda: None
+        self.assertNoResult(app.run(FakeReactor()))
+        self.assertEqual(self.manager.path, other)
+        self.assertEqual(
+            self.manager.current.path, os.path.join(other, "new_project")
+        )
+        self.assertEqual(self.manager.names(), ["lab", "new_project"])
+        self.assertEqual(current_project(other), "new_project")
+        # the setting stays, in the file too
+        default = os.path.join(self.root, ".virtualbricks")
+        self.assertEqual(get_setting("workspace"), default)
+        self.assertEqual(
+            load_toml(locations.settings_file())["workspace"], default
+        )
+        self.assertFalse(os.path.exists(default))

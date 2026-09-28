@@ -52,7 +52,7 @@ from virtualbricks.config.schema import (
     field_names,
 )
 from virtualbricks.config.projectfile import NIC_KEYS, ImageTable, brick_table
-from virtualbricks.config.settings import AppState
+from virtualbricks.config.settings import AppState, WorkspaceState
 from virtualbricks.config.schema import field_info, fields
 from virtualbricks.bricks.event import EventConfig
 from virtualbricks.tests import isolate, make_factory, reset_settings
@@ -200,6 +200,15 @@ class TestSettings(DocsTestCase):
     def test_state(self):
         self.check_defaults("STATE", dump_record(AppState()), "state")
         self.check_kinds("STATE", AppState)
+        self.check_kinds("Workspaces", WorkspaceState)
+        # a workspace has no default folder
+        entries = self.entries("Workspaces")
+        table = dump_record(WorkspaceState("/srv/labs"))
+        self.assertEqual(sorted(entries), sorted(table))
+        self.assertIsNone(entries["path"][2])
+        self.assertEqual(
+            entries["current_project"][2], toml(table["current_project"])
+        )
 
 
 class TestProjects(DocsTestCase):

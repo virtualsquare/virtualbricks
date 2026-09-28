@@ -49,6 +49,7 @@ class TestStartupMigration(GuiTestCase):
             lambda window: self.shown.append(window),
         )
         self.app = gui.Application.__new__(gui.Application)
+        self.app.config = {}
 
     def test_nothing_to_migrate(self):
         self.assertIsNone(self.app.migrate())
@@ -110,7 +111,7 @@ class TestStartupProject(GuiTestCase):
 
     def test_the_last_project(self):
         self.manager.create("lab")
-        set_current_project("lab")
+        set_current_project(self.manager.path, "lab")
         self.app.open_last_project(self.factory)
         self.assertEqual(self.manager.current.name, "lab")
         self.assertEqual(self.problems, [])
@@ -121,7 +122,7 @@ class TestStartupProject(GuiTestCase):
         self.assertEqual(self.problems, [])
 
     def test_a_project_that_is_gone(self):
-        set_current_project("gone")
+        set_current_project(self.manager.path, "gone")
         self.app.open_last_project(self.factory)
         self.assertIsNone(self.manager.current)
         [message] = self.problems
@@ -134,13 +135,13 @@ class TestStartupProject(GuiTestCase):
         os.makedirs(self.manager.project_path("lab"))
         with open(self.manager._project_file("lab"), "w") as fp:
             fp.write("[bricks\n")
-        set_current_project("lab")
+        set_current_project(self.manager.path, "lab")
         self.app.open_last_project(self.factory)
         [message] = self.problems
         self.assertIn('"lab" that was open last can\'t be opened', message)
 
     def test_a_bad_name(self):
-        set_current_project("../x")
+        set_current_project(self.manager.path, "../x")
         self.app.open_last_project(self.factory)
         self.assertEqual(len(self.problems), 1)
 

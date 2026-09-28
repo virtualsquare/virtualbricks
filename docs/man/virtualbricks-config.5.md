@@ -26,7 +26,8 @@ TOML 1.0:
     terminal, KSM and the tray icon.
 
 **state.toml**
-:   What Virtualbricks remembers between runs: the project that was open.
+:   What Virtualbricks remembers between runs: the project that was open
+    last in each workspace.
 
 **project.toml**
 :   One in each project: its bricks, events and disk images, how they are
@@ -143,6 +144,10 @@ quits.
 **workspace** = *path*, default `"~/.virtualbricks"`
 :   The directory of the projects, *.virtualbricks* in your home directory
     by default. Write it as an absolute path: **~** is not expanded.
+    **virtualbricks --workspace** *directory* uses another directory for
+    one run, made if it isn't there, and leaves this setting as it is. Each
+    workspace has its images, in its *vimages* directory, and the project
+    that opens at start in it (see **STATE**).
 
 **terminal** = *string*, default `"/usr/bin/xterm"`
 :   The terminal that opens the console of a brick.
@@ -174,10 +179,22 @@ The file *\$XDG_STATE_HOME*/virtualbricks/state.toml, or
 *~/.local/state/virtualbricks/state.toml* when **XDG_STATE_HOME** is not set.
 Virtualbricks rewrites it whenever it opens a project.
 
+**workspaces** = *array*, default `[]`
+:   The workspaces used, the last used first: a table for each, with the
+    keys of **Workspaces**. A workspace that isn't in the list opens its
+    **new_project**.
+
+## Workspaces
+
+**path** = *path*
+:   The directory of the workspace, as an absolute path. A table without
+    it is reported and dropped.
+
 **current_project** = *string*, default `"new_project"`
-:   The project that opens at start. A missing **new_project** is created.
-    Any other project that can't be opened is reported, and Virtualbricks
-    creates and opens **new_project_0**, or the next free number, instead.
+:   The project that opens at start in this workspace. A missing
+    **new_project** is created. Any other project that can't be opened is
+    reported, and Virtualbricks creates and opens **new_project_0**, or the
+    next free number, instead.
 
 # PROJECTS
 
@@ -743,6 +760,9 @@ python -m virtualbricks.migrate --settings ~/.virtualbricks.conf \
     ~/vb-copy /tmp/vb-test
 ```
 
+Started with **--workspace**, Virtualbricks converts the projects of
+that directory in the same way.
+
 **virtualbricks-migrate** opens the same conversion in a window, and
 **python -m virtualbricks.migrate --help** lists every option. An archive of
 an old project is converted when it's imported.
@@ -768,7 +788,8 @@ an old project is converted when it's imported.
 :   The sockets and consoles of the running bricks, removed when you log out.
 
 */tmp/vb.lock*
-:   The lock that lets only one Virtualbricks run on the machine.
+:   The lock that lets only one Virtualbricks run on the machine, whatever
+    its workspace.
 
 */etc/sudo.conf*
 :   Its **Path askpass** line makes Virtualbricks run sudo with **-A**, as
@@ -802,6 +823,17 @@ kernel_samepage_merging = false
 tray_icon = true
 warn_missing_programs = true
 audio_driver = "alsa"
+```
+
+A **state.toml** after projects were opened in two workspaces, the last
+in *~/net101*, without its comments:
+
+```
+format = 1
+workspaces = [
+    {path = "/home/alice/net101", current_project = "ospf"},
+    {path = "/srv/labs", current_project = "lab"},
+]
 ```
 
 A **project.toml** with a virtual machine, two switches connected by a

@@ -41,6 +41,7 @@ from virtualbricks.config.settings import (
     AppSettings,
     AppState,
     ProjectSettings,
+    WorkspaceState,
     new_project_settings,
     write_settings,
     write_state,
@@ -370,8 +371,11 @@ class Migration:
         if self.dry_run:
             return
         if self.current_project is not None:
-            state = AppState(current_project=self.current_project)
-            write_state(state, self.target.state_file)
+            # the project of the old settings is in their workspace
+            workspace = WorkspaceState(
+                self.app_settings.workspace, self.current_project
+            )
+            write_state(AppState([workspace]), self.target.state_file)
         path = self.target.report_file
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as fp:
@@ -468,8 +472,13 @@ def lock_in_place() -> lockfile.FilesystemLock | None:
     return None
 
 
-def startup_migration() -> Migration | None:
-    """Return the migration the app must run before starting, or None."""
+def startup_migration(workspace: str | None = None) -> Migration | None:
+    """
+    Return the migration the app must run before starting, or None.
+
+    The projects migrated are those of workspace, the folder given on the
+    command line, or else of the workspace setting.
+    """
 
     legacy_settings = locations.legacy_settings_file()
     new_settings = locations.settings_file()
@@ -478,8 +487,9 @@ def startup_migration() -> Migration | None:
     else:
         legacy_settings = None
         app, project = _read_app_settings(new_settings), ProjectSettings()
+    workspace = workspace or app.workspace
     migration = Migration(
-        app.workspace, InPlace(app.workspace), legacy_settings, app, project
+        workspace, InPlace(workspace), legacy_settings, app, project
     )
     return migration if migration.pending() else None
 

@@ -19,7 +19,9 @@
 """
 The workspace: the folder of the projects, and the project that is open.
 
-A project is a folder of the workspace with a ``project.toml``. One project is
+A project is a folder of the workspace with a ``project.toml``. The workspace
+is the folder of the ``workspace`` setting, unless the command line gives
+another, and the state remembers the project open last in each. One project is
 open at a time. While it's open its settings are in effect, a new project
 starts with a copy of them, and the sockets of its bricks are in its runtime
 directory, ``<runtime dir>/<project>``. A project's name is at most 40 bytes,
@@ -270,6 +272,12 @@ class Workspace:
             return self._path
         return str(get_setting("workspace"))
 
+    @path.setter
+    def path(self, path: str | None) -> None:
+        # Before a project is opened; None follows the setting again.
+        self._path = path
+        self._summaries.clear()
+
     def project_path(self, name: str) -> str:
         return os.path.join(self.path, name)
 
@@ -471,7 +479,7 @@ class Workspace:
         self._summaries.pop(name, None)
         if self.current is not None and self.current.name == name:
             self.current.path = self.project_path(new)
-            set_current_project(new)
+            set_current_project(self.path, new)
 
     def duplicate(self, name: str, new: str) -> None:
         """Copy a project with its private disks; the copy is used now."""
@@ -567,7 +575,7 @@ class Workspace:
         report.log(logger)
         self.current = OpenProject(path, project_settings)
         use_project(project_settings)
-        set_current_project(name)
+        set_current_project(self.path, name)
         return report
 
     def close(self, factory: BrickFactory) -> None:
@@ -588,16 +596,22 @@ class Workspace:
         except Exception:
             logger.failure(autosave_error)
 
+    def last_name(self) -> str:
+        """The name of the project open last in this workspace."""
+
+        return current_project(self.path)
+
     def open_last(self, factory: BrickFactory) -> Report:
         """
-        Open the project that was open last.
+        Open the project that was open last in this workspace.
 
-        A workspace without projects gets a new_project first. Raise what
-        open raises, or InvalidNameError, when the project can't be opened.
+        A workspace without projects gets a new_project first, and a folder
+        that isn't there yet is made. Raise what open raises, or
+        InvalidNameError, when the project can't be opened.
         """
 
         os.makedirs(os.path.join(self.path, "vimages"), exist_ok=True)
-        name = current_project()
+        name = self.last_name()
         if DEFAULT_PROJECT_RE.match(name) and not os.path.lexists(
             self.project_path(name)
         ):
@@ -607,7 +621,7 @@ class Workspace:
     def restore_last(self, factory: BrickFactory) -> Report:
         """Open the last project, or a new new_project_N if it can't be."""
 
-        name = current_project()
+        name = self.last_name()
         try:
             return self.open_last(factory)
         except errors.InvalidNameError:

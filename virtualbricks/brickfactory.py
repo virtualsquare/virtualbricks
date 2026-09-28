@@ -677,6 +677,12 @@ class Application:
         load_settings()
         load_state()
 
+    def install_workspace(self):
+        # the folder of the command line, for this run only: the setting
+        # stays as it is
+        if self.config.get("workspace"):
+            projects.path = self.config["workspace"]
+
     def install_sys_hooks(self):
         sys.excepthook = self.excepthook
         threading.excepthook = self.thread_excepthook
@@ -709,7 +715,7 @@ class Application:
 
         from virtualbricks.migrate import startup_migration
 
-        migration = startup_migration()
+        migration = startup_migration(self.config.get("workspace"))
         if migration is not None:
             migration.run()
             migration.log(logger)
@@ -722,6 +728,7 @@ class Application:
 
     def _start(self, reactor):
         self.install_settings()
+        self.install_workspace()
         self.logger.start(self)
         self.install_home()
         quit = defer.Deferred()

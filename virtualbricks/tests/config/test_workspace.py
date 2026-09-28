@@ -94,6 +94,22 @@ class TestPaths(WorkspaceTestCase):
 
         self.assertIsInstance(projects, Workspace)
 
+    def test_a_folder_instead_of_the_setting(self):
+        projects = Workspace()
+        projects.path = "/srv/labs"
+        set_setting("workspace", "/home/alice/labs")
+        self.assertEqual(projects.path, "/srv/labs")
+        self.assertEqual(projects.project_path("lab"), "/srv/labs/lab")
+        projects.path = None
+        self.assertEqual(projects.path, "/home/alice/labs")
+
+    def test_another_folder_forgets_the_summaries(self):
+        self.projects.create("lab")
+        self.assertEqual(len(self.projects.summaries()), 1)
+        self.projects.path = os.path.join(self.root, "other")
+        self.assertEqual(self.projects._summaries, {})
+        self.assertEqual(self.projects.summaries(), [])
+
 
 class TestNames(WorkspaceTestCase):
 
@@ -242,7 +258,7 @@ class TestRename(WorkspaceTestCase):
         self.projects.rename("lab", "ospf")
         self.assertEqual(self.projects.names(), ["ospf"])
         # the state isn't about a project that isn't open
-        self.assertNotEqual(current_project(), "ospf")
+        self.assertNotEqual(current_project(self.path), "ospf")
         # the same name does nothing
         self.projects.rename("ospf", "ospf")
         self.assertEqual(self.projects.names(), ["ospf"])
@@ -256,7 +272,7 @@ class TestRename(WorkspaceTestCase):
         self.assertEqual(
             self.projects.current.path, os.path.join(self.path, "ospf")
         )
-        self.assertEqual(current_project(), "ospf")
+        self.assertEqual(current_project(self.path), "ospf")
         # the running bricks keep their sockets
         self.assertEqual(self.factory.runtime_dir, runtime_dir)
         self.projects.save(self.factory)
@@ -565,7 +581,7 @@ class TestOpen(WorkspaceTestCase):
         self.assertEqual(self.projects.current.name, "lab")
         self.assertEqual(self.factory.bricks, [])
         self.assertIs(project_settings(), self.projects.current.settings)
-        self.assertEqual(current_project(), "lab")
+        self.assertEqual(current_project(self.path), "lab")
         self.assertEqual(
             self.factory.runtime_dir,
             os.path.join(locations.runtime_dir(), "lab"),
@@ -623,7 +639,7 @@ class TestOpen(WorkspaceTestCase):
         self.assertRaises(OSError, self.projects.open, "other", self.factory)
         self.assertEqual(self.projects.current.name, "lab")
         self.assertEqual([b.get_name() for b in self.factory.bricks], ["sw"])
-        self.assertEqual(current_project(), "lab")
+        self.assertEqual(current_project(self.path), "lab")
 
     def test_a_project_that_cannot_be_read_is_not_a_reason_to_save(self):
         self.projects.create("lab")
@@ -753,28 +769,41 @@ class TestStartUp(WorkspaceTestCase):
 
     def test_open_last(self):
         self.projects.create("lab")
-        set_current_project("lab")
+        set_current_project(self.path, "lab")
         self.projects.open_last(self.factory)
         self.assertEqual(self.projects.current.name, "lab")
         self.assertTrue(os.path.isdir(os.path.join(self.path, "vimages")))
 
+    def test_the_last_project_of_each_workspace(self):
+        other = Workspace(os.path.join(self.root, "other"))
+        self.projects.create("lab")
+        other.create("ospf")
+        self.projects.open("lab", self.factory)
+        other.open("ospf", make_factory())
+        self.assertEqual(self.projects.last_name(), "lab")
+        self.assertEqual(other.last_name(), "ospf")
+        self.assertEqual(
+            Workspace(os.path.join(self.root, "never")).last_name(),
+            "new_project",
+        )
+
     def test_the_first_run_creates_new_project(self):
         self.projects.open_last(self.factory)
         self.assertEqual(self.projects.current.name, "new_project")
-        set_current_project("new_project_3")
+        set_current_project(self.path, "new_project_3")
         self.projects.close(self.factory)
         self.projects.open_last(self.factory)
         self.assertEqual(self.projects.current.name, "new_project_3")
 
     def test_open_last_raises(self):
-        set_current_project("gone")
+        set_current_project(self.path, "gone")
         self.assertRaises(
             errors.InvalidNameError,
             self.projects.open_last,
             self.factory,
         )
         self.file("new_project", "notes")
-        set_current_project("new_project")
+        set_current_project(self.path, "new_project")
         self.assertRaises(
             errors.InvalidNameError,
             self.projects.open_last,
@@ -784,7 +813,7 @@ class TestStartUp(WorkspaceTestCase):
 
     def test_restore_the_last_project(self):
         self.projects.create("lab")
-        set_current_project("lab")
+        set_current_project(self.path, "lab")
         self.projects.restore_last(self.factory)
         self.assertEqual(self.projects.current.name, "lab")
         self.assertEqual(self.logger.levels(), [])
@@ -801,20 +830,20 @@ class TestStartUp(WorkspaceTestCase):
         self.assertEqual(self.logger.levels().count("error"), 1)
 
     def test_missing_project(self):
-        set_current_project("gone")
+        set_current_project(self.path, "gone")
         self.projects.create("new_project_0")
         self.projects.restore_last(self.factory)
         self.assertEqual(self.projects.current.name, "new_project_1")
         self.assertEqual(self.logger.levels().count("error"), 1)
 
     def test_invalid_name(self):
-        set_current_project("../x")
+        set_current_project(self.path, "../x")
         self.projects.restore_last(self.factory)
         self.assertEqual(self.projects.current.name, "new_project_0")
 
     def test_unreadable_project(self):
         self.file("lab", locations.PROJECT_FILE, text="[bricks\n")
-        set_current_project("lab")
+        set_current_project(self.path, "lab")
         self.projects.restore_last(self.factory)
         self.assertEqual(self.projects.current.name, "new_project_0")
         self.assertIn("Cannot open project", self.logger.formatted()[0])

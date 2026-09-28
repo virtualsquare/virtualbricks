@@ -23,7 +23,8 @@ Your preferences, which aren\(aqt about a project: the workspace, the
 terminal, KSM and the tray icon.
 .TP
 \f[B]state.toml\f[R]
-What Virtualbricks remembers between runs: the project that was open.
+What Virtualbricks remembers between runs: the project that was open
+last in each workspace.
 .TP
 \f[B]project.toml\f[R]
 One in each project: its bricks, events and disk images, how they are
@@ -142,6 +143,11 @@ Virtualbricks quits.
 The directory of the projects, \f[I].virtualbricks\f[R] in your home
 directory by default.
 Write it as an absolute path: \f[B]\(ti\f[R] is not expanded.
+\f[B]virtualbricks \-\-workspace\f[R] \f[I]directory\f[R] uses another
+directory for one run, made if it isn\(aqt there, and leaves this
+setting as it is.
+Each workspace has its images, in its \f[I]vimages\f[R] directory, and
+the project that opens at start in it (see \f[B]STATE\f[R]).
 .TP
 \f[B]terminal\f[R] = \f[I]string\f[R], default \f[CR]\(dq/usr/bin/xterm\(dq\f[R]
 The terminal that opens the console of a brick.
@@ -175,8 +181,18 @@ The file \f[I]$XDG_STATE_HOME\f[R]/virtualbricks/state.toml, or
 \f[B]XDG_STATE_HOME\f[R] is not set.
 Virtualbricks rewrites it whenever it opens a project.
 .TP
+\f[B]workspaces\f[R] = \f[I]array\f[R], default \f[CR][]\f[R]
+The workspaces used, the last used first: a table for each, with the
+keys of \f[B]Workspaces\f[R].
+A workspace that isn\(aqt in the list opens its \f[B]new_project\f[R].
+.SS Workspaces
+.TP
+\f[B]path\f[R] = \f[I]path\f[R]
+The directory of the workspace, as an absolute path.
+A table without it is reported and dropped.
+.TP
 \f[B]current_project\f[R] = \f[I]string\f[R], default \f[CR]\(dqnew_project\(dq\f[R]
-The project that opens at start.
+The project that opens at start in this workspace.
 A missing \f[B]new_project\f[R] is created.
 Any other project that can\(aqt be opened is reported, and Virtualbricks
 creates and opens \f[B]new_project_0\f[R], or the next free number,
@@ -765,6 +781,9 @@ python \-m virtualbricks.migrate \-\-settings \(ti/.virtualbricks.conf \(rs
     \(ti/vb\-copy /tmp/vb\-test
 .EE
 .PP
+Started with \f[B]\-\-workspace\f[R], Virtualbricks converts the
+projects of that directory in the same way.
+.PP
 \f[B]virtualbricks\-migrate\f[R] opens the same conversion in a window,
 and \f[B]python \-m virtualbricks.migrate \-\-help\f[R] lists every
 option.
@@ -791,7 +810,8 @@ The sockets and consoles of the running bricks, removed when you log
 out.
 .TP
 \f[I]/tmp/vb.lock\f[R]
-The lock that lets only one Virtualbricks run on the machine.
+The lock that lets only one Virtualbricks run on the machine, whatever
+its workspace.
 .TP
 \f[I]/etc/sudo.conf\f[R]
 Its \f[B]Path askpass\f[R] line makes Virtualbricks run sudo with
@@ -825,6 +845,17 @@ kernel_samepage_merging = false
 tray_icon = true
 warn_missing_programs = true
 audio_driver = \(dqalsa\(dq
+.EE
+.PP
+A \f[B]state.toml\f[R] after projects were opened in two workspaces, the
+last in \f[I]\(ti/net101\f[R], without its comments:
+.IP
+.EX
+format = 1
+workspaces = [
+    {path = \(dq/home/alice/net101\(dq, current_project = \(dqospf\(dq},
+    {path = \(dq/srv/labs\(dq, current_project = \(dqlab\(dq},
+]
 .EE
 .PP
 A \f[B]project.toml\f[R] with a virtual machine, two switches connected

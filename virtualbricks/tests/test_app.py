@@ -18,6 +18,9 @@
 
 """The launcher: the lock, the logging, the options."""
 
+import os
+
+from twisted.python import usage
 from twisted.trial import unittest
 
 from virtualbricks import app, locations
@@ -32,3 +35,40 @@ class TestLock(unittest.TestCase):
     def test_global_lock(self):
         application = app._LockedApplication({})
         self.assertEqual(application.lock.name, locations.LOCK_FILE)
+
+
+class TestWorkspace(unittest.TestCase):
+
+    def setUp(self):
+        self.root = isolate(self)
+
+    def parse(self, *args):
+        options = app.Options()
+        options.parseOptions(list(args))
+        return options["workspace"]
+
+    def test_the_setting_without_it(self):
+        self.assertIsNone(self.parse())
+
+    def test_an_absolute_path(self):
+        self.assertEqual(self.parse("--workspace", "/srv/labs/"), "/srv/labs")
+        self.assertEqual(self.parse("--workspace=/srv/labs"), "/srv/labs")
+
+    def test_home_and_the_current_folder(self):
+        self.assertEqual(
+            self.parse("--workspace", "~/labs"),
+            os.path.join(self.root, "labs"),
+        )
+        self.assertEqual(
+            self.parse("--workspace", "labs"),
+            os.path.join(os.getcwd(), "labs"),
+        )
+
+    def test_not_a_folder(self):
+        path = os.path.join(self.root, "file")
+        open(path, "w").close()
+        error = self.assertRaises(
+            usage.UsageError, self.parse, "--workspace", path
+        )
+        self.assertEqual(str(error), f"--workspace: {path} is not a folder")
+        self.assertRaises(usage.UsageError, self.parse, "--workspace", "")

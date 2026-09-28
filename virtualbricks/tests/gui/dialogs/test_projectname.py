@@ -155,7 +155,7 @@ class TestRename(NameTestCase):
         self.type(dialog, "ospf")
         self.ok(dialog)
         self.assertEqual(self.manager.current.name, "ospf")
-        self.assertEqual(current_project(), "ospf")
+        self.assertEqual(current_project(self.manager.path), "ospf")
 
 
 class TestDuplicate(NameTestCase):

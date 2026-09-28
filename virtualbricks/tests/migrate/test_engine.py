@@ -218,9 +218,15 @@ class TestMigrateToFolder(EngineTestCase):
         self.assertEqual(data["workspace"], target.workspace)
         # the settings of the projects are in the projects
         self.assertNotIn("cowfmt", data)
+        # the project of the old settings is in the new workspace
         self.assertEqual(
             load_toml(target.state_file),
-            {"format": SETTINGS_FORMAT, "current_project": "wan"},
+            {
+                "format": SETTINGS_FORMAT,
+                "workspaces": [
+                    {"path": target.workspace, "current_project": "wan"}
+                ],
+            },
         )
         project = load_toml(
             os.path.join(target.workspace, "lab1", "project.toml")
@@ -566,7 +572,8 @@ class TestEntryPoints(EngineTestCase):
             self.workspace,
         )
         self.assertEqual(
-            load_toml(locations.state_file())["current_project"], "lab"
+            load_toml(locations.state_file())["workspaces"],
+            [{"path": self.workspace, "current_project": "lab"}],
         )
         self.assertIsNone(startup_migration())
 

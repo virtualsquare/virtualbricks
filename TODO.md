@@ -16,8 +16,11 @@
 
 ## Projects
 
-- [ ] Implement workspaces: allow projects in directories other than
-  `~/.virtualbricks` (04 §11)
+- [ ] Run two Virtualbricks at once in different workspaces: a lock for
+  each workspace, and runtime directories that tell apart two projects
+  of the same name
+- [ ] Switch to another workspace from the GUI, and list the workspaces
+  used, which `state.toml` already has
 - [ ] Open several projects at once (04 §11: D6 rules it out for now)
 - [ ] Make new projects from templates (04 §11)
 - [ ] Import an archive dropped on the Projects window (04 §3, §9)
@@ -157,6 +160,9 @@
 
 ## Done
 
+- [x] Implement workspaces: `virtualbricks --workspace FOLDER` uses the
+  projects of another folder for a run, the setting stays, and
+  `state.toml` remembers the project open last in each workspace
 - [x] Fix the segmentation fault of an action called from the popover
   menu of a brick or an event (and of a disk image, the same row): the
   row destroyed the popover in its "closed", which GTK emits in the middle

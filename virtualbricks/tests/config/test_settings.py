@@ -312,47 +312,87 @@ class TestState(SettingsTestCase):
 
     def test_default(self):
         self.assertEqual(len(load_state()), 0)
-        self.assertEqual(current_project(), "new_project")
+        self.assertEqual(current_project("/srv/labs"), "new_project")
 
     def test_set_current_project_stores_it(self):
         load_state()
-        set_current_project("lab")
+        set_current_project("/srv/labs", "lab")
         with open(locations.state_file(), encoding="utf-8") as fp:
             text = fp.read()
         self.assertTrue(text.startswith("# " + settings.STATE_HEADER[:20]))
         self.assertIn(
-            "# The project that opens at start"
-            ' (default "new_project")\ncurrent_project = "lab"\n',
+            "# The workspaces used, the last used first (default empty)\n"
+            "workspaces = [\n"
+            '    {path = "/srv/labs", current_project = "lab"},\n'
+            "]\n",
             text,
         )
         self.assertEqual(
             load_toml(locations.state_file()),
-            {"format": 1, "current_project": "lab"},
+            {
+                "format": 1,
+                "workspaces": [
+                    {"path": "/srv/labs", "current_project": "lab"}
+                ],
+            },
         )
         load_state()
-        self.assertEqual(current_project(), "lab")
+        self.assertEqual(current_project("/srv/labs"), "lab")
+
+    def test_each_workspace_has_its_own(self):
+        load_state()
+        set_current_project("/srv/labs", "lab")
+        set_current_project("/home/alice/net101", "ospf")
+        self.assertEqual(current_project("/srv/labs"), "lab")
+        self.assertEqual(current_project("/home/alice/net101"), "ospf")
+
+        def paths():
+            workspaces = load_toml(locations.state_file())["workspaces"]
+            return [workspace["path"] for workspace in workspaces]
+
+        # the last used first
+        self.assertEqual(paths(), ["/home/alice/net101", "/srv/labs"])
+        set_current_project("/srv/labs", "bgp")
+        self.assertEqual(paths(), ["/srv/labs", "/home/alice/net101"])
+        self.assertEqual(current_project("/srv/labs"), "bgp")
+
+    def test_a_folder_written_another_way(self):
+        set_current_project("/srv/labs/", "lab")
+        self.assertEqual(current_project("/srv/./labs"), "lab")
+        set_current_project("/srv/labs", "ospf")
+        self.assertEqual(len(settings._state.workspaces), 1)
+        self.assertEqual(settings._state.workspaces[0].path, "/srv/labs")
 
     def test_explicit_path(self):
         path = self.mktemp()
-        set_current_project("x")  # to the default path
+        set_current_project("/srv/labs", "x")  # to the default path
         store_state(path)
-        self.assertEqual(load_toml(path)["current_project"], "x")
+        self.assertEqual(
+            load_toml(path)["workspaces"],
+            [{"path": "/srv/labs", "current_project": "x"}],
+        )
         load_state(path)
-        self.assertEqual(current_project(), "x")
+        self.assertEqual(current_project("/srv/labs"), "x")
 
     def test_unreadable(self):
         os.makedirs(locations.state_file())
         load_state()
         self.assertEqual(self.logger.levels(), ["error"])
-        self.assertEqual(current_project(), "new_project")
+        self.assertEqual(current_project("/srv/labs"), "new_project")
 
     def test_warnings_are_logged(self):
         os.makedirs(os.path.dirname(locations.state_file()))
-        dump_toml({"current_project": "lab"}, locations.state_file())
+        workspaces = [
+            {"current_project": "lab"},
+            {"path": "/srv/labs", "current_project": "ospf"},
+        ]
+        dump_toml({"workspaces": workspaces}, locations.state_file())
         report = load_state()
-        self.assertEqual(report.warnings, 1)
-        self.assertEqual(current_project(), "lab")
-        self.assertEqual(self.logger.levels(), ["warn"])
+        # no format, and no path in the first workspace, which is dropped
+        self.assertEqual(report.warnings, 3)
+        self.assertEqual(current_project("/srv/labs"), "ospf")
+        self.assertEqual(len(settings._state.workspaces), 1)
+        self.assertEqual(self.logger.levels(), ["warn"] * 3)
 
     def test_store_error(self):
         def fail(*args):

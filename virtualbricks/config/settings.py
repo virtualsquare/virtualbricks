@@ -40,7 +40,9 @@ from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
     Bool,
     Choice,
+    ListOf,
     Path,
+    Record,
     Str,
     define,
     dump_record,
@@ -173,12 +175,26 @@ class AppSettings:
 
 
 @define
-class AppState:
+class WorkspaceState:
+    """What the application remembers of a workspace."""
 
+    path: str = field(
+        Path(required=True), default="", help="The folder of the workspace"
+    )
     current_project: str = field(
         Str(),
         default=locations.DEFAULT_PROJECT,
-        help="The project that opens at start",
+        help="The project that opens at start in this workspace",
+    )
+
+
+@define
+class AppState:
+
+    workspaces: list[WorkspaceState] = field(
+        ListOf(Record(WorkspaceState)),
+        factory=list,
+        help="The workspaces used, the last used first",
     )
 
 
@@ -358,10 +374,31 @@ def store_state(path: str | None = None) -> None:
         logger.failure(cannot_save, filename=path)
 
 
-def current_project() -> str:
-    return _state.current_project
+def _workspace_state(workspace: str) -> WorkspaceState | None:
+    path = os.path.abspath(workspace)
+    for state in _state.workspaces:
+        if os.path.abspath(state.path) == path:
+            return state
+    return None
 
 
-def set_current_project(name: str) -> None:
-    _state.current_project = name
+def current_project(workspace: str) -> str:
+    """The project open last in a workspace, new_project if none was."""
+
+    state = _workspace_state(workspace)
+    if state is None:
+        return locations.DEFAULT_PROJECT
+    return state.current_project
+
+
+def set_current_project(workspace: str, name: str) -> None:
+    """Remember the project open in a workspace, which comes first."""
+
+    state = _workspace_state(workspace)
+    if state is None:
+        state = WorkspaceState(os.path.abspath(workspace))
+    else:
+        _state.workspaces.remove(state)
+    state.current_project = name
+    _state.workspaces.insert(0, state)
     store_state()

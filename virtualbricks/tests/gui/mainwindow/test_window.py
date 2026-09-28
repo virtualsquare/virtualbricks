@@ -82,7 +82,7 @@ class TestStartUpProblem(GuiTestCase):
     def setUp(self):
         super().setUp()
         self.gui = FakeGui(self.factory)
-        set_current_project("gone")
+        set_current_project(self.manager.path, "gone")
 
     def test_closed_without_a_project(self):
         window = VBGUI.show_start_up_problem(self.gui, "gone is gone")

@@ -81,8 +81,8 @@ virtualbricks
 ```
 
 or `python -m virtualbricks`. The window opens with the project that was open
-last. The terminal that started Virtualbricks runs a Python console with the
-brick factory in it, unless you give `--noterm`.
+last in the workspace. The terminal that started Virtualbricks runs a Python
+console with the brick factory in it, unless you give `--noterm`.
 
 The options are:
 
@@ -92,11 +92,13 @@ The options are:
   `SIGUSR2` signal drop into the `pdb` debugger.
 - `-l FILE`, `--logfile FILE`: write the log messages to a file.
 - `--noterm`: don't show the console in the terminal.
+- `--workspace FOLDER`: use the projects of another folder, made if it isn't
+  there, for this run only; see [Configuration](#configuration).
 - `--version`: print the version and exit.
 
-Only one Virtualbricks can run at a time. It holds the lock `/tmp/vb.lock`,
-and if a crash leaves it behind, the message that refuses to start says to
-delete it.
+Only one Virtualbricks can run at a time, whatever its workspace. It holds
+the lock `/tmp/vb.lock`, and if a crash leaves it behind, the message that
+refuses to start says to delete it.
 
 ## Configuration
 
@@ -105,10 +107,13 @@ Virtualbricks keeps its files in TOML, and writes them itself:
 - `~/.config/virtualbricks/settings.toml`: your preferences, which aren't
   about a project, as the terminal. It is in `$XDG_CONFIG_HOME` if that is set.
 - `~/.local/state/virtualbricks/state.toml`: what it remembers between runs,
-  as the project that was open. It is in `$XDG_STATE_HOME` if that is set.
+  as the project that was open last in each workspace. It is in
+  `$XDG_STATE_HOME` if that is set.
 - `~/.virtualbricks/`: the workspace, a folder for each project, with its
-  `project.toml`, its README and its private disks. The `workspace` setting
-  changes it.
+  `project.toml`, its README and its private disks, and `vimages/`, the disk
+  images its projects share. The `workspace` setting changes it, and
+  `virtualbricks --workspace FOLDER` uses another one for a run, as a folder
+  of projects for each course or each client; the setting stays as it is.
 
 Each file says, in a comment above each key, what the key is for, and marks
 with `# default` the values that are the defaults. Virtualbricks writes the
