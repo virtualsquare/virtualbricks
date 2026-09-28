@@ -26,7 +26,7 @@ from virtualbricks.config.schema import (
     field_names,
     rename_references,
 )
-from virtualbricks.i18n import _
+from virtualbricks.i18n import N_, _
 
 logger = Logger()
 attribute_set = "Attribute {attr} set in {brick} with value {value}."
@@ -41,7 +41,8 @@ class BaseConfig:
     icon = field(
         Path(),
         default="",
-        help="An image file to show instead of the icon of its type",
+        label=N_("Icon"),
+        help=N_("An image file to show instead of the icon of its type"),
     )
 
 

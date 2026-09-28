@@ -610,7 +610,7 @@ class TestTheSettings(BricksTestCase):
 
         self.patch(tab, "IConfigController", adapt)
         # not a panel on a draft
-        self.patch(tab, "new_panel", lambda brick: None)
+        self.patch(tab, "new_panel", lambda brick, gui: None)
         return calls, controllers
 
     def test_a_switch(self):

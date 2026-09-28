@@ -57,10 +57,10 @@ PANELS = {
 }
 
 
-def new_panel(brick):
+def new_panel(brick, gui=None):
     """The panel of brick on a new draft, or None if it has none yet."""
 
     panel = PANELS.get(brick.get_type())
     if panel is None:
         return None
-    return panel(brick.draft_factory(brick))
+    return panel(brick.draft_factory(brick), gui)

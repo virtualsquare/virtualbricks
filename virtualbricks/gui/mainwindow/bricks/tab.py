@@ -126,7 +126,7 @@ class BricksTab(RowsTab):
         return brickmenu.popup(widget, event, self.gui, item, True)
 
     def panel_for(self, item):
-        panel = new_panel(item)
+        panel = new_panel(item, self.gui)
         if panel is not None:
             return panel
         return IConfigController(item, None)

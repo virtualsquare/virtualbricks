@@ -844,7 +844,7 @@ class RowsTab(Tab, Gtk.Stack):
         self.ok_button.set_sensitive(not errors)
         if errors:
             error = errors[0]
-            row = panel.form.rows.get(error.key)
+            row = panel.rows.get(error.key)
             if row is None:
                 text = error.text
             else:

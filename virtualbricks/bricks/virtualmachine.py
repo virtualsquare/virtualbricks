@@ -56,7 +56,7 @@ from virtualbricks.config.schema import (
 )
 from virtualbricks.config.settings import get_setting
 from virtualbricks.config.workspace import projects
-from virtualbricks.i18n import _
+from virtualbricks.i18n import N_, _
 from virtualbricks.nic import is_valid_mac, random_mac
 from virtualbricks.programs import PACKAGES, Missing, ProgramError, programs
 from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
@@ -663,131 +663,214 @@ class VirtualMachineConfig(bricks.BrickConfig):
     qemu_program = field(
         Str(required=True),
         default="qemu-system-i386",
-        help="The QEMU program, in the qemu_path folder",
+        label=N_("Program"),
+        help=N_("The QEMU program, in the QEMU folder of the settings"),
     )
     machine_type = field(
         Str(),
         default="",
-        help=(
-            "The machine type, as -machine type= takes it; empty for the QEMU "
-            "default"
+        label=N_("Machine type"),
+        help=N_(
+            "The machine type, as -machine type= takes it; empty for the QEMU"
+            " default"
         ),
     )
     cpu_model = field(
         Str(),
         default="",
-        help="The CPU model, as -cpu takes it; empty for the QEMU default",
+        label=N_("CPU model"),
+        help=N_("The CPU model, as -cpu takes it; empty for the QEMU default"),
     )
-    use_kvm = field(Bool(), default=False, help="Use KVM when the host has it")
-    cpus = field(Int(1, 64), default=1, help="Virtual CPUs")
+    use_kvm = field(
+        Bool(),
+        default=False,
+        label=N_("KVM"),
+        help=N_("Use KVM when the host has it"),
+    )
+    cpus = field(
+        Int(1, 64),
+        default=1,
+        label=N_("Virtual CPUs"),
+        help=N_("The number of virtual CPUs"),
+    )
     # in MiB
-    memory = field(Int(1, 99999), default=64, help="Memory in MiB")
+    memory = field(
+        Int(1, 99999), default=64, label=N_("Memory"), help=N_("Memory in MiB")
+    )
     use_kvm_shadow_memory = field(
-        Bool(), default=False, help="Set the size of the KVM shadow memory"
+        Bool(),
+        default=False,
+        label=N_("KVM shadow memory"),
+        help=N_("Set the size of the KVM shadow memory"),
     )
     kvm_shadow_memory = field(
         Int(0, 99999),
         default=1,
-        help="KVM shadow memory in MiB, with use_kvm_shadow_memory",
+        label=N_("Shadow memory"),
+        help=N_("KVM shadow memory in MiB"),
     )
     # the boot and the disks
     boot_order = field(
         Str(),
         default="",
-        help=(
-            "Boot order as -boot takes it: c the first disk, d the CD-ROM, a "
-            "the floppy; empty for the QEMU default"
+        label=N_("Boot from"),
+        help=N_(
+            "Boot order as -boot takes it: c the first disk, d the CD-ROM, a the floppy; empty for the QEMU default"
         ),
     )
     forget_disk_changes = field(
         Bool(),
         default=False,
-        help=(
-            "Write the changes to the disks in temporary files, forgotten "
-            "when the machine stops"
+        label=N_("Forget the changes"),
+        help=N_(
+            "Write the changes to the disks in temporary files, forgotten when the machine stops"
         ),
     )
     virtio_disks = field(
-        Bool(), default=False, help="Attach the disks as virtio devices"
+        Bool(),
+        default=False,
+        label=N_("Virtio disks"),
+        help=N_("Attach the disks as virtio devices"),
     )
     # the CD-ROM: none, an image file, or a drive of the host
     cdrom = field(
-        Choice("none", "image", "device"), default="none", help="The CD-ROM"
+        Choice("none", "image", "device"),
+        default="none",
+        label=N_("CD-ROM"),
+        help=N_(
+            "What the CD-ROM holds: nothing, an image file or a drive of the host"
+        ),
     )
     cdrom_image = field(
         Path(),
         default="",
-        help="An image file for the CD-ROM, with cdrom image",
+        label=N_("Image"),
+        help=N_("An image file for the CD-ROM"),
     )
     cdrom_device = field(
-        Str(), default="", help="A CD-ROM drive of the host, with cdrom device"
+        Str(),
+        default="",
+        label=N_("Drive"),
+        help=N_("A CD-ROM drive of the host, as /dev/cdrom"),
     )
     # the display
-    headless = field(Bool(), default=False, help="No display at all")
+    headless = field(
+        Bool(),
+        default=False,
+        label=N_("No display"),
+        help=N_("No display at all"),
+    )
     standard_vga = field(
         Bool(),
         default=False,
-        help="A standard VGA card instead of the machine's",
+        label=N_("Standard VGA"),
+        help=N_("A standard VGA card instead of the machine's"),
     )
-    use_vnc = field(Bool(), default=False, help="Show the display over VNC")
+    use_vnc = field(
+        Bool(),
+        default=False,
+        label=N_("VNC"),
+        help=N_("Show the display over VNC"),
+    )
     vnc_display = field(
-        Int(0, 500), default=1, help="The VNC display number, with use_vnc"
+        Int(0, 500),
+        default=1,
+        label=N_("VNC display"),
+        help=N_("The VNC display number"),
     )
     sdl_window = field(
-        Bool(), default=False, help="Show the display in an SDL window"
+        Bool(),
+        default=False,
+        label=N_("SDL window"),
+        help=N_("Show the display in an SDL window"),
     )
     # sound and USB
     sound_card = field(
-        Str(), default="", help="The sound card, as ac97; empty for none"
+        Str(),
+        default="",
+        label=N_("Sound card"),
+        help=N_("The sound card, as ac97; empty for none"),
     )
     use_usb = field(
         Bool(),
         default=False,
-        help="Give the machine USB and the devices of usb_devices",
+        label=N_("USB"),
+        help=N_("Give the machine USB, and its USB devices"),
     )
     usb_devices = field(
         ListOf(UsbDeviceKind()),
         factory=list,
-        help="USB devices of the host, by vendor and product id",
+        label=N_("USB devices"),
+        help=N_("USB devices of the host, by vendor and product id"),
     )
     # the keyboard, the clock and the serial port
     keyboard_layout = field(
         Str(),
         default="",
-        help="The keyboard layout, two letters; empty for the default",
+        label=N_("Keyboard layout"),
+        help=N_("The keyboard layout, two letters; empty for the default"),
     )
     clock_local_time = field(
         Bool(),
         default=False,
-        help="Start the clock of the machine at local time, not UTC",
+        label=N_("Local time"),
+        help=N_("Start the clock of the machine at local time, not UTC"),
     )
     clock_drift_fix = field(
         Bool(),
         default=False,
-        help="Correct the drift of the clock of the machine",
+        label=N_("Drift fix"),
+        help=N_("Correct the drift of the clock of the machine"),
     )
     serial_socket = field(
         Bool(),
         default=False,
-        help="Connect the serial port to a socket in the runtime folder",
+        label=N_("Serial socket"),
+        help=N_("Connect the serial port to a socket in the runtime folder"),
     )
     # booting a kernel directly, and debugging it
-    use_kernel = field(Bool(), default=False, help="Boot a kernel directly")
-    kernel = field(Path(), default="", help="A kernel image, with use_kernel")
+    use_kernel = field(
+        Bool(),
+        default=False,
+        label=N_("Boot a kernel"),
+        help=N_("Boot a kernel directly"),
+    )
+    kernel = field(
+        Path(), default="", label=N_("Kernel"), help=N_("A kernel image")
+    )
     use_initrd = field(
-        Bool(), default=False, help="Load an initial ramdisk, with use_kernel"
+        Bool(),
+        default=False,
+        label=N_("Initial ramdisk"),
+        help=N_("Load an initial ramdisk with the kernel"),
     )
     initrd = field(
-        Path(), default="", help="An initial ramdisk, with use_initrd"
+        Path(), default="", label=N_("Ramdisk"), help=N_("An initial ramdisk")
     )
     kernel_command_line = field(
-        Str(), default="", help="The kernel command line, with use_kernel"
+        Str(),
+        default="",
+        label=N_("Command line"),
+        help=N_("The command line of the kernel"),
     )
-    use_gdb = field(Bool(), default=False, help="Accept a GDB connection")
+    use_gdb = field(
+        Bool(),
+        default=False,
+        label=N_("GDB"),
+        help=N_("Accept a GDB connection"),
+    )
     gdb_port = field(
-        Int(1, 65535), default=1234, help="The TCP port for GDB, with use_gdb"
+        Int(1, 65535),
+        default=1234,
+        label=N_("GDB port"),
+        help=N_("The TCP port for GDB"),
     )
-    acpi = field(Bool(), default=True, help="Give the machine ACPI")
+    acpi = field(
+        Bool(),
+        default=True,
+        label=N_("ACPI"),
+        help=N_("Give the machine ACPI"),
+    )
     # the disks, one per device of DISK_DEVICES, in the same order
     hda_image = _image("hda")
     hda_private = _private("hda")
@@ -868,6 +951,16 @@ class VirtualMachineDraft(Draft):
         ]
         self.qemu = None
         self.machine_properties = frozenset()
+
+    def note(self, name):
+        qemu = self.qemu
+        if name == "audio_driver" and qemu and qemu.audio_drivers is None:
+            # QEMU 6.2
+            return _(
+                "QEMU {version} doesn't list its drivers: this one is taken on"
+                " trust"
+            ).format(version=qemu.version)
+        return ""
 
     # the cards
 

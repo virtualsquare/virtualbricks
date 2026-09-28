@@ -67,6 +67,22 @@ _css = Gtk.CssProvider()
 _css.load_from_data(b"label.lack { color: @warning_color; }")
 
 
+def show_problem(label: Gtk.Label, problem) -> None:
+    """A problem in label: red for an error, else the colour of warnings."""
+
+    label.set_text("" if problem is None else problem.text)
+    label.set_visible(problem is not None)
+    context = label.get_style_context()
+    context.add_provider(_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+    error = problem is not None and problem.error
+    lack = problem is not None and not problem.error
+    for name, on in (("error", error), ("lack", lack)):
+        if on:
+            context.add_class(name)
+        else:
+            context.remove_class(name)
+
+
 def _separate(row, before) -> None:
     """A line between two rows."""
 
@@ -154,16 +170,8 @@ class Row(Gtk.ListBoxRow):
         else:
             caption = self.help
         self.caption.set_text(caption)
-        self.problem.set_text("" if problem is None else problem.text)
-        self.problem.set_visible(problem is not None)
+        show_problem(self.problem, problem)
         error = problem is not None and problem.error
-        lack = problem is not None and not problem.error
-        styles = self.problem.get_style_context()
-        for name, on in (("error", error), ("lack", lack)):
-            if on:
-                styles.add_class(name)
-            else:
-                styles.remove_class(name)
         context = self.control.get_style_context()
         if error:
             context.add_class("error")
@@ -211,10 +219,21 @@ class Form:
         self.widget.pack_start(label, False, False, 0)
         self.widget.pack_start(frame, False, False, 0)
 
-    def row(self, key: str, widget: Gtk.Widget, label: str, help: str) -> Row:
-        """A row of any widget, with its label and its help."""
+    def row(
+        self, key: str, widget: Gtk.Widget, label: str = "", help: str = ""
+    ) -> Row:
+        """
+        A row of any widget, with its label and its help; a setting's are
+        the schema's.
+        """
 
         return self._row(key, widget, label, help)
+
+    def add(self, widget: Gtk.Widget) -> None:
+        """A widget of its own, after the sections."""
+
+        self._list = None
+        self.widget.pack_start(widget, False, False, 0)
 
     def _row(
         self, key: str, widget: Gtk.Widget, label: str = "", help: str = ""

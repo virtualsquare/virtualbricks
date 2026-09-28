@@ -19,11 +19,13 @@
 """
 The panel of a brick: its settings, as the rows of a form on a draft.
 
-A panel says which rows it has in ``build()``, and the form makes them. The
-settings page of the Bricks tab shows ``widget``, keeps OK sensitive while the
-draft has no errors, and applies the draft on OK; the brick sees nothing
-before. A change in a row refreshes the rows, then calls the callbacks of
-``connect_changed()``.
+A panel says which rows it has in ``build()``, and the form makes them; a
+panel of several forms returns the widget that holds them. The settings page
+of the Bricks tab shows ``widget``, keeps OK sensitive while the draft has no
+errors, and applies the draft on OK; the brick sees nothing before. A change
+in a row refreshes the rows, then calls the callbacks of
+``connect_changed()``. ``gui`` is the main window, for a panel that opens
+another tab.
 """
 
 from __future__ import annotations
@@ -37,31 +39,44 @@ from virtualbricks.i18n import _
 class Panel:
     """The settings of a brick, on a draft."""
 
-    def __init__(self, draft) -> None:
+    def __init__(self, draft, gui=None) -> None:
         self.draft = draft
+        self.gui = gui
         self._callbacks: list[Callable[[Panel], None]] = []
         self.form = Form(draft, self.on_changed)
-        self.build(self.form)
-        self.form.refresh()
-        self.widget = self.form.widget
+        root = self.build(self.form)
+        self.widget = self.form.widget if root is None else root
+        self.refresh()
 
-    def build(self, form: Form) -> None:
-        """Add the sections and the rows of the panel."""
+    def build(self, form: Form):
+        """
+        Add the sections and the rows of the panel; return the widget of the
+        panel when it isn't the form's.
+        """
 
         raise NotImplementedError
+
+    @property
+    def rows(self) -> dict:
+        """The rows of the panel, by their key."""
+
+        return self.form.rows
+
+    def refresh(self) -> None:
+        self.form.refresh()
 
     def connect_changed(self, callback: Callable[[Panel], None]) -> None:
         self._callbacks.append(callback)
 
     def on_changed(self) -> None:
-        self.form.refresh()
+        self.refresh()
         for callback in self._callbacks:
             callback(self)
 
     def running_words(self) -> str:
         """What the settings of the brick say while it runs."""
 
-        rows = self.form.rows
+        rows = self.rows
         live = [name for name in self.draft.live() if name in rows]
         brick = self.draft.brick.name
         if not live:

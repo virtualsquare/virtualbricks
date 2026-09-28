@@ -28,7 +28,9 @@ private copy saves it as a new image, merges it into its image or starts it
 over, in the dialogs of ``imagedialogs``.
 
 Nothing changes until OK: the rows keep what is chosen, and ``apply()``
-gives the images to the machine and returns the modes as its settings.
+gives the images to the machine and returns the modes as its settings; on a
+draft, ``to_draft()`` writes them into the draft, and ``changed`` is called
+after each change of a row.
 """
 
 import os
@@ -85,7 +87,7 @@ class DiskRow(Gtk.ListBoxRow):
         self.picker = ImagePicker(
             section.factory, vm, image, section.infos, section.manage
         )
-        self.picker.connect("chosen", lambda picker: self.update())
+        self.picker.connect("chosen", lambda picker: self._changed())
         grid.attach(self.picker, 1, 0, 1, 1)
         self.mode_combo = Gtk.ComboBoxText(
             visible=True, valign=Gtk.Align.CENTER
@@ -93,7 +95,7 @@ class DiskRow(Gtk.ListBoxRow):
         for mode, label in MODES:
             self.mode_combo.append(mode, label)
         self.mode_combo.set_active_id(PRIVATE if private else ITSELF)
-        self.mode_combo.connect("changed", lambda combo: self.update())
+        self.mode_combo.connect("changed", lambda combo: self._changed())
         grid.attach(self.mode_combo, 2, 0, 1, 1)
 
         self.actions = Gio.SimpleActionGroup()
@@ -178,6 +180,10 @@ class DiskRow(Gtk.ListBoxRow):
         self.menu.append_section(None, changes)
         self.menu.append_section(None, others)
 
+    def _changed(self) -> None:
+        self.update()
+        self.section.notify()
+
     def keeps_changes(self) -> bool:
         """
         Whether the disk, as saved and shown, has a private copy with
@@ -235,12 +241,16 @@ class DiskRow(Gtk.ListBoxRow):
 class DisksSection(Gtk.Box):
     """The disks of vm, and Add Disk."""
 
-    def __init__(self, vm, factory, infos=None, manage=None) -> None:
+    def __init__(
+        self, vm, factory, infos=None, manage=None, changed=None
+    ) -> None:
         super().__init__(
             visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=8
         )
         self.vm = vm
         self.factory = factory
+        # called after a change of the disks
+        self.changed = changed
         # the facts of the files, for all the pickers
         self.infos = images.InfoCache() if infos is None else infos
         # shows the Images tab
@@ -336,6 +346,7 @@ class DisksSection(Gtk.Box):
         row = DiskRow(self, device, None, True)
         self.list.add(row)
         self._update_add()
+        self.notify()
         return row
 
     def remove_disk(self, device) -> None:
@@ -347,6 +358,22 @@ class DisksSection(Gtk.Box):
                 other.set_header(None)
             self.list.invalidate_headers()
         self._update_add()
+        self.notify()
+
+    def notify(self) -> None:
+        if self.changed is not None:
+            self.changed()
+
+    def to_draft(self, draft) -> None:
+        """Write the images of the disks, and their modes, into a draft."""
+
+        for device in DISK_DEVICES:
+            row = self.row(device)
+            image = None if row is None else row.image
+            name = "" if image is None else image.get_name()
+            draft.set(f"{device}_image", name)
+            if row is not None:
+                draft.set(f"{device}_private", row.private)
 
     def apply(self) -> dict:
         """
