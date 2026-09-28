@@ -78,11 +78,22 @@ def joined(*parts: str) -> str:
     return ",".join(part for part in parts if part)
 
 
-def socket_path(plug: Plug) -> str:
-    """The path of the socket a plug is in, as a VDE program takes it."""
+def vde_socket(path: str) -> str:
+    """
+    A socket as the VDE programs and QEMU take it. The socket card of a
+    virtual machine, whose path ends with "[]", joins one plug with no switch
+    between: vdeplug4 names that ptp://.
+    """
 
-    # the socket cards of virtual machines end with "[]"
-    return plug.sock.path.rstrip("[]")
+    if path.endswith("[]"):
+        return f"ptp://{path[:-2]}"
+    return path
+
+
+def socket_path(plug: Plug) -> str:
+    """The socket a plug is in, as the VDE programs take it."""
+
+    return vde_socket(plug.sock.path)
 
 
 def vde_program(vde: VdeInfo, name: str) -> str:

@@ -20,7 +20,7 @@
 
 import re
 
-from virtualbricks import bricks
+from virtualbricks import bricks, errors
 from virtualbricks.bricks.command import Command, socket_path
 from virtualbricks.bricks.wire import Wire
 from virtualbricks.config.schema import (
@@ -271,9 +271,14 @@ class Netemu(Wire):
         cmd = Command(path)
         if warning is not None:
             cmd.warn(warning)
-        cmd.option(
-            "-v", f"{socket_path(self.plugs[0])}:{socket_path(self.plugs[1])}"
-        )
+        left, right = (socket_path(plug) for plug in self.plugs)
+        # -v splits its value at the first colon, that of ptp:// on the left
+        if "://" in left:
+            raise errors.BadConfigError(
+                f"{self.name}: the socket card of a machine can only be the"
+                " right end of a Netemu (endpoints)"
+            )
+        cmd.option("-v", f"{left}:{right}")
         # each value both ways, or left to right (LR) and right to left (RL)
         for option, value, reverse, symmetric in (
             (

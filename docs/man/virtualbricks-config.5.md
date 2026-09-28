@@ -592,7 +592,8 @@ vde-netemu isn't installed.
 
 **endpoints** = *array*, default `["", ""]`
 :   The two sockets, left and right. The values of a state apply from left
-    to right, the ones that end in **_right_to_left** from right to left.
+    to right, the ones that end in **_right_to_left** from right to left. A
+    socket card of a virtual machine can only be the right one.
 
 **transition_period** = *integer* >= 1, default `100`
 :   How often the emulator may change state, in milliseconds.

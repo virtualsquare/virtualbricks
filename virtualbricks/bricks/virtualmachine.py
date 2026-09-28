@@ -31,7 +31,13 @@ from twisted.internet.utils import getProcessOutput
 from twisted.logger import Logger
 
 from virtualbricks import bricks, errors, tools
-from virtualbricks.bricks.command import Command, Prepared, joined, socket_path
+from virtualbricks.bricks.command import (
+    Command,
+    Prepared,
+    joined,
+    socket_path,
+    vde_socket,
+)
 from virtualbricks.config.images import read_info
 from virtualbricks.config.projectfile import DEFAULT_MODEL
 from virtualbricks.config.schema import (
@@ -1242,7 +1248,8 @@ def _netdev(link, index, vde):
 
     if link.mode == "sock":
         # a socket card: other bricks plug into it
-        return f"vde,id=vx{index},sock={link.path}" if vde else None
+        sock = vde_socket(link.path)
+        return f"vde,id=vx{index},sock={sock}" if vde else None
     if link.sock is not None and link.sock.mode == "hostonly":
         return f"user,id=vx{index}"
     if link.mode == "vde":

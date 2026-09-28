@@ -116,7 +116,8 @@ class TestCommand(BrickTestCase):
         tap.disconnect()
         tap.connect(card)
         self.assertTrue(card.path.endswith("[]"))
-        self.assertEqual(socket_path(tap.plugs[0]), card.path[:-2])
+        # a socket card joins its plug without a switch
+        self.assertEqual(socket_path(tap.plugs[0]), f"ptp://{card.path[:-2]}")
 
     def test_vde_program(self):
         vde = vde_info()
@@ -299,6 +300,24 @@ class TestNetemu(LinesTestCase):
             ),
         )
 
+    def test_a_socket_card(self):
+        vm = self.factory.new_brick("qemu", "vm")
+        card = vm.add_sock()
+        self.netemu.plugs[1].disconnect()
+        self.netemu.plugs[1].connect(card)
+        argv, _ = self.line(self.netemu, prepared_vde())
+        self.assertIn(f"{RUN}/sw1.ctl:ptp://{RUN}/vm_sock_eth0", argv)
+        # -v can't take it on the left
+        self.netemu.plugs[0].disconnect()
+        self.netemu.plugs[0].connect(card)
+        with self.assertRaises(errors.BadConfigError) as caught:
+            self.netemu.command(prepared_vde())
+        self.assertEqual(
+            str(caught.exception),
+            "ne1: the socket card of a machine can only be the right end of a"
+            " Netemu (endpoints)",
+        )
+
     def test_neither(self):
         vde = vde_info()
         programs = dict(vde.programs)
@@ -407,7 +426,7 @@ class TestMachine(LinesTestCase):
             prepared = prepared_qemu(target, resume="snap1")
             argv, warnings = self.line(vm, prepared)
             expected_warnings = []
-            sock = f"vde,id=vx2,sock={RUN}/vm2_sock_eth2[]"
+            sock = f"vde,id=vx2,sock=ptp://{RUN}/vm2_sock_eth2"
             if facts.vde:
                 cards = [
                     "-device",
