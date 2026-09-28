@@ -24,7 +24,7 @@ from virtualbricks import bricks
 from virtualbricks.bricks.command import Command, socket_path, vde_program
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.schema import Int, Str, define, field
-from virtualbricks.i18n import _
+from virtualbricks.i18n import N_, _
 
 
 def tunnel_key(password):
@@ -58,10 +58,16 @@ def write_key(path, password):
 class TunnelListenConfig(bricks.BrickConfig):
 
     password = field(
-        Str(), default="", help="The password of the tunnel, in clear text"
+        Str(),
+        default="",
+        label=N_("Password"),
+        help=N_("The password of the tunnel, in clear text"),
     )
     listen_port = field(
-        Int(1, 65535), default=7667, help="The UDP port to listen on"
+        Int(1, 65535),
+        default=7667,
+        label=N_("Port"),
+        help=N_("The UDP port to listen on"),
     )
 
 

@@ -122,7 +122,7 @@ class TestRunning(PanelTestCase):
 class TestTheTable(PanelTestCase):
 
     def test_a_switch(self):
-        self.assertEqual(PANELS, {"Switch": SwitchPanel})
+        self.assertIs(PANELS["Switch"], SwitchPanel)
         panel = new_panel(self.switch)
         self.addCleanup(panel.widget.destroy)
         self.assertIsInstance(panel, SwitchPanel)

@@ -24,22 +24,26 @@ setting: its label and its help from the schema, translated, with what the
 draft adds to the help; its widget, at the end; and under them what is wrong
 with the setting, when something is. The widget comes from the kind of the
 field: a switch for true or false, a spin button for a number, between the
-limits of the draft.
+limits of the draft, an entry for a text or a path, buttons or a menu for a
+choice. A socket row chooses what a plug of the brick joins, of the draft's
+sockets.
 
 A change in a widget goes into the draft, then the form calls back. The panel
 then refreshes the rows: a row greys out while the draft doesn't use its
-setting, and shows its problem.
+setting, and shows its problem, red for an error, in the colour of warnings
+for what only keeps the brick from starting.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango  # noqa: E402
 
+from virtualbricks.bricks.draft import Problem  # noqa: E402
 from virtualbricks.config.schema import Float, info_of, kind_of  # noqa: E402
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
@@ -52,6 +56,9 @@ HELP_SCALE = 0.9
 LOWEST = -(2**31)
 HIGHEST = 2**31 - 1
 
+_css = Gtk.CssProvider()
+_css.load_from_data(b"label.lack { color: @warning_color; }")
+
 
 def _separate(row, before) -> None:
     """A line between two rows."""
@@ -60,16 +67,25 @@ def _separate(row, before) -> None:
         row.set_header(Gtk.Separator(visible=True))
 
 
+def socket_name(sock) -> str:
+    """A switch by its name, the socket of another brick by its own."""
+
+    if sock.brick.get_type().startswith("Switch"):
+        return sock.brick.name
+    return sock.nickname
+
+
 class Row(Gtk.ListBoxRow):
     """A setting: its label, its help, its widget and its problem."""
 
-    def __init__(self, draft, name: str, widget: Gtk.Widget) -> None:
+    def __init__(
+        self, key: str, label: str, help: str, widget: Gtk.Widget
+    ) -> None:
         super().__init__(visible=True, activatable=False, selectable=False)
-        info = info_of(draft.settings, name)
         # widget and name are taken by Gtk.Widget
-        self.key = name
+        self.key = key
         self.control = widget
-        self.help = _(info.help)
+        self.help = help
         grid = Gtk.Grid(
             visible=True,
             column_spacing=16,
@@ -86,7 +102,7 @@ class Row(Gtk.ListBoxRow):
             hexpand=True,
             valign=Gtk.Align.CENTER,
         )
-        self.title = Gtk.Label(visible=True, xalign=0.0, label=_(info.label))
+        self.title = Gtk.Label(visible=True, xalign=0.0, label=label)
         # read with the widget, by a screen reader
         self.title.set_mnemonic_widget(widget)
         self.caption = Gtk.Label(
@@ -107,14 +123,19 @@ class Row(Gtk.ListBoxRow):
             wrap=True,
             attributes=pango_attr_list(Pango.attr_scale_new(HELP_SCALE)),
         )
-        self.problem.get_style_context().add_class("error")
+        self.problem.get_style_context().add_provider(
+            _css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
         grid.attach(texts, 0, 0, 1, 1)
         grid.attach(widget, 1, 0, 1, 1)
         grid.attach(self.problem, 0, 1, 2, 1)
         self.add(grid)
 
-    def refresh(self, used: bool, note: str, problem: str | None) -> None:
-        """Grey out if not used; the help with the note; the problem."""
+    def refresh(self, used: bool, note: str, problem: Problem | None) -> None:
+        """
+        Grey out if not used; the help with the note; the problem, an error
+        or what keeps the brick from starting.
+        """
 
         self.set_sensitive(used)
         if note:
@@ -122,10 +143,18 @@ class Row(Gtk.ListBoxRow):
         else:
             caption = self.help
         self.caption.set_text(caption)
-        self.problem.set_text(problem or "")
-        self.problem.set_visible(bool(problem))
+        self.problem.set_text("" if problem is None else problem.text)
+        self.problem.set_visible(problem is not None)
+        error = problem is not None and problem.error
+        lack = problem is not None and not problem.error
+        styles = self.problem.get_style_context()
+        for name, on in (("error", error), ("lack", lack)):
+            if on:
+                styles.add_class(name)
+            else:
+                styles.remove_class(name)
         context = self.control.get_style_context()
-        if problem:
+        if error:
             context.add_class("error")
         else:
             context.remove_class("error")
@@ -165,12 +194,19 @@ class Form:
         self.widget.pack_start(label, False, False, 0)
         self.widget.pack_start(frame, False, False, 0)
 
-    def _row(self, name: str, widget: Gtk.Widget) -> Row:
+    def _row(
+        self, key: str, widget: Gtk.Widget, label: str = "", help: str = ""
+    ) -> Row:
+        """A row; a setting's label and help are the schema's."""
+
         if self._list is None:
             raise ValueError("a row comes after the title of its section")
-        row = Row(self.draft, name, widget)
+        if not label:
+            info = info_of(self.draft.settings, key)
+            label, help = _(info.label), _(info.help)
+        row = Row(key, label, help, widget)
         self._list.add(row)
-        self.rows[name] = row
+        self.rows[key] = row
         return row
 
     def _set(self, name: str, value: object) -> None:
@@ -214,12 +250,150 @@ class Form:
         self._row(name, spin)
         return spin
 
+    def entry(self, name: str, secret: bool = False) -> Gtk.Entry:
+        """A text; a secret one shows as dots."""
+
+        entry = Gtk.Entry(
+            visible=True,
+            text=self.draft.get(name),
+            visibility=not secret,
+            width_chars=24,
+        )
+        entry.connect(
+            "changed", lambda widget: self._set(name, widget.get_text())
+        )
+        self._row(name, entry)
+        return entry
+
+    def path(self, name: str, title: str, folder: bool = False) -> Gtk.Entry:
+        """
+        A file, or a folder: typed, or chosen in a dialog with the title.
+        """
+
+        entry = Gtk.Entry(
+            visible=True, text=self.draft.get(name), width_chars=28
+        )
+        entry.connect(
+            "changed", lambda widget: self._set(name, widget.get_text())
+        )
+        button = Gtk.Button.new_from_icon_name(
+            "document-open-symbolic", Gtk.IconSize.BUTTON
+        )
+        button.set_tooltip_text(_("Choose…"))
+        button.show()
+        button.connect("clicked", self._choose, entry, title, folder)
+        box = Gtk.Box(visible=True)
+        box.get_style_context().add_class("linked")
+        box.pack_start(entry, True, True, 0)
+        box.pack_start(button, False, False, 0)
+        self._row(name, box).title.set_mnemonic_widget(entry)
+        return entry
+
+    def _choose(self, button, entry, title: str, folder: bool) -> None:
+        if folder:
+            action = Gtk.FileChooserAction.SELECT_FOLDER
+        else:
+            action = Gtk.FileChooserAction.OPEN
+        dialog = Gtk.FileChooserDialog(
+            title=title,
+            transient_for=button.get_toplevel(),
+            modal=True,
+            action=action,
+        )
+        dialog.add_buttons(
+            _("_Cancel"),
+            Gtk.ResponseType.CANCEL,
+            _("_Select"),
+            Gtk.ResponseType.ACCEPT,
+        )
+        if entry.get_text():
+            dialog.set_filename(entry.get_text())
+
+        def on_response(dialog, response):
+            if response == Gtk.ResponseType.ACCEPT:
+                entry.set_text(dialog.get_filename() or "")
+            dialog.destroy()
+
+        dialog.connect("response", on_response)
+        dialog.show()
+
+    def choice(
+        self,
+        name: str,
+        options: Sequence[tuple[str, str]],
+        menu: bool = False,
+        missing: str = "",
+    ) -> Gtk.Widget:
+        """
+        One of options, each a value and its words: linked buttons, or a
+        menu. A value that isn't one of them stays in the menu, with the
+        words of missing, as "{value}, not on this host".
+        """
+
+        value = self.draft.get(name)
+        if menu:
+            combo = Gtk.ComboBoxText(visible=True)
+            for option, words in options:
+                combo.append(option, words)
+            if value not in dict(options):
+                combo.append(value, (missing or "{value}").format(value=value))
+            combo.set_active_id(value)
+            combo.connect(
+                "changed",
+                lambda widget: self._set(name, widget.get_active_id()),
+            )
+            self._row(name, combo)
+            return combo
+        box = Gtk.Box(visible=True)
+        box.get_style_context().add_class("linked")
+        group = None
+        for option, words in options:
+            button = Gtk.RadioButton(
+                visible=True, label=words, draw_indicator=False, group=group
+            )
+            group = group or button
+            button.set_active(option == value)
+            button.connect("toggled", self._on_toggled, name, option)
+            box.pack_start(button, False, False, 0)
+        self._row(name, box)
+        return box
+
+    def _on_toggled(self, button, name: str, option: str) -> None:
+        if button.get_active():
+            self._set(name, option)
+
+    def socket(self, index: int, label: str, help: str) -> Gtk.ComboBoxText:
+        """What the plug of index joins: one of the draft's sockets, or none."""
+
+        sockets = self.draft.sockets()
+        current = self.draft.links[index]
+        if current is not None and current not in sockets:
+            sockets.append(current)
+        combo = Gtk.ComboBoxText(visible=True)
+        combo.append("", _("Nothing"))
+        for position, sock in enumerate(sockets):
+            combo.append(str(position), socket_name(sock))
+        if current is None:
+            combo.set_active_id("")
+        else:
+            combo.set_active_id(str(sockets.index(current)))
+
+        def on_changed(widget):
+            chosen = widget.get_active_id()
+            sock = sockets[int(chosen)] if chosen else None
+            self.draft.link(index, sock)
+            self.changed()
+
+        combo.connect("changed", on_changed)
+        self._row(f"plug{index}", combo, label, help)
+        return combo
+
     def refresh(self) -> None:
         """Each row as the draft says: in use or not, its note, its problem."""
 
-        problems: dict[str, str] = {}
+        problems: dict[str, Problem] = {}
         for problem in self.draft.problems():
-            problems.setdefault(problem.key, problem.text)
+            problems.setdefault(problem.key, problem)
         for name, row in self.rows.items():
             row.refresh(
                 self.draft.uses(name),

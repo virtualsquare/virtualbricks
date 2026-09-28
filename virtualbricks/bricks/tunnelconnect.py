@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.bricks.test_tunnelconnect -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -19,25 +20,53 @@
 
 from virtualbricks.bricks.command import Command, socket_path, vde_program
 from virtualbricks import bricks
+from virtualbricks.bricks.draft import Draft, Problem
 from virtualbricks.bricks.tunnellisten import TunnelListen
 from virtualbricks.config.schema import Int, Str, define, field
-from virtualbricks.i18n import _
+from virtualbricks.i18n import N_, _
 
 
 @define
 class TunnelConnectConfig(bricks.BrickConfig):
 
     password = field(
-        Str(), default="", help="The password of the tunnel, in clear text"
+        Str(),
+        default="",
+        label=N_("Password"),
+        help=N_("The password of the tunnel, in clear text"),
     )
     # the host that runs the server end, and its port
     server_host = field(
-        Str(), default="", help="The host that runs the server end"
+        Str(),
+        default="",
+        label=N_("Server"),
+        help=N_("The host that runs the server end"),
     )
     server_port = field(
-        Int(1, 65535), default=7667, help="The UDP port of the server end"
+        Int(1, 65535),
+        default=7667,
+        label=N_("Server port"),
+        help=N_("The UDP port of the server end"),
     )
-    local_port = field(Int(1, 65535), default=10771, help="The local UDP port")
+    local_port = field(
+        Int(1, 65535),
+        default=10771,
+        label=N_("Local port"),
+        help=N_("The local UDP port"),
+    )
+
+
+class TunnelConnectDraft(Draft):
+    """The settings of a tunnel client, which needs its server."""
+
+    def check(self):
+        problems = super().check()
+        if not self.settings.server_host.strip():
+            text = _("Without a server, {brick} can't start").format(
+                brick=self.brick.name
+            )
+            problems.insert(0, Problem("server_host", text, error=False))
+        return problems
 
 
 class TunnelConnect(TunnelListen):
@@ -45,6 +74,7 @@ class TunnelConnect(TunnelListen):
     type = "TunnelConnect"
     summary = "The client end of an encrypted tunnel"
     config_factory = TunnelConnectConfig
+    draft_factory = TunnelConnectDraft
 
     def get_parameters(self):
         if self.plugs[0].sock:

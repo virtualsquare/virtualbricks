@@ -23,7 +23,7 @@ from twisted.internet import defer
 
 from virtualbricks import bricks, errors
 from virtualbricks.config.schema import Path, define, field
-from virtualbricks.i18n import _
+from virtualbricks.i18n import N_, _
 
 sock_not_exists = "Socket does not exists: {path}"
 
@@ -35,7 +35,8 @@ class SwitchWrapperConfig(bricks.BrickConfig):
     socket_path = field(
         Path(),
         default="",
-        help="The control folder of a switch that another program runs",
+        label=N_("Control folder"),
+        help=N_("The control folder of a switch that another program runs"),
     )
 
 

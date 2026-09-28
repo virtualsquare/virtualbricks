@@ -83,11 +83,11 @@ class SwitchDraft(Draft):
     def check(self):
         needed = self.needed()
         if self.settings.ports >= needed:
-            return []
+            return super().check()
         text = _("{switch} needs {count} ports, one for each plug").format(
             switch=self.brick.name, count=needed
         )
-        return [Problem("ports", text)]
+        return [Problem("ports", text)] + super().check()
 
 
 class Switch(bricks.Brick):

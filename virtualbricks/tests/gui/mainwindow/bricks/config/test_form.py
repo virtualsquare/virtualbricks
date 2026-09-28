@@ -111,7 +111,6 @@ class TestARow(FormTestCase):
         self.assertEqual(row.caption.get_text(), "Number of ports")
         self.assertTrue(row.caption.get_style_context().has_class("dim-label"))
         self.assertFalse(row.problem.get_visible())
-        self.assertTrue(row.problem.get_style_context().has_class("error"))
         self.assertFalse(row.get_activatable())
         self.assertFalse(row.get_selectable())
 
@@ -166,6 +165,29 @@ class TestARow(FormTestCase):
             self.assertFalse(
                 row.control.get_style_context().has_class("error")
             )
+
+
+class TestAWarning(FormTestCase):
+
+    def test_not_an_error(self):
+        tap = self.factory.new_brick("tap", "tap0")
+        draft = Draft(tap)
+        made = self.make(draft)
+        made.section("Connection")
+        made.socket(0, "Plugged into", "The switch")
+        made.refresh()
+        row = made.rows["plug0"]
+        self.assertEqual(
+            row.problem.get_text(), "In nothing: tap0 can't start"
+        )
+        styles = row.problem.get_style_context()
+        self.assertTrue(styles.has_class("lack"))
+        self.assertFalse(styles.has_class("error"))
+        self.assertFalse(row.control.get_style_context().has_class("error"))
+        made.rows["plug0"].control.set_active_id("0")
+        made.refresh()
+        self.assertFalse(row.problem.get_visible())
+        self.assertFalse(styles.has_class("lack"))
 
 
 class TestTheWidgets(FormTestCase):
@@ -237,3 +259,188 @@ class TestTheWidgets(FormTestCase):
         # no limits
         bandwidth = made.spin("bandwidth")
         self.assertEqual(bandwidth.get_range(), (form.LOWEST, form.HIGHEST))
+
+    def test_an_entry(self):
+        tunnel = self.factory.new_brick("tunnelc", "tc1")
+        draft = Draft(tunnel)
+        draft.set("server_host", "lab.example.org")
+        made = self.make(draft)
+        made.section("Tunnel")
+        host = made.entry("server_host")
+        password = made.entry("password", secret=True)
+        self.assertEqual(host.get_text(), "lab.example.org")
+        self.assertTrue(host.get_visibility())
+        self.assertFalse(password.get_visibility())
+        self.assertEqual(made.rows["server_host"].title.get_text(), "Server")
+        password.set_text("s3cret")
+        self.assertEqual(draft.get("password"), "s3cret")
+        self.assertEqual(self.changes, 1)
+
+    def test_a_path(self):
+        wrapper = self.factory.new_brick("switchwrapper", "sww")
+        draft = Draft(wrapper)
+        draft.set("socket_path", "/run/vde/sw")
+        made = self.make(draft)
+        made.section("Switch")
+        entry = made.path("socket_path", "The folder", folder=True)
+        box = made.rows["socket_path"].control
+        self.assertEqual(box.get_children()[0], entry)
+        self.assertTrue(box.get_style_context().has_class("linked"))
+        self.assertIs(
+            made.rows["socket_path"].title.get_mnemonic_widget(), entry
+        )
+        self.assertEqual(entry.get_text(), "/run/vde/sw")
+        entry.set_text("/run/vde/other")
+        self.assertEqual(draft.get("socket_path"), "/run/vde/other")
+
+    def test_choosing_a_path(self):
+        dialogs = []
+
+        class FakeDialog:
+            def __init__(self, **props):
+                self.props = props
+                self.buttons = []
+                self.filename = None
+                self.handlers = []
+                self.destroyed = False
+                dialogs.append(self)
+
+            def add_buttons(self, *buttons):
+                self.buttons.extend(buttons)
+
+            def set_filename(self, filename):
+                self.filename = filename
+
+            def get_filename(self):
+                return "/run/vde/chosen"
+
+            def connect(self, signal, handler):
+                self.handlers.append((signal, handler))
+
+            def show(self):
+                pass
+
+            def destroy(self):
+                self.destroyed = True
+
+        self.patch(form.Gtk, "FileChooserDialog", FakeDialog)
+        wrapper = self.factory.new_brick("switchwrapper", "sww")
+        draft = Draft(wrapper)
+        made = self.make(draft)
+        made.section("Switch")
+        entry = made.path("socket_path", "The folder", folder=True)
+        entry.set_text("/run/vde/sw")
+        button = made.rows["socket_path"].control.get_children()[1]
+        button.clicked()
+        [dialog] = dialogs
+        self.assertEqual(dialog.props["title"], "The folder")
+        self.assertEqual(
+            dialog.props["action"], Gtk.FileChooserAction.SELECT_FOLDER
+        )
+        self.assertEqual(dialog.filename, "/run/vde/sw")
+        [(signal, handler)] = dialog.handlers
+        self.assertEqual(signal, "response")
+        handler(dialog, Gtk.ResponseType.CANCEL)
+        self.assertEqual(entry.get_text(), "/run/vde/sw")
+        handler(dialog, Gtk.ResponseType.ACCEPT)
+        self.assertEqual(entry.get_text(), "/run/vde/chosen")
+        self.assertEqual(draft.get("socket_path"), "/run/vde/chosen")
+        self.assertTrue(dialog.destroyed)
+        # a file, and nothing typed yet
+        dialogs.clear()
+        entry.set_text("")
+        made.path("icon", "An icon")
+        made.rows["icon"].control.get_children()[1].clicked()
+        self.assertEqual(
+            dialogs[0].props["action"], Gtk.FileChooserAction.OPEN
+        )
+        self.assertIsNone(dialogs[0].filename)
+
+    def test_buttons_of_a_choice(self):
+        tap = self.factory.new_brick("tap", "tap0")
+        draft = Draft(tap)
+        made = self.make(draft)
+        made.section("Address")
+        box = made.choice(
+            "address_mode",
+            [("off", "Off"), ("dhcp", "DHCP"), ("manual", "Manual")],
+        )
+        self.assertTrue(box.get_style_context().has_class("linked"))
+        buttons = box.get_children()
+        self.assertEqual(
+            [b.get_label() for b in buttons], ["Off", "DHCP", "Manual"]
+        )
+        self.assertEqual(
+            [b.get_active() for b in buttons], [True, False, False]
+        )
+        self.assertFalse(buttons[0].get_mode())
+        buttons[2].set_active(True)
+        self.assertEqual(draft.get("address_mode"), "manual")
+        # the one left says nothing
+        self.assertEqual(self.changes, 1)
+
+    def test_a_menu_of_a_choice(self):
+        capture = self.factory.new_brick("capture", "cap")
+        draft = Draft(capture)
+        draft.set("interface", "eth9")
+        made = self.make(draft)
+        made.section("Capture")
+        combo = made.choice(
+            "interface",
+            [("", "None"), ("eth0", "eth0")],
+            menu=True,
+            missing="{value}, not here",
+        )
+        model = combo.get_model()
+        self.assertEqual(
+            [tuple(row) for row in model],
+            [("None", ""), ("eth0", "eth0"), ("eth9, not here", "eth9")],
+        )
+        self.assertEqual(combo.get_active_id(), "eth9")
+        combo.set_active_id("eth0")
+        self.assertEqual(draft.get("interface"), "eth0")
+        self.assertEqual(self.changes, 1)
+
+    def test_a_socket(self):
+        sw2 = self.factory.new_brick("switch", "sw2")
+        vm = self.factory.new_brick("qemu", "vm1")
+        vm.add_sock()
+        tap = self.factory.new_brick("tap", "tap0")
+        tap.plugs[0].connect(sw2.socks[0])
+        draft = Draft(tap)
+        made = self.make(draft)
+        made.section("Connection")
+        combo = made.socket(0, "Plugged into", "The switch the tap joins")
+        row = made.rows["plug0"]
+        self.assertEqual(
+            (row.title.get_text(), row.caption.get_text()),
+            ("Plugged into", "The switch the tap joins"),
+        )
+        # the switches, not the female plugs
+        self.assertEqual(
+            [tuple(item) for item in combo.get_model()],
+            [("Nothing", ""), ("sw1", "0"), ("sw2", "1")],
+        )
+        self.assertEqual(combo.get_active_id(), "1")
+        combo.set_active_id("0")
+        self.assertIs(draft.links[0], self.switch.socks[0])
+        self.assertEqual(self.changes, 1)
+        combo.set_active_id("")
+        self.assertIsNone(draft.links[0])
+        # the brick waits for OK
+        self.assertIs(tap.plugs[0].sock, sw2.socks[0])
+
+    def test_a_socket_not_offered(self):
+        # a female plug, once allowed
+        vm = self.factory.new_brick("qemu", "vm1")
+        sock = vm.add_sock()
+        tap = self.factory.new_brick("tap", "tap0")
+        tap.plugs[0].connect(sock)
+        made = self.make(Draft(tap))
+        made.section("Connection")
+        combo = made.socket(0, "Plugged into", "")
+        self.assertEqual(
+            [tuple(item) for item in combo.get_model()],
+            [("Nothing", ""), ("sw1", "0"), ("vm1_sock_eth0", "1")],
+        )
+        self.assertEqual(combo.get_active_id(), "1")

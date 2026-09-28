@@ -40,13 +40,9 @@ from virtualbricks.config.settings import current_project
 from virtualbricks.config.workspace import projects
 from virtualbricks.bricks import Brick
 from virtualbricks.gui.mainwindow.bricks.config import (
-    CaptureConfigController,
     NetemuConfigController,
     QemuConfigController,
-    SwitchWrapperConfigController,
     TapConfigController,
-    TunnelClientConfigController,
-    TunnelListenConfigController,
     WireConfigController,
 )
 from virtualbricks.gui.dialogs import EditEthernetDialog
@@ -104,20 +100,12 @@ def config_panel_factory(context):
     """The old panels; those on drafts are in PANELS."""
 
     type = context.get_type()
-    if type == "SwitchWrapper":
-        return SwitchWrapperConfigController(context)
-    elif type == "Tap":
+    if type == "Tap":
         return TapConfigController(context)
-    elif type == "Capture":
-        return CaptureConfigController(context)
     elif type == "Wire":
         return WireConfigController(context)
     elif type == "Netemu":
         return NetemuConfigController(context)
-    elif type == "TunnelConnect":
-        return TunnelClientConfigController(context)
-    elif type == "TunnelListen":
-        return TunnelListenConfigController(context)
     elif type == "Qemu":
         return QemuConfigController(context)
 

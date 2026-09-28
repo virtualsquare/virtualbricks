@@ -21,6 +21,7 @@ once. The drafts here are those of a switch, without its own checks.
 """
 
 from virtualbricks.bricks.draft import Draft, Problem, apply
+from virtualbricks.config.settings import set_setting
 from virtualbricks.tests import BrickTestCase
 
 
@@ -216,3 +217,84 @@ class TestApply(DraftTestCase):
         self.assertEqual(self.switch.config.ports, 32)
         self.assertFalse(self.switch.config.hub_mode)
         self.assertEqual(self.changed, [])
+
+
+class TestLinks(DraftTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.sw2 = self.factory.new_brick("switch", "sw2")
+        self.tap = self.factory.new_brick("tap", "tap0")
+        self.tap.plugs[0].connect(self.switch.socks[0])
+        self.tap_changed = []
+        self.tap.changed.connect(self.tap_changed.append)
+
+    def test_the_sockets(self):
+        vm = self.factory.new_brick("qemu", "vm1")
+        vm.add_sock()
+        wrapper = self.factory.new_brick("switchwrapper", "sww")
+        draft = Draft(self.tap)
+        # the switches, in their order, not the socket of a machine
+        self.assertEqual(
+            draft.sockets(),
+            [self.switch.socks[0], self.sw2.socks[0], wrapper.socks[0]],
+        )
+        # nor, for a machine, its own
+        set_setting("allow_female_plugs", True)
+        self.assertEqual(
+            [sock.nickname for sock in Draft(vm).sockets()],
+            ["sw1_port", "sw2_port", "sww_port"],
+        )
+        self.assertEqual(
+            [sock.nickname for sock in Draft(self.tap).sockets()],
+            ["sw1_port", "sw2_port", "vm1_sock_eth0", "sww_port"],
+        )
+
+    def test_a_copy(self):
+        draft = Draft(self.tap)
+        self.assertEqual(draft.links, [self.switch.socks[0]])
+        draft.link(0, self.sw2.socks[0])
+        self.assertEqual(draft.links, [self.sw2.socks[0]])
+        self.assertIs(self.tap.plugs[0].sock, self.switch.socks[0])
+        self.assertEqual(draft.moved(), {0: self.sw2.socks[0]})
+        draft.link(0, self.switch.socks[0])
+        self.assertEqual(draft.moved(), {})
+
+    def test_in_nothing(self):
+        draft = Draft(self.tap)
+        self.assertEqual(draft.check(), [])
+        draft.link(0, None)
+        self.assertEqual(
+            draft.check(),
+            [Problem("plug0", "In nothing: tap0 can't start", error=False)],
+        )
+        self.assertEqual(draft.errors(), [])
+
+    def test_apply(self):
+        draft = Draft(self.tap)
+        draft.link(0, self.sw2.socks[0])
+        apply(draft)
+        self.assertIs(self.tap.plugs[0].sock, self.sw2.socks[0])
+        self.assertEqual(self.switch.socks[0].plugs, [])
+        self.assertEqual(self.sw2.socks[0].plugs, [self.tap.plugs[0]])
+        # it said it changed, with no setting changed
+        self.assertEqual(self.tap_changed, [self.tap])
+
+    def test_apply_with_settings(self):
+        draft = Draft(self.tap)
+        draft.link(0, None)
+        draft.set("address_mode", "dhcp")
+        apply(draft)
+        self.assertIsNone(self.tap.plugs[0].sock)
+        self.assertEqual(self.switch.socks[0].plugs, [])
+        self.assertEqual(self.tap.config.address_mode, "dhcp")
+        self.assertEqual(self.tap_changed, [self.tap])
+
+    def test_into_a_socket_from_nothing(self):
+        wire = self.factory.new_brick("wire", "w1")
+        draft = Draft(wire)
+        self.assertEqual(draft.links, [None, None])
+        draft.link(1, self.sw2.socks[0])
+        apply(draft)
+        self.assertIsNone(wire.plugs[0].sock)
+        self.assertIs(wire.plugs[1].sock, self.sw2.socks[0])

@@ -28,31 +28,33 @@ Only the names that code outside this package imports from it are exported;
 the tests import the others from their modules.
 """
 
-from .captureconfig import CaptureConfigController
+from .captureconfig import CapturePanel
 from .netemuconfig import NetemuConfigController
 from .qemuconfig import QemuConfigController
 from .switchconfig import SwitchPanel
-from .switchwrapperconfig import SwitchWrapperConfigController
+from .switchwrapperconfig import SwitchWrapperPanel
 from .tapconfig import TapConfigController
-from .tunnelcconfig import TunnelClientConfigController
-from .tunnellconfig import TunnelListenConfigController
+from .tunnelcconfig import TunnelConnectPanel
+from .tunnellconfig import TunnelListenPanel
 from .wireconfig import WireConfigController
 
 __all__ = [
-    "CaptureConfigController",
     "NetemuConfigController",
     "PANELS",
     "QemuConfigController",
-    "SwitchWrapperConfigController",
     "TapConfigController",
-    "TunnelClientConfigController",
-    "TunnelListenConfigController",
     "WireConfigController",
     "new_panel",
 ]
 
 # The panels on drafts, by the type of their brick.
-PANELS = {"Switch": SwitchPanel}
+PANELS = {
+    "Capture": CapturePanel,
+    "Switch": SwitchPanel,
+    "SwitchWrapper": SwitchWrapperPanel,
+    "TunnelConnect": TunnelConnectPanel,
+    "TunnelListen": TunnelListenPanel,
+}
 
 
 def new_panel(brick):

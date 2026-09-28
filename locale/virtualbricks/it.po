@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 21:40+0200\n"
+"POT-Creation-Date: 2026-09-28 21:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -59,6 +59,25 @@ msgid ""
 msgstr ""
 
 #: virtualbricks/bricks/capture.py
+#, fuzzy
+msgid "Interface"
+msgstr "Nome dell'interfaccia di rete:"
+
+#: virtualbricks/bricks/capture.py
+msgid "The interface of the host to capture, as eth0"
+msgstr ""
+
+#: virtualbricks/bricks/capture.py
+#, python-brace-format
+msgid "Without an interface, {brick} can't start"
+msgstr ""
+
+#: virtualbricks/bricks/capture.py
+#, python-brace-format
+msgid "{interface} isn't an interface of this host"
+msgstr ""
+
+#: virtualbricks/bricks/capture.py
 msgid "No interface selected"
 msgstr ""
 
@@ -71,6 +90,11 @@ msgstr ""
 #, fuzzy, python-format
 msgid "Interface %s disconnected"
 msgstr "disconnesso"
+
+#: virtualbricks/bricks/draft.py
+#, fuzzy, python-brace-format
+msgid "In nothing: {brick} can't start"
+msgstr "Avvia Mattone"
 
 #: virtualbricks/bricks/event.py virtualbricks/bricks/__init__.py
 msgid "running"
@@ -155,6 +179,15 @@ msgid "Ports: "
 msgstr "Porte:"
 
 #: virtualbricks/bricks/switchwrapper.py
+#, fuzzy
+msgid "Control folder"
+msgstr "Monitor di controllo"
+
+#: virtualbricks/bricks/switchwrapper.py
+msgid "The control folder of a switch that another program runs"
+msgstr ""
+
+#: virtualbricks/bricks/switchwrapper.py
 #, python-format
 msgid "Socket does not exists: %s"
 msgstr ""
@@ -165,12 +198,62 @@ msgid "plugged to %s "
 msgstr "connesso a %s"
 
 #: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
+#, fuzzy
+msgid "Password"
+msgstr "Password:"
+
+#: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
+msgid "The password of the tunnel, in clear text"
+msgstr ""
+
+#: virtualbricks/bricks/tunnelconnect.py
+msgid "Server"
+msgstr ""
+
+#: virtualbricks/bricks/tunnelconnect.py
+msgid "The host that runs the server end"
+msgstr ""
+
+#: virtualbricks/bricks/tunnelconnect.py
+#, fuzzy
+msgid "Server port"
+msgstr "Salvare il progetto corrente?"
+
+#: virtualbricks/bricks/tunnelconnect.py
+msgid "The UDP port of the server end"
+msgstr ""
+
+#: virtualbricks/bricks/tunnelconnect.py
+#, fuzzy
+msgid "Local port"
+msgstr "Porta locale:"
+
+#: virtualbricks/bricks/tunnelconnect.py
+#, fuzzy
+msgid "The local UDP port"
+msgstr "Porta locale:"
+
+#: virtualbricks/bricks/tunnelconnect.py
+#, python-brace-format
+msgid "Without a server, {brick} can't start"
+msgstr ""
+
+#: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
 msgid "plugged to"
 msgstr "connesso a"
 
 #: virtualbricks/bricks/tunnelconnect.py
 msgid ", connecting to udp://"
 msgstr ", connessione a udp://"
+
+#: virtualbricks/bricks/tunnellisten.py
+#, fuzzy
+msgid "Port"
+msgstr "Porte:"
+
+#: virtualbricks/bricks/tunnellisten.py
+msgid "The UDP port to listen on"
+msgstr ""
 
 #: virtualbricks/bricks/tunnellisten.py
 msgid "listening to udp:"
@@ -431,10 +514,7 @@ msgid "Model:"
 msgstr "Modalità:"
 
 #: virtualbricks/gui/dialogs/ethernetdialog.py
-#: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
 #: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
-#: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
-#: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
 msgid "Connect to:"
 msgstr "Connetti a:"
 
@@ -476,7 +556,9 @@ msgstr "Chiudi VB"
 msgid "Save as"
 msgstr "Salva come..."
 
-#: virtualbricks/gui/dialogs/exportproject.py virtualbricks/migrate/gui.py
+#: virtualbricks/gui/dialogs/exportproject.py
+#: virtualbricks/gui/mainwindow/bricks/config/form.py
+#: virtualbricks/migrate/gui.py
 msgid "Choose…"
 msgstr ""
 
@@ -1049,6 +1131,7 @@ msgstr "Salva come..."
 
 #: virtualbricks/gui/dialogs/logging.py
 #: virtualbricks/gui/mainwindow/bricks/config/base.py
+#: virtualbricks/gui/mainwindow/bricks/config/form.py
 #: virtualbricks/gui/mainwindow/rowtab.py virtualbricks/migrate/gui.py
 #, fuzzy
 msgid "_Cancel"
@@ -1266,6 +1349,7 @@ msgid "The project file can't be read: {problem}"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/projects.py
+#: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
 msgid "None"
 msgstr ""
 
@@ -1569,6 +1653,7 @@ msgid ""
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/config/switchwrapperconfig.py
 #, fuzzy
 msgid "Switch"
 msgstr "Switch"
@@ -1866,9 +1951,33 @@ msgid "_OK"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
 #, fuzzy
-msgid "Capture interface:"
-msgstr "Nome dell'interfaccia di rete:"
+msgid "Connection"
+msgstr "Connetti a"
+
+#: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
+#, fuzzy
+msgid "Plugged into"
+msgstr "connesso a"
+
+#: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
+msgid "The switch that gets the packets"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
+msgid "Capture"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
+#, python-brace-format
+msgid "{value}, not on this host"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/disks.py
 #, fuzzy
@@ -1921,6 +2030,17 @@ msgstr ""
 #, python-brace-format
 msgid "{help} · {note}"
 msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/form.py
+#: virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "_Select"
+msgstr "Seleziona un'Icona"
+
+#: virtualbricks/gui/mainwindow/bricks/config/form.py
+#, fuzzy
+msgid "Nothing"
+msgstr "Assegna niente"
 
 #: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
 #, fuzzy
@@ -2025,12 +2145,6 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
 msgid "Eth"
 msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, fuzzy
-msgid "Connection"
-msgstr "Connetti a"
 
 #: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
 #: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
@@ -2334,7 +2448,7 @@ msgid "Forget every change when {name} stops"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/switchwrapperconfig.py
-msgid "Path to switch:"
+msgid "The control folder of the switch"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
@@ -2372,28 +2486,15 @@ msgid "Gateway:"
 msgstr "Gateway:  "
 
 #: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
+msgid "The switch at this end of the tunnel"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
 #, fuzzy
-msgid "Tunnel server host:"
+msgid "Tunnel"
 msgstr "Tunnel Server"
-
-#: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
-msgid "Local port:"
-msgstr "Porta locale:"
-
-#: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
-#: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
-msgid "Password:"
-msgstr "Password:"
-
-#: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
-#, fuzzy
-msgid "Port:"
-msgstr "Porte:"
-
-#: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
-#, fuzzy
-msgid "Listen port:"
-msgstr "Porta di ascolto:"
 
 #: virtualbricks/gui/mainwindow/bricks/tab.py
 #, python-brace-format
@@ -3154,11 +3255,6 @@ msgstr ""
 
 #: virtualbricks/migrate/gui.py
 #, fuzzy
-msgid "_Select"
-msgstr "Seleziona un'Icona"
-
-#: virtualbricks/migrate/gui.py
-#, fuzzy
 msgid "Virtualbricks migration"
 msgstr "Impostazioni Virtualbricks"
 
@@ -3247,6 +3343,22 @@ msgstr "Salvare il progetto corrente?"
 #, fuzzy, python-brace-format
 msgid "{exe} not found"
 msgstr "kvm non trovato"
+
+#, fuzzy
+#~ msgid "Capture interface:"
+#~ msgstr "Nome dell'interfaccia di rete:"
+
+#, fuzzy
+#~ msgid "Tunnel server host:"
+#~ msgstr "Tunnel Server"
+
+#, fuzzy
+#~ msgid "Port:"
+#~ msgstr "Porte:"
+
+#, fuzzy
+#~ msgid "Listen port:"
+#~ msgstr "Porta di ascolto:"
 
 #~ msgid "Use FSTP"
 #~ msgstr "Usa FSTP"
@@ -4047,9 +4159,6 @@ msgstr "kvm non trovato"
 
 #~ msgid "add this image to bookmarks"
 #~ msgstr "aggiungi l'immagine ai segnalibri"
-
-#~ msgid "Control monitor"
-#~ msgstr "Monitor di controllo"
 
 #~ msgid "<b>control monitor for selected qemu job</b>"
 #~ msgstr "<b>monitor di controllo per il lavoro qemu selezionato</b>"

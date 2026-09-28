@@ -26,6 +26,10 @@ typed, with the reason: a problem. ``apply()`` gives the brick the settings
 that changed in the draft, in one ``set()``: a running brick takes at once
 those it can, through its ``cbset_`` methods, and says it changed once.
 
+The links of a draft are the sockets that the plugs of the brick join, None
+for a plug in nothing; ``sockets()`` are those a plug can join. ``apply()``
+moves the plugs whose socket changed.
+
 A draft also says which settings are in use: a setting of ``WITH`` is in use
 while the setting it goes with has the value it needs. A brick that checks
 its settings against each other, or against the project, has a draft of its
@@ -41,6 +45,8 @@ from typing import Any, ClassVar
 import attr
 
 from virtualbricks.config.schema import field_names, kind_of
+from virtualbricks.config.settings import get_setting
+from virtualbricks.i18n import _
 
 
 @attr.define(frozen=True)
@@ -65,6 +71,9 @@ class Draft:
         self.settings = attr.evolve(brick.config)
         # the values that their kind refused, as typed, and why
         self.refused: dict[str, tuple[object, str]] = {}
+        # the socket that each plug joins, or None
+        self.original_links = [plug.sock for plug in brick.plugs]
+        self.links = list(self.original_links)
 
     def get(self, name: str) -> object:
         """The value of a setting, as it was typed if its kind refused it."""
@@ -114,9 +123,22 @@ class Draft:
         return ""
 
     def check(self) -> list[Problem]:
-        """What is wrong between the settings, or with the project."""
+        """
+        What is wrong between the settings, or with the project: here, a
+        plug in nothing, which the brick can't start with.
+        """
 
-        return []
+        return [
+            Problem(
+                f"plug{index}",
+                _("In nothing: {brick} can't start").format(
+                    brick=self.brick.name
+                ),
+                error=False,
+            )
+            for index, sock in enumerate(self.links)
+            if sock is None
+        ]
 
     def problems(self) -> list[Problem]:
         """The values refused, then what check() finds."""
@@ -138,6 +160,36 @@ class Draft:
             if getattr(self.settings, name) != getattr(self.original, name)
         }
 
+    def sockets(self) -> list:
+        """
+        The sockets a plug of the brick can join: those of the switches, and
+        those of the other bricks where the settings allow female plugs.
+        """
+
+        female = get_setting("allow_female_plugs")
+        return [
+            sock
+            for sock in self.brick.factory.socks
+            if sock.brick is not self.brick
+            and (sock.brick.get_type().startswith("Switch") or female)
+        ]
+
+    def link(self, index: int, sock: Any) -> None:
+        """Plug the plug of index into sock, or into nothing."""
+
+        self.links[index] = sock
+
+    def moved(self) -> dict[int, Any]:
+        """The plugs whose socket changed, by index: their new socket."""
+
+        return {
+            index: sock
+            for index, (sock, before) in enumerate(
+                zip(self.links, self.original_links)
+            )
+            if sock is not before
+        }
+
     def live(self) -> list[str]:
         """The settings a running brick takes at once, in their order."""
 
@@ -150,13 +202,23 @@ class Draft:
 
 def apply(draft: Draft) -> None:
     """
-    Give the brick the settings changed in draft, in one set(); a draft with
-    errors is refused.
+    Give the brick the settings changed in draft, in one set(), after its
+    plugs moved; it says it changed once. A draft with errors is refused.
     """
 
     errors = draft.errors()
     if errors:
         raise ValueError(f"{errors[0].key}: {errors[0].text}")
+    brick = draft.brick
+    moved = draft.moved()
+    for index, sock in moved.items():
+        plug = brick.plugs[index]
+        if plug.sock is not None:
+            plug.disconnect()
+        if sock is not None:
+            plug.connect(sock)
     changes = draft.changes()
     if changes:
-        draft.brick.set(changes)
+        brick.set(changes)
+    elif moved:
+        brick.notify_changed()
