@@ -4,9 +4,6 @@
 
 - [ ] Fix the segmentation fault of an action called from the popover
   menu of a brick or an event
-- [ ] Choose an icon file in a virtual machine's panel without an error:
-  `on_icon_chooser_file_set` raises NotImplementedError, and OK saves
-  the icon anyway (01.2 §7)
 
 ## Config
 
@@ -50,17 +47,11 @@
 - [ ] Move the tab files inside `virtualbricks/gui/mainwindow/tabs`
 - [ ] Drop ngettext from `count()` in `gui/mainwindow/bricks/tab.py`:
   its singular and plural are the same text
-- [ ] Delete `gui/mainwindow/bricks/config/networkcards.py`: nothing
-  uses it since the Glade conversion (01.2 §7)
 - [ ] Move the event editor and the image details onto drafts, so that
   `ConfigController` goes (11 §11)
 
 ## Bricks and programs
 
-- [ ] Redesign the configuration panels, starting with the virtual
-  machine's, on the help texts of the schemas (07 §10, 10 §13)
-  - plan: `docs/redesign/11 - panels-redesign.html`, every decision
-    made; the work is on the branch `mg/brick-panels`
 - [ ] Give the router settings and a panel: it has neither (07 §10,
   10 §13, 11 §11)
 - [ ] Decide how an icon is chosen for any brick or event, and where it
@@ -74,8 +65,6 @@
 - [ ] Set a tap's address after its process starts, through sudo:
   `address_mode`, `ip_address`, `netmask` and `gateway`; today nothing
   does (10 §13, 11 §11)
-- [ ] Show readable values where QEMU's are cryptic: `boot_order` as
-  disk, CD-ROM or floppy (10 §13)
 - [ ] Declare which settings a running brick takes without a restart,
   in place of the `cbset_<name>` methods (10 §13, 11 §11)
   - the switch's ports, hub mode and FSTP, all of Netemu, a machine's
@@ -173,6 +162,12 @@
 
 ## Done
 
+- [x] Redesign the configuration panels of the bricks: drafts between
+  the panels and the bricks, rows from the schemas, the virtual
+  machine's panel on the answers of its QEMU, `widgets.py` gone
+  (a8ed7f3…ba4508c), plan in `docs/redesign/11 - panels-redesign.html`
+- [x] Choose a machine's icon without an error, show the boot devices in
+  words, delete `networkcards.py`: with the new panels
 - [x] Move the design documents into docs/redesign, numbered in the order
   of the work, and bring them up to date
 - [x] Record what the QEMU and VDE of every supported distribution have:

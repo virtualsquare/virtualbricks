@@ -235,17 +235,17 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 1.2 &middot; Report &middot; revision 2, implemented</div>
+    <div class="eyebrow">Step 1.2 &middot; Report &middot; revision 3, implemented</div>
     <h1>Glade Conversion Summary</h1>
     <p class="lede">All 36 Glade files of Virtualbricks became Python modules that build the same widgets in code, one module per file, each with the class that used the file, its name and its code. What was converted and how, how it was checked, and where each module is now.</p>
     <ul class="meta">
       <li>branch <b>mg/abandon-glade</b> at a51b6d4</li>
-      <li>revision 2 &middot; 28 September 2026</li>
+      <li>revision 3 &middot; 28 September 2026</li>
       <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What changed:</strong> revision 1, of 23 September, was <code>CONVERSION_SUMMARY.md</code> at the root of the sources, written as the conversion ended. Revision 2 adds where each module is today (<a href="#files">&sect;4</a>, <a href="#structure">&sect;2</a>) and what became of the issues it listed (<a href="#notes">&sect;7</a>). The rules it followed are in <a href="01.1%20-%20glade-conversion-strategy.html">step 1.1</a>.</p>
     <p class="revision"><strong>Implemented</strong> in one commit, 9ae3919, on 23 September 2026, with the wiring of <code>gui.py</code> (<a href="#notes">&sect;7</a>).</p>
-    <p class="revision"><strong>Since then:</strong> <code>gui/windows/</code> went on 27 September (678ef50): the panels of the bricks, with the disks and the image picker of a virtual machine, are in <code>gui/mainwindow/bricks/config/</code>, every other window in <code>gui/dialogs/</code>, and <code>windows/base.py</code> was split between the two. The main window is <code>gui/mainwindow/window.py</code>, with a class per tab (6cd66cf to 24161e0). The redesigns replaced 13 of the 36 modules and rewrote others, as <a href="#files">&sect;4</a> says. The tests of the windows came back with the configuration redesign (<a href="02%20-%20config-redesign.html">step 2</a>), in <code>virtualbricks/tests/gui/</code>.</p>
+    <p class="revision"><strong>Since then:</strong> <code>gui/windows/</code> went on 27 September (678ef50): the panels of the bricks, with the disks and the image picker of a virtual machine, are in <code>gui/mainwindow/bricks/config/</code>, every other window in <code>gui/dialogs/</code>, and <code>windows/base.py</code> was split between the two. The main window is <code>gui/mainwindow/window.py</code>, with a class per tab (6cd66cf to 24161e0). The redesigns replaced 13 of the 36 modules and rewrote others, as <a href="#files">&sect;4</a> says. The tests of the windows came back with the configuration redesign (<a href="02%20-%20config-redesign.html">step 2</a>), in <code>virtualbricks/tests/gui/</code>. The panels redesign (<a href="11%20-%20panels-redesign.html">step 11</a>) rewrote the panels of the bricks on drafts, and removed <code>qemuconfig.py</code>, <code>networkcards.py</code>, <code>ethernetdialog.py</code>, <code>usbdev.py</code> and <code>widgets.py</code> (a8ed7f3 to ba4508c).</p>
   </header>
 
   <div class="layout">
@@ -338,7 +338,7 @@ Windows that open other windows import them from <code>windows/</code>.</p>
 <thead><tr><th>then, in <code>windows/base.py</code></th><th>now</th></tr></thead>
 <tbody>
 <tr><td><code>_Window</code>, <code>_Dialog</code>, <code>Window</code></td><td>One class, <code>Window</code>, in <code>gui/dialogs/base.py</code> (972cc11)</td></tr>
-<tr><td><code>ConfigController</code>, <code>StateManager</code>, <code>State</code>, the <code>*Control</code> classes, <code>CompoundPrerequisite</code>, <code>YES</code>/<code>NO</code>/<code>MAYBE</code>, <code>_PlugMixin</code></td><td><code>gui/mainwindow/bricks/config/base.py</code> (678ef50)</td></tr>
+<tr><td><code>ConfigController</code>, <code>StateManager</code>, <code>State</code>, the <code>*Control</code> classes, <code>CompoundPrerequisite</code>, <code>YES</code>/<code>NO</code>/<code>MAYBE</code>, <code>_PlugMixin</code></td><td><code>ConfigController</code> in <code>gui/mainwindow/bricks/config/base.py</code> (678ef50); the rest went with the panels redesign (ba4508c), for drafts and <code>draft.uses()</code></td></tr>
 <tr><td><code>destroy_on_exit</code></td><td>Gone: the dialogs close in their response handlers (5ee4de0)</td></tr>
 <tr><td><code>iter_tree_model</code>, <code>VALIDKEY</code></td><td>Gone</td></tr>
 <tr><td><code>load_pixbuf()</code>, <code>pango_attr_list()</code>, <code>_()</code></td><td><code>gui/graphics.py</code> (115df13), <code>gui/pango.py</code> (bb12a63), <code>virtualbricks.i18n</code></td></tr>
@@ -484,7 +484,7 @@ it to know the brick type).</li>
 <td><code>CaptureConfigController</code> (gui)</td>
 <td><code>grid1</code></td>
 <td></td>
-<td><code>mainwindow/bricks/config/</code></td>
+<td><code>mainwindow/bricks/config/</code>, rewritten on a draft (step 11)</td>
 </tr>
 <tr>
 <td>commitdialog.ui</td>
@@ -532,7 +532,7 @@ it to know the brick type).</li>
 <td><code>BaseEthernetDialog</code>, <code>AddEthernetDialog</code>, <code>EditEthernetDialog</code> (dialogs)</td>
 <td><code>EthernetDialog</code></td>
 <td></td>
-<td><code>dialogs/</code></td>
+<td>Removed in ba4508c: the cards are rows of the machine&rsquo;s panel (step 11)</td>
 </tr>
 <tr>
 <td>eventcommand.ui</td>
@@ -588,7 +588,7 @@ it to know the brick type).</li>
 <td><code>NetemuConfigController</code> (gui)</td>
 <td><code>netemu_config_panel</code></td>
 <td></td>
-<td><code>mainwindow/bricks/config/</code></td>
+<td><code>mainwindow/bricks/config/</code>, rewritten on a draft (step 11)</td>
 </tr>
 <tr>
 <td>networkcards.ui</td>
@@ -596,7 +596,7 @@ it to know the brick type).</li>
 <td><code>NetworkCards</code> (new)</td>
 <td><code>window1</code></td>
 <td>&#x26a0; Unused, see below. 2 TODO stubs.</td>
-<td><code>mainwindow/bricks/config/</code>, still unused</td>
+<td>Removed in ba4508c (step 11)</td>
 </tr>
 <tr>
 <td>newbrick.ui</td>
@@ -636,7 +636,7 @@ it to know the brick type).</li>
 <td><code>QemuConfigController</code> (gui)</td>
 <td><code>box_vmconfig</code></td>
 <td></td>
-<td><code>mainwindow/bricks/config/</code>; its Drives tab rewritten (step 9)</td>
+<td>Removed in ba4508c: the panel of a virtual machine, in <code>mainwindow/bricks/config/vm/</code> (step 11)</td>
 </tr>
 <tr>
 <td>renamedialog.ui</td>
@@ -676,7 +676,7 @@ it to know the brick type).</li>
 <td><code>SwitchConfigController</code> (gui)</td>
 <td><code>table</code></td>
 <td></td>
-<td><code>mainwindow/bricks/config/</code></td>
+<td><code>mainwindow/bricks/config/</code>, rewritten on a draft (step 11)</td>
 </tr>
 <tr>
 <td>switchwrapperconfig.ui</td>
@@ -684,7 +684,7 @@ it to know the brick type).</li>
 <td><code>SwitchWrapperConfigController</code> (gui)</td>
 <td><code>table1</code></td>
 <td></td>
-<td><code>mainwindow/bricks/config/</code></td>
+<td><code>mainwindow/bricks/config/</code>, rewritten on a draft (step 11)</td>
 </tr>
 <tr>
 <td>tapconfig.ui</td>
@@ -692,7 +692,7 @@ it to know the brick type).</li>
 <td><code>TapConfigController</code> (gui)</td>
 <td><code>table1</code></td>
 <td></td>
-<td><code>mainwindow/bricks/config/</code></td>
+<td><code>mainwindow/bricks/config/</code>, rewritten on a draft (step 11)</td>
 </tr>
 <tr>
 <td>tunnellconfig.ui</td>
@@ -700,7 +700,7 @@ it to know the brick type).</li>
 <td><code>TunnelListenConfigController</code> (gui)</td>
 <td><code>table1</code></td>
 <td></td>
-<td><code>mainwindow/bricks/config/</code></td>
+<td><code>mainwindow/bricks/config/</code>, rewritten on a draft (step 11)</td>
 </tr>
 <tr>
 <td>tunnelcconfig.ui</td>
@@ -708,7 +708,7 @@ it to know the brick type).</li>
 <td><code>TunnelClientConfigController</code> (gui)</td>
 <td><code>table1</code></td>
 <td>Subclass of <code>TunnelListenConfigController</code> with its own <code>build_ui()</code>.</td>
-<td><code>mainwindow/bricks/config/</code></td>
+<td><code>mainwindow/bricks/config/</code>, rewritten on a draft (step 11)</td>
 </tr>
 <tr>
 <td>usbdev.ui</td>
@@ -716,7 +716,7 @@ it to know the brick type).</li>
 <td><code>UsbDevDialog</code> (dialogs)</td>
 <td><code>UsbDevDialog</code></td>
 <td></td>
-<td><code>dialogs/</code></td>
+<td>Removed in ba4508c: the USB devices are rows of the machine&rsquo;s panel (step 11)</td>
 </tr>
 <tr>
 <td>userwait.ui</td>
@@ -740,7 +740,7 @@ it to know the brick type).</li>
 <td><code>WireConfigController</code> (gui)</td>
 <td><code>vbox</code></td>
 <td></td>
-<td><code>mainwindow/bricks/config/</code></td>
+<td><code>mainwindow/bricks/config/</code>, rewritten on a draft (step 11)</td>
 </tr>
 </tbody>
 </table>
@@ -840,7 +840,7 @@ the UI is converted, as <code>CommitDialog</code>, with 5 TODO stubs.</li>
 <li><code>networkcards.ui</code>: not referenced by any code (the network cards are in
 <code>qemuconfig.ui</code>). Converted as <code>NetworkCards</code>, with 2 TODO stubs.</li>
 </ul>
-<p>Both can probably be deleted together with their <code>.ui</code> file. <em>Today:</em> <code>commitdialog.py</code> went with the disk images redesign (609fb21); <code>networkcards.py</code> is in <code>gui/mainwindow/bricks/config/</code>, still unused.</p>
+<p>Both can probably be deleted together with their <code>.ui</code> file. <em>Today:</em> <code>commitdialog.py</code> went with the disk images redesign (609fb21); <code>networkcards.py</code> went with the panels redesign (ba4508c).</p>
 <h3>Differences from Gtk.Builder</h3>
 <ul>
 <li><code>Freezer</code> (userwait.ui) loaded its file without a translation domain, so
@@ -886,8 +886,8 @@ is never set (no signal is connected to it).</li>
 deleting an action works.</li>
 <li><code>VBGUI.on_events_selection_changed</code> went with the Events tab of its own
 (e297d9c).</li>
-<li><code>QemuConfigController.on_icon_chooser_file_set</code> still raises
-<code>NotImplementedError</code> when a file is chosen; OK saves the icon.</li>
+<li><code>QemuConfigController.on_icon_chooser_file_set</code> went with the old panel
+of a virtual machine (ba4508c); the icon is a file row of its Advanced section.</li>
 <li><code>test_dialogs.py</code> went with the old tests (8584bba); the new suite has none
 of it.</li>
 <li>black formats the package (ae147e3), with lines of at most 79 characters.</li>

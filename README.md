@@ -268,7 +268,9 @@ To add a language, see the top of `l10n.sh`.
   lays the lab out with Graphviz; `locations.py` has the paths of the files.
 - `virtualbricks/bricks/`: a module for each kind of brick: virtual machine,
   switch, tap, wire, and so on; each writes its command line with
-  `command.py`.
+  `command.py`. `draft.py` is what the settings panels work on: a copy of a
+  brick's settings, checked as it's set, given to the brick at OK; a brick
+  with checks of its own has its draft in its module.
 - `virtualbricks/config/`: the settings and the state, the schemas of their
   fields, the project file, and the projects: `workspace.py` lists, creates and
   opens them, `archive.py` and `importing.py` read, write and import their
@@ -280,15 +282,17 @@ To add a language, see the top of `l10n.sh`.
 - `virtualbricks/migrate/`: the only code that reads the files of Virtualbricks
   2.1 and older.
 - `virtualbricks/gui/`: the windows, built in Python code. `mainwindow/` is
-  the main window, with a module or a package for each tab: `bricks/`, with
-  the settings panel of each kind of brick in `bricks/config/`, `events/`,
-  `images/`, `topology.py` and `readme.py`. `dialogs/` has the other windows
-  and dialogs, and `messages.py` the messages of the Logs window.
+  the main window, with a module or a package for each tab: `bricks/`,
+  `events/`, `images/`, `topology.py` and `readme.py`. The settings panel of
+  each kind of brick is in `bricks/config/`: rows made by `form.py` from the
+  schema, on the brick's draft, and the virtual machine's in `vm/`, a module
+  for each section of its sidebar. `dialogs/` has the other windows and
+  dialogs, and `messages.py` the messages of the Logs window.
 - `virtualbricks/tests/`: the tests, in the layout of the package.
 - `docs/`: the manual pages, in `man/`, and their web pages,
   `config-files.html` and `archive-protocol.html`; in `redesign/`, the designs
   of the parts that were rewritten, numbered in the order of the work, from
-  the conversion of the Glade files to the settings.
+  the conversion of the Glade files to the settings panels of the bricks.
 - `locale/`: the translations; `share/`: the desktop file and the icon.
 
 ## License

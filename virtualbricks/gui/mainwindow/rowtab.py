@@ -770,8 +770,7 @@ class RowsTab(Tab, Gtk.Stack):
         head.pack_start(text, True, True, 0)
 
         scrolled = Gtk.ScrolledWindow(visible=True)
-        # in a box, as get_view() puts it: the virtual machine's panel
-        # replaces itself in its parent once it knows the QEMU there is
+        # with a margin around it
         holder = Gtk.Box(
             visible=True,
             orientation=Gtk.Orientation.VERTICAL,

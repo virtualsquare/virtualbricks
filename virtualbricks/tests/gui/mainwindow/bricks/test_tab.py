@@ -30,8 +30,6 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 if has_display:
     from gi.repository import Gdk, Gtk
 
-    # the panels of the bricks, adapters of IConfigController
-    import virtualbricks.gui.gui  # noqa: F401
     from virtualbricks.gui.mainwindow import rowtab
     from virtualbricks.gui.mainwindow.bricks import brickmenu, tab
     from virtualbricks.gui.mainwindow.bricks.tab import BricksTab, count
@@ -802,16 +800,6 @@ class TestTheSettings(BricksTestCase):
             (8, 8, 8),
         )
         self.assertTrue(holder.get_visible())
-
-    def test_a_panel_that_replaces_itself(self):
-        # as the virtual machine's does, once it knows the QEMU there is
-        calls, controllers = self.fake_panels()
-        self.tab.configure(self.sw)
-        panel = controllers[self.sw].panel
-        container = panel.get_parent()
-        container.remove(panel)
-        container.pack_start(Gtk.Label(label="ready"), True, True, 0)
-        self.assertIs(self.tab.configuring, self.sw)
 
     def test_the_panel_closes_it(self):
         calls, controllers = self.fake_panels()
