@@ -1,0 +1,693 @@
+<title>AMP Socket</title>
+<meta name="description" content="A plan for the AMP socket of Virtualbricks: --socket opens sockets described in the syntax of Twisted&rsquo;s endpoints, each with its protocol, text or amp, so that a program written with Twisted can drive a Virtualbricks that runs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  .ref.open { color: var(--decide); background: var(--decide-soft); }
+
+  /* pages 14, 15 and 16 */
+  .chip {
+    display: inline-block;
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.04em;
+    padding: 3px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    vertical-align: 1px;
+    color: var(--risk);
+    background: var(--risk-soft);
+  }
+  .prompt { color: var(--code-h); font-weight: 500; }
+  table.commands td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.commands td:last-child { color: var(--muted); font-size: 13.5px; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+  .note { font-size: 14px; color: var(--muted); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 16 &middot; Design &middot; revision 3, decided</div>
+    <h1>Virtualbricks AMP Socket</h1>
+    <p class="lede">A Virtualbricks started with <code>--socket</code> listens on the sockets that the option names, and each speaks a protocol: the text protocol of page 15, or Twisted&rsquo;s AMP. A program written with Twisted connects to an AMP socket through an endpoint, calls <code>Run</code> with a line of the console, and gets a Deferred of the answer, or an exception it can catch.</p>
+    <ul class="meta">
+      <li>branch <b>develop</b> at abe1bf0</li>
+      <li>revision 3 &middot; 29 September 2026</li>
+      <li><span class="status">decided</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your request of today: implement the IDEAS item &ldquo;Open a second control socket that speaks Twisted&rsquo;s AMP, for programs written with Twisted; both sockets open at the same time&rdquo;, which is Q3 and &sect;11 of <a href="15%20-%20control-socket.html#decisions">page 15</a>, and make a plan first. That both sockets are open at once is part of the request, so it isn&rsquo;t a question here.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 followed your answer on where the sockets are: <code>--socket</code> takes a description in the syntax of Twisted&rsquo;s endpoints, extended with the protocol, <code>text</code> or <code>amp</code>. Revision 3 records your answers to it. Without <code>--socket</code>, no socket is open, which changes Q1 of page 15. <code>--socket</code> alone opens the text socket at the default path. Only <code>unix</code> sockets for now, with <code>tcp</code> and <code>ssl</code>, local and remote, to come (M6). <code>--socket</code> takes its description from the next word when that word starts with a type, or after <code>=</code> (M8). Every other question is as recommended, and my choices of revision 2 stand: the option can be given more than once, and <code>--command</code> talks to one text socket. The protocol of page 15 is called the text protocol from now on (<a href="#decisions">&sect;9</a>).</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>Today</a></li>
+        <li><a href="#option"><span>3</span>The option --socket</a></li>
+        <li><a href="#protocol"><span>4</span>The protocol</a></li>
+        <li><a href="#program"><span>5</span>A program</a></li>
+        <li><a href="#messages"><span>6</span>Messages</a></li>
+        <li><a href="#code"><span>7</span>The code and the tests</a></li>
+        <li><a href="#plan"><span>8</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>9</span>Decisions</a></li>
+        <li><a href="#later"><span>10</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Option</dt><dd><code>--socket</code> opens the text socket at <code>$XDG_RUNTIME_DIR/virtualbricks/.control</code>. <code>--socket unix:PATH:protocol=amp</code> opens an AMP socket at <i>PATH</i>. The description follows Twisted&rsquo;s endpoints, with one more keyword, <code>protocol</code>: <code>text</code>, the default, or <code>amp</code>. The option can be given more than once (<a class="ref done" href="#decisions">M1</a>, <a class="ref done" href="#decisions">M8</a>).</dd></div>
+          <div><dt>Default</dt><dd>Without <code>--socket</code>, Virtualbricks listens nowhere. Today every Virtualbricks listens, so this changes Q1 of page 15.</dd></div>
+          <div><dt>Types</dt><dd><code>unix</code> only, for now. <code>tcp</code> and <code>ssl</code>, on this machine and across the network, come later (<a class="ref done" href="#decisions">M6</a>). A path without <code>unix:</code> is refused, with a message that shows how to write it (<a class="ref done" href="#decisions">M7</a>).</dd></div>
+          <div><dt>Owner</dt><dd>Each socket has its own lock, <i>PATH</i><code>.lock</code>. The first Virtualbricks that takes it listens there, and the others go without that socket. Each socket goes on its own: when one can&rsquo;t be opened, the others still listen.</dd></div>
+          <div><dt>Commands</dt><dd>Two AMP commands. <code>Hello</code> says who answers: the protocol, the version, the process and the open project. <code>Run</code> takes a line of the console and answers its lines (<a class="ref done" href="#decisions">M2</a>).</dd></div>
+          <div><dt>Errors</dt><dd>A command that fails raises <code>CommandFailed</code> in the program, with the console&rsquo;s message (<a class="ref done" href="#decisions">M3</a>). An answer too long for AMP raises <code>AnswerTooLong</code>, and the connection stays open (<a class="ref done" href="#decisions">M5</a>).</dd></div>
+          <div><dt>Order</dt><dd>The requests of a connection run one after the other, as on the text socket. Connections don&rsquo;t wait for each other (<a class="ref done" href="#decisions">M4</a>).</dd></div>
+          <div><dt>--command</dt><dd>It talks to the text socket at the default path, or to the one that <code>--socket</code> names. It speaks only the text protocol.</dd></div>
+          <div><dt>Definitions</dt><dd><code>virtualbricks.console.ampwire</code> holds the two commands and their errors, and loads no reactor. A program imports it, or copies its twenty lines from the manual page.</dd></div>
+          <div><dt>Plan</dt><dd>Three steps, a commit each, on a new branch <code>mg/amp-socket</code> from <code>develop</code> (<a href="#plan">&sect;8</a>).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>Today</h2>
+        <p>Page 15 made the control socket: JSON Lines on <code>.control</code>, spoken by <code>virtualbricks --command</code>, by <code>socat</code> and by any language. This page calls its protocol the text protocol. Every Virtualbricks listens there once its project is open (15 Q1). <code>--socket PATH</code> moves the socket to a path, for both ends: the Virtualbricks that listens, and <code>--command</code>, which talks to it. The lock is <i>PATH</i><code>.lock</code>.</p>
+        <p>A program written with Twisted can speak the text protocol too, but it has to do by hand what AMP does for it: a <code>LineOnlyReceiver</code>, the JSON of each line, each answer matched to its request by their order, and <code>ok: false</code> turned into an error.</p>
+        <p>AMP is Twisted&rsquo;s own protocol, <code>twisted.protocols.amp</code>. A request is a box of keys and values with a tag, and its answer carries the tag back. Each value holds at most 65&nbsp;535 bytes. <code>callRemote</code> returns a Deferred of the answer, and an error that the command declares arrives as its exception. <code>UNIXClientEndpoint</code> connects to a Unix socket.</p>
+        <p>Every socket leads to the same place: <code>dispatch.run()</code>, with the commands of the console, their checks, and the <code>cwd</code> of the request (15 Q6). The AMP socket adds a way in. It doesn&rsquo;t add any command.</p>
+        <figure class="code">
+          <figcaption>two ways in, one Virtualbricks</figcaption>
+<pre><code>a program with Twisted  &#x2500;&#x2500; AMP &#x2500;&#x2500;&#x25b6;  unix:PATH:protocol=amp &#x2500;&#x2510;
+                                                            &#x251c;&#x2500;&#x25b6;  dispatch.run()  &#x2500;&#x25b6;  the project
+virtualbricks --command &#x2500;&#x2500; text &#x2500;&#x25b6;  .control, or unix:PATH &#x2500;&#x2518;</code></pre>
+        </figure>
+      </section>
+
+      <section id="option">
+        <h2><span class="num">&sect;3</span>The option --socket</h2>
+        <figure class="code">
+          <figcaption>from any terminal of yours</figcaption>
+<pre><code><span class="c"># the text socket at its default path</span>
+<span class="prompt">$</span> virtualbricks --no-gui --socket
+
+<span class="c"># an AMP socket, and no text socket</span>
+<span class="prompt">$</span> virtualbricks --no-gui --socket unix:~/labs/lab1.amp:protocol=amp
+
+<span class="c"># both: the text socket at its default path, and an AMP socket</span>
+<span class="prompt">$</span> virtualbricks --no-gui --socket --socket unix:~/labs/lab1.amp:protocol=amp
+
+<span class="c"># the same, with = before the description</span>
+<span class="prompt">$</span> virtualbricks --no-gui --socket --socket=unix:~/labs/lab1.amp:protocol=amp
+
+<span class="c"># --command talks to a text socket</span>
+<span class="prompt">$</span> virtualbricks --socket unix:~/labs/lab1.sock --command status</code></pre>
+        </figure>
+
+        <h3>With a description or without</h3>
+        <ul>
+          <li><strong>Without <code>--socket</code></strong>, Virtualbricks listens nowhere and takes no lock of a socket (Q1 of page 15 changes).</li>
+          <li><strong><code>--socket</code> alone</strong> opens the text socket at the default path, <code>$XDG_RUNTIME_DIR/virtualbricks/.control</code>.</li>
+          <li><strong>A description</strong> is the next word, or comes after <code>=</code> (<a class="ref done" href="#decisions">M8</a>). The next word is taken when it starts with a type and a colon, such as <code>unix:</code> or <code>tcp:</code>. Any other word isn&rsquo;t taken: <code>--socket --no-gui</code> is <code>--socket</code> alone, and so is <code>--command --socket brick list</code>. A path isn&rsquo;t a description: <code>--socket ~/labs/lab1.sock</code> is refused with a message that shows <code>unix:~/labs/lab1.sock</code> (<a class="ref done" href="#decisions">M7</a>).</li>
+          <li><strong>Before getopt.</strong> Twisted&rsquo;s option parser uses getopt, which has no optional arguments. So <code>parseOptions</code> takes each <code>--socket</code> and its description out of the arguments before getopt reads the rest. It stops where getopt stops: at the first word that isn&rsquo;t an option or the value of one, or at <code>--</code>.</li>
+        </ul>
+
+        <h3>The description</h3>
+        <ul>
+          <li><strong>The type</strong> comes first. It is <code>unix</code>, the only one for now. <code>tcp</code> and <code>ssl</code> are known, and refused until they come (<a class="ref done" href="#decisions">M6</a>).</li>
+          <li><strong>The path</strong> comes next, or <code>address=PATH</code>, as Twisted writes it. Virtualbricks expands <code>~</code>, since the shell doesn&rsquo;t expand it after <code>unix:</code>. A relative path is read from the folder where Virtualbricks starts.</li>
+          <li><strong>The protocol</strong> is <code>protocol=text</code> or <code>protocol=amp</code>, in any case. Left out, it is <code>text</code>.</li>
+          <li><strong>Escapes.</strong> <code>:</code> separates the parts, and <code>\</code> makes the next character plain, so <code>unix:/tmp/a\:b.sock</code> is the path <code>/tmp/a:b.sock</code>. The shell removes a backslash that isn&rsquo;t quoted, so such a description goes in single quotes. In a <code>key=value</code>, only the first <code>=</code> counts. These are the rules of Twisted&rsquo;s <code>_tokenize</code> and <code>_parse</code>. Those are private, so Virtualbricks has its own parser that follows them, in <code>console/wire.py</code>.</li>
+          <li><strong>No other keyword.</strong> Twisted&rsquo;s <code>mode</code>, <code>backlog</code> and <code>lockfile</code> are refused. The socket is always 0600, and its lock is Virtualbricks&rsquo; own.</li>
+        </ul>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Options</th><th>Protocol</th><th>Path</th></tr></thead>
+          <tbody>
+            <tr><td>no <code>--socket</code></td><td colspan="2">no socket</td></tr>
+            <tr><td><code>--socket</code></td><td>text</td><td><code>$XDG_RUNTIME_DIR/virtualbricks/.control</code></td></tr>
+            <tr><td><code>--socket unix:~/labs/lab1.sock</code></td><td>text</td><td><code>/home/marco/labs/lab1.sock</code></td></tr>
+            <tr><td><code>--socket unix:~/labs/lab1.amp:protocol=amp</code></td><td>AMP</td><td><code>/home/marco/labs/lab1.amp</code></td></tr>
+            <tr><td><code>--socket=unix:address=lab1.sock:protocol=TEXT</code></td><td>text</td><td><code>lab1.sock</code> in the folder where Virtualbricks starts</td></tr>
+            <tr><td><code>--socket 'unix:/tmp/a\:b.sock'</code></td><td>text</td><td><code>/tmp/a:b.sock</code></td></tr>
+            <tr><td><code>--socket tcp:8080</code></td><td colspan="2">refused: only <code>unix</code> for now (<a class="ref done" href="#decisions">M6</a>)</td></tr>
+            <tr><td><code>--socket ~/labs/lab1.sock</code></td><td colspan="2">refused: the message shows <code>unix:~/labs/lab1.sock</code> (<a class="ref done" href="#decisions">M7</a>)</td></tr>
+            <tr><td><code>--socket unix:/tmp/a.sock:mode=666</code></td><td colspan="2">refused: the keywords are <code>address</code> and <code>protocol</code></td></tr>
+            <tr><td><code>--socket unix:/tmp/a.sock:protocol=json</code></td><td colspan="2">refused: the protocol is <code>text</code> or <code>amp</code></td></tr>
+          </tbody>
+        </table>
+        </div>
+
+        <h3>Several sockets</h3>
+        <p>The option can be given more than once, and Virtualbricks listens on each socket. This is how both protocols are open at once: <code>--socket --socket unix:~/labs/lab1.amp:protocol=amp</code> is the text socket at its default path and an AMP socket. The same protocol twice is fine, such as a text socket in the runtime folder and another in <code>~/labs</code>. The same path twice is refused, and so is <code>--socket</code> alone twice.</p>
+
+        <h3>Who has each</h3>
+        <p>Each socket has its own lock, <i>PATH</i><code>.lock</code> beside it, as <code>--socket PATH</code> has today. The first Virtualbricks that takes the lock listens there. Another one goes without that socket, and logs which process has it. With <code>--lock none</code>, two Virtualbricks started with the same options leave every socket to the first one. Started with different <code>--socket</code> options, each has its own.</p>
+        <p>Each socket goes on its own. When one can&rsquo;t be opened, because its lock is held, something else is at its path, or its folder fails a check, the others still listen, and the log says why. The rest is as on page 15: a socket of yours left behind by a crash is removed, the mode is 0600 from the start, and at the end each connection is closed after its last answer, the socket removed and its lock released.</p>
+
+        <h3>Checks</h3>
+        <p>A path in the runtime folder gets the checks of the default socket: the folder must be yours, and nobody else can write in it. The folder may not exist yet when the options are read, since Virtualbricks makes it at start. Anywhere else, the folder must exist, as today. Each path can have at most 107 bytes, the most a Unix socket path can have, and that is checked with the other options.</p>
+
+        <h3>With --command</h3>
+        <p><code>--command</code> speaks the text protocol. It talks to the socket at the default path, or to the one that <code>--socket</code> names; <code>--socket</code> alone is the default path, as no <code>--socket</code> is. It takes at most one <code>--socket</code>, and that socket must use the text protocol. Since a Virtualbricks started without <code>--socket</code> listens nowhere, the messages of <code>--command</code> that find nobody say to start it with <code>--socket</code> (<a href="#messages">&sect;6</a>).</p>
+      </section>
+
+      <section id="protocol">
+        <h2><span class="num">&sect;4</span>The protocol</h2>
+        <p>Two commands (<a class="ref done" href="#decisions">M2</a>), as Twisted declares them. This is the whole contract: a program needs these lines and nothing else of Virtualbricks.</p>
+        <figure class="code">
+          <figcaption>virtualbricks/console/ampwire.py</figcaption>
+<pre><code><span class="h">class</span> CommandFailed(Exception):
+    <span class="c">"""The command wasn't done, or failed on the way."""</span>
+
+<span class="h">class</span> AnswerTooLong(Exception):
+    <span class="c">"""The command was done; its answer doesn't fit in AMP."""</span>
+
+<span class="h">class</span> Hello(amp.Command):
+    <span class="c">"""Who answers."""</span>
+    response = [
+        (b"protocol", amp.Integer()),
+        (b"version", amp.Unicode()),
+        (b"pid", amp.Integer()),
+        (b"project", amp.Unicode(optional=True)),
+    ]
+
+<span class="h">class</span> Run(amp.Command):
+    <span class="c">"""A line of the console, and its answer."""</span>
+    arguments = [
+        (b"line", amp.Unicode()),
+        (b"cwd", amp.Unicode(optional=True)),
+    ]
+    response = [(b"lines", amp.ListOf(amp.Unicode()))]
+    errors = {
+        CommandFailed: b"COMMAND_FAILED",
+        AnswerTooLong: b"ANSWER_TOO_LONG",
+    }</code></pre>
+        </figure>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Command</th><th>Key</th><th>What it is</th></tr></thead>
+          <tbody>
+            <tr><td rowspan="4"><code>Hello</code></td><td><code>protocol</code></td><td>1. It changes on the day a command changes.</td></tr>
+            <tr><td><code>version</code></td><td>The version of the Virtualbricks that runs.</td></tr>
+            <tr><td><code>pid</code></td><td>Its process.</td></tr>
+            <tr><td><code>project</code></td><td>The name of the open project, <code>None</code> when none is open.</td></tr>
+            <tr><td rowspan="3"><code>Run</code></td><td><code>line</code></td><td>The command, as typed in the console.</td></tr>
+            <tr><td><code>cwd</code></td><td>The folder that paths are read from, an absolute path. It is optional; without it, the folder of Virtualbricks (15 Q6).</td></tr>
+            <tr><td><code>lines</code></td><td>The answer.</td></tr>
+            <tr><td rowspan="3">errors of <code>Run</code></td><td><code>CommandFailed</code></td><td>The message, in the language of the Virtualbricks that runs (<a class="ref done" href="#decisions">M3</a>). A <code>cwd</code> that isn&rsquo;t absolute gets it too, with the message of the text socket.</td></tr>
+            <tr><td><code>AnswerTooLong</code></td><td>The command was done, but its answer is longer than a value of AMP can be (<a class="ref done" href="#decisions">M5</a>).</td></tr>
+            <tr><td><code>UnhandledCommand</code></td><td>AMP&rsquo;s own, for a command that this Virtualbricks doesn&rsquo;t know.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <figure class="code">
+          <figcaption>the boxes, with their values decoded: &rarr; from the program, &larr; from Virtualbricks</figcaption>
+<pre><code><span class="c">&rarr;</span> _ask 1     _command Run   line "brick start sw1"   cwd "/home/marco/labs"
+<span class="c">&larr;</span> _answer 1  lines ["sw1 runs, process 4242"]
+<span class="c">&rarr;</span> _ask 2     _command Run   line "brick start vm9"
+<span class="c">&larr;</span> _error 2   _error_code COMMAND_FAILED   _error_description "No brick named vm9"</code></pre>
+        </figure>
+        <ul>
+          <li><strong>No greeting.</strong> AMP has none. A program calls <code>Hello</code> when it needs to know who answers.</li>
+          <li><strong>Versions.</strong> When a command has to change, the new one gets a new name and <code>Run</code> stays as it is, so a program written today keeps working. An older Virtualbricks answers a newer command with <code>UnhandledCommand</code>, and <code>protocol</code> tells the program which commands it can use.</li>
+          <li><strong>Order.</strong> The requests of a connection run one after the other: a second <code>callRemote</code> waits for the answer to the first. A program that sends <code>brick start sw1</code> and then <code>brick start vm1</code> without waiting gets them in that order. For two commands at once it opens two connections (<a class="ref done" href="#decisions">M4</a>). Connections, the text socket, the terminal and the events don&rsquo;t wait for each other (15 Q7).</li>
+          <li><strong>Limits.</strong> A value holds at most 65&nbsp;535 bytes. A longer line is refused by the program&rsquo;s own AMP before it is sent, as the text socket refuses a line over 64&nbsp;KiB. The answer is one value, a list of lines. <code>brick list</code> of a large project fits many times over, but a long <code>source</code> could go past it. AMP would then drop the connection and log a traceback; instead, <code>Run</code> fails with <code>AnswerTooLong</code> and the connection stays open (<a class="ref done" href="#decisions">M5</a>).</li>
+          <li><strong>Bad boxes.</strong> A box that doesn&rsquo;t fit <code>Run</code>, such as one without <code>line</code>, is left to AMP. AMP answers with an unknown error and closes the connection. A program that uses the definitions above can&rsquo;t send one.</li>
+          <li><strong>The log.</strong> AMP logs each connection that opens and closes, with the addresses of its objects. The AMP socket leaves that out, as the text socket&rsquo;s factory does since fd789ad.</li>
+        </ul>
+      </section>
+
+      <section id="program">
+        <h2><span class="num">&sect;5</span>A program</h2>
+        <p>For a Virtualbricks started with <code>--socket unix:~/labs/lab1.amp:protocol=amp</code>:</p>
+        <figure class="code">
+          <figcaption>start-sw1.py</figcaption>
+<pre><code><span class="h">import</span> os
+
+<span class="h">from</span> twisted.internet <span class="h">import</span> endpoints, task
+<span class="h">from</span> twisted.internet.defer <span class="h">import</span> ensureDeferred
+<span class="h">from</span> twisted.protocols <span class="h">import</span> amp
+
+<span class="h">from</span> virtualbricks.console.ampwire <span class="h">import</span> CommandFailed, Run
+
+SOCKET = os.path.expanduser("~/labs/lab1.amp")
+
+
+<span class="h">async def</span> main(reactor):
+    endpoint = endpoints.UNIXClientEndpoint(reactor, SOCKET)
+    vb = <span class="h">await</span> endpoints.connectProtocol(endpoint, amp.AMP())
+    <span class="h">try</span>:
+        answer = <span class="h">await</span> vb.callRemote(Run, line="brick start sw1")
+    <span class="h">except</span> CommandFailed <span class="h">as</span> exc:
+        print("Error:", exc)
+    <span class="h">else</span>:
+        print("\n".join(answer["lines"]))
+    vb.transport.loseConnection()
+
+
+task.react(<span class="h">lambda</span> reactor: ensureDeferred(main(reactor)))</code></pre>
+        </figure>
+        <ul>
+          <li>Where Virtualbricks isn&rsquo;t installed, the program copies the definitions of <a href="#protocol">&sect;4</a> in place of the import.</li>
+          <li>With <code>cwd=os.getcwd()</code>, <code>source lab.vb</code> reads the <code>lab.vb</code> of the program&rsquo;s folder, as <code>--command</code> does.</li>
+          <li>When nothing listens, <code>connectProtocol</code> fails with <code>ConnectError</code>.</li>
+          <li><code>--command</code> connects only to a socket that belongs to you. A program that connects to a path in a folder that others can write to, such as <code>/tmp</code>, should check the same.</li>
+        </ul>
+      </section>
+
+      <section id="messages">
+        <h2><span class="num">&sect;6</span>Messages</h2>
+        <p>The option, checked with the others. Each message starts with <code>virtualbricks: --socket: </code> and exits with 1:</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>When</th><th>The message goes on with</th></tr></thead>
+          <tbody>
+            <tr><td>Another type</td><td><code>tcp:8080: only unix sockets for now, as unix:PATH</code></td></tr>
+            <tr><td>A path without its type</td><td><code>~/labs/lab1.sock needs its type: unix:~/labs/lab1.sock</code></td></tr>
+            <tr><td>No path</td><td><code>unix: needs a path, as unix:~/labs/lab1.sock</code></td></tr>
+            <tr><td>Another keyword</td><td><code>unix:/tmp/a.sock:mode=666: unknown keyword mode; the keywords are address and protocol</code></td></tr>
+            <tr><td>Another protocol</td><td><code>unix:/tmp/a.sock:protocol=json: the protocol is text or amp</code></td></tr>
+            <tr><td>The same path twice</td><td><code>/home/marco/labs/lab1.sock is given twice</code></td></tr>
+            <tr><td>As today</td><td><code>/home/marco/nope doesn't exist</code>, <code>&hellip; is a folder</code>, <code>&hellip; is longer than 107 bytes</code></td></tr>
+            <tr><td>With <code>--command</code>, an AMP socket</td><td><code>--command speaks the text protocol, not amp</code></td></tr>
+            <tr><td>With <code>--command</code>, two sockets</td><td><code>--command talks to one socket</code></td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>The messages of <code>--command</code> that find nobody, which page 15 &sect;7 lists, now say how to open a socket. They exit with 2, as before:</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>When</th><th><code>--command</code> says</th></tr></thead>
+          <tbody>
+            <tr><td>No Virtualbricks of yours runs</td><td><code>No Virtualbricks of yours runs. Start one with a socket, as virtualbricks --no-gui --socket</code></td></tr>
+            <tr><td>Yours runs, without that socket</td><td><code>Your Virtualbricks, process 4200, doesn't listen on &hellip;: it was started without --socket or with another one, or its log says why</code></td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>What a program gets:</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>When</th><th>The failure</th><th>Its text</th></tr></thead>
+          <tbody>
+            <tr><td>The command fails</td><td><code>CommandFailed</code></td><td><code>No brick named vm9</code></td></tr>
+            <tr><td><code>cwd</code> isn&rsquo;t absolute</td><td><code>CommandFailed</code></td><td><code>Not a request: "cwd" is not an absolute path</code>, as on the text socket</td></tr>
+            <tr><td>The answer is too long</td><td><code>AnswerTooLong</code></td><td><code>The command was done, but its answer, 81204 bytes, is longer than the 65535 that AMP carries; a text socket carries it</code></td></tr>
+            <tr><td>A command this Virtualbricks doesn&rsquo;t know</td><td><code>UnhandledCommand</code></td><td>AMP&rsquo;s own</td></tr>
+            <tr><td>Virtualbricks ends before it answers</td><td><code>ConnectionDone</code> or <code>ConnectionLost</code></td><td>Twisted&rsquo;s own</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>The Virtualbricks that runs logs these, for each socket:</p>
+        <ul>
+          <li>info: <code>Listening on /home/marco/labs/lab1.amp, protocol amp</code>, and <code>protocol text</code> for a text socket.</li>
+          <li>warning: <code>/home/marco/labs/lab1.amp isn't a socket: no socket there</code>, and the same for the other reasons of page 15, such as a runtime folder that others can write in.</li>
+          <li>info: <code>Process 4200 answers on /home/marco/labs/lab1.amp; this one doesn't</code>, in place of the line of page 15 that names <code>--command</code>.</li>
+          <li>info: <code>Command from the AMP socket: brick start sw1</code>, and <code>The command from the AMP socket failed: No brick named vm9</code> when it fails. A text socket logs as today.</li>
+          <li>info: <code>The answer to the AMP socket is 81204 bytes, longer than AMP carries</code>.</li>
+        </ul>
+        <p>Without <code>--socket</code>, the log says nothing about sockets. The texts of <code>CommandFailed</code> and <code>AnswerTooLong</code>, and the messages of <code>--command</code>, are in the language of the Virtualbricks that runs, as on the text socket. The messages of the option and of the log aren&rsquo;t translated, as today.</p>
+      </section>
+
+      <section id="code">
+        <h2><span class="num">&sect;7</span>The code and the tests</h2>
+        <figure class="code">
+          <figcaption>what changes</figcaption>
+<pre><code>virtualbricks/
+&#x251c;&#x2500;&#x2500; console/ampwire.py   <span class="h">new</span>  <span class="c">Hello, Run and their errors; no reactor, nothing of Virtualbricks</span>
+&#x251c;&#x2500;&#x2500; console/wire.py           <span class="c">parse_socket(), Socket, check_cwd()</span>
+&#x251c;&#x2500;&#x2500; console/control.py        <span class="c">the AMP protocol beside the text one; listen() on one socket</span>
+&#x251c;&#x2500;&#x2500; console/client.py         <span class="c">the messages that say to start with --socket</span>
+&#x251c;&#x2500;&#x2500; app.py                    <span class="c">--socket [DESCRIPTION], repeated, read before getopt</span>
+&#x251c;&#x2500;&#x2500; brickfactory.py           <span class="c">listens on each socket of --socket, and nowhere without</span>
+&#x2514;&#x2500;&#x2500; scripts/virtualbricks.py  <span class="c">gives --command the path of its socket</span></code></pre>
+        </figure>
+        <ul>
+          <li><strong>The description.</strong> <code>wire.parse_socket(text)</code> returns a <code>Socket</code>, its <code>path</code> and its <code>protocol</code>, or raises <code>ValueError</code> with the message of <a href="#messages">&sect;6</a>. It follows Twisted&rsquo;s tokenizer, with no Twisted, like the rest of <code>wire.py</code>. It knows <code>tcp</code> and <code>ssl</code> to refuse them, and the rest of the code keeps the type, so that they can come later. <code>wire.TEXT</code> and <code>wire.AMP</code> name the protocols.</li>
+          <li><strong>The option.</strong> <code>Options.parseOptions</code> takes each <code>--socket</code> out of the arguments before getopt. It knows which options take a value, so their values aren&rsquo;t taken for words, and it stops at the first word or at <code>--</code>. Each description is parsed, <code>~</code> expanded, the path made absolute and checked, and the socket appended to <code>config["sockets"]</code>, which stays empty without the option. <code>--help</code> still lists <code>--socket</code>. <code>check_command</code> refuses an AMP socket, or two sockets, with <code>--command</code>.</li>
+          <li><strong>The server.</strong> <code>control.listen(brickfactory, socket, reactor)</code> listens on one socket: its checks, its lock, its stale socket and the factory of its protocol. <code>Application.listen</code> calls it for each socket of <code>config["sockets"]</code>, and for none without the option. <code>Control</code> stays one per socket.</li>
+          <li><strong>The client.</strong> <code>client.main</code> gets the path of the one text socket, or the default path. Its messages that find nobody say to start Virtualbricks with <code>--socket</code>.</li>
+          <li><strong>AMP.</strong> <code>ampwire.py</code> has <code>PROTOCOL</code>, the two errors and the two commands, and imports only <code>twisted.protocols.amp</code>; the manual page shows it whole. <code>AMPControl(amp.AMP)</code> in <code>control.py</code> answers <code>Hello</code> and <code>Run</code>. <code>Run</code> goes through the queue of its connection to <code>dispatch.run()</code> with its <code>cwd</code>, as a line of the text socket does, and measures the answer before AMP writes it. It leaves out AMP&rsquo;s log of each connection.</li>
+          <li><strong>What both protocols share.</strong> The queue of <code>ControlProtocol</code>, its <code>requests</code>, <code>busy</code> and <code>next()</code>, moves into a small class that both use. <code>ControlFactory</code> takes the protocol it builds. <code>wire.check_cwd()</code> is the check of <code>read_request</code>, moved out so that both sockets give the same message.</li>
+        </ul>
+        <p>Tests, each next to its module:</p>
+        <ul>
+          <li><code>tests/console/test_wire.py</code>: <code>parse_socket()</code> with every row of the table of <a href="#option">&sect;3</a> that has a description, the escapes, <code>address=</code>, the case of the protocol, and each refusal; <code>check_cwd()</code>.</li>
+          <li><code>test_app.py</code>: no <code>--socket</code>; <code>--socket</code> alone; a description as the next word and after <code>=</code>; words that aren&rsquo;t taken, as in <code>--socket --no-gui</code> and <code>--command --socket brick list</code>, and the value of another option; a path; the option repeated; the same path twice; a path in a runtime folder not made yet; the refusals of the option and of <code>--command</code>. The tests of <code>--socket PATH</code> change to the new form.</li>
+          <li><code>tests/console/test_client.py</code>: the two messages that change.</li>
+          <li><code>tests/console/test_ampwire.py</code>: a fresh process that imports <code>ampwire</code> loads neither <code>twisted.internet.reactor</code> nor <code>gi</code>.</li>
+          <li><code>tests/console/test_control.py</code>: the AMP protocol through <code>iosim.connectedServerAndClient</code>, with a plain <code>amp.AMP</code> as the program. <code>Hello</code>, with a project and without one; <code>Run</code> and its answer; the <code>cwd</code>, and one that isn&rsquo;t absolute; a command that fails; an answer too long, with the connection still open after it; requests in order; a connection lost while a command runs; the connections closed after their last answer; the log, with no line for each connection. <code>listen()</code> of an AMP socket: its lock, a stale socket, a second <code>listen()</code> that goes without. One real connection through <code>UNIXClientEndpoint</code> in a short temporary folder. The tests of the text socket pass as they are.</li>
+        </ul>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;8</span>Implementation plan</h2>
+        <p>The work goes on a new branch, <code>mg/amp-socket</code>, from <code>develop</code> at abe1bf0. This page is its first commit, then a commit per step. Your own changes in the working tree, to <code>TODO.md</code> and <code>virtualbricks/tools.py</code>, stay out of every commit.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">1 The option</td><td><code>wire.parse_socket()</code> and <code>Socket</code>; <code>--socket [DESCRIPTION]</code>, repeated, read before getopt; no socket without it; <code>listen()</code> on each socket with its own lock; <code>--command</code> with one text socket, and its messages; the queue of a connection in its own class; <code>ControlFactory</code> takes its protocol; <code>wire.check_cwd()</code>. Only <code>protocol=text</code> is accepted until step 2.</td><td><code>parse_socket()</code>, <code>check_cwd()</code>, the option and its refusals, the messages of <code>--command</code>; the tests of the text socket, unchanged.</td></tr>
+            <tr><td class="nowrap">2 AMP</td><td><code>console/ampwire.py</code>; <code>AMPControl</code> in <code>control.py</code>; <code>protocol=amp</code>.</td><td>As in <a href="#code">&sect;7</a>.</td></tr>
+            <tr><td class="nowrap">3 Docs</td><td><code>virtualbricks(1)</code>: <code>--socket [DESCRIPTION]</code> in SYNOPSIS and OPTIONS; DESCRIPTION and THE CONTROL SOCKET, where every Virtualbricks listens today; the descriptions and the AMP socket, with the definitions of &sect;4 and a program like that of &sect;5, within 64 columns; EXAMPLES; its web page <code>command-line.html</code>. <code>.control</code> in <code>virtualbricks-config(5)</code> and <code>config-files.html</code>, there only with <code>--socket</code>. The README. &ldquo;Since then&rdquo; of page 15, whose Q1 and <code>--socket PATH</code> change, and this page&rsquo;s &ldquo;Implemented&rdquo;. In the TODO, the IDEAS item ticked and moved to DONE, and so is the one of <code>--no-control</code>, since no socket opens without <code>--socket</code>; what <a href="#later">&sect;10</a> leaves for later goes under IDEAS.</td><td>The manual page is up to date and lists every option.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Before step 3, a run of the whole program. <code>virtualbricks --no-gui --noterm --lock none --socket --socket unix:&hellip;:protocol=amp</code> runs with a throwaway home, runtime folder and workspace. A program like that of &sect;5, in the job&rsquo;s own folder, calls <code>Hello</code>, then <code>Run</code> with <code>brick new</code>, <code>brick start</code>, <code>status</code>, a command that fails, a <code>source</code> whose answer is too long, <code>brick stop</code> and <code>quit</code>, while <code>--command</code> talks to the text socket at the same time. A second Virtualbricks with the same options goes without both sockets, and a third without <code>--socket</code> listens nowhere. Your own Virtualbricks, its lock and its sockets are never touched.</p>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;9</span>Decisions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>M1</td>
+              <td>Where the AMP socket is</td>
+              <td>
+                <p>Revision 1 proposed <code>.control.amp</code> beside <code>.control</code>, under one lock. Your answer replaces it: each socket is where a <code>--socket</code> description says, with its protocol and its own lock. <code>--socket</code> alone is the text socket at its default path, and without the option there is no socket (<a href="#option">&sect;3</a>).</p>
+              </td>
+              <td class="rec decided">your answer</td>
+            </tr>
+            <tr>
+              <td>M2</td>
+              <td>The commands of the AMP socket</td>
+              <td>
+                <p><b>A</b> Two: <code>Hello</code>, who answers, and <code>Run</code>, a line of the console and its answer. Every command of the console works through <code>Run</code>, as through the text socket, and the protocol doesn&rsquo;t change when the console does.</p>
+                <p><b>B</b> One AMP command for each command of the console, made from its table, with typed arguments: <code>BrickStart(names=[...])</code>, <code>BrickSet(name=..., values=...)</code>. That makes about fifty commands to keep stable, and each change to the console changes the protocol.</p>
+              </td>
+              <td class="rec decided">A; B later</td>
+            </tr>
+            <tr>
+              <td>M3</td>
+              <td>A command that fails</td>
+              <td>
+                <p><b>A</b> The program&rsquo;s Deferred fails with <code>CommandFailed</code>, whose text is the error. What the command did before is dropped: after a failed <code>brick start sw1 vm1</code>, <code>status</code> tells whether <code>sw1</code> runs.</p>
+                <p><b>B</b> <code>CommandFailed</code> too, but its text is what the command did before, a line each, then the error, as the console shows them. A program that wants the error alone takes the last line.</p>
+                <p><b>C</b> No failure: the answer carries <code>ok</code>, <code>lines</code> and <code>error</code>, as on the text socket. The program checks <code>ok</code> after every call.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>M4</td>
+              <td>The requests of one connection</td>
+              <td>
+                <p><b>A</b> One after the other, as on the text socket (15 Q7): a request waits for the answer to the one before. Two at once need two connections.</p>
+                <p><b>B</b> All at once: AMP tags each answer, so a slow <code>brick start</code> doesn&rsquo;t hold up a <code>status</code> sent after it on the same connection. A program that needs an order waits for each answer.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>M5</td>
+              <td>An answer longer than AMP carries, 64&nbsp;KiB</td>
+              <td>
+                <p><b>A</b> <code>Run</code> fails with <code>AnswerTooLong</code>, which says that the command was done, and the connection stays open. A text socket carries any answer.</p>
+                <p><b>B</b> An argument type of our own spreads a long answer over several keys, <code>lines</code>, <code>lines.2</code> and so on. Nothing is lost, but every program needs that class too.</p>
+                <p><b>C</b> The answer is cut at 64&nbsp;KiB, with a last line that says how much is missing.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>M6</td>
+              <td>The types of socket</td>
+              <td>
+                <p><b>A</b> <code>unix</code> only. The mode 0600 and the checks of the folder keep everyone but you and root out. Anyone who connects can run a shell command as you, through an event&rsquo;s actions.</p>
+                <p><b>B</b> <code>unix</code>, and <code>tcp</code> on <code>127.0.0.1</code> only. Every user of the machine can then connect and run commands as you, so it needs a password or a token first.</p>
+                <p><b>C</b> Every type that Twisted knows: <code>tcp</code>, <code>ssl</code>, <code>systemd</code> and the plugins. This means <code>serverFromString</code> in place of our own <code>listenUNIX</code>, and the checks and locks of page 15 for <code>unix</code> alone.</p>
+              </td>
+              <td class="rec decided">A for now; <code>tcp</code> and <code>ssl</code> later</td>
+            </tr>
+            <tr>
+              <td>M7</td>
+              <td>A path without <code>unix:</code></td>
+              <td>
+                <p><b>A</b> Refused, with a message that shows the same path with <code>unix:</code> before it. There is one form, and a path with a colon in it can&rsquo;t be read two ways.</p>
+                <p><b>B</b> Read as <code>unix:PATH</code> of the text protocol when it starts with <code>/</code>, <code>~</code> or <code>.</code>, as <code>--socket PATH</code> is read today.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>M8</td>
+              <td>How <code>--socket</code> takes its description</td>
+              <td>
+                <p><b>A</b> The next word, when it starts with a type and a colon, such as <code>unix:</code>, or after <code>=</code>. Any other word isn&rsquo;t taken, so <code>--socket --no-gui</code> is <code>--socket</code> alone.</p>
+                <p><b>B</b> Only after <code>=</code>, as the optional arguments of GNU tools, such as <code>ls --color[=WHEN]</code>. With a space, the description is left as a stray word, and the message says to write <code>--socket=</code>.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Your answers, 29 September. On revision 1: <code>--socket</code> takes a syntax like that of <code>twisted.internet.endpoints._parseServer</code>, extended with the protocol, text (the default) or AMP; without the option, the text protocol uses the default path. On revision 2: without <code>--socket</code> no socket is open; <code>--socket</code> without an argument opens one at <code>$XDG_RUNTIME_DIR/virtualbricks/.control</code>; M6 is <code>unix</code> only for now, and the plan is to add <code>tcp</code> and <code>ssl</code>, local and remote; all the other suggestions are fine. M8, which your answer raised, you chose A.</p>
+        <p class="note">Left alone, AMP drops the connection on an answer that is too long and logs a traceback. I checked this and the other behaviours of AMP on this page with Twisted 26.4, the version in <code>.venv</code>: an optional value arrives as <code>None</code>, and a declared error arrives as its own exception.</p>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;10</span>Later</h2>
+        <p>These go under IDEAS in the TODO.</p>
+        <ul>
+          <li><code>tcp</code> and <code>ssl</code> sockets, on this machine and across the network, as you plan (<a class="ref done" href="#decisions">M6</a>). A connection can run shell commands through an event&rsquo;s actions, so these need a way to know who connects: a token, or client certificates with <code>ssl</code>.</li>
+          <li>A setting with the sockets to open, for a Virtualbricks started from the desktop&rsquo;s menu, which has no options.</li>
+          <li>A typed AMP command for each command of the console (<a class="ref done" href="#decisions">M2</a> B).</li>
+          <li>What changes in the project, sent by Virtualbricks to the program as AMP commands that the program answers. This is the <code>watch</code> of 15 &sect;11, and AMP carries commands both ways.</li>
+          <li>Answers as data over AMP, as <code>AmpList</code> boxes, together with the <code>brick list --json</code> of 15 &sect;11.</li>
+          <li>Answers longer than 64&nbsp;KiB, spread over several keys (<a class="ref done" href="#decisions">M5</a> B), if one is ever needed.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
