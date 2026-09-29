@@ -136,6 +136,9 @@ class ControlProtocol(basic.LineOnlyReceiver):
 class ControlFactory(protocol.Factory):
     """The connections of the control socket."""
 
+    # listen() logs what the log needs: not the address of the object
+    noisy = False
+
     def __init__(self, brickfactory, reactor):
         self.brickfactory = brickfactory
         self.reactor = reactor
