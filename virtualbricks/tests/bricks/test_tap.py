@@ -18,8 +18,9 @@
 
 """The tap, and the draft of its settings."""
 
+from virtualbricks import errors
 from virtualbricks.bricks.draft import Problem
-from virtualbricks.bricks.tap import TapDraft
+from virtualbricks.bricks.tap import Tap, TapDraft
 from virtualbricks.tests import (
     BrickTestCase,
     CommandTestCase,
@@ -34,6 +35,16 @@ class TestTap(CommandTestCase):
         sw = self.factory.new_brick("switch", "sw")
         tap.plugs[0].connect(sw.socks[0])
         self.assertTrue(tap.configured())
+
+    def test_a_name_that_an_interface_can_have(self):
+        Tap.check_name("t" * 15)
+        with self.assertRaises(errors.InvalidNameError) as cm:
+            Tap.check_name("t" * 16)
+        self.assertEqual(
+            str(cm.exception),
+            "The interface of this computer takes a tap's name: at most 15"
+            " characters, and this one has 16",
+        )
 
 
 class TestTheDraft(BrickTestCase):

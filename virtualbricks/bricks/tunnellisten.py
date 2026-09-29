@@ -75,6 +75,7 @@ class TunnelListen(bricks.Brick):
 
     type = "TunnelListen"
     summary = "The server end of an encrypted tunnel"
+    programs = (("vde_cryptcab",),)
     config_factory = TunnelListenConfig
     connections = "connect"
 

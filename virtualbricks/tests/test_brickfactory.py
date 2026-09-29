@@ -93,6 +93,29 @@ class TestFactory(BrickTestCase):
             " leave room for 18",
         )
 
+    def test_check_name(self):
+        self.factory.runtime_dir = "/run/vb"
+        self.factory.new_brick("switch", "sw")
+        self.assertEqual(
+            self.factory.check_name("switch", " my switch "), "my_switch"
+        )
+        self.assertEqual(self.factory.check_name("Tap", "t" * 15), "t" * 15)
+        # in use, too long for the sockets, refused by the kind
+        for type, name in (
+            ("switch", "sw"),
+            ("switch", "s" * 100),
+            ("tap", "t" * 16),
+        ):
+            with self.assertRaises(errors.InvalidNameError, msg=name):
+                self.factory.check_name(type, name)
+        with self.assertRaises(errors.InvalidTypeError):
+            self.factory.check_name("nope", "nope")
+
+    def test_a_project_opens_with_names_no_longer_taken(self):
+        # a tap named before the check
+        tap = self.factory.new_brick("tap", "t" * 16)
+        self.assertEqual(tap.name, "t" * 16)
+
     def test_rename_brick(self):
         switch = self.factory.new_brick("switch", "sw")
         self.assertEqual(self.factory.rename(switch, "sw2"), "sw")

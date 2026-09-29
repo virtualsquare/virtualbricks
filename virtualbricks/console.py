@@ -280,7 +280,7 @@ class VBProtocol(Protocol):
             self.factory.new_event(name)
         else:
             try:
-                self.factory.new_brick(typ, name)
+                self.factory.new_brick(typ, self.factory.check_name(typ, name))
             except (errors.InvalidTypeError, errors.InvalidNameError) as e:
                 self.sendLine(str(e))
 

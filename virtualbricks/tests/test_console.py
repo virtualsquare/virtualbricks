@@ -53,6 +53,21 @@ class TestConsole(BrickTestCase):
         ):
             self.assertIn(line, self.lines)
 
+    def test_new(self):
+        self.factory.runtime_dir = "/run/vb"
+        self.protocol.do_new("switch", "sw")
+        self.protocol.do_new("tap", "tap_of_the_lab_1")
+        self.protocol.do_new("nope", "x")
+        self.assertEqual([brick.name for brick in self.factory.bricks], ["sw"])
+        self.assertEqual(
+            self.lines,
+            [
+                "The interface of this computer takes a tap's name: at most"
+                " 15 characters, and this one has 16",
+                "Invalid brick type nope",
+            ],
+        )
+
     def test_config(self):
         switch = self.factory.new_brick("switch", "sw")
         self.protocol.brick_action(switch, ["config", "ports=4"])

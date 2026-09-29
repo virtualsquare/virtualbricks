@@ -276,6 +276,12 @@ class Brick(base.Base):
     summary = ""
     # How the plugs are saved: "connect", "endpoints", "nics" or None.
     connections = None
+    # The programs it runs, each a choice of names: any one of them will do.
+    programs = ()
+
+    @classmethod
+    def check_name(cls, name):
+        """Raise InvalidNameError if a brick of this kind can't have name."""
 
     @property
     def pid(self):

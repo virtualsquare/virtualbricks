@@ -1180,6 +1180,8 @@ class VirtualMachine(bricks.Brick):
 
     type = "Qemu"
     summary = "A virtual machine, run by QEMU"
+    # a new machine's: its settings choose another
+    programs = (("qemu-system-i386",),)
     term_command = "unixterm"
     config_factory = VirtualMachineConfig
     draft_factory = VirtualMachineDraft

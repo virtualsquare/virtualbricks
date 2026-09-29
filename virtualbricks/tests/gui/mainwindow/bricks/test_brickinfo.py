@@ -18,22 +18,46 @@
 """What the Bricks tab says about a brick, and how two bricks connect."""
 
 import os
+from unittest import mock
 
-from virtualbricks.bricks.virtualmachine import hostonly_sock
+from virtualbricks.brickfactory import install_brick_types
+from virtualbricks.bricks.event import Event
+from virtualbricks.bricks.netemu import Netemu
+from virtualbricks.bricks.router import Router
+from virtualbricks.bricks.switch import Switch
+from virtualbricks.bricks.switchwrapper import SwitchWrapper
+from virtualbricks.bricks.tunnelconnect import TunnelConnect
+from virtualbricks.bricks.tunnellisten import TunnelListen
+from virtualbricks.bricks.virtualmachine import VirtualMachine, hostonly_sock
+from virtualbricks.bricks.wire import Wire
+from virtualbricks.programs import VDE_PROGRAMS
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
     from virtualbricks.gui.mainwindow.bricks import brickinfo
     from virtualbricks.gui.mainwindow.bricks.brickinfo import (
+        HOST,
+        LINKS,
+        MACHINES,
+        NEW_KINDS,
+        Issue,
         State,
         connect,
         connectable,
         connection,
+        issue,
         kind,
+        new_name,
         process,
         state,
         summary,
     )
+
+
+def new_kind(brick_class):
+    """The kind of New Brick whose bricks are of brick_class."""
+
+    return next(kind for kind in NEW_KINDS if kind.brick is brick_class)
 
 
 class FakeProcess:
@@ -287,3 +311,163 @@ class TestConnection(BrickInfoTestCase):
         self.assertEqual(connectable(tap, bricks), [sw1, sw2])
         self.assertEqual(connectable(sw1, bricks), [tap, tap2, vm])
         self.assertEqual(connectable(vm, bricks), [sw1, sw2])
+
+
+class TestNewKinds(BrickInfoTestCase):
+
+    def test_every_kind_of_brick_once(self):
+        classes = [kind.brick for kind in NEW_KINDS]
+        self.assertEqual(len(set(classes)), len(classes))
+        self.assertEqual(
+            set(classes),
+            set(install_brick_types().values()) - {Event},
+        )
+
+    def test_in_three_groups(self):
+        self.assertEqual(
+            [kind.group for kind in NEW_KINDS],
+            [MACHINES] * 4 + [LINKS] * 4 + [HOST] * 2,
+        )
+
+    def test_words(self):
+        for new in NEW_KINDS:
+            self.assertEqual(new.words, brickinfo.KINDS[new.type])
+            self.assertTrue(new.line, new.type)
+            self.assertTrue(new.about, new.type)
+
+    def test_the_factory_makes_each(self):
+        self.factory.runtime_dir = "/run/vb"
+        for new in NEW_KINDS:
+            name = new_name(self.factory, new)
+            self.assertEqual(name, new.prefix + "1")
+            # a name that passes the checks of any name
+            self.assertEqual(self.factory.check_name(new.type, name), name)
+            brick = self.factory.new_brick(new.type, name)
+            self.assertIsInstance(brick, new.brick)
+
+
+class TestNewName(BrickInfoTestCase):
+
+    def test_the_first_number_free(self):
+        self.assertEqual(new_name(self.factory, new_kind(Switch)), "sw1")
+        self.switch("sw1")
+        self.switch("sw3")
+        self.assertEqual(new_name(self.factory, new_kind(Switch)), "sw2")
+
+    def test_free_in_the_whole_project(self):
+        self.factory.new_event("vm1")
+        self.factory.new_disk_image("vm2", "/images/vm2.qcow2")
+        self.brick("qemu", "vm3")
+        self.assertEqual(
+            new_name(self.factory, new_kind(VirtualMachine)), "vm4"
+        )
+
+
+class TestIssue(BrickInfoTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.vde = self.folder()
+        self.qemu = self.folder()
+        for name in VDE_PROGRAMS:
+            self.install(self.vde, name)
+        self.install(self.qemu, "qemu-system-i386")
+        # only the folders: this computer's PATH has programs of its own
+        patcher = mock.patch.dict(os.environ, {"PATH": ""})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def folder(self):
+        path = os.path.abspath(self.mktemp())
+        os.makedirs(path)
+        return path
+
+    def install(self, folder, name):
+        path = os.path.join(folder, name)
+        with open(path, "w") as fp:
+            fp.write("#!/bin/sh\n")
+        os.chmod(path, 0o755)
+
+    def uninstall(self, *names):
+        for name in names:
+            os.remove(os.path.join(self.vde, name))
+
+    def issue(self, brick_class):
+        return issue(new_kind(brick_class), self.vde, self.qemu)
+
+    def test_everything_installed(self):
+        for new in NEW_KINDS:
+            self.assertIsNone(issue(new, self.vde, self.qemu), new.type)
+
+    def test_a_program_missing(self):
+        self.uninstall("vde_cryptcab")
+        expected = Issue(
+            "vde_cryptcab isn't installed",
+            "vde_cryptcab isn't installed: the package vde2-cryptcab has it."
+            " The brick can be made now, and starts once it is installed.",
+        )
+        self.assertEqual(self.issue(TunnelListen), expected)
+        self.assertEqual(self.issue(TunnelConnect), expected)
+        self.assertIsNone(self.issue(Switch))
+
+    def test_a_program_that_no_distribution_ships(self):
+        self.uninstall("vde_router")
+        self.assertEqual(
+            self.issue(Router),
+            Issue(
+                "vde_router isn't installed",
+                "vde_router isn't installed, and no distribution ships it."
+                " The brick can be made now, and starts once it is"
+                " installed.",
+            ),
+        )
+
+    def test_either_program(self):
+        self.uninstall("vde-netemu")
+        self.assertIsNone(self.issue(Netemu))
+        self.uninstall("wirefilter")
+        self.assertEqual(
+            self.issue(Netemu),
+            Issue(
+                "vde-netemu isn't installed",
+                "Neither vde-netemu (vde-netemu) nor wirefilter (vde2) is"
+                " installed. The brick can be made now, and starts once it is"
+                " installed.",
+            ),
+        )
+
+    def test_several_programs(self):
+        self.uninstall("dpipe", "vde_plug")
+        self.assertEqual(
+            self.issue(Wire),
+            Issue(
+                "dpipe isn't installed",
+                "dpipe isn't installed: the package vde2 has it. vde_plug"
+                " isn't installed: the package vde2 has it. The brick can be"
+                " made now, and starts once they are installed.",
+            ),
+        )
+
+    def test_qemu_in_its_own_folder(self):
+        # the folder of QEMU, not VDE's
+        self.install(self.vde, "qemu-system-i386")
+        os.remove(os.path.join(self.qemu, "qemu-system-i386"))
+        self.assertEqual(
+            self.issue(VirtualMachine),
+            Issue(
+                "qemu-system-i386 isn't installed",
+                "qemu-system-i386 isn't installed: the package"
+                " qemu-system-x86 has it. The brick can be made now, and"
+                " starts once it is installed.",
+            ),
+        )
+
+    def test_in_path_too(self):
+        self.uninstall("vde_switch")
+        self.install(self.qemu, "vde_switch")
+        os.environ["PATH"] = self.qemu
+        self.assertIsNone(self.issue(Switch))
+
+    def test_a_switch_wrapper_runs_nothing(self):
+        self.uninstall(*VDE_PROGRAMS)
+        self.assertIsNone(self.issue(SwitchWrapper))

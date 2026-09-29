@@ -374,6 +374,8 @@ class Netemu(Wire):
 
     type = "Netemu"
     summary = "A wire that emulates a network link"
+    # wirefilter runs in place of vde-netemu
+    programs = (("vde-netemu", "wirefilter"),)
     config_factory = NetemuConfig
     draft_factory = NetemuDraft
     process_protocol = WFProcessProtocol

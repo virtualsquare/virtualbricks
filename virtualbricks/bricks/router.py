@@ -23,6 +23,7 @@ class Router(bricks.Brick):
 
     type = "Router"
     summary = "A VDE router"
+    programs = (("vde_router",),)
 
     def command(self, prepared):
         cmd = Command(vde_program(prepared.vde, "vde_router"))

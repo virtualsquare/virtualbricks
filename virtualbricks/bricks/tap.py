@@ -18,12 +18,15 @@
 
 """A tap: vde_plug2tap, a tap interface of the host plugged to a switch."""
 
-from virtualbricks import bricks
+from virtualbricks import bricks, errors
 from virtualbricks.bricks.command import Command, socket_path, vde_program
 from virtualbricks.bricks.draft import Draft
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.schema import Choice, IPv4, define, field
 from virtualbricks.i18n import N_, _
+
+# The longest name of a network interface: IFNAMSIZ, less the NUL.
+INTERFACE_NAME_MAX = 15
 
 
 @define
@@ -72,9 +75,23 @@ class Tap(bricks.PrivilegedBrick):
 
     type = "Tap"
     summary = "A tap interface of the host, plugged into a switch"
+    programs = (("vde_plug2tap",),)
     config_factory = TapConfig
     draft_factory = TapDraft
     connections = "connect"
+
+    @classmethod
+    def check_name(cls, name):
+        """The interface of the host takes the name of the tap."""
+
+        if len(name) > INTERFACE_NAME_MAX:
+            msg = _(
+                "The interface of this computer takes a tap's name: at most"
+                " {most} characters, and this one has {size}"
+            )
+            raise errors.InvalidNameError(
+                msg.format(most=INTERFACE_NAME_MAX, size=len(name))
+            )
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)

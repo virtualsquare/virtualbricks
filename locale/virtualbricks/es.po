@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 00:33+0200\n"
+"POT-Creation-Date: 2026-09-29 07:38+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -341,6 +341,13 @@ msgstr ""
 #, fuzzy
 msgid "Virtualbricks doesn't set it yet"
 msgstr "Virtualbricks"
+
+#: virtualbricks/bricks/tap.py
+#, python-brace-format
+msgid ""
+"The interface of this computer takes a tap's name: at most {most} "
+"characters, and this one has {size}"
+msgstr ""
 
 #: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
 msgid "Password"
@@ -2129,6 +2136,143 @@ msgstr ""
 #, fuzzy
 msgid "no network card"
 msgstr "Añadir tarjeta de red"
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+#, fuzzy
+msgid "Machines and switches"
+msgstr "Tipo de máquina"
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "Links"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "This computer"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "A computer that QEMU runs"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid ""
+"A computer that QEMU runs, with its disks, its memory, and a network card "
+"for each switch it plugs into."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "The other bricks plug into its ports"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid ""
+"A VDE switch: the other bricks plug into its ports, as into an Ethernet "
+"switch. It can start as it is."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "A switch that another program runs"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid ""
+"A switch that another program runs. The bricks of this project plug into its "
+"socket, whose path its settings give."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "A router between switches"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid ""
+"A VDE router between switches. It has no settings yet: its console "
+"configures it."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "A cable between two switches"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "A cable between two switches, which its settings choose."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "A cable that emulates a network link"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid ""
+"A cable between two switches that emulates a network link: its bandwidth, "
+"delay, loss and more, in states that change over time."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "Waits for a tunnel from another computer"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid ""
+"One end of an encrypted tunnel: it joins a switch here to a tunnel client on "
+"another computer, which connects to it."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "Opens a tunnel to another computer"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid ""
+"The other end of an encrypted tunnel: it joins a switch here to a tunnel "
+"server on another computer, whose address its settings give."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "This computer, plugged into a switch"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid ""
+"A network interface of this computer, plugged into a switch: this computer "
+"joins the lab through it. It runs as root, through sudo."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "An interface's packets, sent to a switch"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid ""
+"An interface of this computer, whose packets go to a switch. It runs as "
+"root, through sudo."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+#, python-brace-format
+msgid "{program} isn't installed"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "The brick can be made now, and starts once it is installed."
+msgid_plural "The brick can be made now, and starts once they are installed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+#, python-brace-format
+msgid "Neither {programs} nor {last} is installed."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+#, python-brace-format
+msgid "{program} isn't installed, and no distribution ships it."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+#, python-brace-format
+msgid "{program} isn't installed: the package {package} has it."
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/bricklist.py
 #: virtualbricks/gui/mainwindow/bricks/brickmenu.py

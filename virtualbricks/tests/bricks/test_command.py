@@ -28,6 +28,7 @@ import os
 import attr
 
 from virtualbricks import bricks, errors
+from virtualbricks.brickfactory import install_brick_types
 from virtualbricks.bricks import virtualmachine
 from virtualbricks.bricks.command import (
     Command,
@@ -39,6 +40,7 @@ from virtualbricks.bricks.command import (
 from virtualbricks.bricks.virtualmachine import UsbDevice, hostonly_sock
 from virtualbricks.config.settings import set_setting
 from virtualbricks.programs import (
+    VDE_PROGRAMS,
     ProgramError,
     Programs,
     parse_machine_properties,
@@ -250,6 +252,65 @@ class TestVdeBricks(LinesTestCase):
             self.line(router, prepared),
             (["/usr/local/bin/vde_router", "-M", f"{RUN}/r1.mgmt"], []),
         )
+
+
+class TestPrograms(LinesTestCase):
+    """The programs a brick declares are those its command line runs."""
+
+    def runs(self, brick, vde):
+        argv = brick.command(Prepared(vde=vde)).argv
+        return {os.path.basename(arg) for arg in argv if arg.startswith("/v/")}
+
+    def assertRuns(self, brick, vde):
+        names = self.runs(brick, vde)
+        # one program of each choice, and nothing else
+        for choice in brick.programs:
+            self.assertEqual(len(names & set(choice)), 1, (brick.name, choice))
+        declared = {name for choice in brick.programs for name in choice}
+        self.assertLessEqual(names, declared, brick.name)
+
+    def test_the_vde_bricks(self):
+        everything = {name: f"/v/{name}" for name in VDE_PROGRAMS}
+        vde = attr.evolve(vde_info(), programs=everything)
+        netemu = self.brick("netemu", "ne1", self.sw1, self.sw2)
+        server = self.brick("tunnellisten", "tl1", self.sw1)
+        client = self.brick(
+            "tunnelconnect", "tc1", self.sw2, server_host="example.org"
+        )
+        tried = [
+            self.sw1,
+            self.brick("tap", "tap1", self.sw1),
+            self.brick("capture", "cap1", self.sw1, interface="eth0"),
+            self.brick("wire", "w1", self.sw1, self.sw2),
+            netemu,
+            server,
+            client,
+            self.brick("router", "r1"),
+        ]
+        for brick in tried:
+            self.assertRuns(brick, vde)
+        # the other program of Netemu's choice
+        del everything["vde-netemu"]
+        wirefilter = attr.evolve(vde, programs=everything)
+        self.assertRuns(netemu, wirefilter)
+        self.assertEqual(self.runs(netemu, wirefilter), {"wirefilter"})
+        # every kind that runs a program of VDE
+        kinds = {
+            kind
+            for kind in install_brick_types().values()
+            if issubclass(kind, bricks.Brick)
+            and kind.programs
+            and kind is not virtualmachine.VirtualMachine
+        }
+        self.assertEqual({type(brick) for brick in tried}, kinds)
+
+    def test_a_new_machine(self):
+        vm = self.factory.new_brick("qemu", "vm1")
+        self.assertEqual(vm.programs, ((vm.config.qemu_program,),))
+
+    def test_a_switch_wrapper_runs_nothing(self):
+        wrapper = self.factory.new_brick("switchwrapper", "wr1")
+        self.assertEqual(wrapper.programs, ())
 
 
 class TestNetemu(LinesTestCase):

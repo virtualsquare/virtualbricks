@@ -301,10 +301,7 @@ class BrickFactory:
         @raises: InvalidNameError, InvalidTypeError
         """
 
-        try:
-            BrickClass = self.__factories[type.lower()]
-        except KeyError:
-            raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
+        BrickClass = self._brick_class(type)
         name = normalize_brick_name(name)
         if self.get_brick_by_name(name) is not None:
             raise NameAlreadyInUseError(name)
@@ -313,6 +310,12 @@ class BrickFactory:
         brick.changed.connect(self.brick_changed.notify)
         self.brick_added.notify(brick)
         return brick
+
+    def _brick_class(self, type):
+        try:
+            return self.__factories[type.lower()]
+        except KeyError:
+            raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
 
     def dup_brick(self, brick):
         name = self.next_name("copy_of_" + brick.name)
@@ -495,6 +498,22 @@ class BrickFactory:
                 " project leave room for {room}"
             )
             raise errors.InvalidNameError(msg.format(size=size, room=room))
+
+    def check_name(self, type, name):
+        """
+        Return name normalized, or raise InvalidNameError if a brick of type
+        can't have it: it is in use, too long for the sockets of the project,
+        or refused by the kind, as a tap's longer than an interface's.
+
+        new_brick() doesn't check these, so that a project with such names
+        still opens: New Brick, Rename and the console's new ask this first.
+        """
+
+        brick_class = self._brick_class(type)
+        normalized_name = self.normalize_name(name)
+        self.check_socket_room(normalized_name)
+        brick_class.check_name(normalized_name)
+        return normalized_name
 
     def new_plug(self, brick):
         return Plug(brick)

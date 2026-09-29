@@ -27,6 +27,10 @@ and, while it runs, a process.
 A brick dropped on another connects the two when one can plug into a socket
 of the other: a brick with a free plug, or a virtual machine, which adds a
 network card for each connection.
+
+New Brick offers the kinds of ``NEW_KINDS``, in groups, each with a line and
+a longer text. A new brick is named after its kind, ``tap1``, and the issue
+of a kind is a program of its bricks that this computer lacks.
 """
 
 from __future__ import annotations
@@ -36,8 +40,20 @@ import ipaddress
 import itertools
 import os
 
+import attr
+
+from virtualbricks.bricks.capture import Capture
+from virtualbricks.bricks.netemu import Netemu
+from virtualbricks.bricks.router import Router
+from virtualbricks.bricks.switch import Switch
+from virtualbricks.bricks.switchwrapper import SwitchWrapper
+from virtualbricks.bricks.tap import Tap
+from virtualbricks.bricks.tunnelconnect import TunnelConnect
+from virtualbricks.bricks.tunnellisten import TunnelListen
 from virtualbricks.bricks.virtualmachine import VirtualMachine
+from virtualbricks.bricks.wire import Wire
 from virtualbricks.i18n import _, ngettext
+from virtualbricks.programs import PACKAGES, Missing, find_program
 from virtualbricks.tools import is_running
 
 # Between the parts of a summary.
@@ -277,3 +293,207 @@ def connectable(brick, bricks) -> list:
     """The bricks, of bricks, that brick can connect to."""
 
     return [other for other in bricks if connection(brick, other) is not None]
+
+
+# New Brick
+
+# The groups of the kinds.
+MACHINES = _("Machines and switches")
+LINKS = _("Links")
+HOST = _("This computer")
+
+
+@attr.define(frozen=True)
+class Kind:
+    """A kind of brick, as New Brick offers it."""
+
+    # the class of its bricks
+    brick: type
+    group: str
+    # one line about it, and the longer text of its tooltip
+    line: str
+    about: str
+    # the start of the names of its bricks: "tap" for tap1
+    prefix: str
+
+    @property
+    def type(self) -> str:
+        """The type of its bricks, as the factory takes it."""
+
+        return self.brick.type
+
+    @property
+    def words(self) -> str:
+        return KINDS[self.brick.type]
+
+
+# The kinds, in the order and the groups of New Brick.
+NEW_KINDS = (
+    Kind(
+        VirtualMachine,
+        MACHINES,
+        _("A computer that QEMU runs"),
+        _(
+            "A computer that QEMU runs, with its disks, its memory, and a"
+            " network card for each switch it plugs into."
+        ),
+        "vm",
+    ),
+    Kind(
+        Switch,
+        MACHINES,
+        _("The other bricks plug into its ports"),
+        _(
+            "A VDE switch: the other bricks plug into its ports, as into an"
+            " Ethernet switch. It can start as it is."
+        ),
+        "sw",
+    ),
+    Kind(
+        SwitchWrapper,
+        MACHINES,
+        _("A switch that another program runs"),
+        _(
+            "A switch that another program runs. The bricks of this project"
+            " plug into its socket, whose path its settings give."
+        ),
+        "wr",
+    ),
+    Kind(
+        Router,
+        MACHINES,
+        _("A router between switches"),
+        _(
+            "A VDE router between switches. It has no settings yet: its"
+            " console configures it."
+        ),
+        "r",
+    ),
+    Kind(
+        Wire,
+        LINKS,
+        _("A cable between two switches"),
+        _("A cable between two switches, which its settings choose."),
+        "w",
+    ),
+    Kind(
+        Netemu,
+        LINKS,
+        _("A cable that emulates a network link"),
+        _(
+            "A cable between two switches that emulates a network link: its"
+            " bandwidth, delay, loss and more, in states that change over"
+            " time."
+        ),
+        "ne",
+    ),
+    Kind(
+        TunnelListen,
+        LINKS,
+        _("Waits for a tunnel from another computer"),
+        _(
+            "One end of an encrypted tunnel: it joins a switch here to a"
+            " tunnel client on another computer, which connects to it."
+        ),
+        "tl",
+    ),
+    Kind(
+        TunnelConnect,
+        LINKS,
+        _("Opens a tunnel to another computer"),
+        _(
+            "The other end of an encrypted tunnel: it joins a switch here to"
+            " a tunnel server on another computer, whose address its settings"
+            " give."
+        ),
+        "tc",
+    ),
+    Kind(
+        Tap,
+        HOST,
+        _("This computer, plugged into a switch"),
+        _(
+            "A network interface of this computer, plugged into a switch:"
+            " this computer joins the lab through it. It runs as root,"
+            " through sudo."
+        ),
+        "tap",
+    ),
+    Kind(
+        Capture,
+        HOST,
+        _("An interface's packets, sent to a switch"),
+        _(
+            "An interface of this computer, whose packets go to a switch. It"
+            " runs as root, through sudo."
+        ),
+        "cap",
+    ),
+)
+
+
+def new_name(factory, kind: Kind) -> str:
+    """The name of a new brick of kind: its prefix and the first number free.
+
+    Free in the whole project: no brick, event or image has the name.
+    """
+
+    for number in itertools.count(1):
+        name = f"{kind.prefix}{number}"
+        if not factory.is_in_use(name):
+            return name
+
+
+@attr.define(frozen=True)
+class Issue:
+    """What keeps the bricks of a kind from starting on this computer."""
+
+    # a line, and the paragraph that the tooltip starts with
+    line: str
+    text: str
+
+
+def issue(kind: Kind, vde_folder: str, qemu_folder: str) -> Issue | None:
+    """The programs of kind that this computer lacks, in words; or None."""
+
+    lacking = [
+        choice
+        for choice in kind.brick.programs
+        if not any(
+            find_program(name, _folder(name, vde_folder, qemu_folder))
+            for name in choice
+        )
+    ]
+    if not lacking:
+        return None
+    line = _("{program} isn't installed").format(program=lacking[0][0])
+    sentences = [_not_installed(choice) for choice in lacking]
+    sentences.append(
+        ngettext(
+            "The brick can be made now, and starts once it is installed.",
+            "The brick can be made now, and starts once they are installed.",
+            len(lacking),
+        )
+    )
+    return Issue(line, " ".join(sentences))
+
+
+def _folder(name, vde_folder, qemu_folder) -> str:
+    return qemu_folder if name.startswith("qemu-") else vde_folder
+
+
+def _not_installed(choice) -> str:
+    if len(choice) > 1:
+        names = [str(Missing(name, PACKAGES.get(name))) for name in choice]
+        return _("Neither {programs} nor {last} is installed.").format(
+            programs=", ".join(names[:-1]), last=names[-1]
+        )
+    name = choice[0]
+    package = PACKAGES.get(name)
+    if package is None:
+        return _(
+            "{program} isn't installed, and no distribution ships it."
+        ).format(program=name)
+    return _(
+        "{program} isn't installed: the package {package} has it."
+    ).format(program=name, package=package)

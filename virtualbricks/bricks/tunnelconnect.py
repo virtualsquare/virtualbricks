@@ -73,6 +73,7 @@ class TunnelConnect(TunnelListen):
 
     type = "TunnelConnect"
     summary = "The client end of an encrypted tunnel"
+    programs = (("vde_cryptcab",),)
     config_factory = TunnelConnectConfig
     draft_factory = TunnelConnectDraft
 

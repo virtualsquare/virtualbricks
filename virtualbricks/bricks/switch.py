@@ -94,6 +94,7 @@ class Switch(bricks.Brick):
 
     type = "Switch"
     summary = "A VDE switch"
+    programs = (("vde_switch",),)
     ports_used = 0
     config_factory = SwitchConfig
     draft_factory = SwitchDraft

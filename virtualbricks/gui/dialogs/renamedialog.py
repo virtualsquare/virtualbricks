@@ -192,10 +192,11 @@ class RenameDialog(Window):
             self.ok_button.set_sensitive(False)
             return
         try:
-            name = self._factory.normalize_name(brick_name)
-            # only a brick has sockets, named after it
-            if not (is_disk_image(self._brick) or is_event(self._brick)):
-                self._factory.check_socket_room(name)
+            # only a brick has sockets, named after it, and a kind
+            if is_disk_image(self._brick) or is_event(self._brick):
+                self._factory.normalize_name(brick_name)
+            else:
+                self._factory.check_name(self._brick.get_type(), brick_name)
             self._reset_error()
         except NameAlreadyInUseError:
             tooltip = (
