@@ -17,9 +17,16 @@
 
 """The commands without a noun."""
 
+from virtualbricks.bricks import event as event_module
 from virtualbricks.console.command import Arg, command
+from virtualbricks.console.legacy import VbShellCommand
 from virtualbricks.console.general import help_
 from virtualbricks.tests.console import ConsoleTestCase, own_commands
+
+
+class FakeProcess:
+    def __init__(self, pid):
+        self.pid = pid
 
 
 class TestHelp(ConsoleTestCase):
@@ -84,3 +91,44 @@ class TestHelp(ConsoleTestCase):
                 self.fails(line),
                 f"No command {line[5:]}; type help for the commands",
             )
+
+
+class TestStatusAndQuit(ConsoleTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.patch(event_module, "reactor", self.clock())
+        self.factory.runtime_dir = "/run/vb"
+
+    def running(self, kind, name, pid):
+        brick = self.factory.new_brick(kind, name)
+        brick.proc = FakeProcess(pid)
+        return brick
+
+    def test_status(self):
+        self.assertEqual(self.run_line("status"), ["Nothing runs"])
+        self.running("switch", "sw1", 41822)
+        self.factory.new_brick("tap", "tap1")
+        event = self.factory.new_event("boot")
+        event.set({"delay": 10, "actions": [VbShellCommand("sw1 off")]})
+        event.poweron()
+        self.clock().advance(3)
+        self.assertEqual(
+            self.run_line("status"),
+            [
+                "BRICK  KIND    PROCESS",
+                "sw1    Switch  41822",
+                "",
+                "EVENT  RUNS IN",
+                "boot   7 s",
+            ],
+        )
+        event.poweroff()
+
+    def test_quit(self):
+        self.running("switch", "sw1", 41822)
+        self.assertEqual(self.fails("quit"), "sw1 is running: stop it first")
+        self.assertFalse(self.factory.quit_d.called)
+        self.factory.get_brick_by_name("sw1").proc = None
+        self.assertEqual(self.run_line("quit"), [])
+        self.assertTrue(self.factory.quit_d.called)

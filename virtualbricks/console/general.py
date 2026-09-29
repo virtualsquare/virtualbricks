@@ -16,7 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The commands without a noun: help, and what the console itself does."""
+"""The commands without a noun: help, status and quit."""
 
 from __future__ import annotations
 
@@ -30,8 +30,11 @@ from virtualbricks.console.command import (
     nouns,
     of_noun,
 )
+from virtualbricks.bricks import brickinfo, eventinfo
 from virtualbricks.console.output import table
+from virtualbricks.console.projects import refuse_running
 from virtualbricks.i18n import N_, _
+from virtualbricks.tools import is_running
 
 
 class Topic(ArgKind):
@@ -88,3 +91,49 @@ def help_(context, topic):
             words=" ".join(topic)
         )
     )
+
+
+@command(
+    None,
+    "status",
+    help=N_(
+        "What runs: the bricks with their processes, the events that wait"
+    ),
+)
+def status(context):
+    factory = context.factory
+    bricks = [
+        (brick.name, brickinfo.kind(brick), str(brick.pid))
+        for brick in factory.bricks
+        if is_running(brick)
+    ]
+    events = [
+        (
+            event.name,
+            _("{seconds} s").format(
+                seconds=eventinfo.seconds_left(event, context.reactor)
+            ),
+        )
+        for event in factory.iter_events()
+        if is_running(event)
+    ]
+    if not bricks and not events:
+        return [_("Nothing runs")]
+    lines = (
+        table(bricks, [_("BRICK"), _("KIND"), _("PROCESS")]) if bricks else []
+    )
+    if events:
+        if lines:
+            lines.append("")
+        lines += table(events, [_("EVENT"), _("RUNS IN")])
+    return lines
+
+
+@command(
+    None,
+    "quit",
+    help=N_("Quit Virtualbricks; refused while bricks run"),
+)
+def quit_(context):
+    refuse_running(context.factory)
+    context.factory.quit()

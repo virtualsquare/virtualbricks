@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 12:10+0200\n"
+"POT-Creation-Date: 2026-09-29 12:16+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -1212,11 +1212,12 @@ msgstr ""
 msgid "The kinds of brick, and what this computer lacks for each"
 msgstr ""
 
-#: virtualbricks/console/bricks.py
+#: virtualbricks/console/bricks.py virtualbricks/console/general.py
 msgid "KIND"
 msgstr ""
 
-#: virtualbricks/console/bricks.py
+#: virtualbricks/console/bricks.py virtualbricks/console/events.py
+#: virtualbricks/console/images.py
 msgid "NAME"
 msgstr ""
 
@@ -1234,7 +1235,7 @@ msgstr ""
 msgid "No bricks"
 msgstr "Importar bricks"
 
-#: virtualbricks/console/bricks.py
+#: virtualbricks/console/bricks.py virtualbricks/console/events.py
 msgid "STATE"
 msgstr ""
 
@@ -1469,7 +1470,7 @@ msgstr "_Crear nueva imagen"
 msgid "The settings of Virtualbricks and of the project"
 msgstr "Virtualbricks"
 
-#: virtualbricks/console/command.py
+#: virtualbricks/console/command.py virtualbricks/console/projects.py
 #, fuzzy
 msgid "The projects of the workspace"
 msgstr "Guardar proyecto como"
@@ -1478,6 +1479,140 @@ msgstr "Guardar proyecto como"
 #, python-brace-format
 msgid "{error}; the messages have the details"
 msgstr ""
+
+#: virtualbricks/console/events.py
+#, fuzzy, python-brace-format
+msgid "No event named {name}"
+msgstr "Quitar"
+
+#: virtualbricks/console/events.py
+#, python-brace-format
+msgid "{state}, {seconds} s"
+msgstr ""
+
+#: virtualbricks/console/events.py
+#, python-brace-format
+msgid "{what} needs a subject"
+msgstr ""
+
+#: virtualbricks/console/events.py
+#, python-brace-format
+msgid "No brick or event named {name}"
+msgstr ""
+
+#: virtualbricks/console/events.py
+#, python-brace-format
+msgid "{command}: {error}"
+msgstr ""
+
+#: virtualbricks/console/events.py
+#, python-brace-format
+msgid "{name} has no action {number}"
+msgstr ""
+
+#: virtualbricks/console/events.py
+msgid "The events, their state and actions"
+msgstr ""
+
+#: virtualbricks/console/events.py virtualbricks/gui/mainwindow/events/tab.py
+#, fuzzy
+msgid "No events"
+msgstr "Eventos"
+
+#: virtualbricks/console/events.py
+msgid "WHAT IT DOES"
+msgstr ""
+
+#: virtualbricks/console/events.py
+msgid "Make an event; without a name, new_event or the next free one"
+msgstr ""
+
+#: virtualbricks/console/events.py
+msgid "An event's delay, its actions numbered, what starts it"
+msgstr ""
+
+#: virtualbricks/console/events.py
+#, python-brace-format
+msgid "started by {brick}, its {key}"
+msgstr ""
+
+#: virtualbricks/console/events.py
+msgid "Change an event's delay or icon"
+msgstr ""
+
+#: virtualbricks/console/events.py
+msgid "event action add, remove and move change the actions"
+msgstr ""
+
+#: virtualbricks/console/events.py
+#, python-brace-format
+msgid "{name} has no key {key}"
+msgstr ""
+
+#: virtualbricks/console/events.py
+msgid ""
+"Add an action: start or stop a brick or an event, or a command of the "
+"console or the shell"
+msgstr ""
+
+#: virtualbricks/console/events.py
+msgid "Remove actions of an event, by their numbers"
+msgstr ""
+
+#: virtualbricks/console/events.py
+msgid "Move an action of an event to another place"
+msgstr ""
+
+#: virtualbricks/console/events.py
+msgid "Start events: each waits its delay, then runs its actions"
+msgstr ""
+
+#: virtualbricks/console/events.py
+#, fuzzy, python-brace-format
+msgid "{name} has no action"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/console/events.py
+#, python-brace-format
+msgid "{name} waits already"
+msgstr ""
+
+#: virtualbricks/console/events.py
+#, python-brace-format
+msgid "{name} runs its actions in {delay} s"
+msgstr ""
+
+#: virtualbricks/console/events.py
+msgid "Stop events that wait"
+msgstr ""
+
+#: virtualbricks/console/events.py
+#, fuzzy, python-brace-format
+msgid "{name} isn't waiting"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/console/events.py
+msgid "Run the actions of events now, and wait for them"
+msgstr ""
+
+#: virtualbricks/console/events.py
+#, fuzzy, python-brace-format
+msgid "{name} ran its actions"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/console/events.py
+msgid "Rename an event, and every brick and action that names it"
+msgstr ""
+
+#: virtualbricks/console/events.py
+#, fuzzy
+msgid "Copy an event"
+msgstr "Parar todos los eventos"
+
+#: virtualbricks/console/events.py
+#, fuzzy
+msgid "Delete events"
+msgstr "Proyectos _Recientes"
 
 #: virtualbricks/console/general.py
 msgid "A command is a noun, a verb, then its arguments: brick start sw1."
@@ -1501,6 +1636,107 @@ msgstr ""
 #: virtualbricks/console/general.py
 #, python-brace-format
 msgid "No command {words}; type help for the commands"
+msgstr ""
+
+#: virtualbricks/console/general.py
+msgid "What runs: the bricks with their processes, the events that wait"
+msgstr ""
+
+#: virtualbricks/console/general.py virtualbricks/gui/mainwindow/events/tab.py
+#, python-brace-format
+msgid "{seconds} s"
+msgstr ""
+
+#: virtualbricks/console/general.py
+msgid "Nothing runs"
+msgstr ""
+
+#: virtualbricks/console/general.py
+msgid "BRICK"
+msgstr ""
+
+#: virtualbricks/console/general.py
+msgid "PROCESS"
+msgstr ""
+
+#: virtualbricks/console/general.py
+msgid "EVENT"
+msgstr ""
+
+#: virtualbricks/console/general.py
+msgid "RUNS IN"
+msgstr ""
+
+#: virtualbricks/console/general.py
+#, fuzzy
+msgid "Quit Virtualbricks; refused while bricks run"
+msgstr "Virtualbricks"
+
+#: virtualbricks/console/images.py
+#, fuzzy, python-brace-format
+msgid "No image named {name}"
+msgstr "Quitar"
+
+#: virtualbricks/console/images.py
+#, python-brace-format
+msgid "An image has no key {key}: only description"
+msgstr ""
+
+#: virtualbricks/console/images.py
+#, fuzzy
+msgid "The disk images and their users"
+msgstr "_Crear nueva imagen"
+
+#: virtualbricks/console/images.py virtualbricks/gui/mainwindow/images/tab.py
+#, fuzzy
+msgid "No images"
+msgstr "_Mensajes"
+
+#: virtualbricks/console/images.py
+msgid "FILE"
+msgstr ""
+
+#: virtualbricks/console/images.py
+msgid "USED BY"
+msgstr ""
+
+#: virtualbricks/console/images.py
+msgid "Add an image file to the project; description= says what it is"
+msgstr ""
+
+#: virtualbricks/console/images.py
+#, fuzzy, python-brace-format
+msgid "No file {path}"
+msgstr "Creación de imagen"
+
+#: virtualbricks/console/images.py
+msgid "An image's file, description and users"
+msgstr ""
+
+#: virtualbricks/console/images.py
+#, fuzzy, python-brace-format
+msgid "used by {disks}"
+msgstr "RAM usada:"
+
+#: virtualbricks/console/images.py
+msgid "used by no machine"
+msgstr ""
+
+#: virtualbricks/console/images.py
+msgid "Change the description of an image"
+msgstr ""
+
+#: virtualbricks/console/images.py
+msgid "Rename an image, in the disks that use it too"
+msgstr ""
+
+#: virtualbricks/console/images.py
+msgid "Remove an image from the project; its file and the private copies stay"
+msgstr ""
+
+#: virtualbricks/console/images.py
+#, python-brace-format
+msgid "{brick} {device} has no image now"
 msgstr ""
 
 #: virtualbricks/console/parser.py
@@ -1540,6 +1776,106 @@ msgstr ""
 #: virtualbricks/console/parser.py
 #, python-brace-format
 msgid "{usage}: too many words: {words}"
+msgstr ""
+
+#: virtualbricks/console/projects.py
+#, fuzzy, python-brace-format
+msgid "No project named {name}"
+msgstr "Guardar proyecto como"
+
+#: virtualbricks/console/projects.py
+#, python-brace-format
+msgid "{names} is running: stop it first"
+msgid_plural "{names} are running: stop them first"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/console/projects.py
+#, fuzzy
+msgid "No projects"
+msgstr "Guardar proyecto como"
+
+#: virtualbricks/console/projects.py
+#, fuzzy
+msgid "The open project"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/console/projects.py
+#, fuzzy
+msgid "No project is open"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/console/projects.py
+#, python-brace-format
+msgid "{bricks} bricks, {events} events, {images} images"
+msgstr ""
+
+#: virtualbricks/console/projects.py
+msgid "Save the open project and open another"
+msgstr ""
+
+#: virtualbricks/console/projects.py
+msgid "Save the open project, make a new one and open it"
+msgstr ""
+
+#: virtualbricks/console/projects.py
+msgid "Save the open project now"
+msgstr ""
+
+#: virtualbricks/console/projects.py
+#, fuzzy
+msgid "Rename a project"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/console/projects.py
+msgid "Copy a project, its disks included"
+msgstr ""
+
+#: virtualbricks/console/projects.py
+msgid "Move a project to the trash; without one, --force deletes it for good"
+msgstr ""
+
+#: virtualbricks/console/projects.py
+#, python-brace-format
+msgid "{name} is open: open another first"
+msgstr ""
+
+#: virtualbricks/console/projects.py
+#, fuzzy, python-brace-format
+msgid "{name} is in the trash"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/console/projects.py
+#, python-brace-format
+msgid "There is no trash here: --force deletes {name} for good"
+msgstr ""
+
+#: virtualbricks/console/settings.py
+#, python-brace-format
+msgid "No setting {key}: setting show lists them"
+msgstr ""
+
+#: virtualbricks/console/settings.py
+#, fuzzy
+msgid "The settings of Virtualbricks and of the open project"
+msgstr "Virtualbricks"
+
+#: virtualbricks/console/settings.py
+#, fuzzy
+msgid "# Virtualbricks"
+msgstr "Virtualbricks"
+
+#: virtualbricks/console/settings.py
+#, fuzzy
+msgid "# This project"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/console/settings.py
+msgid "Change settings, all or none"
+msgstr ""
+
+#: virtualbricks/console/settings.py
+msgid "Put settings back to their defaults"
 msgstr ""
 
 #: virtualbricks/errors.py
@@ -3449,18 +3785,8 @@ msgstr[1] ""
 
 #: virtualbricks/gui/mainwindow/events/tab.py
 #, python-brace-format
-msgid "{seconds} s"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/tab.py
-#, python-brace-format
 msgid "Add an action to {name} first"
 msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/tab.py
-#, fuzzy
-msgid "No events"
-msgstr "Eventos"
 
 #: virtualbricks/gui/mainwindow/events/tab.py
 #, python-brace-format
@@ -3579,11 +3905,6 @@ msgid "{in_use} of {total} in use"
 msgid_plural "{in_use} of {total} in use"
 msgstr[0] ""
 msgstr[1] ""
-
-#: virtualbricks/gui/mainwindow/images/tab.py
-#, fuzzy
-msgid "No images"
-msgstr "_Mensajes"
 
 #: virtualbricks/gui/mainwindow/images/tab.py
 #, python-brace-format
@@ -4324,10 +4645,6 @@ msgstr ""
 #~ msgstr "Nuevo Brick"
 
 #, fuzzy
-#~ msgid "File path"
-#~ msgstr "Creación de imagen"
-
-#, fuzzy
 #~ msgid "<b>Start event selection</b>"
 #~ msgstr "<b> Ajustes Extra </b>"
 
@@ -4356,10 +4673,6 @@ msgstr ""
 
 #~ msgid "Expand Vertically"
 #~ msgstr "Expandir verticalmente"
-
-#, fuzzy
-#~ msgid "New projects"
-#~ msgstr "Guardar proyecto como"
 
 #, fuzzy
 #~ msgid "File:"
