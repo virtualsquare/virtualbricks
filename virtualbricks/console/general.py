@@ -16,9 +16,13 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The commands without a noun: help, status and quit."""
+"""The commands without a noun: help, status, source and quit."""
 
 from __future__ import annotations
+
+import os
+
+from twisted.internet import defer
 
 from virtualbricks.console.command import (
     NOUN_HELP,
@@ -137,3 +141,38 @@ def status(context):
 def quit_(context):
     refuse_running(context.factory)
     context.factory.quit()
+
+
+@command(
+    None,
+    "source",
+    Arg("FILE"),
+    help=N_("Run the commands of a file, one a line, up to the first error"),
+    example="source ~/labs/start.vb",
+)
+@defer.inlineCallbacks
+def source(context, file):
+    from virtualbricks.console.dispatch import run
+
+    path = os.path.expanduser(file)
+    try:
+        with open(path, encoding="utf-8") as fp:
+            text = fp.read()
+    except OSError as exc:
+        raise CommandError(
+            _("{file} can't be read: {error}").format(
+                file=file, error=exc.strerror
+            )
+        ) from None
+    lines = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        try:
+            answer = yield run(
+                context.factory, line, context.reactor, context.terminal
+            )
+        except CommandError as exc:
+            raise CommandError(
+                f"{file}:{number}: {exc}", lines + exc.lines
+            ) from None
+        lines += answer
+    return lines

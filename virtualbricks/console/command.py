@@ -141,6 +141,46 @@ class Pair(ArgKind):
         return key, value
 
 
+class KeyValues(Pair):
+    """
+    KEY=VALUE, whose keys the completion knows: keys(context, done) gives
+    them, kind(context, done, key) the kind of a key's values, None if none.
+    """
+
+    def __init__(
+        self,
+        keys: Callable[[Context, dict], Sequence[str]],
+        kind: Callable[[Context, dict, str], Any],
+    ):
+        self.keys = keys
+        self.kind = kind
+
+    def candidates(self, context: Context, done: dict) -> list[str]:
+        return [f"{key}=" for key in self.keys(context, done)]
+
+    def values(self, context: Context, done: dict, key: str) -> list[str]:
+        """The values the completion offers for key."""
+
+        kind = self.kind(context, done, key)
+        return [] if kind is None else values_of(kind, context.factory)
+
+
+def values_of(kind: Any, factory: Any) -> list[str]:
+    """What a value of a kind of the schema can be, where it's a short list."""
+
+    from virtualbricks.config.schema import Bool, Choice as SchemaChoice, Ref
+
+    if isinstance(kind, Bool):
+        return ["true", "false"]
+    if isinstance(kind, SchemaChoice):
+        return list(kind.choices)
+    if isinstance(kind, Ref) and kind.target == "event":
+        return [event.name for event in factory.iter_events()]
+    if isinstance(kind, Ref) and kind.target == "image":
+        return [image.name for image in factory.iter_disk_images()]
+    return []
+
+
 @attr.frozen
 class Arg:
     """An argument: its name in the help, its kind, how many."""

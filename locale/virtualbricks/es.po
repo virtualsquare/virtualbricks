@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 12:16+0200\n"
+"POT-Creation-Date: 2026-09-29 12:27+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -1672,6 +1672,15 @@ msgstr ""
 msgid "Quit Virtualbricks; refused while bricks run"
 msgstr "Virtualbricks"
 
+#: virtualbricks/console/general.py
+msgid "Run the commands of a file, one a line, up to the first error"
+msgstr ""
+
+#: virtualbricks/console/general.py
+#, python-brace-format
+msgid "{file} can't be read: {error}"
+msgstr ""
+
 #: virtualbricks/console/images.py
 #, fuzzy, python-brace-format
 msgid "No image named {name}"
@@ -1876,6 +1885,22 @@ msgstr ""
 
 #: virtualbricks/console/settings.py
 msgid "Put settings back to their defaults"
+msgstr ""
+
+#: virtualbricks/console/terminal.py
+#, python-brace-format
+msgid "Virtualbricks {version}. Type help, or press Tab to complete."
+msgstr ""
+
+#: virtualbricks/console/terminal.py
+#, fuzzy, python-brace-format
+msgid "Error: {message}"
+msgstr "_Mensajes"
+
+#: virtualbricks/console/terminal.py
+msgid ""
+"The Python shell: factory is the factory of the bricks. Ctrl+D goes back to "
+"the console."
 msgstr ""
 
 #: virtualbricks/errors.py

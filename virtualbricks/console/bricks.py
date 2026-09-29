@@ -64,8 +64,8 @@ from virtualbricks.console.command import (
     ArgKind,
     Choice,
     CommandError,
+    KeyValues,
     Named,
-    Pair,
     Text,
     command,
 )
@@ -200,6 +200,37 @@ class CardArg(ArgKind):
         if vm is None:
             return []
         return [f"eth{n}" for n in range(len(vm.plugs) + len(vm.socks))]
+
+
+def _config(done):
+    brick = done.get("name")
+    return None if brick is None else brick.config
+
+
+def _kind_of_key(config, key):
+    try:
+        return kind_of(config, key)
+    except KeyError:
+        return None
+
+
+# KEY=VALUE, with the keys of the brick named before
+BRICK_KEYS = KeyValues(
+    lambda context, done: (
+        field_names(_config(done)) if _config(done) is not None else []
+    ),
+    lambda context, done, key: (
+        _kind_of_key(_config(done), key) if _config(done) is not None else None
+    ),
+)
+
+
+class BrickKey(ArgKind):
+    """A key of the brick named before."""
+
+    def candidates(self, context, done):
+        config = _config(done)
+        return [] if config is None else field_names(config)
 
 
 # What the commands share
@@ -414,7 +445,7 @@ def keys(context, kind_name, key):
     "brick",
     "set",
     Arg("NAME", BRICK),
-    Arg("KEY=VALUE", Pair(), many=True),
+    Arg("KEY=VALUE", BRICK_KEYS, many=True),
     help=N_("Change keys of a brick, all or none"),
     example="brick set sw1 ports=16 hub_mode=true",
 )
@@ -436,7 +467,7 @@ def set_(context, name, key_value):
     "brick",
     "unset",
     Arg("NAME", BRICK),
-    Arg("KEY", many=True),
+    Arg("KEY", BrickKey(), many=True),
     help=N_("Put keys of a brick back to their defaults"),
     example="brick unset sw1 ports",
 )
@@ -818,7 +849,14 @@ def card_add(context, vm, kind, options):
     "card set",
     Arg("VM", VM),
     Arg("CARD", CardArg()),
-    Arg("KEY=VALUE", Pair(), many=True),
+    Arg(
+        "KEY=VALUE",
+        KeyValues(
+            lambda context, done: ["model", "mac", "target"],
+            lambda context, done, key: None,
+        ),
+        many=True,
+    ),
     help=N_(
         "Change a card's model, mac, or target: a switch, hostonly, or"
         " nothing"

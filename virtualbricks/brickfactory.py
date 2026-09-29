@@ -17,20 +17,16 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import shlex
 import sys
 import threading
-import termios
-import tty
 import re
 import copy
 import itertools
 
 from twisted.application import app
-from twisted.internet import defer, task, stdio, error
-from twisted.protocols import basic
+from twisted.internet import defer, task
 from twisted.python import failure
-from twisted.conch.insults import insults
-from twisted.conch import manhole
 from twisted.logger import (
     FilteringLogObserver,
     LogLevel,
@@ -40,7 +36,7 @@ from twisted.logger import (
     globalLogPublisher,
 )
 
-from virtualbricks import console, errors, locations
+from virtualbricks import errors, locations
 from virtualbricks.config.schema import field_values
 from virtualbricks.config.settings import (
     load_settings,
@@ -140,7 +136,6 @@ class BrickFactory:
     """This is the main class for the core engine.
 
     All the bricks are created and stored in the factory.
-    It also contains a thread to manage the command console.
     """
 
     @property
@@ -544,90 +539,6 @@ class BrickFactory:
             return None
 
 
-class Manhole(manhole.Manhole):
-
-    def connectionMade(self):
-        fd = sys.__stdin__.fileno()
-        self.oldSettings = termios.tcgetattr(fd)
-        tty.setraw(fd)
-        manhole.Manhole.connectionMade(self)
-
-    def connectionLost(self, reason):
-        termios.tcsetattr(
-            sys.__stdin__.fileno(), termios.TCSANOW, self.oldSettings
-        )
-        manhole.Manhole.connectionLost(self, reason)
-
-
-class Console(basic.LineOnlyReceiver):
-
-    inner_protocol = None
-    protocol = None
-    delimiter = b"\n"
-
-    def __init__(self, factory, namespace={}):
-        self.factory = factory
-        self.namespace = namespace
-
-    def _inject_python(self, protocol):
-
-        def do_python():
-            """Open a python interpreter. Use ^D (^Z on windows) to exit."""
-            protocol = insults.ServerProtocol(Manhole, self.namespace)
-            self._switchTo(protocol)
-
-        protocol.do_python = do_python
-
-    def _switchTo(self, new_proto):
-        self.inner_protocol = new_proto
-        new_proto.makeConnection(self.transport)
-
-    def connectionMade(self):
-        if self.protocol is None:
-            self.protocol = console.VBProtocol(self.factory)
-            self._inject_python(self.protocol)
-        self.protocol.makeConnection(self.transport)
-
-    def dataReceived(self, data):
-        if self.inner_protocol is not None:
-            self.inner_protocol.dataReceived(data)
-        else:
-            basic.LineOnlyReceiver.dataReceived(self, data)
-
-    def lineReceived(self, line):
-        self.protocol.lineReceived(line)
-
-    def connectionLost(self, reason):
-        # This method is called for a multitude of reasons, I'm trying to
-        # enumerate them here.
-        if reason.check(error.ConnectionDone):
-            if self.inner_protocol:
-                # 1. Manhole is terminated and the transport close its
-                # connection. Here I want to restart the virtualbricks
-                # protocol.
-                self.inner_protocol.connectionLost(reason)
-                self.inner_protocol = None
-                stdio.StandardIO(self)
-            else:
-                # 2. ^D, twisted.internet.fdesc.readFromFD reads an empty
-                # string and returns ConnectionDone.
-                self.factory.quit()
-        if reason.check(error.ConnectionLost):
-            # 3. The quit deferred is activated, the reactor disconnects all
-            # selectables with ConnectionLost. This method is called twice
-            # after a ^D with a ConnectionDone followed by a ConnectionLost.
-            if self.inner_protocol:
-                # 1. Manhole is terminated and the transport close its
-                # connection. Here I want to restart the virtualbricks
-                # protocol.
-                self.inner_protocol.connectionLost(reason)
-                self.inner_protocol = None
-        else:
-            # 4. An exception is raised inside the protocol, this in an error
-            # in the code, don't quit and reopen the terminal.
-            stdio.StandardIO(self)
-
-
 def AutosaveTimer(factory, interval=180):
     timer = task.LoopingCall(projects.autosave, factory)
     timer.start(interval, now=False)
@@ -753,7 +664,7 @@ class Application:
         quit = defer.Deferred()
         factory = self.factory_factory(quit)
         self._run(factory)
-        if self.config["verbosity"] >= 2 and not self.config["daemon"]:
+        if self.config["verbosity"] >= 2 and not self.config["noterm"]:
             import signal
             import pdb
 
@@ -767,10 +678,11 @@ class Application:
         )
         reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         AutosaveTimer(factory)
-        if not self.config["noterm"] and not self.config["daemon"]:
-            namespace = self.get_namespace()
-            namespace["factory"] = factory
-            stdio.StandardIO(Console(factory, namespace))
+        started = defer.succeed(None)
+        if self.config.get("run"):
+            started = self.run_script(factory, self.config["run"])
+        if not self.config["noterm"]:
+            started.addCallback(lambda _: self.start_console(factory))
         # delay as much as possible the installation of hooks because the
         # exception hook can hide errors in the code requiring to start the
         # application again with logging redirected
@@ -779,6 +691,33 @@ class Application:
 
     def _run(self, factory):
         pass
+
+    def start_console(self, factory):
+        """Read the console in the terminal that started Virtualbricks."""
+
+        from virtualbricks.console.terminal import start
+
+        start(factory, self.get_namespace())
+
+    def run_script(self, factory, path):
+        """Run the commands of path, as the console's source does."""
+
+        from virtualbricks.console.dispatch import run
+        from virtualbricks.console.terminal import error_lines
+
+        done = run(factory, f"source {shlex.quote(path)}")
+
+        def write(lines, stream):
+            for line in lines:
+                stream.write(line + "\n")
+            stream.flush()
+
+        done.addCallbacks(
+            write,
+            lambda failure: write(error_lines(failure), sys.stderr),
+            (sys.stdout,),
+        )
+        return done
 
     def open_last_project(self, factory):
         """Open the project open last, or a new new_project_N."""

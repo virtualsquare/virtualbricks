@@ -36,6 +36,7 @@ from twisted.logger import (
 from virtualbricks import brickfactory, errors
 from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks.config.workspace import projects
+from virtualbricks.console.projects import use_frontend
 from virtualbricks.gui.mainwindow import VBGUI
 from virtualbricks.gui.messages import MessageLog, MessageLogObserver
 from virtualbricks.gui.trash import DesktopTrash
@@ -166,6 +167,25 @@ def AppLoggerFactory(messages):
     return AppLogger
 
 
+class WindowFrontend:
+    """
+    How the console opens, makes and saves projects with the windows: through
+    the main window, which saves what its tabs hold and shows the project.
+    """
+
+    def __init__(self, gui):
+        self.gui = gui
+
+    def open(self, name, factory):
+        return self.gui.on_open(name)
+
+    def new(self, name, factory):
+        self.gui.on_new(name)
+
+    def save(self, factory):
+        self.gui.on_save()
+
+
 class Application(brickfactory.Application):
 
     factory_factory = VisualFactory
@@ -192,6 +212,7 @@ class Application(brickfactory.Application):
         # The workspace has no desktop of its own: removing a project moves
         # it to the trash only in the GUI.
         projects.trasher = DesktopTrash()
+        use_frontend(WindowFrontend(self.gui))
 
     def migrate(self):
         from virtualbricks.migrate import startup_migration

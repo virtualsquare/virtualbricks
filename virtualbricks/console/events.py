@@ -42,7 +42,7 @@ from virtualbricks.console.command import (
     Flag,
     Named,
     Number,
-    Pair,
+    KeyValues,
     command,
 )
 from virtualbricks.console.output import table
@@ -211,7 +211,14 @@ def show(context, name):
     "event",
     "set",
     Arg("NAME", EVENT),
-    Arg("KEY=VALUE", Pair(), many=True),
+    Arg(
+        "KEY=VALUE",
+        KeyValues(
+            lambda context, done: ["delay", "icon"],
+            lambda context, done, key: None,
+        ),
+        many=True,
+    ),
     help=N_("Change an event's delay or icon"),
     example="event set boot delay=10",
 )

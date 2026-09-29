@@ -48,11 +48,21 @@ class Options(usage.Options):
     Copyright (C) 2019 Virtualbricks team"""
 
     optFlags = [
-        ["noterm", None, "Do not show the terminal."],
-        ["daemon", None, ""],
+        ["noterm", None, "Don't read the console in the terminal."],
+        [
+            "no-gui",
+            None,
+            "Run without the windows: the console is the way in.",
+        ],
     ]
     optParameters = [
         ["logfile", "l", None, "Write log messages to file."],
+        [
+            "run",
+            None,
+            None,
+            "Run the commands of a file once the project is open.",
+        ],
         [
             "workspace",
             None,
@@ -96,6 +106,13 @@ class Options(usage.Options):
             raise usage.UsageError(f"--workspace: {path} is not a folder")
         self["workspace"] = path
 
+    def opt_run(self, arg):
+        # the help is the text of optParameters
+        path = os.path.abspath(os.path.expanduser(arg))
+        if not os.path.isfile(path):
+            raise usage.UsageError(f"--run: {path} is not a file")
+        self["run"] = path
+
     def opt_lock(self, arg):
         # the help is the text of optParameters
         if arg not in locks.POLICIES:
@@ -137,11 +154,18 @@ class Options(usage.Options):
     opt_b = opt_debug
 
 
-def run_app(Application, config):
+def parse_options(config):
+    """Read the command line into config, or exit with the error."""
+
     try:
         config.parseOptions()
     except usage.error as ue:
         raise SystemExit("%s: %s" % (sys.argv[0], ue))
+
+
+def run_app(Application, config):
+    """Run Application with config, whose options are read already."""
+
     task.react(Application(config).run, ())
 
 

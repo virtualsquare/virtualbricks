@@ -39,7 +39,7 @@ from virtualbricks.console.command import (
     Arg,
     ArgKind,
     CommandError,
-    Pair,
+    KeyValues,
     command,
 )
 from virtualbricks.i18n import N_, _
@@ -96,7 +96,16 @@ def show(context, key):
 @command(
     "setting",
     "set",
-    Arg("KEY=VALUE", Pair(), many=True),
+    Arg(
+        "KEY=VALUE",
+        KeyValues(
+            lambda context, done: _names(),
+            lambda context, done, key: (
+                setting_kind(key) if has_option(key) else None
+            ),
+        ),
+        many=True,
+    ),
     help=N_("Change settings, all or none"),
     example="setting set terminal=/usr/bin/gnome-terminal",
 )

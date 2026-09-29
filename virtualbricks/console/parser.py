@@ -139,3 +139,83 @@ def parse(context: Context, line: str) -> Parsed | None:
             )
         )
     return Parsed(command, values)
+
+
+def _verbs(words: Sequence[str]) -> list[str]:
+    """The next word of the verbs of a noun, after the words of it given."""
+
+    noun, done = words[0], list(words[1:])
+    return [
+        c.verb.split()[len(done)]
+        for c in of_noun(noun)
+        if c.verb.split()[: len(done)] == done
+        and len(c.verb.split()) > len(done)
+    ]
+
+
+def _read_quietly(context: Context, arg, words: Sequence[str]):
+    values = []
+    for word in words:
+        try:
+            values.append(arg.kind.read(context, word))
+        except CommandError:
+            values.append(None)
+    return values if arg.many else (values[0] if values else None)
+
+
+def _candidates(context: Context, words: list[str], partial: str) -> list[str]:
+    if not words:
+        return nouns() + [c.verb for c in of_noun(None)]
+    command, used = find(words)
+    if command is None:
+        return _verbs(words) if words[0] in nouns() else []
+    if partial.startswith("-"):
+        return [f"--{flag.name}" for flag in command.flags]
+    given = [w for w in words[used:] if not w.startswith("--")]
+    if not command.args:
+        return []
+    done: dict = {}
+    index = 0
+    for arg in command.args:
+        if arg.many:
+            done[keyword(arg)] = _read_quietly(context, arg, given[index:])
+            index = len(given)
+            break
+        if index < len(given):
+            done[keyword(arg)] = _read_quietly(
+                context, arg, given[index : index + 1]
+            )
+        index += 1
+    position = len(given)
+    arg = None
+    for number, each in enumerate(command.args):
+        if each.many or number == position:
+            arg = each
+            break
+    if arg is None:
+        return []
+    key, sep, _value = partial.partition("=")
+    if sep and hasattr(arg.kind, "values"):
+        return [
+            f"{key}={value}" for value in arg.kind.values(context, done, key)
+        ]
+    return arg.kind.candidates(context, done)
+
+
+def complete(context: Context, text: str) -> tuple[str, list[str]]:
+    """
+    The word being typed at the end of text, and the words it can become,
+    for the completion; no word in a quote that isn't closed.
+    """
+
+    try:
+        words = shlex.split(text)
+    except ValueError:
+        return "", []
+    partial = ""
+    if text and not text[-1].isspace() and words:
+        partial = words.pop()
+    found = _candidates(context, words, partial)
+    return partial, sorted(
+        {word for word in found if word.startswith(partial)}
+    )

@@ -158,3 +158,31 @@ class TestWorkspace(unittest.TestCase):
         )
         self.assertEqual(str(error), f"--workspace: {path} is not a folder")
         self.assertRaises(usage.UsageError, self.parse, "--workspace", "")
+
+
+class TestTheConsoleOptions(unittest.TestCase):
+
+    def setUp(self):
+        self.root = isolate(self)
+
+    def parse(self, *args):
+        options = app.Options()
+        options.parseOptions(list(args))
+        return options
+
+    def test_no_gui(self):
+        self.assertFalse(self.parse()["no-gui"])
+        self.assertTrue(self.parse("--no-gui")["no-gui"])
+
+    def test_run(self):
+        self.assertIsNone(self.parse()["run"])
+        path = os.path.join(self.root, "lab.vb")
+        open(path, "w").close()
+        self.assertEqual(self.parse("--run", "~/lab.vb")["run"], path)
+        error = self.assertRaises(
+            usage.UsageError, self.parse, "--run", "/nope.vb"
+        )
+        self.assertEqual(str(error), "--run: /nope.vb is not a file")
+
+    def test_no_daemon(self):
+        self.assertRaises(usage.UsageError, self.parse, "--daemon")

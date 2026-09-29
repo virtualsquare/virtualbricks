@@ -22,13 +22,28 @@ def make_application(config):
     return gui.Application(config)
 
 
-def run():
-    import gi
+def make_plain_application(config):
+    """The application without the windows: no GTK is loaded."""
 
-    gi.require_version("Gtk", "3.0")
-    gi.require_version("Gdk", "3.0")
-    from twisted.internet import gtk3reactor
+    from virtualbricks import brickfactory
+
+    return brickfactory.Application(config)
+
+
+def run():
     from virtualbricks import app
 
-    gtk3reactor.install()
-    app.run_app(app.LockedApplication(make_application), app.Options())
+    config = app.Options()
+    app.parse_options(config)
+    if config["no-gui"]:
+        factory = make_plain_application
+    else:
+        import gi
+
+        gi.require_version("Gtk", "3.0")
+        gi.require_version("Gdk", "3.0")
+        from twisted.internet import gtk3reactor
+
+        gtk3reactor.install()
+        factory = make_application
+    app.run_app(app.LockedApplication(factory), config)

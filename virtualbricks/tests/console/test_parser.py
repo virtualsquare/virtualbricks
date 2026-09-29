@@ -28,8 +28,8 @@ from virtualbricks.console.command import (
     Pair,
     command,
 )
-from virtualbricks.console.parser import parse, split
-from virtualbricks.tests.console import own_commands
+from virtualbricks.console.parser import complete, parse, split
+from virtualbricks.tests.console import ConsoleTestCase, own_commands
 
 
 def nothing(context, **values):
@@ -180,3 +180,101 @@ class TestParse(unittest.TestCase):
             self.error("sw1 start"),
             "No command sw1; type help for the commands",
         )
+
+
+class TestComplete(ConsoleTestCase):
+    """What Tab offers, with the commands of the console."""
+
+    def setUp(self):
+        super().setUp()
+        self.factory.runtime_dir = "/run/vb"
+        self.context = Context(self.factory)
+        self.factory.new_brick("switch", "sw1")
+        self.factory.new_brick("vm", "vm1")
+        self.factory.new_event("boot")
+
+    def complete(self, text):
+        return complete(self.context, text)
+
+    def test_the_words(self):
+        self.assertEqual(
+            self.complete(""),
+            (
+                "",
+                [
+                    "brick",
+                    "event",
+                    "help",
+                    "image",
+                    "project",
+                    "quit",
+                    "setting",
+                    "source",
+                    "status",
+                ],
+            ),
+        )
+        self.assertEqual(self.complete("bri"), ("bri", ["brick"]))
+        self.assertEqual(self.complete("brick st"), ("st", ["start", "stop"]))
+        # a verb of two words, a word at a time
+        self.assertEqual(self.complete("brick ca"), ("ca", ["card"]))
+        self.assertEqual(
+            self.complete("brick card "), ("", ["add", "remove", "set"])
+        )
+
+    def test_the_arguments(self):
+        self.assertEqual(self.complete("brick start "), ("", ["sw1", "vm1"]))
+        # every name of a many
+        self.assertEqual(self.complete("brick start sw1 v"), ("v", ["vm1"]))
+        self.assertEqual(
+            self.complete("brick new t"),
+            ("t", ["tap", "tunnelclient", "tunnelserver"]),
+        )
+        self.assertEqual(self.complete("brick card add "), ("", ["vm1"]))
+        self.assertEqual(
+            self.complete("brick card add vm1 "),
+            ("", ["hostonly", "plug", "socket"]),
+        )
+        self.assertEqual(self.complete("event show "), ("", ["boot"]))
+        self.assertEqual(self.complete("brick list "), ("", []))
+
+    def test_keys_and_values(self):
+        self.assertEqual(
+            self.complete("brick set sw1 "),
+            (
+                "",
+                [
+                    "fast_spanning_tree=",
+                    "hub_mode=",
+                    "icon=",
+                    "on_start=",
+                    "on_stop=",
+                    "ports=",
+                ],
+            ),
+        )
+        self.assertEqual(
+            self.complete("brick set vm1 cdrom="),
+            ("cdrom=", ["cdrom=device", "cdrom=image", "cdrom=none"]),
+        )
+        self.assertEqual(
+            self.complete("brick set sw1 hub_mode=t"),
+            ("hub_mode=t", ["hub_mode=true"]),
+        )
+        self.assertEqual(
+            self.complete("brick set sw1 on_start="),
+            ("on_start=", ["on_start=boot"]),
+        )
+        self.assertEqual(
+            self.complete("setting set tray"), ("tray", ["tray_icon="])
+        )
+        self.assertEqual(
+            self.complete("brick unset vm1 mem"), ("mem", ["memory"])
+        )
+
+    def test_options_and_quotes(self):
+        self.assertEqual(
+            self.complete("event action add boot start sw1 --"),
+            ("--", ["--at"]),
+        )
+        self.assertEqual(self.complete('brick set vm1 icon="a '), ("", []))

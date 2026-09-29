@@ -18,7 +18,9 @@
 
 """The brick factory and the start of the application."""
 
+import io
 import os
+import sys
 import stat
 
 from twisted.internet import defer, task
@@ -138,7 +140,7 @@ class TestFactory(BrickTestCase):
         timer.stop()
 
 
-CONFIG = {"verbosity": 0, "daemon": False, "noterm": True}
+CONFIG = {"verbosity": 0, "noterm": True}
 
 
 class FakeAppLogger:
@@ -314,3 +316,58 @@ class TestRun(AppTestCase):
             load_toml(locations.settings_file())["workspace"], default
         )
         self.assertFalse(os.path.exists(default))
+
+
+class TestTheConsole(AppTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.started = []
+        self.out = io.StringIO()
+        self.err = io.StringIO()
+        self.patch(sys, "stdout", self.out)
+        self.patch(sys, "stderr", self.err)
+
+    def application(self, **config):
+        app = Application({**CONFIG, **config})
+        app.install_locale = lambda: None
+        app.start_console = lambda factory: self.started.append(factory)
+        return app
+
+    def script(self, text):
+        path = os.path.join(self.root, "lab.vb")
+        with open(path, "w") as fp:
+            fp.write(text)
+        return path
+
+    def test_the_console_starts(self):
+        self.application(noterm=False).run(FakeReactor())
+        self.assertEqual(len(self.started), 1)
+        self.application(noterm=True).run(FakeReactor())
+        self.assertEqual(len(self.started), 1)
+
+    def test_a_script_first(self):
+        path = self.script("brick new switch\n# a comment\n\nbrick new tap\n")
+        self.application(noterm=False, run=path).run(FakeReactor())
+        self.assertEqual(self.out.getvalue(), "sw1\ntap1\n")
+        self.assertEqual(
+            [brick.name for brick in self.started[0].bricks], ["sw1", "tap1"]
+        )
+
+    def test_a_script_that_fails(self):
+        path = self.script("brick new switch\nbrick nope\nbrick new tap\n")
+        self.application(noterm=False, run=path).run(FakeReactor())
+        self.assertEqual(self.out.getvalue(), "")
+        self.assertEqual(
+            self.err.getvalue().splitlines()[:2],
+            [
+                "sw1",
+                f"Error: {path}:2: brick has no nope: its verbs are types,"
+                " list, new, show, keys, set, unset, start, stop, kill, restart,"
+                " pause, continue, suspend, resume, reset, monitor, connect,"
+                " disconnect, card add, card set, card remove, rename, duplicate,"
+                " delete",
+            ],
+        )
+        # the console starts all the same
+        self.assertEqual(len(self.started), 1)

@@ -23,6 +23,7 @@ import os
 from virtualbricks import locations
 from virtualbricks.config import workspace
 from virtualbricks.config.settings import set_current_project
+from virtualbricks.console import projects as console_projects
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 from virtualbricks.tests.migrate.fixtures import (
@@ -175,9 +176,37 @@ class TestStartupTrash(GuiTestCase):
         self.patch(gui, "MessageDialogObserver", Observer)
         self.patch(gui, "globalLogPublisher", Publisher())
         self.patch(gui, "VBGUI", VBGUI)
+        # the console opens projects through the main window too
+        self.patch(console_projects, "frontend", console_projects.frontend)
         app = gui.Application.__new__(gui.Application)
         app.messages = None
         self.assertIsNone(self.manager.trasher)
         app._run(self.factory)
         self.assertIsInstance(self.manager.trasher, DesktopTrash)
         self.assertIsInstance(app.gui, VBGUI)
+        self.assertIsInstance(console_projects.frontend, gui.WindowFrontend)
+        self.assertIs(console_projects.frontend.gui, app.gui)
+
+
+class TestWindowFrontend(GuiTestCase):
+    """The console opens, makes and saves projects through the window."""
+
+    def test_through_the_window(self):
+        calls = []
+
+        class Window:
+            def on_open(self, name):
+                calls.append(("open", name))
+                return "report"
+
+            def on_new(self, name):
+                calls.append(("new", name))
+
+            def on_save(self):
+                calls.append(("save",))
+
+        frontend = gui.WindowFrontend(Window())
+        self.assertEqual(frontend.open("lab", self.factory), "report")
+        frontend.new("lab2", self.factory)
+        frontend.save(self.factory)
+        self.assertEqual(calls, [("open", "lab"), ("new", "lab2"), ("save",)])

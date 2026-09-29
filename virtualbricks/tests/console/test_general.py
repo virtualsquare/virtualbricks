@@ -17,8 +17,11 @@
 
 """The commands without a noun."""
 
+import os
+
 from virtualbricks.bricks import event as event_module
 from virtualbricks.console.command import Arg, command
+from virtualbricks.console.dispatch import run
 from virtualbricks.console.legacy import VbShellCommand
 from virtualbricks.console.general import help_
 from virtualbricks.tests.console import ConsoleTestCase, own_commands
@@ -132,3 +135,40 @@ class TestStatusAndQuit(ConsoleTestCase):
         self.factory.get_brick_by_name("sw1").proc = None
         self.assertEqual(self.run_line("quit"), [])
         self.assertTrue(self.factory.quit_d.called)
+
+
+class TestSource(ConsoleTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.factory.runtime_dir = "/run/vb"
+
+    def script(self, text):
+        path = os.path.abspath(self.mktemp())
+        with open(path, "w") as fp:
+            fp.write(text)
+        return path
+
+    def test_source(self):
+        path = self.script(
+            "# the lab\nbrick new switch\n\nbrick new tap  # a tap\n"
+        )
+        self.assertEqual(self.run_line(f"source {path}"), ["sw1", "tap1"])
+
+    def test_up_to_the_first_error(self):
+        path = self.script("brick new switch\nbrick new nope\nbrick new tap\n")
+        failure = self.failureResultOf(
+            run(self.factory, f"source {path}", self.clock())
+        )
+        self.assertEqual(
+            failure.getErrorMessage(),
+            f"{path}:2: No kind nope: brick types lists them",
+        )
+        self.assertEqual(failure.value.lines, ["sw1"])
+        self.assertEqual([b.name for b in self.factory.bricks], ["sw1"])
+
+    def test_a_file_that_cant_be_read(self):
+        self.assertEqual(
+            self.fails("source /nope.vb"),
+            "/nope.vb can't be read: No such file or directory",
+        )
