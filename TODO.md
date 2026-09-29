@@ -1,5 +1,7 @@
 # TODO
 
+# IDEAS
+
 ## Config
 
 - [ ] Name the holders of the lock in the refusals of the migration
@@ -160,7 +162,7 @@
 
 - [ ] Update the copyright notice
 
-## Done
+# DONE
 
 - [x] Say who holds the lock when a start is refused: the processes of
   `/proc/locks` and their users (13 §6)
@@ -223,7 +225,10 @@
 - One item per line, starting with a verb; detail indented below it.
 - Sections by area, most urgent first.
 - Blocked items go under Waiting, saying what they wait for.
-- When an item is done, tick it and move it to the top of Done.
+- New ideas go under IDEAS, never straight into TODO, including what the
+  Later section of a design page keeps for later. The maintainer moves an
+  idea into TODO when it is to be done.
+- When an item is done, tick it and move it to the top of DONE.
 - An item that comes from a design page cites it: (07 §10) is §10 of
   `docs/redesign/07 - bricks-redesign.html`. When it is done, say so in
   that page's "Since then" too.
