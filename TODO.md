@@ -2,8 +2,8 @@
 
 ## Config
 
-- [ ] Say who holds the lock when a start is refused: `/proc/locks` has
-  the process of each `flock` (13 §10)
+- [ ] Name the holders of the lock in the refusals of the migration
+  command and window too (13 §10)
 - [ ] Add a `lock` setting, maybe, so a shared machine doesn't need
   `--lock user` at every start (13 §9 L5)
 - [ ] Move `locations` into `config` (maybe)
@@ -162,9 +162,12 @@
 
 ## Done
 
-- [x] Choose how many Virtualbricks run at once: `--lock system`, the
-  default, `user` with a lock in `$XDG_RUNTIME_DIR`, or `none`
-  (02 §14, 10 §13), plan in `docs/redesign/13 - lock-policies.html`
+- [x] Say who holds the lock when a start is refused: the processes of
+  `/proc/locks` and their users (13 §6)
+- [x] Choose how many Virtualbricks run at once, the single-instance
+  mode: `--lock system`, the default, `user` with a lock in
+  `$XDG_RUNTIME_DIR`, or `none` (02 §14, 10 §13), plan in
+  `docs/redesign/13 - single-instance-mode.html`
 - [x] Redesign New Brick: a popover of the kinds, a name chosen for each
   new brick, its settings after the click; the window without a title or
   a label is gone (07 §10), plan in

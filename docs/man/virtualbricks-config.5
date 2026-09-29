@@ -819,17 +819,18 @@ out.
 .TP
 \f[I]/tmp/virtualbricks.lock\f[R]
 The system lock.
-Started with \f[B]\-\-lock system\f[R], the default, Virtualbricks holds
-it alone: one runs on the machine, whoever runs it and whatever its
-workspace.
-With \f[B]\-\-lock user\f[R] it shares it with the others of that
-policy, so it doesn\(aqt start while one holds it alone.
+In the single\-instance mode \f[B]system\f[R], the default,
+Virtualbricks holds it alone: one runs on the machine, whoever runs it
+and whatever its workspace.
+In the mode \f[B]user\f[R] it shares it with the others in that mode, so
+it doesn\(aqt start while one holds it alone.
+The mode is set by \f[B]virtualbricks \-\-lock\f[R] \f[I]mode\f[R].
 .TP
 \f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.lock
-The lock of your user, held with \f[B]\-\-lock user\f[R]: one
-Virtualbricks for each user.
+The lock of your user, held in the single\-instance mode \f[B]user\f[R]:
+one Virtualbricks for each user.
 The migration of your files holds it too.
-With \f[B]\-\-lock none\f[R] Virtualbricks takes no lock, and the others
+In the mode \f[B]none\f[R] Virtualbricks takes no lock, and the others
 don\(aqt see it.
 The system releases the locks when Virtualbricks ends, even on a crash.
 .TP

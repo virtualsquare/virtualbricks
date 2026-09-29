@@ -1,5 +1,5 @@
-<title>Lock Policies</title>
-<meta name="description" content="How many Virtualbricks run at once: the --lock option with the system, user and none policies, their flock locks, and who starts beside whom.">
+<title>Single-Instance Mode</title>
+<meta name="description" content="The single-instance mode of Virtualbricks, set by --lock: one on the machine, one for each user, or no limit; its flock locks, who starts beside whom, and who holds the lock.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
@@ -247,16 +247,17 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 13 &middot; Design &middot; revision 1, implemented</div>
-    <h1>Virtualbricks Lock Policies</h1>
-    <p class="lede">A new option, <code>--lock</code>, says how many Virtualbricks can run at once: one on the machine, the default and today&rsquo;s rule; one for each user; or any number. A Virtualbricks of the user policy respects one of the system policy, and the locks go away with the process, even after a crash.</p>
+    <div class="eyebrow">Step 13 &middot; Design &middot; revision 3, implemented</div>
+    <h1>Virtualbricks Single-Instance Mode</h1>
+    <p class="lede">A new option, <code>--lock</code>, sets the single-instance mode, how many Virtualbricks can run at once: one on the machine, the default and today&rsquo;s rule; one for each user; or any number. A Virtualbricks in the user mode respects one in the system mode, and the locks go away with the process, even after a crash.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at c34e2a7</li>
-      <li>revision 1 &middot; 29 September 2026</li>
+      <li>revision 3 &middot; 29 September 2026</li>
       <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> your request of today: a lock per system, per user or none, chosen on the command line, one per system by default, with the user lock complying with a system lock already held. It is the per-user lock that the configuration redesign kept for later (<a href="02%20-%20config-redesign.html">02</a> D3 and &sect;14) and the settings redesign recalled (<a href="10%20-%20settings-redesign.html">10</a> &sect;13).</p>
-    <p class="revision"><strong>Implemented</strong> on 29 September 2026 in 72168aa, on the branch <b>mg/lock-policies</b>: <code>virtualbricks/locks.py</code>, the option, the migration&rsquo;s lock, 21 new tests with one gone (1862 pass), the README, the manual page and its web page, and the TODO. The choices that your request left open are in <a href="#choices">&sect;9</a>, as I made them.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 answers your question of today: a refused start names the processes that hold the lock and the user that started each, read from <code>/proc</code> (<a href="#messages">&sect;6</a>). The item left <a href="#later">&sect;10</a>. Revision 3 calls the three choices the <em>single-instance mode</em>, as you asked, here, in the README, the manual page and <code>--help</code>; the page was <code>13 - lock-policies.html</code>. The code keeps its names: <code>policy</code>, <code>POLICIES</code>.</p>
+    <p class="revision"><strong>Implemented</strong> on 29 September 2026 in 72168aa, on the branch <b>mg/lock-policies</b>: <code>virtualbricks/locks.py</code>, the option, the migration&rsquo;s lock, 21 new tests with one gone (1862 pass), the README, the manual page and its web page, and the TODO. The choices that your request left open are in <a href="#choices">&sect;9</a>, as I made them. The holders of revision 2 came in 0961de6, with 7 more tests (1869 pass), and the words of revision 3 with this page&rsquo;s commit.</p>
   </header>
 
   <div class="layout">
@@ -265,7 +266,7 @@
       <ol>
         <li><a href="#glance"><span>1</span>At a glance</a></li>
         <li><a href="#before"><span>2</span>The lock before</a></li>
-        <li><a href="#policies"><span>3</span>The three policies</a></li>
+        <li><a href="#modes"><span>3</span>The three modes</a></li>
         <li><a href="#matrix"><span>4</span>Who starts beside whom</a></li>
         <li><a href="#locks"><span>5</span>The locks</a></li>
         <li><a href="#messages"><span>6</span>Messages</a></li>
@@ -280,12 +281,13 @@
       <section id="glance">
         <h2><span class="num">&sect;1</span>At a glance</h2>
         <dl class="glance">
-          <div><dt>The option</dt><dd><code>virtualbricks --lock system|user|none</code>, for one run. Without it, <code>system</code>. Any other word stops the start: <code>--lock: 'workspace' is not one of system, user, none</code>.</dd></div>
+          <div><dt>The option</dt><dd><code>virtualbricks --lock system|user|none</code> sets the single-instance mode for one run. Without it, <code>system</code>. Any other word stops the start: <code>--lock: 'workspace' is not one of system, user, none</code>.</dd></div>
           <div><dt>system</dt><dd>One Virtualbricks on the machine, whoever runs it and whatever its workspace, as today. It holds the system lock, <code>/tmp/virtualbricks.lock</code>, alone.</dd></div>
-          <div><dt>user</dt><dd>One for each user, so the users of a shared machine stop blocking each other. It holds <code>$XDG_RUNTIME_DIR/virtualbricks/.lock</code> alone and shares the system lock with the others of this policy. It doesn&rsquo;t start while a Virtualbricks of the system policy runs, and while it runs, none of the system policy starts.</dd></div>
+          <div><dt>user</dt><dd>One for each user, so the users of a shared machine stop blocking each other. It holds <code>$XDG_RUNTIME_DIR/virtualbricks/.lock</code> alone and shares the system lock with the others in this mode. It doesn&rsquo;t start while a Virtualbricks in the system mode runs, and while it runs, none in the system mode starts.</dd></div>
           <div><dt>none</dt><dd>No lock: it starts beside any other, and the others don&rsquo;t see it. It is for a test instance beside your own, or for two workspaces at once.</dd></div>
+          <div><dt>Who</dt><dd>A refused start says which processes hold the lock and who started them: <code>Held by process 4242 of bob.</code></dd></div>
           <div><dt>Crashes</dt><dd>The locks are <code>flock(2)</code> locks: the system releases them when the process ends. No lock is left behind, and the message that told you to delete one goes.</dd></div>
-          <div><dt>Migration</dt><dd>Migrating your files in place holds the locks of the user policy: it waits for your own Virtualbricks, whatever its policy, and for one of the system policy.</dd></div>
+          <div><dt>Migration</dt><dd>Migrating your files in place holds the locks of the user mode: it waits for your own Virtualbricks, whatever its mode, and for one in the system mode.</dd></div>
         </dl>
       </section>
 
@@ -300,23 +302,23 @@
         </ul>
       </section>
 
-      <section id="policies">
-        <h2><span class="num">&sect;3</span>The three policies</h2>
+      <section id="modes">
+        <h2><span class="num">&sect;3</span>The three modes</h2>
         <div class="scroll">
         <table>
-          <thead><tr><th>Policy</th><th>At most</th><th>Holds</th><th>Doesn&rsquo;t start while</th></tr></thead>
+          <thead><tr><th>Mode</th><th>At most</th><th>Holds</th><th>Doesn&rsquo;t start while</th></tr></thead>
           <tbody>
             <tr>
               <td class="nowrap"><code>system</code>, the default</td>
               <td>one Virtualbricks on the machine</td>
               <td>the system lock, exclusive</td>
-              <td>any other Virtualbricks holds the system lock, in either mode</td>
+              <td>any other Virtualbricks holds the system lock, shared or exclusive</td>
             </tr>
             <tr>
               <td class="nowrap"><code>user</code></td>
               <td>one for each user</td>
               <td>the system lock, shared, then the user lock, exclusive</td>
-              <td>a Virtualbricks of the system policy runs, or one of yours holds your user lock</td>
+              <td>a Virtualbricks in the system mode runs, or one of yours holds your user lock</td>
             </tr>
             <tr>
               <td class="nowrap"><code>none</code></td>
@@ -327,13 +329,13 @@
           </tbody>
         </table>
         </div>
-        <p>This is a readers&ndash;writer lock on the machine. The system policy is the writer: it needs the machine to itself. The user policy is a reader of the machine, and a writer of its user.</p>
-        <p>Holding the shared system lock is how the user lock complies with a system lock already held, as you asked. It works in the other direction too: while any Virtualbricks of the user policy runs, the system policy can&rsquo;t have the machine to itself, so it refuses to start (<a class="ref" href="#choices">L1</a>).</p>
+        <p>This is a readers&ndash;writer lock on the machine. The system mode is the writer: it needs the machine to itself. The user mode is a reader of the machine, and a writer of its user.</p>
+        <p>Holding the shared system lock is how the user lock complies with a system lock already held, as you asked. It works in the other direction too: while any Virtualbricks in the user mode runs, the system mode can&rsquo;t have the machine to itself, so it refuses to start (<a class="ref" href="#choices">L1</a>).</p>
       </section>
 
       <section id="matrix">
         <h2><span class="num">&sect;4</span>Who starts beside whom</h2>
-        <p>Each row is a Virtualbricks already running; each column is the policy of the one you start.</p>
+        <p>Each row is a Virtualbricks already running; each column is the mode of the one you start.</p>
         <div class="scroll">
         <table class="matrix wide">
           <thead><tr><th>Already running</th><th><code>--lock system</code></th><th><code>--lock user</code></th><th><code>--lock none</code></th></tr></thead>
@@ -347,7 +349,7 @@
           </tbody>
         </table>
         </div>
-        <p class="note">A Virtualbricks of the none policy is invisible to the others (<a class="ref" href="#choices">L2</a>). Two of yours that run at once share the settings and the state, and nothing stops both from opening the same project.</p>
+        <p class="note">A Virtualbricks in the none mode is invisible to the others (<a class="ref" href="#choices">L2</a>). Two of yours that run at once share the settings and the state, and nothing stops both from opening the same project.</p>
       </section>
 
       <section id="locks">
@@ -371,24 +373,38 @@
 
       <section id="messages">
         <h2><span class="num">&sect;6</span>Messages</h2>
-        <p>When a lock is held, Virtualbricks exits with status 1 and says why. A failed exclusive lock on the system file doesn&rsquo;t tell who holds it; a second try with a shared lock does: if that succeeds, the holders are of the user policy.</p>
+        <p>When a lock is held, Virtualbricks exits with status 1 and says why. A failed exclusive lock on the system file doesn&rsquo;t tell who holds it; a second try with a shared lock does: if that succeeds, the holders are in the user mode.</p>
         <div class="scroll">
         <table class="messages wide">
           <thead><tr><th>Starting</th><th>Held by</th><th>Message</th></tr></thead>
           <tbody>
-            <tr><td class="nowrap"><code>system</code> or <code>user</code></td><td>one of the system policy</td><td>Another Virtualbricks is running on this machine with --lock system, the default, which lets only one run at a time.</td></tr>
-            <tr><td class="nowrap"><code>system</code></td><td>some of the user policy</td><td>Virtualbricks is running on this machine with --lock user, one for each user: start this one with --lock user as well.</td></tr>
-            <tr><td class="nowrap"><code>user</code></td><td>one of yours, of the user policy</td><td>Another Virtualbricks of yours is running, and --lock user lets each user run one.</td></tr>
+            <tr><td class="nowrap"><code>system</code> or <code>user</code></td><td>one in the system mode</td><td>Another Virtualbricks is running on this machine with --lock system, the default, which lets only one run at a time.</td></tr>
+            <tr><td class="nowrap"><code>system</code></td><td>some in the user mode</td><td>Virtualbricks is running on this machine with --lock user, one for each user: start this one with --lock user as well.</td></tr>
+            <tr><td class="nowrap"><code>user</code></td><td>one of yours, in the user mode</td><td>Another Virtualbricks of yours is running, and --lock user lets each user run one.</td></tr>
             <tr><td class="nowrap"><code>system</code> or <code>user</code></td><td>nobody, but the file can&rsquo;t be opened</td><td>Cannot take the lock /tmp/virtualbricks.lock: Permission denied. With --lock none, Virtualbricks runs without locks.</td></tr>
           </tbody>
         </table>
         </div>
-        <p>A migration in progress holds the locks of the user policy, so it is reported as a Virtualbricks of that policy.</p>
+        <p>A migration in progress holds the locks of the user mode, so it is reported as a Virtualbricks in that mode.</p>
+        <h3>Who holds the lock</h3>
+        <p>Each message then names the processes that hold the lock, and the user that started each:</p>
+        <figure class="code">
+          <figcaption>virtualbricks --lock user, while alice and bob run theirs</figcaption>
+<pre><code>Virtualbricks is running on this machine with --lock user, one for each
+user: start this one with --lock user as well. Held by processes 4242 of
+alice and 4343 of bob.</code></pre>
+        </figure>
+        <ul>
+          <li><strong>The processes</strong> come from <code>/proc/locks</code>, which lists every <code>flock</code> with the process that took it and the device and inode of its file, as <code>FLOCK ADVISORY READ 4242 00:28:19858</code>. Virtualbricks keeps the lines of its lock file, leaves out the processes that only wait for it, and names each process once.</li>
+          <li><strong>The user</strong> is the real user of the <code>Uid:</code> line of <code>/proc/<i>pid</i>/status</code>, the one who started the process, by name, or by number when it has none.</li>
+          <li><strong>Any user can read both</strong>, so Bob sees Alice&rsquo;s process. Where <code>/proc</code> is mounted with <code>hidepid</code>, another user&rsquo;s process shows without its user. A process in another PID namespace, as in a container, shows as 0 and is left out. When <code>/proc/locks</code> can&rsquo;t be read, the message ends after its first sentence.</li>
+          <li><strong>Looked up after the refusal</strong>, once this Virtualbricks holds nothing of the file it asks about, so it never names itself. A holder that exits in between is simply not named.</li>
+        </ul>
       </section>
 
       <section id="migration">
         <h2><span class="num">&sect;7</span>The migration</h2>
-        <p>The migration command and window hold the app&rsquo;s lock while they change your files in place (<a href="02%20-%20config-redesign.html#tools">02 &sect;11</a>). They now hold the locks of the user policy (<a class="ref" href="#choices">L3</a>). They wait for your own Virtualbricks, whatever its policy, since one of the system policy holds the system lock alone. They don&rsquo;t wait for another user&rsquo;s Virtualbricks of the user policy, which never touches your files. When a lock is held, the command still exits with status 3 and the window still asks you to close Virtualbricks.</p>
+        <p>The migration command and window hold the app&rsquo;s lock while they change your files in place (<a href="02%20-%20config-redesign.html#tools">02 &sect;11</a>). They now hold the locks of the user mode (<a class="ref" href="#choices">L3</a>). They wait for your own Virtualbricks, whatever its mode, since one in the system mode holds the system lock alone. They don&rsquo;t wait for another user&rsquo;s Virtualbricks in the user mode, which never touches your files. When a lock is held, the command still exits with status 3 and the window still asks you to close Virtualbricks.</p>
         <p>The migration at startup runs inside the app, under the locks it already holds. With <code>--lock none</code>, it runs without any.</p>
       </section>
 
@@ -420,39 +436,39 @@
     <span class="h">return</span> lock</code></pre>
         </figure>
         <ul>
-          <li><strong><code>virtualbricks/locks.py</code></strong>, new: <code>SYSTEM</code>, <code>USER</code>, <code>NONE</code>, <code>POLICIES</code>; <code>acquire(policy)</code>; <code>Lock</code> (<code>policy</code>, <code>locked</code>, <code>unlock()</code>, which can be called twice); <code>Held</code> (<code>policy</code>, <code>holder</code>, <code>path</code>; <code>str()</code> is the message of &sect;6).</li>
+          <li><strong><code>virtualbricks/locks.py</code></strong>, new: <code>SYSTEM</code>, <code>USER</code>, <code>NONE</code>, <code>POLICIES</code>; <code>acquire(policy)</code>; <code>Lock</code> (<code>policy</code>, <code>locked</code>, <code>unlock()</code>, which can be called twice); <code>Held</code> (<code>policy</code>, <code>holder</code>, <code>path</code>, <code>holders</code>; <code>str()</code> is the message of &sect;6); <code>holders(path)</code>, the pairs of process and user from <code>/proc</code>, whose root is <code>PROC</code> for the tests.</li>
           <li><strong><code>locations.py</code></strong>: <code>SYSTEM_LOCK_FILE</code> replaces <code>LOCK_FILE</code>; <code>user_lock_file()</code>.</li>
           <li><strong><code>app.py</code></strong>: the <code>--lock</code> option and its check; <code>_LockedApplication</code> takes the locks of <code>config["lock"]</code> and releases them after the reactor&rsquo;s shutdown; its <code>lock</code> argument goes.</li>
           <li><strong><code>migrate/engine.py</code></strong>: <code>lock_in_place()</code> returns <code>acquire(USER)</code>, or <code>None</code> when a lock is held. <code>migrate/gui.py</code> only changes a type.</li>
-          <li><strong>Tests</strong>: <code>tests/test_locks.py</code>, new, 15 tests: each policy against the others, another user played by another runtime directory, a refused start that holds nothing, the file modes under umask 077, a symbolic link not followed, descriptors not inherited, and a child process that holds the lock and is killed with <code>SIGKILL</code>, after which the lock is free. <code>test_app.py</code> has 5 on the option and the launcher, in place of one on the lock&rsquo;s path; <code>test_locations.py</code> one on <code>user_lock_file()</code>; the migration&rsquo;s lock tests follow the new rules.</li>
-          <li><strong>Test helpers</strong>: <code>isolate()</code> points the system lock into the test&rsquo;s folder and checks at the end that it is free; <code>hold_lock(test, policy, user)</code> holds the locks of any policy, as another user when <code>user</code> is given.</li>
-          <li><strong>Docs</strong>: the README (the option, the policies, and <code>--lock none</code> for a test instance), <code>virtualbricks-config(5)</code> and <a href="../config-files.html#files">config-files.html</a> (both files under Files), the TODO.</li>
+          <li><strong>Tests</strong>: <code>tests/test_locks.py</code>, new, 22 tests: each mode against the others, another user played by another runtime directory, a refused start that holds nothing, the file modes under umask 077, a symbolic link not followed, descriptors not inherited, and child processes: one that holds the lock and is killed with <code>SIGKILL</code>, after which the lock is free, two that share the system lock, one that holds your user lock, each named in the refusal. The lines of <code>/proc/locks</code> and the users of a fake <code>/proc</code> have tests of their own. <code>test_app.py</code> has 5 on the option and the launcher, in place of one on the lock&rsquo;s path; <code>test_locations.py</code> one on <code>user_lock_file()</code>; the migration&rsquo;s lock tests follow the new rules.</li>
+          <li><strong>Test helpers</strong>: <code>isolate()</code> points the system lock into the test&rsquo;s folder and checks at the end that it is free; <code>hold_lock(test, policy, user)</code> holds the locks of any mode, as another user when <code>user</code> is given.</li>
+          <li><strong>Docs</strong>: the README (the option, the modes, and <code>--lock none</code> for a test instance), <code>virtualbricks-config(5)</code> and <a href="../config-files.html#files">config-files.html</a> (both files under Files), the TODO.</li>
         </ul>
-        <p>Checks: nine deliberate breaks of <code>locks.py</code> and <code>app.py</code>, one at a time, each made the new tests fail. The real <code>virtualbricks</code> ran on GTK&rsquo;s Broadway display with a second one started beside it under each policy. Every refusal of &sect;4 and &sect;6 came out as written, and <code>--lock none</code> ran beside a Virtualbricks of the system policy.</p>
+        <p>Checks: nine deliberate breaks of <code>locks.py</code> and <code>app.py</code>, one at a time, each made the new tests fail. The real <code>virtualbricks</code> ran on GTK&rsquo;s Broadway display with a second one started beside it in each mode. Every refusal of &sect;4 and &sect;6 came out as written, and <code>--lock none</code> ran beside a Virtualbricks in the system mode.</p>
       </section>
 
       <section id="choices">
         <h2><span class="num">&sect;9</span>Choices</h2>
-        <p>Your request settled the three policies, the option, the default and the rule for the user lock. These are the choices it left, made while implementing. Each can change.</p>
+        <p>Your request settled the three modes, the option, the default and the rule for the user lock. These are the choices it left, made while implementing. Each can change.</p>
         <div class="scroll">
         <table class="decisions wide">
           <thead><tr><th></th><th>Question</th><th>Options</th><th>Made</th></tr></thead>
           <tbody>
             <tr>
               <td>L1</td>
-              <td>A Virtualbricks of the system policy, while some of the user policy run</td>
+              <td>A Virtualbricks in the system mode, while some in the user mode run</td>
               <td>
-                <p><b>A</b> Refused: the system policy promises one Virtualbricks on the machine.</p>
-                <p><b>B</b> Started: the system policy only keeps out the others of the system policy, and the user policy.</p>
+                <p><b>A</b> Refused: the system mode promises one Virtualbricks on the machine.</p>
+                <p><b>B</b> Started: the system mode only keeps out the others in the system mode, and the user mode.</p>
               </td>
               <td class="rec">A</td>
             </tr>
             <tr>
               <td>L2</td>
-              <td>The none policy and the others&rsquo; locks</td>
+              <td>The none mode and the others&rsquo; locks</td>
               <td>
                 <p><b>A</b> It takes nothing and checks nothing: &ldquo;no lock at all&rdquo;.</p>
-                <p><b>B</b> It shares the system lock, so it doesn&rsquo;t start beside one of the system policy, and keeps that one from starting.</p>
+                <p><b>B</b> It shares the system lock, so it doesn&rsquo;t start beside one in the system mode, and keeps that one from starting.</p>
               </td>
               <td class="rec">A</td>
             </tr>
@@ -460,7 +476,7 @@
               <td>L3</td>
               <td>The lock of the migration of your files</td>
               <td>
-                <p><b>A</b> The locks of the user policy: it waits for your Virtualbricks and for one of the system policy.</p>
+                <p><b>A</b> The locks of the user mode: it waits for your Virtualbricks and for one in the system mode.</p>
                 <p><b>B</b> The system lock alone, as before: it also waits for every other user&rsquo;s.</p>
               </td>
               <td class="rec">A</td>
@@ -476,7 +492,7 @@
             </tr>
             <tr>
               <td>L5</td>
-              <td>Where the policy comes from</td>
+              <td>Where the mode comes from</td>
               <td>
                 <p><b>A</b> The option only, for one run, as asked.</p>
                 <p><b>B</b> Also a <code>lock</code> setting in <code>settings.toml</code>, so a shared machine doesn&rsquo;t need the option at every start.</p>
@@ -488,7 +504,7 @@
               <td>The lock itself</td>
               <td>
                 <p><b>A</b> <code>flock(2)</code>, shared or exclusive, released by the kernel.</p>
-                <p><b>B</b> Twisted&rsquo;s <code>FilesystemLock</code>, as before: it has no shared mode, can&rsquo;t check another user&rsquo;s lock (<a href="#before">&sect;2</a>), and can be left behind.</p>
+                <p><b>B</b> Twisted&rsquo;s <code>FilesystemLock</code>, as before: it can&rsquo;t be shared, can&rsquo;t check another user&rsquo;s lock (<a href="#before">&sect;2</a>), and can be left behind.</p>
               </td>
               <td class="rec">A</td>
             </tr>
@@ -501,7 +517,7 @@
         <h2><span class="num">&sect;10</span>Later</h2>
         <ul>
           <li>A lock for each workspace, and runtime directories that tell apart two projects of the same name, so two Virtualbricks can run safely in two workspaces (TODO). Today <code>--lock none</code> lets them start, but two projects named alike share a runtime directory.</li>
-          <li>Say who holds the lock when a start is refused: <code>/proc/locks</code> lists the process id of each <code>flock</code>, and from it the user.</li>
+          <li>The holders in the refusals of the migration command and window too, which still only say that Virtualbricks is running.</li>
           <li>A <code>lock</code> setting, from <a class="ref" href="#choices">L5</a> B.</li>
         </ul>
       </section>

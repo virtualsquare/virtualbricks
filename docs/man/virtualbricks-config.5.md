@@ -794,17 +794,18 @@ an old project is converted when it's imported.
 :   The sockets and consoles of the running bricks, removed when you log out.
 
 */tmp/virtualbricks.lock*
-:   The system lock. Started with **--lock system**, the default,
+:   The system lock. In the single-instance mode **system**, the default,
     Virtualbricks holds it alone: one runs on the machine, whoever runs it
-    and whatever its workspace. With **--lock user** it shares it with the
-    others of that policy, so it doesn't start while one holds it alone.
+    and whatever its workspace. In the mode **user** it shares it with the
+    others in that mode, so it doesn't start while one holds it alone. The
+    mode is set by **virtualbricks --lock** *mode*.
 
 *\$XDG_RUNTIME_DIR*/virtualbricks/.lock
-:   The lock of your user, held with **--lock user**: one Virtualbricks for
-    each user. The migration of your files holds it too. With
-    **--lock none** Virtualbricks takes no lock, and the others don't see
-    it. The system releases the locks when Virtualbricks ends, even on a
-    crash.
+:   The lock of your user, held in the single-instance mode **user**: one
+    Virtualbricks for each user. The migration of your files holds it too.
+    In the mode **none** Virtualbricks takes no lock, and the others don't
+    see it. The system releases the locks when Virtualbricks ends, even on
+    a crash.
 
 */etc/sudo.conf*
 :   Its **Path askpass** line makes Virtualbricks run sudo with **-A**, as

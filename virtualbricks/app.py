@@ -63,8 +63,8 @@ class Options(usage.Options):
             "lock",
             None,
             locks.SYSTEM,
-            "How many Virtualbricks run at once: system, one on the machine; "
-            "user, one for each user; none, no limit.",
+            "The single-instance mode: system, one Virtualbricks on the "
+            "machine; user, one for each user; none, no limit.",
         ],
         [
             "logger",

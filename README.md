@@ -94,10 +94,11 @@ The options are:
 - `--noterm`: don't show the console in the terminal.
 - `--workspace FOLDER`: use the projects of another folder, made if it isn't
   there, for this run only; see [Configuration](#configuration).
-- `--lock POLICY`: how many Virtualbricks can run at once, see below.
+- `--lock MODE`: the single-instance mode, how many Virtualbricks can run at
+  once; see below.
 - `--version`: print the version and exit.
 
-`--lock` takes one of three policies:
+`--lock` sets the single-instance mode, one of:
 
 - `system`, the default: one Virtualbricks on the machine, whoever runs it
   and whatever its workspace. It holds the lock `/tmp/virtualbricks.lock`
@@ -105,14 +106,15 @@ The options are:
 - `user`: one for each user, so the users of a shared machine don't stop each
   other. It holds the lock `.lock` of the runtime directory,
   `$XDG_RUNTIME_DIR/virtualbricks/`, and shares `/tmp/virtualbricks.lock`
-  with the others of this policy: it doesn't start while one runs with
+  with the others in this mode: it doesn't start while one runs with
   `system`, nor one with `system` while it runs.
 - `none`: no lock. It starts beside any other, and the others don't see it;
   two of yours share the settings, and nothing stops both from opening the
   same project.
 
 The system releases the locks when Virtualbricks ends, even when it crashes,
-so none is ever left behind.
+so none is ever left behind. When a lock refuses a start, the message names
+the processes that hold it and the users that started them.
 
 ## Configuration
 
