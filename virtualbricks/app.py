@@ -15,6 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import importlib
 import os
 import re
 import shlex
@@ -72,9 +73,9 @@ class Options(usage.Options):
             None,
             "Listen on a control socket: .control in the runtime folder, or "
             "the one of the description after it, as "
-            "unix:PATH:protocol=amp or tcp:PORT. Give it again for more "
-            "sockets. With --command, the socket to talk to, as "
-            "tcp:HOST:PORT.",
+            "unix:PATH:protocol=amp, tcp:PORT or ssl:PORT:privateKey=FILE. "
+            "Give it again for more sockets. With --command, the socket to "
+            "talk to, as tcp:HOST:PORT.",
         ],
     ]
     optParameters = [
@@ -245,12 +246,14 @@ class Options(usage.Options):
         return socket._replace(path=path)
 
     def _network_socket(self, socket, client):
-        token_file = socket.token_file
-        if token_file is not None:
-            token_file = os.path.abspath(os.path.expanduser(token_file))
-            socket = socket._replace(token_file=token_file)
+        socket = socket._replace(
+            **{
+                wire.FILES[key]: os.path.abspath(os.path.expanduser(path))
+                for key, path in socket.files().items()
+            }
+        )
         if client:
-            # --command reads the token, and says what is wrong with it
+            # --command reads its files, and says what is wrong with them
             return socket
         address = (socket.host, socket.port)
         if any(
@@ -260,9 +263,24 @@ class Options(usage.Options):
             raise usage.UsageError(
                 f"--socket: {socket.where()} is given twice"
             )
+        if socket.kind == "ssl":
+            try:
+                self._tls().server_options(socket)
+            except wire.Unusable as exc:
+                raise usage.UsageError(f"--socket: {exc}") from None
         if socket.uses_token():
-            self._check_token(token_file)
+            self._check_token(socket.token_file)
         return socket
+
+    def _tls(self):
+        """The module of the ssl sockets, which needs pyOpenSSL."""
+
+        try:
+            return importlib.import_module("virtualbricks.console.tls")
+        except ImportError:
+            raise usage.UsageError(
+                "--socket: ssl needs pyOpenSSL: the package python3-openssl"
+            ) from None
 
     def _check_token(self, path):
         """

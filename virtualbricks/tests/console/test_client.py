@@ -29,7 +29,13 @@ from twisted.trial import unittest
 
 from virtualbricks import locations, locks
 from virtualbricks.console import client, wire
-from virtualbricks.tests import hold_lock, isolate, make_socket, short_folder
+from virtualbricks.tests import (
+    DATA,
+    hold_lock,
+    isolate,
+    make_socket,
+    short_folder,
+)
 
 GREETING = wire.greeting("2.1.0", 4200, "lab1")
 
@@ -484,6 +490,56 @@ class TestTcp(ClientTestCase):
         self.patch(client.Connection, "local", lambda self: False)
         self.assertOutput(self.main("status", target=server.target), "")
         self.assertEqual(server.requests[1], wire.request("status"))
+
+
+class TestSslFiles(ClientTestCase):
+    """The files of --command over ssl, read before it connects."""
+
+    def unanswered(self, **fields):
+        target = wire.parse_socket("ssl:127.0.0.1:1", client=True)
+        status = self.main("status", target=target._replace(**fields))
+        self.assertEqual(status, client.UNANSWERED)
+        return self.stderr.getvalue()
+
+    def test_the_folder_it_trusts(self):
+        missing = os.path.join(short_folder(self), "nope")
+        self.assertEqual(
+            self.unanswered(ca_dir=missing),
+            f"{missing} doesn't exist: no command sent\n",
+        )
+
+    def test_no_certificate_there(self):
+        folder = short_folder(self)
+        self.assertEqual(
+            self.unanswered(ca_dir=folder),
+            f"{folder} has no .pem certificate: no command sent\n",
+        )
+
+    def test_not_a_certificate(self):
+        folder = short_folder(self)
+        path = os.path.join(folder, "lab.pem")
+        with open(path, "w") as file:
+            file.write("notes\n")
+        self.assertEqual(
+            self.unanswered(ca_dir=folder),
+            f"{path} isn't a certificate in PEM: no command sent\n",
+        )
+
+    def test_its_own_certificate(self):
+        key = os.path.join(DATA, "tls", "alice.key")
+        cert = os.path.join(DATA, "tls", "bob.pem")
+        self.assertEqual(
+            self.unanswered(private_key=key, cert=cert),
+            f"The key {key} isn't that of the certificate {cert}, or isn't"
+            " in PEM: no command sent\n",
+        )
+
+    def test_a_key_that_isnt_there(self):
+        missing = os.path.join(short_folder(self), "nope.key")
+        self.assertEqual(
+            self.unanswered(private_key=missing),
+            f"{missing}: No such file or directory\n",
+        )
 
 
 class TestTheProcess(unittest.TestCase):

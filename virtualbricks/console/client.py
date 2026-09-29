@@ -20,7 +20,8 @@
 ``virtualbricks --command``: a command of the console, sent to the
 Virtualbricks that runs through its control socket, and its answer. Over
 tcp, it proves first that it knows the token, and checks that the other end
-knows it too.
+knows it too. Over ssl, it checks the certificate of Virtualbricks, shows
+its own if it has one, and proves the token when asked.
 
 The words after ``--command`` are the command, quoted again for the
 console; without words, the lines of the standard input are, each sent
@@ -36,6 +37,7 @@ import os
 import pwd
 import shlex
 import socket
+import ssl
 import sys
 
 from virtualbricks import locations, locks
@@ -162,6 +164,9 @@ class Connection:
             line = self.reader.readline()
         except TimeoutError:
             raise Unanswered(_timed_out(self.where())) from None
+        except ssl.SSLError as exc:
+            # over TLS 1.3, a refused certificate is known at the first read
+            raise Unanswered(_refused_by(self.target, exc)) from None
         except ConnectionResetError:
             line = b""
         if not line.endswith(b"\n"):
@@ -277,8 +282,90 @@ def _loopback(host: str) -> bool:
         return host == "localhost"
 
 
+def _pem_files(folder: str) -> list[str]:
+    """The .pem files of folder, as Twisted reads its caCertsDir."""
+
+    try:
+        names = sorted(os.listdir(folder))
+    except FileNotFoundError:
+        raise Unanswered(
+            _("{path} doesn't exist: no command sent").format(path=folder)
+        ) from None
+    except OSError as exc:
+        raise Unanswered(f"{folder}: {exc.strerror}") from None
+    paths = [os.path.join(folder, name) for name in names]
+    paths = [
+        path
+        for path in paths
+        if path.lower().endswith(".pem") and os.path.isfile(path)
+    ]
+    if not paths:
+        raise Unanswered(
+            _("{path} has no .pem certificate: no command sent").format(
+                path=folder
+            )
+        )
+    return paths
+
+
+def _tls(target: wire.Socket) -> ssl.SSLContext:
+    """
+    The TLS of --command: the certificates it trusts for Virtualbricks,
+    those of ca_dir or of the system, and its own certificate, if any.
+    """
+
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    if target.ca_dir is None:
+        context.load_default_certs()
+    else:
+        for path in _pem_files(target.ca_dir):
+            try:
+                context.load_verify_locations(cafile=path)
+            except ssl.SSLError:
+                raise Unanswered(
+                    _(
+                        "{path} isn't a certificate in PEM: no command sent"
+                    ).format(path=path)
+                ) from None
+    if target.private_key or target.cert:
+        cert = target.cert or target.private_key
+        key = target.private_key or target.cert
+        try:
+            context.load_cert_chain(cert, key)
+        except ssl.SSLError:
+            raise Unanswered(
+                _(
+                    "The key {key} isn't that of the certificate {cert}, or"
+                    " isn't in PEM: no command sent"
+                ).format(key=key, cert=cert)
+            ) from None
+        except OSError as exc:
+            raise Unanswered(
+                f"{exc.filename or cert}: {exc.strerror}"
+            ) from None
+    return context
+
+
+def _refused_by(target: wire.Socket | None, exc: ssl.SSLError) -> str:
+    """Why the TLS of target refused this end, from the error."""
+
+    host = target.host if target is not None else _("the socket")
+    reason = exc.reason or str(exc)
+    mine = target is not None and bool(target.private_key or target.cert)
+    if "CERTIFICATE_REQUIRED" in reason or (
+        "HANDSHAKE_FAILURE" in reason and not mine
+    ):
+        return _(
+            "{host} asks for your certificate: privateKey= and certKey="
+        ).format(host=host)
+    if "ALERT" in reason and mine:
+        return _("{host} refused your certificate").format(host=host)
+    return f"{host}: {reason}"
+
+
 def _connect_network(target: wire.Socket) -> Connection:
     where = target.where()
+    context = _tls(target) if target.kind == "ssl" else None
     try:
         sock = socket.create_connection(
             (target.host, target.port), timeout=CONNECT_TIMEOUT
@@ -301,6 +388,8 @@ def _connect_network(target: wire.Socket) -> Connection:
         raise Unanswered(_timed_out(where)) from None
     except OSError as exc:
         raise Unanswered(f"{where}: {exc.strerror}") from None
+    if context is not None:
+        sock = _handshake(context, sock, target)
     try:
         connection = Connection(sock, target)
     except BaseException:
@@ -309,6 +398,30 @@ def _connect_network(target: wire.Socket) -> Connection:
     # the command takes as long as it takes
     sock.settimeout(None)
     return connection
+
+
+def _handshake(context, sock, target):
+    """The TLS of sock, once the certificate of target is checked."""
+
+    try:
+        return context.wrap_socket(sock, server_hostname=target.host)
+    except ssl.SSLCertVerificationError as exc:
+        sock.close()
+        raise Unanswered(
+            _(
+                "The certificate of {host} isn't one you trust: {reason}."
+                " Name the folder of its certificate with caCertsDir="
+            ).format(host=target.host, reason=exc.verify_message)
+        ) from None
+    except ssl.SSLError as exc:
+        sock.close()
+        raise Unanswered(_refused_by(target, exc)) from None
+    except TimeoutError:
+        sock.close()
+        raise Unanswered(_timed_out(target.where())) from None
+    except OSError as exc:
+        sock.close()
+        raise Unanswered(f"{target.where()}: {exc.strerror}") from None
 
 
 def _commands(words, stdin):

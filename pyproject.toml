@@ -13,7 +13,8 @@ license-files = ["COPYING", "LICENCE"]
 requires-python = ">=3.10"
 dependencies = [
     "pygraphviz>=1.7",
-    "Twisted>=22.1",
+    # tls: pyOpenSSL and service-identity, for the ssl sockets
+    "Twisted[tls]>=22.1",
     "attrs>=20.1",
     "constantly>=15.1",
     "markdown-it-py>=1.1",

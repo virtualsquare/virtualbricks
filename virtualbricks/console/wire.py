@@ -36,7 +36,8 @@ Then each request gets an answer, in order::
 ``cwd``, the folder that the paths of the command are read from, is
 optional: without it, they are read from the folder of Virtualbricks.
 
-A tcp socket answers only the clients that know its token. Its first line
+A tcp socket answers only the clients that know its token, and so does an
+ssl socket that doesn't ask them for certificates. Its first line
 asks for a proof, with a nonce; the greeting comes once the proof is right,
 with the proof of Virtualbricks, and the connection closes if it isn't::
 
@@ -76,16 +77,44 @@ TEXT = "text"
 AMP = "amp"
 PROTOCOLS = (TEXT, AMP)
 # The types of socket.
-TYPES = ("unix", "tcp")
+TYPES = ("unix", "tcp", "ssl")
 # The keywords of a description of each type, after its path or its port:
-# of a socket to listen on, and of one that --command talks to.
+# of a socket to listen on, and of one that --command talks to. Those of
+# ssl are Twisted's, but caCertsDir, which only its clients have.
 KEYWORDS = {
     "unix": ("address", "protocol"),
     "tcp": ("port", "interface", "protocol", "tokenFile"),
+    "ssl": (
+        "port",
+        "interface",
+        "protocol",
+        "tokenFile",
+        "privateKey",
+        "certKey",
+        "extraCertChain",
+        "caCertsDir",
+    ),
 }
 CLIENT_KEYWORDS = {
     "unix": ("address", "protocol"),
     "tcp": ("host", "port", "protocol", "tokenFile"),
+    "ssl": (
+        "host",
+        "port",
+        "protocol",
+        "tokenFile",
+        "caCertsDir",
+        "privateKey",
+        "certKey",
+    ),
+}
+# The keywords that name a file, and the fields of Socket they fill.
+FILES = {
+    "tokenFile": "token_file",
+    "privateKey": "private_key",
+    "certKey": "cert",
+    "extraCertChain": "chain",
+    "caCertsDir": "ca_dir",
 }
 # What a type looks like, as unix, tcp or ssl.
 TYPE = re.compile(r"[a-z][a-z0-9]*", re.IGNORECASE)
@@ -118,10 +147,14 @@ class BadRequest(Exception):
 class Socket(NamedTuple):
     """
     A socket to listen on or to talk to: its path, or its host and its port,
-    its protocol and, for tcp, the file of its token.
+    its protocol and, for tcp and ssl, the file of its token; for ssl, the
+    files of its certificate and of those it trusts.
 
     The host of a socket to listen on is the address of its interface; with
-    --command, it is the machine to talk to.
+    --command, it is the machine to talk to. The certificate of a socket to
+    listen on is that of Virtualbricks, and its clients show one that
+    ca_dir trusts; with --command, the certificate is that of the client,
+    which trusts the certificate of Virtualbricks by ca_dir.
     """
 
     path: str | None
@@ -131,11 +164,27 @@ class Socket(NamedTuple):
     port: int | None = None
     # None for the file of locations.token_file()
     token_file: str | None = None
+    private_key: str | None = None
+    # the file of private_key without it, which holds both
+    cert: str | None = None
+    chain: str | None = None
+    ca_dir: str | None = None
 
     def uses_token(self) -> bool:
         """Whether a client proves that it knows the token."""
 
+        if self.kind == "ssl":
+            return self.ca_dir is None
         return self.kind == "tcp"
+
+    def files(self) -> dict[str, str]:
+        """The files of its keywords, by keyword, as tokenFile."""
+
+        return {
+            key: getattr(self, field)
+            for key, field in FILES.items()
+            if getattr(self, field) is not None
+        }
 
     def where(self) -> str:
         """Where it is, for the messages: its path, or its host and port."""
@@ -252,10 +301,16 @@ def parse_socket(text: str, client: bool = False) -> Socket:
         host, port = _host_and_port(text, kind, args[1:], keywords)
     else:
         host, port = _interface_and_port(text, kind, args[1:], keywords)
-    token_file = keywords.get("tokenFile")
-    if token_file == "":
-        raise ValueError(f"{text}: tokenFile needs a file")
-    return Socket(None, protocol, kind, host, port, token_file)
+    files = {}
+    for key, field in FILES.items():
+        if keywords.get(key) == "":
+            raise ValueError(f"{text}: {key} needs a file")
+        files[field] = keywords.get(key)
+    if kind == "ssl" and not client and files["private_key"] is None:
+        raise ValueError(
+            f"{text} needs privateKey=FILE, the key of its certificate"
+        )
+    return Socket(None, protocol, kind, host, port, **files)
 
 
 def _path(text, args, keywords):

@@ -28,7 +28,10 @@ holds the lock beside it: the first Virtualbricks that takes the lock
 listens, the others go without. A tcp socket listens on a port of this
 machine, and its clients prove first that they know the token of
 :func:`virtualbricks.locations.token_file`, or of its own file; the others
-are shut out. Each connection runs its requests one after the other;
+are shut out. An ssl socket listens on any address; its clients prove the
+token too, or show a certificate that it trusts, by
+:mod:`virtualbricks.console.tls`. Each connection runs its requests one
+after the other;
 connections don't wait for each other, nor for the terminal or the events.
 At the end, each connection is closed once its last answer is written, so
 that ``quit`` answers too.
@@ -39,8 +42,10 @@ from __future__ import annotations
 import os
 
 from twisted.internet import defer, error, protocol
+from twisted.internet.interfaces import IHandshakeListener
 from twisted.logger import Logger
 from twisted.protocols import amp, basic
+from zope.interface import implementer
 
 from virtualbricks import __version__, locations, locks
 from virtualbricks.config.workspace import projects
@@ -53,6 +58,10 @@ listening = "Listening on {path}, protocol {protocol}"
 listening_token = (
     "Listening on {where}, protocol {protocol}, with the token of {path}"
 )
+listening_certificates = (
+    "Listening on {where}, protocol {protocol}, with the certificates of"
+    " {path}"
+)
 made_token = "Made the token {path}"
 no_socket = "{reason}: no control socket"
 answered_by = "{holder} answers on {path}; this one doesn't"
@@ -64,6 +73,8 @@ proved = "{who} connected to {socket} with the token"
 wrong_token = "{who} on {socket}: wrong token"
 not_a_proof = "{who} on {socket}: not a proof"
 too_slow = "{who} on {socket}: no proof in {seconds} seconds"
+connected_as = "{who} connected to {socket} as {name}"
+handshake_failed = "{who} on {socket}: the TLS handshake failed: {reason}"
 amp_command_received = "Command from the AMP socket: {line}"
 amp_command_failed = "The command from the AMP socket failed: {error}"
 answer_too_long = (
@@ -127,7 +138,82 @@ def _peer(transport):
     return f"{address.host} port {address.port}"
 
 
-class ControlProtocol(basic.LineOnlyReceiver):
+@implementer(IHandshakeListener)
+class Visitor:
+    """
+    What a connection of either protocol knows of its client, on a network
+    socket: who it is, for the log, the time it has to prove the token, and
+    the certificate that it showed over ssl.
+    """
+
+    # who connects, for the log; None on a unix socket
+    who = None
+    # what closes the connection when the proof of the token is late
+    timer = None
+    handshaken = False
+
+    def arrive(self):
+        """The connection is made: who it is, and the time to prove."""
+
+        if self.factory.network():
+            self.who = _peer(self.transport)
+        if self.factory.token is not None:
+            self.timer = self.reactor.callLater(
+                wire.PROOF_TIMEOUT, self._too_slow
+            )
+
+    def leave(self, reason):
+        """The connection is lost; over ssl, maybe before its handshake."""
+
+        self._stop_timer()
+        socket = self.factory.socket
+        if socket is not None and socket.kind == "ssl" and not self.handshaken:
+            from virtualbricks.console import tls
+
+            logger.warn(
+                handshake_failed,
+                who=self.who,
+                socket=self.factory.label(),
+                reason=tls.describe(reason),
+            )
+
+    def handshakeCompleted(self):
+        self.handshaken = True
+        if self.factory.token is not None:
+            # the proof of the token says who it is
+            return
+        from virtualbricks.console import tls
+
+        name = tls.common_name(self.transport.getPeerCertificate())
+        logger.info(
+            connected_as, who=self.who, socket=self.factory.label(), name=name
+        )
+        self.who = f"{name} at {self.transport.getPeer().host}"
+
+    def _stop_timer(self):
+        if self.timer is not None and self.timer.active():
+            self.timer.cancel()
+        self.timer = None
+
+    def _too_slow(self):
+        self.timer = None
+        logger.warn(
+            too_slow,
+            who=self.who,
+            socket=self.factory.label(),
+            seconds=wire.PROOF_TIMEOUT,
+        )
+        self._shut_out(
+            _("No proof in {seconds} seconds").format(
+                seconds=wire.PROOF_TIMEOUT
+            )
+        )
+
+    def _shut_out(self, error):
+        raise NotImplementedError()
+
+
+class ControlProtocol(Visitor, basic.LineOnlyReceiver):
     """A connection of the text protocol: its requests and their answers."""
 
     delimiter = b"\n"
@@ -138,24 +224,19 @@ class ControlProtocol(basic.LineOnlyReceiver):
         self.brickfactory = brickfactory
         self.reactor = reactor
         self.requests = InOrder()
-        # who connects to a network socket, for the log; None on unix
-        self.who = None
         # the nonce of the proof that a client of a socket with a token
-        # owes, until it gives it, and what closes it without one
+        # owes, until it gives it; once shut out, nothing it sends counts
         self.nonce = None
-        self.timer = None
         self.shut = False
 
     def connectionMade(self):
         self.factory.connections.add(self)
-        if self.factory.network():
-            self.who = _peer(self.transport)
+        self.arrive()
         if self.factory.token is None:
             self.greet()
             return
         self.nonce = wire.new_nonce()
         self.send(wire.challenge(self.nonce))
-        self.timer = self.reactor.callLater(wire.PROOF_TIMEOUT, self._too_slow)
 
     def greet(self, proof=None):
         current = projects.current
@@ -166,7 +247,7 @@ class ControlProtocol(basic.LineOnlyReceiver):
         # the command that runs goes on; its answer is dropped. Twisted
         # doesn't reset connected.
         self.connected = False
-        self._stop_timer()
+        self.leave(reason)
         self.requests.stop()
         self.factory.lost(self)
 
@@ -204,30 +285,11 @@ class ControlProtocol(basic.LineOnlyReceiver):
         logger.info(proved, who=self.who, socket=socket)
         self.greet(wire.proof(token, "server", mine, nonce))
 
-    def _too_slow(self):
-        self.timer = None
-        logger.warn(
-            too_slow,
-            who=self.who,
-            socket=self.factory.label(),
-            seconds=wire.PROOF_TIMEOUT,
-        )
-        self._shut_out(
-            _("No proof in {seconds} seconds").format(
-                seconds=wire.PROOF_TIMEOUT
-            )
-        )
-
     def _shut_out(self, error):
         self._stop_timer()
         self.shut = True
         self.send(wire.refusal(error))
         self.transport.loseConnection()
-
-    def _stop_timer(self):
-        if self.timer is not None and self.timer.active():
-            self.timer.cancel()
-        self.timer = None
 
     def handle(self, line):
         try:
@@ -257,7 +319,7 @@ class ControlProtocol(basic.LineOnlyReceiver):
         self.send(wire.refusal(message, getattr(exc, "lines", [])))
 
 
-class AMPControl(amp.AMP):
+class AMPControl(Visitor, amp.AMP):
     """
     A connection of the AMP protocol: the commands of ampwire. On a socket
     with a token, Hello and Run wait for the proof, by Challenge and
@@ -273,13 +335,10 @@ class AMPControl(amp.AMP):
         self.brickfactory = brickfactory
         self.reactor = reactor
         self.requests = InOrder()
-        # who connects to a network socket, for the log; None on unix
-        self.who = None
-        # whether the program owes the proof of the token, the nonce of
-        # its Challenge, and what closes it without a proof
+        # whether the program owes the proof of the token, and the nonce of
+        # its Challenge
         self.owes_proof = False
         self.nonce = None
-        self.timer = None
 
     def makeConnection(self, transport):
         # AMP logs each connection with the addresses of its objects: listen()
@@ -288,36 +347,16 @@ class AMPControl(amp.AMP):
 
     def connectionMade(self):
         self.factory.connections.add(self)
-        if self.factory.network():
-            self.who = _peer(self.transport)
-        if self.factory.token is not None:
-            self.owes_proof = True
-            self.timer = self.reactor.callLater(
-                wire.PROOF_TIMEOUT, self._too_slow
-            )
+        self.arrive()
+        self.owes_proof = self.factory.token is not None
 
     def connectionLost(self, reason):
         # the command that runs goes on; its answer is dropped
         amp.BinaryBoxProtocol.connectionLost(self, reason)
         self.transport = None
-        self._stop_timer()
+        self.leave(reason)
         self.requests.stop()
         self.factory.lost(self)
-
-    def _stop_timer(self):
-        if self.timer is not None and self.timer.active():
-            self.timer.cancel()
-        self.timer = None
-
-    def _too_slow(self):
-        self.timer = None
-        logger.warn(
-            too_slow,
-            who=self.who,
-            socket=self.factory.label(),
-            seconds=wire.PROOF_TIMEOUT,
-        )
-        self.transport.loseConnection()
 
     def _check_proved(self):
         if self.owes_proof:
@@ -341,21 +380,22 @@ class AMPControl(amp.AMP):
         socket = self.factory.label()
         if mine is None or not wire.NONCE.fullmatch(nonce):
             logger.warn(not_a_proof, who=self.who, socket=socket)
-            self._shut_out()
-            raise ampwire.WrongToken(_("Challenge first, then Authenticate"))
+            message = _("Challenge first, then Authenticate")
+            self._shut_out(message)
+            raise ampwire.WrongToken(message)
         if not wire.same_proof(
             proof, wire.proof(token, "client", mine, nonce)
         ):
             logger.warn(wrong_token, who=self.who, socket=socket)
-            self._shut_out()
+            self._shut_out(_("Wrong token"))
             raise ampwire.WrongToken(_("Wrong token"))
         self._stop_timer()
         self.owes_proof = False
         logger.info(proved, who=self.who, socket=socket)
         return {"proof": wire.proof(token, "server", mine, nonce)}
 
-    def _shut_out(self):
-        """Close the connection once the error is written."""
+    def _shut_out(self, error):
+        """Close the connection once the error, if any, is written."""
 
         self._stop_timer()
         self.owes_proof = True
@@ -633,12 +673,21 @@ def _strerror(exc):
 
 
 def _listen_network(brickfactory, socket, reactor):
-    """listen() on the port of a tcp socket, with its token."""
+    """
+    listen() on the port of a tcp or ssl socket, with its token, or with
+    the certificates that its clients show.
+    """
 
     where = socket.name()
-    token_file = socket.token_file or locations.token_file()
+    token = token_file = options = None
     try:
-        token = _token(token_file)
+        if socket.kind == "ssl":
+            from virtualbricks.console import tls
+
+            options = tls.server_options(socket)
+        if socket.uses_token():
+            token_file = socket.token_file or locations.token_file()
+            token = _token(token_file)
     except wire.Unusable as exc:
         logger.warn(no_socket, reason=f"{where}: {exc}")
         return None
@@ -649,7 +698,14 @@ def _listen_network(brickfactory, socket, reactor):
         brickfactory, reactor, PROTOCOLS[socket.protocol], socket, token
     )
     try:
-        port = reactor.listenTCP(socket.port, factory, interface=socket.host)
+        if options is None:
+            port = reactor.listenTCP(
+                socket.port, factory, interface=socket.host
+            )
+        else:
+            port = reactor.listenSSL(
+                socket.port, factory, options, interface=socket.host
+            )
     except error.CannotListenError as exc:
         logger.warn(no_socket, reason=f"{where}: {_strerror(exc.socketError)}")
         return None
@@ -657,10 +713,18 @@ def _listen_network(brickfactory, socket, reactor):
     socket = factory.socket = socket._replace(port=port.getHost().port)
     control = Control(socket, port, None, factory)
     reactor.addSystemEventTrigger("before", "shutdown", control.close)
-    logger.info(
-        listening_token,
-        where=socket.name(),
-        protocol=socket.protocol,
-        path=token_file,
-    )
+    if token is None:
+        logger.info(
+            listening_certificates,
+            where=socket.name(),
+            protocol=socket.protocol,
+            path=socket.ca_dir,
+        )
+    else:
+        logger.info(
+            listening_token,
+            where=socket.name(),
+            protocol=socket.protocol,
+            path=token_file,
+        )
     return control

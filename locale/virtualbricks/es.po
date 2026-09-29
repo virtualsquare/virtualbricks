@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 17:32+0200\n"
+"POT-Creation-Date: 2026-09-29 17:40+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -1527,6 +1527,38 @@ msgstr ""
 
 #: virtualbricks/console/client.py
 #, python-brace-format
+msgid "{path} doesn't exist: no command sent"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "{path} has no .pem certificate: no command sent"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "{path} isn't a certificate in PEM: no command sent"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid ""
+"The key {key} isn't that of the certificate {cert}, or isn't in PEM: no "
+"command sent"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "{host} asks for your certificate: privateKey= and certKey="
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "{host} refused your certificate"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
 msgid "Can't find {host}: {reason}"
 msgstr ""
 
@@ -1539,6 +1571,13 @@ msgstr "Virtualbricks"
 #, python-brace-format
 msgid ""
 "Nothing listens on {where}. Start Virtualbricks with --socket {kind}:{port}"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid ""
+"The certificate of {host} isn't one you trust: {reason}. Name the folder of "
+"its certificate with caCertsDir="
 msgstr ""
 
 #: virtualbricks/console/client.py
@@ -1590,12 +1629,12 @@ msgid "The projects of the workspace"
 msgstr "Guardar proyecto como"
 
 #: virtualbricks/console/control.py
-msgid "Wrong token"
+#, python-brace-format
+msgid "No proof in {seconds} seconds"
 msgstr ""
 
 #: virtualbricks/console/control.py
-#, python-brace-format
-msgid "No proof in {seconds} seconds"
+msgid "Wrong token"
 msgstr ""
 
 #: virtualbricks/console/control.py
@@ -2036,6 +2075,41 @@ msgid ""
 "the console."
 msgstr ""
 
+#: virtualbricks/console/tls.py virtualbricks/console/wire.py
+#, python-brace-format
+msgid "{path} doesn't exist"
+msgstr ""
+
+#: virtualbricks/console/tls.py
+#, fuzzy, python-brace-format
+msgid "{path} isn't a certificate in PEM"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/console/tls.py
+#, fuzzy, python-brace-format
+msgid "{path} isn't a private key in PEM"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/console/tls.py
+#, python-brace-format
+msgid "The key {key} isn't that of the certificate {cert}"
+msgstr ""
+
+#: virtualbricks/console/tls.py
+#, python-brace-format
+msgid "{path} has no certificate in PEM"
+msgstr ""
+
+#: virtualbricks/console/tls.py
+#, fuzzy, python-brace-format
+msgid "{path} isn't a folder"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/console/tls.py
+#, python-brace-format
+msgid "{path} has no .pem certificate"
+msgstr ""
+
 #: virtualbricks/console/wire.py
 msgid "Not a proof: \"nonce\" and \"proof\" come first"
 msgstr ""
@@ -2051,11 +2125,6 @@ msgstr ""
 
 #: virtualbricks/console/wire.py
 msgid "Not a request: \"cwd\" is not an absolute path"
-msgstr ""
-
-#: virtualbricks/console/wire.py
-#, python-brace-format
-msgid "{path} doesn't exist"
 msgstr ""
 
 #: virtualbricks/console/wire.py

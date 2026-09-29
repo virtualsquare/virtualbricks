@@ -264,10 +264,10 @@ class TestDescriptions(unittest.TestCase):
         )
 
     def test_another_type(self):
-        for text in ("ssl:443", "systemd:domain=INET:index=0"):
+        for text in ("systemd:domain=INET:index=0", "tls:443"):
             self.assertEqual(
                 self.refused(text),
-                f"{text}: the types are unix and tcp, as unix:PATH or"
+                f"{text}: the types are unix, tcp and ssl, as unix:PATH or"
                 " tcp:PORT",
             )
 
@@ -432,6 +432,99 @@ class TestTcpDescriptions(unittest.TestCase):
         self.assertEqual(socket.where(), "/tmp/lab.sock")
         self.assertEqual(socket.name(), "/tmp/lab.sock")
         self.assertFalse(socket.uses_token())
+
+
+class TestSslDescriptions(unittest.TestCase):
+    """The ssl sockets: those of tcp, with certificates."""
+
+    def refused(self, text, client=False):
+        return str(
+            self.assertRaises(ValueError, wire.parse_socket, text, client)
+        )
+
+    def test_to_listen_on(self):
+        socket = wire.parse_socket("ssl:8765:privateKey=~/vb/lab.pem")
+        self.assertEqual(
+            socket,
+            wire.Socket(
+                None,
+                "text",
+                "ssl",
+                "127.0.0.1",
+                8765,
+                private_key="~/vb/lab.pem",
+            ),
+        )
+        self.assertTrue(socket.uses_token())
+        self.assertEqual(socket.files(), {"privateKey": "~/vb/lab.pem"})
+        # across the network, and certificates in place of the token
+        socket = wire.parse_socket(
+            "ssl:8765:interface=0.0.0.0:privateKey=/vb/lab.key"
+            ":certKey=/vb/lab.pem:extraCertChain=/vb/chain.pem"
+            ":caCertsDir=/vb/clients:protocol=amp"
+        )
+        self.assertEqual(
+            socket,
+            wire.Socket(
+                None,
+                "amp",
+                "ssl",
+                "0.0.0.0",
+                8765,
+                None,
+                "/vb/lab.key",
+                "/vb/lab.pem",
+                "/vb/chain.pem",
+                "/vb/clients",
+            ),
+        )
+        self.assertFalse(socket.uses_token())
+        self.assertEqual(socket.name(), "ssl 0.0.0.0 port 8765")
+
+    def test_its_key(self):
+        self.assertEqual(
+            self.refused("ssl:8765"),
+            "ssl:8765 needs privateKey=FILE, the key of its certificate",
+        )
+        self.assertEqual(
+            self.refused("ssl:8765:privateKey="),
+            "ssl:8765:privateKey=: privateKey needs a file",
+        )
+        self.assertEqual(
+            self.refused("ssl:8765:privateKey=/k:sslmethod=TLSv1_METHOD"),
+            "ssl:8765:privateKey=/k:sslmethod=TLSv1_METHOD: unknown keyword"
+            " sslmethod; the keywords of ssl are port, interface, protocol,"
+            " tokenFile, privateKey, certKey, extraCertChain and caCertsDir",
+        )
+
+    def test_to_talk_to(self):
+        def parse(text):
+            return wire.parse_socket(text, client=True)
+
+        self.assertEqual(
+            parse("ssl:lab.example:8765:caCertsDir=/vb/lab"),
+            wire.Socket(
+                None, "text", "ssl", "lab.example", 8765, ca_dir="/vb/lab"
+            ),
+        )
+        self.assertEqual(
+            parse("ssl:8765:privateKey=/vb/alice.key:certKey=/vb/alice.pem"),
+            wire.Socket(
+                None,
+                "text",
+                "ssl",
+                "127.0.0.1",
+                8765,
+                private_key="/vb/alice.key",
+                cert="/vb/alice.pem",
+            ),
+        )
+        self.assertEqual(
+            self.refused("ssl:lab:8765:extraCertChain=/c", client=True),
+            "ssl:lab:8765:extraCertChain=/c: unknown keyword extraCertChain;"
+            " the keywords of ssl are host, port, protocol, tokenFile,"
+            " caCertsDir, privateKey and certKey",
+        )
 
 
 class TestTokens(unittest.TestCase):

@@ -30,6 +30,7 @@ from twisted.trial import unittest
 from virtualbricks import app, locations, locks
 from virtualbricks.console import wire
 from virtualbricks.tests import (
+    DATA,
     hold_lock,
     isolate,
     lock_is_free,
@@ -279,9 +280,9 @@ class TestSocket(unittest.TestCase):
 
     def test_what_is_refused(self):
         self.assertEqual(
-            self.refused("--socket", "ssl:443"),
-            "--socket: ssl:443: the types are unix and tcp, as unix:PATH or"
-            " tcp:PORT",
+            self.refused("--socket", "tls:443"),
+            "--socket: tls:443: the types are unix, tcp and ssl, as unix:PATH"
+            " or tcp:PORT",
         )
         self.assertEqual(
             self.refused("--socket=unix:"),
@@ -424,6 +425,120 @@ class TestTcpSocket(unittest.TestCase):
             self.refused("--socket", "tcp:lab.example:8765"),
             "--socket: tcp:lab.example:8765: the address to listen on is"
             " interface=lab.example",
+        )
+
+
+class TestSslSocket(unittest.TestCase):
+
+    TLS = os.path.join(DATA, "tls")
+
+    def setUp(self):
+        self.root = isolate(self)
+        self.patch(sys, "stdin", Input(False))
+
+    def parse(self, *args):
+        options = app.Options()
+        options.parseOptions(list(args))
+        return options
+
+    def refused(self, *args):
+        return str(self.assertRaises(usage.UsageError, self.parse, *args))
+
+    def data(self, name):
+        return os.path.join(self.TLS, name)
+
+    def test_a_port(self):
+        os.symlink(self.TLS, os.path.join(self.root, "vb"))
+        [socket] = self.parse(
+            "--socket",
+            "ssl:8765:interface=0.0.0.0:privateKey=~/vb/server.key"
+            ":certKey=~/vb/server.pem",
+        )["sockets"]
+        folder = os.path.join(self.root, "vb")
+        self.assertEqual(
+            socket,
+            wire.Socket(
+                None,
+                "text",
+                "ssl",
+                "0.0.0.0",
+                8765,
+                private_key=os.path.join(folder, "server.key"),
+                cert=os.path.join(folder, "server.pem"),
+            ),
+        )
+
+    def test_certificates_in_place_of_the_token(self):
+        # the token isn't read: a client shows its certificate
+        path = locations.token_file()
+        os.makedirs(os.path.dirname(path))
+        with open(path, "w") as file:
+            file.write("1234\n")
+        self.parse(
+            "--socket",
+            f"ssl:8765:privateKey={self.data('server.key')}"
+            f":certKey={self.data('server.pem')}:caCertsDir={self.TLS}",
+        )
+
+    def test_the_files(self):
+        key = self.data("server.key")
+        self.assertEqual(
+            self.refused(
+                "--socket",
+                f"ssl:8765:privateKey={key}:certKey={self.data('bob.pem')}",
+            ),
+            f"--socket: The key {key} isn't that of the certificate"
+            f" {self.data('bob.pem')}",
+        )
+        missing = os.path.join(self.root, "lab.pem")
+        self.assertEqual(
+            self.refused("--socket", "ssl:8765:privateKey=~/lab.pem"),
+            f"--socket: {missing} doesn't exist",
+        )
+        self.assertEqual(
+            self.refused(
+                "--socket",
+                f"ssl:8765:privateKey={key}:certKey={self.data('server.pem')}"
+                f":caCertsDir={self.root}",
+            ),
+            f"--socket: {self.root} has no .pem certificate",
+        )
+
+    def test_no_pyopenssl(self):
+        name = "virtualbricks.console.tls"
+        module = sys.modules.pop(name, None)
+        sys.modules[name] = None
+
+        def restore():
+            del sys.modules[name]
+            if module is not None:
+                sys.modules[name] = module
+
+        self.addCleanup(restore)
+        self.assertEqual(
+            self.refused("--socket", "ssl:8765:privateKey=/vb/lab.pem"),
+            "--socket: ssl needs pyOpenSSL: the package python3-openssl",
+        )
+
+    def test_with_command(self):
+        # its files are --command's to read
+        [socket] = self.parse(
+            "--socket",
+            "ssl:lab.example:8765:caCertsDir=~/vb/lab:privateKey=~/a.key",
+            "--command",
+            "status",
+        )["sockets"]
+        self.assertEqual(
+            socket,
+            wire.Socket(
+                None,
+                "text",
+                "ssl",
+                "lab.example",
+                8765,
+                private_key=os.path.join(self.root, "a.key"),
+                ca_dir=os.path.join(self.root, "vb", "lab"),
+            ),
         )
 
 

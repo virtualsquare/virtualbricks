@@ -21,7 +21,7 @@ import io
 import os
 import stat
 
-from twisted.internet import address, defer, endpoints, reactor, threads
+from twisted.internet import address, defer, endpoints, reactor, task, threads
 from twisted.internet.testing import StringTransport
 from twisted.protocols import amp, basic
 from twisted.test import iosim
@@ -30,6 +30,7 @@ from virtualbricks import __version__, locations, locks
 from virtualbricks.console import ampwire, client, control, wire
 from virtualbricks.console.command import Arg, CommandError, command
 from virtualbricks.tests import (
+    DATA,
     FakeLogger,
     make_socket,
     short_folder,
@@ -781,6 +782,13 @@ class TestAMPToken(ConsoleTestCase):
         self.successResultOf(self.call(ampwire.Hello))
 
 
+TLS = os.path.join(DATA, "tls")
+
+
+def tls_file(name):
+    return os.path.join(TLS, name)
+
+
 class Reactor:
     """The reactor of the tests, whose shutdown triggers are only kept."""
 
@@ -792,6 +800,9 @@ class Reactor:
 
     def listenTCP(self, *args, **kwargs):
         return reactor.listenTCP(*args, **kwargs)
+
+    def listenSSL(self, *args, **kwargs):
+        return reactor.listenSSL(*args, **kwargs)
 
     def callLater(self, *args, **kwargs):
         return reactor.callLater(*args, **kwargs)
@@ -980,8 +991,8 @@ class TestListen(ConsoleTestCase):
         self.assertEqual(self.logger.levels(), ["warn"])
 
 
-class TestListenTcp(ConsoleTestCase):
-    """A tcp socket, on a free port of this machine."""
+class ListenTestCase(ConsoleTestCase):
+    """A socket on a free port of this machine."""
 
     def setUp(self):
         super().setUp()
@@ -1013,14 +1024,19 @@ class TestListenTcp(ConsoleTestCase):
             file.write(TOKEN + "\n")
         os.chmod(path, mode)
 
-    def command(self, found, *words, **fields):
-        """--command, in a thread: its status, output and errors."""
+    def command(self, target, *words, **fields):
+        """
+        --command to target, a wire.Socket or the Control of a tcp socket,
+        in a thread: its status, output and errors.
+        """
 
+        if isinstance(target, control.Control):
+            target = target.socket
         stdout, stderr = io.StringIO(), io.StringIO()
         done = threads.deferToThread(
             client.main,
             list(words),
-            found.socket._replace(**fields),
+            target._replace(**fields),
             io.StringIO(),
             stdout,
             stderr,
@@ -1029,6 +1045,10 @@ class TestListenTcp(ConsoleTestCase):
             lambda status: (status, stdout.getvalue(), stderr.getvalue())
         )
         return done
+
+
+class TestListenTcp(ListenTestCase):
+    """A tcp socket, on a free port of this machine."""
 
     @defer.inlineCallbacks
     def test_listen(self):
@@ -1137,3 +1157,180 @@ class TestListenTcp(ConsoleTestCase):
             " socket",
         )
         self.assertEqual(self.logger.levels()[-1], "warn")
+
+
+class TestListenSsl(ListenTestCase):
+    """An ssl socket, with the certificates of tests/data/tls."""
+
+    def listen(self, port=0, **fields):
+        socket = wire.Socket(
+            None,
+            wire.TEXT,
+            "ssl",
+            "127.0.0.1",
+            port,
+            private_key=tls_file("server.key"),
+            cert=tls_file("server.pem"),
+        )
+        found = control.listen(
+            self.factory, socket._replace(**fields), self.reactor
+        )
+        if found is not None:
+            self.addCleanup(found.close)
+        return found
+
+    def folder(self, *names):
+        """A folder with the certificates of names, as caCertsDir."""
+
+        folder = self.mktemp()
+        os.makedirs(folder)
+        for name in names:
+            with open(tls_file(name), "rb") as source:
+                with open(os.path.join(folder, name), "wb") as copy:
+                    copy.write(source.read())
+        return os.path.abspath(folder)
+
+    def target(self, found, *mine, **fields):
+        """--command to found, which trusts its certificate; mine, its own."""
+
+        target = wire.parse_socket(
+            f"ssl:127.0.0.1:{found.socket.port}", client=True
+        )
+        if mine:
+            fields.update(
+                private_key=tls_file(f"{mine[0]}.key"),
+                cert=tls_file(f"{mine[0]}.pem"),
+            )
+        return target._replace(ca_dir=self.folder("server.pem"), **fields)
+
+    @defer.inlineCallbacks
+    def logged(self, count):
+        """The log, once it has count lines: the server may be late."""
+
+        for _ in range(500):
+            if len(self.logger.events) >= count:
+                break
+            yield task.deferLater(reactor, 0.01, lambda: None)
+        return self.logger.formatted()
+
+    @defer.inlineCallbacks
+    def test_the_token(self):
+        found = self.listen()
+        port = found.socket.port
+        result = yield self.command(
+            self.target(found), "brick", "new", "switch"
+        )
+        self.assertEqual(result, (client.DONE, "sw1\n", ""))
+        log = yield self.logged(4)
+        self.assertEqual(
+            log[:2],
+            [
+                f"Made the token {self.token_file}",
+                f"Listening on ssl 127.0.0.1 port {port}, protocol text, with"
+                f" the token of {self.token_file}",
+            ],
+        )
+        self.assertRegex(
+            log[2],
+            rf"^127\.0\.0\.1 port [0-9]+ connected to ssl port {port} with"
+            " the token$",
+        )
+
+    @defer.inlineCallbacks
+    def test_client_certificates(self):
+        clients = self.folder("alice.pem")
+        found = self.listen(ca_dir=clients)
+        port = found.socket.port
+        self.assertEqual(
+            self.logger.formatted(),
+            [
+                f"Listening on ssl 127.0.0.1 port {port}, protocol text, with"
+                f" the certificates of {clients}"
+            ],
+        )
+        # no token without it
+        self.assertFalse(os.path.exists(self.token_file))
+        result = yield self.command(self.target(found, "alice"), "status")
+        self.assertEqual(result, (client.DONE, "Nothing runs\n", ""))
+        log = yield self.logged(3)
+        self.assertRegex(
+            log[1],
+            rf"^127\.0\.0\.1 port [0-9]+ connected to ssl port {port} as"
+            " alice$",
+        )
+        self.assertEqual(log[2], "Command from alice at 127.0.0.1: status")
+
+    @defer.inlineCallbacks
+    def test_another_certificate(self):
+        found = self.listen(ca_dir=self.folder("alice.pem"))
+        result = yield self.command(self.target(found, "bob"), "status")
+        self.assertEqual(
+            result,
+            (client.UNANSWERED, "", "127.0.0.1 refused your certificate\n"),
+        )
+        log = yield self.logged(2)
+        self.assertRegex(
+            log[1],
+            rf"^127\.0\.0\.1 port [0-9]+ on ssl port {found.socket.port}:"
+            " the TLS handshake failed: .*certificate",
+        )
+        self.assertEqual(self.logger.levels(), ["info", "warn"])
+
+    @defer.inlineCallbacks
+    def test_no_certificate(self):
+        found = self.listen(ca_dir=self.folder("alice.pem"))
+        result = yield self.command(self.target(found), "status")
+        self.assertEqual(
+            result,
+            (
+                client.UNANSWERED,
+                "",
+                "127.0.0.1 asks for your certificate: privateKey= and"
+                " certKey=\n",
+            ),
+        )
+
+    @defer.inlineCallbacks
+    def test_a_certificate_not_trusted(self):
+        found = self.listen()
+        target = self.target(found)._replace(ca_dir=self.folder("alice.pem"))
+        result = yield self.command(target, "status")
+        self.assertEqual(
+            result,
+            (
+                client.UNANSWERED,
+                "",
+                "The certificate of 127.0.0.1 isn't one you trust:"
+                " self-signed certificate. Name the folder of its certificate"
+                " with caCertsDir=\n",
+            ),
+        )
+
+    @defer.inlineCallbacks
+    def test_amp(self):
+        # a program with Twisted's tls: client and a certificate
+        found = self.listen(protocol=wire.AMP, ca_dir=self.folder("alice.pem"))
+        description = (
+            f"tls:127.0.0.1:{found.socket.port}"
+            f":trustRoots={self.folder('server.pem')}"
+            f":certificate={tls_file('alice.pem')}"
+            f":privateKey={tls_file('alice.key')}"
+        )
+        endpoint = endpoints.clientFromString(reactor, description)
+        program = yield endpoints.connectProtocol(endpoint, AMPProgram())
+        answer = yield program.callRemote(ampwire.Run, line="brick new switch")
+        self.assertEqual(answer, {"lines": ["sw1"]})
+        yield found.close()
+        yield program.lost
+
+    def test_files_that_dont_match(self):
+        self.assertIsNone(self.listen(cert=tls_file("alice.pem")))
+        self.assertEqual(
+            self.logger.formatted(),
+            [
+                "ssl 127.0.0.1 port 0: The key"
+                f" {tls_file('server.key')} isn't that of the certificate"
+                f" {tls_file('alice.pem')}: no control socket"
+            ],
+        )
+        self.assertEqual(self.logger.levels(), ["warn"])
