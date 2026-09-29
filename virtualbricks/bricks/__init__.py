@@ -45,7 +45,6 @@ from virtualbricks.config.schema import (
     field,
     load_record,
     notes,
-    parse_value,
 )
 from virtualbricks.config.settings import get_setting
 from virtualbricks.i18n import _
@@ -363,14 +362,6 @@ class Brick(base.Base):
         except error.ProcessExitedAlready:
             pass
         return self._exited_d
-
-    def configure(self, attrlist):
-        """Set the parameters typed in the console as ``name=value``."""
-
-        attrs = {}
-        for name, value in (a.split("=", 1) for a in attrlist):
-            attrs[name] = parse_value(self.config, name, value)
-        self.update_config(attrs)
 
     def config_table(self):
         """Return the configuration as saved in the project file."""

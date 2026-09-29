@@ -45,14 +45,6 @@ class TestBase(BrickTestCase):
         self.assertRaises(KeyError, switch.update_config, {"nope": 1})
         self.assertRaises(ValueError, switch.update_config, {"ports": 500})
 
-    def test_configure_from_the_console(self):
-        switch = self.factory.new_brick("switch", "sw")
-        switch.configure(["ports=8", "fast_spanning_tree=yes"])
-        self.assertEqual(switch.config.ports, 8)
-        self.assertIs(switch.config.fast_spanning_tree, True)
-        self.assertRaises(KeyError, switch.configure, ["nope=1"])
-        self.assertRaises(ValueError, switch.configure, ["ports=x"])
-
     def test_config_table(self):
         tap = self.factory.new_brick("tap", "tap0")
         tap.update_config({"address_mode": "manual"})
