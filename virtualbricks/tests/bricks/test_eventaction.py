@@ -19,7 +19,7 @@
 
 from twisted.trial import unittest
 
-from virtualbricks import console
+from virtualbricks.console import legacy as console
 from virtualbricks.config.schema import Kind
 from virtualbricks.config.report import Report
 from virtualbricks.bricks.eventaction import EventAction

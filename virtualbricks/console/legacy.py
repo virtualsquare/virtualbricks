@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.test_console -*-
+# -*- test-case-name: virtualbricks.tests.console.test_legacy -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 

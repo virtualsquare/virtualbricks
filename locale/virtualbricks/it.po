@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 11:56+0200\n"
+"POT-Creation-Date: 2026-09-29 12:02+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1161,6 +1161,112 @@ msgstr ""
 msgid ""
 "The name leaves {room} bytes to the names of the bricks, and the longest has "
 "{longest}"
+msgstr ""
+
+#: virtualbricks/console/command.py
+#, python-brace-format
+msgid "\"{word}\" is not a number"
+msgstr ""
+
+#: virtualbricks/console/command.py
+#, python-brace-format
+msgid "\"{word}\" is not one of {words}"
+msgstr ""
+
+#: virtualbricks/console/command.py
+#, python-brace-format
+msgid "\"{word}\" is not KEY=VALUE"
+msgstr ""
+
+#: virtualbricks/console/command.py
+msgid "Make, change, start, stop and delete bricks"
+msgstr ""
+
+#: virtualbricks/console/command.py
+msgid "Make and change events, and start them"
+msgstr ""
+
+#: virtualbricks/console/command.py
+#, fuzzy
+msgid "The disk images of the project"
+msgstr "Scegli un nuovo nome:"
+
+#: virtualbricks/console/command.py
+#, fuzzy
+msgid "The settings of Virtualbricks and of the project"
+msgstr "Impostazioni Virtualbricks"
+
+#: virtualbricks/console/command.py
+#, fuzzy
+msgid "The projects of the workspace"
+msgstr "Il nome \""
+
+#: virtualbricks/console/dispatch.py
+#, python-brace-format
+msgid "{error}; the messages have the details"
+msgstr ""
+
+#: virtualbricks/console/general.py
+msgid "A command is a noun, a verb, then its arguments: brick start sw1."
+msgstr ""
+
+#: virtualbricks/console/general.py
+msgid ""
+"help NOUN lists the verbs of a noun, and help NOUN VERB tells about one "
+"command."
+msgstr ""
+
+#: virtualbricks/console/general.py
+#, python-brace-format
+msgid "Example: {example}"
+msgstr ""
+
+#: virtualbricks/console/general.py
+msgid "The commands, a noun's verbs, or one command"
+msgstr ""
+
+#: virtualbricks/console/general.py
+#, python-brace-format
+msgid "No command {words}; type help for the commands"
+msgstr ""
+
+#: virtualbricks/console/parser.py
+msgid "A quote isn't closed"
+msgstr ""
+
+#: virtualbricks/console/parser.py
+#, python-brace-format
+msgid "{noun} needs a verb: {verbs}"
+msgstr ""
+
+#: virtualbricks/console/parser.py
+#, python-brace-format
+msgid "{noun} has no {verb}: its verbs are {verbs}"
+msgstr ""
+
+#: virtualbricks/console/parser.py
+#, python-brace-format
+msgid "No command {word}; type help for the commands"
+msgstr ""
+
+#: virtualbricks/console/parser.py
+#, python-brace-format
+msgid "{command} has no option {option}"
+msgstr ""
+
+#: virtualbricks/console/parser.py
+#, python-brace-format
+msgid "{option} needs {value}"
+msgstr ""
+
+#: virtualbricks/console/parser.py
+#, python-brace-format
+msgid "{usage}: {name} is missing"
+msgstr ""
+
+#: virtualbricks/console/parser.py
+#, python-brace-format
+msgid "{usage}: too many words: {words}"
 msgstr ""
 
 #: virtualbricks/errors.py
@@ -4308,10 +4414,6 @@ msgstr "kvm non trovato"
 #, fuzzy
 #~ msgid "Virtualbricks - Open project"
 #~ msgstr "Virtualbricks: azione in corso"
-
-#, fuzzy
-#~ msgid "Virtualbricks - Delete project"
-#~ msgstr "Impostazioni Virtualbricks"
 
 #, fuzzy
 #~ msgid "New project name:"

@@ -18,7 +18,7 @@
 
 """The commands of the console."""
 
-from virtualbricks import console
+from virtualbricks.console import legacy
 from virtualbricks.tests import (
     BrickTestCase,
 )
@@ -28,7 +28,7 @@ class TestConsole(BrickTestCase):
 
     def setUp(self):
         super().setUp()
-        self.protocol = console.VBProtocol(self.factory)
+        self.protocol = legacy.VBProtocol(self.factory)
         self.lines = []
         self.protocol.sendLine = self.lines.append
 
@@ -79,7 +79,7 @@ class TestConsole(BrickTestCase):
         )
 
     def test_settings(self):
-        config = console.ConfigurationProtocol(self.factory)
+        config = legacy.ConfigurationProtocol(self.factory)
         config.sendLine = self.lines.append
         config.do_get("allow_female_plugs")
         config.do_set("allow_female_plugs", "yes")
