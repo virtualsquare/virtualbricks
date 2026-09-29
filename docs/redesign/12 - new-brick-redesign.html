@@ -694,17 +694,18 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 12 &middot; Design &middot; revision 3, implemented</div>
+    <div class="eyebrow">Step 12 &middot; Design &middot; revision 4, implemented</div>
     <h1>Virtualbricks New Brick Redesign</h1>
     <p class="lede">New Brick becomes a popover of the kinds, in words and groups, each saying what it is or what it lacks. A click makes the brick, with a name of its own, and opens its settings, as for a new event.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 76002c8</li>
-      <li>revision 3 &middot; 29 September 2026</li>
+      <li>revision 4 &middot; 29 September 2026</li>
       <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> your request of today, a redesign of the New Brick window with mock-ups and options. Page 07 left this window unchanged, and its &sect;10 put its title and label in the TODO. The panels that open after the click are those of page 11, unchanged.</p>
     <p class="revision"><strong>What changed:</strong> revision 2 records your answers. New Brick is the popover of revision 1&rsquo;s X2 (N1 C). Each entry shows one line with its issue, and a longer tooltip describes the problem. The name is chosen automatically and is unique in the project (N2 D), so the window goes, with its name field and the TODO item about its title and label. N8, whether an entry with an issue can be clicked, came with the popover. The rest is as recommended. &sect;3 now has the words of every entry, &sect;4 shows the popover and a tooltip, and the window of revision 1 and the other shapes stay at its end, not chosen.</p>
     <p class="revision"><strong>Implemented</strong> on 29 September 2026 on the branch <code>mg/new-brick</code>, a commit per step: 87805d8 the kinds, 9d35fb0 the popover, and one for the documents. The differences from the plan: <code>new_brick()</code> doesn&rsquo;t check a tap&rsquo;s 15 characters, since it also opens the projects, and a project with such a tap must still open; <code>factory.check_name()</code> has them, and Rename, the console&rsquo;s <code>new</code> and the popover ask it. The words of the kinds are translated with <code>_()</code>, as <code>KINDS</code> already is, not marked <code>N_()</code>, and a <code>Kind</code> holds the class of its bricks, whose <code>type</code> the factory takes. The <code>new()</code> of the rows tab keeps no argument: the Bricks tab points the popover at the New Brick shown, as the Images tab does with its menu. A new machine&rsquo;s program is <code>qemu-system-i386</code>, the default of its settings, and that is the one its issue names. The words of an issue are those of &sect;3 and P2 now; each ends &ldquo;The brick can be made now, and starts once it is installed.&rdquo; GTK shows a tooltip under the pointer, and for the row with the keyboard&rsquo;s focus after Ctrl+F1. The popover was checked in the whole application on Broadway: New Brick, a click on Tap, <code>tap2</code> made after <code>tap1</code>, its settings, its row selected after Cancel, and the popover open again on Tap.</p>
+    <p class="revision"><strong>Since then:</strong> the page of an empty project has no New Brick of its own, nor New Event or Add Image in the other tabs (292f41f): the New of the row above the list is always there, and the popover opens under it only. P1 and &sect;5 still speak of the second button.</p>
   </header>
 
   <div class="layout">
