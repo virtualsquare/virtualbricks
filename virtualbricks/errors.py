@@ -97,12 +97,6 @@ class BrickRunningError(Error):
     """There is one or more brick that is running."""
 
 
-class WidgetNotFound(Error):
-    """
-    A Gtk.Builder resource does not define a specific widget.
-    """
-
-
 class CommandError(Exception):
     """
     One utility command failed. Ex. qemu-img.
