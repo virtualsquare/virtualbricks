@@ -22,7 +22,7 @@ from twisted.python import usage, reflect
 from twisted.internet import defer, task
 from twisted.logger import textFileLogObserver
 
-from virtualbricks import locks
+from virtualbricks import locations, locks
 
 _log_file = sys.stdout
 
@@ -70,6 +70,13 @@ class Options(usage.Options):
             "The folder of the projects for this run, instead of the setting.",
         ],
         [
+            "socket",
+            None,
+            None,
+            "The path of the control socket, instead of .control in the "
+            "runtime folder.",
+        ],
+        [
             "lock",
             None,
             locks.SYSTEM,
@@ -105,6 +112,24 @@ class Options(usage.Options):
         if os.path.exists(path) and not os.path.isdir(path):
             raise usage.UsageError(f"--workspace: {path} is not a folder")
         self["workspace"] = path
+
+    def opt_socket(self, arg):
+        # the help is the text of optParameters
+        if not arg:
+            raise usage.UsageError("--socket needs a path")
+        path = os.path.abspath(os.path.expanduser(arg))
+        folder = os.path.dirname(path)
+        if not os.path.isdir(folder):
+            raise usage.UsageError(f"--socket: {folder} doesn't exist")
+        if os.path.isdir(path):
+            raise usage.UsageError(f"--socket: {path} is a folder")
+        if len(os.fsencode(path)) > locations.SOCKET_PATH_MAX:
+            raise usage.UsageError(
+                f"--socket: {path} is longer than"
+                f" {locations.SOCKET_PATH_MAX} bytes, the most a socket's"
+                " path can have"
+            )
+        self["socket"] = path
 
     def opt_run(self, arg):
         # the help is the text of optParameters

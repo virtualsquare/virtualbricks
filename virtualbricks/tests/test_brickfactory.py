@@ -33,6 +33,7 @@ from virtualbricks.bricks.eventaction import (
     StopAction,
 )
 from virtualbricks.config.workspace import projects
+from virtualbricks.console import control
 from virtualbricks.config import workspace
 from virtualbricks.config.settings import (
     current_project,
@@ -218,6 +219,13 @@ class AppTestCase(unittest.TestCase):
         self.patch(workspace, "logger", FakeLogger())
         self.manager = use_workspace(self)
         self.patch(brickfactory, "AutosaveTimer", lambda factory: None)
+        # the socket where the Virtualbricks would listen, not a real one
+        self.listened = []
+        self.patch(
+            control,
+            "listen",
+            lambda factory, path, reactor: self.listened.append(path),
+        )
         self.app = Application(CONFIG)
         self.app.install_locale = lambda: None
 
@@ -380,6 +388,11 @@ class TestTheConsole(AppTestCase):
         self.assertEqual(len(self.started), 1)
         self.application(noterm=True).run(FakeReactor())
         self.assertEqual(len(self.started), 1)
+
+    def test_the_control_socket(self):
+        self.application().run(FakeReactor())
+        self.application(socket="/srv/lab.sock").run(FakeReactor())
+        self.assertEqual(self.listened, [None, "/srv/lab.sock"])
 
     def test_a_script_first(self):
         path = self.script("brick new switch\n# a comment\n\nbrick new tap\n")

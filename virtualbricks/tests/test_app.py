@@ -27,7 +27,12 @@ from twisted.python import usage
 from twisted.trial import unittest
 
 from virtualbricks import app, locations, locks
-from virtualbricks.tests import hold_lock, isolate, lock_is_free
+from virtualbricks.tests import (
+    hold_lock,
+    isolate,
+    lock_is_free,
+    short_folder,
+)
 
 
 class FakeReactor:
@@ -158,6 +163,57 @@ class TestWorkspace(unittest.TestCase):
         )
         self.assertEqual(str(error), f"--workspace: {path} is not a folder")
         self.assertRaises(usage.UsageError, self.parse, "--workspace", "")
+
+
+class TestSocket(unittest.TestCase):
+
+    def setUp(self):
+        self.root = isolate(self)
+
+    def parse(self, *args):
+        options = app.Options()
+        options.parseOptions(list(args))
+        return options["socket"]
+
+    def refused(self, *args):
+        return str(self.assertRaises(usage.UsageError, self.parse, *args))
+
+    def test_the_runtime_folder_without_it(self):
+        self.assertIsNone(self.parse())
+
+    def test_a_path(self):
+        self.assertEqual(
+            self.parse("--socket", "/tmp/lab.sock"), "/tmp/lab.sock"
+        )
+        # a home short enough for a socket's path
+        home = short_folder(self)
+        os.environ["HOME"] = home
+        self.assertEqual(
+            self.parse("--socket", "~/lab.sock"),
+            os.path.join(home, "lab.sock"),
+        )
+        self.assertEqual(
+            self.parse("--socket", "lab.sock"),
+            os.path.join(os.getcwd(), "lab.sock"),
+        )
+
+    def test_what_is_refused(self):
+        self.assertEqual(self.refused("--socket", ""), "--socket needs a path")
+        folder = os.path.join(self.root, "nope")
+        self.assertEqual(
+            self.refused("--socket", os.path.join(folder, "lab.sock")),
+            f"--socket: {folder} doesn't exist",
+        )
+        self.assertEqual(
+            self.refused("--socket", self.root),
+            f"--socket: {self.root} is a folder",
+        )
+        path = "/tmp/" + "a" * 103
+        self.assertEqual(
+            self.refused("--socket", path),
+            f"--socket: {path} is longer than 107 bytes, the most a"
+            " socket's path can have",
+        )
 
 
 class TestTheConsoleOptions(unittest.TestCase):

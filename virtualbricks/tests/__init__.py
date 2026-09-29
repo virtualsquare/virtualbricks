@@ -16,6 +16,9 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import shutil
+import socket
+import tempfile
 
 from twisted.internet import defer
 from twisted.trial import unittest
@@ -52,6 +55,23 @@ def isolate(test):
     test.patch(locations, "SYSTEM_LOCK_FILE", os.path.join(root, "vb.lock"))
     test.addCleanup(_check_released, test)
     return root
+
+
+def short_folder(test):
+    """A folder of the test with a path short enough for sockets."""
+
+    # the folders of trial are too deep for the 107 bytes of a socket
+    folder = tempfile.mkdtemp(prefix="vb-")
+    test.addCleanup(shutil.rmtree, folder)
+    return folder
+
+
+def make_socket(path):
+    """A socket file at path that nobody listens on, as after a crash."""
+
+    sock = socket.socket(socket.AF_UNIX)
+    sock.bind(path)
+    sock.close()
 
 
 def _check_released(test):

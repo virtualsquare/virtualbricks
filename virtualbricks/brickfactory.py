@@ -673,6 +673,7 @@ class Application:
             app.fixPdb()
         reactor.addSystemEventTrigger("before", "shutdown", store_settings)
         self.open_last_project(factory)
+        self.listen(factory, reactor)
         reactor.addSystemEventTrigger(
             "before", "shutdown", projects.save, factory
         )
@@ -698,6 +699,13 @@ class Application:
         from virtualbricks.console.terminal import start
 
         start(factory, self.get_namespace())
+
+    def listen(self, factory, reactor):
+        """Answer virtualbricks --command, on the control socket."""
+
+        from virtualbricks.console.control import listen
+
+        listen(factory, self.config.get("socket"), reactor)
 
     def run_script(self, factory, path):
         """Run the commands of path, as the console's source does."""

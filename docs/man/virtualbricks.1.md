@@ -67,6 +67,10 @@ way in: a lab on a machine without a display.
     on the machine; **user**, one for each user; **none**, no limit. See
     **FILES**.
 
+**--socket** *path*
+:   Listen on the control socket *path*, instead of *.control* in the
+    runtime folder; see **FILES**. Its folder must exist.
+
 **--version**
 :   Print the version and exit.
 
