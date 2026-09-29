@@ -52,7 +52,7 @@ from virtualbricks.bricks.virtualmachine import (  # noqa: E402
 )
 from virtualbricks.gui.mainwindow import tab  # noqa: E402
 from virtualbricks.bricks import brickinfo  # noqa: E402
-from virtualbricks.bricks.brickinfo import State  # noqa: E402
+from virtualbricks.bricks.brickinfo import NO_CONSOLE, State  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
     menu_item,
     menu_of,
@@ -69,9 +69,8 @@ sending_signal = "Sending to process signal {signame}!"
 sending_acpi = "send ACPI {acpievent}"
 
 GROUP = "brick"
-# The kinds of bricks without a settings panel, and without a console.
+# The kinds of bricks without a settings panel.
 NO_PANEL = frozenset(("Router",))
-NO_CONSOLE = frozenset(("Tap", "Capture"))
 # The choices of an event: the action, the setting of the brick it
 # changes, and the label of its submenu.
 WHEN = (

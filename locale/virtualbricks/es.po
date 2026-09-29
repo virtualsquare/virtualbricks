@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 12:02+0200\n"
+"POT-Creation-Date: 2026-09-29 12:10+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -129,7 +129,7 @@ msgstr ""
 msgid "Not configured"
 msgstr ""
 
-#: virtualbricks/bricks/brickinfo.py
+#: virtualbricks/bricks/brickinfo.py virtualbricks/console/bricks.py
 msgid "nothing"
 msgstr ""
 
@@ -1142,6 +1142,300 @@ msgid ""
 "{longest}"
 msgstr ""
 
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "No brick named {name}"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, fuzzy, python-brace-format
+msgid "{name} is not a virtual machine"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "No kind {word}: brick types lists them"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} has no socket to plug into"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "\"{word}\" is not a card: eth0, eth1…"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} is running: stop it first"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} has no key {key}: brick keys {name} lists them"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} is running: {keys} count from its next start"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, fuzzy, python-brace-format
+msgid "socket {name}"
+msgstr "Quitar"
+
+#: virtualbricks/console/bricks.py
+msgid "in nothing"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "host only"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, fuzzy, python-brace-format
+msgid "plugged into {name}"
+msgstr "Quitar"
+
+#: virtualbricks/console/bricks.py
+msgid "left"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "right"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "The kinds of brick, and what this computer lacks for each"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "KIND"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "NAME"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "WHAT IT IS"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "The bricks, their state and settings"
+msgstr ""
+
+#: virtualbricks/console/bricks.py virtualbricks/gui/dialogs/importdialog.py
+#: virtualbricks/gui/mainwindow/bricks/bricklist.py
+#, fuzzy
+msgid "No bricks"
+msgstr "Importar bricks"
+
+#: virtualbricks/console/bricks.py
+msgid "STATE"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "SUMMARY"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Make a brick; without a name, the kind's and the first free number"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "A brick's state, links and keys"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#: virtualbricks/gui/mainwindow/bricks/bricklist.py
+#, python-brace-format
+msgid "process {pid}"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "not used: {key} is {value}"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid ""
+"The keys of a kind of brick or of a brick, or one, with what each is for"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "No key {key}: brick keys lists them"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Change keys of a brick, all or none"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Put keys of a brick back to their defaults"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} runs, process {pid}"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Start bricks, after those they plug into, and wait for them"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} runs already"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} isn't running"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} stopped"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Stop bricks, and wait until their programs end"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Kill the programs of bricks"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Stop bricks, killing them after two seconds, and start them"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} runs again, process {pid}"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Pause the programs of bricks"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Let paused bricks go on"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Save a machine's state in its first disk, and stop it"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} is suspended"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Start a machine from the state that suspend saved"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} is resumed"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Reset a running machine, as its reset button"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Open the control monitor of a running brick in a terminal"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} has no control monitor"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} has network cards: brick card add {name} plug TARGET"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} doesn't plug into anything"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Plug a brick into switches: a wire or a Netemu's ends, left then right"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} has {count} plugs"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} has no free plug: brick disconnect {name}"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid ""
+"{brick} can't plug into {target}: only switches take plugs, unless "
+"allow_female_plugs is true"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Unplug a brick, or one end of a wire or a Netemu"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} has no ends: brick disconnect {name}"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "\"{word}\" is not model=, mac= or a target"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} has no eth{number}"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid ""
+"Add a network card: plugged into TARGET, a socket, or host only; model= and "
+"mac= are its own"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Change a card's model, mac, or target: a switch, hostonly, or nothing"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Take network cards out of a machine"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, fuzzy
+msgid "Rename a brick"
+msgstr "Nuevo Brick"
+
+#: virtualbricks/console/bricks.py
+msgid "Copy a brick, with its links"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+msgid "Delete bricks that don't run"
+msgstr ""
+
 #: virtualbricks/console/command.py
 #, python-brace-format
 msgid "\"{word}\" is not a number"
@@ -1696,12 +1990,6 @@ msgid "{n} event"
 msgid_plural "{n} events"
 msgstr[0] "Eventos"
 msgstr[1] "Eventos"
-
-#: virtualbricks/gui/dialogs/importdialog.py
-#: virtualbricks/gui/mainwindow/bricks/bricklist.py
-#, fuzzy
-msgid "No bricks"
-msgstr "Importar bricks"
 
 #: virtualbricks/gui/dialogs/importdialog.py
 msgid "no disk"
@@ -2462,11 +2750,6 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/bricks/bricklist.py
 #, python-brace-format
 msgid "Configure {name} first"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/bricklist.py
-#, python-brace-format
-msgid "process {pid}"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/bricklist.py

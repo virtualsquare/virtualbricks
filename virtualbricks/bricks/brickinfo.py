@@ -298,6 +298,9 @@ def connectable(brick, bricks) -> list:
 
 # New Brick
 
+# The kinds of brick without a control monitor.
+NO_CONSOLE = frozenset(("Tap", "Capture"))
+
 # The groups of the kinds.
 MACHINES = _("Machines and switches")
 LINKS = _("Links")
@@ -316,6 +319,8 @@ class Kind:
     about: str
     # the start of the names of its bricks: "tap" for tap1
     prefix: str
+    # its word in the console: brick new vm
+    word: str
 
     @property
     def type(self) -> str:
@@ -339,6 +344,7 @@ NEW_KINDS = (
             " network card for each switch it plugs into."
         ),
         "vm",
+        "vm",
     ),
     Kind(
         Switch,
@@ -349,6 +355,7 @@ NEW_KINDS = (
             " Ethernet switch. It can start as it is."
         ),
         "sw",
+        "switch",
     ),
     Kind(
         SwitchWrapper,
@@ -359,6 +366,7 @@ NEW_KINDS = (
             " plug into its socket, whose path its settings give."
         ),
         "wr",
+        "switchwrapper",
     ),
     Kind(
         Router,
@@ -369,6 +377,7 @@ NEW_KINDS = (
             " console configures it."
         ),
         "r",
+        "router",
     ),
     Kind(
         Wire,
@@ -376,6 +385,7 @@ NEW_KINDS = (
         _("A cable between two switches"),
         _("A cable between two switches, which its settings choose."),
         "w",
+        "wire",
     ),
     Kind(
         Netemu,
@@ -387,6 +397,7 @@ NEW_KINDS = (
             " time."
         ),
         "ne",
+        "netemu",
     ),
     Kind(
         TunnelListen,
@@ -397,6 +408,7 @@ NEW_KINDS = (
             " tunnel client on another computer, which connects to it."
         ),
         "tl",
+        "tunnelserver",
     ),
     Kind(
         TunnelConnect,
@@ -408,6 +420,7 @@ NEW_KINDS = (
             " give."
         ),
         "tc",
+        "tunnelclient",
     ),
     Kind(
         Tap,
@@ -419,6 +432,7 @@ NEW_KINDS = (
             " through sudo."
         ),
         "tap",
+        "tap",
     ),
     Kind(
         Capture,
@@ -429,6 +443,7 @@ NEW_KINDS = (
             " runs as root, through sudo."
         ),
         "cap",
+        "capture",
     ),
 )
 

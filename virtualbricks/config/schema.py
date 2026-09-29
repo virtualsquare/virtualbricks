@@ -585,6 +585,24 @@ def _detail(cls: type[object], attribute: attr.Attribute[object]) -> str:
     return "; ".join(parts)
 
 
+def field_help(cls_or_obj: object, name: str) -> tuple[str, str]:
+    """
+    What a field is for, as its help says, and its range or choices, its
+    default and what it goes with: the parts of the comment of its key.
+    KeyError if there is no such field.
+    """
+
+    for attribute in fields(cls_or_obj):
+        if attribute.name == name:
+            cls = (
+                cls_or_obj
+                if isinstance(cls_or_obj, type)
+                else type(cls_or_obj)
+            )
+            return field_info(attribute).help, _detail(cls, attribute)
+    raise KeyError(name)
+
+
 def notes(
     cls: type[object], data: Table, exclude: Collection[str] = ()
 ) -> Notes:

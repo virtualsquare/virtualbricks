@@ -41,7 +41,14 @@ from virtualbricks.i18n import N_, _
 
 
 class CommandError(Exception):
-    """A command that can't be done; str() says why, to the user."""
+    """
+    A command that can't be done; str() says why, to the user. lines are
+    what it did before, as starting the first of three bricks.
+    """
+
+    def __init__(self, message: str, lines: Sequence[str] = ()):
+        super().__init__(message)
+        self.lines = list(lines)
 
 
 @attr.define

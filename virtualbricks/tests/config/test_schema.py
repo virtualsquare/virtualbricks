@@ -50,7 +50,12 @@ from virtualbricks.config.schema import (
 from virtualbricks.config.report import Report
 from virtualbricks.config.tomlfile import Note
 from virtualbricks.config import schema
-from virtualbricks.config.schema import field_info, fields, references
+from virtualbricks.config.schema import (
+    field_help,
+    field_info,
+    fields,
+    references,
+)
 
 
 @define
@@ -546,6 +551,21 @@ class TestNotes(unittest.TestCase):
             result[("boot", "image")], Note("", "default empty", True)
         )
         self.assertEqual(len(result), 11)
+
+    def test_field_help(self):
+        # the parts of a key's comment, from the class or an instance
+        self.assertEqual(
+            field_help(Emulator, "period"),
+            ("How often", "1 or more; default 100"),
+        )
+        self.assertEqual(
+            field_help(Machine(), "ram"), ("", "1-1024; default 64")
+        )
+        self.assertEqual(
+            field_help(Display, "port"),
+            ("The port", "0-99; default 1; used when vnc is true"),
+        )
+        self.assertRaises(KeyError, field_help, Machine, "nope")
 
     def test_list_of_records(self):
         data = dump_record(Emulator(states=[Machine(), Machine(ram=8)]))

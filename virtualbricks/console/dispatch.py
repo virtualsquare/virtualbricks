@@ -33,7 +33,7 @@ from twisted.logger import Logger
 from virtualbricks import errors
 
 # the modules of the nouns declare their commands
-from virtualbricks.console import general  # noqa: F401
+from virtualbricks.console import bricks, general  # noqa: F401
 from virtualbricks.console.command import CommandError, Context
 from virtualbricks.console.parser import parse
 from virtualbricks.i18n import _
