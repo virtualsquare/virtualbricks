@@ -1,0 +1,810 @@
+<title>Remote GUI</title>
+<meta name="description" content="The windows of Virtualbricks for a Virtualbricks that runs on another machine: virtualbricks --connect shows the project open there, keeps a copy of it that the other end updates over AMP, and sends every action there.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  .ref.open { color: var(--decide); background: var(--decide-soft); }
+
+  /* pages 14 to 19 */
+  .chip {
+    display: inline-block;
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.04em;
+    padding: 3px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    vertical-align: 1px;
+    color: var(--risk);
+    background: var(--risk-soft);
+  }
+  .prompt { color: var(--code-h); font-weight: 500; }
+  table.commands td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.commands td:last-child { color: var(--muted); font-size: 13.5px; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+  .note { font-size: 14px; color: var(--muted); }
+  /* page 19 */
+  figure.diagram { margin: 18px 0 22px; }
+  figure.diagram .stage { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 10px; }
+  figure.diagram svg { display: block; width: 100%; min-width: 660px; height: auto; color: var(--ink); }
+  figure.diagram figcaption { font-size: 13.5px; color: var(--muted); margin-top: 8px; max-width: 70ch; }
+  .diagram .zone { fill: var(--ground); stroke: var(--rule); stroke-width: 1; }
+  .diagram .box { fill: var(--surface); stroke: var(--muted); stroke-width: 1; }
+  .diagram .box.hot { fill: var(--accent-soft); stroke: var(--accent); }
+  .diagram text { fill: var(--ink); font-family: var(--font-body); font-size: 13px; }
+  .diagram text.head { font-family: var(--font-head); font-weight: 600; font-size: 15px; }
+  .diagram text.sub { fill: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+  .diagram text.edge-label { fill: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+  .diagram text.wire-label { fill: var(--accent); font-family: var(--font-mono); font-size: 11.5px; }
+  .diagram .edge { stroke: var(--muted); stroke-width: 1.3; fill: none; }
+  .diagram .wire { stroke: var(--accent); stroke-width: 1.8; fill: none; }
+  .diagram .head-muted { fill: var(--muted); }
+  .diagram .head-accent { fill: var(--accent); }
+  table.parts td:first-child { white-space: nowrap; font-weight: 500; }
+  table.parts td.step { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 19 &middot; Design &middot; revision 1, proposal</div>
+    <h1>Virtualbricks Remote GUI</h1>
+    <p class="lede"><code>virtualbricks --connect ssl:lab.example:8765</code> opens the windows of the Virtualbricks that runs on another machine. The project you see is the one open there, and whatever you do in the windows, from starting a brick to the OK of its settings, happens there. The windows keep a copy of that project, which the other end keeps up to date, so they read it as fast as today and only the actions cross the network.</p>
+    <ul class="meta">
+      <li>branch <b>develop</b> at 6430114</li>
+      <li>revision 1 &middot; 29 September 2026</li>
+      <li><span class="status">proposal</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your request of today: &ldquo;With <code>virtualbricks --command</code> it is possible to control an instance of Virtualbricks via CLI. I want to be able to control a remote instance of Virtualbricks through the GUI via the control sockets. The open project is the remote one and the actions affect the remote bricks. Create a plan.&rdquo; It builds on the sockets of pages <a href="15%20-%20control-socket.html">15</a>, <a href="16%20-%20amp-socket.html">16</a> and <a href="17%20-%20network-sockets.html">17</a>: AMP, <code>tcp</code> and <code>ssl</code>, the token and the client certificates stay as they are. The twelve questions, R1 to R12 in <a href="#decisions">&sect;12</a>, are open; each has my recommendation. At your request, the page is committed on <code>develop</code>; nothing of it is implemented yet.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>Today</a></li>
+        <li><a href="#looks"><span>3</span>How it looks</a></li>
+        <li><a href="#ends"><span>4</span>The two ends</a></li>
+        <li><a href="#copy"><span>5</span>The copy of the project</a></li>
+        <li><a href="#engine"><span>6</span>The engine</a></li>
+        <li><a href="#protocol"><span>7</span>The protocol</a></li>
+        <li><a href="#parts"><span>8</span>Each part of the windows</a></li>
+        <li><a href="#machine"><span>9</span>Files, consoles, displays</a></li>
+        <li><a href="#code"><span>10</span>The code and the tests</a></li>
+        <li><a href="#plan"><span>11</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>12</span>Decisions</a></li>
+        <li><a href="#later"><span>13</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <p>Below, <em>the lab machine</em> is the one whose Virtualbricks runs the bricks, and <em>the desktop</em> the one that shows the windows. They can be the same machine.</p>
+        <dl class="glance">
+          <div><dt>Start</dt><dd><code>virtualbricks --connect DESCRIPTION</code>, with the descriptions that <code>--command</code> takes: <code>unix:PATH</code>, <code>tcp:PORT</code>, <code>ssl:HOST:PORT:caCertsDir=FOLDER</code>. The socket must speak AMP, and <code>--connect</code> assumes <code>protocol=amp</code> (<a class="ref open" href="#decisions">R1</a>).</dd></div>
+          <div><dt>Lab machine</dt><dd>Any Virtualbricks with an AMP socket, with or without its own windows: <code>--socket ssl:8765:privateKey=FILE:protocol=amp:interface=0.0.0.0</code>. Nothing else to set.</dd></div>
+          <div><dt>The copy</dt><dd>The windows hold a copy of the open project, made of the real bricks, events and images, in a factory that never starts a program. The lab machine sends the project when the windows connect, then each change as it happens (<a class="ref open" href="#decisions">R3</a>).</dd></div>
+          <div><dt>Actions</dt><dd>Whatever the windows do goes through one object, the engine. On this machine it calls the bricks as today. Over a connection it sends the console&rsquo;s line, <code>brick start vm1</code>, or a command of its own where the console has none, as the OK of a panel (<a class="ref open" href="#decisions">R4</a>).</dd></div>
+          <div><dt>Protocol</dt><dd>AMP, which lets the lab machine call the windows as well as answer them (<a class="ref open" href="#decisions">R2</a>). New commands, with new names; those of page 16 don&rsquo;t change.</dd></div>
+          <div><dt>Order</dt><dd>An answer comes after the changes its command made: once <code>brick new</code> is answered, the brick is in the copy.</dd></div>
+          <div><dt>Projects</dt><dd>The Projects window lists, opens and changes the projects of the lab machine, and every window connected follows (<a class="ref open" href="#decisions">R5</a>).</dd></div>
+          <div><dt>Together</dt><dd>Any number of windows at once, the lab machine&rsquo;s own too. An OK is refused when a key it changes changed there since the panel opened (<a class="ref open" href="#decisions">R7</a>).</dd></div>
+          <div><dt>Files</dt><dd>A path is a path of the lab machine, typed with completion from its folders (<a class="ref open" href="#decisions">R9</a>). Import and Export wait (<a class="ref open" href="#decisions">R12</a>).</dd></div>
+          <div><dt>Consoles</dt><dd>The console of a brick opens in a terminal of the desktop, through the connection (<a class="ref open" href="#decisions">R8</a>).</dd></div>
+          <div><dt>Quit</dt><dd>Closes the windows; the lab machine goes on (<a class="ref open" href="#decisions">R6</a>).</dd></div>
+          <div><dt>Plan</dt><dd>Seven steps, a commit each, on a new branch <code>mg/remote-gui</code>. The first sends today&rsquo;s windows through the engine and changes nothing you can see (<a href="#plan">&sect;11</a>).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>Today</h2>
+        <p><code>--command</code> sends a line of the console to the Virtualbricks that runs, through its control socket, and prints the answer (page 15). Page 16 added AMP, page 17 added <code>tcp</code> and <code>ssl</code> with a token or client certificates, and <code>--command</code> speaks both protocols. Whatever reaches a socket can do what the console does.</p>
+        <p>The windows use none of it. They hold the factory of their own process and call it and its objects directly:</p>
+        <ul>
+          <li>The Bricks, Events, Images and Topology tabs read <code>factory.bricks</code>, <code>iter_events()</code> and <code>iter_disk_images()</code>, and follow the signals <code>brick-added</code>, <code>brick-changed</code>, <code>brick-removed</code> and those of the events and images.</li>
+          <li>A menu calls <code>brick.poweron()</code>, <code>send_signal()</code>, <code>open_console()</code>; a dialog calls <code>factory.new_brick()</code>, <code>del_brick()</code>, <code>rename()</code>; the OK of a panel calls <code>draft.apply()</code>, which moves the plugs and calls <code>brick.set()</code>. The Projects window calls the workspace, the Readme tab <code>set_description()</code>, the Settings window <code>set_setting()</code>. <code>grep</code> finds about 50 such places, in some 20 modules.</li>
+          <li>Some read the machine they run on: <code>qemu-img info</code> of the image files, the answers of QEMU for the machine&rsquo;s panel, <code>lsusb</code> for its USB devices, the programs of VDE and QEMU for New Brick and the warning at start, and the file choosers.</li>
+        </ul>
+        <p>The console can&rsquo;t do everything the windows do. It can&rsquo;t set a key whose value is a list or a table, as <code>usb_devices</code> or the states of a Netemu: those kinds say &ldquo;can&rsquo;t be set from the console&rdquo;. It can&rsquo;t make an image file, work on the private copies of a machine&rsquo;s disks, read or write the README, or import and export archives. <code>brick monitor</code> opens its terminal on the machine where Virtualbricks runs.</p>
+        <p>And a socket only answers: nothing tells a client that a brick stopped. The IDEAS have &ldquo;Follow what changes through the control socket, <code>watch</code>&hellip; over AMP, as commands that Virtualbricks sends to the program (16 &sect;10)&rdquo;. This page does that, for the windows.</p>
+      </section>
+
+      <section id="looks">
+        <h2><span class="num">&sect;3</span>How it looks</h2>
+        <p>On the lab machine, a Virtualbricks with an AMP socket; on the desktop, the windows. Across the network, <code>ssl</code> with the token or a client certificate, as page 17 set up. Or a <code>unix</code> socket that <code>ssh</code> forwards, which needs neither, since <code>ssh</code> already knows who you are:</p>
+        <div class="compare">
+          <figure class="code">
+            <figcaption>ssl, with the token</figcaption>
+<pre><code><span class="c"># the lab machine</span>
+<span class="prompt">$</span> virtualbricks --no-gui --socket \
+    ssl:8765:privateKey=lab.pem:protocol=amp:\
+interface=0.0.0.0
+
+<span class="c"># the desktop, with a copy of its token</span>
+<span class="prompt">$</span> virtualbricks --connect \
+    ssl:lab.example:8765:caCertsDir=~/vb/lab</code></pre>
+          </figure>
+          <figure class="code">
+            <figcaption>unix, through ssh</figcaption>
+<pre><code><span class="c"># the lab machine</span>
+<span class="prompt">$</span> virtualbricks --no-gui --socket \
+    unix:/run/user/1000/vb.amp:protocol=amp
+
+<span class="c"># the desktop</span>
+<span class="prompt">$</span> ssh -N -L /tmp/lab.amp:/run/user/1000/vb.amp \
+    lab.example &amp;
+<span class="prompt">$</span> virtualbricks --connect unix:/tmp/lab.amp</code></pre>
+          </figure>
+        </div>
+        <ul>
+          <li><strong>The windows</strong> are the ones you know, with the project of the lab machine. The title names it: <code>Virtualbricks (project: ospf-lab on lab.example)</code>.</li>
+          <li><strong>An action</strong> shows once the lab machine has done it: Start, and the row turns to <em>Running</em> with its process when the program runs there. A refusal opens a dialog, as today, with the lab machine&rsquo;s message: &ldquo;Cannot start &lsquo;vm1&rsquo;: not configured&rdquo;.</li>
+          <li><strong>The Logs window</strong> shows the messages of the lab machine beside those of the windows, each with the machine it comes from, starting with the last 500 that the lab machine kept.</li>
+          <li><strong>When the connection breaks</strong>, the windows turn insensitive under a bar: &ldquo;The connection to lab.example port 8765 is lost: connection refused&rdquo;, with Reconnect and Quit. If the lab machine quit, the bar says so. Reconnect builds the copy again from nothing.</li>
+          <li><strong>What doesn&rsquo;t work over a connection yet</strong> is greyed, with the tooltip &ldquo;Not over a connection, for now&rdquo;: Import and Export (<a class="ref open" href="#decisions">R12</a>).</li>
+          <li><strong>The messages of the lab machine</strong>, refusals and log, come in its language; the words of the windows in yours. The IDEAS already have this for <code>--command</code>.</li>
+          <li><strong>The terminal</strong> that started the windows reads no console: <code>--connect</code> implies <code>--noterm</code>. <code>--no-gui</code>, <code>--run</code>, <code>--workspace</code>, <code>--lock</code> and <code>--socket</code> are refused with it, as the options of a run are with <code>--command</code>: &ldquo;--connect opens the windows of another Virtualbricks: --lock is for the one that runs the bricks&rdquo;. The windows take no lock and open no project of their own.</li>
+        </ul>
+      </section>
+
+      <section id="ends">
+        <h2><span class="num">&sect;4</span>The two ends</h2>
+        <figure class="diagram">
+          <div class="stage">
+          <svg viewBox="0 0 900 330" role="img" aria-label="Over a connection, the tabs read a copy of the project and send their actions to an engine; the engine sends them over one AMP connection to the control socket of the lab machine, which runs them on its factory and sends back the changes, before the answer.">
+            <defs>
+              <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" class="head-muted"></path>
+              </marker>
+              <marker id="aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" class="head-accent"></path>
+              </marker>
+            </defs>
+            <rect class="zone" x="10" y="30" width="360" height="285" rx="8"></rect>
+            <rect class="zone" x="530" y="30" width="360" height="285" rx="8"></rect>
+            <text class="head" x="26" y="58">The desktop</text>
+            <text class="sub" x="26" y="76">the windows, --connect</text>
+            <text class="head" x="546" y="58">The lab machine</text>
+            <text class="sub" x="546" y="76">Virtualbricks, --socket &#8230;:protocol=amp</text>
+
+            <rect class="box" x="30" y="100" width="130" height="195" rx="5"></rect>
+            <text x="95" y="190" text-anchor="middle">Tabs, panels</text>
+            <text x="95" y="208" text-anchor="middle">and dialogs</text>
+
+            <rect class="box hot" x="220" y="120" width="130" height="60" rx="5"></rect>
+            <text x="285" y="146" text-anchor="middle">Engine</text>
+            <text class="sub" x="285" y="164" text-anchor="middle">RemoteEngine</text>
+
+            <rect class="box hot" x="220" y="225" width="130" height="60" rx="5"></rect>
+            <text x="285" y="251" text-anchor="middle">Project copy</text>
+            <text class="sub" x="285" y="269" text-anchor="middle">MirrorFactory</text>
+
+            <line class="edge" x1="162" y1="150" x2="216" y2="150" marker-end="url(#ah)"></line>
+            <text class="edge-label" x="189" y="142" text-anchor="middle">acts</text>
+            <line class="edge" x1="218" y1="255" x2="164" y2="255" marker-end="url(#ah)"></line>
+            <text class="edge-label" x="191" y="247" text-anchor="middle">signals</text>
+
+            <rect class="box" x="550" y="100" width="130" height="195" rx="5"></rect>
+            <text x="615" y="182" text-anchor="middle">Control socket</text>
+            <text class="sub" x="615" y="200" text-anchor="middle">AMPControl</text>
+            <text class="sub" x="615" y="215" text-anchor="middle">and Follower</text>
+
+            <rect class="box" x="740" y="100" width="130" height="90" rx="5"></rect>
+            <text x="805" y="136" text-anchor="middle">Factory</text>
+            <text class="sub" x="805" y="154" text-anchor="middle">bricks, events,</text>
+            <text class="sub" x="805" y="169" text-anchor="middle">images, project</text>
+
+            <rect class="box" x="740" y="205" width="130" height="90" rx="5"></rect>
+            <text x="805" y="241" text-anchor="middle">Programs, files</text>
+            <text class="sub" x="805" y="259" text-anchor="middle">QEMU, VDE,</text>
+            <text class="sub" x="805" y="274" text-anchor="middle">qemu-img, lsusb</text>
+
+            <line class="edge" x1="682" y1="130" x2="736" y2="130" marker-end="url(#ah)"></line>
+            <text class="edge-label" x="710" y="122" text-anchor="middle">runs</text>
+            <line class="edge" x1="738" y1="165" x2="684" y2="165" marker-end="url(#ah)"></line>
+            <text class="edge-label" x="711" y="181" text-anchor="middle">signals</text>
+            <line class="edge" x1="682" y1="250" x2="736" y2="250" marker-end="url(#ah)"></line>
+            <text class="edge-label" x="710" y="242" text-anchor="middle">asks</text>
+
+            <text class="sub" x="450" y="98" text-anchor="middle">one AMP connection</text>
+            <text class="sub" x="450" y="112" text-anchor="middle">unix, tcp or ssl</text>
+            <line class="wire" x1="352" y1="142" x2="546" y2="142" marker-end="url(#aw)"></line>
+            <text class="wire-label" x="450" y="134" text-anchor="middle">Run, Apply, Readme&#8230;</text>
+            <line class="wire" x1="548" y1="166" x2="354" y2="166" marker-end="url(#aw)"></line>
+            <text class="wire-label" x="450" y="183" text-anchor="middle">answers</text>
+            <line class="wire" x1="548" y1="255" x2="354" y2="255" marker-end="url(#aw)"></line>
+            <text class="wire-label" x="450" y="247" text-anchor="middle">Changed, Removed, Logged&#8230;</text>
+          </svg>
+          </div>
+          <figcaption>Over a connection, the tabs read the copy and follow its signals, as they follow the factory today; what they do goes to the engine, which sends it over the connection. The lab machine runs it, and sends back what changed before the answer. On this machine the copy is the factory itself, and the engine calls it.</figcaption>
+        </figure>
+        <p>The same windows serve both cases. What changes between them is two objects, which the windows get when they start:</p>
+        <ul>
+          <li><strong>What they read:</strong> the factory of this process, or <code>MirrorFactory</code>, the copy of the lab machine&rsquo;s project (<a href="#copy">&sect;5</a>). Both are a <code>BrickFactory</code>, with the same objects and signals.</li>
+          <li><strong>What they call:</strong> <code>LocalEngine</code>, which does what the windows do today, or <code>RemoteEngine</code>, which sends it (<a href="#engine">&sect;6</a>).</li>
+        </ul>
+        <p>On the lab machine, each AMP connection that asks to follow gets a <code>Follower</code>, which listens to the signals of the factory, the workspace and the settings, and turns them into commands that it calls on the windows (<a href="#protocol">&sect;7</a>). Every AMP socket answers the windows; there is no option to open.</p>
+      </section>
+
+      <section id="copy">
+        <h2><span class="num">&sect;5</span>The copy of the project</h2>
+        <p>The copy is built with the code that reads a project file. The lab machine sends the tables that <code>project_document()</code> writes, one object at a time, and the windows build them with <code>restore_project()</code> into a <code>MirrorFactory</code>. The classes are the real ones, so <code>brickinfo</code> and <code>eventinfo</code>, the drafts of the panels with their checks and their <code>when</code>, the summaries of the rows and the layout of the Topology tab all work as they are.</p>
+        <h3>Beyond the project file</h3>
+        <ul>
+          <li><strong>The state.</strong> A running brick has its process number: its <code>proc</code> is a stand-in that has the number and nothing to signal, so <code>is_running()</code> and <code>brickinfo.process()</code> answer as for a local one. An event that waits has the seconds left, which the windows count down on their own clock; no clock is shared between the machines.</li>
+          <li><strong>The lab machine.</strong> The name of the project, its settings, the length of its runtime folder (New Brick and Rename check that the sockets of a name fit, 107 bytes), its version, which programs it lacks and what each kind of New Brick lacks there, and whether it has KSM.</li>
+        </ul>
+        <h3>Kept up to date</h3>
+        <ul>
+          <li><strong>A change</strong> updates the object in place: <code>load_config_table()</code>, the plugs moved to their new sockets, the state, then <code>notify_changed()</code>. The rows and an open panel keep their objects.</li>
+          <li><strong>A rename</strong> is a push of its own, since the copy finds objects by name; the objects whose references moved come as changes after it.</li>
+          <li><strong>A new project</strong> opened on the lab machine empties the copy, and the whole project comes again; the tabs get their <code>on_open()</code>, as when a project opens today.</li>
+        </ul>
+        <h3>It never starts anything</h3>
+        <p>The engine never calls a brick of the copy, but a window that still does, a bug, must not start a program on the desktop. So the bricks and events of a <code>MirrorFactory</code> refuse <code>poweron()</code>, <code>poweroff()</code>, <code>send()</code>, <code>send_signal()</code> and <code>open_console()</code> with an error that names the call. The copy is never saved either: the lab machine saves its project, and saves it every three minutes, as today.</p>
+      </section>
+
+      <section id="engine">
+        <h2><span class="num">&sect;6</span>The engine</h2>
+        <p>What the windows change, run or ask of the machine goes through the engine, and only through it. Each call returns a Deferred, on this machine too, so the windows wait in the same way on both. The tests of the windows check each action against a fake engine.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>What</th><th>LocalEngine</th><th>RemoteEngine</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">Start, stop, kill, restart, pause, continue, reset, suspend, resume</td><td><code>brick.poweron()</code>, <code>poweroff()</code>, <code>send_signal()</code>, <code>restart()</code>&hellip;</td><td><code>brick start vm1</code>, <code>brick stop vm1</code>&hellip;</td></tr>
+            <tr><td class="nowrap">New brick, rename, duplicate, delete</td><td><code>factory.new_brick()</code>, <code>rename()</code>, <code>dup_brick()</code>, <code>del_brick()</code></td><td><code>brick new qemu vm2</code>, <code>brick rename</code>, <code>brick duplicate</code>, <code>brick delete</code></td></tr>
+            <tr><td class="nowrap">Connect, from the menu or a drop</td><td><code>brickinfo.connect(a, b)</code></td><td><code>Connect</code>, which calls <code>brickinfo.connect()</code> there: it picks a free plug or a new card, which the console splits in two commands</td></tr>
+            <tr><td class="nowrap">OK of a panel</td><td><code>draft.apply()</code></td><td><code>Apply</code>: the keys changed, the plugs moved and the extras of the draft (<a href="#protocol">&sect;7</a>)</td></tr>
+            <tr><td class="nowrap">Events</td><td><code>new_event()</code>, <code>poweron()</code>, <code>poweroff()</code>, <code>run_actions()</code>&hellip;</td><td><code>event new</code>, <code>event start</code>, <code>event stop</code>, <code>event run</code>, <code>rename</code>, <code>duplicate</code>, <code>delete</code>; OK by <code>Apply</code></td></tr>
+            <tr><td class="nowrap">Images</td><td><code>new_disk_image()</code>, <code>remove_disk_image()</code></td><td><code>image add</code>, <code>image set</code>, <code>image rename</code>, <code>image delete</code></td></tr>
+            <tr><td class="nowrap">Image files</td><td><code>qemu-img create</code>, <code>copy_sparse()</code>, <code>archive.merge_image()</code>, the trash</td><td><code>MakeImage</code>, <code>CopyImage</code>, <code>SaveCopy</code>, <code>MergeCopy</code>, <code>StartOver</code>, <code>TrashFile</code></td></tr>
+            <tr><td class="nowrap">Projects</td><td>the workspace</td><td><code>Projects</code> and <code>Project</code> for the list; <code>project open</code>, <code>new</code>, <code>save</code>, <code>rename</code>, <code>duplicate</code>, <code>delete</code>; <code>DiskUsage</code></td></tr>
+            <tr><td class="nowrap">README</td><td><code>get_description()</code>, <code>set_description()</code></td><td><code>Readme</code>, <code>SetReadme</code></td></tr>
+            <tr><td class="nowrap">Settings</td><td><code>set_setting()</code></td><td><code>setting set KEY=VALUE</code></td></tr>
+            <tr><td class="nowrap">Facts of the machine</td><td><code>programs.qemu()</code>, <code>machine_properties()</code>, <code>qemu-img info</code>, <code>lsusb</code>, the folders</td><td><code>QemuFacts</code>, <code>MachineProperties</code>, <code>ImageFacts</code>, <code>UsbDevices</code>, <code>Folder</code></td></tr>
+            <tr><td class="nowrap">Console of a brick</td><td><code>brick.open_console()</code></td><td><code>Attach</code>, and a terminal on the desktop (<a href="#machine">&sect;9</a>)</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>A line is built from its words with <code>shlex.quote()</code>, so a name or a description with spaces arrives whole. Its answer is dropped when it succeeds, since the pushes carry what changed; a refusal becomes the message of a dialog.</p>
+        <p><code>QemuFacts</code> answers the texts that QEMU printed, <code>-version</code>, <code>-machine help</code>, <code>-cpu help</code>, <code>-device help</code> and the others, and the desktop reads them with the functions of <code>programs.py</code> that read them today. The reading stays in one place, and the facts are those of the QEMU on the lab machine.</p>
+        <p>Step 1 of the plan gives today&rsquo;s windows the engine, with <code>LocalEngine</code> only. It is the IDEAS items &ldquo;Extract the logic from the windows&rdquo; and &ldquo;Move <code>startstop_brick</code> out of VBGUI&rdquo;, for what changes the project.</p>
+      </section>
+
+      <section id="protocol">
+        <h2><span class="num">&sect;7</span>The protocol</h2>
+        <p>AMP, over any socket of <code>--socket</code> with <code>protocol=amp</code>. The commands of page 16, <code>Hello</code>, <code>Run</code>, <code>Challenge</code> and <code>Authenticate</code>, don&rsquo;t change, and <code>Hello</code> still answers protocol 1, the number <code>--command</code> checks: the new commands are new names, as page 16 asks. On <code>tcp</code> and <code>ssl</code>, they wait for the proof of the token, as <code>Run</code> does. Structured values, as the table of a brick, are JSON in an AMP string, since AMP has no tables.</p>
+        <h3>From the windows</h3>
+        <div class="scroll">
+        <table class="commands wide">
+          <thead><tr><th>Command</th><th>Answer, and what it does</th></tr></thead>
+          <tbody>
+            <tr><td>Follow()</td><td>The project and the version; then the lab machine sends the whole project, and each change after it.</td></tr>
+            <tr><td>Run(line)</td><td>Page 16&rsquo;s. The windows never send <code>cwd</code>: their paths are the lab machine&rsquo;s.</td></tr>
+            <tr><td>Apply(kind, name, changes, before, links, extras)</td><td>The OK of a panel: the lab machine makes a draft of its brick, event or image, sets the changes, moves the links and gives the extras, then <code>apply()</code>, all or nothing. <code>Conflict</code> when a key in <code>before</code> has another value there (<a class="ref open" href="#decisions">R7</a>).</td></tr>
+            <tr><td>Connect(source, target)</td><td><code>brickinfo.connect()</code> on the lab machine.</td></tr>
+            <tr><td>Projects(), Project(name)</td><td>The names of the projects of the workspace, then the summary of one: its description, images and problem. One at a time, since AMP carries 64 KiB in a value.</td></tr>
+            <tr><td>DiskUsage(name)</td><td>The space a project takes, in a thread there, as the Projects window does today.</td></tr>
+            <tr><td>Readme(), SetReadme(text)</td><td>The README of the open project.</td></tr>
+            <tr><td>QemuFacts(program), MachineProperties(program, machine)</td><td>The texts QEMU printed, for <code>programs.qemu_info()</code>.</td></tr>
+            <tr><td>ImageFacts(path), UsbDevices()</td><td>What <code>qemu-img info</code> says, with the size and time of the file; the USB devices of the lab machine.</td></tr>
+            <tr><td>Folder(path)</td><td>The entries of a folder of the lab machine that start with the last part of path, at most 200, for the completion.</td></tr>
+            <tr><td>MakeImage, CopyImage, SaveCopy, MergeCopy, StartOver, TrashFile</td><td>What the Images tab and the disks of a machine do to files, run there with the code they run today.</td></tr>
+            <tr><td>Attach(brick, console)</td><td>Step 6: the connection carries the bytes of the brick&rsquo;s console from then on (<a href="#machine">&sect;9</a>).</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>From the lab machine</h3>
+        <p>Commands that the lab machine calls on the windows, which need no answer (AMP&rsquo;s <code>requiresAnswer = False</code>):</p>
+        <div class="scroll">
+        <table class="commands wide">
+          <thead><tr><th>Command</th><th>When</th></tr></thead>
+          <tbody>
+            <tr><td>Opened(project, settings, machine)</td><td>After <code>Follow</code>, and when a project opens there: the copy starts again. <code>machine</code> has the version, the runtime folder, the programs it lacks, the lacks of each kind, KSM.</td></tr>
+            <tr><td>Changed(kind, name, table, state)</td><td>A brick, event or image added or changed: its table as the project file writes it, and its state.</td></tr>
+            <tr><td>Renamed(kind, old, new)</td><td>A rename, before the changes it made to the others.</td></tr>
+            <tr><td>Removed(kind, name)</td><td>A delete.</td></tr>
+            <tr><td>Synced()</td><td>The whole project has been sent: the windows show it.</td></tr>
+            <tr><td>SettingsChanged(settings)</td><td>A setting of the lab machine or of the project changed.</td></tr>
+            <tr><td>Logged(time, level, text, stream)</td><td>A message of the log, info and above. At <code>Follow</code>, the last 500, which the lab machine keeps while it has an AMP socket.</td></tr>
+            <tr><td>Quitting()</td><td>The lab machine quits: the bar says so, rather than &ldquo;connection lost&rdquo;.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <figure class="code">
+          <figcaption>The windows connect, then start r1</figcaption>
+<pre><code><span class="h">windows</span>  Hello                  <span class="c">&rarr;</span>
+         <span class="c">&larr;</span> protocol 1, version 2.1.0, project ospf-lab
+<span class="h">windows</span>  Follow                 <span class="c">&rarr;</span>
+         <span class="c">&larr;</span> answer: project ospf-lab
+         <span class="c">&larr;</span> Opened ospf-lab {"cow_format": "qcow2", &hellip;} {&hellip;}
+         <span class="c">&larr;</span> Changed image frr-debian {"path": &hellip;} {}
+         <span class="c">&larr;</span> Changed event boot {"delay": 5, &hellip;} {"left": null}
+         <span class="c">&larr;</span> Changed brick sw1 {"type": "switch", &hellip;} {"pid": 4242}
+         <span class="c">&larr;</span> Changed brick r1 {"type": "qemu", &hellip;} {"pid": null}
+         <span class="c">&larr;</span> Synced
+<span class="h">windows</span>  Run "brick start r1"   <span class="c">&rarr;</span>
+         <span class="c">&larr;</span> Changed brick r1 {&hellip;} {"pid": 4250}
+         <span class="c">&larr;</span> answer: ["r1 runs, process 4250"]</code></pre>
+        </figure>
+        <h3>Three rules</h3>
+        <ul>
+          <li><strong>Pushes before the answer.</strong> Before it writes the answer of a command, the lab machine sends the pushes that wait. Once <code>brick new</code> is answered, New Brick finds the brick in the copy and opens its settings.</li>
+          <li><strong>Once a turn.</strong> Changes gather until the end of the reactor&rsquo;s turn, and each object goes once, in the order it first changed: starting 20 bricks sends 20 <code>Changed</code>, not 60. A new switch goes before the brick plugged into it.</li>
+          <li><strong>64 KiB.</strong> A value of AMP holds at most 64 KiB. A brick&rsquo;s table is a few hundred bytes; a README or a project summary longer than that is refused with the message of page 16&rsquo;s <code>AnswerTooLong</code>.</li>
+        </ul>
+        <p>Nothing here gives a connection more than it has: whatever reaches an AMP socket can already do what the console does, shell actions included (17 &sect;12). <code>Folder</code> lists what the user of the lab machine can list, and <code>Attach</code> reaches only the console sockets of a running brick, which the lab machine names itself.</p>
+      </section>
+
+      <section id="parts">
+        <h2><span class="num">&sect;8</span>Each part of the windows</h2>
+        <div class="scroll">
+        <table class="parts wide">
+          <thead><tr><th>Part</th><th>Over a connection</th><th>Step</th></tr></thead>
+          <tbody>
+            <tr><td>Title</td><td>&ldquo;Virtualbricks (project: ospf-lab on lab.example)&rdquo;; for <code>unix</code>, the path of the socket.</td><td class="step">4</td></tr>
+            <tr><td>Bricks tab</td><td>Rows, states, processes and summaries from the copy.</td><td class="step">3</td></tr>
+            <tr><td>New Brick</td><td>The kinds with what the lab machine lacks for each; the name checked on the copy, then <code>brick new</code>, and the new brick&rsquo;s settings open.</td><td class="step">4</td></tr>
+            <tr><td>Brick menu</td><td>Start, Stop, Kill, Restart, Pause, Continue, Reset, Suspend, Resume, Rename, Duplicate, Delete as lines, and the events of its start and stop as <code>brick set vm1 on_start=boot</code>; Connect by <code>Connect</code>.</td><td class="step">4</td></tr>
+            <tr><td>Open Console</td><td>A terminal on the desktop, through the connection (<a class="ref open" href="#decisions">R8</a>).</td><td class="step">6</td></tr>
+            <tr><td>Panels</td><td>The draft on the copy, OK by <code>Apply</code>. The panel of a machine asks <code>QemuFacts</code>, <code>MachineProperties</code>, <code>UsbDevices</code> and <code>ImageFacts</code>.</td><td class="step">4, 5</td></tr>
+            <tr><td>Events tab</td><td>Rows from the copy, with the seconds left on the desktop&rsquo;s clock; New Event, Start, Stop, Run, Rename, Duplicate, Delete as lines; OK by <code>Apply</code>.</td><td class="step">3, 4</td></tr>
+            <tr><td>Images tab</td><td>Rows from the copy, facts by <code>ImageFacts</code>; Add Image, New Empty Disk and the menu of a disk by the image file commands, with paths of the lab machine.</td><td class="step">5</td></tr>
+            <tr><td>Topology tab</td><td>Drawn from the copy on the desktop; Export writes a file of the desktop.</td><td class="step">3</td></tr>
+            <tr><td>Readme tab</td><td><code>Readme</code> and <code>SetReadme</code>.</td><td class="step">5</td></tr>
+            <tr><td>Projects</td><td>The Projects window, New Project, Open Recent, Save, Rename, Duplicate by <code>Projects</code>, <code>Project</code>, <code>DiskUsage</code> and the <code>project</code> lines (<a class="ref open" href="#decisions">R5</a>).</td><td class="step">5</td></tr>
+            <tr><td>Import, Export</td><td>Greyed, with a tooltip (<a class="ref open" href="#decisions">R12</a>).</td><td class="step">4</td></tr>
+            <tr><td>Settings</td><td>Three pages: This computer (terminal, tray icon, the warning at start), The lab machine (KSM, audio driver; the workspace shown), and the project&rsquo;s (<a class="ref open" href="#decisions">R10</a>).</td><td class="step">5</td></tr>
+            <tr><td>Logs window</td><td>The messages of the desktop and of the lab machine, each marked with its machine.</td><td class="step">4</td></tr>
+            <tr><td>Warning at start</td><td>The programs and KSM of the lab machine, from <code>Opened</code>.</td><td class="step">4</td></tr>
+            <tr><td>Error dialogs</td><td>The refusals of the windows&rsquo; own actions. The other errors of the lab machine go to the Logs window only, or every error of every brick there would open a dialog on every desktop.</td><td class="step">4</td></tr>
+            <tr><td>Tray icon, About</td><td>The desktop&rsquo;s, as today; About adds the version of the lab machine.</td><td class="step">4</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="machine">
+        <h2><span class="num">&sect;9</span>Files, consoles, displays</h2>
+        <p>A brick lives on the lab machine, and so does what it uses. Four things follow from that.</p>
+        <h3>Paths</h3>
+        <p>A path in a panel, in Add Image, the kernel and initrd of a machine, a CD-ROM: all are paths of the lab machine. A file chooser shows the desktop&rsquo;s files, so over a connection a path row is an entry that completes from the lab machine&rsquo;s folders with <code>Folder</code>, and its Browse button goes (<a class="ref open" href="#decisions">R9</a>). The image of a new disk is made there, with the <code>qemu-img</code> of the lab machine.</p>
+        <h3>The trash</h3>
+        <p>Removing an image or a project moves its files to the trash when the lab machine&rsquo;s Virtualbricks has windows, which give it one. A Virtualbricks with <code>--no-gui</code> has no trash, so the windows offer to delete for good, as <code>project delete --force</code> does.</p>
+        <h3>Consoles</h3>
+        <p>Open Console, over a connection (<a class="ref open" href="#decisions">R8</a>):</p>
+        <ol>
+          <li>The windows listen on a unix socket of their own runtime folder, 0600, and open the terminal of the desktop&rsquo;s settings on it, with <code>vdeterm</code> or <code>unixterm</code>, as the brick would.</li>
+          <li>When the terminal connects, the windows open a new connection to the lab machine, prove the token if needed, and call <code>Attach(brick, console)</code>.</li>
+          <li>The lab machine checks that the brick runs and connects to its socket: <code>NAME.mgmt</code>, the monitor of a machine, or its serial socket. It answers, and the connection carries bytes both ways from then on, AMP&rsquo;s <code>ProtocolSwitchCommand</code>. The windows join the two sockets.</li>
+        </ol>
+        <p>The desktop needs VDE&rsquo;s <code>vdeterm</code> and <code>unixterm</code> for this; without them the item is greyed and its tooltip names the package.</p>
+        <h3>The display of a machine</h3>
+        <p>An SDL window shows on the screen of the lab machine, if it has one. VNC, <code>-vnc :N</code>, listens on port 5900&nbsp;+&nbsp;N of every address of the lab machine, without a password, so a VNC viewer on the desktop reaches it today; the windows don&rsquo;t open it for you yet (<a href="#later">&sect;13</a>).</p>
+      </section>
+
+      <section id="code">
+        <h2><span class="num">&sect;10</span>The code and the tests</h2>
+        <h3>New modules</h3>
+        <ul>
+          <li><code>virtualbricks/engine.py</code>: the operations of <a href="#engine">&sect;6</a> and <code>LocalEngine</code>. No GTK, no Twisted beyond Deferreds.</li>
+          <li><code>virtualbricks/remote/commands.py</code>: the AMP commands of <a href="#protocol">&sect;7</a>. <code>console/ampwire.py</code> keeps page 16&rsquo;s, short enough for a program to copy.</li>
+          <li><code>remote/follower.py</code>: the lab machine&rsquo;s side: <code>Follower</code>, the gathering of changes, the log it keeps, and the answers to the new commands, which <code>AMPControl</code> takes on.</li>
+          <li><code>remote/mirror.py</code>: <code>MirrorFactory</code>, the stand-in process, the deadlines of the events, the refusals.</li>
+          <li><code>remote/client.py</code>: <code>RemoteEngine</code>, the connection over <code>unix</code>, <code>tcp</code> and <code>ssl</code> with Twisted, the proof with <code>ampwire.authenticate()</code>, the certificates with <code>console/tls.py</code>, Reconnect.</li>
+          <li><code>remote/tunnel.py</code>: the consoles, in step 6.</li>
+        </ul>
+        <h3>What changes</h3>
+        <ul>
+          <li><code>app.py</code> and <code>scripts/virtualbricks.py</code>: <code>--connect</code>, its refusals, and a start with neither lock, migration, workspace, autosave nor sockets.</li>
+          <li><code>gui/gui.py</code>: <code>RemoteApplication</code> beside <code>Application</code>; <code>VBGUI</code> gets its factory and its engine.</li>
+          <li>The windows: the modules of <a href="#today">&sect;2</a> call the engine.</li>
+          <li><code>config/settings.py</code> and <code>config/workspace.py</code>: a signal when a setting changes and when a project opens, for <code>SettingsChanged</code> and <code>Opened</code>; neither imports anything of the GUI.</li>
+          <li><code>console/control.py</code>: <code>AMPControl</code> writes the waiting pushes before each answer.</li>
+        </ul>
+        <h3>Tests</h3>
+        <ul>
+          <li><strong>The windows</strong> with a fake engine: each menu item, button and OK calls the operation it should, and nothing else changes the project.</li>
+          <li><strong>The copy</strong>, both ends in one test with Twisted&rsquo;s <code>iosim</code>: a real factory on the lab side, a <code>MirrorFactory</code> on the other. After each change, new, set, connect, rename, delete, a start with a fake process, a project opened, both give the same <code>project_document()</code> and the same states.</li>
+          <li><strong>The rules:</strong> pushes before the answer, once a turn in order, the 64 KiB refusal, <code>Apply</code> all or nothing, its <code>Conflict</code>.</li>
+          <li><strong>The connection:</strong> the proof over <code>tcp</code>, the certificates of <code>tests/data/tls</code> over <code>ssl</code>, a lab machine of another version refused, the bar when the connection is lost, Reconnect.</li>
+          <li><strong>The copy refuses to start</strong> a brick or an event.</li>
+          <li><strong>The consoles:</strong> bytes both ways between a fake terminal and a fake console socket.</li>
+        </ul>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;11</span>Implementation plan</h2>
+        <p>The work goes on a new branch, <code>mg/remote-gui</code>, from <code>develop</code>, which has this page, with a commit per step. Your own changes in the working tree, to <code>TODO.md</code> and <code>virtualbricks/tools.py</code>, stay out of every commit. Steps 1 to 3 change nothing you can see, and each can be merged on its own.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">1 The engine</td><td><code>engine.py</code> with <code>LocalEngine</code>; every window changes the project, runs a program and asks the machine through it; <code>startstop_brick</code> leaves <code>VBGUI</code>.</td><td>The windows with a fake engine; the tests of today pass unchanged, or with the engine in place of the factory.</td></tr>
+            <tr><td class="nowrap">2 Following</td><td><code>remote/commands.py</code>; <code>Follow</code> and the pushes on the lab machine, <code>Follower</code>, the gathering and the order, the log it keeps, the signals of the settings and the workspace.</td><td>The pushes that each change gives, with <code>iosim</code>.</td></tr>
+            <tr><td class="nowrap">3 The copy</td><td><code>MirrorFactory</code>: built from the pushes, changed in place, the stand-in process, the deadlines, renames, projects opened, the refusals.</td><td>A copy kept equal to a real factory.</td></tr>
+            <tr><td class="nowrap">4 The windows</td><td><code>--connect</code>, <code>RemoteApplication</code>, <code>RemoteEngine</code> with the lines, <code>Apply</code> and <code>Connect</code>; the title, the bar, Reconnect, the Logs window, the dialogs, the warning at start, Import and Export greyed.</td><td>The options; the windows on a copy fed by a fake lab machine; <code>Apply</code> and its <code>Conflict</code>.</td></tr>
+            <tr><td class="nowrap">5 The lab machine&rsquo;s facts</td><td><code>QemuFacts</code>, <code>MachineProperties</code>, <code>UsbDevices</code>, <code>ImageFacts</code>, <code>Folder</code>; the image file commands; <code>Readme</code>; the Projects window over the connection; the three pages of Settings; the path entries.</td><td>Each command at both ends.</td></tr>
+            <tr><td class="nowrap">6 Consoles</td><td><code>Attach</code>, <code>remote/tunnel.py</code>, the terminal on the desktop. Dropped if R8 is B.</td><td>Bytes both ways.</td></tr>
+            <tr><td class="nowrap">7 Docs</td><td><code>virtualbricks(1)</code>: <code>--connect</code> in OPTIONS, a section on the windows of another Virtualbricks, the new AMP commands, EXAMPLES, within 64 columns; <code>command-line.html</code>; the README. &ldquo;Since then&rdquo; of pages 15 (the <code>watch</code> of &sect;11), 16 (the commands it named for later) and 17 (<code>--connect</code> takes its descriptions); this page&rsquo;s &ldquo;Implemented&rdquo;. In the TODO, what &sect;13 leaves for later goes under IDEAS.</td><td>The manual page lists every option.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Before step 7, a run of the whole program, with a throwaway home, runtime folder and workspace, <code>--lock none</code>, and every socket on <code>127.0.0.1</code>: a lab Virtualbricks with <code>--no-gui</code> and a <code>unix</code>, a <code>tcp</code> and an <code>ssl</code> AMP socket; the windows on Broadway with <code>--connect</code> to each; a brick made, set, connected, started and stopped from the windows, and one from <code>--command</code> that the windows follow; two windows at once and a conflicting OK; the lab machine killed and started again, then Reconnect. Your own Virtualbricks, its lock and its sockets are never touched.</p>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;12</span>Decisions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Recommended</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>R1</td>
+              <td>How the windows reach the lab machine</td>
+              <td>
+                <p><b>A</b> <code>virtualbricks --connect DESCRIPTION</code>, with the descriptions of <code>--command</code> (17 N6) and <code>protocol=amp</code> assumed. The process shows the lab machine&rsquo;s windows until it quits.</p>
+                <p><b>B</b> <code>--socket DESCRIPTION --connect</code>, as <code>--command</code> takes its socket.</p>
+                <p><b>C</b> A Connect&hellip; item in the File menu of the windows, which leave their own Virtualbricks for the lab machine&rsquo;s, and come back.</p>
+              </td>
+              <td class="rec">A; C later</td>
+            </tr>
+            <tr>
+              <td>R2</td>
+              <td>The protocol</td>
+              <td>
+                <p><b>A</b> AMP: the lab machine calls the windows too, with commands that need no answer; errors by name; page 16&rsquo;s commands unchanged. The windows already run Twisted.</p>
+                <p><b>B</b> The text protocol, which would need numbered requests and lines that nobody asked for; it has neither today.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>R3</td>
+              <td>What the windows hold</td>
+              <td>
+                <p><b>A</b> A copy made of the real classes, from the tables of the project file: the tabs, the panels, <code>brickinfo</code> and the topology work unchanged, and the copy refuses to start anything.</p>
+                <p><b>B</b> Views made on the lab machine: rows, summaries and states as text. Every tab rewritten for them, and the panels still need the settings of the bricks.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>R4</td>
+              <td>How the actions travel</td>
+              <td>
+                <p><b>A</b> The console&rsquo;s line where it has a command, so the lab machine checks it and logs it as a line of <code>--command</code>; typed commands for the rest: the OK of a panel, Connect, the facts, the files.</p>
+                <p><b>B</b> A typed AMP command for every action, as 16 M2 B; the console untouched.</p>
+                <p><b>C</b> Lines only: the console gets the commands it lacks, as <code>brick apply NAME JSON</code>.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>R5</td>
+              <td>The projects of the lab machine</td>
+              <td>
+                <p><b>A</b> The windows open, make, rename, duplicate and delete them, as the console does. Every window connected, and the lab machine&rsquo;s own, follow the project that opens.</p>
+                <p><b>B</b> Only the project open there. The Projects window lists the others and opens nothing.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>R6</td>
+              <td>Quit</td>
+              <td>
+                <p><b>A</b> Quit closes the windows; the lab machine goes on. Its Virtualbricks quits from its console or with <code>--command quit</code>.</p>
+                <p><b>B</b> Quit asks: close the windows, or quit Virtualbricks on the lab machine too, refused while bricks run.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>R7</td>
+              <td>Two windows change the same thing</td>
+              <td>
+                <p><b>A</b> OK sends the keys it changed with the values it started from, and the lab machine refuses it when one of them changed there meanwhile: &ldquo;memory is 2048 on lab.example now&rdquo;. The keys that the panel didn&rsquo;t touch keep what others set.</p>
+                <p><b>B</b> The last OK wins, for the keys it changed.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>R8</td>
+              <td>The console of a brick</td>
+              <td>
+                <p><b>A</b> Through the connection: a terminal on the desktop, joined to the brick&rsquo;s socket on the lab machine (<a href="#machine">&sect;9</a>). Step 6, which can wait.</p>
+                <p><b>B</b> Greyed for now: <code>ssh</code> to the lab machine and <code>vdeterm</code> there.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>R9</td>
+              <td>Paths</td>
+              <td>
+                <p><b>A</b> Paths of the lab machine, typed in entries that complete from its folders; no Browse.</p>
+                <p><b>B</b> A file browser of the lab machine, a dialog of our own.</p>
+                <p><b>C</b> Files chosen on the desktop and copied to the lab machine.</p>
+              </td>
+              <td class="rec">A; B and C later</td>
+            </tr>
+            <tr>
+              <td>R10</td>
+              <td>Settings</td>
+              <td>
+                <p><b>A</b> Three pages: This computer (terminal, tray icon, the warning at start), The lab machine (KSM, audio driver; its workspace shown, not changed), and the project&rsquo;s.</p>
+                <p><b>B</b> The project&rsquo;s only; the lab machine&rsquo;s own settings stay with its console.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>R11</td>
+              <td>Versions</td>
+              <td>
+                <p><b>A</b> The same version of Virtualbricks at both ends; the windows refuse another: &ldquo;lab.example runs Virtualbricks 2.2.0, these windows are 2.1.0: run the same version on both&rdquo;.</p>
+                <p><b>B</b> Any Virtualbricks with the commands of the windows and a project format that the windows read.</p>
+              </td>
+              <td class="rec">A, for now</td>
+            </tr>
+            <tr>
+              <td>R12</td>
+              <td>Import and Export</td>
+              <td>
+                <p><b>A</b> Greyed over a connection for now, with a tooltip. The lab machine&rsquo;s own windows do them.</p>
+                <p><b>B</b> Now: archives carried over the connection in pieces of 64 KiB, both ways.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <p>My choices, which the questions don&rsquo;t cover: <code>--connect</code> assumes <code>protocol=amp</code> and refuses <code>protocol=text</code>; it implies <code>--noterm</code> and refuses the options of a run; <code>cwd</code> is never sent; every AMP socket answers the windows, with no option of its own; the lab machine keeps its last 500 messages while it has an AMP socket; errors open dialogs only for the windows&rsquo; own actions; Reconnect is a button, not an automatic retry; JSON inside the values of AMP; the copy is never saved; the name of the lab machine in the title.</p>
+        <p class="note">Checked on 29 September, in the code at 6430114: the kinds <code>ListOf</code> and <code>Record</code> have no <code>parse()</code>, so <code>brick set</code> refuses <code>usb_devices</code> and the states of a Netemu. <code>--command</code> refuses an AMP socket whose <code>Hello</code> answers a protocol other than 1. <code>project_document()</code> and <code>restore_project()</code> write and read a whole project as tables. The Projects window, the name dialog, the Readme tab, the image dialogs and the import already take a workspace as an argument, the global one by default; the tabs take their factory.</p>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;13</span>Later</h2>
+        <p>These go under IDEAS in the TODO.</p>
+        <ul>
+          <li>A Connect&hellip; item in the File menu, with the lab machines used before, kept in <code>state.toml</code>; and back to this machine without a restart.</li>
+          <li>Several lab machines at once, a window each.</li>
+          <li>Send files to the lab machine: images, ISO files, kernels; and a file browser of the lab machine.</li>
+          <li>Import and export archives over the connection.</li>
+          <li>The console of the terminal sends its lines to the lab machine, completed from the copy: the <code>--attach</code> of the IDEAS.</li>
+          <li>Open the display of a machine: a VNC viewer on the desktop, through the connection, with QEMU&rsquo;s VNC on the lab machine&rsquo;s loopback only.</li>
+          <li>The pushes as lines of the text socket too, for a status bar or a script: the <code>watch</code> of 15 &sect;11.</li>
+          <li>Windows that only look: a token that allows reading and nothing else (17 &sect;12).</li>
+          <li>Windows and a lab machine of different versions.</li>
+          <li>The lab machine&rsquo;s messages in the language of the desktop.</li>
+          <li>Show who else is connected to the lab machine.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
