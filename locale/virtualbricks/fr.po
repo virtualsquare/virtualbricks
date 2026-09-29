@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 18:07+0200\n"
+"POT-Creation-Date: 2026-09-30 00:08+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -4538,9 +4538,4 @@ msgstr ""
 
 #: virtualbricks/migrate/gui.py
 msgid "Save report"
-msgstr ""
-
-#: virtualbricks/spawn.py
-#, python-brace-format
-msgid "{exe} not found"
 msgstr ""

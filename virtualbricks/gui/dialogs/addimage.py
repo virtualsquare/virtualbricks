@@ -43,12 +43,13 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango
 from twisted.internet import defer, threads
 
-from virtualbricks import errors, spawn
+from virtualbricks import errors
 from virtualbricks.config import images
 from virtualbricks.config.workspace import copy_sparse, projects
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
+from virtualbricks.qemu import run
 
 MARGIN = 18
 GAP = 6
@@ -384,7 +385,7 @@ class NewDiskDialog(_AddDialog):
     def __init__(self, factory, workspace=None, qemu_img=None):
         self.factory = factory
         self.workspace = projects if workspace is None else workspace
-        self.qemu_img = spawn.qemu_img if qemu_img is None else qemu_img
+        self.qemu_img = run.qemu_img if qemu_img is None else qemu_img
         self.working = False
         self.build_ui()
         self.check()

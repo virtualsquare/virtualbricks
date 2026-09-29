@@ -74,7 +74,7 @@ class MachinePanelTestCase(GuiTestCase):
         untranslated(self)
         self.programs = FakePrograms(self.target)
         self.patch(vmpanel, "programs", self.programs)
-        self.patch(vmpanel, "abspath_qemu", self.abspath)
+        self.patch(vmpanel, "which", self.which)
         self.found = [
             UsbDevice("046d:c52b", "Logitech, Inc. Unifying Receiver")
         ]
@@ -96,7 +96,7 @@ class MachinePanelTestCase(GuiTestCase):
     def prepare(self):
         pass
 
-    def abspath(self, name):
+    def which(self, name):
         if name == "qemu-system-aarch64":
             raise FileNotFoundError(name)
         return f"/usr/bin/{name}"

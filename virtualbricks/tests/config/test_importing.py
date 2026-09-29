@@ -860,14 +860,14 @@ exec sleep 60
         )
 
     def test_find_qemu_img(self):
-        from virtualbricks import spawn
+        from virtualbricks.qemu import run
 
         def missing(name):
             raise FileNotFoundError(name)
 
-        self.patch(spawn, "abspath_qemu", missing)
+        self.patch(run, "which", missing)
         self.assertEqual(archive.find_qemu_img(), "")
-        self.patch(spawn, "abspath_qemu", lambda name: "/usr/bin/" + name)
+        self.patch(run, "which", lambda name: "/usr/bin/" + name)
         self.assertEqual(archive.find_qemu_img(), "/usr/bin/qemu-img")
 
     def unpack_with(self, qemu_img):

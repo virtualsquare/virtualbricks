@@ -52,8 +52,9 @@ from typing import TYPE_CHECKING, Any, Callable
 from twisted.internet import defer
 from twisted.logger import Logger
 
-from virtualbricks import errors, spawn
+from virtualbricks import errors
 from virtualbricks.config.workspace import projects
+from virtualbricks.qemu import run as qemu_run
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
@@ -116,7 +117,7 @@ def read_info(path: str, run: Run | None = None) -> defer.Deferred:
     """Run ``qemu-img info`` on path: an ``ImageInfo``, when it ends."""
 
     if run is None:
-        run = spawn.qemu_img
+        run = qemu_run.qemu_img
     # -U: a running machine locks the image it writes to
     deferred = run(["info", "--output=json", "-U", path])
     deferred.addCallback(lambda output: parse_info(json.loads(output)))
@@ -254,7 +255,7 @@ def relink(
     """
 
     if run is None:
-        run = spawn.qemu_img
+        run = qemu_run.qemu_img
     path = os.path.abspath(path)
     old = image.get_path()
     if path == old:

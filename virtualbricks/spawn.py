@@ -15,32 +15,25 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import json
 import locale
 import os
 from pathlib import Path
 
-from twisted.internet import defer
-from twisted.internet.utils import getProcessOutputAndValue
-from twisted.logger import Logger
 
-from virtualbricks.errors import BadConfigError, CommandError
-from virtualbricks.i18n import _
-
-logger = Logger()
-qemu_info_failed = "Error while getting information about image file."
-
-
-def _abspath_exe(executable, path):
+def find_executable(executable, folder):
     """
+    The executable itself, if it is one, else the one in folder, else the one
+    on PATH; FileNotFoundError if there's none.
+
     :type executable: pathlib.Path
-    :type path: Optional[pathlib.Path]
+    :type folder: Optional[pathlib.Path]
+    :rtype: pathlib.Path
     """
 
     if os.access(executable, os.X_OK):
         return executable
-    if path is not None:
-        abspath = path.joinpath(executable)
+    if folder is not None:
+        abspath = folder.joinpath(executable)
         if os.access(abspath, os.X_OK):
             return abspath
     for path in map(Path, os.environ.get("PATH", ".").split(":")):
@@ -64,71 +57,9 @@ def encode_proc_output(output):
     return str(output, encoding, "strict")
 
 
-def _encode_or_complain(codes):
-    """
-    :type codes: Tuple[bytes, bytes, int]
-    :rtype: str
-    """
-
-    stdout, stderr, exit_status = codes
-    if exit_status != 0:
-        raise CommandError(exit_status, encode_proc_output(stderr))
-    return encode_proc_output(stdout)
-
-
-def getQemuOutput(executable, args=()):
-    """
-    Run qemu executable and return the stdout.
-
-    :type args: List[str]
-    :rtype: twisted.internet.defer.Deferred[str]
-    """
-
-    exe = abspath_qemu(executable)
-    if exe is None:
-        return defer.fail(BadConfigError(_("{exe} not found").format(exe=exe)))
-    deferred = getProcessOutputAndValue(exe, args, env=os.environ)
-    return deferred.addCallback(_encode_or_complain)
-
-
 def abspath_vde(executable):
     from virtualbricks.config.settings import get_setting
 
-    return str(_abspath_exe(Path(executable), Path(get_setting("vde_path"))))
-
-
-def abspath_qemu(executable):
-    from virtualbricks.config.settings import get_setting
-
-    return str(_abspath_exe(Path(executable), Path(get_setting("qemu_path"))))
-
-
-def _log_failure(failure, message):
-    logger.failure(message, failure)
-    return failure
-
-
-def qemu_img_info(path):
-    """
-    Run `qemu-img info` on the given file.
-
-    :type path: Union[str, pathlib.Path]
-    :rtype: twisted.internet.defer.Deferred[List[Dict[str, Any]]]
-    """
-
-    args = ["info", "--format=json", "--backing-chain", str(path)]
-    deferred = qemu_img(args)
-    deferred.addCallback(json.loads)
-    deferred.addErrback(_log_failure, qemu_info_failed)
-    return deferred
-
-
-def qemu_img(args):
-    """
-    Run qemu-img and return the stdout.
-
-    :type args: List[str]
-    :rtype: twisted.internet.defer.Deferred[str]
-    """
-
-    return getQemuOutput("qemu-img", args)
+    return str(
+        find_executable(Path(executable), Path(get_setting("vde_path")))
+    )

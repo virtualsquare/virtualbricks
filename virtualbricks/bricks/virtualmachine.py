@@ -59,10 +59,11 @@ from virtualbricks.config.workspace import projects
 from virtualbricks.i18n import N_, _
 from virtualbricks.nic import is_valid_mac, random_mac
 from virtualbricks.programs import PACKAGES, Missing, ProgramError, programs
-from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
+from virtualbricks.spawn import encode_proc_output
 from virtualbricks.observable import Event, Observable
 from virtualbricks.qemu import imageformat
 from virtualbricks.qemu.imageformat import NotCowFileError
+from virtualbricks.qemu.run import qemu_img, which
 from virtualbricks.tools import discard_first_arg, sync
 
 logger = Logger()
@@ -1291,7 +1292,7 @@ class VirtualMachine(bricks.Brick):
     def program(self):
         """The path of the QEMU program; FileNotFoundError if missing."""
 
-        return abspath_qemu(self.config.qemu_program)
+        return which(self.config.qemu_program)
 
     def prepare(self, resume=""):
         """

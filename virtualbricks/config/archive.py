@@ -1392,10 +1392,10 @@ def inspect_archive(
 def find_qemu_img() -> str:
     """The qemu-img of the settings or of PATH; "" if there's none."""
 
-    from virtualbricks.spawn import abspath_qemu
+    from virtualbricks.qemu import run
 
     try:
-        return abspath_qemu("qemu-img")
+        return run.which("qemu-img")
     except FileNotFoundError:
         return ""
 

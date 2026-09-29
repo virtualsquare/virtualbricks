@@ -43,7 +43,7 @@ from virtualbricks.gui.mainwindow.bricks.config.vm import (  # noqa: E402
 )
 from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.programs import programs  # noqa: E402
-from virtualbricks.spawn import abspath_qemu  # noqa: E402
+from virtualbricks.qemu.run import which  # noqa: E402
 
 logger = Logger()
 qemu_error = "Cannot ask {program} what it has"
@@ -202,7 +202,7 @@ class VirtualMachinePanel(Panel):
         chosen = self.draft.get("machine_type")
         self.asked = (program, chosen)
         try:
-            path = abspath_qemu(program)
+            path = which(program)
         except FileNotFoundError:
             self.draft.qemu = None
             self.draft.machine_properties = frozenset()

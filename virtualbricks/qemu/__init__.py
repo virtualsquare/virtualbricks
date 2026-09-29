@@ -20,6 +20,7 @@ What Virtualbricks knows of QEMU itself.
 
 - ``imageformat``: the format of a disk image and its backing file, from the
   first bytes of the file.
+- ``run``: finding the QEMU programs, and running ``qemu-img``.
 
 The package exports nothing: the rest of Virtualbricks imports each name
 from its module, as in ``from virtualbricks.qemu.imageformat import

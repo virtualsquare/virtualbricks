@@ -137,10 +137,10 @@ class TestParseInfo(BrickTestCase):
         )
 
     def test_read_info_with_qemu_img(self):
-        # the qemu-img of spawn, when none is given
+        # the qemu-img of qemu.run, when none is given
         qemu_img = FakeQemuImg()
         qemu_img.infos["/lab/frr.qcow2"] = INFO
-        self.patch(images.spawn, "qemu_img", qemu_img)
+        self.patch(images.qemu_run, "qemu_img", qemu_img)
         self.successResultOf(read_info("/lab/frr.qcow2"))
         self.assertEqual(len(qemu_img.calls), 1)
 
@@ -412,7 +412,7 @@ class TestRelink(ImagesTestCase):
         )
 
     def test_with_qemu_img(self):
-        self.patch(images.spawn, "qemu_img", self.qemu_img)
+        self.patch(images.qemu_run, "qemu_img", self.qemu_img)
         self.copy(self.vm("r1"))
         self.successResultOf(
             relink(self.factory, self.image, "/new/frr.qcow2")

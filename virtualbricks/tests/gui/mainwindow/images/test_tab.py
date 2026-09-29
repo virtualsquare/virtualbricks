@@ -25,7 +25,7 @@ import os
 
 from twisted.internet import defer
 
-from virtualbricks import spawn
+from virtualbricks.qemu import run
 from virtualbricks.config.workspace import OpenProject
 from virtualbricks.tests.config.test_images import INFO, FakeQemuImg
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
@@ -90,7 +90,7 @@ class ImagesTestCase(GuiTestCase):
         super().setUp()
         untranslated(self)
         self.qemu_img = LaterQemuImg()
-        self.patch(spawn, "qemu_img", self.qemu_img)
+        self.patch(run, "qemu_img", self.qemu_img)
         # the private copies are in the open project
         self.manager.current = OpenProject(self.folder("lab"), None)
         self.frr = self.image("frr")
