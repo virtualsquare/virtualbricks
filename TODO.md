@@ -1,11 +1,5 @@
 # TODO
 
-## Console
-
-- [ ] Add a control socket in the runtime folder, so that
-  `virtualbricks --command ...` talks to a Virtualbricks that runs
-  (14 §11, K6 C)
-
 # IDEAS
 
 ## Config
@@ -200,6 +194,11 @@
 
 # DONE
 
+- [x] Add a control socket in the runtime folder, so that
+  `virtualbricks --command ...` talks to a Virtualbricks that runs
+  (14 §11, K6 C): every Virtualbricks listens on `.control`, or on the
+  path of `--socket`; JSON lines, a lock of its own; plan in
+  `docs/redesign/15 - control-socket.html`
 - [x] Give the console line the keys of readline, in the Python shell
   too: Ctrl+R and Ctrl+S search the history; Ctrl+B, Ctrl+F, Alt+B, Alt+F,
   Ctrl+Left and Ctrl+Right move; Ctrl+D, Ctrl+W, Alt+Backspace, Alt+D,

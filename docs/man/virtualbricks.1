@@ -8,6 +8,9 @@ console
 \f[B]virtualbricks\f[R] [\f[I]options\f[R]]
 .PP
 \f[B]virtualbricks \-\-no\-gui\f[R] [\f[I]options\f[R]]
+.PP
+\f[B]virtualbricks\f[R] [\f[B]\-\-socket\f[R] \f[I]path\f[R]]
+\f[B]\-\-command\f[R] [\f[I]word\f[R]...]
 .SH DESCRIPTION
 Virtualbricks makes and runs labs of virtual machines, run by QEMU, and
 of the VDE switches, cables, taps and tunnels between them.
@@ -18,6 +21,11 @@ Started from a terminal, it reads the commands of its console there,
 beside the windows.
 With \f[B]\-\-no\-gui\f[R] it runs without them, and the console is the
 way in: a lab on a machine without a display.
+.PP
+A Virtualbricks that runs listens on a control socket:
+\f[B]virtualbricks \-\-command\f[R] sends it a command of the console
+from any terminal or script, and prints its answer.
+See \f[B]THE CONTROL SOCKET\f[R].
 .SH OPTIONS
 .TP
 \f[B]\-v\f[R], \f[B]\-\-verbose\f[R]
@@ -65,12 +73,15 @@ See \f[B]FILES\f[R].
 .TP
 \f[B]\-\-command\f[R] [\f[I]word\f[R]...]
 Send the command of the words that follow to the Virtualbricks that
-runs, through its control socket, and print its answer; without words,
-the lines of the standard input.
+runs, and print its answer; without words, send the lines of the
+standard input.
+It takes no lock, and no other option but \f[B]\-\-socket\f[R].
+See \f[B]THE CONTROL SOCKET\f[R].
 .TP
 \f[B]\-\-socket\f[R] \f[I]path\f[R]
-Listen on the control socket \f[I]path\f[R], instead of
-\f[I].control\f[R] in the runtime folder; see \f[B]FILES\f[R].
+The control socket, instead of \f[I].control\f[R] in the runtime folder:
+where Virtualbricks listens, and where \f[B]\-\-command\f[R] sends its
+command.
 Its folder must exist.
 .TP
 \f[B]\-\-version\f[R]
@@ -182,6 +193,58 @@ A file of commands, one a line, runs with \f[B]source\f[R]
 start.
 Empty lines and comments are skipped, and the first error stops the
 file, saying where, as \f[I]lab.vb\f[R]:7.
+.SH THE CONTROL SOCKET
+Every Virtualbricks, with the windows or without, listens on a control
+socket once its project is open:
+\f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.control, or the path of
+\f[B]\-\-socket\f[R].
+\f[B]\-\-command\f[R] sends it a command, as typed in its console:
+.IP
+.EX
+virtualbricks \-\-command brick start sw1 vm1
+virtualbricks \-\-command brick set vm1 memory=1024
+.EE
+.PP
+The words after \f[B]\-\-command\f[R] are those of the command, as the
+shell split them; they reach the console quoted again, so a value with
+spaces is quoted once, as in the console.
+The options of \f[B]virtualbricks\f[R] end at the first word.
+Without words, the lines of the standard input are the commands, each
+sent after the answer to the one before, up to the first error, which
+names its line.
+.PP
+The answer goes to the standard output.
+When a command fails, what it did first goes there too, and the error,
+\f[B]Error:\f[R] and why, to the standard error; see \f[B]EXIT
+STATUS\f[R].
+A relative path, as that of \f[B]source\f[R] \f[I]file\f[R], is read
+from the folder where \f[B]\-\-command\f[R] runs.
+Ctrl+C stops waiting, not the command.
+Virtualbricks logs each command it gets, and answers in its own
+language.
+.PP
+Only you can connect: the socket is yours alone, and Virtualbricks
+doesn\(aqt listen in a runtime folder that isn\(aqt yours, or that
+others can write in.
+One Virtualbricks has the socket: the first to start, which holds the
+lock \f[I]path\f[R].lock beside it.
+With \f[B]\-\-lock none\f[R], another one runs without a socket, unless
+it has its own \f[B]\-\-socket\f[R].
+A socket left by a crash is removed at the next start; nothing else at
+the path is.
+.SS The protocol
+Any program can talk to the socket: UTF\-8 JSON, an object on each line.
+Virtualbricks greets with the \f[B]protocol\f[R], 1, its
+\f[B]version\f[R], its \f[B]pid\f[R] and the open \f[B]project\f[R];
+then it answers each request in turn.
+A request\(aqs \f[B]cwd\f[R], the folder of its paths, is optional:
+.IP
+.EX
+{\(dqline\(dq: \(dqbrick start sw1\(dq, \(dqcwd\(dq: \(dq/home/alice/labs\(dq}
+{\(dqok\(dq: true, \(dqlines\(dq: [\(dqsw1 runs, process 4242\(dq]}
+{\(dqline\(dq: \(dqbrick start vm9\(dq}
+{\(dqok\(dq: false, \(dqlines\(dq: [], \(dqerror\(dq: \(dqNo brick named vm9\(dq}
+.EE
 .SH COMMANDS
 .SS Bricks
 .TP
@@ -399,6 +462,22 @@ one that fails is logged with the event, the number of the action and
 the reason.
 The project file keeps the actions as \f[B]virtualbricks\-config\f[R](5)
 says.
+.SH EXIT STATUS
+With \f[B]\-\-command\f[R]:
+.TP
+\f[B]0\f[R]
+The command was done.
+.TP
+\f[B]1\f[R]
+The command failed, or an option is wrong.
+.TP
+\f[B]2\f[R]
+No Virtualbricks answered: none runs, it ended before it answered, or it
+speaks another protocol.
+The error says which.
+.TP
+\f[B]130\f[R]
+Ctrl+C stopped the wait.
 .SH FILES
 .TP
 \f[I]$XDG_STATE_HOME\f[R]/virtualbricks/history
@@ -406,6 +485,9 @@ The history of the console, the last 500 lines.
 .TP
 \f[I]/tmp/virtualbricks.lock\f[R], \f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.lock
 The locks of the single\-instance mode, see \f[B]\-\-lock\f[R].
+.TP
+\f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.control, .control.lock
+The control socket and its lock, see \f[B]THE CONTROL SOCKET\f[R].
 .PP
 The settings, the state and the projects are described in
 \f[B]virtualbricks\-config\f[R](5).
@@ -437,6 +519,14 @@ A lab on a server, from a file, without windows or console:
 .IP
 .EX
 virtualbricks \-\-no\-gui \-\-noterm \-\-run \(ti/labs/ospf.vb
+.EE
+.PP
+The machine of that lab, from another terminal, and the commands of a
+file, sent to it one after the other:
+.IP
+.EX
+virtualbricks \-\-command brick start router
+virtualbricks \-\-command < \(ti/labs/traffic.vb
 .EE
 .SH SEE ALSO
 \f[B]virtualbricks\-config\f[R](5), \f[B]virtualbricks\-archive\f[R](7),

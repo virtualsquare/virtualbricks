@@ -852,6 +852,13 @@ In the mode \f[B]none\f[R] Virtualbricks takes no lock, and the others
 don\(aqt see it.
 The system releases the locks when Virtualbricks ends, even on a crash.
 .TP
+\f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.control
+The control socket, where the Virtualbricks that runs answers
+\f[B]virtualbricks \-\-command\f[R]; \f[I].control.lock\f[R] beside it
+is held by the one that listens.
+\f[B]virtualbricks \-\-socket\f[R] \f[I]path\f[R] puts them elsewhere;
+see \f[B]virtualbricks\f[R](1).
+.TP
 \f[I]/etc/sudo.conf\f[R]
 Its \f[B]Path askpass\f[R] line makes Virtualbricks run sudo with
 \f[B]\-A\f[R], as \f[B]SUDO_ASKPASS\f[R] does; see \f[B]PRIVILEGES\f[R].

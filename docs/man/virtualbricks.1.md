@@ -16,6 +16,8 @@ virtualbricks - labs of QEMU machines and VDE networks, and their console
 
 **virtualbricks --no-gui** [*options*]
 
+**virtualbricks** [**--socket** *path*] **--command** [*word*...]
+
 # DESCRIPTION
 
 Virtualbricks makes and runs labs of virtual machines, run by QEMU, and of
@@ -26,6 +28,10 @@ project that was open last in its workspace, a folder of projects; see
 Started from a terminal, it reads the commands of its console there, beside
 the windows. With **--no-gui** it runs without them, and the console is the
 way in: a lab on a machine without a display.
+
+A Virtualbricks that runs listens on a control socket: **virtualbricks
+--command** sends it a command of the console from any terminal or script,
+and prints its answer. See **THE CONTROL SOCKET**.
 
 # OPTIONS
 
@@ -69,12 +75,14 @@ way in: a lab on a machine without a display.
 
 **--command** [*word*...]
 :   Send the command of the words that follow to the Virtualbricks that
-    runs, through its control socket, and print its answer; without
-    words, the lines of the standard input.
+    runs, and print its answer; without words, send the lines of the
+    standard input. It takes no lock, and no other option but
+    **--socket**. See **THE CONTROL SOCKET**.
 
 **--socket** *path*
-:   Listen on the control socket *path*, instead of *.control* in the
-    runtime folder; see **FILES**. Its folder must exist.
+:   The control socket, instead of *.control* in the runtime folder: where
+    Virtualbricks listens, and where **--command** sends its command. Its
+    folder must exist.
 
 **--version**
 :   Print the version and exit.
@@ -186,6 +194,53 @@ after the one before, and the end of the input quits.
 A file of commands, one a line, runs with **source** *file* in the console
 or **--run** *file* at start. Empty lines and comments are skipped, and the
 first error stops the file, saying where, as *lab.vb*:7.
+
+# THE CONTROL SOCKET
+
+Every Virtualbricks, with the windows or without, listens on a control
+socket once its project is open: *\$XDG_RUNTIME_DIR*/virtualbricks/.control,
+or the path of **--socket**. **--command** sends it a command, as typed in
+its console:
+
+```
+virtualbricks --command brick start sw1 vm1
+virtualbricks --command brick set vm1 memory=1024
+```
+
+The words after **--command** are those of the command, as the shell split
+them; they reach the console quoted again, so a value with spaces is quoted
+once, as in the console. The options of **virtualbricks** end at the first
+word. Without words, the lines of the standard input are the commands, each
+sent after the answer to the one before, up to the first error, which names
+its line.
+
+The answer goes to the standard output. When a command fails, what it did
+first goes there too, and the error, **Error:** and why, to the standard
+error; see **EXIT STATUS**. A relative path, as that of **source** *file*,
+is read from the folder where **--command** runs. Ctrl+C stops waiting, not
+the command. Virtualbricks logs each command it gets, and answers in its
+own language.
+
+Only you can connect: the socket is yours alone, and Virtualbricks doesn't
+listen in a runtime folder that isn't yours, or that others can write in.
+One Virtualbricks has the socket: the first to start, which holds the lock
+*path*.lock beside it. With **--lock none**, another one runs without a
+socket, unless it has its own **--socket**. A socket left by a crash is
+removed at the next start; nothing else at the path is.
+
+## The protocol
+
+Any program can talk to the socket: UTF-8 JSON, an object on each line.
+Virtualbricks greets with the **protocol**, 1, its **version**, its
+**pid** and the open **project**; then it answers each request in turn.
+A request's **cwd**, the folder of its paths, is optional:
+
+```
+{"line": "brick start sw1", "cwd": "/home/alice/labs"}
+{"ok": true, "lines": ["sw1 runs, process 4242"]}
+{"line": "brick start vm9"}
+{"ok": false, "lines": [], "error": "No brick named vm9"}
+```
 
 # COMMANDS
 
@@ -402,6 +457,23 @@ any command of this page, and one that fails is logged with the event, the
 number of the action and the reason. The project file keeps the actions as
 **virtualbricks-config**(5) says.
 
+# EXIT STATUS
+
+With **--command**:
+
+**0**
+:   The command was done.
+
+**1**
+:   The command failed, or an option is wrong.
+
+**2**
+:   No Virtualbricks answered: none runs, it ended before it answered, or
+    it speaks another protocol. The error says which.
+
+**130**
+:   Ctrl+C stopped the wait.
+
 # FILES
 
 *\$XDG_STATE_HOME*/virtualbricks/history
@@ -409,6 +481,9 @@ number of the action and the reason. The project file keeps the actions as
 
 */tmp/virtualbricks.lock*, *\$XDG_RUNTIME_DIR*/virtualbricks/.lock
 :   The locks of the single-instance mode, see **--lock**.
+
+*\$XDG_RUNTIME_DIR*/virtualbricks/.control, .control.lock
+:   The control socket and its lock, see **THE CONTROL SOCKET**.
 
 The settings, the state and the projects are described in
 **virtualbricks-config**(5).
@@ -442,6 +517,14 @@ A lab on a server, from a file, without windows or console:
 
 ```
 virtualbricks --no-gui --noterm --run ~/labs/ospf.vb
+```
+
+The machine of that lab, from another terminal, and the commands of a
+file, sent to it one after the other:
+
+```
+virtualbricks --command brick start router
+virtualbricks --command < ~/labs/traffic.vb
 ```
 
 # SEE ALSO

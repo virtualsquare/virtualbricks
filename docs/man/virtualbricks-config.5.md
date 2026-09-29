@@ -821,6 +821,12 @@ an old project is converted when it's imported.
     see it. The system releases the locks when Virtualbricks ends, even on
     a crash.
 
+*\$XDG_RUNTIME_DIR*/virtualbricks/.control
+:   The control socket, where the Virtualbricks that runs answers
+    **virtualbricks --command**; *.control.lock* beside it is held by the
+    one that listens. **virtualbricks --socket** *path* puts them
+    elsewhere; see **virtualbricks**(1).
+
 */etc/sudo.conf*
 :   Its **Path askpass** line makes Virtualbricks run sudo with **-A**, as
     **SUDO_ASKPASS** does; see **PRIVILEGES**.

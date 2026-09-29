@@ -199,6 +199,8 @@
   table.fields p.ex { font: 12.5px/1.5 var(--font-mono); color: var(--muted); }
   table.fields p.ex::before { content: "e.g. "; font-family: var(--font-body); font-style: italic; }
   dl.terms dt code { white-space: nowrap; }
+  /* four ways in: two by two */
+  @media (min-width: 820px) { .files { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
 <div class="page">
   <header class="masthead">
@@ -253,6 +255,16 @@
         <dt>Fails</dt><dd>in the log, with the event and the action</dd>
       </dl>
     </li>
+    <li class="file">
+      <h2><a href="#control-socket">From another terminal</a></h2>
+      <p class="how">$ <b>virtualbricks --command</b> WORD&hellip;</p>
+      <p>A Virtualbricks that runs listens on a control socket: <code>virtualbricks --command</code> sends it a command of the console from any terminal or script, and prints its answer. See <a href="#control-socket">The control socket</a>.</p>
+      <dl>
+        <dt>Reaches</dt><dd>the one that runs, with windows or not</dd>
+        <dt>Answers</dt><dd>output, error, exit status</dd>
+        <dt>Socket</dt><dd><code>.control</code>, or <code>--socket</code></dd>
+      </dl>
+    </li>
   </ul>
 
   <div class="layout">
@@ -262,6 +274,7 @@
 <li><a href="#synopsis">Synopsis</a></li>
 <li><a href="#options">Options</a></li>
 <li><a href="#console">The console</a></li>
+<li><a href="#control-socket">The control socket</a></li>
 <li><a href="#commands">Commands</a></li>
 <li class="sub"><a href="#commands-bricks">Bricks</a></li>
 <li class="sub"><a href="#commands-events">Events</a></li>
@@ -270,6 +283,7 @@
 <li class="sub"><a href="#commands-projects">Projects</a></li>
 <li class="sub"><a href="#commands-other-commands">Other commands</a></li>
 <li><a href="#events">Events</a></li>
+<li><a href="#exit-status">Exit status</a></li>
 <li><a href="#files">Files</a></li>
 <li><a href="#examples">Examples</a></li>
 <li><a href="#see-also">See also</a></li>
@@ -279,7 +293,8 @@
 <section id="synopsis">
 <h2>Synopsis</h2>
 <figure class="code"><pre><code>virtualbricks [options]
-virtualbricks --no-gui [options]</code></pre></figure>
+virtualbricks --no-gui [options]
+virtualbricks [--socket path] --command [word...]</code></pre></figure>
 </section>
 <section id="options">
 <h2>Options</h2>
@@ -294,6 +309,8 @@ virtualbricks --no-gui [options]</code></pre></figure>
 <dt><code>--run</code> <em>file</em></dt><dd><p>Run the commands of <em>file</em> once the project is open, as <code>source</code> does, then read the console.</p></dd>
 <dt><code>--workspace</code> <em>directory</em></dt><dd><p>Use the projects of <em>directory</em> for this run, instead of the <code>workspace</code> setting; it&#x27;s made if it isn&#x27;t there.</p></dd>
 <dt><code>--lock</code> <em>mode</em></dt><dd><p>The single-instance mode: <code>system</code>, the default, one Virtualbricks on the machine; <code>user</code>, one for each user; <code>none</code>, no limit. See <a href="#files">Files</a>.</p></dd>
+<dt><code>--command</code> [<em>word</em>...]</dt><dd><p>Send the command of the words that follow to the Virtualbricks that runs, and print its answer; without words, send the lines of the standard input. It takes no lock, and no other option but <code>--socket</code>. See <a href="#control-socket">The control socket</a>.</p></dd>
+<dt><code>--socket</code> <em>path</em></dt><dd><p>The control socket, instead of <em>.control</em> in the runtime folder: where Virtualbricks listens, and where <code>--command</code> sends its command. Its folder must exist.</p></dd>
 <dt><code>--version</code></dt><dd><p>Print the version and exit.</p></dd>
 <dt><code>--help</code></dt><dd><p>Print the options and exit.</p></dd>
 </dl>
@@ -329,6 +346,21 @@ virtualbricks --no-gui [options]</code></pre></figure>
 <p>When the input isn&#x27;t a terminal, as a pipe, each line is a command, run after the one before, and the end of the input quits.</p>
 <h3 id="console-scripts">Scripts</h3>
 <p>A file of commands, one a line, runs with <code>source</code> <em>file</em> in the console or <code>--run</code> <em>file</em> at start. Empty lines and comments are skipped, and the first error stops the file, saying where, as <em>lab.vb</em>:7.</p>
+</section>
+<section id="control-socket">
+<h2>The control socket</h2>
+<p>Every Virtualbricks, with the windows or without, listens on a control socket once its project is open: <em>$XDG_RUNTIME_DIR</em>/virtualbricks/.control, or the path of <code>--socket</code>. <code>--command</code> sends it a command, as typed in its console:</p>
+<figure class="code"><pre><code>virtualbricks --command brick start sw1 vm1
+virtualbricks --command brick set vm1 memory=1024</code></pre></figure>
+<p>The words after <code>--command</code> are those of the command, as the shell split them; they reach the console quoted again, so a value with spaces is quoted once, as in the console. The options of <code>virtualbricks</code> end at the first word. Without words, the lines of the standard input are the commands, each sent after the answer to the one before, up to the first error, which names its line.</p>
+<p>The answer goes to the standard output. When a command fails, what it did first goes there too, and the error, <code>Error:</code> and why, to the standard error; see <a href="#exit-status">Exit status</a>. A relative path, as that of <code>source</code> <em>file</em>, is read from the folder where <code>--command</code> runs. Ctrl+C stops waiting, not the command. Virtualbricks logs each command it gets, and answers in its own language.</p>
+<p>Only you can connect: the socket is yours alone, and Virtualbricks doesn&#x27;t listen in a runtime folder that isn&#x27;t yours, or that others can write in. One Virtualbricks has the socket: the first to start, which holds the lock <em>path</em>.lock beside it. With <code>--lock none</code>, another one runs without a socket, unless it has its own <code>--socket</code>. A socket left by a crash is removed at the next start; nothing else at the path is.</p>
+<h3 id="control-socket-the-protocol">The protocol</h3>
+<p>Any program can talk to the socket: UTF-8 JSON, an object on each line. Virtualbricks greets with the <code>protocol</code>, 1, its <code>version</code>, its <code>pid</code> and the open <code>project</code>; then it answers each request in turn. A request&#x27;s <code>cwd</code>, the folder of its paths, is optional:</p>
+<figure class="code"><pre><code>{"line": "brick start sw1", "cwd": "/home/alice/labs"}
+{"ok": true, "lines": ["sw1 runs, process 4242"]}
+{"line": "brick start vm9"}
+{"ok": false, "lines": [], "error": "No brick named vm9"}</code></pre></figure>
 </section>
 <section id="commands">
 <h2>Commands</h2>
@@ -414,11 +446,22 @@ virtualbricks --no-gui [options]</code></pre></figure>
 <h2>Events</h2>
 <p>An event, started, waits its delay, then runs its actions, all at once: an action doesn&#x27;t wait for the one before. An action starts or stops a brick, with the bricks it plugs into, or an event, or runs a command of the console or of the shell, as <code>event action add</code> makes them. A command of the console in an event is any command of this page, and one that fails is logged with the event, the number of the action and the reason. The project file keeps the actions as <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a> says.</p>
 </section>
+<section id="exit-status">
+<h2>Exit status</h2>
+<p>With <code>--command</code>:</p>
+<dl class="terms">
+<dt><code>0</code></dt><dd><p>The command was done.</p></dd>
+<dt><code>1</code></dt><dd><p>The command failed, or an option is wrong.</p></dd>
+<dt><code>2</code></dt><dd><p>No Virtualbricks answered: none runs, it ended before it answered, or it speaks another protocol. The error says which.</p></dd>
+<dt><code>130</code></dt><dd><p>Ctrl+C stopped the wait.</p></dd>
+</dl>
+</section>
 <section id="files">
 <h2>Files</h2>
 <dl class="terms">
-<dt><em>\$XDG_STATE_HOME</em>/virtualbricks/history</dt><dd><p>The history of the console, the last 500 lines.</p></dd>
-<dt><em>/tmp/virtualbricks.lock</em>, <em>\$XDG_RUNTIME_DIR</em>/virtualbricks/.lock</dt><dd><p>The locks of the single-instance mode, see <code>--lock</code>.</p></dd>
+<dt><em>$XDG_STATE_HOME</em>/virtualbricks/history</dt><dd><p>The history of the console, the last 500 lines.</p></dd>
+<dt><em>/tmp/virtualbricks.lock</em>, <em>$XDG_RUNTIME_DIR</em>/virtualbricks/.lock</dt><dd><p>The locks of the single-instance mode, see <code>--lock</code>.</p></dd>
+<dt><em>$XDG_RUNTIME_DIR</em>/virtualbricks/.control, .control.lock</dt><dd><p>The control socket and its lock, see <a href="#control-socket">The control socket</a>.</p></dd>
 </dl>
 <p>The settings, the state and the projects are described in <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>.</p>
 </section>
@@ -440,6 +483,9 @@ event action add down stop router
 event start up down</code></pre></figure>
 <p>A lab on a server, from a file, without windows or console:</p>
 <figure class="code"><pre><code>virtualbricks --no-gui --noterm --run ~/labs/ospf.vb</code></pre></figure>
+<p>The machine of that lab, from another terminal, and the commands of a file, sent to it one after the other:</p>
+<figure class="code"><pre><code>virtualbricks --command brick start router
+virtualbricks --command &lt; ~/labs/traffic.vb</code></pre></figure>
 </section>
 <section id="see-also">
 <h2>See also</h2>
