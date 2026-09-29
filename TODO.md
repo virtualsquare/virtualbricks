@@ -46,13 +46,19 @@
 ## Bricks and programs
 
 - [ ] Give the router settings and a panel: it has neither (07 §10,
-  10 §13, 11 §11)
+  10 §13, 11 §11, 12 §9)
 - [ ] Decide how an icon is chosen for any brick or event, and where it
   shows (10 §13, 11 §11)
 - [ ] Select several bricks to start, stop or delete them at once
   (07 §10)
 - [ ] Disconnect a brick from its menu: today only its panel does it
   (07 §10)
+- [ ] Offer New Brick in the Topology tab too: on its empty page and in
+  its More menu (12 §9)
+- [ ] Make a brick already plugged into a switch, from the switch's
+  menu: a tap, a machine or a wire (12 §9)
+- [ ] Name a duplicate as New Brick names a brick: `sw3`, not
+  `copy_of_sw1` (12 §9)
 - [ ] Give the New Brick window a title, and its name field a label
   (07 §10)
 - [ ] Set a tap's address after its process starts, through sudo:
@@ -71,7 +77,8 @@
 - [ ] Show the command line of a machine as it would start, in the
   Advanced section of its panel (11 §11)
 - [ ] Add a Programs window: each program found, its version, what it
-  lacks and the packages to install (10 §13)
+  lacks and the packages to install (10 §13, 12 §9)
+  - the tooltip of a missing program in New Brick could open it
 - [ ] Ask QEMU for other architectures the same way; only
   qemu-system-x86 is recorded (10 §13)
 - [ ] Support Wirefilter along Netemu
