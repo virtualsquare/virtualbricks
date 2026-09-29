@@ -18,7 +18,11 @@
 """What the Bricks tab says about a brick, and how two bricks connect."""
 
 import os
+import subprocess
+import sys
 from unittest import mock
+
+from twisted.trial import unittest
 
 from virtualbricks.brickfactory import install_brick_types
 from virtualbricks.bricks.event import Event
@@ -31,27 +35,26 @@ from virtualbricks.bricks.tunnellisten import TunnelListen
 from virtualbricks.bricks.virtualmachine import VirtualMachine, hostonly_sock
 from virtualbricks.bricks.wire import Wire
 from virtualbricks.programs import VDE_PROGRAMS
-from virtualbricks.tests.gui import GuiTestCase, has_display
+from virtualbricks.tests import BrickTestCase
 
-if has_display:
-    from virtualbricks.gui.mainwindow.bricks import brickinfo
-    from virtualbricks.gui.mainwindow.bricks.brickinfo import (
-        HOST,
-        LINKS,
-        MACHINES,
-        NEW_KINDS,
-        Issue,
-        State,
-        connect,
-        connectable,
-        connection,
-        issue,
-        kind,
-        new_name,
-        process,
-        state,
-        summary,
-    )
+from virtualbricks.bricks import brickinfo
+from virtualbricks.bricks.brickinfo import (
+    HOST,
+    LINKS,
+    MACHINES,
+    NEW_KINDS,
+    Issue,
+    State,
+    connect,
+    connectable,
+    connection,
+    issue,
+    kind,
+    new_name,
+    process,
+    state,
+    summary,
+)
 
 
 def new_kind(brick_class):
@@ -74,7 +77,7 @@ class OtherBrick:
         return "Other"
 
 
-class BrickInfoTestCase(GuiTestCase):
+class BrickInfoTestCase(BrickTestCase):
 
     def setUp(self):
         super().setUp()
@@ -471,3 +474,21 @@ class TestIssue(BrickInfoTestCase):
     def test_a_switch_wrapper_runs_nothing(self):
         self.uninstall(*VDE_PROGRAMS)
         self.assertIsNone(self.issue(SwitchWrapper))
+
+
+class TestWithoutTheDesktop(unittest.TestCase):
+
+    def test_no_graphics_library(self):
+        # in a process of its own: the tests of the windows load GTK; the
+        # console reads these modules
+        code = (
+            "import sys; import virtualbricks.bricks.brickinfo, "
+            "virtualbricks.bricks.eventinfo; "
+            "print([m for m in sys.modules if m == 'gi'"
+            " or m.startswith(('gi.', 'gtk', 'gobject'))])"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", code], capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "[]")

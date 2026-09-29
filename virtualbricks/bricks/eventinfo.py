@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.mainwindow.events.test_eventinfo -*-
+# -*- test-case-name: virtualbricks.tests.bricks.test_eventinfo -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-What the Events tab says about an event, without widgets.
+What the Events tab and the console say about an event, without widgets.
 
 An event is ready, waiting for its delay, or not configured when it has no
 action. Its actions are commands for the console or the shell; read here,

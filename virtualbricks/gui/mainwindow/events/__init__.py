@@ -19,10 +19,10 @@
 The Events tab of the main window.
 
 ``tab`` is the tab, with its rows, on those of
-:mod:`virtualbricks.gui.mainwindow.rowtab`; ``eventinfo`` what a row says
-about an event, without widgets; ``eventmenu`` the menu of an event;
-``eventeditor`` the settings of an event, its delay and its actions; and
-``newevent`` the window of New Event.
+:mod:`virtualbricks.gui.mainwindow.rowtab`; ``eventmenu`` the menu of an
+event; ``eventeditor`` the settings of an event, its delay and its actions;
+and ``newevent`` the window of New Event. What a row says about an event is
+in :mod:`virtualbricks.bricks.eventinfo`, which the console shares.
 
 Only the classes that code outside this package imports from it are exported;
 the tests import the others from their modules.

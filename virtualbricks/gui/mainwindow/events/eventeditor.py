@@ -23,7 +23,7 @@ chosen instead of typed.
 The delay is a number of seconds. Each action is a row: its kind, then the
 brick, the event or the command it does it to, and a button that removes it;
 Add Action adds one. The kinds are those of
-:mod:`virtualbricks.gui.mainwindow.events.eventinfo`: start or stop a brick or an
+:mod:`virtualbricks.bricks.eventinfo`: start or stop a brick or an
 event, a command of the console, a shell command on the host. An event isn't
 among the events that it can start or stop.
 
@@ -47,8 +47,8 @@ from gi.repository import Gtk  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.panel import (  # noqa: E402
     Panel,
 )
-from virtualbricks.gui.mainwindow.events import eventinfo  # noqa: E402
-from virtualbricks.gui.mainwindow.events.eventinfo import (  # noqa: E402
+from virtualbricks.bricks import eventinfo  # noqa: E402
+from virtualbricks.bricks.eventinfo import (  # noqa: E402
     Action,
     Kind,
 )

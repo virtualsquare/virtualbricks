@@ -42,14 +42,12 @@ from gi.repository import Gtk  # noqa: E402
 from twisted.internet import reactor, task  # noqa: E402
 
 from virtualbricks.bricks.draft import Draft  # noqa: E402
-from virtualbricks.gui.mainwindow.events import (  # noqa: E402
-    eventinfo,
-    eventmenu,
-)
+from virtualbricks.bricks import eventinfo  # noqa: E402
+from virtualbricks.gui.mainwindow.events import eventmenu  # noqa: E402
 from virtualbricks.gui.mainwindow.events.eventeditor import (  # noqa: E402
     EventEditor,
 )
-from virtualbricks.gui.mainwindow.events.eventinfo import (  # noqa: E402
+from virtualbricks.bricks.eventinfo import (  # noqa: E402
     LABELS,
     SEPARATOR,
     State,

@@ -42,7 +42,7 @@ from gi.repository import GdkPixbuf, GLib, Gtk, Pango  # noqa: E402
 from virtualbricks import errors  # noqa: E402
 from virtualbricks.config.settings import get_setting  # noqa: E402
 from virtualbricks.gui import graphics  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks.brickinfo import (  # noqa: E402
+from virtualbricks.bricks.brickinfo import (  # noqa: E402
     NEW_KINDS,
     issue,
     new_name,

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 07:45+0200\n"
+"POT-Creation-Date: 2026-09-29 11:56+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -69,6 +69,291 @@ msgid ""
 "for {room}"
 msgstr ""
 
+#: virtualbricks/bricks/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/config/switchwrapperconfig.py
+msgid "Switch"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Switch wrapper"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Tap"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Wire"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Netemu"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Capture interface"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Tunnel server"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Tunnel client"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Router"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Virtual machine"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py virtualbricks/gui/mainwindow/bricks/tab.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "Running"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "Stopped"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Not connected"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py virtualbricks/bricks/eventinfo.py
+msgid "Not configured"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "nothing"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "on {brick}"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "{n} port"
+msgid_plural "{n} ports"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "hub"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "no socket"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "no address"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "{delay} ms"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-format, python-brace-format
+msgid "{loss}% loss"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "no interface"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "{interface} on {brick}"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "UDP port {port}"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "to {host}"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "no host"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "eth{n} as a socket"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "eth{n} not connected"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "eth{n} host only"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "eth{n} on {brick}"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "{size} MiB"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "no network card"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Machines and switches"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Links"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "This computer"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "A computer that QEMU runs"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid ""
+"A computer that QEMU runs, with its disks, its memory, and a network card "
+"for each switch it plugs into."
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "The other bricks plug into its ports"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid ""
+"A VDE switch: the other bricks plug into its ports, as into an Ethernet "
+"switch. It can start as it is."
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "A switch that another program runs"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid ""
+"A switch that another program runs. The bricks of this project plug into its "
+"socket, whose path its settings give."
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "A router between switches"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid ""
+"A VDE router between switches. It has no settings yet: its console "
+"configures it."
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "A cable between two switches"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "A cable between two switches, which its settings choose."
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "A cable that emulates a network link"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid ""
+"A cable between two switches that emulates a network link: its bandwidth, "
+"delay, loss and more, in states that change over time."
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Waits for a tunnel from another computer"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid ""
+"One end of an encrypted tunnel: it joins a switch here to a tunnel client on "
+"another computer, which connects to it."
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "Opens a tunnel to another computer"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid ""
+"The other end of an encrypted tunnel: it joins a switch here to a tunnel "
+"server on another computer, whose address its settings give."
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "This computer, plugged into a switch"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid ""
+"A network interface of this computer, plugged into a switch: this computer "
+"joins the lab through it. It runs as root, through sudo."
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "An interface's packets, sent to a switch"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid ""
+"An interface of this computer, whose packets go to a switch. It runs as "
+"root, through sudo."
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "{program} isn't installed"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+msgid "The brick can be made now, and starts once it is installed."
+msgid_plural "The brick can be made now, and starts once they are installed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "Neither {programs} nor {last} is installed."
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "{program} isn't installed, and no distribution ships it."
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py
+#, python-brace-format
+msgid "{program} isn't installed: the package {package} has it."
+msgstr ""
+
 #: virtualbricks/bricks/capture.py
 msgid "Interface"
 msgstr ""
@@ -90,6 +375,77 @@ msgstr ""
 #: virtualbricks/bricks/draft.py virtualbricks/bricks/virtualmachine.py
 #, python-brace-format
 msgid "In nothing: {brick} can't start"
+msgstr ""
+
+#: virtualbricks/bricks/eventinfo.py
+msgid "Ready"
+msgstr ""
+
+#: virtualbricks/bricks/eventinfo.py virtualbricks/gui/mainwindow/events/tab.py
+msgid "Waiting"
+msgstr ""
+
+#: virtualbricks/bricks/eventinfo.py virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid "{first} and {last}"
+msgstr ""
+
+#: virtualbricks/bricks/eventinfo.py
+#, python-brace-format
+msgid "starts {names}"
+msgstr ""
+
+#: virtualbricks/bricks/eventinfo.py
+#, python-brace-format
+msgid "stops {names}"
+msgstr ""
+
+#: virtualbricks/bricks/eventinfo.py
+#, python-brace-format
+msgid "starts the event {names}"
+msgid_plural "starts the events {names}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/bricks/eventinfo.py
+#, python-brace-format
+msgid "stops the event {names}"
+msgid_plural "stops the events {names}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/bricks/eventinfo.py
+#, python-brace-format
+msgid "runs “{command}” on the host"
+msgstr ""
+
+#: virtualbricks/bricks/eventinfo.py
+#, python-brace-format
+msgid "runs “{command}”"
+msgstr ""
+
+#: virtualbricks/bricks/eventinfo.py
+msgid "No actions yet"
+msgstr ""
+
+#: virtualbricks/bricks/eventinfo.py
+#, python-brace-format
+msgid "After {delay} s, {does}"
+msgstr ""
+
+#: virtualbricks/bricks/eventinfo.py
+#, python-brace-format
+msgid "At once, {does}"
+msgstr ""
+
+#: virtualbricks/bricks/eventinfo.py
+#, python-brace-format
+msgid "when {brick} starts"
+msgstr ""
+
+#: virtualbricks/bricks/eventinfo.py
+#, python-brace-format
+msgid "when {brick} stops"
 msgstr ""
 
 #: virtualbricks/bricks/event.py virtualbricks/bricks/__init__.py
@@ -704,6 +1060,14 @@ msgstr ""
 #: virtualbricks/bricks/virtualmachine.py
 #, python-brace-format
 msgid "{mac} isn't a MAC address"
+msgstr ""
+
+#: virtualbricks/bricks/virtualmachine.py
+msgid "Suspend/Resume not supported on this disk."
+msgstr ""
+
+#: virtualbricks/bricks/virtualmachine.py
+msgid "Cannot find suspend point."
 msgstr ""
 
 #: virtualbricks/config/importing.py
@@ -1804,12 +2168,6 @@ msgid "File missing"
 msgstr ""
 
 #: virtualbricks/gui/imageinfo.py
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-#, python-brace-format
-msgid "{first} and {last}"
-msgstr ""
-
-#: virtualbricks/gui/imageinfo.py
 #, python-brace-format
 msgid "{size} disk"
 msgstr ""
@@ -1907,293 +2265,6 @@ msgstr ""
 msgid ""
 "{vm}'s changes are kept in {copy}, {size}, in the project; {image} stays as "
 "it is."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#: virtualbricks/gui/mainwindow/bricks/config/switchwrapperconfig.py
-msgid "Switch"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Switch wrapper"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Tap"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Wire"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Netemu"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Capture interface"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Tunnel server"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Tunnel client"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Router"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Virtual machine"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#: virtualbricks/gui/mainwindow/bricks/tab.py
-#: virtualbricks/gui/mainwindow/images/imagedetails.py
-msgid "Running"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#: virtualbricks/gui/mainwindow/images/imagedetails.py
-msgid "Stopped"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Not connected"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-msgid "Not configured"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "nothing"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "on {brick}"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "{n} port"
-msgid_plural "{n} ports"
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "hub"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "no socket"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "no address"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "{delay} ms"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-format, python-brace-format
-msgid "{loss}% loss"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "no interface"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "{interface} on {brick}"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "UDP port {port}"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "to {host}"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "no host"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "eth{n} as a socket"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "eth{n} not connected"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "eth{n} host only"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "eth{n} on {brick}"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "{size} MiB"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "no network card"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Machines and switches"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Links"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "This computer"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "A computer that QEMU runs"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid ""
-"A computer that QEMU runs, with its disks, its memory, and a network card "
-"for each switch it plugs into."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "The other bricks plug into its ports"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid ""
-"A VDE switch: the other bricks plug into its ports, as into an Ethernet "
-"switch. It can start as it is."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "A switch that another program runs"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid ""
-"A switch that another program runs. The bricks of this project plug into its "
-"socket, whose path its settings give."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "A router between switches"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid ""
-"A VDE router between switches. It has no settings yet: its console "
-"configures it."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "A cable between two switches"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "A cable between two switches, which its settings choose."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "A cable that emulates a network link"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid ""
-"A cable between two switches that emulates a network link: its bandwidth, "
-"delay, loss and more, in states that change over time."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Waits for a tunnel from another computer"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid ""
-"One end of an encrypted tunnel: it joins a switch here to a tunnel client on "
-"another computer, which connects to it."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Opens a tunnel to another computer"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid ""
-"The other end of an encrypted tunnel: it joins a switch here to a tunnel "
-"server on another computer, whose address its settings give."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "This computer, plugged into a switch"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid ""
-"A network interface of this computer, plugged into a switch: this computer "
-"joins the lab through it. It runs as root, through sudo."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "An interface's packets, sent to a switch"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid ""
-"An interface of this computer, whose packets go to a switch. It runs as "
-"root, through sudo."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "{program} isn't installed"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "The brick can be made now, and starts once it is installed."
-msgid_plural "The brick can be made now, and starts once they are installed."
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "Neither {programs} nor {last} is installed."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "{program} isn't installed, and no distribution ships it."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#, python-brace-format
-msgid "{program} isn't installed: the package {package} has it."
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/bricklist.py
@@ -2307,14 +2378,6 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "Kill"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
-msgid "Suspend/Resume not supported on this disk."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
-msgid "Cannot find suspend point."
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
@@ -2857,73 +2920,6 @@ msgstr ""
 msgid ""
 "{event} is waiting: when the wait is over, it runs its actions as they are "
 "then; a new delay counts from its next start."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-msgid "Ready"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-#: virtualbricks/gui/mainwindow/events/tab.py
-msgid "Waiting"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-#, python-brace-format
-msgid "starts {names}"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-#, python-brace-format
-msgid "stops {names}"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-#, python-brace-format
-msgid "starts the event {names}"
-msgid_plural "starts the events {names}"
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-#, python-brace-format
-msgid "stops the event {names}"
-msgid_plural "stops the events {names}"
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-#, python-brace-format
-msgid "runs “{command}” on the host"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-#, python-brace-format
-msgid "runs “{command}”"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-msgid "No actions yet"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-#, python-brace-format
-msgid "After {delay} s, {does}"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-#, python-brace-format
-msgid "At once, {does}"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-#, python-brace-format
-msgid "when {brick} starts"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
-#, python-brace-format
-msgid "when {brick} stops"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events/eventmenu.py

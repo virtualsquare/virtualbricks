@@ -33,7 +33,7 @@ if has_display:
         MAX_DELAY,
         EventEditor,
     )
-    from virtualbricks.gui.mainwindow.events.eventinfo import Action, Kind
+    from virtualbricks.bricks.eventinfo import Action, Kind
 
 
 def vb(command):

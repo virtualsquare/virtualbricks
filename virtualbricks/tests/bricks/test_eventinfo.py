@@ -22,23 +22,22 @@ import dataclasses
 from twisted.internet import task
 
 from virtualbricks import console
-from virtualbricks.tests.gui import GuiTestCase, has_display
+from virtualbricks.tests import BrickTestCase
 
-if has_display:
-    from virtualbricks.gui.mainwindow.events import eventinfo
-    from virtualbricks.gui.mainwindow.events.eventinfo import (
-        Action,
-        Kind,
-        State,
-        missing,
-        names,
-        read,
-        seconds_left,
-        state,
-        summary,
-        triggers,
-        write,
-    )
+from virtualbricks.bricks import eventinfo
+from virtualbricks.bricks.eventinfo import (
+    Action,
+    Kind,
+    State,
+    missing,
+    names,
+    read,
+    seconds_left,
+    state,
+    summary,
+    triggers,
+    write,
+)
 
 
 class Scheduled:
@@ -56,7 +55,7 @@ def vb(command):
     return console.VbShellCommand(command)
 
 
-class EventInfoTestCase(GuiTestCase):
+class EventInfoTestCase(BrickTestCase):
 
     def setUp(self):
         super().setUp()

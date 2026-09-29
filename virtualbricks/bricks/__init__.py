@@ -73,6 +73,9 @@ start_brick = "Starting: {args}"
 left_out = "{warning}"
 open_console = "Opening console for {name}\n%{args}\n"
 console_done = "Console terminated\n{status}"
+restarting = "Restarting process!"
+# restart() kills the process if it hasn't stopped after these seconds.
+KILL_AFTER = 2
 console_terminated = (
     "Console terminated\n{status}\nProcess stdout:"
     "\n{out}\nProcess stderr:\n{err}\n"
@@ -534,3 +537,20 @@ class PrivilegedBrick(Brick):
 
     def needsudo(self):
         return os.geteuid() != 0
+
+
+def restart(brick, clock) -> defer.Deferred:
+    """Stop brick, killing it if it takes too long, and start it again."""
+
+    logger.debug(restarting)
+    stopped = brick.poweroff()
+    call = clock.callLater(KILL_AFTER, brick.poweroff, kill=True)
+
+    def cancel(passthru):
+        if call.active():
+            call.cancel()
+        return passthru
+
+    stopped.addBoth(cancel)
+    stopped.addCallback(lambda _: brick.poweron())
+    return stopped

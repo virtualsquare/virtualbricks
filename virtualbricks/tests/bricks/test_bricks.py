@@ -20,8 +20,9 @@
 
 import os
 
+from twisted.internet import defer, task
 
-from virtualbricks import console, errors
+from virtualbricks import bricks, console, errors
 from virtualbricks.base import BaseConfig
 from virtualbricks.bricks import BrickConfig
 from virtualbricks.config.report import Report
@@ -183,3 +184,46 @@ class TestRelatedEvents(BrickTestCase):
         self.assertEqual(started, ["boot"])
         switch._start_related_events(on=False, off=True)
         self.assertEqual(started, ["boot"])
+
+
+class TestRestart(BrickTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.clock = task.Clock()
+        self.done = []
+        self.stopped = defer.Deferred()
+        self.vm = self.factory.new_brick("qemu", "vm")
+
+        def poweroff(**kwargs):
+            self.done.append(("off", kwargs))
+            return self.stopped
+
+        self.vm.poweroff = poweroff
+        self.vm.poweron = lambda: self.done.append("on") or self.vm
+
+    def test_stops_then_starts(self):
+        # a virtual machine too: not an ACPI reset
+        restarted = bricks.restart(self.vm, self.clock)
+        self.assertEqual(self.done, [("off", {})])
+        self.stopped.callback(None)
+        self.assertEqual(self.done, [("off", {}), "on"])
+        self.assertIs(self.successResultOf(restarted), self.vm)
+        self.clock.advance(10)
+        self.assertEqual(self.done, [("off", {}), "on"])
+
+    def test_what_doesnt_stop_doesnt_start(self):
+        restarted = bricks.restart(self.vm, self.clock)
+        self.stopped.errback(RuntimeError("still running"))
+        self.failureResultOf(restarted, RuntimeError)
+        self.assertEqual(self.done, [("off", {})])
+
+    def test_kills_what_doesnt_stop(self):
+        # after two seconds, as the Running tab did
+        bricks.restart(self.vm, self.clock)
+        self.clock.advance(1.9)
+        self.assertEqual(self.done, [("off", {})])
+        self.clock.advance(0.1)
+        self.assertEqual(self.done, [("off", {}), ("off", {"kill": True})])
+        self.stopped.callback(None)
+        self.assertEqual(self.done[-1], "on")

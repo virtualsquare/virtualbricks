@@ -291,7 +291,9 @@ To add a language, see the top of `l10n.sh`.
   switch, tap, wire, and so on; each writes its command line with
   `command.py`. `draft.py` is what the settings panels work on: a copy of a
   brick's settings, checked as it's set, given to the brick at OK; a brick
-  with checks of its own has its draft in its module.
+  with checks of its own has its draft in its module. `brickinfo.py` and
+  `eventinfo.py` say in words what a brick or an event is and does, for the
+  tabs of the main window and for the console.
 - `virtualbricks/config/`: the settings and the state, the schemas of their
   fields, the project file, and the projects: `workspace.py` lists, creates and
   opens them, `archive.py` and `importing.py` read, write and import their

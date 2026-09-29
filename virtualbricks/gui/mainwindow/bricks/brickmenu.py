@@ -41,14 +41,18 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gio, GLib, Gtk  # noqa: E402
-from twisted.internet import defer, error, reactor  # noqa: E402
+from twisted.internet import error, reactor  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks import tools  # noqa: E402
-from virtualbricks.bricks.virtualmachine import VirtualMachine  # noqa: E402
+from virtualbricks.bricks import restart  # noqa: E402
+from virtualbricks.bricks.virtualmachine import (  # noqa: E402
+    VirtualMachine,
+    resume,
+    suspend,
+)
 from virtualbricks.gui.mainwindow import tab  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks import brickinfo  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks.brickinfo import State  # noqa: E402
+from virtualbricks.bricks import brickinfo  # noqa: E402
+from virtualbricks.bricks.brickinfo import State  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
     menu_item,
     menu_of,
@@ -56,23 +60,15 @@ from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
 )
 from virtualbricks.gui.dialogs.renamedialog import RenameDialog  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.spawn import qemu_img  # noqa: E402
 from virtualbricks.tools import is_running  # noqa: E402
 
 logger = Logger()
-not_supported = "Suspend/Resume not supported on this disk."
-snapshot_error = "Error on snapshot"
 resuming = "Resuming virtual machine {name}"
 suspending = "Save snapshot on virtual machine {name}"
 sending_signal = "Sending to process signal {signame}!"
 sending_acpi = "send ACPI {acpievent}"
-restarting = "Restarting process!"
 
 GROUP = "brick"
-# The snapshot that Suspend saves in the first disk, and Resume loads.
-SNAPSHOT = "virtualbricks"
-# Restart kills the process if it hasn't stopped after these seconds.
-KILL_AFTER = 2
 # The kinds of bricks without a settings panel, and without a console.
 NO_PANEL = frozenset(("Router",))
 NO_CONSOLE = frozenset(("Tap", "Capture"))
@@ -328,79 +324,3 @@ def popup(widget, event, gui, brick, keys=False) -> Gtk.Menu:
         GROUP,
         BrickActions(gui, brick),
     )
-
-
-# What the process items do to a brick
-
-
-def restart(brick, clock) -> defer.Deferred:
-    """Stop brick, killing it if it takes too long, and start it again."""
-
-    logger.debug(restarting)
-    stopped = brick.poweroff()
-    call = clock.callLater(KILL_AFTER, brick.poweroff, kill=True)
-
-    def cancel(passthru):
-        if call.active():
-            call.cancel()
-        return passthru
-
-    stopped.addBoth(cancel)
-    stopped.addCallback(lambda _: brick.poweron())
-    return stopped
-
-
-def _first_disk(vm) -> str | None:
-    disk = vm.disk("hda")
-    if disk.is_cow():
-        return disk.get_cow_path()
-    if disk.image:
-        return disk.image.path
-    return None
-
-
-def _not_supported() -> defer.Deferred:
-    logger.error(not_supported)
-    return defer.fail(
-        RuntimeError(_("Suspend/Resume not supported on this disk."))
-    )
-
-
-def suspend(vm) -> defer.Deferred:
-    """Save the state of a virtual machine in its first disk, and stop it."""
-
-    path = _first_disk(vm)
-    if path is None:
-        return _not_supported()
-    image_type = tools.image_type_from_file(path)
-    if image_type not in (tools.ImageFormat.QCOW2, tools.ImageFormat.QCOW3):
-        return _not_supported()
-    vm.send(f"savevm {SNAPSHOT}\n".encode())
-    return vm.poweroff()
-
-
-def resume(vm) -> defer.Deferred:
-    """Start a virtual machine from what Suspend saved in its first disk."""
-
-    def found(output):
-        if output.find(SNAPSHOT) == -1:
-            raise RuntimeError(_("Cannot find suspend point."))
-
-    def load(_):
-        if vm.proc is not None:
-            vm.send(f"loadvm {SNAPSHOT}\n".encode())
-        else:
-            return vm.poweron(resume=SNAPSHOT)
-
-    def failed(failure):
-        logger.failure(snapshot_error, failure)
-        return failure
-
-    path = _first_disk(vm)
-    if path is None:
-        return _not_supported()
-    output = qemu_img(["snapshot", "-l", path])
-    output.addCallback(found)
-    output.addCallback(load)
-    output.addErrback(failed)
-    return output

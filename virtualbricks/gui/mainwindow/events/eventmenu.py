@@ -35,8 +35,8 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gio, Gtk  # noqa: E402
 
 from virtualbricks.gui.mainwindow import tab  # noqa: E402
-from virtualbricks.gui.mainwindow.events import eventinfo  # noqa: E402
-from virtualbricks.gui.mainwindow.events.eventinfo import State  # noqa: E402
+from virtualbricks.bricks import eventinfo  # noqa: E402
+from virtualbricks.bricks.eventinfo import State  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
     menu_item,
     menu_of,

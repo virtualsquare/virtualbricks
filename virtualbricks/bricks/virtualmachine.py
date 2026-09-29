@@ -83,6 +83,10 @@ own_err = "plug {plug} does not belong to {brick}"
 acquire_lock = "Aquiring disk locks"
 release_lock = "Releasing disk locks"
 search_usb = "Searching USB devices"
+not_supported = "Suspend/Resume not supported on this disk."
+snapshot_error = "Error on snapshot"
+# The snapshot that suspend() saves in the first disk, and resume() loads.
+SNAPSHOT = "virtualbricks"
 
 
 @dataclass(frozen=True)
@@ -1706,3 +1710,62 @@ def lacks(config, cards, qemu, machine_properties, audio_driver):
 
 def is_virtualmachine(brick):
     return brick.get_type() == "Qemu"
+
+
+# Suspend and resume a machine, as its menu does
+
+
+def _first_disk(vm) -> str | None:
+    disk = vm.disk("hda")
+    if disk.is_cow():
+        return disk.get_cow_path()
+    if disk.image:
+        return disk.image.path
+    return None
+
+
+def _not_supported() -> defer.Deferred:
+    logger.error(not_supported)
+    return defer.fail(
+        RuntimeError(_("Suspend/Resume not supported on this disk."))
+    )
+
+
+def suspend(vm) -> defer.Deferred:
+    """Save the state of a virtual machine in its first disk, and stop it."""
+
+    path = _first_disk(vm)
+    if path is None:
+        return _not_supported()
+    image_type = tools.image_type_from_file(path)
+    if image_type not in (tools.ImageFormat.QCOW2, tools.ImageFormat.QCOW3):
+        return _not_supported()
+    vm.send(f"savevm {SNAPSHOT}\n".encode())
+    return vm.poweroff()
+
+
+def resume(vm) -> defer.Deferred:
+    """Start a virtual machine from what Suspend saved in its first disk."""
+
+    def found(output):
+        if output.find(SNAPSHOT) == -1:
+            raise RuntimeError(_("Cannot find suspend point."))
+
+    def load(_):
+        if vm.proc is not None:
+            vm.send(f"loadvm {SNAPSHOT}\n".encode())
+        else:
+            return vm.poweron(resume=SNAPSHOT)
+
+    def failed(failure):
+        logger.failure(snapshot_error, failure)
+        return failure
+
+    path = _first_disk(vm)
+    if path is None:
+        return _not_supported()
+    output = qemu_img(["snapshot", "-l", path])
+    output.addCallback(found)
+    output.addCallback(load)
+    output.addErrback(failed)
+    return output

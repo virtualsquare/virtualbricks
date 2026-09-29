@@ -38,11 +38,9 @@ from gi.repository import Gtk  # noqa: E402
 from twisted.internet import defer  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks.gui.mainwindow.bricks import (  # noqa: E402
-    brickinfo,
-    brickmenu,
-)
-from virtualbricks.gui.mainwindow.bricks.brickinfo import State  # noqa: E402
+from virtualbricks.bricks import brickinfo  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks import brickmenu  # noqa: E402
+from virtualbricks.bricks.brickinfo import State  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.bricklist import (  # noqa: E402
     BrickList,
 )

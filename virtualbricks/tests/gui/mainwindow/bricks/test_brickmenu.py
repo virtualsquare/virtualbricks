@@ -20,9 +20,8 @@
 import os
 import signal
 
-from twisted.internet import defer, error, task
+from twisted.internet import error, task
 
-from virtualbricks import tools
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
@@ -34,9 +33,6 @@ if has_display:
         BrickActions,
         menu,
         popup,
-        restart,
-        resume,
-        suspend,
     )
 
 
@@ -70,23 +66,6 @@ class FakeDialog:
 
     def show(self, parent):
         self.shown.append((self.args, parent))
-
-
-class FakeImage:
-    def __init__(self, path):
-        self.path = path
-
-
-class FakeDisk:
-    def __init__(self, cow=False, image=None):
-        self.cow = cow
-        self.image = image
-
-    def is_cow(self):
-        return self.cow
-
-    def get_cow_path(self):
-        return "/lab/vm_hda.cow"
 
 
 def content(model):
@@ -571,130 +550,6 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
                 ("draft", True, False),
             ],
         )
-
-
-class TestRestart(BrickMenuTestCase):
-
-    def setUp(self):
-        super().setUp()
-        self.clock = task.Clock()
-        self.done = []
-        self.stopped = defer.Deferred()
-        self.vm = self.brick("qemu", "vm")
-
-        def poweroff(**kwargs):
-            self.done.append(("off", kwargs))
-            return self.stopped
-
-        self.vm.poweroff = poweroff
-        self.vm.poweron = lambda: self.done.append("on") or self.vm
-
-    def test_stops_then_starts(self):
-        # a virtual machine too: not an ACPI reset
-        restarted = restart(self.vm, self.clock)
-        self.assertEqual(self.done, [("off", {})])
-        self.stopped.callback(None)
-        self.assertEqual(self.done, [("off", {}), "on"])
-        self.assertIs(self.successResultOf(restarted), self.vm)
-        self.clock.advance(10)
-        self.assertEqual(self.done, [("off", {}), "on"])
-
-    def test_what_doesnt_stop_doesnt_start(self):
-        restarted = restart(self.vm, self.clock)
-        self.stopped.errback(RuntimeError("still running"))
-        self.failureResultOf(restarted, RuntimeError)
-        self.assertEqual(self.done, [("off", {})])
-
-    def test_kills_what_doesnt_stop(self):
-        # after two seconds, as the Running tab did
-        restart(self.vm, self.clock)
-        self.clock.advance(1.9)
-        self.assertEqual(self.done, [("off", {})])
-        self.clock.advance(0.1)
-        self.assertEqual(self.done, [("off", {}), ("off", {"kill": True})])
-        self.stopped.callback(None)
-        self.assertEqual(self.done[-1], "on")
-
-
-class TestSuspendAndResume(BrickMenuTestCase):
-
-    def setUp(self):
-        super().setUp()
-        self.vm = self.brick("qemu", "vm")
-        self.done = []
-        self.vm.send = lambda data: self.done.append(data)
-        self.vm.poweroff = lambda: defer.succeed(self.done.append("off"))
-        self.vm.poweron = lambda resume="": defer.succeed(
-            self.done.append(("on", resume))
-        )
-        self.disk = FakeDisk(image=FakeImage("/lab/vm.qcow2"))
-        self.vm.disk = lambda name: self.disk if name == "hda" else None
-        self.formats = []
-
-        def image_type(path):
-            self.formats.append(path)
-            return tools.ImageFormat.QCOW2
-
-        self.patch(tools, "image_type_from_file", image_type)
-
-    def not_supported(self, deferred):
-        self.failureResultOf(deferred, RuntimeError)
-        self.assertEqual(
-            self.logger.formatted(),
-            ["Suspend/Resume not supported on this disk."],
-        )
-
-    def test_suspend(self):
-        self.successResultOf(suspend(self.vm))
-        self.assertEqual(self.done, [b"savevm virtualbricks\n", "off"])
-        self.assertEqual(self.formats, ["/lab/vm.qcow2"])
-
-    def test_suspend_a_private_disk(self):
-        self.disk.cow = True
-        self.successResultOf(suspend(self.vm))
-        self.assertEqual(self.formats, ["/lab/vm_hda.cow"])
-
-    def test_suspend_needs_qcow2(self):
-        self.patch(
-            tools, "image_type_from_file", lambda path: tools.ImageFormat.RAW
-        )
-        self.not_supported(suspend(self.vm))
-        self.assertEqual(self.done, [])
-
-    def test_no_disk(self):
-        self.disk.image = None
-        self.not_supported(suspend(self.vm))
-        self.logger = FakeLogger()
-        self.patch(brickmenu, "logger", self.logger)
-        self.not_supported(resume(self.vm))
-
-    def snapshots(self, output):
-        listed = []
-
-        def qemu_img(args):
-            listed.append(args)
-            return defer.succeed(output)
-
-        self.patch(brickmenu, "qemu_img", qemu_img)
-        return listed
-
-    def test_resume_a_stopped_machine(self):
-        listed = self.snapshots("1  virtualbricks  1.2 GiB")
-        self.successResultOf(resume(self.vm))
-        self.assertEqual(listed, [["snapshot", "-l", "/lab/vm.qcow2"]])
-        self.assertEqual(self.done, [("on", "virtualbricks")])
-
-    def test_resume_a_running_machine(self):
-        self.snapshots("1  virtualbricks  1.2 GiB")
-        self.running(self.vm)
-        self.successResultOf(resume(self.vm))
-        self.assertEqual(self.done, [b"loadvm virtualbricks\n"])
-
-    def test_nothing_to_resume(self):
-        self.snapshots("")
-        self.failureResultOf(resume(self.vm), RuntimeError)
-        self.assertEqual(self.done, [])
-        self.assertEqual(self.logger.formatted(), ["Error on snapshot"])
 
 
 class TestPopup(BrickMenuTestCase):

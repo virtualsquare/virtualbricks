@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.test_brickinfo -*-
+# -*- test-case-name: virtualbricks.tests.bricks.test_brickinfo -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -17,12 +17,13 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-What the Bricks tab says about a brick, and how two bricks connect.
+What the Bricks tab and the console say about a brick, and how two bricks
+connect.
 
-Nothing here builds a widget. A brick has a kind in words, "Virtual
-machine" for the type "Qemu"; a summary of its settings made for the list,
-"x86_64 · 512 MiB · eth0 on sw1", which the console doesn't use; a state;
-and, while it runs, a process.
+Nothing here builds a widget or loads GTK. A brick has a kind in words,
+"Virtual machine" for the type "Qemu"; a summary of its settings made for
+the list, "x86_64 · 512 MiB · eth0 on sw1"; a state; and, while it runs, a
+process.
 
 A brick dropped on another connects the two when one can plug into a socket
 of the other: a brick with a free plug, or a virtual machine, which adds a

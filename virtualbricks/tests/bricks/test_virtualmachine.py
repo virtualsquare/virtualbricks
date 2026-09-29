@@ -22,13 +22,15 @@ import os
 
 from twisted.internet import defer
 
-from virtualbricks import bricks
+from virtualbricks import bricks, tools
+from virtualbricks.bricks import virtualmachine
 from virtualbricks.config.workspace import OpenProject
 from virtualbricks.config.report import Report
 from virtualbricks.tests import (
     use_workspace,
     BrickTestCase,
     CommandTestCase,
+    FakeLogger,
 )
 from virtualbricks.bricks.virtualmachine import (
     Card,
@@ -39,6 +41,8 @@ from virtualbricks.bricks.virtualmachine import (
     VirtualMachineDraft,
     hostonly_sock,
     lacks,
+    resume,
+    suspend,
 )
 from virtualbricks.bricks.draft import Problem, apply
 from virtualbricks.programs import parse_machine_properties
@@ -661,3 +665,103 @@ class TestTheDraftOfAnImage(BrickTestCase):
         apply(self.draft)
         self.assertEqual(renamed, [])
         self.assertEqual(self.image.get_name(), "frr")
+
+
+class FakeImage:
+    def __init__(self, path):
+        self.path = path
+
+
+class FakeDisk:
+    def __init__(self, cow=False, image=None):
+        self.cow = cow
+        self.image = image
+
+    def is_cow(self):
+        return self.cow
+
+    def get_cow_path(self):
+        return "/lab/vm_hda.cow"
+
+
+class TestSuspendAndResume(BrickTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.logger = FakeLogger()
+        self.patch(virtualmachine, "logger", self.logger)
+        self.vm = self.factory.new_brick("qemu", "vm")
+        self.done = []
+        self.vm.send = lambda data: self.done.append(data)
+        self.vm.poweroff = lambda: defer.succeed(self.done.append("off"))
+        self.vm.poweron = lambda resume="": defer.succeed(
+            self.done.append(("on", resume))
+        )
+        self.disk = FakeDisk(image=FakeImage("/lab/vm.qcow2"))
+        self.vm.disk = lambda name: self.disk if name == "hda" else None
+        self.formats = []
+
+        def image_type(path):
+            self.formats.append(path)
+            return tools.ImageFormat.QCOW2
+
+        self.patch(tools, "image_type_from_file", image_type)
+
+    def not_supported(self, deferred):
+        self.failureResultOf(deferred, RuntimeError)
+        self.assertEqual(
+            self.logger.formatted(),
+            ["Suspend/Resume not supported on this disk."],
+        )
+
+    def test_suspend(self):
+        self.successResultOf(suspend(self.vm))
+        self.assertEqual(self.done, [b"savevm virtualbricks\n", "off"])
+        self.assertEqual(self.formats, ["/lab/vm.qcow2"])
+
+    def test_suspend_a_private_disk(self):
+        self.disk.cow = True
+        self.successResultOf(suspend(self.vm))
+        self.assertEqual(self.formats, ["/lab/vm_hda.cow"])
+
+    def test_suspend_needs_qcow2(self):
+        self.patch(
+            tools, "image_type_from_file", lambda path: tools.ImageFormat.RAW
+        )
+        self.not_supported(suspend(self.vm))
+        self.assertEqual(self.done, [])
+
+    def test_no_disk(self):
+        self.disk.image = None
+        self.not_supported(suspend(self.vm))
+        self.logger = FakeLogger()
+        self.patch(virtualmachine, "logger", self.logger)
+        self.not_supported(resume(self.vm))
+
+    def snapshots(self, output):
+        listed = []
+
+        def qemu_img(args):
+            listed.append(args)
+            return defer.succeed(output)
+
+        self.patch(virtualmachine, "qemu_img", qemu_img)
+        return listed
+
+    def test_resume_a_stopped_machine(self):
+        listed = self.snapshots("1  virtualbricks  1.2 GiB")
+        self.successResultOf(resume(self.vm))
+        self.assertEqual(listed, [["snapshot", "-l", "/lab/vm.qcow2"]])
+        self.assertEqual(self.done, [("on", "virtualbricks")])
+
+    def test_resume_a_running_machine(self):
+        self.snapshots("1  virtualbricks  1.2 GiB")
+        self.vm.proc = FakeProcess()
+        self.successResultOf(resume(self.vm))
+        self.assertEqual(self.done, [b"loadvm virtualbricks\n"])
+
+    def test_nothing_to_resume(self):
+        self.snapshots("")
+        self.failureResultOf(resume(self.vm), RuntimeError)
+        self.assertEqual(self.done, [])
+        self.assertEqual(self.logger.formatted(), ["Error on snapshot"])

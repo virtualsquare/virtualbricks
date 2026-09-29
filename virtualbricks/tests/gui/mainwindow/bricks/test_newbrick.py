@@ -28,7 +28,7 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 if has_display:
     from gi.repository import Gtk
 
-    from virtualbricks.gui.mainwindow.bricks.brickinfo import NEW_KINDS
+    from virtualbricks.bricks.brickinfo import NEW_KINDS
     from virtualbricks.gui.mainwindow.bricks.newbrick import NewBrickPopover
 
 

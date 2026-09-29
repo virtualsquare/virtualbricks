@@ -36,11 +36,9 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, GdkPixbuf, Gtk  # noqa: E402
 
-from virtualbricks.gui.mainwindow.bricks import (  # noqa: E402
-    brickinfo,
-    brickmenu,
-)
-from virtualbricks.gui.mainwindow.bricks.brickinfo import (  # noqa: E402
+from virtualbricks.bricks import brickinfo  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks import brickmenu  # noqa: E402
+from virtualbricks.bricks.brickinfo import (  # noqa: E402
     LABELS,
     SEPARATOR,
     State,
