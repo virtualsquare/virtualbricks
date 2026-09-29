@@ -1,5 +1,11 @@
 # TODO
 
+## Console
+
+- [ ] Add a control socket in the runtime folder, so that
+  `virtualbricks --command ...` talks to a Virtualbricks that runs
+  (14 §11, K6 C)
+
 # IDEAS
 
 ## Config
@@ -157,6 +163,20 @@
 - [ ] Write CLAUDE.md: the rules for working on this project
   (e.g. no re-exports for names only typing or tests use)
 - [ ] Document the project: layout, deployment, running the tests
+
+## Console
+
+- [ ] Answer in JSON for scripts, as `brick list --json` (14 §11)
+- [ ] Import and export archives from the console (14 §11)
+- [ ] Make new disk images from the console: `image new NAME SIZE`, with
+  `qemu-img` (14 §11)
+- [ ] Send a line to a brick's control monitor, `brick send vm1 "info
+  status"`, and show its answer (14 §11)
+- [ ] Show the console in a tab of the main window (14 §11)
+- [ ] Run an event's actions one after the other, each waiting for the
+  one before (14 §11)
+- [ ] Take any unambiguous beginning of a word, as `ip` does:
+  `br st sw1` (14 §11)
 
 ## Waiting
 

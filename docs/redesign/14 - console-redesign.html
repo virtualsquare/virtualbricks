@@ -1,0 +1,748 @@
+<title>Console Redesign</title>
+<meta name="description" content="A plan for the console of Virtualbricks: one grammar, noun verb arguments, to make, change, start, stop and delete bricks and events from the terminal, scripts and events, with help, completion and a mode without the GUI.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  .ref.open { color: var(--decide); background: var(--decide-soft); }
+
+  /* page 14 */
+  .chip {
+    display: inline-block;
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.04em;
+    padding: 3px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    vertical-align: 1px;
+    color: var(--risk);
+    background: var(--risk-soft);
+  }
+  .prompt { color: var(--code-h); font-weight: 500; }
+  table.commands td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.commands td:last-child { color: var(--muted); font-size: 13.5px; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+  .note { font-size: 14px; color: var(--muted); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 14 &middot; Design &middot; revision 2, decided</div>
+    <h1>Virtualbricks Console Redesign</h1>
+    <p class="lede">The console becomes a command language for what the windows do: make, change, start, stop, rename, duplicate and delete bricks and events, with their links, the images, the settings and the projects. One grammar, <code>noun verb arguments</code>, for the terminal, the scripts and the events, with quoting, help and completion, and an answer for every command.</p>
+    <ul class="meta">
+      <li>branch <b>mg/console-redesign</b> at af06a05</li>
+      <li>revision 2 &middot; 29 September 2026</li>
+      <li><span class="status">decided</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your request of today: refactor the console and its protocol, so that you can create bricks, edit them, start them, stop them and delete them, and the same for events, and prepare a plan to implement it, on a new branch. Nothing is implemented yet.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 records your answers: every question of <a href="#decisions">&sect;10</a> as recommended. For K6, <code>--no-gui</code> comes now, and the control socket goes in the TODO, not among the ideas (<a href="#later">&sect;11</a>).</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>The console today</a></li>
+        <li><a href="#problems"><span>3</span>What gets in the way</a></li>
+        <li><a href="#language"><span>4</span>The command language</a></li>
+        <li><a href="#session"><span>5</span>A session</a></li>
+        <li><a href="#events"><span>6</span>Events and their commands</a></li>
+        <li><a href="#terminal"><span>7</span>Terminal, scripts, no GUI</a></li>
+        <li><a href="#code"><span>8</span>The code</a></li>
+        <li><a href="#plan"><span>9</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>10</span>Decisions</a></li>
+        <li><a href="#later"><span>11</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Grammar</dt><dd>A noun, a verb, then names, <code>KEY=VALUE</code> pairs and flags, split as the shell splits words: <code>brick set vm1 memory=1024 kernel_command_line="console=ttyS0 root=/dev/vda"</code>. A name is never a command word, so any name works (<a class="ref done" href="#decisions">K1</a>, <a class="ref done" href="#decisions">K3</a>).</dd></div>
+          <div><dt>Commands</dt><dd>Bricks: list, new, show, set, start, stop, rename, duplicate, delete, connect, a machine&rsquo;s cards, and the process menu: pause, suspend, restart, kill. Events: list, new, show, set, their actions, start, stop, run now, rename, duplicate, delete. Then images, settings and projects, and <code>help</code>, <code>status</code>, <code>source</code>, <code>python</code>, <code>quit</code> (<a class="ref done" href="#decisions">K2</a>).</dd></div>
+          <div><dt>Answers</dt><dd>Every command answers: what it made, what it shows, or one error that says what and why. A start waits until the brick runs or fails, and says which (<a class="ref done" href="#decisions">K4</a>).</dd></div>
+          <div><dt>Events</dt><dd>Starting or stopping a brick or an event becomes an action of its own, <code>{kind = "start", target = "sw1"}</code>, which a rename follows. Other console commands use the new grammar, and one that fails is an error in the log, no longer a success. Projects written before are rewritten once, as format 2 (<a class="ref done" href="#decisions">K5</a>).</dd></div>
+          <div><dt>Terminal</dt><dd>History, line editing and Tab completion; the prompt names the open project; <code>python</code> opens the Python shell, as today (<a class="ref done" href="#decisions">K8</a>).</dd></div>
+          <div><dt>No GUI</dt><dd><code>virtualbricks --no-gui</code> runs the same program without GTK, for a lab on a server; <code>--run FILE</code> and <code>source FILE</code> run the commands of a file (<a class="ref done" href="#decisions">K6</a>, <a class="ref done" href="#decisions">K7</a>).</dd></div>
+          <div><dt>Code</dt><dd>A package without GTK, <code>virtualbricks/console/</code>: the parser, one table of the commands that also gives the help and the completion, the commands, the terminal. What the console shares with the windows moves out of <code>gui/</code> first.</dd></div>
+          <div><dt>Plan</dt><dd>Seven steps, a commit each, on this branch (<a href="#plan">&sect;9</a>).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>The console today</h2>
+        <p>Started from a terminal, Virtualbricks reads commands on its standard input, unless it has <code>--noterm</code> or <code>--daemon</code>. <code>console.VBProtocol</code> takes a line and splits it at the spaces. When the first word is one of its commands, it calls <code>do_</code><i>word</i>; otherwise the first word is taken as the name of a brick or an event, and the second as what to do with it. Its help says:</p>
+        <figure class="code">
+          <figcaption>virtualbricks&gt; help</figcaption>
+<pre><code>Base commands -----------------------------------------------------
+h[elp]                  print this help
+ps                      List of active process
+n[ew] TYPE NAME         Create a new TYPE brick with NAME
+list                    List of bricks already created
+socks                   List of connections available for bricks
+conn[ections]           List of connections for each bricks
+reset                   Remove all the bricks and events
+quit                    Stop virtualbricks
+event *args             TODO
+brick *args             TODO
+
+Brick configuration command ---------------------------------------
+BRICK_NAME show         List parameters of BRICK_NAME brick
+BRICK_NAME on           Starts BRICK_NAME
+BRICK_NAME off          Stops BRICK_NAME
+BRICK_NAME remove       Delete BRICK_NAME
+BRICK_NAME config PARM=VALUE    Configure a parameter of BRICK_NAME
+BRICK_NAME connect NICK Connect BRICK_NAME to a Sock
+BRICK_NAME disconnect   Disconnect BRICK_NAME to a sock
+BRICK_NAME help         Help about parameters of BRICK_NAME</code></pre>
+        </figure>
+        <p>The help doesn&rsquo;t list <code>config get KEY</code> and <code>config set KEY VALUE</code> for the settings, <code>images list</code>, <code>python</code>, which opens a Python shell with the factory in it, <code>warranty</code>, and the short forms <code>q</code>, <code>cfg</code>, <code>i</code>.</p>
+        <h3>Who else speaks it</h3>
+        <ul>
+          <li><strong>Events.</strong> An action <code>{kind = "vb", command = "sw1 on"}</code> runs a console command through <code>console.parse()</code>, which answers to a transport that drops every line.</li>
+          <li><strong>The event editor.</strong> <code>eventinfo.read()</code> takes <code>NAME on</code> and <code>NAME off</code> as Start or Stop a brick or an event, and anything else as a console command; <code>eventinfo.write()</code> writes them back.</li>
+          <li><strong>The migration of 2.1.</strong> <code>convert_command()</code> gives <code>BRICK config KEY=VALUE</code> the key names of today.</li>
+          <li><strong>Five tests</strong> in <code>tests/test_console.py</code>: show, new, config and the settings.</li>
+        </ul>
+      </section>
+
+      <section id="problems">
+        <h2><span class="num">&sect;3</span>What gets in the way</h2>
+        <p>From the code at af06a05. Items marked <span class="chip">checked</span> were run on this branch, through <code>VBProtocol</code>.</p>
+        <h3>Commands that fail, or fail silently</h3>
+        <ul>
+          <li><span class="chip">checked</span> <code>brick sw1 on</code> does nothing: <code>do_brick</code> passes the words unpacked, so &ldquo;on&rdquo; becomes the letters o and n. <code>brick sw1 config ports=4</code> answers &ldquo;invalid number of arguments&rdquo;. The help lists both as TODO.</li>
+          <li><span class="chip">checked</span> A value with a space can&rsquo;t be set: <code>vm1 config kernel_command_line=console=ttyS0 root=/dev/vda</code> answers &ldquo;No such parameter root&rdquo;.</li>
+          <li><span class="chip">checked</span> A brick named like a command can&rsquo;t be reached: after <code>new switch list</code>, which works, <code>list show</code> answers &ldquo;invalid number of arguments&rdquo;.</li>
+          <li><span class="chip">checked</span> <code>sw1 help</code>, in the help, does nothing. <code>brick nope on</code> says &ldquo;No such event &lsquo;nope&rsquo;&rdquo;.</li>
+          <li><span class="chip">checked</span> An event&rsquo;s console command that fails is logged as a success: the event with <code>sw1 config nope=1</code> logs &ldquo;Process ended with exit code None&rdquo;, and the error went to the transport that drops it.</li>
+          <li><code>sw1 on</code> doesn&rsquo;t wait for the start, nor say whether it worked: the Deferred of <code>poweron()</code> is dropped, where the windows log its failure.</li>
+          <li><span class="chip">checked</span> <code>reset</code> deletes every brick, event and image of the open project without asking, and the autosave writes the empty project within three minutes.</li>
+          <li><code>Protocol.lineReceived</code> turns every <code>TypeError</code>, a bug in a command included, into &ldquo;invalid number of arguments&rdquo;.</li>
+        </ul>
+        <h3>What it can&rsquo;t do</h3>
+        <ul>
+          <li>Rename, duplicate; an event&rsquo;s delay and actions, and Run Now; the process menu (pause, continue, suspend, resume, reset, restart, kill).</li>
+          <li>A machine&rsquo;s cards: <code>connect</code> fills the first free plug, with no model, MAC address, socket card or host-only card, and <code>disconnect</code> unplugs them all. A wire&rsquo;s ends can&rsquo;t be chosen.</li>
+          <li>Images: only a list. Settings: no list. Projects: nothing.</li>
+        </ul>
+        <h3>How it&rsquo;s built</h3>
+        <ul>
+          <li>The answers have no shape of their own: <code>ps</code>, <code>list</code>, <code>socks</code> and <code>connections</code> each lay them out their own way, and an error looks like any other line.</li>
+          <li>One class parses, dispatches, formats and changes the project, so the tests call <code>brick_action()</code> directly. The terminal, <code>Console</code> and <code>Manhole</code>, lives in <code>brickfactory.py</code>.</li>
+          <li>The terminal is the tty&rsquo;s own line mode: no history, and the arrows print escape codes. The greeting says &ldquo;Copyright (C) 2022&rdquo;, and <code>warranty</code> prints &ldquo;NotImplementedError&rdquo;.</li>
+          <li>The console exists only beside the windows: <code>scripts/virtualbricks.py</code> always starts GTK, though <code>brickfactory.py</code> and <code>console.py</code> load none of it.</li>
+          <li>What the console would share with the windows is under <code>gui/</code>, whose package loads GTK: the kinds, names and summaries of the bricks (<code>brickinfo.py</code>), the actions of the events (<code>eventinfo.py</code>), restart, suspend and resume (<code>brickmenu.py</code>).</li>
+        </ul>
+      </section>
+
+      <section id="language">
+        <h2><span class="num">&sect;4</span>The command language</h2>
+        <h3>Rules</h3>
+        <ul>
+          <li><strong>A line is <code>NOUN VERB ARGUMENTS</code></strong>: the nouns are <code>brick</code>, <code>event</code>, <code>image</code>, <code>setting</code> and <code>project</code>, and a few words stand alone: <code>help</code>, <code>status</code>, <code>source</code>, <code>python</code>, <code>quit</code>. A name is always an argument, never a command, so a brick can be called <code>list</code>.</li>
+          <li><strong>Words are split as the shell splits them</strong>, with <code>shlex</code>: quotes keep spaces, a backslash escapes, <code>#</code> starts a comment. Settings are <code>KEY=VALUE</code>, as many as needed in one command, all checked before any is set.</li>
+          <li><strong>Every command succeeds or fails.</strong> A success answers when there is something to say: the name given to a new brick, the process of a started one. A failure is one message that names the brick, the key and the reason. Nothing fails without a word.</li>
+          <li><strong>What takes time waits</strong>: start, stop, restart and suspend come back when they are done or failed.</li>
+          <li><strong>The words of the windows</strong>: start, stop, rename, duplicate, delete, the kinds of New Brick (<code>switch</code>, <code>vm</code>, <code>tap</code>&hellip;), the keys of <code>project.toml</code>, the names of the Settings window.</li>
+          <li><strong>One table</strong> lists the commands, their arguments and their help: the parser, <code>help</code>, the completion and the manual page read it, so they can&rsquo;t drift apart.</li>
+        </ul>
+
+        <h3>Bricks</h3>
+        <div class="scroll">
+        <table class="commands wide">
+          <thead><tr><th>Command</th><th>What it does</th><th>Today</th></tr></thead>
+          <tbody>
+            <tr><td>brick types</td><td>The kinds, with what each is and what this computer lacks for it, as in New Brick.</td><td>&mdash;</td></tr>
+            <tr><td>brick list</td><td>Each brick: name, kind, state and summary, as in the Bricks tab.</td><td>list</td></tr>
+            <tr><td>brick new KIND [NAME]</td><td>Make a brick. Without a name, the kind&rsquo;s short form and the first free number, as New Brick: <code>sw3</code>. Prints the name.</td><td>new TYPE NAME</td></tr>
+            <tr><td>brick show NAME</td><td>State, process, links, then every key as <code>KEY = VALUE</code>, with what keeps a key unused, as today.</td><td>NAME show</td></tr>
+            <tr><td>brick keys KIND|NAME [KEY]</td><td>The keys, with what each is for, its range or choices, and its default: the comments of <code>project.toml</code>.</td><td>NAME help, which does nothing</td></tr>
+            <tr><td>brick set NAME KEY=VALUE&hellip;</td><td>Change keys, all or none. A running brick takes at once what it can, as a switch&rsquo;s ports, and the answer says what waits for the next start.</td><td>NAME config</td></tr>
+            <tr><td>brick unset NAME KEY&hellip;</td><td>Put keys back to their defaults.</td><td>&mdash;</td></tr>
+            <tr><td>brick start NAME&hellip;</td><td>Start, after the bricks each plugs into, and wait until each runs or fails.</td><td>NAME on</td></tr>
+            <tr><td>brick stop NAME&hellip;</td><td>Stop, and wait until the process ends.</td><td>NAME off</td></tr>
+            <tr><td>brick restart NAME&hellip;</td><td>Stop, killing after two seconds, and start again, as the process menu.</td><td>&mdash;</td></tr>
+            <tr><td>brick pause|continue NAME&hellip;</td><td>Stop and continue the process (SIGSTOP, SIGCONT).</td><td>&mdash;</td></tr>
+            <tr><td>brick suspend|resume VM</td><td>Save a machine&rsquo;s state in its first disk and stop it; start it from there.</td><td>&mdash;</td></tr>
+            <tr><td>brick reset VM</td><td>Reset a running machine, as its reset button.</td><td>&mdash;</td></tr>
+            <tr><td>brick kill NAME&hellip;</td><td>Kill the process (SIGKILL).</td><td>&mdash;</td></tr>
+            <tr><td>brick monitor NAME</td><td>Open the control monitor in the terminal that the settings name, as Open Control Monitor.</td><td>&mdash;</td></tr>
+            <tr><td>brick connect NAME TARGET [TARGET]</td><td>Plug a tap, capture or tunnel into a switch; give a wire or a Netemu its ends, left then right.</td><td>NAME connect</td></tr>
+            <tr><td>brick disconnect NAME [left|right]</td><td>Unplug, or one end of a wire or Netemu.</td><td>NAME disconnect</td></tr>
+            <tr><td>brick card add VM plug TARGET [model=M] [mac=A]</td><td>A card plugged into TARGET; <code>socket [name=N]</code> for a socket card, <code>hostonly</code> for QEMU&rsquo;s own network.</td><td>NAME connect</td></tr>
+            <tr><td>brick card set VM ethN KEY=VALUE&hellip;</td><td>A card&rsquo;s model, MAC address or socket; cards are <code>eth0</code>, <code>eth1</code>&hellip; as in the summaries.</td><td>&mdash;</td></tr>
+            <tr><td>brick card remove VM ethN</td><td>Take a card out.</td><td>&mdash;</td></tr>
+            <tr><td>brick rename NAME NEW</td><td>Rename, with the checks of Rename (F2).</td><td>&mdash;</td></tr>
+            <tr><td>brick duplicate NAME [NEW]</td><td>Copy a brick with its links.</td><td>&mdash;</td></tr>
+            <tr><td>brick delete NAME&hellip;</td><td>Delete; a running brick is refused.</td><td>NAME remove</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p class="note">A brick&rsquo;s start and stop events are its keys <code>on_start</code> and <code>on_stop</code>: <code>brick set sw1 on_start=boot</code>.</p>
+
+        <h3>Events</h3>
+        <div class="scroll">
+        <table class="commands wide">
+          <thead><tr><th>Command</th><th>What it does</th><th>Today</th></tr></thead>
+          <tbody>
+            <tr><td>event list</td><td>Each event: name, state (ready, waiting 7 s, not configured), delay, actions.</td><td>list</td></tr>
+            <tr><td>event new [NAME]</td><td>Make an event; without a name, <code>new_event</code> or the next free one, as New Event.</td><td>new event NAME</td></tr>
+            <tr><td>event show NAME</td><td>Delay, the actions numbered, and the bricks that start it.</td><td>&mdash;</td></tr>
+            <tr><td>event set NAME delay=SECONDS</td><td>Change the delay, or <code>icon</code>.</td><td>&mdash;</td></tr>
+            <tr><td>event action add NAME ACTION [--at N]</td><td>ACTION is <code>start TARGET</code>, <code>stop TARGET</code>, <code>console COMMAND</code> or <code>shell COMMAND</code>; TARGET is a brick or an event.</td><td>&mdash;</td></tr>
+            <tr><td>event action remove NAME N&hellip;</td><td>Remove actions by number.</td><td>&mdash;</td></tr>
+            <tr><td>event action move NAME N TO</td><td>Change an action&rsquo;s place.</td><td>&mdash;</td></tr>
+            <tr><td>event start NAME&hellip;</td><td>Wait the delay, then run the actions.</td><td>NAME on</td></tr>
+            <tr><td>event stop NAME&hellip;</td><td>Stop waiting.</td><td>NAME off</td></tr>
+            <tr><td>event run NAME&hellip;</td><td>Run the actions now, as Run Now.</td><td>&mdash;</td></tr>
+            <tr><td>event rename NAME NEW</td><td>Rename, and every action and brick that names it.</td><td>&mdash;</td></tr>
+            <tr><td>event duplicate NAME [NEW]</td><td>Copy an event.</td><td>&mdash;</td></tr>
+            <tr><td>event delete NAME&hellip;</td><td>Delete.</td><td>NAME remove</td></tr>
+          </tbody>
+        </table>
+        </div>
+
+        <h3>Images, settings and projects</h3>
+        <div class="scroll">
+        <table class="commands wide">
+          <thead><tr><th>Command</th><th>What it does</th><th>Today</th></tr></thead>
+          <tbody>
+            <tr><td>image list</td><td>Each image: name, file, format, size, the machines that use it.</td><td>images list</td></tr>
+            <tr><td>image add NAME PATH [description=TEXT]</td><td>Add an image file to the project.</td><td>&mdash;</td></tr>
+            <tr><td>image show|set|rename NAME &hellip;</td><td>An image&rsquo;s file and description.</td><td>&mdash;</td></tr>
+            <tr><td>image delete NAME</td><td>Remove it; the disks that used it are left without an image, their private copies stay.</td><td>&mdash;</td></tr>
+            <tr><td>setting show [KEY]</td><td>The settings of Virtualbricks and of the open project, as the two tabs of the Settings window.</td><td>config get KEY</td></tr>
+            <tr><td>setting set KEY=VALUE&hellip;</td><td>Change settings; <code>setting unset KEY</code> puts one back to its default.</td><td>config set KEY VALUE</td></tr>
+            <tr><td>project list</td><td>The projects of the workspace, with the first line of each README.</td><td>&mdash;</td></tr>
+            <tr><td>project show</td><td>The open project: name, folder, bricks, events, images.</td><td>&mdash;</td></tr>
+            <tr><td>project open|new NAME</td><td>Open a project, or make one; refused while bricks run, as in the Projects window.</td><td>&mdash;</td></tr>
+            <tr><td>project save</td><td>Save now, without waiting for the autosave.</td><td>&mdash;</td></tr>
+            <tr><td>project rename|duplicate|delete NAME &hellip;</td><td>As the Projects window; delete moves to the trash where there is one, and asks for <code>--force</code> where there isn&rsquo;t.</td><td>&mdash;</td></tr>
+          </tbody>
+        </table>
+        </div>
+
+        <h3>Words of their own</h3>
+        <div class="scroll">
+        <table class="commands wide">
+          <thead><tr><th>Command</th><th>What it does</th><th>Today</th></tr></thead>
+          <tbody>
+            <tr><td>help [NOUN [VERB]]</td><td>The commands, a noun&rsquo;s verbs, or one command with its arguments and an example.</td><td>help</td></tr>
+            <tr><td>status</td><td>What runs: each running brick with its process, each waiting event with the seconds left.</td><td>ps</td></tr>
+            <tr><td>source FILE</td><td>Run the commands of a file, stopping at the first error (<a class="ref done" href="#decisions">K7</a>).</td><td>&mdash;</td></tr>
+            <tr><td>python</td><td>The Python shell with <code>factory</code>; Ctrl+D comes back.</td><td>python</td></tr>
+            <tr><td>quit</td><td>Quit Virtualbricks; refused while bricks run, naming them.</td><td>quit</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p><strong>What goes:</strong> <code>reset</code>, which <code>project new</code> and <code>project open</code> replace; <code>socks</code> and <code>connections</code>, whose content goes into <code>brick show</code> and the completion of targets; <code>warranty</code>; the short forms, which Tab completion replaces; the placeholders <code>event *args</code> and <code>brick *args</code>.</p>
+      </section>
+
+      <section id="session">
+        <h2><span class="num">&sect;5</span>A session</h2>
+        <p>A mock-up, with the recommended answers: a switch and a machine, made, set, started, and an event that restarts the machine with more memory.</p>
+        <figure class="code">
+          <figcaption>virtualbricks --no-gui</figcaption>
+<pre><code>Virtualbricks 2.1.0, project lab. Type help, or press Tab to complete.
+<span class="prompt">lab&gt;</span> brick new switch
+sw1
+<span class="prompt">lab&gt;</span> brick new vm router
+router
+<span class="prompt">lab&gt;</span> brick set router qemu_program=qemu-system-x86_64 use_kvm=true memory=512
+<span class="prompt">lab&gt;</span> brick set router kernel_command_line="console=ttyS0 root=/dev/vda1"
+<span class="prompt">lab&gt;</span> brick card add router plug sw1 model=virtio-net-pci
+router eth0: plugged into sw1, virtio-net-pci, 52:54:00:3f:a1:07
+<span class="prompt">lab&gt;</span> brick set router memory=99999999
+<span class="e">Error: router memory: 99999999 is outside 1&ndash;99999</span>
+<span class="prompt">lab&gt;</span> brick start router
+sw1 runs, process 41822
+router runs, process 41830
+<span class="prompt">lab&gt;</span> brick list
+NAME    KIND             STATE    SUMMARY
+router  Virtual machine  running  x86_64, KVM, 512 MiB, eth0 on sw1
+sw1     Switch           running  32 ports
+<span class="prompt">lab&gt;</span> event new bigger
+bigger
+<span class="prompt">lab&gt;</span> event action add bigger stop router
+<span class="prompt">lab&gt;</span> event action add bigger console "brick set router memory=1024"
+<span class="prompt">lab&gt;</span> event action add bigger start router
+<span class="prompt">lab&gt;</span> event show bigger
+delay = 0
+1  stop router
+2  console "brick set router memory=1024"
+3  start router
+<span class="prompt">lab&gt;</span> brick delete sw1
+<span class="e">Error: sw1 is running: stop it first</span>
+<span class="prompt">lab&gt;</span> quit
+<span class="e">Error: sw1 and router are running: stop them first</span></code></pre>
+        </figure>
+        <p class="note">The actions of an event run all at once today, so this event would need the order that <a href="#later">&sect;11</a> leaves for later.</p>
+      </section>
+
+      <section id="events">
+        <h2><span class="num">&sect;6</span>Events and their commands</h2>
+        <p>An event&rsquo;s actions are kept as console or shell commands, and the event editor guesses from the text which were Start or Stop. With <a class="ref done" href="#decisions">K5</a> B, starting and stopping get actions of their own, and the console commands speak the new grammar:</p>
+        <div class="compare">
+          <figure class="code">
+            <figcaption>project.toml, format 1</figcaption>
+<pre><code>actions = [
+    {kind = "vb", command = "router off"},
+    {kind = "vb", command = "router config memory=1024"},
+    {kind = "vb", command = "router on"},
+    {kind = "shell", command = "logger lab up"},
+]</code></pre>
+          </figure>
+          <figure class="code">
+            <figcaption>project.toml, format 2</figcaption>
+<pre><code>actions = [
+    {kind = "stop", target = "router"},
+    {kind = "console", command = "brick set router memory=1024"},
+    {kind = "start", target = "router"},
+    {kind = "shell", command = "logger lab up"},
+]</code></pre>
+          </figure>
+        </div>
+        <ul>
+          <li><strong><code>start</code> and <code>stop</code> take a target</strong>, a brick or an event: names are unique among bricks, events and images, so one word is enough. Renaming the target renames it in every action, as renaming an event already does for <code>on_start</code>.</li>
+          <li><strong><code>console</code></strong> is any command of <a href="#language">&sect;4</a>. It is checked when the project opens and when the event editor takes it; <code>shell</code> stays as it is.</li>
+          <li><strong>An action that fails is an error of the event in the log</strong>, with its number and its command: &ldquo;Event bigger, action 2: router memory: 99999999 is outside 1&ndash;99999&rdquo;. The other actions still run.</li>
+          <li><strong>Format 2.</strong> A step in <code>projectfile.UPGRADES</code> rewrites a format 1 file once, when it opens: <code>NAME on</code> and <code>NAME off</code> become start and stop; <code>NAME config KEY=VALUE&hellip;</code> becomes <code>brick set</code> or <code>event set</code>, quoted where needed; <code>NAME remove</code>, <code>connect</code>, <code>disconnect</code>, <code>new</code> and <code>config set</code> become their new commands. Anything else stays a console command, and the report of the opening says it may not run. An older Virtualbricks then refuses the file, as it refuses any newer format.</li>
+          <li><strong>The migration of 2.1</strong> writes format 2 directly, after its renames of keys.</li>
+          <li><strong>The event editor</strong> keeps its six kinds: Start and Stop a brick or an event become start and stop with a target. Its console field is checked by the parser as you type, with the error under it, as the name fields are.</li>
+        </ul>
+      </section>
+
+      <section id="terminal">
+        <h2><span class="num">&sect;7</span>Terminal, scripts, no GUI</h2>
+        <h3>The terminal</h3>
+        <ul>
+          <li><strong>Line editing, history and completion</strong> with <code>twisted.conch.recvline</code> on the raw terminal that the Python shell already uses (<a class="ref done" href="#decisions">K8</a>). The history is kept in <code>$XDG_STATE_HOME/virtualbricks/history</code>, the last 500 lines. Tab completes nouns, verbs, names of bricks, events and images, kinds, <code>KEY=</code> and the choices of a key.</li>
+          <li><strong>Keys:</strong> Ctrl+C clears the line, or stops waiting for a command, not the brick; Ctrl+D quits, as today.</li>
+          <li><strong>The prompt</strong> is the name of the open project. The greeting says the version and how to get help.</li>
+          <li><strong><code>python</code></strong> switches to the Python shell, with <code>factory</code>, and Ctrl+D comes back: the same as today, without the switching of <code>brickfactory.Console</code>.</li>
+          <li><strong>Messages</strong> go through <code>_()</code> as those of the windows; command words, kinds and keys stay English (<a class="ref done" href="#decisions">K9</a>).</li>
+        </ul>
+        <h3>Scripts</h3>
+        <ul>
+          <li><strong><code>virtualbricks --run FILE</code></strong> runs a file of commands once the last project is open; <code>source FILE</code> runs one from the console (<a class="ref done" href="#decisions">K7</a>).</li>
+          <li>Empty lines and <code>#</code> comments are skipped. The first error stops the file, as <code>lab.vb:7: router memory: 99999999 is outside 1&ndash;99999</code>; the program goes on.</li>
+        </ul>
+        <h3>Without the GUI</h3>
+        <ul>
+          <li><strong><code>virtualbricks --no-gui</code></strong> runs <code>brickfactory.Application</code> with Twisted&rsquo;s default reactor and never loads GTK (<a class="ref done" href="#decisions">K6</a>). The startup migration logs what it converts instead of opening its window. The console is the way in.</li>
+          <li>With <code>--noterm</code> as well, it runs the lab of <code>--run</code> until it gets SIGTERM. <code>--daemon</code>, which has no help and does what <code>--noterm</code> does, and keeps the debugger of <code>--debug</code> away, goes.</li>
+          <li>Talking to a Virtualbricks that runs already, through a socket, is for later (<a href="#later">&sect;11</a>).</li>
+        </ul>
+      </section>
+
+      <section id="code">
+        <h2><span class="num">&sect;8</span>The code</h2>
+        <figure class="code">
+          <figcaption>virtualbricks/</figcaption>
+<pre><code>console/                <span class="c">the console, without GTK; console.py goes</span>
+&#x251c;&#x2500;&#x2500; __init__.py         <span class="c">run(factory, line), for the events and the scripts</span>
+&#x251c;&#x2500;&#x2500; parser.py           <span class="c">words (shlex), the grammar, errors that say where</span>
+&#x251c;&#x2500;&#x2500; table.py            <span class="c">each command: noun, verb, arguments, help (N_()), function</span>
+&#x251c;&#x2500;&#x2500; bricks.py           <span class="c">the commands of &sect;4, one module per noun</span>
+&#x251c;&#x2500;&#x2500; events.py
+&#x251c;&#x2500;&#x2500; images.py
+&#x251c;&#x2500;&#x2500; settings.py
+&#x251c;&#x2500;&#x2500; projects.py
+&#x251c;&#x2500;&#x2500; output.py           <span class="c">tables and KEY = VALUE lines</span>
+&#x2514;&#x2500;&#x2500; terminal.py         <span class="c">prompt, history, completion, the Python shell</span>
+bricks/kinds.py         <span class="c">from gui/.../brickinfo.py: kinds, new names, issues, summaries, states</span>
+bricks/event.py         <span class="c">+ from gui/.../eventinfo.py: the actions, states, triggers</span>
+bricks/__init__.py      <span class="c">+ restart(), from brickmenu.py</span>
+bricks/virtualmachine.py <span class="c">+ suspend(), resume(), from brickmenu.py</span>
+bricks/eventaction.py   <span class="c">start, stop, console, shell</span>
+config/projectfile.py   <span class="c">FORMAT 2, UPGRADES[1]</span>
+brickfactory.py         <span class="c">Console and Manhole go to console/terminal.py</span>
+app.py                  <span class="c">--no-gui, --run; --daemon goes</span>
+scripts/virtualbricks.py <span class="c">GTK only without --no-gui</span></code></pre>
+        </figure>
+        <ul>
+          <li><strong>A command</strong> is a function of the factory and its parsed arguments that returns a Deferred of its answer, or fails with a <code>CommandError</code> that holds the message. The terminal prints; the events log; the scripts stop at the first failure.</li>
+          <li><strong>The table</strong> declares each argument&rsquo;s kind (a brick, an event, a kind, <code>KEY=VALUE</code>, a flag), from which the parser checks, the completion proposes and <code>help</code> writes.</li>
+          <li><strong>The windows</strong> keep calling the model, not the console; they import the moved modules from their new places. The event editor uses the parser to check its console field.</li>
+          <li><strong>No GTK</strong>: a test imports <code>virtualbricks.console</code> in a fresh process and checks that no <code>gi</code> module is loaded, as for the workspace.</li>
+        </ul>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;9</span>Implementation plan</h2>
+        <p>A commit per step on this branch, with the recommended answers; your answers may change a step. The console works at the end of every step, the old way until step 5.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">1 Share</td><td>The kinds, names, summaries and states of the bricks to <code>bricks/kinds.py</code>; the actions and states of the events to <code>bricks/event.py</code>; restart, suspend and resume out of <code>brickmenu.py</code>. The windows import them from there; nothing else changes.</td><td>The moved tests follow; no <code>gi</code> in the new modules.</td></tr>
+            <tr><td class="nowrap">2 Language</td><td><code>console/parser.py</code>, <code>table.py</code>, <code>output.py</code>, <code>CommandError</code>, <code>run()</code>, <code>help</code>. Not yet on the terminal.</td><td>Words and quotes, every kind of argument, unknown nouns, verbs and keys, help from the table.</td></tr>
+            <tr><td class="nowrap">3 Bricks</td><td>Every brick command of &sect;4, with the cards, the links and the process menu.</td><td>Each command on a factory, what it answers and changes; start and stop with fake processes; each refusal.</td></tr>
+            <tr><td class="nowrap">4 The rest</td><td>Events, images, settings, projects, <code>status</code>, <code>quit</code>.</td><td>As step 3; projects in a temporary workspace.</td></tr>
+            <tr><td class="nowrap">5 Terminal</td><td><code>console/terminal.py</code>: history, editing, completion, prompt, <code>python</code>, <code>source</code>; <code>--run</code>, <code>--no-gui</code>. <code>VBProtocol</code>, <code>brickfactory.Console</code> and <code>Manhole</code> go.</td><td>Sessions typed into a fake terminal: keys, completion, history file, Ctrl+C and Ctrl+D; <code>--no-gui</code> loads no <code>gi</code>; a script and its first error.</td></tr>
+            <tr><td class="nowrap">6 Events</td><td>Actions start, stop, console and shell; format 2 and its upgrade; the 2.1 migration; the event editor; a failing action logged as an error.</td><td>Each format 1 form and its rewrite; a rename followed; the editor&rsquo;s kinds; the log of a failing action.</td></tr>
+            <tr><td class="nowrap">7 Docs</td><td>A manual page <code>virtualbricks(1)</code>, the options and every command, and its web page (<a class="ref done" href="#decisions">K10</a>); the README; <code>virtualbricks-config(5)</code> for the actions; this page&rsquo;s &ldquo;Implemented&rdquo;; the TODO.</td><td>The manual page is up to date, and lists every command of the table.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Before step 5 is done, a run of the whole program: <code>virtualbricks --no-gui --run</code> on a lab of a switch and a paused machine, and a session in a terminal.</p>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;10</span>Decisions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>K1</td>
+              <td>The order of the words</td>
+              <td>
+                <p><b>A</b> Noun first: <code>brick start sw1</code>, <code>event action add boot start sw1</code>. A noun groups its verbs for help and completion, and new nouns come without clashes.</p>
+                <p><b>B</b> Verb first, the name telling the kind, since names are unique: <code>start sw1</code>, <code>set sw1 ports=16</code>. Shorter; <code>new</code> and <code>list</code> still need a kind, and help is one list of about thirty verbs.</p>
+                <p><b>C</b> Today&rsquo;s name first, repaired: <code>sw1 start</code>. Close to today, but a brick can&rsquo;t be named like a command.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>K2</td>
+              <td>What the console covers</td>
+              <td>
+                <p><b>A</b> Bricks and events, with images and settings as today.</p>
+                <p><b>B</b> A, and the projects: list, show, open, new, save, rename, duplicate, delete. Without the GUI, it is the only way to change project.</p>
+                <p><b>C</b> Bricks and events only.</p>
+              </td>
+              <td class="rec decided">B</td>
+            </tr>
+            <tr>
+              <td>K3</td>
+              <td>A value with spaces</td>
+              <td>
+                <p><b>A</b> The shell&rsquo;s quoting: <code>kernel_command_line="console=ttyS0 root=/dev/vda1"</code>, several keys per command.</p>
+                <p><b>B</b> One key per command, the rest of the line its value: <code>brick set router kernel_command_line console=ttyS0 root=/dev/vda1</code>.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>K4</td>
+              <td>A command that takes time: start, stop, restart, suspend</td>
+              <td>
+                <p><b>A</b> The prompt comes back when it is done, with its result; Ctrl+C stops waiting, not the brick.</p>
+                <p><b>B</b> The prompt comes back at once, and the result is printed when it comes, between other lines.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>K5</td>
+              <td>The console commands kept in the events</td>
+              <td>
+                <p><b>A</b> Rewritten once in the new grammar, in format 2, still as text.</p>
+                <p><b>B</b> A, and start and stop as actions of their own with a target that a rename follows (&sect;6).</p>
+                <p><b>C</b> The old grammar accepted beside the new one, with no format change.</p>
+              </td>
+              <td class="rec decided">B</td>
+            </tr>
+            <tr>
+              <td>K6</td>
+              <td>Running without the GUI</td>
+              <td>
+                <p><b>A</b> No: the console stays beside the windows.</p>
+                <p><b>B</b> <code>--no-gui</code>: the same program without GTK, the console the way in.</p>
+                <p><b>C</b> B, and a control socket in the runtime folder, so that <code>virtualbricks --command &hellip;</code> talks to one that runs.</p>
+              </td>
+              <td class="rec decided">B; C in the TODO</td>
+            </tr>
+            <tr>
+              <td>K7</td>
+              <td>Commands from a file</td>
+              <td>
+                <p><b>A</b> None.</p>
+                <p><b>B</b> <code>source FILE</code> and <code>--run FILE</code>, stopping at the first error.</p>
+                <p><b>C</b> B, going on after an error and counting them at the end.</p>
+              </td>
+              <td class="rec decided">B</td>
+            </tr>
+            <tr>
+              <td>K8</td>
+              <td>Typing in the terminal</td>
+              <td>
+                <p><b>A</b> As today: the tty&rsquo;s line mode, no history.</p>
+                <p><b>B</b> Editing, a history kept between runs and Tab completion, with <code>twisted.conch.recvline</code>.</p>
+              </td>
+              <td class="rec decided">B</td>
+            </tr>
+            <tr>
+              <td>K9</td>
+              <td>The language of the answers</td>
+              <td>
+                <p><b>A</b> Translated as the windows are; commands, kinds and keys in English.</p>
+                <p><b>B</b> English only, as today.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>K10</td>
+              <td>Where the console is documented</td>
+              <td>
+                <p><b>A</b> A manual page, <code>virtualbricks(1)</code>, with the options and every command, and its web page, as the other two pages.</p>
+                <p><b>B</b> The README and <code>help</code>.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Your answers, 29 September: as recommended, and for K6 the control socket in the TODO.</p>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;11</span>Later</h2>
+        <p>The control socket is in the TODO, as you asked; the rest are under IDEAS.</p>
+        <ul>
+          <li>A control socket in the runtime folder, so that <code>virtualbricks --command &hellip;</code> or a script talks to a Virtualbricks that runs (<a class="ref done" href="#decisions">K6</a> C).</li>
+          <li>Answers in JSON for scripts, as <code>brick list --json</code>.</li>
+          <li>Importing and exporting archives from the console.</li>
+          <li>New disk images from the console: <code>image new NAME SIZE</code>, with <code>qemu-img</code>.</li>
+          <li>A line to a brick&rsquo;s control monitor: <code>brick send vm1 "info status"</code>, with its answer.</li>
+          <li>The console in a tab of the main window.</li>
+          <li>An event&rsquo;s actions one after the other, each waiting for the one before, instead of all at once.</li>
+          <li>Any unambiguous beginning of a word, as <code>ip</code> takes it: <code>br st sw1</code>.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
