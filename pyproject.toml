@@ -16,7 +16,6 @@ dependencies = [
     # tls: pyOpenSSL and service-identity, for the ssl sockets
     "Twisted[tls]>=22.1",
     "attrs>=20.1",
-    "constantly>=15.1",
     "markdown-it-py>=1.1",
     "zope.interface>=5.4",
     "PyGObject>=3.42",
@@ -40,8 +39,7 @@ dev = [
     "pyflakes>=3.0",
     "ruff>=0.16",
     # The types of the libraries: Twisted, attrs, tomlkit and tomli ship
-    # theirs. There are none for pygraphviz, zope.interface and
-    # constantly.
+    # theirs. There are none for pygraphviz and zope.interface.
     "PyGObject-stubs>=2.17",
 ]
 

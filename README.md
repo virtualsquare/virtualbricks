@@ -362,10 +362,10 @@ To add a language, see the top of `l10n.sh`.
   events and the images of the open project; `programs.py` asks the
   installed Qemu and VDE programs what they have; `sudo.py` writes the `sudo`
   command of what needs root, and `ksm.py` turns Kernel Samepage Merging on
-  and off; `spawn.py` and `tools.py` are helpers for `qemu-img`, KVM and the
-  formats of the disk images; `markdown.py` reads the README of a project,
-  and `topology.py` lays the lab out with Graphviz; `locations.py` has the
-  paths of the files.
+  and off; `spawn.py` is a helper for `qemu-img` and KVM, and `tools.py`
+  has small helpers for the rest; `markdown.py` reads the README of a
+  project, and `topology.py` lays the lab out with Graphviz; `locations.py`
+  has the paths of the files.
 - `virtualbricks/bricks/`: a module for each kind of brick: virtual machine,
   switch, tap, wire, and so on; each writes its command line with
   `command.py`. `draft.py` is what the settings panels work on: a copy of a
@@ -373,6 +373,9 @@ To add a language, see the top of `l10n.sh`.
   with checks of its own has its draft in its module. `brickinfo.py` and
   `eventinfo.py` say in words what a brick or an event is and does, for the
   tabs of the main window and for the console.
+- `virtualbricks/qemu/`: what Virtualbricks knows of QEMU itself.
+  `imageformat.py` tells the format of a disk image, and its backing file,
+  from the first bytes of the file.
 - `virtualbricks/console/`: the console. `command.py` declares each command
   with its arguments, `parser.py` reads and completes a line, `dispatch.py`
   runs it; a module for each noun, `bricks.py`, `events.py`, `images.py`,

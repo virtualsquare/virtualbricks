@@ -31,7 +31,7 @@ from twisted.internet import defer
 from twisted.internet.utils import getProcessOutput
 from twisted.logger import Logger
 
-from virtualbricks import bricks, errors, tools
+from virtualbricks import bricks, errors
 from virtualbricks.bricks.command import (
     Command,
     Prepared,
@@ -61,7 +61,9 @@ from virtualbricks.nic import is_valid_mac, random_mac
 from virtualbricks.programs import PACKAGES, Missing, ProgramError, programs
 from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
 from virtualbricks.observable import Event, Observable
-from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
+from virtualbricks.qemu import imageformat
+from virtualbricks.qemu.imageformat import NotCowFileError
+from virtualbricks.tools import discard_first_arg, sync
 
 logger = Logger()
 new_cow = (
@@ -572,7 +574,7 @@ class Disk:
         except Exception:
             return defer.fail()
         try:
-            backing_file = tools.get_backing_file(image_file)
+            backing_file = imageformat.get_backing_file(image_file)
         except FileNotFoundError:
             # TODO
             # logger.debug(new_private_image_file, image_file=image_file)
@@ -1737,8 +1739,11 @@ def suspend(vm) -> defer.Deferred:
     path = _first_disk(vm)
     if path is None:
         return _not_supported()
-    image_type = tools.image_type_from_file(path)
-    if image_type not in (tools.ImageFormat.QCOW2, tools.ImageFormat.QCOW3):
+    image_type = imageformat.image_type_from_file(path)
+    if image_type not in (
+        imageformat.ImageFormat.QCOW2,
+        imageformat.ImageFormat.QCOW3,
+    ):
         return _not_supported()
     vm.send(f"savevm {SNAPSHOT}\n".encode())
     return vm.poweroff()

@@ -22,7 +22,8 @@ import os
 
 from twisted.internet import defer
 
-from virtualbricks import bricks, tools
+from virtualbricks import bricks
+from virtualbricks.qemu import imageformat
 from virtualbricks.bricks import virtualmachine
 from virtualbricks.config.workspace import OpenProject
 from virtualbricks.config.report import Report
@@ -703,9 +704,9 @@ class TestSuspendAndResume(BrickTestCase):
 
         def image_type(path):
             self.formats.append(path)
-            return tools.ImageFormat.QCOW2
+            return imageformat.ImageFormat.QCOW2
 
-        self.patch(tools, "image_type_from_file", image_type)
+        self.patch(imageformat, "image_type_from_file", image_type)
 
     def not_supported(self, deferred):
         self.failureResultOf(deferred, RuntimeError)
@@ -726,7 +727,9 @@ class TestSuspendAndResume(BrickTestCase):
 
     def test_suspend_needs_qcow2(self):
         self.patch(
-            tools, "image_type_from_file", lambda path: tools.ImageFormat.RAW
+            imageformat,
+            "image_type_from_file",
+            lambda path: imageformat.ImageFormat.RAW,
         )
         self.not_supported(suspend(self.vm))
         self.assertEqual(self.done, [])
