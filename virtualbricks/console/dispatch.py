@@ -84,3 +84,13 @@ def run(factory, line, reactor=None, terminal=None):
     done.addCallback(lambda lines: list(lines or []))
     done.addErrback(_reason, line)
     return done
+
+
+def check(factory, line):
+    """Why line isn't a command the parser reads, or None if it is one."""
+
+    try:
+        parse(Context(factory), line)
+    except CommandError as exc:
+        return str(exc)
+    return None

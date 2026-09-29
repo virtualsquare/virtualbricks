@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 12:27+0200\n"
+"POT-Creation-Date: 2026-09-29 12:37+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -382,6 +382,11 @@ msgstr ""
 #, fuzzy, python-brace-format
 msgid "In nothing: {brick} can't start"
 msgstr "Bricks (Bloques)"
+
+#: virtualbricks/bricks/eventaction.py virtualbricks/console/events.py
+#, python-brace-format
+msgid "No brick or event named {name}"
+msgstr ""
 
 #: virtualbricks/bricks/eventinfo.py
 msgid "Ready"
@@ -1493,11 +1498,6 @@ msgstr ""
 #: virtualbricks/console/events.py
 #, python-brace-format
 msgid "{what} needs a subject"
-msgstr ""
-
-#: virtualbricks/console/events.py
-#, python-brace-format
-msgid "No brick or event named {name}"
 msgstr ""
 
 #: virtualbricks/console/events.py
@@ -3759,7 +3759,7 @@ msgid "Shell command"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events/eventeditor.py
-msgid "A command of the console, as “vm1 config ram=512”"
+msgid "A command of the console, as “brick set vm1 memory=512”"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events/eventeditor.py

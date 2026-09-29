@@ -34,6 +34,7 @@ from virtualbricks.config.settings import (
 )
 from virtualbricks.config.tomlfile import dump_toml, load_toml
 from virtualbricks.config import workspace
+from virtualbricks.config.projectfile import FORMAT
 from virtualbricks.config.workspace import (
     DiskUsage,
     ImageSummary,
@@ -202,7 +203,7 @@ class TestCreate(WorkspaceTestCase):
     def test_create(self):
         self.projects.create("lab")
         data = load_toml(self.project_file("lab"))
-        self.assertEqual(data["format"], 1)
+        self.assertEqual(data["format"], FORMAT)
         self.assertEqual(data["settings"]["cow_format"], "qcow2")
         self.assertFalse(
             os.path.exists(os.path.join(self.path, "lab", "README"))

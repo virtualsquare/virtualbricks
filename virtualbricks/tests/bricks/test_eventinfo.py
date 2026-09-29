@@ -21,7 +21,12 @@ import dataclasses
 
 from twisted.internet import task
 
-from virtualbricks import console
+from virtualbricks.bricks.eventaction import (
+    StopAction,
+    StartAction,
+    ConsoleAction,
+    ShellAction,
+)
 from virtualbricks.tests import BrickTestCase
 
 from virtualbricks.bricks import eventinfo
@@ -52,7 +57,12 @@ class Scheduled:
 
 
 def vb(command):
-    return console.VbShellCommand(command)
+    """An action as the old console wrote it: NAME on, NAME off, or else."""
+
+    words = command.split()
+    if len(words) == 2 and words[1] in ("on", "off"):
+        return (StartAction if words[1] == "on" else StopAction)(words[0])
+    return ConsoleAction(command)
 
 
 class EventInfoTestCase(BrickTestCase):
@@ -106,15 +116,15 @@ class TestActions(EventInfoTestCase):
             # a brick that is gone
             (vb("sw9 on"), Action(Kind.START_BRICK, "sw9")),
             (
-                vb("vm1 config ram=512"),
-                Action(Kind.CONSOLE, "vm1 config ram=512"),
+                ConsoleAction("brick set vm1 memory=512"),
+                Action(Kind.CONSOLE, "brick set vm1 memory=512"),
             ),
-            (vb("new switch sw3"), Action(Kind.CONSOLE, "new switch sw3")),
-            # the console's own command first
-            (vb("help on"), Action(Kind.CONSOLE, "help on")),
-            (vb("sw1 on now"), Action(Kind.CONSOLE, "sw1 on now")),
             (
-                console.ShellCommand("ping -c 3 10.0.0.254"),
+                ConsoleAction("brick new switch sw3"),
+                Action(Kind.CONSOLE, "brick new switch sw3"),
+            ),
+            (
+                ShellAction("ping -c 3 10.0.0.254"),
                 Action(Kind.SHELL, "ping -c 3 10.0.0.254"),
             ),
         ):
@@ -127,7 +137,7 @@ class TestActions(EventInfoTestCase):
             vb("start-vms on"),
             vb("start-vms off"),
             vb("vm1 config ram=512"),
-            console.ShellCommand("ls -l"),
+            ShellAction("ls -l"),
         ):
             written = write(read(command, self.factory))
             self.assertEqual(str(written), str(command))
@@ -187,7 +197,7 @@ class TestWords(EventInfoTestCase):
             vb("start-vms off"),
             vb("vm1 on"),
             vb("vm1 config ram=512"),
-            console.ShellCommand("logger up"),
+            ShellAction("logger up"),
         )
         self.assertEqual(
             summary(self.event, self.factory),

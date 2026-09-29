@@ -19,15 +19,20 @@ import os
 
 from twisted.trial import unittest
 
-from virtualbricks import console, locations
+from virtualbricks import locations
+from virtualbricks.bricks.eventaction import (
+    ConsoleAction,
+    EventAction,
+    ShellAction,
+)
 from virtualbricks.config.projectfile import DEFAULT_MODEL
+from virtualbricks.config.projectfile import FORMAT as PROJECT_FORMAT
+from virtualbricks.config.projectfile import describe_action
 from virtualbricks.config.settings import (
-    FORMAT as SETTINGS_FORMAT,
     ProjectSettings,
 )
 from virtualbricks.config.schema import Bool, Float, Int, Mac, Str, dump_record
 from virtualbricks.config.report import Report
-from virtualbricks.bricks.eventaction import EventAction
 from virtualbricks.migrate import convert
 from virtualbricks.migrate.convert import (
     MigrationError,
@@ -178,13 +183,14 @@ class TestConvertValue(unittest.TestCase):
 
     def test_event_actions(self):
         kind = EventAction()
+        # a command of the old console, which commands() reads later
         self.assertEqual(
             convert._convert_item(kind, "add sw1 on"),
-            console.VbShellCommand("sw1 on"),
+            ConsoleAction("sw1 on"),
         )
         self.assertEqual(
             convert._convert_item(kind, "addsh logger hi"),
-            console.ShellCommand("logger hi"),
+            ShellAction("logger hi"),
         )
         error = self.assertRaises(
             ValueError, convert._convert_item, kind, "rm -rf"
@@ -234,7 +240,7 @@ class TestFixtures(ConvertTestCase):
     def test_config1(self):
         data, count, report = self.convert(CONFIG1)
         self.assertEqual(count, 3)
-        self.assertEqual(data["format"], SETTINGS_FORMAT)
+        self.assertEqual(data["format"], PROJECT_FORMAT)
         self.assertEqual(data["settings"], dump_record(ProjectSettings()))
         self.assertEqual(
             data["images"],
@@ -376,7 +382,7 @@ class TestFixtures(ConvertTestCase):
                 "icon": "",
                 "delay": 3,
                 "actions": [
-                    {"kind": "vb", "command": "sw1 on"},
+                    {"kind": "start", "target": "sw1"},
                     {"kind": "shell", "command": "logger hi"},
                 ],
             },
@@ -388,6 +394,7 @@ class TestFixtures(ConvertTestCase):
                 "using the default 32",
                 ".project:23: [Event:boot] actions: \"__import__('os')."
                 "system('id')\" is not an event action, dropped",
+                ".project:22: [Event:boot] 'sw1 on' is now start sw1",
             ],
         )
 
@@ -921,20 +928,21 @@ actions=["add vm config ram=512 kvm=* noacpi=* cdromen=* stdout=x", \
         data, _, report = self.convert(text)
         self.assertEqual(
             [
-                action["command"]
+                describe_action(action)
                 for action in data["events"]["resize"]["actions"]
             ],
             [
-                "vm config memory=512 use_kvm=true acpi=false cdrom=image",
-                "sw config ports=8",
-                "vm on",
-                "vm config nope=1",
-                "ghost config ram=1",
-                "vm config ram=512",
+                'console "brick set vm memory=512 use_kvm=true acpi=false'
+                ' cdrom=image"',
+                'console "brick set sw ports=8"',
+                "start vm",
+                'console "brick set vm nope=1"',
+                'console "brick set ghost ram=1"',
+                'shell "vm config ram=512"',
             ],
         )
         infos = [m for m in messages(report, "info") if "[Event:resize]" in m]
-        self.assertEqual(len(infos), 2)
+        self.assertEqual(len(infos), 5)
 
 
 class TestConvertCommand(unittest.TestCase):

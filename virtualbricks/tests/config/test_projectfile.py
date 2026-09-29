@@ -20,8 +20,12 @@ import os
 
 from twisted.trial import unittest
 
-from virtualbricks import console
+from virtualbricks.bricks.eventaction import (
+    ShellAction,
+    StartAction,
+)
 from virtualbricks.config.projectfile import (
+    FORMAT,
     ProjectFormatError,
     project_document,
 )
@@ -67,8 +71,8 @@ def build_lab(factory, image_path="/images/deb.qcow2"):
         {
             "delay": 5,
             "actions": [
-                console.VbShellCommand("vm on"),
-                console.ShellCommand("logger hi"),
+                StartAction("vm"),
+                ShellAction("logger hi"),
             ],
         }
     )
@@ -132,7 +136,7 @@ class TestDocument(ProjectFileTestCase):
         self.assertEqual(
             data,
             {
-                "format": 1,
+                "format": FORMAT,
                 "settings": dump_record(ProjectSettings()),
             },
         )
@@ -203,7 +207,7 @@ class TestDocument(ProjectFileTestCase):
     def test_save_and_create(self):
         path = self.mktemp()
         create_project_file(path, ProjectSettings())
-        self.assertEqual(load_toml(path)["format"], 1)
+        self.assertEqual(load_toml(path)["format"], FORMAT)
         save_project(build_lab(self.factory), ProjectSettings(), path)
         self.assertIn("bricks", load_toml(path))
 
@@ -377,7 +381,8 @@ class TestNotes(ProjectFileTestCase):
             text.startswith(tomlfile.dumps_toml({}, header=HEADER))
         )
         self.assertIn(
-            "\n# The version of the layout of this file\nformat = 1\n", text
+            f"\n# The version of the layout of this file\nformat = {FORMAT}\n",
+            text,
         )
         data = self.lab()
         save_project(self.factory, ProjectSettings(), path)
@@ -392,7 +397,7 @@ class TestNotes(ProjectFileTestCase):
 class TestUpgrade(ProjectFileTestCase):
 
     def test_current(self):
-        data = {"format": 1}
+        data = {"format": FORMAT}
         self.assertIs(upgrade_project(data, self.report), data)
         self.assertEqual(self.messages(), [])
 
@@ -407,7 +412,7 @@ class TestUpgrade(ProjectFileTestCase):
         self.assertRaises(
             ProjectFormatError,
             upgrade_project,
-            {"format": 2},
+            {"format": FORMAT + 1},
             self.report,
         )
 
@@ -703,3 +708,114 @@ class TestEditing(unittest.TestCase):
             [("vm", "hda")],
         )
         self.assertEqual(list(devices_for_image({}, "deb")), [])
+
+
+class TestTheOldCommands(ProjectFileTestCase):
+    """Format 1 to 2: the commands of the old console in the events."""
+
+    def test_each_form(self):
+        bricks, events = {"sw1", "vm1"}, {"boot"}
+        for text, action in (
+            ("sw1 on", {"kind": "start", "target": "sw1"}),
+            ("boot off", {"kind": "stop", "target": "boot"}),
+            # a brick that is gone
+            ("sw9 on", {"kind": "start", "target": "sw9"}),
+            ("brick sw1 on", {"kind": "start", "target": "sw1"}),
+            (
+                "vm1 config memory=512 cpus=2",
+                {
+                    "kind": "console",
+                    "command": "brick set vm1 memory=512 cpus=2",
+                },
+            ),
+            (
+                "boot config delay=5",
+                {"kind": "console", "command": "event set boot delay=5"},
+            ),
+            ("sw1 remove", {"kind": "console", "command": "brick delete sw1"}),
+            ("boot show", {"kind": "console", "command": "event show boot"}),
+            (
+                "vm1 connect sw1_port",
+                {"kind": "console", "command": "brick connect vm1 sw1"},
+            ),
+            (
+                "vm1 disconnect",
+                {"kind": "console", "command": "brick disconnect vm1"},
+            ),
+            (
+                "new switch sw3",
+                {"kind": "console", "command": "brick new switch sw3"},
+            ),
+            (
+                "n event later",
+                {"kind": "console", "command": "event new later"},
+            ),
+            (
+                "config set terminal /usr/bin/xterm",
+                {
+                    "kind": "console",
+                    "command": "setting set terminal=/usr/bin/xterm",
+                },
+            ),
+            ("ps", {"kind": "console", "command": "status"}),
+            ("quit", {"kind": "console", "command": "quit"}),
+            ("images list", {"kind": "console", "command": "image list"}),
+        ):
+            self.assertEqual(
+                projectfile.old_action(text, bricks, events),
+                (action, True),
+                text,
+            )
+
+    def test_what_the_console_doesnt_read(self):
+        for text in ("reset", "socks", "sw1 on now", "python"):
+            self.assertEqual(
+                projectfile.old_action(text, {"sw1"}, set()),
+                ({"kind": "console", "command": text}, False),
+            )
+
+    def test_a_project(self):
+        data = {
+            "format": 1,
+            "bricks": {"sw1": {"type": "switch"}},
+            "events": {
+                "boot": {
+                    "delay": 5,
+                    "actions": [
+                        {"kind": "vb", "command": "sw1 on"},
+                        {"kind": "shell", "command": "logger up"},
+                        {"kind": "vb", "command": "reset"},
+                    ],
+                }
+            },
+        }
+        upgraded = upgrade_project(data, self.report)
+        self.assertEqual(upgraded["format"], 2)
+        self.assertEqual(
+            upgraded["events"]["boot"]["actions"],
+            [
+                {"kind": "start", "target": "sw1"},
+                {"kind": "shell", "command": "logger up"},
+                {"kind": "console", "command": "reset"},
+            ],
+        )
+        self.assertEqual(
+            self.messages(),
+            [
+                "events.boot.actions: the command 'sw1 on' is now start sw1",
+                "events.boot.actions: 'reset' is a command of the old console,"
+                " which the console may not read",
+            ],
+        )
+
+    def test_what_isnt_an_action_stays(self):
+        # the loader reports it, as for any other file
+        data = {
+            "format": 1,
+            "events": {"boot": {"actions": [1, {"kind": "vb"}]}},
+        }
+        self.assertEqual(
+            upgrade_project(data, self.report)["events"]["boot"]["actions"],
+            [1, {"kind": "vb"}],
+        )
+        self.assertEqual(self.messages(), [])

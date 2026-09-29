@@ -38,6 +38,8 @@ from virtualbricks import errors, locations
 from virtualbricks.config.projectfile import (
     DEFAULT_MODEL,
     SOCKET_NAME,
+    describe_action,
+    old_action,
     project_document,
 )
 from virtualbricks.config.settings import (
@@ -285,8 +287,11 @@ def convert_value(kind: Kind[object], text: str) -> object:
 
 
 def _convert_item(kind: Kind[object], text: str) -> object:
-    from virtualbricks import console
-    from virtualbricks.bricks.eventaction import EventAction
+    from virtualbricks.bricks.eventaction import (
+        ConsoleAction,
+        EventAction,
+        ShellAction,
+    )
     from virtualbricks.bricks.virtualmachine import (
         USB_ID,
         UsbDevice,
@@ -296,9 +301,10 @@ def _convert_item(kind: Kind[object], text: str) -> object:
     if isinstance(kind, EventAction):
         command, _, rest = text.partition(" ")
         if command == "add":
-            return console.VbShellCommand(rest)
+            # a command of the old console, which commands() reads
+            return ConsoleAction(rest)
         if command == "addsh":
-            return console.ShellCommand(rest)
+            return ShellAction(rest)
         raise ValueError(f'"{text}" is not an event action')
     if isinstance(kind, UsbDeviceKind):
         if not USB_ID.fullmatch(text):
@@ -708,23 +714,37 @@ class _Converter:
                     setattr(brick.config, key, self.image_aliases[name])
 
     def commands(self) -> None:
-        """Give the console commands of the events the names of today."""
+        """
+        Give the commands of the events the names of today, and the words
+        of the console of today: start and stop become actions.
+        """
 
-        from virtualbricks import console
+        from virtualbricks.bricks.eventaction import ConsoleAction, EventAction
 
+        bricks = {brick.get_name() for brick in self.factory.bricks}
+        events = {event.get_name() for event in self.factory.iter_events()}
         for event in self.factory.iter_events():
             where = self.where(self.seen["event"][event.get_name()])
             actions: list[object] = []
             for action in event.config.actions:
-                if isinstance(action, console.VbShellCommand):
-                    text = convert_command(self.factory, str(action))
-                    if text != str(action):
+                if isinstance(action, ConsoleAction):
+                    old = action.command
+                    text = convert_command(self.factory, old)
+                    table, read = old_action(text, bricks, events)
+                    if read:
                         self.report.info(
-                            f"[Event:{event.get_name()}] {action!r} is now"
-                            f" {text!r}",
+                            f"[Event:{event.get_name()}] {old!r} is now"
+                            f" {describe_action(table)}",
                             where,
                         )
-                        action = console.VbShellCommand(text)
+                    else:
+                        self.report.warning(
+                            f"[Event:{event.get_name()}] {old!r} is a command"
+                            " of the old console, which the console may not"
+                            " read",
+                            where,
+                        )
+                    action = EventAction().from_data(table, self.report, where)
                 actions.append(action)
             event.config.actions = actions
 

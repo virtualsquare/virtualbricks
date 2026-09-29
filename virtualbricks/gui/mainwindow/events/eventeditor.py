@@ -48,6 +48,7 @@ from virtualbricks.gui.mainwindow.bricks.config.panel import (  # noqa: E402
     Panel,
 )
 from virtualbricks.bricks import eventinfo  # noqa: E402
+from virtualbricks.console.dispatch import check  # noqa: E402
 from virtualbricks.bricks.eventinfo import (  # noqa: E402
     Action,
     Kind,
@@ -82,7 +83,7 @@ SUBJECTS = {
     Kind.SHELL: COMMAND,
 }
 PLACEHOLDERS = {
-    Kind.CONSOLE: _("A command of the console, as “vm1 config ram=512”"),
+    Kind.CONSOLE: _("A command of the console, as “brick set vm1 memory=512”"),
     Kind.SHELL: _("A command for the shell of the host"),
 }
 
@@ -160,6 +161,10 @@ class ActionRow(Gtk.Box):
                 text=subject,
                 placeholder_text=PLACEHOLDERS[self.kind],
             )
+            if self.kind is Kind.CONSOLE:
+                # the parser says what's wrong, as it's typed
+                widget.connect("changed", self._check_command)
+                self._check_command(widget)
         else:
             widget = Gtk.ComboBoxText(visible=True)
             names = self.choices[source]
@@ -176,6 +181,15 @@ class ActionRow(Gtk.Box):
         widget.connect("changed", lambda widget: self.changed())
         self.subject = widget
         self.subject_box.pack_start(widget, True, True, 0)
+
+    def _check_command(self, entry: Gtk.Entry) -> None:
+        text = entry.get_text()
+        problem = check(self.factory, text) if text.strip() else None
+        where = Gtk.EntryIconPosition.SECONDARY
+        entry.set_icon_from_icon_name(
+            where, "dialog-warning-symbolic" if problem else None
+        )
+        entry.set_icon_tooltip_text(where, problem)
 
     def _subject(self) -> str:
         if isinstance(self.subject, Gtk.Entry):

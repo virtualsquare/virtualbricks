@@ -19,25 +19,37 @@
 
 from twisted.internet import task
 
-from virtualbricks import console, errors
+from virtualbricks import errors
+from virtualbricks.bricks.eventaction import (
+    ConsoleAction,
+    ShellAction,
+    StartAction,
+)
 from virtualbricks.config.schema import ListOf, field_names, kind_of
 from virtualbricks.bricks import event as event_module
 from virtualbricks.bricks.event import Event, EventConfig, is_event
 from virtualbricks.tests import BrickTestCase, FakeLogger
 
 
-class Recording(console.VbShellCommand):
+class Recording(ConsoleAction):
     """An action that records that it was performed, and returns a status."""
 
     performed = []
     status = 0
 
     def perform(self, factory):
-        self.performed.append((str(self), factory))
+        self.performed.append((self.command, factory))
         return self.status
 
 
-class Failing(console.VbShellCommand):
+class Exits(ShellAction):
+    """A command of the shell that ends at once with its status."""
+
+    def perform(self, factory):
+        return 7
+
+
+class Failing(ConsoleAction):
 
     def perform(self, factory):
         raise RuntimeError("the action failed")
@@ -52,7 +64,7 @@ class TestEventConfig(BrickTestCase):
 
     def test_actions_are_not_shared(self):
         first, second = EventConfig(), EventConfig()
-        first.actions.append(console.VbShellCommand("a on"))
+        first.actions.append(StartAction("a"))
         self.assertEqual(second.actions, [])
 
     def test_delay_is_an_integer(self):
@@ -64,7 +76,7 @@ class TestEventConfig(BrickTestCase):
 
     def test_actions_are_commands(self):
         self.assertRaises(ValueError, EventConfig, actions=["a on"])
-        EventConfig(actions=[console.ShellCommand("ls")])
+        EventConfig(actions=[ShellAction("ls")])
 
     def test_the_fields(self):
         self.assertEqual(
@@ -105,7 +117,7 @@ class TestEvent(BrickTestCase):
         self.assertEqual(self.event.config, EventConfig())
 
     def test_configured(self):
-        action = console.VbShellCommand("a on")
+        action = StartAction("a")
         self.assertFalse(self.event.configured())
         self.event.set({"delay": 2})
         self.assertFalse(self.event.configured())
@@ -186,8 +198,8 @@ class TestEvent(BrickTestCase):
         self.assertEqual(len(Recording.performed), 2)
 
     def test_the_status_is_logged(self):
-        Recording.status = 7
-        self.configure(1, Recording("a on"))
+        # of a command of the shell
+        self.configure(1, Exits("true"), Recording("brick list"))
         self.event.poweron()
         self.clock.advance(1)
         self.assertEqual(self.logger.levels(), ["info"])
@@ -201,13 +213,28 @@ class TestEvent(BrickTestCase):
         self.clock.advance(1)
         # the other actions still run, and the event finishes
         self.assertEqual(Recording.performed, [("b on", self.factory)])
-        self.assertEqual(self.logger.levels(), ["error", "info"])
-        level, format, values = self.logger.events[0]
-        self.assertEqual(format, event_module.event_error)
+        self.assertEqual(self.logger.levels(), ["failure"])
         self.assertEqual(
-            values["log_failure"].getErrorMessage(), "the action failed"
+            self.logger.formatted(),
+            ['Event boot, action 1, console "a on": the action failed'],
         )
         return deferred.addCallback(self.assertIs, self.event)
+
+    def test_a_refused_action_is_an_error(self):
+        # what the console refuses needs no traceback
+        self.configure(1, StartAction("nope"), ConsoleAction("nope"))
+        self.event.poweron()
+        self.clock.advance(1)
+        self.assertEqual(self.logger.levels(), ["error", "error"])
+        self.assertEqual(
+            self.logger.formatted(),
+            [
+                "Event boot, action 1, start nope: No brick or event named"
+                " nope",
+                'Event boot, action 2, console "nope": No command nope; type'
+                " help for the commands",
+            ],
+        )
 
     def test_poweroff_cancels_the_actions(self):
         self.configure(3, Recording("a on"))
@@ -256,12 +283,10 @@ class TestEvent(BrickTestCase):
         self.assertFalse(is_event(self.factory.new_brick("switch", "sw")))
 
     def test_dup_event(self):
-        self.event.set(
-            {"delay": 2, "actions": [console.VbShellCommand("a on")]}
-        )
+        self.event.set({"delay": 2, "actions": [StartAction("a")]})
         copy = self.factory.dup_event(self.event)
         self.assertEqual(copy.config, self.event.config)
-        copy.config.actions.append(console.VbShellCommand("b on"))
+        copy.config.actions.append(StartAction("b"))
         self.assertEqual(len(self.event.config.actions), 1)
 
     def test_del_event_stops_it(self):

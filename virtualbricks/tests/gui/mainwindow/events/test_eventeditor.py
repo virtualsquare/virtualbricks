@@ -21,7 +21,13 @@ back, the kinds and their subjects, adding and removing actions; all on a
 draft, which OK applies.
 """
 
-from virtualbricks import console
+from virtualbricks.bricks.eventaction import (
+    StopAction,
+    StartAction,
+    ConsoleAction,
+    describe,
+    ShellAction,
+)
 from virtualbricks.bricks.draft import Draft, apply
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
@@ -37,17 +43,22 @@ if has_display:
 
 
 def vb(command):
-    return console.VbShellCommand(command)
+    """An action as the old console wrote it: NAME on, NAME off, or else."""
+
+    words = command.split()
+    if len(words) == 2 and words[1] in ("on", "off"):
+        return (StartAction if words[1] == "on" else StopAction)(words[0])
+    return ConsoleAction(command)
 
 
 def sh(command):
-    return console.ShellCommand(command)
+    return ShellAction(command)
 
 
 def commands(event):
     """The actions of event as the project file keeps them."""
 
-    return [(type(action), str(action)) for action in event.config.actions]
+    return [describe(action) for action in event.config.actions]
 
 
 class EditorTestCase(GuiTestCase):
@@ -149,9 +160,7 @@ class TestReadingAnEvent(EditorTestCase):
         self.assertEqual(self.choices(row), ["sw1", "sw2", "vm9 (missing)"])
         self.assertEqual(self.subject(row), "vm9")
         self.ok(editor)
-        self.assertEqual(
-            commands(self.event), [(console.VbShellCommand, "vm9 on")]
-        )
+        self.assertEqual(commands(self.event), ["start vm9"])
 
     def test_the_event_itself(self):
         # not missing, but not a choice either
@@ -200,9 +209,7 @@ class TestSaving(EditorTestCase):
         self.event.changed.connect(changed.append)
         self.assertEqual(editor.draft.changes(), {})
         self.ok(editor)
-        self.assertEqual(
-            commands(self.event), [(console.VbShellCommand, "sw1  on")]
-        )
+        self.assertEqual(commands(self.event), ["start sw1"])
         self.assertEqual(changed, [])
 
     def test_on_the_draft(self):
@@ -215,9 +222,7 @@ class TestSaving(EditorTestCase):
         )
         # the event waits for OK
         self.assertEqual(self.event.config.delay, 5)
-        self.assertEqual(
-            commands(self.event), [(console.VbShellCommand, "sw1 on")]
-        )
+        self.assertEqual(commands(self.event), ["start sw1"])
 
     def test_the_delay(self):
         editor = self.edit(5, vb("sw1 on"))
@@ -236,9 +241,32 @@ class TestSaving(EditorTestCase):
         editor = self.edit(5, vb("sw1 on"), sh("ls"))
         editor.rows()[1].subject.set_text("  ")
         self.ok(editor)
+        self.assertEqual(commands(self.event), ["start sw1"])
+
+
+class TestTheConsoleCommand(EditorTestCase):
+    """The parser says what's wrong with a console command, as it's typed."""
+
+    def icon(self, entry):
+        where = Gtk.EntryIconPosition.SECONDARY
+        return entry.get_icon_name(where), entry.get_icon_tooltip_text(where)
+
+    def test_checked_as_typed(self):
+        editor = self.edit(5, ConsoleAction("brick set sw1 ports=4"))
+        [row] = editor.rows()
+        self.assertEqual(self.icon(row.subject), (None, None))
+        row.subject.set_text("brick set nope ports=4")
         self.assertEqual(
-            commands(self.event), [(console.VbShellCommand, "sw1 on")]
+            self.icon(row.subject),
+            ("dialog-warning-symbolic", "No brick named nope"),
         )
+        row.subject.set_text("")
+        self.assertEqual(self.icon(row.subject), (None, None))
+
+    def test_a_shell_command_isnt(self):
+        editor = self.edit(5, ShellAction("nope"))
+        [row] = editor.rows()
+        self.assertEqual(self.icon(row.subject), (None, None))
 
 
 class TestChangingAnAction(EditorTestCase):
@@ -249,9 +277,7 @@ class TestChangingAnAction(EditorTestCase):
         row.kind_combo.set_active_id("stop-brick")
         self.assertEqual(self.subject(row), "sw2")
         self.ok(editor)
-        self.assertEqual(
-            commands(self.event), [(console.VbShellCommand, "sw2 off")]
-        )
+        self.assertEqual(commands(self.event), ["stop sw2"])
 
     def test_a_missing_brick_stays(self):
         editor = self.edit(5, vb("vm9 on"))
@@ -260,9 +286,7 @@ class TestChangingAnAction(EditorTestCase):
         self.assertEqual(self.choices(row), ["sw1", "sw2", "vm9 (missing)"])
         row.subject.set_active_id("sw1")
         self.ok(editor)
-        self.assertEqual(
-            commands(self.event), [(console.VbShellCommand, "sw1 off")]
-        )
+        self.assertEqual(commands(self.event), ["stop sw1"])
 
     def test_to_an_event(self):
         editor = self.edit(5, vb("sw2 on"))
@@ -281,7 +305,7 @@ class TestChangingAnAction(EditorTestCase):
         self.assertEqual(row.subject.get_text(), "")
         self.assertEqual(
             row.subject.get_placeholder_text(),
-            "A command of the console, as “vm1 config ram=512”",
+            "A command of the console, as “brick set vm1 memory=512”",
         )
         row.subject.set_text("sw2 config ports=4")
         # a command stays a command
@@ -294,7 +318,7 @@ class TestChangingAnAction(EditorTestCase):
         self.ok(editor)
         self.assertEqual(
             commands(self.event),
-            [(console.ShellCommand, "sw2 config ports=4")],
+            ['shell "sw2 config ports=4"'],
         )
 
     def test_no_event_to_choose(self):
@@ -333,8 +357,8 @@ class TestAddingAndRemoving(EditorTestCase):
         self.assertEqual(
             commands(self.event),
             [
-                (console.VbShellCommand, "sw2 on"),
-                (console.VbShellCommand, "sw1 on"),
+                "start sw2",
+                "start sw1",
             ],
         )
 
@@ -355,7 +379,7 @@ class TestAddingAndRemoving(EditorTestCase):
         self.ok(editor)
         self.assertEqual(
             commands(self.event),
-            [(console.VbShellCommand, "sw1 on"), (console.ShellCommand, "ls")],
+            ["start sw1", 'shell "ls"'],
         )
 
     def test_remove_the_last(self):

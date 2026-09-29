@@ -39,7 +39,9 @@ from typing import Any
 from twisted.internet import defer, reactor, task
 from twisted.logger import formatEvent, globalLogPublisher
 
-from virtualbricks import console
+from virtualbricks.bricks.eventaction import (
+    ConsoleAction,
+)
 from virtualbricks.config.workspace import projects
 
 # How long the bricks run before they are looked at, in seconds.
@@ -98,7 +100,7 @@ def build(factory: Any, folder: str, root: bool | None = None) -> None:
     if root is None:
         root = is_root()
     event = factory.new_event("configure")
-    event.set({"actions": [console.VbShellCommand("sw2 config ports=8")]})
+    event.set({"actions": [ConsoleAction("brick set sw2 ports=8")]})
     sw1 = factory.new_brick("switch", "sw1")
     sw1.set({"fast_spanning_tree": True, "on_start": "configure"})
     sw2 = factory.new_brick("switch", "sw2")

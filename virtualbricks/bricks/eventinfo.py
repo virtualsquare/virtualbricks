@@ -20,11 +20,9 @@
 What the Events tab and the console say about an event, without widgets.
 
 An event is ready, waiting for its delay, or not configured when it has no
-action. Its actions are commands for the console or the shell; read here,
-each has a kind and a subject: "sw1 on" starts the brick sw1, "start-vms off"
-stops the event start-vms, and a command that is neither is a console
-command. Written back, an action is the same command, so the project file
-doesn't change.
+action. Read here, each action has a kind and a subject: start the brick
+sw1, stop the event start-vms, a command of the console or of the shell.
+Written back, an action is the same, so the project file doesn't change.
 
 The row of an event says in words what it does, after how long, and which
 bricks start it: "After 5 s, starts sw1 and sw2 · when sw1 starts".
@@ -36,7 +34,12 @@ import dataclasses
 import enum
 import math
 
-from virtualbricks import console
+from virtualbricks.bricks.eventaction import (
+    ConsoleAction,
+    ShellAction,
+    StartAction,
+    StopAction,
+)
 from virtualbricks.i18n import _, ngettext
 from virtualbricks.tools import is_running
 
@@ -93,36 +96,31 @@ def seconds_left(event, clock) -> int | None:
 
 
 def read(command, factory) -> Action:
-    """The action of a command of an event."""
+    """The action of an action of an event, as the settings show it."""
 
-    if isinstance(command, console.ShellCommand):
-        return Action(Kind.SHELL, str(command))
-    words = str(command).split()
-    # the console runs its own commands first
-    if (
-        len(words) == 2
-        and words[1] in (ON, OFF)
-        and not hasattr(console.VBProtocol, "do_" + words[0])
-    ):
-        name, what = words
-        if factory.get_event_by_name(name) is not None:
-            kind = Kind.START_EVENT if what == ON else Kind.STOP_EVENT
-        else:
-            # a brick, there or gone
-            kind = Kind.START_BRICK if what == ON else Kind.STOP_BRICK
-        return Action(kind, name)
-    return Action(Kind.CONSOLE, str(command))
+    if isinstance(command, ShellAction):
+        return Action(Kind.SHELL, command.command)
+    if isinstance(command, ConsoleAction):
+        return Action(Kind.CONSOLE, command.command)
+    start = isinstance(command, StartAction)
+    if factory.get_event_by_name(command.target) is not None:
+        kind = Kind.START_EVENT if start else Kind.STOP_EVENT
+    else:
+        # a brick, there or gone
+        kind = Kind.START_BRICK if start else Kind.STOP_BRICK
+    return Action(kind, command.target)
 
 
 def write(action: Action):
-    """The command of an action, as the event keeps it."""
+    """The action as the event keeps it."""
 
     if action.kind is Kind.SHELL:
-        return console.ShellCommand(action.subject)
+        return ShellAction(action.subject)
     if action.kind is Kind.CONSOLE:
-        return console.VbShellCommand(action.subject)
-    what = ON if action.kind in (Kind.START_BRICK, Kind.START_EVENT) else OFF
-    return console.VbShellCommand(f"{action.subject} {what}")
+        return ConsoleAction(action.subject)
+    if action.kind in (Kind.START_BRICK, Kind.START_EVENT):
+        return StartAction(action.subject)
+    return StopAction(action.subject)
 
 
 def missing(action: Action, factory) -> bool:

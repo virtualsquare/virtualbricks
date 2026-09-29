@@ -22,7 +22,9 @@ import os
 from virtualbricks.bricks import event as event_module
 from virtualbricks.console.command import Arg, command
 from virtualbricks.console.dispatch import run
-from virtualbricks.console.legacy import VbShellCommand
+from virtualbricks.bricks.eventaction import (
+    StopAction,
+)
 from virtualbricks.console.general import help_
 from virtualbricks.tests.console import ConsoleTestCase, own_commands
 
@@ -113,7 +115,7 @@ class TestStatusAndQuit(ConsoleTestCase):
         self.running("switch", "sw1", 41822)
         self.factory.new_brick("tap", "tap1")
         event = self.factory.new_event("boot")
-        event.set({"delay": 10, "actions": [VbShellCommand("sw1 off")]})
+        event.set({"delay": 10, "actions": [StopAction("sw1")]})
         event.poweron()
         self.clock().advance(3)
         self.assertEqual(

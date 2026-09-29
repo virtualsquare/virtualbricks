@@ -21,6 +21,7 @@ from twisted.internet import defer
 
 from virtualbricks import errors
 from virtualbricks.console import dispatch
+from virtualbricks.console.dispatch import check
 from virtualbricks.console.command import CommandError, command
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.console import ConsoleTestCase, own_commands
@@ -81,3 +82,22 @@ class TestRun(ConsoleTestCase):
             self.fails("bug"), "'ports'; the messages have the details"
         )
         self.assertEqual(self.logger.formatted(), ["The command 'bug' failed"])
+
+
+class TestCheck(ConsoleTestCase):
+
+    def test_check(self):
+        self.factory.runtime_dir = "/run/vb"
+        self.factory.new_brick("switch", "sw1")
+        self.assertIsNone(check(self.factory, "brick set sw1 ports=4"))
+        self.assertEqual(
+            check(self.factory, "brick set sw2 ports=4"), "No brick named sw2"
+        )
+        self.assertEqual(
+            check(self.factory, "sw1 on"),
+            "No command sw1; type help for the commands",
+        )
+        # nothing runs
+        self.assertEqual(
+            self.factory.get_brick_by_name("sw1").config.ports, 32
+        )

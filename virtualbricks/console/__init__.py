@@ -19,21 +19,10 @@
 The console: commands for the terminal, the scripts and the events.
 
 ``command`` declares the commands and the kinds of their arguments,
-``parser`` reads a line, ``dispatch`` runs it with ``run()``, ``output``
-lays out the answers, and a module per noun has its commands. It loads no
-GTK.
+``parser`` reads a line and completes it, ``dispatch`` runs it with
+``run()``, ``output`` lays out the answers, a module per noun has its
+commands, and ``terminal`` reads them in the terminal. It loads no GTK.
 
-``legacy`` is the console of before, which the terminal and the events use
-until the new one replaces it.
-
-Only the names that code outside this package imports from it are exported;
-the tests import the others from their modules.
+The package exports nothing: the rest of the code imports what it needs from
+each module, as in ``from virtualbricks.console.dispatch import run``.
 """
-
-from virtualbricks.console.legacy import (
-    ShellCommand,
-    VBProtocol,
-    VbShellCommand,
-)
-
-__all__ = ["ShellCommand", "VBProtocol", "VbShellCommand"]

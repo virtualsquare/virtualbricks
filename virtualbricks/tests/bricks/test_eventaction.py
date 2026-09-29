@@ -17,12 +17,31 @@
 
 """The actions of an event."""
 
+from twisted.internet import defer
 from twisted.trial import unittest
 
-from virtualbricks.console import legacy as console
-from virtualbricks.config.schema import Kind
+from virtualbricks.bricks.eventaction import (
+    ConsoleAction,
+    EventAction,
+    ShellAction,
+    StartAction,
+    StopAction,
+    describe,
+)
 from virtualbricks.config.report import Report
-from virtualbricks.bricks.eventaction import EventAction
+from virtualbricks.config.schema import Kind
+from virtualbricks.console.command import CommandError
+from virtualbricks.tests import BrickTestCase
+
+ACTIONS = [
+    (StartAction("sw1"), {"kind": "start", "target": "sw1"}),
+    (StopAction("boot"), {"kind": "stop", "target": "boot"}),
+    (
+        ConsoleAction("brick set vm1 memory=512"),
+        {"kind": "console", "command": "brick set vm1 memory=512"},
+    ),
+    (ShellAction("logger hi"), {"kind": "shell", "command": "logger hi"}),
+]
 
 
 class TestEventAction(unittest.TestCase):
@@ -30,79 +49,108 @@ class TestEventAction(unittest.TestCase):
     def setUp(self):
         self.kind = EventAction()
         self.report = Report()
-        self.vb = console.VbShellCommand("sw on")
-        self.shell = console.ShellCommand("logger hi")
 
     def test_is_a_kind(self):
         self.assertIsInstance(self.kind, Kind)
 
     def test_check(self):
-        self.kind.check(self.vb)
-        self.kind.check(self.shell)
-
-    def test_check_rejects_other_values(self):
-        for value in ("sw on", 1, None, ["sw on"], console.String("sw on")):
+        for action, _data in ACTIONS:
+            self.kind.check(action)
+        for value in ("sw on", 1, None, ["sw on"], {"kind": "start"}):
             self.assertRaises(ValueError, self.kind.check, value)
 
-    def test_to_data(self):
-        self.assertEqual(
-            self.kind.to_data(self.vb), {"kind": "vb", "command": "sw on"}
-        )
-        self.assertEqual(
-            self.kind.to_data(self.shell),
-            {"kind": "shell", "command": "logger hi"},
-        )
-
-    def test_from_data(self):
-        vb = self.kind.from_data(
-            {"kind": "vb", "command": "sw on"}, self.report, "a"
-        )
-        self.assertIsInstance(vb, console.VbShellCommand)
-        self.assertEqual(vb, self.vb)
-        shell = self.kind.from_data(
-            {"kind": "shell", "command": "logger hi"}, self.report, "a"
-        )
-        self.assertIsInstance(shell, console.ShellCommand)
-        self.assertEqual(shell, self.shell)
-        self.assertEqual(list(self.report), [])
-
-    def test_from_data_round_trip(self):
-        for action in (self.vb, self.shell):
-            data = self.kind.to_data(action)
+    def test_data_both_ways(self):
+        for action, data in ACTIONS:
+            self.assertEqual(self.kind.to_data(action), data)
             self.assertEqual(
                 self.kind.from_data(data, self.report, "a"), action
             )
+        self.assertEqual(len(self.report), 0)
 
-    def test_from_data_reports_unknown_fields(self):
-        value = self.kind.from_data(
-            {"kind": "shell", "command": "x", "extra": 1}, self.report, "a"
-        )
-        self.assertIsInstance(value, console.ShellCommand)
-        self.assertEqual(
-            [str(m) for m in self.report], ["a.extra: unknown field, dropped"]
-        )
-
-    def test_from_data_rejects_bad_data(self):
-        for data, problem in (
-            ("x", "'x' is not a table"),
+    def test_what_is_wrong(self):
+        for data, error in (
+            ("sw1 on", "'sw1 on' is not a table"),
             (
-                {"kind": "python", "command": "x"},
-                "'python' is not vb or shell",
+                {"kind": "vb", "command": "sw1 on"},
+                "'vb' is not start, stop, console or shell",
             ),
-            ({"command": "x"}, "None is not vb or shell"),
-            ({"kind": "vb"}, "None is not a command"),
-            ({"kind": "vb", "command": 3}, "3 is not a command"),
+            ({"kind": "start"}, "target None is not a target"),
+            (
+                {"kind": "shell", "command": " "},
+                "command ' ' is not a command",
+            ),
         ):
-            with self.assertRaises(ValueError) as caught:
-                self.kind.from_data(data, self.report, "a")
-            self.assertEqual(str(caught.exception), problem)
+            exc = self.assertRaises(
+                ValueError, self.kind.from_data, data, self.report, "a"
+            )
+            self.assertEqual(str(exc), error)
 
-    def test_format(self):
-        self.assertEqual(self.kind.format(self.vb), 'vb "sw on"')
-        self.assertEqual(self.kind.format(self.shell), 'shell "logger hi"')
-
-    def test_kinds(self):
-        self.assertEqual(
-            EventAction.kinds,
-            {"vb": console.VbShellCommand, "shell": console.ShellCommand},
+    def test_unknown_fields(self):
+        action = self.kind.from_data(
+            {"kind": "start", "target": "sw1", "when": 1}, self.report, "a"
         )
+        self.assertEqual(action, StartAction("sw1"))
+        self.assertEqual(
+            [str(message) for message in self.report],
+            ["a.when: unknown field, dropped"],
+        )
+
+    def test_in_words(self):
+        self.assertEqual(
+            [describe(action) for action, _data in ACTIONS],
+            [
+                "start sw1",
+                "stop boot",
+                'console "brick set vm1 memory=512"',
+                'shell "logger hi"',
+            ],
+        )
+        self.assertEqual(self.kind.format(StartAction("sw1")), "start sw1")
+
+
+class TestPerform(BrickTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.factory.runtime_dir = "/run/vb"
+        self.done = []
+        self.sw1 = self.factory.new_brick("switch", "sw1")
+        self.sw1.poweron = lambda resume="": defer.succeed(
+            self.done.append("sw1 on")
+        )
+        self.sw1.poweroff = lambda kill=False: defer.succeed(
+            self.done.append("sw1 off")
+        )
+        self.boot = self.factory.new_event("boot")
+        self.boot.poweron = lambda: self.done.append("boot on")
+        self.boot.poweroff = lambda: self.done.append("boot off")
+
+    def test_start_and_stop(self):
+        for action in (
+            StartAction("sw1"),
+            StopAction("sw1"),
+            StartAction("boot"),
+            StopAction("boot"),
+        ):
+            self.successResultOf(action.perform(self.factory))
+        self.assertEqual(
+            self.done, ["sw1 on", "sw1 off", "boot on", "boot off"]
+        )
+
+    def test_a_target_not_there(self):
+        failure = self.failureResultOf(
+            defer.maybeDeferred(StartAction("nope").perform, self.factory)
+        )
+        self.assertEqual(
+            failure.getErrorMessage(), "No brick or event named nope"
+        )
+
+    def test_a_console_command(self):
+        answer = self.successResultOf(
+            ConsoleAction("brick new tap").perform(self.factory)
+        )
+        self.assertEqual(answer, ["tap1"])
+        failure = self.failureResultOf(
+            ConsoleAction("brick new nope").perform(self.factory)
+        )
+        failure.trap(CommandError)

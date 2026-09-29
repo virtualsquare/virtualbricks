@@ -22,8 +22,8 @@ the list, the page of a project without events, the keys and the settings.
 
 from twisted.internet import task
 
-from virtualbricks import console
 from virtualbricks.bricks import event as event_module
+from virtualbricks.bricks.eventaction import StartAction
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
@@ -35,13 +35,13 @@ if has_display:
     from virtualbricks.gui.mainwindow.events.tab import EventsTab, count
 
 
-class Recording(console.VbShellCommand):
+class Recording(StartAction):
     """An action that records that it was performed."""
 
     performed = []
 
     def perform(self, factory):
-        self.performed.append(str(self))
+        self.performed.append(f"{self.target} on")
         return 0
 
 
@@ -94,7 +94,10 @@ class EventsTestCase(GuiTestCase):
         event.set(
             {
                 "delay": delay,
-                "actions": [Recording(command) for command in commands],
+                "actions": [
+                    Recording(command.removesuffix(" on"))
+                    for command in commands
+                ],
             }
         )
         return event

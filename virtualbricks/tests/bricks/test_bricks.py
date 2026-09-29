@@ -22,9 +22,10 @@ import os
 
 from twisted.internet import defer, task
 
-from virtualbricks import bricks, console, errors
+from virtualbricks import bricks, errors
 from virtualbricks.base import BaseConfig
 from virtualbricks.bricks import BrickConfig
+from virtualbricks.bricks.eventaction import StartAction
 from virtualbricks.config.report import Report
 from virtualbricks.config.schema import field_names, info_of, kind_of
 from virtualbricks.tests import (
@@ -174,7 +175,7 @@ class TestRelatedEvents(BrickTestCase):
     def test_related_events(self):
         switch = self.factory.new_brick("switch", "sw")
         event = self.factory.new_event("boot")
-        event.set({"actions": [console.VbShellCommand("sw on")]})
+        event.set({"actions": [StartAction("sw")]})
         started = []
         event.poweron = lambda: started.append("boot")
         switch._start_related_events(on=True)

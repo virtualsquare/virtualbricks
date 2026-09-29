@@ -27,6 +27,11 @@ from twisted.internet import defer, task
 from twisted.trial import unittest
 
 from virtualbricks import brickfactory, errors, locations
+from virtualbricks.bricks.eventaction import (
+    ConsoleAction,
+    StartAction,
+    StopAction,
+)
 from virtualbricks.config.workspace import projects
 from virtualbricks.config import workspace
 from virtualbricks.config.settings import (
@@ -117,6 +122,36 @@ class TestFactory(BrickTestCase):
         # a tap named before the check
         tap = self.factory.new_brick("tap", "t" * 16)
         self.assertEqual(tap.name, "t" * 16)
+
+    def test_a_rename_follows_the_actions(self):
+        # the bricks and the events that actions start or stop
+        self.factory.runtime_dir = "/run/vb"
+        self.factory.new_brick("switch", "sw1")
+        later = self.factory.new_event("later")
+        boot = self.factory.new_event("boot")
+        boot.set(
+            {
+                "actions": [
+                    StartAction("sw1"),
+                    StopAction("later"),
+                    ConsoleAction("brick set sw1 ports=4"),
+                ]
+            }
+        )
+        changed = []
+        boot.changed.connect(changed.append)
+        self.factory.rename(self.factory.get_brick_by_name("sw1"), "core")
+        self.factory.rename(later, "after")
+        self.assertEqual(
+            boot.config.actions,
+            [
+                StartAction("core"),
+                StopAction("after"),
+                # a command stays as it is written
+                ConsoleAction("brick set sw1 ports=4"),
+            ],
+        )
+        self.assertEqual(changed, [boot, boot])
 
     def test_rename_brick(self):
         switch = self.factory.new_brick("switch", "sw")

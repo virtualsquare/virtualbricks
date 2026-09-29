@@ -16,44 +16,129 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""An action of an event: a console command or a shell command."""
+"""
+An action of an event: start or stop a brick or an event, run a command of
+the console or of the shell.
 
-from virtualbricks import console
+In the project file an action is a table: ``{kind = "start", target =
+"sw1"}``, ``{kind = "console", command = "brick set vm1 memory=1024"}``. The
+target of start and stop is a name, of a brick or of an event, which a rename
+follows. Each action has ``perform(factory)``, which returns a Deferred, or a
+failure that says why it can't run.
+"""
+
+import os
+
+import attr
+from twisted.internet import defer, utils
+
 from virtualbricks.config.schema import Kind
+from virtualbricks.i18n import _
+
+
+def _target(factory, name):
+    found = factory.get_brick_by_name(name) or factory.get_event_by_name(name)
+    if found is None:
+        raise ValueError(_("No brick or event named {name}").format(name=name))
+    return found
+
+
+@attr.frozen
+class StartAction:
+    """Start a brick, and wait for it; or start an event, which waits."""
+
+    target: str
+
+    def perform(self, factory):
+        found = _target(factory, self.target)
+        if found.get_type() == "Event":
+            found.poweron()
+            return defer.succeed(None)
+        return found.poweron()
+
+
+@attr.frozen
+class StopAction:
+    """Stop a brick, and wait for it; or stop an event that waits."""
+
+    target: str
+
+    def perform(self, factory):
+        found = _target(factory, self.target)
+        if found.get_type() == "Event":
+            found.poweroff()
+            return defer.succeed(None)
+        return found.poweroff()
+
+
+@attr.frozen
+class ConsoleAction:
+    """A command of the console; its answer, or the reason it failed."""
+
+    command: str
+
+    def perform(self, factory):
+        from virtualbricks.console.dispatch import run
+
+        return run(factory, self.command)
+
+
+@attr.frozen
+class ShellAction:
+    """A command of the shell of the host; its exit code."""
+
+    command: str
+
+    def perform(self, factory):
+        return utils.getProcessValue("sh", ("-c", self.command), os.environ)
+
+
+# the kinds in the project file, and what each holds
+KINDS = {
+    "start": (StartAction, "target"),
+    "stop": (StopAction, "target"),
+    "console": (ConsoleAction, "command"),
+    "shell": (ShellAction, "command"),
+}
 
 
 class EventAction(Kind):
-    """A console command ("vb") or a shell command ("shell")."""
-
-    kinds = {"vb": console.VbShellCommand, "shell": console.ShellCommand}
+    """An action of an event, as KINDS has them."""
 
     def check(self, value):
-        if not isinstance(value, tuple(self.kinds.values())):
+        if not isinstance(value, tuple(cls for cls, _key in KINDS.values())):
             raise ValueError(f"{value!r} is not an event action")
 
     def to_data(self, value):
-        for kind, cls in self.kinds.items():
+        for kind, (cls, key) in KINDS.items():
             if isinstance(value, cls):
-                return {"kind": kind, "command": str(value)}
+                return {"kind": kind, key: getattr(value, key)}
 
     def from_data(self, data, report, where):
         if not isinstance(data, dict):
             raise ValueError(f"{data!r} is not a table")
         kind = data.get("kind")
-        command = data.get("command")
-        if kind not in self.kinds:
-            raise ValueError(f"{kind!r} is not vb or shell")
-        if not isinstance(command, str):
-            raise ValueError(f"{command!r} is not a command")
-        for key in data.keys() - {"kind", "command"}:
-            report.warning("unknown field, dropped", f"{where}.{key}")
-        return self.kinds[kind](command)
+        if kind not in KINDS:
+            raise ValueError(f"{kind!r} is not start, stop, console or shell")
+        cls, key = KINDS[kind]
+        value = data.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{key} {value!r} is not a {key}")
+        for other in data.keys() - {"kind", key}:
+            report.warning("unknown field, dropped", f"{where}.{other}")
+        return cls(value)
 
     def format(self, value):
-        return _describe_action(value)
+        return describe(value)
 
 
-def _describe_action(action):
-    if isinstance(action, console.ShellCommand):
-        return f'shell "{action}"'
-    return f'vb "{action}"'
+def describe(action) -> str:
+    """An action in words of the console: start sw1, console "…"."""
+
+    for kind, (cls, key) in KINDS.items():
+        if isinstance(action, cls):
+            text = getattr(action, key)
+            if key == "command":
+                return f'{kind} "{text}"'
+            return f"{kind} {text}"
+    return repr(action)

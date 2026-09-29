@@ -18,15 +18,23 @@
 
 """An event: actions that run after a delay."""
 
+import attr
 from twisted.internet import defer, reactor
 
 from virtualbricks import base, errors
-from virtualbricks.bricks.eventaction import EventAction
+from virtualbricks.bricks.eventaction import (
+    EventAction,
+    ShellAction,
+    StartAction,
+    StopAction,
+    describe,
+)
+from virtualbricks.console.command import CommandError
 from virtualbricks.config.schema import Int, ListOf, define, field
 from virtualbricks.i18n import _
 
 process_ended = "Process ended with exit code {code}"
-event_error = "Error in event action. See the log for more " "information"
+action_failed = "Event {event}, action {number}, {action}: {error}"
 
 
 @define
@@ -38,7 +46,8 @@ class EventConfig(base.BaseConfig):
     actions = field(
         ListOf(EventAction()),
         factory=list,
-        help="The actions: console or shell commands",
+        help="The actions: start or stop a brick or an event, or a command"
+        " of the console or of the shell",
     )
 
 
@@ -109,23 +118,63 @@ class Event(base.Base):
         self.notify_changed()
 
     def run_actions(self):
-        """Run the actions now; a wait goes on."""
+        """Run the actions now; a wait goes on. Each that fails is logged."""
 
-        def log_err(results):
-            for success, status in results:
+        def logged(results):
+            for number, (success, result) in enumerate(results, start=1):
+                action = self.config.actions[number - 1]
                 if success:
-                    self.logger.info(process_ended, code=status)
+                    if isinstance(action, ShellAction):
+                        self.logger.info(process_ended, code=result)
+                elif result.check(errors.Error, CommandError, ValueError):
+                    self.logger.error(
+                        action_failed,
+                        event=self.name,
+                        number=number,
+                        action=describe(action),
+                        error=result.getErrorMessage(),
+                    )
                 else:
-                    self.logger.error(event_error, log_failure=status)
+                    self.logger.failure(
+                        action_failed,
+                        result,
+                        event=self.name,
+                        number=number,
+                        action=describe(action),
+                        error=result.getErrorMessage(),
+                    )
             return self
 
+        actions = list(self.config.actions)
         procs = [
             defer.maybeDeferred(action.perform, self.factory)
-            for action in self.config.actions
+            for action in actions
         ]
         return defer.DeferredList(procs, consumeErrors=True).addCallback(
-            log_err
+            logged
         )
+
+    def rename_references(self, target, old, new):
+        """
+        Point the references to old at new: those of the settings, and the
+        targets of the actions that start or stop a brick or an event.
+        """
+
+        changed = super().rename_references(target, old, new)
+        if target in ("brick", "event"):
+            actions = [
+                (
+                    attr.evolve(action, target=new)
+                    if isinstance(action, (StartAction, StopAction))
+                    and action.target == old
+                    else action
+                )
+                for action in self.config.actions
+            ]
+            if actions != self.config.actions:
+                self.config.actions = actions
+                changed = True
+        return changed
 
 
 def is_event(brick):

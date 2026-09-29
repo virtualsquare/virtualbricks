@@ -36,7 +36,8 @@ from __future__ import annotations
 import functools
 import os
 import re
-from collections.abc import Callable, Iterator
+import shlex
+from collections.abc import Callable, Collection, Iterator
 from typing import TYPE_CHECKING, TypeAlias, TypedDict, cast
 
 from virtualbricks import errors
@@ -77,7 +78,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.bricks.plug import Plug
     from virtualbricks.bricks.sock import Sock
 
-FORMAT = 1
+FORMAT = 2
 TOP_KEYS = frozenset(("format", "settings", "images", "events", "bricks"))
 HOSTONLY = "_hostonly"
 CONNECTION_KEYS = {
@@ -113,8 +114,129 @@ NIC_NOTES = {
     "mac": Note("The MAC address"),
 }
 
+# The old console's words for its own commands, and the new command.
+OLD_COMMANDS = {
+    ("quit",): "quit",
+    ("q",): "quit",
+    ("help",): "help",
+    ("h",): "help",
+    ("ps",): "status",
+    ("list",): "brick list",
+    ("images", "list"): "image list",
+    ("i", "list"): "image list",
+}
+
+
+def _join(words: Collection[str]) -> str:
+    return " ".join(shlex.quote(word) for word in words)
+
+
+def old_action(
+    text: str, bricks: Collection[str], events: Collection[str]
+) -> tuple[Table, bool]:
+    """
+    The action of format 2 of a command of the console of format 1, as
+    "sw1 on"; and whether the new console reads it: a command of the old
+    console that the new one lacks stays as it is.
+
+    bricks and events are the names of the project, which say whether a
+    name is a brick or an event.
+    """
+
+    words = text.split()
+    if len(words) >= 2 and words[0] in ("brick", "event"):
+        # the old console's own forms: brick NAME ARGS...
+        words = words[1:]
+    if tuple(words) in OLD_COMMANDS:
+        return {"kind": "console", "command": OLD_COMMANDS[tuple(words)]}, True
+    if len(words) == 3 and words[0] in ("new", "n"):
+        if words[1] == "event":
+            command = f"event new {shlex.quote(words[2])}"
+        else:
+            command = f"brick new {_join(words[1:])}"
+        return {"kind": "console", "command": command}, True
+    if len(words) >= 3 and words[:2] in (["config", "set"], ["cfg", "set"]):
+        setting = f"{words[2]}={' '.join(words[3:])}"
+        return {
+            "kind": "console",
+            "command": f"setting set {_join([setting])}",
+        }, True
+    if len(words) >= 2:
+        name, verb, rest = words[0], words[1], words[2:]
+        noun = "event" if name in events and name not in bricks else "brick"
+        if verb in ("on", "off") and not rest:
+            kind = "start" if verb == "on" else "stop"
+            return {"kind": kind, "target": name}, True
+        if verb == "config" and rest:
+            command = f"{noun} set {_join([name] + rest)}"
+            return {"kind": "console", "command": command}, True
+        if verb in ("remove", "show") and not rest:
+            new = "delete" if verb == "remove" else "show"
+            return {"kind": "console", "command": f"{noun} {new} {name}"}, True
+        if verb == "connect" and len(rest) == 1:
+            # a switch's socket was its name and _port
+            target = rest[0].removesuffix("_port")
+            return {
+                "kind": "console",
+                "command": f"brick connect {_join([name, target])}",
+            }, True
+        if verb == "disconnect" and not rest:
+            return {
+                "kind": "console",
+                "command": f"brick disconnect {name}",
+            }, True
+    return {"kind": "console", "command": text}, False
+
+
+def _upgrade_actions(data: Table, report: Report) -> Table:
+    """
+    Format 1 to 2: the events start and stop with actions of their own, and
+    their console commands are those of the new console.
+    """
+
+    events = data.get("events")
+    bricks = data.get("bricks")
+    brick_names = set(bricks) if isinstance(bricks, dict) else set()
+    event_names = set(events) if isinstance(events, dict) else set()
+    for name, table in (events.items() if isinstance(events, dict) else ()):
+        actions = table.get("actions") if isinstance(table, dict) else None
+        if not isinstance(actions, list):
+            continue
+        for index, action in enumerate(actions):
+            if not isinstance(action, dict) or action.get("kind") != "vb":
+                continue
+            text = action.get("command")
+            if not isinstance(text, str):
+                continue
+            new, read = old_action(text, brick_names, event_names)
+            where = f"events.{name}.actions"
+            if read:
+                report.info(
+                    f"the command {text!r} is now {describe_action(new)}",
+                    where,
+                )
+            else:
+                report.warning(
+                    f"{text!r} is a command of the old console, which the"
+                    " console may not read",
+                    where,
+                )
+            actions[index] = new
+    data["format"] = 2
+    return data
+
+
+def describe_action(table: Table) -> str:
+    """An action of the project file in words: start sw1, console "…"."""
+
+    kind = table.get("kind")
+    if kind in ("start", "stop"):
+        return f"{kind} {table.get('target')}"
+    return f'{kind} "{table.get("command")}"'
+
+
 # Steps that rewrite the data of format N into the data of format N + 1.
-UPGRADES: dict[int, Callable[[Table, Report], Table]] = {}
+UPGRADES: dict[int, Callable[[Table, Report], Table]] = {1: _upgrade_actions}
 
 
 class ProjectFormatError(Exception):

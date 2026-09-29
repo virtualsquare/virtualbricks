@@ -445,7 +445,8 @@ class BrickFactory:
 
         prev_name = brick.get_name()
         new_name = self.normalize_name(name)
-        target = None
+        # the actions of the events name bricks too
+        target = "brick"
         # Update indexes
         if is_disk_image(brick):
             self._disk_images[new_name] = brick
@@ -456,10 +457,9 @@ class BrickFactory:
             del self._events[prev_name]
             target = "event"
         brick.set_name(new_name)
-        if target is not None:
-            for obj in itertools.chain(self._bricks, self._events.values()):
-                if obj.rename_references(target, prev_name, new_name):
-                    obj.notify_changed()
+        for obj in itertools.chain(self._bricks, self._events.values()):
+            if obj.rename_references(target, prev_name, new_name):
+                obj.notify_changed()
         return prev_name
 
     def normalize_name(self, name):
