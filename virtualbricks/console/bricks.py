@@ -819,7 +819,7 @@ def _card_index(vm, number):
     Arg("KIND", Choice("plug", "socket", "hostonly")),
     Arg("OPTIONS", Text(), many=True, optional=True),
     help=N_(
-        "Add a network card: plugged into TARGET, a socket, or host only;"
+        "Add a network card: plug and its target, socket, or hostonly;"
         " model= and mac= are its own"
     ),
     example="brick card add vm1 plug sw1 model=virtio-net-pci",

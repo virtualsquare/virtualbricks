@@ -16,15 +16,18 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The man page of the files, docs/man/virtualbricks-config.5.md, against the
-code: every key that Virtualbricks writes is documented, with its default.
+The man pages against the code.
 
-Each key is documented by a line such as
+docs/man/virtualbricks-config.5.md documents every key that Virtualbricks
+writes, with its default, by a line such as
 
     **ram** = *integer* 1-99999, default `64`
 
-where the default is written as in TOML. The tests are skipped when the
-sources of the documentation are not there, as in an installed package.
+where the default is written as in TOML. docs/man/virtualbricks.1.md has
+every option of the command line and every command of the console, each as
+command_entry() writes it from the table of the commands. The tests are
+skipped when the sources of the documentation are not there, as in an
+installed package.
 """
 
 import os
@@ -37,6 +40,9 @@ import tomlkit
 from twisted.trial import unittest
 
 from virtualbricks import locations
+from virtualbricks.app import Options
+from virtualbricks.console import dispatch
+from virtualbricks.console.command import COMMANDS
 from virtualbricks.config.projectfile import DEFAULT_MODEL
 from virtualbricks.config.settings import AppSettings, ProjectSettings
 from virtualbricks.config.schema import (
@@ -62,6 +68,7 @@ from virtualbricks.bricks.netemu import BRICK_KEYS, STATE_KEYS, NetemuConfig
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 MAN = os.path.join(ROOT, "docs", "man")
 SOURCE = os.path.join(MAN, "virtualbricks-config.5.md")
+PROGRAM = os.path.join(MAN, "virtualbricks.1.md")
 HEADING = re.compile(r"^(#+) (.+)$")
 ENTRY = re.compile(
     r"^\*\*(?P<name>.+?)\*\* = \*(?P<kind>[^*]+)\*"
@@ -311,3 +318,70 @@ class TestManPage(DocsTestCase):
             0,
             f"{result.stdout}{result.stderr}run python docs/man/build.py",
         )
+
+
+def section(path, heading):
+    """The text of a section of a page, up to the next one."""
+
+    with open(path, encoding="utf-8") as fp:
+        text = fp.read()
+    start = text.index(f"\n# {heading}\n")
+    end = text.find("\n# ", start + 1)
+    return text[start : None if end == -1 else end]
+
+
+def arg_words(name):
+    """An argument's name as the page writes it: *KEY*=*VALUE*."""
+
+    return re.sub(r"[A-Z]+", lambda match: f"*{match[0]}*", name)
+
+
+def command_usage(command):
+    parts = [f"**{command.name}**"]
+    for arg in command.args:
+        text = arg_words(arg.name) + ("..." if arg.many else "")
+        parts.append(f"[{text}]" if arg.optional else text)
+    for flag in command.flags:
+        text = f"**--{flag.name}**"
+        if flag.value is not None:
+            text += f" {arg_words(flag.value.name)}"
+        parts.append(f"[{text}]")
+    return " ".join(parts)
+
+
+def command_entry(command):
+    """A command in the page: its usage, its help and its example."""
+
+    lines = [command_usage(command), f":   {command.help}."]
+    if command.example:
+        lines.append(f"    For example, **{command.example}**.")
+    return "\n".join(lines) + "\n"
+
+
+class TestTheConsolePage(unittest.TestCase):
+
+    def setUp(self):
+        if not os.path.exists(PROGRAM):
+            raise unittest.SkipTest("the sources of the documentation")
+        # the commands are in the table once their modules are imported
+        self.assertTrue(dispatch.run)
+
+    def test_every_command(self):
+        text = section(PROGRAM, "COMMANDS")
+        for command in COMMANDS:
+            self.assertIn(f"\n{command_entry(command)}", text, command.name)
+        # and no other
+        entries = re.findall(r"^\*\*[a-z]", text, re.MULTILINE)
+        self.assertEqual(len(entries), len(COMMANDS))
+
+    def test_every_option(self):
+        text = section(PROGRAM, "OPTIONS")
+        options = Options()
+        for name in {option.rstrip("=") for option in options.longOpt}:
+            self.assertIn(f"**--{name}**", text)
+        # a letter, on the line of its option: **-l** *file*, **--logfile**
+        for letter in options.shortOpt.replace(":", ""):
+            long_name = options.synonyms[letter]
+            self.assertRegex(
+                text, rf"\n\*\*-{letter}\*\*[^\n]*\*\*--{long_name}\*\*"
+            )

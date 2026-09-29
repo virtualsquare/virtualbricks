@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 12:37+0200\n"
+"POT-Creation-Date: 2026-09-29 12:54+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1439,7 +1439,7 @@ msgstr ""
 
 #: virtualbricks/console/bricks.py
 msgid ""
-"Add a network card: plugged into TARGET, a socket, or host only; model= and "
+"Add a network card: plug and its target, socket, or hostonly; model= and "
 "mac= are its own"
 msgstr ""
 

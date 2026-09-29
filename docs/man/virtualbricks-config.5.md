@@ -46,9 +46,11 @@ The files of Virtualbricks 2.1 and older, *~/.virtualbricks.conf* and the
 
 ## Format version
 
-Every file starts with a **format** key, the version of its layout, currently
-**1**. A file written by a newer Virtualbricks, with a higher **format**, is
-not read: its settings are not used and the file is never overwritten, and a
+Every file starts with a **format** key, the version of its layout: **2**
+for a project, **1** for the settings and the state. A project of format
+**1** is read, and saved in format **2**: the commands of its events become
+actions, see **Events**. A file written by a newer Virtualbricks, with a
+higher **format**, is not read: its settings are not used and the file is never overwritten, and a
 project in that format doesn't open. A missing or invalid **format** is
 reported, and the file is read as the current version.
 
@@ -277,17 +279,28 @@ the open project.
 :   Seconds to wait before running the actions.
 
 **actions** = *array*, default `[]`
-:   The commands to run, in order. Each one is an inline table with two keys:
-    **kind**, which is **"vb"** for a command of the Virtualbricks console or
-    **"shell"** for a command run by **sh**(1), and **command**, the command
-    itself. For example:
+:   What the event does after its delay, all at once: an action doesn't
+    wait for the one before. Each is an inline table whose **kind** says
+    what it does. **"start"** and **"stop"** start or stop their
+    **target**, the name of a brick, with the bricks it plugs into, or of
+    an event. **"console"** runs its **command** in the console, see
+    **virtualbricks**(1), and **"shell"** runs it with **sh**(1). A brick
+    or an event renamed is renamed in the targets, not in the commands.
+    For example:
 
     ```
     actions = [
-        {kind = "vb", command = "sw1 on"},
+        {kind = "start", target = "sw1"},
+        {kind = "console", command = "brick set vm1 memory=1024"},
         {kind = "shell", command = "logger lab started"},
     ]
     ```
+
+    A project of format **1** had only **"vb"**, a command of the old
+    console, and **"shell"**. Its commands are read as those of the new
+    console, as **sw1 on** becomes **{kind = "start", target = "sw1"}** and
+    **vm1 config memory=512** becomes **brick set vm1 memory=512**. A command
+    the new console lacks stays as it was, and is reported.
 
 ## Bricks
 
@@ -569,7 +582,8 @@ connect to it by its name.
 A tap interface of the host, plugged into a switch through
 **vde_plug2tap**(1). It needs root, see **PRIVILEGES**. The interface
 takes the name of the brick, which Linux limits to 15 characters: New
-Brick, Rename and the console's **new** refuse a longer one.
+Brick, Rename and the console's **brick new** and **brick rename** refuse a
+longer one.
 
 **connect** = *string*, default `""`
 :   The socket the tap is plugged into.
@@ -755,8 +769,8 @@ and shows what it converted in a window. The settings of
 *~/.virtualbricks.conf* that are now a project's, as **qemupath**, go into
 each converted project. The keys get the names of this page, as **qemupath**
 becomes **qemu_path** and **numports** becomes **ports**, and so do the
-settings in the commands of the events, as **sw1 config numports=16**. The
-old files are left as they were.
+commands of the events become actions, as **sw1 config numports=16**
+becomes **brick set sw1 ports=16**. The old files are left as they were.
 
 The same conversion can be tried on copies, into a new folder laid out like
 the XDG directories:
@@ -858,7 +872,7 @@ The virtual machine is shortened: Virtualbricks writes all of its keys, and
 the six empty disks.
 
 ```
-format = 1
+format = 2
 
 [settings]
 cow_format = "qcow2"
@@ -875,7 +889,7 @@ description = "Debian 12\nbase image"
 icon = ""
 delay = 5
 actions = [
-    {kind = "vb", command = "sw1 on"},
+    {kind = "start", target = "router1"},
     {kind = "shell", command = "logger lab started"},
 ]
 
@@ -991,9 +1005,9 @@ are stored but not applied: the interface gets no address from Virtualbricks.
 
 # SEE ALSO
 
-**virtualbricks-archive**(7), **qemu**(1), **vde_switch**(1),
-**vde_plug2tap**(1), **vde_cryptcab**(1), **dpipe**(1), **sudo**(8),
-**sudoers**(5), **sudo.conf**(5), **tmpfiles.d**(5)
+**virtualbricks**(1), **virtualbricks-archive**(7), **qemu**(1),
+**vde_switch**(1), **vde_plug2tap**(1), **vde_cryptcab**(1), **dpipe**(1),
+**sudo**(8), **sudoers**(5), **sudo.conf**(5), **tmpfiles.d**(5)
 
 TOML 1.0: <https://toml.io/en/v1.0.0>
 

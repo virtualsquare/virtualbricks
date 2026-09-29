@@ -96,9 +96,8 @@
 - [ ] Run the actions in order, each after the previous one: today they
   all start together (08 §10)
 - [ ] Show the output of a shell command in the Logs window (08 §10)
-- [ ] Rename a brick or an event in the actions that name it (08 §10)
 - [ ] Add an action that changes a brick's settings, as the console's
-  `sw1 config ports=16` (08 §10, E5)
+  `brick set sw1 ports=16` (08 §10, E5)
 
 ## Disk images
 
@@ -184,6 +183,14 @@
 
 # DONE
 
+- [x] Redesign the console: `noun verb arguments` for the bricks, the
+  events, the images, the settings and the projects, with help, Tab
+  completion and a history; `--no-gui` and `--run`; events start and stop
+  with actions of their own, projects at format 2; the manual page
+  `virtualbricks(1)` (cc1b47e…6975fc2), plan in
+  `docs/redesign/14 - console-redesign.html`
+- [x] Rename a brick or an event in the start and stop actions that name
+  it (08 §10); a console command keeps its text
 - [x] Say who holds the lock when a start is refused: the processes of
   `/proc/locks` and their users (13 §6)
 - [x] Choose how many Virtualbricks run at once, the single-instance

@@ -1,0 +1,441 @@
+<title>Virtualbricks Command Line</title>
+<meta name="description" content="Reference of the virtualbricks command: its options, and the console that makes, changes, starts, stops and deletes the bricks and events of a lab, in the terminal, from a file or in an event.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --rule-soft: #e3e9e6;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --warn: #7a4800;
+    --warn-soft: #faeed6;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --code-k: #1f5a4a;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --rule-soft: #1e2724;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --warn: #edb45a;
+      --warn-soft: #2a2112;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+      --code-k: #8fd1b8;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --rule-soft: #1e2724;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --warn: #edb45a;
+    --warn-soft: #2a2112;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+    --code-k: #8fd1b8;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.6 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 36px 96px; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.06em 0.3em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  a code { color: inherit; }
+  em { font-style: italic; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid var(--rule); }
+  .eyebrow { font: 500 12px/1.2 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  h1 { font: 600 clamp(2rem, 5vw, 3rem)/1.05 var(--font-head); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+  .lede { font-size: 1.12rem; line-height: 1.55; max-width: 66ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+
+  /* the three files */
+  .files { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0 0 18px; padding: 0; list-style: none; }
+  @media (min-width: 820px) { .files { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .file { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; }
+  .file h2 { font: 600 1.25rem/1.2 var(--font-head); margin: 0; }
+  .file h2 a { color: var(--ink); text-decoration: none; }
+  .file h2 a:hover { color: var(--accent); }
+  .file .path { font: 13px/1.45 var(--font-mono); color: var(--muted); overflow-wrap: anywhere; margin: 0; }
+  .file .path b { color: var(--ink); font-weight: 500; }
+  .file p { margin: 0; font-size: 15px; }
+  .file dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: 14px; }
+  .file dt { color: var(--muted); }
+  .file dd { margin: 0; }
+  .caution { max-width: none; display: flex; gap: 10px; align-items: baseline; background: var(--warn-soft); border-radius: 6px; padding: 12px 16px; margin: 0 0 36px; font-size: 15px; }
+  .caution b { color: var(--warn); font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; flex: none; }
+  .caution span { max-width: 90ch; }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1040px) {
+    .layout { grid-template-columns: 200px minmax(0, 1fr); gap: 52px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+  .toc a { display: block; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  @media (max-width: 1039px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 { font: 600 1.8rem/1.15 var(--font-head); margin: 0 0 16px; text-wrap: balance; }
+  h3 { font: 600 1.25rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; scroll-margin-top: 20px; }
+  h3 code, h2 code { font-size: 0.92em; padding: 0.04em 0.3em; }
+  h4 { font: 600 1.02rem/1.3 var(--font-head); margin: 24px 0 8px; scroll-margin-top: 20px; }
+  h4.group { font: 500 12px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 22px 0 6px; }
+  p, li { max-width: 72ch; }
+  p { margin: 0 0 14px; }
+  ul { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--muted); }
+
+  dl.terms { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px 20px; margin: 4px 0 18px; }
+  @media (min-width: 640px) { dl.terms { grid-template-columns: minmax(9em, max-content) minmax(0, 1fr); } }
+  dl.terms dt { font-weight: 500; padding-top: 8px; }
+  dl.terms dd { margin: 0; padding-top: 8px; border-top: 1px solid var(--rule-soft); }
+  @media (min-width: 640px) { dl.terms dt { border-top: 1px solid var(--rule-soft); } }
+  dl.terms dd p { margin: 0 0 8px; }
+
+  /* field tables */
+  .scroll { overflow-x: auto; margin: 8px 0 20px; }
+  table.fields { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; }
+  table.fields thead th { font: 600 12.5px/1.3 var(--font-head); letter-spacing: 0.03em; text-align: left; color: var(--muted); padding: 9px 12px; border-bottom: 1.5px solid var(--rule); background: var(--ground); }
+  table.fields td, table.fields tbody th { padding: 9px 12px; border-top: 1px solid var(--rule-soft); vertical-align: top; text-align: left; font-weight: 400; }
+  table.fields tbody tr:target { background: var(--accent-soft); }
+  table.fields tbody th { width: 11em; white-space: nowrap; }
+  code.key { background: none; padding: 0; color: var(--accent); font-weight: 500; font-size: 0.92em; }
+  code.key em { font-weight: 400; }
+  td.kind { width: 9.5em; font: 13px/1.5 var(--font-mono); color: var(--muted); white-space: nowrap; }
+  td.kind .range { color: var(--ink); }
+  td.default { width: 10em; }
+  td.default code { white-space: pre; }
+  td.meaning p { margin: 0 0 6px; max-width: none; }
+  td.meaning p:last-child { margin: 0; }
+  .none { color: var(--muted); }
+
+  /* code */
+  figure.code { margin: 14px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  pre { margin: 0; padding: 12px 14px; overflow-x: auto; font: 13px/1.58 var(--font-mono); color: var(--code-ink); tab-size: 4; }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  pre.snippet { background: var(--code-bg); border-radius: 5px; margin: 6px 0; padding: 8px 10px; font-size: 12.5px; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .k { color: var(--code-k); }
+  a.man { text-decoration: none; }
+  a.man:hover code { text-decoration: underline; }
+
+  .footnote { font-size: 13.5px; color: var(--muted); margin-top: 8px; }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+  /* command-line.html: the grammar, the ways in, the command tables */
+  .grammar { display: grid; gap: 6px; font: 14px/1.5 var(--font-mono); background: var(--accent-soft); color: var(--ink); border-radius: 6px; padding: 12px 16px; margin: 0 0 18px; overflow-x: auto; }
+  .grammar .parts { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+  .grammar .part { display: inline-grid; gap: 1px; }
+  .grammar .part b { font-weight: 500; }
+  .grammar .part span { font: 500 10.5px/1.2 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .grammar .nouns { color: var(--muted); font-size: 13px; }
+  .grammar .nouns b { color: var(--accent); font-weight: 500; }
+  .file .how { font: 13px/1.45 var(--font-mono); color: var(--muted); margin: 0; overflow-wrap: anywhere; }
+  .file .how b { color: var(--accent); font-weight: 500; }
+  .toc li.sub a { padding-left: 14px; font-size: 13.5px; color: var(--muted); }
+  .toc li.sub a:hover { color: var(--accent); }
+  table.fields.cmds { min-width: 620px; }
+  table.fields.cmds tbody th { width: 22em; white-space: normal; }
+  table.fields.cmds code.key { font-size: 13px; overflow-wrap: normal; }
+  table.fields.cmds code.key em { color: var(--ink); }
+  table.fields td p { margin: 0 0 6px; max-width: none; }
+  table.fields td p:last-child { margin: 0; }
+  table.fields p.ex { font: 12.5px/1.5 var(--font-mono); color: var(--muted); }
+  table.fields p.ex::before { content: "e.g. "; font-family: var(--font-body); font-style: italic; }
+  dl.terms dt code { white-space: nowrap; }
+</style>
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Reference &middot; virtualbricks(1)</div>
+    <h1>Virtualbricks Command Line</h1>
+    <p class="lede">Virtualbricks makes and runs labs of virtual machines, run by QEMU, and of the VDE switches, cables, taps and tunnels between them. It opens the project that was open last in its workspace, a folder of projects; see <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>.</p>
+    <ul class="meta">
+      <li><b>virtualbricks</b> 2.1.0</li>
+      <li><b>59</b> commands</li>
+      <li>project <b>format 2</b></li>
+      <li>also as <b>man 1 virtualbricks</b></li>
+    </ul>
+  </header>
+
+  <div class="grammar" aria-label="A command of the console">
+    <div class="parts">
+      <span class="part"><b>brick</b><span>noun</span></span>
+      <span class="part"><b>set</b><span>verb</span></span>
+      <span class="part"><b>vm1</b><span>name</span></span>
+      <span class="part"><b>memory=1024 cpus=2</b><span>key=value&hellip;, all or none</span></span>
+    </div>
+    <div class="nouns">nouns <b>brick</b> <b>event</b> <b>image</b> <b>setting</b> <b>project</b> &middot; on their own <b>help</b> <b>status</b> <b>source</b> <b>python</b> <b>quit</b></div>
+  </div>
+
+  <ul class="files">
+    <li class="file">
+      <h2><a href="#console-typing">In the terminal</a></h2>
+      <p class="how">$ <b>virtualbricks</b> [--no-gui]</p>
+      <p>Started from a terminal, it reads the commands of its console there, beside the windows. With <code>--no-gui</code> it runs without them, and the console is the way in: a lab on a machine without a display.</p>
+      <dl>
+        <dt>Keys</dt><dd>editing, history, Tab</dd>
+        <dt>Prompt</dt><dd>the open project</dd>
+        <dt>Ends</dt><dd><code>quit</code>, Ctrl+D</dd>
+      </dl>
+    </li>
+    <li class="file">
+      <h2><a href="#console-scripts">From a file</a></h2>
+      <p class="how"><b>--run</b> FILE &middot; <b>source</b> FILE &middot; a pipe</p>
+      <p>A command a line, each after the one before: a lab set up the same way every time, on a server too.</p>
+      <dl>
+        <dt>Skips</dt><dd>empty lines, <code>#</code> comments</dd>
+        <dt>Stops</dt><dd>at the first error, <em>file</em>:<em>line</em></dd>
+        <dt>Then</dt><dd>the terminal, or the end</dd>
+      </dl>
+    </li>
+    <li class="file">
+      <h2><a href="#events">In an event</a></h2>
+      <p class="how"><b>event action add</b> NAME console &quot;&hellip;&quot;</p>
+      <p>A command of the console as an action of an event, beside those that start or stop a brick or run a shell command.</p>
+      <dl>
+        <dt>Runs</dt><dd>after the delay, with the other actions</dd>
+        <dt>Fails</dt><dd>in the log, with the event and the action</dd>
+      </dl>
+    </li>
+  </ul>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+<li><a href="#synopsis">Synopsis</a></li>
+<li><a href="#options">Options</a></li>
+<li><a href="#console">The console</a></li>
+<li><a href="#commands">Commands</a></li>
+<li class="sub"><a href="#commands-bricks">Bricks</a></li>
+<li class="sub"><a href="#commands-events">Events</a></li>
+<li class="sub"><a href="#commands-images">Images</a></li>
+<li class="sub"><a href="#commands-settings">Settings</a></li>
+<li class="sub"><a href="#commands-projects">Projects</a></li>
+<li class="sub"><a href="#commands-other-commands">Other commands</a></li>
+<li><a href="#events">Events</a></li>
+<li><a href="#files">Files</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#see-also">See also</a></li>
+      </ol>
+    </nav>
+    <main>
+<section id="synopsis">
+<h2>Synopsis</h2>
+<figure class="code"><pre><code>virtualbricks [options]
+virtualbricks --no-gui [options]</code></pre></figure>
+</section>
+<section id="options">
+<h2>Options</h2>
+<dl class="terms">
+<dt><code>-v</code>, <code>--verbose</code></dt><dd><p>Log more; it can be repeated.</p></dd>
+<dt><code>-q</code>, <code>--quiet</code></dt><dd><p>Log less; it can be repeated.</p></dd>
+<dt><code>-b</code>, <code>--debug</code></dt><dd><p>Log everything. With it, and with <code>-vv</code>, Ctrl+C and the <code>SIGUSR2</code> signal drop into the <code>pdb</code> debugger, unless <code>--noterm</code> is given.</p></dd>
+<dt><code>-l</code> <em>file</em>, <code>--logfile</code> <em>file</em></dt><dd><p>Write the log messages to <em>file</em>; <code>-</code> for the standard output.</p></dd>
+<dt><code>--logger</code> <em>name</em></dt><dd><p>The fully qualified name of a factory of the log observer, instead of <code>--logfile</code>.</p></dd>
+<dt><code>--noterm</code></dt><dd><p>Don&#x27;t read the console in the terminal.</p></dd>
+<dt><code>--no-gui</code></dt><dd><p>Run without the windows: no GTK is loaded, and the console is the way in. With <code>--noterm</code> too, nothing is read: the lab runs until Virtualbricks gets <code>SIGTERM</code> or <code>SIGINT</code>.</p></dd>
+<dt><code>--run</code> <em>file</em></dt><dd><p>Run the commands of <em>file</em> once the project is open, as <code>source</code> does, then read the console.</p></dd>
+<dt><code>--workspace</code> <em>directory</em></dt><dd><p>Use the projects of <em>directory</em> for this run, instead of the <code>workspace</code> setting; it&#x27;s made if it isn&#x27;t there.</p></dd>
+<dt><code>--lock</code> <em>mode</em></dt><dd><p>The single-instance mode: <code>system</code>, the default, one Virtualbricks on the machine; <code>user</code>, one for each user; <code>none</code>, no limit. See <a href="#files">Files</a>.</p></dd>
+<dt><code>--version</code></dt><dd><p>Print the version and exit.</p></dd>
+<dt><code>--help</code></dt><dd><p>Print the options and exit.</p></dd>
+</dl>
+</section>
+<section id="console">
+<h2>The console</h2>
+<h3 id="console-commands">Commands</h3>
+<p>A command is a noun, a verb, then its arguments: <code>brick start sw1</code>. The nouns are <code>brick</code>, <code>event</code>, <code>image</code>, <code>setting</code> and <code>project</code>, and a few words stand alone: <code>help</code>, <code>status</code>, <code>source</code>, <code>python</code> and <code>quit</code>. A name is always an argument, never a command, so a brick can be called <code>list</code>.</p>
+<p>The words are split as the shell splits them: quotes keep spaces, a backslash escapes, and <code>#</code> starts a comment. A key and its value are <em>KEY</em>=<em>VALUE</em>, as many as needed in one command; they are all checked before any is set, so a command changes all of them or none:</p>
+<figure class="code"><pre><code>brick set vm1 memory=1024 "kernel_command_line=quiet ro"</code></pre></figure>
+<p>The keys are those of the project file, see <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>, but for the disks, whose keys are <em>device</em>_<code>image</code> and <em>device</em>_<code>private</code>, as <code>hda_image</code>, and the network cards, which have commands of their own. Options, as <code>--force</code>, go anywhere after the verb.</p>
+<h3 id="console-answers">Answers</h3>
+<p>A command answers when there is something to say: the name given to a new brick, the process of a started one, a table. When it can&#x27;t be done, it says why in one line, which starts with <code>Error:</code>, and changes nothing; a command that starts several bricks says which started before the one that failed. <code>start</code>, <code>stop</code>, <code>restart</code> and <code>suspend</code> wait until they are done, or fail.</p>
+<h3 id="console-typing">Typing</h3>
+<p>On a terminal the line can be edited, and Tab completes the nouns, the verbs, the names of the bricks, events, images and projects, the kinds of brick, the keys, and the values of a key that has a few. The prompt is the name of the open project.</p>
+<dl class="terms">
+<dt>Up and Down</dt><dd><p>Go through the history, which is kept between runs.</p></dd>
+<dt>Ctrl+C</dt><dd><p>Clear the line; while a command runs, stop waiting for it, but not what it does: its answer comes when it&#x27;s done.</p></dd>
+<dt>Ctrl+D</dt><dd><p>On an empty line, quit, as <code>quit</code> does.</p></dd>
+<dt>Ctrl+L</dt><dd><p>Clear the screen.</p></dd>
+</dl>
+<p><code>python</code> opens a Python shell, where <code>factory</code> is the factory of the bricks; Ctrl+D comes back to the console.</p>
+<p>When the input isn&#x27;t a terminal, as a pipe, each line is a command, run after the one before, and the end of the input quits.</p>
+<h3 id="console-scripts">Scripts</h3>
+<p>A file of commands, one a line, runs with <code>source</code> <em>file</em> in the console or <code>--run</code> <em>file</em> at start. Empty lines and comments are skipped, and the first error stops the file, saying where, as <em>lab.vb</em>:7.</p>
+</section>
+<section id="commands">
+<h2>Commands</h2>
+<h3 id="commands-bricks">Bricks</h3>
+<div class="scroll"><table class="fields cmds"><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+<tr id="brick-types"><th scope="row"><code class="key">brick types</code></th><td class="meaning"><p>The kinds of brick, and what this computer lacks for each.</p></td></tr>
+<tr id="brick-list"><th scope="row"><code class="key">brick list</code></th><td class="meaning"><p>The bricks, their state and settings.</p></td></tr>
+<tr id="brick-new"><th scope="row"><code class="key">brick new <em>KIND</em> [<em>NAME</em>]</code></th><td class="meaning"><p>Make a brick; without a name, the kind&#x27;s and the first free number.</p><p class="ex">brick new switch</p></td></tr>
+<tr id="brick-show"><th scope="row"><code class="key">brick show <em>NAME</em></code></th><td class="meaning"><p>A brick&#x27;s state, links and keys.</p></td></tr>
+<tr id="brick-keys"><th scope="row"><code class="key">brick keys <em>KIND</em>|<em>NAME</em> [<em>KEY</em>]</code></th><td class="meaning"><p>The keys of a kind of brick or of a brick, or one, with what each is for.</p><p class="ex">brick keys vm memory</p></td></tr>
+<tr id="brick-set"><th scope="row"><code class="key">brick set <em>NAME</em> <em>KEY</em>=<em>VALUE</em>&hellip;</code></th><td class="meaning"><p>Change keys of a brick, all or none.</p><p class="ex">brick set sw1 ports=16 hub_mode=true</p></td></tr>
+<tr id="brick-unset"><th scope="row"><code class="key">brick unset <em>NAME</em> <em>KEY</em>&hellip;</code></th><td class="meaning"><p>Put keys of a brick back to their defaults.</p><p class="ex">brick unset sw1 ports</p></td></tr>
+<tr id="brick-start"><th scope="row"><code class="key">brick start <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Start bricks, after those they plug into, and wait for them.</p><p class="ex">brick start router</p></td></tr>
+<tr id="brick-stop"><th scope="row"><code class="key">brick stop <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Stop bricks, and wait until their programs end.</p></td></tr>
+<tr id="brick-kill"><th scope="row"><code class="key">brick kill <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Kill the programs of bricks.</p></td></tr>
+<tr id="brick-restart"><th scope="row"><code class="key">brick restart <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Stop bricks, killing them after two seconds, and start them.</p></td></tr>
+<tr id="brick-pause"><th scope="row"><code class="key">brick pause <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Pause the programs of bricks.</p></td></tr>
+<tr id="brick-continue"><th scope="row"><code class="key">brick continue <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Let paused bricks go on.</p></td></tr>
+<tr id="brick-suspend"><th scope="row"><code class="key">brick suspend <em>VM</em></code></th><td class="meaning"><p>Save a machine&#x27;s state in its first disk, and stop it.</p></td></tr>
+<tr id="brick-resume"><th scope="row"><code class="key">brick resume <em>VM</em></code></th><td class="meaning"><p>Start a machine from the state that suspend saved.</p></td></tr>
+<tr id="brick-reset"><th scope="row"><code class="key">brick reset <em>VM</em></code></th><td class="meaning"><p>Reset a running machine, as its reset button.</p></td></tr>
+<tr id="brick-monitor"><th scope="row"><code class="key">brick monitor <em>NAME</em></code></th><td class="meaning"><p>Open the control monitor of a running brick in a terminal.</p></td></tr>
+<tr id="brick-connect"><th scope="row"><code class="key">brick connect <em>NAME</em> <em>TARGET</em>&hellip;</code></th><td class="meaning"><p>Plug a brick into switches: a wire or a Netemu&#x27;s ends, left then right.</p><p class="ex">brick connect w1 sw1 sw2</p></td></tr>
+<tr id="brick-disconnect"><th scope="row"><code class="key">brick disconnect <em>NAME</em> [<em>END</em>]</code></th><td class="meaning"><p>Unplug a brick, or one end of a wire or a Netemu.</p></td></tr>
+<tr id="brick-card-add"><th scope="row"><code class="key">brick card add <em>VM</em> <em>KIND</em> [<em>OPTIONS</em>&hellip;]</code></th><td class="meaning"><p>Add a network card: plug and its target, socket, or hostonly; model= and mac= are its own.</p><p class="ex">brick card add vm1 plug sw1 model=virtio-net-pci</p></td></tr>
+<tr id="brick-card-set"><th scope="row"><code class="key">brick card set <em>VM</em> <em>CARD</em> <em>KEY</em>=<em>VALUE</em>&hellip;</code></th><td class="meaning"><p>Change a card&#x27;s model, mac, or target: a switch, hostonly, or nothing.</p><p class="ex">brick card set vm1 eth0 model=e1000 target=sw2</p></td></tr>
+<tr id="brick-card-remove"><th scope="row"><code class="key">brick card remove <em>VM</em> <em>CARD</em>&hellip;</code></th><td class="meaning"><p>Take network cards out of a machine.</p></td></tr>
+<tr id="brick-rename"><th scope="row"><code class="key">brick rename <em>NAME</em> <em>NEW</em></code></th><td class="meaning"><p>Rename a brick.</p></td></tr>
+<tr id="brick-duplicate"><th scope="row"><code class="key">brick duplicate <em>NAME</em> [<em>NEW</em>]</code></th><td class="meaning"><p>Copy a brick, with its links.</p></td></tr>
+<tr id="brick-delete"><th scope="row"><code class="key">brick delete <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Delete bricks that don&#x27;t run.</p></td></tr>
+</tbody></table></div>
+<h3 id="commands-events">Events</h3>
+<div class="scroll"><table class="fields cmds"><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+<tr id="event-list"><th scope="row"><code class="key">event list</code></th><td class="meaning"><p>The events, their state and actions.</p></td></tr>
+<tr id="event-new"><th scope="row"><code class="key">event new [<em>NAME</em>]</code></th><td class="meaning"><p>Make an event; without a name, new_event or the next free one.</p></td></tr>
+<tr id="event-show"><th scope="row"><code class="key">event show <em>NAME</em></code></th><td class="meaning"><p>An event&#x27;s delay, its actions numbered, what starts it.</p></td></tr>
+<tr id="event-set"><th scope="row"><code class="key">event set <em>NAME</em> <em>KEY</em>=<em>VALUE</em>&hellip;</code></th><td class="meaning"><p>Change an event&#x27;s delay or icon.</p><p class="ex">event set boot delay=10</p></td></tr>
+<tr id="event-action-add"><th scope="row"><code class="key">event action add <em>NAME</em> <em>WHAT</em> [<em>SUBJECT</em>] [--at <em>N</em>]</code></th><td class="meaning"><p>Add an action: start or stop a brick or an event, or a command of the console or the shell.</p><p class="ex">event action add boot console "brick set vm1 memory=1024"</p></td></tr>
+<tr id="event-action-remove"><th scope="row"><code class="key">event action remove <em>NAME</em> <em>N</em>&hellip;</code></th><td class="meaning"><p>Remove actions of an event, by their numbers.</p></td></tr>
+<tr id="event-action-move"><th scope="row"><code class="key">event action move <em>NAME</em> <em>N</em> <em>TO</em></code></th><td class="meaning"><p>Move an action of an event to another place.</p></td></tr>
+<tr id="event-start"><th scope="row"><code class="key">event start <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Start events: each waits its delay, then runs its actions.</p></td></tr>
+<tr id="event-stop"><th scope="row"><code class="key">event stop <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Stop events that wait.</p></td></tr>
+<tr id="event-run"><th scope="row"><code class="key">event run <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Run the actions of events now, and wait for them.</p></td></tr>
+<tr id="event-rename"><th scope="row"><code class="key">event rename <em>NAME</em> <em>NEW</em></code></th><td class="meaning"><p>Rename an event, and every brick and action that names it.</p></td></tr>
+<tr id="event-duplicate"><th scope="row"><code class="key">event duplicate <em>NAME</em> [<em>NEW</em>]</code></th><td class="meaning"><p>Copy an event.</p></td></tr>
+<tr id="event-delete"><th scope="row"><code class="key">event delete <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Delete events.</p></td></tr>
+</tbody></table></div>
+<h3 id="commands-images">Images</h3>
+<div class="scroll"><table class="fields cmds"><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+<tr id="image-list"><th scope="row"><code class="key">image list</code></th><td class="meaning"><p>The disk images and their users.</p></td></tr>
+<tr id="image-add"><th scope="row"><code class="key">image add <em>NAME</em> <em>PATH</em> [<em>KEY</em>=<em>VALUE</em>&hellip;]</code></th><td class="meaning"><p>Add an image file to the project; description= says what it is.</p><p class="ex">image add debian ~/images/debian.qcow2 description="Debian 13"</p></td></tr>
+<tr id="image-show"><th scope="row"><code class="key">image show <em>NAME</em></code></th><td class="meaning"><p>An image&#x27;s file, description and users.</p></td></tr>
+<tr id="image-set"><th scope="row"><code class="key">image set <em>NAME</em> <em>KEY</em>=<em>VALUE</em>&hellip;</code></th><td class="meaning"><p>Change the description of an image.</p></td></tr>
+<tr id="image-rename"><th scope="row"><code class="key">image rename <em>NAME</em> <em>NEW</em></code></th><td class="meaning"><p>Rename an image, in the disks that use it too.</p></td></tr>
+<tr id="image-delete"><th scope="row"><code class="key">image delete <em>NAME</em></code></th><td class="meaning"><p>Remove an image from the project; its file and the private copies stay.</p></td></tr>
+</tbody></table></div>
+<h3 id="commands-settings">Settings</h3>
+<div class="scroll"><table class="fields cmds"><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+<tr id="setting-show"><th scope="row"><code class="key">setting show [<em>KEY</em>]</code></th><td class="meaning"><p>The settings of Virtualbricks and of the open project.</p></td></tr>
+<tr id="setting-set"><th scope="row"><code class="key">setting set <em>KEY</em>=<em>VALUE</em>&hellip;</code></th><td class="meaning"><p>Change settings, all or none.</p><p class="ex">setting set terminal=/usr/bin/gnome-terminal</p></td></tr>
+<tr id="setting-unset"><th scope="row"><code class="key">setting unset <em>KEY</em>&hellip;</code></th><td class="meaning"><p>Put settings back to their defaults.</p></td></tr>
+</tbody></table></div>
+<h3 id="commands-projects">Projects</h3>
+<div class="scroll"><table class="fields cmds"><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+<tr id="project-list"><th scope="row"><code class="key">project list</code></th><td class="meaning"><p>The projects of the workspace.</p></td></tr>
+<tr id="project-show"><th scope="row"><code class="key">project show</code></th><td class="meaning"><p>The open project.</p></td></tr>
+<tr id="project-open"><th scope="row"><code class="key">project open <em>NAME</em></code></th><td class="meaning"><p>Save the open project and open another.</p></td></tr>
+<tr id="project-new"><th scope="row"><code class="key">project new <em>NAME</em></code></th><td class="meaning"><p>Save the open project, make a new one and open it.</p></td></tr>
+<tr id="project-save"><th scope="row"><code class="key">project save</code></th><td class="meaning"><p>Save the open project now.</p></td></tr>
+<tr id="project-rename"><th scope="row"><code class="key">project rename <em>NAME</em> <em>NEW</em></code></th><td class="meaning"><p>Rename a project.</p></td></tr>
+<tr id="project-duplicate"><th scope="row"><code class="key">project duplicate <em>NAME</em> <em>NEW</em></code></th><td class="meaning"><p>Copy a project, its disks included.</p></td></tr>
+<tr id="project-delete"><th scope="row"><code class="key">project delete <em>NAME</em> [--force]</code></th><td class="meaning"><p>Move a project to the trash; without one, --force deletes it for good.</p></td></tr>
+</tbody></table></div>
+<h3 id="commands-other-commands">Other commands</h3>
+<div class="scroll"><table class="fields cmds"><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+<tr id="help"><th scope="row"><code class="key">help [<em>TOPIC</em>&hellip;]</code></th><td class="meaning"><p>The commands, a noun&#x27;s verbs, or one command.</p><p class="ex">help brick set</p></td></tr>
+<tr id="status"><th scope="row"><code class="key">status</code></th><td class="meaning"><p>What runs: the bricks with their processes, the events that wait.</p></td></tr>
+<tr id="quit"><th scope="row"><code class="key">quit</code></th><td class="meaning"><p>Quit Virtualbricks; refused while bricks run.</p></td></tr>
+<tr id="source"><th scope="row"><code class="key">source <em>FILE</em></code></th><td class="meaning"><p>Run the commands of a file, one a line, up to the first error.</p><p class="ex">source ~/labs/start.vb</p></td></tr>
+</tbody></table></div>
+</section>
+<section id="events">
+<h2>Events</h2>
+<p>An event, started, waits its delay, then runs its actions, all at once: an action doesn&#x27;t wait for the one before. An action starts or stops a brick, with the bricks it plugs into, or an event, or runs a command of the console or of the shell, as <code>event action add</code> makes them. A command of the console in an event is any command of this page, and one that fails is logged with the event, the number of the action and the reason. The project file keeps the actions as <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a> says.</p>
+</section>
+<section id="files">
+<h2>Files</h2>
+<dl class="terms">
+<dt><em>\$XDG_STATE_HOME</em>/virtualbricks/history</dt><dd><p>The history of the console, the last 500 lines.</p></dd>
+<dt><em>/tmp/virtualbricks.lock</em>, <em>\$XDG_RUNTIME_DIR</em>/virtualbricks/.lock</dt><dd><p>The locks of the single-instance mode, see <code>--lock</code>.</p></dd>
+</dl>
+<p>The settings, the state and the projects are described in <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>.</p>
+</section>
+<section id="examples">
+<h2>Examples</h2>
+<p>A switch and a machine plugged into it, started:</p>
+<figure class="code"><pre><code>brick new switch
+brick new vm router
+brick set router memory=512 use_kvm=true
+brick card add router plug sw1 model=virtio-net-pci
+brick start router</code></pre></figure>
+<p>The machine, with its switch, for ten minutes, and a line in the system log:</p>
+<figure class="code"><pre><code>event new up
+event action add up start router
+event action add up shell "logger the lab is up"
+event new down
+event set down delay=600
+event action add down stop router
+event start up down</code></pre></figure>
+<p>A lab on a server, from a file, without windows or console:</p>
+<figure class="code"><pre><code>virtualbricks --no-gui --noterm --run ~/labs/ospf.vb</code></pre></figure>
+</section>
+<section id="see-also">
+<h2>See also</h2>
+<p><a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>, <a class="man" href="archive-protocol.html"><code>virtualbricks-archive</code>(7)</a>, <a class="man" href="https://manpages.debian.org/qemu.1"><code>qemu</code>(1)</a>, <a class="man" href="https://manpages.debian.org/vde_switch.1"><code>vde_switch</code>(1)</a></p>
+</section>
+      <p class="footnote">Written from <code>docs/man/virtualbricks.1.md</code>, the source of the man page, so the two say the same. Its commands and options are checked against the code by <code>virtualbricks/tests/test_docs.py</code>.</p>
+    </main>
+  </div>
+</div>

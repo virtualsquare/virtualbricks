@@ -81,8 +81,10 @@ virtualbricks
 ```
 
 or `python -m virtualbricks`. The window opens with the project that was open
-last in the workspace. The terminal that started Virtualbricks runs a Python
-console with the brick factory in it, unless you give `--noterm`.
+last in the workspace, and the terminal that started Virtualbricks reads the
+commands of its console, unless you give `--noterm`; see
+[The console](#the-console).
+
 
 The options are:
 
@@ -91,7 +93,11 @@ The options are:
 - `--debug`: the most verbose output. With it, and with `-vv`, Ctrl+C and the
   `SIGUSR2` signal drop into the `pdb` debugger.
 - `-l FILE`, `--logfile FILE`: write the log messages to a file.
-- `--noterm`: don't show the console in the terminal.
+- `--noterm`: don't read the console in the terminal.
+- `--no-gui`: run without the windows, and without GTK: the console is the
+  way in.
+- `--run FILE`: run the commands of a file once the project is open, then
+  read the console.
 - `--workspace FOLDER`: use the projects of another folder, made if it isn't
   there, for this run only; see [Configuration](#configuration).
 - `--lock MODE`: the single-instance mode, how many Virtualbricks can run at
@@ -115,6 +121,36 @@ The options are:
 The system releases the locks when Virtualbricks ends, even when it crashes,
 so none is ever left behind. When a lock refuses a start, the message names
 the processes that hold it and the users that started them.
+
+### The console
+
+A command of the console is a noun, a verb and its arguments:
+
+```
+brick new switch
+brick new vm router
+brick set router memory=512 use_kvm=true
+brick card add router plug sw1
+brick start router
+event new down
+event set down delay=600
+event action add down stop router
+event start down
+```
+
+The nouns are `brick`, `event`, `image`, `setting` and `project`; `help`
+lists the commands, and Tab completes them, the names and the keys. A key
+and its value are `KEY=VALUE`, with the names of the project file, and a
+command changes all of them or none. The history is kept between runs, and
+`python` opens a Python shell with the brick factory in it.
+
+The same commands run from a file, with `source FILE` or `--run FILE`, from a
+pipe, and in an event, as its actions. With `--no-gui --noterm --run FILE`,
+Virtualbricks sets a lab up and runs it on a machine without a display.
+
+Every option and command is in the manual page, which you can read from the
+sources with `man ./docs/man/virtualbricks.1`, and in
+[`docs/command-line.html`](docs/command-line.html).
 
 ## Configuration
 
@@ -245,10 +281,12 @@ coverage report
   `make_factory`, `FakeLogger`, `use_workspace`, and `BrickTestCase` and
   `CommandTestCase` for the bricks) and, for the windows, in
   `virtualbricks/tests/gui/__init__.py` (`GuiTestCase`).
-- `test_docs.py` checks that the manual page documents every setting, key of
-  the project file and kind of brick of the code, and that the page is up to
-  date with its source: when you change one of them, update
-  `docs/man/virtualbricks-config.5.md`.
+- `test_docs.py` checks that the manual page of the files documents every
+  setting, key of the project file and kind of brick of the code, that the
+  manual page of the command has every option and every command of the
+  console as the table of the commands has them, and that the pages are up to
+  date with their sources: when you change one of them, update
+  `docs/man/virtualbricks-config.5.md` or `docs/man/virtualbricks.1.md`.
 
 ### Code style
 
@@ -260,10 +298,9 @@ pre-commit run --all-files     # run them without committing
 ```
 
 - **black** and **ruff**: format and check what you changed.
-- **man pages**: `python docs/man/build.py` builds
-  `docs/man/virtualbricks-config.5` from its Markdown source with pandoc; the
-  page is committed. With `--check` it only tells whether the page is out of
-  date.
+- **man pages**: `python docs/man/build.py` builds the pages of `docs/man/`
+  from their Markdown sources with pandoc; the pages are committed. With
+  `--check` it only tells whether one is out of date.
 - **translations**: `./l10n.sh` extracts the messages of the sources into
   `locale/virtualbricks/virtualbricks.pot`, merges them into the `.po` file of
   each language and compiles the `.mo` catalogs, which are committed too. It
@@ -280,13 +317,13 @@ To add a language, see the top of `l10n.sh`.
 
 - `virtualbricks/`: `app.py` and `scripts/` start the application and read its
   command line; `brickfactory.py` is the model in memory, the bricks, the
-  events and the images of the open project; `console.py` is the console of
-  the terminal; `programs.py` asks the installed Qemu and VDE programs what
-  they have; `sudo.py` writes the `sudo` command of what needs root, and
-  `ksm.py` turns Kernel Samepage Merging on and off; `spawn.py` and
-  `tools.py` are helpers for `qemu-img`, KVM and the formats of the disk
-  images; `markdown.py` reads the README of a project, and `topology.py`
-  lays the lab out with Graphviz; `locations.py` has the paths of the files.
+  events and the images of the open project; `programs.py` asks the
+  installed Qemu and VDE programs what they have; `sudo.py` writes the `sudo`
+  command of what needs root, and `ksm.py` turns Kernel Samepage Merging on
+  and off; `spawn.py` and `tools.py` are helpers for `qemu-img`, KVM and the
+  formats of the disk images; `markdown.py` reads the README of a project,
+  and `topology.py` lays the lab out with Graphviz; `locations.py` has the
+  paths of the files.
 - `virtualbricks/bricks/`: a module for each kind of brick: virtual machine,
   switch, tap, wire, and so on; each writes its command line with
   `command.py`. `draft.py` is what the settings panels work on: a copy of a
@@ -294,6 +331,12 @@ To add a language, see the top of `l10n.sh`.
   with checks of its own has its draft in its module. `brickinfo.py` and
   `eventinfo.py` say in words what a brick or an event is and does, for the
   tabs of the main window and for the console.
+- `virtualbricks/console/`: the console. `command.py` declares each command
+  with its arguments, `parser.py` reads and completes a line, `dispatch.py`
+  runs it; a module for each noun, `bricks.py`, `events.py`, `images.py`,
+  `settings.py` and `projects.py`, and `general.py` for `help`, `status`,
+  `source` and `quit`. `terminal.py` reads the terminal, or a pipe. It
+  imports no GTK, so that `--no-gui` doesn't load it.
 - `virtualbricks/config/`: the settings and the state, the schemas of their
   fields, the project file, and the projects: `workspace.py` lists, creates and
   opens them, `archive.py` and `importing.py` read, write and import their
@@ -315,9 +358,9 @@ To add a language, see the top of `l10n.sh`.
   messages of the Logs window.
 - `virtualbricks/tests/`: the tests, in the layout of the package.
 - `docs/`: the manual pages, in `man/`, and their web pages,
-  `config-files.html` and `archive-protocol.html`; in `redesign/`, the designs
-  of the parts that were rewritten, numbered in the order of the work, from
-  the conversion of the Glade files to the settings panels of the bricks.
+  `command-line.html`, `config-files.html` and `archive-protocol.html`; in
+  `redesign/`, the designs of the parts that were rewritten, numbered in the
+  order of the work, from the conversion of the Glade files to the console.
 - `locale/`: the translations; `share/`: the desktop file and the icon.
 
 ## License

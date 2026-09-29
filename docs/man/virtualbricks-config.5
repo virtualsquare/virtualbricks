@@ -44,7 +44,11 @@ Virtualbricks doesn\(aqt read them any more.
 .SH COMMON RULES
 .SS Format version
 Every file starts with a \f[B]format\f[R] key, the version of its
-layout, currently \f[B]1\f[R].
+layout: \f[B]2\f[R] for a project, \f[B]1\f[R] for the settings and the
+state.
+A project of format \f[B]1\f[R] is read, and saved in format
+\f[B]2\f[R]: the commands of its events become actions, see
+\f[B]Events\f[R].
 A file written by a newer Virtualbricks, with a higher \f[B]format\f[R],
 is not read: its settings are not used and the file is never
 overwritten, and a project in that format doesn\(aqt open.
@@ -281,20 +285,34 @@ Nothing shows it yet.
 Seconds to wait before running the actions.
 .TP
 \f[B]actions\f[R] = \f[I]array\f[R], default \f[CR][]\f[R]
-The commands to run, in order.
-Each one is an inline table with two keys: \f[B]kind\f[R], which is
-\f[B]\(dqvb\(dq\f[R] for a command of the Virtualbricks console or
-\f[B]\(dqshell\(dq\f[R] for a command run by \f[B]sh\f[R](1), and
-\f[B]command\f[R], the command itself.
+What the event does after its delay, all at once: an action doesn\(aqt
+wait for the one before.
+Each is an inline table whose \f[B]kind\f[R] says what it does.
+\f[B]\(dqstart\(dq\f[R] and \f[B]\(dqstop\(dq\f[R] start or stop their
+\f[B]target\f[R], the name of a brick, with the bricks it plugs into, or
+of an event.
+\f[B]\(dqconsole\(dq\f[R] runs its \f[B]command\f[R] in the console, see
+\f[B]virtualbricks\f[R](1), and \f[B]\(dqshell\(dq\f[R] runs it with
+\f[B]sh\f[R](1).
+A brick or an event renamed is renamed in the targets, not in the
+commands.
 For example:
 .RS
 .IP
 .EX
 actions = [
-    {kind = \(dqvb\(dq, command = \(dqsw1 on\(dq},
+    {kind = \(dqstart\(dq, target = \(dqsw1\(dq},
+    {kind = \(dqconsole\(dq, command = \(dqbrick set vm1 memory=1024\(dq},
     {kind = \(dqshell\(dq, command = \(dqlogger lab started\(dq},
 ]
 .EE
+A project of format \f[B]1\f[R] had only \f[B]\(dqvb\(dq\f[R], a command
+of the old console, and \f[B]\(dqshell\(dq\f[R].
+Its commands are read as those of the new console, as \f[B]sw1 on\f[R]
+becomes \f[B]{kind = \(dqstart\(dq, target = \(dqsw1\(dq}\f[R] and
+\f[B]vm1 config memory=512\f[R] becomes \f[B]brick set vm1
+memory=512\f[R].
+A command the new console lacks stays as it was, and is reported.
 .RE
 .SS Bricks
 Every brick table has a \f[B]type\f[R], which is one of \f[B]qemu\f[R],
@@ -589,8 +607,8 @@ A tap interface of the host, plugged into a switch through
 \f[B]vde_plug2tap\f[R](1).
 It needs root, see \f[B]PRIVILEGES\f[R].
 The interface takes the name of the brick, which Linux limits to 15
-characters: New Brick, Rename and the console\(aqs \f[B]new\f[R] refuse
-a longer one.
+characters: New Brick, Rename and the console\(aqs \f[B]brick new\f[R]
+and \f[B]brick rename\f[R] refuse a longer one.
 .TP
 \f[B]connect\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 The socket the tap is plugged into.
@@ -777,8 +795,8 @@ The settings of \f[I]\(ti/.virtualbricks.conf\f[R] that are now a
 project\(aqs, as \f[B]qemupath\f[R], go into each converted project.
 The keys get the names of this page, as \f[B]qemupath\f[R] becomes
 \f[B]qemu_path\f[R] and \f[B]numports\f[R] becomes \f[B]ports\f[R], and
-so do the settings in the commands of the events, as \f[B]sw1 config
-numports=16\f[R].
+so do the commands of the events become actions, as \f[B]sw1 config
+numports=16\f[R] becomes \f[B]brick set sw1 ports=16\f[R].
 The old files are left as they were.
 .PP
 The same conversion can be tried on copies, into a new folder laid out
@@ -886,7 +904,7 @@ The virtual machine is shortened: Virtualbricks writes all of its keys,
 and the six empty disks.
 .IP
 .EX
-format = 1
+format = 2
 
 [settings]
 cow_format = \(dqqcow2\(dq
@@ -903,7 +921,7 @@ description = \(dqDebian 12\(rsnbase image\(dq
 icon = \(dq\(dq
 delay = 5
 actions = [
-    {kind = \(dqvb\(dq, command = \(dqsw1 on\(dq},
+    {kind = \(dqstart\(dq, target = \(dqrouter1\(dq},
     {kind = \(dqshell\(dq, command = \(dqlogger lab started\(dq},
 ]
 
@@ -1016,8 +1034,8 @@ The \f[B]address_mode\f[R], \f[B]ip_address\f[R], \f[B]netmask\f[R] and
 \f[B]gateway\f[R] of a tap are stored but not applied: the interface
 gets no address from Virtualbricks.
 .SH SEE ALSO
-\f[B]virtualbricks\-archive\f[R](7), \f[B]qemu\f[R](1),
-\f[B]vde_switch\f[R](1), \f[B]vde_plug2tap\f[R](1),
+\f[B]virtualbricks\f[R](1), \f[B]virtualbricks\-archive\f[R](7),
+\f[B]qemu\f[R](1), \f[B]vde_switch\f[R](1), \f[B]vde_plug2tap\f[R](1),
 \f[B]vde_cryptcab\f[R](1), \f[B]dpipe\f[R](1), \f[B]sudo\f[R](8),
 \f[B]sudoers\f[R](5), \f[B]sudo.conf\f[R](5), \f[B]tmpfiles.d\f[R](5)
 .PP
