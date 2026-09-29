@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 07:38+0200\n"
+"POT-Creation-Date: 2026-09-29 07:45+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -753,7 +753,6 @@ msgstr ""
 #: virtualbricks/gui/dialogs/exportproject.py
 #: virtualbricks/gui/dialogs/imagedialogs.py
 #: virtualbricks/gui/dialogs/importdialog.py
-#: virtualbricks/gui/dialogs/newbrick.py
 #: virtualbricks/gui/dialogs/projectname.py
 #: virtualbricks/gui/dialogs/projects.py
 #: virtualbricks/gui/dialogs/renamedialog.py
@@ -1466,22 +1465,6 @@ msgstr ""
 msgid "_Save"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/newbrick.py
-#: virtualbricks/gui/dialogs/renamedialog.py
-#: virtualbricks/gui/dialogs/settings.py
-msgid "OK"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/newbrick.py
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Tap"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/newbrick.py
-#: virtualbricks/gui/dialogs/renamedialog.py
-msgid "Brick name"
-msgstr ""
-
 #: virtualbricks/gui/dialogs/projectname.py
 #: virtualbricks/gui/dialogs/projects.py
 msgid "New Project"
@@ -1722,7 +1705,16 @@ msgid "Virtualbricks - Rename brick"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/renamedialog.py
+#: virtualbricks/gui/dialogs/settings.py
+msgid "OK"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/renamedialog.py
 msgid "Chose a new name"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/renamedialog.py
+msgid "Brick name"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
@@ -1924,6 +1916,10 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 msgid "Switch wrapper"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "Tap"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/brickinfo.py

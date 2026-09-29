@@ -33,6 +33,7 @@ if has_display:
 
     from virtualbricks.gui.mainwindow import rowtab
     from virtualbricks.gui.mainwindow.bricks import brickmenu, tab
+    from virtualbricks.gui.mainwindow.bricks.newbrick import NewBrickPopover
     from virtualbricks.gui.mainwindow.bricks.tab import BricksTab, count
     from virtualbricks.gui.mainwindow.rowtab import types
     from virtualbricks.gui.mainwindow.picture import Icons
@@ -305,16 +306,38 @@ class TestTheRowAboveTheList(BricksTestCase):
         self.assertEqual(self.tab.count.get_text(), "1 of 2 running")
         self.assertEqual(count([]), "0 of 0 running")
 
-    def test_new_brick(self):
-        shown = []
+    def test_new_brick_under_its_button(self):
+        opened = []
         self.patch(
-            tab,
-            "NewBrickDialog",
-            lambda factory: FakeDialog(shown, factory),
+            NewBrickPopover,
+            "popup_at",
+            lambda popover, widget: opened.append((popover, widget)),
         )
         self.tab.new_button.clicked()
+        popover = self.tab.new_popover
+        self.addCleanup(popover.destroy)
+        # a project without bricks has its own button; the popover stays
+        self.factory.del_brick(self.sw)
         self.tab.empty_new_button.clicked()
-        self.assertEqual(shown, [(self.factory, self.gui.window)] * 2)
+        self.assertEqual(
+            opened,
+            [
+                (popover, self.tab.new_button),
+                (popover, self.tab.empty_new_button),
+            ],
+        )
+
+    def test_a_new_brick_shows_its_settings(self):
+        self.patch(NewBrickPopover, "popup_at", lambda popover, widget: None)
+        self.tab.new_button.clicked()
+        popover = self.tab.new_popover
+        self.addCleanup(popover.destroy)
+        row = next(row for row in popover.rows if row.kind.type == "Tap")
+        popover.on_row_activated(popover.list, row)
+        tap = self.factory.get_brick_by_name("tap1")
+        self.assertIsNotNone(tap)
+        self.assertIs(self.tab.list.selected(), tap)
+        self.assertEqual(self.gui.configured, [tap])
 
     def test_start_all_starts_what_can(self):
         self.brick("qemu", "vm")

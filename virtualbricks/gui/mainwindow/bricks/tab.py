@@ -20,8 +20,10 @@
 The Bricks tab of the main window: the bricks of the project, on the tab of
 rows of :mod:`virtualbricks.gui.mainwindow.rowtab`.
 
-New Brick opens the window that makes a brick. The switch shows all the
-bricks or the running ones, and Start All starts the bricks that can start.
+New Brick opens the popover of the kinds of
+:mod:`virtualbricks.gui.mainwindow.bricks.newbrick` under the button; the brick
+made is selected and its settings show. The switch shows all the bricks or
+the running ones, and Start All starts the bricks that can start.
 The menu of a brick is :mod:`virtualbricks.gui.mainwindow.bricks.brickmenu`'s, and
 its settings are its panel of :mod:`virtualbricks.gui.mainwindow.bricks.config`, on a
 draft of the brick; a router has none.
@@ -45,11 +47,13 @@ from virtualbricks.gui.mainwindow.bricks.bricklist import (  # noqa: E402
     BrickList,
 )
 from virtualbricks.gui.mainwindow.bricks.config import new_panel  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks.newbrick import (  # noqa: E402
+    NewBrickPopover,
+)
 from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     RowsTab,
     log_failures,
 )
-from virtualbricks.gui.dialogs.newbrick import NewBrickDialog  # noqa: E402
 from virtualbricks.i18n import _, ngettext  # noqa: E402
 from virtualbricks.tools import is_running  # noqa: E402
 
@@ -84,6 +88,8 @@ class BricksTab(RowsTab):
     ADDED = "brick-added"
     REMOVED = "brick-removed"
     CHANGED = "brick-changed"
+    # made at the first New Brick, and kept
+    new_popover: NewBrickPopover | None = None
 
     def make_list(self) -> BrickList:
         return BrickList(self.gui, self.factory)
@@ -116,7 +122,22 @@ class BricksTab(RowsTab):
         return log_failures(deferreds, not_stopped, logger)
 
     def new(self) -> None:
-        NewBrickDialog(self.factory).show(self.gui.window)
+        """Offer the kinds of bricks, under the button."""
+
+        widget = self.new_button
+        if self.pages.get_visible_child() is self.empty:
+            widget = self.empty_new_button
+        if self.new_popover is None:
+            self.new_popover = NewBrickPopover(self.factory, self.on_made)
+        self.new_popover.popup_at(widget)
+
+    def on_made(self, brick) -> None:
+        """Select the new brick, and show its settings."""
+
+        row = self.list.row_of(brick)
+        self.list.select_row(row)
+        row.grab_focus()
+        self.gui.curtain_up(brick)
 
     def remove(self, item) -> None:
         self.gui.ask_remove_brick(item)

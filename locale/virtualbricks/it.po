@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 07:38+0200\n"
+"POT-Creation-Date: 2026-09-29 07:45+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -792,7 +792,6 @@ msgstr ""
 #: virtualbricks/gui/dialogs/exportproject.py
 #: virtualbricks/gui/dialogs/imagedialogs.py
 #: virtualbricks/gui/dialogs/importdialog.py
-#: virtualbricks/gui/dialogs/newbrick.py
 #: virtualbricks/gui/dialogs/projectname.py
 #: virtualbricks/gui/dialogs/projects.py
 #: virtualbricks/gui/dialogs/renamedialog.py
@@ -1534,23 +1533,6 @@ msgstr "Annulla"
 msgid "_Save"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/newbrick.py
-#: virtualbricks/gui/dialogs/renamedialog.py
-#: virtualbricks/gui/dialogs/settings.py
-msgid "OK"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/newbrick.py
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-msgid "Tap"
-msgstr "Tap"
-
-#: virtualbricks/gui/dialogs/newbrick.py
-#: virtualbricks/gui/dialogs/renamedialog.py
-#, fuzzy
-msgid "Brick name"
-msgstr "Nome Mattone:"
-
 #: virtualbricks/gui/dialogs/projectname.py
 #: virtualbricks/gui/dialogs/projects.py
 #, fuzzy
@@ -1812,9 +1794,19 @@ msgid "Virtualbricks - Rename brick"
 msgstr "Lista Mattoni di Virtualbricks"
 
 #: virtualbricks/gui/dialogs/renamedialog.py
+#: virtualbricks/gui/dialogs/settings.py
+msgid "OK"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/renamedialog.py
 #, fuzzy
 msgid "Chose a new name"
 msgstr "Scegli un nuovo nome:"
+
+#: virtualbricks/gui/dialogs/renamedialog.py
+#, fuzzy
+msgid "Brick name"
+msgstr "Nome Mattone:"
 
 #: virtualbricks/gui/dialogs/settings.py
 msgid "VDE binaries path"
@@ -2027,6 +2019,10 @@ msgstr "Switch"
 #, fuzzy
 msgid "Switch wrapper"
 msgstr "Switch"
+
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "Tap"
+msgstr "Tap"
 
 #: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 msgid "Wire"
