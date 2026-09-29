@@ -1,0 +1,603 @@
+<title>Control Socket</title>
+<meta name="description" content="A plan for the control socket of Virtualbricks: a Virtualbricks that runs listens in your runtime folder, and virtualbricks --command sends it a console command from any terminal or script.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  .ref.open { color: var(--decide); background: var(--decide-soft); }
+
+  /* pages 14 and 15 */
+  .chip {
+    display: inline-block;
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.04em;
+    padding: 3px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    vertical-align: 1px;
+    color: var(--risk);
+    background: var(--risk-soft);
+  }
+  .prompt { color: var(--code-h); font-weight: 500; }
+  table.commands td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.commands td:last-child { color: var(--muted); font-size: 13.5px; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+  .note { font-size: 14px; color: var(--muted); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 15 &middot; Design &middot; revision 2, decided</div>
+    <h1>Virtualbricks Control Socket</h1>
+    <p class="lede">A Virtualbricks that runs listens on a socket in your runtime folder. <code>virtualbricks --command brick start sw1</code> sends it a console command from any terminal or script, prints the answer and exits with its status. This works whether that Virtualbricks has windows or not.</p>
+    <ul class="meta">
+      <li>branch <b>mg/console-redesign</b> at 28214a0</li>
+      <li>revision 2 &middot; 29 September 2026</li>
+      <li><span class="status">decided</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your request of today: implement the TODO item &ldquo;Add a control socket in the runtime folder, so that <code>virtualbricks --command ...</code> talks to a Virtualbricks that runs&rdquo;, which is K6 C of <a href="14%20-%20console-redesign.html#decisions">page 14</a>, and make a plan first. Revision 1 left seven questions open in <a href="#decisions">&sect;10</a>, each with a recommendation.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 records your answers: every question of <a href="#decisions">&sect;10</a> as recommended. For Q3 you added that a socket speaking Twisted&rsquo;s AMP comes next, open at the same time as this one (<a href="#later">&sect;11</a>). You also asked for an option that gives the socket another path: <code>--socket PATH</code>, for the Virtualbricks that listens and for <code>--command</code> alike (<a href="#command">&sect;3</a>, <a href="#another">&sect;4</a>). The name <code>--socket</code> is my choice.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>Today</a></li>
+        <li><a href="#command"><span>3</span>The command line</a></li>
+        <li><a href="#socket"><span>4</span>The socket</a></li>
+        <li><a href="#protocol"><span>5</span>The protocol</a></li>
+        <li><a href="#outside"><span>6</span>Commands from outside</a></li>
+        <li><a href="#messages"><span>7</span>Messages</a></li>
+        <li><a href="#code"><span>8</span>The code and the tests</a></li>
+        <li><a href="#plan"><span>9</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>10</span>Decisions</a></li>
+        <li><a href="#later"><span>11</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Command</dt><dd><code>virtualbricks --command brick start sw1</code>: the words after <code>--command</code> are the command, quoted as in the console. With no words, the command reads its standard input a line at a time and stops at the first error (<a class="ref done" href="#decisions">Q2</a>).</dd></div>
+          <div><dt>Answer</dt><dd>The answer goes to the standard output and an error to the standard error. The exit status is 0 when the command was done, 1 when it failed, and 2 when no Virtualbricks answered (<a class="ref done" href="#decisions">Q5</a>).</dd></div>
+          <div><dt>Socket</dt><dd><code>$XDG_RUNTIME_DIR/virtualbricks/.control</code>, mode 0600, in a folder that only you can enter. Every Virtualbricks listens there once its project is open, with or without the windows (<a class="ref done" href="#decisions">Q1</a>). <code>--socket PATH</code> puts it somewhere else, for both ends.</dd></div>
+          <div><dt>Owner</dt><dd>One Virtualbricks has the socket. It holds the lock <code>.control.lock</code> next to the socket. In the modes <code>system</code> and <code>user</code> there is only one of yours anyway. With <code>--lock none</code>, the first one to start has the socket and the others run without one, unless each gets its own with <code>--socket</code> (<a class="ref done" href="#decisions">Q4</a>).</dd></div>
+          <div><dt>Protocol</dt><dd>One line of JSON for each request and each answer, after a greeting that gives the protocol&rsquo;s version. You can read it with <code>socat</code>, and any language can speak it (<a class="ref done" href="#decisions">Q3</a>).</dd></div>
+          <div><dt>Commands</dt><dd>Every command of the console works as in its terminal. Paths are read from the folder where you run <code>--command</code> (<a class="ref done" href="#decisions">Q6</a>). A command doesn&rsquo;t wait for the terminal, the events or other connections (<a class="ref done" href="#decisions">Q7</a>).</dd></div>
+          <div><dt>Client</dt><dd>It loads no Twisted reactor and no GTK, takes no lock and opens no project. It connects, sends, prints and exits.</dd></div>
+          <div><dt>Plan</dt><dd>Four steps, a commit each, on a new branch <code>mg/control-socket</code> from <code>mg/console-redesign</code> (<a href="#plan">&sect;9</a>).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>Today</h2>
+        <p>The console of page 14 has two ways in: the terminal that started Virtualbricks, and the files of <code>--run</code> and <code>source</code>. A Virtualbricks started from the desktop&rsquo;s menu, or with <code>--noterm</code>, has no console at all. A script can&rsquo;t ask a running Virtualbricks to do anything. All it can do is start another one, and the single-instance mode refuses that.</p>
+        <p>The runtime folder already exists. <code>locations.runtime_dir()</code> is <code>$XDG_RUNTIME_DIR/virtualbricks</code>, or <code>virtualbricks-</code><i>uid</i> in the temporary folder when the variable isn&rsquo;t set. Virtualbricks makes it at start with mode 0700. Each open project gets a folder in it for the sockets of its bricks, and the user lock of <a href="13%20-%20single-instance-mode.html">page 13</a> is there as <code>.lock</code>. A project&rsquo;s name never starts with a dot, so names that start with one are free for Virtualbricks&rsquo; own files.</p>
+        <figure class="code">
+          <figcaption>the runtime folder</figcaption>
+<pre><code>$XDG_RUNTIME_DIR/virtualbricks/    <span class="c">0700, yours alone</span>
+&#x251c;&#x2500;&#x2500; .lock            <span class="c">the lock of --lock user (page 13)</span>
+&#x251c;&#x2500;&#x2500; .control         <span class="c">the control socket, 0600</span>            <span class="h">new</span>
+&#x251c;&#x2500;&#x2500; .control.lock    <span class="c">held by the one that has it</span>         <span class="h">new</span>
+&#x2514;&#x2500;&#x2500; lab1/            <span class="c">the sockets of the bricks of lab1</span></code></pre>
+        </figure>
+      </section>
+
+      <section id="command">
+        <h2><span class="num">&sect;3</span>The command line</h2>
+        <figure class="code">
+          <figcaption>from any terminal of yours</figcaption>
+<pre><code><span class="prompt">$</span> virtualbricks --command brick start sw1 vm1
+sw1 runs, process 4242
+vm1 runs, process 4250
+<span class="prompt">$</span> virtualbricks --command brick set vm1 kernel_command_line="console=ttyS0 root=/dev/vda"
+<span class="prompt">$</span> virtualbricks --command brick start vm9
+<span class="e">Error: No brick named vm9</span>
+<span class="prompt">$</span> echo $?
+1</code></pre>
+        </figure>
+        <ul>
+          <li><strong>Words.</strong> The words after <code>--command</code> are the words of the command, as the shell split them. The client quotes them again for the console with <code>shlex.join</code>, so <code>kernel_command_line="console=ttyS0 root=/dev/vda"</code> reaches the console as one word, as if typed there. The options of <code>virtualbricks</code> end at the first word, so an option of the command, such as <code>--force</code>, can come anywhere after it.</li>
+          <li><strong>Output.</strong> The answer goes to the standard output a line at a time. When a command fails, what it did before goes to the standard output, and the error, <code>Error: &hellip;</code>, goes to the standard error, as in the console.</li>
+          <li><strong>Exit status.</strong> 0: the command was done. 1: it failed. 2: no Virtualbricks answered, because none runs, it ended during the command, or it speaks another version of the protocol. A wrong option exits with 1, as today.</li>
+          <li><strong>Standard input.</strong> With no words, <code>--command</code> reads commands from its standard input, one per line, over one connection, each after the one before. The first error stops it, as it stops <code>source</code>, and names its line: <code>line 3: No brick named vm9</code>. When the input is a terminal, it doesn&rsquo;t sit waiting: it says how to use it.</li>
+          <li><strong>Ctrl+C</strong> stops waiting, not the command. The connection closes and Virtualbricks goes on with the start, as when you press Ctrl+C in its console. The exit status is 130.</li>
+          <li><strong>Another socket.</strong> <code>--socket PATH</code> gives the path of the socket, both to the Virtualbricks that listens and to <code>--command</code>. <code>virtualbricks --no-gui --socket ~/labs/lab1.sock</code> listens there, and <code>virtualbricks --socket ~/labs/lab1.sock --command status</code> talks to it. Like every option, it comes before the words (<a href="#another">&sect;4</a>).</li>
+          <li><strong>Other options.</strong> The options of a run mean nothing with <code>--command</code>, so they are refused: <code>--no-gui</code>, <code>--noterm</code>, <code>--run</code>, <code>--workspace</code>, <code>--lock</code>, <code>--logfile</code> and <code>--logger</code>. <code>--socket</code> is the one that goes with it. Words without <code>--command</code> are refused too, and the message shows the command with <code>--command</code>.</li>
+        </ul>
+        <figure class="code">
+          <figcaption>a script</figcaption>
+<pre><code><span class="prompt">$</span> virtualbricks --command &lt; start-lab.vb
+<span class="prompt">$</span> printf 'brick start sw1\nbrick start vm1\n' | virtualbricks --command</code></pre>
+        </figure>
+      </section>
+
+      <section id="socket">
+        <h2><span class="num">&sect;4</span>The socket</h2>
+        <h3>Who listens</h3>
+        <p>Every Virtualbricks listens, with or without the windows. It starts once the last project is open, before the commands of <code>--run</code>, so <code>--command</code> works while a long script is starting machines (<a class="ref done" href="#decisions">Q1</a>).</p>
+        <p>The folder is 0700 and the socket 0600, so only you and root can connect. Anyone who can connect can already run programs as you, so the socket gives nobody new powers. Before it listens, Virtualbricks checks that the folder is a real folder, not a link, that it belongs to you, and that no one else can open it. This matters for the fallback in the temporary folder, where another user could have made <code>virtualbricks-</code><i>uid</i> first. If the check fails, Virtualbricks runs without a socket and logs why. <code>--command</code> makes the same check before it connects.</p>
+
+        <h3>Who has it</h3>
+        <p>Only one Virtualbricks can listen on a path. The one that has the socket holds an exclusive <code>flock</code> on <code>.control.lock</code>, like the locks of page 13, for as long as it runs:</p>
+        <ol>
+          <li>It takes <code>.control.lock</code> without waiting. If another Virtualbricks holds it, this one runs without a socket and logs which process has it.</li>
+          <li>It removes any <code>.control</code> left behind by a Virtualbricks that ended without removing it, as after a crash. While it holds the lock, nobody else listens there.</li>
+          <li>It listens on <code>.control</code>, mode 0600.</li>
+        </ol>
+        <p>When it ends, it stops listening and closes each connection after its last answer is written, so <code>quit</code> gets its answer too. Then it removes <code>.control</code> and releases the lock. After a crash the socket stays behind, and the next start removes it.</p>
+        <div class="scroll">
+        <table>
+          <thead><tr><th>Mode</th><th>Virtualbricks of yours</th><th>The socket</th></tr></thead>
+          <tbody>
+            <tr><td><code>system</code></td><td>one on the machine</td><td>it has it</td></tr>
+            <tr><td><code>user</code></td><td>one of yours</td><td>it has it</td></tr>
+            <tr><td><code>none</code></td><td>any number</td><td>the first to start has it, whatever its mode; the others run without one and log it, unless each has its own <code>--socket</code> (<a class="ref done" href="#decisions">Q4</a>)</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Another user&rsquo;s Virtualbricks listens in that user&rsquo;s runtime folder, so <code>--command</code> never reaches it. When <code>--command</code> finds no Virtualbricks of yours, it says whose one is running (<a href="#messages">&sect;7</a>).</p>
+
+        <h3>The length of the path</h3>
+        <p>A Unix socket path has at most 107 bytes. <code>/run/user/1000/virtualbricks/.control</code> has 37. When the folder is in a long <code>TMPDIR</code>, Virtualbricks runs without a socket and logs why, and <code>--command</code> says the same. A longer <code>--socket</code> is refused with the other options.</p>
+
+        <h3 id="another">Another path</h3>
+        <p>With <code>--socket PATH</code>, the socket is at <i>PATH</i> and its lock at <i>PATH</i><code>.lock</code>. The default follows the same rule: <code>.control</code> and <code>.control.lock</code>. <code>~</code> is expanded, and a relative path is read from the folder where Virtualbricks starts. The folder must exist, since Virtualbricks doesn&rsquo;t make it. It doesn&rsquo;t have to be private, because the socket&rsquo;s mode 0600 keeps others from connecting. In a folder that others can write to, such as <code>/tmp</code>, they can take the path first or hold its lock, so choose a folder of your own.</p>
+        <p>Virtualbricks removes what is at the path only when it is a socket of yours that nobody answers on. Anything else stays where it is, such as a file given by mistake, and Virtualbricks runs without a socket and logs why. <code>--command</code> connects only to a socket that belongs to you, at either path.</p>
+      </section>
+
+      <section id="protocol">
+        <h2><span class="num">&sect;5</span>The protocol</h2>
+        <p>UTF-8 JSON, one object per line (<a class="ref done" href="#decisions">Q3</a>). On connecting, the server sends a greeting. Then the client sends requests and gets one answer for each, in order, until it closes the connection.</p>
+        <figure class="code">
+          <figcaption>&larr; from Virtualbricks, &rarr; from the client</figcaption>
+<pre><code><span class="c">&larr;</span> {"protocol": 1, "version": "2.1.0", "pid": 4200, "project": "lab1"}
+<span class="c">&rarr;</span> {"line": "brick start sw1", "cwd": "/home/marco/labs"}
+<span class="c">&larr;</span> {"ok": true, "lines": ["sw1 runs, process 4242"]}
+<span class="c">&rarr;</span> {"line": "brick start vm9", "cwd": "/home/marco/labs"}
+<span class="c">&larr;</span> {"ok": false, "lines": [], "error": "No brick named vm9"}</code></pre>
+        </figure>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Message</th><th>Key</th><th>What it is</th></tr></thead>
+          <tbody>
+            <tr><td rowspan="4">greeting</td><td><code>protocol</code></td><td>1. A client that doesn&rsquo;t know the number says so and exits with 2.</td></tr>
+            <tr><td><code>version</code></td><td>The version of the Virtualbricks that runs.</td></tr>
+            <tr><td><code>pid</code></td><td>Its process.</td></tr>
+            <tr><td><code>project</code></td><td>The name of the open project.</td></tr>
+            <tr><td rowspan="2">request</td><td><code>line</code></td><td>The command, as typed in the console.</td></tr>
+            <tr><td><code>cwd</code></td><td>The folder that paths are read from. It is optional; without it, the server uses its own folder.</td></tr>
+            <tr><td rowspan="3">answer</td><td><code>ok</code></td><td>Whether the command was done.</td></tr>
+            <tr><td><code>lines</code></td><td>The answer, or what the command did before it failed.</td></tr>
+            <tr><td><code>error</code></td><td>Only when <code>ok</code> is false: the message, in the language of the Virtualbricks that runs.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>A request that isn&rsquo;t a JSON object with a string <code>line</code> gets <code>ok: false</code> with the reason, and the connection stays open. A line longer than 64&nbsp;KiB closes the connection. The <code>protocol</code> number is there for the day the protocol changes: a Virtualbricks that has run since before an upgrade may speak an older one, and the client then says to restart it.</p>
+        <figure class="code">
+          <figcaption>without the client</figcaption>
+<pre><code><span class="prompt">$</span> socat - UNIX-CONNECT:$XDG_RUNTIME_DIR/virtualbricks/.control
+{"protocol": 1, "version": "2.1.0", "pid": 4200, "project": "lab1"}
+{"line": "status"}
+{"ok": true, "lines": ["Nothing runs"]}</code></pre>
+        </figure>
+      </section>
+
+      <section id="outside">
+        <h2><span class="num">&sect;6</span>Commands from outside</h2>
+        <ul>
+          <li><strong>Every command</strong> of the console works, with the same checks. <code>quit</code> works too, and is refused while bricks run. <code>python</code> isn&rsquo;t a command but something the terminal does, so it isn&rsquo;t available. <code>brick monitor</code> opens its terminal on the display of the Virtualbricks that runs, as its menu does.</li>
+          <li><strong>Paths</strong> (<a class="ref done" href="#decisions">Q6</a>). Two commands take a path: <code>source FILE</code> and <code>image add NAME PATH</code>. They read it from the folder of the request&rsquo;s <code>cwd</code>, so <code>virtualbricks --command source lab.vb</code> runs the <code>lab.vb</code> of the folder you&rsquo;re in. <code>Context</code> gets a <code>cwd</code> and a <code>path()</code> that both commands use. The terminal and the events pass the folder of Virtualbricks, as they do today. <code>KEY=VALUE</code> values are kept as typed, as in the console.</li>
+          <li><strong>Waiting</strong> (<a class="ref done" href="#decisions">Q7</a>). A connection runs its requests one after the other. The answer to <code>brick start</code> comes when the brick runs or fails. Connections don&rsquo;t wait for each other, or for the terminal or the events, just as the terminal and the events don&rsquo;t wait for each other today. The model refuses what can&rsquo;t be done at that moment, such as opening a project while bricks run, or deleting a running brick.</li>
+          <li><strong>The windows.</strong> A brick made from outside appears in the Bricks tab and in the Topology, as one made in the console does, because the windows follow the model.</li>
+          <li><strong>The log.</strong> Each command from outside is logged, and so is its error if it fails, so the Logs window shows what a script did: <code>Command from --command: brick start sw1</code>. A failure that isn&rsquo;t a <code>CommandError</code> is logged with its traceback, as in the console.</li>
+          <li><strong>The language.</strong> The answers are in the language of the Virtualbricks that runs, not in that of the terminal where <code>--command</code> runs.</li>
+        </ul>
+      </section>
+
+      <section id="messages">
+        <h2><span class="num">&sect;7</span>Messages</h2>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>When</th><th><code>--command</code> says</th><th>Exit</th></tr></thead>
+          <tbody>
+            <tr><td>No socket, and no Virtualbricks on the machine</td><td>No Virtualbricks of yours runs. Start one, as <code>virtualbricks --no-gui</code>.</td><td class="num">2</td></tr>
+            <tr><td>No socket, and another user holds the system lock</td><td>No Virtualbricks of yours runs. The one on this machine is process 4242 of bob.</td><td class="num">2</td></tr>
+            <tr><td>A socket that refuses, left behind by a crash</td><td>The same as with no socket.</td><td class="num">2</td></tr>
+            <tr><td>Nothing answers at the path of <code>--socket</code></td><td>No Virtualbricks listens on /home/marco/labs/lab1.sock.</td><td class="num">2</td></tr>
+            <tr><td>Something else is at the path</td><td>/home/marco/notes.txt isn&rsquo;t a socket.</td><td class="num">2</td></tr>
+            <tr><td>Another user&rsquo;s socket is at the path</td><td>/tmp/lab.sock isn&rsquo;t yours: no command sent.</td><td class="num">2</td></tr>
+            <tr><td>The connection closes before the answer</td><td>Virtualbricks closed the connection before it answered: it may have ended.</td><td class="num">2</td></tr>
+            <tr><td>Another protocol</td><td>The Virtualbricks that runs, version 2.1.0, speaks another protocol: restart it.</td><td class="num">2</td></tr>
+            <tr><td>The folder isn&rsquo;t yours alone</td><td>The runtime folder /tmp/virtualbricks-1000 isn&rsquo;t yours alone: no command sent.</td><td class="num">2</td></tr>
+            <tr><td>The path is too long</td><td>The socket&rsquo;s path, <i>path</i>, is longer than 107 bytes.</td><td class="num">2</td></tr>
+            <tr><td>The command fails</td><td><code>Error: No brick named vm9</code>, after what it did before</td><td class="num">1</td></tr>
+            <tr><td>Words without <code>--command</code></td><td>virtualbricks: unexpected words: brick list. To send them to the Virtualbricks that runs: <code>virtualbricks --command brick list</code></td><td class="num">1</td></tr>
+            <tr><td>An option of a run</td><td>virtualbricks: --command takes no --no-gui: it talks to a Virtualbricks that runs</td><td class="num">1</td></tr>
+            <tr><td><code>--socket</code> in a folder that doesn&rsquo;t exist</td><td>virtualbricks: --socket: /home/marco/nope doesn&rsquo;t exist</td><td class="num">1</td></tr>
+            <tr><td>No words, input from a terminal</td><td>virtualbricks: --command needs a command, as <code>virtualbricks --command brick list</code>, or lines on its standard input</td><td class="num">1</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>The Virtualbricks that runs logs these:</p>
+        <ul>
+          <li>info: <code>Process 4200 answers virtualbricks --command; this one doesn't</code></li>
+          <li>warning: <code>The runtime folder /tmp/virtualbricks-1000 isn't yours alone: no control socket</code>, and the same for a path that is too long</li>
+          <li>warning: <code>/home/marco/notes.txt isn't a socket of yours: no control socket</code></li>
+          <li>info: <code>Command from --command: brick start sw1</code>, and its error if it fails</li>
+        </ul>
+      </section>
+
+      <section id="code">
+        <h2><span class="num">&sect;8</span>The code and the tests</h2>
+        <figure class="code">
+          <figcaption>what changes</figcaption>
+<pre><code>virtualbricks/
+&#x251c;&#x2500;&#x2500; console/control.py        <span class="h">new</span> <span class="c">the server: listen(), the protocol, the shutdown</span>
+&#x251c;&#x2500;&#x2500; console/client.py         <span class="h">new</span> <span class="c">--command, with the socket module, no Twisted</span>
+&#x251c;&#x2500;&#x2500; console/command.py        <span class="c">Context.cwd, Context.path()</span>
+&#x251c;&#x2500;&#x2500; console/general.py        <span class="c">source reads its file with path()</span>
+&#x251c;&#x2500;&#x2500; console/images.py         <span class="c">image add too</span>
+&#x251c;&#x2500;&#x2500; locations.py              <span class="c">control_socket(), control_lock_file()</span>
+&#x251c;&#x2500;&#x2500; locks.py                  <span class="c">hold(path): an exclusive lock, or None</span>
+&#x251c;&#x2500;&#x2500; app.py                    <span class="c">--command and its words, --socket, the refused options</span>
+&#x251c;&#x2500;&#x2500; brickfactory.py           <span class="c">Application listens once the project is open</span>
+&#x2514;&#x2500;&#x2500; scripts/virtualbricks.py  <span class="c">--command runs the client, before GTK and the lock</span></code></pre>
+        </figure>
+        <ul>
+          <li><strong>Server.</strong> <code>control.listen(factory, path, reactor)</code> checks the folder, takes the lock, removes a stale socket and calls <code>reactor.listenUNIX(path, ..., mode=0o600)</code>. It adds a <code>before shutdown</code> trigger that stops listening and returns a Deferred that fires once every connection has closed after its last answer. The protocol is a <code>LineOnlyReceiver</code> with a queue of requests, and each request goes through <code>dispatch.run()</code> with a <code>Context</code> that carries its <code>cwd</code>. The GUI&rsquo;s <code>Application</code> inherits <code>_start</code>, so it listens too.</li>
+          <li><strong>Client.</strong> <code>client.main(words, stdin, stdout, stderr)</code> returns the exit status. <code>connect()</code> finds and checks the socket, and <code>talk(sock, lines, cwd, ...)</code> speaks the protocol. It loads neither the Twisted reactor nor <code>gi</code>, so it starts at once.</li>
+          <li><strong>Options.</strong> <code>--command</code> is a flag, and <code>parseArgs</code> keeps the words. Twisted&rsquo;s option parser stops at the first word that isn&rsquo;t an option, so <code>brick start --force sw1</code> reaches the console whole.</li>
+        </ul>
+        <p>Tests, each next to its module:</p>
+        <ul>
+          <li><code>tests/console/test_control.py</code>: the protocol on a fake transport: the greeting, a request and its answer, an error, a bad line, requests in order, a connection lost during a command, the log. <code>listen()</code> in a temporary runtime folder: the lock, a stale socket removed, a second <code>listen()</code> that goes without, a folder that isn&rsquo;t private, a path too long, another path and its lock, a file at the path left alone. The shutdown after the last answer.</li>
+          <li><code>tests/console/test_client.py</code>: <code>talk()</code> against a scripted peer on a socket pair. Each message of &sect;7 and its exit status. The words quoted again. The standard input, with its first error. A fresh process that imports the client loads neither <code>gi</code> nor <code>twisted.internet.reactor</code>.</li>
+          <li><code>test_app.py</code>: <code>--command</code> and its words, <code>--socket</code> and its checks, the refused options, words without <code>--command</code>. <code>test_locks.py</code>: <code>hold()</code>. <code>test_locations.py</code>: the two paths. <code>test_general.py</code> and <code>test_images.py</code>: a relative path read from <code>cwd</code>. <code>test_docs.py</code> already checks that the man page lists every option.</li>
+        </ul>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;9</span>Implementation plan</h2>
+        <p>The work goes on a new branch, <code>mg/control-socket</code>, from <code>mg/console-redesign</code> at 28214a0. It builds on the new console, which isn&rsquo;t in <code>develop</code> yet. There is a commit per step.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">1 Paths</td><td><code>locations.control_socket()</code> and <code>control_lock_file()</code>, <code>locks.hold(path)</code>, <code>Context.cwd</code> and <code>path()</code> for <code>source</code> and <code>image add</code>.</td><td>The paths; <code>hold()</code> held and free; a relative path read from <code>cwd</code>.</td></tr>
+            <tr><td class="nowrap">2 Server</td><td><code>console/control.py</code>: the greeting, the requests and answers, the log, <code>listen()</code> and its checks, the shutdown. <code>--socket PATH</code>. <code>Application._start</code> listens once the project is open, at the default path or at that of <code>--socket</code>.</td><td>As in &sect;8, on fake transports and in a temporary runtime folder.</td></tr>
+            <tr><td class="nowrap">3 Client</td><td><code>console/client.py</code>, at the default path or at that of <code>--socket</code>; <code>--command</code> in <code>app.Options</code>; <code>scripts/virtualbricks.py</code> runs the client before GTK and the lock.</td><td>As in &sect;8: <code>talk()</code>, each message and exit status, no <code>gi</code> and no reactor.</td></tr>
+            <tr><td class="nowrap">4 Docs</td><td><code>virtualbricks(1)</code>: <code>--command</code> in SYNOPSIS, <code>--command</code> and <code>--socket</code> in OPTIONS, the socket in THE CONSOLE, EXIT STATUS, FILES and EXAMPLES; its web page <code>command-line.html</code>. The runtime folder in <code>virtualbricks-config(5)</code> and <code>config-files.html</code>. The README. &ldquo;Since then&rdquo; of pages 13 and 14, and this page&rsquo;s &ldquo;Implemented&rdquo;. The TODO item ticked and moved to DONE.</td><td>The man page is up to date and lists every option.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Before step 4, a run of the whole program. <code>virtualbricks --no-gui --noterm</code> runs in a throwaway workspace, and <code>--command</code> runs from another shell: <code>brick new</code>, <code>brick start</code>, <code>status</code>, <code>brick stop</code>, <code>quit</code>. Then one run with the windows, on Broadway. Every test and check runs with its own <code>XDG_RUNTIME_DIR</code>, so that it never takes or removes the socket of a Virtualbricks you are running.</p>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;10</span>Decisions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Q1</td>
+              <td>Which Virtualbricks listen</td>
+              <td>
+                <p><b>A</b> Every one, with or without the windows, once its project is open. The folder and the socket let only you in.</p>
+                <p><b>B</b> Only one started with an option, <code>--listen</code>.</p>
+                <p><b>C</b> Only one started with <code>--no-gui</code>.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>Q2</td>
+              <td>How <code>--command</code> takes the command</td>
+              <td>
+                <p><b>A</b> The words after it: <code>virtualbricks --command brick start sw1</code>, quoted again for the console. With no words, the lines of the standard input.</p>
+                <p><b>B</b> One argument, the whole line: <code>virtualbricks --command "brick start sw1"</code>, repeated for more commands. A value with spaces needs two levels of quotes.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>Q3</td>
+              <td>The protocol</td>
+              <td>
+                <p><b>A</b> JSON Lines: a greeting, then a request and an answer per line. You can read it with <code>socat</code>, any language can speak it, and there is room for answers as data later.</p>
+                <p><b>B</b> Twisted&rsquo;s AMP: typed commands in length-prefixed boxes. It is robust, but only Twisted speaks it easily, and the client would need Twisted&rsquo;s reactor.</p>
+                <p><b>C</b> Text: the line in; the answer out, then an end line with the status. An answer line that looks like the end line needs escaping.</p>
+              </td>
+              <td class="rec decided">A; AMP next, beside it</td>
+            </tr>
+            <tr>
+              <td>Q4</td>
+              <td>Several Virtualbricks of yours, with <code>--lock none</code></td>
+              <td>
+                <p><b>A</b> The first to start has the socket, and holds <code>.control.lock</code>. The others run without one and log it.</p>
+                <p><b>B</b> A socket for each process, <code>.control-</code><i>pid</i>. <code>--command</code> picks the only one, or needs <code>--pid</code> when there are several.</p>
+                <p><b>C</b> A socket for each workspace. This needs the runtime folders for each workspace that are still an idea (13 &sect;10).</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>Q5</td>
+              <td>When no Virtualbricks answers</td>
+              <td>
+                <p><b>A</b> Say so and exit with 2. When another user&rsquo;s Virtualbricks holds the system lock, say whose it is.</p>
+                <p><b>B</b> Start one without the windows in the background, and send it the command. That leaves a lab running headless that nothing shows.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>Q6</td>
+              <td>The paths of <code>source</code> and <code>image add</code></td>
+              <td>
+                <p><b>A</b> Read from the folder where <code>--command</code> runs, which the request carries.</p>
+                <p><b>B</b> Read from the folder of the Virtualbricks that runs, as its terminal reads them. <code>source lab.vb</code> then depends on where Virtualbricks was started.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>Q7</td>
+              <td>Commands from several places at once</td>
+              <td>
+                <p><b>A</b> Each connection runs its commands in order. Connections, the terminal and the events don&rsquo;t wait for each other, as today.</p>
+                <p><b>B</b> One queue for everything: each command waits for the previous one, wherever it came from. The start of a slow machine then blocks the terminal too.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Your answers, 29 September: as recommended. For Q3, a socket that speaks AMP comes next, and both sockets can be open at the same time. You also asked for an option that takes another path for the socket: <code>--socket PATH</code>.</p>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;11</span>Later</h2>
+        <p>These go under IDEAS in the TODO.</p>
+        <ul>
+          <li>A second socket that speaks Twisted&rsquo;s AMP, for programs written with Twisted, open at the same time as the JSON one (Q3).</li>
+          <li>An interactive console on the Virtualbricks that runs, <code>virtualbricks --attach</code>, with the line editing, the history and the completion of its terminal. Completion needs a request of its own.</li>
+          <li>Answers as data, for <code>brick list --json</code>, carried by the protocol as they are.</li>
+          <li>A socket for each workspace, with the runtime folders that tell apart projects of the same name (13 &sect;10).</li>
+          <li>A way to turn the socket off, <code>--no-control</code> or a setting, if anyone wants a Virtualbricks that can&rsquo;t be reached.</li>
+          <li>Answers in the language of the terminal where <code>--command</code> runs.</li>
+          <li>A connection that follows what changes, <code>watch</code>, for a status bar or another program.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>

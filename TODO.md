@@ -25,6 +25,8 @@
   of the same name (13 §10)
   - `--lock none` lets the second one start, but nothing keeps them
     apart
+  - a control socket for each workspace too, so that `--command`
+    reaches either (15 §11)
 - [ ] Switch to another workspace from the GUI, and list the workspaces
   used, which `state.toml` already has
 - [ ] Open several projects at once (04 §11: D6 rules it out for now)
@@ -165,7 +167,8 @@
 
 ## Console
 
-- [ ] Answer in JSON for scripts, as `brick list --json` (14 §11)
+- [ ] Answer in JSON for scripts, as `brick list --json` (14 §11); the
+  control socket's protocol carries them as they are (15 §11)
 - [ ] Import and export archives from the console (14 §11)
 - [ ] Make new disk images from the console: `image new NAME SIZE`, with
   `qemu-img` (14 §11)
@@ -178,6 +181,18 @@
   `br st sw1` (14 §11)
 - [ ] More keys of readline: Alt+. for the last argument of the command
   before, as a brick's name, and Ctrl+_ to undo an edit
+- [ ] Open a second control socket that speaks Twisted's AMP, for
+  programs written with Twisted; both sockets open at the same time
+  (15 §10 Q3, §11)
+- [ ] Attach an interactive console to the Virtualbricks that runs,
+  `virtualbricks --attach`, with the editing, history and completion of
+  its terminal; the completion needs a request of its own (15 §11)
+- [ ] Turn the control socket off, with `--no-control` or a setting, if
+  anyone wants a Virtualbricks that can't be reached (15 §11)
+- [ ] Answer `--command` in the language of its own terminal, not in
+  that of the Virtualbricks that runs (15 §11)
+- [ ] Follow what changes through the control socket, `watch`, for a
+  status bar or another program (15 §11)
 
 ## Waiting
 
