@@ -431,6 +431,11 @@ class Brick(base.Base):
 
         raise NotImplementedError("Brick.command")
 
+    def needsudo(self):
+        """Whether the program of the brick runs through sudo."""
+
+        return False
+
     def spawn(self, command):
         """
         Start the program of a Command.

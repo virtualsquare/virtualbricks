@@ -74,9 +74,6 @@ class Base:
     def get_type(self):
         return self.type
 
-    def needsudo(self):
-        return False
-
     def _check_option(self, name):
         if name not in field_names(self.config):
             raise KeyError(
