@@ -1,0 +1,755 @@
+<title>Network Sockets</title>
+<meta name="description" content="Network sockets for Virtualbricks: --socket opens tcp and ssl sockets beside the unix ones, and each connection proves that it knows the token, or shows a client certificate, before it can run a command.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  .ref.open { color: var(--decide); background: var(--decide-soft); }
+
+  /* pages 14, 15, 16 and 17 */
+  .chip {
+    display: inline-block;
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.04em;
+    padding: 3px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    vertical-align: 1px;
+    color: var(--risk);
+    background: var(--risk-soft);
+  }
+  .prompt { color: var(--code-h); font-weight: 500; }
+  table.commands td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.commands td:last-child { color: var(--muted); font-size: 13.5px; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+  .note { font-size: 14px; color: var(--muted); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 17 &middot; Design &middot; revision 2, decided</div>
+    <h1>Virtualbricks Network Sockets</h1>
+    <p class="lede"><code>--socket</code> opens <code>tcp</code> and <code>ssl</code> sockets beside the <code>unix</code> ones, on this machine and across the network. Before it answers anything, each connection shows who it is: it proves that it knows the token of Virtualbricks, or, over <code>ssl</code>, shows a certificate that Virtualbricks trusts.</p>
+    <ul class="meta">
+      <li>branch <b>develop</b> at a6dcd00</li>
+      <li>revision 2 &middot; 29 September 2026</li>
+      <li><span class="status">decided</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your request of today: implement the IDEAS item &ldquo;Listen on <code>tcp</code> and <code>ssl</code> sockets too, on this machine and across the network, with a way to know who connects, a token or the certificates of the clients: a connection can run shell commands through an event&rsquo;s actions&rdquo;, which is M6 and &sect;10 of <a href="16%20-%20amp-socket.html#decisions">page 16</a>, and make a plan first. Both protocols, text and AMP, work on the new types, and <code>--command</code> reaches them too.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 records your answer to the seven questions, N1 to N7 of <a href="#decisions">&sect;11</a>: every one as recommended. The smaller choices, listed under the table, are mine. The page is the first commit of <code>mg/network-sockets</code>.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>Today</a></li>
+        <li><a href="#descriptions"><span>3</span>The descriptions</a></li>
+        <li><a href="#token"><span>4</span>The token</a></li>
+        <li><a href="#certificates"><span>5</span>Certificates</a></li>
+        <li><a href="#protocols"><span>6</span>The protocols</a></li>
+        <li><a href="#command"><span>7</span>--command</a></li>
+        <li><a href="#messages"><span>8</span>Messages</a></li>
+        <li><a href="#code"><span>9</span>The code and the tests</a></li>
+        <li><a href="#plan"><span>10</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>11</span>Decisions</a></li>
+        <li><a href="#later"><span>12</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Types</dt><dd><code>--socket tcp:8765</code> and <code>--socket ssl:8765:privateKey=FILE</code>, beside <code>unix:PATH</code>, each with <code>protocol=text</code> or <code>amp</code>. The option can still be given more than once, and each socket goes on its own.</dd></div>
+          <div><dt>Where</dt><dd>On <code>127.0.0.1</code> unless <code>interface=</code> names another address (<a class="ref done" href="#decisions">N4</a>). Plain <code>tcp</code> stays on this machine; across the network, <code>ssl</code> (<a class="ref done" href="#decisions">N3</a>).</dd></div>
+          <div><dt>Token</dt><dd><code>~/.config/virtualbricks/token</code>, made at the first start that needs it and kept, so that a client machine copies it once; <code>tokenFile=</code> names another (<a class="ref done" href="#decisions">N1</a>).</dd></div>
+          <div><dt>Proof</dt><dd>The token never crosses the wire. Each end proves that it knows it, with an HMAC over a random value of each end. A program that takes the port before Virtualbricks learns nothing from a client (<a class="ref done" href="#decisions">N2</a>).</dd></div>
+          <div><dt>Certificates</dt><dd><code>ssl</code> always encrypts, and the client checks the certificate of Virtualbricks. With <code>caCertsDir=FOLDER</code>, each client shows a certificate that the folder trusts, in place of the token (<a class="ref done" href="#decisions">N5</a>).</dd></div>
+          <div><dt>Unix</dt><dd>Nothing changes: a <code>unix</code> socket is yours alone and takes neither a token nor a certificate.</dd></div>
+          <div><dt>Protocols</dt><dd>The text protocol gets a handshake before its greeting. AMP gets <code>Challenge</code> and <code>Authenticate</code>, and <code>ampwire.authenticate()</code> does both for a program.</dd></div>
+          <div><dt>Log</dt><dd>Each connection to <code>tcp</code> or <code>ssl</code> is logged with its address, and with the name of its certificate. Refusals are warnings.</dd></div>
+          <div><dt>--command</dt><dd><code>--socket tcp:8765 --command status</code> on this machine; <code>--socket ssl:lab.example:8765:caCertsDir=~/vb/lab --command status</code> from another (<a class="ref done" href="#decisions">N6</a>). It sends its folder only to this machine.</dd></div>
+          <div><dt>pyOpenSSL</dt><dd><code>Twisted[tls]</code> becomes a dependency. The Twisted package of every supported distribution already depends on pyOpenSSL (<a class="ref done" href="#decisions">N7</a>).</dd></div>
+          <div><dt>Plan</dt><dd>Four steps, a commit each, on a new branch <code>mg/network-sockets</code> from <code>develop</code> (<a href="#plan">&sect;10</a>).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>Today</h2>
+        <p>Page 16 made <code>--socket</code> take descriptions in the syntax of Twisted&rsquo;s endpoints, each with its protocol. Only <code>unix</code> is accepted; <code>tcp</code> and <code>ssl</code> are known and refused (16 M6). A <code>unix</code> socket is 0600 in a folder that is yours, so only you and root can connect.</p>
+        <p>What a connection can do is what the console does. That includes <code>event new e1 shell "&hellip;"</code> and <code>event start e1</code>, which run a shell command as you (page 14). A port is a different kind of door: on <code>127.0.0.1</code>, every user of this machine can knock, and so can a container that shares its network. Across the network, anyone who reaches the port can, and anyone on the way can read or change what passes. So a <code>tcp</code> or <code>ssl</code> socket has to know who connects before it answers anything. That is most of this page. The commands, <code>dispatch.run()</code>, the order of requests and the end of a connection stay as pages 15 and 16 made them.</p>
+        <figure class="code">
+          <figcaption>three kinds of door, one Virtualbricks</figcaption>
+<pre><code>--command, a program &#x2500;&#x2500; unix &#x2500;&#x25b6; .control, unix:PATH   <span class="c">0600, yours alone</span>     &#x2500;&#x2510;
+--command, a program &#x2500;&#x2500; tcp &#x2500;&#x2500;&#x25b6; 127.0.0.1 port 8765   <span class="c">the token</span>             &#x2500;&#x253c;&#x2500;&#x25b6; dispatch.run()
+--command, a program &#x2500;&#x2500; ssl &#x2500;&#x2500;&#x25b6; 0.0.0.0 port 8765     <span class="c">the token, or a</span>       &#x2500;&#x2518;
+                                                     <span class="c">client certificate</span></code></pre>
+        </figure>
+      </section>
+
+      <section id="descriptions">
+        <h2><span class="num">&sect;3</span>The descriptions</h2>
+        <figure class="code">
+          <figcaption>the Virtualbricks that listens</figcaption>
+<pre><code><span class="c"># tcp on this machine, with the token that Virtualbricks makes</span>
+<span class="prompt">$</span> virtualbricks --no-gui --socket tcp:8765
+
+<span class="c"># AMP over tcp, beside the text socket in the runtime folder</span>
+<span class="prompt">$</span> virtualbricks --no-gui --socket --socket tcp:8766:protocol=amp
+
+<span class="c"># ssl on every IPv4 address, key and certificate in one file, the token</span>
+<span class="prompt">lab$</span> virtualbricks --no-gui --socket ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.pem
+
+<span class="c"># ssl that asks each client for a certificate, in place of the token</span>
+<span class="prompt">lab$</span> virtualbricks --no-gui \
+        --socket ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.pem:caCertsDir=~/vb/clients</code></pre>
+        </figure>
+
+        <h3>The keywords</h3>
+        <p>They are Twisted&rsquo;s, with the same meaning, except <code>protocol</code> and <code>tokenFile</code>, which are ours, and <code>caCertsDir</code>, which Twisted has only in its client descriptions (<a href="#certificates">&sect;5</a>). Each file is a path: <code>~</code> is expanded, and a relative path is read from the folder where Virtualbricks starts.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Keyword</th><th>unix</th><th>tcp</th><th>ssl</th><th>What it is</th></tr></thead>
+          <tbody>
+            <tr><td>first part</td><td><i>PATH</i></td><td><i>PORT</i></td><td><i>PORT</i></td><td>The path, or the port, 1 to 65535.</td></tr>
+            <tr><td><code>address</code>, <code>port</code></td><td class="yes">address</td><td class="yes">port</td><td class="yes">port</td><td>The same, as a keyword.</td></tr>
+            <tr><td><code>protocol</code></td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td><code>text</code>, the default, or <code>amp</code>.</td></tr>
+            <tr><td><code>interface</code></td><td class="no">no</td><td class="yes">yes</td><td class="yes">yes</td><td>The address to listen on, an IP address: <code>127.0.0.1</code> without it (<a class="ref done" href="#decisions">N4</a>). For <code>tcp</code>, a loopback address only (<a class="ref done" href="#decisions">N3</a>).</td></tr>
+            <tr><td><code>tokenFile</code></td><td class="no">no</td><td class="yes">yes</td><td class="yes">yes</td><td>The file of the token; <code>~/.config/virtualbricks/token</code> without it (<a class="ref done" href="#decisions">N1</a>).</td></tr>
+            <tr><td><code>privateKey</code></td><td class="no">no</td><td class="no">no</td><td class="yes">needed</td><td>The key of the certificate of Virtualbricks, PEM.</td></tr>
+            <tr><td><code>certKey</code></td><td class="no">no</td><td class="no">no</td><td class="yes">yes</td><td>The certificate, PEM; the file of <code>privateKey</code> without it, as Twisted does.</td></tr>
+            <tr><td><code>extraCertChain</code></td><td class="no">no</td><td class="no">no</td><td class="yes">yes</td><td>The certificates between it and its authority, for a certificate that one issued.</td></tr>
+            <tr><td><code>caCertsDir</code></td><td class="no">no</td><td class="no">no</td><td class="yes">yes</td><td>A folder of <code>.pem</code> certificates. Each client shows a certificate that one of them issued, or one of them; no token then (<a class="ref done" href="#decisions">N5</a>).</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Twisted&rsquo;s <code>backlog</code>, <code>sslmethod</code> and <code>dhParameters</code> are refused, as <code>mode</code> and <code>lockfile</code> are for <code>unix</code>. The escapes are those of page 16, so an IPv6 address has its colons escaped and goes in single quotes: <code>'tcp:8765:interface=\:\:1'</code>.</p>
+
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Options</th><th>Listens on</th><th>Who connects</th></tr></thead>
+          <tbody>
+            <tr><td><code>--socket tcp:8765</code></td><td><code>127.0.0.1</code> port 8765, text</td><td>the token</td></tr>
+            <tr><td><code>--socket tcp:8765:protocol=amp</code></td><td>the same, AMP</td><td>the token</td></tr>
+            <tr><td><code>--socket 'tcp:8765:interface=\:\:1'</code></td><td><code>::1</code> port 8765, text</td><td>the token</td></tr>
+            <tr><td><code>--socket tcp:8765:tokenFile=~/vb/lab1.token</code></td><td><code>127.0.0.1</code> port 8765, text</td><td>the token of that file</td></tr>
+            <tr><td><code>--socket ssl:8765:privateKey=~/vb/lab.key:certKey=~/vb/lab.pem</code></td><td><code>127.0.0.1</code> port 8765, TLS</td><td>the token</td></tr>
+            <tr><td><code>--socket ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.pem</code></td><td>every IPv4 address, TLS</td><td>the token</td></tr>
+            <tr><td><code>--socket ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.pem:caCertsDir=~/vb/clients</code></td><td>every IPv4 address, TLS</td><td>a certificate of <code>~/vb/clients</code></td></tr>
+            <tr><td><code>--socket tcp:8765:interface=0.0.0.0</code></td><td colspan="2">refused: <code>tcp</code> stays on this machine; across the network, <code>ssl</code> (<a class="ref done" href="#decisions">N3</a>)</td></tr>
+            <tr><td><code>--socket ssl:8765</code></td><td colspan="2">refused: <code>ssl</code> needs <code>privateKey=FILE</code></td></tr>
+            <tr><td><code>--socket tcp:127.0.0.1:8765</code></td><td colspan="2">refused: the address to listen on is <code>interface=127.0.0.1</code></td></tr>
+            <tr><td><code>--socket tcp:0</code></td><td colspan="2">refused: the port is a number from 1 to 65535; no client could find port 0</td></tr>
+            <tr><td><code>--socket unix:~/lab.sock:tokenFile=~/vb/t</code></td><td colspan="2">refused: the keywords of <code>unix</code> are <code>address</code> and <code>protocol</code></td></tr>
+          </tbody>
+        </table>
+        </div>
+
+        <h3>Checks with the options</h3>
+        <ul>
+          <li><strong>The files</strong> of <code>ssl</code> are read with the other options: the certificate and its key must load and match, and <code>caCertsDir</code> must hold at least one <code>.pem</code> certificate. A wrong file stops the start with a message, rather than a warning in the log once the project is open. They are read again when the socket opens.</li>
+          <li><strong>The token file</strong> is checked if it is there (<a href="#token">&sect;4</a>). One that isn&rsquo;t there yet is made when the socket opens.</li>
+          <li><strong>The same address and port twice</strong> are refused, whatever the types: <code>tcp:8765</code> and <code>ssl:8765</code> would both be <code>127.0.0.1</code> port 8765. Addresses that overlap, such as <code>0.0.0.0</code> and <code>127.0.0.1</code> on one port, are found when the second socket opens, and it goes without.</li>
+        </ul>
+
+        <h3>Who has each</h3>
+        <p>A port has no lock file: the operating system gives it to one process. The first Virtualbricks that opens it listens there; another gets <code>Address already in use</code>, goes without that socket and logs it. Unlike the lock of a <code>unix</code> socket, a port doesn&rsquo;t say which process holds it. The rest is as on page 16: each socket opens on its own once the project is open, and at the end each connection is closed after its last answer.</p>
+      </section>
+
+      <section id="token">
+        <h2><span class="num">&sect;4</span>The token</h2>
+        <ul>
+          <li><strong>The file.</strong> <code>$XDG_CONFIG_HOME/virtualbricks/token</code>, one line (<a class="ref done" href="#decisions">N1</a>). The first start with a <code>tcp</code> or <code>ssl</code> socket that needs a token makes it, with 32 random bytes of <code>secrets</code> written as 43 characters, mode 0600, and logs that it did. It stays, so the next start has the same token, and a client machine copies it once.</li>
+          <li><strong>Another file.</strong> <code>tokenFile=FILE</code> names another, for a lab whose token you give to someone who shouldn&rsquo;t have your usual one. Virtualbricks makes that file too, if it isn&rsquo;t there. <code>--command</code> never makes one.</li>
+          <li><strong>Never in the arguments.</strong> <code>tokenFile=</code> takes a file, not the token: the arguments of every process can be read by every user of the machine, with <code>ps</code>.</li>
+          <li><strong>Checks.</strong> The file must be yours, and neither the group nor others may read it; otherwise it is refused with <code>chmod 600 FILE</code> in the message, as <code>ssh</code> does with its keys. Spaces and the newline at its ends don&rsquo;t count. A token must have at least 16 characters, so that <code>1234</code>, written by hand, is refused. <code>--command</code> checks the same.</li>
+          <li><strong>A new token.</strong> Delete the file, or write another token in it, and start Virtualbricks again: it reads the file once, at start. Then copy it to the clients again.</li>
+        </ul>
+
+        <h3>The proof</h3>
+        <p>Neither end sends the token (<a class="ref done" href="#decisions">N2</a>). On connecting, Virtualbricks sends a nonce, 32 random bytes in hex. The client answers with its own nonce and a proof: the HMAC-SHA256, under the token, of both nonces. Virtualbricks checks it with <code>hmac.compare_digest</code> and answers with its own proof, over the same nonces, which the client checks in turn:</p>
+        <figure class="code">
+          <figcaption>the two proofs, in hex</figcaption>
+<pre><code>client = HMAC-SHA256(token, "virtualbricks client " + nonce of Virtualbricks + " " + nonce of the client)
+server = HMAC-SHA256(token, "virtualbricks server " + nonce of Virtualbricks + " " + nonce of the client)</code></pre>
+        </figure>
+        <ul>
+          <li><strong>A port taken first.</strong> Any user can open a free port of <code>127.0.0.1</code>. Someone who opens 8765 while your Virtualbricks isn&rsquo;t running gets, from <code>--command</code>, a proof over a nonce of their own, which opens nothing: the real Virtualbricks sends a new nonce each time. And <code>--command</code> stops there, since that end has no proof to give back.</li>
+          <li><strong>Ten seconds.</strong> A connection that hasn&rsquo;t proved itself in 10 seconds is closed. Before its proof, a connection can send only the proof; anything else is answered with an error, and the connection is closed.</li>
+          <li><strong>A wrong proof</strong> gets the error <code>Wrong token</code>, and the connection is closed. The log warns, with the address.</li>
+          <li><strong>Guessing.</strong> A token of 32 random bytes can&rsquo;t be guessed one connection at a time, so there is no limit on attempts for now (<a href="#later">&sect;12</a>).</li>
+        </ul>
+      </section>
+
+      <section id="certificates">
+        <h2><span class="num">&sect;5</span>Certificates</h2>
+        <ul>
+          <li><strong>Always.</strong> <code>ssl</code> encrypts what passes, and the client checks the certificate of Virtualbricks: the client knows that it talks to the right machine, and nobody on the way reads the commands or changes them.</li>
+          <li><strong>The certificate of Virtualbricks</strong> is <code>privateKey</code> and <code>certKey</code>, Twisted&rsquo;s keywords. A client trusts it through <code>caCertsDir=</code>, a folder with the certificate itself or its authority; without it, through the authorities of its system, for a certificate from a public one.</li>
+          <li><strong>Client certificates</strong> (<a class="ref done" href="#decisions">N5</a>). With <code>caCertsDir=FOLDER</code>, each client shows a certificate that one of the <code>.pem</code> files of the folder issued, or that is one of them. So the folder holds an authority of the lab, or the self-signed certificate of each client. A client without one, or with another, is refused during the TLS handshake, before a byte of it reaches Virtualbricks. There is no token then: the greeting comes right after the handshake.</li>
+          <li><strong>Who it is.</strong> The log names each connection by the common name of its certificate: <code>alice-laptop</code>.</li>
+          <li><strong>A client that goes.</strong> Remove its certificate from the folder and start Virtualbricks again, which reads the folder once, at start.</li>
+          <li><strong>Twisted.</strong> Its server <code>ssl:</code> has no keyword for client certificates. Virtualbricks borrows <code>caCertsDir</code> from Twisted&rsquo;s client descriptions, where it names the certificates that a client trusts, and builds the TLS options itself, with <code>CertificateOptions(trustRoot=...)</code>.</li>
+        </ul>
+        <figure class="code">
+          <figcaption>making the certificates, with openssl</figcaption>
+<pre><code><span class="c"># the certificate of the lab machine, for its name and its address</span>
+<span class="prompt">lab$</span> openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+        -nodes -days 3650 -subj /CN=lab.example \
+        -addext subjectAltName=DNS:lab.example,IP:192.0.2.7 \
+        -keyout ~/vb/lab.key -out ~/vb/lab.pem
+
+<span class="c"># a client's own certificate; its .pem goes into ~/vb/clients on the lab</span>
+<span class="prompt">laptop$</span> openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+        -nodes -days 3650 -subj /CN=alice-laptop \
+        -keyout ~/vb/alice.key -out ~/vb/alice.pem</code></pre>
+        </figure>
+        <p class="note">Checked with Twisted 24.11 and pyOpenSSL 25 in the job&rsquo;s folder, with certificates made as above: a client whose self-signed certificate was in the folder was let in, and its common name was there once the handshake completed; one with another certificate got <code>unknown ca</code>, and one without got <code>certificate required</code>. Python&rsquo;s own <code>ssl</code> module checked the self-signed certificate of the server by its IP address, and refused it when given another certificate to trust.</p>
+      </section>
+
+      <section id="protocols">
+        <h2><span class="num">&sect;6</span>The protocols</h2>
+        <h3>Text</h3>
+        <p>On a socket that needs a token, the first line says so and carries the nonce. The greeting of page 15 comes once the proof is right, with the proof of Virtualbricks:</p>
+        <figure class="code">
+          <figcaption>&rarr; from the client, &larr; from Virtualbricks</figcaption>
+<pre><code><span class="c">&larr;</span> {"protocol": 1, "auth": "token", "nonce": "3f9a&hellip;"}
+<span class="c">&rarr;</span> {"nonce": "c41d&hellip;", "proof": "8e02&hellip;"}
+<span class="c">&larr;</span> {"protocol": 1, "version": "2.1.0", "pid": 4200, "project": "lab1", "proof": "51b7&hellip;"}
+<span class="c">&rarr;</span> {"line": "brick list"}
+<span class="c">&larr;</span> {"ok": true, "lines": ["sw1 switch, stopped"]}
+
+<span class="c">a wrong proof, and the connection closes:</span>
+<span class="c">&larr;</span> {"ok": false, "lines": [], "error": "Wrong token"}</code></pre>
+        </figure>
+        <ul>
+          <li>On a <code>unix</code> socket, and on <code>ssl</code> with client certificates, the greeting is the first line, as today.</li>
+          <li><code>protocol</code> stays 1: the greeting and the requests don&rsquo;t change, and the new first line comes only on the new types, which no client of today reaches.</li>
+          <li>A program computes the proof with the HMAC of its language. By hand, with <code>socat</code> or <code>openssl s_client</code>, <code>openssl dgst -sha256 -hmac</code> computes it.</li>
+        </ul>
+
+        <h3>AMP</h3>
+        <p>Two commands and two errors join <code>ampwire.py</code>, with a function that runs the handshake for a program:</p>
+        <figure class="code">
+          <figcaption>virtualbricks/console/ampwire.py, what it adds</figcaption>
+<pre><code><span class="h">class</span> TokenNeeded(Exception):
+    <span class="c">"""The socket answers once the program proves that it knows the token."""</span>
+
+<span class="h">class</span> WrongToken(Exception):
+    <span class="c">"""The proof doesn't match the token, or the socket takes none."""</span>
+
+<span class="h">class</span> Challenge(amp.Command):
+    <span class="c">"""The nonce of Virtualbricks, to prove the token over."""</span>
+    response = [(b"nonce", amp.Unicode())]
+    errors = {WrongToken: b"WRONG_TOKEN"}
+
+<span class="h">class</span> Authenticate(amp.Command):
+    <span class="c">"""The nonce and the proof of the program; the proof of Virtualbricks."""</span>
+    arguments = [(b"nonce", amp.Unicode()), (b"proof", amp.Unicode())]
+    response = [(b"proof", amp.Unicode())]
+    errors = {WrongToken: b"WRONG_TOKEN"}
+
+<span class="h">def</span> proof(token, side, theirs, mine):
+    message = f"virtualbricks {side} {theirs} {mine}"
+    <span class="h">return</span> hmac.new(token.encode(), message.encode(), "sha256").hexdigest()
+
+<span class="h">async def</span> authenticate(vb, token):
+    <span class="c">"""Prove to the Virtualbricks of vb, an AMP connection, that you know token."""</span>
+    mine = secrets.token_hex(32)
+    theirs = (<span class="h">await</span> vb.callRemote(Challenge))["nonce"]
+    answer = <span class="h">await</span> vb.callRemote(
+        Authenticate, nonce=mine, proof=proof(token, "client", theirs, mine)
+    )
+    <span class="h">if not</span> hmac.compare_digest(answer["proof"], proof(token, "server", theirs, mine)):
+        <span class="h">raise</span> WrongToken("The other end doesn't know the token")</code></pre>
+        </figure>
+        <ul>
+          <li><strong>Before the proof</strong>, <code>Hello</code> and <code>Run</code> fail with <code>TokenNeeded</code>, which joins their <code>errors</code>. A program with the definitions of page 16 gets it as AMP&rsquo;s <code>UnknownRemoteError</code>, still a failure. The names and arguments of both stay, so <code>protocol</code> stays 1.</li>
+          <li><strong>A wrong proof</strong> fails with <code>WrongToken</code>, and the connection is closed. So do <code>Challenge</code> and <code>Authenticate</code> on a socket that takes no token, with a message that says so.</li>
+          <li><strong>Ten seconds</strong> to prove, as on the text socket.</li>
+          <li><code>ampwire.py</code> still loads no reactor and nothing of Virtualbricks: <code>hmac</code> and <code>secrets</code> are Python&rsquo;s. It has its own copy of <code>proof()</code>, and a test checks that it gives what <code>wire.proof()</code> gives.</li>
+        </ul>
+        <figure class="code">
+          <figcaption>lab-status.py, for ssl:8765 on lab.example, with the token</figcaption>
+<pre><code><span class="h">import</span> os
+
+<span class="h">from</span> twisted.internet <span class="h">import</span> endpoints, task
+<span class="h">from</span> twisted.internet.defer <span class="h">import</span> ensureDeferred
+<span class="h">from</span> twisted.protocols <span class="h">import</span> amp
+
+<span class="h">from</span> virtualbricks.console.ampwire <span class="h">import</span> Run, authenticate
+
+
+<span class="h">async def</span> main(reactor):
+    trust = os.path.expanduser("~/vb/lab")
+    endpoint = endpoints.clientFromString(
+        reactor, f"tls:lab.example:8765:trustRoots={trust}"
+    )
+    vb = <span class="h">await</span> endpoints.connectProtocol(endpoint, amp.AMP())
+    <span class="h">with</span> open(os.path.expanduser("~/.config/virtualbricks/token")) <span class="h">as</span> f:
+        <span class="h">await</span> authenticate(vb, f.read().strip())
+    answer = <span class="h">await</span> vb.callRemote(Run, line="status")
+    print("\n".join(answer["lines"]))
+    vb.transport.loseConnection()
+
+task.react(<span class="h">lambda</span> reactor: ensureDeferred(main(reactor)))</code></pre>
+        </figure>
+        <ul>
+          <li>The program uses Twisted&rsquo;s <code>tls:</code> client, which checks the name in the certificate; its client <code>ssl:</code> doesn&rsquo;t. <code>trustRoots</code> is a folder of <code>.pem</code> files. With a client certificate, <code>:certificate=&hellip;:privateKey=&hellip;</code> joins the description, and there is no <code>authenticate()</code>. Checked with Twisted 24.11: that description reached a server that asked for a client certificate.</li>
+          <li>Over <code>tcp</code> on this machine: <code>tcp:127.0.0.1:8766</code>, then <code>authenticate()</code>.</li>
+        </ul>
+      </section>
+
+      <section id="command">
+        <h2><span class="num">&sect;7</span>--command</h2>
+        <figure class="code">
+          <figcaption>the client</figcaption>
+<pre><code><span class="c"># on this machine: the description that Virtualbricks listens on</span>
+<span class="prompt">$</span> virtualbricks --socket tcp:8765 --command status
+
+<span class="c"># from another machine, with the token copied into ~/.config/virtualbricks</span>
+<span class="prompt">laptop$</span> virtualbricks --socket ssl:lab.example:8765:caCertsDir=~/vb/lab --command status
+
+<span class="c"># with a client certificate, in place of the token</span>
+<span class="prompt">laptop$</span> virtualbricks \
+        --socket ssl:lab.example:8765:caCertsDir=~/vb/lab:privateKey=~/vb/alice.key:certKey=~/vb/alice.pem \
+        --command brick start sw1</code></pre>
+        </figure>
+        <ul>
+          <li><strong>The machine</strong> (<a class="ref done" href="#decisions">N6</a>). Twisted&rsquo;s client form: <code>tcp:HOST:PORT</code>, or <code>host=</code> and <code>port=</code>. <code>tcp:PORT</code> alone is <code>127.0.0.1</code>, so <code>tcp:8765</code> is the same on both ends. <code>interface=</code> is refused with <code>--command</code>, with a message that shows <code>host=</code>.</li>
+          <li><strong>The keywords</strong> of <code>--command</code>: <code>host</code>, <code>port</code>, <code>protocol</code> (text) and <code>tokenFile</code>; for <code>ssl</code>, also <code>caCertsDir</code>, the certificates it trusts for Virtualbricks, and <code>privateKey</code> and <code>certKey</code>, its own certificate, when Virtualbricks asks for one. Those are the keywords of Twisted&rsquo;s client <code>ssl:</code>.</li>
+          <li><strong>The token</strong> is that of <code>tokenFile=</code>, or the default file. It must be there, yours, and unreadable by others. <code>--command</code> sends only the proof, and checks the proof of Virtualbricks before it sends the command.</li>
+          <li><strong>The folder.</strong> <code>cwd</code> goes with each request over <code>unix</code>, and over <code>tcp</code> or <code>ssl</code> when the other end is a loopback address. To another machine it isn&rsquo;t sent, since its folders aren&rsquo;t that machine&rsquo;s: a relative path is read from the folder of that Virtualbricks, as for a request without <code>cwd</code> (15 Q6).</li>
+          <li><strong>Waiting.</strong> 10 seconds to connect and prove. Then as long as the command takes, as today.</li>
+          <li><strong>What it loads.</strong> Python&rsquo;s <code>socket</code>, <code>ssl</code>, <code>hmac</code> and <code>secrets</code>; still neither Twisted nor pyOpenSSL. The exit statuses stay those of page 15: 2 when nothing answers the command, a refused token or certificate included.</li>
+        </ul>
+      </section>
+
+      <section id="messages">
+        <h2><span class="num">&sect;8</span>Messages</h2>
+        <p>The option, checked with the others. Each message starts with <code>virtualbricks: --socket: </code> and exits with 1:</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>When</th><th>The message goes on with</th></tr></thead>
+          <tbody>
+            <tr><td><code>tcp</code> beyond this machine</td><td><code>tcp:8765:interface=0.0.0.0: tcp listens on this machine only, as interface=127.0.0.1 or ::1; across the network, ssl</code></td></tr>
+            <tr><td>No port</td><td><code>tcp: needs a port, as tcp:8765</code></td></tr>
+            <tr><td>Not a port</td><td><code>tcp:http: the port is a number from 1 to 65535</code></td></tr>
+            <tr><td>An address before the port</td><td><code>tcp:127.0.0.1:8765: the address to listen on is interface=127.0.0.1</code></td></tr>
+            <tr><td>Not an address</td><td><code>tcp:8765:interface=lab.example: the interface is an IP address, as 127.0.0.1 or ::1</code></td></tr>
+            <tr><td>Another keyword</td><td><code>tcp:8765:backlog=5: unknown keyword backlog; the keywords of tcp are port, interface, protocol and tokenFile</code></td></tr>
+            <tr><td><code>ssl</code> without a key</td><td><code>ssl:8765 needs privateKey=FILE, the key of its certificate</code></td></tr>
+            <tr><td>A file of <code>ssl</code></td><td><code>/home/marco/vb/lab.pem doesn't exist</code>, <code>&hellip; isn't a certificate in PEM</code>, <code>the key /home/marco/vb/lab.key isn't that of the certificate /home/marco/vb/lab.pem</code>, <code>/home/marco/vb/clients has no .pem certificate</code></td></tr>
+            <tr><td>The token file</td><td><code>others can read /home/marco/vb/lab1.token: chmod 600 /home/marco/vb/lab1.token</code>, <code>&hellip; isn't yours</code>, <code>the token of /home/marco/vb/lab1.token has 5 characters; a token has at least 16</code></td></tr>
+            <tr><td>Twice</td><td><code>127.0.0.1 port 8765 is given twice</code></td></tr>
+            <tr><td>No pyOpenSSL</td><td><code>ssl needs pyOpenSSL: the package python3-openssl</code>, for an install that lacks it in spite of <a class="ref done" href="#decisions">N7</a></td></tr>
+            <tr><td>With <code>--command</code>, <code>interface=</code></td><td><code>--command reaches the machine of host=, as tcp:lab.example:8765; interface= is where Virtualbricks listens</code></td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p><code>--command</code>, in the language of the Virtualbricks it runs from, exits with 2:</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>When</th><th><code>--command</code> says</th></tr></thead>
+          <tbody>
+            <tr><td>Nothing on the port</td><td><code>Nothing listens on 127.0.0.1 port 8765. Start Virtualbricks with --socket tcp:8765</code>; for another machine, the first sentence alone</td></tr>
+            <tr><td>No answer</td><td><code>lab.example port 8765 didn't answer in 10 seconds</code></td></tr>
+            <tr><td>No such machine</td><td><code>Can't find lab.example: Name or service not known</code></td></tr>
+            <tr><td>No token file</td><td><code>No token: /home/alice/.config/virtualbricks/token doesn't exist. Copy the one of the machine where Virtualbricks runs, or name another with tokenFile=</code></td></tr>
+            <tr><td>Another token</td><td><code>The Virtualbricks on lab.example port 8765 has another token</code></td></tr>
+            <tr><td>An end without the token</td><td><code>What answers on 127.0.0.1 port 8765 doesn't know your token: it isn't your Virtualbricks</code></td></tr>
+            <tr><td>A certificate not trusted</td><td><code>The certificate of lab.example isn't one you trust: self-signed certificate. Name the folder of its certificate with caCertsDir=</code></td></tr>
+            <tr><td>A certificate asked for</td><td><code>lab.example asks for your certificate: privateKey= and certKey=</code></td></tr>
+            <tr><td>A certificate refused</td><td><code>lab.example refused your certificate</code></td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>A program over AMP gets <code>TokenNeeded</code> and <code>WrongToken</code> (<a href="#protocols">&sect;6</a>), and Twisted&rsquo;s own failures for the rest. The Virtualbricks that runs logs these, for each socket:</p>
+        <ul>
+          <li>info: <code>Listening on tcp 127.0.0.1 port 8765, protocol text, with the token of /home/marco/.config/virtualbricks/token</code>, or <code>&hellip; with the certificates of /home/marco/vb/clients</code>.</li>
+          <li>info: <code>Made the token /home/marco/.config/virtualbricks/token</code>.</li>
+          <li>info: <code>192.0.2.20 port 50412 connected to ssl port 8765 as alice-laptop</code>, and <code>&hellip; with the token</code>.</li>
+          <li>info: <code>Command from alice-laptop at 192.0.2.20: brick list</code>, and <code>Command from 127.0.0.1 port 50412: brick list</code> with a token. A <code>unix</code> socket logs as today.</li>
+          <li>warning: <code>192.0.2.66 port 40022 on tcp port 8765: wrong token</code>, <code>&hellip;: no proof in 10 seconds</code>, <code>&hellip; on ssl port 8765: the TLS handshake failed: certificate verify failed</code>.</li>
+          <li>warning: <code>tcp 127.0.0.1 port 8765: Address already in use: no control socket</code>.</li>
+        </ul>
+        <p>The messages of the option and of the log aren&rsquo;t translated, as today; those of <code>--command</code>, <code>TokenNeeded</code> and <code>WrongToken</code> are.</p>
+      </section>
+
+      <section id="code">
+        <h2><span class="num">&sect;9</span>The code and the tests</h2>
+        <figure class="code">
+          <figcaption>what changes</figcaption>
+<pre><code>virtualbricks/
+&#x251c;&#x2500;&#x2500; console/wire.py        <span class="c">Socket with host and port; tcp and ssl in parse_socket(), and the client</span>
+&#x2502;                          <span class="c">form; the handshake's messages, proof(), read_token()</span>
+&#x251c;&#x2500;&#x2500; console/tls.py     <span class="h">new</span> <span class="c">the TLS options of an ssl socket, and the checks of its files;</span>
+&#x2502;                          <span class="c">the only module that loads pyOpenSSL</span>
+&#x251c;&#x2500;&#x2500; console/ampwire.py     <span class="c">Challenge, Authenticate, TokenNeeded, WrongToken, authenticate()</span>
+&#x251c;&#x2500;&#x2500; console/control.py     <span class="c">listen() on tcp and ssl; the handshake before the first request;</span>
+&#x2502;                          <span class="c">who connects, in the log</span>
+&#x251c;&#x2500;&#x2500; console/client.py      <span class="c">tcp and ssl with Python's own modules; the handshake; cwd on this machine</span>
+&#x251c;&#x2500;&#x2500; locations.py           <span class="c">token_file()</span>
+&#x251c;&#x2500;&#x2500; app.py                 <span class="c">the checks of the new descriptions, for listening and for --command</span>
+&#x2514;&#x2500;&#x2500; pyproject.toml         <span class="c">Twisted[tls]</span></code></pre>
+        </figure>
+        <ul>
+          <li><strong>The description.</strong> <code>Socket</code> gets <code>host</code>, <code>port</code>, <code>token_file</code> and the files of <code>ssl</code>; <code>path</code> stays for <code>unix</code>. <code>parse_socket(text, client=False)</code> reads the listening form, and with <code>client=True</code> the form of <code>--command</code>. <code>wire.TYPES</code> becomes <code>unix</code>, <code>tcp</code> and <code>ssl</code>; <code>wire.py</code> still loads no Twisted.</li>
+          <li><strong>The server.</strong> <code>listen()</code> keeps its lock and checks for <code>unix</code>, and for <code>tcp</code> and <code>ssl</code> calls <code>listenTCP</code> or <code>listenSSL</code> on the interface. Both protocols start in a state that waits for the proof when the socket has a token; the text protocol sends the first line, AMP refuses all but the two new commands. A <code>callLater</code> of 10 seconds closes a connection that doesn&rsquo;t prove itself. An <code>IHandshakeListener</code> names the certificate once the TLS handshake is done. <code>Control</code> gets a name for the log in place of its path.</li>
+          <li><strong>The client.</strong> <code>client.connect()</code> takes a <code>Socket</code>. It opens <code>socket.create_connection</code>, wrapped by <code>ssl.create_default_context()</code> with the certificates of <code>caCertsDir</code> and its own; then <code>Connection</code> runs the handshake when the first line asks for it.</li>
+          <li><strong>The dependency.</strong> <code>Twisted[tls]&gt;=22.1</code> in <code>pyproject.toml</code> brings pyOpenSSL, service-identity and idna; <code>.venv</code> gets them. Only <code>console/tls.py</code> imports pyOpenSSL, when an <code>ssl</code> socket is described.</li>
+        </ul>
+        <p>Tests, each next to its module:</p>
+        <ul>
+          <li><code>tests/console/test_wire.py</code>: every row of the table of <a href="#descriptions">&sect;3</a>; the client form; each refusal; <code>proof()</code> against a fixed value, and the same as <code>ampwire.proof()</code>; <code>read_token()</code> with a file that others can read, one not yours, a short token, spaces around it.</li>
+          <li><code>tests/console/test_tls.py</code>: the options from the test certificates; a key that isn&rsquo;t the certificate&rsquo;s; a file that isn&rsquo;t PEM; a <code>caCertsDir</code> without certificates.</li>
+          <li><code>tests/test_app.py</code>: the new descriptions and their refusals; the same port twice; <code>--command</code> with <code>host=</code>, <code>tcp:HOST:PORT</code> and <code>interface=</code>.</li>
+          <li><code>tests/console/test_control.py</code>: the handshake of the text protocol on a <code>StringTransport</code>: the first line, a right proof and the greeting with the proof of Virtualbricks, a wrong one, another message first, and 10 seconds on a <code>Clock</code>. Over AMP with <code>iosim</code>: <code>Hello</code> before the proof, <code>authenticate()</code>, a wrong token, the commands on a socket without a token. <code>listen()</code> on <code>tcp</code> at <code>127.0.0.1</code>, and a second one on the same port that goes without; on <code>ssl</code> with the test certificates, a client certificate let in and one refused, and the name in the log. The token file made at the first start. The tests of <code>unix</code> pass as they are.</li>
+          <li><code>tests/console/test_client.py</code>: <code>FakeVirtualbricks</code> on <code>tcp</code> and <code>ssl</code> in its thread: the handshake, another token, an end that doesn&rsquo;t know the token, a certificate not trusted, one asked for, <code>cwd</code> only to a loopback address, and the messages of <a href="#messages">&sect;8</a>.</li>
+          <li><code>tests/data/tls/</code>: a certificate for <code>127.0.0.1</code> and <code>localhost</code>, and two clients, made once with the <code>openssl</code> lines of <a href="#certificates">&sect;5</a> for 100 years, with a README that says how.</li>
+        </ul>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;10</span>Implementation plan</h2>
+        <p>The work goes on a new branch, <code>mg/network-sockets</code>, from <code>develop</code> at a6dcd00. This page is its first commit, then a commit per step. Your own changes in the working tree, to <code>TODO.md</code> and <code>virtualbricks/tools.py</code>, stay out of every commit.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">1 tcp and the token</td><td><code>tcp</code> in <code>parse_socket()</code>, both forms; <code>Socket</code> with <code>host</code> and <code>port</code>; <code>locations.token_file()</code>, <code>read_token()</code>, the file made when the socket opens; the handshake of the text protocol and its 10 seconds; <code>listen()</code> on <code>tcp</code>; <code>--command</code> over <code>tcp</code>, with its handshake, its messages and <code>cwd</code> on this machine only; the log with who connects. <code>ssl</code> stays refused until step 3.</td><td>The descriptions, the token, the handshake, <code>listen()</code> and the client over <code>tcp</code>; the tests of <code>unix</code>, unchanged.</td></tr>
+            <tr><td class="nowrap">2 AMP</td><td><code>Challenge</code>, <code>Authenticate</code>, <code>TokenNeeded</code>, <code>WrongToken</code>, <code>proof()</code> and <code>authenticate()</code> in <code>ampwire.py</code>; <code>AMPControl</code> waits for the proof on a socket with a token.</td><td>As in <a href="#code">&sect;9</a>.</td></tr>
+            <tr><td class="nowrap">3 ssl</td><td><code>Twisted[tls]</code>; <code>ssl</code> in <code>parse_socket()</code>; <code>console/tls.py</code> and the checks of its files with the options; <code>listenSSL</code>; <code>caCertsDir</code> and the name of each client&rsquo;s certificate; <code>--command</code> over <code>ssl</code>, with its certificates; the test certificates.</td><td>As in <a href="#code">&sect;9</a>.</td></tr>
+            <tr><td class="nowrap">4 Docs</td><td><code>virtualbricks(1)</code>: <code>--socket</code> in OPTIONS; THE CONTROL SOCKET with <code>tcp</code>, <code>ssl</code>, the token, the certificates and the <code>openssl</code> lines, within 64 columns; the handshake under The text protocol; the new AMP commands and a program over <code>ssl</code>; EXIT STATUS, FILES with the token, EXAMPLES; its web page <code>command-line.html</code>. The token in <code>virtualbricks-config(5)</code> and <code>config-files.html</code>. The README. &ldquo;Since then&rdquo; of pages 15, whose text protocol gets a first line, and 16, whose M6 is done; this page&rsquo;s &ldquo;Implemented&rdquo;. In the TODO, the IDEAS item ticked and moved to DONE; what <a href="#later">&sect;12</a> leaves for later goes under IDEAS.</td><td>The manual page is up to date and lists every option.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Before step 4, a run of the whole program, with a throwaway home, runtime folder and workspace, <code>--lock none</code>, and every socket on <code>127.0.0.1</code>, so nothing of it is reachable from the network: a Virtualbricks with a <code>tcp</code> text socket, a <code>tcp</code> AMP socket and an <code>ssl</code> socket that asks for client certificates. <code>--command</code> over <code>tcp</code> and over <code>ssl</code> with a client certificate; a wrong token, a client without a certificate, and a fake server on a free port that <code>--command</code> refuses. A program like that of <a href="#protocols">&sect;6</a> over <code>tls:</code> and over <code>tcp</code> with <code>authenticate()</code>. A second Virtualbricks with the same options goes without the ports. Then the <code>ssl</code> socket again with Twisted 22.1 and pyOpenSSL 21.0, the versions of Ubuntu 22.04, in a throwaway virtual environment. Your own Virtualbricks, its lock and its sockets are never touched.</p>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;11</span>Decisions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>N1</td>
+              <td>Where the token comes from</td>
+              <td>
+                <p><b>A</b> A file in the config folder, <code>~/.config/virtualbricks/token</code>, made at the first start that needs it and kept. <code>tokenFile=</code> names another. A client machine copies it once.</p>
+                <p><b>B</b> A new token at each start, in the runtime folder. Only your processes on this machine can read it, and a client on another machine needs a new copy after each start.</p>
+                <p><b>C</b> Only a file that you make and name with <code>tokenFile=</code>; Virtualbricks makes none.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>N2</td>
+              <td>How the token is checked</td>
+              <td>
+                <p><b>A</b> Neither end sends it: each proves that it knows it, with an HMAC over a nonce of each end (<a href="#token">&sect;4</a>). Whoever takes the port first learns nothing, and the client knows that the other end has the token. A program needs an HMAC, which every language has.</p>
+                <p><b>B</b> The client sends it, as the first message: <code>{"token": "&hellip;"}</code>. Easier by hand, but whoever listens on the port gets it: on <code>tcp</code>, any user of the machine who opens the port before Virtualbricks.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>N3</td>
+              <td>Plain <code>tcp</code> across the network</td>
+              <td>
+                <p><b>A</b> Refused: <code>tcp</code> listens on a loopback address only. Across the network, <code>ssl</code>, or <code>ssh -L</code> to a socket on the lab machine. On a network, anyone who can see the traffic reads the commands and their answers, and anyone who can change it can take over a connection after its proof.</p>
+                <p><b>B</b> Allowed, and the log warns at start.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>N4</td>
+              <td>Where <code>tcp</code> and <code>ssl</code> listen without <code>interface=</code></td>
+              <td>
+                <p><b>A</b> <code>127.0.0.1</code>, this machine. The network takes <code>interface=0.0.0.0</code> or <code>::</code>, written on purpose.</p>
+                <p><b>B</b> Every address, as Twisted&rsquo;s <code>tcp:8765</code> does.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>N5</td>
+              <td>Client certificates on <code>ssl</code></td>
+              <td>
+                <p><b>A</b> With <code>caCertsDir=</code>, a certificate that the folder trusts, in place of the token. Without it, the token.</p>
+                <p><b>B</b> With <code>caCertsDir=</code>, a certificate and the token, both.</p>
+                <p><b>C</b> Always a certificate on <code>ssl</code>; the token is for <code>tcp</code> only.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>N6</td>
+              <td>How <code>--command</code> names the machine</td>
+              <td>
+                <p><b>A</b> Twisted&rsquo;s client form: <code>tcp:HOST:PORT</code>, or <code>host=</code>; <code>tcp:PORT</code> alone is this machine, so <code>tcp:8765</code> works on both ends. <code>interface=</code> is refused with <code>--command</code>.</p>
+                <p><b>B</b> The description that Virtualbricks listens on, with <code>interface=</code> as the machine to reach: <code>tcp:8765:interface=192.0.2.7</code>.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>N7</td>
+              <td>pyOpenSSL</td>
+              <td>
+                <p><b>A</b> A dependency: <code>Twisted[tls]</code> in <code>pyproject.toml</code>. The <code>python3-twisted</code> of every supported distribution already depends on <code>python3-openssl</code> and <code>python3-service-identity</code>, so nothing more is installed there; <code>pip</code> installs them with Virtualbricks.</p>
+                <p><b>B</b> Optional, as <code>virtualbricks[ssl]</code>. Without it, <code>ssl:</code> is refused with a message that names the package.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Your answer, 29 September: as recommended, go ahead.</p>
+        <p>My choices, which the questions don&rsquo;t cover: the token file is refused when others can read it or it isn&rsquo;t yours, and when its token has fewer than 16 characters; Virtualbricks makes a missing token file, the default or a named one, and <code>--command</code> never does; 10 seconds to connect and to prove; no lock for a port; the same address and port twice refused, and port 0; <code>backlog</code>, <code>sslmethod</code> and <code>dhParameters</code> refused; the files of <code>ssl</code> checked with the options; <code>cwd</code> sent only to this machine; each connection to <code>tcp</code> or <code>ssl</code> logged with who it is.</p>
+        <p class="note">Checked on 29 September: the <code>python3-twisted</code> of Ubuntu 22.04 (22.1.0, with pyOpenSSL 21.0.0 and service-identity 18.1.0), of Debian 12 (22.4.0) and of this machine (24.11.0) depends on <code>python3-openssl</code> and <code>python3-service-identity</code>. <code>.venv</code> has neither today. Twisted&rsquo;s server <code>ssl:</code> has <code>privateKey</code>, <code>certKey</code>, <code>extraCertChain</code>, <code>sslmethod</code> and <code>dhParameters</code>, and listens on every address without <code>interface</code>; <code>caCertsDir</code> is in its client <code>ssl:</code> only.</p>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;12</span>Later</h2>
+        <p>These go under IDEAS in the TODO.</p>
+        <ul>
+          <li>Read the token and the client certificates again without a restart, to let a client go at once.</li>
+          <li>Tokens that allow less: <code>status</code> and <code>brick list</code> only, or no shell actions from another machine. Today a connection can do all that the console does.</li>
+          <li>Make the certificate of Virtualbricks, and a client&rsquo;s, from Virtualbricks, and show its fingerprint to check on the client, as <code>ssh</code> does on the first connection.</li>
+          <li>Name the process that holds a port, as the locks name theirs (page 13).</li>
+          <li>Slow down an address that sends wrong proofs.</li>
+          <li>The other types of Twisted, such as <code>systemd</code> for a socket that systemd opens.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
