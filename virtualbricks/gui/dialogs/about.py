@@ -12,8 +12,7 @@ import gi
 from virtualbricks.gui.dialogs.base import Window
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import Gdk, GdkPixbuf, Gtk
+from gi.repository import Gdk, Gtk
 
 from virtualbricks import __version__
 from virtualbricks.gui import graphics
@@ -113,9 +112,7 @@ class AboutDialog(Window):
         dialog.set_authors(AUTHORS)
         dialog.set_artists(ARTISTS)
 
-        logo_filename = graphics.get_image(LOGO_RESOURCE)
-        if logo_filename is not None:
-            dialog.set_logo(GdkPixbuf.Pixbuf.new_from_file(logo_filename))
+        dialog.set_logo(graphics.load_pixbuf(LOGO_RESOURCE))
 
         # TODO: Glade placeholder for the titlebar slot, nothing to create.
 

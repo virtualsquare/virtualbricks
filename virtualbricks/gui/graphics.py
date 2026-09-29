@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.test_graphics -*-
+# -*- test-case-name: virtualbricks.tests.gui.test_graphics -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,37 +16,30 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-# This module is ported to new GTK3 using PyGObject
+"""The images of the GUI, in ``virtualbricks/gui/data``."""
+
+import os
 
 import gi
 
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf
 
-from virtualbricks.path import get_resource_filename
+__all__ = ["brick_icon", "image_file", "load_pixbuf"]
 
-__all__ = [
-    "get_image",
-    "pixbuf_for_brick_type",
-    "get_data_filename",
-    "load_pixbuf",
-]
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 
-def get_data_filename(resource):
-    return get_resource_filename("virtualbricks.gui", resource)
+def image_file(name: str) -> str:
+    """The path of an image of the GUI."""
 
-
-def get_image(name):
-    return get_data_filename(name)
+    return os.path.join(DATA_DIR, name)
 
 
 def load_pixbuf(name: str) -> GdkPixbuf.Pixbuf:
-    """
-    Load an image from the ``virtualbricks/gui/data`` directory.
-    """
+    """Load an image of the GUI."""
 
-    return GdkPixbuf.Pixbuf.new_from_file(get_data_filename(name))
+    return GdkPixbuf.Pixbuf.new_from_file(image_file(name))
 
 
 def has_custom_icon(brick):
@@ -58,11 +51,4 @@ def brick_icon(brick):
     if has_custom_icon(brick):
         return brick.config.icon
     else:
-        return get_data_filename(brick.get_type().lower() + ".png")
-
-
-def pixbuf_for_brick_type(type):
-    filename = get_data_filename("%s.png" % type.lower())
-    if filename is None:
-        return None
-    return GdkPixbuf.Pixbuf.new_from_file(filename)
+        return image_file(brick.get_type().lower() + ".png")

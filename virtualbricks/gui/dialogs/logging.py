@@ -172,8 +172,8 @@ def type_icon(source_type):
 
     if source_type not in _type_icons:
         pixbuf = None
-        filename = graphics.get_data_filename(source_type + ".png")
-        if filename and os.path.isfile(filename):
+        filename = graphics.image_file(source_type + ".png")
+        if os.path.isfile(filename):
             try:
                 pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
                     filename, ICON_SIZE, ICON_SIZE
