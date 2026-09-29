@@ -588,6 +588,9 @@ The control directory of the switch.
 A tap interface of the host, plugged into a switch through
 \f[B]vde_plug2tap\f[R](1).
 It needs root, see \f[B]PRIVILEGES\f[R].
+The interface takes the name of the brick, which Linux limits to 15
+characters: New Brick, Rename and the console\(aqs \f[B]new\f[R] refuse
+a longer one.
 .TP
 \f[B]connect\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 The socket the tap is plugged into.

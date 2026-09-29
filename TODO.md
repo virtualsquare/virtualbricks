@@ -59,8 +59,6 @@
   menu: a tap, a machine or a wire (12 §9)
 - [ ] Name a duplicate as New Brick names a brick: `sw3`, not
   `copy_of_sw1` (12 §9)
-- [ ] Give the New Brick window a title, and its name field a label
-  (07 §10)
 - [ ] Set a tap's address after its process starts, through sudo:
   `address_mode`, `ip_address`, `netmask` and `gateway`; today nothing
   does (10 §13, 11 §11)
@@ -163,6 +161,10 @@
 
 ## Done
 
+- [x] Redesign New Brick: a popover of the kinds, a name chosen for each
+  new brick, its settings after the click; the window without a title or
+  a label is gone (07 §10), plan in
+  `docs/redesign/12 - new-brick-redesign.html` (87805d8, 9d35fb0)
 - [x] Move the event editor and the image details onto drafts, so that
   `ConfigController` goes (11 §11): every panel is on a draft, and OK
   takes the numbers typed and not yet taken

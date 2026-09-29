@@ -567,7 +567,9 @@ connect to it by its name.
 ## tap
 
 A tap interface of the host, plugged into a switch through
-**vde_plug2tap**(1). It needs root, see **PRIVILEGES**.
+**vde_plug2tap**(1). It needs root, see **PRIVILEGES**. The interface
+takes the name of the brick, which Linux limits to 15 characters: New
+Brick, Rename and the console's **new** refuse a longer one.
 
 **connect** = *string*, default `""`
 :   The socket the tap is plugged into.
