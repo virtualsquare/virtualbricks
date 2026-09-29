@@ -213,8 +213,16 @@ class TestDescriptions(unittest.TestCase):
             wire.Socket("/tmp/lab.sock"),
         )
         self.assertEqual(
+            parse("unix:/tmp/lab.amp:protocol=amp"),
+            wire.Socket("/tmp/lab.amp", "amp"),
+        )
+        self.assertEqual(
+            parse("unix:/tmp/lab.amp:protocol=AMP"),
+            wire.Socket("/tmp/lab.amp", "amp"),
+        )
+        self.assertEqual(
             self.refused("unix:/tmp/lab.sock:protocol=json"),
-            "unix:/tmp/lab.sock:protocol=json: the protocol is text",
+            "unix:/tmp/lab.sock:protocol=json: the protocol is text or amp",
         )
 
     def test_the_rules_of_twisted(self):

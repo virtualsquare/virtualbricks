@@ -205,6 +205,12 @@ class TestSocket(unittest.TestCase):
             self.sockets("--socket=unix:/tmp/lab.sock:protocol=TEXT"),
             [wire.Socket("/tmp/lab.sock")],
         )
+        self.assertEqual(
+            self.sockets(
+                "--socket", "--socket", "unix:/tmp/lab.amp:protocol=amp"
+            ),
+            [wire.Socket(self.default), wire.Socket("/tmp/lab.amp", "amp")],
+        )
         # a home short enough for a socket's path
         home = short_folder(self)
         os.environ["HOME"] = home
@@ -343,6 +349,15 @@ class TestCommand(unittest.TestCase):
                 "status",
             ),
             "--command talks to one --socket",
+        )
+        self.assertEqual(
+            self.refused(
+                "--socket",
+                "unix:/tmp/a.amp:protocol=amp",
+                "--command",
+                "status",
+            ),
+            "--command speaks the text protocol, not amp",
         )
 
     def test_words_without_it(self):

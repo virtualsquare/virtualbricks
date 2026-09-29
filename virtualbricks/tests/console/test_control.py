@@ -22,10 +22,11 @@ import stat
 
 from twisted.internet import defer, endpoints, reactor
 from twisted.internet.testing import StringTransport
-from twisted.protocols import basic
+from twisted.protocols import amp, basic
+from twisted.test import iosim
 
 from virtualbricks import __version__, locations, locks
-from virtualbricks.console import control, wire
+from virtualbricks.console import ampwire, control, wire
 from virtualbricks.console.command import Arg, CommandError, command
 from virtualbricks.tests import (
     FakeLogger,
@@ -218,6 +219,195 @@ class TestProtocol(ConsoleTestCase):
         self.successResultOf(self.server.close())
 
 
+class TestAMP(ConsoleTestCase):
+    """A connection of the AMP socket, to a program on fake transports."""
+
+    def setUp(self):
+        super().setUp()
+        self.factory.runtime_dir = "/run/vb"
+        self.logger = FakeLogger()
+        self.patch(control, "logger", self.logger)
+        self.amp_log = FakeLogger()
+        self.patch(amp, "_log", self.amp_log)
+        self.workspace = use_workspace(self)
+        self.workspace.current = Project()
+        self.server = control.ControlFactory(
+            self.factory, self.clock(), control.AMPControl
+        )
+        self.program, self.connection, self.pump = self.connect()
+
+    def connect(self):
+        """A program, the connection that answers it, and their pump."""
+
+        return iosim.connectedServerAndClient(
+            lambda: self.server.buildProtocol(None), amp.AMP
+        )
+
+    def call(self, command, program=None, pump=None, **arguments):
+        """The answer to command, once the pump is done."""
+
+        # AMP drops a connection whose failed call has no errback when the
+        # answer comes: the answer has its callbacks first
+        answer = defer.Deferred()
+        called = (program or self.program).callRemote(command, **arguments)
+        called.chainDeferred(answer)
+        (pump or self.pump).flush()
+        return answer
+
+    def declare(self):
+        """Commands of the test's own: wait NAME, cwd and long."""
+
+        own_commands(self)
+        self.waiting = {}
+
+        @command(None, "wait", Arg("NAME"), help="Wait")
+        def wait(context, name):
+            self.waiting[name] = done = defer.Deferred()
+            return done
+
+        @command(None, "cwd", help="The folder")
+        def cwd(context):
+            return [str(context.cwd)]
+
+        @command(None, "long", help="An answer too long")
+        def long(context):
+            return ["x" * 1000] * 70
+
+    def test_hello(self):
+        hello = {
+            "protocol": 1,
+            "version": __version__,
+            "pid": os.getpid(),
+            "project": "lab1",
+        }
+        self.assertEqual(self.successResultOf(self.call(ampwire.Hello)), hello)
+        self.workspace.current = None
+        self.assertEqual(
+            self.successResultOf(self.call(ampwire.Hello)),
+            {**hello, "project": None},
+        )
+
+    def test_a_command(self):
+        answer = self.call(ampwire.Run, line="brick new switch")
+        self.assertEqual(self.successResultOf(answer), {"lines": ["sw1"]})
+        self.assertEqual([b.name for b in self.factory.bricks], ["sw1"])
+        self.assertEqual(
+            self.logger.formatted(),
+            ["Command from the AMP socket: brick new switch"],
+        )
+        # AMP's own lines for each connection are left out; the program's
+        # are its own
+        self.assertEqual(
+            [
+                line
+                for line in self.amp_log.formatted()
+                if "AMPControl" in line
+            ],
+            [],
+        )
+
+    def test_a_command_that_fails(self):
+        failure = self.failureResultOf(
+            self.call(ampwire.Run, line="brick start vm9"),
+            ampwire.CommandFailed,
+        )
+        self.assertEqual(str(failure.value), "No brick named vm9")
+        self.assertEqual(
+            self.logger.formatted()[1],
+            "The command from the AMP socket failed: No brick named vm9",
+        )
+
+    def test_what_it_did_first(self):
+        # dropped: the program asks status
+        own_commands(self)
+
+        @command(None, "half", help="Half")
+        def half(context):
+            raise CommandError("vm2: no image", ["vm1 runs"])
+
+        failure = self.failureResultOf(
+            self.call(ampwire.Run, line="half"), ampwire.CommandFailed
+        )
+        self.assertEqual(str(failure.value), "vm2: no image")
+
+    def test_the_folder_of_the_request(self):
+        self.declare()
+        answer = self.call(ampwire.Run, line="cwd", cwd="/srv/labs")
+        self.assertEqual(
+            self.successResultOf(answer), {"lines": ["/srv/labs"]}
+        )
+        answer = self.call(ampwire.Run, line="cwd")
+        self.assertEqual(self.successResultOf(answer), {"lines": ["None"]})
+        failure = self.failureResultOf(
+            self.call(ampwire.Run, line="cwd", cwd="labs"),
+            ampwire.CommandFailed,
+        )
+        self.assertEqual(
+            str(failure.value), 'Not a request: "cwd" is not an absolute path'
+        )
+
+    def test_an_answer_too_long(self):
+        self.declare()
+        failure = self.failureResultOf(
+            self.call(ampwire.Run, line="long"), ampwire.AnswerTooLong
+        )
+        self.assertEqual(
+            str(failure.value),
+            "The command was done, but its answer, 70140 bytes, is longer than"
+            " the 65535 that AMP carries; a text socket carries it",
+        )
+        self.assertEqual(
+            self.logger.formatted()[1],
+            "The answer to the AMP socket is 70140 bytes, longer than AMP"
+            " carries",
+        )
+        # the connection stays
+        answer = self.call(ampwire.Run, line="cwd")
+        self.assertEqual(self.successResultOf(answer), {"lines": ["None"]})
+
+    def test_in_order(self):
+        self.declare()
+        first = self.call(ampwire.Run, line="wait a")
+        second = self.call(ampwire.Run, line="wait b")
+        self.assertEqual(list(self.waiting), ["a"])
+        # another connection doesn't wait for this one
+        program, _, pump = self.connect()
+        self.call(ampwire.Run, program, pump, line="wait c")
+        self.assertEqual(list(self.waiting), ["a", "c"])
+        self.waiting["a"].callback(["a done"])
+        self.pump.flush()
+        self.assertEqual(self.successResultOf(first), {"lines": ["a done"]})
+        self.assertEqual(list(self.waiting), ["a", "c", "b"])
+        self.assertNoResult(second)
+        self.waiting["b"].callback(["b done"])
+        self.pump.flush()
+        self.assertEqual(self.successResultOf(second), {"lines": ["b done"]})
+
+    def test_lost_while_it_runs(self):
+        self.declare()
+        first = self.call(ampwire.Run, line="wait a")
+        self.call(ampwire.Run, line="wait b")
+        self.program.transport.loseConnection()
+        self.pump.flush()
+        self.assertEqual(self.server.connections, set())
+        self.failureResultOf(first)
+        # the command goes on; its answer, and the requests after it, drop
+        self.waiting["a"].callback(["a done"])
+        self.assertEqual(list(self.waiting), ["a"])
+
+    def test_closed_after_the_last_answer(self):
+        answer = self.program.callRemote(ampwire.Run, line="status")
+        # the request arrives, and its answer waits to be written
+        self.pump.pump()
+        closed = self.server.close()
+        self.assertNoResult(closed)
+        self.pump.flush()
+        self.assertEqual(
+            self.successResultOf(answer), {"lines": ["Nothing runs"]}
+        )
+        self.successResultOf(closed)
+
+
 class Reactor:
     """The reactor of the tests, whose shutdown triggers are only kept."""
 
@@ -250,6 +440,18 @@ class Client(basic.LineOnlyReceiver):
         self.lost.callback(None)
 
 
+class AMPProgram(amp.AMP):
+    """A program of the tests, over a real socket."""
+
+    def __init__(self):
+        super().__init__()
+        self.lost = defer.Deferred()
+
+    def connectionLost(self, reason):
+        super().connectionLost(reason)
+        self.lost.callback(None)
+
+
 class TestListen(ConsoleTestCase):
     """The socket, in a runtime folder of the test."""
 
@@ -266,8 +468,8 @@ class TestListen(ConsoleTestCase):
         self.lock_file = locations.control_lock_file(self.path)
         self.reactor = Reactor()
 
-    def listen(self, path=None):
-        socket = None if path is None else wire.Socket(path)
+    def listen(self, path=None, protocol=wire.TEXT):
+        socket = None if path is None else wire.Socket(path, protocol)
         found = control.listen(self.factory, socket, self.reactor)
         if found is not None:
             self.addCleanup(found.close)
@@ -283,8 +485,8 @@ class TestListen(ConsoleTestCase):
         self.assertTrue(stat.S_ISSOCK(mode))
         self.assertEqual(stat.S_IMODE(mode), 0o600)
         self.assertIsNone(locks.hold(locations.control_lock_file(path)))
-        self.assertEqual(
-            self.reactor.triggers, [("before", "shutdown", found.close)]
+        self.assertIn(
+            ("before", "shutdown", found.close), self.reactor.triggers
         )
 
     @defer.inlineCallbacks
@@ -308,6 +510,44 @@ class TestListen(ConsoleTestCase):
         lock = locks.hold(self.lock_file)
         self.assertIsNotNone(lock)
         lock.unlock()
+
+    @defer.inlineCallbacks
+    def test_amp(self):
+        path = os.path.join(os.path.dirname(self.path), ".control.amp")
+        found = self.listen(path, wire.AMP)
+        self.assertListening(found, path)
+        self.assertEqual(
+            self.logger.formatted(), [f"Listening on {path}, protocol amp"]
+        )
+        endpoint = endpoints.UNIXClientEndpoint(reactor, path)
+        program = yield endpoints.connectProtocol(endpoint, AMPProgram())
+        hello = yield program.callRemote(ampwire.Hello)
+        self.assertEqual(hello["pid"], os.getpid())
+        answer = yield program.callRemote(ampwire.Run, line="brick new switch")
+        self.assertEqual(answer, {"lines": ["sw1"]})
+        # the end: the connection closes, the socket goes, the lock is free
+        yield found.close()
+        yield program.lost
+        self.assertFalse(os.path.exists(path))
+        locks.hold(locations.control_lock_file(path)).unlock()
+
+    def test_both(self):
+        # a text socket and an AMP one, a lock each; a crash left the second
+        path = os.path.join(short_folder(self), "lab.amp")
+        make_socket(path)
+        self.assertListening(self.listen(), self.path)
+        self.assertListening(self.listen(path, wire.AMP), path)
+        # another Virtualbricks goes without both
+        self.assertIsNone(self.listen())
+        self.assertIsNone(self.listen(path, wire.AMP))
+        self.assertEqual(
+            self.logger.formatted()[2:],
+            [
+                f"Process {os.getpid()} answers on {self.path}; this one"
+                " doesn't",
+                f"Process {os.getpid()} answers on {path}; this one doesn't",
+            ],
+        )
 
     def test_another_path(self):
         path = os.path.join(short_folder(self), "lab.sock")

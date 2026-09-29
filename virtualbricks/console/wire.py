@@ -55,9 +55,11 @@ PROTOCOL = 1
 # The longest line a request can be; a longer one closes the connection.
 MAX_LINE = 64 * 1024
 
-# The protocols a socket speaks: the lines of JSON of this module.
+# The protocols a socket speaks: the lines of JSON of this module, and the
+# commands of virtualbricks.console.ampwire.
 TEXT = "text"
-PROTOCOLS = (TEXT,)
+AMP = "amp"
+PROTOCOLS = (TEXT, AMP)
 # The types of socket: only unix, for now.
 TYPES = ("unix",)
 # The keywords of a description, after its type and its path.

@@ -72,7 +72,7 @@ class Options(usage.Options):
             None,
             "Listen on a control socket: .control in the runtime folder, or "
             "the one of the description after it, as "
-            "unix:PATH:protocol=text. Give it again for more sockets. With "
+            "unix:PATH:protocol=amp. Give it again for more sockets. With "
             "--command, the socket to talk to.",
         ],
     ]

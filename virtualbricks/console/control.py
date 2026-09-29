@@ -19,7 +19,8 @@
 """
 The control sockets: the Virtualbricks that runs answers the commands of
 ``virtualbricks --command``, and of any program that speaks the text
-protocol of :mod:`virtualbricks.console.wire`.
+protocol of :mod:`virtualbricks.console.wire`, or the AMP commands of
+:mod:`virtualbricks.console.ampwire`.
 
 :func:`listen` listens on a socket of ``--socket``, ``.control`` in the
 runtime folder or the path of its description, while it holds the lock
@@ -36,12 +37,13 @@ import os
 
 from twisted.internet import defer, error, protocol
 from twisted.logger import Logger
-from twisted.protocols import basic
+from twisted.protocols import amp, basic
 
 from virtualbricks import __version__, locations, locks
 from virtualbricks.config.workspace import projects
-from virtualbricks.console import wire
+from virtualbricks.console import ampwire, wire
 from virtualbricks.console.dispatch import run
+from virtualbricks.i18n import _
 
 logger = Logger()
 listening = "Listening on {path}, protocol {protocol}"
@@ -49,6 +51,11 @@ no_socket = "{reason}: no control socket"
 answered_by = "{holder} answers on {path}; this one doesn't"
 command_received = "Command from the control socket: {line}"
 command_failed = "The command from the control socket failed: {error}"
+amp_command_received = "Command from the AMP socket: {line}"
+amp_command_failed = "The command from the AMP socket failed: {error}"
+answer_too_long = (
+    "The answer to the AMP socket is {size} bytes, longer than AMP carries"
+)
 
 # How long the end waits for a client to read its last answer, in seconds.
 CLOSE_TIMEOUT = 2
@@ -155,6 +162,80 @@ class ControlProtocol(basic.LineOnlyReceiver):
         self.send(wire.refusal(message, getattr(exc, "lines", [])))
 
 
+class AMPControl(amp.AMP):
+    """A connection of the AMP protocol: the commands of ampwire."""
+
+    # how Run writes its answer, to measure it first
+    LINES = amp.ListOf(amp.Unicode())
+
+    def __init__(self, brickfactory, reactor):
+        super().__init__()
+        # not factory: Twisted sets that, the ControlFactory
+        self.brickfactory = brickfactory
+        self.reactor = reactor
+        self.requests = InOrder()
+
+    def makeConnection(self, transport):
+        # AMP logs each connection with the addresses of its objects: listen()
+        # logs what the log needs
+        amp.BinaryBoxProtocol.makeConnection(self, transport)
+
+    def connectionMade(self):
+        self.factory.connections.add(self)
+
+    def connectionLost(self, reason):
+        # the command that runs goes on; its answer is dropped
+        amp.BinaryBoxProtocol.connectionLost(self, reason)
+        self.transport = None
+        self.requests.stop()
+        self.factory.lost(self)
+
+    @ampwire.Hello.responder
+    def hello(self):
+        current = projects.current
+        return {
+            "protocol": ampwire.PROTOCOL,
+            "version": __version__,
+            "pid": os.getpid(),
+            "project": current.name if current is not None else None,
+        }
+
+    @ampwire.Run.responder
+    def run_line(self, line, cwd):
+        return self.requests.add(lambda: self.handle(line, cwd))
+
+    def handle(self, line, cwd):
+        try:
+            wire.check_cwd(cwd)
+        except wire.BadRequest as exc:
+            raise ampwire.CommandFailed(str(exc)) from None
+        logger.info(amp_command_received, line=line)
+        done = run(self.brickfactory, line, self.reactor, cwd=cwd)
+        done.addCallbacks(self._answer, self._refuse)
+        return done
+
+    def _answer(self, lines):
+        size = len(self.LINES.toString(lines))
+        if size > amp.MAX_VALUE_LENGTH:
+            logger.info(answer_too_long, size=size)
+            raise ampwire.AnswerTooLong(
+                _(
+                    "The command was done, but its answer, {size} bytes, is"
+                    " longer than the {most} that AMP carries; a text socket"
+                    " carries it"
+                ).format(size=size, most=amp.MAX_VALUE_LENGTH)
+            )
+        return {"lines": lines}
+
+    def _refuse(self, failure):
+        # run() fails with a CommandError, and logs the failures of bugs;
+        # what the command did first is dropped
+        exc = failure.value
+        message = str(exc) or type(exc).__name__
+        logger.info(amp_command_failed, error=message)
+        raise ampwire.CommandFailed(message)
+
+
 class ControlFactory(protocol.Factory):
     """The connections of a control socket, of the protocol it speaks."""
 
@@ -256,7 +337,7 @@ def _listen_unix(reactor, path, factory):
 
 
 # The protocol of the connections of a socket, by the protocol it speaks.
-PROTOCOLS = {wire.TEXT: ControlProtocol}
+PROTOCOLS = {wire.TEXT: ControlProtocol, wire.AMP: AMPControl}
 
 
 def listen(brickfactory, socket=None, reactor=None):
