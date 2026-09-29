@@ -18,10 +18,12 @@
 
 """
 ``virtualbricks --command``: a command of the console, sent to the
-Virtualbricks that runs through its control socket, and its answer. Over
-tcp, it proves first that it knows the token, and checks that the other end
-knows it too. Over ssl, it checks the certificate of Virtualbricks, shows
-its own if it has one, and proves the token when asked.
+Virtualbricks that runs through its control socket, and its answer. It
+speaks the text protocol, or AMP to a socket with ``protocol=amp``, through
+:mod:`virtualbricks.console.ampbox`. Over tcp, it proves first that it knows
+the token, and checks that the other end knows it too. Over ssl, it checks
+the certificate of Virtualbricks, shows its own if it has one, and proves
+the token when asked.
 
 The words after ``--command`` are the command, quoted again for the
 console; without words, the lines of the standard input are, each sent
@@ -41,7 +43,7 @@ import ssl
 import sys
 
 from virtualbricks import locations, locks
-from virtualbricks.console import wire
+from virtualbricks.console import ampbox, wire
 from virtualbricks.i18n import _, ngettext
 
 # The exit statuses: the command was done, it failed, nothing answered it.
@@ -50,8 +52,10 @@ FAILED = 1
 UNANSWERED = 2
 # as a shell reports SIGINT
 INTERRUPTED = 130
-# How long a network socket has to answer and to prove, in seconds.
+# How long a socket has to answer and to prove, in seconds.
 CONNECT_TIMEOUT = wire.PROOF_TIMEOUT
+# The version of the AMP commands that --command knows, as ampwire.PROTOCOL
+AMP_PROTOCOL = 1
 
 
 class Unanswered(Exception):
@@ -65,9 +69,16 @@ def _closed() -> str:
     )
 
 
+def _another_protocol(version: object) -> str:
+    return _(
+        "The Virtualbricks that runs, version {version}, speaks another"
+        " protocol: restart it"
+    ).format(version=version)
+
+
 class Connection:
     """
-    A connection to the control socket, a wire.Socket: requests and their
+    A connection to a text socket, a wire.Socket: requests and their
     answers. A socket that asks for the proof of the token gets it first.
     """
 
@@ -76,20 +87,20 @@ class Connection:
         self.target = target
         self.reader = sock.makefile("rb")
         try:
-            first = self.receive()
-            if first.get("protocol") != wire.PROTOCOL:
-                raise Unanswered(
-                    _(
-                        "The Virtualbricks that runs, version {version},"
-                        " speaks another protocol: restart it"
-                    ).format(version=first.get("version"))
-                )
-            if first.get("auth") == wire.AUTH_TOKEN:
-                first = self.prove(first.get("nonce"))
-            self.greeting = first
+            self.greeting = self.open()
         except BaseException:
             self.reader.close()
             raise
+
+    def open(self) -> dict:
+        """The greeting of Virtualbricks, once the token is proved."""
+
+        first = self.receive()
+        if first.get("protocol") != wire.PROTOCOL:
+            raise Unanswered(_another_protocol(first.get("version")))
+        if first.get("auth") == wire.AUTH_TOKEN:
+            first = self.prove(first.get("nonce"))
+        return first
 
     def close(self):
         self.reader.close()
@@ -154,21 +165,38 @@ class Connection:
             ) from None
 
     def send(self, message: dict):
+        self.send_bytes(wire.encode(message))
+
+    def send_bytes(self, data: bytes):
         try:
-            self.sock.sendall(wire.encode(message))
+            self.sock.sendall(data)
         except (BrokenPipeError, ConnectionResetError):
             raise Unanswered(_closed()) from None
 
-    def receive(self) -> dict:
+    def reading(self, read):
+        """What read() reads; b"" at the end of the connection."""
+
         try:
-            line = self.reader.readline()
+            return read()
         except TimeoutError:
-            raise Unanswered(_timed_out(self.where())) from None
+            raise Unanswered(self.silent()) from None
         except ssl.SSLError as exc:
             # over TLS 1.3, a refused certificate is known at the first read
             raise Unanswered(_refused_by(self.target, exc)) from None
         except ConnectionResetError:
-            line = b""
+            return b""
+
+    def silent(self) -> str:
+        """Why nothing came before the time was up, to the user."""
+
+        # an AMP socket waits for the first box
+        return _(
+            "{where} didn't greet in {seconds} seconds: if it speaks AMP, add"
+            " protocol=amp"
+        ).format(where=self.where(), seconds=CONNECT_TIMEOUT)
+
+    def receive(self) -> dict:
+        line = self.reading(self.reader.readline)
         if not line.endswith(b"\n"):
             raise Unanswered(_closed())
         try:
@@ -181,6 +209,133 @@ class Connection:
 
         self.send(wire.request(line, cwd))
         return self.receive()
+
+
+class AMPError(Exception):
+    """The error of an AMP command: its code and its description."""
+
+    def __init__(self, code: bytes, description: str):
+        super().__init__(code, description)
+        self.code = code
+        self.description = description
+
+
+class AMPConnection(Connection):
+    """
+    A connection to an AMP socket: the commands of ampwire, as boxes. A
+    socket that asks for the proof of the token gets it first.
+    """
+
+    tag = 0
+
+    def open(self) -> dict:
+        try:
+            hello = self.call(b"Hello")
+        except AMPError as exc:
+            if exc.code != b"TOKEN_NEEDED":
+                raise self.unexpected(exc) from None
+            self.authenticate()
+            hello = self.call(b"Hello")
+        greeting = {
+            "protocol": ampbox.integer(hello.get(b"protocol", b"")),
+            "version": ampbox.text(hello.get(b"version", b"")),
+        }
+        if greeting["protocol"] != AMP_PROTOCOL:
+            raise Unanswered(_another_protocol(greeting["version"]))
+        return greeting
+
+    def authenticate(self):
+        """Prove that this end knows the token: Challenge, Authenticate."""
+
+        token = self.read_token()
+        try:
+            nonce = ampbox.text(self.call(b"Challenge").get(b"nonce", b""))
+            mine = wire.new_nonce()
+            proof = wire.proof(token, "client", nonce, mine)
+            answer = self.call(
+                b"Authenticate", nonce=mine.encode(), proof=proof.encode()
+            )
+        except AMPError as exc:
+            if exc.code == b"WRONG_TOKEN":
+                raise Unanswered(
+                    _("The Virtualbricks on {where} has another token").format(
+                        where=self.where()
+                    )
+                ) from None
+            raise self.unexpected(exc) from None
+        expected = wire.proof(token, "server", nonce, mine)
+        given = ampbox.text(answer.get(b"proof", b""))
+        if not wire.same_proof(given, expected):
+            raise Unanswered(
+                _(
+                    "What answers on {where} doesn't know your token: it"
+                    " isn't your Virtualbricks"
+                ).format(where=self.where())
+            )
+
+    def call(self, command: bytes, **arguments: bytes) -> dict:
+        """The answer of command; AMPError if it fails."""
+
+        self.tag += 1
+        tag = b"%x" % self.tag
+        box = {ampbox.ASK: tag, ampbox.COMMAND: command}
+        box.update((key.encode(), value) for key, value in arguments.items())
+        self.send_bytes(ampbox.encode(box))
+        while True:
+            answer = self.receive_box()
+            if answer.get(ampbox.ANSWER) == tag:
+                return answer
+            if answer.get(ampbox.ERROR) == tag:
+                raise AMPError(
+                    answer.get(ampbox.ERROR_CODE, b""),
+                    ampbox.text(answer.get(ampbox.ERROR_DESCRIPTION, b"")),
+                )
+            # a box that isn't the answer isn't for --command
+
+    def receive_box(self) -> dict:
+        try:
+            return ampbox.read(
+                lambda size: self.reading(lambda: self.reader.read(size))
+            )
+        except ampbox.Closed:
+            raise Unanswered(_closed()) from None
+        except ampbox.BadBox:
+            raise Unanswered(_not_the_protocol()) from None
+
+    def unexpected(self, exc: AMPError) -> Unanswered:
+        """An error that --command doesn't expect, to the user."""
+
+        return Unanswered(f"{self.where()}: {exc.description}")
+
+    def silent(self) -> str:
+        return _timed_out(self.where())
+
+    def ask(self, line: str, cwd: str | None = None) -> dict:
+        """
+        The answer to the command of line, as the text protocol gives it:
+        what a command did before it failed doesn't come over AMP.
+        """
+
+        arguments = {"line": line.encode("utf-8")}
+        if cwd is not None:
+            arguments["cwd"] = cwd.encode("utf-8")
+        try:
+            answer = self.call(b"Run", **arguments)
+        except ampbox.TooLong:
+            return wire.refusal(
+                _(
+                    "The command is longer than the {most} bytes that AMP"
+                    " carries"
+                ).format(most=ampbox.MAX_VALUE)
+            )
+        except AMPError as exc:
+            if exc.code in (b"COMMAND_FAILED", b"ANSWER_TOO_LONG"):
+                return wire.refusal(exc.description)
+            raise self.unexpected(exc) from None
+        try:
+            return wire.answer(ampbox.texts(answer.get(b"lines", b"")))
+        except ampbox.BadBox:
+            raise Unanswered(_not_the_protocol()) from None
 
 
 def _not_the_protocol() -> str:
@@ -262,7 +417,9 @@ def connect(target: wire.Socket | None = None) -> Connection:
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
         sock.connect(path)
-        return Connection(sock, target)
+        # the socket greets at once, or it isn't one of the text protocol
+        sock.settimeout(CONNECT_TIMEOUT)
+        return _open(sock, target)
     except (ConnectionRefusedError, FileNotFoundError):
         # a socket left by a crash
         sock.close()
@@ -391,10 +548,19 @@ def _connect_network(target: wire.Socket) -> Connection:
     if context is not None:
         sock = _handshake(context, sock, target)
     try:
-        connection = Connection(sock, target)
+        return _open(sock, target)
     except BaseException:
         sock.close()
         raise
+
+
+def _open(sock: socket.socket, target: wire.Socket) -> Connection:
+    """The connection on sock, in the protocol of target, once it's open."""
+
+    if target.protocol == wire.AMP:
+        connection: Connection = AMPConnection(sock, target)
+    else:
+        connection = Connection(sock, target)
     # the command takes as long as it takes
     sock.settimeout(None)
     return connection

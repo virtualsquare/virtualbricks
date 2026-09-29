@@ -589,14 +589,15 @@ class TestCommand(unittest.TestCase):
             ),
             "--command talks to one --socket",
         )
+        # either protocol
         self.assertEqual(
-            self.refused(
+            self.parse(
                 "--socket",
                 "unix:/tmp/a.amp:protocol=amp",
                 "--command",
                 "status",
-            ),
-            "--command speaks the text protocol, not amp",
+            )["sockets"],
+            [wire.Socket("/tmp/a.amp", wire.AMP)],
         )
 
     def test_words_without_it(self):

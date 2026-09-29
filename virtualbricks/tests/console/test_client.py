@@ -481,7 +481,8 @@ class TestTcp(ClientTestCase):
         target = wire.parse_socket(f"tcp:{port}", client=True)
         self.assertEqual(
             self.unanswered(target),
-            f"127.0.0.1 port {port} didn't answer in 0.1 seconds\n",
+            f"127.0.0.1 port {port} didn't greet in 0.1 seconds: if it speaks"
+            " AMP, add protocol=amp\n",
         )
 
     def test_the_folder_stays_here(self):

@@ -372,14 +372,8 @@ class Options(usage.Options):
                     f"--command takes no --{name}: it talks to a Virtualbricks"
                     " that runs"
                 )
-        sockets = self["sockets"]
-        if len(sockets) > 1:
+        if len(self["sockets"]) > 1:
             raise usage.UsageError("--command talks to one --socket")
-        if sockets and sockets[0].protocol != wire.TEXT:
-            raise usage.UsageError(
-                "--command speaks the text protocol, not"
-                f" {sockets[0].protocol}"
-            )
         if not words and sys.stdin is not None and sys.stdin.isatty():
             raise usage.UsageError(
                 "--command needs a command, as virtualbricks --command brick"

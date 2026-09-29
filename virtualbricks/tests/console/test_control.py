@@ -788,6 +788,29 @@ def tls_file(name):
     return os.path.join(TLS, name)
 
 
+def command_in_thread(target, *words, stdin="", **fields):
+    """
+    --command to target, a wire.Socket or the Control of a socket, in a
+    thread: its status, output and errors.
+    """
+
+    if isinstance(target, control.Control):
+        target = target.socket
+    stdout, stderr = io.StringIO(), io.StringIO()
+    done = threads.deferToThread(
+        client.main,
+        list(words),
+        target._replace(**fields),
+        io.StringIO(stdin),
+        stdout,
+        stderr,
+    )
+    done.addCallback(
+        lambda status: (status, stdout.getvalue(), stderr.getvalue())
+    )
+    return done
+
+
 class Reactor:
     """The reactor of the tests, whose shutdown triggers are only kept."""
 
@@ -989,6 +1012,91 @@ class TestListen(ConsoleTestCase):
         self.assertIsNone(self.listen(path))
         self.assertEqual(self.logger.levels(), ["warn"])
 
+    @defer.inlineCallbacks
+    def test_command_over_amp(self):
+        found = self.listen(self.path + ".amp", wire.AMP)
+        result = yield command_in_thread(found, "brick", "new", "switch")
+        self.assertEqual(result, (client.DONE, "sw1\n", ""))
+        # the lines of standard input, up to the first that fails
+        result = yield command_in_thread(
+            found, stdin="status\nbrick start vm9\nstatus\n"
+        )
+        self.assertEqual(
+            result,
+            (
+                client.FAILED,
+                "Nothing runs\n",
+                "Error: line 2: No brick named vm9\n",
+            ),
+        )
+
+    @defer.inlineCallbacks
+    def test_the_folder_over_amp(self):
+        own_commands(self)
+
+        @command(None, "cwd", help="The folder")
+        def cwd(context):
+            return [str(context.cwd)]
+
+        @command(None, "long", help="Long")
+        def long(context):
+            return ["x" * 1000] * 70
+
+        found = self.listen(self.path + ".amp", wire.AMP)
+        result = yield command_in_thread(found, "cwd")
+        self.assertEqual(result, (client.DONE, f"{os.getcwd()}\n", ""))
+        status, stdout, stderr = yield command_in_thread(found, "long")
+        self.assertEqual((status, stdout), (client.FAILED, ""))
+        self.assertRegex(
+            stderr,
+            "^Error: The command was done, but its answer, [0-9]+ bytes, is"
+            " longer than the 65535 that AMP carries; a text socket carries"
+            " it\n$",
+        )
+
+    @defer.inlineCallbacks
+    def test_the_wrong_protocol(self):
+        text = self.listen()
+        amp_socket = self.listen(self.path + ".amp", wire.AMP)
+        result = yield command_in_thread(text, "status", protocol=wire.AMP)
+        self.assertEqual(
+            result,
+            (
+                client.UNANSWERED,
+                "",
+                "What answers on the socket doesn't speak its protocol\n",
+            ),
+        )
+        # an AMP socket waits for the first box
+        self.patch(client, "CONNECT_TIMEOUT", 0.2)
+        result = yield command_in_thread(
+            amp_socket, "status", protocol=wire.TEXT
+        )
+        self.assertEqual(
+            result,
+            (
+                client.UNANSWERED,
+                "",
+                f"{amp_socket.path} didn't greet in 0.2 seconds: if it speaks"
+                " AMP, add protocol=amp\n",
+            ),
+        )
+
+    @defer.inlineCallbacks
+    def test_another_amp_protocol(self):
+        self.patch(ampwire, "PROTOCOL", 2)
+        found = self.listen(self.path + ".amp", wire.AMP)
+        result = yield command_in_thread(found, "status")
+        self.assertEqual(
+            result,
+            (
+                client.UNANSWERED,
+                "",
+                f"The Virtualbricks that runs, version {__version__}, speaks"
+                " another protocol: restart it\n",
+            ),
+        )
+
 
 class ListenTestCase(ConsoleTestCase):
     """A socket on a free port of this machine."""
@@ -1024,26 +1132,7 @@ class ListenTestCase(ConsoleTestCase):
         os.chmod(path, mode)
 
     def command(self, target, *words, **fields):
-        """
-        --command to target, a wire.Socket or the Control of a tcp socket,
-        in a thread: its status, output and errors.
-        """
-
-        if isinstance(target, control.Control):
-            target = target.socket
-        stdout, stderr = io.StringIO(), io.StringIO()
-        done = threads.deferToThread(
-            client.main,
-            list(words),
-            target._replace(**fields),
-            io.StringIO(),
-            stdout,
-            stderr,
-        )
-        done.addCallback(
-            lambda status: (status, stdout.getvalue(), stderr.getvalue())
-        )
-        return done
+        return command_in_thread(target, *words, **fields)
 
 
 class TestListenTcp(ListenTestCase):
@@ -1124,6 +1213,24 @@ class TestListenTcp(ListenTestCase):
         self.assertEqual(answer, {"lines": ["sw1"]})
         yield found.close()
         yield program.lost
+
+    @defer.inlineCallbacks
+    def test_command_over_amp(self):
+        found = self.listen(protocol=wire.AMP)
+        result = yield self.command(found, "brick", "new", "switch")
+        self.assertEqual(result, (client.DONE, "sw1\n", ""))
+        other = os.path.join(self.mktemp(), "token")
+        self.write_token(other)
+        result = yield self.command(found, "status", token_file=other)
+        self.assertEqual(
+            result,
+            (
+                client.UNANSWERED,
+                "",
+                f"The Virtualbricks on 127.0.0.1 port {found.socket.port} has"
+                " another token\n",
+            ),
+        )
 
     def test_a_token_of_its_own(self):
         path = os.path.join(self.mktemp(), "lab1.token")
@@ -1321,6 +1428,17 @@ class TestListenSsl(ListenTestCase):
         self.assertEqual(answer, {"lines": ["sw1"]})
         yield found.close()
         yield program.lost
+
+    @defer.inlineCallbacks
+    def test_command_over_amp(self):
+        found = self.listen(protocol=wire.AMP, ca_dir=self.folder("alice.pem"))
+        target = self.target(found, "alice")._replace(protocol=wire.AMP)
+        result = yield self.command(target, "brick", "new", "switch")
+        self.assertEqual(result, (client.DONE, "sw1\n", ""))
+        log = yield self.logged(3)
+        self.assertEqual(
+            log[2], "Command from alice at 127.0.0.1: brick new switch"
+        )
 
     def test_files_that_dont_match(self):
         self.assertIsNone(self.listen(cert=tls_file("alice.pem")))

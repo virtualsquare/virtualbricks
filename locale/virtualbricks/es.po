@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 17:40+0200\n"
+"POT-Creation-Date: 2026-09-29 18:07+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -1480,6 +1480,17 @@ msgstr ""
 #: virtualbricks/console/client.py
 #, python-brace-format
 msgid "{reason}: no command sent"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid ""
+"{where} didn't greet in {seconds} seconds: if it speaks AMP, add protocol=amp"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "The command is longer than the {most} bytes that AMP carries"
 msgstr ""
 
 #: virtualbricks/console/client.py
