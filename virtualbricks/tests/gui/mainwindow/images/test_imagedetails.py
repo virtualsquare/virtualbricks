@@ -82,7 +82,7 @@ class DetailsTestCase(GuiTestCase):
         vm = self.factory.new_brick("qemu", name)
         vm.update_config(
             {
-                f"{device}_image": self.frr.get_name(),
+                f"{device}_image": self.frr.name,
                 f"{device}_private": private,
             }
         )
@@ -197,9 +197,9 @@ class TestSaving(DetailsTestCase):
             {"name": "frr-debian", "description": "FRR on Debian."},
         )
         # the image waits for OK
-        self.assertEqual(self.frr.get_name(), "frr")
+        self.assertEqual(self.frr.name, "frr")
         apply(details.draft)
-        self.assertEqual(self.frr.get_name(), "frr-debian")
+        self.assertEqual(self.frr.name, "frr-debian")
         self.assertEqual(self.frr.get_description(), "FRR on Debian.")
         # the disks follow
         self.assertEqual(vm.config.hda_image, "frr-debian")

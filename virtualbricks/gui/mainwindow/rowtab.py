@@ -290,7 +290,7 @@ class Row(Gtk.ListBoxRow):
         the object can't start. tooltip explains the state.
         """
 
-        name = self.item.get_name()
+        name = self.item.name
         self.name.set_text(name)
         self.detail.set_text(detail)
         self.detail.set_tooltip_text(detail)
@@ -462,8 +462,7 @@ class RowList(Gtk.ListBox):
             return False
         text = self.search.strip().casefold()
         return (
-            text in item.get_name().casefold()
-            or text in self.kind(item).casefold()
+            text in item.name.casefold() or text in self.kind(item).casefold()
         )
 
     def _update_placeholder(self) -> None:
@@ -751,7 +750,7 @@ class RowsTab(Tab, Gtk.Stack):
         name = Gtk.Label(
             visible=True,
             xalign=0.0,
-            label=item.get_name(),
+            label=item.name,
             attributes=pango_attr_list(
                 Pango.attr_weight_new(Pango.Weight.BOLD)
             ),

@@ -472,10 +472,10 @@ class _Converter:
             self.factory.new_disk_image(section.name, path, description)
         except errors.ImageAlreadyInUseError:
             same = self.factory.get_image_by_path(os.path.abspath(path))
-            self.image_aliases[section.name] = same.get_name()
+            self.image_aliases[section.name] = same.name
             self.report.warning(
-                f"{section.label()} is the same file as {same.get_name()}; "
-                f"its disks now use {same.get_name()}",
+                f"{section.label()} is the same file as {same.name}; "
+                f"its disks now use {same.name}",
                 where,
             )
         except errors.InvalidNameError as exc:
@@ -721,10 +721,10 @@ class _Converter:
 
         from virtualbricks.bricks.eventaction import ConsoleAction, EventAction
 
-        bricks = {brick.get_name() for brick in self.factory.bricks}
-        events = {event.get_name() for event in self.factory.iter_events()}
+        bricks = {brick.name for brick in self.factory.bricks}
+        events = {event.name for event in self.factory.iter_events()}
         for event in self.factory.iter_events():
-            where = self.where(self.seen["event"][event.get_name()])
+            where = self.where(self.seen["event"][event.name])
             actions: list[object] = []
             for action in event.config.actions:
                 if isinstance(action, ConsoleAction):
@@ -733,13 +733,13 @@ class _Converter:
                     table, read = old_action(text, bricks, events)
                     if read:
                         self.report.info(
-                            f"[Event:{event.get_name()}] {old!r} is now"
+                            f"[Event:{event.name}] {old!r} is now"
                             f" {describe_action(table)}",
                             where,
                         )
                     else:
                         self.report.warning(
-                            f"[Event:{event.get_name()}] {old!r} is a command"
+                            f"[Event:{event.name}] {old!r} is a command"
                             " of the old console, which the console may not"
                             " read",
                             where,

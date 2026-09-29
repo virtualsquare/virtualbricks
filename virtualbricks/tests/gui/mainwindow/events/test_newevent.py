@@ -57,7 +57,7 @@ class NewEventTestCase(GuiTestCase):
         )
 
     def events(self):
-        return [event.get_name() for event in self.factory.iter_events()]
+        return [event.name for event in self.factory.iter_events()]
 
 
 class TestTheWindow(NewEventTestCase):

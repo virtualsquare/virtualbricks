@@ -168,10 +168,14 @@ class TestFactory(BrickTestCase):
             self.factory.new_brick("switch", "sw"),
             self.factory.new_brick("qemu", "vm"),
             self.factory.new_event("ev"),
+            self.factory.new_disk_image("deb", "/lab/deb.qcow2"),
         ):
+            name = item.name
             with self.assertRaises(AttributeError):
                 item.name = "other"
-            self.assertEqual(item.get_name(), item.name)
+            self.assertEqual(item.name, name)
+            self.factory.rename(item, name + "2")
+            self.assertEqual(item.name, name + "2")
 
     def test_autosave_timer(self):
         calls = []

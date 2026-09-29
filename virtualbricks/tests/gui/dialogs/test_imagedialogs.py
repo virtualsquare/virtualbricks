@@ -64,9 +64,6 @@ class FakeVM:
     def __init__(self, name):
         self.name = name
 
-    def get_name(self):
-        return self.name
-
 
 def texts(dialog):
     return [
@@ -99,9 +96,7 @@ class DialogTestCase(GuiTestCase):
 
     def vm(self, name, image, private=True):
         vm = self.factory.new_brick("qemu", name)
-        vm.update_config(
-            {"hda_image": image.get_name(), "hda_private": private}
-        )
+        vm.update_config({"hda_image": image.name, "hda_private": private})
         return vm
 
 

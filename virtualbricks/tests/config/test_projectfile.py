@@ -498,9 +498,7 @@ class TestLenientReading(ProjectFileTestCase):
             },
         }
         factory, _ = self.restore(data)
-        self.assertEqual(
-            [i.get_name() for i in factory.iter_disk_images()], ["one"]
-        )
+        self.assertEqual([i.name for i in factory.iter_disk_images()], ["one"])
         self.assertEqual(
             self.messages(),
             [
@@ -521,7 +519,7 @@ class TestLenientReading(ProjectFileTestCase):
             },
         }
         factory, _ = self.restore(data)
-        self.assertEqual([e.get_name() for e in factory.iter_events()], ["ok"])
+        self.assertEqual([e.name for e in factory.iter_events()], ["ok"])
         self.assertEqual(len(self.messages()), 1)
 
     def test_bricks(self):

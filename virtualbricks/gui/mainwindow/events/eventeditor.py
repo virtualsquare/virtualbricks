@@ -222,9 +222,9 @@ class EventEditor(Panel):
         event = self.draft.brick
         factory = event.factory
         self.choices = {
-            BRICK: [brick.get_name() for brick in factory.bricks],
+            BRICK: [brick.name for brick in factory.bricks],
             EVENT: [
-                other.get_name()
+                other.name
                 for other in factory.iter_events()
                 if other is not event
             ],

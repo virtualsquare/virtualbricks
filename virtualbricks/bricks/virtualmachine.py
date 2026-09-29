@@ -270,10 +270,9 @@ class Image:
         self._description = description
         self.changed = Event(Observable(), "changed")
 
-    def get_name(self):
-        """
-        :rtype: str
-        """
+    @property
+    def name(self) -> str:
+        """Read-only: the factory's rename() changes it, with set_name()."""
 
         return self._name
 
@@ -284,16 +283,6 @@ class Image:
 
         self._name = value
         self.changed.notify(self)
-
-    def _get_name_prop(self):
-        warnings.warn("Image.name", DeprecationWarning)
-        return self.get_name()
-
-    def _set_name_prop(self, value):
-        warnings.warn("Image.name", DeprecationWarning)
-        return self.set_name(value)
-
-    name = property(_get_name_prop, _set_name_prop)
 
     def get_path(self):
         """
@@ -401,9 +390,7 @@ class ImageDraft(Draft):
         super().__init__(image)
 
     def read(self) -> ImageSettings:
-        return ImageSettings(
-            self.brick.get_name(), self.brick.get_description()
-        )
+        return ImageSettings(self.brick.name, self.brick.get_description())
 
     def new_name(self) -> str | None:
         """
@@ -481,7 +468,7 @@ class Disk:
         return self.vm.factory.get_image_by_name(name)
 
     def set_image(self, image):
-        name = "" if image is None else image.get_name()
+        name = "" if image is None else image.name
         setattr(self.vm.config, f"{self.device}_image", name)
 
     def is_cow(self):

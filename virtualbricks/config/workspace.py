@@ -566,11 +566,11 @@ class Workspace:
         project_settings = restore_project(factory, data, report, path)
         room = locations.brick_name_room(runtime_dir)
         for brick in factory.bricks:
-            if len(os.fsencode(brick.get_name())) > room:
+            if len(os.fsencode(brick.name)) > room:
                 report.warning(
                     f"the name is longer than the {room} bytes its sockets"
                     " allow; rename it before starting it",
-                    f"bricks.{brick.get_name()}",
+                    f"bricks.{brick.name}",
                 )
         report.log(logger)
         self.current = OpenProject(path, project_settings)

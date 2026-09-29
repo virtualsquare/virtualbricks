@@ -107,7 +107,7 @@ class EventRow(Row):
         tooltip = None
         if state is State.NOT_CONFIGURED:
             tooltip = _("Add an action to {name} first").format(
-                name=event.get_name()
+                name=event.name
             )
         self.show(
             eventinfo.summary(event, self.gui.brickfactory),

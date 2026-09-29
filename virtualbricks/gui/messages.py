@@ -146,7 +146,7 @@ def describe_source(event):
         # the process of a brick, a plug, a socket...
         source = getattr(source, "brick", None)
     if isinstance(source, base.Base):
-        return source.get_name(), source.get_type().lower()
+        return source.name, source.get_type().lower()
     return part_name(event.get("log_namespace", "")), None
 
 

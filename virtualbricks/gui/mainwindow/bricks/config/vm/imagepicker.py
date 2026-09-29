@@ -80,7 +80,7 @@ class ImageOption(Gtk.ListBoxRow):
         if image is None:
             name = _label(_("No image"), dim=True)
         else:
-            name = _label(image.get_name(), bold=True)
+            name = _label(image.name, bold=True)
         self.words = _label(dim=True, ellipsize=Pango.EllipsizeMode.END)
         self.words.get_style_context().add_class("caption")
         box.pack_start(_two_lines(name, self.words), True, True, 0)
@@ -195,7 +195,7 @@ class ImagePicker(Gtk.MenuButton):
             self.name_label.set_text(_("No image"))
             self.facts_label.set_text(_("Choose an image for this disk"))
             return
-        self.name_label.set_text(image.get_name())
+        self.name_label.set_text(image.name)
         path = image.get_path()
         if not os.path.exists(path):
             self.facts_label.set_text(
@@ -260,7 +260,7 @@ class ImagePicker(Gtk.MenuButton):
         text = self.search.get_text().strip().lower()
         if option.image is None:
             return not text
-        return text in option.image.get_name().lower()
+        return text in option.image.name.lower()
 
     def on_row_activated(self, listbox, option) -> None:
         self.popover.popdown()

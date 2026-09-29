@@ -625,7 +625,7 @@ class TestOpen(WorkspaceTestCase):
         self.assertEqual(self.factory.bricks, [])
         # and it comes back
         self.projects.open("lab", self.factory)
-        self.assertEqual([b.get_name() for b in self.factory.bricks], ["sw"])
+        self.assertEqual([b.name for b in self.factory.bricks], ["sw"])
 
     def test_the_open_project_stays_if_it_cannot_be_saved(self):
         self.projects.create("lab")
@@ -639,7 +639,7 @@ class TestOpen(WorkspaceTestCase):
         self.patch(workspace, "save_project", fail)
         self.assertRaises(OSError, self.projects.open, "other", self.factory)
         self.assertEqual(self.projects.current.name, "lab")
-        self.assertEqual([b.get_name() for b in self.factory.bricks], ["sw"])
+        self.assertEqual([b.name for b in self.factory.bricks], ["sw"])
         self.assertEqual(current_project(self.path), "lab")
 
     def test_a_project_that_cannot_be_read_is_not_a_reason_to_save(self):

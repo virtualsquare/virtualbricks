@@ -57,9 +57,9 @@ def state_tooltip(brick, state: State) -> str | None:
     if state is State.RUNNING:
         return _("Process {pid}").format(pid=brickinfo.process(brick))
     if state is State.NOT_CONNECTED:
-        return _("Connect {name} first").format(name=brick.get_name())
+        return _("Connect {name} first").format(name=brick.name)
     if state is State.NOT_CONFIGURED:
-        return _("Configure {name} first").format(name=brick.get_name())
+        return _("Configure {name} first").format(name=brick.name)
     return None
 
 
@@ -158,7 +158,7 @@ class BrickList(RowList):
                     GdkPixbuf.InterpType.BILINEAR,
                 )
             )
-        self._drag_label = Gtk.Label(visible=True, label=row.item.get_name())
+        self._drag_label = Gtk.Label(visible=True, label=row.item.name)
         icon.pack_start(image, False, False, 0)
         icon.pack_start(self._drag_label, False, False, 0)
         self._drag_icon = icon
@@ -182,13 +182,13 @@ class BrickList(RowList):
         if brickinfo.connection(source, row.item) is None:
             Gdk.drag_status(context, Gdk.DragAction(0), time)
             row.drag_unhighlight()
-            self._say(source.get_name())
+            self._say(source.name)
         else:
             Gdk.drag_status(context, Gdk.DragAction.LINK, time)
             row.drag_highlight()
             self._say(
                 _("Connect {brick} to {other}").format(
-                    brick=source.get_name(), other=row.item.get_name()
+                    brick=source.name, other=row.item.name
                 )
             )
         return True
@@ -197,7 +197,7 @@ class BrickList(RowList):
         row.drag_unhighlight()
         source = self.dragged(context)
         if source is not None:
-            self._say(source.get_name())
+            self._say(source.name)
 
     def on_drag_drop(self, row, context, x, y, time) -> bool:
         source = self.dragged(context)

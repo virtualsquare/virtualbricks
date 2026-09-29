@@ -187,7 +187,7 @@ class ProjectNameDialog:
         """The bricks of the project renamed, if it's the open one."""
 
         if self.kind == RENAME and self.is_current():
-            return [brick.get_name() for brick in self.gui.brickfactory.bricks]
+            return [brick.name for brick in self.gui.brickfactory.bricks]
         return None
 
     def check(self):

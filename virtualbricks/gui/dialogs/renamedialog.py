@@ -55,9 +55,9 @@ class RenameDialog(Window):
 
         self._factory = brickfactory
         self._brick = brick
-        self._prev_name = brick.get_name()
+        self._prev_name = brick.name
         self.build_ui()
-        self.brick_name_entry.set_text(brick.get_name())
+        self.brick_name_entry.set_text(brick.name)
 
     def build_ui(self) -> None:
         """Create the widgets, formerly in ``renamedialog.ui``."""

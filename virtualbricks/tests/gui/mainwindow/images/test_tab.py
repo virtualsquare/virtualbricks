@@ -106,7 +106,7 @@ class ImagesTestCase(GuiTestCase):
         vm = self.factory.new_brick("qemu", name)
         vm.update_config(
             {
-                f"{device}_image": (image or self.frr).get_name(),
+                f"{device}_image": (image or self.frr).name,
                 f"{device}_private": private,
             }
         )
@@ -421,7 +421,7 @@ class TestTheDetails(ImagesTestCase):
         self.tab.configure(self.frr)
         self.tab._controller.name_entry.set_text("frr-debian")
         self.tab.cancel_button.clicked()
-        self.assertEqual(self.frr.get_name(), "frr")
+        self.assertEqual(self.frr.name, "frr")
         self.assertIsNone(self.tab.configuring)
 
     def test_removing_the_image(self):

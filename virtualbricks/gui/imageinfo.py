@@ -116,7 +116,7 @@ def _machines(uses) -> list[str]:
     # each machine once, in its order
     found = []
     for use in uses:
-        name = use.vm.get_name()
+        name = use.vm.name
         if name not in found:
             found.append(name)
     return found
@@ -165,7 +165,7 @@ def tooltip(image, image_state: State, uses) -> str | None:
     """What the state of image says, when pointed at."""
 
     if image_state is State.MISSING:
-        return _("Find the file of {name}").format(name=image.get_name())
+        return _("Find the file of {name}").format(name=image.name)
     if image_state is State.IN_USE:
         running = _machines([use for use in uses if use.running])
         return ngettext("{names} runs", "{names} run", len(running)).format(
@@ -229,7 +229,7 @@ def disk_line(vm, image, saved, private, copy, copy_size) -> str:
 
     if image is None:
         return _("No image: {vm} starts without this disk.").format(vm=vm)
-    name = image.get_name()
+    name = image.name
     if not os.path.exists(image.get_path()):
         return _(
             "The file of {image} isn't there: find it in the Images tab, or"
@@ -251,7 +251,7 @@ def disk_line(vm, image, saved, private, copy, copy_size) -> str:
             "{copy} keeps {vm}'s changes to"
             " {saved}: the next start sets it aside and begins again from"
             " {image}."
-        ).format(copy=copy, vm=vm, saved=saved.get_name(), image=name)
+        ).format(copy=copy, vm=vm, saved=saved.name, image=name)
     return _(
         "{vm}'s changes are kept in {copy},"
         " {size}, in the project; {image} stays as it is."

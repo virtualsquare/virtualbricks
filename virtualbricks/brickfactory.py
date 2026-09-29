@@ -248,7 +248,7 @@ class BrickFactory:
             # through the machine, which tells that it changed
             disk.vm.update_config({f"{disk.device}_image": ""})
         disk_image.changed.disconnect(self.image_changed.notify)
-        del self._disk_images[disk_image.get_name()]
+        del self._disk_images[disk_image.name]
         self.image_removed.notify(disk_image)
         return disks
 
@@ -349,7 +349,7 @@ class BrickFactory:
 
     def _get_element_by_name(self, name, sequence):
         for item in sequence:
-            if item.get_name() == name:
+            if item.name == name:
                 return item
 
     def get_brick_by_name(self, name):
@@ -395,7 +395,7 @@ class BrickFactory:
     def del_event(self, event):
         event.poweroff()
         event.changed.disconnect(self.event_changed.notify)
-        del self._events[event.get_name()]
+        del self._events[event.name]
         self.event_removed.notify(event)
 
     def get_event_by_name(self, name):
@@ -443,7 +443,7 @@ class BrickFactory:
     def rename(self, brick, name):
         """Rename a brick, event or image, and every reference to it."""
 
-        prev_name = brick.get_name()
+        prev_name = brick.name
         new_name = self.normalize_name(name)
         # the actions of the events name bricks too
         target = "brick"

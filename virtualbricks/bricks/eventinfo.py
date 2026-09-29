@@ -139,9 +139,9 @@ def triggers(event, bricks) -> list:
 
     found = []
     for brick in bricks:
-        if brick.config.on_start == event.get_name():
+        if brick.config.on_start == event.name:
             found.append((brick, ON))
-        if brick.config.on_stop == event.get_name():
+        if brick.config.on_stop == event.name:
             found.append((brick, OFF))
     return found
 
@@ -224,7 +224,7 @@ def summary(event, factory) -> str:
     when = [
         (
             _("when {brick} starts") if what == ON else _("when {brick} stops")
-        ).format(brick=brick.get_name())
+        ).format(brick=brick.name)
         for brick, what in triggers(event, factory.bricks)
     ]
     return SEPARATOR.join([line] + when)

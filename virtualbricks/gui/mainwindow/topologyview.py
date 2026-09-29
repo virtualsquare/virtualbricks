@@ -106,7 +106,7 @@ def origin(size: float, zoom: float, room: float) -> float:
 
 
 def tooltip_text(brick) -> str:
-    return f"{brick.get_name()} · {brick.get_type()} · {brick.get_state()}"
+    return f"{brick.name} · {brick.get_type()} · {brick.get_state()}"
 
 
 class TopologyView(Gtk.ScrolledWindow):

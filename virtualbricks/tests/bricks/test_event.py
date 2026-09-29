@@ -110,7 +110,7 @@ class TestEvent(BrickTestCase):
     def test_type(self):
         self.assertIsInstance(self.event, Event)
         self.assertEqual(self.event.get_type(), "Event")
-        self.assertEqual(self.event.get_name(), "boot")
+        self.assertEqual(self.event.name, "boot")
         self.assertIs(self.event.config_factory, EventConfig)
 
     def test_new_event_has_the_default_config(self):

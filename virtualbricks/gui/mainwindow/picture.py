@@ -169,7 +169,7 @@ def draw(cr, layout, zoom, origin, palette, font, text, icons, hover=None):
     font = scaled_font(font, zoom)
     for node in layout.nodes:
         alpha = 1.0 if is_running(node.brick) else STOPPED_ALPHA
-        name = text(node.brick.get_name())
+        name = text(node.brick.name)
         name.set_font_description(font)
         name.set_width(round(node.width * zoom * Pango.SCALE))
         name.set_alignment(Pango.Alignment.CENTER)

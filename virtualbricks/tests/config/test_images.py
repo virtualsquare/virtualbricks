@@ -231,7 +231,7 @@ class ImagesTestCase(BrickTestCase):
         vm = self.factory.new_brick("qemu", name)
         vm.update_config(
             {
-                f"{device}_image": (image or self.image).get_name(),
+                f"{device}_image": (image or self.image).name,
                 f"{device}_private": private,
             }
         )

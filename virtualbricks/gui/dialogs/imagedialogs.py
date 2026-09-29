@@ -122,7 +122,7 @@ def disks_words(uses) -> str:
     if not uses:
         return _("No disk uses it.")
     disks = [
-        _("{vm} ({device})").format(vm=use.vm.get_name(), device=use.device)
+        _("{vm} ({device})").format(vm=use.vm.name, device=use.device)
         for use in uses
     ]
     words = ngettext(
@@ -154,7 +154,7 @@ class RemoveImageDialog(Window):
         self.dialog, self.remove_button, box = _dialog(
             _("Remove Image"), _("Remove"), destructive=True
         )
-        name = self.image.get_name()
+        name = self.image.name
         path = self.image.get_path()
         box.pack_start(
             _label(_("Remove the image {name}?").format(name=name), bold=True),
@@ -252,7 +252,7 @@ class FindFileDialog(Window):
         self.dialog, self.use_button, box = _dialog(
             _("Find the File"), _("Use This File")
         )
-        name = self.image.get_name()
+        name = self.image.name
         box.pack_start(
             _label(
                 _("Where is the file of {name}?").format(name=name), bold=True
@@ -444,7 +444,7 @@ class SaveImageDialog(_JobDialog):
         self.dialog, self.action_button, box = _dialog(
             _("Save as a New Image"), _("Save")
         )
-        vm, image = self.vm.get_name(), self.image.get_name()
+        vm, image = self.vm.name, self.image.name
         box.pack_start(
             _label(
                 _("Save {vm}'s {device} as a new image").format(
@@ -507,7 +507,7 @@ class SaveImageDialog(_JobDialog):
     def default_name(self) -> str:
         """The image's name and the machine's, free in the library."""
 
-        stem = f"{self.image.get_name()}-{self.vm.get_name()}"
+        stem = f"{self.image.name}-{self.vm.name}"
         name, number = stem, 2
         while check_name(self.factory, name) is not None:
             name = f"{stem}-{number}"
@@ -527,7 +527,7 @@ class SaveImageDialog(_JobDialog):
         self.name_message.set_visible(message is not None)
         running = self.vm.__isrunning__()
         if running and self.job is None:
-            self._say(_stop_first([self.vm.get_name()]))
+            self._say(_stop_first([self.vm.name]))
         ready = bool(name) and message is None and not running
         self.action_button.set_sensitive(ready and self.job is None)
         return ready
@@ -586,7 +586,7 @@ class MergeDialog(_JobDialog):
         ]
 
     def build_ui(self) -> None:
-        image = self.image.get_name()
+        image = self.image.name
         self.dialog, self.action_button, box = _dialog(
             _("Merge into {image}").format(image=image),
             _("Merge"),
@@ -595,7 +595,7 @@ class MergeDialog(_JobDialog):
         box.pack_start(
             _label(
                 _("Merge {vm}'s changes into {image}?").format(
-                    vm=self.vm.get_name(), image=image
+                    vm=self.vm.name, image=image
                 ),
                 bold=True,
             ),
@@ -604,9 +604,7 @@ class MergeDialog(_JobDialog):
             0,
         )
         users = [
-            _("{vm} ({device})").format(
-                vm=use.vm.get_name(), device=use.device
-            )
+            _("{vm} ({device})").format(vm=use.vm.name, device=use.device)
             for use in self.others()
         ]
         users += [
@@ -637,7 +635,7 @@ class MergeDialog(_JobDialog):
     def check(self) -> bool:
         running = sorted(
             {
-                use.vm.get_name()
+                use.vm.name
                 for use in images.uses(self.factory, self.image)
                 if use.running
             }
@@ -682,7 +680,7 @@ class StartOverDialog(Window):
         self.build_ui()
 
     def build_ui(self) -> None:
-        vm = self.vm.get_name()
+        vm = self.vm.name
         disk = self.vm.disk(self.device)
         copy = disk.get_cow_path()
         self.dialog, self.action_button, box = _dialog(
@@ -691,7 +689,7 @@ class StartOverDialog(Window):
         box.pack_start(
             _label(
                 _("Start {vm}'s {device} over from {image}?").format(
-                    vm=vm, device=self.device, image=disk.image.get_name()
+                    vm=vm, device=self.device, image=disk.image.name
                 ),
                 bold=True,
             ),
@@ -737,7 +735,7 @@ class StartOverDialog(Window):
         except (OSError, errors.Error) as exc:
             logger.error(
                 start_over_failed,
-                vm=self.vm.get_name(),
+                vm=self.vm.name,
                 device=self.device,
                 error=exc,
             )

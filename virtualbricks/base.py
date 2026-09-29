@@ -54,22 +54,22 @@ class Base:
     config_factory = None
     logger = Logger()
 
-    def get_name(self):
-        return self._name
-
-    # read-only: rename() changes it, through set_name()
-    name = property(get_name)
-
-    def set_name(self, name):
-        self._name = name
-        self.notify_changed()
-
     def __init__(self, factory, name):
         self._observable = observable.Observable("changed")
         self.changed = observable.Event(self._observable, "changed")
         self.factory = factory
         self._name = name
         self.config = self.config_factory()
+
+    @property
+    def name(self):
+        """Read-only: the factory's rename() changes it, with set_name()."""
+
+        return self._name
+
+    def set_name(self, name):
+        self._name = name
+        self.notify_changed()
 
     def get_type(self):
         return self.type

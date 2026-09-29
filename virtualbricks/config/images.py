@@ -264,7 +264,7 @@ def relink(
     if other is not None and other is not image:
         return defer.fail(errors.ImageAlreadyInUseError(path))
     disks = uses(factory, image)
-    running = [use.vm.get_name() for use in disks if use.running]
+    running = [use.vm.name for use in disks if use.running]
     if running:
         return defer.fail(RunningError(sorted(set(running))))
     copies = [use.copy for use in disks if use.copy_size is not None]
@@ -363,7 +363,7 @@ def start_over(vm: VirtualMachine, device: str, trasher=None) -> bool:
     """
 
     if vm.__isrunning__():
-        raise RunningError([vm.get_name()])
+        raise RunningError([vm.name])
     return discard(vm.disk(device).get_cow_path(), trasher)
 
 

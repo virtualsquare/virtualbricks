@@ -39,16 +39,10 @@ class FakeImage:
     def get_path(self):
         return self.path
 
-    def get_name(self):
-        return self.name
-
 
 class FakeVM:
     def __init__(self, name):
         self.name = name
-
-    def get_name(self):
-        return self.name
 
 
 def use(vm, private=True, running=False, device="hda"):

@@ -329,7 +329,7 @@ def project_document(
 
     data: Table = {"format": FORMAT, "settings": dump_record(project_settings)}
     images: Table = {
-        image.get_name(): {
+        image.name: {
             "path": image.get_path(),
             "description": image.get_description(),
         }
@@ -338,13 +338,13 @@ def project_document(
     if images:
         data["images"] = images
     events: Table = {
-        event.get_name(): dump_record(event.config)
+        event.name: dump_record(event.config)
         for event in factory.iter_events()
     }
     if events:
         data["events"] = events
     bricks: Table = {
-        brick.get_name(): brick_table(brick) for brick in factory.bricks
+        brick.name: brick_table(brick) for brick in factory.bricks
     }
     if bricks:
         data["bricks"] = bricks
@@ -697,7 +697,7 @@ def _check_references(factory: BrickFactory, report: Report) -> None:
         for name, target, value in references(obj.config):
             if lookups[target](value) is None:
                 key = key_of(obj.config, name)
-                where = f"{kind}.{obj.get_name()}.{key}"
+                where = f"{kind}.{obj.name}.{key}"
                 report.warning(f'no {target} named "{value}"', where)
 
 

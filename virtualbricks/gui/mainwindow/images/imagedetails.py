@@ -270,7 +270,7 @@ class ImageDetails(Panel):
             state = _("Running") if use.running else _("Stopped")
             for column, label in enumerate(
                 (
-                    _label(use.vm.get_name(), bold=True),
+                    _label(use.vm.name, bold=True),
                     _label(use.device, dim=True),
                     _label(mode_words(use), hexpand=True),
                     _label(state, dim=not use.running),

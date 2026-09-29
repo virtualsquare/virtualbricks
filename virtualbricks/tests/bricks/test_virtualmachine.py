@@ -618,7 +618,7 @@ class TestTheDraftOfAnImage(BrickTestCase):
         draft.set("name", "frr-debian")
         self.assertEqual(draft.changes(), {"name": "frr-debian"})
         self.assertEqual(draft.problems(), [])
-        self.assertEqual(self.image.get_name(), "frr")
+        self.assertEqual(self.image.name, "frr")
 
     def test_apply(self):
         vm = self.factory.new_brick("qemu", "vm")
@@ -648,7 +648,7 @@ class TestTheDraftOfAnImage(BrickTestCase):
             [Problem("name", "The name “sw1” is in use")],
         )
         self.assertRaises(ValueError, apply, self.draft)
-        self.assertEqual(self.image.get_name(), "frr")
+        self.assertEqual(self.image.name, "frr")
 
     def test_a_name_that_cant_be(self):
         for name, problem in (
@@ -665,7 +665,7 @@ class TestTheDraftOfAnImage(BrickTestCase):
         self.assertEqual(self.draft.problems(), [])
         apply(self.draft)
         self.assertEqual(renamed, [])
-        self.assertEqual(self.image.get_name(), "frr")
+        self.assertEqual(self.image.name, "frr")
 
 
 class FakeImage:

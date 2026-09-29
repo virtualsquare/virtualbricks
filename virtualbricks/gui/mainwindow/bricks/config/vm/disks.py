@@ -146,7 +146,7 @@ class DiskRow(Gtk.ListBoxRow):
         copy = disk.get_cow_path()
         self.line.set_text(
             imageinfo.disk_line(
-                vm.get_name(),
+                vm.name,
                 self.image,
                 disk.image,
                 self.private,
@@ -164,7 +164,7 @@ class DiskRow(Gtk.ListBoxRow):
         self._make_menu()
 
     def _make_menu(self) -> None:
-        image = "" if self.image is None else self.image.get_name()
+        image = "" if self.image is None else self.image.name
         changes = Gio.Menu()
         changes.append(_("Save as a New Image…"), "disk.save")
         changes.append(
@@ -371,7 +371,7 @@ class DisksSection(Gtk.Box):
         for device in DISK_DEVICES:
             row = self.row(device)
             image = None if row is None else row.image
-            name = "" if image is None else image.get_name()
+            name = "" if image is None else image.name
             draft.set(f"{device}_image", name)
             if row is not None:
                 draft.set(f"{device}_private", row.private)

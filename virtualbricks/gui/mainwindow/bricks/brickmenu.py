@@ -100,7 +100,7 @@ def menu(brick, bricks, events, keys=False) -> Gio.Menu:
             *(_item(t.name, "connect", t.name) for t in targets)
         )
         connect_to = Gio.MenuItem.new_submenu(_("Connect To"), submenu)
-    names = [event.get_name() for event in events]
+    names = [event.name for event in events]
     when = [
         Gio.MenuItem.new_submenu(
             label, _events_menu(action, getattr(brick.config, setting), names)
@@ -264,7 +264,7 @@ class BrickActions(Gio.SimpleActionGroup):
         action.set_state(value)
 
     def resume(self) -> None:
-        logger.debug(resuming, name=self.brick.get_name())
+        logger.debug(resuming, name=self.brick.name)
         self.gui.user_wait_action(resume(self.brick))
 
     def delete(self) -> None:
@@ -289,7 +289,7 @@ class BrickActions(Gio.SimpleActionGroup):
         self._signal(signal.SIGCONT)
 
     def suspend(self) -> None:
-        logger.debug(suspending, name=self.brick.get_name())
+        logger.debug(suspending, name=self.brick.name)
         self.gui.user_wait_action(suspend(self.brick))
 
     def reset(self) -> None:
