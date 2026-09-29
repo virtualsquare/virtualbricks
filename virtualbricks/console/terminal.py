@@ -24,6 +24,7 @@ editing, a history kept between runs and Tab completion; the prompt is the
 name of the open project. A command runs to its end before the next: Ctrl+C
 stops waiting for it, not what it does. ``python`` opens the Python shell,
 and Ctrl+D comes back; Ctrl+D on an empty line quits, as ``quit`` does.
+Both lines have the keys of readline, :mod:`virtualbricks.console.lineedit`.
 
 When the input is not a terminal, as a pipe, :class:`PlainConsole` reads it
 a line at a time, and quits at its end.
@@ -49,6 +50,7 @@ from virtualbricks import __version__, locations
 from virtualbricks.config.workspace import projects
 from virtualbricks.console.command import CommandError, Context
 from virtualbricks.console.dispatch import run
+from virtualbricks.console.lineedit import ReadlineKeys
 from virtualbricks.console.parser import complete
 from virtualbricks.i18n import _
 
@@ -56,10 +58,7 @@ logger = Logger()
 history_error = "The history of the console can't be written"
 
 CTRL_C = b"\x03"
-CTRL_D = b"\x04"
 CTRL_L = b"\x0c"
-CTRL_A = b"\x01"
-CTRL_E = b"\x05"
 # The lines of the history kept between runs.
 HISTORY_SIZE = 500
 
@@ -97,7 +96,7 @@ def _common(words: list[str]) -> str:
     return os.path.commonprefix(words)
 
 
-class ConsoleLine(recvline.HistoricRecvLine):
+class ConsoleLine(ReadlineKeys, recvline.HistoricRecvLine):
     """The line of the console: each command, run to its end."""
 
     def __init__(self, factory, switcher=None, reactor=None):
@@ -115,13 +114,7 @@ class ConsoleLine(recvline.HistoricRecvLine):
         self.ps = (prompt().encode(),)
         super().connectionMade()
         self.keyHandlers.update(
-            {
-                CTRL_C: self.handle_INT,
-                CTRL_D: self.handle_EOF,
-                CTRL_L: self.handle_FF,
-                CTRL_A: self.handle_HOME,
-                CTRL_E: self.handle_END,
-            }
+            {CTRL_C: self.handle_INT, CTRL_L: self.handle_FF}
         )
         self.historyLines = self.read_history()
         self.historyPosition = len(self.historyLines)
@@ -188,10 +181,8 @@ class ConsoleLine(recvline.HistoricRecvLine):
         self.terminal.nextLine()
         self.drawInputLine()
 
-    def handle_EOF(self):
-        if self.lineBuffer:
-            self.terminal.write(b"\a")
-            return
+    def end_of_input(self):
+        # Ctrl+D on an empty line
         self.terminal.nextLine()
         self.execute("quit")
 
@@ -266,7 +257,7 @@ class ConsoleLine(recvline.HistoricRecvLine):
         self.terminal.write(self.ps[self.pn])
 
 
-class PythonShell(manhole.Manhole):
+class PythonShell(ReadlineKeys, manhole.Manhole):
     """The Python shell, with the factory; Ctrl+D goes back to the console."""
 
     def __init__(self, namespace, back):
@@ -286,6 +277,10 @@ class PythonShell(manhole.Manhole):
         self.setInsertMode()
 
     def handle_QUIT(self):
+        self.back()
+
+    def end_of_input(self):
+        # Ctrl+D on an empty line
         self.back()
 
 

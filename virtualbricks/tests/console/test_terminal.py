@@ -30,6 +30,7 @@ from twisted.trial import unittest
 from virtualbricks.console import command as command_module
 from virtualbricks.console import terminal
 from virtualbricks.console.command import CommandError, command
+from virtualbricks.console.lineedit import CTRL_D
 from virtualbricks.console.terminal import (
     ConsoleLine,
     PlainConsole,
@@ -151,7 +152,7 @@ class TestTheLine(TerminalTestCase):
         console = self.console()
         brick = self.factory.new_brick("switch", "sw1")
         brick.proc = object()
-        console.keystrokeReceived(terminal.CTRL_D, None)
+        console.keystrokeReceived(CTRL_D, None)
         self.assertEqual(
             self.shown()[-2:],
             ["Error: sw1 is running: stop it first", "virtualbricks>"],
@@ -159,11 +160,45 @@ class TestTheLine(TerminalTestCase):
         brick.proc = None
         # not while something is typed
         self.type(console, "x")
-        console.keystrokeReceived(terminal.CTRL_D, None)
+        console.keystrokeReceived(CTRL_D, None)
         self.assertFalse(self.factory.quit_d.called)
         console.keystrokeReceived(terminal.CTRL_C, None)
-        console.keystrokeReceived(terminal.CTRL_D, None)
+        console.keystrokeReceived(CTRL_D, None)
         self.assertTrue(self.factory.quit_d.called)
+
+
+class TestReadlineKeys(TerminalTestCase):
+    """The keys of lineedit, as the terminal sends them."""
+
+    def server(self, namespace=None):
+        server = insults.ServerProtocol(
+            Switcher, self.factory, namespace or {}, self.clock()
+        )
+        self.transport = StringTransport()
+        server.makeConnection(self.transport)
+        return server
+
+    def test_alt_keys(self):
+        server = self.server()
+        # Alt+B, back to "new"; Alt+T, "switch" and "new" change places
+        server.dataReceived(b"brick switch new\x1bb\x1bt\r")
+        self.assertEqual([b.name for b in self.factory.bricks], ["sw1"])
+
+    def test_ctrl_arrows_and_ctrl_k(self):
+        server = self.server()
+        server.dataReceived(b"brick new switch sw1 extra\x1b[1;5D\x0b\r")
+        self.assertEqual([b.name for b in self.factory.bricks], ["sw1"])
+
+    def test_the_python_shell_has_them(self):
+        server = self.server({"answer": 42})
+        server.dataReceived(b"python\r")
+        # Alt+Backspace deletes 25
+        server.dataReceived(b"answer + 1 + 25\x1b\x7f3\r")
+        self.assertIn(b"46", self.transport.value())
+        # Ctrl+D deletes, and on an empty line goes back
+        server.dataReceived(b"x\x01\x04\x04")
+        switcher = server.terminalProtocol
+        self.assertIs(switcher.current, switcher.console)
 
 
 class TestCompletion(TerminalTestCase):
@@ -248,7 +283,7 @@ class TestSwitcher(TerminalTestCase):
         server.dataReceived(b"answer, len(factory.bricks)\r")
         self.assertIn(b"(42, 0)", transport.value())
         switcher = server.terminalProtocol
-        server.dataReceived(terminal.CTRL_D)
+        server.dataReceived(CTRL_D)
         self.assertIs(switcher.current, switcher.console)
         transport.clear()
         server.dataReceived(b"brick new switch\r")

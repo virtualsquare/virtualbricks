@@ -142,6 +142,8 @@ The nouns are `brick`, `event`, `image`, `setting` and `project`; `help`
 lists the commands, and Tab completes them, the names and the keys. A key
 and its value are `KEY=VALUE`, with the names of the project file, and a
 command changes all of them or none. The history is kept between runs, and
+the line has the keys of readline: Ctrl+R searches the history, Alt+B and
+Alt+F go by words, Ctrl+W, Ctrl+K and the others delete, Ctrl+Y puts back.
 `python` opens a Python shell with the brick factory in it.
 
 The same commands run from a file, with `source FILE` or `--run FILE`, from a
@@ -335,8 +337,9 @@ To add a language, see the top of `l10n.sh`.
   with its arguments, `parser.py` reads and completes a line, `dispatch.py`
   runs it; a module for each noun, `bricks.py`, `events.py`, `images.py`,
   `settings.py` and `projects.py`, and `general.py` for `help`, `status`,
-  `source` and `quit`. `terminal.py` reads the terminal, or a pipe. It
-  imports no GTK, so that `--no-gui` doesn't load it.
+  `source` and `quit`. `terminal.py` reads the terminal, or a pipe, and
+  `lineedit.py` has the keys of readline for its line. It imports no GTK, so
+  that `--no-gui` doesn't load it.
 - `virtualbricks/config/`: the settings and the state, the schemas of their
   fields, the project file, and the projects: `workspace.py` lists, creates and
   opens them, `archive.py` and `importing.py` read, write and import their

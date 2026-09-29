@@ -311,11 +311,21 @@ virtualbricks --no-gui [options]</code></pre></figure>
 <p>On a terminal the line can be edited, and Tab completes the nouns, the verbs, the names of the bricks, events, images and projects, the kinds of brick, the keys, and the values of a key that has a few. The prompt is the name of the open project.</p>
 <dl class="terms">
 <dt>Up and Down</dt><dd><p>Go through the history, which is kept between runs.</p></dd>
+<dt>Ctrl+R, Ctrl+S</dt><dd><p>Search the history backwards or forwards as you type. Ctrl+R or Ctrl+S again finds the next match, Backspace takes back a character, Ctrl+G gives the line back as it was, and any other key keeps the line found: Enter runs it.</p></dd>
+<dt>Ctrl+A, Ctrl+E</dt><dd><p>Go to the start or the end of the line.</p></dd>
+<dt>Ctrl+B, Ctrl+F</dt><dd><p>Go back or forward a character.</p></dd>
+<dt>Alt+B, Alt+F, Ctrl+Left, Ctrl+Right</dt><dd><p>Go back or forward a word. Here a word is letters and digits, so <code>memory=512</code> is two.</p></dd>
+<dt>Ctrl+D</dt><dd><p>Delete the character under the cursor; on an empty line, quit, as <code>quit</code> does.</p></dd>
+<dt>Ctrl+W</dt><dd><p>Delete the word before the cursor, up to a space.</p></dd>
+<dt>Alt+Backspace, Alt+D</dt><dd><p>Delete the word before or after the cursor, letters and digits.</p></dd>
+<dt>Ctrl+U, Ctrl+K</dt><dd><p>Delete the line before or after the cursor.</p></dd>
+<dt>Ctrl+Y</dt><dd><p>Put back what was deleted last; what keys deleted one after the other comes back together.</p></dd>
+<dt>Ctrl+T, Alt+T</dt><dd><p>Swap the character before the cursor with the one under it, or the word before it with the word after it; at the end of the line, the last two.</p></dd>
 <dt>Ctrl+C</dt><dd><p>Clear the line; while a command runs, stop waiting for it, but not what it does: its answer comes when it&#x27;s done.</p></dd>
-<dt>Ctrl+D</dt><dd><p>On an empty line, quit, as <code>quit</code> does.</p></dd>
 <dt>Ctrl+L</dt><dd><p>Clear the screen.</p></dd>
 </dl>
-<p><code>python</code> opens a Python shell, where <code>factory</code> is the factory of the bricks; Ctrl+D comes back to the console.</p>
+<p>The Alt keys need a terminal that sends Escape before the key, as most do; xterm does with its <code>metaSendsEscape</code> resource. Escape and then the key works everywhere.</p>
+<p><code>python</code> opens a Python shell, where <code>factory</code> is the factory of the bricks and the line has the same keys, but for Tab, which indents; Ctrl+D on an empty line comes back to the console.</p>
 <p>When the input isn&#x27;t a terminal, as a pipe, each line is a command, run after the one before, and the end of the input quits.</p>
 <h3 id="console-scripts">Scripts</h3>
 <p>A file of commands, one a line, runs with <code>source</code> <em>file</em> in the console or <code>--run</code> <em>file</em> at start. Empty lines and comments are skipped, and the first error stops the file, saying where, as <em>lab.vb</em>:7.</p>

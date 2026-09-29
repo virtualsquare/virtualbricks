@@ -116,18 +116,58 @@ name of the open project.
 Up and Down
 :   Go through the history, which is kept between runs.
 
+Ctrl+R, Ctrl+S
+:   Search the history backwards or forwards as you type. Ctrl+R or
+    Ctrl+S again finds the next match, Backspace takes back a
+    character, Ctrl+G gives the line back as it was, and any other key
+    keeps the line found: Enter runs it.
+
+Ctrl+A, Ctrl+E
+:   Go to the start or the end of the line.
+
+Ctrl+B, Ctrl+F
+:   Go back or forward a character.
+
+Alt+B, Alt+F, Ctrl+Left, Ctrl+Right
+:   Go back or forward a word. Here a word is letters and digits, so
+    **memory=512** is two.
+
+Ctrl+D
+:   Delete the character under the cursor; on an empty line, quit, as
+    **quit** does.
+
+Ctrl+W
+:   Delete the word before the cursor, up to a space.
+
+Alt+Backspace, Alt+D
+:   Delete the word before or after the cursor, letters and digits.
+
+Ctrl+U, Ctrl+K
+:   Delete the line before or after the cursor.
+
+Ctrl+Y
+:   Put back what was deleted last; what keys deleted one after the
+    other comes back together.
+
+Ctrl+T, Alt+T
+:   Swap the character before the cursor with the one under it, or the
+    word before it with the word after it; at the end of the line, the
+    last two.
+
 Ctrl+C
 :   Clear the line; while a command runs, stop waiting for it, but not
     what it does: its answer comes when it's done.
 
-Ctrl+D
-:   On an empty line, quit, as **quit** does.
-
 Ctrl+L
 :   Clear the screen.
 
+The Alt keys need a terminal that sends Escape before the key, as most do;
+xterm does with its **metaSendsEscape** resource. Escape and then the key
+works everywhere.
+
 **python** opens a Python shell, where **factory** is the factory of the
-bricks; Ctrl+D comes back to the console.
+bricks and the line has the same keys, but for Tab, which indents; Ctrl+D
+on an empty line comes back to the console.
 
 When the input isn't a terminal, as a pipe, each line is a command, run
 after the one before, and the end of the input quits.

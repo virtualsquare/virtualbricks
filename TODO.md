@@ -176,6 +176,8 @@
   one before (14 §11)
 - [ ] Take any unambiguous beginning of a word, as `ip` does:
   `br st sw1` (14 §11)
+- [ ] More keys of readline: Alt+. for the last argument of the command
+  before, as a brick's name, and Ctrl+_ to undo an edit
 
 ## Waiting
 
@@ -183,6 +185,10 @@
 
 # DONE
 
+- [x] Give the console line the keys of readline, in the Python shell
+  too: Ctrl+R and Ctrl+S search the history; Ctrl+B, Ctrl+F, Alt+B, Alt+F,
+  Ctrl+Left and Ctrl+Right move; Ctrl+D, Ctrl+W, Alt+Backspace, Alt+D,
+  Ctrl+U and Ctrl+K delete, Ctrl+Y puts back; Ctrl+T and Alt+T swap
 - [x] Redesign the console: `noun verb arguments` for the bricks, the
   events, the images, the settings and the projects, with help, Tab
   completion and a history; `--no-gui` and `--run`; events start and stop
