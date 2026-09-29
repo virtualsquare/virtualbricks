@@ -50,8 +50,9 @@ from virtualbricks.config.report import ERROR, INFO, WARNING
 if TYPE_CHECKING:  # pragma: no cover
     from twisted.internet.interfaces import IReactorCore
     from twisted.python.failure import Failure
-    from twisted.python.lockfile import FilesystemLock
     from typing_extensions import Unpack
+
+    from virtualbricks.locks import Lock
 
 logger = Logger()
 migration_failed = "The migration stopped on an error"
@@ -139,7 +140,7 @@ class MigrationWindow:
 
     migration: engine.Migration | None = None
     # Held while the files of the user are migrated from the form.
-    lock: FilesystemLock | None = None
+    lock: Lock | None = None
 
     def __init__(
         self,

@@ -18,10 +18,9 @@
 import errno
 import os
 
-from twisted.python import lockfile
 from twisted.trial import unittest
 
-from virtualbricks import locations
+from virtualbricks import locations, locks
 from virtualbricks.config.settings import (
     FORMAT as SETTINGS_FORMAT,
     AppSettings,
@@ -686,7 +685,7 @@ class TestLock(unittest.TestCase):
 
     def test_lock(self):
         lock = self.lock_in_place()
-        self.assertEqual(lock.name, locations.LOCK_FILE)
+        self.assertEqual(lock.policy, locks.USER)
         self.assertTrue(lock.locked)
         # the application can't start, and a second migration can't run
         self.assertFalse(lock_is_free())
@@ -695,12 +694,17 @@ class TestLock(unittest.TestCase):
         self.assertTrue(self.lock_in_place().locked)
 
     def test_lock_while_virtualbricks_runs(self):
-        hold_lock(self)
-        self.assertIsNone(self.lock_in_place())
+        # yours with either policy, or another user's with the system one
+        running = (
+            (locks.SYSTEM, None),
+            (locks.USER, None),
+            (locks.SYSTEM, "bob"),
+        )
+        for policy, user in running:
+            lock = hold_lock(self, policy, user)
+            self.assertIsNone(self.lock_in_place())
+            lock.unlock()
 
     def test_lock_of_another_user(self):
-        def lock(self):
-            raise PermissionError("Operation not permitted")
-
-        self.patch(lockfile.FilesystemLock, "lock", lock)
-        self.assertIsNone(lock_in_place())
+        hold_lock(self, locks.USER, "bob")
+        self.assertTrue(self.lock_in_place().locked)

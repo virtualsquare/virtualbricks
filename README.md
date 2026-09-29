@@ -94,11 +94,25 @@ The options are:
 - `--noterm`: don't show the console in the terminal.
 - `--workspace FOLDER`: use the projects of another folder, made if it isn't
   there, for this run only; see [Configuration](#configuration).
+- `--lock POLICY`: how many Virtualbricks can run at once, see below.
 - `--version`: print the version and exit.
 
-Only one Virtualbricks can run at a time, whatever its workspace. It holds
-the lock `/tmp/vb.lock`, and if a crash leaves it behind, the message that
-refuses to start says to delete it.
+`--lock` takes one of three policies:
+
+- `system`, the default: one Virtualbricks on the machine, whoever runs it
+  and whatever its workspace. It holds the lock `/tmp/virtualbricks.lock`
+  alone.
+- `user`: one for each user, so the users of a shared machine don't stop each
+  other. It holds the lock `.lock` of the runtime directory,
+  `$XDG_RUNTIME_DIR/virtualbricks/`, and shares `/tmp/virtualbricks.lock`
+  with the others of this policy: it doesn't start while one runs with
+  `system`, nor one with `system` while it runs.
+- `none`: no lock. It starts beside any other, and the others don't see it;
+  two of yours share the settings, and nothing stops both from opening the
+  same project.
+
+The system releases the locks when Virtualbricks ends, even when it crashes,
+so none is ever left behind.
 
 ## Configuration
 
@@ -180,8 +194,8 @@ HOME=$H XDG_CONFIG_HOME=$H/.config XDG_STATE_HOME=$H/.local/state \
     virtualbricks
 ```
 
-The lock `/tmp/vb.lock` is the same for every home: you can't run that while
-another Virtualbricks is running.
+The locks are the same for every home: add `--lock none` to run that beside
+your own Virtualbricks.
 
 ### Tests
 
@@ -203,7 +217,7 @@ coverage report
 
 `trial` writes in `_trial_temp/`, which git ignores.
 
-- The tests don't touch your settings, your projects or the lock: each one
+- The tests don't touch your settings, your projects or the locks: each one
   runs in a temporary home. They need neither root, nor Qemu, nor VDE, but
   one: `test_integration.py` makes the sample project of
   `virtualbricks/tests/sample.py`, a brick of each kind, and starts it with

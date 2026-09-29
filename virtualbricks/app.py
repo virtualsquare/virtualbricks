@@ -18,13 +18,12 @@
 import os
 import sys
 
-from twisted.python import usage, lockfile, reflect
+from twisted.python import usage, reflect
 from twisted.internet import defer, task
 from twisted.logger import textFileLogObserver
 
-from virtualbricks import locations
+from virtualbricks import locks
 
-# One instance at a time, for all the users of the machine.
 _log_file = sys.stdout
 
 
@@ -61,6 +60,13 @@ class Options(usage.Options):
             "The folder of the projects for this run, instead of the setting.",
         ],
         [
+            "lock",
+            None,
+            locks.SYSTEM,
+            "How many Virtualbricks run at once: system, one on the machine; "
+            "user, one for each user; none, no limit.",
+        ],
+        [
             "logger",
             None,
             None,
@@ -89,6 +95,13 @@ class Options(usage.Options):
         if os.path.exists(path) and not os.path.isdir(path):
             raise usage.UsageError(f"--workspace: {path} is not a folder")
         self["workspace"] = path
+
+    def opt_lock(self, arg):
+        # the help is the text of optParameters
+        if arg not in locks.POLICIES:
+            choices = ", ".join(locks.POLICIES)
+            raise usage.UsageError(f"--lock: {arg!r} is not one of {choices}")
+        self["lock"] = arg
 
     def opt_verbose(self):
         """Increase log verbosity."""
@@ -136,26 +149,24 @@ class _LockedApplication:
 
     factory = None
 
-    def __init__(self, config, lock=None):
+    def __init__(self, config):
         self.config = config
-        self.lock = lock or lockfile.FilesystemLock(locations.LOCK_FILE)
 
     def run(self, reactor):
         assert self.factory is not None, "factory attribute is not set"
-        if self.lock.lock():
-            reactor.addSystemEventTrigger(
-                "after", "shutdown", self.lock.unlock
-            )
-            app = self.factory(self.config)
-            return app.run(reactor)
-        else:
+        try:
+            lock = locks.acquire(self.config.get("lock", locks.SYSTEM))
+        except locks.Held as held:
+            return defer.fail(SystemExit(str(held)))
+        except OSError as error:
             msg = (
-                "Another Virtualbricks instance is running and you cannot "
-                "run more than one instance of it. If this is an "
-                "error, please delete %s to start Virtualbricks"
-                % self.lock.name
+                f"Cannot take the lock {error.filename}: {error.strerror}. "
+                "With --lock none, Virtualbricks runs without locks."
             )
             return defer.fail(SystemExit(msg))
+        reactor.addSystemEventTrigger("after", "shutdown", lock.unlock)
+        app = self.factory(self.config)
+        return app.run(reactor)
 
 
 def LockedApplication(factory):

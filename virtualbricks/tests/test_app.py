@@ -18,23 +18,104 @@
 
 """The launcher: the lock, the logging, the options."""
 
+import functools
 import os
 
+from twisted.internet import defer
 from twisted.python import usage
 from twisted.trial import unittest
 
-from virtualbricks import app, locations
-from virtualbricks.tests import isolate
+from virtualbricks import app, locations, locks
+from virtualbricks.tests import hold_lock, isolate, lock_is_free
+
+
+class FakeReactor:
+
+    def __init__(self):
+        self.triggers = []
+
+    def addSystemEventTrigger(self, phase, event, callable):
+        self.triggers.append((phase, event, callable))
+
+    def shutdown(self):
+        for phase, event, callable in self.triggers:
+            callable()
+
+
+class FakeApplication:
+
+    def __init__(self, started, config):
+        self.started = started
+        self.config = config
+
+    def run(self, reactor):
+        self.started.append(self.config["lock"])
+        return defer.succeed(None)
 
 
 class TestLock(unittest.TestCase):
 
     def setUp(self):
         isolate(self)
+        self.reactor = FakeReactor()
+        self.started = []
 
-    def test_global_lock(self):
-        application = app._LockedApplication({})
-        self.assertEqual(application.lock.name, locations.LOCK_FILE)
+    def parse(self, *args):
+        options = app.Options()
+        options.parseOptions(list(args))
+        return options
+
+    def run_app(self, *args):
+        factory = functools.partial(FakeApplication, self.started)
+        application = app.LockedApplication(factory)(self.parse(*args))
+        return application.run(self.reactor)
+
+    def test_the_policy(self):
+        self.assertEqual(self.parse()["lock"], locks.SYSTEM)
+        for policy in locks.POLICIES:
+            self.assertEqual(self.parse("--lock", policy)["lock"], policy)
+        self.assertEqual(self.parse("--lock=user")["lock"], locks.USER)
+        error = self.assertRaises(
+            usage.UsageError, self.parse, "--lock", "workspace"
+        )
+        self.assertEqual(
+            str(error), "--lock: 'workspace' is not one of system, user, none"
+        )
+
+    def test_held_until_shutdown(self):
+        self.successResultOf(self.run_app("--lock", "user"))
+        self.assertEqual(self.started, [locks.USER])
+        self.assertFalse(lock_is_free())
+        self.reactor.shutdown()
+        self.assertTrue(lock_is_free())
+
+    def test_refused(self):
+        hold_lock(self, locks.USER, "bob")
+        failure = self.failureResultOf(self.run_app(), SystemExit)
+        self.assertEqual(
+            str(failure.value), str(locks.Held(locks.SYSTEM, locks.USER, ""))
+        )
+        self.assertEqual(self.started, [])
+        self.successResultOf(self.run_app("--lock", "user"))
+        self.assertEqual(self.started, [locks.USER])
+        self.reactor.shutdown()
+
+    def test_none_starts_anyway(self):
+        hold_lock(self)
+        self.successResultOf(self.run_app("--lock", "none"))
+        self.assertEqual(self.started, [locks.NONE])
+
+    def test_a_lock_that_cannot_be_opened(self):
+        os.symlink("elsewhere", locations.SYSTEM_LOCK_FILE)
+        self.addCleanup(os.remove, locations.SYSTEM_LOCK_FILE)
+        failure = self.failureResultOf(self.run_app(), SystemExit)
+        self.assertEqual(
+            str(failure.value),
+            f"Cannot take the lock {locations.SYSTEM_LOCK_FILE}: Too many "
+            "levels of symbolic links. With --lock none, Virtualbricks runs "
+            "without locks.",
+        )
+        self.assertEqual(self.started, [])
 
 
 class TestWorkspace(unittest.TestCase):

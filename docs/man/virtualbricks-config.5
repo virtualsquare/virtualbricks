@@ -817,9 +817,21 @@ The images saved when a project is imported.
 The sockets and consoles of the running bricks, removed when you log
 out.
 .TP
-\f[I]/tmp/vb.lock\f[R]
-The lock that lets only one Virtualbricks run on the machine, whatever
-its workspace.
+\f[I]/tmp/virtualbricks.lock\f[R]
+The system lock.
+Started with \f[B]\-\-lock system\f[R], the default, Virtualbricks holds
+it alone: one runs on the machine, whoever runs it and whatever its
+workspace.
+With \f[B]\-\-lock user\f[R] it shares it with the others of that
+policy, so it doesn\(aqt start while one holds it alone.
+.TP
+\f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.lock
+The lock of your user, held with \f[B]\-\-lock user\f[R]: one
+Virtualbricks for each user.
+The migration of your files holds it too.
+With \f[B]\-\-lock none\f[R] Virtualbricks takes no lock, and the others
+don\(aqt see it.
+The system releases the locks when Virtualbricks ends, even on a crash.
 .TP
 \f[I]/etc/sudo.conf\f[R]
 Its \f[B]Path askpass\f[R] line makes Virtualbricks run sudo with

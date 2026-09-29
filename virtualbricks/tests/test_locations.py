@@ -81,6 +81,13 @@ class TestLocations(unittest.TestCase):
             locations.runtime_dir().endswith(f"virtualbricks-{os.getuid()}")
         )
 
+    def test_user_lock_file(self):
+        # beside the runtime directories of the projects, named as none can be
+        self.env["XDG_RUNTIME_DIR"] = "/run/user/1000"
+        self.assertEqual(
+            locations.user_lock_file(), "/run/user/1000/virtualbricks/.lock"
+        )
+
     def test_brick_name_room(self):
         # 107 bytes: the runtime directory, "/", the name, ".ctl/.<pid>-<n>"
         runtime_dir = "/run/user/1000/virtualbricks/lab"

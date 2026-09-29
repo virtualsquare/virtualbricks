@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.config.test_locations -*-
+# -*- test-case-name: virtualbricks.tests.test_locations -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -34,6 +34,9 @@ SOCKET_PATH_MAX = 107
 # inside a switch's directory, "<brick>.ctl/.<pid>-<n>", as libvdeplug names
 # them, with the largest pid Linux gives.
 BRICK_SOCKET_SUFFIX = len(".ctl/.4194304-00000")
+# The lock that every user's Virtualbricks takes, see virtualbricks.locks. It
+# isn't in the temporary directory of TMPDIR, which may be the user's own.
+SYSTEM_LOCK_FILE = "/tmp/virtualbricks.lock"
 
 
 def home():
@@ -80,6 +83,12 @@ def runtime_dir():
     return os.path.join(tempfile.gettempdir(), f"{APP}-{os.getuid()}")
 
 
+def user_lock_file():
+    # a project's name never starts with a dot, so no project's runtime
+    # directory is named like it
+    return os.path.join(runtime_dir(), ".lock")
+
+
 def brick_name_room(runtime_dir):
     """The bytes a brick's name can have in the sockets under runtime_dir."""
 
@@ -90,6 +99,3 @@ def brick_name_room(runtime_dir):
 def ensure_private_dir(path):
     os.makedirs(path, mode=0o700, exist_ok=True)
     return path
-
-
-LOCK_FILE = "/tmp/vb.lock"

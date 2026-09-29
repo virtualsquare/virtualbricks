@@ -33,7 +33,6 @@ from collections.abc import Collection, Iterator
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 import attr
-from twisted.python import lockfile
 
 from virtualbricks.config.report import ERROR, INFO, WARNING, Report
 from virtualbricks.config.projectfile import write_project_file
@@ -48,7 +47,7 @@ from virtualbricks.config.settings import (
 )
 from virtualbricks.config.tomlfile import DecodeError, load_toml
 from virtualbricks.config.schema import load_record
-from virtualbricks import locations
+from virtualbricks import locations, locks
 from virtualbricks.migrate import convert, legacy
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -454,22 +453,18 @@ def _describe_error(exc: Exception) -> str:
     return f"{exc}; project not migrated"
 
 
-def lock_in_place() -> lockfile.FilesystemLock | None:
+def lock_in_place() -> locks.Lock | None:
     """
-    Hold the lock of the application while the files of the user change.
+    Hold the locks of the user policy while the files of the user change.
 
-    Return the lock, to unlock when done, or None if Virtualbricks is running.
-    At startup the application already holds it.
+    Return them, to unlock when done, or None if Virtualbricks is running,
+    unless with --lock none. At startup the application holds its own.
     """
 
-    lock = lockfile.FilesystemLock(locations.LOCK_FILE)
     try:
-        if lock.lock():
-            return lock
-    except OSError:
-        # the lock of another user, see the per-user lock in the design
-        pass
-    return None
+        return locks.acquire(locks.USER)
+    except locks.Held:
+        return None
 
 
 def startup_migration(workspace: str | None = None) -> Migration | None:

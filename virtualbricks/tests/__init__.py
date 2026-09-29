@@ -18,8 +18,9 @@
 import os
 
 from twisted.internet import defer
-from twisted.python import lockfile
 from twisted.trial import unittest
+
+from virtualbricks import locks
 
 # The tests of the configuration are virtualbricks.tests.config: here that
 # name is theirs, so the settings are taken by name and from their module.
@@ -43,20 +44,19 @@ def isolate(test):
         XDG_RUNTIME_DIR=os.path.join(root, "run"),
     )
     test.patch(os, "environ", env)
-    # Never the lock of a running Virtualbricks. The check runs after every
-    # other cleanup of the test, when the lock must be free again.
+    # Never the locks of a running Virtualbricks: the user lock is in the
+    # runtime directory. The check runs after every other cleanup of the
+    # test, when the locks must be free again, and before they are restored.
     from virtualbricks import locations
 
-    lock_file = os.path.join(root, "vb.lock")
-    test.addCleanup(_check_released, test, lock_file)
-    test.patch(locations, "LOCK_FILE", lock_file)
+    test.patch(locations, "SYSTEM_LOCK_FILE", os.path.join(root, "vb.lock"))
+    test.addCleanup(_check_released, test)
     return root
 
 
-def _check_released(test, lock_file):
-    if os.path.lexists(lock_file):
-        os.remove(lock_file)
-        test.fail(f"the test left the lock held: {lock_file}")
+def _check_released(test):
+    if not lock_is_free():
+        test.fail("the test left the lock held")
 
 
 class FakeTrash:
@@ -101,32 +101,37 @@ def release(lock):
         lock.unlock()
 
 
-def hold_lock(test):
+def hold_lock(test, policy=locks.SYSTEM, user=None):
     """
-    Hold the lock of the application, as a running Virtualbricks does.
+    Hold the locks of policy, as a running Virtualbricks does.
 
-    It is released when the test ends, even if the test fails.
+    With user, the name of another user, the locks of a Virtualbricks of
+    theirs: another runtime directory. They are released when the test ends,
+    even if the test fails.
     """
 
-    from virtualbricks import locations
-
-    lock = lockfile.FilesystemLock(locations.LOCK_FILE)
+    runtime = os.environ.get("XDG_RUNTIME_DIR", "")
+    if user is not None:
+        os.environ["XDG_RUNTIME_DIR"] = f"{runtime}-{user}"
+    try:
+        lock = locks.acquire(policy)
+    except locks.Held:
+        test.fail(f"the lock is already held ({policy}, {user})")
+    finally:
+        if user is not None:
+            os.environ["XDG_RUNTIME_DIR"] = runtime
     test.addCleanup(release, lock)
-    if not lock.lock():
-        test.fail(f"the lock is already held: {locations.LOCK_FILE}")
     return lock
 
 
 def lock_is_free():
     """Whether the lock of the application can be taken; it is left free."""
 
-    from virtualbricks import locations
-
-    lock = lockfile.FilesystemLock(locations.LOCK_FILE)
-    if lock.lock():
-        lock.unlock()
-        return True
-    return False
+    try:
+        locks.acquire(locks.SYSTEM).unlock()
+    except locks.Held:
+        return False
+    return True
 
 
 def reset_settings(test, **values):
