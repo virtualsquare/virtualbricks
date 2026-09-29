@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 15:19+0200\n"
+"POT-Creation-Date: 2026-09-29 16:33+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1435,8 +1435,8 @@ msgstr ""
 #: virtualbricks/console/client.py
 #, python-brace-format
 msgid ""
-"Your Virtualbricks, process {pid}, doesn't listen on {path}: it has another "
-"--socket, or its log says why"
+"Your Virtualbricks, process {pid}, doesn't listen on {path}: it was started "
+"without --socket or with another one, or its log says why"
 msgstr ""
 
 #: virtualbricks/console/client.py
@@ -1451,7 +1451,9 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: virtualbricks/console/client.py
-msgid "No Virtualbricks of yours runs. Start one, as virtualbricks --no-gui"
+msgid ""
+"No Virtualbricks of yours runs. Start one with a socket, as virtualbricks --"
+"no-gui --socket"
 msgstr ""
 
 #: virtualbricks/console/client.py

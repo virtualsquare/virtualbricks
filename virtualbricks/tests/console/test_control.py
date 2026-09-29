@@ -267,7 +267,8 @@ class TestListen(ConsoleTestCase):
         self.reactor = Reactor()
 
     def listen(self, path=None):
-        found = control.listen(self.factory, path, self.reactor)
+        socket = None if path is None else wire.Socket(path)
+        found = control.listen(self.factory, socket, self.reactor)
         if found is not None:
             self.addCleanup(found.close)
         return found
@@ -292,7 +293,7 @@ class TestListen(ConsoleTestCase):
         self.assertListening(found, self.path)
         self.assertEqual(
             self.logger.formatted(),
-            [f"Listening for virtualbricks --command on {self.path}"],
+            [f"Listening on {self.path}, protocol text"],
         )
         client = yield self.connect(self.path)
         greeting = yield client.messages.get()
@@ -319,8 +320,8 @@ class TestListen(ConsoleTestCase):
         self.assertIsNone(self.listen())
         self.assertEqual(
             self.logger.formatted()[1],
-            f"Process {os.getpid()} answers virtualbricks --command on"
-            f" {self.path}; this one doesn't",
+            f"Process {os.getpid()} answers on {self.path}; this one"
+            " doesn't",
         )
         self.assertEqual(self.logger.levels(), ["info", "info"])
         # the first one still does

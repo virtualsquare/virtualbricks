@@ -28,6 +28,7 @@ from twisted.python import usage
 from twisted.trial import unittest
 
 from virtualbricks import app, locations, locks
+from virtualbricks.console import wire
 from virtualbricks.tests import (
     hold_lock,
     isolate,
@@ -170,48 +171,127 @@ class TestSocket(unittest.TestCase):
 
     def setUp(self):
         self.root = isolate(self)
+        # a runtime folder short enough for a socket's path, not made yet
+        self.runtime = os.path.join(short_folder(self), "run")
+        os.environ["XDG_RUNTIME_DIR"] = self.runtime
+        self.default = locations.control_socket()
 
     def parse(self, *args):
         options = app.Options()
         options.parseOptions(list(args))
-        return options["socket"]
+        return options
+
+    def sockets(self, *args):
+        return self.parse(*args)["sockets"]
 
     def refused(self, *args):
         return str(self.assertRaises(usage.UsageError, self.parse, *args))
 
-    def test_the_runtime_folder_without_it(self):
-        self.assertIsNone(self.parse())
+    def test_none_without_it(self):
+        self.assertEqual(self.sockets(), [])
+        self.assertNotIn("socket", self.parse())
 
-    def test_a_path(self):
+    def test_alone(self):
+        # the runtime folder is made at start
+        self.assertFalse(os.path.exists(os.path.dirname(self.default)))
+        self.assertEqual(self.sockets("--socket"), [wire.Socket(self.default)])
+
+    def test_a_description(self):
         self.assertEqual(
-            self.parse("--socket", "/tmp/lab.sock"), "/tmp/lab.sock"
+            self.sockets("--socket", "unix:/tmp/lab.sock"),
+            [wire.Socket("/tmp/lab.sock")],
+        )
+        self.assertEqual(
+            self.sockets("--socket=unix:/tmp/lab.sock:protocol=TEXT"),
+            [wire.Socket("/tmp/lab.sock")],
         )
         # a home short enough for a socket's path
         home = short_folder(self)
         os.environ["HOME"] = home
         self.assertEqual(
-            self.parse("--socket", "~/lab.sock"),
-            os.path.join(home, "lab.sock"),
+            self.sockets("--socket", "unix:~/lab.sock"),
+            [wire.Socket(os.path.join(home, "lab.sock"))],
         )
         self.assertEqual(
-            self.parse("--socket", "lab.sock"),
-            os.path.join(os.getcwd(), "lab.sock"),
+            self.sockets("--socket", "unix:address=lab.sock"),
+            [wire.Socket(os.path.join(os.getcwd(), "lab.sock"))],
+        )
+
+    def test_the_next_word(self):
+        # taken when it starts with a type, as unix:
+        options = self.parse("--socket", "--no-gui")
+        self.assertEqual(options["sockets"], [wire.Socket(self.default)])
+        self.assertTrue(options["no-gui"])
+        options = self.parse("--command", "--socket", "brick", "list")
+        self.assertEqual(options["sockets"], [wire.Socket(self.default)])
+        self.assertEqual(options["words"], ["brick", "list"])
+        # the value of another option isn't one
+        options = self.parse("--workspace", "--socket")
+        self.assertEqual(options["sockets"], [])
+        self.assertEqual(
+            options["workspace"], os.path.join(os.getcwd(), "--socket")
+        )
+        options = self.parse("--workspace=labs", "--socket")
+        self.assertEqual(options["sockets"], [wire.Socket(self.default)])
+        # the options end at the first word, and at --
+        self.assertEqual(
+            self.parse("--command", "status", "--socket")["words"],
+            ["status", "--socket"],
+        )
+        self.assertEqual(self.sockets("--command", "--", "--socket"), [])
+
+    def test_a_prefix(self):
+        # getopt reads a prefix of one option as the option
+        self.assertEqual(
+            self.sockets("--sock", "unix:/tmp/lab.sock"),
+            [wire.Socket("/tmp/lab.sock")],
+        )
+
+    def test_more_than_one(self):
+        self.assertEqual(
+            self.sockets("--socket", "--socket", "unix:/tmp/lab.sock"),
+            [wire.Socket(self.default), wire.Socket("/tmp/lab.sock")],
+        )
+        self.assertEqual(
+            self.refused("--socket", "--socket"),
+            f"--socket: {self.default} is given twice",
+        )
+        self.assertEqual(
+            self.refused("--socket", f"unix:{self.default}", "--socket"),
+            f"--socket: {self.default} is given twice",
+        )
+
+    def test_a_path(self):
+        self.assertEqual(
+            self.refused("--socket", "~/lab.sock"),
+            "--socket: ~/lab.sock needs its type: unix:~/lab.sock",
+        )
+        self.assertEqual(
+            self.refused("--socket=/tmp/lab.sock"),
+            "--socket: /tmp/lab.sock needs its type: unix:/tmp/lab.sock",
         )
 
     def test_what_is_refused(self):
-        self.assertEqual(self.refused("--socket", ""), "--socket needs a path")
+        self.assertEqual(
+            self.refused("--socket", "tcp:8080"),
+            "--socket: tcp:8080: only unix sockets for now, as unix:PATH",
+        )
+        self.assertEqual(
+            self.refused("--socket=unix:"),
+            "--socket: unix: needs a path, as unix:~/labs/lab1.sock",
+        )
         folder = os.path.join(self.root, "nope")
         self.assertEqual(
-            self.refused("--socket", os.path.join(folder, "lab.sock")),
+            self.refused("--socket", f"unix:{folder}/lab.sock"),
             f"--socket: {folder} doesn't exist",
         )
         self.assertEqual(
-            self.refused("--socket", self.root),
+            self.refused("--socket", f"unix:{self.root}"),
             f"--socket: {self.root} is a folder",
         )
         path = "/tmp/" + "a" * 103
         self.assertEqual(
-            self.refused("--socket", path),
+            self.refused("--socket", f"unix:{path}"),
             f"--socket: {path} is longer than 107 bytes, the most a"
             " socket's path can have",
         )
@@ -247,10 +327,23 @@ class TestCommand(unittest.TestCase):
             options["words"], ["brick", "start", "--force", "vm1"]
         )
         options = self.parse(
-            "--socket", "/tmp/lab.sock", "--command", "status"
+            "--socket", "unix:/tmp/lab.sock", "--command", "status"
         )
-        self.assertEqual(options["socket"], "/tmp/lab.sock")
+        self.assertEqual(options["sockets"], [wire.Socket("/tmp/lab.sock")])
         self.assertFalse(self.parse()["command"])
+
+    def test_one_socket(self):
+        self.assertEqual(
+            self.refused(
+                "--socket",
+                "unix:/tmp/a.sock",
+                "--socket",
+                "unix:/tmp/b.sock",
+                "--command",
+                "status",
+            ),
+            "--command talks to one --socket",
+        )
 
     def test_words_without_it(self):
         self.assertEqual(

@@ -44,7 +44,10 @@ def run():
         from virtualbricks.console import client
 
         i18n.install()
-        sys.exit(client.main(config["words"], config["socket"]))
+        # one socket at most, of the text protocol
+        sockets = config["sockets"]
+        path = sockets[0].path if sockets else None
+        sys.exit(client.main(config["words"], path))
     if config["no-gui"]:
         factory = make_plain_application
     else:

@@ -21,8 +21,9 @@ import os
 
 from twisted.trial import unittest
 
+from virtualbricks import locations
 from virtualbricks.console import wire
-from virtualbricks.tests import make_socket, short_folder
+from virtualbricks.tests import isolate, make_socket, short_folder
 
 
 class TestMessages(unittest.TestCase):
@@ -181,3 +182,129 @@ class TestSockets(unittest.TestCase):
         self.patch(os, "getuid", lambda: uid + 1)
         error = self.assertRaises(wire.Unusable, wire.check_socket, self.path)
         self.assertEqual(str(error), f"{self.path} isn't yours")
+
+
+class TestDescriptions(unittest.TestCase):
+
+    def refused(self, text):
+        return str(self.assertRaises(ValueError, wire.parse_socket, text))
+
+    def test_a_path(self):
+        parse = wire.parse_socket
+        self.assertEqual(
+            parse("unix:/tmp/lab.sock"), ("/tmp/lab.sock", "text", "unix")
+        )
+        self.assertEqual(parse("unix:~/lab.sock"), wire.Socket("~/lab.sock"))
+        self.assertEqual(
+            parse("unix:address=lab.sock"), wire.Socket("lab.sock")
+        )
+        self.assertEqual(
+            parse("UNIX:/tmp/lab.sock"), wire.Socket("/tmp/lab.sock")
+        )
+
+    def test_the_protocol(self):
+        parse = wire.parse_socket
+        self.assertEqual(
+            parse("unix:/tmp/lab.sock:protocol=text"),
+            wire.Socket("/tmp/lab.sock"),
+        )
+        self.assertEqual(
+            parse("unix:protocol=TEXT:address=/tmp/lab.sock"),
+            wire.Socket("/tmp/lab.sock"),
+        )
+        self.assertEqual(
+            self.refused("unix:/tmp/lab.sock:protocol=json"),
+            "unix:/tmp/lab.sock:protocol=json: the protocol is text",
+        )
+
+    def test_the_rules_of_twisted(self):
+        parse = wire.parse_socket
+        # a backslash makes the next character plain
+        self.assertEqual(
+            parse(r"unix:/tmp/a\:b.sock"), wire.Socket("/tmp/a:b.sock")
+        )
+        self.assertEqual(
+            parse(r"unix:/tmp/a\\b.sock"), wire.Socket(r"/tmp/a\b.sock")
+        )
+        self.assertEqual(
+            parse(r"unix:/tmp/a\=b.sock"), wire.Socket("/tmp/a=b.sock")
+        )
+        # the first = of a part only
+        self.assertEqual(
+            parse("unix:address=/tmp/a=b.sock"), wire.Socket("/tmp/a=b.sock")
+        )
+        self.assertEqual(
+            self.refused("unix:/tmp/a\\"),
+            "unix:/tmp/a\\ ends with a backslash",
+        )
+
+    def test_without_its_type(self):
+        self.assertEqual(
+            self.refused("~/lab.sock"),
+            "~/lab.sock needs its type: unix:~/lab.sock",
+        )
+        self.assertEqual(
+            self.refused("/tmp/a:b.sock"),
+            "/tmp/a:b.sock needs its type, as unix:PATH",
+        )
+        self.assertEqual(
+            self.refused("protocol=text"),
+            "protocol=text needs its type and its path, as"
+            " unix:~/labs/lab1.sock",
+        )
+
+    def test_another_type(self):
+        for text in ("tcp:8080", "ssl:443", "systemd:domain=INET:index=0"):
+            self.assertEqual(
+                self.refused(text),
+                f"{text}: only unix sockets for now, as unix:PATH",
+            )
+
+    def test_the_path(self):
+        for text in ("unix", "unix:", "unix:address="):
+            self.assertEqual(
+                self.refused(text),
+                f"{text} needs a path, as unix:~/labs/lab1.sock",
+            )
+        for text in ("unix:/tmp/a.sock:666", "unix:/tmp/a:address=/tmp/b"):
+            self.assertEqual(
+                self.refused(text),
+                f"{text}: one path, then the keywords address and protocol",
+            )
+
+    def test_the_keywords(self):
+        self.assertEqual(
+            self.refused("unix:/tmp/a.sock:mode=666"),
+            "unix:/tmp/a.sock:mode=666: unknown keyword mode; the keywords"
+            " are address and protocol",
+        )
+        self.assertEqual(
+            self.refused("unix:/tmp/a.sock:protocol=text:protocol=text"),
+            "unix:/tmp/a.sock:protocol=text:protocol=text: protocol is given"
+            " twice",
+        )
+
+
+class TestRequestFolders(unittest.TestCase):
+
+    def test_check_cwd(self):
+        wire.check_cwd(None)
+        wire.check_cwd("/srv/labs")
+        for cwd in ("labs", 1, ""):
+            error = self.assertRaises(wire.BadRequest, wire.check_cwd, cwd)
+            self.assertEqual(
+                str(error), 'Not a request: "cwd" is not an absolute path'
+            )
+
+
+class TestTheRuntimeFolder(unittest.TestCase):
+
+    def test_in_it(self):
+        isolate(self)
+        folder = locations.runtime_dir()
+        self.assertTrue(wire.in_runtime_dir(locations.control_socket()))
+        self.assertTrue(wire.in_runtime_dir(os.path.join(folder, "a.sock")))
+        self.assertFalse(
+            wire.in_runtime_dir(os.path.join(folder, "lab1", "a"))
+        )
+        self.assertFalse(wire.in_runtime_dir("/tmp/lab.sock"))

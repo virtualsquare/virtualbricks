@@ -701,11 +701,15 @@ class Application:
         start(factory, self.get_namespace())
 
     def listen(self, factory, reactor):
-        """Answer virtualbricks --command, on the control socket."""
+        """Answer on the control sockets of --socket; on none without it."""
 
+        sockets = self.config.get("sockets")
+        if not sockets:
+            return
         from virtualbricks.console.control import listen
 
-        listen(factory, self.config.get("socket"), reactor)
+        for socket in sockets:
+            listen(factory, socket, reactor)
 
     def run_script(self, factory, path):
         """Run the commands of path, as the console's source does."""

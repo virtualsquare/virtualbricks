@@ -172,8 +172,8 @@ class TestUnanswered(ClientTestCase):
     def test_no_virtualbricks(self):
         self.assertEqual(
             self.unanswered(),
-            "No Virtualbricks of yours runs. Start one, as virtualbricks"
-            " --no-gui\n",
+            "No Virtualbricks of yours runs. Start one with a socket, as"
+            " virtualbricks --no-gui --socket\n",
         )
 
     def test_another_users(self):
@@ -198,7 +198,17 @@ class TestUnanswered(ClientTestCase):
         self.assertEqual(
             self.unanswered(),
             f"Your Virtualbricks, process {os.getpid()}, doesn't listen on"
-            f" {self.path}: it has another --socket, or its log says why\n",
+            f" {self.path}: it was started without --socket or with another"
+            " one, or its log says why\n",
+        )
+
+    def test_the_default_path_given(self):
+        # --socket alone gives the path in the runtime folder: the messages
+        # are those of no --socket
+        self.assertEqual(
+            self.unanswered(path=self.path),
+            "No Virtualbricks of yours runs. Start one with a socket, as"
+            " virtualbricks --no-gui --socket\n",
         )
 
     def test_nothing_at_another_path(self):
@@ -211,8 +221,8 @@ class TestUnanswered(ClientTestCase):
         make_socket(self.path)
         self.assertEqual(
             self.unanswered(),
-            "No Virtualbricks of yours runs. Start one, as virtualbricks"
-            " --no-gui\n",
+            "No Virtualbricks of yours runs. Start one with a socket, as"
+            " virtualbricks --no-gui --socket\n",
         )
 
     def test_not_a_socket(self):
@@ -289,7 +299,8 @@ class TestTheProcess(unittest.TestCase):
         code = (
             "import sys\n"
             "from virtualbricks.scripts import virtualbricks\n"
-            f"sys.argv = ['virtualbricks', '--socket', {path!r}, '--command',"
+            f"sys.argv = ['virtualbricks', '--socket', 'unix:{path}',"
+            " '--command',"
             " 'status']\n"
             "try:\n"
             "    virtualbricks.run()\n"

@@ -16,6 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import re
 import shlex
 import sys
 
@@ -24,8 +25,11 @@ from twisted.internet import defer, task
 from twisted.logger import textFileLogObserver
 
 from virtualbricks import locations, locks
+from virtualbricks.console import wire
 
 _log_file = sys.stdout
+# The word after --socket is its description when it starts with a type.
+DESCRIPTION = re.compile(r"[a-z][a-z0-9]*:", re.IGNORECASE)
 
 
 def file_logger():
@@ -62,6 +66,15 @@ class Options(usage.Options):
             "that runs, and print its answer; without words, the lines of "
             "the standard input.",
         ],
+        # read before getopt, which has no optional arguments
+        [
+            "socket",
+            None,
+            "Listen on a control socket: .control in the runtime folder, or "
+            "the one of the description after it, as "
+            "unix:PATH:protocol=text. Give it again for more sockets. With "
+            "--command, the socket to talk to.",
+        ],
     ]
     optParameters = [
         ["logfile", "l", None, "Write log messages to file."],
@@ -76,13 +89,6 @@ class Options(usage.Options):
             None,
             None,
             "The folder of the projects for this run, instead of the setting.",
-        ],
-        [
-            "socket",
-            None,
-            None,
-            "The path of the control socket, instead of .control in the "
-            "runtime folder.",
         ],
         [
             "lock",
@@ -117,12 +123,112 @@ class Options(usage.Options):
         usage.Options.__init__(self)
         self["verbosity"] = 0
         self["words"] = []
+        # the sockets of --socket, a wire.Socket each; the flag is never set
+        del self["socket"]
+        self["sockets"] = []
         # the options given whose value doesn't tell
         self.given = set()
+
+    def parseOptions(self, options=None):
+        if options is None:
+            options = sys.argv[1:]
+        usage.Options.parseOptions(self, self.take_sockets(options))
 
     def parseArgs(self, *words):
         # the options end at the first word: the command's own come after
         self["words"] = list(words)
+
+    def take_sockets(self, args):
+        """
+        Read each --socket of args, and return the other arguments.
+
+        getopt has no optional arguments: --socket takes the next word when
+        it starts with a type, as unix:, or the description after =. It
+        stops where getopt does, at the first word or at --.
+        """
+
+        args = list(args)
+        rest = []
+        while args:
+            arg = args.pop(0)
+            if arg == "--" or arg == "-" or not arg.startswith("-"):
+                rest.append(arg)
+                rest.extend(args)
+                break
+            name, equals, description = arg.partition("=")
+            if self._long_option(name) == "socket":
+                if equals:
+                    self.add_socket(description)
+                elif args and DESCRIPTION.match(args[0]):
+                    self.add_socket(args.pop(0))
+                elif args and args[0].startswith(("/", "~", ".")):
+                    raise usage.UsageError(
+                        f"--socket: {args[0]} needs its type:"
+                        f" unix:{args[0]}"
+                    )
+                else:
+                    self.add_socket(None)
+                continue
+            rest.append(arg)
+            if args and self._takes_value(arg):
+                rest.append(args.pop(0))
+        return rest
+
+    def _long_option(self, name):
+        """The long option that name is, as getopt reads it, or None."""
+
+        if not name.startswith("--"):
+            return None
+        name = name[2:]
+        options = [option.rstrip("=") for option in self.longOpt]
+        if name in options:
+            return name
+        # getopt takes a prefix of one option only
+        found = [option for option in options if option.startswith(name)]
+        return found[0] if len(found) == 1 else None
+
+    def _takes_value(self, arg):
+        """Whether the option arg takes the next word as its value."""
+
+        if arg.startswith("--"):
+            option = self._long_option(arg)
+            return "=" not in arg and f"{option}=" in self.longOpt
+        # -vl FILE: the first short option that takes a value takes the
+        # rest of the word, or the next word
+        for position, char in enumerate(arg[1:], start=1):
+            index = self.shortOpt.find(char)
+            if index < 0 or char == ":":
+                continue
+            if self.shortOpt[index + 1 : index + 2] == ":":
+                return position == len(arg) - 1
+        return False
+
+    def add_socket(self, description):
+        """Listen on the socket of description, or on the default one."""
+
+        if description is None:
+            socket = wire.Socket(locations.control_socket())
+        else:
+            try:
+                socket = wire.parse_socket(description)
+            except ValueError as exc:
+                raise usage.UsageError(f"--socket: {exc}") from None
+        path = os.path.abspath(os.path.expanduser(socket.path))
+        folder = os.path.dirname(path)
+        # Virtualbricks makes the runtime folder at start
+        if not os.path.isdir(folder) and not wire.in_runtime_dir(path):
+            raise usage.UsageError(f"--socket: {folder} doesn't exist")
+        if os.path.isdir(path):
+            raise usage.UsageError(f"--socket: {path} is a folder")
+        if len(os.fsencode(path)) > locations.SOCKET_PATH_MAX:
+            raise usage.UsageError(
+                f"--socket: {path} is longer than"
+                f" {locations.SOCKET_PATH_MAX} bytes, the most a socket's"
+                " path can have"
+            )
+        if any(other.path == path for other in self["sockets"]):
+            raise usage.UsageError(f"--socket: {path} is given twice")
+        self["sockets"].append(socket._replace(path=path))
 
     def opt_logfile(self, arg):
         """Write log messages to file."""
@@ -140,24 +246,6 @@ class Options(usage.Options):
         if os.path.exists(path) and not os.path.isdir(path):
             raise usage.UsageError(f"--workspace: {path} is not a folder")
         self["workspace"] = path
-
-    def opt_socket(self, arg):
-        # the help is the text of optParameters
-        if not arg:
-            raise usage.UsageError("--socket needs a path")
-        path = os.path.abspath(os.path.expanduser(arg))
-        folder = os.path.dirname(path)
-        if not os.path.isdir(folder):
-            raise usage.UsageError(f"--socket: {folder} doesn't exist")
-        if os.path.isdir(path):
-            raise usage.UsageError(f"--socket: {path} is a folder")
-        if len(os.fsencode(path)) > locations.SOCKET_PATH_MAX:
-            raise usage.UsageError(
-                f"--socket: {path} is longer than"
-                f" {locations.SOCKET_PATH_MAX} bytes, the most a socket's"
-                " path can have"
-            )
-        self["socket"] = path
 
     def opt_run(self, arg):
         # the help is the text of optParameters
@@ -213,6 +301,14 @@ class Options(usage.Options):
                     f"--command takes no --{name}: it talks to a Virtualbricks"
                     " that runs"
                 )
+        sockets = self["sockets"]
+        if len(sockets) > 1:
+            raise usage.UsageError("--command talks to one --socket")
+        if sockets and sockets[0].protocol != wire.TEXT:
+            raise usage.UsageError(
+                "--command speaks the text protocol, not"
+                f" {sockets[0].protocol}"
+            )
         if not words and sys.stdin is not None and sys.stdin.isatty():
             raise usage.UsageError(
                 "--command needs a command, as virtualbricks --command brick"

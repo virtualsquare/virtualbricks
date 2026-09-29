@@ -114,10 +114,10 @@ def _processes(holders) -> str:
     return ", ".join(names)
 
 
-def _nobody(path: str, default: bool) -> str:
+def _nobody(path: str) -> str:
     """Why nothing answers on path: the Virtualbricks that runs, if any."""
 
-    if not default:
+    if not wire.in_runtime_dir(path):
         return _("No Virtualbricks listens on {path}").format(path=path)
     try:
         me = pwd.getpwuid(os.getuid()).pw_name
@@ -130,7 +130,8 @@ def _nobody(path: str, default: bool) -> str:
     if mine:
         return _(
             "Your Virtualbricks, process {pid}, doesn't listen on {path}: it"
-            " has another --socket, or its log says why"
+            " was started without --socket or with another one, or its log"
+            " says why"
         ).format(pid=mine[0], path=path)
     theirs = [(pid, user) for pid, user in holders if user is not None]
     if theirs:
@@ -142,7 +143,8 @@ def _nobody(path: str, default: bool) -> str:
             len(theirs),
         ).format(processes=_processes(theirs))
     return _(
-        "No Virtualbricks of yours runs. Start one, as virtualbricks --no-gui"
+        "No Virtualbricks of yours runs. Start one with a socket, as"
+        " virtualbricks --no-gui --socket"
     )
 
 
@@ -152,20 +154,19 @@ def connect(path: str | None = None) -> Connection:
     runtime folder if None; raise Unanswered if none can be reached.
     """
 
-    default = path is None
-    if default:
+    if path is None:
         path = locations.control_socket()
     try:
         wire.check_length(path)
         there = wire.check_socket(path)
         if there:
-            wire.check_path(path, default)
+            wire.check_path(path, wire.in_runtime_dir(path))
     except wire.Unusable as exc:
         raise Unanswered(
             _("{reason}: no command sent").format(reason=exc)
         ) from None
     if not there:
-        raise Unanswered(_nobody(path, default))
+        raise Unanswered(_nobody(path))
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
         sock.connect(path)
@@ -173,7 +174,7 @@ def connect(path: str | None = None) -> Connection:
     except (ConnectionRefusedError, FileNotFoundError):
         # a socket left by a crash
         sock.close()
-        raise Unanswered(_nobody(path, default)) from None
+        raise Unanswered(_nobody(path)) from None
     except OSError as exc:
         sock.close()
         raise Unanswered(f"{path}: {exc.strerror}") from None

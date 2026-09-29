@@ -17,17 +17,17 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The control socket: the Virtualbricks that runs answers the commands of
-``virtualbricks --command``, and of any program that speaks the protocol of
-:mod:`virtualbricks.console.wire`.
+The control sockets: the Virtualbricks that runs answers the commands of
+``virtualbricks --command``, and of any program that speaks the text
+protocol of :mod:`virtualbricks.console.wire`.
 
-:func:`listen` listens on the socket, ``.control`` in the runtime folder or
-the path of ``--socket``, while it holds the lock beside it: the first
-Virtualbricks that takes the lock listens, the others go without. Each
-connection runs its requests one after the other; connections don't wait
-for each other, nor for the terminal or the events. At the end, each
-connection is closed once its last answer is written, so that ``quit``
-answers too.
+:func:`listen` listens on a socket of ``--socket``, ``.control`` in the
+runtime folder or the path of its description, while it holds the lock
+beside it: the first Virtualbricks that takes the lock listens, the others
+go without. Each connection runs its requests one after the other;
+connections don't wait for each other, nor for the terminal or the events.
+At the end, each connection is closed once its last answer is written, so
+that ``quit`` answers too.
 """
 
 from __future__ import annotations
@@ -44,11 +44,9 @@ from virtualbricks.console import wire
 from virtualbricks.console.dispatch import run
 
 logger = Logger()
-listening = "Listening for virtualbricks --command on {path}"
+listening = "Listening on {path}, protocol {protocol}"
 no_socket = "{reason}: no control socket"
-answered_by = (
-    "{holder} answers virtualbricks --command on {path}; this one doesn't"
-)
+answered_by = "{holder} answers on {path}; this one doesn't"
 command_received = "Command from the control socket: {line}"
 command_failed = "The command from the control socket failed: {error}"
 
@@ -56,8 +54,54 @@ command_failed = "The command from the control socket failed: {error}"
 CLOSE_TIMEOUT = 2
 
 
+class InOrder:
+    """The requests of a connection, each run after the one before."""
+
+    def __init__(self):
+        self.waiting = []
+        # a request runs, and the loop of _next() runs
+        self.busy = False
+        self.looping = False
+        self.stopped = False
+
+    def add(self, call):
+        """
+        Run call() once the requests before it are done: a Deferred of its
+        result, which never fires if the connection is lost first.
+        """
+
+        done = defer.Deferred()
+        self.waiting.append((call, done))
+        self._next()
+        return done
+
+    def stop(self):
+        """The connection is lost: drop the requests that wait."""
+
+        self.stopped = True
+        self.waiting = []
+
+    def _next(self):
+        if self.looping:
+            return
+        self.looping = True
+        try:
+            while self.waiting and not self.busy and not self.stopped:
+                self.busy = True
+                call, done = self.waiting.pop(0)
+                result = defer.maybeDeferred(call)
+                result.chainDeferred(done)
+                result.addBoth(self._finished)
+        finally:
+            self.looping = False
+
+    def _finished(self, _):
+        self.busy = False
+        self._next()
+
+
 class ControlProtocol(basic.LineOnlyReceiver):
-    """A connection: its requests, each answered after the one before."""
+    """A connection of the text protocol: its requests and their answers."""
 
     delimiter = b"\n"
     MAX_LENGTH = wire.MAX_LINE
@@ -66,10 +110,7 @@ class ControlProtocol(basic.LineOnlyReceiver):
         # not factory: Twisted sets that, the ControlFactory
         self.brickfactory = brickfactory
         self.reactor = reactor
-        self.requests = []
-        # a command runs, and the loop of next() runs
-        self.busy = False
-        self.looping = False
+        self.requests = InOrder()
 
     def connectionMade(self):
         self.factory.connections.add(self)
@@ -81,7 +122,7 @@ class ControlProtocol(basic.LineOnlyReceiver):
         # the command that runs goes on; its answer is dropped. Twisted
         # doesn't reset connected.
         self.connected = False
-        self.requests = []
+        self.requests.stop()
         self.factory.lost(self)
 
     def send(self, message):
@@ -90,26 +131,7 @@ class ControlProtocol(basic.LineOnlyReceiver):
 
     def lineReceived(self, line):
         if line.strip():
-            self.requests.append(line)
-            self.next()
-
-    def next(self):
-        """Run the requests that wait, one after the other."""
-
-        if self.looping:
-            return
-        self.looping = True
-        try:
-            while self.requests and not self.busy and self.connected:
-                self.busy = True
-                done = self.handle(self.requests.pop(0))
-                done.addBoth(self._finished)
-        finally:
-            self.looping = False
-
-    def _finished(self, _):
-        self.busy = False
-        self.next()
+            self.requests.add(lambda: self.handle(line))
 
     def handle(self, line):
         try:
@@ -134,20 +156,21 @@ class ControlProtocol(basic.LineOnlyReceiver):
 
 
 class ControlFactory(protocol.Factory):
-    """The connections of the control socket."""
+    """The connections of a control socket, of the protocol it speaks."""
 
     # listen() logs what the log needs: not the address of the object
     noisy = False
 
-    def __init__(self, brickfactory, reactor):
+    def __init__(self, brickfactory, reactor, protocol=ControlProtocol):
         self.brickfactory = brickfactory
         self.reactor = reactor
+        self.protocol = protocol
         self.connections = set()
         # fired once every connection is closed, while closing
         self._closed = None
 
     def buildProtocol(self, addr):
-        connection = ControlProtocol(self.brickfactory, self.reactor)
+        connection = self.protocol(self.brickfactory, self.reactor)
         connection.factory = self
         return connection
 
@@ -232,10 +255,14 @@ def _listen_unix(reactor, path, factory):
         os.umask(umask)
 
 
-def listen(brickfactory, path=None, reactor=None):
+# The protocol of the connections of a socket, by the protocol it speaks.
+PROTOCOLS = {wire.TEXT: ControlProtocol}
+
+
+def listen(brickfactory, socket=None, reactor=None):
     """
-    Answer the commands of the control socket at path: ``.control`` in the
-    runtime folder if None.
+    Answer the commands of socket, a wire.Socket of --socket: the text
+    socket at ``.control`` in the runtime folder if None.
 
     Return the Control, None if this Virtualbricks goes without: another
     one answers there, or the socket can't be there; the log says which.
@@ -244,12 +271,12 @@ def listen(brickfactory, path=None, reactor=None):
 
     if reactor is None:
         from twisted.internet import reactor
-    default = path is None
-    if default:
-        path = locations.control_socket()
+    if socket is None:
+        socket = wire.Socket(locations.control_socket())
+    path = socket.path
     lock_file = locations.control_lock_file(path)
     try:
-        wire.check_path(path, default)
+        wire.check_path(path, wire.in_runtime_dir(path))
         lock = locks.hold(lock_file)
     except wire.Unusable as exc:
         logger.warn(no_socket, reason=str(exc))
@@ -260,7 +287,7 @@ def listen(brickfactory, path=None, reactor=None):
     if lock is None:
         logger.info(answered_by, holder=_holder(lock_file), path=path)
         return None
-    factory = ControlFactory(brickfactory, reactor)
+    factory = ControlFactory(brickfactory, reactor, PROTOCOLS[socket.protocol])
     try:
         # holding the lock, nobody answers on a socket left there: a crash
         if wire.check_socket(path):
@@ -280,5 +307,5 @@ def listen(brickfactory, path=None, reactor=None):
         return None
     control = Control(path, port, lock, factory)
     reactor.addSystemEventTrigger("before", "shutdown", control.close)
-    logger.info(listening, path=path)
+    logger.info(listening, path=path, protocol=socket.protocol)
     return control

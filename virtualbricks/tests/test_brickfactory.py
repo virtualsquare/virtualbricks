@@ -33,7 +33,7 @@ from virtualbricks.bricks.eventaction import (
     StopAction,
 )
 from virtualbricks.config.workspace import projects
-from virtualbricks.console import control
+from virtualbricks.console import control, wire
 from virtualbricks.config import workspace
 from virtualbricks.config.settings import (
     current_project,
@@ -224,7 +224,7 @@ class AppTestCase(unittest.TestCase):
         self.patch(
             control,
             "listen",
-            lambda factory, path, reactor: self.listened.append(path),
+            lambda factory, socket, reactor: self.listened.append(socket),
         )
         self.app = Application(CONFIG)
         self.app.install_locale = lambda: None
@@ -389,10 +389,13 @@ class TestTheConsole(AppTestCase):
         self.application(noterm=True).run(FakeReactor())
         self.assertEqual(len(self.started), 1)
 
-    def test_the_control_socket(self):
+    def test_the_control_sockets(self):
+        # none without --socket
         self.application().run(FakeReactor())
-        self.application(socket="/srv/lab.sock").run(FakeReactor())
-        self.assertEqual(self.listened, [None, "/srv/lab.sock"])
+        self.assertEqual(self.listened, [])
+        sockets = [wire.Socket("/srv/lab.sock"), wire.Socket("/srv/lab2.sock")]
+        self.application(sockets=sockets).run(FakeReactor())
+        self.assertEqual(self.listened, sockets)
 
     def test_a_script_first(self):
         path = self.script("brick new switch\n# a comment\n\nbrick new tap\n")
