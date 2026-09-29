@@ -18,45 +18,11 @@
 
 
 import os
-import sys
-from functools import update_wrapper, wraps
+from functools import update_wrapper
 import struct
 
 from twisted.internet import utils
-from twisted.logger import Logger
 import constantly as constants
-
-logger = Logger()
-
-
-def synchronize(func, lock):
-    @wraps(func)
-    def wrapper(*args, **kwds):
-        with lock:
-            return func(*args, **kwds)
-
-    return wrapper
-
-
-def synchronize_with(lock):
-    def wrap(func):
-        return synchronize(func, lock)
-
-    return wrap
-
-
-def stack_trace():
-    out = []
-    f = sys._getframe(1)
-    while f:
-        out.append("{0.f_code.co_filename}:{0.f_lineno}".format(f))
-        f = f.f_back
-    return "\n".join(out)
-
-
-def check_kvm(path=None):
-    return os.access("/dev/kvm", os.R_OK & os.W_OK)
-
 
 GENERIC_HEADER = ">II"
 GENERIC_HEADER_LEN = struct.calcsize(GENERIC_HEADER)
