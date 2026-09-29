@@ -32,7 +32,17 @@ them on PATH::
 its lines; the paths of the command are read from ``cwd``, from the folder
 of Virtualbricks without it. The requests of a connection run one after the
 other.
+
+A tcp socket answers once the program proves that it knows the token, with
+:func:`authenticate`, which calls ``Challenge`` and ``Authenticate``::
+
+    endpoint = endpoints.TCP4ClientEndpoint(reactor, "127.0.0.1", 8766)
+    vb = await endpoints.connectProtocol(endpoint, amp.AMP())
+    await authenticate(vb, token)
 """
+
+import hmac
+import secrets
 
 from twisted.protocols import amp
 
@@ -49,6 +59,14 @@ class AnswerTooLong(Exception):
     """The command was done; its answer doesn't fit in AMP."""
 
 
+class TokenNeeded(Exception):
+    """The socket answers once the program proves that it knows the token."""
+
+
+class WrongToken(Exception):
+    """The proof doesn't match the token, or the socket takes none."""
+
+
 class Hello(amp.Command):
     """Who answers."""
 
@@ -58,6 +76,7 @@ class Hello(amp.Command):
         (b"pid", amp.Integer()),
         (b"project", amp.Unicode(optional=True)),
     ]
+    errors = {TokenNeeded: b"TOKEN_NEEDED"}
 
 
 class Run(amp.Command):
@@ -71,4 +90,46 @@ class Run(amp.Command):
     errors = {
         CommandFailed: b"COMMAND_FAILED",
         AnswerTooLong: b"ANSWER_TOO_LONG",
+        TokenNeeded: b"TOKEN_NEEDED",
     }
+
+
+class Challenge(amp.Command):
+    """The nonce of Virtualbricks, to prove the token over."""
+
+    response = [(b"nonce", amp.Unicode())]
+    errors = {WrongToken: b"WRONG_TOKEN"}
+
+
+class Authenticate(amp.Command):
+    """The nonce and the proof of the program; the proof of Virtualbricks."""
+
+    arguments = [(b"nonce", amp.Unicode()), (b"proof", amp.Unicode())]
+    response = [(b"proof", amp.Unicode())]
+    errors = {WrongToken: b"WRONG_TOKEN"}
+
+
+def proof(token, side, server_nonce, client_nonce):
+    """
+    The proof that side, "client" or "server", knows token: the HMAC-SHA256
+    of both nonces under the token, in hex.
+    """
+
+    message = f"virtualbricks {side} {server_nonce} {client_nonce}"
+    return hmac.new(token.encode(), message.encode(), "sha256").hexdigest()
+
+
+async def authenticate(vb, token):
+    """
+    Prove to the Virtualbricks of vb, an AMP connection, that the program
+    knows token; raise WrongToken if either end doesn't know it.
+    """
+
+    mine = secrets.token_hex(32)
+    theirs = (await vb.callRemote(Challenge))["nonce"]
+    answer = await vb.callRemote(
+        Authenticate, nonce=mine, proof=proof(token, "client", theirs, mine)
+    )
+    expected = proof(token, "server", theirs, mine)
+    if not hmac.compare_digest(answer["proof"].encode(), expected.encode()):
+        raise WrongToken("The other end doesn't know the token")

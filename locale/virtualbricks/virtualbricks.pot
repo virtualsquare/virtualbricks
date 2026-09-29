@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 17:29+0200\n"
+"POT-Creation-Date: 2026-09-29 17:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1556,6 +1556,18 @@ msgstr ""
 #: virtualbricks/console/control.py
 #, python-brace-format
 msgid "No proof in {seconds} seconds"
+msgstr ""
+
+#: virtualbricks/console/control.py
+msgid "Prove the token first: Challenge, then Authenticate"
+msgstr ""
+
+#: virtualbricks/console/control.py
+msgid "This socket takes no token"
+msgstr ""
+
+#: virtualbricks/console/control.py
+msgid "Challenge first, then Authenticate"
 msgstr ""
 
 #: virtualbricks/console/control.py

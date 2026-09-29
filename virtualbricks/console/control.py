@@ -258,7 +258,11 @@ class ControlProtocol(basic.LineOnlyReceiver):
 
 
 class AMPControl(amp.AMP):
-    """A connection of the AMP protocol: the commands of ampwire."""
+    """
+    A connection of the AMP protocol: the commands of ampwire. On a socket
+    with a token, Hello and Run wait for the proof, by Challenge and
+    Authenticate.
+    """
 
     # how Run writes its answer, to measure it first
     LINES = amp.ListOf(amp.Unicode())
@@ -269,6 +273,13 @@ class AMPControl(amp.AMP):
         self.brickfactory = brickfactory
         self.reactor = reactor
         self.requests = InOrder()
+        # who connects to a network socket, for the log; None on unix
+        self.who = None
+        # whether the program owes the proof of the token, the nonce of
+        # its Challenge, and what closes it without a proof
+        self.owes_proof = False
+        self.nonce = None
+        self.timer = None
 
     def makeConnection(self, transport):
         # AMP logs each connection with the addresses of its objects: listen()
@@ -277,16 +288,87 @@ class AMPControl(amp.AMP):
 
     def connectionMade(self):
         self.factory.connections.add(self)
+        if self.factory.network():
+            self.who = _peer(self.transport)
+        if self.factory.token is not None:
+            self.owes_proof = True
+            self.timer = self.reactor.callLater(
+                wire.PROOF_TIMEOUT, self._too_slow
+            )
 
     def connectionLost(self, reason):
         # the command that runs goes on; its answer is dropped
         amp.BinaryBoxProtocol.connectionLost(self, reason)
         self.transport = None
+        self._stop_timer()
         self.requests.stop()
         self.factory.lost(self)
 
+    def _stop_timer(self):
+        if self.timer is not None and self.timer.active():
+            self.timer.cancel()
+        self.timer = None
+
+    def _too_slow(self):
+        self.timer = None
+        logger.warn(
+            too_slow,
+            who=self.who,
+            socket=self.factory.label(),
+            seconds=wire.PROOF_TIMEOUT,
+        )
+        self.transport.loseConnection()
+
+    def _check_proved(self):
+        if self.owes_proof:
+            raise ampwire.TokenNeeded(
+                _("Prove the token first: Challenge, then Authenticate")
+            )
+
+    @ampwire.Challenge.responder
+    def challenge(self):
+        if self.factory.token is None:
+            raise ampwire.WrongToken(_("This socket takes no token"))
+        self.nonce = wire.new_nonce()
+        return {"nonce": self.nonce}
+
+    @ampwire.Authenticate.responder
+    def authenticate(self, nonce, proof):
+        token = self.factory.token
+        if token is None:
+            raise ampwire.WrongToken(_("This socket takes no token"))
+        mine, self.nonce = self.nonce, None
+        socket = self.factory.label()
+        if mine is None or not wire.NONCE.fullmatch(nonce):
+            logger.warn(not_a_proof, who=self.who, socket=socket)
+            self._shut_out()
+            raise ampwire.WrongToken(_("Challenge first, then Authenticate"))
+        if not wire.same_proof(
+            proof, wire.proof(token, "client", mine, nonce)
+        ):
+            logger.warn(wrong_token, who=self.who, socket=socket)
+            self._shut_out()
+            raise ampwire.WrongToken(_("Wrong token"))
+        self._stop_timer()
+        self.owes_proof = False
+        logger.info(proved, who=self.who, socket=socket)
+        return {"proof": wire.proof(token, "server", mine, nonce)}
+
+    def _shut_out(self):
+        """Close the connection once the error is written."""
+
+        self._stop_timer()
+        self.owes_proof = True
+
+        def close():
+            if self.transport is not None:
+                self.transport.loseConnection()
+
+        self.reactor.callLater(0, close)
+
     @ampwire.Hello.responder
     def hello(self):
+        self._check_proved()
         current = projects.current
         return {
             "protocol": ampwire.PROTOCOL,
@@ -297,6 +379,7 @@ class AMPControl(amp.AMP):
 
     @ampwire.Run.responder
     def run_line(self, line, cwd):
+        self._check_proved()
         return self.requests.add(lambda: self.handle(line, cwd))
 
     def handle(self, line, cwd):
@@ -304,7 +387,10 @@ class AMPControl(amp.AMP):
             wire.check_cwd(cwd)
         except wire.BadRequest as exc:
             raise ampwire.CommandFailed(str(exc)) from None
-        logger.info(amp_command_received, line=line)
+        if self.who is None:
+            logger.info(amp_command_received, line=line)
+        else:
+            logger.info(command_from, who=self.who, line=line)
         done = run(self.brickfactory, line, self.reactor, cwd=cwd)
         done.addCallbacks(self._answer, self._refuse)
         return done
@@ -327,7 +413,10 @@ class AMPControl(amp.AMP):
         # what the command did first is dropped
         exc = failure.value
         message = str(exc) or type(exc).__name__
-        logger.info(amp_command_failed, error=message)
+        if self.who is None:
+            logger.info(amp_command_failed, error=message)
+        else:
+            logger.info(command_from_failed, who=self.who, error=message)
         raise ampwire.CommandFailed(message)
 
 

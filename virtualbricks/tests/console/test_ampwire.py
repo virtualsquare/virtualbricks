@@ -20,7 +20,12 @@
 import subprocess
 import sys
 
+from twisted.internet import defer
+from twisted.protocols import amp
+from twisted.test import iosim
 from twisted.trial import unittest
+
+from virtualbricks.console import ampwire, wire
 
 
 class TestTheImport(unittest.TestCase):
@@ -49,4 +54,41 @@ class TestTheImport(unittest.TestCase):
                 "['virtualbricks', 'virtualbricks.console',"
                 " 'virtualbricks.console.ampwire']",
             ],
+        )
+
+
+class TestTheProof(unittest.TestCase):
+
+    def test_as_the_text_socket(self):
+        nonce, mine = wire.new_nonce(), wire.new_nonce()
+        for side in ("client", "server"):
+            self.assertEqual(
+                ampwire.proof("0123456789abcdef", side, nonce, mine),
+                wire.proof("0123456789abcdef", side, nonce, mine),
+            )
+
+
+class Liar(amp.AMP):
+    """An end that doesn't know the token, and proves something else."""
+
+    @ampwire.Challenge.responder
+    def challenge(self):
+        return {"nonce": wire.new_nonce()}
+
+    @ampwire.Authenticate.responder
+    def authenticate(self, nonce, proof):
+        return {"proof": wire.new_nonce()}
+
+
+class TestAuthenticate(unittest.TestCase):
+
+    def test_an_end_without_the_token(self):
+        program, liar, pump = iosim.connectedServerAndClient(Liar, amp.AMP)
+        done = defer.ensureDeferred(
+            ampwire.authenticate(program, "0123456789abcdef")
+        )
+        pump.flush()
+        failure = self.failureResultOf(done, ampwire.WrongToken)
+        self.assertEqual(
+            failure.getErrorMessage(), "The other end doesn't know the token"
         )

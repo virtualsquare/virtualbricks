@@ -622,6 +622,165 @@ class TestAMP(ConsoleTestCase):
         self.successResultOf(closed)
 
 
+class TestAMPToken(ConsoleTestCase):
+    """A connection of an AMP socket on tcp, whose program proves the token."""
+
+    def setUp(self):
+        super().setUp()
+        self.factory.runtime_dir = "/run/vb"
+        self.logger = FakeLogger()
+        self.patch(control, "logger", self.logger)
+        self.patch(amp, "_log", FakeLogger())
+        use_workspace(self).current = Project()
+        self.server = control.ControlFactory(
+            self.factory,
+            self.clock(),
+            control.AMPControl,
+            wire.parse_socket("tcp:8766:protocol=amp"),
+            TOKEN,
+        )
+        self.program, self.connection, self.pump = self.connect()
+
+    def connect(self):
+        peer = address.IPv4Address("TCP", "127.0.0.1", 50412)
+
+        def transport(protocol):
+            return iosim.FakeTransport(protocol, True, peerAddress=peer)
+
+        return iosim.connectedServerAndClient(
+            lambda: self.server.buildProtocol(None),
+            amp.AMP,
+            serverTransportFactory=transport,
+        )
+
+    def call(self, command, **arguments):
+        # the answer has its callbacks before it comes, see TestAMP.call
+        answer = defer.Deferred()
+        self.program.callRemote(command, **arguments).chainDeferred(answer)
+        self.pump.flush()
+        return answer
+
+    def authenticate(self, token=TOKEN):
+        done = defer.ensureDeferred(ampwire.authenticate(self.program, token))
+        self.pump.flush()
+        return done
+
+    def assertClosed(self):
+        # the error goes first, then the connection closes
+        self.assertIsNotNone(self.connection.transport)
+        self.clock().advance(0)
+        self.pump.flush()
+        self.assertIsNone(self.connection.transport)
+
+    def test_the_proof(self):
+        self.successResultOf(self.authenticate())
+        hello = self.successResultOf(self.call(ampwire.Hello))
+        self.assertEqual(hello["project"], "lab1")
+        answer = self.successResultOf(
+            self.call(ampwire.Run, line="brick new switch")
+        )
+        self.assertEqual(answer, {"lines": ["sw1"]})
+        self.assertEqual(
+            self.logger.formatted(),
+            [
+                "127.0.0.1 port 50412 connected to tcp port 8766 with the"
+                " token",
+                "Command from 127.0.0.1 port 50412: brick new switch",
+            ],
+        )
+        # no timer left to close it
+        self.assertEqual(self.clock().getDelayedCalls(), [])
+
+    def test_a_command_that_fails(self):
+        self.successResultOf(self.authenticate())
+        failure = self.failureResultOf(
+            self.call(ampwire.Run, line="brick start vm9"),
+            ampwire.CommandFailed,
+        )
+        self.assertEqual(failure.getErrorMessage(), "No brick named vm9")
+        self.assertEqual(
+            self.logger.formatted()[-1],
+            "The command from 127.0.0.1 port 50412 failed: No brick named"
+            " vm9",
+        )
+
+    def test_before_the_proof(self):
+        for amp_command, arguments in (
+            (ampwire.Hello, {}),
+            (ampwire.Run, {"line": "brick new switch"}),
+        ):
+            failure = self.failureResultOf(
+                self.call(amp_command, **arguments), ampwire.TokenNeeded
+            )
+            self.assertEqual(
+                failure.getErrorMessage(),
+                "Prove the token first: Challenge, then Authenticate",
+            )
+        self.assertEqual(self.factory.bricks, [])
+        # the connection stays, for the proof
+        self.successResultOf(self.authenticate())
+
+    def test_a_wrong_token(self):
+        failure = self.failureResultOf(
+            self.authenticate("fedcba9876543210"), ampwire.WrongToken
+        )
+        self.assertEqual(failure.getErrorMessage(), "Wrong token")
+        self.assertClosed()
+        self.assertEqual(
+            self.logger.formatted(),
+            ["127.0.0.1 port 50412 on tcp port 8766: wrong token"],
+        )
+        self.assertEqual(self.logger.levels(), ["warn"])
+
+    def test_without_the_challenge(self):
+        nonce = wire.new_nonce()
+        failure = self.failureResultOf(
+            self.call(ampwire.Authenticate, nonce=nonce, proof="8e02"),
+            ampwire.WrongToken,
+        )
+        self.assertEqual(
+            failure.getErrorMessage(), "Challenge first, then Authenticate"
+        )
+        self.assertClosed()
+        self.assertEqual(
+            self.logger.formatted(),
+            ["127.0.0.1 port 50412 on tcp port 8766: not a proof"],
+        )
+
+    def test_ten_seconds(self):
+        self.clock().advance(wire.PROOF_TIMEOUT - 0.1)
+        self.pump.flush()
+        self.assertIsNotNone(self.connection.transport)
+        self.clock().advance(0.1)
+        self.pump.flush()
+        self.assertIsNone(self.connection.transport)
+        self.assertEqual(
+            self.logger.formatted(),
+            ["127.0.0.1 port 50412 on tcp port 8766: no proof in 10 seconds"],
+        )
+
+    def test_lost_before_the_proof(self):
+        self.program.transport.loseConnection()
+        self.pump.flush()
+        self.assertEqual(self.clock().getDelayedCalls(), [])
+
+    def test_no_token_here(self):
+        # a socket without a token has nothing to prove
+        self.server.token = None
+        self.program, self.connection, self.pump = self.connect()
+        for amp_command, arguments in (
+            (ampwire.Challenge, {}),
+            (ampwire.Authenticate, {"nonce": "c" * 64, "proof": "8e02"}),
+        ):
+            failure = self.failureResultOf(
+                self.call(amp_command, **arguments), ampwire.WrongToken
+            )
+            self.assertEqual(
+                failure.getErrorMessage(), "This socket takes no token"
+            )
+        self.successResultOf(self.call(ampwire.Hello))
+
+
 class Reactor:
     """The reactor of the tests, whose shutdown triggers are only kept."""
 
@@ -932,6 +1091,20 @@ class TestListenTcp(ConsoleTestCase):
             ),
         )
         self.assertEqual(self.logger.levels(), ["info", "info", "warn"])
+
+    @defer.inlineCallbacks
+    def test_amp(self):
+        found = self.listen(protocol=wire.AMP)
+        endpoint = endpoints.TCP4ClientEndpoint(
+            reactor, "127.0.0.1", found.socket.port
+        )
+        program = yield endpoints.connectProtocol(endpoint, AMPProgram())
+        token = wire.read_token(self.token_file)
+        yield defer.ensureDeferred(ampwire.authenticate(program, token))
+        answer = yield program.callRemote(ampwire.Run, line="brick new switch")
+        self.assertEqual(answer, {"lines": ["sw1"]})
+        yield found.close()
+        yield program.lost
 
     def test_a_token_of_its_own(self):
         path = os.path.join(self.mktemp(), "lab1.token")
