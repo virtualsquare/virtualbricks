@@ -91,7 +91,7 @@ def add(context, name, path, key_value):
     factory = context.factory
     description = _description(key_value) or ""
     name = factory.normalize_name(name)
-    path = os.path.abspath(os.path.expanduser(path))
+    path = context.path(path)
     if not os.path.isfile(path):
         raise CommandError(_("No file {path}").format(path=path))
     return [factory.new_disk_image(name, path, description).name]

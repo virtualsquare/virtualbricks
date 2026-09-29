@@ -164,6 +164,38 @@ class TestFiles(unittest.TestCase):
             self.assertFalse(os.get_inheritable(fd))
 
 
+class TestHold(unittest.TestCase):
+    """The lock of one file, as the control socket's."""
+
+    def setUp(self):
+        isolate(self)
+        self.path = os.path.abspath(self.mktemp())
+
+    def hold(self):
+        lock = locks.hold(self.path)
+        self.addCleanup(release, lock)
+        return lock
+
+    def test_alone(self):
+        lock = self.hold()
+        self.assertTrue(lock.locked)
+        self.assertIsNone(locks.hold(self.path))
+        self.assertEqual(locks.holders(self.path), ((os.getpid(), ME),))
+        lock.unlock()
+        self.assertTrue(self.hold().locked)
+
+    def test_apart_from_the_policies(self):
+        hold_lock(self, USER)
+        self.assertTrue(self.hold().locked)
+
+    def test_a_symlink_is_not_followed(self):
+        target = self.path + "-target"
+        os.symlink(target, self.path)
+        error = self.assertRaises(OSError, locks.hold, self.path)
+        self.assertEqual(error.errno, errno.ELOOP)
+        self.assertFalse(os.path.exists(target))
+
+
 class TestProcesses(unittest.TestCase):
 
     def setUp(self):

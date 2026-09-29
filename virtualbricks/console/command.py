@@ -31,6 +31,7 @@ can't be done raises :class:`CommandError`, whose text is the message.
 
 from __future__ import annotations
 
+import os
 import re
 from collections.abc import Callable, Sequence
 from typing import Any
@@ -60,6 +61,15 @@ class Context:
     reactor: Any = None
     # the terminal, when the command was typed there
     terminal: Any = None
+    # the folder that the paths of the command are read from, None for the
+    # folder of Virtualbricks: that of --command, for a command sent there
+    cwd: str | None = None
+
+    def path(self, word: str) -> str:
+        """The absolute path that word, a path the user typed, names."""
+
+        folder = self.cwd if self.cwd is not None else os.getcwd()
+        return os.path.normpath(os.path.join(folder, os.path.expanduser(word)))
 
 
 class ArgKind:

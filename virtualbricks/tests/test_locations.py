@@ -88,6 +88,20 @@ class TestLocations(unittest.TestCase):
             locations.user_lock_file(), "/run/user/1000/virtualbricks/.lock"
         )
 
+    def test_control_socket(self):
+        # beside the runtime directories of the projects, and its lock too
+        self.env["XDG_RUNTIME_DIR"] = "/run/user/1000"
+        socket = locations.control_socket()
+        self.assertEqual(socket, "/run/user/1000/virtualbricks/.control")
+        self.assertEqual(
+            locations.control_lock_file(socket),
+            "/run/user/1000/virtualbricks/.control.lock",
+        )
+        self.assertEqual(
+            locations.control_lock_file("/home/alice/lab.sock"),
+            "/home/alice/lab.sock.lock",
+        )
+
     def test_brick_name_room(self):
         # 107 bytes: the runtime directory, "/", the name, ".ctl/.<pid>-<n>"
         runtime_dir = "/run/user/1000/virtualbricks/lab"

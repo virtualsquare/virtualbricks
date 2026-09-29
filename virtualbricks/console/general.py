@@ -20,8 +20,6 @@
 
 from __future__ import annotations
 
-import os
-
 from twisted.internet import defer
 
 from virtualbricks.console.command import (
@@ -154,7 +152,7 @@ def quit_(context):
 def source(context, file):
     from virtualbricks.console.dispatch import run
 
-    path = os.path.expanduser(file)
+    path = context.path(file)
     try:
         with open(path, encoding="utf-8") as fp:
             text = fp.read()
@@ -168,7 +166,11 @@ def source(context, file):
     for number, line in enumerate(text.splitlines(), start=1):
         try:
             answer = yield run(
-                context.factory, line, context.reactor, context.terminal
+                context.factory,
+                line,
+                context.reactor,
+                context.terminal,
+                context.cwd,
             )
         except CommandError as exc:
             raise CommandError(

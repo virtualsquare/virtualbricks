@@ -17,6 +17,8 @@
 
 """The commands, their arguments and how they are found."""
 
+import os
+
 from twisted.trial import unittest
 
 from virtualbricks.console.command import (
@@ -143,3 +145,23 @@ class TestKinds(unittest.TestCase):
                 CommandError, pair.read, self.context, word
             )
             self.assertEqual(str(error), f'"{word}" is not KEY=VALUE')
+
+
+class TestContext(unittest.TestCase):
+
+    def test_path(self):
+        context = Context(None, cwd="/home/alice/labs")
+        self.assertEqual(context.path("lab.vb"), "/home/alice/labs/lab.vb")
+        self.assertEqual(context.path("../lab.vb"), "/home/alice/lab.vb")
+        self.assertEqual(context.path("/srv/lab.vb"), "/srv/lab.vb")
+        home = os.path.expanduser("~")
+        self.assertEqual(
+            context.path("~/lab.vb"), os.path.join(home, "lab.vb")
+        )
+
+    def test_the_folder_of_virtualbricks(self):
+        # the terminal and the events: the folder that it runs in
+        self.assertEqual(
+            Context(None).path("lab.vb"),
+            os.path.join(os.getcwd(), "lab.vb"),
+        )

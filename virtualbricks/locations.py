@@ -89,6 +89,19 @@ def user_lock_file():
     return os.path.join(runtime_dir(), ".lock")
 
 
+def control_socket():
+    """The socket that the Virtualbricks of this user listens on."""
+
+    # named with a dot, as the user lock
+    return os.path.join(runtime_dir(), ".control")
+
+
+def control_lock_file(socket):
+    """The lock that the Virtualbricks listening on socket holds."""
+
+    return socket + ".lock"
+
+
 def brick_name_room(runtime_dir):
     """The bytes a brick's name can have in the sockets under runtime_dir."""
 

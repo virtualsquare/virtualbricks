@@ -226,6 +226,21 @@ def _open(path: str) -> int:
         return fd
 
 
+def hold(path: str) -> Lock | None:
+    """
+    Lock the file at path alone, without waiting, as the control socket's.
+
+    Return the lock, None if another process holds it; raise OSError if the
+    file can't be opened.
+    """
+
+    # the lock of a file of its own, of no policy
+    lock = Lock(NONE)
+    if not lock._take(path, fcntl.LOCK_EX):
+        return None
+    return lock
+
+
 def acquire(policy: str = SYSTEM) -> Lock:
     """
     Take the locks of policy and return them.

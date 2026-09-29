@@ -169,6 +169,19 @@ class TestSource(ConsoleTestCase):
         self.assertEqual(failure.value.lines, ["sw1"])
         self.assertEqual([b.name for b in self.factory.bricks], ["sw1"])
 
+    def test_from_the_folder_of_the_command(self):
+        # sent by --command: the file and the paths inside it are read from
+        # the folder that it runs in
+        folder = os.path.abspath(self.mktemp())
+        os.makedirs(folder)
+        open(os.path.join(folder, "deb.qcow2"), "w").close()
+        with open(os.path.join(folder, "lab.vb"), "w") as fp:
+            fp.write("image add deb deb.qcow2\n")
+        answer = run(self.factory, "source lab.vb", self.clock(), cwd=folder)
+        self.assertEqual(self.successResultOf(answer), ["deb"])
+        image = self.factory.get_image_by_name("deb")
+        self.assertEqual(image.get_path(), os.path.join(folder, "deb.qcow2"))
+
     def test_a_file_that_cant_be_read(self):
         self.assertEqual(
             self.fails("source /nope.vb"),

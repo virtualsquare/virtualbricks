@@ -19,6 +19,7 @@
 
 import os
 
+from virtualbricks.console.dispatch import run
 from virtualbricks.tests.console import ConsoleTestCase
 
 
@@ -51,6 +52,15 @@ class TestImages(ConsoleTestCase):
             self.run_line("image show deb"),
             ["deb", self.path, "Debian 13", "used by vm1 hda"],
         )
+
+    def test_add_from_the_folder_of_the_command(self):
+        folder, name = os.path.split(self.path)
+        answer = run(
+            self.factory, f"image add deb {name}", self.clock(), cwd=folder
+        )
+        self.assertEqual(self.successResultOf(answer), ["deb"])
+        image = self.factory.get_image_by_name("deb")
+        self.assertEqual(image.get_path(), self.path)
 
     def test_what_is_wrong(self):
         self.assertEqual(

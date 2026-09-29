@@ -61,9 +61,10 @@ def _reason(failure, line):
     )
 
 
-def run(factory, line, reactor=None, terminal=None):
+def run(factory, line, reactor=None, terminal=None, cwd=None):
     """
-    Run a line of the console on factory.
+    Run a line of the console on factory; its paths are read from cwd, the
+    folder of Virtualbricks if None.
 
     Return a Deferred of the lines of the answer, which fails with a
     CommandError.
@@ -71,7 +72,7 @@ def run(factory, line, reactor=None, terminal=None):
 
     if reactor is None:
         from twisted.internet import reactor
-    context = Context(factory, reactor, terminal)
+    context = Context(factory, reactor, terminal, cwd)
     try:
         parsed = parse(context, line)
     except CommandError:
