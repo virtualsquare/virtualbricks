@@ -112,3 +112,9 @@ class Base:
     def notify_changed(self):
         if not self._restore:
             self._observable.notify("changed", self)
+
+
+def is_running(brick):
+    """Whether a brick or an event is running."""
+
+    return brick.__isrunning__()

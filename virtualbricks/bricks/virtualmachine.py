@@ -64,7 +64,6 @@ from virtualbricks.observable import Event, Observable
 from virtualbricks.qemu import imageformat
 from virtualbricks.qemu.imageformat import NotCowFileError
 from virtualbricks.qemu.run import qemu_img, which
-from virtualbricks.tools import discard_first_arg, sync
 
 logger = Logger()
 new_cow = (
@@ -544,8 +543,6 @@ class Disk:
 
         deferred = read_info(path, qemu_img)
         deferred.addCallback(create)
-        deferred.addCallback(discard_first_arg(sync))
-        # Always return None, independently of the return from sync
         deferred.addCallback(lambda _: None)
         return deferred
 

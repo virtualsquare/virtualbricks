@@ -43,7 +43,7 @@ from gi.repository import Gtk  # noqa: E402
 
 from virtualbricks.gui.mainwindow.bricks.config.form import Form
 from virtualbricks.i18n import _
-from virtualbricks.tools import is_running
+from virtualbricks.base import is_running
 
 
 def spin_buttons(widget: Gtk.Widget) -> Iterator[Gtk.SpinButton]:

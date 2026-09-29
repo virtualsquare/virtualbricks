@@ -40,7 +40,7 @@ from virtualbricks.bricks.virtualmachine import is_disk_image
 from virtualbricks.config.settings import get_setting, set_setting
 from virtualbricks.config.workspace import projects
 from virtualbricks.programs import missing_programs
-from virtualbricks.tools import is_running
+from virtualbricks.base import is_running
 from virtualbricks.i18n import _
 from virtualbricks.gui.graphics import load_pixbuf
 from virtualbricks.gui.dialogs.about import AboutDialog

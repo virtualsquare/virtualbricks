@@ -41,7 +41,7 @@ from virtualbricks.bricks.eventaction import (
     StopAction,
 )
 from virtualbricks.i18n import _, ngettext
-from virtualbricks.tools import is_running
+from virtualbricks.base import is_running
 
 # Between the parts of a row's line.
 SEPARATOR = " · "
