@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 15:14+0200\n"
+"POT-Creation-Date: 2026-09-29 15:19+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1406,6 +1406,69 @@ msgstr ""
 msgid "Delete bricks that don't run"
 msgstr ""
 
+#: virtualbricks/console/client.py
+msgid ""
+"Virtualbricks closed the connection before it answered: it may have ended"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid ""
+"The Virtualbricks that runs, version {version}, speaks another protocol: "
+"restart it"
+msgstr ""
+
+#: virtualbricks/console/client.py
+msgid "What answers on the socket doesn't speak its protocol"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "{one} and {other}"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "No Virtualbricks listens on {path}"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid ""
+"Your Virtualbricks, process {pid}, doesn't listen on {path}: it has another "
+"--socket, or its log says why"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid ""
+"No Virtualbricks of yours runs; the one on this machine is process "
+"{processes}"
+msgid_plural ""
+"No Virtualbricks of yours runs; those on this machine are processes "
+"{processes}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/console/client.py
+msgid "No Virtualbricks of yours runs. Start one, as virtualbricks --no-gui"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "{reason}: no command sent"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "line {number}: {error}"
+msgstr ""
+
+#: virtualbricks/console/client.py virtualbricks/console/terminal.py
+#, python-brace-format
+msgid "Error: {message}"
+msgstr ""
+
 #: virtualbricks/console/command.py
 #, python-brace-format
 msgid "\"{word}\" is not a number"
@@ -1838,11 +1901,6 @@ msgstr ""
 #: virtualbricks/console/terminal.py
 #, python-brace-format
 msgid "Virtualbricks {version}. Type help, or press Tab to complete."
-msgstr ""
-
-#: virtualbricks/console/terminal.py
-#, python-brace-format
-msgid "Error: {message}"
 msgstr ""
 
 #: virtualbricks/console/terminal.py

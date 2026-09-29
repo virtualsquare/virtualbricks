@@ -21,6 +21,7 @@
 import functools
 import os
 import pwd
+import sys
 
 from twisted.internet import defer
 from twisted.python import usage
@@ -214,6 +215,79 @@ class TestSocket(unittest.TestCase):
             f"--socket: {path} is longer than 107 bytes, the most a"
             " socket's path can have",
         )
+
+
+class Input:
+    def __init__(self, tty):
+        self.tty = tty
+
+    def isatty(self):
+        return self.tty
+
+
+class TestCommand(unittest.TestCase):
+
+    def setUp(self):
+        self.root = isolate(self)
+        self.patch(sys, "stdin", Input(False))
+
+    def parse(self, *args):
+        options = app.Options()
+        options.parseOptions(list(args))
+        return options
+
+    def refused(self, *args):
+        return str(self.assertRaises(usage.UsageError, self.parse, *args))
+
+    def test_the_words(self):
+        options = self.parse("--command", "brick", "start", "--force", "vm1")
+        self.assertTrue(options["command"])
+        # the options end at the first word
+        self.assertEqual(
+            options["words"], ["brick", "start", "--force", "vm1"]
+        )
+        options = self.parse(
+            "--socket", "/tmp/lab.sock", "--command", "status"
+        )
+        self.assertEqual(options["socket"], "/tmp/lab.sock")
+        self.assertFalse(self.parse()["command"])
+
+    def test_words_without_it(self):
+        self.assertEqual(
+            self.refused("brick", "set", "vm1", "name=my vm"),
+            "unexpected words: brick set vm1 name=my vm. To send them to the"
+            " Virtualbricks that runs: virtualbricks --command brick set vm1"
+            " 'name=my vm'",
+        )
+
+    def test_the_options_of_a_run(self):
+        script = os.path.join(self.root, "lab.vb")
+        open(script, "w").close()
+        for args in (
+            ["--no-gui"],
+            ["--noterm"],
+            ["--run", script],
+            ["--workspace", self.root],
+            ["--lock", "system"],
+            ["--logfile", "-"],
+            ["--logger", "virtualbricks.app.file_logger"],
+        ):
+            name = args[0][2:]
+            self.assertEqual(
+                self.refused(*args, "--command", "status"),
+                f"--command takes no --{name}: it talks to a Virtualbricks"
+                " that runs",
+            )
+
+    def test_the_standard_input(self):
+        self.assertEqual(self.parse("--command")["words"], [])
+        self.patch(sys, "stdin", Input(True))
+        self.assertEqual(
+            self.refused("--command"),
+            "--command needs a command, as virtualbricks --command brick list,"
+            " or lines on its standard input",
+        )
+        self.parse("--command", "status")
 
 
 class TestTheConsoleOptions(unittest.TestCase):

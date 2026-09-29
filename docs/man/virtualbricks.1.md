@@ -67,6 +67,11 @@ way in: a lab on a machine without a display.
     on the machine; **user**, one for each user; **none**, no limit. See
     **FILES**.
 
+**--command** [*word*...]
+:   Send the command of the words that follow to the Virtualbricks that
+    runs, through its control socket, and print its answer; without
+    words, the lines of the standard input.
+
 **--socket** *path*
 :   Listen on the control socket *path*, instead of *.control* in the
     runtime folder; see **FILES**. Its folder must exist.

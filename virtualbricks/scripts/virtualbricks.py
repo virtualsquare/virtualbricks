@@ -16,6 +16,9 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+import sys
+
+
 def make_application(config):
     from virtualbricks.gui import gui
 
@@ -35,6 +38,13 @@ def run():
 
     config = app.Options()
     app.parse_options(config)
+    if config["command"]:
+        # no lock, no reactor, no GTK: the Virtualbricks that runs has them
+        from virtualbricks import i18n
+        from virtualbricks.console import client
+
+        i18n.install()
+        sys.exit(client.main(config["words"], config["socket"]))
     if config["no-gui"]:
         factory = make_plain_application
     else:

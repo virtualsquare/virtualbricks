@@ -120,6 +120,17 @@ def refusal(error: str, lines: Sequence[str] = ()) -> dict:
     return {"ok": False, "lines": list(lines), "error": error}
 
 
+def check_length(path: str) -> None:
+    """Raise Unusable if path is too long for a socket."""
+
+    if len(os.fsencode(path)) > locations.SOCKET_PATH_MAX:
+        raise Unusable(
+            _("The socket's path, {path}, is longer than {size} bytes").format(
+                path=path, size=locations.SOCKET_PATH_MAX
+            )
+        )
+
+
 def check_path(path: str, default: bool) -> None:
     """
     Raise Unusable if a socket can't be at path.
@@ -130,12 +141,7 @@ def check_path(path: str, default: bool) -> None:
     folder of another path must be there.
     """
 
-    if len(os.fsencode(path)) > locations.SOCKET_PATH_MAX:
-        raise Unusable(
-            _("The socket's path, {path}, is longer than {size} bytes").format(
-                path=path, size=locations.SOCKET_PATH_MAX
-            )
-        )
+    check_length(path)
     folder = os.path.dirname(path)
     try:
         # the runtime folder can't be a link; the folder of another path can
@@ -168,7 +174,7 @@ def check_socket(path: str) -> bool:
 
     try:
         info = os.lstat(path)
-    except FileNotFoundError:
+    except (FileNotFoundError, NotADirectoryError):
         return False
     if not stat.S_ISSOCK(info.st_mode):
         raise Unusable(_("{path} isn't a socket").format(path=path))

@@ -16,6 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import shlex
 import sys
 
 from twisted.python import usage, reflect
@@ -53,6 +54,13 @@ class Options(usage.Options):
             "no-gui",
             None,
             "Run without the windows: the console is the way in.",
+        ],
+        [
+            "command",
+            None,
+            "Send the command of the words that follow to the Virtualbricks "
+            "that runs, and print its answer; without words, the lines of "
+            "the standard input.",
         ],
     ]
     optParameters = [
@@ -93,13 +101,33 @@ class Options(usage.Options):
         ],
     ]
 
+    # The options of a run, which a command sent to the Virtualbricks that
+    # runs has no use for.
+    RUN_OPTIONS = (
+        "no-gui",
+        "noterm",
+        "run",
+        "workspace",
+        "lock",
+        "logfile",
+        "logger",
+    )
+
     def __init__(self):
         usage.Options.__init__(self)
         self["verbosity"] = 0
+        self["words"] = []
+        # the options given whose value doesn't tell
+        self.given = set()
+
+    def parseArgs(self, *words):
+        # the options end at the first word: the command's own come after
+        self["words"] = list(words)
 
     def opt_logfile(self, arg):
         """Write log messages to file."""
 
+        self.given.add("logfile")
         self["logger"] = _file_logger(arg)
 
     def opt_workspace(self, arg):
@@ -143,6 +171,7 @@ class Options(usage.Options):
         if arg not in locks.POLICIES:
             choices = ", ".join(locks.POLICIES)
             raise usage.UsageError(f"--lock: {arg!r} is not one of {choices}")
+        self.given.add("lock")
         self["lock"] = arg
 
     def opt_verbose(self):
@@ -164,7 +193,34 @@ class Options(usage.Options):
         print("Virtualbricks", __version__)
         sys.exit(0)
 
+    def check_command(self):
+        """Refuse words without --command, and the options of a run with it."""
+
+        words = self["words"]
+        if not self["command"]:
+            if words:
+                raise usage.UsageError(
+                    f"unexpected words: {' '.join(words)}. To send them to"
+                    " the Virtualbricks that runs: virtualbricks --command"
+                    f" {shlex.join(words)}"
+                )
+            return
+        for name in self.RUN_OPTIONS:
+            if name in self.given or (
+                name not in ("lock", "logfile") and self[name]
+            ):
+                raise usage.UsageError(
+                    f"--command takes no --{name}: it talks to a Virtualbricks"
+                    " that runs"
+                )
+        if not words and sys.stdin is not None and sys.stdin.isatty():
+            raise usage.UsageError(
+                "--command needs a command, as virtualbricks --command brick"
+                " list, or lines on its standard input"
+            )
+
     def postOptions(self):
+        self.check_command()
         if self["logger"]:
             try:
                 self["logger"] = reflect.namedAny(self["logger"])
