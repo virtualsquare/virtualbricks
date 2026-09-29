@@ -290,7 +290,7 @@ class TestTheRowAboveTheList(BricksTestCase):
         empty = tab.empty
         self.assertEqual(
             [(expand, fill) for _child, expand, fill in packing(empty)],
-            [(False, False)] * 4,
+            [(False, False)] * 3,
         )
         for child in empty.get_children():
             self.assertTrue(child.get_visible(), child)
@@ -316,16 +316,10 @@ class TestTheRowAboveTheList(BricksTestCase):
         self.tab.new_button.clicked()
         popover = self.tab.new_popover
         self.addCleanup(popover.destroy)
-        # a project without bricks has its own button; the popover stays
+        # in a project without bricks too; the popover stays
         self.factory.del_brick(self.sw)
-        self.tab.empty_new_button.clicked()
-        self.assertEqual(
-            opened,
-            [
-                (popover, self.tab.new_button),
-                (popover, self.tab.empty_new_button),
-            ],
-        )
+        self.tab.new_button.clicked()
+        self.assertEqual(opened, [(popover, self.tab.new_button)] * 2)
 
     def test_a_new_brick_shows_its_settings(self):
         self.patch(NewBrickPopover, "popup_at", lambda popover, widget: None)
@@ -412,14 +406,11 @@ class TestAProjectWithoutBricks(BricksTestCase):
         ):
             self.assertFalse(widget.get_sensitive(), widget)
         self.assertTrue(tab.new_button.get_sensitive())
-        image, title, words, button = tab.empty.get_children()
+        # New Brick is the one above, where it always is
+        image, title, words = tab.empty.get_children()
         self.assertEqual(title.get_text(), "No Bricks Yet")
         self.assertIn("A brick is a switch", words.get_text())
         self.assertTrue(words.get_style_context().has_class("dim-label"))
-        self.assertIs(button, tab.empty_new_button)
-        self.assertTrue(
-            button.get_style_context().has_class("suggested-action")
-        )
         pixbuf = image.get_pixbuf()
         self.assertEqual((pixbuf.get_width(), pixbuf.get_height()), (64, 64))
         self.assertAlmostEqual(image.get_opacity(), 0.35, places=2)

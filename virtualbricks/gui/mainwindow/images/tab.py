@@ -222,9 +222,6 @@ class ImagesTab(RowsTab):
     def new(self) -> None:
         """Offer an existing image or a new empty disk, under the button."""
 
-        widget = self.new_button
-        if self.pages.get_visible_child() is self.empty:
-            widget = self.empty_new_button
         menu = Gtk.Menu()
         for label, callback in (
             (_("Existing Image…"), self.add_existing),
@@ -233,9 +230,12 @@ class ImagesTab(RowsTab):
             item = Gtk.MenuItem(label=label, visible=True)
             item.connect("activate", lambda item, call=callback: call())
             menu.append(item)
-        menu.attach_to_widget(widget, None)
+        menu.attach_to_widget(self.new_button, None)
         menu.popup_at_widget(
-            widget, Gdk.Gravity.SOUTH_WEST, Gdk.Gravity.NORTH_WEST, None
+            self.new_button,
+            Gdk.Gravity.SOUTH_WEST,
+            Gdk.Gravity.NORTH_WEST,
+            None,
         )
         self._add_menu = menu
 

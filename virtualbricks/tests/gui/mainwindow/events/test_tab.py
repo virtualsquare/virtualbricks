@@ -345,14 +345,13 @@ class TestAProjectWithoutEvents(EventsTestCase):
     def test_the_page(self):
         tab = self.tab
         self.assertIs(tab.pages.get_visible_child(), tab.empty)
-        image, title, words, button = tab.empty.get_children()
+        image, title, words = tab.empty.get_children()
         self.assertEqual(title.get_text(), "No Events Yet")
         self.assertEqual(
             words.get_text(),
             "An event waits, then starts or stops bricks, or runs commands. "
             "Add one to script the lab.",
         )
-        self.assertEqual(button.get_label(), "New Event")
         self.assertIsNotNone(image.get_pixbuf())
         self.assertEqual(tab.count.get_text(), "")
         self.assertFalse(tab.start_button.get_sensitive())

@@ -340,14 +340,13 @@ class TestAProjectWithoutImages(ImagesTestCase):
     def test_the_page(self):
         tab = self.tab
         self.assertIs(tab.pages.get_visible_child(), tab.empty)
-        image, title, words, button = tab.empty.get_children()
+        image, title, words = tab.empty.get_children()
         self.assertEqual(title.get_text(), "No Images Yet")
         self.assertEqual(
             words.get_text(),
             "A disk image is the disk a virtual machine starts from. Add one"
             " to give a machine its disk.",
         )
-        self.assertEqual(button.get_label(), "Add Image")
         self.assertIsNotNone(image.get_pixbuf())
 
     def test_add_under_its_button(self):
@@ -357,9 +356,9 @@ class TestAProjectWithoutImages(ImagesTestCase):
             "popup_at_widget",
             lambda menu, widget, *args: popped.append(widget),
         )
-        self.tab.empty_new_button.clicked()
+        self.tab.new_button.clicked()
         self.addCleanup(self.tab._add_menu.destroy)
-        self.assertEqual(popped, [self.tab.empty_new_button])
+        self.assertEqual(popped, [self.tab.new_button])
 
 
 class TestTheKeysAndTheMouse(ImagesTestCase):

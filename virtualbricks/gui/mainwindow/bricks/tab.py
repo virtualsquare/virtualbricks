@@ -124,12 +124,9 @@ class BricksTab(RowsTab):
     def new(self) -> None:
         """Offer the kinds of bricks, under the button."""
 
-        widget = self.new_button
-        if self.pages.get_visible_child() is self.empty:
-            widget = self.empty_new_button
         if self.new_popover is None:
             self.new_popover = NewBrickPopover(self.factory, self.on_made)
-        self.new_popover.popup_at(widget)
+        self.new_popover.popup_at(self.new_button)
 
     def on_made(self, brick) -> None:
         """Select the new brick, and show its settings."""

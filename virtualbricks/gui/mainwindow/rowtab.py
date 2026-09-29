@@ -585,7 +585,6 @@ class RowsTab(Tab, Gtk.Stack):
         self.main_page.pack_start(self.pages, True, True, 0)
 
         self.new_button.connect("clicked", self.on_new_clicked)
-        self.empty_new_button.connect("clicked", self.on_new_clicked)
         self.start_button.connect("clicked", self.on_start_clicked)
         self.stop_button.connect("clicked", self.on_stop_clicked)
         self.search.connect("search-changed", self.on_search_changed)
@@ -633,11 +632,7 @@ class RowsTab(Tab, Gtk.Stack):
             justify=Gtk.Justification.CENTER,
         )
         words.get_style_context().add_class("dim-label")
-        self.empty_new_button = Gtk.Button(
-            visible=True, label=self.NEW, halign=Gtk.Align.CENTER
-        )
-        self.empty_new_button.get_style_context().add_class("suggested-action")
-        for widget in (image, title, words, self.empty_new_button):
+        for widget in (image, title, words):
             page.pack_start(widget, False, False, 0)
         return page
 
