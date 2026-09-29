@@ -19,6 +19,7 @@
 
 import errno
 import os
+import pwd
 import signal
 import stat
 import subprocess
@@ -30,15 +31,18 @@ from virtualbricks import locations, locks
 from virtualbricks.locks import NONE, SYSTEM, USER
 from virtualbricks.tests import hold_lock, isolate, lock_is_free, release
 
-# A Virtualbricks of the system policy in a process of its own, until killed.
+# A Virtualbricks in a process of its own, until its input ends or it's
+# killed: the system lock, the policy, the runtime directory of its user.
 CHILD = """\
-import sys
+import os, sys
 from virtualbricks import locations, locks
 locations.SYSTEM_LOCK_FILE = sys.argv[1]
-locks.acquire(locks.SYSTEM)
+os.environ["XDG_RUNTIME_DIR"] = sys.argv[3]
+locks.acquire(sys.argv[2])
 print("held", flush=True)
 sys.stdin.read()
 """
+ME = pwd.getpwuid(os.getuid()).pw_name
 
 
 class TestPolicies(unittest.TestCase):
@@ -165,9 +169,11 @@ class TestProcesses(unittest.TestCase):
     def setUp(self):
         isolate(self)
 
-    def test_a_crash_leaves_no_lock(self):
+    def spawn(self, policy, runtime=None):
+        runtime = runtime or os.environ["XDG_RUNTIME_DIR"]
+        argv = [locations.SYSTEM_LOCK_FILE, policy, runtime]
         child = subprocess.Popen(
-            [sys.executable, "-c", CHILD, locations.SYSTEM_LOCK_FILE],
+            [sys.executable, "-c", CHILD, *argv],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             text=True,
@@ -176,18 +182,96 @@ class TestProcesses(unittest.TestCase):
         self.addCleanup(child.stdin.close)
         self.addCleanup(child.stdout.close)
         self.assertEqual(child.stdout.readline(), "held\n")
-        self.assertEqual(
-            self.assertRaises(locks.Held, locks.acquire, USER).holder, SYSTEM
-        )
+        return child
+
+    def test_a_crash_leaves_no_lock(self):
+        child = self.spawn(SYSTEM)
+        held = self.assertRaises(locks.Held, locks.acquire, USER)
+        self.assertEqual(held.holder, SYSTEM)
+        self.assertEqual(held.holders, ((child.pid, ME),))
         child.send_signal(signal.SIGKILL)
         child.wait()
         self.assertTrue(lock_is_free())
 
+    def test_every_holder_of_a_shared_lock(self):
+        runtime = os.environ["XDG_RUNTIME_DIR"]
+        alice = self.spawn(USER, runtime + "-alice")
+        bob = self.spawn(USER, runtime + "-bob")
+        held = self.assertRaises(locks.Held, locks.acquire, SYSTEM)
+        self.assertEqual(held.holder, USER)
+        self.assertEqual(
+            sorted(held.holders), sorted([(alice.pid, ME), (bob.pid, ME)])
+        )
+        self.assertIn(" Held by processes ", str(held))
+
+    def test_the_holder_of_your_lock(self):
+        child = self.spawn(USER)
+        held = self.assertRaises(locks.Held, locks.acquire, USER)
+        self.assertEqual(held.path, locations.user_lock_file())
+        self.assertEqual(held.holders, ((child.pid, ME),))
+
+
+class TestHolders(unittest.TestCase):
+
+    def setUp(self):
+        self.root = isolate(self)
+
+    def test_in_this_process(self):
+        hold_lock(self)
+        held = self.assertRaises(locks.Held, locks.acquire, SYSTEM)
+        self.assertEqual(held.holders, ((os.getpid(), ME),))
+        self.assertTrue(
+            str(held).endswith(f" Held by process {os.getpid()} of {ME}.")
+        )
+
+    def test_without_proc(self):
+        self.patch(locks, "PROC", os.path.join(self.root, "no-proc"))
+        hold_lock(self)
+        held = self.assertRaises(locks.Held, locks.acquire, SYSTEM)
+        self.assertEqual(held.holders, ())
+        self.assertNotIn("Held by", str(held))
+        self.assertEqual(locks.holders(locations.SYSTEM_LOCK_FILE), ())
+
+    def test_the_lines_of_proc_locks(self):
+        text = (
+            "1: FLOCK  ADVISORY  WRITE 4242 00:2b:77 0 EOF\n"
+            "2: -> FLOCK  ADVISORY  WRITE 4343 00:2b:77 0 EOF\n"
+            "3: POSIX  ADVISORY  WRITE 4444 00:2b:77 0 EOF\n"
+            "4: FLOCK  ADVISORY  READ 4545 00:2b:78 0 EOF\n"
+            "5: FLOCK  ADVISORY  READ 4646 00:2b:77 0 EOF\n"
+            "6: FLOCK  ADVISORY  READ 4646 00:2b:77 0 EOF\n"
+            "7: FLOCK  ADVISORY  READ 0 00:2b:77 0 EOF\n"
+        )
+        # not a waiter, a POSIX lock, another file, twice, another namespace
+        self.assertEqual(locks._lock_pids(text, "00:2b:77"), [4242, 4646])
+
+    def test_users(self):
+        proc = os.path.join(self.root, "proc")
+        self.patch(locks, "PROC", proc)
+        unknown = 2**31 - 7
+        self.assertRaises(KeyError, pwd.getpwuid, unknown)
+        statuses = {
+            4242: "Name:\tvirtualbricks\nUid:\t0\t1000\t1000\t1000\n",
+            4343: f"Uid:\t{unknown}\t{unknown}\t{unknown}\t{unknown}\n",
+            4444: "Name:\tvirtualbricks\n",
+        }
+        for pid, status in statuses.items():
+            os.makedirs(os.path.join(proc, str(pid)))
+            with open(os.path.join(proc, str(pid), "status"), "w") as fp:
+                fp.write(status)
+        # the real user, a user without a name, a status without one, no
+        # such process
+        self.assertEqual(locks._user(4242), pwd.getpwuid(0).pw_name)
+        self.assertEqual(locks._user(4343), str(unknown))
+        self.assertIsNone(locks._user(4444))
+        self.assertIsNone(locks._user(4545))
+
 
 class TestMessages(unittest.TestCase):
 
-    def message(self, policy, holder):
-        return str(locks.Held(policy, holder, "/tmp/virtualbricks.lock"))
+    def message(self, policy, holder, holders=()):
+        path = "/tmp/virtualbricks.lock"
+        return str(locks.Held(policy, holder, path, holders))
 
     def test_messages(self):
         running_alone = (
@@ -205,4 +289,24 @@ class TestMessages(unittest.TestCase):
             self.message(USER, USER),
             "Another Virtualbricks of yours is running, and --lock user lets "
             "each user run one.",
+        )
+
+    def test_holders(self):
+        yours = (
+            "Another Virtualbricks of yours is running, and --lock user lets "
+            "each user run one."
+        )
+        self.assertEqual(
+            self.message(USER, USER, ((4242, "bob"),)),
+            f"{yours} Held by process 4242 of bob.",
+        )
+        self.assertEqual(
+            self.message(USER, USER, ((4242, None),)),
+            f"{yours} Held by process 4242.",
+        )
+        self.assertEqual(
+            self.message(SYSTEM, USER, ((1, "alice"), (2, None), (3, "bob"))),
+            "Virtualbricks is running on this machine with --lock user, one "
+            "for each user: start this one with --lock user as well. Held by "
+            "processes 1 of alice, 2 and 3 of bob.",
         )

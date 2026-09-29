@@ -31,11 +31,14 @@ none
 The migration of a user's files holds the locks of the user policy.
 
 The locks are flock(2) locks, which the system releases when the process
-ends, even on a crash: a lock is never left behind. Their files stay.
+ends, even on a crash: a lock is never left behind. Their files stay. When a
+start is refused, /proc/locks tells which processes hold the lock, and their
+status which user runs them.
 """
 
 import fcntl
 import os
+import pwd
 
 from virtualbricks import locations
 
@@ -43,37 +46,60 @@ SYSTEM = "system"
 USER = "user"
 NONE = "none"
 POLICIES = (SYSTEM, USER, NONE)
+PROC = "/proc"
+
+# A process that holds a lock, and the name of its user, None if hidden.
+Holder = tuple[int, "str | None"]
 
 
 class Held(Exception):
     """
     Another Virtualbricks holds a lock that policy needs.
 
-    holder is the policy the other runs with, as the lock at path tells it.
+    holder is the policy the other runs with, as the lock at path tells it;
+    holders are the processes that hold the lock, as far as they are known.
     """
 
-    def __init__(self, policy: str, holder: str, path: str):
-        super().__init__(policy, holder, path)
+    def __init__(
+        self,
+        policy: str,
+        holder: str,
+        path: str,
+        holders: tuple[Holder, ...] = (),
+    ):
+        super().__init__(policy, holder, path, holders)
         self.policy = policy
         self.holder = holder
         self.path = path
+        self.holders = holders
 
     def __str__(self) -> str:
         if self.holder == SYSTEM:
-            return (
+            text = (
                 "Another Virtualbricks is running on this machine with "
                 "--lock system, the default, which lets only one run at a "
                 "time."
             )
-        if self.policy == SYSTEM:
-            return (
+        elif self.policy == SYSTEM:
+            text = (
                 "Virtualbricks is running on this machine with --lock user, "
                 "one for each user: start this one with --lock user as well."
             )
-        return (
-            "Another Virtualbricks of yours is running, and --lock user lets "
-            "each user run one."
-        )
+        else:
+            text = (
+                "Another Virtualbricks of yours is running, and --lock user "
+                "lets each user run one."
+            )
+        if not self.holders:
+            return text
+        names = [
+            str(pid) if user is None else f"{pid} of {user}"
+            for pid, user in self.holders
+        ]
+        noun = "process" if len(names) == 1 else "processes"
+        if len(names) > 1:
+            names[-2:] = [f"{names[-2]} and {names[-1]}"]
+        return f"{text} Held by {noun} {', '.join(names)}."
 
 
 class Lock:
@@ -123,6 +149,62 @@ def _system_holder() -> str:
     return USER
 
 
+def holders(path: str) -> tuple[Holder, ...]:
+    """
+    The processes that hold a flock of the file at path, with their users.
+
+    Empty when /proc/locks can't be read, or the file is gone.
+    """
+
+    try:
+        info = os.stat(path)
+        with open(os.path.join(PROC, "locks")) as fp:
+            text = fp.read()
+    except OSError:
+        return ()
+    major, minor = os.major(info.st_dev), os.minor(info.st_dev)
+    key = f"{major:02x}:{minor:02x}:{info.st_ino}"
+    return tuple((pid, _user(pid)) for pid in _lock_pids(text, key))
+
+
+def _lock_pids(text: str, key: str) -> list[int]:
+    """The processes of the flocks of /proc/locks on the file key."""
+
+    # "1: FLOCK  ADVISORY  WRITE 4242 103:02:398395 0 EOF", the device in hex
+    # and the inode; a process that waits for the lock has "->" after "1:".
+    # The process is the one that took the lock, 0 if in another namespace.
+    pids: list[int] = []
+    for line in text.splitlines():
+        fields = line.split()
+        if len(fields) > 5 and fields[1] == "FLOCK" and fields[5] == key:
+            pid = int(fields[4])
+            if pid > 0 and pid not in pids:
+                pids.append(pid)
+    return pids
+
+
+def _user(pid: int) -> str | None:
+    """The name of the user that runs pid; None if /proc hides it."""
+
+    uid = None
+    try:
+        with open(os.path.join(PROC, str(pid), "status")) as fp:
+            for line in fp:
+                # real, effective, saved and filesystem user: the real one
+                # started it
+                if line.startswith("Uid:"):
+                    uid = int(line.split()[1])
+                    break
+    except (OSError, ValueError, IndexError):
+        return None
+    if uid is None:
+        return None
+    try:
+        return pwd.getpwuid(uid).pw_name
+    except KeyError:
+        return str(uid)
+
+
 def _open(path: str) -> int:
     """Open the lock file at path, made readable by everyone if missing."""
 
@@ -157,15 +239,16 @@ def acquire(policy: str = SYSTEM) -> Lock:
     lock = Lock(policy)
     path = locations.SYSTEM_LOCK_FILE
     try:
+        # a refused lock asks its holders once this process holds none of it
         if policy == SYSTEM and not lock._take(path, fcntl.LOCK_EX):
-            raise Held(policy, _system_holder(), path)
+            raise Held(policy, _system_holder(), path, holders(path))
         if policy == USER:
             if not lock._take(path, fcntl.LOCK_SH):
-                raise Held(policy, SYSTEM, path)
+                raise Held(policy, SYSTEM, path, holders(path))
             locations.ensure_private_dir(locations.runtime_dir())
             path = locations.user_lock_file()
             if not lock._take(path, fcntl.LOCK_EX):
-                raise Held(policy, USER, path)
+                raise Held(policy, USER, path, holders(path))
     except BaseException:
         lock.unlock()
         raise

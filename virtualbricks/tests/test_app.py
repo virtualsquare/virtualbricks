@@ -20,6 +20,7 @@
 
 import functools
 import os
+import pwd
 
 from twisted.internet import defer
 from twisted.python import usage
@@ -92,8 +93,12 @@ class TestLock(unittest.TestCase):
     def test_refused(self):
         hold_lock(self, locks.USER, "bob")
         failure = self.failureResultOf(self.run_app(), SystemExit)
+        user = pwd.getpwuid(os.getuid()).pw_name
         self.assertEqual(
-            str(failure.value), str(locks.Held(locks.SYSTEM, locks.USER, ""))
+            str(failure.value),
+            "Virtualbricks is running on this machine with --lock user, one "
+            "for each user: start this one with --lock user as well. Held by "
+            f"process {os.getpid()} of {user}.",
         )
         self.assertEqual(self.started, [])
         self.successResultOf(self.run_app("--lock", "user"))
