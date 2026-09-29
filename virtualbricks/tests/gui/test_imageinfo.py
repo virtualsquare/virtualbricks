@@ -36,9 +36,6 @@ class FakeImage:
         self.path = path
         self.name = name
 
-    def get_path(self):
-        return self.path
-
 
 class FakeVM:
     def __init__(self, name):

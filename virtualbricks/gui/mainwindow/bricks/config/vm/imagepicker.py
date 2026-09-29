@@ -196,7 +196,7 @@ class ImagePicker(Gtk.MenuButton):
             self.facts_label.set_text(_("Choose an image for this disk"))
             return
         self.name_label.set_text(image.name)
-        path = image.get_path()
+        path = image.path
         if not os.path.exists(path):
             self.facts_label.set_text(
                 _("{path} isn't there").format(path=imageinfo.short_path(path))
@@ -242,7 +242,7 @@ class ImagePicker(Gtk.MenuButton):
 
     def show_option(self, option, info=None) -> None:
         image = option.image
-        path = image.get_path()
+        path = image.path
         there = os.path.exists(path)
         option.set_sensitive(there)
         if there and info is None:

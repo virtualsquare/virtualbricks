@@ -91,7 +91,7 @@ def short_path(path: str) -> str:
 def state(image, uses) -> State:
     """The state of image, which the disks of uses use."""
 
-    if not os.path.exists(image.get_path()):
+    if not os.path.exists(image.path):
         return State.MISSING
     if any(use.running for use in uses):
         return State.IN_USE
@@ -151,10 +151,8 @@ def summary(image, info, uses) -> str:
     that its file isn't there.
     """
 
-    if not os.path.exists(image.get_path()):
-        first = _("{path} isn't there").format(
-            path=short_path(image.get_path())
-        )
+    if not os.path.exists(image.path):
+        first = _("{path} isn't there").format(path=short_path(image.path))
         return SEPARATOR.join((first, use_words(uses)))
     if info is None:
         return use_words(uses)
@@ -211,7 +209,7 @@ def others_words(uses, vm) -> str:
 def option_words(image, info, uses, vm) -> str:
     """What the picker of a disk of vm says of image, under its name."""
 
-    if not os.path.exists(image.get_path()):
+    if not os.path.exists(image.path):
         return _("The file isn't on this computer")
     parts = [short_facts(info)] if info is not None else []
     others = others_words(uses, vm)
@@ -230,7 +228,7 @@ def disk_line(vm, image, saved, private, copy, copy_size) -> str:
     if image is None:
         return _("No image: {vm} starts without this disk.").format(vm=vm)
     name = image.name
-    if not os.path.exists(image.get_path()):
+    if not os.path.exists(image.path):
         return _(
             "The file of {image} isn't there: find it in the Images tab, or"
             " choose another image."

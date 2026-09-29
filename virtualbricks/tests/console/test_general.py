@@ -180,7 +180,7 @@ class TestSource(ConsoleTestCase):
         answer = run(self.factory, "source lab.vb", self.clock(), cwd=folder)
         self.assertEqual(self.successResultOf(answer), ["deb"])
         image = self.factory.get_image_by_name("deb")
-        self.assertEqual(image.get_path(), os.path.join(folder, "deb.qcow2"))
+        self.assertEqual(image.path, os.path.join(folder, "deb.qcow2"))
 
     def test_a_file_that_cant_be_read(self):
         self.assertEqual(

@@ -100,7 +100,7 @@ class ImageRow(Row):
     def info(self):
         """What qemu-img info says of the file, once read; read it if not."""
 
-        path = self.item.get_path()
+        path = self.item.path
         info = self.infos.get(path)
         if info is None and os.path.exists(path):
             reading = self.infos.read(path)

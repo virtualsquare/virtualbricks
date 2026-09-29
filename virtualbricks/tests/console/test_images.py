@@ -60,7 +60,7 @@ class TestImages(ConsoleTestCase):
         )
         self.assertEqual(self.successResultOf(answer), ["deb"])
         image = self.factory.get_image_by_name("deb")
-        self.assertEqual(image.get_path(), self.path)
+        self.assertEqual(image.path, self.path)
 
     def test_what_is_wrong(self):
         self.assertEqual(
@@ -81,7 +81,7 @@ class TestImages(ConsoleTestCase):
         self.vm.update_config({"hda_image": "deb"})
         self.assertEqual(self.run_line("image set deb description=Other"), [])
         image = self.factory.get_image_by_name("deb")
-        self.assertEqual(image.get_description(), "Other")
+        self.assertEqual(image.description, "Other")
         self.assertEqual(self.run_line("image rename deb debian"), [])
         self.assertEqual(self.vm.config.hda_image, "debian")
         self.assertEqual(

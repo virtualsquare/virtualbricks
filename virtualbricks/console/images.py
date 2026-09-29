@@ -72,7 +72,7 @@ def list_(context):
     if not images:
         return [_("No images")]
     rows = [
-        (image.name, image.get_path(), ", ".join(_users(factory, image)))
+        (image.name, image.path, ", ".join(_users(factory, image)))
         for image in images
     ]
     return table(rows, [_("NAME"), _("FILE"), _("USED BY")])
@@ -106,9 +106,9 @@ def add(context, name, path, key_value):
 def show(context, name):
     image = name
     users = _users(context.factory, image)
-    lines = [image.name, image.get_path()]
-    if image.get_description():
-        lines.append(image.get_description())
+    lines = [image.name, image.path]
+    if image.description:
+        lines.append(image.description)
     lines.append(
         _("used by {disks}").format(disks=", ".join(users))
         if users

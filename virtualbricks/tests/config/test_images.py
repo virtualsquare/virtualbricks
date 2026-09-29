@@ -310,7 +310,7 @@ class TestRelink(ImagesTestCase):
                 for copy in copies
             ],
         )
-        self.assertEqual(self.image.get_path(), "/new/frr.qcow2")
+        self.assertEqual(self.image.path, "/new/frr.qcow2")
         # the path changes once the copies point at it
         self.assertEqual(changes, [2])
         # r2's copy isn't made yet: its first start makes it on the new file
@@ -326,7 +326,7 @@ class TestRelink(ImagesTestCase):
     def test_a_relative_path(self):
         self.qemu_img.infos[os.path.abspath("frr.qcow2")] = INFO
         self.successResultOf(self.relink("frr.qcow2"))
-        self.assertEqual(self.image.get_path(), os.path.abspath("frr.qcow2"))
+        self.assertEqual(self.image.path, os.path.abspath("frr.qcow2"))
 
     def test_the_same_path(self):
         self.copy(self.vm("r1"))
@@ -337,7 +337,7 @@ class TestRelink(ImagesTestCase):
         self.factory.new_disk_image("debian", "/new/frr.qcow2")
         self.failureResultOf(self.relink(), errors.ImageAlreadyInUseError)
         self.assertEqual(self.qemu_img.calls, [])
-        self.assertEqual(self.image.get_path(), "/lab/frr.qcow2")
+        self.assertEqual(self.image.path, "/lab/frr.qcow2")
 
     def test_not_while_a_machine_runs(self):
         self.copy(self.vm("r1"))
@@ -350,14 +350,14 @@ class TestRelink(ImagesTestCase):
             "stop the machines that use it first: r2, r3",
         )
         self.assertEqual(self.qemu_img.calls, [])
-        self.assertEqual(self.image.get_path(), "/lab/frr.qcow2")
+        self.assertEqual(self.image.path, "/lab/frr.qcow2")
 
     def test_a_file_that_qemu_img_cant_read(self):
         self.copy(self.vm("r1"))
         self.qemu_img.failing.add(("info", "--output=json"))
         self.failureResultOf(self.relink(), RuntimeError)
         self.assertEqual(self.qemu_img.rebases(), [])
-        self.assertEqual(self.image.get_path(), "/lab/frr.qcow2")
+        self.assertEqual(self.image.path, "/lab/frr.qcow2")
 
     def test_a_copy_that_cant_be_pointed(self):
         # the copies already pointed go back, and the image keeps its file
@@ -382,7 +382,7 @@ class TestRelink(ImagesTestCase):
                 ["rebase", "-u", "-b", "/lab/frr.qcow2", "-F", "qcow2", first],
             ],
         )
-        self.assertEqual(self.image.get_path(), "/lab/frr.qcow2")
+        self.assertEqual(self.image.path, "/lab/frr.qcow2")
         self.assertEqual(logger.events, [])
 
     def test_a_copy_that_cant_go_back(self):
@@ -557,7 +557,7 @@ class TestPrivateCopies(ImagesTestCase):
             self.factory, vm, "hda", "frr-r1", "/lab/frr-r1.qcow2", True, trash
         )
         self.assertIs(self.factory.get_image_by_name("frr-r1"), image)
-        self.assertEqual(image.get_path(), "/lab/frr-r1.qcow2")
+        self.assertEqual(image.path, "/lab/frr-r1.qcow2")
         self.assertIs(vm.disk("hda").image, image)
         # its changes are in the image now
         self.assertEqual(trash.trashed, [path])

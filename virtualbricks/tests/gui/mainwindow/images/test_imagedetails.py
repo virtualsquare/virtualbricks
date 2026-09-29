@@ -64,7 +64,7 @@ class DetailsTestCase(GuiTestCase):
         self.manager.current = OpenProject(self.lab, None)
         self.workspace = FakeWorkspace(None)
         self.frr = self.image("frr")
-        self.qemu_img.infos[self.frr.get_path()] = dict(
+        self.qemu_img.infos[self.frr.path] = dict(
             INFO,
             **{"backing-filename": "/lab/base.qcow2"},
         )
@@ -96,7 +96,7 @@ class TestTheFacts(DetailsTestCase):
         self.assertEqual(
             facts[:4],
             [
-                ["File", imageinfo.short_path(self.frr.get_path())],
+                ["File", imageinfo.short_path(self.frr.path)],
                 ["Format", "qcow2, above /lab/base.qcow2"],
                 ["Size", "4.0 GB disk, 1.9 GB on disk"],
                 ["Snapshots", "virtualbricks"],
@@ -115,12 +115,12 @@ class TestTheFacts(DetailsTestCase):
         )
 
     def test_read_once_by_the_list(self):
-        self.successResultOf(self.infos.read(self.frr.get_path()))
+        self.successResultOf(self.infos.read(self.frr.path))
         self.details()
         self.assertEqual(len(self.qemu_img.calls), 1)
 
     def test_a_file_that_qemu_img_cant_read(self):
-        self.qemu_img.failing.add((self.frr.get_path(),))
+        self.qemu_img.failing.add((self.frr.path,))
         details = self.details()
         self.assertEqual(cells(details.facts)[1], ["Format", "Unknown"])
         # once
@@ -173,7 +173,7 @@ class TestTheUses(DetailsTestCase):
         self.assertFalse(self.details().others.get_visible())
 
     def test_other_projects(self):
-        path = self.frr.get_path()
+        path = self.frr.path
         self.workspace = FakeWorkspace(
             None, ospf=[("router", path)], bgp=[("pc", path)]
         )
@@ -200,7 +200,7 @@ class TestSaving(DetailsTestCase):
         self.assertEqual(self.frr.name, "frr")
         apply(details.draft)
         self.assertEqual(self.frr.name, "frr-debian")
-        self.assertEqual(self.frr.get_description(), "FRR on Debian.")
+        self.assertEqual(self.frr.description, "FRR on Debian.")
         # the disks follow
         self.assertEqual(vm.config.hda_image, "frr-debian")
 
@@ -224,7 +224,7 @@ class TestSaving(DetailsTestCase):
             details.name_entry.get_style_context().has_class("error")
         )
         self.assertEqual(details.draft.errors(), [])
-        self.assertTrue(os.path.exists(self.frr.get_path()))
+        self.assertTrue(os.path.exists(self.frr.path))
 
     def test_not_running(self):
         # a machine that uses it keeps its file, whatever the image's name

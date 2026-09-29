@@ -160,7 +160,7 @@ class TestRemove(DialogTestCase):
         self.assertIsNone(self.factory.get_image_by_name("frr"))
         self.assertIsNone(vm.disk("hda").image)
         # the file stays unless asked
-        self.assertTrue(os.path.exists(image.get_path()))
+        self.assertTrue(os.path.exists(image.path))
 
     def test_the_file_to_the_trash(self):
         image = self.factory.new_disk_image("frr", self.file(self.vimages))
@@ -171,7 +171,7 @@ class TestRemove(DialogTestCase):
         )
         dialog.file_check.set_active(True)
         dialog.dialog.response(Gtk.ResponseType.OK)
-        self.assertEqual(self.trash.trashed, [image.get_path()])
+        self.assertEqual(self.trash.trashed, [image.path])
 
     def test_no_trash(self):
         self.workspace.trasher = None
@@ -180,7 +180,7 @@ class TestRemove(DialogTestCase):
         self.assertIn("there is no trash", dialog.file_check.get_label())
         dialog.file_check.set_active(True)
         dialog.remove()
-        self.assertFalse(os.path.exists(image.get_path()))
+        self.assertFalse(os.path.exists(image.path))
 
     def test_the_trash_fails(self):
         self.trash.error = OSError(13, "Permission denied")
@@ -273,7 +273,7 @@ class TestFindFile(DialogTestCase):
         dialog.choose(path)
         self.assertTrue(dialog.use_button.get_sensitive())
         dialog.dialog.response(Gtk.ResponseType.OK)
-        self.assertEqual(self.image.get_path(), path)
+        self.assertEqual(self.image.path, path)
 
     def test_a_file_that_cant_be_used(self):
         path = self.file(self.folder("lab"))
@@ -282,7 +282,7 @@ class TestFindFile(DialogTestCase):
         dialog.choose(path)
         # the dialog says why
         dialog.use()
-        self.assertEqual(self.image.get_path(), "/gone/frr.qcow2")
+        self.assertEqual(self.image.path, "/gone/frr.qcow2")
         self.assertTrue(dialog.error_label.get_visible())
         self.assertTrue(dialog.use_button.get_sensitive())
 
@@ -383,7 +383,7 @@ class TestSave(DiskTestCase):
         self.assertEqual(dialog.progress.get_text(), "50%")
         job.done.callback({"output": output, "size": 4096})
         image = self.factory.get_image_by_name("frr-r1")
-        self.assertEqual(image.get_path(), output)
+        self.assertEqual(image.path, output)
         self.assertIs(self.r1.disk("hda").image, image)
         self.assertEqual(self.trash.trashed, [self.copy])
         self.assertEqual(
@@ -451,7 +451,7 @@ class TestMerge(DiskTestCase):
         from virtualbricks.tests.config.test_images import FakeWorkspace
 
         self.vm("r2", self.frr)
-        others = FakeWorkspace(None, ospf=[("router", self.frr.get_path())])
+        others = FakeWorkspace(None, ospf=[("router", self.frr.path)])
         self.workspace.others = others.summaries()
         self.assertIn(
             "frr changes for all that use it too: r2 (hda) and the project"

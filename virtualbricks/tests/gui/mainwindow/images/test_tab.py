@@ -94,7 +94,7 @@ class ImagesTestCase(GuiTestCase):
         # the private copies are in the open project
         self.manager.current = OpenProject(self.folder("lab"), None)
         self.frr = self.image("frr")
-        self.qemu_img.infos[self.frr.get_path()] = INFO
+        self.qemu_img.infos[self.frr.path] = INFO
         self.gui = FakeGui(self.factory)
         self.tab = ImagesTab(self.gui, self.factory)
         self.gui.tab = self.tab
@@ -166,7 +166,7 @@ class TestTheRows(ImagesTestCase):
 
     def test_before_qemu_img_answers(self):
         image = self.image("pc")
-        self.qemu_img.infos[image.get_path()] = INFO
+        self.qemu_img.infos[image.path] = INFO
         self.assertEqual(self.row(image).detail.get_text(), "no disk uses it")
         self.qemu_img.answer()
         self.assertEqual(
@@ -182,16 +182,16 @@ class TestTheRows(ImagesTestCase):
 
     def test_a_file_that_qemu_img_cant_read(self):
         image = self.image("notes")
-        self.qemu_img.failing.add((image.get_path(),))
+        self.qemu_img.failing.add((image.path,))
         self.qemu_img.answer()
         self.assertEqual(self.row(image).detail.get_text(), "no disk uses it")
         self.assertEqual(len(self.qemu_img.calls), 2)
 
     def test_a_file_that_a_machine_keeps_changing(self):
         image = self.image("pc")
-        self.qemu_img.infos[image.get_path()] = INFO
+        self.qemu_img.infos[image.path] = INFO
         # the machine writes while qemu-img reads
-        with open(image.get_path(), "w") as fp:
+        with open(image.path, "w") as fp:
             fp.write("changed")
         self.qemu_img.answer()
         self.assertIn("4.0 GB disk", self.row(image).detail.get_text())
@@ -240,7 +240,7 @@ class TestTheRows(ImagesTestCase):
         self.manager.create("dtn")
         self.manager.open("dtn", self.factory)
         frr = self.image("frr")
-        self.qemu_img.infos[frr.get_path()] = INFO
+        self.qemu_img.infos[frr.path] = INFO
         # a machine read after another tells the tab
         self.vm("node1", frr)
         self.vm("node2", frr)
@@ -413,7 +413,7 @@ class TestTheDetails(ImagesTestCase):
         details.description_view.get_buffer().set_text("FRR on Debian.")
         tab.ok_button.clicked()
         self.assertIs(self.factory.get_image_by_name("frr-debian"), self.frr)
-        self.assertEqual(self.frr.get_description(), "FRR on Debian.")
+        self.assertEqual(self.frr.description, "FRR on Debian.")
         self.assertIs(tab.get_visible_child(), tab.main_page)
         self.assertEqual(self.row().name.get_text(), "frr-debian")
 
@@ -436,4 +436,4 @@ class TestTheDetails(ImagesTestCase):
         self.vm("r1")
         self.assertEqual(self.tab.count.get_text(), "0 of 1 in use")
         self.tab.on_quit = lambda: None
-        self.assertTrue(os.path.exists(self.frr.get_path()))
+        self.assertTrue(os.path.exists(self.frr.path))

@@ -21,6 +21,7 @@
 import os
 
 from twisted.internet import defer
+from twisted.trial import unittest
 
 from virtualbricks import bricks
 from virtualbricks.qemu import imageformat
@@ -35,6 +36,7 @@ from virtualbricks.tests import (
 )
 from virtualbricks.bricks.virtualmachine import (
     Card,
+    Image,
     ImageDraft,
     Lack,
     UsbDevice,
@@ -603,6 +605,46 @@ class TestApply(DraftTestCase):
         self.assertEqual(self.vm.config.usb_devices, [device])
 
 
+class TestImage(unittest.TestCase):
+    def setUp(self):
+        self.image = Image("deb", "/lab/deb.qcow2", "Debian 12")
+        self.changed = []
+        self.image.changed.connect(self.changed.append)
+
+    def test_read_only(self):
+        """The settings of an image change with its set_ methods alone."""
+
+        for name in ("name", "path", "description"):
+            with self.subTest(name=name), self.assertRaises(AttributeError):
+                setattr(self.image, name, "other")
+        self.assertEqual(
+            (self.image.name, self.image.path, self.image.description),
+            ("deb", "/lab/deb.qcow2", "Debian 12"),
+        )
+
+    def test_set(self):
+        self.image.set_name("deb2")
+        self.image.set_path("/lab/deb2.qcow2")
+        self.image.set_description("Debian 13")
+        self.assertEqual(
+            (self.image.name, self.image.path, self.image.description),
+            ("deb2", "/lab/deb2.qcow2", "Debian 13"),
+        )
+        self.assertEqual(self.changed, [self.image] * 3)
+
+    def test_the_same_description(self):
+        self.image.set_description("Debian 12")
+        self.assertEqual(self.changed, [])
+
+    def test_the_file(self):
+        self.assertEqual(self.image.basename(), "deb.qcow2")
+        self.assertFalse(self.image.exists())
+        path = os.path.abspath(self.mktemp())
+        open(path, "w").close()
+        self.image.set_path(path)
+        self.assertTrue(self.image.exists())
+
+
 class TestTheDraftOfAnImage(BrickTestCase):
 
     def setUp(self):
@@ -628,7 +670,7 @@ class TestTheDraftOfAnImage(BrickTestCase):
         apply(self.draft)
         # the name as the factory writes it
         self.assertIs(self.factory.get_image_by_name("frr_debian"), self.image)
-        self.assertEqual(self.image.get_description(), "FRR on Debian.")
+        self.assertEqual(self.image.description, "FRR on Debian.")
         # the disks follow
         self.assertEqual(vm.config.hda_image, "frr_debian")
 
@@ -638,7 +680,7 @@ class TestTheDraftOfAnImage(BrickTestCase):
         self.draft.set("description", "FRR on Debian.")
         apply(self.draft)
         self.assertEqual(renamed, [])
-        self.assertEqual(self.image.get_description(), "FRR on Debian.")
+        self.assertEqual(self.image.description, "FRR on Debian.")
 
     def test_a_name_in_use(self):
         self.factory.new_brick("switch", "sw1")

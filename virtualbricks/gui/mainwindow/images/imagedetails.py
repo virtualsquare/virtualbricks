@@ -142,7 +142,7 @@ class ImageDetails(Panel):
         self.panel.pack_start(self.uses, False, False, 0)
         self.show_uses()
 
-        others = images.other_projects(self.workspace, image.get_path())
+        others = images.other_projects(self.workspace, image.path)
         self.others = _label(dim=True, wrap=True)
         if others:
             self.others.set_text(
@@ -184,7 +184,7 @@ class ImageDetails(Panel):
     def read_facts(self) -> None:
         """Show the facts of the file, and read them first if needed."""
 
-        path = self.image.get_path()
+        path = self.image.path
         info = self.infos.get(path)
         if info is not None or not os.path.exists(path):
             self.show_facts(info)
@@ -203,7 +203,7 @@ class ImageDetails(Panel):
         READING.
         """
 
-        path = self.image.get_path()
+        path = self.image.path
         rows = [(_("File"), imageinfo.short_path(path))]
         if not os.path.exists(path):
             rows.append((_("State"), _("The file isn't there")))

@@ -44,7 +44,7 @@ class DisksTestCase(GuiTestCase):
         self.frr = self.image("frr")
         self.pc = self.image("pc")
         for image in (self.frr, self.pc):
-            self.qemu_img.infos[image.get_path()] = INFO
+            self.qemu_img.infos[image.path] = INFO
         self.r1 = self.factory.new_brick("qemu", "r1")
         self.r1.update_config(
             {
@@ -137,7 +137,7 @@ class TestTheMenuOfADisk(DisksTestCase):
         hda = self.section.row("hda")
         self.assertTrue(hda.actions.get_action_enabled("show"))
         hda.actions.activate_action("show", None)
-        self.assertEqual(shown, [self.frr.get_path()])
+        self.assertEqual(shown, [self.frr.path])
         hda.picker.choose(None)
         self.assertFalse(hda.actions.get_action_enabled("show"))
 

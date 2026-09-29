@@ -62,7 +62,7 @@ def menu(image, keys=False) -> Gio.Menu:
     def key(name):
         return name if keys else None
 
-    missing = not os.path.exists(image.get_path())
+    missing = not os.path.exists(image.path)
     return menu_of(
         menu_section(
             _item(_("Find the File…"), "find-file") if missing else None
@@ -98,7 +98,7 @@ class ImageActions(Gio.SimpleActionGroup):
     def update(self) -> None:
         """The actions that the image allows now."""
 
-        there = os.path.exists(self.image.get_path())
+        there = os.path.exists(self.image.path)
         self.lookup_action("find-file").set_enabled(not there)
         self.lookup_action("show").set_enabled(there)
 
@@ -112,7 +112,7 @@ class ImageActions(Gio.SimpleActionGroup):
         RenameDialog(self.gui.brickfactory, self.image).show(self.gui.window)
 
     def show(self) -> None:
-        show_in_files(self.gui.window, self.image.get_path())
+        show_in_files(self.gui.window, self.image.path)
 
     def remove(self) -> None:
         self.gui.ask_remove_image(self.image)

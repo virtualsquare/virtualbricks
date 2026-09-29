@@ -257,7 +257,7 @@ def relink(
     if run is None:
         run = qemu_run.qemu_img
     path = os.path.abspath(path)
-    old = image.get_path()
+    old = image.path
     if path == old:
         return defer.succeed(None)
     other = factory.get_image_by_path(path)

@@ -330,8 +330,8 @@ def project_document(
     data: Table = {"format": FORMAT, "settings": dump_record(project_settings)}
     images: Table = {
         image.name: {
-            "path": image.get_path(),
-            "description": image.get_description(),
+            "path": image.path,
+            "description": image.description,
         }
         for image in factory.iter_disk_images()
     }

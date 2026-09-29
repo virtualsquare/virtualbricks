@@ -187,7 +187,7 @@ class TestExistingImage(AddTestCase):
         with open(copy, "rb") as fp:
             self.assertEqual(fp.read(), b"disk")
         image = self.factory.get_image_by_name("frr")
-        self.assertEqual(image.get_path(), copy)
+        self.assertEqual(image.path, copy)
         self.assertEqual(self.added, [image])
 
     def test_a_copy_beside_another(self):
@@ -197,7 +197,7 @@ class TestExistingImage(AddTestCase):
         self.dialog.name_entry.set_text("frr2")
         self.dialog.add()
         self.assertEqual(
-            self.factory.get_image_by_name("frr2").get_path(),
+            self.factory.get_image_by_name("frr2").path,
             os.path.join(folder, "frr-2.qcow2"),
         )
 
@@ -207,9 +207,7 @@ class TestExistingImage(AddTestCase):
         self.dialog.in_place_radio.set_active(True)
         self.successResultOf(self.dialog.add())
         self.assertEqual(self.copies, [])
-        self.assertEqual(
-            self.factory.get_image_by_name("frr").get_path(), path
-        )
+        self.assertEqual(self.factory.get_image_by_name("frr").path, path)
 
     def test_above_a_backing_file(self):
         path = self.file(
@@ -227,9 +225,7 @@ class TestExistingImage(AddTestCase):
         self.assertFalse(self.dialog.copy_radio.get_visible())
         self.dialog.add()
         self.assertEqual(self.copies, [])
-        self.assertEqual(
-            self.factory.get_image_by_name("frr").get_path(), path
-        )
+        self.assertEqual(self.factory.get_image_by_name("frr").path, path)
 
     def test_a_copy_that_fails(self):
         def fail(source, target):
@@ -309,7 +305,7 @@ class TestNewDisk(AddTestCase):
             [["create", "-q", "-f", "qcow2", path, str(10 * 1000**3)]],
         )
         image = self.factory.get_image_by_name("scratch")
-        self.assertEqual(image.get_path(), path)
+        self.assertEqual(image.path, path)
         self.assertEqual(self.added, [image])
 
     def test_a_file_there_already(self):

@@ -154,9 +154,7 @@ class DiskRow(Gtk.ListBoxRow):
                 images.space_taken(copy),
             )
         )
-        there = self.image is not None and os.path.exists(
-            self.image.get_path()
-        )
+        there = self.image is not None and os.path.exists(self.image.path)
         self.actions.lookup_action("show").set_enabled(there)
         changes = self.keeps_changes()
         for name in ("save", "merge", "start-over"):
@@ -198,7 +196,7 @@ class DiskRow(Gtk.ListBoxRow):
             and self.private
             and bool(disk.is_cow())
             and os.path.exists(disk.get_cow_path())
-            and os.path.exists(self.image.get_path())
+            and os.path.exists(self.image.path)
         )
 
     def save(self) -> SaveImageDialog:
@@ -229,7 +227,7 @@ class DiskRow(Gtk.ListBoxRow):
         return dialog
 
     def show_in_files(self) -> None:
-        show_in_files(self._window(), self.image.get_path())
+        show_in_files(self._window(), self.image.path)
 
     def remove(self) -> None:
         self.section.remove_disk(self.device)

@@ -271,7 +271,7 @@ class BrickFactory:
         """
 
         for disk_image in self._disk_images.values():
-            if disk_image.get_path() == path:
+            if disk_image.path == path:
                 return disk_image
 
     def iter_disk_images(self):

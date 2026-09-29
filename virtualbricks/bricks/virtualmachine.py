@@ -24,7 +24,6 @@ import os
 import pathlib
 import re
 import shutil
-import warnings
 
 import attr
 from twisted.internet import defer
@@ -284,10 +283,9 @@ class Image:
         self._name = value
         self.changed.notify(self)
 
-    def get_path(self):
-        """
-        :rtype: str
-        """
+    @property
+    def path(self) -> str:
+        """Read-only: images.relink() changes it, with set_path()."""
 
         return self._path
 
@@ -299,20 +297,9 @@ class Image:
         self._path = value
         self.changed.notify(self)
 
-    def _get_path_prop(self):
-        warnings.warn("Image.path", DeprecationWarning)
-        return self.get_path()
-
-    def _set_path_prop(self, value):
-        warnings.warn("Image.path", DeprecationWarning)
-        return self.set_path(value)
-
-    path = property(_get_path_prop, _set_path_prop)
-
-    def get_description(self):
-        """
-        :rtype: str
-        """
+    @property
+    def description(self) -> str:
+        """Read-only: set_description() changes it."""
 
         return self._description
 
@@ -324,16 +311,6 @@ class Image:
         if self._description != description:
             self._description = description
             self.changed.notify(self)
-
-    def _get_description_prop(self):
-        warnings.warn("Image.description", DeprecationWarning)
-        return self.get_description()
-
-    def _set_description_prop(self, value):
-        warnings.warn("Image.description", DeprecationWarning)
-        return self.set_description(value)
-
-    description = property(_get_description_prop, _set_description_prop)
 
     def basename(self):
         return os.path.basename(self.path)
@@ -390,7 +367,7 @@ class ImageDraft(Draft):
         super().__init__(image)
 
     def read(self) -> ImageSettings:
-        return ImageSettings(self.brick.name, self.brick.get_description())
+        return ImageSettings(self.brick.name, self.brick.description)
 
     def new_name(self) -> str | None:
         """
@@ -639,7 +616,7 @@ class Disk:
 
     def __repr__(self):
         return (
-            f"<Disk {self.device}({self.vm.name}) image={self.image.get_path()} "
+            f"<Disk {self.device}({self.vm.name}) image={self.image.path} "
             f"readonly={self.readonly()} cow={self.is_cow()}>"
         )
 

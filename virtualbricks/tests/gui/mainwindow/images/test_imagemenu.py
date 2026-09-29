@@ -122,7 +122,7 @@ class TestWhatIsEnabled(ImageMenuTestCase):
 
     def test_update(self):
         actions = ImageActions(self.gui, self.missing)
-        self.missing.set_path(self.there.get_path())
+        self.missing.set_path(self.there.path)
         actions.update()
         self.assertTrue(actions.get_action_enabled("show"))
         self.assertFalse(actions.get_action_enabled("find-file"))
@@ -169,7 +169,7 @@ class TestWhatTheyDo(ImageMenuTestCase):
             lambda parent, path: shown.append((parent, path)),
         )
         ImageActions(self.gui, self.there).activate_action("show", None)
-        self.assertEqual(shown, [(self.gui.window, self.there.get_path())])
+        self.assertEqual(shown, [(self.gui.window, self.there.path)])
 
 
 class TestPopup(ImageMenuTestCase):

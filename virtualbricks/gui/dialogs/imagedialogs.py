@@ -155,7 +155,7 @@ class RemoveImageDialog(Window):
             _("Remove Image"), _("Remove"), destructive=True
         )
         name = self.image.name
-        path = self.image.get_path()
+        path = self.image.path
         box.pack_start(
             _label(_("Remove the image {name}?").format(name=name), bold=True),
             False,
@@ -201,13 +201,13 @@ class RemoveImageDialog(Window):
     def offers_file(self) -> bool:
         """Whether the dialog offers to remove the file too."""
 
-        path = self.image.get_path()
+        path = self.image.path
         folder = os.path.join(self.workspace.path, images.IMAGE_FOLDER)
         return os.path.isfile(path) and images.is_inside(path, folder)
 
     def can_trash(self) -> bool:
         trasher = self.workspace.trasher
-        return trasher is not None and trasher.can_trash(self.image.get_path())
+        return trasher is not None and trasher.can_trash(self.image.path)
 
     def on_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
@@ -218,7 +218,7 @@ class RemoveImageDialog(Window):
         self.factory.remove_disk_image(self.image)
         if self.file_check is None or not self.file_check.get_active():
             return
-        path = self.image.get_path()
+        path = self.image.path
         try:
             if self.can_trash():
                 self.workspace.trasher.trash(path)
@@ -245,7 +245,7 @@ class FindFileDialog(Window):
         """The file of the same name in the image folder, if there's one."""
 
         folder = os.path.join(self.workspace.path, images.IMAGE_FOLDER)
-        path = os.path.join(folder, os.path.basename(self.image.get_path()))
+        path = os.path.join(folder, os.path.basename(self.image.path))
         return path if os.path.isfile(path) else None
 
     def build_ui(self):
@@ -264,7 +264,7 @@ class FindFileDialog(Window):
         box.pack_start(
             _label(
                 _("{path} isn't there.").format(
-                    path=imageinfo.short_path(self.image.get_path())
+                    path=imageinfo.short_path(self.image.path)
                 )
             ),
             False,
@@ -612,7 +612,7 @@ class MergeDialog(_JobDialog):
                 project=project, image=name
             )
             for project, name in images.other_projects(
-                self.workspace, self.image.get_path()
+                self.workspace, self.image.path
             )
         ]
         if users:

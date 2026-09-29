@@ -53,7 +53,7 @@ class PickerTestCase(GuiTestCase):
         self.pc = self.image("pc")
         self.old = self.factory.new_disk_image("old", "/gone/old.qcow2")
         for image in (self.frr, self.pc):
-            self.qemu_img.infos[image.get_path()] = INFO
+            self.qemu_img.infos[image.path] = INFO
         self.r1 = self.vm("r1", self.frr)
         self.managed = []
         self.chosen = []
