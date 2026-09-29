@@ -631,7 +631,6 @@ class TestAMPToken(ConsoleTestCase):
         self.factory.runtime_dir = "/run/vb"
         self.logger = FakeLogger()
         self.patch(control, "logger", self.logger)
-        self.patch(amp, "_log", FakeLogger())
         use_workspace(self).current = Project()
         self.server = control.ControlFactory(
             self.factory,
