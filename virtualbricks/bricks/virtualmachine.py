@@ -58,8 +58,13 @@ from virtualbricks.config.settings import get_setting
 from virtualbricks.config.workspace import projects
 from virtualbricks.i18n import N_, _
 from virtualbricks.nic import is_valid_mac, random_mac
-from virtualbricks.programs import PACKAGES, Missing, ProgramError, programs
-from virtualbricks.spawn import encode_proc_output
+from virtualbricks.programs import (
+    PACKAGES,
+    Missing,
+    ProgramError,
+    decode_output,
+    programs,
+)
 from virtualbricks.observable import Event, Observable
 from virtualbricks.qemu import imageformat
 from virtualbricks.qemu.imageformat import NotCowFileError
@@ -170,7 +175,7 @@ def get_usb_devices():
 
     logger.info(search_usb)
     deferred = getProcessOutput("lsusb", env=os.environ)
-    deferred.addCallback(encode_proc_output)
+    deferred.addCallback(decode_output)
     deferred.addCallback(_parse_lsusb_output)
     return deferred
 

@@ -35,6 +35,7 @@ Nothing here imports GTK.
 
 from __future__ import annotations
 
+import locale
 import os
 import re
 from collections.abc import Callable, Iterable, Mapping
@@ -59,6 +60,7 @@ __all__ = [
     "QemuInfo",
     "VdeInfo",
     "Version",
+    "decode_output",
     "find_program",
     "machine_question",
     "missing_programs",
@@ -456,6 +458,12 @@ def missing_programs(vde_folder: str, qemu_folder: str) -> list[Missing]:
 
 
 # Asking the programs
+
+
+def decode_output(output: bytes) -> str:
+    """What a program printed, in the encoding of the locale."""
+
+    return output.decode(locale.getpreferredencoding())
 
 
 Run = Callable[[str, Iterable[str]], "defer.Deferred[Answer]"]

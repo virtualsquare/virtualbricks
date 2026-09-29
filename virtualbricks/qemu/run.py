@@ -22,33 +22,34 @@ PATH, and running ``qemu-img``.
 """
 
 import os
-from pathlib import Path
 
 from twisted.internet.utils import getProcessOutputAndValue
 
 from virtualbricks.config.settings import get_setting
 from virtualbricks.errors import CommandError
-from virtualbricks.spawn import encode_proc_output, find_executable
+from virtualbricks.programs import decode_output, find_program
 
 
 def which(program: str) -> str:
     """
-    The path of a QEMU program: program itself if it is one, else the one in
-    the folder of the ``qemu_path`` setting, else the one on PATH.
+    The path of a QEMU program: the one in the folder of the ``qemu_path``
+    setting, else the one on PATH; a path given in full is itself.
 
     :raises FileNotFoundError: if there's none, where ``shutil.which()``
         returns None.
     """
 
-    folder = Path(get_setting("qemu_path"))
-    return str(find_executable(Path(program), folder))
+    path = find_program(program, get_setting("qemu_path"))
+    if path is None:
+        raise FileNotFoundError(program)
+    return path
 
 
-def _encode_or_complain(codes):
+def _decode_or_complain(codes):
     stdout, stderr, exit_status = codes
     if exit_status != 0:
-        raise CommandError(exit_status, encode_proc_output(stderr))
-    return encode_proc_output(stdout)
+        raise CommandError(exit_status, decode_output(stderr))
+    return decode_output(stdout)
 
 
 def _output(program, args):
@@ -61,7 +62,7 @@ def _output(program, args):
     """
 
     deferred = getProcessOutputAndValue(which(program), args, env=os.environ)
-    return deferred.addCallback(_encode_or_complain)
+    return deferred.addCallback(_decode_or_complain)
 
 
 def qemu_img(args):

@@ -18,6 +18,7 @@
 """What the installed programs of the bricks can do."""
 
 import json
+import locale
 import os
 import re
 from typing import NamedTuple
@@ -39,6 +40,7 @@ from virtualbricks.programs import (
     Programs,
     QemuInfo,
     Version,
+    decode_output,
     find_program,
     machine_question,
     missing_programs,
@@ -657,6 +659,13 @@ class TestRun(unittest.TestCase):
         self.assertEqual(
             str(failure.value), "/usr/bin/qemu-img info: no more processes"
         )
+
+    def test_decode_output(self):
+        self.patch(locale, "getpreferredencoding", lambda: "latin-1")
+        self.assertEqual(decode_output(b"d\xe9b\n"), "d\xe9b\n")
+        self.patch(locale, "getpreferredencoding", lambda: "utf-8")
+        self.assertEqual(decode_output(b"d\xc3\xa9b\n"), "d\xe9b\n")
+        self.assertRaises(UnicodeDecodeError, decode_output, b"d\xe9b\n")
 
     def test_missing(self):
         failure = self.failureResultOf(run("/nonexistent/qemu", ["-help"]))

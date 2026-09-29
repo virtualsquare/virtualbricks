@@ -21,20 +21,20 @@ Finding the VDE programs, in the folder of the ``vde_path`` setting or on
 PATH.
 """
 
-from pathlib import Path
-
 from virtualbricks.config.settings import get_setting
-from virtualbricks.spawn import find_executable
+from virtualbricks.programs import find_program
 
 
 def which(program: str) -> str:
     """
-    The path of a VDE program: program itself if it is one, else the one in
-    the folder of the ``vde_path`` setting, else the one on PATH.
+    The path of a VDE program: the one in the folder of the ``vde_path``
+    setting, else the one on PATH; a path given in full is itself.
 
     :raises FileNotFoundError: if there's none, where ``shutil.which()``
         returns None.
     """
 
-    folder = Path(get_setting("vde_path"))
-    return str(find_executable(Path(program), folder))
+    path = find_program(program, get_setting("vde_path"))
+    if path is None:
+        raise FileNotFoundError(program)
+    return path
