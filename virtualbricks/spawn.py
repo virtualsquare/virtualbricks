@@ -55,11 +55,3 @@ def encode_proc_output(output):
     assert isinstance(output, bytes)
     encoding = locale.getpreferredencoding()
     return str(output, encoding, "strict")
-
-
-def abspath_vde(executable):
-    from virtualbricks.config.settings import get_setting
-
-    return str(
-        find_executable(Path(executable), Path(get_setting("vde_path")))
-    )

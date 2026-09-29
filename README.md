@@ -362,10 +362,10 @@ To add a language, see the top of `l10n.sh`.
   events and the images of the open project; `programs.py` asks the
   installed Qemu and VDE programs what they have; `sudo.py` writes the `sudo`
   command of what needs root, and `ksm.py` turns Kernel Samepage Merging on
-  and off; `spawn.py` finds the programs and reads what they print;
-  `base.py` has what bricks and events share; `markdown.py` reads the README
-  of a project, and `topology.py` lays the lab out with Graphviz;
-  `locations.py` has the paths of the files.
+  and off; `spawn.py` finds the programs and reads what they print, and
+  `vde.py` finds those of VDE; `base.py` has what bricks and events share;
+  `markdown.py` reads the README of a project, and `topology.py` lays the
+  lab out with Graphviz; `locations.py` has the paths of the files.
 - `virtualbricks/bricks/`: a module for each kind of brick: virtual machine,
   switch, tap, wire, and so on; each writes its command line with
   `command.py`. `draft.py` is what the settings panels work on: a copy of a

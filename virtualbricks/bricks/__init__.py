@@ -50,8 +50,8 @@ from virtualbricks.config.schema import (
 from virtualbricks.config.settings import get_setting
 from virtualbricks.i18n import _
 from virtualbricks.programs import programs
-from virtualbricks.spawn import abspath_vde
 from virtualbricks.sudo import sudo_command
+from virtualbricks.vde import which
 
 __all__ = ["Brick", "BrickConfig", "PrivilegedBrick"]
 
@@ -506,7 +506,7 @@ class Brick(base.Base):
 
     def open_console(self):
         term = get_setting("terminal")
-        args = [term, "-e", abspath_vde(self.term_command), self.console()]
+        args = [term, "-e", which(self.term_command), self.console()]
         self.logger.info(open_console, name=self.name, args=" ".join(args))
         reactor.spawnProcess(TermProtocol(), term, args, os.environ)
 
