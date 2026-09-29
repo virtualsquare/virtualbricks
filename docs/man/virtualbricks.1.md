@@ -79,7 +79,7 @@ SOCKET**.
 :   Send the command of the words that follow to the Virtualbricks that
     runs, and print its answer; without words, send the lines of the
     standard input. It takes no lock, and no other option but one
-    **--socket** of the text protocol. See **THE CONTROL SOCKET**.
+    **--socket**, text or AMP. See **THE CONTROL SOCKET**.
 
 **--socket** [*description*]
 :   Listen on a control socket: alone, the text socket *.control* in the
@@ -221,13 +221,16 @@ virtualbricks --no-gui --socket \
 virtualbricks --no-gui --socket tcp:8765
 ```
 
-**--command** sends a command to a text socket, as typed in the console:
+**--command** sends a command to a socket, as typed in the console, in
+the protocol of its description:
 
 ```
 virtualbricks --command brick start sw1 vm1
 virtualbricks --command brick set vm1 memory=1024
 virtualbricks --socket unix:~/labs/lab1.sock --command status
 virtualbricks --socket tcp:8765 --command status
+virtualbricks --socket unix:~/labs/lab1.amp:protocol=amp \
+    --command status
 ```
 
 The words after **--command** are those of the command, as the shell split
@@ -242,7 +245,9 @@ first goes there too, and the error, **Error:** and why, to the standard
 error; see **EXIT STATUS**. A relative path, as that of **source** *file*,
 is read from the folder where **--command** runs. Ctrl+C stops waiting, not
 the command. Virtualbricks logs each command it gets, and answers in its
-own language.
+own language. Over AMP, what a command did before it failed doesn't come,
+and an answer longer than 65535 bytes is an error; a text socket carries
+both.
 
 Only you can connect to a **unix** socket: each is yours alone, and
 Virtualbricks doesn't listen in a runtime folder that isn't yours, or that
@@ -671,7 +676,8 @@ With **--command**:
 :   The command was done.
 
 **1**
-:   The command failed, or an option is wrong.
+:   The command failed, its answer was too long for AMP, or an option is
+    wrong.
 
 **2**
 :   No Virtualbricks answered: none listens there, it ended before it

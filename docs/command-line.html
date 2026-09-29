@@ -262,7 +262,7 @@
       <dl>
         <dt>Reaches</dt><dd>one started with <code>--socket</code>, with windows or not</dd>
         <dt>Answers</dt><dd>output, error, exit status</dd>
-        <dt>AMP</dt><dd><code>protocol=amp</code>, for a program with Twisted</dd>
+        <dt>AMP</dt><dd><code>protocol=amp</code>, for a program with Twisted or <code>--command</code></dd>
       </dl>
     </li>
   </ul>
@@ -309,7 +309,7 @@ virtualbricks [--socket [description]] --command [word...]</code></pre></figure>
 <dt><code>--run</code> <em>file</em></dt><dd><p>Run the commands of <em>file</em> once the project is open, as <code>source</code> does, then read the console.</p></dd>
 <dt><code>--workspace</code> <em>directory</em></dt><dd><p>Use the projects of <em>directory</em> for this run, instead of the <code>workspace</code> setting; it&#x27;s made if it isn&#x27;t there.</p></dd>
 <dt><code>--lock</code> <em>mode</em></dt><dd><p>The single-instance mode: <code>system</code>, the default, one Virtualbricks on the machine; <code>user</code>, one for each user; <code>none</code>, no limit. See <a href="#files">Files</a>.</p></dd>
-<dt><code>--command</code> [<em>word</em>...]</dt><dd><p>Send the command of the words that follow to the Virtualbricks that runs, and print its answer; without words, send the lines of the standard input. It takes no lock, and no other option but one <code>--socket</code> of the text protocol. See <a href="#control-socket">The control socket</a>.</p></dd>
+<dt><code>--command</code> [<em>word</em>...]</dt><dd><p>Send the command of the words that follow to the Virtualbricks that runs, and print its answer; without words, send the lines of the standard input. It takes no lock, and no other option but one <code>--socket</code>, text or AMP. See <a href="#control-socket">The control socket</a>.</p></dd>
 <dt><code>--socket</code> [<em>description</em>]</dt><dd><p>Listen on a control socket: alone, the text socket <em>.control</em> in the runtime folder; with a <em>description</em>, as <code>unix:~/labs/lab1.amp:protocol=amp</code> or <code>tcp:8765</code>, the socket it describes. It can be given more than once. The next word is the description when it starts with a type and a colon, as <code>unix:</code>; after <code>=</code> it is too. With <code>--command</code>, the socket to talk to, as <code>tcp:lab.example:8765</code>. See <a href="#control-socket">The control socket</a>.</p></dd>
 <dt><code>--version</code></dt><dd><p>Print the version and exit.</p></dd>
 <dt><code>--help</code></dt><dd><p>Print the options and exit.</p></dd>
@@ -355,13 +355,15 @@ virtualbricks --no-gui --socket unix:~/labs/lab1.sock
 virtualbricks --no-gui --socket \
     --socket unix:~/labs/lab1.amp:protocol=amp
 virtualbricks --no-gui --socket tcp:8765</code></pre></figure>
-<p><code>--command</code> sends a command to a text socket, as typed in the console:</p>
+<p><code>--command</code> sends a command to a socket, as typed in the console, in the protocol of its description:</p>
 <figure class="code"><pre><code>virtualbricks --command brick start sw1 vm1
 virtualbricks --command brick set vm1 memory=1024
 virtualbricks --socket unix:~/labs/lab1.sock --command status
-virtualbricks --socket tcp:8765 --command status</code></pre></figure>
+virtualbricks --socket tcp:8765 --command status
+virtualbricks --socket unix:~/labs/lab1.amp:protocol=amp \
+    --command status</code></pre></figure>
 <p>The words after <code>--command</code> are those of the command, as the shell split them; they reach the console quoted again, so a value with spaces is quoted once, as in the console. The options of <code>virtualbricks</code> end at the first word. Without words, the lines of the standard input are the commands, each sent after the answer to the one before, up to the first error, which names its line.</p>
-<p>The answer goes to the standard output. When a command fails, what it did first goes there too, and the error, <code>Error:</code> and why, to the standard error; see <a href="#exit-status">Exit status</a>. A relative path, as that of <code>source</code> <em>file</em>, is read from the folder where <code>--command</code> runs. Ctrl+C stops waiting, not the command. Virtualbricks logs each command it gets, and answers in its own language.</p>
+<p>The answer goes to the standard output. When a command fails, what it did first goes there too, and the error, <code>Error:</code> and why, to the standard error; see <a href="#exit-status">Exit status</a>. A relative path, as that of <code>source</code> <em>file</em>, is read from the folder where <code>--command</code> runs. Ctrl+C stops waiting, not the command. Virtualbricks logs each command it gets, and answers in its own language. Over AMP, what a command did before it failed doesn&#x27;t come, and an answer longer than 65535 bytes is an error; a text socket carries both.</p>
 <p>Only you can connect to a <code>unix</code> socket: each is yours alone, and Virtualbricks doesn&#x27;t listen in a runtime folder that isn&#x27;t yours, or that others can write in. One Virtualbricks has each socket: the first to start, which holds the lock <em>path</em>.lock beside it; with <code>--lock none</code>, another one with the same <code>--socket</code> runs without that socket. A socket left by a crash is removed at the next start; nothing else at the path is.</p>
 <h3 id="control-socket-sockets-on-the-network">Sockets on the network</h3>
 <p>A <code>tcp</code> socket listens on this machine: on <code>127.0.0.1</code>, or on another loopback address of <code>interface=</code>, as <code>&#x27;interface=\:\:1&#x27;</code>, whose colons are escaped. Across the network, what passes on <code>tcp</code> could be read, so it is refused there. An <code>ssl</code> socket encrypts, and listens on <code>127.0.0.1</code> too, or on the address of <code>interface=</code>, as <code>0.0.0.0</code> for every IPv4 address of the machine. It needs the certificate of Virtualbricks: <code>privateKey=</code><em>file</em>, its key, and <code>certKey=</code><em>file</em>, the certificate, unless the key&#x27;s file holds it too, both in PEM; <code>extraCertChain=</code><em>file</em> holds the certificates between it and the authority that issued it. A port has no lock: the first Virtualbricks takes it, and another one runs without that socket.</p>
@@ -559,7 +561,7 @@ task.react(lambda reactor: ensureDeferred(main(reactor)))</code></pre></figure>
 <p>With <code>--command</code>:</p>
 <dl class="terms">
 <dt><code>0</code></dt><dd><p>The command was done.</p></dd>
-<dt><code>1</code></dt><dd><p>The command failed, or an option is wrong.</p></dd>
+<dt><code>1</code></dt><dd><p>The command failed, its answer was too long for AMP, or an option is wrong.</p></dd>
 <dt><code>2</code></dt><dd><p>No Virtualbricks answered: none listens there, it ended before it answered, it speaks another protocol, or it refused the token or the certificate. The error says which.</p></dd>
 <dt><code>130</code></dt><dd><p>Ctrl+C stopped the wait.</p></dd>
 </dl>

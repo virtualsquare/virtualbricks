@@ -77,8 +77,8 @@ See \f[B]FILES\f[R].
 Send the command of the words that follow to the Virtualbricks that
 runs, and print its answer; without words, send the lines of the
 standard input.
-It takes no lock, and no other option but one \f[B]\-\-socket\f[R] of
-the text protocol.
+It takes no lock, and no other option but one \f[B]\-\-socket\f[R], text
+or AMP.
 See \f[B]THE CONTROL SOCKET\f[R].
 .TP
 \f[B]\-\-socket\f[R] [\f[I]description\f[R]]
@@ -225,14 +225,16 @@ virtualbricks \-\-no\-gui \-\-socket \(rs
 virtualbricks \-\-no\-gui \-\-socket tcp:8765
 .EE
 .PP
-\f[B]\-\-command\f[R] sends a command to a text socket, as typed in the
-console:
+\f[B]\-\-command\f[R] sends a command to a socket, as typed in the
+console, in the protocol of its description:
 .IP
 .EX
 virtualbricks \-\-command brick start sw1 vm1
 virtualbricks \-\-command brick set vm1 memory=1024
 virtualbricks \-\-socket unix:\(ti/labs/lab1.sock \-\-command status
 virtualbricks \-\-socket tcp:8765 \-\-command status
+virtualbricks \-\-socket unix:\(ti/labs/lab1.amp:protocol=amp \(rs
+    \-\-command status
 .EE
 .PP
 The words after \f[B]\-\-command\f[R] are those of the command, as the
@@ -252,6 +254,8 @@ from the folder where \f[B]\-\-command\f[R] runs.
 Ctrl+C stops waiting, not the command.
 Virtualbricks logs each command it gets, and answers in its own
 language.
+Over AMP, what a command did before it failed doesn\(aqt come, and an
+answer longer than 65535 bytes is an error; a text socket carries both.
 .PP
 Only you can connect to a \f[B]unix\f[R] socket: each is yours alone,
 and Virtualbricks doesn\(aqt listen in a runtime folder that isn\(aqt
@@ -698,7 +702,8 @@ With \f[B]\-\-command\f[R]:
 The command was done.
 .TP
 \f[B]1\f[R]
-The command failed, or an option is wrong.
+The command failed, its answer was too long for AMP, or an option is
+wrong.
 .TP
 \f[B]2\f[R]
 No Virtualbricks answered: none listens there, it ended before it

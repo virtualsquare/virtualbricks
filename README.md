@@ -178,6 +178,8 @@ program written with Twisted: `--socket unix:~/labs/lab1.amp:protocol=amp`.
 The program calls `Run` with a line of the console and gets a Deferred of
 its answer; `virtualbricks/console/ampwire.py` has the commands. The option
 can be given more than once, for a JSON socket and an AMP one at once.
+`--command` talks to either: `--socket unix:~/labs/lab1.amp:protocol=amp
+--command status`.
 
 `--socket tcp:8765` listens on a port of this machine, and
 `--socket ssl:8765:interface=0.0.0.0:privateKey=lab.pem` on a port open to
@@ -377,7 +379,8 @@ To add a language, see the top of `l10n.sh`.
   `settings.py` and `projects.py`, and `general.py` for `help`, `status`,
   `source` and `quit`. `terminal.py` reads the terminal, or a pipe, and
   `lineedit.py` has the keys of readline for its line. `control.py` listens
-  on the control sockets, `client.py` is `--command`, and `wire.py` has what
+  on the control sockets, `client.py` is `--command`, with `ampbox.py`, the
+  boxes of AMP read and written without Twisted, and `wire.py` has what
   both share: the text protocol, the descriptions of `--socket`, the checks
   of a socket's path, the token and its proof. `tls.py` has the certificates
   of the ssl sockets, and is the only module that needs pyOpenSSL.

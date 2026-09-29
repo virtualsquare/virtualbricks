@@ -212,6 +212,9 @@
 
 # DONE
 
+- [x] Teach `--command` AMP too: with `protocol=amp` it talks to an AMP
+  socket, on unix, tcp or ssl, through `console/ampbox.py`, which reads
+  and writes the boxes of AMP without Twisted
 - [x] Listen on `tcp` and `ssl` sockets too, on this machine and across
   the network, with a way to know who connects (16 §9 M6, §10):
   `--socket tcp:PORT` on this machine, `ssl:PORT:privateKey=FILE` on any
