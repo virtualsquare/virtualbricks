@@ -34,18 +34,38 @@ from virtualbricks.tests import hold_lock, isolate, make_socket, short_folder
 GREETING = wire.greeting("2.1.0", 4200, "lab1")
 
 
+TOKEN = "0123456789abcdef"
+
+
 class FakeVirtualbricks:
     """
-    A Virtualbricks that listens on path in a thread: it greets, keeps the
-    requests, and gives the answers in order; it closes when they are over.
+    A Virtualbricks that listens on path in a thread, or on a free tcp port
+    of this machine without it: it greets, keeps the requests, and gives the
+    answers in order; it closes when they are over.
+
+    With a token, it asks for the proof first, and refuses a wrong one; with
+    lie too, it doesn't know the token and sends a proof of its own.
     """
 
-    def __init__(self, test, path, *answers, greeting=GREETING):
+    def __init__(
+        self, test, path, *answers, greeting=GREETING, token=None, lie=False
+    ):
         self.answers = list(answers)
         self.greeting = greeting
+        self.token = token
+        self.lie = lie
         self.requests = []
-        self.server = socket.socket(socket.AF_UNIX)
-        self.server.bind(path)
+        if path is None:
+            self.server = socket.socket(socket.AF_INET)
+            self.server.bind(("127.0.0.1", 0))
+            self.port = self.server.getsockname()[1]
+            self.target = wire.Socket(
+                None, "text", "tcp", "127.0.0.1", self.port
+            )
+        else:
+            self.server = socket.socket(socket.AF_UNIX)
+            self.server.bind(path)
+            self.target = wire.Socket(path)
         self.server.listen(1)
         self.thread = threading.Thread(target=self.serve, daemon=True)
         self.thread.start()
@@ -58,16 +78,37 @@ class FakeVirtualbricks:
             # stopped before anyone connected
             return
         with conn, conn.makefile("rb") as reader:
-            if isinstance(self.greeting, bytes):
-                conn.sendall(self.greeting)
+            greeting = self.greeting
+            if self.token is not None:
+                greeting = self.prove(conn, reader)
+                if greeting is None:
+                    return
+            if isinstance(greeting, bytes):
+                conn.sendall(greeting)
             else:
-                conn.sendall(wire.encode(self.greeting))
+                conn.sendall(wire.encode(greeting))
             while self.answers:
                 line = reader.readline()
                 if not line:
                     return
                 self.requests.append(wire.decode(line))
                 conn.sendall(wire.encode(self.answers.pop(0)))
+
+    def prove(self, conn, reader):
+        nonce = wire.new_nonce()
+        conn.sendall(wire.encode(wire.challenge(nonce)))
+        line = reader.readline()
+        if not line:
+            return None
+        self.requests.append(wire.decode(line))
+        theirs, given = wire.read_proof(line)
+        if given != wire.proof(self.token, "client", nonce, theirs):
+            conn.sendall(wire.encode(wire.refusal("Wrong token")))
+            return None
+        proof = wire.proof(self.token, "server", nonce, theirs)
+        if self.lie:
+            proof = wire.proof("fedcba9876543210", "server", nonce, theirs)
+        return dict(self.greeting, proof=proof)
 
     def stop(self):
         self.server.close()
@@ -85,9 +126,11 @@ class ClientTestCase(unittest.TestCase):
         self.stdout = io.StringIO()
         self.stderr = io.StringIO()
 
-    def main(self, *words, stdin="", path=None):
+    def main(self, *words, stdin="", path=None, target=None):
+        if path is not None:
+            target = wire.Socket(path)
         return client.main(
-            list(words), path, io.StringIO(stdin), self.stdout, self.stderr
+            list(words), target, io.StringIO(stdin), self.stdout, self.stderr
         )
 
     def assertOutput(self, status, stdout, stderr=""):
@@ -289,6 +332,158 @@ class TestUnanswered(ClientTestCase):
                 "Virtualbricks closed the connection before it answered: it"
                 " may have ended",
             )
+
+
+class TestTcp(ClientTestCase):
+    """--command over tcp, with the token."""
+
+    def setUp(self):
+        super().setUp()
+        self.token_file = locations.token_file()
+        self.write_token(self.token_file)
+
+    def write_token(self, path, text=TOKEN, mode=0o600):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as file:
+            file.write(text + "\n")
+        os.chmod(path, mode)
+
+    def unanswered(self, target, *words):
+        status = self.main(*(words or ["status"]), target=target)
+        self.assertEqual(status, client.UNANSWERED)
+        self.assertEqual(self.stdout.getvalue(), "")
+        return self.stderr.getvalue()
+
+    def test_the_proof(self):
+        server = FakeVirtualbricks(
+            self, None, wire.answer(["sw1 runs"]), token=TOKEN
+        )
+        status = self.main("brick", "start", "sw1", target=server.target)
+        self.assertOutput(status, "sw1 runs\n")
+        proof, request = server.requests
+        self.assertEqual(sorted(proof), ["nonce", "proof"])
+        self.assertNotIn(TOKEN, str(proof))
+        # this machine: the folder goes with the request
+        self.assertEqual(request, wire.request("brick start sw1", os.getcwd()))
+
+    def test_another_token_file(self):
+        path = os.path.join(self.mktemp(), "lab1.token")
+        self.write_token(path, "fedcba9876543210")
+        server = FakeVirtualbricks(
+            self, None, wire.answer([]), token="fedcba9876543210"
+        )
+        target = server.target._replace(token_file=path)
+        self.assertOutput(self.main("status", target=target), "")
+
+    def test_no_token_asked(self):
+        # a socket that doesn't ask for it, as ssl with certificates
+        server = FakeVirtualbricks(self, None, wire.answer(["Nothing runs"]))
+        status = self.main("status", target=server.target)
+        self.assertOutput(status, "Nothing runs\n")
+
+    def test_another_token(self):
+        server = FakeVirtualbricks(
+            self, None, wire.answer([]), token="fedcba9876543210"
+        )
+        self.assertEqual(
+            self.unanswered(server.target),
+            f"The Virtualbricks on 127.0.0.1 port {server.port} has another"
+            " token\n",
+        )
+
+    def test_an_end_without_the_token(self):
+        server = FakeVirtualbricks(
+            self, None, wire.answer([]), token=TOKEN, lie=True
+        )
+        self.assertEqual(
+            self.unanswered(server.target),
+            f"What answers on 127.0.0.1 port {server.port} doesn't know your"
+            " token: it isn't your Virtualbricks\n",
+        )
+        server.stop()
+        # the command never went
+        self.assertEqual(len(server.requests), 1)
+
+    def test_no_token(self):
+        os.remove(self.token_file)
+        server = FakeVirtualbricks(self, None, wire.answer([]), token=TOKEN)
+        self.assertEqual(
+            self.unanswered(server.target),
+            f"No token: {self.token_file} doesn't exist. Copy the one of the"
+            " machine where Virtualbricks runs, or name another with"
+            " tokenFile=\n",
+        )
+
+    def test_a_token_that_others_can_read(self):
+        os.chmod(self.token_file, 0o644)
+        server = FakeVirtualbricks(self, None, wire.answer([]), token=TOKEN)
+        self.assertEqual(
+            self.unanswered(server.target),
+            f"Others can read or change {self.token_file}: chmod 600"
+            f" {self.token_file}: no command sent\n",
+        )
+
+    def test_nothing_listens(self):
+        free = socket.socket(socket.AF_INET)
+        free.bind(("127.0.0.1", 0))
+        port = free.getsockname()[1]
+        free.close()
+        target = wire.parse_socket(f"tcp:{port}", client=True)
+        self.assertEqual(
+            self.unanswered(target),
+            f"Nothing listens on 127.0.0.1 port {port}. Start Virtualbricks"
+            f" with --socket tcp:{port}\n",
+        )
+
+    def refuse(self, error):
+        def create_connection(address, timeout):
+            self.assertEqual(timeout, client.CONNECT_TIMEOUT)
+            raise error
+
+        self.patch(socket, "create_connection", create_connection)
+
+    def test_another_machine(self):
+        target = wire.parse_socket("tcp:lab.example:8765", client=True)
+        self.refuse(ConnectionRefusedError(111, "Connection refused"))
+        self.assertEqual(
+            self.unanswered(target),
+            "Nothing listens on lab.example port 8765\n",
+        )
+        self.stderr.truncate(0)
+        self.stderr.seek(0)
+        self.refuse(socket.gaierror(-2, "Name or service not known"))
+        self.assertEqual(
+            self.unanswered(target),
+            "Can't find lab.example: Name or service not known\n",
+        )
+        self.stderr.truncate(0)
+        self.stderr.seek(0)
+        self.refuse(TimeoutError())
+        self.assertEqual(
+            self.unanswered(target),
+            "lab.example port 8765 didn't answer in 10 seconds\n",
+        )
+
+    def test_no_greeting(self):
+        # it connects, and says nothing
+        self.patch(client, "CONNECT_TIMEOUT", 0.1)
+        server = socket.socket(socket.AF_INET)
+        self.addCleanup(server.close)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = server.getsockname()[1]
+        target = wire.parse_socket(f"tcp:{port}", client=True)
+        self.assertEqual(
+            self.unanswered(target),
+            f"127.0.0.1 port {port} didn't answer in 0.1 seconds\n",
+        )
+
+    def test_the_folder_stays_here(self):
+        # another machine reads the paths from its own folder
+        server = FakeVirtualbricks(self, None, wire.answer([]), token=TOKEN)
+        self.patch(client.Connection, "local", lambda self: False)
+        self.assertOutput(self.main("status", target=server.target), "")
+        self.assertEqual(server.requests[1], wire.request("status"))
 
 
 class TestTheProcess(unittest.TestCase):

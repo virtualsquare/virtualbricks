@@ -18,7 +18,9 @@
 
 """
 ``virtualbricks --command``: a command of the console, sent to the
-Virtualbricks that runs through its control socket, and its answer.
+Virtualbricks that runs through its control socket, and its answer. Over
+tcp, it proves first that it knows the token, and checks that the other end
+knows it too.
 
 The words after ``--command`` are the command, quoted again for the
 console; without words, the lines of the standard input are, each sent
@@ -29,6 +31,7 @@ Twisted's reactor nor GTK, takes no lock and opens no project.
 
 from __future__ import annotations
 
+import ipaddress
 import os
 import pwd
 import shlex
@@ -45,6 +48,8 @@ FAILED = 1
 UNANSWERED = 2
 # as a shell reports SIGINT
 INTERRUPTED = 130
+# How long a network socket has to answer and to prove, in seconds.
+CONNECT_TIMEOUT = wire.PROOF_TIMEOUT
 
 
 class Unanswered(Exception):
@@ -59,20 +64,27 @@ def _closed() -> str:
 
 
 class Connection:
-    """A connection to the control socket: requests and their answers."""
+    """
+    A connection to the control socket, a wire.Socket: requests and their
+    answers. A socket that asks for the proof of the token gets it first.
+    """
 
-    def __init__(self, sock: socket.socket):
+    def __init__(self, sock: socket.socket, target: wire.Socket | None = None):
         self.sock = sock
+        self.target = target
         self.reader = sock.makefile("rb")
         try:
-            self.greeting = self.receive()
-            if self.greeting.get("protocol") != wire.PROTOCOL:
+            first = self.receive()
+            if first.get("protocol") != wire.PROTOCOL:
                 raise Unanswered(
                     _(
                         "The Virtualbricks that runs, version {version},"
                         " speaks another protocol: restart it"
-                    ).format(version=self.greeting.get("version"))
+                    ).format(version=first.get("version"))
                 )
+            if first.get("auth") == wire.AUTH_TOKEN:
+                first = self.prove(first.get("nonce"))
+            self.greeting = first
         except BaseException:
             self.reader.close()
             raise
@@ -81,9 +93,75 @@ class Connection:
         self.reader.close()
         self.sock.close()
 
+    def where(self) -> str:
+        return self.target.where() if self.target else _("the socket")
+
+    def local(self) -> bool:
+        """Whether the Virtualbricks at the other end runs on this machine."""
+
+        if self.target is None or self.target.kind == "unix":
+            return True
+        host = self.sock.getpeername()[0]
+        return ipaddress.ip_address(host.partition("%")[0]).is_loopback
+
+    def prove(self, nonce: object) -> dict:
+        """Prove that this end knows the token; the greeting that follows."""
+
+        if not isinstance(nonce, str):
+            raise Unanswered(_not_the_protocol())
+        token = self.read_token()
+        mine = wire.new_nonce()
+        proof = wire.proof(token, "client", nonce, mine)
+        self.send(wire.token_proof(mine, proof))
+        greeting = self.receive()
+        if greeting.get("ok") is False:
+            raise Unanswered(
+                _("The Virtualbricks on {where} has another token").format(
+                    where=self.where()
+                )
+            )
+        expected = wire.proof(token, "server", nonce, mine)
+        if not wire.same_proof(greeting.get("proof"), expected):
+            raise Unanswered(
+                _(
+                    "What answers on {where} doesn't know your token: it"
+                    " isn't your Virtualbricks"
+                ).format(where=self.where())
+            )
+        return greeting
+
+    def read_token(self) -> str:
+        path = None
+        if self.target is not None:
+            path = self.target.token_file
+        if path is None:
+            path = locations.token_file()
+        try:
+            return wire.read_token(path)
+        except wire.NoToken:
+            raise Unanswered(
+                _(
+                    "No token: {path} doesn't exist. Copy the one of the"
+                    " machine where Virtualbricks runs, or name another with"
+                    " tokenFile="
+                ).format(path=path)
+            ) from None
+        except wire.Unusable as exc:
+            raise Unanswered(
+                _("{reason}: no command sent").format(reason=exc)
+            ) from None
+
+    def send(self, message: dict):
+        try:
+            self.sock.sendall(wire.encode(message))
+        except (BrokenPipeError, ConnectionResetError):
+            raise Unanswered(_closed()) from None
+
     def receive(self) -> dict:
         try:
             line = self.reader.readline()
+        except TimeoutError:
+            raise Unanswered(_timed_out(self.where())) from None
         except ConnectionResetError:
             line = b""
         if not line.endswith(b"\n"):
@@ -91,18 +169,23 @@ class Connection:
         try:
             return wire.decode(line)
         except ValueError:
-            raise Unanswered(
-                _("What answers on the socket doesn't speak its protocol")
-            ) from None
+            raise Unanswered(_not_the_protocol()) from None
 
     def ask(self, line: str, cwd: str | None = None) -> dict:
         """The answer to the command of line, whose paths are read in cwd."""
 
-        try:
-            self.sock.sendall(wire.encode(wire.request(line, cwd)))
-        except (BrokenPipeError, ConnectionResetError):
-            raise Unanswered(_closed()) from None
+        self.send(wire.request(line, cwd))
         return self.receive()
+
+
+def _not_the_protocol() -> str:
+    return _("What answers on the socket doesn't speak its protocol")
+
+
+def _timed_out(where: str) -> str:
+    return _("{where} didn't answer in {seconds} seconds").format(
+        where=where, seconds=CONNECT_TIMEOUT
+    )
 
 
 def _processes(holders) -> str:
@@ -148,14 +231,18 @@ def _nobody(path: str) -> str:
     )
 
 
-def connect(path: str | None = None) -> Connection:
+def connect(target: wire.Socket | None = None) -> Connection:
     """
-    Connect to the Virtualbricks that listens on path, the socket in the
-    runtime folder if None; raise Unanswered if none can be reached.
+    Connect to the Virtualbricks that listens on target, a wire.Socket, the
+    socket in the runtime folder if None; raise Unanswered if none can be
+    reached.
     """
 
-    if path is None:
-        path = locations.control_socket()
+    if target is None:
+        target = wire.Socket(locations.control_socket())
+    if target.kind != "unix":
+        return _connect_network(target)
+    path = target.path
     try:
         wire.check_length(path)
         there = wire.check_socket(path)
@@ -170,7 +257,7 @@ def connect(path: str | None = None) -> Connection:
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
         sock.connect(path)
-        return Connection(sock)
+        return Connection(sock, target)
     except (ConnectionRefusedError, FileNotFoundError):
         # a socket left by a crash
         sock.close()
@@ -181,6 +268,47 @@ def connect(path: str | None = None) -> Connection:
     except BaseException:
         sock.close()
         raise
+
+
+def _loopback(host: str) -> bool:
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return host == "localhost"
+
+
+def _connect_network(target: wire.Socket) -> Connection:
+    where = target.where()
+    try:
+        sock = socket.create_connection(
+            (target.host, target.port), timeout=CONNECT_TIMEOUT
+        )
+    except socket.gaierror as exc:
+        raise Unanswered(
+            _("Can't find {host}: {reason}").format(
+                host=target.host, reason=exc.strerror
+            )
+        ) from None
+    except ConnectionRefusedError:
+        message = _("Nothing listens on {where}").format(where=where)
+        if _loopback(target.host):
+            message = _(
+                "Nothing listens on {where}. Start Virtualbricks with"
+                " --socket {kind}:{port}"
+            ).format(where=where, kind=target.kind, port=target.port)
+        raise Unanswered(message) from None
+    except TimeoutError:
+        raise Unanswered(_timed_out(where)) from None
+    except OSError as exc:
+        raise Unanswered(f"{where}: {exc.strerror}") from None
+    try:
+        connection = Connection(sock, target)
+    except BaseException:
+        sock.close()
+        raise
+    # the command takes as long as it takes
+    sock.settimeout(None)
+    return connection
 
 
 def _commands(words, stdin):
@@ -195,20 +323,21 @@ def _commands(words, stdin):
             yield number, line
 
 
-def main(words, path=None, stdin=None, stdout=None, stderr=None) -> int:
+def main(words, target=None, stdin=None, stdout=None, stderr=None) -> int:
     """
     Send the command of words, or the lines of stdin without words, to the
-    Virtualbricks that listens on path, the default socket if None; write
-    the answers and return the exit status.
+    Virtualbricks that listens on target, a wire.Socket, the default socket
+    if None; write the answers and return the exit status.
     """
 
     stdin = sys.stdin if stdin is None else stdin
     stdout = sys.stdout if stdout is None else stdout
     stderr = sys.stderr if stderr is None else stderr
-    cwd = os.getcwd()
     connection = None
     try:
-        connection = connect(path)
+        connection = connect(target)
+        # the folders of another machine aren't those of this one
+        cwd = os.getcwd() if connection.local() else None
         for number, line in _commands(words, stdin):
             answer = connection.ask(line, cwd)
             for text in answer.get("lines", []):

@@ -17,16 +17,17 @@
 
 """The control socket: the Virtualbricks that listens, its protocol."""
 
+import io
 import os
 import stat
 
-from twisted.internet import defer, endpoints, reactor
+from twisted.internet import address, defer, endpoints, reactor, threads
 from twisted.internet.testing import StringTransport
 from twisted.protocols import amp, basic
 from twisted.test import iosim
 
 from virtualbricks import __version__, locations, locks
-from virtualbricks.console import ampwire, control, wire
+from virtualbricks.console import ampwire, client, control, wire
 from virtualbricks.console.command import Arg, CommandError, command
 from virtualbricks.tests import (
     FakeLogger,
@@ -217,6 +218,219 @@ class TestProtocol(ConsoleTestCase):
     def test_nothing_to_close(self):
         self.connection.connectionLost(None)
         self.successResultOf(self.server.close())
+
+
+TOKEN = "0123456789abcdef"
+TCP = wire.parse_socket("tcp:8765")
+
+
+def prove(challenge, token=TOKEN):
+    """The client's answer to the first line, and the server's proof."""
+
+    mine = wire.new_nonce()
+    nonce = challenge["nonce"]
+    return (
+        wire.token_proof(mine, wire.proof(token, "client", nonce, mine)),
+        wire.proof(token, "server", nonce, mine),
+    )
+
+
+class TestTheToken(TestProtocol):
+    """A connection of a tcp socket, whose client proves the token first."""
+
+    def setUp(self):
+        super().setUp()
+        self.server = control.ControlFactory(
+            self.factory, self.clock(), socket=TCP, token=TOKEN
+        )
+        self.connection, self.transport = self.connect()
+
+    def connect(self):
+        connection = self.server.buildProtocol(None)
+        peer = address.IPv4Address("TCP", "127.0.0.1", 50412)
+        transport = StringTransport(peerAddress=peer)
+        connection.makeConnection(transport)
+        return connection, transport
+
+    def proved(self, challenge=None):
+        """Prove the token; the greeting, checked."""
+
+        if challenge is None:
+            [challenge] = self.received()
+        answer, server_proof = prove(challenge)
+        self.send(answer)
+        [greeting] = self.received()
+        self.assertEqual(greeting.pop("proof"), server_proof)
+        return greeting
+
+    def test_the_greeting(self):
+        [challenge] = self.received()
+        self.assertEqual(challenge, wire.challenge(challenge["nonce"]))
+        self.assertRegex(challenge["nonce"], "^[0-9a-f]{64}$")
+        self.assertEqual(
+            self.proved(challenge),
+            {
+                "protocol": 1,
+                "version": __version__,
+                "pid": os.getpid(),
+                "project": "lab1",
+            },
+        )
+        self.assertEqual(
+            self.logger.formatted(),
+            ["127.0.0.1 port 50412 connected to tcp port 8765 with the token"],
+        )
+        # another connection, another nonce
+        other, transport = self.connect()
+        [again] = self.received(transport)
+        self.assertNotEqual(again["nonce"], challenge["nonce"])
+
+    def test_a_command(self):
+        self.proved()
+        self.send(wire.request("brick new switch"))
+        self.assertEqual(self.received(), [wire.answer(["sw1"])])
+        self.assertEqual(
+            self.logger.formatted()[1],
+            "Command from 127.0.0.1 port 50412: brick new switch",
+        )
+
+    def test_a_command_that_fails(self):
+        self.proved()
+        self.send(wire.request("brick start vm9"))
+        self.assertEqual(self.received(), [wire.refusal("No brick named vm9")])
+        self.assertEqual(
+            self.logger.formatted()[2],
+            "The command from 127.0.0.1 port 50412 failed: No brick named"
+            " vm9",
+        )
+
+    def test_a_wrong_token(self):
+        [challenge] = self.received()
+        answer, _ = prove(challenge, token="fedcba9876543210")
+        self.send(answer, wire.request("brick new switch"))
+        self.assertEqual(self.received(), [wire.refusal("Wrong token")])
+        self.assertTrue(self.transport.disconnecting)
+        self.assertEqual(self.factory.bricks, [])
+        self.assertEqual(
+            self.logger.formatted(),
+            ["127.0.0.1 port 50412 on tcp port 8765: wrong token"],
+        )
+        self.assertEqual(self.logger.levels(), ["warn"])
+
+    def test_the_proof_of_another_nonce(self):
+        # a proof given to another end, which chose its nonce
+        self.received()
+        answer, _ = prove({"nonce": wire.new_nonce()})
+        self.send(answer)
+        self.assertEqual(self.received(), [wire.refusal("Wrong token")])
+
+    def test_a_request_first(self):
+        self.received()
+        self.send(
+            b"\n", wire.request("brick new switch"), wire.request("status")
+        )
+        self.assertEqual(
+            self.received(),
+            [wire.refusal('Not a proof: "nonce" and "proof" come first')],
+        )
+        self.assertTrue(self.transport.disconnecting)
+        self.assertEqual(self.factory.bricks, [])
+        self.assertEqual(
+            self.logger.formatted(),
+            ["127.0.0.1 port 50412 on tcp port 8765: not a proof"],
+        )
+
+    def test_the_proof_and_a_request_together(self):
+        [challenge] = self.received()
+        answer, _ = prove(challenge)
+        self.connection.dataReceived(
+            wire.encode(answer) + wire.encode(wire.request("status"))
+        )
+        greeting, answer = self.received()
+        self.assertEqual(greeting["pid"], os.getpid())
+        self.assertEqual(answer, wire.answer(["Nothing runs"]))
+
+    def test_ten_seconds(self):
+        self.received()
+        self.clock().advance(wire.PROOF_TIMEOUT - 0.1)
+        self.assertFalse(self.transport.disconnecting)
+        self.clock().advance(0.1)
+        self.assertEqual(
+            self.received(), [wire.refusal("No proof in 10 seconds")]
+        )
+        self.assertTrue(self.transport.disconnecting)
+        self.assertEqual(
+            self.logger.formatted(),
+            ["127.0.0.1 port 50412 on tcp port 8765: no proof in 10 seconds"],
+        )
+        self.assertEqual(self.logger.levels(), ["warn"])
+
+    def test_proved_in_time(self):
+        self.proved()
+        self.clock().advance(wire.PROOF_TIMEOUT)
+        self.assertFalse(self.transport.disconnecting)
+        self.assertEqual(self.clock().getDelayedCalls(), [])
+
+    def test_lost_before_the_proof(self):
+        self.connection.connectionLost(None)
+        self.assertEqual(self.clock().getDelayedCalls(), [])
+
+    def test_closed_after_the_last_answer(self):
+        self.proved()
+        self.send(wire.request("status"))
+        closed = self.server.close()
+        self.assertTrue(self.transport.disconnecting)
+        self.assertEqual(self.received(), [wire.answer(["Nothing runs"])])
+        self.connection.connectionLost(None)
+        self.successResultOf(closed)
+
+    def test_nothing_to_close(self):
+        self.connection.connectionLost(None)
+        self.successResultOf(self.server.close())
+
+    def test_a_client_that_doesnt_read(self):
+        self.proved()
+        super().test_a_client_that_doesnt_read()
+
+    def test_not_a_request(self):
+        self.proved()
+        self.send(b"status\n", wire.request("status"))
+        self.assertEqual(
+            self.received(),
+            [
+                wire.refusal(
+                    'Not a request: a line of JSON, as {"line": "brick list"}'
+                ),
+                wire.answer(["Nothing runs"]),
+            ],
+        )
+
+    # the tests of the plain socket, once the token is proved
+    def test_what_it_did_first(self):
+        self.proved()
+        super().test_what_it_did_first()
+
+    def test_the_folder_of_the_request(self):
+        self.proved()
+        super().test_the_folder_of_the_request()
+
+    def test_in_order(self):
+        self.proved()
+        # the other connection proves it too
+        connect = self.connect
+
+        def proving():
+            connection, transport = connect()
+            [challenge] = self.received(transport)
+            self.send(prove(challenge)[0], connection=connection)
+            return connection, transport
+
+        self.connect = proving
+        super().test_in_order()
+
+    def test_lost_while_it_runs(self):
+        self.proved()
+        super().test_lost_while_it_runs()
 
 
 class TestAMP(ConsoleTestCase):
@@ -417,6 +631,9 @@ class Reactor:
     def listenUNIX(self, *args, **kwargs):
         return reactor.listenUNIX(*args, **kwargs)
 
+    def listenTCP(self, *args, **kwargs):
+        return reactor.listenTCP(*args, **kwargs)
+
     def callLater(self, *args, **kwargs):
         return reactor.callLater(*args, **kwargs)
 
@@ -602,3 +819,148 @@ class TestListen(ConsoleTestCase):
         path = os.path.join(os.path.dirname(self.path), "a" * 107)
         self.assertIsNone(self.listen(path))
         self.assertEqual(self.logger.levels(), ["warn"])
+
+
+class TestListenTcp(ConsoleTestCase):
+    """A tcp socket, on a free port of this machine."""
+
+    def setUp(self):
+        super().setUp()
+        self.factory.runtime_dir = "/run/vb"
+        self.logger = FakeLogger()
+        self.patch(control, "logger", self.logger)
+        use_workspace(self)
+        self.reactor = Reactor()
+        self.token_file = locations.token_file()
+
+    def listen(self, port=0, **fields):
+        socket = wire.Socket(None, wire.TEXT, "tcp", "127.0.0.1", port)
+        found = control.listen(
+            self.factory, socket._replace(**fields), self.reactor
+        )
+        if found is not None:
+            self.addCleanup(found.close)
+        return found
+
+    def connect(self, found):
+        endpoint = endpoints.TCP4ClientEndpoint(
+            reactor, "127.0.0.1", found.socket.port
+        )
+        return endpoints.connectProtocol(endpoint, Client())
+
+    def write_token(self, path, mode=0o600):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as file:
+            file.write(TOKEN + "\n")
+        os.chmod(path, mode)
+
+    def command(self, found, *words, **fields):
+        """--command, in a thread: its status, output and errors."""
+
+        stdout, stderr = io.StringIO(), io.StringIO()
+        done = threads.deferToThread(
+            client.main,
+            list(words),
+            found.socket._replace(**fields),
+            io.StringIO(),
+            stdout,
+            stderr,
+        )
+        done.addCallback(
+            lambda status: (status, stdout.getvalue(), stderr.getvalue())
+        )
+        return done
+
+    @defer.inlineCallbacks
+    def test_listen(self):
+        found = self.listen()
+        # the token is made, only yours, and stays for the next start
+        token = wire.read_token(self.token_file)
+        self.assertEqual(stat.S_IMODE(os.stat(self.token_file).st_mode), 0o600)
+        port = found.socket.port
+        self.assertNotEqual(port, 0)
+        self.assertEqual(
+            self.logger.formatted(),
+            [
+                f"Made the token {self.token_file}",
+                f"Listening on tcp 127.0.0.1 port {port}, protocol text, with"
+                f" the token of {self.token_file}",
+            ],
+        )
+        self.assertIn(
+            ("before", "shutdown", found.close), self.reactor.triggers
+        )
+        client = yield self.connect(found)
+        challenge = yield client.messages.get()
+        answer, server_proof = prove(challenge, token)
+        client.sendLine(wire.encode(answer)[:-1])
+        greeting = yield client.messages.get()
+        self.assertEqual(greeting["proof"], server_proof)
+        client.sendLine(wire.encode(wire.request("brick new switch"))[:-1])
+        answer = yield client.messages.get()
+        self.assertEqual(answer, wire.answer(["sw1"]))
+        yield found.close()
+        yield client.lost
+        self.assertEqual(wire.read_token(self.token_file), token)
+
+    @defer.inlineCallbacks
+    def test_command(self):
+        # --command proves the token, and sends the folder: this machine
+        found = self.listen()
+        own_commands(self)
+
+        @command(None, "cwd", help="The folder")
+        def cwd(context):
+            return [str(context.cwd)]
+
+        result = yield self.command(found, "cwd")
+        self.assertEqual(result, (client.DONE, f"{os.getcwd()}\n", ""))
+
+    @defer.inlineCallbacks
+    def test_command_with_another_token(self):
+        found = self.listen()
+        other = os.path.join(self.mktemp(), "token")
+        self.write_token(other)
+        result = yield self.command(found, "status", token_file=other)
+        self.assertEqual(
+            result,
+            (
+                client.UNANSWERED,
+                "",
+                f"The Virtualbricks on 127.0.0.1 port {found.socket.port} has"
+                " another token\n",
+            ),
+        )
+        self.assertEqual(self.logger.levels(), ["info", "info", "warn"])
+
+    def test_a_token_of_its_own(self):
+        path = os.path.join(self.mktemp(), "lab1.token")
+        os.makedirs(os.path.dirname(path))
+        found = self.listen(token_file=path)
+        self.assertIsNotNone(found)
+        wire.read_token(path)
+        self.assertFalse(os.path.exists(self.token_file))
+
+    def test_a_token_that_others_can_read(self):
+        self.write_token(self.token_file, 0o644)
+        self.assertIsNone(self.listen())
+        self.assertEqual(
+            self.logger.formatted(),
+            [
+                f"tcp 127.0.0.1 port 0: Others can read or change"
+                f" {self.token_file}: chmod 600 {self.token_file}: no control"
+                " socket"
+            ],
+        )
+        self.assertEqual(self.logger.levels(), ["warn"])
+
+    def test_a_port_in_use(self):
+        first = self.listen()
+        port = first.socket.port
+        self.assertIsNone(self.listen(port))
+        self.assertEqual(
+            self.logger.formatted()[-1],
+            f"tcp 127.0.0.1 port {port}: Address already in use: no control"
+            " socket",
+        )
+        self.assertEqual(self.logger.levels()[-1], "warn")

@@ -25,6 +25,8 @@ APP = "virtualbricks"
 DEFAULT_PROJECT = "new_project"
 SETTINGS_FILE = "settings.toml"
 STATE_FILE = "state.toml"
+# The token of the tcp and ssl control sockets, in the config folder.
+TOKEN_FILE = "token"
 PROJECT_FILE = "project.toml"
 LEGACY_SETTINGS_FILE = ".virtualbricks.conf"
 LEGACY_PROJECT_FILE = ".project"
@@ -100,6 +102,12 @@ def control_lock_file(socket):
     """The lock that the Virtualbricks listening on socket holds."""
 
     return socket + ".lock"
+
+
+def token_file():
+    """The token that a client of a tcp or ssl socket proves it knows."""
+
+    return os.path.join(config_dir(), TOKEN_FILE)
 
 
 def brick_name_room(runtime_dir):

@@ -102,6 +102,13 @@ class TestLocations(unittest.TestCase):
             "/home/alice/lab.sock.lock",
         )
 
+    def test_token_file(self):
+        # beside the settings
+        self.env["XDG_CONFIG_HOME"] = "/home/alice/.config"
+        self.assertEqual(
+            locations.token_file(), "/home/alice/.config/virtualbricks/token"
+        )
+
     def test_brick_name_room(self):
         # 107 bytes: the runtime directory, "/", the name, ".ctl/.<pid>-<n>"
         runtime_dir = "/run/user/1000/virtualbricks/lab"

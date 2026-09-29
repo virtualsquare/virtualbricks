@@ -46,8 +46,7 @@ def run():
         i18n.install()
         # one socket at most, of the text protocol
         sockets = config["sockets"]
-        path = sockets[0].path if sockets else None
-        sys.exit(client.main(config["words"], path))
+        sys.exit(client.main(config["words"], sockets[0] if sockets else None))
     if config["no-gui"]:
         factory = make_plain_application
     else:

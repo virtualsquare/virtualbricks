@@ -72,8 +72,9 @@ class Options(usage.Options):
             None,
             "Listen on a control socket: .control in the runtime folder, or "
             "the one of the description after it, as "
-            "unix:PATH:protocol=amp. Give it again for more sockets. With "
-            "--command, the socket to talk to.",
+            "unix:PATH:protocol=amp or tcp:PORT. Give it again for more "
+            "sockets. With --command, the socket to talk to, as "
+            "tcp:HOST:PORT.",
         ],
     ]
     optParameters = [
@@ -126,6 +127,9 @@ class Options(usage.Options):
         # the sockets of --socket, a wire.Socket each; the flag is never set
         del self["socket"]
         self["sockets"] = []
+        # the descriptions of --socket, None for --socket alone, read once
+        # it is known whether --command talks to them
+        self.descriptions = []
         # the options given whose value doesn't tell
         self.given = set()
 
@@ -158,16 +162,16 @@ class Options(usage.Options):
             name, equals, description = arg.partition("=")
             if self._long_option(name) == "socket":
                 if equals:
-                    self.add_socket(description)
+                    self.descriptions.append(description)
                 elif args and DESCRIPTION.match(args[0]):
-                    self.add_socket(args.pop(0))
+                    self.descriptions.append(args.pop(0))
                 elif args and args[0].startswith(("/", "~", ".")):
                     raise usage.UsageError(
                         f"--socket: {args[0]} needs its type:"
                         f" unix:{args[0]}"
                     )
                 else:
-                    self.add_socket(None)
+                    self.descriptions.append(None)
                 continue
             rest.append(arg)
             if args and self._takes_value(arg):
@@ -203,16 +207,26 @@ class Options(usage.Options):
                 return position == len(arg) - 1
         return False
 
-    def add_socket(self, description):
-        """Listen on the socket of description, or on the default one."""
+    def add_socket(self, description, client=False):
+        """
+        Listen on the socket of description, or on the default one; with
+        client, talk to it with --command.
+        """
 
         if description is None:
             socket = wire.Socket(locations.control_socket())
         else:
             try:
-                socket = wire.parse_socket(description)
+                socket = wire.parse_socket(description, client)
             except ValueError as exc:
                 raise usage.UsageError(f"--socket: {exc}") from None
+        if socket.kind == "unix":
+            socket = self._unix_socket(socket)
+        else:
+            socket = self._network_socket(socket, client)
+        self["sockets"].append(socket)
+
+    def _unix_socket(self, socket):
         path = os.path.abspath(os.path.expanduser(socket.path))
         folder = os.path.dirname(path)
         # Virtualbricks makes the runtime folder at start
@@ -228,7 +242,46 @@ class Options(usage.Options):
             )
         if any(other.path == path for other in self["sockets"]):
             raise usage.UsageError(f"--socket: {path} is given twice")
-        self["sockets"].append(socket._replace(path=path))
+        return socket._replace(path=path)
+
+    def _network_socket(self, socket, client):
+        token_file = socket.token_file
+        if token_file is not None:
+            token_file = os.path.abspath(os.path.expanduser(token_file))
+            socket = socket._replace(token_file=token_file)
+        if client:
+            # --command reads the token, and says what is wrong with it
+            return socket
+        address = (socket.host, socket.port)
+        if any(
+            other.kind != "unix" and (other.host, other.port) == address
+            for other in self["sockets"]
+        ):
+            raise usage.UsageError(
+                f"--socket: {socket.where()} is given twice"
+            )
+        if socket.uses_token():
+            self._check_token(token_file)
+        return socket
+
+    def _check_token(self, path):
+        """
+        Refuse a token file that can't be used; one that isn't there is made
+        when the socket opens, in the config folder or in its own.
+        """
+
+        if path is None:
+            path = locations.token_file()
+        elif not os.path.isdir(os.path.dirname(path)):
+            raise usage.UsageError(
+                f"--socket: {os.path.dirname(path)} doesn't exist"
+            )
+        try:
+            wire.read_token(path)
+        except wire.NoToken:
+            pass
+        except wire.Unusable as exc:
+            raise usage.UsageError(f"--socket: {exc}") from None
 
     def opt_logfile(self, arg):
         """Write log messages to file."""
@@ -316,6 +369,8 @@ class Options(usage.Options):
             )
 
     def postOptions(self):
+        for description in self.descriptions:
+            self.add_socket(description, client=self["command"])
         self.check_command()
         if self["logger"]:
             try:

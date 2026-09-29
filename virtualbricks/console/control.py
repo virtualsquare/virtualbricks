@@ -22,10 +22,13 @@ The control sockets: the Virtualbricks that runs answers the commands of
 protocol of :mod:`virtualbricks.console.wire`, or the AMP commands of
 :mod:`virtualbricks.console.ampwire`.
 
-:func:`listen` listens on a socket of ``--socket``, ``.control`` in the
-runtime folder or the path of its description, while it holds the lock
-beside it: the first Virtualbricks that takes the lock listens, the others
-go without. Each connection runs its requests one after the other;
+:func:`listen` listens on a socket of ``--socket``. A unix socket is
+``.control`` in the runtime folder or the path of its description, while it
+holds the lock beside it: the first Virtualbricks that takes the lock
+listens, the others go without. A tcp socket listens on a port of this
+machine, and its clients prove first that they know the token of
+:func:`virtualbricks.locations.token_file`, or of its own file; the others
+are shut out. Each connection runs its requests one after the other;
 connections don't wait for each other, nor for the terminal or the events.
 At the end, each connection is closed once its last answer is written, so
 that ``quit`` answers too.
@@ -47,10 +50,20 @@ from virtualbricks.i18n import _
 
 logger = Logger()
 listening = "Listening on {path}, protocol {protocol}"
+listening_token = (
+    "Listening on {where}, protocol {protocol}, with the token of {path}"
+)
+made_token = "Made the token {path}"
 no_socket = "{reason}: no control socket"
 answered_by = "{holder} answers on {path}; this one doesn't"
 command_received = "Command from the control socket: {line}"
 command_failed = "The command from the control socket failed: {error}"
+command_from = "Command from {who}: {line}"
+command_from_failed = "The command from {who} failed: {error}"
+proved = "{who} connected to {socket} with the token"
+wrong_token = "{who} on {socket}: wrong token"
+not_a_proof = "{who} on {socket}: not a proof"
+too_slow = "{who} on {socket}: no proof in {seconds} seconds"
 amp_command_received = "Command from the AMP socket: {line}"
 amp_command_failed = "The command from the AMP socket failed: {error}"
 answer_too_long = (
@@ -107,6 +120,13 @@ class InOrder:
         self._next()
 
 
+def _peer(transport):
+    """Who is at the other end of a network socket, for the log."""
+
+    address = transport.getPeer()
+    return f"{address.host} port {address.port}"
+
+
 class ControlProtocol(basic.LineOnlyReceiver):
     """A connection of the text protocol: its requests and their answers."""
 
@@ -118,17 +138,35 @@ class ControlProtocol(basic.LineOnlyReceiver):
         self.brickfactory = brickfactory
         self.reactor = reactor
         self.requests = InOrder()
+        # who connects to a network socket, for the log; None on unix
+        self.who = None
+        # the nonce of the proof that a client of a socket with a token
+        # owes, until it gives it, and what closes it without one
+        self.nonce = None
+        self.timer = None
+        self.shut = False
 
     def connectionMade(self):
         self.factory.connections.add(self)
+        if self.factory.network():
+            self.who = _peer(self.transport)
+        if self.factory.token is None:
+            self.greet()
+            return
+        self.nonce = wire.new_nonce()
+        self.send(wire.challenge(self.nonce))
+        self.timer = self.reactor.callLater(wire.PROOF_TIMEOUT, self._too_slow)
+
+    def greet(self, proof=None):
         current = projects.current
         name = current.name if current is not None else None
-        self.send(wire.greeting(__version__, os.getpid(), name))
+        self.send(wire.greeting(__version__, os.getpid(), name, proof))
 
     def connectionLost(self, reason):
         # the command that runs goes on; its answer is dropped. Twisted
         # doesn't reset connected.
         self.connected = False
+        self._stop_timer()
         self.requests.stop()
         self.factory.lost(self)
 
@@ -137,8 +175,59 @@ class ControlProtocol(basic.LineOnlyReceiver):
             self.transport.write(wire.encode(message))
 
     def lineReceived(self, line):
-        if line.strip():
+        if self.shut or not line.strip():
+            return
+        if self.nonce is not None:
+            self.prove(line)
+        else:
             self.requests.add(lambda: self.handle(line))
+
+    def prove(self, line):
+        """The first line of a client of a socket with a token: its proof."""
+
+        token = self.factory.token
+        socket = self.factory.label()
+        try:
+            nonce, given = wire.read_proof(line)
+        except wire.BadRequest as exc:
+            logger.warn(not_a_proof, who=self.who, socket=socket)
+            self._shut_out(str(exc))
+            return
+        if not wire.same_proof(
+            given, wire.proof(token, "client", self.nonce, nonce)
+        ):
+            logger.warn(wrong_token, who=self.who, socket=socket)
+            self._shut_out(_("Wrong token"))
+            return
+        self._stop_timer()
+        mine, self.nonce = self.nonce, None
+        logger.info(proved, who=self.who, socket=socket)
+        self.greet(wire.proof(token, "server", mine, nonce))
+
+    def _too_slow(self):
+        self.timer = None
+        logger.warn(
+            too_slow,
+            who=self.who,
+            socket=self.factory.label(),
+            seconds=wire.PROOF_TIMEOUT,
+        )
+        self._shut_out(
+            _("No proof in {seconds} seconds").format(
+                seconds=wire.PROOF_TIMEOUT
+            )
+        )
+
+    def _shut_out(self, error):
+        self._stop_timer()
+        self.shut = True
+        self.send(wire.refusal(error))
+        self.transport.loseConnection()
+
+    def _stop_timer(self):
+        if self.timer is not None and self.timer.active():
+            self.timer.cancel()
+        self.timer = None
 
     def handle(self, line):
         try:
@@ -146,7 +235,10 @@ class ControlProtocol(basic.LineOnlyReceiver):
         except wire.BadRequest as exc:
             self.send(wire.refusal(str(exc)))
             return defer.succeed(None)
-        logger.info(command_received, line=text)
+        if self.who is None:
+            logger.info(command_received, line=text)
+        else:
+            logger.info(command_from, who=self.who, line=text)
         done = run(self.brickfactory, text, self.reactor, cwd=cwd)
         done.addCallbacks(self._answer, self._refuse)
         return done
@@ -158,7 +250,10 @@ class ControlProtocol(basic.LineOnlyReceiver):
         # run() fails with a CommandError, and logs the failures of bugs
         exc = failure.value
         message = str(exc) or type(exc).__name__
-        logger.info(command_failed, error=message)
+        if self.who is None:
+            logger.info(command_failed, error=message)
+        else:
+            logger.info(command_from_failed, who=self.who, error=message)
         self.send(wire.refusal(message, getattr(exc, "lines", [])))
 
 
@@ -237,18 +332,40 @@ class AMPControl(amp.AMP):
 
 
 class ControlFactory(protocol.Factory):
-    """The connections of a control socket, of the protocol it speaks."""
+    """
+    The connections of a control socket, a wire.Socket, of the protocol it
+    speaks; with a token, each client proves first that it knows it.
+    """
 
     # listen() logs what the log needs: not the address of the object
     noisy = False
 
-    def __init__(self, brickfactory, reactor, protocol=ControlProtocol):
+    def __init__(
+        self,
+        brickfactory,
+        reactor,
+        protocol=ControlProtocol,
+        socket=None,
+        token=None,
+    ):
         self.brickfactory = brickfactory
         self.reactor = reactor
         self.protocol = protocol
+        self.socket = socket
+        self.token = token
         self.connections = set()
         # fired once every connection is closed, while closing
         self._closed = None
+
+    def network(self):
+        """Whether it listens on a port, where anyone can connect."""
+
+        return self.socket is not None and self.socket.kind != "unix"
+
+    def label(self):
+        """A network socket, as the log names it after a client."""
+
+        return f"{self.socket.kind} port {self.socket.port}"
 
     def buildProtocol(self, addr):
         connection = self.protocol(self.brickfactory, self.reactor)
@@ -289,14 +406,21 @@ class ControlFactory(protocol.Factory):
 
 
 class Control:
-    """The socket that this Virtualbricks listens on, and its lock."""
+    """
+    The socket that this Virtualbricks listens on, a wire.Socket, and the
+    lock of a unix one.
+    """
 
-    def __init__(self, path, port, lock, factory):
-        self.path = path
+    def __init__(self, socket, port, lock, factory):
+        self.socket = socket
         self.port = port
         self.lock = lock
         self.factory = factory
         self.closed = False
+
+    @property
+    def path(self):
+        return self.socket.path
 
     def close(self):
         """Stop listening, close the connections, release the lock."""
@@ -309,7 +433,8 @@ class Control:
         done.addCallback(lambda _: self.factory.close())
 
         def release(result):
-            self.lock.unlock()
+            if self.lock is not None:
+                self.lock.unlock()
             return result
 
         done.addBoth(release)
@@ -354,6 +479,8 @@ def listen(brickfactory, socket=None, reactor=None):
         from twisted.internet import reactor
     if socket is None:
         socket = wire.Socket(locations.control_socket())
+    if socket.kind != "unix":
+        return _listen_network(brickfactory, socket, reactor)
     path = socket.path
     lock_file = locations.control_lock_file(path)
     try:
@@ -368,7 +495,9 @@ def listen(brickfactory, socket=None, reactor=None):
     if lock is None:
         logger.info(answered_by, holder=_holder(lock_file), path=path)
         return None
-    factory = ControlFactory(brickfactory, reactor, PROTOCOLS[socket.protocol])
+    factory = ControlFactory(
+        brickfactory, reactor, PROTOCOLS[socket.protocol], socket
+    )
     try:
         # holding the lock, nobody answers on a socket left there: a crash
         if wire.check_socket(path):
@@ -386,7 +515,63 @@ def listen(brickfactory, socket=None, reactor=None):
         lock.unlock()
         logger.warn(no_socket, reason=f"{path}: {exc.socketError}")
         return None
-    control = Control(path, port, lock, factory)
+    control = Control(socket, port, lock, factory)
     reactor.addSystemEventTrigger("before", "shutdown", control.close)
     logger.info(listening, path=path, protocol=socket.protocol)
+    return control
+
+
+def _token(path):
+    """The token of the file at path, made if it isn't there."""
+
+    try:
+        return wire.read_token(path)
+    except wire.NoToken:
+        pass
+    if path == locations.token_file():
+        os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+    try:
+        token = wire.make_token(path)
+    except FileExistsError:
+        # another Virtualbricks made it first
+        return wire.read_token(path)
+    logger.info(made_token, path=path)
+    return token
+
+
+def _strerror(exc):
+    return getattr(exc, "strerror", None) or str(exc)
+
+
+def _listen_network(brickfactory, socket, reactor):
+    """listen() on the port of a tcp socket, with its token."""
+
+    where = socket.name()
+    token_file = socket.token_file or locations.token_file()
+    try:
+        token = _token(token_file)
+    except wire.Unusable as exc:
+        logger.warn(no_socket, reason=f"{where}: {exc}")
+        return None
+    except OSError as exc:
+        logger.warn(no_socket, reason=f"{where}: {token_file}: {exc.strerror}")
+        return None
+    factory = ControlFactory(
+        brickfactory, reactor, PROTOCOLS[socket.protocol], socket, token
+    )
+    try:
+        port = reactor.listenTCP(socket.port, factory, interface=socket.host)
+    except error.CannotListenError as exc:
+        logger.warn(no_socket, reason=f"{where}: {_strerror(exc.socketError)}")
+        return None
+    # the port taken, when the socket asked for any
+    socket = factory.socket = socket._replace(port=port.getHost().port)
+    control = Control(socket, port, None, factory)
+    reactor.addSystemEventTrigger("before", "shutdown", control.close)
+    logger.info(
+        listening_token,
+        where=socket.name(),
+        protocol=socket.protocol,
+        path=token_file,
+    )
     return control

@@ -279,8 +279,9 @@ class TestSocket(unittest.TestCase):
 
     def test_what_is_refused(self):
         self.assertEqual(
-            self.refused("--socket", "tcp:8080"),
-            "--socket: tcp:8080: only unix sockets for now, as unix:PATH",
+            self.refused("--socket", "ssl:443"),
+            "--socket: ssl:443: the types are unix and tcp, as unix:PATH or"
+            " tcp:PORT",
         )
         self.assertEqual(
             self.refused("--socket=unix:"),
@@ -300,6 +301,129 @@ class TestSocket(unittest.TestCase):
             self.refused("--socket", f"unix:{path}"),
             f"--socket: {path} is longer than 107 bytes, the most a"
             " socket's path can have",
+        )
+
+
+class TestTcpSocket(unittest.TestCase):
+
+    def setUp(self):
+        self.root = isolate(self)
+        self.patch(sys, "stdin", Input(False))
+
+    def parse(self, *args):
+        options = app.Options()
+        options.parseOptions(list(args))
+        return options
+
+    def sockets(self, *args):
+        return self.parse(*args)["sockets"]
+
+    def refused(self, *args):
+        return str(self.assertRaises(usage.UsageError, self.parse, *args))
+
+    def tcp(self, port, host="127.0.0.1", protocol="text", token_file=None):
+        return wire.Socket(None, protocol, "tcp", host, port, token_file)
+
+    def write_token(self, path, mode=0o600):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as file:
+            file.write("0123456789abcdef\n")
+        os.chmod(path, mode)
+
+    def test_a_port(self):
+        self.assertEqual(
+            self.sockets("--socket", "tcp:8765"), [self.tcp(8765)]
+        )
+        # the token file is made when the socket opens
+        self.assertFalse(os.path.exists(locations.token_file()))
+        # a runtime folder short enough for the default socket
+        os.environ["XDG_RUNTIME_DIR"] = os.path.join(short_folder(self), "run")
+        self.assertEqual(
+            self.sockets(
+                "--socket",
+                "--socket=tcp:8766:protocol=amp",
+                r"--socket=tcp:8765:interface=\:\:1",
+            ),
+            [
+                wire.Socket(locations.control_socket()),
+                self.tcp(8766, protocol="amp"),
+                self.tcp(8765, "::1"),
+            ],
+        )
+
+    def test_the_same_port_twice(self):
+        self.assertEqual(
+            self.refused(
+                "--socket",
+                "tcp:8765",
+                "--socket",
+                "tcp:port=8765:protocol=amp",
+            ),
+            "--socket: 127.0.0.1 port 8765 is given twice",
+        )
+
+    def test_a_token_file(self):
+        folder = os.path.join(self.root, "vb")
+        self.assertEqual(
+            self.refused("--socket", "tcp:8765:tokenFile=~/vb/lab1.token"),
+            f"--socket: {folder} doesn't exist",
+        )
+        os.mkdir(folder)
+        path = os.path.join(folder, "lab1.token")
+        self.assertEqual(
+            self.sockets("--socket", "tcp:8765:tokenFile=~/vb/lab1.token"),
+            [self.tcp(8765, token_file=path)],
+        )
+        self.write_token(path, 0o644)
+        self.assertEqual(
+            self.refused("--socket", "tcp:8765:tokenFile=~/vb/lab1.token"),
+            f"--socket: Others can read or change {path}: chmod 600 {path}",
+        )
+
+    def test_the_default_token(self):
+        path = locations.token_file()
+        self.write_token(path)
+        self.assertEqual(
+            self.sockets("--socket", "tcp:8765"), [self.tcp(8765)]
+        )
+        with open(path, "w") as file:
+            file.write("1234\n")
+        self.assertEqual(
+            self.refused("--socket", "tcp:8765"),
+            f"--socket: The token of {path} has 4 characters; a token has at"
+            " least 16",
+        )
+
+    def test_with_command(self):
+        # the machine to talk to; the token is --command's to read
+        self.write_token(locations.token_file(), 0o644)
+        for args in (
+            ["--socket", "tcp:lab.example:8765", "--command", "status"],
+            ["--command", "--socket", "tcp:lab.example:8765", "status"],
+        ):
+            self.assertEqual(
+                self.sockets(*args), [self.tcp(8765, "lab.example")]
+            )
+        self.assertEqual(
+            self.sockets("--socket", "tcp:8765", "--command", "status"),
+            [self.tcp(8765)],
+        )
+        self.assertEqual(
+            self.refused(
+                "--socket",
+                "tcp:8765:interface=127.0.0.1",
+                "--command",
+                "status",
+            ),
+            "--socket: tcp:8765:interface=127.0.0.1: --command reaches the"
+            " machine of host=, as tcp:lab.example:8765; interface= is where"
+            " Virtualbricks listens",
+        )
+        # listening, the same description is refused
+        self.assertEqual(
+            self.refused("--socket", "tcp:lab.example:8765"),
+            "--socket: tcp:lab.example:8765: the address to listen on is"
+            " interface=lab.example",
         )
 
 

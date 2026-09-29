@@ -35,13 +35,28 @@ Then each request gets an answer, in order::
 
 ``cwd``, the folder that the paths of the command are read from, is
 optional: without it, they are read from the folder of Virtualbricks.
+
+A tcp socket answers only the clients that know its token. Its first line
+asks for a proof, with a nonce; the greeting comes once the proof is right,
+with the proof of Virtualbricks, and the connection closes if it isn't::
+
+    {"protocol": 1, "auth": "token", "nonce": "3f9a..."}
+    {"nonce": "c41d...", "proof": "8e02..."}
+    {"protocol": 1, "version": "2.1.0", "pid": 4200, "project": "lab1",
+     "proof": "51b7..."}
+
+Neither end sends the token: each proves that it knows it, with the HMAC of
+both nonces under the token, see :func:`proof`.
 """
 
 from __future__ import annotations
 
+import hmac
+import ipaddress
 import json
 import os
 import re
+import secrets
 import stat
 from collections.abc import Sequence
 from typing import NamedTuple
@@ -60,16 +75,40 @@ MAX_LINE = 64 * 1024
 TEXT = "text"
 AMP = "amp"
 PROTOCOLS = (TEXT, AMP)
-# The types of socket: only unix, for now.
-TYPES = ("unix",)
-# The keywords of a description, after its type and its path.
-KEYWORDS = ("address", "protocol")
+# The types of socket.
+TYPES = ("unix", "tcp")
+# The keywords of a description of each type, after its path or its port:
+# of a socket to listen on, and of one that --command talks to.
+KEYWORDS = {
+    "unix": ("address", "protocol"),
+    "tcp": ("port", "interface", "protocol", "tokenFile"),
+}
+CLIENT_KEYWORDS = {
+    "unix": ("address", "protocol"),
+    "tcp": ("host", "port", "protocol", "tokenFile"),
+}
 # What a type looks like, as unix, tcp or ssl.
 TYPE = re.compile(r"[a-z][a-z0-9]*", re.IGNORECASE)
+PORT = re.compile(r"[0-9]+")
+# Where a network socket listens without interface=, and where --command
+# looks for it without a host: this machine.
+LOOPBACK = "127.0.0.1"
+
+# How a socket asks for the proof of its token, in its first line.
+AUTH_TOKEN = "token"
+# The fewest characters a token has; Virtualbricks makes tokens of 43.
+TOKEN_MIN = 16
+# How long a client has to prove that it knows the token, in seconds.
+PROOF_TIMEOUT = 10
+NONCE = re.compile(r"[0-9a-f]{32,128}")
 
 
 class Unusable(Exception):
     """A socket path that can't be used; str() says why, to the user."""
+
+
+class NoToken(Unusable):
+    """The file of the token isn't there."""
 
 
 class BadRequest(Exception):
@@ -77,11 +116,47 @@ class BadRequest(Exception):
 
 
 class Socket(NamedTuple):
-    """A socket to listen on or to talk to: its path and its protocol."""
+    """
+    A socket to listen on or to talk to: its path, or its host and its port,
+    its protocol and, for tcp, the file of its token.
 
-    path: str
+    The host of a socket to listen on is the address of its interface; with
+    --command, it is the machine to talk to.
+    """
+
+    path: str | None
     protocol: str = TEXT
     kind: str = "unix"
+    host: str | None = None
+    port: int | None = None
+    # None for the file of locations.token_file()
+    token_file: str | None = None
+
+    def uses_token(self) -> bool:
+        """Whether a client proves that it knows the token."""
+
+        return self.kind == "tcp"
+
+    def where(self) -> str:
+        """Where it is, for the messages: its path, or its host and port."""
+
+        if self.kind == "unix":
+            return str(self.path)
+        return f"{self.host} port {self.port}"
+
+    def name(self) -> str:
+        """Its name in the log: the path, or the type, host and port."""
+
+        if self.kind == "unix":
+            return str(self.path)
+        return f"{self.kind} {self.where()}"
+
+
+def _and(words: Sequence[str]) -> str:
+    words = list(words)
+    if len(words) < 2:
+        return "".join(words)
+    return ", ".join(words[:-1]) + " and " + words[-1]
 
 
 def _parts(text: str) -> list[list[str]]:
@@ -120,10 +195,13 @@ def _parts(text: str) -> list[list[str]]:
     return parts
 
 
-def parse_socket(text: str) -> Socket:
+def parse_socket(text: str, client: bool = False) -> Socket:
     """
-    The socket of a description, as ``unix:PATH:protocol=text``: its type,
-    its path, or ``address=PATH``, and its protocol, text if left out.
+    The socket of a description: its type, its path or its port, and its
+    keywords, as ``unix:PATH:protocol=text`` or ``tcp:8765``. The protocol
+    is text if left out. With client, the description of --command, which
+    names the machine to talk to: ``tcp:HOST:PORT``, or ``tcp:PORT`` for
+    this one.
 
     Raise ValueError if text isn't one; str() says why, to the user.
     """
@@ -138,38 +216,115 @@ def parse_socket(text: str) -> Socket:
     if kind not in TYPES:
         if TYPE.fullmatch(kind):
             raise ValueError(
-                f"{text}: only unix sockets for now, as unix:PATH"
+                f"{text}: the types are {_and(TYPES)}, as unix:PATH or"
+                " tcp:PORT"
             )
         # a path, as the option took before descriptions
         if len(parts) == 1:
             raise ValueError(f"{text} needs its type: unix:{text}")
         raise ValueError(f"{text} needs its type, as unix:PATH")
+    allowed = (CLIENT_KEYWORDS if client else KEYWORDS)[kind]
     keywords: dict[str, str] = {}
     for part in parts:
         if len(part) == 1:
             continue
         key, value = part
-        if key not in KEYWORDS:
+        if key not in allowed:
+            if client and key == "interface":
+                raise ValueError(
+                    f"{text}: --command reaches the machine of host=, as"
+                    f" {kind}:lab.example:8765; interface= is where"
+                    " Virtualbricks listens"
+                )
             raise ValueError(
-                f"{text}: unknown keyword {key}; the keywords are"
-                f" {' and '.join(KEYWORDS)}"
+                f"{text}: unknown keyword {key}; the keywords of {kind} are"
+                f" {_and(allowed)}"
             )
         if key in keywords:
             raise ValueError(f"{text}: {key} is given twice")
         keywords[key] = value
-    paths = args[1:]
+    protocol = keywords.get("protocol", TEXT).lower()
+    if protocol not in PROTOCOLS:
+        raise ValueError(f"{text}: the protocol is {' or '.join(PROTOCOLS)}")
+    if kind == "unix":
+        return Socket(_path(text, args[1:], keywords), protocol, kind)
+    if client:
+        host, port = _host_and_port(text, kind, args[1:], keywords)
+    else:
+        host, port = _interface_and_port(text, kind, args[1:], keywords)
+    token_file = keywords.get("tokenFile")
+    if token_file == "":
+        raise ValueError(f"{text}: tokenFile needs a file")
+    return Socket(None, protocol, kind, host, port, token_file)
+
+
+def _path(text, args, keywords):
+    paths = list(args)
     if "address" in keywords:
         paths.append(keywords["address"])
     if len(paths) > 1:
         raise ValueError(
-            f"{text}: one path, then the keywords" f" {' and '.join(KEYWORDS)}"
+            f"{text}: one path, then the keywords" f" {_and(KEYWORDS['unix'])}"
         )
     if not paths or not paths[0]:
         raise ValueError(f"{text} needs a path, as unix:~/labs/lab1.sock")
-    protocol = keywords.get("protocol", TEXT).lower()
-    if protocol not in PROTOCOLS:
-        raise ValueError(f"{text}: the protocol is {' or '.join(PROTOCOLS)}")
-    return Socket(paths[0], protocol, kind)
+    return paths[0]
+
+
+def _port(text, kind, value):
+    if not value:
+        raise ValueError(f"{text} needs a port, as {kind}:8765")
+    if not PORT.fullmatch(value) or not 1 <= int(value) <= 65535:
+        raise ValueError(f"{text}: the port is a number from 1 to 65535")
+    return int(value)
+
+
+def _interface_and_port(text, kind, args, keywords):
+    """The address and the port of a socket to listen on."""
+
+    if len(args) > 1:
+        raise ValueError(
+            f"{text}: the address to listen on is interface={args[0]}"
+        )
+    port = keywords.get("port")
+    if args:
+        if port is not None:
+            raise ValueError(f"{text}: port is given twice")
+        port = args[0]
+    port = _port(text, kind, port)
+    try:
+        address = ipaddress.ip_address(keywords.get("interface", LOOPBACK))
+    except ValueError:
+        raise ValueError(
+            f"{text}: the interface is an IP address, as 127.0.0.1 or ::1"
+        ) from None
+    if kind == "tcp" and not address.is_loopback:
+        raise ValueError(
+            f"{text}: tcp listens on this machine only, as"
+            " interface=127.0.0.1 or ::1; across the network, ssl"
+        )
+    return str(address), port
+
+
+def _host_and_port(text, kind, args, keywords):
+    """
+    The machine and the port that --command talks to, as Twisted's clients
+    read them: HOST:PORT, host= and port=; PORT alone is this machine.
+    """
+
+    host = keywords.get("host")
+    port = keywords.get("port")
+    if len(args) == 2 and host is None and port is None:
+        host, port = args
+    elif len(args) == 1 and port is None:
+        port = args[0]
+    elif len(args) == 1 and host is None:
+        host = args[0]
+    elif args:
+        raise ValueError(f"{text}: one host and one port, as {kind}:HOST:PORT")
+    if host == "":
+        raise ValueError(f"{text} needs a host, as {kind}:lab.example:8765")
+    return host or LOOPBACK, _port(text, kind, port)
 
 
 def encode(message: dict) -> bytes:
@@ -185,13 +340,69 @@ def decode(line: bytes) -> dict:
     return message
 
 
-def greeting(version: str, pid: int, project: str | None) -> dict:
-    return {
+def greeting(
+    version: str, pid: int, project: str | None, proof: str | None = None
+) -> dict:
+    """Who answers; with the proof of the token, on a socket that has one."""
+
+    message = {
         "protocol": PROTOCOL,
         "version": version,
         "pid": pid,
         "project": project,
     }
+    if proof is not None:
+        message["proof"] = proof
+    return message
+
+
+def new_nonce() -> str:
+    return secrets.token_hex(32)
+
+
+def challenge(nonce: str) -> dict:
+    """The first line of a socket with a token: the proof, over nonce."""
+
+    return {"protocol": PROTOCOL, "auth": AUTH_TOKEN, "nonce": nonce}
+
+
+def proof(token: str, side: str, server_nonce: str, client_nonce: str) -> str:
+    """
+    The proof that side, "client" or "server", knows token: the HMAC-SHA256
+    of both nonces under the token, in hex. Each side proves it over the
+    same nonces, with its own name, so that neither proof is the other.
+    """
+
+    message = f"virtualbricks {side} {server_nonce} {client_nonce}"
+    return hmac.new(token.encode(), message.encode(), "sha256").hexdigest()
+
+
+def token_proof(nonce: str, proof: str) -> dict:
+    """The answer of a client to the first line: its nonce and its proof."""
+
+    return {"nonce": nonce, "proof": proof}
+
+
+def read_proof(line: bytes) -> tuple[str, str]:
+    """The nonce and the proof of a client; BadRequest if it isn't one."""
+
+    try:
+        message = decode(line)
+    except ValueError:
+        message = {}
+    nonce = message.get("nonce")
+    given = message.get("proof")
+    if not (isinstance(nonce, str) and NONCE.fullmatch(nonce)):
+        raise BadRequest(_('Not a proof: "nonce" and "proof" come first'))
+    if not isinstance(given, str):
+        raise BadRequest(_('Not a proof: "nonce" and "proof" come first'))
+    return nonce, given
+
+
+def same_proof(given: object, expected: str) -> bool:
+    return isinstance(given, str) and hmac.compare_digest(
+        given.encode(), expected.encode()
+    )
 
 
 def request(line: str, cwd: str | None = None) -> dict:
@@ -235,6 +446,57 @@ def refusal(error: str, lines: Sequence[str] = ()) -> dict:
     """The answer of a command that failed, after what it did first."""
 
     return {"ok": False, "lines": list(lines), "error": error}
+
+
+def read_token(path: str) -> str:
+    """
+    The token of the file at path; raise NoToken if the file isn't there,
+    Unusable if it can't be a token's: another user's, one that others can
+    read or change, or one with a token too short.
+    """
+
+    try:
+        with open(path, encoding="utf-8") as file:
+            info = os.fstat(file.fileno())
+            text = file.read(4096)
+    except FileNotFoundError:
+        raise NoToken(_("{path} doesn't exist").format(path=path)) from None
+    except UnicodeDecodeError:
+        raise Unusable(
+            _("{path} isn't a token: a line of text").format(path=path)
+        ) from None
+    except OSError as exc:
+        raise Unusable(f"{path}: {exc.strerror}") from None
+    if not stat.S_ISREG(info.st_mode):
+        raise Unusable(_("{path} isn't a file").format(path=path))
+    if info.st_uid != os.getuid():
+        raise Unusable(_("{path} isn't yours").format(path=path))
+    if info.st_mode & 0o077:
+        raise Unusable(
+            _("Others can read or change {path}: chmod 600 {path}").format(
+                path=path
+            )
+        )
+    token = text.strip()
+    if len(token) < TOKEN_MIN:
+        raise Unusable(
+            _(
+                "The token of {path} has {size} characters; a token has at"
+                " least {least}"
+            ).format(path=path, size=len(token), least=TOKEN_MIN)
+        )
+    return token
+
+
+def make_token(path: str) -> str:
+    """Write a new token in a new file at path, only yours; return it."""
+
+    token = secrets.token_urlsafe(32)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+    fd = os.open(path, flags, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as file:
+        file.write(token + "\n")
+    return token
 
 
 def check_length(path: str) -> None:

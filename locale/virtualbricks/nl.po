@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 16:39+0200\n"
+"POT-Creation-Date: 2026-09-29 17:29+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1417,7 +1417,39 @@ msgid ""
 msgstr ""
 
 #: virtualbricks/console/client.py
+msgid "the socket"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "The Virtualbricks on {where} has another token"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid ""
+"What answers on {where} doesn't know your token: it isn't your Virtualbricks"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid ""
+"No token: {path} doesn't exist. Copy the one of the machine where "
+"Virtualbricks runs, or name another with tokenFile="
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "{reason}: no command sent"
+msgstr ""
+
+#: virtualbricks/console/client.py
 msgid "What answers on the socket doesn't speak its protocol"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "{where} didn't answer in {seconds} seconds"
 msgstr ""
 
 #: virtualbricks/console/client.py
@@ -1456,7 +1488,18 @@ msgstr ""
 
 #: virtualbricks/console/client.py
 #, python-brace-format
-msgid "{reason}: no command sent"
+msgid "Can't find {host}: {reason}"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "Nothing listens on {where}"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid ""
+"Nothing listens on {where}. Start Virtualbricks with --socket {kind}:{port}"
 msgstr ""
 
 #: virtualbricks/console/client.py
@@ -1502,6 +1545,15 @@ msgstr ""
 
 #: virtualbricks/console/command.py virtualbricks/console/projects.py
 msgid "The projects of the workspace"
+msgstr ""
+
+#: virtualbricks/console/control.py
+msgid "Wrong token"
+msgstr ""
+
+#: virtualbricks/console/control.py
+#, python-brace-format
+msgid "No proof in {seconds} seconds"
 msgstr ""
 
 #: virtualbricks/console/control.py
@@ -1917,6 +1969,10 @@ msgid ""
 msgstr ""
 
 #: virtualbricks/console/wire.py
+msgid "Not a proof: \"nonce\" and \"proof\" come first"
+msgstr ""
+
+#: virtualbricks/console/wire.py
 #, python-brace-format
 msgid "Not a request: a line of JSON, as {example}"
 msgstr ""
@@ -1927,6 +1983,36 @@ msgstr ""
 
 #: virtualbricks/console/wire.py
 msgid "Not a request: \"cwd\" is not an absolute path"
+msgstr ""
+
+#: virtualbricks/console/wire.py
+#, python-brace-format
+msgid "{path} doesn't exist"
+msgstr ""
+
+#: virtualbricks/console/wire.py
+#, python-brace-format
+msgid "{path} isn't a token: a line of text"
+msgstr ""
+
+#: virtualbricks/console/wire.py
+#, python-brace-format
+msgid "{path} isn't a file"
+msgstr ""
+
+#: virtualbricks/console/wire.py
+#, python-brace-format
+msgid "{path} isn't yours"
+msgstr ""
+
+#: virtualbricks/console/wire.py
+#, python-brace-format
+msgid "Others can read or change {path}: chmod 600 {path}"
+msgstr ""
+
+#: virtualbricks/console/wire.py
+#, python-brace-format
+msgid "The token of {path} has {size} characters; a token has at least {least}"
 msgstr ""
 
 #: virtualbricks/console/wire.py
@@ -1957,11 +2043,6 @@ msgstr ""
 #: virtualbricks/console/wire.py
 #, python-brace-format
 msgid "{path} isn't a socket"
-msgstr ""
-
-#: virtualbricks/console/wire.py
-#, python-brace-format
-msgid "{path} isn't yours"
 msgstr ""
 
 #: virtualbricks/errors.py
