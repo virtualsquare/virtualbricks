@@ -29,10 +29,11 @@ Started from a terminal, it reads the commands of its console there, beside
 the windows. With **--no-gui** it runs without them, and the console is the
 way in: a lab on a machine without a display.
 
-Started with **--socket**, it listens on control sockets: **virtualbricks
---command** sends it a command of the console from any terminal or script,
-and prints its answer, and a program written with Twisted can drive it
-through AMP. See **THE CONTROL SOCKET**.
+Started with **--socket**, it listens on control sockets, on this machine
+or across the network: **virtualbricks --command** sends it a command of
+the console from any terminal or script, and prints its answer, and a
+program written with Twisted can drive it through AMP. See **THE CONTROL
+SOCKET**.
 
 # OPTIONS
 
@@ -83,11 +84,11 @@ through AMP. See **THE CONTROL SOCKET**.
 **--socket** [*description*]
 :   Listen on a control socket: alone, the text socket *.control* in the
     runtime folder; with a *description*, as
-    **unix:~/labs/lab1.amp:protocol=amp**, the socket it describes. It
-    can be given more than once. The next word is the description when
-    it starts with a type and a colon, as **unix:**; after **=** it is
-    too. With **--command**, the socket to talk to. See **THE CONTROL
-    SOCKET**.
+    **unix:~/labs/lab1.amp:protocol=amp** or **tcp:8765**, the socket it
+    describes. It can be given more than once. The next word is the
+    description when it starts with a type and a colon, as **unix:**;
+    after **=** it is too. With **--command**, the socket to talk to, as
+    **tcp:lab.example:8765**. See **THE CONTROL SOCKET**.
 
 **--version**
 :   Print the version and exit.
@@ -206,9 +207,10 @@ A Virtualbricks started with **--socket**, with the windows or without,
 listens on control sockets once its project is open; without it, on none.
 **--socket** alone is the text socket
 *\$XDG_RUNTIME_DIR*/virtualbricks/.control. A description, in the syntax
-of Twisted's endpoints, names another: its type, **unix**, the only one for
-now; its path, or **address=***path*; and **protocol=text**, the default,
-or **protocol=amp**. **:** separates the parts, and a backslash makes the
+of Twisted's endpoints, names another: its type, **unix**, **tcp** or
+**ssl**; the path of a **unix** socket, or **address=***path*; the port of
+the others, or **port=***port*; and **protocol=text**, the default, or
+**protocol=amp**. **:** separates the parts, and a backslash makes the
 next character plain. The option can be given more than once:
 
 ```
@@ -216,6 +218,7 @@ virtualbricks --no-gui --socket
 virtualbricks --no-gui --socket unix:~/labs/lab1.sock
 virtualbricks --no-gui --socket \
     --socket unix:~/labs/lab1.amp:protocol=amp
+virtualbricks --no-gui --socket tcp:8765
 ```
 
 **--command** sends a command to a text socket, as typed in the console:
@@ -224,6 +227,7 @@ virtualbricks --no-gui --socket \
 virtualbricks --command brick start sw1 vm1
 virtualbricks --command brick set vm1 memory=1024
 virtualbricks --socket unix:~/labs/lab1.sock --command status
+virtualbricks --socket tcp:8765 --command status
 ```
 
 The words after **--command** are those of the command, as the shell split
@@ -240,12 +244,75 @@ is read from the folder where **--command** runs. Ctrl+C stops waiting, not
 the command. Virtualbricks logs each command it gets, and answers in its
 own language.
 
-Only you can connect: each socket is yours alone, and Virtualbricks
-doesn't listen in a runtime folder that isn't yours, or that others can
-write in. One Virtualbricks has each socket: the first to start, which
-holds the lock *path*.lock beside it; with **--lock none**, another one
-with the same **--socket** runs without that socket. A socket left by a
-crash is removed at the next start; nothing else at the path is.
+Only you can connect to a **unix** socket: each is yours alone, and
+Virtualbricks doesn't listen in a runtime folder that isn't yours, or that
+others can write in. One Virtualbricks has each socket: the first to
+start, which holds the lock *path*.lock beside it; with **--lock none**,
+another one with the same **--socket** runs without that socket. A socket
+left by a crash is removed at the next start; nothing else at the path is.
+
+## Sockets on the network
+
+A **tcp** socket listens on this machine: on **127.0.0.1**, or on another
+loopback address of **interface=**, as **'interface=\\:\\:1'**, whose
+colons are escaped. Across the network, what passes on **tcp** could be
+read, so it is refused there. An **ssl** socket encrypts, and listens on
+**127.0.0.1** too, or on the address of **interface=**, as **0.0.0.0** for
+every IPv4 address of the machine. It needs the certificate of
+Virtualbricks: **privateKey=***file*, its key, and **certKey=***file*, the
+certificate, unless the key's file holds it too, both in PEM;
+**extraCertChain=***file* holds the certificates between it and the
+authority that issued it. A port has no lock: the first Virtualbricks
+takes it, and another one runs without that socket.
+
+Whoever reaches a port can connect, and a connection can do all that the
+console does, the shell commands of an event's actions included. So each
+client proves first that it knows the token of Virtualbricks: the line of
+*\$XDG_CONFIG_HOME*/virtualbricks/token, which the first start with such a
+socket makes, or of the file of **tokenFile=**. Neither end sends it: each
+proves that it knows it, and a client without a proof in 10 seconds is cut
+off. The file must be yours, and nobody else may read it; copy it to the
+machines of the clients. With **caCertsDir=***directory*, an **ssl**
+socket asks each client for a certificate in place of the token: one that
+a .pem file of *directory* issued, or is. The files are read at start. The
+log names each client, by its address or by its certificate:
+
+```
+virtualbricks --no-gui --socket \
+    'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.pem'
+virtualbricks --no-gui --socket \
+    'ssl:8765:privateKey=~/vb/lab.pem:caCertsDir=~/vb/clients'
+```
+
+**--command** names the machine as **tcp:***host***:***port*, or with
+**host=** and **port=**; **tcp:***port* alone is this machine. Over
+**ssl**, **caCertsDir=***directory* holds the certificate of Virtualbricks,
+or that of its authority; without it, the authorities of the system are
+trusted. **privateKey=** and **certKey=** are the certificate of the
+client, for a Virtualbricks that asks for one. The token is that of
+**tokenFile=**, or the default one. To another machine, **--command**
+doesn't send its folder: a relative path is read from the folder of that
+Virtualbricks.
+
+```
+virtualbricks \
+    --socket 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
+    --command status
+```
+
+The certificates, made with **openssl**(1): that of the machine of
+Virtualbricks, for its name and address, and that of a client, whose .pem
+goes into the directory of **caCertsDir=**:
+
+```
+openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+    -nodes -days 3650 -subj /CN=lab.example \
+    -addext subjectAltName=DNS:lab.example,IP:192.0.2.7 \
+    -keyout lab.key -out lab.pem
+openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+    -nodes -days 3650 -subj /CN=alice-laptop \
+    -keyout alice.key -out alice.pem
+```
 
 ## The text protocol
 
@@ -261,6 +328,28 @@ A request's **cwd**, the folder of its paths, is optional:
 {"ok": false, "lines": [], "error": "No brick named vm9"}
 ```
 
+On a socket that asks for the token, the first line asks for the proof,
+with a **nonce** of 64 hex digits. The client answers with a nonce of its
+own and its **proof**: the HMAC-SHA256 under the token of
+**virtualbricks client** *nonce* *its-nonce*, in hex. The greeting follows,
+with the proof of Virtualbricks, that of **virtualbricks server** *nonce*
+*its-nonce*, which the client checks. A wrong proof is refused, and the
+connection closed:
+
+```
+{"protocol": 1, "auth": "token", "nonce": "3f9a..."}
+{"nonce": "c41d...", "proof": "8e02..."}
+{"protocol": 1, "version": "2.1.0", "pid": 4200,
+ "project": "lab1", "proof": "51b7..."}
+```
+
+In a shell, **openssl** computes a proof:
+
+```
+printf 'virtualbricks client %s %s' "$nonce" "$mine" |
+    openssl dgst -sha256 -hmac "$token"
+```
+
 ## The AMP protocol
 
 A program written with Twisted drives an AMP socket with two commands.
@@ -269,15 +358,24 @@ the **project**. **Run** takes a **line** of the console and its **cwd**,
 optional, and answers its **lines**. A command that fails raises
 **CommandFailed**, with its error; **AnswerTooLong** says that a command
 was done, but its answer is longer than the 65535 bytes of an AMP value.
-The requests of a connection run in turn. The module
-**virtualbricks.console.ampwire** has the commands; a program that can't
-import it declares them:
+The requests of a connection run in turn. On a socket that asks for the
+token, **Hello** and **Run** fail with **TokenNeeded** until the program
+proves it: **authenticate**(*vb*, *token*) calls **Challenge**, then
+**Authenticate**, and raises **WrongToken** if either end doesn't know the
+token. The module **virtualbricks.console.ampwire** has the commands; a
+program that can't import it declares them:
 
 ```
 class CommandFailed(Exception):
     pass
 
 class AnswerTooLong(Exception):
+    pass
+
+class TokenNeeded(Exception):
+    pass
+
+class WrongToken(Exception):
     pass
 
 class Hello(amp.Command):
@@ -287,6 +385,7 @@ class Hello(amp.Command):
         (b"pid", amp.Integer()),
         (b"project", amp.Unicode(optional=True)),
     ]
+    errors = {TokenNeeded: b"TOKEN_NEEDED"}
 
 class Run(amp.Command):
     arguments = [
@@ -297,7 +396,37 @@ class Run(amp.Command):
     errors = {
         CommandFailed: b"COMMAND_FAILED",
         AnswerTooLong: b"ANSWER_TOO_LONG",
+        TokenNeeded: b"TOKEN_NEEDED",
     }
+
+class Challenge(amp.Command):
+    response = [(b"nonce", amp.Unicode())]
+    errors = {WrongToken: b"WRONG_TOKEN"}
+
+class Authenticate(amp.Command):
+    arguments = [
+        (b"nonce", amp.Unicode()),
+        (b"proof", amp.Unicode()),
+    ]
+    response = [(b"proof", amp.Unicode())]
+    errors = {WrongToken: b"WRONG_TOKEN"}
+
+def proof(token, side, nonce, mine):
+    text = f"virtualbricks {side} {nonce} {mine}"
+    key = token.encode()
+    return hmac.new(key, text.encode(), "sha256").hexdigest()
+
+async def authenticate(vb, token):
+    mine = secrets.token_hex(32)
+    nonce = (await vb.callRemote(Challenge))["nonce"]
+    answer = await vb.callRemote(
+        Authenticate,
+        nonce=mine,
+        proof=proof(token, "client", nonce, mine),
+    )
+    expected = proof(token, "server", nonce, mine)
+    if not hmac.compare_digest(answer["proof"], expected):
+        raise WrongToken("The other end doesn't know the token")
 ```
 
 Then a program, for the AMP socket of the third example above:
@@ -312,6 +441,12 @@ async def main(reactor):
 
 task.react(lambda reactor: ensureDeferred(main(reactor)))
 ```
+
+Over **tcp**, the endpoint is **tcp:127.0.0.1:***port*, and the program
+calls **authenticate**() before the other commands. Over **ssl**, Twisted's
+**tls:***host***:***port***:trustRoots=***directory* checks the certificate
+of Virtualbricks and its name; **certificate=** and **privateKey=** add
+the program's own.
 
 # COMMANDS
 
@@ -540,7 +675,8 @@ With **--command**:
 
 **2**
 :   No Virtualbricks answered: none listens there, it ended before it
-    answered, or it speaks another protocol. The error says which.
+    answered, it speaks another protocol, or it refused the token or the
+    certificate. The error says which.
 
 **130**
 :   Ctrl+C stopped the wait.
@@ -555,6 +691,10 @@ With **--command**:
 
 *\$XDG_RUNTIME_DIR*/virtualbricks/.control, .control.lock
 :   The text socket of **--socket** alone and its lock, see **THE CONTROL
+    SOCKET**.
+
+*\$XDG_CONFIG_HOME*/virtualbricks/token
+:   The token of the **tcp** and **ssl** sockets, see **THE CONTROL
     SOCKET**.
 
 The settings, the state and the projects are described in
@@ -600,7 +740,19 @@ virtualbricks --command brick start router
 virtualbricks --command < ~/labs/traffic.vb
 ```
 
+The same lab, open to the network over **ssl**, and its machine, started
+from a laptop that has a copy of the token and of **lab.pem**, in
+*~/vb/lab*:
+
+```
+virtualbricks --no-gui --noterm --run ~/labs/ospf.vb --socket \
+    'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.pem'
+virtualbricks \
+    --socket 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
+    --command brick start router
+```
+
 # SEE ALSO
 
 **virtualbricks-config**(5), **virtualbricks-archive**(7), **qemu**(1),
-**vde_switch**(1)
+**vde_switch**(1), **openssl**(1)

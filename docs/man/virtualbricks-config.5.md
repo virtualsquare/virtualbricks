@@ -828,6 +828,12 @@ an old project is converted when it's imported.
     socket elsewhere, and with **protocol=amp** it speaks Twisted's AMP;
     see **virtualbricks**(1).
 
+*\$XDG_CONFIG_HOME*/virtualbricks/token
+:   The token of the **tcp** and **ssl** control sockets: a client proves
+    that it knows it before its first command. The first Virtualbricks
+    started with such a socket makes it, readable by you alone; copy it to
+    the machines of the clients. See **virtualbricks**(1).
+
 */etc/sudo.conf*
 :   Its **Path askpass** line makes Virtualbricks run sudo with **-A**, as
     **SUDO_ASKPASS** does; see **PRIVILEGES**.

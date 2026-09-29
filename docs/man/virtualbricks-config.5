@@ -860,6 +860,13 @@ A description after \f[B]\-\-socket\f[R] puts a socket elsewhere, and
 with \f[B]protocol=amp\f[R] it speaks Twisted\(aqs AMP; see
 \f[B]virtualbricks\f[R](1).
 .TP
+\f[I]$XDG_CONFIG_HOME\f[R]/virtualbricks/token
+The token of the \f[B]tcp\f[R] and \f[B]ssl\f[R] control sockets: a
+client proves that it knows it before its first command.
+The first Virtualbricks started with such a socket makes it, readable by
+you alone; copy it to the machines of the clients.
+See \f[B]virtualbricks\f[R](1).
+.TP
 \f[I]/etc/sudo.conf\f[R]
 Its \f[B]Path askpass\f[R] line makes Virtualbricks run sudo with
 \f[B]\-A\f[R], as \f[B]SUDO_ASKPASS\f[R] does; see \f[B]PRIVILEGES\f[R].

@@ -22,10 +22,11 @@ beside the windows.
 With \f[B]\-\-no\-gui\f[R] it runs without them, and the console is the
 way in: a lab on a machine without a display.
 .PP
-Started with \f[B]\-\-socket\f[R], it listens on control sockets:
-\f[B]virtualbricks \-\-command\f[R] sends it a command of the console
-from any terminal or script, and prints its answer, and a program
-written with Twisted can drive it through AMP.
+Started with \f[B]\-\-socket\f[R], it listens on control sockets, on
+this machine or across the network: \f[B]virtualbricks \-\-command\f[R]
+sends it a command of the console from any terminal or script, and
+prints its answer, and a program written with Twisted can drive it
+through AMP.
 See \f[B]THE CONTROL SOCKET\f[R].
 .SH OPTIONS
 .TP
@@ -83,11 +84,13 @@ See \f[B]THE CONTROL SOCKET\f[R].
 \f[B]\-\-socket\f[R] [\f[I]description\f[R]]
 Listen on a control socket: alone, the text socket \f[I].control\f[R] in
 the runtime folder; with a \f[I]description\f[R], as
-\f[B]unix:\(ti/labs/lab1.amp:protocol=amp\f[R], the socket it describes.
+\f[B]unix:\(ti/labs/lab1.amp:protocol=amp\f[R] or \f[B]tcp:8765\f[R],
+the socket it describes.
 It can be given more than once.
 The next word is the description when it starts with a type and a colon,
 as \f[B]unix:\f[R]; after \f[B]=\f[R] it is too.
-With \f[B]\-\-command\f[R], the socket to talk to.
+With \f[B]\-\-command\f[R], the socket to talk to, as
+\f[B]tcp:lab.example:8765\f[R].
 See \f[B]THE CONTROL SOCKET\f[R].
 .TP
 \f[B]\-\-version\f[R]
@@ -206,9 +209,10 @@ it, on none.
 \f[B]\-\-socket\f[R] alone is the text socket
 \f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.control.
 A description, in the syntax of Twisted\(aqs endpoints, names another:
-its type, \f[B]unix\f[R], the only one for now; its path, or
-\f[B]address=\f[R]\f[I]path\f[R]; and \f[B]protocol=text\f[R], the
-default, or \f[B]protocol=amp\f[R].
+its type, \f[B]unix\f[R], \f[B]tcp\f[R] or \f[B]ssl\f[R]; the path of a
+\f[B]unix\f[R] socket, or \f[B]address=\f[R]\f[I]path\f[R]; the port of
+the others, or \f[B]port=\f[R]\f[I]port\f[R]; and
+\f[B]protocol=text\f[R], the default, or \f[B]protocol=amp\f[R].
 \f[B]:\f[R] separates the parts, and a backslash makes the next
 character plain.
 The option can be given more than once:
@@ -218,6 +222,7 @@ virtualbricks \-\-no\-gui \-\-socket
 virtualbricks \-\-no\-gui \-\-socket unix:\(ti/labs/lab1.sock
 virtualbricks \-\-no\-gui \-\-socket \(rs
     \-\-socket unix:\(ti/labs/lab1.amp:protocol=amp
+virtualbricks \-\-no\-gui \-\-socket tcp:8765
 .EE
 .PP
 \f[B]\-\-command\f[R] sends a command to a text socket, as typed in the
@@ -227,6 +232,7 @@ console:
 virtualbricks \-\-command brick start sw1 vm1
 virtualbricks \-\-command brick set vm1 memory=1024
 virtualbricks \-\-socket unix:\(ti/labs/lab1.sock \-\-command status
+virtualbricks \-\-socket tcp:8765 \-\-command status
 .EE
 .PP
 The words after \f[B]\-\-command\f[R] are those of the command, as the
@@ -247,14 +253,86 @@ Ctrl+C stops waiting, not the command.
 Virtualbricks logs each command it gets, and answers in its own
 language.
 .PP
-Only you can connect: each socket is yours alone, and Virtualbricks
-doesn\(aqt listen in a runtime folder that isn\(aqt yours, or that
-others can write in.
+Only you can connect to a \f[B]unix\f[R] socket: each is yours alone,
+and Virtualbricks doesn\(aqt listen in a runtime folder that isn\(aqt
+yours, or that others can write in.
 One Virtualbricks has each socket: the first to start, which holds the
 lock \f[I]path\f[R].lock beside it; with \f[B]\-\-lock none\f[R],
 another one with the same \f[B]\-\-socket\f[R] runs without that socket.
 A socket left by a crash is removed at the next start; nothing else at
 the path is.
+.SS Sockets on the network
+A \f[B]tcp\f[R] socket listens on this machine: on \f[B]127.0.0.1\f[R],
+or on another loopback address of \f[B]interface=\f[R], as
+\f[B]\(aqinterface=\(rs:\(rs:1\(aq\f[R], whose colons are escaped.
+Across the network, what passes on \f[B]tcp\f[R] could be read, so it is
+refused there.
+An \f[B]ssl\f[R] socket encrypts, and listens on \f[B]127.0.0.1\f[R]
+too, or on the address of \f[B]interface=\f[R], as \f[B]0.0.0.0\f[R] for
+every IPv4 address of the machine.
+It needs the certificate of Virtualbricks:
+\f[B]privateKey=\f[R]\f[I]file\f[R], its key, and
+\f[B]certKey=\f[R]\f[I]file\f[R], the certificate, unless the key\(aqs
+file holds it too, both in PEM; \f[B]extraCertChain=\f[R]\f[I]file\f[R]
+holds the certificates between it and the authority that issued it.
+A port has no lock: the first Virtualbricks takes it, and another one
+runs without that socket.
+.PP
+Whoever reaches a port can connect, and a connection can do all that the
+console does, the shell commands of an event\(aqs actions included.
+So each client proves first that it knows the token of Virtualbricks:
+the line of \f[I]$XDG_CONFIG_HOME\f[R]/virtualbricks/token, which the
+first start with such a socket makes, or of the file of
+\f[B]tokenFile=\f[R].
+Neither end sends it: each proves that it knows it, and a client without
+a proof in 10 seconds is cut off.
+The file must be yours, and nobody else may read it; copy it to the
+machines of the clients.
+With \f[B]caCertsDir=\f[R]\f[I]directory\f[R], an \f[B]ssl\f[R] socket
+asks each client for a certificate in place of the token: one that a
+\&.pem file of \f[I]directory\f[R] issued, or is.
+The files are read at start.
+The log names each client, by its address or by its certificate:
+.IP
+.EX
+virtualbricks \-\-no\-gui \-\-socket \(rs
+    \(aqssl:8765:interface=0.0.0.0:privateKey=\(ti/vb/lab.pem\(aq
+virtualbricks \-\-no\-gui \-\-socket \(rs
+    \(aqssl:8765:privateKey=\(ti/vb/lab.pem:caCertsDir=\(ti/vb/clients\(aq
+.EE
+.PP
+\f[B]\-\-command\f[R] names the machine as
+\f[B]tcp:\f[R]\f[I]host\f[R]\f[B]:\f[R]\f[I]port\f[R], or with
+\f[B]host=\f[R] and \f[B]port=\f[R]; \f[B]tcp:\f[R]\f[I]port\f[R] alone
+is this machine.
+Over \f[B]ssl\f[R], \f[B]caCertsDir=\f[R]\f[I]directory\f[R] holds the
+certificate of Virtualbricks, or that of its authority; without it, the
+authorities of the system are trusted.
+\f[B]privateKey=\f[R] and \f[B]certKey=\f[R] are the certificate of the
+client, for a Virtualbricks that asks for one.
+The token is that of \f[B]tokenFile=\f[R], or the default one.
+To another machine, \f[B]\-\-command\f[R] doesn\(aqt send its folder: a
+relative path is read from the folder of that Virtualbricks.
+.IP
+.EX
+virtualbricks \(rs
+    \-\-socket \(aqssl:lab.example:8765:caCertsDir=\(ti/vb/lab\(aq \(rs
+    \-\-command status
+.EE
+.PP
+The certificates, made with \f[B]openssl\f[R](1): that of the machine of
+Virtualbricks, for its name and address, and that of a client, whose
+\&.pem goes into the directory of \f[B]caCertsDir=\f[R]:
+.IP
+.EX
+openssl req \-x509 \-newkey ec \-pkeyopt ec_paramgen_curve:P\-256 \(rs
+    \-nodes \-days 3650 \-subj /CN=lab.example \(rs
+    \-addext subjectAltName=DNS:lab.example,IP:192.0.2.7 \(rs
+    \-keyout lab.key \-out lab.pem
+openssl req \-x509 \-newkey ec \-pkeyopt ec_paramgen_curve:P\-256 \(rs
+    \-nodes \-days 3650 \-subj /CN=alice\-laptop \(rs
+    \-keyout alice.key \-out alice.pem
+.EE
 .SS The text protocol
 Any program can talk to a text socket: UTF\-8 JSON, an object on each
 line.
@@ -269,6 +347,30 @@ A request\(aqs \f[B]cwd\f[R], the folder of its paths, is optional:
 {\(dqline\(dq: \(dqbrick start vm9\(dq}
 {\(dqok\(dq: false, \(dqlines\(dq: [], \(dqerror\(dq: \(dqNo brick named vm9\(dq}
 .EE
+.PP
+On a socket that asks for the token, the first line asks for the proof,
+with a \f[B]nonce\f[R] of 64 hex digits.
+The client answers with a nonce of its own and its \f[B]proof\f[R]: the
+HMAC\-SHA256 under the token of \f[B]virtualbricks client\f[R]
+\f[I]nonce\f[R] \f[I]its\-nonce\f[R], in hex.
+The greeting follows, with the proof of Virtualbricks, that of
+\f[B]virtualbricks server\f[R] \f[I]nonce\f[R] \f[I]its\-nonce\f[R],
+which the client checks.
+A wrong proof is refused, and the connection closed:
+.IP
+.EX
+{\(dqprotocol\(dq: 1, \(dqauth\(dq: \(dqtoken\(dq, \(dqnonce\(dq: \(dq3f9a...\(dq}
+{\(dqnonce\(dq: \(dqc41d...\(dq, \(dqproof\(dq: \(dq8e02...\(dq}
+{\(dqprotocol\(dq: 1, \(dqversion\(dq: \(dq2.1.0\(dq, \(dqpid\(dq: 4200,
+ \(dqproject\(dq: \(dqlab1\(dq, \(dqproof\(dq: \(dq51b7...\(dq}
+.EE
+.PP
+In a shell, \f[B]openssl\f[R] computes a proof:
+.IP
+.EX
+printf \(aqvirtualbricks client %s %s\(aq \(dq$nonce\(dq \(dq$mine\(dq |
+    openssl dgst \-sha256 \-hmac \(dq$token\(dq
+.EE
 .SS The AMP protocol
 A program written with Twisted drives an AMP socket with two commands.
 \f[B]Hello\f[R] answers the \f[B]protocol\f[R], 1, the
@@ -279,6 +381,11 @@ A command that fails raises \f[B]CommandFailed\f[R], with its error;
 \f[B]AnswerTooLong\f[R] says that a command was done, but its answer is
 longer than the 65535 bytes of an AMP value.
 The requests of a connection run in turn.
+On a socket that asks for the token, \f[B]Hello\f[R] and \f[B]Run\f[R]
+fail with \f[B]TokenNeeded\f[R] until the program proves it:
+\f[B]authenticate\f[R](\f[I]vb\f[R], \f[I]token\f[R]) calls
+\f[B]Challenge\f[R], then \f[B]Authenticate\f[R], and raises
+\f[B]WrongToken\f[R] if either end doesn\(aqt know the token.
 The module \f[B]virtualbricks.console.ampwire\f[R] has the commands; a
 program that can\(aqt import it declares them:
 .IP
@@ -289,6 +396,12 @@ class CommandFailed(Exception):
 class AnswerTooLong(Exception):
     pass
 
+class TokenNeeded(Exception):
+    pass
+
+class WrongToken(Exception):
+    pass
+
 class Hello(amp.Command):
     response = [
         (b\(dqprotocol\(dq, amp.Integer()),
@@ -296,6 +409,7 @@ class Hello(amp.Command):
         (b\(dqpid\(dq, amp.Integer()),
         (b\(dqproject\(dq, amp.Unicode(optional=True)),
     ]
+    errors = {TokenNeeded: b\(dqTOKEN_NEEDED\(dq}
 
 class Run(amp.Command):
     arguments = [
@@ -306,7 +420,37 @@ class Run(amp.Command):
     errors = {
         CommandFailed: b\(dqCOMMAND_FAILED\(dq,
         AnswerTooLong: b\(dqANSWER_TOO_LONG\(dq,
+        TokenNeeded: b\(dqTOKEN_NEEDED\(dq,
     }
+
+class Challenge(amp.Command):
+    response = [(b\(dqnonce\(dq, amp.Unicode())]
+    errors = {WrongToken: b\(dqWRONG_TOKEN\(dq}
+
+class Authenticate(amp.Command):
+    arguments = [
+        (b\(dqnonce\(dq, amp.Unicode()),
+        (b\(dqproof\(dq, amp.Unicode()),
+    ]
+    response = [(b\(dqproof\(dq, amp.Unicode())]
+    errors = {WrongToken: b\(dqWRONG_TOKEN\(dq}
+
+def proof(token, side, nonce, mine):
+    text = f\(dqvirtualbricks {side} {nonce} {mine}\(dq
+    key = token.encode()
+    return hmac.new(key, text.encode(), \(dqsha256\(dq).hexdigest()
+
+async def authenticate(vb, token):
+    mine = secrets.token_hex(32)
+    nonce = (await vb.callRemote(Challenge))[\(dqnonce\(dq]
+    answer = await vb.callRemote(
+        Authenticate,
+        nonce=mine,
+        proof=proof(token, \(dqclient\(dq, nonce, mine),
+    )
+    expected = proof(token, \(dqserver\(dq, nonce, mine)
+    if not hmac.compare_digest(answer[\(dqproof\(dq], expected):
+        raise WrongToken(\(dqThe other end doesn\(aqt know the token\(dq)
 .EE
 .PP
 Then a program, for the AMP socket of the third example above:
@@ -321,6 +465,15 @@ async def main(reactor):
 
 task.react(lambda reactor: ensureDeferred(main(reactor)))
 .EE
+.PP
+Over \f[B]tcp\f[R], the endpoint is
+\f[B]tcp:127.0.0.1:\f[R]\f[I]port\f[R], and the program calls
+\f[B]authenticate\f[R]() before the other commands.
+Over \f[B]ssl\f[R], Twisted\(aqs
+\f[B]tls:\f[R]\f[I]host\f[R]\f[B]:\f[R]\f[I]port\f[R]\f[B]:trustRoots=\f[R]\f[I]directory\f[R]
+checks the certificate of Virtualbricks and its name;
+\f[B]certificate=\f[R] and \f[B]privateKey=\f[R] add the program\(aqs
+own.
 .SH COMMANDS
 .SS Bricks
 .TP
@@ -549,7 +702,8 @@ The command failed, or an option is wrong.
 .TP
 \f[B]2\f[R]
 No Virtualbricks answered: none listens there, it ended before it
-answered, or it speaks another protocol.
+answered, it speaks another protocol, or it refused the token or the
+certificate.
 The error says which.
 .TP
 \f[B]130\f[R]
@@ -564,6 +718,10 @@ The locks of the single\-instance mode, see \f[B]\-\-lock\f[R].
 .TP
 \f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.control, .control.lock
 The text socket of \f[B]\-\-socket\f[R] alone and its lock, see \f[B]THE
+CONTROL SOCKET\f[R].
+.TP
+\f[I]$XDG_CONFIG_HOME\f[R]/virtualbricks/token
+The token of the \f[B]tcp\f[R] and \f[B]ssl\f[R] sockets, see \f[B]THE
 CONTROL SOCKET\f[R].
 .PP
 The settings, the state and the projects are described in
@@ -606,6 +764,18 @@ file, sent to it one after the other:
 virtualbricks \-\-command brick start router
 virtualbricks \-\-command < \(ti/labs/traffic.vb
 .EE
+.PP
+The same lab, open to the network over \f[B]ssl\f[R], and its machine,
+started from a laptop that has a copy of the token and of
+\f[B]lab.pem\f[R], in \f[I]\(ti/vb/lab\f[R]:
+.IP
+.EX
+virtualbricks \-\-no\-gui \-\-noterm \-\-run \(ti/labs/ospf.vb \-\-socket \(rs
+    \(aqssl:8765:interface=0.0.0.0:privateKey=\(ti/vb/lab.pem\(aq
+virtualbricks \(rs
+    \-\-socket \(aqssl:lab.example:8765:caCertsDir=\(ti/vb/lab\(aq \(rs
+    \-\-command brick start router
+.EE
 .SH SEE ALSO
 \f[B]virtualbricks\-config\f[R](5), \f[B]virtualbricks\-archive\f[R](7),
-\f[B]qemu\f[R](1), \f[B]vde_switch\f[R](1)
+\f[B]qemu\f[R](1), \f[B]vde_switch\f[R](1), \f[B]openssl\f[R](1)

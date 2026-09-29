@@ -184,16 +184,27 @@
 - [ ] Follow what changes through the control socket, `watch`, for a
   status bar or another program (15 §11); over AMP, as commands that
   Virtualbricks sends to the program (16 §10)
-- [ ] Listen on `tcp` and `ssl` sockets too, on this machine and across
-  the network, with a way to know who connects, a token or the
-  certificates of the clients: a connection can run shell commands
-  through an event's actions (16 §9 M6, §10)
 - [ ] Open the sockets of a setting, for a Virtualbricks started from the
   desktop's menu, which has no options (16 §10)
 - [ ] A typed AMP command for each command of the console, made from its
   table (16 §9 M2 B)
 - [ ] Carry the answers longer than 64 KiB over AMP, spread over several
   keys, if one is ever needed (16 §9 M5 B)
+- [ ] Read the token and the client certificates again without a
+  restart, to let a client go at once (17 §12)
+- [ ] Tokens that allow less: `status` and `brick list` only, or no shell
+  actions from another machine; today a connection can do all that the
+  console does (17 §12)
+- [ ] Make the certificate of Virtualbricks, and a client's, from
+  Virtualbricks, and show its fingerprint to check on the client, as ssh
+  does on the first connection (17 §12)
+- [ ] Name the process that holds a port, as the locks name theirs
+  (17 §12)
+- [ ] Slow down an address that sends wrong proofs of the token (17 §12)
+- [ ] Listen on the other types of Twisted's endpoints, as `systemd` for a
+  socket that systemd opens (17 §12)
+- [ ] Run the tests of the AMP socket on Twisted 22.1 too: they patch
+  `amp._log`, which 22.1 doesn't have (17)
 
 ## Waiting
 
@@ -201,6 +212,13 @@
 
 # DONE
 
+- [x] Listen on `tcp` and `ssl` sockets too, on this machine and across
+  the network, with a way to know who connects (16 §9 M6, §10):
+  `--socket tcp:PORT` on this machine, `ssl:PORT:privateKey=FILE` on any
+  address; each client proves the token of `~/.config/virtualbricks/token`
+  with an HMAC, neither end sending it, or shows a certificate of
+  `caCertsDir=`; `--command` talks to `tcp:HOST:PORT`; plan in
+  `docs/redesign/17 - network-sockets.html`
 - [x] Open a second control socket that speaks Twisted's AMP, for
   programs written with Twisted; both sockets open at the same time
   (15 §10 Q3, §11): `--socket [DESCRIPTION]`, in the syntax of Twisted's

@@ -106,8 +106,9 @@ The options are:
   that runs, and print its answer; see [The console](#the-console).
 - `--socket [DESCRIPTION]`: listen on a control socket, `.control` in the
   runtime directory, or the one of a description, as
-  `unix:~/labs/lab1.amp:protocol=amp`; it can be given more than once. With
-  `--command`, the socket to talk to.
+  `unix:~/labs/lab1.amp:protocol=amp`, `tcp:8765` or
+  `ssl:8765:privateKey=FILE`; it can be given more than once. With
+  `--command`, the socket to talk to, as `tcp:lab.example:8765`.
 - `--version`: print the version and exit.
 
 `--lock` sets the single-instance mode, one of:
@@ -177,6 +178,15 @@ program written with Twisted: `--socket unix:~/labs/lab1.amp:protocol=amp`.
 The program calls `Run` with a line of the console and gets a Deferred of
 its answer; `virtualbricks/console/ampwire.py` has the commands. The option
 can be given more than once, for a JSON socket and an AMP one at once.
+
+`--socket tcp:8765` listens on a port of this machine, and
+`--socket ssl:8765:interface=0.0.0.0:privateKey=lab.pem` on a port open to
+the network, with TLS. A client proves first that it knows the token of
+`~/.config/virtualbricks/token`, which Virtualbricks makes; neither end
+sends it. With `caCertsDir=FOLDER`, an ssl socket asks each client for a
+certificate instead, and the log names it. `--command` talks to them as
+`--socket tcp:8765` on this machine, or as
+`--socket ssl:lab.example:8765:caCertsDir=FOLDER` from another.
 
 Every option and command is in the manual page, which you can read from the
 sources with `man ./docs/man/virtualbricks.1`, and in
@@ -368,9 +378,11 @@ To add a language, see the top of `l10n.sh`.
   `source` and `quit`. `terminal.py` reads the terminal, or a pipe, and
   `lineedit.py` has the keys of readline for its line. `control.py` listens
   on the control sockets, `client.py` is `--command`, and `wire.py` has what
-  both share: the text protocol, the descriptions of `--socket` and the
-  checks of a socket's path. `ampwire.py` has the commands of the AMP socket,
-  for the programs that use it. It imports no GTK, so that `--no-gui`
+  both share: the text protocol, the descriptions of `--socket`, the checks
+  of a socket's path, the token and its proof. `tls.py` has the certificates
+  of the ssl sockets, and is the only module that needs pyOpenSSL.
+  `ampwire.py` has the commands of the AMP socket, for the programs that use
+  it. It imports no GTK, so that `--no-gui`
   doesn't load it, and `client.py` doesn't load Twisted's reactor either.
 - `virtualbricks/config/`: the settings and the state, the schemas of their
   fields, the project file, and the projects: `workspace.py` lists, creates and
