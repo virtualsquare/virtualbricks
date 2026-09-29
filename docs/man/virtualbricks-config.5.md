@@ -822,10 +822,11 @@ an old project is converted when it's imported.
     a crash.
 
 *\$XDG_RUNTIME_DIR*/virtualbricks/.control
-:   The control socket, where the Virtualbricks that runs answers
-    **virtualbricks --command**; *.control.lock* beside it is held by the
-    one that listens. **virtualbricks --socket** *path* puts them
-    elsewhere; see **virtualbricks**(1).
+:   The text socket, where a Virtualbricks started with **--socket**
+    answers **virtualbricks --command**; *.control.lock* beside it is held
+    by the one that listens. A description after **--socket** puts a
+    socket elsewhere, and with **protocol=amp** it speaks Twisted's AMP;
+    see **virtualbricks**(1).
 
 */etc/sudo.conf*
 :   Its **Path askpass** line makes Virtualbricks run sudo with **-A**, as

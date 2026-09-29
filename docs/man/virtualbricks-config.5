@@ -853,11 +853,12 @@ don\(aqt see it.
 The system releases the locks when Virtualbricks ends, even on a crash.
 .TP
 \f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.control
-The control socket, where the Virtualbricks that runs answers
-\f[B]virtualbricks \-\-command\f[R]; \f[I].control.lock\f[R] beside it
-is held by the one that listens.
-\f[B]virtualbricks \-\-socket\f[R] \f[I]path\f[R] puts them elsewhere;
-see \f[B]virtualbricks\f[R](1).
+The text socket, where a Virtualbricks started with \f[B]\-\-socket\f[R]
+answers \f[B]virtualbricks \-\-command\f[R]; \f[I].control.lock\f[R]
+beside it is held by the one that listens.
+A description after \f[B]\-\-socket\f[R] puts a socket elsewhere, and
+with \f[B]protocol=amp\f[R] it speaks Twisted\(aqs AMP; see
+\f[B]virtualbricks\f[R](1).
 .TP
 \f[I]/etc/sudo.conf\f[R]
 Its \f[B]Path askpass\f[R] line makes Virtualbricks run sudo with

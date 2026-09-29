@@ -9,7 +9,7 @@ console
 .PP
 \f[B]virtualbricks \-\-no\-gui\f[R] [\f[I]options\f[R]]
 .PP
-\f[B]virtualbricks\f[R] [\f[B]\-\-socket\f[R] \f[I]path\f[R]]
+\f[B]virtualbricks\f[R] [\f[B]\-\-socket\f[R] [\f[I]description\f[R]]]
 \f[B]\-\-command\f[R] [\f[I]word\f[R]...]
 .SH DESCRIPTION
 Virtualbricks makes and runs labs of virtual machines, run by QEMU, and
@@ -22,9 +22,10 @@ beside the windows.
 With \f[B]\-\-no\-gui\f[R] it runs without them, and the console is the
 way in: a lab on a machine without a display.
 .PP
-A Virtualbricks that runs listens on a control socket:
+Started with \f[B]\-\-socket\f[R], it listens on control sockets:
 \f[B]virtualbricks \-\-command\f[R] sends it a command of the console
-from any terminal or script, and prints its answer.
+from any terminal or script, and prints its answer, and a program
+written with Twisted can drive it through AMP.
 See \f[B]THE CONTROL SOCKET\f[R].
 .SH OPTIONS
 .TP
@@ -75,14 +76,19 @@ See \f[B]FILES\f[R].
 Send the command of the words that follow to the Virtualbricks that
 runs, and print its answer; without words, send the lines of the
 standard input.
-It takes no lock, and no other option but \f[B]\-\-socket\f[R].
+It takes no lock, and no other option but one \f[B]\-\-socket\f[R] of
+the text protocol.
 See \f[B]THE CONTROL SOCKET\f[R].
 .TP
-\f[B]\-\-socket\f[R] \f[I]path\f[R]
-The control socket, instead of \f[I].control\f[R] in the runtime folder:
-where Virtualbricks listens, and where \f[B]\-\-command\f[R] sends its
-command.
-Its folder must exist.
+\f[B]\-\-socket\f[R] [\f[I]description\f[R]]
+Listen on a control socket: alone, the text socket \f[I].control\f[R] in
+the runtime folder; with a \f[I]description\f[R], as
+\f[B]unix:\(ti/labs/lab1.amp:protocol=amp\f[R], the socket it describes.
+It can be given more than once.
+The next word is the description when it starts with a type and a colon,
+as \f[B]unix:\f[R]; after \f[B]=\f[R] it is too.
+With \f[B]\-\-command\f[R], the socket to talk to.
+See \f[B]THE CONTROL SOCKET\f[R].
 .TP
 \f[B]\-\-version\f[R]
 Print the version and exit.
@@ -194,15 +200,33 @@ start.
 Empty lines and comments are skipped, and the first error stops the
 file, saying where, as \f[I]lab.vb\f[R]:7.
 .SH THE CONTROL SOCKET
-Every Virtualbricks, with the windows or without, listens on a control
-socket once its project is open:
-\f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.control, or the path of
-\f[B]\-\-socket\f[R].
-\f[B]\-\-command\f[R] sends it a command, as typed in its console:
+A Virtualbricks started with \f[B]\-\-socket\f[R], with the windows or
+without, listens on control sockets once its project is open; without
+it, on none.
+\f[B]\-\-socket\f[R] alone is the text socket
+\f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.control.
+A description, in the syntax of Twisted\(aqs endpoints, names another:
+its type, \f[B]unix\f[R], the only one for now; its path, or
+\f[B]address=\f[R]\f[I]path\f[R]; and \f[B]protocol=text\f[R], the
+default, or \f[B]protocol=amp\f[R].
+\f[B]:\f[R] separates the parts, and a backslash makes the next
+character plain.
+The option can be given more than once:
+.IP
+.EX
+virtualbricks \-\-no\-gui \-\-socket
+virtualbricks \-\-no\-gui \-\-socket unix:\(ti/labs/lab1.sock
+virtualbricks \-\-no\-gui \-\-socket \(rs
+    \-\-socket unix:\(ti/labs/lab1.amp:protocol=amp
+.EE
+.PP
+\f[B]\-\-command\f[R] sends a command to a text socket, as typed in the
+console:
 .IP
 .EX
 virtualbricks \-\-command brick start sw1 vm1
 virtualbricks \-\-command brick set vm1 memory=1024
+virtualbricks \-\-socket unix:\(ti/labs/lab1.sock \-\-command status
 .EE
 .PP
 The words after \f[B]\-\-command\f[R] are those of the command, as the
@@ -223,17 +247,17 @@ Ctrl+C stops waiting, not the command.
 Virtualbricks logs each command it gets, and answers in its own
 language.
 .PP
-Only you can connect: the socket is yours alone, and Virtualbricks
+Only you can connect: each socket is yours alone, and Virtualbricks
 doesn\(aqt listen in a runtime folder that isn\(aqt yours, or that
 others can write in.
-One Virtualbricks has the socket: the first to start, which holds the
-lock \f[I]path\f[R].lock beside it.
-With \f[B]\-\-lock none\f[R], another one runs without a socket, unless
-it has its own \f[B]\-\-socket\f[R].
+One Virtualbricks has each socket: the first to start, which holds the
+lock \f[I]path\f[R].lock beside it; with \f[B]\-\-lock none\f[R],
+another one with the same \f[B]\-\-socket\f[R] runs without that socket.
 A socket left by a crash is removed at the next start; nothing else at
 the path is.
-.SS The protocol
-Any program can talk to the socket: UTF\-8 JSON, an object on each line.
+.SS The text protocol
+Any program can talk to a text socket: UTF\-8 JSON, an object on each
+line.
 Virtualbricks greets with the \f[B]protocol\f[R], 1, its
 \f[B]version\f[R], its \f[B]pid\f[R] and the open \f[B]project\f[R];
 then it answers each request in turn.
@@ -244,6 +268,58 @@ A request\(aqs \f[B]cwd\f[R], the folder of its paths, is optional:
 {\(dqok\(dq: true, \(dqlines\(dq: [\(dqsw1 runs, process 4242\(dq]}
 {\(dqline\(dq: \(dqbrick start vm9\(dq}
 {\(dqok\(dq: false, \(dqlines\(dq: [], \(dqerror\(dq: \(dqNo brick named vm9\(dq}
+.EE
+.SS The AMP protocol
+A program written with Twisted drives an AMP socket with two commands.
+\f[B]Hello\f[R] answers the \f[B]protocol\f[R], 1, the
+\f[B]version\f[R], the \f[B]pid\f[R] and the \f[B]project\f[R].
+\f[B]Run\f[R] takes a \f[B]line\f[R] of the console and its
+\f[B]cwd\f[R], optional, and answers its \f[B]lines\f[R].
+A command that fails raises \f[B]CommandFailed\f[R], with its error;
+\f[B]AnswerTooLong\f[R] says that a command was done, but its answer is
+longer than the 65535 bytes of an AMP value.
+The requests of a connection run in turn.
+The module \f[B]virtualbricks.console.ampwire\f[R] has the commands; a
+program that can\(aqt import it declares them:
+.IP
+.EX
+class CommandFailed(Exception):
+    pass
+
+class AnswerTooLong(Exception):
+    pass
+
+class Hello(amp.Command):
+    response = [
+        (b\(dqprotocol\(dq, amp.Integer()),
+        (b\(dqversion\(dq, amp.Unicode()),
+        (b\(dqpid\(dq, amp.Integer()),
+        (b\(dqproject\(dq, amp.Unicode(optional=True)),
+    ]
+
+class Run(amp.Command):
+    arguments = [
+        (b\(dqline\(dq, amp.Unicode()),
+        (b\(dqcwd\(dq, amp.Unicode(optional=True)),
+    ]
+    response = [(b\(dqlines\(dq, amp.ListOf(amp.Unicode()))]
+    errors = {
+        CommandFailed: b\(dqCOMMAND_FAILED\(dq,
+        AnswerTooLong: b\(dqANSWER_TOO_LONG\(dq,
+    }
+.EE
+.PP
+Then a program, for the AMP socket of the third example above:
+.IP
+.EX
+async def main(reactor):
+    path = os.path.expanduser(\(dq\(ti/labs/lab1.amp\(dq)
+    endpoint = endpoints.UNIXClientEndpoint(reactor, path)
+    vb = await endpoints.connectProtocol(endpoint, amp.AMP())
+    answer = await vb.callRemote(Run, line=\(dqbrick start sw1\(dq)
+    print(\(dq\(rsn\(dq.join(answer[\(dqlines\(dq]))
+
+task.react(lambda reactor: ensureDeferred(main(reactor)))
 .EE
 .SH COMMANDS
 .SS Bricks
@@ -472,8 +548,8 @@ The command was done.
 The command failed, or an option is wrong.
 .TP
 \f[B]2\f[R]
-No Virtualbricks answered: none runs, it ended before it answered, or it
-speaks another protocol.
+No Virtualbricks answered: none listens there, it ended before it
+answered, or it speaks another protocol.
 The error says which.
 .TP
 \f[B]130\f[R]
@@ -487,7 +563,8 @@ The history of the console, the last 500 lines.
 The locks of the single\-instance mode, see \f[B]\-\-lock\f[R].
 .TP
 \f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.control, .control.lock
-The control socket and its lock, see \f[B]THE CONTROL SOCKET\f[R].
+The text socket of \f[B]\-\-socket\f[R] alone and its lock, see \f[B]THE
+CONTROL SOCKET\f[R].
 .PP
 The settings, the state and the projects are described in
 \f[B]virtualbricks\-config\f[R](5).
@@ -515,10 +592,11 @@ event action add down stop router
 event start up down
 .EE
 .PP
-A lab on a server, from a file, without windows or console:
+A lab on a server, from a file, without windows or console, with the
+text socket:
 .IP
 .EX
-virtualbricks \-\-no\-gui \-\-noterm \-\-run \(ti/labs/ospf.vb
+virtualbricks \-\-no\-gui \-\-noterm \-\-socket \-\-run \(ti/labs/ospf.vb
 .EE
 .PP
 The machine of that lab, from another terminal, and the commands of a

@@ -162,7 +162,8 @@
 ## Console
 
 - [ ] Answer in JSON for scripts, as `brick list --json` (14 §11); the
-  control socket's protocol carries them as they are (15 §11)
+  control socket's protocol carries them as they are (15 §11), and AMP as
+  `AmpList` boxes (16 §10)
 - [ ] Import and export archives from the console (14 §11)
 - [ ] Make new disk images from the console: `image new NAME SIZE`, with
   `qemu-img` (14 §11)
@@ -175,18 +176,24 @@
   `br st sw1` (14 §11)
 - [ ] More keys of readline: Alt+. for the last argument of the command
   before, as a brick's name, and Ctrl+_ to undo an edit
-- [ ] Open a second control socket that speaks Twisted's AMP, for
-  programs written with Twisted; both sockets open at the same time
-  (15 §10 Q3, §11)
 - [ ] Attach an interactive console to the Virtualbricks that runs,
   `virtualbricks --attach`, with the editing, history and completion of
   its terminal; the completion needs a request of its own (15 §11)
-- [ ] Turn the control socket off, with `--no-control` or a setting, if
-  anyone wants a Virtualbricks that can't be reached (15 §11)
 - [ ] Answer `--command` in the language of its own terminal, not in
   that of the Virtualbricks that runs (15 §11)
 - [ ] Follow what changes through the control socket, `watch`, for a
-  status bar or another program (15 §11)
+  status bar or another program (15 §11); over AMP, as commands that
+  Virtualbricks sends to the program (16 §10)
+- [ ] Listen on `tcp` and `ssl` sockets too, on this machine and across
+  the network, with a way to know who connects, a token or the
+  certificates of the clients: a connection can run shell commands
+  through an event's actions (16 §9 M6, §10)
+- [ ] Open the sockets of a setting, for a Virtualbricks started from the
+  desktop's menu, which has no options (16 §10)
+- [ ] A typed AMP command for each command of the console, made from its
+  table (16 §9 M2 B)
+- [ ] Carry the answers longer than 64 KiB over AMP, spread over several
+  keys, if one is ever needed (16 §9 M5 B)
 
 ## Waiting
 
@@ -194,6 +201,14 @@
 
 # DONE
 
+- [x] Open a second control socket that speaks Twisted's AMP, for
+  programs written with Twisted; both sockets open at the same time
+  (15 §10 Q3, §11): `--socket [DESCRIPTION]`, in the syntax of Twisted's
+  endpoints, `unix:PATH:protocol=amp`, once for each socket; plan in
+  `docs/redesign/16 - amp-socket.html`
+- [x] Turn the control socket off, with `--no-control` or a setting, if
+  anyone wants a Virtualbricks that can't be reached (15 §11): without
+  `--socket`, a Virtualbricks listens nowhere (16)
 - [x] Add a control socket in the runtime folder, so that
   `virtualbricks --command ...` talks to a Virtualbricks that runs
   (14 §11, K6 C): every Virtualbricks listens on `.control`, or on the

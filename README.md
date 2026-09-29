@@ -104,8 +104,10 @@ The options are:
   once; see below.
 - `--command WORD...`: send a command of the console to the Virtualbricks
   that runs, and print its answer; see [The console](#the-console).
-- `--socket PATH`: the control socket, where Virtualbricks listens and
-  `--command` sends, instead of `.control` in the runtime directory.
+- `--socket [DESCRIPTION]`: listen on a control socket, `.control` in the
+  runtime directory, or the one of a description, as
+  `unix:~/labs/lab1.amp:protocol=amp`; it can be given more than once. With
+  `--command`, the socket to talk to.
 - `--version`: print the version and exit.
 
 `--lock` sets the single-instance mode, one of:
@@ -154,11 +156,12 @@ The same commands run from a file, with `source FILE` or `--run FILE`, from a
 pipe, and in an event, as its actions. With `--no-gui --noterm --run FILE`,
 Virtualbricks sets a lab up and runs it on a machine without a display.
 
-A Virtualbricks that runs, with the windows or without, listens on a control
-socket, `$XDG_RUNTIME_DIR/virtualbricks/.control`, and `--command` sends it a
-command from any terminal or script:
+A Virtualbricks started with `--socket`, with the windows or without,
+listens on a control socket, `$XDG_RUNTIME_DIR/virtualbricks/.control`, and
+`--command` sends it a command from any terminal or script:
 
 ```
+virtualbricks --no-gui --socket
 virtualbricks --command brick start router
 virtualbricks --command < start-lab.vb
 ```
@@ -167,6 +170,13 @@ The answer goes to the standard output, an error to the standard error, and
 the exit status is 0 when the command was done, 1 when it failed, and 2 when
 no Virtualbricks answered. Only you can connect. The socket speaks JSON, a
 line for each request and answer, so any program can use it.
+
+A description after `--socket`, in the syntax of Twisted's endpoints, puts a
+socket elsewhere, and `protocol=amp` makes it speak Twisted's AMP, for a
+program written with Twisted: `--socket unix:~/labs/lab1.amp:protocol=amp`.
+The program calls `Run` with a line of the console and gets a Deferred of
+its answer; `virtualbricks/console/ampwire.py` has the commands. The option
+can be given more than once, for a JSON socket and an AMP one at once.
 
 Every option and command is in the manual page, which you can read from the
 sources with `man ./docs/man/virtualbricks.1`, and in
@@ -357,10 +367,11 @@ To add a language, see the top of `l10n.sh`.
   `settings.py` and `projects.py`, and `general.py` for `help`, `status`,
   `source` and `quit`. `terminal.py` reads the terminal, or a pipe, and
   `lineedit.py` has the keys of readline for its line. `control.py` listens
-  on the control socket, `client.py` is `--command`, and `wire.py` has what
-  both share: the protocol and the checks of the socket's path. It imports
-  no GTK, so that `--no-gui` doesn't load it, and `client.py` doesn't load
-  Twisted's reactor either.
+  on the control sockets, `client.py` is `--command`, and `wire.py` has what
+  both share: the text protocol, the descriptions of `--socket` and the
+  checks of a socket's path. `ampwire.py` has the commands of the AMP socket,
+  for the programs that use it. It imports no GTK, so that `--no-gui`
+  doesn't load it, and `client.py` doesn't load Twisted's reactor either.
 - `virtualbricks/config/`: the settings and the state, the schemas of their
   fields, the project file, and the projects: `workspace.py` lists, creates and
   opens them, `archive.py` and `importing.py` read, write and import their
