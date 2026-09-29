@@ -106,8 +106,6 @@ class Switch(bricks.Brick):
             so.path = self.path()
         self.notify_changed()
 
-    name = property(bricks.Brick.get_name, set_name)
-
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         sock = factory.new_sock(self, self.name + "_port")

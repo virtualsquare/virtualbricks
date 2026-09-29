@@ -57,11 +57,12 @@ class Base:
     def get_name(self):
         return self._name
 
+    # read-only: rename() changes it, through set_name()
+    name = property(get_name)
+
     def set_name(self, name):
         self._name = name
         self.notify_changed()
-
-    name = property(get_name, set_name)
 
     def __init__(self, factory, name):
         self._observable = observable.Observable("changed")

@@ -161,6 +161,18 @@ class TestFactory(BrickTestCase):
         self.assertEqual(self.factory.rename(switch, "sw2"), "sw")
         self.assertEqual(switch.name, "sw2")
 
+    def test_only_rename_changes_the_name(self):
+        """The factory's indexes and the references follow a rename only."""
+
+        for item in (
+            self.factory.new_brick("switch", "sw"),
+            self.factory.new_brick("qemu", "vm"),
+            self.factory.new_event("ev"),
+        ):
+            with self.assertRaises(AttributeError):
+                item.name = "other"
+            self.assertEqual(item.get_name(), item.name)
+
     def test_autosave_timer(self):
         calls = []
         self.patch(projects, "autosave", calls.append)

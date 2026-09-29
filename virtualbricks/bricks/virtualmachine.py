@@ -1212,8 +1212,6 @@ class VirtualMachine(bricks.Brick):
                 sock.nickname = f"{name}_{suffix}"
                 sock.path = self.runtime_path(f"{name}_{suffix}[]")
 
-    name = property(bricks.Brick.get_name, set_name)
-
     def rename(self, new_name):
         """
         Override Brick.rename() to rename also the disks.
