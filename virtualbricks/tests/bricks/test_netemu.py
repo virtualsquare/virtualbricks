@@ -40,7 +40,7 @@ class TestNetemu(BrickTestCase):
         netemu = self.factory.new_brick("netemu", "wan")
         netemu.markov_manager.add(1)
         self.factory.new_event("up")
-        netemu.set({"on_start": "up"})
+        netemu.update_config({"on_start": "up"})
         self.assertEqual(
             [s.on_start for s in netemu.markov_manager.states], ["up", "up"]
         )
@@ -51,7 +51,7 @@ class TestNetemu(BrickTestCase):
         netemu = self.factory.new_brick("netemu", "wan")
         netemu.markov_manager.add(1)
         event = self.factory.new_event("up")
-        netemu.set({"on_start": "up"})
+        netemu.update_config({"on_start": "up"})
         self.factory.rename(event, "start")
         self.assertEqual(
             [s.on_start for s in netemu.markov_manager.states],

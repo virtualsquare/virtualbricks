@@ -71,7 +71,9 @@ class TestFactory(BrickTestCase):
 
     def test_dup_brick(self):
         vm = self.factory.new_brick("qemu", "vm")
-        vm.set({"memory": 256, "usb_devices": [UsbDevice("1d6b:0002", "hub")]})
+        vm.update_config(
+            {"memory": 256, "usb_devices": [UsbDevice("1d6b:0002", "hub")]}
+        )
         copy = self.factory.dup_brick(vm)
         self.assertEqual(copy.config.memory, 256)
         self.assertEqual(copy.config.usb_devices, vm.config.usb_devices)
@@ -80,9 +82,9 @@ class TestFactory(BrickTestCase):
     def test_rename_event_updates_the_bricks(self):
         event = self.factory.new_event("boot")
         switch = self.factory.new_brick("switch", "sw")
-        switch.set({"on_start": "boot", "on_stop": "boot"})
+        switch.update_config({"on_start": "boot", "on_stop": "boot"})
         other = self.factory.new_event("other")
-        other.set({"delay": 1})
+        other.update_config({"delay": 1})
         changed = []
         switch.changed.connect(changed.append)
         self.factory.rename(event, "start")
@@ -130,7 +132,7 @@ class TestFactory(BrickTestCase):
         self.factory.new_brick("switch", "sw1")
         later = self.factory.new_event("later")
         boot = self.factory.new_event("boot")
-        boot.set(
+        boot.update_config(
             {
                 "actions": [
                     StartAction("sw1"),

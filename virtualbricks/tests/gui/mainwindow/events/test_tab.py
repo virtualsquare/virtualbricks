@@ -91,7 +91,7 @@ class EventsTestCase(GuiTestCase):
     def event(self, name, delay=5, *commands):
         event = self.factory.new_event(name)
         self.patch(event, "logger", FakeLogger())
-        event.set(
+        event.update_config(
             {
                 "delay": delay,
                 "actions": [
@@ -207,7 +207,7 @@ class TestTheRows(EventsTestCase):
     def test_the_bricks_that_start_it(self):
         row = self.row()
         sw = self.factory.new_brick("switch", "sw1")
-        sw.set({"on_start": "start-vms"})
+        sw.update_config({"on_start": "start-vms"})
         self.assertEqual(
             row.detail.get_text(), "After 5 s, starts vm1 · when sw1 starts"
         )
@@ -250,7 +250,9 @@ class TestTheRows(EventsTestCase):
         self.ev.poweron()
         self.tab.on_quit()
         self.assertEqual(len(self.clock.getDelayedCalls()), 1)
-        self.factory.new_brick("switch", "sw1").set({"on_start": "start-vms"})
+        self.factory.new_brick("switch", "sw1").update_config(
+            {"on_start": "start-vms"}
+        )
         self.assertEqual(row.detail.get_text(), "After 5 s, starts vm1")
         self.ev.poweroff()
         self.tab.on_quit = lambda: None
@@ -312,7 +314,7 @@ class TestTheRowAboveTheList(EventsTestCase):
         self.assertTrue(tab.stop_button.get_sensitive())
         # nothing to start in an event without actions
         self.ev.poweroff()
-        self.ev.set({"actions": []})
+        self.ev.update_config({"actions": []})
         self.assertFalse(tab.start_button.get_sensitive())
 
     def test_the_search(self):

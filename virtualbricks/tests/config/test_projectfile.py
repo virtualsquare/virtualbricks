@@ -67,7 +67,7 @@ def build_lab(factory, image_path="/images/deb.qcow2"):
 
     image = factory.new_disk_image("deb", image_path, "Debian\nbase")
     event = factory.new_event("boot")
-    event.set(
+    event.update_config(
         {
             "delay": 5,
             "actions": [
@@ -77,10 +77,10 @@ def build_lab(factory, image_path="/images/deb.qcow2"):
         }
     )
     sw1 = factory.new_brick("switch", "sw1")
-    sw1.set({"ports": 16, "on_start": "boot"})
+    sw1.update_config({"ports": 16, "on_start": "boot"})
     sw2 = factory.new_brick("switch", "sw2")
     vm = factory.new_brick("qemu", "vm")
-    vm.set(
+    vm.update_config(
         {
             "use_kvm": True,
             "hda_private": True,
@@ -93,7 +93,7 @@ def build_lab(factory, image_path="/images/deb.qcow2"):
     vm.add_plug(None, "00:aa:00:00:00:03", "rtl8139")
     vm.add_sock("00:aa:00:00:00:04", "virtio")
     tap = factory.new_brick("tap", "tap0")
-    tap.set({"address_mode": "manual", "ip_address": "10.0.0.2"})
+    tap.update_config({"address_mode": "manual", "ip_address": "10.0.0.2"})
     tap.connect(sw2.socks[0])
     wan = factory.new_brick("netemu", "wan")
     wan.plugs[0].connect(sw1.socks[0])

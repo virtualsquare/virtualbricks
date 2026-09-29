@@ -35,16 +35,15 @@ from virtualbricks.tests import (
 
 class TestBase(BrickTestCase):
 
-    def test_get_and_set(self):
+    def test_update_config(self):
         switch = self.factory.new_brick("switch", "sw")
         calls = []
         switch.cbset_ports = calls.append
-        switch.set({"ports": 16, "hub_mode": False})
-        self.assertEqual(switch.get("ports"), 16)
+        switch.update_config({"ports": 16, "hub_mode": False})
+        self.assertEqual(switch.config.ports, 16)
         self.assertEqual(calls, [16])
-        self.assertRaises(KeyError, switch.get, "nope")
-        self.assertRaises(KeyError, switch.set, {"nope": 1})
-        self.assertRaises(ValueError, switch.set, {"ports": 500})
+        self.assertRaises(KeyError, switch.update_config, {"nope": 1})
+        self.assertRaises(ValueError, switch.update_config, {"ports": 500})
 
     def test_configure_from_the_console(self):
         switch = self.factory.new_brick("switch", "sw")
@@ -56,7 +55,7 @@ class TestBase(BrickTestCase):
 
     def test_config_table(self):
         tap = self.factory.new_brick("tap", "tap0")
-        tap.set({"address_mode": "manual"})
+        tap.update_config({"address_mode": "manual"})
         table = tap.config_table()
         self.assertEqual(table["address_mode"], "manual")
         report = Report()
@@ -117,8 +116,8 @@ class TestSchemas(BrickTestCase):
             self.assertIsInstance(item.config, BaseConfig)
             self.assertEqual(field_names(item.config)[0], "icon")
             self.assertEqual(item.config.icon, "")
-        vm.set({"icon": "/usr/share/pixmaps/router.png"})
-        self.assertEqual(vm.get("icon"), "/usr/share/pixmaps/router.png")
+        vm.update_config({"icon": "/usr/share/pixmaps/router.png"})
+        self.assertEqual(vm.config.icon, "/usr/share/pixmaps/router.png")
 
     def test_what_goes_with_what(self):
         # a setting goes with another setting of its schema, and a value that
@@ -140,13 +139,17 @@ class TestSchemas(BrickTestCase):
 
     def test_limits(self):
         tap = self.factory.new_brick("tap", "tap0")
-        self.assertRaises(ValueError, tap.set, {"address_mode": "static"})
-        self.assertRaises(ValueError, tap.set, {"ip_address": "10.0.0"})
-        tap.set({"gateway": ""})
+        self.assertRaises(
+            ValueError, tap.update_config, {"address_mode": "static"}
+        )
+        self.assertRaises(
+            ValueError, tap.update_config, {"ip_address": "10.0.0"}
+        )
+        tap.update_config({"gateway": ""})
         listen = self.factory.new_brick("tunnellisten", "tl")
-        self.assertRaises(ValueError, listen.set, {"listen_port": 0})
+        self.assertRaises(ValueError, listen.update_config, {"listen_port": 0})
         vm = self.factory.new_brick("qemu", "vm")
-        self.assertRaises(ValueError, vm.set, {"memory": 0})
+        self.assertRaises(ValueError, vm.update_config, {"memory": 0})
 
     def test_tunnel_configured(self):
         listen = self.factory.new_brick("tunnellisten", "tl")
@@ -157,12 +160,12 @@ class TestSchemas(BrickTestCase):
 
     def test_switch_wrapper(self):
         wrapper = self.factory.new_brick("switchwrapper", "wr")
-        wrapper.set({"socket_path": "/nonexistent"})
+        wrapper.update_config({"socket_path": "/nonexistent"})
         failure = self.failureResultOf(wrapper.poweron())
         failure.trap(errors.BadConfigError)
         path = self.mktemp()
         os.makedirs(path)
-        wrapper.set({"socket_path": path})
+        wrapper.update_config({"socket_path": path})
         self.assertIs(self.successResultOf(wrapper.poweron()), wrapper)
 
     def test_router_has_no_name_field(self):
@@ -175,12 +178,12 @@ class TestRelatedEvents(BrickTestCase):
     def test_related_events(self):
         switch = self.factory.new_brick("switch", "sw")
         event = self.factory.new_event("boot")
-        event.set({"actions": [StartAction("sw")]})
+        event.update_config({"actions": [StartAction("sw")]})
         started = []
         event.poweron = lambda: started.append("boot")
         switch._start_related_events(on=True)
         self.assertEqual(started, [])
-        switch.set({"on_start": "boot", "on_stop": "gone"})
+        switch.update_config({"on_start": "boot", "on_stop": "gone"})
         switch._start_related_events(on=True)
         self.assertEqual(started, ["boot"])
         switch._start_related_events(on=False, off=True)

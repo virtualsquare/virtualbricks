@@ -189,7 +189,7 @@ class TestADraft(DraftTestCase):
     def test_changes_made_elsewhere_stay(self):
         # the console changes the brick while its settings show
         draft = Draft(self.switch)
-        self.switch.set({"hub_mode": True})
+        self.switch.update_config({"hub_mode": True})
         draft.set("ports", 16)
         self.assertEqual(draft.changes(), {"ports": 16})
         apply(draft)

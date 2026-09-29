@@ -31,7 +31,7 @@ class TestSwitch(CommandTestCase):
 
     def test_switch_ports(self):
         switch = self.factory.new_brick("switch", "sw")
-        switch.set({"ports": 8})
+        switch.update_config({"ports": 8})
         self.assertEqual(switch.socks[0].get_free_ports(), 8)
 
 

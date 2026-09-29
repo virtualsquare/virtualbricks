@@ -479,22 +479,22 @@ class Netemu(Wire):
     def init_markov(self):
         self.markov_manager = MarkovConfig(self.config)
 
-    def set(self, attrs):
+    def update_config(self, changes):
         self._set(
-            attrs,
+            changes,
             "buffer_size_symmetric",
             "buffer_size",
             "buffer_size_right_to_left",
         )
-        self._set(attrs, "delay_symmetric", "delay", "delay_right_to_left")
+        self._set(changes, "delay_symmetric", "delay", "delay_right_to_left")
         self._set(
-            attrs,
+            changes,
             "bandwidth_symmetric",
             "bandwidth",
             "bandwidth_right_to_left",
         )
-        self._set(attrs, "loss_symmetric", "loss", "loss_right_to_left")
-        Wire.set(self, attrs)
+        self._set(changes, "loss_symmetric", "loss", "loss_right_to_left")
+        Wire.update_config(self, changes)
         # the events belong to the brick, so every state has the same ones
         for name in BRICK_KEYS:
             value = getattr(self.config, name)

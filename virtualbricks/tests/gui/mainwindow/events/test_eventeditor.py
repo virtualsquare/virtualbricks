@@ -71,7 +71,7 @@ class EditorTestCase(GuiTestCase):
         self.event = self.factory.new_event("start-lab")
 
     def edit(self, delay=5, *actions):
-        self.event.set({"delay": delay, "actions": list(actions)})
+        self.event.update_config({"delay": delay, "actions": list(actions)})
         editor = EventEditor(Draft(self.event))
         self.addCleanup(editor.panel.destroy)
         return editor

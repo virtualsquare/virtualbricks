@@ -37,7 +37,7 @@ class TestTheSwitchPanel(GuiTestCase):
                 "tap" if name == "tap0" else "wire", name
             )
             brick.plugs[0].connect(self.switch.socks[0])
-        self.switch.set({"fast_spanning_tree": True})
+        self.switch.update_config({"fast_spanning_tree": True})
         self.panel = SwitchPanel(SwitchDraft(self.switch))
         self.addCleanup(self.panel.widget.destroy)
 

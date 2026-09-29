@@ -40,7 +40,7 @@ class TestImages(ConsoleTestCase):
             ),
             ["deb"],
         )
-        self.vm.set({"hda_image": "deb"})
+        self.vm.update_config({"hda_image": "deb"})
         self.assertEqual(
             self.run_line("image list"),
             [
@@ -78,7 +78,7 @@ class TestImages(ConsoleTestCase):
 
     def test_change_and_delete(self):
         self.run_line(f"image add deb {self.path}")
-        self.vm.set({"hda_image": "deb"})
+        self.vm.update_config({"hda_image": "deb"})
         self.assertEqual(self.run_line("image set deb description=Other"), [])
         image = self.factory.get_image_by_name("deb")
         self.assertEqual(image.get_description(), "Other")

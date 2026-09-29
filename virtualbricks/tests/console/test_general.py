@@ -115,7 +115,7 @@ class TestStatusAndQuit(ConsoleTestCase):
         self.running("switch", "sw1", 41822)
         self.factory.new_brick("tap", "tap1")
         event = self.factory.new_event("boot")
-        event.set({"delay": 10, "actions": [StopAction("sw1")]})
+        event.update_config({"delay": 10, "actions": [StopAction("sw1")]})
         event.poweron()
         self.clock().advance(3)
         self.assertEqual(

@@ -79,7 +79,7 @@ class TestVirtualMachine(BrickTestCase):
         self.assertEqual(vm.config.hda_image, "deb")
         self.assertIs(disk.image, image)
         self.assertEqual(changes, [(vm, image)])
-        vm.set({"hda_private": True})
+        vm.update_config({"hda_private": True})
         self.assertTrue(disk.is_cow())
         self.assertFalse(disk.readonly())
         vm.set_image("hda", None)
@@ -158,7 +158,7 @@ class TestRunning(CommandTestCase):
 
     def test_update_usb_devices(self):
         vm = self.factory.new_brick("qemu", "vm")
-        vm.set({"usb_devices": [UsbDevice("1d6b:0002", "hub")]})
+        vm.update_config({"usb_devices": [UsbDevice("1d6b:0002", "hub")]})
         sent = []
         vm.send = sent.append
         vm.update_usb_devices(
@@ -248,7 +248,7 @@ class TestLacks(BrickTestCase):
             self.assertEqual(self.lacking(target), {}, target)
 
     def test_a_machine_type_of_ubuntu(self):
-        self.vm.set({"machine_type": "pc-i440fx-jammy"})
+        self.vm.update_config({"machine_type": "pc-i440fx-jammy"})
         self.assertEqual(self.lacking("ubuntu-22.04"), {})
         self.assertEqual(
             self.lacking("debian-13"),
@@ -259,7 +259,7 @@ class TestLacks(BrickTestCase):
         )
 
     def test_a_sound_card_of_8_2(self):
-        self.vm.set({"sound_card": "virtio-sound-pci"})
+        self.vm.update_config({"sound_card": "virtio-sound-pci"})
         self.assertEqual(
             self.lacking("ubuntu-22.04"),
             {
@@ -270,7 +270,7 @@ class TestLacks(BrickTestCase):
         for target in ("ubuntu-24.04", "debian-13", "debian-testing"):
             self.assertEqual(self.lacking(target), {}, target)
         # the PC speaker is the machine's
-        self.vm.set({"sound_card": "pcspk"})
+        self.vm.update_config({"sound_card": "pcspk"})
         self.assertEqual(self.lacking("ubuntu-22.04"), {})
         # a driver of the settings, taken on trust by 6.2
         self.assertEqual(self.lacking("ubuntu-22.04", driver="nope"), {})
@@ -312,7 +312,7 @@ class TestLacks(BrickTestCase):
 
     def test_acpi_off(self):
         # every target turns it off, on the pc machine
-        self.vm.set({"acpi": False})
+        self.vm.update_config({"acpi": False})
         for target in TARGETS:
             self.assertEqual(self.lacking(target), {}, target)
         found = lacks(
@@ -329,7 +329,7 @@ class TestLacks(BrickTestCase):
         self.assertEqual(found, [])
 
     def test_the_command_says_the_same(self):
-        self.vm.set(
+        self.vm.update_config(
             {
                 "machine_type": "pc-i440fx-jammy",
                 "cpu_model": "Zen9",
@@ -379,7 +379,7 @@ class TestTheDraft(DraftTestCase):
 
     def test_its_lists_are_its_own(self):
         device = UsbDevice("046d:c52b", "Logitech")
-        self.vm.set({"usb_devices": [device]})
+        self.vm.update_config({"usb_devices": [device]})
         draft = VirtualMachineDraft(self.vm)
         draft.settings.usb_devices.append(UsbDevice("0bda:8153", ""))
         self.assertEqual(self.vm.config.usb_devices, [device])
@@ -573,7 +573,7 @@ class TestApply(DraftTestCase):
 
     def test_the_images(self):
         image = self.factory.new_disk_image("deb", "/i/deb.qcow2")
-        self.vm.set({"hdb_image": "gone"})
+        self.vm.update_config({"hdb_image": "gone"})
         images = []
         self.vm.image_changed.connect(images.append)
         draft = VirtualMachineDraft(self.vm)
@@ -622,7 +622,7 @@ class TestTheDraftOfAnImage(BrickTestCase):
 
     def test_apply(self):
         vm = self.factory.new_brick("qemu", "vm")
-        vm.set({"hda_image": "frr"})
+        vm.update_config({"hda_image": "frr"})
         self.draft.set("name", "frr debian")
         self.draft.set("description", "FRR on Debian.")
         apply(self.draft)

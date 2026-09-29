@@ -229,7 +229,7 @@ class ImagesTestCase(BrickTestCase):
 
     def vm(self, name, device="hda", private=True, image=None):
         vm = self.factory.new_brick("qemu", name)
-        vm.set(
+        vm.update_config(
             {
                 f"{device}_image": (image or self.image).get_name(),
                 f"{device}_private": private,

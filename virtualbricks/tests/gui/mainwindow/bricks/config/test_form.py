@@ -275,7 +275,7 @@ class TestTheWidgets(FormTestCase):
         for name in ("vm1", "vm2"):
             vm = self.factory.new_brick("qemu", name)
             vm.add_plug(self.switch.socks[0])
-        self.switch.set({"ports": 1})
+        self.switch.update_config({"ports": 1})
         draft = SwitchDraft(self.switch)
         made = self.make(draft)
         made.section("Ports")

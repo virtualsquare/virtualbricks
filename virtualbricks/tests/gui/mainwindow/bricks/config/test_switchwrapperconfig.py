@@ -31,7 +31,7 @@ class TestTheSwitchWrapperPanel(GuiTestCase):
     def test_its_folder(self):
         untranslated(self)
         wrapper = self.factory.new_brick("switchwrapper", "sww")
-        wrapper.set({"socket_path": "/run/vde/sw"})
+        wrapper.update_config({"socket_path": "/run/vde/sw"})
         panel = new_panel(wrapper)
         self.addCleanup(panel.widget.destroy)
         self.assertIsInstance(panel, SwitchWrapperPanel)

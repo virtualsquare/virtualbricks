@@ -31,7 +31,9 @@ class TestTheMachineSection(MachinePanelTestCase):
             "qemu_programs",
             lambda folder: ["qemu-system-i386", "qemu-system-x86_64"],
         )
-        self.vm.set({"machine_type": "pc-i440fx-jammy", "cpu_model": "max"})
+        self.vm.update_config(
+            {"machine_type": "pc-i440fx-jammy", "cpu_model": "max"}
+        )
 
     def test_the_programs(self):
         program = self.panel.rows["qemu_program"].control

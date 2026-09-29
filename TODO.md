@@ -71,10 +71,15 @@
   in place of the `cbset_<name>` methods (10 §13, 11 §11)
   - the switch's ports, hub mode and FSTP, all of Netemu, a machine's
     USB devices
+  - short of that, name them for what they are: `on_<name>_changed`, or
+    the like; `draft.py` looks them up by name too
 - [ ] Keep notes of your own on a brick: a key, shown in its panel and
   above its table (10 §13, 11 §11)
-- [ ] Check every value in `brick.set()` before assigning any, for the
-  console too (11 §11)
+- [ ] Check every value in `brick.update_config()` before assigning any,
+  for the console too (11 §11)
+- [ ] Change one setting of a brick without a mapping of one:
+  `brick.update_config({setting: value})` in the brick menu and in New
+  Event
 - [ ] Offer HDA sound: a controller and its codec together, which no
   single entry of the sound cards can start (11 §11)
 - [ ] Show the command line of a machine as it would start, in the

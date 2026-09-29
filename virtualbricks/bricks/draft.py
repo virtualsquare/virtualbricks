@@ -24,10 +24,10 @@ A panel works on a draft, never on the brick. The draft holds a copy of the
 brick's configuration, and each value set in it is checked by the kind of
 its field, as in the brick. A value the kind refuses is kept aside, as it was
 typed, with the reason: a problem. ``apply()`` gives the brick the settings
-that changed in the draft, in one ``set()``: a running brick takes at once
-those it can, through its ``cbset_`` methods, and says it changed once. An
-object without a record of settings, as a disk image, has a draft that
-makes one in ``read()`` and gives the changes back in ``give()``.
+that changed in the draft, in one ``update_config()``: a running brick takes
+at once those it can, through its ``cbset_`` methods, and says it changed
+once. An object without a record of settings, as a disk image, has a draft
+that makes one in ``read()`` and gives the changes back in ``give()``.
 
 The links of a draft are the sockets that the plugs of the brick join, None
 for a plug in nothing; ``sockets()`` are those a plug can join. ``apply()``
@@ -96,9 +96,9 @@ class Draft:
         return self.brick.config
 
     def give(self, changes: dict[str, object]) -> None:
-        """Give the brick the settings that changed, in one set()."""
+        """Give the brick the settings that changed, in one update_config()."""
 
-        self.brick.set(changes)
+        self.brick.update_config(changes)
 
     def get(self, name: str) -> object:
         """The value of a setting, as it was typed if its kind refused it."""
@@ -230,8 +230,9 @@ class Draft:
 
 def apply(draft: Draft) -> None:
     """
-    Give the brick the settings changed in draft, in one set(), after its
-    plugs moved; it says it changed once. A draft with errors is refused.
+    Give the brick the settings changed in draft, in one update_config(),
+    after its plugs moved; it says it changed once. A draft with errors is
+    refused.
     """
 
     errors = draft.errors()

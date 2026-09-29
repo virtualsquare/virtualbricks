@@ -28,7 +28,7 @@ class TestTheDisksSection(MachinePanelTestCase):
     def prepare(self):
         self.manager.current = OpenProject(self.folder("lab"), None)
         self.image = self.factory.new_disk_image("deb", "/i/deb.qcow2")
-        self.vm.set({"hda_image": "deb", "hda_private": True})
+        self.vm.update_config({"hda_image": "deb", "hda_private": True})
 
     def test_a_change_goes_to_the_draft(self):
         section = self.panel.disks
@@ -86,7 +86,7 @@ class TestTheCdromSection(MachinePanelTestCase):
         self.assertEqual(self.panel.draft.get("boot_order"), "d")
 
     def test_a_boot_order_of_its_own(self):
-        self.vm.set({"boot_order": "cdn"})
+        self.vm.update_config({"boot_order": "cdn"})
         panel = self.panel.__class__(self.panel.draft.__class__(self.vm))
         self.addCleanup(panel.widget.destroy)
         boot = panel.rows["boot_order"].control

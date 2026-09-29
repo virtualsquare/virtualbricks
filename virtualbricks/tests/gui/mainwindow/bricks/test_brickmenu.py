@@ -483,7 +483,7 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
 
     def test_a_missing_event(self):
         # deleted, the brick still names it
-        self.sw.set({"on_stop": "gone"})
+        self.sw.update_config({"on_stop": "gone"})
         submenu = self.submenu("When It Stops")
         self.assertEqual(
             content(submenu),
@@ -515,7 +515,7 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
 
     def test_the_choice_follows_the_brick(self):
         actions = BrickActions(self.gui, self.sw)
-        self.sw.set({"on_start": "boot"})
+        self.sw.update_config({"on_start": "boot"})
         actions.update()
         self.assertEqual(
             actions.get_action_state("when-starts").unpack(), "boot"
@@ -523,7 +523,7 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
 
     def test_a_radio_item_each(self):
         # as GTK shows them: the one chosen, checked
-        self.sw.set({"on_start": "boot"})
+        self.sw.update_config({"on_start": "boot"})
         result = Gtk.Menu.new_from_model(
             menu(self.sw, self.factory.bricks, self.events())
         )

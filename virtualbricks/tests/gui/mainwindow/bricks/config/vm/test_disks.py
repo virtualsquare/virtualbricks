@@ -46,7 +46,7 @@ class DisksTestCase(GuiTestCase):
         for image in (self.frr, self.pc):
             self.qemu_img.infos[image.get_path()] = INFO
         self.r1 = self.factory.new_brick("qemu", "r1")
-        self.r1.set(
+        self.r1.update_config(
             {
                 "hda_image": "frr",
                 "hda_private": True,
@@ -121,7 +121,7 @@ class TestTheRows(DisksTestCase):
         )
 
     def test_no_disk(self):
-        self.r1.set({"hda_image": "", "hdc_image": ""})
+        self.r1.update_config({"hda_image": "", "hdc_image": ""})
         self.section = self.make()
         self.assertEqual(self.devices(), [])
         self.assertEqual(len(self.add_items()), 7)

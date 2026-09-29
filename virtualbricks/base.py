@@ -83,8 +83,15 @@ class Base:
                 % {"config": self.name, "option": name}
             )
 
-    def set(self, attrs):
-        for name, value in attrs.items():
+    def update_config(self, changes):
+        """
+        Set the settings in changes, a mapping of names to values: KeyError
+        for a name the config doesn't have. Each value that changes goes to
+        the ``cbset_<name>`` method of the brick, if it has one, and the
+        brick says it changed, once.
+        """
+
+        for name, value in changes.items():
             self._check_option(name)
             if value != getattr(self.config, name):
                 logger.info(attribute_set, attr=name, brick=self, value=value)
@@ -93,10 +100,6 @@ class Base:
                 if setter:
                     setter(value)
         self.notify_changed()
-
-    def get(self, name):
-        self._check_option(name)
-        return getattr(self.config, name)
 
     def rename(self, name):
         return self.factory.rename(self, name)

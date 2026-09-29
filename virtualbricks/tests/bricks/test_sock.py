@@ -56,11 +56,11 @@ class TestSock(BrickTestCase):
     def test_free_ports(self):
         sock = self.switch.socks[0]
         self.assertEqual(sock.get_free_ports(), 32)
-        self.switch.set({"ports": 4})
+        self.switch.update_config({"ports": 4})
         self.assertEqual(sock.get_free_ports(), 4)
 
     def test_free_ports_of_the_plugs(self):
-        self.switch.set({"ports": 4})
+        self.switch.update_config({"ports": 4})
         sock = self.switch.socks[0]
         taps = []
         for name in ("t1", "t2", "t3"):

@@ -260,7 +260,7 @@ class BrickActions(Gio.SimpleActionGroup):
             brickinfo.connect(self.brick, other)
 
     def on_event_chosen(self, action, value, setting) -> None:
-        self.brick.set({setting: value.get_string()})
+        self.brick.update_config({setting: value.get_string()})
         action.set_state(value)
 
     def resume(self) -> None:

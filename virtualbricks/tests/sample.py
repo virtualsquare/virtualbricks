@@ -100,15 +100,15 @@ def build(factory: Any, folder: str, root: bool | None = None) -> None:
     if root is None:
         root = is_root()
     event = factory.new_event("configure")
-    event.set({"actions": [ConsoleAction("brick set sw2 ports=8")]})
+    event.update_config({"actions": [ConsoleAction("brick set sw2 ports=8")]})
     sw1 = factory.new_brick("switch", "sw1")
-    sw1.set({"fast_spanning_tree": True, "on_start": "configure"})
+    sw1.update_config({"fast_spanning_tree": True, "on_start": "configure"})
     sw2 = factory.new_brick("switch", "sw2")
     sw3 = factory.new_brick("switch", "sw3")
     factory.new_disk_image("deb", _image(folder, "deb", "qcow2"))
     factory.new_disk_image("raw", _image(folder, "raw", "raw"))
     vm = factory.new_brick("qemu", "vm1")
-    vm.set(
+    vm.update_config(
         {
             "qemu_program": "qemu-system-x86_64",
             "headless": True,
@@ -133,18 +133,18 @@ def build(factory: Any, folder: str, root: bool | None = None) -> None:
     wan.plugs[0].connect(sw1.socks[0])
     wan.plugs[1].connect(sw2.socks[0])
     server = factory.new_brick("tunnellisten", "tl0")
-    server.set({"password": "secret"})
+    server.update_config({"password": "secret"})
     server.connect(sw2.socks[0])
     client = factory.new_brick("tunnelconnect", "tc0")
-    client.set({"password": "secret", "server_host": "127.0.0.1"})
+    client.update_config({"password": "secret", "server_host": "127.0.0.1"})
     client.connect(sw3.socks[0])
     wrapper = factory.new_brick("switchwrapper", "wr0")
-    wrapper.set({"socket_path": sw1.path()})
+    wrapper.update_config({"socket_path": sw1.path()})
     factory.new_brick("router", "r0")
     if root:
         factory.new_brick("tap", "tap0").connect(sw2.socks[0])
         capture = factory.new_brick("capture", "cap0")
-        capture.set({"interface": "lo"})
+        capture.update_config({"interface": "lo"})
         capture.connect(sw3.socks[0])
 
 

@@ -91,7 +91,7 @@ class TestTheSoundCards(MachinePanelTestCase):
 class TestTheUsbDevices(MachinePanelTestCase):
 
     def prepare(self):
-        self.vm.set(
+        self.vm.update_config(
             {
                 "use_usb": True,
                 "usb_devices": [UsbDevice("0bda:8153", "Realtek")],

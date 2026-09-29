@@ -36,7 +36,9 @@ class EventsTestCase(ConsoleTestCase):
 
     def event(self, name, *actions, delay=0):
         event = self.factory.new_event(name)
-        event.set({"delay": delay, "actions": [write(a) for a in actions]})
+        event.update_config(
+            {"delay": delay, "actions": [write(a) for a in actions]}
+        )
         return event
 
 
@@ -71,7 +73,7 @@ class TestMakeAndShow(EventsTestCase):
             Action(Kind.SHELL, "logger up"),
             delay=5,
         )
-        self.sw1.set({"on_stop": "boot"})
+        self.sw1.update_config({"on_stop": "boot"})
         self.assertEqual(
             self.run_line("event show boot"),
             [
@@ -206,7 +208,7 @@ class TestNames(EventsTestCase):
 
     def test_rename(self):
         self.event("boot")
-        self.sw1.set({"on_start": "boot"})
+        self.sw1.update_config({"on_start": "boot"})
         self.assertEqual(self.run_line("event rename boot up"), [])
         self.assertEqual(self.sw1.config.on_start, "up")
         self.assertEqual(

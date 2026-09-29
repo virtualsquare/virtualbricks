@@ -246,7 +246,7 @@ class BrickFactory:
         ]
         for disk in disks:
             # through the machine, which tells that it changed
-            disk.vm.set({f"{disk.device}_image": ""})
+            disk.vm.update_config({f"{disk.device}_image": ""})
         disk_image.changed.disconnect(self.image_changed.notify)
         del self._disk_images[disk_image.get_name()]
         self.image_removed.notify(disk_image)
@@ -315,7 +315,7 @@ class BrickFactory:
     def dup_brick(self, brick):
         name = self.next_name("copy_of_" + brick.name)
         new_brick = self.new_brick(brick.get_type(), name)
-        new_brick.set(copy.deepcopy(field_values(brick.config)))
+        new_brick.update_config(copy.deepcopy(field_values(brick.config)))
 
         for p in brick.plugs:
             if p.sock is not None:

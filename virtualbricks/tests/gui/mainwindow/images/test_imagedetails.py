@@ -80,7 +80,7 @@ class DetailsTestCase(GuiTestCase):
 
     def vm(self, name, private=True, device="hda"):
         vm = self.factory.new_brick("qemu", name)
-        vm.set(
+        vm.update_config(
             {
                 f"{device}_image": self.frr.get_name(),
                 f"{device}_private": private,

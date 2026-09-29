@@ -370,7 +370,7 @@ class Brick(base.Base):
         attrs = {}
         for name, value in (a.split("=", 1) for a in attrlist):
             attrs[name] = parse_value(self.config, name, value)
-        self.set(attrs)
+        self.update_config(attrs)
 
     def config_table(self):
         """Return the configuration as saved in the project file."""

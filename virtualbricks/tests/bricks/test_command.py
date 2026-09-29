@@ -146,7 +146,7 @@ class LinesTestCase(BrickTestCase):
     def brick(self, kind, name, *socks, **values):
         brick = self.factory.new_brick(kind, name)
         if values:
-            brick.set(values)
+            brick.update_config(values)
         for plug, sock in zip(brick.plugs, socks):
             plug.connect(sock.socks[0])
         return brick
@@ -333,7 +333,7 @@ class TestNetemu(LinesTestCase):
         )
 
     def test_vde_netemu(self):
-        self.netemu.set(
+        self.netemu.update_config(
             {
                 "bandwidth_symmetric": False,
                 "bandwidth_right_to_left": 1000,
@@ -430,7 +430,7 @@ class TestMachine(LinesTestCase):
 
     def machine(self, name="vm2"):
         vm = self.brick("qemu", name)
-        vm.set(
+        vm.update_config(
             {
                 "qemu_program": "qemu-system-x86_64",
                 "use_kvm": True,
@@ -577,7 +577,7 @@ class TestMachine(LinesTestCase):
         self.assertEqual(
             argv[5:9], ["-hda", "/lab/vm_hda.cow", "-hdc", "/images/c.qcow2"]
         )
-        vm.set({"virtio_disks": True})
+        vm.update_config({"virtio_disks": True})
         argv, _ = self.line(vm, prepared_qemu(disks=disks))
         self.assertEqual(
             argv[5:9],
@@ -611,7 +611,7 @@ class TestMachine(LinesTestCase):
             warnings,
             ["vm: QEMU 10.0.13 has no KVM (use_kvm): the machine is emulated"],
         )
-        vm.set({"use_kvm_shadow_memory": False})
+        vm.update_config({"use_kvm_shadow_memory": False})
         argv, _ = self.line(vm, prepared_qemu())
         self.assertEqual(argv[1:5], ["-accel", "kvm", "-accel", "tcg"])
 
@@ -680,7 +680,7 @@ class TestMachine(LinesTestCase):
                 " machine has none"
             ],
         )
-        vm.set({"sound_card": "ac97"})
+        vm.update_config({"sound_card": "ac97"})
         argv, warnings = self.line(vm, prepared_qemu(driver="coreaudio"))
         self.assertNotIn("-audiodev", argv)
         self.assertEqual(
@@ -732,7 +732,7 @@ class TestPrepare(CommandTestCase):
 
     def test_tunnel_key(self):
         listen = self.factory.new_brick("tunnellisten", "tl")
-        listen.set({"password": "secret"})
+        listen.update_config({"password": "secret"})
         self.successResultOf(listen.prepare())
         path = os.path.join(self.factory.runtime_dir, "tl.key")
         self.assertEqual(listen.key_path(), path)
@@ -751,7 +751,7 @@ class TestPrepare(CommandTestCase):
         set_setting("audio_driver", "pipewire")
         self.factory.new_disk_image("debian", "/images/debian.qcow2")
         vm = self.factory.new_brick("qemu", "vm")
-        vm.set({"hdb_image": "debian", "machine_type": "q35"})
+        vm.update_config({"hdb_image": "debian", "machine_type": "q35"})
         prepared = self.successResultOf(vm.prepare())
         self.assertEqual(
             prepared.qemu.path, os.path.join(self.bin, "qemu-system-i386")
@@ -764,7 +764,7 @@ class TestPrepare(CommandTestCase):
 
     def test_unknown_machine(self):
         vm = self.factory.new_brick("qemu", "vm")
-        vm.set({"machine_type": "pc-q35-11.1"})
+        vm.update_config({"machine_type": "pc-q35-11.1"})
         info = recorded_info("debian-13")
         self.run.answers[("-machine", f"{info.default_machine},help")] = (
             self.run.answers[("-machine", "pc,help")]
@@ -775,13 +775,13 @@ class TestPrepare(CommandTestCase):
 
     def test_missing_program(self):
         vm = self.factory.new_brick("qemu", "vm")
-        vm.set({"qemu_program": "qemu-system-arm"})
+        vm.update_config({"qemu_program": "qemu-system-arm"})
         failure = self.failureResultOf(vm.prepare())
         failure.trap(ProgramError)
         self.assertEqual(str(failure.value), "qemu-system-arm isn't installed")
         os.remove(os.path.join(self.bin, "qemu-system-i386"))
         self.patch(os, "environ", dict(os.environ, PATH=self.bin))
-        vm.set({"qemu_program": "qemu-system-i386"})
+        vm.update_config({"qemu_program": "qemu-system-i386"})
         failure = self.failureResultOf(vm.prepare())
         self.assertEqual(
             str(failure.value),

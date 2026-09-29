@@ -171,7 +171,7 @@ class TestListAndShow(BricksTestCase):
         sw1 = self.brick("switch", "sw1")
         vm = self.running(self.brick("vm", "vm1"))
         vm.add_plug(sw1.socks[0], "52:54:00:00:00:01", "e1000")
-        vm.set({"use_vnc": True, "headless": True})
+        vm.update_config({"use_vnc": True, "headless": True})
         lines = self.run_line("brick show vm1")
         self.assertEqual(
             lines[:2],
@@ -269,7 +269,7 @@ class TestSet(BricksTestCase):
 
     def test_unset(self):
         vm = self.brick("vm", "vm1")
-        vm.set({"memory": 512, "cpus": 4})
+        vm.update_config({"memory": 512, "cpus": 4})
         self.assertEqual(self.run_line("brick unset vm1 memory cpus"), [])
         self.assertEqual((vm.config.memory, vm.config.cpus), (64, 1))
         self.assertEqual(
@@ -614,7 +614,7 @@ class TestNames(BricksTestCase):
 
     def test_duplicate(self):
         sw = self.brick("switch", "sw1")
-        sw.set({"ports": 4})
+        sw.update_config({"ports": 4})
         self.assertEqual(self.run_line("brick duplicate sw1"), ["copy_of_sw1"])
         self.assertEqual(self.run_line("brick duplicate sw1 sw2"), ["sw2"])
         self.assertEqual(self.factory.get_brick_by_name("sw2").config.ports, 4)

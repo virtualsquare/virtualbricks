@@ -104,7 +104,7 @@ class TestEvent(BrickTestCase):
         Recording.status = 0
 
     def configure(self, delay=3, *actions):
-        self.event.set({"delay": delay, "actions": list(actions)})
+        self.event.update_config({"delay": delay, "actions": list(actions)})
         del self.changes[:]
 
     def test_type(self):
@@ -119,12 +119,12 @@ class TestEvent(BrickTestCase):
     def test_configured(self):
         action = StartAction("a")
         self.assertFalse(self.event.configured())
-        self.event.set({"delay": 2})
+        self.event.update_config({"delay": 2})
         self.assertFalse(self.event.configured())
         # at once
-        self.event.set({"delay": 0, "actions": [action]})
+        self.event.update_config({"delay": 0, "actions": [action]})
         self.assertTrue(self.event.configured())
-        self.event.set({"delay": 2})
+        self.event.update_config({"delay": 2})
         self.assertTrue(self.event.configured())
 
     def test_state(self):
@@ -142,7 +142,7 @@ class TestEvent(BrickTestCase):
 
     def test_poweron_needs_a_configuration(self):
         for delay, actions in ((0, []), (2, [])):
-            self.event.set({"delay": delay, "actions": actions})
+            self.event.update_config({"delay": delay, "actions": actions})
             self.assertRaises(errors.BadConfigError, self.event.poweron)
         self.assertEqual(self.clock.getDelayedCalls(), [])
 
@@ -266,11 +266,11 @@ class TestEvent(BrickTestCase):
         self.assertRaises(errors.BadConfigError, self.event.toggle)
 
     def test_set_notifies(self):
-        self.event.set({"delay": 2})
+        self.event.update_config({"delay": 2})
         self.assertEqual(self.changes, [self.event])
 
     def test_set_rejects_unknown_options(self):
-        self.assertRaises(KeyError, self.event.set, {"speed": 1})
+        self.assertRaises(KeyError, self.event.update_config, {"speed": 1})
 
     def test_rename(self):
         self.event.rename("start")
@@ -283,7 +283,7 @@ class TestEvent(BrickTestCase):
         self.assertFalse(is_event(self.factory.new_brick("switch", "sw")))
 
     def test_dup_event(self):
-        self.event.set({"delay": 2, "actions": [StartAction("a")]})
+        self.event.update_config({"delay": 2, "actions": [StartAction("a")]})
         copy = self.factory.dup_event(self.event)
         self.assertEqual(copy.config, self.event.config)
         copy.config.actions.append(StartAction("b"))

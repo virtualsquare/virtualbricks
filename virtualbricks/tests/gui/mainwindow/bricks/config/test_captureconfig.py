@@ -64,7 +64,7 @@ class TestTheCapturePanel(GuiTestCase):
         self.assertFalse(panel.form.rows["interface"].problem.get_visible())
 
     def test_an_interface_gone(self):
-        self.capture.set({"interface": "eth0"})
+        self.capture.update_config({"interface": "eth0"})
         interface = self.make().form.rows["interface"].control
         self.assertEqual(
             [tuple(row) for row in interface.get_model()][-1],

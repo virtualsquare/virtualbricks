@@ -226,7 +226,7 @@ class TestItsQemu(MachinePanelTestCase):
         )
 
     def test_a_program_not_installed(self):
-        self.vm.set({"qemu_program": "qemu-system-aarch64"})
+        self.vm.update_config({"qemu_program": "qemu-system-aarch64"})
         panel = VirtualMachinePanel(VirtualMachineDraft(self.vm))
         self.addCleanup(panel.widget.destroy)
         self.assertIsNone(panel.draft.qemu)
@@ -243,7 +243,7 @@ class TestWhatItLacks(MachinePanelTestCase):
     target = "ubuntu-22.04"
 
     def prepare(self):
-        self.vm.set(
+        self.vm.update_config(
             {
                 "machine_type": "pc-i440fx-jammy",
                 "sound_card": "virtio-sound-pci",

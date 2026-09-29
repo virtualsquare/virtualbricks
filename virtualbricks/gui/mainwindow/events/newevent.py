@@ -152,6 +152,6 @@ class NewEventDialog:
         # a number typed and not yet taken
         self.delay.update()
         event = self.factory.new_event(self.name_entry.get_text())
-        event.set({"delay": self.delay.get_value_as_int()})
+        event.update_config({"delay": self.delay.get_value_as_int()})
         dialog.destroy()
         self.gui.curtain_up(event)

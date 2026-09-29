@@ -41,7 +41,7 @@ class TestCapture(CommandTestCase):
 
     def test_capture(self):
         capture = self.factory.new_brick("capture", "cap")
-        capture.set({"interface": "eth0"})
+        capture.update_config({"interface": "eth0"})
         self.assertFalse(capture.configured())
         sw = self.factory.new_brick("switch", "sw")
         capture.plugs[0].connect(sw.socks[0])

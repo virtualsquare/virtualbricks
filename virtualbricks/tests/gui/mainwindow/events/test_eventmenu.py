@@ -83,7 +83,7 @@ class EventMenuTestCase(GuiTestCase):
     def event(self, name, delay=5, *commands):
         event = self.factory.new_event(name)
         self.patch(event, "logger", FakeLogger())
-        event.set(
+        event.update_config(
             {
                 "delay": delay,
                 "actions": [
