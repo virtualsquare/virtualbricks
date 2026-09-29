@@ -1,0 +1,704 @@
+<title>GTK 4 Migration</title>
+<meta name="description" content="Virtualbricks on GTK 4: what the move takes, what each Debian and Ubuntu target ships and lacks, checked in containers, and a plan in two phases, first on GTK 3 and then the switch.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  .ref.open { color: var(--decide); background: var(--decide-soft); }
+
+  /* pages 14 to 18 */
+  .chip {
+    display: inline-block;
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.04em;
+    padding: 3px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    vertical-align: 1px;
+    color: var(--risk);
+    background: var(--risk-soft);
+  }
+  .prompt { color: var(--code-h); font-weight: 500; }
+  table.commands td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.commands td:last-child { color: var(--muted); font-size: 13.5px; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+  .note { font-size: 14px; color: var(--muted); }
+
+  /* page 18 */
+  .warn { color: var(--decide); }
+  table.matrix td:first-child { color: var(--ink); min-width: 13em; }
+  table.matrix td { font-variant-numeric: tabular-nums; }
+  table.matrix tr.key td { font-weight: 500; }
+  var { font-style: italic; }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 18 &middot; Design &middot; revision 1, proposal</div>
+    <h1>Virtualbricks on GTK 4</h1>
+    <p class="lede">The windows move from GTK 3 to GTK 4 on every Debian and Ubuntu that Virtualbricks supports, from GTK 4.6 in Ubuntu 22.04 to GTK 4.22 in Ubuntu 26.04 and Debian testing. First, the parts that GTK 3 can already write the GTK 4 way, merged one at a time with the program working. Then the switch itself, on one branch.</p>
+    <ul class="meta">
+      <li>branch <b>develop</b> at d7d452d</li>
+      <li>revision 1 &middot; 29 September 2026</li>
+      <li><span class="status">proposal</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your request of today: migrate the project to GTK 4, prepare a plan, and highlight the compatibility with the Debian and Ubuntu releases. The versions and the behaviour in <a href="#targets">&sect;3</a> to <a href="#checked">&sect;5</a> were checked today in podman containers of the six targets, with GTK 4, PyGObject and Twisted installed from each distribution. At your request, the page is committed on <code>develop</code> as a plan for later: nothing of it is implemented, and the eight questions, G1 to G8 in <a href="#decisions">&sect;11</a>, stay open until the work starts. The versions will need checking again then.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>Today</a></li>
+        <li><a href="#targets"><span>3</span>The targets</a></li>
+        <li><a href="#versions"><span>4</span>What each GTK 4 has</a></li>
+        <li><a href="#checked"><span>5</span>Checked in containers</a></li>
+        <li><a href="#code"><span>6</span>How the code changes</a></li>
+        <li><a href="#compat"><span>7</span>compat.py</a></li>
+        <li><a href="#tests"><span>8</span>The tests</a></li>
+        <li><a href="#packaging"><span>9</span>Packages, icon, desktop</a></li>
+        <li><a href="#plan"><span>10</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>11</span>Decisions</a></li>
+        <li><a href="#later"><span>12</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Why now</dt><dd>GTK 3 only gets fixes now. Twisted deprecated <code>gtk3reactor</code> in 23.8, so Virtualbricks already starts with a deprecation warning on Ubuntu 24.04 and Debian 13 and newer. GTK 3 is still packaged on all six targets (3.24.33 to 3.24.52), so nothing forces a date.</dd></div>
+          <div><dt>Targets</dt><dd>Every target has GTK 4: 4.6.9 in Ubuntu 22.04, 4.8.3 in Debian 12, 4.14.5 in Ubuntu 24.04, 4.18.6 in Debian 13, 4.22.4 in Ubuntu 26.04 and Debian testing. All 28 widgets and features that Virtualbricks needs build and show on all six (<a href="#checked">&sect;5</a>).</dd></div>
+          <div><dt>Lowest</dt><dd>GTK 4.6 with PyGObject 3.42, so Ubuntu 22.04 keeps working (<a class="ref open" href="#decisions">G1</a>). Only three things need an API newer than 4.6: the file chooser, opening a link and loading CSS. <code>gui/compat.py</code> asks GTK what it has and picks (<a href="#compat">&sect;7</a>).</dd></div>
+          <div><dt>The 4.10 line</dt><dd>GTK 4.10 deprecated the combo boxes, the tree views, <code>Gtk.Dialog</code>, the file choosers, the info bar and the style contexts. Their replacements in GTK 4.0 are used, except for the file chooser, whose replacement came in 4.10. Nothing deprecated in GTK 4.22 is used.</dd></div>
+          <div><dt>PyGObject</dt><dd>PyGObject 3.42, on 22.04 and Debian 12, can&rsquo;t hold GTK&rsquo;s expressions or render nodes. So there are no drop-downs with search, and no pictures of widgets in the tests. 3.48 and newer have both, and they warn when a deprecated function is called.</dd></div>
+          <div><dt>Reactor</dt><dd><code>gireactor</code>, with a <code>Gtk.Application</code> registered with the reactor (<a class="ref open" href="#decisions">G7</a>). This works with GTK 4 on Twisted 22.1 to 26.4.</dd></div>
+          <div><dt>Dialogs</dt><dd>A <code>Dialog</code> of our own on <code>Gtk.Window</code>, whose answer is a Deferred (<a class="ref open" href="#decisions">G3</a>). GTK 4 has no <code>run()</code>, so no window waits in a loop of its own.</dd></div>
+          <div><dt>Gone</dt><dd>The tray icon: GTK 4 has none (<a class="ref open" href="#decisions">G4</a>). Window positions, window types and the undecorated &ldquo;action in progress&rdquo; window go too.</dd></div>
+          <div><dt>Tests</dt><dd>GTK 4 has no <code>OffscreenWindow</code>, and Python can&rsquo;t make GTK 4 events. So the tests call the handlers with values and size widgets by hand. They run under Xvfb on 22.04, where the Broadway of GTK 4.6 crashes, and under Xvfb or Broadway elsewhere.</dd></div>
+          <div><dt>Plan</dt><dd>Phase A: four steps on GTK 3, each merged into <code>develop</code> with the program working. Phase B: the switch, seven steps on a branch <code>mg/gtk4</code>, merged once the GUI tests pass in a container of each target. Phase C comes later (<a href="#plan">&sect;10</a>, <a href="#later">&sect;12</a>).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>Today</h2>
+        <p>The windows are Python since the Glade conversion (<a href="01.2%20-%20glade-conversion-summary.html">page 01.2</a>): 64 modules in <code>virtualbricks/gui/</code>, 44 of which load GTK, plus <code>migrate/gui.py</code> and the start in <code>scripts/virtualbricks.py</code>, 16,462 lines in all. Their tests are 51 modules in <code>virtualbricks/tests/gui/</code>, with 839 of the 2,238 tests. Every module that loads GTK asks for <code>Gtk 3.0</code> itself.</p>
+        <p>Most of what they use is still in GTK 4 under the same name: boxes, grids, labels, buttons, entries, spin buttons, switches, notebooks, stacks, popovers, list boxes, text views, scrolled windows, the about dialog. What GTK 4 takes away, counted in the sources at d7d452d:</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>GTK 3</th><th>Where Virtualbricks uses it</th><th>GTK 4</th></tr></thead>
+          <tbody>
+            <tr><td><code>Box.pack_start()</code>, <code>pack_end()</code></td><td class="num">271 calls in 28 modules</td><td><code>append()</code>; the expand and fill arguments become <code>hexpand</code>, <code>vexpand</code> and alignment on the child, the padding its margins</td></tr>
+            <tr><td><code>add()</code> of a container, <code>show_all()</code>, <code>border_width</code>, <code>get_children()</code></td><td class="num">about 51 <code>add()</code> of a widget, <code>visible=True</code> 371 times, <code>get_children()</code> 23 times in 15 modules and 101 in 30 test modules</td><td><code>set_child()</code> or the parent&rsquo;s own <code>append()</code>; widgets are visible by default; margins; <code>get_first_child()</code> and <code>get_next_sibling()</code></td></tr>
+            <tr><td><code>get_style_context()</code>, <code>add_class()</code>, a CSS provider per widget</td><td class="num">82 in 24 modules; 5 providers</td><td><code>add_css_class()</code>; one provider for the display</td></tr>
+            <tr><td><code>Gtk.Menu</code>, <code>Gtk.MenuBar</code>, <code>Gtk.MenuItem</code>, <code>popup_at_pointer()</code></td><td class="num">28 in 9 modules</td><td><code>Gtk.PopoverMenu</code> and <code>Gtk.PopoverMenuBar</code> on a <code>Gio.Menu</code>. The menus of the tabs are already <code>Gio.Menu</code> models with actions, 58 uses.</td></tr>
+            <tr><td><code>Gtk.AccelGroup</code></td><td>6 shortcuts, <code>mainwindow/window.py</code></td><td>actions, with <code>set_accels_for_action()</code></td></tr>
+            <tr><td>Event signals: <code>button-press-event</code>, <code>key-press-event</code>, <code>motion-notify-event</code>, <code>scroll-event</code>, <code>size-allocate</code>, <code>delete-event</code>, <code>popup-menu</code></td><td class="num">26 connections in 9 modules; 52 key names</td><td>Controllers: <code>GestureClick</code>, <code>EventControllerKey</code>, <code>EventControllerMotion</code>, <code>EventControllerScroll</code>, <code>ShortcutController</code>; <code>close-request</code>. Nothing tells a widget it was resized; a subclass overrides <code>do_size_allocate()</code>.</td></tr>
+            <tr><td><code>Gtk.Dialog</code>, <code>run()</code></td><td class="num">7 dialogs; 5 nested loops in 3 modules</td><td><code>Gtk.Dialog</code> is deprecated in 4.10, and <code>run()</code> is gone in 4.0</td></tr>
+            <tr><td><code>Gtk.FileChooserButton</code></td><td class="num">5 in 4 modules</td><td>gone: a button, and a file dialog</td></tr>
+            <tr><td><code>Gtk.FileChooserDialog</code>, <code>FileChooserNative</code></td><td class="num">8 modules</td><td><code>Gtk.FileDialog</code>, from 4.10</td></tr>
+            <tr><td><code>Gtk.ComboBox</code>, <code>ComboBoxText</code></td><td class="num">13 in 6 modules</td><td><code>Gtk.DropDown</code> on a <code>Gtk.StringList</code></td></tr>
+            <tr><td><code>Gtk.RadioButton</code></td><td class="num">13 in 6 modules</td><td><code>Gtk.CheckButton</code> with <code>set_group()</code></td></tr>
+            <tr><td><code>Gtk.InfoBar</code></td><td>3 modules</td><td>deprecated in 4.10</td></tr>
+            <tr><td><code>Gtk.TreeView</code></td><td><code>migrate/gui.py</code></td><td>deprecated in 4.10: <code>Gtk.ColumnView</code></td></tr>
+            <tr><td>Drag and drop: <code>drag_source_set()</code>, <code>TargetEntry</code>, the <code>drag-*</code> signals</td><td><code>mainwindow/bricks/bricklist.py</code></td><td><code>Gtk.DragSource</code>, <code>Gtk.DropTarget</code></td></tr>
+            <tr><td>The <code>draw</code> signal; <code>Gdk.cairo_set_source_pixbuf()</code></td><td><code>topologyview.py</code>, <code>picture.py</code></td><td><code>set_draw_func()</code>; cairo&rsquo;s own images</td></tr>
+            <tr><td><code>Gdk.Window.set_cursor()</code></td><td>3 modules</td><td><code>set_cursor_from_name()</code></td></tr>
+            <tr><td><code>WindowPosition</code>, type hints, <code>skip_taskbar_hint</code>, <code>decorated=False</code></td><td class="num">10 in 9 modules; 5</td><td>gone</td></tr>
+            <tr><td><code>Gtk.StatusIcon</code></td><td><code>window.py</code>, the Settings window</td><td>gone, and nothing takes its place</td></tr>
+            <tr><td><code>GdkPixbuf</code> in widgets, <code>Gtk.IconSize</code>, <code>set_image()</code></td><td class="num">14 in 7 modules; 16 in 10; 8 in 7</td><td><code>Gdk.Texture</code>; <code>set_pixel_size()</code>; <code>set_icon_name()</code>, or a box as the child</td></tr>
+            <tr><td>A window icon from a pixbuf</td><td><code>window.py</code></td><td>an icon name, looked up in the icon theme</td></tr>
+            <tr><td><code>Gtk.OffscreenWindow</code></td><td>9 test modules</td><td>gone</td></tr>
+            <tr><td><code>Gdk.Event</code> made by a test</td><td class="num">41 in 10 test modules</td><td>GTK 4 events can&rsquo;t be made</td></tr>
+            <tr><td><code>Gtk.main_iteration()</code></td><td class="num">20 in 6 test modules</td><td><code>GLib.MainContext.default().iteration()</code></td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>GTK 3 and GTK 4 can&rsquo;t be loaded in the same process. So there&rsquo;s no period in which some windows are GTK 3 and others GTK 4: the program switches all at once. That&rsquo;s why the plan first moves, still on GTK 3, what GTK 3 can already write the GTK 4 way (<a href="#plan">&sect;10</a>).</p>
+      </section>
+
+      <section id="targets">
+        <h2><span class="num">&sect;3</span>The targets</h2>
+        <p>The six supported targets, with the versions each ships today, from the package archives in the containers of <a href="#checked">&sect;5</a>. Debian sid wasn&rsquo;t checked: it has testing&rsquo;s versions or newer.</p>
+        <div class="scroll">
+        <table class="wide matrix">
+          <thead><tr><th></th><th>Ubuntu 22.04</th><th>Debian 12</th><th>Ubuntu 24.04</th><th>Debian 13</th><th>Ubuntu 26.04</th><th>Debian testing</th></tr></thead>
+          <tbody>
+            <tr><td>GTK 3, today</td><td>3.24.33</td><td>3.24.38</td><td>3.24.41</td><td>3.24.49</td><td>3.24.52</td><td>3.24.52</td></tr>
+            <tr class="key"><td>GTK 4</td><td class="no">4.6.9</td><td class="warn">4.8.3</td><td class="yes">4.14.5</td><td class="yes">4.18.6</td><td class="yes">4.22.4</td><td class="yes">4.22.4</td></tr>
+            <tr class="key"><td>PyGObject</td><td class="no">3.42.1</td><td class="no">3.42.2</td><td class="yes">3.48.2</td><td class="yes">3.50.0</td><td class="yes">3.56.2</td><td class="yes">3.58.0</td></tr>
+            <tr><td>Twisted</td><td>22.1.0</td><td>22.4.0</td><td>24.3.0</td><td>24.11.0</td><td>25.5.0</td><td>26.4.0</td></tr>
+            <tr><td>Python</td><td>3.10.12</td><td>3.11.2</td><td>3.12.3</td><td>3.13.5</td><td>3.14.4</td><td>3.14.7</td></tr>
+            <tr><td>GLib</td><td>2.72.4</td><td>2.74.6</td><td>2.80.0</td><td>2.84.4</td><td>2.88.0</td><td>2.90.0</td></tr>
+            <tr><td>pycairo</td><td>1.20.1</td><td>1.20.1</td><td>1.25.1</td><td>1.27.0</td><td>1.27.0</td><td>1.29.1</td></tr>
+            <tr><td>libadwaita, not used</td><td>1.1.7</td><td>1.2.2</td><td>1.5.0</td><td>1.7.6</td><td>1.9.1</td><td>1.9.2</td></tr>
+            <tr><td><code>gtk3reactor</code> deprecated</td><td>no</td><td>no</td><td class="warn">yes</td><td class="warn">yes</td><td class="warn">yes</td><td class="warn">yes</td></tr>
+            <tr><td>Support, as published</td><td>standard support to April 2027</td><td>regular security support ended June 2026; LTS to June 2028</td><td>to 2029</td><td>stable since August 2025</td><td>to 2031</td><td>rolling</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>The package is <code>gir1.2-gtk-4.0</code> on all six, beside <code>python3-gi</code> and <code>python3-gi-cairo</code>. The tests&rsquo; Broadway is <code>gtk4-broadwayd</code>, in <code>libgtk-4-bin</code>.</p>
+        <p>The line that matters falls between Debian 12 and Ubuntu 24.04. GTK jumps from 4.8 to 4.14, and PyGObject from 3.42 to 3.48. The two older targets have everything that Virtualbricks needs from GTK 4.0 to 4.6. They lack the replacements that came with 4.10 and 4.12, and their PyGObject can&rsquo;t pass GTK&rsquo;s expressions and render nodes. Ubuntu 22.04 is the lowest in both, and its standard support ends in April 2027. Debian 12 is past its regular security support and in LTS until June 2028. Dropping the two would move the lowest GTK to 4.14 and make <code>compat.py</code> unnecessary (<a class="ref open" href="#decisions">G1</a>, option B).</p>
+        <p class="note">The support dates are the ones Canonical and Debian publish; they weren&rsquo;t checked today.</p>
+      </section>
+
+      <section id="versions">
+        <h2><span class="num">&sect;4</span>What each GTK 4 has</h2>
+        <p>For each API the migration touches: the version that added it, and the version that deprecated it, from the introspection data of GTK 4.22.4 (<code>Gtk-4.0.gir</code> of Debian testing&rsquo;s <code>libgtk-4-dev</code>). A deprecated API stays in GTK 4 until GTK 5, but PyGObject 3.48 and newer warn each time a deprecated function is called.</p>
+        <h3>Added</h3>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>API</th><th>Since</th><th>Targets</th><th>In Virtualbricks</th></tr></thead>
+          <tbody>
+            <tr><td><code>DropDown</code>, <code>StringList</code>, <code>ListView</code>, <code>ColumnView</code>, <code>SignalListItemFactory</code>, <code>CustomSorter</code></td><td>4.0</td><td class="yes">all six</td><td>combo boxes; the list of the migration window</td></tr>
+            <tr><td><code>PopoverMenu</code>, <code>PopoverMenuBar</code></td><td>4.0</td><td class="yes">all six</td><td>every menu</td></tr>
+            <tr><td><code>GestureClick</code>, <code>EventControllerKey</code>, <code>&hellip;Motion</code>, <code>&hellip;Scroll</code>, <code>ShortcutController</code></td><td>4.0</td><td class="yes">all six</td><td>every event</td></tr>
+            <tr><td><code>DragSource</code>, <code>DropTarget</code></td><td>4.0</td><td class="yes">all six</td><td>plugging a brick by dragging it</td></tr>
+            <tr><td><code>DrawingArea.set_draw_func()</code></td><td>4.0</td><td class="yes">all six</td><td>the topology</td></tr>
+            <tr><td><code>CheckButton.set_group()</code></td><td>4.0</td><td class="yes">all six</td><td>radio buttons</td></tr>
+            <tr><td><code>add_css_class()</code>, <code>StyleContext.add_provider_for_display()</code></td><td>4.0</td><td class="yes">all six</td><td>styles; the second isn&rsquo;t deprecated, unlike the rest of <code>StyleContext</code></td></tr>
+            <tr><td><code>set_cursor_from_name()</code>, <code>WidgetPaintable</code></td><td>4.0</td><td class="yes">all six</td><td>the hand and link cursors; the icon of a drag</td></tr>
+            <tr><td><code>Gdk.Texture.new_from_filename()</code>, <code>MenuButton.set_child()</code></td><td>4.6</td><td class="yes">all six</td><td>icons; the New Brick button</td></tr>
+            <tr><td><code>Inscription</code>, <code>Picture.set_content_fit()</code></td><td>4.8</td><td class="warn">not 22.04</td><td>not needed</td></tr>
+            <tr><td><code>FileDialog</code>, <code>AlertDialog</code>, <code>UriLauncher</code>, <code>FileLauncher</code></td><td>4.10</td><td class="no">24.04 and newer</td><td><code>compat.py</code>: the file chooser and links</td></tr>
+            <tr><td><code>CssProvider.load_from_string()</code>, <code>compute_point()</code>, <code>ListBox.remove_all()</code>, <code>ListView.scroll_to()</code>, <code>ColumnViewCell</code></td><td>4.12</td><td class="no">24.04 and newer</td><td><code>compat.py</code>: CSS; the rest is avoided</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>Deprecated</h3>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>In</th><th>What</th><th>In place of it</th></tr></thead>
+          <tbody>
+            <tr><td>4.10</td><td><code>ComboBox</code>, <code>ComboBoxText</code>, <code>TreeView</code> with its models and cell renderers, <code>Dialog</code>, <code>MessageDialog</code>, <code>FileChooserDialog</code>, <code>FileChooserNative</code>, <code>EntryCompletion</code>, <code>InfoBar</code>, <code>Statusbar</code>, <code>StyleContext</code> and <code>get_style_context()</code>, <code>Assistant</code>, <code>show_uri()</code>, <code>Widget.show()</code> and <code>hide()</code></td><td><code>DropDown</code>, <code>ColumnView</code>, our <code>Dialog</code>, <code>FileDialog</code>, <code>add_css_class()</code>, <code>UriLauncher</code>, <code>set_visible()</code></td></tr>
+            <tr><td>4.12</td><td><code>CssProvider.load_from_data()</code>, <code>translate_coordinates()</code>, <code>get_allocation()</code>, <code>Image.new_from_pixbuf()</code>, <code>Picture.new_for_pixbuf()</code></td><td><code>load_from_string()</code>, <code>compute_point()</code>, <code>get_width()</code>, textures</td></tr>
+            <tr><td>4.14</td><td><code>Window.present_with_time()</code></td><td><code>present()</code></td></tr>
+            <tr><td>4.18</td><td><code>ShortcutsWindow</code></td><td>not used</td></tr>
+            <tr><td>4.20</td><td><code>Gdk.cairo_set_source_pixbuf()</code>, <code>Gdk.Texture.new_for_pixbuf()</code>, <code>Gtk.ResponseType</code>, <code>DialogFlags</code></td><td>cairo&rsquo;s images; <code>new_from_filename()</code>; our own answers</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>The rule of the migration follows from the two tables: <strong>nothing deprecated in GTK 4.22, and nothing newer than 4.6 outside <code>compat.py</code></strong>. Where the only replacement of a deprecated API is newer than 4.6, <code>compat.py</code> uses the new one when GTK has it and the old one when it doesn&rsquo;t. That happens three times: the file chooser (4.10), opening a link (4.10) and loading CSS (4.12).</p>
+        <h3>PyGObject</h3>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th></th><th>3.42.1, Ubuntu 22.04</th><th>3.42.2, Debian 12</th><th>3.48 and newer</th></tr></thead>
+          <tbody>
+            <tr><td><code>Gtk.PropertyExpression</code>: search in a <code>DropDown</code>, sorting by a property</td><td class="no">a critical, then a crash</td><td class="no">TypeError</td><td class="yes">works</td></tr>
+            <tr><td>Render nodes: a picture of a widget, from <code>WidgetPaintable</code> and <code>Gtk.Snapshot</code></td><td class="no">TypeError, then a crash on exit</td><td class="no">TypeError</td><td class="yes">works</td></tr>
+            <tr><td><code>CssProvider.load_from_data()</code></td><td colspan="2">bytes only</td><td>bytes, or a string and its length; deprecated from GTK 4.12</td></tr>
+            <tr><td>A warning when a deprecated function is called</td><td colspan="2">none</td><td class="warn">DeprecationWarning, as for <code>get_style_context()</code>, <code>StyleContext.add_class()</code>, <code>FileChooserNative.new()</code> and <code>load_from_data()</code>. Building a widget by its keywords, as <code>Gtk.TreeView()</code>, gives none.</td></tr>
+            <tr><td><code>Gio.ListStore</code> of our own <code>GObject</code> classes, with <code>len()</code>, <code>[i]</code> and iteration; <code>CustomSorter</code>; <code>ContentProvider.new_for_value()</code> of our object; <code>DropTarget</code> of our type; <code>CallbackAction</code></td><td colspan="3" class="yes">works on all</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>So the code of the switch uses no <code>Gtk.Expression</code>, no render nodes, and no <code>get_current_event()</code>, which returns an event that 3.42 can&rsquo;t pass either. Lists sort with <code>CustomSorter</code>, and rows are made by factories.</p>
+      </section>
+
+      <section id="checked">
+        <h2><span class="num">&sect;5</span>Checked in containers</h2>
+        <p>In a podman container of each target, with <code>python3-gi python3-gi-cairo gir1.2-gtk-4.0 libgtk-4-bin python3-twisted</code> installed without recommends. A probe script ran on Broadway (<code>gtk4-broadwayd</code>) and on X11 (Xvfb), with <code>GSK_RENDERER=cairo</code>, and a second script built each widget in a process of its own, so a crash names it.</p>
+        <div class="scroll">
+        <table class="wide matrix">
+          <thead><tr><th></th><th>22.04</th><th>12</th><th>24.04</th><th>13</th><th>26.04</th><th>testing</th></tr></thead>
+          <tbody>
+            <tr class="key"><td>The 28 widgets and features, each shown in a window: drop-downs, list and column views, list boxes, popover menus, the menu bar, popovers, drawing, the five controllers, shortcuts, drag and drop, text views, notebooks and panes, the entries, stacks and overlays, images, tooltips, CSS, the dialogs, the file choosers</td><td class="warn">X11 all; Broadway none</td><td class="yes">all</td><td class="yes">all</td><td class="yes">all</td><td class="yes">all</td><td class="yes">all</td></tr>
+            <tr><td><code>gireactor.install()</code>, <code>registerGApplication()</code>, a window with a menu bar and a popover menu shown; <code>reactor.stop()</code> ends the application</td><td class="yes">yes, X11</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+            <tr><td>A widget sized with <code>allocate()</code>, with no window</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+            <tr><td><code>Gtk.init_check()</code> with no display</td><td colspan="6" class="warn">returns True on all six; building a widget then crashes the process</td></tr>
+            <tr><td>Broadway, <code>gtk4-broadwayd</code></td><td class="no">crashes with any window</td><td class="yes">works</td><td class="yes">works</td><td class="yes">works</td><td class="yes">works</td><td class="yes">works</td></tr>
+            <tr><td>An icon found by name in a folder added to the icon theme: a PNG at its top</td><td class="no">no</td><td class="no">no</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+            <tr><td>&hellip; in the <code>hicolor/<var>SIZE</var>/apps/</code> layout</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+            <tr><td>A widget rendered to a PNG</td><td class="no">no</td><td class="no">no</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+            <tr><td><code>Gtk.FileDialog</code>, <code>UriLauncher</code>, <code>load_from_string()</code></td><td class="no">no</td><td class="no">no</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+            <tr><td>Deprecated calls warn</td><td>no</td><td>no</td><td class="warn">yes</td><td class="warn">yes</td><td class="warn">yes</td><td class="warn">yes</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>On Ubuntu 22.04 the first probe crashed early. It turned out to be the Broadway backend of GTK 4.6.9: even an empty window crashes it. The same widgets run on Xvfb, and on Broadway from Debian 12 on. Tests and checks on 22.04 therefore use Xvfb.</p>
+        <p class="note">Checked on 29 September 2026 in the images <code>debian:bookworm</code>, <code>trixie</code>, <code>testing</code> and <code>ubuntu:22.04</code>, <code>24.04</code>, <code>26.04</code> that the tests of the programs use (<code>tests/data/programs/</code>). The scripts are in a scratch folder for now; step B7 makes them a check in the repository.</p>
+      </section>
+
+      <section id="code">
+        <h2><span class="num">&sect;6</span>How the code changes</h2>
+        <p>Four rules for all of it:</p>
+        <ul>
+          <li><code>gi.require_version("Gtk", "4.0")</code> once, in <code>virtualbricks/gui/__init__.py</code>, in place of the 44 modules asking each for itself. <code>migrate/gui.py</code> loads it from there.</li>
+          <li>Nothing deprecated in GTK 4.22; nothing newer than 4.6 outside <code>compat.py</code> (<a href="#versions">&sect;4</a>).</li>
+          <li>No <code>Gtk.Expression</code>, no render nodes, no <code>get_current_event()</code>, for PyGObject 3.42.</li>
+          <li>Handlers take values, not events: a click handler gets the number of presses, <code>x</code> and <code>y</code>; a key handler gets <code>keyval</code> and the modifiers. The tests call them the same way.</li>
+        </ul>
+
+        <h3>The start</h3>
+        <p><code>scripts/virtualbricks.py</code> and <code>migrate/gui.py</code> install <code>gireactor</code> in place of <code>gtk3reactor</code>. They make a <code>Gtk.Application</code> with <code>NON_UNIQUE</code> and register it with <code>reactor.registerGApplication()</code> before <code>task.react()</code> runs the reactor (<a class="ref open" href="#decisions">G7</a>). The lock of <a href="13%20-%20single-instance-mode.html">page 13</a> stays the only rule about a second Virtualbricks. <code>reactor.stop()</code> ends the application, as it ends the program today.</p>
+
+        <h3>Containers and styles</h3>
+        <ul>
+          <li><code>pack_start(child, expand, fill, padding)</code> becomes <code>append(child)</code>, with <code>hexpand</code> or <code>vexpand</code>, <code>halign</code> or <code>valign</code>, and margins on the child. <code>add()</code> becomes <code>set_child()</code>. <code>visible=True</code>, <code>show_all()</code> and <code>border_width</code> go.</li>
+          <li><code>get_children()</code> becomes a <code>children(widget)</code> helper in <code>gui/dialogs/base.py</code>, or a list the class keeps. GTK 4 counts inner widgets as children too (a button&rsquo;s label is its child), so code and tests reach widgets by their attributes, not by their position in the tree.</li>
+          <li><code>get_style_context().add_class()</code> becomes <code>add_css_class()</code>. The five CSS providers, now each added to its own widgets, become one provider for the display, loaded at start by <code>compat.load_css()</code> and aimed at the widgets through classes.</li>
+        </ul>
+
+        <h3>Menus and shortcuts</h3>
+        <ul>
+          <li>The menu bar becomes a <code>Gio.Menu</code> shown by a <code>Gtk.PopoverMenuBar</code> (<a class="ref open" href="#decisions">G5</a>), and each item an action: <code>app.quit</code>, <code>app.settings</code>, <code>win.save</code>, &hellip; The six shortcuts, Ctrl+N, Ctrl+O, Ctrl+S, Ctrl+Q, Ctrl+P and F1, go through <code>set_accels_for_action()</code>, which also shows them in the menus. Open Recent is a section of the model, rebuilt when the list of recent projects changes.</li>
+          <li>The menus of the rows are already <code>Gio.Menu</code> models with actions (<code>brickmenu.py</code>, <code>eventmenu.py</code>, <code>imagemenu.py</code>, <code>rowtab.py</code>, the <code>popup()</code> of <code>tab.py</code>). <code>Gtk.Menu.new_from_model()</code> becomes <code>Gtk.PopoverMenu.new_from_model()</code>, parented to the list and pointing at the row or at the click. The Add menu of the Images tab, built by hand today, becomes a model too.</li>
+          <li>A menu opened by the keyboard (Menu, Shift+F10), today the <code>popup-menu</code> signal and <code>keys=True</code>, gets a <code>ShortcutController</code> on each list.</li>
+        </ul>
+
+        <h3>Events</h3>
+        <p><code>button-press-event</code> becomes <code>GestureClick</code> (button 3 for the menus, two presses to open a row), <code>key-press-event</code> <code>EventControllerKey</code>, <code>motion-notify-event</code> <code>EventControllerMotion</code>, <code>scroll-event</code> <code>EventControllerScroll</code>, and <code>delete-event</code> <code>close-request</code>. <code>size-allocate</code> has no signal in GTK 4. <code>markdownview.py</code>, the buttons of <code>readme.py</code>, and the bar and the area of the topology get a small subclass that overrides <code>do_size_allocate()</code>, or the <code>resize</code> signal of the drawing area.</p>
+
+        <h3>Dialogs and files</h3>
+        <ul>
+          <li>The seven <code>Gtk.Dialog</code>s (confirm, settings, rename, project name, add image, the image dialogs, new event) become a <code>Dialog</code> of our own in <code>gui/dialogs/base.py</code> (<a class="ref open" href="#decisions">G3</a>). It is a <code>Gtk.Window</code>, modal and transient for its parent, with its buttons at the bottom, a default button, and Escape to cancel. Its <code>show()</code> returns a Deferred that fires with the answer.</li>
+          <li>The five nested loops go: the chooser and the question &ldquo;replace the archive?&rdquo; of <code>exportproject.py</code>, the chooser of <code>importdialog.py</code>, and the two of <code>migrate/gui.py</code>. Each waits on a Deferred, in an <code>inlineCallbacks</code> where the code reads better that way.</li>
+          <li>The four file chooser buttons (<code>addimage.py</code>, <code>imagedialogs.py</code>, <code>importdialog.py</code>, <code>settings.py</code>) become a button that shows the file&rsquo;s name and opens <code>compat.choose_file()</code>. The eight choosers become <code>compat.choose_file()</code>, <code>choose_folder()</code> and <code>save_file()</code>.</li>
+          <li>The three <code>Gtk.MessageDialog</code>s (the errors of <code>gui.py</code>, the question &ldquo;replace the archive?&rdquo; of <code>exportproject.py</code>, and the question of <code>projects.py</code>) become <code>Dialog</code>s too. <code>Gtk.AboutDialog</code> stays: it isn&rsquo;t deprecated. Its logo becomes a texture.</li>
+        </ul>
+
+        <h3>Widgets that change</h3>
+        <ul>
+          <li>The 13 combo boxes become <code>Gtk.DropDown</code>s on a <code>Gtk.StringList</code>. The ids they carry today, as <code>active_id</code>, become a list of values beside the labels, and the selected index maps between them. There is no search in them: it needs an expression, which PyGObject 3.42 can&rsquo;t pass.</li>
+          <li>The 13 radio buttons become <code>Gtk.CheckButton</code>s in a group; GTK 4 draws them as radio buttons.</li>
+          <li>The three info bars (the Projects window, the machine&rsquo;s panel, the running bar of <code>rowtab.py</code>) become a small bar of our own: a revealer with a box, a label and its buttons, and a CSS class.</li>
+          <li>The one tree view, the list of <code>migrate/gui.py</code>, becomes a <code>Gtk.ColumnView</code> on a <code>Gio.ListStore</code>.</li>
+          <li>The lists of the tabs stay <code>Gtk.ListBox</code>es with the rows of <code>rowtab.py</code> (<a class="ref open" href="#decisions">G8</a>).</li>
+          <li>Icons: <code>GdkPixbuf</code> in widgets becomes <code>Gdk.Texture.new_from_filename()</code>; <code>Gtk.Image.new_from_icon_name(name, size)</code> becomes <code>new_from_icon_name(name)</code> with <code>set_pixel_size()</code>; a button with an image and a label gets a box with both as its child.</li>
+          <li>The popovers of <code>picker.py</code>, <code>imagepicker.py</code>, <code>newbrick.py</code>, <code>readme.py</code> and <code>rowtab.py</code> take their widget with <code>set_parent()</code> in place of GTK 3&rsquo;s <code>relative_to</code>, and let it go with <code>unparent()</code> when the widget goes.</li>
+        </ul>
+
+        <h3>Drag and drop</h3>
+        <p>In <code>bricklist.py</code>, each row gets a <code>Gtk.DragSource</code> whose content is the row&rsquo;s brick (<code>Gdk.ContentProvider.new_for_value()</code>). Its icon is a <code>WidgetPaintable</code> of the label that says what the drop would do. Each row also gets a <code>Gtk.DropTarget</code> for the brick&rsquo;s type with the link action. Its <code>motion</code> handler answers whether this brick can plug into that one, and <code>drop</code> plugs it. GTK sets the <code>:drop(active)</code> state on the row, which the CSS highlights, in place of <code>drag_highlight()</code>.</p>
+
+        <h3>The topology</h3>
+        <p><code>topologyview.py</code> draws with <code>set_draw_func()</code>; its cairo code stays as it is. Its five event signals become controllers, <code>query-tooltip</code> stays, and the cursor goes through <code>set_cursor_from_name()</code>. <code>picture.py</code> paints the icons from cairo images (<code>cairo.ImageSurface.create_from_png()</code>, scaled in cairo) in place of <code>Gdk.cairo_set_source_pixbuf()</code>, deprecated in 4.20. The picture then loads neither <code>Gdk</code> nor <code>GdkPixbuf</code>: only cairo and Pango.</p>
+
+        <h3>Text views</h3>
+        <p><code>markdownview.py</code> and the log window (<code>logging.py</code>) keep their text views, tags and <code>window_to_buffer_coords()</code>, which takes <code>Gtk.TextWindowType.WIDGET</code>. The pointer over a link comes from <code>EventControllerMotion</code>, and the hand cursor from <code>set_cursor_from_name()</code>.</p>
+
+        <h3>Windows and the tray</h3>
+        <ul>
+          <li>Window positions, type hints, <code>skip_taskbar_hint</code> and <code>urgency_hint</code> go: GTK 4 has none of them. The window manager places the windows, a dialog over its parent. <code>get_toplevel()</code> becomes <code>get_root()</code>.</li>
+          <li>The &ldquo;action in progress&rdquo; window, undecorated and of the notification type, becomes a modal <code>Dialog</code> with a spinner and no buttons.</li>
+          <li>The tray icon and its menu go, since GTK 4 has no <code>Gtk.StatusIcon</code> (<a class="ref open" href="#decisions">G4</a>). The <code>tray_icon</code> setting stays readable in the files, has no effect, and leaves the Settings window. <code>virtualbricks-config(5)</code> and <code>config-files.html</code> say so.</li>
+          <li>The window icon becomes the name <code>virtualbricks</code>, looked up in the icon theme (<a href="#packaging">&sect;9</a>).</li>
+        </ul>
+      </section>
+
+      <section id="compat">
+        <h2><span class="num">&sect;7</span>compat.py</h2>
+        <p>The only module that asks GTK what it has. It asks with <code>hasattr</code>, not by version number, as <code>programs.py</code> asks QEMU for its options.</p>
+        <figure class="code">
+          <figcaption>virtualbricks/gui/compat.py</figcaption>
+<pre><code><span class="h">HAS_FILE_DIALOG</span> = hasattr(Gtk, <span class="w">"FileDialog"</span>)          <span class="c"># 4.10</span>
+<span class="h">HAS_URI_LAUNCHER</span> = hasattr(Gtk, <span class="w">"UriLauncher"</span>)        <span class="c"># 4.10</span>
+<span class="h">HAS_LOAD_FROM_STRING</span> = hasattr(Gtk.CssProvider, <span class="w">"load_from_string"</span>)  <span class="c"># 4.12</span>
+
+<span class="h">def</span> choose_file(parent, title, filters=(), folder=None) -&gt; Deferred[str | None]
+<span class="h">def</span> choose_folder(parent, title, folder=None) -&gt; Deferred[str | None]
+<span class="h">def</span> save_file(parent, title, name, folder=None) -&gt; Deferred[str | None]
+    <span class="c"># Gtk.FileDialog; before 4.10, Gtk.FileChooserNative and its response signal</span>
+
+<span class="h">def</span> open_uri(parent, uri) -&gt; None
+    <span class="c"># Gtk.UriLauncher; before 4.10, Gtk.show_uri()</span>
+
+<span class="h">def</span> load_css(text) -&gt; Gtk.CssProvider
+    <span class="c"># load_from_string(); before 4.12, load_from_data() with bytes, the only</span>
+    <span class="c"># form that 4.6 and 4.8 take; added for the display</span></code></pre>
+        </figure>
+        <p>A cancelled chooser fires with <code>None</code>. The tests patch each flag, so both branches run on every machine. Each branch also runs for real in the containers of the targets that have it (step B7). Raising the lowest GTK to 4.12 later removes every old branch (<a href="#later">&sect;12</a>).</p>
+        <p>The <code>Dialog</code> of <code>gui/dialogs/base.py</code> isn&rsquo;t in <code>compat.py</code>: it is the same on every GTK 4.</p>
+      </section>
+
+      <section id="tests">
+        <h2><span class="num">&sect;8</span>The tests</h2>
+        <ul>
+          <li><strong>The display.</strong> Today <code>tests/gui/__init__.py</code> asks <code>Gtk.init_check()</code>. On GTK 4 it returns True even without a display, on all six targets, and the first widget then crashes the whole run. <code>has_display</code> becomes <code>Gdk.Display.get_default() is not None</code>.</li>
+          <li><strong>No <code>OffscreenWindow</code>.</strong> The nine test modules that use it size the widget by hand with <code>allocate(width, height, -1, None)</code>, which works without a window on all six. Where a test needs a real window, it presents a <code>Gtk.Window</code> and turns the main loop.</li>
+          <li><strong>No events.</strong> GTK 4 events can&rsquo;t be made from Python, so the 41 events that ten test modules build go away. The tests call the handlers with the values a controller passes. Phase A moves the handlers to controllers while still on GTK 3, so most of these tests change there, with GTK 3 still running them.</li>
+          <li><strong>The tree.</strong> The 101 <code>get_children()</code> of 30 test modules become <code>children()</code>, or better the attribute of the widget, since GTK 4 lists inner widgets as children.</li>
+          <li><strong>The main loop.</strong> <code>Gtk.main_iteration()</code>, in six test modules, becomes <code>GLib.MainContext.default().iteration(False)</code>.</li>
+          <li><strong>Where they run.</strong> <code>xvfb-run -a python -m twisted.trial virtualbricks</code> on every target. Broadway works too from Debian 12 on, and on this machine, but not on Ubuntu 22.04. Step B7 adds a check that runs the GUI tests in a container of each target, as <code>tests/data/programs/start.py</code> starts the sample project in each. It is the check before a release.</li>
+          <li><strong>Deprecations.</strong> The run on the newest target is clean of GTK&rsquo;s <code>DeprecationWarning</code>s. PyGObject 3.48 and newer report each deprecated call, so the rule of <a href="#versions">&sect;4</a> is checked, not only written down.</li>
+          <li><strong>Pictures.</strong> Rendering a widget to a PNG needs PyGObject 3.48, so it stays out of the suite and is used only to look at a window, as on Broadway today.</li>
+        </ul>
+        <p>New code gets new tests: <code>compat.py</code>, the <code>Dialog</code>, the info bar of our own, <code>children()</code>. Moved code keeps its tests, changed only where GTK 4 makes them change.</p>
+      </section>
+
+      <section id="packaging">
+        <h2><span class="num">&sect;9</span>Packages, icon, desktop</h2>
+        <ul>
+          <li><strong>Packages.</strong> <code>gir1.2-gtk-4.0</code> in place of <code>gir1.2-gtk-3.0</code>, with the same name on all six targets. <code>python3-gi</code>, <code>python3-gi-cairo</code> and <code>python3-twisted</code> stay as today. For the tests, <code>xvfb</code>, or <code>libgtk-4-bin</code> for Broadway. <code>pyproject.toml</code> keeps <code>PyGObject&gt;=3.42</code>. <code>PyGObject-stubs</code>, the types for the editor, is installed with its GTK 4 configuration.</li>
+          <li><strong>The icon.</strong> A GTK 4 window takes only an icon name. <code>virtualbricks.png</code> is 130&times;140 today, so a square 128&times;128 copy goes in <code>share/icons/hicolor/128x128/apps/virtualbricks.png</code>, installed beside the <code>.xpm</code> of <code>share/pixmaps</code>. Run from the sources, the program adds its data folder to the icon theme, with the icon in the same <code>hicolor</code> layout: GTK 4.6 and 4.8 find only that layout (<a href="#checked">&sect;5</a>).</li>
+          <li><strong>The desktop file.</strong> On Wayland, a window is matched to its desktop file by the application id. With <a class="ref open" href="#decisions">G7</a> A, <code>share/virtualbricks.desktop</code> becomes <code>share/org.virtualsquare.Virtualbricks.desktop</code> and keeps <code>Icon=virtualbricks</code>. With G7 B, nothing changes: GTK uses the program&rsquo;s name, <code>virtualbricks</code>.</li>
+          <li><strong>The README.</strong> &ldquo;GTK 3&rdquo; becomes &ldquo;GTK 4, 4.6 or newer&rdquo;; the <code>apt</code> lines and the tests section follow. The manual pages name no version of GTK. <code>virtualbricks-config(5)</code> describes <code>tray_icon</code> as &ldquo;Show an icon in the system tray&rdquo;, and says instead that it has no effect (step A3).</li>
+        </ul>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;10</span>Implementation plan</h2>
+        <p><strong>Phase A</strong> runs on GTK 3, from <code>develop</code>, a commit per step, each merged into <code>develop</code> with the program working and the whole suite passing. It does, in GTK 3.24, what GTK 3 can already write the GTK 4 way. That shrinks the switch, and most test changes land while GTK 3 still runs them.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">A1 The start</td><td><code>gireactor</code> in <code>scripts/virtualbricks.py</code> and <code>migrate/gui.py</code>, which also ends Twisted&rsquo;s warning; the <code>Gtk.Application</code> of <a class="ref open" href="#decisions">G7</a>, registered with the reactor; the main window an application window; the hicolor icon, and the desktop file&rsquo;s name if G7 A. <code>has_display</code> from <code>Gdk.Display</code>.</td><td>The start with the application, the icon found by name; the program on Broadway.</td></tr>
+            <tr><td class="nowrap">A2 Dialogs</td><td>The <code>Dialog</code> on <code>Gtk.Window</code>, with a Deferred for its answer; the seven <code>Gtk.Dialog</code>s, the three message dialogs and the five nested loops move to it. <code>compat.py</code> starts with <code>choose_file()</code> and the others on <code>FileChooserNative</code>, and the four file chooser buttons become buttons that call it.</td><td>The <code>Dialog</code>, <code>compat.py</code>; the dialogs&rsquo; tests answer through the Deferred.</td></tr>
+            <tr><td class="nowrap">A3 Menus</td><td>The menu bar from a <code>Gio.Menu</code> with actions and <code>set_accels_for_action()</code> (<code>Gtk.MenuBar.new_from_model()</code> in GTK 3); the menus of the rows as popovers from their models (<code>Gtk.Popover.new_from_model()</code>); the Add menu of the Images tab and Open Recent as models; the tray icon out (<a class="ref open" href="#decisions">G4</a>), with <code>tray_icon</code> described as having no effect in <code>virtualbricks-config(5)</code> and <code>config-files.html</code>.</td><td>The actions and their shortcuts; the menus by their models, not by a picture.</td></tr>
+            <tr><td class="nowrap">A4 Controllers</td><td>The event signals become the controllers of GTK 3.24: <code>GestureMultiPress</code>, <code>EventControllerKey</code>, <code>EventControllerMotion</code>, <code>EventControllerScroll</code>. Handlers take values. <code>popup-menu</code> becomes shortcuts.</td><td>The 41 made events go; the tests call the handlers with values.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p><strong>Phase B</strong> is the switch, on a new branch <code>mg/gtk4</code> from <code>develop</code>, a commit per step. B1 turns the whole program to GTK 4 at once, so between B1 and B6 the program doesn&rsquo;t start. Each step&rsquo;s tests pass by package, as <code>python -m twisted.trial virtualbricks.tests.gui.dialogs</code>. The whole suite passes again from B6, and the branch is merged after B7.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">B1 Foundation</td><td><code>require_version("Gtk", "4.0")</code> once, in <code>gui/__init__.py</code>; <code>compat.py</code> with both branches; the <code>Dialog</code> and <code>children()</code> on GTK 4; textures in <code>graphics.py</code>; the display&rsquo;s CSS; <code>tests/gui/__init__.py</code> without <code>OffscreenWindow</code>.</td><td><code>compat.py</code> both ways, the <code>Dialog</code>, the helpers.</td></tr>
+            <tr><td class="nowrap">B2 Dialogs</td><td>The modules of <code>gui/dialogs/</code>: containers, drop-downs, radio groups, the info bar of the Projects window, the text view of the log.</td><td><code>tests/gui/dialogs</code></td></tr>
+            <tr><td class="nowrap">B3 Panels</td><td><code>mainwindow/bricks/config/</code>: <code>form.py</code> and its drop-downs, the panels, <code>vm/</code> and the machine&rsquo;s info bar.</td><td><code>tests/gui/mainwindow/bricks/config</code></td></tr>
+            <tr><td class="nowrap">B4 Tabs</td><td><code>rowtab.py</code> and its popovers and running bar, the tabs of <code>bricks/</code>, <code>events/</code> and <code>images/</code>, drag and drop, <code>readme.py</code>, <code>markdownview.py</code>.</td><td>The tabs&rsquo; tests, and <code>test_markdownview.py</code></td></tr>
+            <tr><td class="nowrap">B5 Topology</td><td><code>topology.py</code>, <code>topologyview.py</code> with <code>set_draw_func()</code> and controllers, <code>picture.py</code> on cairo alone.</td><td><code>test_topology.py</code>, <code>test_topologyview.py</code></td></tr>
+            <tr><td class="nowrap">B6 Windows</td><td><code>window.py</code>: the menu bar, the shortcuts, the notebook, the &ldquo;action in progress&rdquo; dialog; <code>gui.py</code>; <code>migrate/gui.py</code> with its column view.</td><td>The whole suite, on this machine, under Xvfb and on Broadway.</td></tr>
+            <tr><td class="nowrap">B7 Every target</td><td>A check that runs the GUI tests in a container of each target under Xvfb (<code>tests/data/gtk/</code>, from the scripts of <a href="#checked">&sect;5</a>). The program run by hand on Broadway (Debian 12, testing) and on Xvfb (Ubuntu 22.04). The README; the desktop file; &ldquo;Since then&rdquo; on the pages whose widgets changed (01.1, 01.2, 06, 07, 08, 11, 12, and any other found naming a GTK 3 widget); this page&rsquo;s &ldquo;Implemented&rdquo;. In the TODO, what <a href="#later">&sect;12</a> leaves for later goes under IDEAS.</td><td>The GUI tests pass on all six; no GTK deprecation warning on testing.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Before B7, the whole program with a throwaway home, runtime folder and workspace and <code>--lock none</code>, on Broadway: the sample project of <code>tests/sample.py</code>, each panel opened and saved, a brick plugged by dragging it, the menus by mouse and by keyboard, the file choosers, the topology dragged and zoomed, the README edited, an archive exported and imported. Then the same on Ubuntu 22.04 under Xvfb, in a container. Your own Virtualbricks, its lock and its sockets are never touched. Your changes in the working tree, to <code>TODO.md</code> and <code>virtualbricks/tools.py</code>, stay out of every commit.</p>
+        <p><strong>Phase C</strong> is later, under IDEAS (<a href="#later">&sect;12</a>).</p>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;11</span>Decisions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>I&rsquo;d choose</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>G1</td>
+              <td>The lowest GTK 4</td>
+              <td>
+                <p><b>A</b> 4.6, all six targets. <code>compat.py</code> covers the file chooser, links and CSS, and the code follows the limits of PyGObject 3.42 (<a href="#versions">&sect;4</a>). Ubuntu 22.04 runs its tests under Xvfb.</p>
+                <p><b>B</b> 4.14, Ubuntu 24.04 and newer. No <code>compat.py</code>, and PyGObject 3.48 lifts the limits. Ubuntu 22.04 and Debian 12 stay on a GTK 3 release, a branch that gets fixes until April 2027 and June 2028.</p>
+                <p><b>C</b> Stay on GTK 3 until the two older targets end, and migrate then as B.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>G2</td>
+              <td>How to get there</td>
+              <td>
+                <p><b>A</b> Phase A on GTK 3 first, four steps merged into <code>develop</code> one at a time, then the switch on <code>mg/gtk4</code> (<a href="#plan">&sect;10</a>). The switch is smaller, and most test changes run on GTK 3 first.</p>
+                <p><b>B</b> Everything on one branch from the start. Fewer steps, but nothing of it runs until the end.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>G3</td>
+              <td>Dialogs</td>
+              <td>
+                <p><b>A</b> A <code>Dialog</code> of our own on <code>Gtk.Window</code>, whose answer is a Deferred. It is the same on every GTK 4, and uses nothing deprecated.</p>
+                <p><b>B</b> Keep <code>Gtk.Dialog</code> and <code>Gtk.MessageDialog</code>: they are deprecated in 4.10, their methods warn on PyGObject 3.48 and newer, and <code>Gtk.ResponseType</code> is deprecated in 4.20.</p>
+                <p><b>C</b> The dialogs of libadwaita: 1.5 or newer, so not on Ubuntu 22.04 or Debian 12.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>G4</td>
+              <td>The tray icon</td>
+              <td>
+                <p><b>A</b> Drop it. The <code>tray_icon</code> setting stays readable and has no effect. On GNOME the icon hasn&rsquo;t shown for years even with GTK 3, since GNOME no longer has a tray.</p>
+                <p><b>B</b> A StatusNotifierItem of our own, over D-Bus with <code>Gio</code>, with no new dependency. It shows on KDE, XFCE and the GNOME of Ubuntu, which has the extension, but not on plain GNOME.</p>
+                <p><b>C</b> libayatana-appindicator: it is built on GTK 3 and can&rsquo;t load beside GTK 4.</p>
+              </td>
+              <td class="rec">A, with B under IDEAS</td>
+            </tr>
+            <tr>
+              <td>G5</td>
+              <td>The menu bar</td>
+              <td>
+                <p><b>A</b> Keep a menu bar, as today, from a <code>Gio.Menu</code>.</p>
+                <p><b>B</b> A header bar with a main menu, as GNOME programs have. It fits the IDEAS item of switching projects from the title (<a href="04%20-%20projects-redesign.html">page 04</a> &sect;3, direction B), but it changes how the program looks in the same step.</p>
+              </td>
+              <td class="rec">A, with B under IDEAS</td>
+            </tr>
+            <tr>
+              <td>G6</td>
+              <td>libadwaita</td>
+              <td>
+                <p><b>A</b> No. Plain GTK 4 looks the same everywhere and needs no new dependency. The 1.1 of Ubuntu 22.04 lacks most of what would help.</p>
+                <p><b>B</b> Yes, as a dependency, 1.1 or newer.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>G7</td>
+              <td>The application</td>
+              <td>
+                <p><b>A</b> A <code>Gtk.Application</code>, <code>org.virtualsquare.Virtualbricks</code>, with <code>NON_UNIQUE</code> so that the lock of page 13 stays the only rule, registered with the reactor. It gives the actions, the shortcuts shown in the menus and the menu bar. The desktop file takes the id as its name, so that Wayland matches the windows to it. The id is yours to choose; <code>io.github.virtualsquare.Virtualbricks</code> would do as well.</p>
+                <p><b>B</b> Plain windows, without an application. Shortcuts through a <code>ShortcutController</code> on the main window, the shortcut labels in the menus written by hand, and actions added to each window. The desktop file keeps its name.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>G8</td>
+              <td>The lists of the tabs</td>
+              <td>
+                <p><b>A</b> Keep <code>Gtk.ListBox</code>: it isn&rsquo;t deprecated, and the rows of <code>rowtab.py</code> move over nearly as they are.</p>
+                <p><b>B</b> <code>Gtk.ListView</code> or <code>ColumnView</code>, with factories that reuse rows: better for hundreds of bricks, but the rows and their tests are rewritten, and PyGObject 3.42 limits them to <code>CustomSorter</code> and <code>CustomFilter</code>.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;12</span>Later</h2>
+        <p>These go under IDEAS in the TODO.</p>
+        <ul>
+          <li>Raise the lowest GTK to 4.12 once Ubuntu 22.04 and Debian 12 are gone, and drop the old branches of <code>compat.py</code>.</li>
+          <li>Search in the long drop-downs, as the machine types, once PyGObject 3.48 is the lowest.</li>
+          <li>A header bar with a main menu, and the projects in a popover on the title (G5 B; page 04 &sect;3).</li>
+          <li><code>Gtk.ListView</code> for the lists of the tabs, if projects grow to hundreds of bricks (G8 B).</li>
+          <li>A tray icon as a StatusNotifierItem over D-Bus (G4 B).</li>
+          <li>libadwaita, once every target has 1.5 or newer (G6).</li>
+          <li>Pictures of the windows in the tests, where PyGObject is 3.48 or newer.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
