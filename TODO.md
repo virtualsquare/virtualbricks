@@ -2,11 +2,10 @@
 
 ## Config
 
-- [ ] Move the lock into `$XDG_RUNTIME_DIR`, one per user, next to the
-  sockets (02 §14, 10 §13)
-  - users of one machine stop blocking each other, and a test instance
-    can run beside your own; `LOCK_FILE` in `locations.py` is the one
-    place to change, and the migration takes the lock through it
+- [ ] Say who holds the lock when a start is refused: `/proc/locks` has
+  the process of each `flock` (13 §10)
+- [ ] Add a `lock` setting, maybe, so a shared machine doesn't need
+  `--lock user` at every start (13 §9 L5)
 - [ ] Move `locations` into `config` (maybe)
 - [ ] Drop the `log_link_loops` setting, maybe: a loop always stops a
   start (10 §13)
@@ -15,7 +14,9 @@
 
 - [ ] Run two Virtualbricks at once in different workspaces: a lock for
   each workspace, and runtime directories that tell apart two projects
-  of the same name
+  of the same name (13 §10)
+  - `--lock none` lets the second one start, but nothing keeps them
+    apart
 - [ ] Switch to another workspace from the GUI, and list the workspaces
   used, which `state.toml` already has
 - [ ] Open several projects at once (04 §11: D6 rules it out for now)
@@ -161,6 +162,9 @@
 
 ## Done
 
+- [x] Choose how many Virtualbricks run at once: `--lock system`, the
+  default, `user` with a lock in `$XDG_RUNTIME_DIR`, or `none`
+  (02 §14, 10 §13), plan in `docs/redesign/13 - lock-policies.html`
 - [x] Redesign New Brick: a popover of the kinds, a name chosen for each
   new brick, its settings after the click; the window without a title or
   a label is gone (07 §10), plan in

@@ -1,0 +1,510 @@
+<title>Lock Policies</title>
+<meta name="description" content="How many Virtualbricks run at once: the --lock option with the system, user and none policies, their flock locks, and who starts beside whom.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  .ref.open { color: var(--decide); background: var(--decide-soft); }
+
+  /* who starts beside whom */
+  table.matrix td, table.matrix th { text-align: left; }
+  table.matrix td.go, table.matrix td.stop { font: 500 13px/1.3 var(--font-mono); white-space: nowrap; }
+  table.matrix td.go { color: var(--ok); }
+  table.matrix td.stop { color: var(--risk); }
+  table.matrix td.go::before { content: "\2713\00a0"; }
+  table.matrix td.stop::before { content: "\2717\00a0"; }
+  table.messages td:last-child { font-family: var(--font-mono); font-size: 13px; }
+  .note { font-size: 14px; color: var(--muted); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 13 &middot; Design &middot; revision 1, implemented</div>
+    <h1>Virtualbricks Lock Policies</h1>
+    <p class="lede">A new option, <code>--lock</code>, says how many Virtualbricks can run at once: one on the machine, the default and today&rsquo;s rule; one for each user; or any number. A Virtualbricks of the user policy respects one of the system policy, and the locks go away with the process, even after a crash.</p>
+    <ul class="meta">
+      <li>branch <b>develop</b> at c34e2a7</li>
+      <li>revision 1 &middot; 29 September 2026</li>
+      <li><span class="status done">implemented</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your request of today: a lock per system, per user or none, chosen on the command line, one per system by default, with the user lock complying with a system lock already held. It is the per-user lock that the configuration redesign kept for later (<a href="02%20-%20config-redesign.html">02</a> D3 and &sect;14) and the settings redesign recalled (<a href="10%20-%20settings-redesign.html">10</a> &sect;13).</p>
+    <p class="revision"><strong>Implemented</strong> on 29 September 2026 in 72168aa, on the branch <b>mg/lock-policies</b>: <code>virtualbricks/locks.py</code>, the option, the migration&rsquo;s lock, 21 new tests with one gone (1862 pass), the README, the manual page and its web page, and the TODO. The choices that your request left open are in <a href="#choices">&sect;9</a>, as I made them.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#before"><span>2</span>The lock before</a></li>
+        <li><a href="#policies"><span>3</span>The three policies</a></li>
+        <li><a href="#matrix"><span>4</span>Who starts beside whom</a></li>
+        <li><a href="#locks"><span>5</span>The locks</a></li>
+        <li><a href="#messages"><span>6</span>Messages</a></li>
+        <li><a href="#migration"><span>7</span>The migration</a></li>
+        <li><a href="#code"><span>8</span>The code and the tests</a></li>
+        <li><a href="#choices"><span>9</span>Choices</a></li>
+        <li><a href="#later"><span>10</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>The option</dt><dd><code>virtualbricks --lock system|user|none</code>, for one run. Without it, <code>system</code>. Any other word stops the start: <code>--lock: 'workspace' is not one of system, user, none</code>.</dd></div>
+          <div><dt>system</dt><dd>One Virtualbricks on the machine, whoever runs it and whatever its workspace, as today. It holds the system lock, <code>/tmp/virtualbricks.lock</code>, alone.</dd></div>
+          <div><dt>user</dt><dd>One for each user, so the users of a shared machine stop blocking each other. It holds <code>$XDG_RUNTIME_DIR/virtualbricks/.lock</code> alone and shares the system lock with the others of this policy. It doesn&rsquo;t start while a Virtualbricks of the system policy runs, and while it runs, none of the system policy starts.</dd></div>
+          <div><dt>none</dt><dd>No lock: it starts beside any other, and the others don&rsquo;t see it. It is for a test instance beside your own, or for two workspaces at once.</dd></div>
+          <div><dt>Crashes</dt><dd>The locks are <code>flock(2)</code> locks: the system releases them when the process ends. No lock is left behind, and the message that told you to delete one goes.</dd></div>
+          <div><dt>Migration</dt><dd>Migrating your files in place holds the locks of the user policy: it waits for your own Virtualbricks, whatever its policy, and for one of the system policy.</dd></div>
+        </dl>
+      </section>
+
+      <section id="before">
+        <h2><span class="num">&sect;2</span>The lock before</h2>
+        <p>Virtualbricks took a single lock, <code>/tmp/vb.lock</code>, through Twisted&rsquo;s <code>FilesystemLock</code>: a symbolic link whose target is the process id. The configuration redesign kept it global (<a class="ref done" href="02%20-%20config-redesign.html#decisions">D3</a>) and listed its faults:</p>
+        <ul>
+          <li><strong>One user blocked the machine.</strong> While Alice ran Virtualbricks, Bob couldn&rsquo;t start his, on his own files.</li>
+          <li><strong>Another user&rsquo;s lock was an error.</strong> To check a lock, <code>FilesystemLock</code> sends signal 0 to its process. For another user&rsquo;s process that raises <code>EPERM</code>, so Bob got a traceback instead of the message.</li>
+          <li><strong>A crash could leave the lock behind.</strong> Your own stale lock was cleaned up, but not another user&rsquo;s: <code>/tmp</code> is sticky, and only its owner can remove it.</li>
+          <li><strong>No test instance beside your own.</strong> A throwaway <code>HOME</code> still met the same lock, as the README said.</li>
+        </ul>
+      </section>
+
+      <section id="policies">
+        <h2><span class="num">&sect;3</span>The three policies</h2>
+        <div class="scroll">
+        <table>
+          <thead><tr><th>Policy</th><th>At most</th><th>Holds</th><th>Doesn&rsquo;t start while</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="nowrap"><code>system</code>, the default</td>
+              <td>one Virtualbricks on the machine</td>
+              <td>the system lock, exclusive</td>
+              <td>any other Virtualbricks holds the system lock, in either mode</td>
+            </tr>
+            <tr>
+              <td class="nowrap"><code>user</code></td>
+              <td>one for each user</td>
+              <td>the system lock, shared, then the user lock, exclusive</td>
+              <td>a Virtualbricks of the system policy runs, or one of yours holds your user lock</td>
+            </tr>
+            <tr>
+              <td class="nowrap"><code>none</code></td>
+              <td>no limit</td>
+              <td>nothing</td>
+              <td>never refused</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <p>This is a readers&ndash;writer lock on the machine. The system policy is the writer: it needs the machine to itself. The user policy is a reader of the machine, and a writer of its user.</p>
+        <p>Holding the shared system lock is how the user lock complies with a system lock already held, as you asked. It works in the other direction too: while any Virtualbricks of the user policy runs, the system policy can&rsquo;t have the machine to itself, so it refuses to start (<a class="ref" href="#choices">L1</a>).</p>
+      </section>
+
+      <section id="matrix">
+        <h2><span class="num">&sect;4</span>Who starts beside whom</h2>
+        <p>Each row is a Virtualbricks already running; each column is the policy of the one you start.</p>
+        <div class="scroll">
+        <table class="matrix wide">
+          <thead><tr><th>Already running</th><th><code>--lock system</code></th><th><code>--lock user</code></th><th><code>--lock none</code></th></tr></thead>
+          <tbody>
+            <tr><td>A Virtualbricks with <code>system</code>, yours or another user&rsquo;s</td><td class="stop">refused</td><td class="stop">refused</td><td class="go">starts</td></tr>
+            <tr><td>Yours with <code>user</code></td><td class="stop">refused</td><td class="stop">refused</td><td class="go">starts</td></tr>
+            <tr><td>Another user&rsquo;s with <code>user</code></td><td class="stop">refused</td><td class="go">starts</td><td class="go">starts</td></tr>
+            <tr><td>Any with <code>none</code></td><td class="go">starts</td><td class="go">starts</td><td class="go">starts</td></tr>
+            <tr><td>The migration of your files</td><td class="stop">refused</td><td class="stop">refused</td><td class="go">starts</td></tr>
+            <tr><td>The migration of another user&rsquo;s files</td><td class="stop">refused</td><td class="go">starts</td><td class="go">starts</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p class="note">A Virtualbricks of the none policy is invisible to the others (<a class="ref" href="#choices">L2</a>). Two of yours that run at once share the settings and the state, and nothing stops both from opening the same project.</p>
+      </section>
+
+      <section id="locks">
+        <h2><span class="num">&sect;5</span>The locks</h2>
+        <h3>flock</h3>
+        <p>Both locks are <code>flock(2)</code> locks, shared or exclusive, taken without waiting (<code>LOCK_NB</code>). The kernel releases them when the process ends, however it ends, so there is never a stale lock to clean up. The files themselves stay; an empty file costs nothing, and deleting a lock file that someone may be opening is a race.</p>
+        <p>A <code>flock</code> belongs to an open file, not to a process: two opens of the same file in one process exclude each other. The tests rely on this and hold several Virtualbricks&rsquo; locks in one process (<a href="#code">&sect;8</a>).</p>
+        <h3>Where</h3>
+        <dl class="glance">
+          <div><dt>System</dt><dd><code>/tmp/virtualbricks.lock</code>, a fixed path. Not the temporary directory of <code>TMPDIR</code>, which can be a user&rsquo;s own and would hide the lock from the others. A new name, because a Virtualbricks from before this change reads <code>/tmp/vb.lock</code> as a symbolic link: on a plain file its <code>readlink</code> fails and it would stop with a traceback (<a class="ref" href="#choices">L4</a>).</dd></div>
+          <div><dt>User</dt><dd><code>.lock</code> in the runtime directory, <code>$XDG_RUNTIME_DIR/virtualbricks/</code> (<code>/tmp/virtualbricks-<i>uid</i>/</code> without the variable), next to the sockets and private to you. A project&rsquo;s name never starts with a dot, so no project&rsquo;s runtime directory can be named like it.</dd></div>
+        </dl>
+        <h3>Opening the system lock safely</h3>
+        <ul>
+          <li><strong>Read-only, without following a symbolic link</strong> (<code>O_RDONLY | O_NOFOLLOW</code>). A link planted at the path fails the open, rather than making Virtualbricks create or lock a file elsewhere. <code>flock</code> works on a file opened read-only. Without <code>O_NOFOLLOW</code>, a dangling link would also make the open loop forever, and the tests check it.</li>
+          <li><strong>Created only if it is missing</strong>, with <code>O_CREAT | O_EXCL</code>. systemd sets <code>fs.protected_regular</code> (2 on this Debian), which refuses <code>O_CREAT</code> on another user&rsquo;s file in a sticky directory such as <code>/tmp</code>, even when the file exists already.</li>
+          <li><strong>Readable by everyone</strong>: the file is set to mode 0644 after it is made, whatever the umask, so another user can open it to share it.</li>
+          <li><strong>Not inherited</strong>: Python opens files close-on-exec, so QEMU and VDE, which Virtualbricks starts, don&rsquo;t keep the lock after it exits.</li>
+        </ul>
+      </section>
+
+      <section id="messages">
+        <h2><span class="num">&sect;6</span>Messages</h2>
+        <p>When a lock is held, Virtualbricks exits with status 1 and says why. A failed exclusive lock on the system file doesn&rsquo;t tell who holds it; a second try with a shared lock does: if that succeeds, the holders are of the user policy.</p>
+        <div class="scroll">
+        <table class="messages wide">
+          <thead><tr><th>Starting</th><th>Held by</th><th>Message</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap"><code>system</code> or <code>user</code></td><td>one of the system policy</td><td>Another Virtualbricks is running on this machine with --lock system, the default, which lets only one run at a time.</td></tr>
+            <tr><td class="nowrap"><code>system</code></td><td>some of the user policy</td><td>Virtualbricks is running on this machine with --lock user, one for each user: start this one with --lock user as well.</td></tr>
+            <tr><td class="nowrap"><code>user</code></td><td>one of yours, of the user policy</td><td>Another Virtualbricks of yours is running, and --lock user lets each user run one.</td></tr>
+            <tr><td class="nowrap"><code>system</code> or <code>user</code></td><td>nobody, but the file can&rsquo;t be opened</td><td>Cannot take the lock /tmp/virtualbricks.lock: Permission denied. With --lock none, Virtualbricks runs without locks.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>A migration in progress holds the locks of the user policy, so it is reported as a Virtualbricks of that policy.</p>
+      </section>
+
+      <section id="migration">
+        <h2><span class="num">&sect;7</span>The migration</h2>
+        <p>The migration command and window hold the app&rsquo;s lock while they change your files in place (<a href="02%20-%20config-redesign.html#tools">02 &sect;11</a>). They now hold the locks of the user policy (<a class="ref" href="#choices">L3</a>). They wait for your own Virtualbricks, whatever its policy, since one of the system policy holds the system lock alone. They don&rsquo;t wait for another user&rsquo;s Virtualbricks of the user policy, which never touches your files. When a lock is held, the command still exits with status 3 and the window still asks you to close Virtualbricks.</p>
+        <p>The migration at startup runs inside the app, under the locks it already holds. With <code>--lock none</code>, it runs without any.</p>
+      </section>
+
+      <section id="code">
+        <h2><span class="num">&sect;8</span>The code and the tests</h2>
+        <figure class="code">
+          <figcaption>virtualbricks/locks.py</figcaption>
+<pre><code><span class="h">def</span> acquire(policy: str = SYSTEM) -&gt; Lock:
+    <span class="c">"""Take the locks of policy and return them.
+
+    Raise Held if another Virtualbricks holds one of them, OSError if a lock
+    file can't be opened."""</span>
+    ...
+    lock = Lock(policy)
+    path = locations.SYSTEM_LOCK_FILE
+    <span class="h">try</span>:
+        <span class="h">if</span> policy == SYSTEM <span class="h">and not</span> lock._take(path, fcntl.LOCK_EX):
+            <span class="h">raise</span> Held(policy, _system_holder(), path)
+        <span class="h">if</span> policy == USER:
+            <span class="h">if not</span> lock._take(path, fcntl.LOCK_SH):
+                <span class="h">raise</span> Held(policy, SYSTEM, path)
+            locations.ensure_private_dir(locations.runtime_dir())
+            path = locations.user_lock_file()
+            <span class="h">if not</span> lock._take(path, fcntl.LOCK_EX):
+                <span class="h">raise</span> Held(policy, USER, path)
+    <span class="h">except</span> BaseException:
+        lock.unlock()   <span class="c"># a refused start holds nothing</span>
+        <span class="h">raise</span>
+    <span class="h">return</span> lock</code></pre>
+        </figure>
+        <ul>
+          <li><strong><code>virtualbricks/locks.py</code></strong>, new: <code>SYSTEM</code>, <code>USER</code>, <code>NONE</code>, <code>POLICIES</code>; <code>acquire(policy)</code>; <code>Lock</code> (<code>policy</code>, <code>locked</code>, <code>unlock()</code>, which can be called twice); <code>Held</code> (<code>policy</code>, <code>holder</code>, <code>path</code>; <code>str()</code> is the message of &sect;6).</li>
+          <li><strong><code>locations.py</code></strong>: <code>SYSTEM_LOCK_FILE</code> replaces <code>LOCK_FILE</code>; <code>user_lock_file()</code>.</li>
+          <li><strong><code>app.py</code></strong>: the <code>--lock</code> option and its check; <code>_LockedApplication</code> takes the locks of <code>config["lock"]</code> and releases them after the reactor&rsquo;s shutdown; its <code>lock</code> argument goes.</li>
+          <li><strong><code>migrate/engine.py</code></strong>: <code>lock_in_place()</code> returns <code>acquire(USER)</code>, or <code>None</code> when a lock is held. <code>migrate/gui.py</code> only changes a type.</li>
+          <li><strong>Tests</strong>: <code>tests/test_locks.py</code>, new, 15 tests: each policy against the others, another user played by another runtime directory, a refused start that holds nothing, the file modes under umask 077, a symbolic link not followed, descriptors not inherited, and a child process that holds the lock and is killed with <code>SIGKILL</code>, after which the lock is free. <code>test_app.py</code> has 5 on the option and the launcher, in place of one on the lock&rsquo;s path; <code>test_locations.py</code> one on <code>user_lock_file()</code>; the migration&rsquo;s lock tests follow the new rules.</li>
+          <li><strong>Test helpers</strong>: <code>isolate()</code> points the system lock into the test&rsquo;s folder and checks at the end that it is free; <code>hold_lock(test, policy, user)</code> holds the locks of any policy, as another user when <code>user</code> is given.</li>
+          <li><strong>Docs</strong>: the README (the option, the policies, and <code>--lock none</code> for a test instance), <code>virtualbricks-config(5)</code> and <a href="../config-files.html#files">config-files.html</a> (both files under Files), the TODO.</li>
+        </ul>
+        <p>Checks: nine deliberate breaks of <code>locks.py</code> and <code>app.py</code>, one at a time, each made the new tests fail. The real <code>virtualbricks</code> ran on GTK&rsquo;s Broadway display with a second one started beside it under each policy. Every refusal of &sect;4 and &sect;6 came out as written, and <code>--lock none</code> ran beside a Virtualbricks of the system policy.</p>
+      </section>
+
+      <section id="choices">
+        <h2><span class="num">&sect;9</span>Choices</h2>
+        <p>Your request settled the three policies, the option, the default and the rule for the user lock. These are the choices it left, made while implementing. Each can change.</p>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Made</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>L1</td>
+              <td>A Virtualbricks of the system policy, while some of the user policy run</td>
+              <td>
+                <p><b>A</b> Refused: the system policy promises one Virtualbricks on the machine.</p>
+                <p><b>B</b> Started: the system policy only keeps out the others of the system policy, and the user policy.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>L2</td>
+              <td>The none policy and the others&rsquo; locks</td>
+              <td>
+                <p><b>A</b> It takes nothing and checks nothing: &ldquo;no lock at all&rdquo;.</p>
+                <p><b>B</b> It shares the system lock, so it doesn&rsquo;t start beside one of the system policy, and keeps that one from starting.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>L3</td>
+              <td>The lock of the migration of your files</td>
+              <td>
+                <p><b>A</b> The locks of the user policy: it waits for your Virtualbricks and for one of the system policy.</p>
+                <p><b>B</b> The system lock alone, as before: it also waits for every other user&rsquo;s.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>L4</td>
+              <td>The path of the system lock</td>
+              <td>
+                <p><b>A</b> <code>/tmp/virtualbricks.lock</code>, a new name: a Virtualbricks from before this change neither sees it nor stops on it.</p>
+                <p><b>B</b> <code>/tmp/vb.lock</code>, as before: an older Virtualbricks would stop with a traceback on the plain file, and a link it left would block the new one.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>L5</td>
+              <td>Where the policy comes from</td>
+              <td>
+                <p><b>A</b> The option only, for one run, as asked.</p>
+                <p><b>B</b> Also a <code>lock</code> setting in <code>settings.toml</code>, so a shared machine doesn&rsquo;t need the option at every start.</p>
+              </td>
+              <td class="rec">A, B kept for later</td>
+            </tr>
+            <tr>
+              <td>L6</td>
+              <td>The lock itself</td>
+              <td>
+                <p><b>A</b> <code>flock(2)</code>, shared or exclusive, released by the kernel.</p>
+                <p><b>B</b> Twisted&rsquo;s <code>FilesystemLock</code>, as before: it has no shared mode, can&rsquo;t check another user&rsquo;s lock (<a href="#before">&sect;2</a>), and can be left behind.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;10</span>Later</h2>
+        <ul>
+          <li>A lock for each workspace, and runtime directories that tell apart two projects of the same name, so two Virtualbricks can run safely in two workspaces (TODO). Today <code>--lock none</code> lets them start, but two projects named alike share a runtime directory.</li>
+          <li>Say who holds the lock when a start is refused: <code>/proc/locks</code> lists the process id of each <code>flock</code>, and from it the user.</li>
+          <li>A <code>lock</code> setting, from <a class="ref" href="#choices">L5</a> B.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
