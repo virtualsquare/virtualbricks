@@ -102,6 +102,29 @@
 
 ## Disk images
 
+- [ ] Make renaming a virtual machine safe for its private disks: it can
+  overwrite a disk that is in the way, or leave the disks half renamed
+  - since 2928039 `VirtualMachine.set_name()`, which every rename goes
+    through, calls `_rename_private_disks()` in
+    `bricks/virtualmachine.py`: it moves `<old>_<dev>.cow` and its
+    backups (`.cow.bak-…`) to `<new>_<dev>.cow` with `os.rename()`,
+    one file after the other, and nothing is checked first
+  - a file in the way is replaced without a word, and what was in it is
+    lost. No machine owns such a file, but it can be there: the disk of a
+    machine that was deleted, or one that the rename bug fixed in 2928039
+    left behind. Before it, the GUI and the console renamed `a` to `b`
+    without moving `a_hda.cow`, and `b` started a new, empty
+    `b_hda.cow`; renaming `b` back to `a` now moves the empty disk over
+    the one that holds the machine's data
+  - if a move fails halfway (permissions, a read-only folder), the disks
+    moved so far have the new name and the rest the old one. The machine
+    keeps its old name, because `set_name()` raises before it sets it, so
+    it no longer finds the disks already moved and starts new ones
+  - what could be done: check every target before moving anything, and
+    refuse the rename naming the file in the way (the rename dialog and
+    `brick rename` show the error); if a move fails, move back the files
+    already moved
+
 - [ ] Show the images of all projects: each file once, the projects and
   disks that use it, and the files of vimages no project uses, as the
   copies an import leaves (09 §11 S3, 04 §11)
