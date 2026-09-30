@@ -285,7 +285,7 @@ class Base:
     logger = Logger()
 
     def __init__(self, factory, name):
-        self._observable = observable.Observable("changed")
+        self._observable = observable.Observable()
         self.changed = observable.Signal(self._observable, "changed")
         self.factory = factory
         self._name = name
@@ -340,7 +340,7 @@ class Base:
         return self._observable.muted()
 
     def notify_changed(self):
-        self._observable.notify("changed", self)
+        self.changed.notify(self)
 
 
 def is_running(brick):

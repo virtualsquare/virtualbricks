@@ -23,13 +23,11 @@ class Observable:
     # TODO: investigate if weakref.WeakValueDictionary can be used to ease the
     # disponse of observables.
 
-    def __init__(self, *names):
-        self.__events = {}
+    def __init__(self):
+        self._events = {}
         # how many muted() blocks are open: while there is one, notify()
         # tells no one
         self._muted = 0
-        for name in names:
-            self.add_event(name)
 
     @contextlib.contextmanager
     def muted(self):
@@ -42,39 +40,39 @@ class Observable:
             self._muted -= 1
 
     def add_event(self, name):
-        if name in self.__events:
+        if name in self._events:
             raise ValueError("Event %s already present" % name)
-        self.__events[name] = []
+        self._events[name] = []
 
     def add_observer(self, name, callback, args, kwds):
         assert callable(callback), f"{callable!r} is not callable"
-        assert name in self.__events, f"Event {name} not present"
-        assert (callback, args, kwds) not in self.__events[name]
-        self.__events[name].append((callback, args, kwds))
+        assert name in self._events, f"Event {name} not present"
+        assert (callback, args, kwds) not in self._events[name]
+        self._events[name].append((callback, args, kwds))
 
     def remove_observer(self, name, callback, args, kwds):
         assert callable(callback), f"{callable!r} is not callable"
-        assert name in self.__events, f"Event {name} not present"
-        self.__events[name].remove((callback, args, kwds))
+        assert name in self._events, f"Event {name} not present"
+        self._events[name].remove((callback, args, kwds))
 
     def notify(self, name, emitter):
-        assert name in self.__events, f"Event {name} not present"
+        assert name in self._events, f"Event {name} not present"
         if not self._muted:
-            for callback, args, kwds in self.__events[name]:
+            for callback, args, kwds in self._events[name]:
                 callback(emitter, *args, **kwds)
 
     def __len__(self):
-        return len(self.__events)
+        return len(self._events)
 
     def __bool__(self):
-        return bool(self.__events)
+        return bool(self._events)
 
 
 class Signal:
 
     def __init__(self, observable, name):
-        self.__observable = observable
-        self.__name = name
+        self._observable = observable
+        self._name = name
         try:
             observable.add_event(name)
         except ValueError:
@@ -82,11 +80,11 @@ class Signal:
 
     def connect(self, callback, *args, **kwds):
         assert callable(callback), f"{callable!r} is not callable"
-        self.__observable.add_observer(self.__name, callback, args, kwds)
+        self._observable.add_observer(self._name, callback, args, kwds)
 
     def disconnect(self, callback, *args, **kwds):
         assert callable(callback), f"{callable!r} is not callable"
-        self.__observable.remove_observer(self.__name, callback, args, kwds)
+        self._observable.remove_observer(self._name, callback, args, kwds)
 
     def notify(self, emitter):
-        self.__observable.notify(self.__name, emitter)
+        self._observable.notify(self._name, emitter)
