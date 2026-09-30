@@ -112,7 +112,7 @@ class TestVirtualMachine(BrickTestCase):
         projects = use_workspace(self, self.mktemp())
         projects.current = OpenProject(self.mktemp(), None)
         os.makedirs(projects.current.path)
-        vm.rename("vm2")
+        self.factory.rename_item(vm, "vm2")
         self.assertEqual(default.nickname, "vm2_sock_eth1")
         self.assertEqual(
             default.path,
@@ -125,6 +125,49 @@ class TestVirtualMachine(BrickTestCase):
         sock.nickname = "other"
         vm.set_name("vm3")
         self.assertEqual(sock.nickname, "other")
+
+    def open_project(self, *filenames):
+        projects = use_workspace(self, self.mktemp())
+        projects.current = OpenProject(self.mktemp(), None)
+        os.makedirs(projects.current.path)
+        for filename in filenames:
+            with open(os.path.join(projects.current.path, filename), "w") as f:
+                f.write(filename)
+        return projects.current.path
+
+    def test_rename_moves_the_private_disks(self):
+        path = self.open_project(
+            "vm_hda.cow",
+            "vm_hdb.cow.bak-2026-09-30_10-00",
+            "vm_x.cow",
+            "vmx_hda.cow",
+            "sw_hda.cow",
+        )
+        vm = self.factory.new_brick("qemu", "vm")
+        self.factory.rename_item(vm, "r1")
+        self.assertEqual(
+            sorted(os.listdir(path)),
+            [
+                "r1_hda.cow",
+                "r1_hdb.cow.bak-2026-09-30_10-00",
+                "sw_hda.cow",
+                "vm_x.cow",
+                "vmx_hda.cow",
+            ],
+        )
+        self.assertEqual(
+            vm.disk("hda").get_cow_path(), os.path.join(path, "r1_hda.cow")
+        )
+        with open(os.path.join(path, "r1_hda.cow")) as f:
+            self.assertEqual(f.read(), "vm_hda.cow")
+
+    def test_rename_takes_the_name_as_it_is(self):
+        path = self.open_project("a.b_hda.cow", "axb_hda.cow")
+        vm = self.factory.new_brick("qemu", "a.b")
+        self.factory.rename_item(vm, "c")
+        self.assertEqual(
+            sorted(os.listdir(path)), ["axb_hda.cow", "c_hda.cow"]
+        )
 
     def test_usb_kind(self):
         kind = UsbDeviceKind()

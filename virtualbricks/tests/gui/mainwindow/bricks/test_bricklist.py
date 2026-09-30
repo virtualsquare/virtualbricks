@@ -220,7 +220,7 @@ class TestTheRows(BrickListTestCase):
         self.assertEqual(
             self.row(self.tap).detail.get_text(), "Tap · on sw · no address"
         )
-        self.sw.rename("sw1")
+        self.factory.rename_item(self.sw, "sw1")
         self.assertEqual(
             self.row(self.tap).detail.get_text(), "Tap · on sw1 · no address"
         )

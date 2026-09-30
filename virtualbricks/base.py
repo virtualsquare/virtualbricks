@@ -99,9 +99,6 @@ class Base:
                     setter(value)
         self.notify_changed()
 
-    def rename(self, name):
-        return self.factory.rename_item(self, name)
-
     def rename_references(self, target, old, new):
         """Point the references to the image or event ``old`` at ``new``."""
 

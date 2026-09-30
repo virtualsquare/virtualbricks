@@ -21,7 +21,6 @@ import datetime
 import errno
 import itertools
 import os
-import pathlib
 import re
 import shutil
 
@@ -624,6 +623,23 @@ class Disk:
 DISK_DEVICES = ("hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock")
 
 
+def _rename_private_disks(folder, old, new):
+    """
+    Rename the private disks of the machine ``old`` in ``folder``, and their
+    backups, after the machine ``new``.
+    """
+
+    disk = re.compile(
+        rf"{re.escape(old)}_(?P<rest>(?:{'|'.join(DISK_DEVICES)})\.cow"
+        r"(?:\.(?:bak|back)-[0-9_-]+)?)\Z"
+    )
+    for filename in sorted(os.listdir(folder)):
+        match = disk.match(filename)
+        path = os.path.join(folder, filename)
+        if match and os.path.isfile(path):
+            os.rename(path, os.path.join(folder, f"{new}_{match['rest']}"))
+
+
 def _image(dev):
     """
     The field of the image of a disk device, such as ``hda``.
@@ -1168,39 +1184,17 @@ class VirtualMachine(bricks.Brick):
         self._disks = {dev: Disk(self, dev) for dev in DISK_DEVICES}
 
     def set_name(self, name):
+        """The sockets and the private disks named after it follow."""
+
         prefix = f"{self.name}_"
+        if projects.current is not None:
+            _rename_private_disks(projects.current.path, self.name, name)
         bricks.Brick.set_name(self, name)
         for sock in self.socks:
             if sock.nickname.startswith(prefix):
                 suffix = sock.nickname[len(prefix) :]
                 sock.nickname = f"{name}_{suffix}"
                 sock.path = self.runtime_path(f"{name}_{suffix}[]")
-
-    def rename(self, new_name):
-        """
-        Override Brick.rename() to rename also the disks.
-
-        :type new_name: str
-        :rtype: None
-        """
-
-        # TODO: logs
-        # TODO: rewind in case of error
-        prev_name = super().rename(new_name)
-        project_path = pathlib.Path(projects.current.path)
-        disk_regex = re.compile(
-            f"{prev_name}_"  # vm name
-            "(?P<disk>[a-z0-9]+)"  # disk
-            ".cow"  # extension
-            r"(?P<bak_suffix>\.(?:bak|back)-[0-9\-_]+)?"  # backup suffix
-            "$"  # end
-        )
-        new_name_repl = rf"{new_name}_\g<disk>.cow\g<bak_suffix>"
-        for path in project_path.iterdir():
-            if path.is_file() and disk_regex.match(path.name):
-                new_disk_name = disk_regex.sub(new_name_repl, path.name)
-                path.rename(project_path.joinpath(new_disk_name))
-        return prev_name
 
     def poweron(self, resume=""):
         """

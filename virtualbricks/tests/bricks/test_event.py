@@ -273,7 +273,7 @@ class TestEvent(BrickTestCase):
         self.assertRaises(KeyError, self.event.update_config, {"speed": 1})
 
     def test_rename(self):
-        self.event.rename("start")
+        self.factory.rename_item(self.event, "start")
         self.assertEqual(self.event.name, "start")
         self.assertIs(self.factory.get_event_by_name("start"), self.event)
         self.assertIsNone(self.factory.get_event_by_name("boot"))
