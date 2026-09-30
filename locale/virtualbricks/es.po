@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 22:20+0200\n"
+"POT-Creation-Date: 2026-09-30 22:44+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -4776,6 +4776,52 @@ msgstr ""
 
 #: virtualbricks/migrate/gui.py
 msgid "Save report"
+msgstr ""
+
+#: virtualbricks/remote/client.py
+msgid "Not over a connection, for now"
+msgstr ""
+
+#: virtualbricks/remote/client.py
+#, python-brace-format
+msgid ""
+"{where} asks for the token, and {path} has none: copy the token of that "
+"Virtualbricks there"
+msgstr ""
+
+#: virtualbricks/remote/client.py
+#, fuzzy, python-brace-format
+msgid "{where} doesn't take your token"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/remote/client.py
+#, python-brace-format
+msgid ""
+"{where} speaks only protocol {protocol} of AMP: its Virtualbricks is older "
+"than these windows"
+msgstr ""
+
+#: virtualbricks/remote/client.py
+#, python-brace-format
+msgid ""
+"{where} runs Virtualbricks {theirs}, these windows are {ours}: run the same "
+"version on both"
+msgstr ""
+
+#: virtualbricks/remote/client.py
+#, python-brace-format
+msgid ""
+"{where} has no commands for the windows: run the same Virtualbricks on both"
+msgstr ""
+
+#: virtualbricks/remote/client.py
+#, python-brace-format
+msgid "Can't reach {where}: {reason}"
+msgstr ""
+
+#: virtualbricks/remote/client.py
+#, python-brace-format
+msgid "The connection to {where} is lost"
 msgstr ""
 
 #: virtualbricks/remote/mirror.py

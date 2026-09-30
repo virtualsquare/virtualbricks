@@ -922,7 +922,8 @@ def duplicate(context, name, new):
     if new is not None:
         new = factory.check_brick_name(name.get_type(), new)
     copy = factory.duplicate_brick(name)
-    if new is not None:
+    # the name it has already needs no rename
+    if new is not None and new != copy.name:
         factory.rename_item(copy, new)
     return [copy.name]
 

@@ -154,6 +154,29 @@ def server_options(socket):
     )
 
 
+def client_options(socket):
+    """
+    The TLS options of the windows for socket, a wire.Socket of --connect
+    of type ssl: the certificates they trust for Virtualbricks, those of
+    ca_dir or else of the system, and their own certificate, if any. Raise
+    wire.Unusable if one of its files can't be used.
+    """
+
+    if socket.ca_dir is not None:
+        trust = ssl.trustRootFromCertificates(trusted(socket.ca_dir))
+    else:
+        trust = ssl.platformTrust()
+    mine = None
+    if socket.private_key or socket.cert:
+        mine = private_certificate(
+            socket.cert or socket.private_key,
+            socket.private_key or socket.cert,
+        )
+    return ssl.optionsForClientTLS(
+        socket.host, trustRoot=trust, clientCertificate=mine
+    )
+
+
 def common_name(certificate):
     """The name of a client's certificate, a pyOpenSSL X509, for the log."""
 
