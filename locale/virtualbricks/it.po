@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 23:01+0200\n"
+"POT-Creation-Date: 2026-09-30 23:40+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -4946,6 +4946,16 @@ msgstr ""
 #: virtualbricks/remote/client.py
 #, python-brace-format
 msgid "The connection to {where} is lost"
+msgstr ""
+
+#: virtualbricks/remote/facts.py
+#, python-brace-format
+msgid "The answer, {size} bytes, is longer than the {most} that AMP carries"
+msgstr ""
+
+#: virtualbricks/remote/facts.py
+#, python-brace-format
+msgid "No QEMU program {program}"
 msgstr ""
 
 #: virtualbricks/remote/mirror.py

@@ -33,6 +33,7 @@ from virtualbricks.bricks import FakeProcess
 from virtualbricks.bricks.eventaction import ShellAction
 from virtualbricks.config import settings
 from virtualbricks.console import ampcommands, ampwire, control, wire
+from virtualbricks.programs import qemu_programs
 from virtualbricks.remote import commands, follower
 from virtualbricks.remote.follower import (
     LogKeeper,
@@ -212,6 +213,10 @@ class TestFollow(FollowTestCase):
         self.assertEqual(machine["version"], __version__)
         self.assertEqual(machine["runtime_dir"], "/run/vb")
         self.assertIn("Switch", machine["lacks"])
+        self.assertEqual(
+            machine["qemu_programs"],
+            qemu_programs(settings.get_setting("qemu_path")),
+        )
         self.assertEqual(
             got[1][3:], ({"path": "/lab/frr.qcow2", "description": ""}, {})
         )

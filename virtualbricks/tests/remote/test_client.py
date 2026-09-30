@@ -32,7 +32,15 @@ from virtualbricks.bricks.brickinfo import NEW_KINDS
 from virtualbricks.bricks.eventaction import ShellAction
 from virtualbricks.config import settings
 from virtualbricks.console import ampcommands, ampwire, control, wire
-from virtualbricks.remote import client, follower, mirror
+from virtualbricks.bricks.virtualmachine import UsbDevice
+from virtualbricks.programs import (
+    QEMU_QUESTIONS,
+    Answer,
+    ProgramError,
+    Programs,
+    machine_question,
+)
+from virtualbricks.remote import client, commands, facts, follower, mirror
 from virtualbricks.remote.client import (
     NotYet,
     Refused,
@@ -48,6 +56,7 @@ from virtualbricks.tests import FakeLogger, use_workspace
 from virtualbricks.tests.console import ConsoleTestCase
 from virtualbricks.tests.console.test_control import TOKEN, tls_file
 from virtualbricks.tests.remote.test_mirror import Project
+from virtualbricks.tests.test_programs import FakeRun, executable
 
 TARGET = wire.Socket("/run/lab.amp", wire.AMP)
 
@@ -360,8 +369,6 @@ class TestEngine(ClientTestCase):
             self.assertEqual(
                 failure.getErrorMessage(), "Not over a connection, for now"
             )
-        self.failureResultOf(self.engine.qemu("qemu-system-x86_64"), OSError)
-        self.assertEqual(self.done(self.engine.usb()), [])
 
     def test_quit(self):
         self.done(self.engine.quit())
@@ -392,6 +399,131 @@ class TestEngine(ClientTestCase):
         self.clock().advance(0)
         self.pump.flush()
         self.assertEqual([message["text"] for message in messages], ["hi"])
+
+
+class TestFacts(ClientTestCase):
+    """What the windows ask of the machine there: its QEMU, its USB."""
+
+    def setUp(self):
+        super().setUp()
+        # the QEMU program of the setting there, which answers as Debian 13's
+        folder = os.path.abspath(self.mktemp())
+        self.qemu = executable(folder, "qemu-system-x86_64")
+        settings.set_setting("qemu_path", folder)
+        os.environ["PATH"] = ""
+        self.run = FakeRun()
+        self.patch(facts, "programs", Programs(self.run))
+        self.logger = FakeLogger()
+        self.patch(facts, "logger", self.logger)
+        self.found = [UsbDevice("1d6b:0002", "Linux Foundation 2.0 root hub")]
+        self.patch(facts, "get_usb_devices", lambda: defer.succeed(self.found))
+        self.done(self.start())
+
+    def read_there(self):
+        """What the program says of itself, read there."""
+
+        return self.successResultOf(Programs(FakeRun()).qemu(self.qemu))
+
+    def test_qemu(self):
+        info = self.done(self.engine.qemu("qemu-system-x86_64"))
+        self.assertEqual(info, self.read_there())
+        self.assertEqual(info.path, self.qemu)
+        self.assertEqual(
+            sorted(args for _, args in self.run.calls),
+            sorted(QEMU_QUESTIONS.values()),
+        )
+
+    def test_no_such_program(self):
+        failure = self.refused(
+            self.engine.qemu("qemu-system-riscv64"), FileNotFoundError
+        )
+        self.assertEqual(failure.value.args, ("qemu-system-riscv64",))
+
+    def test_a_program_that_fails(self):
+        self.run.fail = ProgramError("qemu-system-x86_64: killed by signal 9")
+        failure = self.refused(
+            self.engine.qemu("qemu-system-x86_64"), ampwire.CommandFailed
+        )
+        self.assertEqual(
+            failure.getErrorMessage(), "qemu-system-x86_64: killed by signal 9"
+        )
+        self.assertEqual(self.logger.events, [])
+
+    def test_an_answer_too_long(self):
+        self.run.answers[QEMU_QUESTIONS["devices"]] = Answer("é" * 40000)
+        failure = self.refused(
+            self.engine.qemu("qemu-system-x86_64"), ampwire.AnswerTooLong
+        )
+        # ["é…", "", 0], in UTF-8
+        self.assertIn("80011 bytes", failure.getErrorMessage())
+
+    def test_machine_properties(self):
+        info = self.done(self.engine.qemu("qemu-system-x86_64"))
+        there = Programs(FakeRun())
+        self.assertEqual(
+            self.done(self.engine.machine_properties(info, "q35")),
+            self.successResultOf(there.machine_properties(info, "q35")),
+        )
+        # the default machine type, as the Virtualbricks there has it
+        self.done(self.engine.machine_properties(info, ""))
+        self.assertEqual(
+            self.run.calls[-1],
+            (self.qemu, machine_question(info.default_machine)),
+        )
+
+    def test_the_default_machine_there(self):
+        answer = self.done(
+            self.windows.callRemote(
+                commands.MachineProperties,
+                program="qemu-system-x86_64",
+                machine="",
+            )
+        )
+        default = machine_question(self.read_there().default_machine)
+        self.assertEqual(self.run.calls[-1], (self.qemu, default))
+        self.assertEqual(answer["text"], self.run.answers[default].out)
+
+    def test_usb(self):
+        self.assertEqual(self.done(self.engine.usb()), self.found)
+
+    def test_a_failure_on_the_way(self):
+        def broken():
+            raise RuntimeError("lsusb crashed")
+
+        self.patch(facts, "get_usb_devices", broken)
+        failure = self.refused(self.engine.usb(), ampwire.CommandFailed)
+        self.assertEqual(failure.getErrorMessage(), "lsusb crashed")
+        self.assertEqual(
+            self.logger.formatted(),
+            ["UsbDevices for the windows of another machine failed"],
+        )
+
+    def test_the_pushes_first(self):
+        self.factory.new_brick("switch", "sw2")
+        asking = self.engine.usb()
+        asking.addCallback(lambda _: self.copy.get_brick("sw2"))
+        self.assertIsNotNone(self.done(asking))
+
+    def test_beside_the_queue(self):
+        # a command there that takes long: the facts don't wait for it
+        held = defer.Deferred()
+        self.connection.requests.add(lambda: held)
+        self.assertEqual(self.done(self.engine.usb()), self.found)
+        held.callback(None)
+
+    def test_before_the_agreement(self):
+        # Hello again, without protocol 2
+        self.done(self.windows.callRemote(ampwire.Hello))
+        self.refused(self.engine.usb(), ampcommands.ProtocolNeeded)
+
+    def test_what_the_windows_read(self):
+        machine = self.engine.machine
+        self.assertEqual(machine.qemu_programs(), ["qemu-system-x86_64"])
+        settings.set_setting("audio_driver", "pa")
+        self.pump.flush()
+        self.clock().advance(0)
+        self.pump.flush()
+        self.assertEqual(machine.setting("audio_driver"), "pa")
 
 
 class TestEndpoints(ConsoleTestCase):

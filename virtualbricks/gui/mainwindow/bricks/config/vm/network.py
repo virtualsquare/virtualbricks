@@ -32,7 +32,6 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango  # noqa: E402
 
 from virtualbricks.bricks.virtualmachine import hostonly_sock  # noqa: E402
-from virtualbricks.config.settings import get_setting  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.form import (  # noqa: E402
     show_problem,
     socket_name,
@@ -140,7 +139,8 @@ class CardRow(Gtk.ListBoxRow):
         self.plugged.append(HOST, _("The host only, on QEMU's user network"))
         for position, sock in enumerate(self.sockets):
             self.plugged.append(str(position), socket_name(sock))
-        if card.kind == SOCKET or get_setting("allow_female_plugs"):
+        machine = cards.panel.engine.machine
+        if card.kind == SOCKET or machine.setting("allow_female_plugs"):
             self.plugged.append(SOCKET, _("Other bricks plug into it"))
         self.plugged.set_active_id(self._plugged_id(card))
         self.plugged.connect("changed", self.on_plugged)

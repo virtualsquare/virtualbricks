@@ -518,6 +518,19 @@ class TestMachine(EngineTestCase):
         )
         self.assertEqual(self.successResultOf(engine.usb()), found)
 
+    def test_what_the_windows_read(self):
+        folder = os.path.abspath(self.mktemp())
+        os.makedirs(folder)
+        settings.set_setting("qemu_path", folder)
+        os.environ["PATH"] = ""
+        path = os.path.join(folder, "qemu-system-riscv64")
+        with open(path, "w"):
+            pass
+        os.chmod(path, 0o755)
+        machine = self.engine.machine
+        self.assertEqual(machine.setting("qemu_path"), folder)
+        self.assertEqual(machine.qemu_programs(), ["qemu-system-riscv64"])
+
     def test_quit(self):
         switch = self.factory.new_brick("switch", "sw1")
         switch.proc = FakeProcess(switch)

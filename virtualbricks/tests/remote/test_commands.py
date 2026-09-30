@@ -61,6 +61,13 @@ class TestCommands(unittest.TestCase):
             self.assertTrue(command.requiresAnswer)
             self.assertIs(command.errors, ampcommands.ERRORS)
 
+    def test_the_answers_of_qemu(self):
+        # a value each: the questions of programs.py, which the commands
+        # don't import
+        from virtualbricks.programs import QEMU_QUESTIONS
+
+        self.assertEqual(commands.QEMU_ANSWERS, tuple(QEMU_QUESTIONS))
+
     def test_in_the_record(self):
         lines = ampgen.record().splitlines()
         for command in commands.FROM_PROGRAM + commands.PUSHES:

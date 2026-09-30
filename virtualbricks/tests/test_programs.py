@@ -502,6 +502,17 @@ class TestQemu(ProgramsTestCase):
         self.assertIs(first, second)
         self.assertEqual(len(self.run.calls), len(QEMU_QUESTIONS))
 
+    def test_the_answers_once(self):
+        answers = self.successResultOf(self.programs.qemu_answers(self.qemu))
+        self.assertEqual(set(answers), set(QEMU_QUESTIONS))
+        self.assertEqual(
+            answers["version"], self.run.answers[QEMU_QUESTIONS["version"]]
+        )
+        # what the info is read from
+        self.successResultOf(self.programs.qemu(self.qemu))
+        self.successResultOf(self.programs.qemu_answers(self.qemu))
+        self.assertEqual(len(self.run.calls), len(QEMU_QUESTIONS))
+
     def test_asks_once_while_waiting(self):
         self.run.wait = True
         first = self.programs.qemu(self.qemu)

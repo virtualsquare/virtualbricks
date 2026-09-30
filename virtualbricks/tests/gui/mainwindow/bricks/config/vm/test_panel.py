@@ -251,6 +251,47 @@ class TestItsQemu(MachinePanelTestCase):
         )
 
 
+class MachineThere:
+    """The machine of the bricks, when it isn't this one: its settings."""
+
+    settings = {
+        "qemu_path": "/opt/lab/bin",
+        "audio_driver": "pa",
+        "allow_female_plugs": True,
+    }
+
+    def setting(self, name):
+        return self.settings[name]
+
+    def qemu_programs(self):
+        return ["qemu-system-aarch64"]
+
+
+class TestTheMachineThere(MachinePanelTestCase):
+    """The panel says what the machine of the bricks has, not this one."""
+
+    def prepare(self):
+        self.gui.engine.machine = MachineThere()
+        self.vm.update_config({"qemu_program": "qemu-system-aarch64"})
+        self.vm.add_plug(self.switch.socks[0], "52:54:00:00:00:01", "e1000")
+
+    def test_its_settings(self):
+        rows = self.panel.rows
+        self.assertEqual(
+            [tuple(row) for row in rows["qemu_program"].control.get_model()],
+            [("aarch64", "qemu-system-aarch64")],
+        )
+        self.assertEqual(
+            self.panel.status_words.get_text(),
+            "qemu-system-aarch64 isn't in /opt/lab/bin: the lists show only"
+            " vm1's choices",
+        )
+        self.assertEqual(rows["audio_driver"].control.get_text(), "pa")
+        # its female plugs
+        [card] = self.panel.cards.rows()
+        self.assertEqual(card.plugged.get_model()[-1][1], "socket")
+
+
 class TestWhatItLacks(MachinePanelTestCase):
 
     target = "ubuntu-22.04"

@@ -31,7 +31,6 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks.config.settings import get_setting  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.picker import (  # noqa: E402
     Option,
     Picker,
@@ -100,7 +99,9 @@ def build_sound(panel, page) -> None:
     made = Picker(draft.get("sound_card"), chose, missing(draft))
     panel.sound_picker = made
     form.row("sound_card", made)
-    driver = Gtk.Label(visible=True, label=get_setting("audio_driver"))
+    driver = Gtk.Label(
+        visible=True, label=panel.engine.machine.setting("audio_driver")
+    )
     form.row("audio_driver", driver, _("Audio driver"), _("From the settings"))
 
     def fill():

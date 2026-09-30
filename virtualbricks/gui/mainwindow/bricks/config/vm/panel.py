@@ -29,7 +29,6 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks.config.settings import get_setting  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.form import Form  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.panel import (
     Panel,
@@ -222,7 +221,7 @@ class VirtualMachinePanel(Panel):
                 " {brick}'s choices"
             ).format(
                 program=program,
-                folder=get_setting("qemu_path"),
+                folder=self.engine.machine.setting("qemu_path"),
                 brick=self.draft.brick.name,
             ),
             Gtk.MessageType.WARNING,

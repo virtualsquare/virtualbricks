@@ -87,6 +87,53 @@ class Connect(amp.Command):
     errors = ERRORS
 
 
+# The questions of programs.QEMU_QUESTIONS, whose answers QemuFacts gives.
+QEMU_ANSWERS = (
+    "version",
+    "options",
+    "machines",
+    "cpus",
+    "devices",
+    "displays",
+    "audio_drivers",
+    "netdevs",
+    "accelerators",
+)
+
+
+class QemuFacts(amp.Command):
+    """
+    What the QEMU program of that name has, as the texts it printed: its
+    path, and its answer to each question, JSON ``[out, err, status]``, a
+    value each, since all of them are more than AMP carries in one.
+    NotFound if there is none.
+    """
+
+    arguments = [(b"program", amp.Unicode())]
+    response = [(b"path", amp.Unicode())] + [
+        (name.encode(), amp.Unicode()) for name in QEMU_ANSWERS
+    ]
+    errors = ERRORS
+
+
+class MachineProperties(amp.Command):
+    """
+    The text of the properties of a machine type of a QEMU program, as
+    ``-machine TYPE,help`` prints it; the default type if machine is empty.
+    """
+
+    arguments = [(b"program", amp.Unicode()), (b"machine", amp.Unicode())]
+    response = [(b"text", amp.Unicode())]
+    errors = ERRORS
+
+
+class UsbDevices(amp.Command):
+    """The USB devices of the machine: JSON ``[{id, description}]``."""
+
+    response = [(b"devices", amp.Unicode())]
+    errors = ERRORS
+
+
 class _Push(amp.Command):
     """A command that Virtualbricks calls on a program that follows it."""
 
@@ -157,7 +204,14 @@ class Quitting(_Push):
 
 
 # What a program calls, and what Virtualbricks calls on it.
-FROM_PROGRAM = (Follow, Apply, Connect)
+FROM_PROGRAM = (
+    Follow,
+    Apply,
+    Connect,
+    QemuFacts,
+    MachineProperties,
+    UsbDevices,
+)
 PUSHES = (
     Opened,
     Changed,

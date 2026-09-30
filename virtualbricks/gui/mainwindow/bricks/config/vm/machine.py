@@ -22,10 +22,8 @@ type and the CPU model, chosen of what the program has, KVM, the CPUs, the
 memory, and ACPI.
 """
 
-from virtualbricks.config.settings import get_setting
 from virtualbricks.gui.mainwindow.bricks.config.picker import Option, Picker
 from virtualbricks.i18n import _
-from virtualbricks.programs import qemu_programs
 
 
 def missing(draft) -> str:
@@ -52,7 +50,7 @@ def build(panel, page) -> None:
     form = page.form
     draft = panel.draft
     form.section(_("Machine"))
-    names = qemu_programs(get_setting("qemu_path"))
+    names = panel.engine.machine.qemu_programs()
     form.choice(
         "qemu_program",
         [(name, name.removeprefix("qemu-system-")) for name in names],

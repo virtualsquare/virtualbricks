@@ -59,7 +59,7 @@ from virtualbricks.config import settings
 from virtualbricks.config.projectfile import brick_table
 from virtualbricks.config.schema import dump_record, field_names
 from virtualbricks.config.workspace import projects
-from virtualbricks.programs import missing_programs
+from virtualbricks.programs import missing_programs, qemu_programs
 from virtualbricks.remote import commands
 from virtualbricks.remote.commands import BRICK, EVENT, IMAGE
 
@@ -185,6 +185,7 @@ def machine_table(factory, workspace) -> dict:
         "workspace": workspace.path,
         "runtime_dir": factory.runtime_dir,
         "missing": [str(missing) for missing in missing_programs(vde, qemu)],
+        "qemu_programs": qemu_programs(qemu),
         "lacks": lacks,
         "ksm": ksm.check_ksm(),
     }

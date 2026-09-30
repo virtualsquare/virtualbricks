@@ -26,6 +26,9 @@ settings, and what they ask of the machine goes through the engine. Each
 call returns a Deferred, so that the windows wait for an engine on this
 machine as they would for one on another, and a refusal is its failure.
 
+``engine.machine`` has what the windows read of the machine of the bricks
+at once, without asking: its settings, its QEMU programs.
+
 ``LocalEngine`` does what the windows did before, on the factory of this
 process. It loads no GTK.
 """
@@ -52,8 +55,22 @@ from virtualbricks.config.settings import (
     store_settings,
 )
 from virtualbricks.config.workspace import projects
-from virtualbricks.programs import programs as known_programs
+from virtualbricks.programs import programs as known_programs, qemu_programs
 from virtualbricks.qemu import run
+
+
+class LocalMachine:
+    """What the windows read of this machine, which runs the bricks."""
+
+    def setting(self, name):
+        """A setting of Virtualbricks, or of the open project."""
+
+        return get_setting(name)
+
+    def qemu_programs(self) -> list[str]:
+        """The names of the QEMU system emulators, for a machine to use."""
+
+        return qemu_programs(get_setting("qemu_path"))
 
 
 class LocalEngine:
@@ -78,6 +95,7 @@ class LocalEngine:
     ) -> None:
         # what the windows read, and what the engine changes
         self.factory = factory
+        self.machine = LocalMachine()
         self.workspace = projects if workspace is None else workspace
         self.clock = reactor if clock is None else clock
         self.qemu_img = run.qemu_img if qemu_img is None else qemu_img

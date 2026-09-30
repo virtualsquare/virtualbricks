@@ -17,7 +17,7 @@
 
 """The Machine section: the program, the pickers of its QEMU, the rest."""
 
-from virtualbricks.gui.mainwindow.bricks.config.vm import machine
+from virtualbricks import engine
 from virtualbricks.tests.gui.mainwindow.bricks.config.vm.test_panel import (
     MachinePanelTestCase,
 )
@@ -26,8 +26,9 @@ from virtualbricks.tests.gui.mainwindow.bricks.config.vm.test_panel import (
 class TestTheMachineSection(MachinePanelTestCase):
 
     def prepare(self):
+        # the QEMU programs that the engine of the window finds
         self.patch(
-            machine,
+            engine,
             "qemu_programs",
             lambda folder: ["qemu-system-i386", "qemu-system-x86_64"],
         )

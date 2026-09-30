@@ -64,7 +64,9 @@ __all__ = [
     "find_program",
     "machine_question",
     "missing_programs",
+    "parse_machine_properties",
     "programs",
+    "qemu_info",
     "qemu_programs",
 ]
 
@@ -582,6 +584,15 @@ class Programs:
         deferred.addCallback(lambda answers: dict(zip(names, answers)))
         return deferred.addErrback(_first_error)
 
+    def qemu_answers(self, path: str) -> defer.Deferred[dict[str, Answer]]:
+        """What the QEMU program at path answers to QEMU_QUESTIONS."""
+
+        try:
+            key = ("answers", _key(path))
+        except OSError as exc:
+            return defer.fail(ProgramError(f"{path}: {exc.strerror}"))
+        return self._once(key, lambda: self._gather(path, QEMU_QUESTIONS))
+
     def qemu(self, path: str) -> defer.Deferred[QemuInfo]:
         """What the QEMU program at path has."""
 
@@ -591,29 +602,35 @@ class Programs:
             return defer.fail(ProgramError(f"{path}: {exc.strerror}"))
 
         def ask() -> defer.Deferred[object]:
-            deferred = self._gather(path, QEMU_QUESTIONS)
+            deferred = self.qemu_answers(path)
             return deferred.addCallback(lambda a: qemu_info(path, a))
 
         return self._once(key, ask)
+
+    def machine_answer(
+        self, path: str, machine: str
+    ) -> defer.Deferred[Answer]:
+        """What the QEMU program at path says of the machine type machine."""
+
+        try:
+            key = ("machine", _key(path), machine)
+        except OSError as exc:
+            return defer.fail(ProgramError(f"{path}: {exc.strerror}"))
+        return self._once(
+            key, lambda: self._run(path, machine_question(machine))
+        )
 
     def machine_properties(
         self, info: QemuInfo, machine: str = ""
     ) -> defer.Deferred[frozenset[str]]:
         """The properties of a machine type; the default one if empty."""
 
-        machine = machine or info.default_machine
-        try:
-            key = ("machine", _key(info.path), machine)
-        except OSError as exc:
-            return defer.fail(ProgramError(f"{info.path}: {exc.strerror}"))
-
-        def ask() -> defer.Deferred[object]:
-            deferred = self._run(info.path, machine_question(machine))
-            return deferred.addCallback(
-                lambda answer: parse_machine_properties(answer.out)
-            )
-
-        return self._once(key, ask)
+        deferred = self.machine_answer(
+            info.path, machine or info.default_machine
+        )
+        return deferred.addCallback(
+            lambda answer: parse_machine_properties(answer.out)
+        )
 
     def vde(self, folder: str) -> defer.Deferred[VdeInfo]:
         """Which VDE programs there are, in folder and else in PATH."""

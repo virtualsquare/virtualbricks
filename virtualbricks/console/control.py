@@ -55,7 +55,12 @@ from virtualbricks.console.command import COMMANDS, CommandError, NotFound
 from virtualbricks.console.dispatch import run, run_command
 from virtualbricks.console.parser import line_of
 from virtualbricks.i18n import _
-from virtualbricks.remote import answers, commands as remote_commands, follower
+from virtualbricks.remote import (
+    answers,
+    commands as remote_commands,
+    facts,
+    follower,
+)
 
 logger = Logger()
 listening = "Listening on {path}, protocol {protocol}"
@@ -362,7 +367,12 @@ WINDOWS = {
 
 
 class AMPControl(
-    Visitor, TypedCommands, follower.Following, answers.Answers, amp.AMP
+    Visitor,
+    TypedCommands,
+    follower.Following,
+    answers.Answers,
+    facts.Facts,
+    amp.AMP,
 ):
     """
     A connection of the AMP protocol: the commands of ampwire, and, once

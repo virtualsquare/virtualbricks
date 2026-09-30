@@ -43,10 +43,12 @@ from twisted.protocols import amp
 from virtualbricks import __version__, locations
 from virtualbricks.brickfactory import normalize_name
 from virtualbricks.bricks.brickinfo import NEW_KINDS, Issue
+from virtualbricks.bricks.virtualmachine import UsbDevice
 from virtualbricks.config.settings import setting_kind
 from virtualbricks.config.schema import kind_of
 from virtualbricks.console import ampcommands, ampwire, wire
 from virtualbricks.i18n import _
+from virtualbricks.programs import Answer, parse_machine_properties, qemu_info
 from virtualbricks.remote import commands
 from virtualbricks.remote.commands import BRICK, EVENT, IMAGE
 from virtualbricks.remote.drafts import what_changed
@@ -222,6 +224,22 @@ def _text(kind, value) -> str:
     return value if isinstance(value, str) else kind.format(value)
 
 
+class RemoteMachine:
+    """
+    What the windows read of the machine of the bricks, from the copy: the
+    settings and the facts that the Virtualbricks there sent.
+    """
+
+    def __init__(self, mirror):
+        self.mirror = mirror
+
+    def setting(self, name):
+        return self.mirror.settings[name]
+
+    def qemu_programs(self) -> list[str]:
+        return list(self.mirror.machine.get("qemu_programs", []))
+
+
 class RemoteEngine:
     """
     The engine of the windows of the Virtualbricks at where, over the
@@ -232,6 +250,7 @@ class RemoteEngine:
 
     def __init__(self, mirror, windows, where, quit=None):
         self.factory = mirror
+        self.machine = RemoteMachine(mirror)
         # the connection; Reconnect gives another
         self.windows = windows
         self.where = where
@@ -475,14 +494,44 @@ class RemoteEngine:
         return defer.succeed(None if found is None else Issue(**found))
 
     def qemu(self, program):
-        # its answers come in step 5: the panel shows the brick's choices
-        return defer.fail(FileNotFoundError(program))
+        """
+        What the QEMU program has there, read here from what it printed;
+        FileNotFoundError if there is none.
+        """
+
+        asking = self.call(commands.QemuFacts, program=program)
+
+        def read(answer):
+            answers = {
+                name: Answer(*json.loads(answer[name]))
+                for name in commands.QEMU_ANSWERS
+            }
+            return qemu_info(answer["path"], answers)
+
+        def not_there(failure):
+            failure.trap(ampcommands.NotFound)
+            raise FileNotFoundError(program)
+
+        return asking.addCallbacks(read, not_there)
 
     def machine_properties(self, info, machine):
-        return defer.succeed(frozenset())
+        # the default machine type, if empty, as the Virtualbricks there
+        # has it
+        asking = self.call(
+            commands.MachineProperties, program=info.path, machine=machine
+        )
+        return asking.addCallback(
+            lambda answer: parse_machine_properties(answer["text"])
+        )
 
     def usb(self):
-        return defer.succeed([])
+        asking = self.call(commands.UsbDevices)
+        return asking.addCallback(
+            lambda answer: [
+                UsbDevice(device["id"], device["description"])
+                for device in json.loads(answer["devices"])
+            ]
+        )
 
     def quit(self):
         """Close the windows; the Virtualbricks there goes on."""
