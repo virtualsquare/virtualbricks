@@ -58,6 +58,35 @@ class Follow(amp.Command):
     errors = ERRORS
 
 
+class Apply(amp.Command):
+    """
+    The OK of the panel of a brick, an event or an image: what it changed,
+    ``changes``, ``links`` and ``extras``, JSON as remote.drafts writes it.
+    All or nothing.
+    """
+
+    arguments = [
+        (b"kind", amp.Unicode()),
+        (b"name", amp.Unicode()),
+        (b"changes", amp.Unicode()),
+        (b"links", amp.Unicode()),
+        (b"extras", amp.Unicode()),
+    ]
+    response = []
+    errors = ERRORS
+
+
+class Connect(amp.Command):
+    """
+    Connect a brick to another, as a drop does: a free plug, or a new card
+    of a machine. Whether it could.
+    """
+
+    arguments = [(b"source", amp.Unicode()), (b"target", amp.Unicode())]
+    response = [(b"connected", amp.Boolean())]
+    errors = ERRORS
+
+
 class _Push(amp.Command):
     """A command that Virtualbricks calls on a program that follows it."""
 
@@ -128,7 +157,7 @@ class Quitting(_Push):
 
 
 # What a program calls, and what Virtualbricks calls on it.
-FROM_PROGRAM = (Follow,)
+FROM_PROGRAM = (Follow, Apply, Connect)
 PUSHES = (
     Opened,
     Changed,

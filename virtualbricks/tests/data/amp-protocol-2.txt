@@ -58,6 +58,8 @@ SettingShow key:str? cwd:str? -> lines:[str] ! NOT_FOUND BAD_ARGUMENT PROTOCOL_N
 SettingSet key_value:pairs cwd:str? -> lines:[str] ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 SettingUnset key:[str] cwd:str? -> lines:[str] ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 Follow -> project:str? version:str ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
+Apply kind:str name:str changes:str links:str extras:str -> ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
+Connect source:str target:str -> connected:bool ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 Opened project:str? settings:str machine:str -> !
 Changed kind:str name:str table:str state:str -> !
 Renamed kind:str old:str new:str -> !

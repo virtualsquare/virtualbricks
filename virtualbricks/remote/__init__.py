@@ -20,9 +20,12 @@
 The windows of a Virtualbricks that runs on another machine (page 19).
 
 ``commands`` has the AMP commands of the windows and of the pushes, in
-protocol 2 beside the typed commands of the console, and ``follower`` the
+protocol 2 beside the typed commands of the console. ``follower`` is the
 side of the Virtualbricks that runs the bricks: it sends the project, then
-each change, to the connections that follow it. It loads no GTK.
+each change, to the connections that follow it; ``answers`` answers the
+commands that the console has none for, as ``Apply``, the OK of a panel,
+which ``drafts`` reads and gives. ``mirror`` is the copy of the project that
+the windows read. It loads no GTK.
 
 The package exports nothing: the rest of the code imports what it needs from
 each module.
