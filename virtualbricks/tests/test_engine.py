@@ -562,6 +562,19 @@ class TestMachine(EngineTestCase):
             [("ospf", "debian")],
         )
 
+    def test_the_trash(self):
+        workspace = FakeWorkspace(None)
+        workspace.path = "/ws"
+        workspace.trasher = None
+        machine = LocalEngine(self.factory, workspace=workspace).machine
+        self.assertFalse(machine.can_trash("/ws/vimages/frr.qcow2"))
+        workspace.trasher = FakeTrash()
+        self.assertTrue(machine.can_trash("/ws/vimages/frr.qcow2"))
+        # another file system, as a USB disk
+        workspace.trasher = FakeTrash(can_trash=False)
+        self.assertFalse(machine.can_trash("/ws/vimages/frr.qcow2"))
+        self.assertEqual(machine.image_folder(), "/ws/vimages")
+
     def test_quit(self):
         switch = self.factory.new_brick("switch", "sw1")
         switch.proc = FakeProcess(switch)

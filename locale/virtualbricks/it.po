@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 23:56+0200\n"
+"POT-Creation-Date: 2026-10-01 00:06+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1958,7 +1958,7 @@ msgstr "Lista Mattoni di Virtualbricks"
 msgid "Run the commands of a file, one a line, up to the first error"
 msgstr ""
 
-#: virtualbricks/console/images.py
+#: virtualbricks/console/images.py virtualbricks/remote/answers.py
 #, fuzzy, python-brace-format
 msgid "No image named {name}"
 msgstr "Formato immagine"
@@ -2086,7 +2086,7 @@ msgstr "Nuovo progetto"
 msgid "The open project"
 msgstr "Nuovo progetto"
 
-#: virtualbricks/console/projects.py
+#: virtualbricks/console/projects.py virtualbricks/remote/answers.py
 #, fuzzy
 msgid "No project is open"
 msgstr "Nuovo progetto"
@@ -2561,6 +2561,10 @@ msgstr "Rimuovi"
 #, fuzzy, python-brace-format
 msgid "Remove the image {name}?"
 msgstr "Formato immagine"
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+msgid "Looking at the file…"
+msgstr ""
 
 #: virtualbricks/gui/dialogs/imagedialogs.py
 #, python-brace-format
@@ -4903,6 +4907,41 @@ msgstr ""
 msgid "Save report"
 msgstr "Salvare il progetto corrente?"
 
+#: virtualbricks/remote/answers.py
+#, fuzzy, python-brace-format
+msgid "No virtual machine named {name}"
+msgstr "Formato immagine"
+
+#: virtualbricks/remote/answers.py
+#, python-brace-format
+msgid "The format is {formats}"
+msgstr ""
+
+#: virtualbricks/remote/answers.py
+#, fuzzy, python-brace-format
+msgid "{path} is there already"
+msgstr "Macchina Virtuale"
+
+#: virtualbricks/remote/answers.py
+#, fuzzy, python-brace-format
+msgid "No disk {device}"
+msgstr "fai boot dal dispositivo"
+
+#: virtualbricks/remote/answers.py
+#, fuzzy, python-brace-format
+msgid "{path} isn't in the workspace"
+msgstr "Macchina Virtuale"
+
+#: virtualbricks/remote/answers.py
+#, fuzzy, python-brace-format
+msgid "The image {name} has the file"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/remote/answers.py
+#, fuzzy, python-brace-format
+msgid "The project {name} uses the file"
+msgstr "Nuovo progetto"
+
 #: virtualbricks/remote/client.py
 #, python-brace-format
 msgid ""
@@ -5285,9 +5324,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Commit virtual machine changes"
 #~ msgstr "Macchina Virtuale"
-
-#~ msgid "boot as device"
-#~ msgstr "fai boot dal dispositivo"
 
 #~ msgid "Snapshot mode"
 #~ msgstr "Modalità Snapshot"

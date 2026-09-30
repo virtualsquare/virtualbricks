@@ -91,6 +91,17 @@ class LocalMachine:
 
         return images.other_projects(self.workspace, path)
 
+    def can_trash(self, path) -> bool:
+        """Whether the file path would go to the trash, rather than away."""
+
+        trasher = self.workspace.trasher
+        return trasher is not None and trasher.can_trash(path)
+
+    def image_folder(self) -> str:
+        """The folder of the images of the workspace."""
+
+        return os.path.join(self.workspace.path, images.IMAGE_FOLDER)
+
     def setting(self, name):
         """A setting of Virtualbricks, or of the open project."""
 

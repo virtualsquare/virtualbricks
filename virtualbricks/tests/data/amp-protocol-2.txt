@@ -64,6 +64,10 @@ QemuFacts program:str -> path:str version:str options:str machines:str cpus:str 
 MachineProperties program:str machine:str -> text:str ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 UsbDevices -> devices:str ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 ImageFacts path:str -> file:str info:str others:str ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
+MakeImage path:str format:str size:int -> ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
+StartOver vm:str device:str -> trashed:bool ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
+TrashFile path:str -> trashed:bool ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
+Relink name:str path:str -> ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 Opened project:str? settings:str machine:str -> !
 Changed kind:str name:str table:str state:str -> !
 Renamed kind:str old:str new:str -> !

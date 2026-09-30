@@ -216,6 +216,8 @@ class TestFollow(FollowTestCase):
         self.assertEqual(machine["runtime_dir"], "/run/vb")
         self.assertIn("Switch", machine["lacks"])
         self.assertEqual(machine["project_folder"], "/lab/lab1")
+        # no windows there, no trash
+        self.assertFalse(machine["trash"])
         self.assertEqual(
             machine["qemu_programs"],
             qemu_programs(settings.get_setting("qemu_path")),

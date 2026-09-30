@@ -437,25 +437,40 @@ class NewDiskDialog(_AddDialog):
         grid.attach(label, 0, 3, 1, 1)
         grid.attach(self.format_combo, 1, 3, 1, 1)
         label = _label(_("Folder"), bold=True)
-        self.folder_chooser = Gtk.FileChooserButton(
-            visible=True,
-            hexpand=True,
-            action=Gtk.FileChooserAction.SELECT_FOLDER,
-            title=_("Choose a Folder"),
-        )
-        self.folder_chooser.set_filename(images.image_folder(self.workspace))
-        label.set_mnemonic_widget(self.folder_chooser)
+        if self.engine.local:
+            self.folder_chooser = Gtk.FileChooserButton(
+                visible=True,
+                hexpand=True,
+                action=Gtk.FileChooserAction.SELECT_FOLDER,
+                title=_("Choose a Folder"),
+            )
+            self.folder_chooser.set_filename(
+                images.image_folder(self.workspace)
+            )
+            label.set_mnemonic_widget(self.folder_chooser)
+            folder = self.folder_chooser
+        else:
+            # the image folder there: a file chooser shows those of here
+            self.folder_chooser = None
+            folder = _label(
+                imageinfo.short_path(self.engine.machine.image_folder())
+            )
         self.file_label = _label(dim=True, wrap=True)
         grid.attach(label, 0, 4, 1, 1)
-        grid.attach(self.folder_chooser, 1, 4, 1, 1)
+        grid.attach(folder, 1, 4, 1, 1)
         grid.attach(self.file_label, 1, 5, 1, 1)
         self._error_row(grid, 6)
 
         self.format_combo.connect("changed", lambda combo: self.check())
-        self.folder_chooser.connect("file-set", lambda chooser: self.check())
+        if self.folder_chooser is not None:
+            self.folder_chooser.connect(
+                "file-set", lambda chooser: self.check()
+            )
         self.dialog.connect("response", self.on_response)
 
     def folder(self) -> str:
+        if self.folder_chooser is None:
+            return self.engine.machine.image_folder()
         return self.folder_chooser.get_filename() or images.image_folder(
             self.workspace
         )
@@ -477,7 +492,9 @@ class NewDiskDialog(_AddDialog):
     def check(self):
         name_ok = self._name_ok()
         target = self.target()
-        taken = name_ok and os.path.lexists(target)
+        # over a connection, a file that isn't known there yet is refused
+        # when the disk is made
+        taken = name_ok and self.engine.machine.exists(target)
         if taken:
             self.file_label.set_text(
                 _("{file} is there already").format(

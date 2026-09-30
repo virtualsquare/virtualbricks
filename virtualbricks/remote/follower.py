@@ -190,6 +190,8 @@ def machine_table(factory, workspace) -> dict:
         "workspace": workspace.path,
         # where the private copies of the machines are
         "project_folder": None if current is None else current.path,
+        # whether the files removed go to a trash: the windows there give one
+        "trash": workspace.trasher is not None,
         "runtime_dir": factory.runtime_dir,
         "missing": [str(missing) for missing in missing_programs(vde, qemu)],
         "qemu_programs": qemu_programs(qemu),

@@ -19,50 +19,74 @@
 """
 The answers of the Virtualbricks of the bricks to the commands of the
 windows of another machine that the console has none for (page 19 §7):
-``Apply``, the OK of a panel, and ``Connect``, a drop.
+``Apply``, the OK of a panel, ``Connect``, a drop, and the commands of the
+files of the images: ``MakeImage``, ``StartOver``, ``TrashFile`` and
+``Relink``.
 
 The AMP connections of the control sockets take them on, beside Follow.
 Like the typed commands, they run in the order they came, their line goes to
 the log, and the pushes that wait go before their answer. NotFound and
 BadArgument say that nothing was done.
+
+TrashFile moves only a file of the workspace that no image uses, of this
+project or of another: the windows offer no more, and a connection gets no
+more than they offer.
 """
 
 import json
+import os
 
+from twisted.internet import defer
 from twisted.logger import Logger
 from twisted.protocols import amp
 
+from virtualbricks import errors
 from virtualbricks.bricks import brickinfo
+from virtualbricks.bricks.virtualmachine import DISK_DEVICES, is_virtualmachine
+from virtualbricks.config import images
+from virtualbricks.config.workspace import projects
 from virtualbricks.console import ampcommands, ampwire
+from virtualbricks.errors import CommandError
+from virtualbricks.i18n import _
+from virtualbricks.qemu import run as qemu_run
 from virtualbricks.remote import commands
 from virtualbricks.remote.drafts import apply_changes
 
 logger = Logger()
 failed = "{command} of {name} failed"
 
+# the formats of a new empty disk
+FORMATS = ("qcow2", "raw")
+
 
 class Answers(amp.CommandLocator):
     """
-    The answers to Apply and Connect; the connection has brickfactory,
-    requests, pushes_first(), _log_line() and _log_failed().
+    The answers to Apply, Connect and the commands of the files; the
+    connection has brickfactory, requests, pushes_first(), _log_line() and
+    _log_failed().
     """
 
     def _answer_in_order(self, line, name, call):
-        def run():
-            self._log_line(line)
-            try:
-                return call()
-            except LookupError as exc:
+        def refused(failure):
+            exc = failure.value
+            if failure.check(LookupError):
                 # a KeyError's str() has quotes
                 message = str(exc.args[0]) if exc.args else str(exc)
                 self._log_failed(message)
-                raise ampcommands.NotFound(message) from None
-            except ValueError as exc:
+                raise ampcommands.NotFound(message)
+            if failure.check(ValueError, errors.Error):
                 self._log_failed(str(exc))
-                raise ampcommands.BadArgument(str(exc)) from None
-            except Exception as exc:
-                logger.failure(failed, command=line.split()[0], name=name)
-                raise ampwire.CommandFailed(str(exc) or type(exc).__name__)
+                raise ampcommands.BadArgument(str(exc))
+            if failure.check(CommandError, OSError):
+                # a program or a file said no: nothing to fix here
+                self._log_failed(str(exc))
+                raise ampwire.CommandFailed(str(exc))
+            logger.failure(failed, failure, command=line.split()[0], name=name)
+            raise ampwire.CommandFailed(str(exc) or type(exc).__name__)
+
+        def run():
+            self._log_line(line)
+            return defer.maybeDeferred(call).addErrback(refused)
 
         return self.requests.add(run).addBoth(self.pushes_first)
 
@@ -94,3 +118,91 @@ class Answers(amp.CommandLocator):
         return self._answer_in_order(
             f"connect {source} {target}", source, call
         )
+
+    # The files of the images
+
+    def _vm(self, name):
+        vm = self.brickfactory.get_brick(name)
+        if vm is None or not is_virtualmachine(vm):
+            raise LookupError(
+                _("No virtual machine named {name}").format(name=name)
+            )
+        return vm
+
+    @commands.MakeImage.responder
+    def make_image(self, path, format, size):
+        def call():
+            if format not in FORMATS:
+                raise ValueError(
+                    _("The format is {formats}").format(
+                        formats=" or ".join(FORMATS)
+                    )
+                )
+            if os.path.lexists(path):
+                raise ValueError(
+                    _("{path} is there already").format(path=path)
+                )
+            if os.path.dirname(path) == os.path.join(
+                projects.path, images.IMAGE_FOLDER
+            ):
+                # the folder of the images, made when first needed
+                images.image_folder(projects)
+            making = qemu_run.qemu_img(
+                ["create", "-q", "-f", format, path, str(size)]
+            )
+            return making.addCallback(lambda _: {})
+
+        return self._answer_in_order(f"make image {path}", path, call)
+
+    @commands.StartOver.responder
+    def start_over(self, vm, device):
+        def call():
+            machine = self._vm(vm)
+            if machine.project_folder() is None:
+                raise ValueError(_("No project is open"))
+            if device not in DISK_DEVICES:
+                raise ValueError(_("No disk {device}").format(device=device))
+            trashed = images.start_over(machine, device, projects.trasher)
+            # its copy is gone: what the windows show of it
+            machine.changed.notify(machine)
+            return {"trashed": trashed}
+
+        return self._answer_in_order(f"start over {vm} {device}", vm, call)
+
+    @commands.TrashFile.responder
+    def trash_file(self, path):
+        def call():
+            path_there = os.path.abspath(path)
+            if not images.is_inside(path_there, projects.path):
+                raise ValueError(
+                    _("{path} isn't in the workspace").format(path=path)
+                )
+            image = self.brickfactory.get_image_by_path(path_there)
+            if image is not None:
+                raise ValueError(
+                    _("The image {name} has the file").format(name=image.name)
+                )
+            others = images.other_projects(projects, path_there)
+            if others:
+                raise ValueError(
+                    _("The project {name} uses the file").format(
+                        name=others[0][0]
+                    )
+                )
+            trashed = images.discard(path_there, projects.trasher)
+            return {"trashed": trashed}
+
+        return self._answer_in_order(f"trash {path}", path, call)
+
+    @commands.Relink.responder
+    def relink(self, name, path):
+        def call():
+            image = self.brickfactory.get_image(name)
+            if image is None:
+                raise LookupError(_("No image named {name}").format(name=name))
+            relinking = images.relink(
+                self.brickfactory, image, path, qemu_run.qemu_img
+            )
+            return relinking.addCallback(lambda _: {})
+
+        return self._answer_in_order(f"relink {name} {path}", name, call)

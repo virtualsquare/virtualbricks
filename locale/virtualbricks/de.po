@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 23:56+0200\n"
+"POT-Creation-Date: 2026-10-01 00:06+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1886,7 +1886,7 @@ msgstr ""
 msgid "Run the commands of a file, one a line, up to the first error"
 msgstr ""
 
-#: virtualbricks/console/images.py
+#: virtualbricks/console/images.py virtualbricks/remote/answers.py
 #, python-brace-format
 msgid "No image named {name}"
 msgstr ""
@@ -2010,7 +2010,7 @@ msgstr ""
 msgid "The open project"
 msgstr ""
 
-#: virtualbricks/console/projects.py
+#: virtualbricks/console/projects.py virtualbricks/remote/answers.py
 msgid "No project is open"
 msgstr ""
 
@@ -2466,6 +2466,10 @@ msgstr ""
 #: virtualbricks/gui/dialogs/imagedialogs.py
 #, python-brace-format
 msgid "Remove the image {name}?"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+msgid "Looking at the file…"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/imagedialogs.py
@@ -4646,6 +4650,41 @@ msgstr ""
 
 #: virtualbricks/migrate/gui.py
 msgid "Save report"
+msgstr ""
+
+#: virtualbricks/remote/answers.py
+#, python-brace-format
+msgid "No virtual machine named {name}"
+msgstr ""
+
+#: virtualbricks/remote/answers.py
+#, python-brace-format
+msgid "The format is {formats}"
+msgstr ""
+
+#: virtualbricks/remote/answers.py
+#, python-brace-format
+msgid "{path} is there already"
+msgstr ""
+
+#: virtualbricks/remote/answers.py
+#, python-brace-format
+msgid "No disk {device}"
+msgstr ""
+
+#: virtualbricks/remote/answers.py
+#, python-brace-format
+msgid "{path} isn't in the workspace"
+msgstr ""
+
+#: virtualbricks/remote/answers.py
+#, python-brace-format
+msgid "The image {name} has the file"
+msgstr ""
+
+#: virtualbricks/remote/answers.py
+#, python-brace-format
+msgid "The project {name} uses the file"
 msgstr ""
 
 #: virtualbricks/remote/client.py

@@ -36,6 +36,7 @@ of the bricks. What it can't do yet over a connection fails with
 """
 
 import json
+import os
 
 from twisted.internet import defer, endpoints, error
 from twisted.protocols import amp
@@ -45,7 +46,7 @@ from virtualbricks import __version__, locations
 from virtualbricks.brickfactory import normalize_name
 from virtualbricks.bricks.brickinfo import NEW_KINDS, Issue
 from virtualbricks.bricks.virtualmachine import UsbDevice
-from virtualbricks.config.images import parse_info
+from virtualbricks.config.images import IMAGE_FOLDER, parse_info
 from virtualbricks.config.settings import setting_kind
 from virtualbricks.config.schema import kind_of
 from virtualbricks.console import ampcommands, ampwire, wire
@@ -316,6 +317,14 @@ class RemoteMachine:
         found = self.asked.get(path)
         return [] if found is None else found["others"]
 
+    def can_trash(self, path) -> bool:
+        return bool(self.mirror.machine.get("trash"))
+
+    def image_folder(self) -> str:
+        return os.path.join(
+            self.mirror.machine.get("workspace", ""), IMAGE_FOLDER
+        )
+
     def setting(self, name):
         return self.mirror.settings[name]
 
@@ -499,7 +508,7 @@ class RemoteEngine:
         )
 
     def make_image(self, path, fmt, size):
-        return defer.fail(NotYet("make_image"))
+        return self.call(commands.MakeImage, path=path, format=fmt, size=size)
 
     def image_facts(self, path):
         """
@@ -526,13 +535,21 @@ class RemoteEngine:
         return self.image_facts(path).addCallback(lambda found: found["info"])
 
     def relink(self, image, path):
-        return defer.fail(NotYet("relink"))
+        return self.call(commands.Relink, name=image.name, path=path)
 
     def discard_file(self, path):
-        return defer.fail(NotYet("discard_file"))
+        trashing = self.call(commands.TrashFile, path=path)
+
+        def gone(answer):
+            # what was asked of it is no more
+            self.machine.asked.pop(path, None)
+            return answer["trashed"]
+
+        return trashing.addCallback(gone)
 
     def start_over(self, vm, device):
-        return defer.fail(NotYet("start_over"))
+        starting = self.call(commands.StartOver, vm=vm.name, device=device)
+        return starting.addCallback(lambda answer: answer["trashed"])
 
     # The projects
 

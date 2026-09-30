@@ -154,12 +154,14 @@ class DiskRow(Gtk.ListBoxRow):
                 there,
             )
         )
-        # over a connection, the long work and the file manager wait
+        # over a connection, the long work and the file manager wait (19
+        # R13); a copy starts over there
         local = self.section.engine.local
         self.actions.lookup_action("show").set_enabled(there and local)
         changes = self.keeps_changes()
-        for name in ("save", "merge", "start-over"):
+        for name in ("save", "merge"):
             self.actions.lookup_action(name).set_enabled(changes and local)
+        self.actions.lookup_action("start-over").set_enabled(changes)
         self._make_menu()
 
     def _make_menu(self) -> None:

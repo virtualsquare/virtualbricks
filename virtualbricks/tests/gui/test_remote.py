@@ -472,8 +472,9 @@ class TestWhatWaits(GuiTestCase):
         section = DisksSection(vm, self.gui.engine, images.InfoCache(qemu_img))
         self.addCleanup(section.destroy)
         enabled = self.enabled(section.row("hda").actions)
+        # a copy starts over there
         self.assertEqual(
-            enabled & {"save", "merge", "start-over", "show"}, set()
+            enabled & {"save", "merge", "start-over", "show"}, {"start-over"}
         )
         self.assertIn("remove", enabled)
 

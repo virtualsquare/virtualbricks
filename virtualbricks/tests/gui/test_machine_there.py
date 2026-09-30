@@ -28,13 +28,21 @@ from twisted.internet import defer
 from virtualbricks.bricks.virtualmachine import ImageDraft
 from virtualbricks.config import images
 from virtualbricks.config.workspace import OpenProject
+from virtualbricks.console import ampcommands
 from virtualbricks.engine import LocalEngine, LocalMachine
+from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.config.test_images import INFO
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 
 if has_display:
     from gi.repository import Gtk
 
+    from virtualbricks.gui.dialogs import imagedialogs
+    from virtualbricks.gui.dialogs.addimage import NewDiskDialog
+    from virtualbricks.gui.dialogs.imagedialogs import (
+        RemoveImageDialog,
+        StartOverDialog,
+    )
     from virtualbricks.gui.mainwindow.bricks.config.vm.disks import (
         DisksSection,
     )
@@ -47,6 +55,18 @@ if has_display:
 
 # Thursday 24 September 2026, 17:47:09, local time
 CHANGED = time.mktime((2026, 9, 24, 17, 47, 9, 0, 0, -1))
+
+
+def texts(box):
+    """The labels of a box, those of the boxes in it too."""
+
+    found = []
+    for child in box.get_children():
+        if isinstance(child, Gtk.Label):
+            found.append(child.get_text())
+        elif isinstance(child, Gtk.Box):
+            found.extend(texts(child))
+    return found
 
 
 class KnownInfos:
@@ -85,6 +105,12 @@ class MachineThere(LocalMachine):
 
     def other_projects(self, path):
         return self.others.get(path, [])
+
+    def can_trash(self, path):
+        return False
+
+    def image_folder(self):
+        return "/lab/vimages"
 
 
 class FakeGui:
@@ -247,3 +273,85 @@ class TestTheDisks(ThereTestCase):
         self.assertEqual(
             options[self.here].words.get_text(), "The file isn't there"
         )
+
+
+class TestTheDialogs(ThereTestCase):
+    """The dialogs of the files, over a connection."""
+
+    def setUp(self):
+        super().setUp()
+        self.engine.local = False
+
+    def test_remove_an_image(self):
+        infos = self.machine.infos = LaterInfos(self.machine)
+        self.frr.set_path("/lab/vimages/frr.qcow2")
+        self.machine.files[self.frr.path] = 5000
+        dialog = RemoveImageDialog(self.engine, self.frr)
+        self.addCleanup(dialog.dialog.destroy)
+        # what the other projects there do with the file comes first
+        self.assertEqual(texts(dialog.file_box), ["Looking at the file…"])
+        self.assertFalse(dialog.remove_button.get_sensitive())
+        infos.answer(self.frr.path, [])
+        self.assertTrue(dialog.remove_button.get_sensitive())
+        self.assertEqual(
+            dialog.file_check.get_label(),
+            "Also delete the file (5.0 KB): there is no trash",
+        )
+
+    def test_remove_an_image_others_use(self):
+        infos = self.machine.infos = LaterInfos(self.machine)
+        self.frr.set_path("/lab/vimages/frr.qcow2")
+        self.machine.files[self.frr.path] = 5000
+        dialog = RemoveImageDialog(self.engine, self.frr)
+        self.addCleanup(dialog.dialog.destroy)
+        infos.answer(self.frr.path, [("ospf", "frr")])
+        self.assertIsNone(dialog.file_check)
+        self.assertEqual(
+            texts(dialog.file_box),
+            ["The project ospf uses the file too: it stays."],
+        )
+
+    def test_the_file_stays_there(self):
+        # the Virtualbricks there refuses: the log says why
+        logger = FakeLogger()
+        self.patch(imagedialogs, "logger", logger)
+        self.frr.set_path("/lab/vimages/frr.qcow2")
+        self.machine.files[self.frr.path] = 5000
+        self.engine.remove = lambda image: defer.succeed(None)
+        self.engine.discard_file = lambda path: defer.fail(
+            ampcommands.BadArgument("The project ospf uses the file")
+        )
+        infos = self.machine.infos = LaterInfos(self.machine)
+        dialog = RemoveImageDialog(self.engine, self.frr)
+        self.addCleanup(dialog.dialog.destroy)
+        infos.answer(self.frr.path, [])
+        dialog.file_check.set_active(True)
+        self.successResultOf(dialog.remove())
+        self.assertEqual(
+            logger.formatted(),
+            [
+                "Cannot remove the file /lab/vimages/frr.qcow2: The project"
+                " ospf uses the file"
+            ],
+        )
+
+    def test_start_over(self):
+        dialog = StartOverDialog(self.engine, self.r1, "hda")
+        self.addCleanup(dialog.dialog.destroy)
+        self.assertIn(
+            "r1_hda.cow is deleted for good, with the changes it keeps,"
+            " 8.2 KB: there is no trash. The next start makes an empty one.",
+            texts(dialog.dialog.get_content_area()),
+        )
+
+    def test_a_new_disk(self):
+        dialog = NewDiskDialog(self.engine)
+        self.addCleanup(dialog.dialog.destroy)
+        self.assertIsNone(dialog.folder_chooser)
+        dialog.name_entry.set_text("pc")
+        self.assertEqual(dialog.target(), "/lab/vimages/pc.qcow2")
+        self.assertTrue(dialog.create_button.get_sensitive())
+        # a file there already
+        self.machine.files["/lab/vimages/pc.qcow2"] = 10
+        self.assertFalse(dialog.check())
+        self.assertIn("is there already", dialog.file_label.get_text())

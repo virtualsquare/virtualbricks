@@ -151,6 +151,54 @@ class ImageFacts(amp.Command):
     errors = ERRORS
 
 
+class MakeImage(amp.Command):
+    """
+    Make the file of an empty disk: path, its format, qcow2 or raw, and its
+    size in bytes. BadArgument if the file is there already.
+    """
+
+    arguments = [
+        (b"path", amp.Unicode()),
+        (b"format", amp.Unicode()),
+        (b"size", amp.Integer()),
+    ]
+    response = []
+    errors = ERRORS
+
+
+class StartOver(amp.Command):
+    """
+    The private copy of a disk of a machine goes, with its changes, to the
+    trash if there is one: whether it went there.
+    """
+
+    arguments = [(b"vm", amp.Unicode()), (b"device", amp.Unicode())]
+    response = [(b"trashed", amp.Boolean())]
+    errors = ERRORS
+
+
+class TrashFile(amp.Command):
+    """
+    A file of the workspace that no image uses goes to the trash, or is
+    deleted without one: whether it went to the trash.
+    """
+
+    arguments = [(b"path", amp.Unicode())]
+    response = [(b"trashed", amp.Boolean())]
+    errors = ERRORS
+
+
+class Relink(amp.Command):
+    """
+    Give the image name the file path, and the private copies made on the
+    image with it.
+    """
+
+    arguments = [(b"name", amp.Unicode()), (b"path", amp.Unicode())]
+    response = []
+    errors = ERRORS
+
+
 class _Push(amp.Command):
     """A command that Virtualbricks calls on a program that follows it."""
 
@@ -229,6 +277,10 @@ FROM_PROGRAM = (
     MachineProperties,
     UsbDevices,
     ImageFacts,
+    MakeImage,
+    StartOver,
+    TrashFile,
+    Relink,
 )
 PUSHES = (
     Opened,

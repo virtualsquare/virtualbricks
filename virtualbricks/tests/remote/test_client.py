@@ -43,7 +43,14 @@ from virtualbricks.programs import (
     Programs,
     machine_question,
 )
-from virtualbricks.remote import client, commands, facts, follower, mirror
+from virtualbricks.remote import (
+    answers,
+    client,
+    commands,
+    facts,
+    follower,
+    mirror,
+)
 from virtualbricks.remote.client import (
     NotYet,
     Refused,
@@ -55,7 +62,7 @@ from virtualbricks.remote.client import (
 from virtualbricks.remote.drafts import draft_of
 from virtualbricks.remote.follower import LogKeeper
 from virtualbricks.remote.mirror import MirrorFactory
-from virtualbricks.tests import FakeLogger, use_workspace
+from virtualbricks.tests import FakeLogger, FakeTrash, use_workspace
 from virtualbricks.tests.console import ConsoleTestCase
 from virtualbricks.tests.console.test_control import TOKEN, tls_file
 from virtualbricks.tests.config.test_images import (
@@ -370,7 +377,6 @@ class TestEngine(ClientTestCase):
         for deferred in (
             self.engine.terminate(copy),
             self.engine.open_console(copy),
-            self.engine.make_image("/x", "qcow2", 1),
             self.engine.set_readme("# lab"),
         ):
             failure = self.failureResultOf(deferred, NotYet)
@@ -660,6 +666,246 @@ class TestFileFacts(ClientTestCase):
         self.refused(second, ampcommands.NotFound)
         # asked again
         self.refused(infos.read("/nowhere/frr.qcow2"), ampcommands.NotFound)
+
+
+class TakingTrash(FakeTrash):
+    """A trash that takes the file away."""
+
+    def trash(self, path):
+        super().trash(path)
+        os.remove(path)
+
+
+class TestFileCommands(ClientTestCase):
+    """The windows change the files there: new disks, copies, the trash."""
+
+    def setUp(self):
+        super().setUp()
+        root = os.path.abspath(self.mktemp())
+        self.workspace = use_workspace(self, root)
+        self.workspace.current = Project(os.path.join(root, "lab1"))
+        os.makedirs(self.workspace.current.path)
+        self.trash = TakingTrash()
+        self.workspace.trasher = self.trash
+        self.qemu_img = FakeQemuImg()
+        self.patch(answers.qemu_run, "qemu_img", self.qemu_img)
+        self.logger = FakeLogger()
+        self.patch(answers, "logger", self.logger)
+        self.patch(control, "logger", self.control_log)
+        self.frr = self.file(os.path.join(root, "vimages"), "frr.qcow2")
+        self.qemu_img.infos[self.frr] = INFO
+        self.image = self.factory.new_image("frr", self.frr)
+        self.vm = self.factory.new_brick("qemu", "vm1")
+        self.vm.update_config({"hda_image": "frr", "hda_private": True})
+        self.cow = self.file(
+            self.workspace.current.path,
+            os.path.basename(self.vm.disk("hda").get_cow_path()),
+        )
+        self.done(self.start())
+
+    @property
+    def control_log(self):
+        if not hasattr(self, "_control_log"):
+            self._control_log = FakeLogger()
+        return self._control_log
+
+    def file(self, folder, name):
+        os.makedirs(folder, exist_ok=True)
+        path = os.path.join(folder, name)
+        with open(path, "wb") as fp:
+            fp.write(b"x" * 100)
+        return path
+
+    def test_the_trash_there(self):
+        self.assertTrue(self.engine.machine.can_trash("/anything"))
+        self.workspace.trasher = None
+        self.workspace.opened.notify(self.workspace)
+        self.quiet(defer.succeed(None))
+        self.assertFalse(self.engine.machine.can_trash("/anything"))
+        self.assertEqual(
+            self.engine.machine.image_folder(),
+            os.path.join(self.workspace.path, "vimages"),
+        )
+
+    def test_a_new_disk(self):
+        path = os.path.join(self.workspace.path, "vimages", "pc.qcow2")
+        self.done(self.engine.make_image(path, "qcow2", 1024))
+        self.assertEqual(
+            self.qemu_img.calls,
+            [["create", "-q", "-f", "qcow2", path, "1024"]],
+        )
+        self.assertIn(
+            f"make image {path}", " ".join(self.control_log.formatted())
+        )
+
+    def test_the_folder_of_the_images(self):
+        # made when first needed
+        folder = os.path.join(self.workspace.path, "vimages")
+        os.remove(self.frr)
+        os.rmdir(folder)
+        path = os.path.join(folder, "pc.qcow2")
+        self.done(self.engine.make_image(path, "raw", 1024))
+        self.assertTrue(os.path.isdir(folder))
+
+    def test_a_new_disk_refused(self):
+        failure = self.refused(
+            self.engine.make_image(self.frr, "qcow2", 1024),
+            ampcommands.BadArgument,
+        )
+        self.assertEqual(
+            failure.getErrorMessage(), f"{self.frr} is there already"
+        )
+        failure = self.refused(
+            self.engine.make_image("/lab/pc.vdi", "vdi", 1024),
+            ampcommands.BadArgument,
+        )
+        self.assertEqual(
+            failure.getErrorMessage(), "The format is qcow2 or raw"
+        )
+        self.assertEqual(self.qemu_img.calls, [])
+
+    def test_qemu_img_fails(self):
+        def qemu_img(args):
+            return defer.fail(CommandError(1, "qemu-img: No space left"))
+
+        self.patch(answers.qemu_run, "qemu_img", qemu_img)
+        path = os.path.join(self.workspace.path, "vimages", "pc.qcow2")
+        failure = self.refused(
+            self.engine.make_image(path, "qcow2", 1024), ampwire.CommandFailed
+        )
+        self.assertEqual(failure.getErrorMessage(), "qemu-img: No space left")
+        # a refusal, not a bug
+        self.assertEqual(self.logger.events, [])
+
+    def test_a_bug_on_the_way(self):
+        def qemu_img(args):
+            return defer.fail(RuntimeError("broken"))
+
+        self.patch(answers.qemu_run, "qemu_img", qemu_img)
+        path = os.path.join(self.workspace.path, "vimages", "pc.qcow2")
+        self.refused(
+            self.engine.make_image(path, "qcow2", 1024), ampwire.CommandFailed
+        )
+        self.assertEqual(self.logger.formatted(), [f"make of {path} failed"])
+
+    def test_start_over(self):
+        copy = self.copy.get_brick("vm1")
+        self.assertTrue(self.engine.machine.exists(self.cow))
+        self.assertTrue(self.done(self.engine.start_over(copy, "hda")))
+        self.assertEqual(self.trash.trashed, [self.cow])
+        # the copy is gone there, and the windows know
+        self.assertFalse(self.engine.machine.exists(self.cow))
+
+    def test_start_over_without_a_trash(self):
+        self.workspace.trasher = None
+        copy = self.copy.get_brick("vm1")
+        self.assertFalse(self.done(self.engine.start_over(copy, "hda")))
+        self.assertFalse(os.path.exists(self.cow))
+
+    def test_start_over_refused(self):
+        copy = self.copy.get_brick("vm1")
+        self.vm.__isrunning__ = lambda: True
+        failure = self.refused(
+            self.engine.start_over(copy, "hda"), ampcommands.BadArgument
+        )
+        self.assertIn("vm1", failure.getErrorMessage())
+        self.vm.__isrunning__ = lambda: False
+        self.refused(
+            self.windows.callRemote(
+                commands.StartOver, vm="vm1", device="hdz"
+            ),
+            ampcommands.BadArgument,
+        )
+        self.factory.new_brick("switch", "sw1")
+        for name in ("vm9", "sw1"):
+            self.refused(
+                self.windows.callRemote(
+                    commands.StartOver, vm=name, device="hda"
+                ),
+                ampcommands.NotFound,
+            )
+        self.workspace.current = None
+        failure = self.refused(
+            self.engine.start_over(copy, "hda"), ampcommands.BadArgument
+        )
+        self.assertEqual(failure.getErrorMessage(), "No project is open")
+        self.assertEqual(self.trash.trashed, [])
+
+    def test_trash_a_file(self):
+        self.done(self.engine.image_info(self.frr))
+        self.done(self.engine.remove(self.copy.get_image("frr")))
+        self.assertTrue(self.done(self.engine.discard_file(self.frr)))
+        self.assertEqual(self.trash.trashed, [self.frr])
+        # what was asked of it is no more
+        self.assertFalse(self.engine.machine.exists(self.frr))
+
+    def test_no_trash_there(self):
+        self.workspace.trasher = None
+        self.factory.remove_image(self.image)
+        self.assertFalse(self.done(self.engine.discard_file(self.frr)))
+        self.assertFalse(os.path.exists(self.frr))
+
+    def test_trash_refused(self):
+        # an image has it
+        failure = self.refused(
+            self.engine.discard_file(self.frr), ampcommands.BadArgument
+        )
+        self.assertEqual(
+            failure.getErrorMessage(), "The image frr has the file"
+        )
+        # outside the workspace
+        outside = self.file(os.path.abspath(self.mktemp()), "debian.qcow2")
+        failure = self.refused(
+            self.engine.discard_file(outside), ampcommands.BadArgument
+        )
+        self.assertIn("isn't in the workspace", failure.getErrorMessage())
+        # another project has it
+        self.factory.remove_image(self.image)
+        self.patch(
+            answers,
+            "projects",
+            FakeWorkspace("lab1", ospf=[("debian", self.frr)]),
+        )
+        answers.projects.path = self.workspace.path
+        answers.projects.trasher = self.trash
+        failure = self.refused(
+            self.engine.discard_file(self.frr), ampcommands.BadArgument
+        )
+        self.assertEqual(
+            failure.getErrorMessage(), "The project ospf uses the file"
+        )
+        self.assertEqual(self.trash.trashed, [])
+        self.assertTrue(os.path.exists(self.frr))
+
+    def test_relink(self):
+        path = self.file(
+            os.path.join(self.workspace.path, "vimages"), "new.qcow2"
+        )
+        self.qemu_img.infos[path] = INFO
+        self.done(self.engine.relink(self.copy.get_image("frr"), path))
+        self.assertEqual(self.image.path, path)
+        self.assertEqual(self.copy.get_image("frr").path, path)
+        # the private copy follows
+        self.assertEqual(
+            self.qemu_img.rebases(),
+            [["rebase", "-u", "-b", path, "-F", "qcow2", self.cow]],
+        )
+
+    def test_relink_refused(self):
+        path = self.file(
+            os.path.join(self.workspace.path, "vimages"), "new.qcow2"
+        )
+        self.qemu_img.infos[path] = INFO
+        self.vm.__isrunning__ = lambda: True
+        self.refused(
+            self.engine.relink(self.copy.get_image("frr"), path),
+            ampcommands.BadArgument,
+        )
+        self.refused(
+            self.windows.callRemote(commands.Relink, name="deb", path=path),
+            ampcommands.NotFound,
+        )
+        self.assertEqual(self.image.path, self.frr)
 
 
 class TestEndpoints(ConsoleTestCase):

@@ -53,6 +53,7 @@ from twisted.logger import Logger
 from virtualbricks import errors
 from virtualbricks.config import archive, images
 from virtualbricks.config.workspace import projects
+from virtualbricks.console import ampcommands, ampwire
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.dialogs.addimage import check_name
 from virtualbricks.gui.dialogs.base import Window
@@ -145,11 +146,12 @@ class RemoveImageDialog(Window):
     def get_root_widget(self):
         return self.dialog
 
-    def __init__(self, engine, image, workspace=None):
+    def __init__(self, engine, image):
         self.engine = engine
         self.factory = engine.factory
+        # the files are those of the machine of the bricks
+        self.machine = engine.machine
         self.image = image
-        self.workspace = projects if workspace is None else workspace
         self.build_ui()
 
     def build_ui(self):
@@ -164,10 +166,35 @@ class RemoveImageDialog(Window):
             False,
             0,
         )
-        uses = images.uses(self.factory, self.image)
+        uses = images.uses(self.factory, self.image, self.machine.taken)
         box.pack_start(_label(disks_words(uses)), False, False, 0)
         self.file_check = None
-        others = images.other_projects(self.workspace, path)
+        # what it says of the file: over a connection, once the other
+        # projects are known there
+        self.file_box = Gtk.Box(
+            visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=GAP
+        )
+        box.pack_start(self.file_box, False, False, 0)
+        self.dialog.connect("response", self.on_response)
+        if self.engine.local:
+            self.show_file()
+            return
+        self.remove_button.set_sensitive(False)
+        self.file_box.pack_start(
+            _label(_("Looking at the file…"), dim=True), False, False, 0
+        )
+        reading = self.machine.infos.read(path)
+        reading.addBoth(lambda _: self.show_file())
+
+    def show_file(self):
+        """What the dialog says of the file, and offers to do with it."""
+
+        for child in self.file_box.get_children():
+            child.destroy()
+        self.remove_button.set_sensitive(True)
+        path = self.image.path
+        box = self.file_box
+        others = self.machine.other_projects(path)
         if others:
             projects_names = imageinfo.names(sorted({p for p, _i in others}))
             words = ngettext(
@@ -177,8 +204,8 @@ class RemoveImageDialog(Window):
             ).format(names=projects_names)
             box.pack_start(_label(words, dim=True), False, False, 0)
         elif self.offers_file():
-            size = imageinfo.human_size(os.stat(path).st_blocks * 512)
-            if self.can_trash():
+            size = imageinfo.human_size(self.machine.taken(path) or 0)
+            if self.machine.can_trash(path):
                 label = _("Also move the file to the trash ({size})")
             else:
                 label = _("Also delete the file ({size}): there is no trash")
@@ -198,18 +225,14 @@ class RemoveImageDialog(Window):
                 False,
                 0,
             )
-        self.dialog.connect("response", self.on_response)
 
     def offers_file(self) -> bool:
         """Whether the dialog offers to remove the file too."""
 
         path = self.image.path
-        folder = os.path.join(self.workspace.path, images.IMAGE_FOLDER)
-        return os.path.isfile(path) and images.is_inside(path, folder)
-
-    def can_trash(self) -> bool:
-        trasher = self.workspace.trasher
-        return trasher is not None and trasher.can_trash(self.image.path)
+        return self.machine.exists(path) and images.is_inside(
+            path, self.machine.image_folder()
+        )
 
     def on_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
@@ -226,7 +249,8 @@ class RemoveImageDialog(Window):
         return removing
 
     def _not_removed(self, failure, path):
-        failure.trap(OSError)
+        # here, or there over a connection
+        failure.trap(OSError, ampwire.CommandFailed, ampcommands.BadArgument)
         logger.error(remove_failed, path=path, error=failure.value)
 
 
@@ -671,11 +695,10 @@ class StartOverDialog(Window):
     def get_root_widget(self):
         return self.dialog
 
-    def __init__(self, engine, vm, device, workspace=None) -> None:
+    def __init__(self, engine, vm, device) -> None:
         self.engine = engine
         self.vm = vm
         self.device = device
-        self.workspace = projects if workspace is None else workspace
         # called when the copy is gone
         self.on_done = None
         self.build_ui()
@@ -698,9 +721,9 @@ class StartOverDialog(Window):
             False,
             0,
         )
-        size = imageinfo.human_size(images.space_taken(copy) or 0)
-        trasher = self.workspace.trasher
-        if trasher is not None and trasher.can_trash(copy):
+        machine = self.engine.machine
+        size = imageinfo.human_size(machine.taken(copy) or 0)
+        if machine.can_trash(copy):
             words = _(
                 "{copy} goes to the trash, with the changes it keeps, {size};"
                 " the next start makes an empty one."
@@ -740,7 +763,13 @@ class StartOverDialog(Window):
             self.on_done()
 
     def _not_started_over(self, failure) -> None:
-        failure.trap(OSError, errors.Error)
+        # here, or there over a connection
+        failure.trap(
+            OSError,
+            errors.Error,
+            ampwire.CommandFailed,
+            ampcommands.BadArgument,
+        )
         logger.error(
             start_over_failed,
             vm=self.vm.name,

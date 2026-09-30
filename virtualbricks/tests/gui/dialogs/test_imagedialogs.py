@@ -67,11 +67,16 @@ class FakeVM:
 
 
 def texts(dialog):
-    return [
-        child.get_text()
-        for child in dialog.get_content_area().get_children()
-        if isinstance(child, Gtk.Label)
-    ]
+    """The labels of a dialog, those in its boxes too, in their order."""
+
+    def labels(box):
+        for child in box.get_children():
+            if isinstance(child, Gtk.Label):
+                yield child.get_text()
+            elif isinstance(child, Gtk.Box):
+                yield from labels(child)
+
+    return list(labels(dialog.get_content_area()))
 
 
 class DialogTestCase(GuiTestCase):
@@ -150,7 +155,7 @@ class TestDisksWords(DialogTestCase):
 class TestRemove(DialogTestCase):
 
     def dialog(self, image):
-        dialog = RemoveImageDialog(self.engine(), image, self.workspace)
+        dialog = RemoveImageDialog(self.engine(), image)
         self.addCleanup(dialog.dialog.destroy)
         return dialog
 
@@ -503,9 +508,7 @@ class TestMerge(DiskTestCase):
 class TestStartOver(DiskTestCase):
 
     def dialog(self):
-        return self.track(
-            StartOverDialog(self.engine(), self.r1, "hda", self.workspace)
-        )
+        return self.track(StartOverDialog(self.engine(), self.r1, "hda"))
 
     def test_to_the_trash(self):
         dialog = self.dialog()
