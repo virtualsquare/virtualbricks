@@ -18,6 +18,8 @@
 
 """Where Virtualbricks keeps its files, following the XDG base directories."""
 
+import base64
+import hashlib
 import os
 import tempfile
 
@@ -36,6 +38,11 @@ SOCKET_PATH_MAX = 107
 # inside a switch's directory, "<brick>.ctl/.<pid>-<n>", as libvdeplug names
 # them, with the largest pid Linux gives.
 BRICK_SOCKET_SUFFIX = len(".ctl/.4194304-00000")
+# The folder of a workspace in the runtime directory is named by a key of its
+# path, this long: 40 bits.
+WORKSPACE_KEY_SIZE = 8
+# The link, in that folder, to the workspace.
+WORKSPACE_LINK = ".workspace"
 # The lock that every user's Virtualbricks takes, see virtualbricks.locks. It
 # isn't in the temporary directory of TMPDIR, which may be the user's own.
 SYSTEM_LOCK_FILE = "/tmp/virtualbricks.lock"
@@ -83,6 +90,24 @@ def runtime_dir():
     if os.path.isabs(value):
         return os.path.join(value, APP)
     return os.path.join(tempfile.gettempdir(), f"{APP}-{os.getuid()}")
+
+
+def workspace_key(workspace):
+    """
+    The name of the folder of workspace in the runtime directory.
+
+    The same folder has the same key, whatever path names it.
+    """
+
+    path = os.fsencode(os.path.realpath(workspace))
+    digest = base64.b32encode(hashlib.sha256(path).digest())
+    return digest[:WORKSPACE_KEY_SIZE].decode("ascii").lower()
+
+
+def workspace_runtime_dir(workspace):
+    """The runtime directory of workspace: its projects' own are in it."""
+
+    return os.path.join(runtime_dir(), workspace_key(workspace))
 
 
 def user_lock_file():

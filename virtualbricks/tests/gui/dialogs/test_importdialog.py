@@ -81,6 +81,7 @@ class ImportTestCase(GuiTestCase):
         # never created
         self.patch(locations, "runtime_dir", lambda: "/run/vb-tests")
         self.patch(locations, "ensure_private_dir", lambda path: path)
+        self.patch(self.manager, "make_runtime_dir", lambda: None)
         self.ours = self.folder("bin")
         # this computer's: those of the open project
         use_project(ProjectSettings(qemu_path=self.ours, vde_path=self.ours))

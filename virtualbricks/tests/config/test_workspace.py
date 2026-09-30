@@ -19,6 +19,7 @@
 
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -45,8 +46,8 @@ from virtualbricks.config.settings import set_current_project
 from virtualbricks.tests import FakeLogger, FakeTrash, isolate, make_factory
 from virtualbricks.tests import reset_settings
 
-# 28 bytes, as /run/user/1000/virtualbricks: a project name of 40 bytes
-# leaves 18 bytes to the names of its bricks.
+# 28 bytes, as /run/user/1000/virtualbricks: with the key of the workspace, a
+# project name of 40 bytes leaves 9 bytes to the names of its bricks.
 RUNTIME = "/run/user/1000/virtualbricks"
 MiB = 1 << 20
 
@@ -112,6 +113,47 @@ class TestPaths(WorkspaceTestCase):
         self.assertEqual(self.projects.summaries(), [])
 
 
+class TestRuntimeDir(WorkspaceTestCase):
+
+    def test_runtime_dir(self):
+        self.fixed_runtime_dir()
+        key = locations.workspace_key(self.path)
+        self.assertEqual(
+            self.projects.runtime_dir("lab"), f"{RUNTIME}/{key}/lab"
+        )
+
+    def test_make_runtime_dir(self):
+        folder = self.projects.make_runtime_dir()
+        self.assertEqual(folder, locations.workspace_runtime_dir(self.path))
+        # private, the folder of the runtime directory too
+        for path in (folder, locations.runtime_dir()):
+            self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o700)
+        link = os.path.join(folder, locations.WORKSPACE_LINK)
+        self.assertEqual(os.readlink(link), self.path)
+        self.assertEqual(os.listdir(folder), [locations.WORKSPACE_LINK])
+        # a second call is fine
+        self.assertEqual(self.projects.make_runtime_dir(), folder)
+
+    def test_the_link_is_made_again(self):
+        folder = self.projects.make_runtime_dir()
+        link = os.path.join(folder, locations.WORKSPACE_LINK)
+        os.unlink(link)
+        os.symlink("/elsewhere", link)
+        self.projects.make_runtime_dir()
+        self.assertEqual(os.readlink(link), self.path)
+        self.assertEqual(os.listdir(folder), [locations.WORKSPACE_LINK])
+
+    def test_a_link_to_the_workspace(self):
+        # the same folder, whatever path names it
+        os.makedirs(self.path)
+        link = os.path.join(self.root, "link")
+        os.symlink(self.path, link)
+        self.assertEqual(
+            Workspace(link).make_runtime_dir(),
+            self.projects.make_runtime_dir(),
+        )
+
+
 class TestNames(WorkspaceTestCase):
 
     def test_no_workspace(self):
@@ -158,22 +200,25 @@ class TestNames(WorkspaceTestCase):
     def test_the_bricks_must_fit_in_the_socket_paths(self):
         self.fixed_runtime_dir()
         self.assertEqual(
-            locations.brick_name_room(os.path.join(RUNTIME, "x" * 40)), 18
+            locations.brick_name_room(
+                os.path.join(RUNTIME, "k" * 8, "x" * 40)
+            ),
+            9,
         )
         check = self.projects.check_name
-        self.assertIsNone(check("x" * 40, bricks=["b" * 18]))
+        self.assertIsNone(check("x" * 40, bricks=["b" * 9]))
         self.assertEqual(
-            check("x" * 40, bricks=["b" * 19, "sw"]),
-            "The name leaves 18 bytes to the names of the bricks,"
-            " and the longest has 19",
+            check("x" * 40, bricks=["b" * 10, "sw"]),
+            "The name leaves 9 bytes to the names of the bricks,"
+            " and the longest has 10",
         )
-        self.assertIsNone(check("x" * 39, bricks=["b" * 19]))
+        self.assertIsNone(check("x" * 39, bricks=["b" * 10]))
 
     def test_renaming_reads_the_bricks_of_the_project(self):
         self.fixed_runtime_dir()
         self.projects.create("lab")
         data = load_toml(self.project_file("lab"))
-        data["bricks"] = {"b" * 19: {"type": "switch"}}
+        data["bricks"] = {"b" * 10: {"type": "switch"}}
         self.write("lab", data)
         self.assertIsNotNone(self.projects.check_name("x" * 40, "lab"))
         self.assertIsNone(self.projects.check_name("x" * 39, "lab"))
@@ -297,9 +342,9 @@ class TestRename(WorkspaceTestCase):
             self.projects.rename,
             "lab",
             "x" * 40,
-            bricks=["b" * 19],
+            bricks=["b" * 10],
         )
-        self.projects.rename("lab", "x" * 40, bricks=["b" * 18])
+        self.projects.rename("lab", "x" * 40, bricks=["b" * 9])
 
 
 class TestDuplicate(WorkspaceTestCase):
@@ -585,9 +630,26 @@ class TestOpen(WorkspaceTestCase):
         self.assertEqual(current_project(self.path), "lab")
         self.assertEqual(
             self.factory.runtime_dir,
-            os.path.join(locations.runtime_dir(), "lab"),
+            os.path.join(locations.workspace_runtime_dir(self.path), "lab"),
         )
         self.assertTrue(os.path.isdir(self.factory.runtime_dir))
+        # the runtime directory of the workspace, private, with its link
+        folder = os.path.dirname(self.factory.runtime_dir)
+        self.assertEqual(stat.S_IMODE(os.stat(folder).st_mode), 0o700)
+        link = os.path.join(folder, locations.WORKSPACE_LINK)
+        self.assertEqual(os.readlink(link), self.path)
+
+    def test_two_projects_of_the_same_name(self):
+        # in two workspaces, each has its own runtime directory
+        other = Workspace(os.path.join(self.root, "other"))
+        self.projects.create("lab")
+        other.create("lab")
+        self.projects.open("lab", self.factory)
+        factory = make_factory()
+        other.open("lab", factory)
+        self.assertNotEqual(factory.runtime_dir, self.factory.runtime_dir)
+        self.assertEqual(os.path.basename(factory.runtime_dir), "lab")
+        self.assertTrue(os.path.isdir(factory.runtime_dir))
 
     def test_open_the_open_project(self):
         self.projects.create("lab")
@@ -680,11 +742,12 @@ class TestOpen(WorkspaceTestCase):
     def test_bricks_too_long_for_their_sockets(self):
         self.fixed_runtime_dir()
         self.patch(locations, "ensure_private_dir", lambda path: path)
+        self.patch(self.projects, "make_runtime_dir", lambda: None)
         self.projects.create("x" * 40)
         data = load_toml(self.project_file("x" * 40))
         data["bricks"] = {
-            "b" * 19: {"type": "switch"},
-            "b" * 18: {"type": "switch"},
+            "b" * 10: {"type": "switch"},
+            "b" * 9: {"type": "switch"},
         }
         self.write("x" * 40, data)
         report = self.projects.open("x" * 40, self.factory)
@@ -692,8 +755,8 @@ class TestOpen(WorkspaceTestCase):
         self.assertEqual(len(list(self.factory.bricks)), 2)
         messages = [str(m) for m in report if "sockets" in str(m)]
         [message] = messages
-        self.assertIn(f"bricks.{'b' * 19}:", message)
-        self.assertIn("18 bytes", message)
+        self.assertIn(f"bricks.{'b' * 10}:", message)
+        self.assertIn("9 bytes", message)
 
     def test_close(self):
         self.projects.create("lab")

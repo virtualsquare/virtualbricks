@@ -47,6 +47,7 @@ class ProjectsTestCase(GuiTestCase):
         self.patch(projects, "logger", self.logger)
         self.patch(projectname, "logger", FakeLogger())
         self.patch(locations, "ensure_private_dir", lambda path: path)
+        self.patch(self.manager, "make_runtime_dir", lambda: None)
         self.usage = {}
         self.trash = FakeTrash()
         self.patch(self.manager, "trasher", self.trash)

@@ -38,11 +38,12 @@ class NameTestCase(GuiTestCase):
         self.gui = ProjectsGui(self.factory, self.manager)
         self.logger = FakeLogger()
         self.patch(projectname, "logger", self.logger)
-        # a real one, 28 bytes, which leaves 18 bytes to the bricks of a
-        # project with 40; never created
+        # a real one, 28 bytes, which with the key of the workspace leaves 9
+        # bytes to the bricks of a project with 40; never created
         runtime_dir = "/run/user/1000/virtualbricks"
         self.patch(locations, "runtime_dir", lambda: runtime_dir)
         self.patch(locations, "ensure_private_dir", lambda path: path)
+        self.patch(self.manager, "make_runtime_dir", lambda: None)
         self.done = []
 
     def dialog(self, kind, original=None):
@@ -192,12 +193,12 @@ class TestDuplicate(NameTestCase):
 
     def test_the_bricks_of_the_copy_must_fit(self):
         data = load_toml(self.manager._project_file("lab"))
-        data["bricks"] = {"b" * 19: {"type": "switch"}}
+        data["bricks"] = {"b" * 10: {"type": "switch"}}
         dump_toml(data, self.manager._project_file("lab"))
         dialog = self.dialog(projectname.DUPLICATE, "lab")
         ok, message = self.type(dialog, "x" * 40)
         self.assertFalse(ok)
-        self.assertIn("leaves 18 bytes", message)
+        self.assertIn("leaves 9 bytes", message)
 
     def test_show(self):
         dialog = self.dialog(projectname.DUPLICATE, "lab")

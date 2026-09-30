@@ -24,8 +24,10 @@ is the folder of the ``workspace`` setting, unless the command line gives
 another, and the state remembers the project open last in each. One project is
 open at a time. While it's open its settings are in effect, a new project
 starts with a copy of them, and the sockets of its bricks are in its runtime
-directory, ``<runtime dir>/<project>``. A project's name is at most 40 bytes,
-so that its bricks' names have room in their socket paths.
+directory, ``<runtime dir>/<key>/<project>``, where the key names the
+workspace, so that two projects of the same name in two workspaces are apart.
+A project's name is at most 40 bytes, so that its bricks' names have room in
+their socket paths.
 
 Hidden folders are never projects: they are for imports in progress.
 """
@@ -176,10 +178,6 @@ def write_description(path: str, text: str) -> None:
         fp.write(text)
 
 
-def project_runtime_dir(name: str) -> str:
-    return os.path.join(locations.runtime_dir(), name)
-
-
 def brick_names(data: Table) -> list[str]:
     bricks = data.get("bricks", {})
     return list(bricks) if isinstance(bricks, dict) else []
@@ -284,6 +282,37 @@ class Workspace:
     def _project_file(self, name: str) -> str:
         return os.path.join(self.path, name, locations.PROJECT_FILE)
 
+    def runtime_dir(self, name: str) -> str:
+        """The runtime directory of the project name: its bricks' sockets."""
+
+        return os.path.join(locations.workspace_runtime_dir(self.path), name)
+
+    def make_runtime_dir(self) -> str:
+        """
+        Make the runtime directory of the workspace, and in it the link to
+        the workspace, which tells whose it is; return it.
+        """
+
+        locations.ensure_private_dir(locations.runtime_dir())
+        folder = locations.workspace_runtime_dir(self.path)
+        locations.ensure_private_dir(folder)
+        link = os.path.join(folder, locations.WORKSPACE_LINK)
+        target = os.path.abspath(self.path)
+        try:
+            if os.readlink(link) == target:
+                return folder
+        except OSError:
+            pass
+        # replaced at once, so that the link is never missing
+        tmp = f"{link}-{os.getpid()}"
+        try:
+            os.unlink(tmp)
+        except FileNotFoundError:
+            pass
+        os.symlink(target, tmp)
+        os.replace(tmp, link)
+        return folder
+
     def exists(self, name: str) -> bool:
         return self._is_name(name) and os.path.isfile(self._project_file(name))
 
@@ -332,7 +361,7 @@ class Workspace:
             )
         if name != renaming and os.path.lexists(self.project_path(name)):
             return _("A project with this name already exists")
-        room = locations.brick_name_room(project_runtime_dir(name))
+        room = locations.brick_name_room(self.runtime_dir(name))
         if renaming is not None and bricks is None:
             bricks = self._brick_names(renaming)
         longest = max((len(os.fsencode(b)) for b in bricks or ()), default=0)
@@ -561,7 +590,8 @@ class Workspace:
         self.close(factory)
         logger.debug(open_project, name=name)
         path = self.project_path(name)
-        runtime_dir = project_runtime_dir(name)
+        self.make_runtime_dir()
+        runtime_dir = self.runtime_dir(name)
         factory.runtime_dir = locations.ensure_private_dir(runtime_dir)
         project_settings = restore_project(factory, data, report, path)
         room = locations.brick_name_room(runtime_dir)

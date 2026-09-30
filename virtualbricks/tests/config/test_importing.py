@@ -272,10 +272,10 @@ class TestPlan(ImportingTestCase):
         self.patch(
             locations, "runtime_dir", lambda: "/run/user/1000/virtualbricks"
         )
-        plan = self.plan({}, bricks={"b" * 19: {"type": "switch"}})
+        plan = self.plan({}, bricks={"b" * 10: {"type": "switch"}})
         plan.name = "x" * 40
         [problem] = plan.problems(self.workspace)
-        self.assertIn("leaves 18 bytes", problem)
+        self.assertIn("leaves 9 bytes", problem)
 
     def test_the_job(self):
         plan = self.plan(

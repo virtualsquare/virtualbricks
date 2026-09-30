@@ -81,6 +81,35 @@ class TestLocations(unittest.TestCase):
             locations.runtime_dir().endswith(f"virtualbricks-{os.getuid()}")
         )
 
+    def test_workspace_key(self):
+        # eight letters and digits of base32, the same at every call
+        key = locations.workspace_key("/home/alice/labs")
+        self.assertRegex(key, r"\A[a-z2-7]{8}\Z")
+        self.assertEqual(key, locations.workspace_key("/home/alice/labs"))
+        self.assertNotEqual(key, locations.workspace_key("/home/alice/lab"))
+        self.assertEqual(
+            locations.workspace_key("/home/alice/labs/"),
+            locations.workspace_key("/home/alice/./labs"),
+        )
+
+    def test_workspace_key_of_a_link(self):
+        # the folder, whatever path names it
+        root = os.path.abspath(self.mktemp())
+        os.makedirs(os.path.join(root, "labs"))
+        os.symlink("labs", os.path.join(root, "link"))
+        self.assertEqual(
+            locations.workspace_key(os.path.join(root, "link")),
+            locations.workspace_key(os.path.join(root, "labs")),
+        )
+
+    def test_workspace_runtime_dir(self):
+        self.env["XDG_RUNTIME_DIR"] = "/run/user/1000"
+        key = locations.workspace_key("/home/alice/labs")
+        self.assertEqual(
+            locations.workspace_runtime_dir("/home/alice/labs"),
+            f"/run/user/1000/virtualbricks/{key}",
+        )
+
     def test_user_lock_file(self):
         # beside the runtime directories of the projects, named as none can be
         self.env["XDG_RUNTIME_DIR"] = "/run/user/1000"
