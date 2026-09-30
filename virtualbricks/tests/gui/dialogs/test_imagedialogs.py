@@ -27,6 +27,7 @@ from twisted.internet import defer
 from virtualbricks.config.archive import ArchiveCancelled, ArchiveError
 from virtualbricks.config.images import DiskUse
 from virtualbricks.config.workspace import OpenProject
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests import FakeLogger, FakeTrash
 from virtualbricks.tests.config.test_images import INFO, FakeQemuImg
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
@@ -88,6 +89,11 @@ class DialogTestCase(GuiTestCase):
             self.folder(os.path.join("workspace", "lab")), None
         )
 
+    def engine(self, **fakes):
+        """The engine of the dialogs, on the workspace of the test."""
+
+        return LocalEngine(self.factory, workspace=self.workspace, **fakes)
+
     def file(self, folder, name="frr.qcow2", data=b"disk"):
         path = os.path.join(folder, name)
         with open(path, "wb") as fp:
@@ -144,7 +150,7 @@ class TestDisksWords(DialogTestCase):
 class TestRemove(DialogTestCase):
 
     def dialog(self, image):
-        dialog = RemoveImageDialog(self.factory, image, self.workspace)
+        dialog = RemoveImageDialog(self.engine(), image, self.workspace)
         self.addCleanup(dialog.dialog.destroy)
         return dialog
 
@@ -233,7 +239,7 @@ class TestFindFile(DialogTestCase):
 
     def dialog(self):
         dialog = FindFileDialog(
-            self.factory, self.image, self.workspace, self.qemu_img
+            self.engine(qemu_img=self.qemu_img), self.image, self.workspace
         )
         self.addCleanup(dialog.dialog.destroy)
         return dialog
@@ -497,7 +503,9 @@ class TestMerge(DiskTestCase):
 class TestStartOver(DiskTestCase):
 
     def dialog(self):
-        return self.track(StartOverDialog(self.r1, "hda", self.workspace))
+        return self.track(
+            StartOverDialog(self.engine(), self.r1, "hda", self.workspace)
+        )
 
     def test_to_the_trash(self):
         dialog = self.dialog()

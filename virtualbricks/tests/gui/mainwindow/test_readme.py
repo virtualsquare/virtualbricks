@@ -23,6 +23,7 @@ README it loads and saves.
 from twisted.internet import task
 from twisted.trial import unittest
 
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests.gui import has_display
 
 if has_display:
@@ -52,7 +53,7 @@ class TestReadmeTab(unittest.TestCase):
         window = Gtk.OffscreenWindow()
         self.addCleanup(window.destroy)
         # the saves of the edits never come
-        tab = ReadmeTab(clock=task.Clock())
+        tab = ReadmeTab(LocalEngine(None), clock=task.Clock())
         # first: a popover in an offscreen window, unlike a real one, makes
         # GTK complain when the window goes
         self.addCleanup(tab.syntax_button.get_popover().destroy)
@@ -149,7 +150,7 @@ class TestReadmeTab(unittest.TestCase):
         self.assertEqual(self.tab.editor.get_right_margin(), wider)
 
     def test_the_margin_follows_the_theme(self):
-        before = ReadmeTab().preview.get_right_margin()
+        before = ReadmeTab(LocalEngine(None)).preview.get_right_margin()
         _, tab = self.tab_in_window(b"button { padding-left: 40px; }")
         _, width = tab.buttons.get_preferred_width()
         self.assertGreater(width, before)
@@ -159,7 +160,7 @@ class TestReadmeTab(unittest.TestCase):
         self.assertEqual(tab.preview.get_right_margin(), width)
 
     def test_not_measured_after_the_end(self):
-        before = ReadmeTab().preview.get_right_margin()
+        before = ReadmeTab(LocalEngine(None)).preview.get_right_margin()
         _, tab = self.tab_in_window(b"button { padding-left: 40px; }")
         tab.destroy()
         self.run_idle_calls()
@@ -207,7 +208,8 @@ class TestLoadAndSave(unittest.TestCase):
     def setUp(self):
         self.project = FakeProject(README)
         self.clock = task.Clock()
-        self.tab = ReadmeTab(FakeWorkspace(self.project), self.clock)
+        engine = LocalEngine(None, workspace=FakeWorkspace(self.project))
+        self.tab = ReadmeTab(engine, self.clock)
         self.addCleanup(self.tab.destroy)
         self.buffer = self.tab.editor.get_buffer()
 

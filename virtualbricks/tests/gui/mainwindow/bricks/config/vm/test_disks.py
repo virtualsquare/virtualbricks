@@ -22,6 +22,7 @@ import os
 from virtualbricks.bricks.virtualmachine import VirtualMachineDraft
 from virtualbricks.config import images
 from virtualbricks.config.workspace import OpenProject
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests.config.test_images import INFO, FakeQemuImg
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 
@@ -41,6 +42,7 @@ class DisksTestCase(GuiTestCase):
         untranslated(self)
         self.manager.current = OpenProject(self.folder("lab"), None)
         self.qemu_img = FakeQemuImg()
+        self.engine = LocalEngine(self.factory, qemu_img=self.qemu_img)
         self.frr = self.image("frr")
         self.pc = self.image("pc")
         for image in (self.frr, self.pc):
@@ -58,7 +60,7 @@ class DisksTestCase(GuiTestCase):
 
     def make(self):
         section = DisksSection(
-            self.r1, self.factory, images.InfoCache(self.qemu_img)
+            self.r1, self.engine, images.InfoCache(self.qemu_img)
         )
         self.addCleanup(section.destroy)
         return section
@@ -188,7 +190,7 @@ class TestTheDraft(DisksTestCase):
         calls = []
         section = DisksSection(
             self.r1,
-            self.factory,
+            self.engine,
             images.InfoCache(self.qemu_img),
             changed=lambda: calls.append("changed"),
         )
@@ -313,6 +315,7 @@ class TestTheChanges(DisksTestCase):
     def test_start_over(self):
         self.hda.actions.activate_action("start-over", None)
         self.assertEqual(
-            self.shown[0][:2], ("StartOverDialog", (self.r1, "hda"))
+            self.shown[0][:2],
+            ("StartOverDialog", (self.engine, self.r1, "hda")),
         )
         self.assertEqual(self.hda.start_over().on_done, self.hda.update)

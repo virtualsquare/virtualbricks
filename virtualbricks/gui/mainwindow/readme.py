@@ -26,9 +26,10 @@ syntax. The views keep a margin as wide as the buttons, so no text goes
 under them; it's measured again when the buttons get their room, as a new
 theme can change them.
 
-The editor holds the README of the open project: the tab loads it when a
-project opens and when it shows, and saves it when another tab shows, when
-the project is saved, and 30 seconds after an edit.
+The editor holds the README of the open project, which the engine reads and
+writes: the tab loads it when a project opens and when it shows, and saves
+it when another tab shows, when the project is saved, and 30 seconds after
+an edit.
 """
 
 from __future__ import annotations
@@ -39,7 +40,6 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk  # noqa: E402
 from twisted.internet import reactor  # noqa: E402
 
-from virtualbricks.config.workspace import projects  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
 from virtualbricks.gui.markdownview import MarkdownView  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
@@ -99,9 +99,9 @@ class ReadmeTab(Tab, Gtk.Overlay):
 
     title = _("Readme")
 
-    def __init__(self, workspace=None, clock=None) -> None:
+    def __init__(self, engine, clock=None) -> None:
         super().__init__(visible=True)
-        self.workspace = projects if workspace is None else workspace
+        self.engine = engine
         self.clock = reactor if clock is None else clock
         # the save of an edit, on its way
         self._saving = None
@@ -185,8 +185,11 @@ class ReadmeTab(Tab, Gtk.Overlay):
     def load(self) -> None:
         """The README of the open project, in the editor: not an edit."""
 
+        self.engine.readme().addCallback(self._loaded)
+
+    def _loaded(self, text) -> None:
         textbuffer = self.editor.get_buffer()
-        textbuffer.set_text(self.workspace.current.get_description())
+        textbuffer.set_text(text)
         textbuffer.set_modified(False)
 
     def save(self) -> None:
@@ -195,7 +198,7 @@ class ReadmeTab(Tab, Gtk.Overlay):
         textbuffer = self.editor.get_buffer()
         if textbuffer.get_modified():
             text = textbuffer.get_property("text")
-            self.workspace.current.set_description(text)
+            self.engine.set_readme(text)
             textbuffer.set_modified(False)
 
     def _save_later(self) -> None:

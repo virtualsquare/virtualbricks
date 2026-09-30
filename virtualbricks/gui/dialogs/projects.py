@@ -34,7 +34,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gio, Gtk, Pango
-from twisted.internet import threads
+from twisted.internet import defer
 from twisted.logger import Logger
 
 from virtualbricks import errors
@@ -170,7 +170,7 @@ class ProjectsWindow:
         self.gui = gui
         self.workspace = projects if workspace is None else workspace
         if disk_usage is None:
-            disk_usage = self._disk_usage_in_thread
+            disk_usage = gui.engine.disk_usage
         self._disk_usage = disk_usage
         self.rows = []
         self.selected = None
@@ -178,9 +178,6 @@ class ProjectsWindow:
         self.destroyed = False
         self.build_ui()
         self.reload()
-
-    def _disk_usage_in_thread(self, name):
-        return threads.deferToThread(self.workspace.disk_usage, name)
 
     # The widgets
 
@@ -405,13 +402,19 @@ class ProjectsWindow:
         """Read the projects again, keeping the selection."""
 
         selected = self.selected.name if self.selected else None
+        reading = self.gui.engine.project_summaries()
+        reading.addCallback(self._fill, selected)
+
+    def _fill(self, summaries, selected):
+        if self.destroyed:
+            return
         for child in self.list.get_children():
             self.list.remove(child)
         current = self.workspace.current
         open_name = current.name if current is not None else None
         self.rows = [
             ProjectRow(summary, summary.name == open_name)
-            for summary in self.workspace.summaries()
+            for summary in summaries
         ]
         for row in self.rows:
             self.list.add(row.row)
@@ -523,16 +526,22 @@ class ProjectsWindow:
     def open(self, name):
         if self.is_open(name) or not self._is_readable(name):
             return
-        try:
-            self.gui.on_open(name)
-        except (OSError, errors.Error) as exc:
-            logger.error(cannot_open, name=name, error=exc)
-            self.show_problem(
-                _("Cannot open {name}: {error}").format(name=name, error=exc)
-            )
-            return
+        opening = defer.maybeDeferred(self.gui.on_open, name)
+        opening.addCallbacks(
+            self._opened, self._not_opened, None, None, (name,)
+        )
+
+    def _opened(self, report):
         self.gui.set_title()
         self.window.destroy()
+
+    def _not_opened(self, failure, name):
+        failure.trap(OSError, errors.Error)
+        exc = failure.value
+        logger.error(cannot_open, name=name, error=exc)
+        self.show_problem(
+            _("Cannot open {name}: {error}").format(name=name, error=exc)
+        )
 
     def _is_readable(self, name):
         for row in self.rows:
@@ -595,7 +604,9 @@ class ProjectsWindow:
 
     def on_remove(self, action=None, parameter=None):
         if self.selected is not None:
-            dialog = RemoveDialog(self.workspace, self.selected)
+            dialog = RemoveDialog(
+                self.gui.engine, self.workspace, self.selected
+            )
             dialog.on_done = self.on_removed
             dialog.show(self.window)
             return dialog
@@ -628,7 +639,8 @@ class RemoveDialog:
     DELETE = 2
     on_done = None
 
-    def __init__(self, workspace, summary, disk_usage=None):
+    def __init__(self, engine, workspace, summary, disk_usage=None):
+        self.engine = engine
         self.workspace = workspace
         self.summary = summary
         self.name = summary.name
@@ -707,22 +719,26 @@ class RemoveDialog:
             self.dialog.set_transient_for(parent)
         self.dialog.show()
 
-    def remove(self, how):
-        if how == self.TRASH:
-            self.workspace.trash(self.name)
+    def remove(self, how) -> defer.Deferred:
+        trash = how == self.TRASH
+        removing = self.engine.remove_project(self.name, trash)
+        removing.addCallback(self._removed, trash)
+        return removing
+
+    def _removed(self, result, trash):
+        if trash:
             logger.info(project_trashed, name=self.name)
         else:
-            self.workspace.delete(self.name)
             logger.info(project_deleted, name=self.name)
+        if self.on_done is not None:
+            self.on_done(self.name)
+
+    def _not_removed(self, failure):
+        failure.trap(OSError, errors.Error)
+        logger.error(cannot_remove, name=self.name, error=failure.value)
 
     def on_response(self, dialog, response_id):
         dialog.destroy()
         if response_id not in (self.TRASH, self.DELETE):
             return
-        try:
-            self.remove(response_id)
-        except (OSError, errors.Error) as exc:
-            logger.error(cannot_remove, name=self.name, error=exc)
-            return
-        if self.on_done is not None:
-            self.on_done(self.name)
+        self.remove(response_id).addErrback(self._not_removed)

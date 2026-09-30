@@ -47,6 +47,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gio, Gtk, Pango
+from twisted.internet import defer
 from twisted.logger import Logger
 
 from virtualbricks import errors
@@ -144,8 +145,9 @@ class RemoveImageDialog(Window):
     def get_root_widget(self):
         return self.dialog
 
-    def __init__(self, factory, image, workspace=None):
-        self.factory = factory
+    def __init__(self, engine, image, workspace=None):
+        self.engine = engine
+        self.factory = engine.factory
         self.image = image
         self.workspace = projects if workspace is None else workspace
         self.build_ui()
@@ -215,17 +217,17 @@ class RemoveImageDialog(Window):
         dialog.destroy()
 
     def remove(self):
-        self.factory.remove_image(self.image)
-        if self.file_check is None or not self.file_check.get_active():
-            return
         path = self.image.path
-        try:
-            if self.can_trash():
-                self.workspace.trasher.trash(path)
-            else:
-                os.remove(path)
-        except OSError as exc:
-            logger.error(remove_failed, path=path, error=exc)
+        removing = self.engine.remove(self.image)
+        if self.file_check is not None and self.file_check.get_active():
+            # to the trash, if there is one
+            removing.addCallback(lambda _: self.engine.discard_file(path))
+            removing.addErrback(self._not_removed, path)
+        return removing
+
+    def _not_removed(self, failure, path):
+        failure.trap(OSError)
+        logger.error(remove_failed, path=path, error=failure.value)
 
 
 class FindFileDialog(Window):
@@ -234,11 +236,11 @@ class FindFileDialog(Window):
     def get_root_widget(self):
         return self.dialog
 
-    def __init__(self, factory, image, workspace=None, qemu_img=None):
-        self.factory = factory
+    def __init__(self, engine, image, workspace=None):
+        self.engine = engine
+        self.factory = engine.factory
         self.image = image
         self.workspace = projects if workspace is None else workspace
-        self.qemu_img = qemu_img
         self.build_ui()
 
     def found(self) -> str | None:
@@ -326,9 +328,7 @@ class FindFileDialog(Window):
 
     def use(self):
         self.use_button.set_sensitive(False)
-        relinked = images.relink(
-            self.factory, self.image, self.chosen, self.qemu_img
-        )
+        relinked = self.engine.relink(self.image, self.chosen)
         relinked.addCallbacks(self._used, self._failed)
         return relinked
 
@@ -671,7 +671,8 @@ class StartOverDialog(Window):
     def get_root_widget(self):
         return self.dialog
 
-    def __init__(self, vm, device, workspace=None) -> None:
+    def __init__(self, engine, vm, device, workspace=None) -> None:
+        self.engine = engine
         self.vm = vm
         self.device = device
         self.workspace = projects if workspace is None else workspace
@@ -729,16 +730,20 @@ class StartOverDialog(Window):
             self.start_over()
         dialog.destroy()
 
-    def start_over(self) -> None:
-        try:
-            images.start_over(self.vm, self.device, self.workspace.trasher)
-        except (OSError, errors.Error) as exc:
-            logger.error(
-                start_over_failed,
-                vm=self.vm.name,
-                device=self.device,
-                error=exc,
-            )
-            return
+    def start_over(self) -> defer.Deferred:
+        starting = self.engine.start_over(self.vm, self.device)
+        starting.addCallbacks(self._started_over, self._not_started_over)
+        return starting
+
+    def _started_over(self, trashed) -> None:
         if self.on_done is not None:
             self.on_done()
+
+    def _not_started_over(self, failure) -> None:
+        failure.trap(OSError, errors.Error)
+        logger.error(
+            start_over_failed,
+            vm=self.vm.name,
+            device=self.device,
+            error=failure.value,
+        )

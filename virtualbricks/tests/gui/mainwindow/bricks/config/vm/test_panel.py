@@ -25,6 +25,7 @@ from virtualbricks.bricks.virtualmachine import (
     hostonly_sock,
 )
 from virtualbricks.config.settings import set_setting
+from virtualbricks.engine import LocalEngine
 from virtualbricks.programs import parse_machine_properties
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 from virtualbricks.tests.test_programs import load, recorded_info
@@ -32,8 +33,6 @@ from virtualbricks.tests.test_programs import load, recorded_info
 if has_display:
     from gi.repository import Gtk
 
-    from virtualbricks.gui.mainwindow.bricks.config.vm import devices
-    from virtualbricks.gui.mainwindow.bricks.config.vm import panel as vmpanel
     from virtualbricks.gui.mainwindow.bricks.config.vm.panel import (
         VirtualMachinePanel,
     )
@@ -64,6 +63,13 @@ class FakePrograms:
             deferred.callback(info)
 
 
+class PanelGui:
+    """The main window, as a panel sees it: its engine."""
+
+    def __init__(self, engine):
+        self.engine = engine
+
+
 class MachinePanelTestCase(GuiTestCase):
 
     target = "debian-13"
@@ -73,20 +79,24 @@ class MachinePanelTestCase(GuiTestCase):
         super().setUp()
         untranslated(self)
         self.programs = FakePrograms(self.target)
-        self.patch(vmpanel, "programs", self.programs)
-        self.patch(vmpanel, "which", self.which)
         self.found = [
             UsbDevice("046d:c52b", "Logitech, Inc. Unifying Receiver")
         ]
-        self.patch(
-            devices.virtualmachine,
-            "get_usb_devices",
-            lambda: defer.succeed(self.found),
+        # QEMU and lsusb, as the engine of the window asks them
+        self.gui = PanelGui(
+            LocalEngine(
+                self.factory,
+                programs=self.programs,
+                which=self.which,
+                usb_devices=lambda: self.lsusb(),
+            )
         )
         self.switch = self.factory.new_brick("switch", "sw1")
         self.vm = self.factory.new_brick("qemu", "vm1")
         self.prepare()
-        self.panel = VirtualMachinePanel(VirtualMachineDraft(self.vm))
+        self.panel = VirtualMachinePanel(
+            VirtualMachineDraft(self.vm), self.gui
+        )
         self.addCleanup(self.panel.widget.destroy)
         self.calls = []
         self.panel.connect_changed(self.calls.append)
@@ -100,6 +110,9 @@ class MachinePanelTestCase(GuiTestCase):
         if name == "qemu-system-aarch64":
             raise FileNotFoundError(name)
         return f"/usr/bin/{name}"
+
+    def lsusb(self):
+        return defer.succeed(self.found)
 
     def page(self, key):
         return self.panel.page(key)
@@ -227,7 +240,7 @@ class TestItsQemu(MachinePanelTestCase):
 
     def test_a_program_not_installed(self):
         self.vm.update_config({"qemu_program": "qemu-system-aarch64"})
-        panel = VirtualMachinePanel(VirtualMachineDraft(self.vm))
+        panel = VirtualMachinePanel(VirtualMachineDraft(self.vm), self.gui)
         self.addCleanup(panel.widget.destroy)
         self.assertIsNone(panel.draft.qemu)
         self.assertEqual(

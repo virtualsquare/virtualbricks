@@ -109,18 +109,20 @@ class BricksTab(RowsTab):
     def start_all(self) -> defer.Deferred:
         """Start the bricks that can start; the failures are logged."""
 
+        engine = self.gui.engine
         deferreds = [
-            brick.poweron() for brick in self.items() if self.can_start(brick)
+            engine.start(brick)
+            for brick in self.items()
+            if self.can_start(brick)
         ]
         return log_failures(deferreds, not_started, logger)
 
     def stop_all(self) -> defer.Deferred:
         """Stop the running bricks; the failures are logged."""
 
+        engine = self.gui.engine
         deferreds = [
-            defer.maybeDeferred(brick.poweroff)
-            for brick in self.items()
-            if is_running(brick)
+            engine.stop(brick) for brick in self.items() if is_running(brick)
         ]
         return log_failures(deferreds, not_stopped, logger)
 
@@ -128,7 +130,7 @@ class BricksTab(RowsTab):
         """Offer the kinds of bricks, under the button."""
 
         if self.new_popover is None:
-            self.new_popover = NewBrickPopover(self.factory, self.on_made)
+            self.new_popover = NewBrickPopover(self.gui.engine, self.on_made)
         self.new_popover.popup_at(self.new_button)
 
     def on_made(self, brick) -> None:

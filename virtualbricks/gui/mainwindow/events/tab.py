@@ -118,7 +118,7 @@ class EventRow(Row):
         )
 
     def on_startstop_clicked(self, button) -> None:
-        self.item.toggle()
+        eventmenu.startstop(self.gui.engine, self.item)
 
 
 class EventList(RowList):
@@ -233,13 +233,13 @@ class EventsTab(RowsTab):
 
         for event in self.items():
             if self.can_start(event):
-                event.poweron()
+                self.gui.engine.start_event(event)
 
     def stop_all(self) -> None:
         """Stop the waiting events: their actions don't run."""
 
         for event in self.items():
-            event.poweroff()
+            self.gui.engine.stop_event(event)
 
     def new(self) -> None:
         NewEventDialog(self.gui).show(self.gui.window)

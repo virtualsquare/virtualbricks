@@ -25,6 +25,7 @@ import os
 from twisted.internet import defer
 
 from virtualbricks.bricks.draft import Draft
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
@@ -69,14 +70,11 @@ class FakeSwitch:
 class FakeGui:
     def __init__(self, factory):
         self.brickfactory = factory
+        self.engine = LocalEngine(factory)
         self.window = object()
-        self.started = []
         self.removed = []
         self.configured = []
         self.tab = None
-
-    def startstop_brick(self, brick):
-        self.started.append(brick)
 
     def curtain_up(self, brick):
         self.configured.append(brick)

@@ -18,6 +18,7 @@
 """The main window: what closing the windows it opens tells it."""
 
 from virtualbricks.config.settings import set_current_project
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
@@ -31,6 +32,7 @@ class FakeGui:
 
     def __init__(self, factory):
         self.brickfactory = factory
+        self.engine = LocalEngine(factory)
         self.window = None
         self.titles = 0
 

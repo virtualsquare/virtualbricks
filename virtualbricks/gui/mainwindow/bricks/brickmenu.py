@@ -41,15 +41,10 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gio, GLib, Gtk  # noqa: E402
-from twisted.internet import error, reactor  # noqa: E402
+from twisted.internet import defer  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks.bricks import restart  # noqa: E402
-from virtualbricks.bricks.virtualmachine import (  # noqa: E402
-    VirtualMachine,
-    resume,
-    suspend,
-)
+from virtualbricks.bricks.virtualmachine import VirtualMachine  # noqa: E402
 from virtualbricks.gui.mainwindow import tab  # noqa: E402
 from virtualbricks.bricks import brickinfo  # noqa: E402
 from virtualbricks.bricks.brickinfo import NO_CONSOLE, State  # noqa: E402
@@ -67,6 +62,8 @@ resuming = "Resuming virtual machine {name}"
 suspending = "Save snapshot on virtual machine {name}"
 sending_signal = "Sending to process signal {signame}!"
 sending_acpi = "send ACPI {acpievent}"
+stop_error = "Error on stopping brick."
+start_error = "Error on starting brick."
 
 GROUP = "brick"
 # The kinds of bricks without a settings panel.
@@ -80,6 +77,18 @@ WHEN = (
 
 
 _item = functools.partial(menu_item, GROUP)
+
+
+def startstop(engine, brick) -> defer.Deferred:
+    """Stop brick if it runs, or else start it; a failure is logged."""
+
+    if is_running(brick):
+        return engine.stop(brick).addErrback(
+            lambda f: logger.failure(stop_error, f)
+        )
+    return engine.start(brick).addErrback(
+        lambda f: logger.failure(start_error, f)
+    )
 
 
 def menu(brick, bricks, events, keys=False) -> Gio.Menu:
@@ -176,11 +185,11 @@ def _process_menu(brick) -> Gio.Menu:
 class BrickActions(Gio.SimpleActionGroup):
     """What the items of the menu of a brick do."""
 
-    def __init__(self, gui, brick, clock=None) -> None:
+    def __init__(self, gui, brick) -> None:
         super().__init__()
         self.gui = gui
+        self.engine = gui.engine
         self.brick = brick
-        self.clock = reactor if clock is None else clock
         for name, callback in (
             ("startstop", self.startstop),
             ("configure", self.configure),
@@ -243,29 +252,29 @@ class BrickActions(Gio.SimpleActionGroup):
     # The items
 
     def startstop(self) -> None:
-        self.gui.startstop_brick(self.brick)
+        startstop(self.engine, self.brick)
 
     def configure(self) -> None:
         self.gui.curtain_up(self.brick)
 
     def rename(self) -> None:
-        RenameDialog(self.gui.brickfactory, self.brick).show(self.gui.window)
+        RenameDialog(self.engine, self.brick).show(self.gui.window)
 
     def duplicate(self) -> None:
-        self.gui.brickfactory.duplicate_brick(self.brick)
+        self.engine.duplicate(self.brick)
 
     def on_connect(self, action, target) -> None:
-        other = self.gui.brickfactory.get_brick(target.get_string())
+        other = self.engine.factory.get_brick(target.get_string())
         if other is not None:
-            brickinfo.connect(self.brick, other)
+            self.engine.connect(self.brick, other)
 
     def on_event_chosen(self, action, value, setting) -> None:
-        self.brick.update_config({setting: value.get_string()})
+        self.engine.update_config(self.brick, {setting: value.get_string()})
         action.set_state(value)
 
     def resume(self) -> None:
         logger.debug(resuming, name=self.brick.name)
-        self.gui.user_wait_action(resume(self.brick))
+        self.gui.user_wait_action(self.engine.resume(self.brick))
 
     def delete(self) -> None:
         self.gui.ask_remove_brick(self.brick)
@@ -273,39 +282,34 @@ class BrickActions(Gio.SimpleActionGroup):
     # The items of the process
 
     def console(self) -> None:
-        self.brick.open_console()
-
-    def _signal(self, number) -> None:
-        logger.debug(sending_signal, signame=signal.Signals(number).name)
-        try:
-            self.brick.send_signal(number)
-        except error.ProcessExitedAlready:
-            pass
+        self.engine.open_console(self.brick)
 
     def pause(self) -> None:
-        self._signal(signal.SIGSTOP)
+        logger.debug(sending_signal, signame=signal.SIGSTOP.name)
+        self.engine.pause(self.brick)
 
     def cont(self) -> None:
-        self._signal(signal.SIGCONT)
+        logger.debug(sending_signal, signame=signal.SIGCONT.name)
+        self.engine.continue_(self.brick)
 
     def suspend(self) -> None:
         logger.debug(suspending, name=self.brick.name)
-        self.gui.user_wait_action(suspend(self.brick))
+        self.gui.user_wait_action(self.engine.suspend(self.brick))
 
     def reset(self) -> None:
         logger.info(sending_acpi, acpievent="reset")
-        self.brick.send(b"system_reset\n")
+        self.engine.reset(self.brick)
 
     def restart(self) -> None:
-        restart(self.brick, self.clock)
+        self.engine.restart(self.brick)
 
     def terminate(self) -> None:
         logger.debug(sending_signal, signame="SIGTERM")
-        self.brick.poweroff(term=True)
+        self.engine.terminate(self.brick)
 
     def kill(self) -> None:
         logger.debug(sending_signal, signame="SIGKILL")
-        self.brick.poweroff(kill=True)
+        self.engine.kill(self.brick)
 
 
 def popup(widget, event, gui, brick, keys=False) -> Gtk.Menu:

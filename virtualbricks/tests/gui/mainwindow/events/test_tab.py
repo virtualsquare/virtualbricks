@@ -24,6 +24,7 @@ from twisted.internet import task
 
 from virtualbricks.bricks import event as event_module
 from virtualbricks.bricks.eventaction import StartAction
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
@@ -48,6 +49,7 @@ class Recording(StartAction):
 class FakeGui:
     def __init__(self, factory):
         self.brickfactory = factory
+        self.engine = LocalEngine(factory)
         self.window = object()
         self.configured = []
         self.removed = []
@@ -378,7 +380,9 @@ class TestTheKeysAndTheMouse(EventsTestCase):
         self.patch(eventmenu, "RenameDialog", lambda *a: FakeDialog(shown, *a))
         self.select(self.ev)
         self.assertTrue(self.press(Gdk.KEY_F2))
-        self.assertEqual(shown, [((self.factory, self.ev), self.gui.window)])
+        self.assertEqual(
+            shown, [((self.gui.engine, self.ev), self.gui.window)]
+        )
         # not while it waits
         self.ev.poweron()
         self.assertTrue(self.press(Gdk.KEY_F2))

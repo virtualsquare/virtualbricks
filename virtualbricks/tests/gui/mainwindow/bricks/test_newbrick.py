@@ -22,6 +22,7 @@ from unittest import mock
 
 from virtualbricks.bricks.tap import Tap
 from virtualbricks.config import settings
+from virtualbricks.engine import LocalEngine
 from virtualbricks.programs import VDE_PROGRAMS
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
@@ -64,7 +65,9 @@ class NewBrickTestCase(GuiTestCase):
         self.window.add(self.button)
         self.window.show_all()
         self.made = []
-        self.popover = NewBrickPopover(self.factory, self.made.append)
+        self.popover = NewBrickPopover(
+            LocalEngine(self.factory), self.made.append
+        )
         self.addCleanup(self.popover.destroy)
 
     def folder(self):

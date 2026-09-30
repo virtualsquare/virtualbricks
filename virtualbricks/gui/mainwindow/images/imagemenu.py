@@ -103,13 +103,13 @@ class ImageActions(Gio.SimpleActionGroup):
         self.lookup_action("show").set_enabled(there)
 
     def find_file(self) -> None:
-        FindFileDialog(self.gui.brickfactory, self.image).show(self.gui.window)
+        FindFileDialog(self.gui.engine, self.image).show(self.gui.window)
 
     def details(self) -> None:
         self.gui.curtain_up(self.image)
 
     def rename(self) -> None:
-        RenameDialog(self.gui.brickfactory, self.image).show(self.gui.window)
+        RenameDialog(self.gui.engine, self.image).show(self.gui.window)
 
     def show(self) -> None:
         show_in_files(self.gui.window, self.image.path)

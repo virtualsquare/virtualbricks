@@ -27,6 +27,7 @@ from twisted.trial import unittest
 
 from virtualbricks import ksm
 from virtualbricks.config import workspace
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests import (
     FakeLogger,
     isolate,
@@ -46,11 +47,33 @@ except (ImportError, ValueError):  # pragma: no cover
     has_display = False
 
 
+class RecordingEngine:
+    """
+    An engine that remembers what it was asked, in calls, and does nothing:
+    the tests start no program. It knows the calls of LocalEngine only.
+    """
+
+    def __init__(self, factory):
+        self.factory = factory
+        self.calls = []
+
+    def __getattr__(self, name):
+        if name.startswith("_") or not hasattr(LocalEngine, name):
+            raise AttributeError(name)
+
+        def call(*args, **kwargs):
+            self.calls.append((name, *args, *kwargs.items()))
+            return defer.succeed(None)
+
+        return call
+
+
 class FakeGui:
     """The main window, as the dialogs see it."""
 
     def __init__(self, factory):
         self.brickfactory = factory
+        self.engine = LocalEngine(factory)
         self.systray = []
 
     def start_systray(self):

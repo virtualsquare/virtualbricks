@@ -21,6 +21,7 @@ import os
 
 from twisted.internet import defer
 
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests.config.test_images import INFO, FakeQemuImg
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 
@@ -103,7 +104,9 @@ class TestExistingImage(AddTestCase):
     def setUp(self):
         super().setUp()
         self.dialog = self.track(
-            ExistingImageDialog(self.factory, qemu_img=self.qemu_img)
+            ExistingImageDialog(
+                LocalEngine(self.factory, qemu_img=self.qemu_img)
+            )
         )
 
     def test_waits_for_a_file(self):
@@ -267,7 +270,7 @@ class TestNewDisk(AddTestCase):
     def setUp(self):
         super().setUp()
         self.dialog = self.track(
-            NewDiskDialog(self.factory, qemu_img=self.qemu_img)
+            NewDiskDialog(LocalEngine(self.factory, qemu_img=self.qemu_img))
         )
         self.vimages = os.path.join(self.manager.path, "vimages")
 

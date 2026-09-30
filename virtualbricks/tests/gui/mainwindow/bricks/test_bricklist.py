@@ -22,7 +22,8 @@ running bricks, and a brick dropped on another.
 
 import os
 
-from virtualbricks.tests.gui import GuiTestCase, has_display
+from virtualbricks.engine import LocalEngine
+from virtualbricks.tests.gui import GuiTestCase, RecordingEngine, has_display
 
 if has_display:
     from gi.repository import Gdk, GObject, Gtk
@@ -46,11 +47,8 @@ class FakeProcess:
 class FakeGui:
     def __init__(self, factory):
         self.brickfactory = factory
+        self.engine = LocalEngine(factory)
         self.window = None
-        self.started = []
-
-    def startstop_brick(self, brick):
-        self.started.append(brick)
 
 
 class FakeDrag:
@@ -307,8 +305,13 @@ class TestTheRows(BrickListTestCase):
         self.assertFalse(row.startstop.get_sensitive())
 
     def test_start_and_stop(self):
+        self.gui.engine = RecordingEngine(self.factory)
         self.row(self.sw).startstop.clicked()
-        self.assertEqual(self.gui.started, [self.sw])
+        self.running(self.sw)
+        self.row(self.sw).startstop.clicked()
+        self.assertEqual(
+            self.gui.engine.calls, [("start", self.sw), ("stop", self.sw)]
+        )
 
     def test_the_actions_of_the_menu(self):
         row = self.row(self.sw)

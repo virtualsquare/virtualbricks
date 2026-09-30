@@ -45,15 +45,17 @@ class RenameDialog(Window):
     is valid and not in use.
     """
 
-    def __init__(self, brickfactory, brick):
+    def __init__(self, engine, brick):
         """
-        :type brickfactory: virtualbricks.brickfactory.BrickFactory
+        :type engine: virtualbricks.engine.LocalEngine
         :type brick: Union[virtualbricks.bricks.Brick,
             virtualbricks.bricks.event.Event]
         :rtype: None
         """
 
-        self._factory = brickfactory
+        # the names are checked on its factory; it renames
+        self._engine = engine
+        self._factory = engine.factory
         self._brick = brick
         self._prev_name = brick.name
         self.build_ui()
@@ -213,13 +215,11 @@ class RenameDialog(Window):
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
             name = self.brick_name_entry.get_text()
-            try:
-                self._factory.rename_item(self._brick, name)
-                # TODO: add debugging log
-                # logger.debug(renamed)
-            except errors.InvalidNameError:
-                # TODO: check the difference between invalid_name and
-                # brick_invalid_name
-                logger.error(invalid_name, name=name)
+            renaming = self._engine.rename(self._brick, name)
+            renaming.addErrback(self._refused, name)
         dialog.destroy()
         return True
+
+    def _refused(self, failure, name):
+        failure.trap(errors.InvalidNameError)
+        logger.error(invalid_name, name=name)

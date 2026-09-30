@@ -151,7 +151,8 @@ class NewEventDialog:
             return
         # a number typed and not yet taken
         self.delay.update()
-        event = self.factory.new_event(self.name_entry.get_text())
-        event.update_config({"delay": self.delay.get_value_as_int()})
+        making = self.gui.engine.new_event(
+            self.name_entry.get_text(), self.delay.get_value_as_int()
+        )
         dialog.destroy()
-        self.gui.curtain_up(event)
+        making.addCallback(self.gui.curtain_up)

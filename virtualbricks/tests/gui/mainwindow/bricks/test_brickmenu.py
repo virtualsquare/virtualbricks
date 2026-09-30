@@ -20,10 +20,11 @@
 import os
 import signal
 
-from twisted.internet import error, task
+from twisted.internet import error
 
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests import FakeLogger
-from virtualbricks.tests.gui import GuiTestCase, has_display
+from virtualbricks.tests.gui import GuiTestCase, RecordingEngine, has_display
 
 if has_display:
     from gi.repository import Gdk, GLib, Gtk
@@ -43,11 +44,9 @@ class FakeProcess:
 class FakeGui:
     def __init__(self, factory):
         self.brickfactory = factory
+        self.engine = LocalEngine(factory)
         self.window = object()
         self.calls = []
-
-    def startstop_brick(self, brick):
-        self.calls.append(("startstop", brick))
 
     def curtain_up(self, brick):
         self.calls.append(("configure", brick))
@@ -335,23 +334,35 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
     def activate(self, name, target=None):
         self.actions.activate_action(name, target)
 
+    def recording(self, brick):
+        """The actions of brick, with an engine that only remembers."""
+
+        self.gui.engine = RecordingEngine(self.factory)
+        return BrickActions(self.gui, brick)
+
     def test_the_gui(self):
-        for name in ("startstop", "configure", "delete"):
+        for name in ("configure", "delete"):
             self.activate(name)
         self.assertEqual(
-            self.gui.calls,
-            [
-                ("startstop", self.sw),
-                ("configure", self.sw),
-                ("delete", self.sw),
-            ],
+            self.gui.calls, [("configure", self.sw), ("delete", self.sw)]
+        )
+
+    def test_start_and_stop(self):
+        actions = self.recording(self.sw)
+        actions.activate_action("startstop", None)
+        self.running(self.sw)
+        actions.activate_action("startstop", None)
+        self.assertEqual(
+            self.gui.engine.calls, [("start", self.sw), ("stop", self.sw)]
         )
 
     def test_rename(self):
         shown = []
         self.patch(brickmenu, "RenameDialog", lambda *a: FakeDialog(shown, *a))
         self.activate("rename")
-        self.assertEqual(shown, [((self.factory, self.sw), self.gui.window)])
+        self.assertEqual(
+            shown, [((self.gui.engine, self.sw), self.gui.window)]
+        )
 
     def test_duplicate(self):
         self.activate("duplicate")
@@ -366,15 +377,13 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
 
     def test_suspend_and_resume_wait(self):
         vm = self.running(self.brick("qemu", "vm"))
-        actions = BrickActions(self.gui, vm)
-        self.patch(brickmenu, "suspend", lambda brick: ("suspend", brick))
-        self.patch(brickmenu, "resume", lambda brick: ("resume", brick))
+        actions = self.recording(vm)
         actions.activate_action("suspend", None)
         actions.activate_action("resume", None)
         self.assertEqual(
-            self.gui.calls,
-            [("wait", ("suspend", vm)), ("wait", ("resume", vm))],
+            self.gui.engine.calls, [("suspend", vm), ("resume", vm)]
         )
+        self.assertEqual([call[0] for call in self.gui.calls], ["wait"] * 2)
 
     def test_the_process(self):
         vm = self.running(self.brick("qemu", "vm"))
@@ -417,14 +426,9 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
         self.activate("continue")
 
     def test_restart(self):
-        clock = task.Clock()
-        actions = BrickActions(self.gui, self.running(self.sw), clock)
-        restarts = []
-        self.patch(
-            brickmenu, "restart", lambda brick, c: restarts.append((brick, c))
-        )
+        actions = self.recording(self.running(self.sw))
         actions.activate_action("restart", None)
-        self.assertEqual(restarts, [(self.sw, clock)])
+        self.assertEqual(self.gui.engine.calls, [("restart", self.sw)])
 
 
 class TestTheEventsOfABrick(BrickMenuTestCase):

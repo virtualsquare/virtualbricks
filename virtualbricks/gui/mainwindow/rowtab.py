@@ -57,7 +57,6 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, GdkPixbuf, GLib, Gtk, Pango  # noqa: E402
 from twisted.internet import defer  # noqa: E402
 
-from virtualbricks.bricks.draft import apply  # noqa: E402
 from virtualbricks.gui import graphics  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.panel import (
     Panel,
@@ -847,8 +846,16 @@ class RowsTab(Tab, Gtk.Stack):
         # a number just taken can make an error, which shows beside OK
         if panel.draft.errors():
             return
-        apply(panel.draft)
-        self.close_settings()
+        applying = self.gui.engine.apply(panel.draft)
+        applying.addCallbacks(
+            lambda _: self.close_settings(), self._not_applied
+        )
+
+    def _not_applied(self, failure) -> None:
+        """The engine refused the draft: why shows beside OK."""
+
+        self.why.set_text(failure.getErrorMessage())
+        self.why.set_visible(True)
 
     def on_cancel_clicked(self, button) -> None:
         self.close_settings()

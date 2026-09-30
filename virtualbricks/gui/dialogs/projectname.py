@@ -28,6 +28,7 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango
+from twisted.internet import defer
 from twisted.logger import Logger
 
 from virtualbricks import errors
@@ -60,7 +61,8 @@ class ProjectNameDialog:
     Ask a name, and create, rename or duplicate a project with it.
 
     gui is the main window: the dialog saves, creates and opens projects
-    through it, as its menus do. on_done, if set, is called after a change.
+    through it, as its menus do, and renames and duplicates them through its
+    engine. on_done, if set, is called after a change.
     """
 
     on_done = None
@@ -228,25 +230,45 @@ class ProjectNameDialog:
             buffer.get_start_iter(), buffer.get_end_iter(), False
         )
 
-    def apply(self):
-        """Do what the dialog is for; raise what the workspace raises."""
+    def apply(self) -> defer.Deferred:
+        """
+        Do what the dialog is for, through the main window and its engine:
+        a Deferred of the name, or of the failure of the engine.
+        """
 
         name = self.name_entry.get_text()
+        engine = self.gui.engine
         if self.kind == NEW:
-            self.gui.on_new(name, self.description())
-            logger.info(project_created, name=name)
+            doing = defer.maybeDeferred(
+                self.gui.on_new, name, self.description()
+            )
+            doing.addCallback(
+                lambda _: logger.info(project_created, name=name)
+            )
         elif self.kind == RENAME:
-            self.workspace.rename(self.original, name, bricks=self.bricks())
-            logger.info(project_renamed, old=self.original, name=name)
-            self.gui.set_title()
+            doing = engine.rename_project(self.original, name)
+            doing.addCallback(self._renamed, name)
         else:
             if self.is_current():
-                self.gui.on_save()
-            self.workspace.duplicate(self.original, name)
-            logger.info(project_duplicated, old=self.original, name=name)
+                doing = defer.maybeDeferred(self.gui.on_save)
+            else:
+                doing = defer.succeed(None)
+            doing.addCallback(
+                lambda _: engine.duplicate_project(self.original, name)
+            )
+            doing.addCallback(
+                lambda _: logger.info(
+                    project_duplicated, old=self.original, name=name
+                )
+            )
             if self.open_check.get_active():
-                self.gui.on_open(name)
-        return name
+                doing.addCallback(lambda _: self.gui.on_open(name))
+        doing.addCallback(lambda _: name)
+        return doing
+
+    def _renamed(self, result, name):
+        logger.info(project_renamed, old=self.original, name=name)
+        self.gui.set_title()
 
     def on_response(self, dialog, response_id):
         if response_id != Gtk.ResponseType.OK:
@@ -254,13 +276,15 @@ class ProjectNameDialog:
             return
         if not self.ok_button.get_sensitive():
             return
-        try:
-            name = self.apply()
-        except (OSError, errors.Error) as exc:
-            self.error_label.set_text(str(exc))
-            self.error_label.set_visible(True)
-            self.check()
-            return
-        dialog.destroy()
+        self.apply().addCallbacks(self._done, self._failed)
+
+    def _done(self, name):
+        self.dialog.destroy()
         if self.on_done is not None:
             self.on_done(name)
+
+    def _failed(self, failure):
+        failure.trap(OSError, errors.Error)
+        self.error_label.set_text(str(failure.value))
+        self.error_label.set_visible(True)
+        self.check()

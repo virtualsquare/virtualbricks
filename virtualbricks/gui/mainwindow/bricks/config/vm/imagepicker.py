@@ -97,9 +97,11 @@ class ImagePicker(Gtk.MenuButton):
 
     __gsignals__ = {"chosen": (GObject.SignalFlags.RUN_FIRST, None, ())}
 
-    def __init__(self, factory, vm, image=None, infos=None, manage=None):
+    def __init__(self, engine, vm, image=None, infos=None, manage=None):
         super().__init__(visible=True, hexpand=True)
-        self.factory = factory
+        # it adds images; they are those of its factory
+        self.engine = engine
+        self.factory = engine.factory
         self.vm = vm
         self.image = image
         # the facts of the files, which the other pickers share
@@ -272,14 +274,14 @@ class ImagePicker(Gtk.MenuButton):
 
     def add_existing(self) -> ExistingImageDialog:
         self.popover.popdown()
-        dialog = ExistingImageDialog(self.factory)
+        dialog = ExistingImageDialog(self.engine)
         dialog.on_added = self.choose
         dialog.show(self._window())
         return dialog
 
     def add_new(self) -> NewDiskDialog:
         self.popover.popdown()
-        dialog = NewDiskDialog(self.factory)
+        dialog = NewDiskDialog(self.engine)
         dialog.on_added = self.choose
         dialog.show(self._window())
         return dialog

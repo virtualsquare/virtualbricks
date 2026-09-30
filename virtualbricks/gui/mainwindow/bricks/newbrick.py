@@ -20,13 +20,14 @@
 New Brick: a popover of the kinds of bricks, under the button.
 
 The kinds are those of :data:`brickinfo.NEW_KINDS`, in their groups. Each is
-a row: its picture, its name and a line, which says what it is or, when this
-computer lacks a program of its bricks, the issue, after a warning sign. The
-tooltip says more, the issue first. The rows say it again each time the
-popover opens: a program may have been installed since.
+a row: its picture, its name and a line, which says what it is or, when the
+machine of the bricks lacks a program of its bricks, the issue, after a
+warning sign; the engine says what it lacks. The tooltip says more, the
+issue first. The rows say it again each time the popover opens: a program
+may have been installed since.
 
-A click on a row, or Enter, makes a brick of the kind, named after it, as
-``tap1``, and hands it on; the popover opens next on that kind. A kind with an
+A click on a row, or Enter, makes a brick of the kind through the engine,
+named after it, as ``tap1``, and hands it on; the popover opens next on that kind. A kind with an
 issue can still be made: its bricks start once the program is installed. A
 row is greyed only when the name wouldn't fit the sockets of the project, and
 its tooltip says why.
@@ -40,13 +41,8 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import GdkPixbuf, GLib, Gtk, Pango  # noqa: E402
 
 from virtualbricks import errors  # noqa: E402
-from virtualbricks.config.settings import get_setting  # noqa: E402
 from virtualbricks.gui import graphics  # noqa: E402
-from virtualbricks.bricks.brickinfo import (  # noqa: E402
-    NEW_KINDS,
-    issue,
-    new_name,
-)
+from virtualbricks.bricks.brickinfo import NEW_KINDS, new_name  # noqa: E402
 from virtualbricks.gui.mainwindow.rowtab import styled  # noqa: E402
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 
@@ -178,13 +174,13 @@ def _group_header(row, before) -> None:
 
 class NewBrickPopover(Gtk.Popover):
     """
-    The kinds of bricks, to make one of them; made(brick) gets each brick
-    made. The popover stays, from one opening to the next.
+    The kinds of bricks, to make one of them through engine; made(brick)
+    gets each brick made. The popover stays, from one opening to the next.
     """
 
-    def __init__(self, factory, made) -> None:
+    def __init__(self, engine, made) -> None:
         super().__init__(position=Gtk.PositionType.BOTTOM)
-        self.factory = factory
+        self.engine = engine
         self.made = made
         # the kind of the brick made last, where the popover opens
         self.last = None
@@ -217,28 +213,27 @@ class NewBrickPopover(Gtk.Popover):
         return self.rows[0]
 
     def refresh(self) -> None:
-        """Say what each kind lacks on this computer, today."""
+        """Say what each kind lacks on the machine of the bricks, today."""
 
-        vde_folder = get_setting("vde_path")
-        qemu_folder = get_setting("qemu_path")
+        factory = self.engine.factory
         for row in self.rows:
             kind = row.kind
             try:
-                self.factory.check_brick_name(
-                    kind.type, new_name(self.factory, kind)
-                )
+                factory.check_brick_name(kind.type, new_name(factory, kind))
             except errors.InvalidNameError as exc:
                 row.show_refused(str(exc))
                 continue
-            found = issue(kind, vde_folder, qemu_folder)
-            if found is None:
-                row.show_kind()
-            else:
-                row.show_issue(found)
+            self.engine.lacks(kind).addCallback(self._show_lacks, row)
+
+    def _show_lacks(self, found, row) -> None:
+        if found is None:
+            row.show_kind()
+        else:
+            row.show_issue(found)
 
     def on_row_activated(self, listbox, row) -> None:
         self.popdown()
         kind = row.kind
-        brick = self.factory.new_brick(kind.type, new_name(self.factory, kind))
+        name = new_name(self.engine.factory, kind)
         self.last = kind
-        self.made(brick)
+        self.engine.new_brick(kind.type, name).addCallback(self.made)

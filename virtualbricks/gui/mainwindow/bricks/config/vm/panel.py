@@ -42,8 +42,6 @@ from virtualbricks.gui.mainwindow.bricks.config.vm import (  # noqa: E402
     system,
 )
 from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.programs import programs  # noqa: E402
-from virtualbricks.qemu.run import which  # noqa: E402
 
 logger = Logger()
 qemu_error = "Cannot ask {program} what it has"
@@ -201,29 +199,35 @@ class VirtualMachinePanel(Panel):
         program = self.draft.get("qemu_program")
         chosen = self.draft.get("machine_type")
         self.asked = (program, chosen)
-        try:
-            path = which(program)
-        except FileNotFoundError:
-            self.draft.qemu = None
-            self.draft.machine_properties = frozenset()
-            self.show_status(
-                _(
-                    "{program} isn't in {folder}: the lists show only"
-                    " {brick}'s choices"
-                ).format(
-                    program=program,
-                    folder=get_setting("qemu_path"),
-                    brick=self.draft.brick.name,
-                ),
-                Gtk.MessageType.WARNING,
-            )
-            self.fill()
-            return
-        deferred = programs.qemu(path)
-        deferred.addCallback(self.answered, program, chosen)
-        deferred.addErrback(
-            lambda failure: logger.failure(qemu_error, failure, program=path)
+        deferred = self.engine.qemu(program)
+        deferred.addCallbacks(
+            self.answered,
+            self.not_answered,
+            (program, chosen),
+            None,
+            (program, chosen),
         )
+
+    def not_answered(self, failure, program: str, chosen: str) -> None:
+        if self.asked != (program, chosen):
+            return
+        if not failure.check(FileNotFoundError):
+            logger.failure(qemu_error, failure, program=program)
+            return
+        self.draft.qemu = None
+        self.draft.machine_properties = frozenset()
+        self.show_status(
+            _(
+                "{program} isn't in {folder}: the lists show only"
+                " {brick}'s choices"
+            ).format(
+                program=program,
+                folder=get_setting("qemu_path"),
+                brick=self.draft.brick.name,
+            ),
+            Gtk.MessageType.WARNING,
+        )
+        self.fill()
 
     def answered(self, info, program: str, chosen: str) -> None:
         if self.asked != (program, chosen):
@@ -238,7 +242,7 @@ class VirtualMachinePanel(Panel):
         self.fill()
         self.on_changed()
         machine_type = chosen if info.has_machine(chosen) else ""
-        deferred = programs.machine_properties(info, machine_type)
+        deferred = self.engine.machine_properties(info, machine_type)
         deferred.addCallback(self.described, program, chosen)
         deferred.addErrback(
             lambda failure: logger.failure(

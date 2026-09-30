@@ -96,7 +96,7 @@ class BrickRow(Row):
         )
 
     def on_startstop_clicked(self, button) -> None:
-        self.gui.startstop_brick(self.item)
+        brickmenu.startstop(self.gui.engine, self.item)
 
 
 class BrickList(RowList):
@@ -204,6 +204,14 @@ class BrickList(RowList):
 
     def on_drag_drop(self, row, context, x, y, time) -> bool:
         source = self.dragged(context)
-        done = source is not None and brickinfo.connect(source, row.item)
-        Gtk.drag_finish(context, done, False, time)
+        if source is None:
+            Gtk.drag_finish(context, False, False, time)
+            return True
+
+        def finish(done):
+            # a failure goes on, to the log
+            Gtk.drag_finish(context, done is True, False, time)
+            return done
+
+        self.gui.engine.connect(source, row.item).addBoth(finish)
         return True

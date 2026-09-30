@@ -23,7 +23,7 @@ import time
 
 from twisted.internet import defer
 
-from virtualbricks import errors, locations
+from virtualbricks import engine, errors, locations
 from virtualbricks.config.tomlfile import dump_toml, load_toml
 from virtualbricks.config.workspace import DiskUsage
 from virtualbricks.tests import FakeLogger, FakeTrash
@@ -279,7 +279,7 @@ class TestDetails(ProjectsTestCase):
         self.addCleanup(self.destroy, window)
         called = []
         self.patch(
-            projects.threads,
+            engine.threads,
             "deferToThread",
             lambda f, *args: called.append((f, args)) or defer.Deferred(),
         )
@@ -452,7 +452,7 @@ class TestRemove(ProjectsTestCase):
 
     def dialog(self, name, usage=None):
         dialog = projects.RemoveDialog(
-            self.manager, self.manager.summary(name), usage
+            self.gui.engine, self.manager, self.manager.summary(name), usage
         )
         self.addCleanup(dialog.dialog.destroy)
         return dialog
@@ -488,7 +488,7 @@ class TestRemove(ProjectsTestCase):
 
     def test_the_size_is_read(self):
         dialog = projects.RemoveDialog(
-            self.manager, self.manager.summary("lab")
+            self.gui.engine, self.manager, self.manager.summary("lab")
         )
         self.addCleanup(dialog.dialog.destroy)
         self.assertIn("Its folder,", self.secondary(dialog))
@@ -498,7 +498,7 @@ class TestRemove(ProjectsTestCase):
 
         self.patch(self.manager, "disk_usage", fail)
         dialog = projects.RemoveDialog(
-            self.manager, self.manager.summary("lab")
+            self.gui.engine, self.manager, self.manager.summary("lab")
         )
         self.addCleanup(dialog.dialog.destroy)
         self.assertIn("Its folder goes", self.secondary(dialog))

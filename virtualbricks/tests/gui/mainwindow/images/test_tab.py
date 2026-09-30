@@ -27,6 +27,7 @@ from twisted.internet import defer
 
 from virtualbricks.qemu import run
 from virtualbricks.config.workspace import OpenProject
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests.config.test_images import INFO, FakeQemuImg
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 from virtualbricks.tests.gui.mainwindow.bricks.test_brickmenu import content
@@ -60,6 +61,7 @@ class LaterQemuImg(FakeQemuImg):
 class FakeGui:
     def __init__(self, factory):
         self.brickfactory = factory
+        self.engine = LocalEngine(factory)
         self.window = object()
         self.configured = []
         self.removed = []
@@ -306,8 +308,8 @@ class TestTheRowAboveTheList(ImagesTestCase):
         self.assertEqual(
             shown,
             [
-                (("ExistingImageDialog", self.factory), self.gui.window),
-                (("NewDiskDialog", self.factory), self.gui.window),
+                (("ExistingImageDialog", self.gui.engine), self.gui.window),
+                (("NewDiskDialog", self.gui.engine), self.gui.window),
             ],
         )
 

@@ -17,6 +17,7 @@
 
 """The window of New Event: the name checked, the delay, Create."""
 
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
@@ -29,6 +30,7 @@ if has_display:
 class FakeGui:
     def __init__(self, factory):
         self.brickfactory = factory
+        self.engine = LocalEngine(factory)
         self.configured = []
 
     def curtain_up(self, event):

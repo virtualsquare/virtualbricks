@@ -31,7 +31,9 @@ New Empty Disk asks a name, a size in MB or GB and a format, qcow2 or raw,
 and makes the file in the image folder, or another folder, with ``qemu-img
 create``.
 
-Both add the image to the library, then call ``on_added`` with it.
+Both add the image to the library, then call ``on_added`` with it. The
+engine reads the file, makes the new one and adds the image; the copy is
+made here.
 """
 
 import math
@@ -49,7 +51,6 @@ from virtualbricks.config.workspace import copy_sparse, projects
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
-from virtualbricks.qemu import run
 
 MARGIN = 18
 GAP = 6
@@ -175,10 +176,10 @@ class _AddDialog:
 class ExistingImageDialog(_AddDialog):
     """Add an image of an existing file."""
 
-    def __init__(self, factory, workspace=None, qemu_img=None):
-        self.factory = factory
+    def __init__(self, engine, workspace=None):
+        self.engine = engine
+        self.factory = engine.factory
         self.workspace = projects if workspace is None else workspace
-        self.qemu_img = qemu_img
         self.path = None
         self.info = None
         self.working = False
@@ -258,7 +259,7 @@ class ExistingImageDialog(_AddDialog):
         buffer = self.description_view.get_buffer()
         if not buffer.get_char_count():
             buffer.set_text(read_description(self.path))
-        reading = images.read_info(self.path, self.qemu_img)
+        reading = self.engine.image_info(self.path)
         reading.addCallbacks(
             self._read,
             self._not_read,
@@ -364,7 +365,7 @@ class ExistingImageDialog(_AddDialog):
         else:
             copying = defer.succeed(None)
         copying.addCallback(
-            lambda _: self.factory.new_image(name, path, description)
+            lambda _: self.engine.new_image(name, path, description)
         )
         copying.addCallbacks(
             self._added, self._copy_failed, errbackArgs=(path,)
@@ -382,10 +383,10 @@ class ExistingImageDialog(_AddDialog):
 class NewDiskDialog(_AddDialog):
     """Add an image of a new empty disk."""
 
-    def __init__(self, factory, workspace=None, qemu_img=None):
-        self.factory = factory
+    def __init__(self, engine, workspace=None):
+        self.engine = engine
+        self.factory = engine.factory
         self.workspace = projects if workspace is None else workspace
-        self.qemu_img = run.qemu_img if qemu_img is None else qemu_img
         self.working = False
         self.build_ui()
         self.check()
@@ -501,9 +502,7 @@ class NewDiskDialog(_AddDialog):
         fmt = self.format_combo.get_active_id()
         self.working = True
         self.check()
-        creating = self.qemu_img(
-            ["create", "-q", "-f", fmt, path, str(self.size())]
-        )
-        creating.addCallback(lambda _: self.factory.new_image(name, path))
+        creating = self.engine.make_image(path, fmt, self.size())
+        creating.addCallback(lambda _: self.engine.new_image(name, path))
         creating.addCallbacks(self._added, self._failed)
         return creating

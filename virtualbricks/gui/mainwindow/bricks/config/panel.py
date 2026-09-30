@@ -29,7 +29,8 @@ the draft, with ``commit()``, then applies the draft; the brick sees nothing
 before. While the brick runs, an info bar says what ``running_words()``
 says. A change in a row refreshes the rows, then calls the callbacks of
 ``connect_changed()``. ``gui`` is the main window, for a panel that opens
-another tab.
+another tab; ``engine`` is its engine, for a panel that asks the machine,
+or else the engine of this machine.
 """
 
 from __future__ import annotations
@@ -41,6 +42,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # noqa: E402
 
+from virtualbricks.engine import LocalEngine
 from virtualbricks.gui.mainwindow.bricks.config.form import Form
 from virtualbricks.i18n import _
 from virtualbricks.bricks import is_running
@@ -75,6 +77,14 @@ class Panel:
         """
 
         raise NotImplementedError
+
+    @property
+    def engine(self):
+        """What the panel asks of the machine: through the main window."""
+
+        if self.gui is None:
+            return LocalEngine(self.draft.brick.factory)
+        return self.gui.engine
 
     @property
     def rows(self) -> dict:

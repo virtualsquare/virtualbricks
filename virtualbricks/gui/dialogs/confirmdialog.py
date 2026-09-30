@@ -24,10 +24,18 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
+from twisted.logger import Logger
 
 from virtualbricks.i18n import _
 from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.gui.pango import pango_attr_list
+
+logger = Logger()
+not_removed = "{error}"
+
+
+def _log_refusal(failure):
+    logger.error(not_removed, error=failure.getErrorMessage())
 
 
 class _ConfirmDialog(Window):
@@ -199,8 +207,8 @@ class DeleteBrickConfirmDialog(_ConfirmDialog):
     Ask to delete a brick.
     """
 
-    def __init__(self, brickfactory, brick):
-        self._brickfactory = brickfactory
+    def __init__(self, engine, brick):
+        self._engine = engine
         self._brick = brick
         self.build_ui()
         qst_fmt = _("Do you really want to delete {brick} ({type})?")
@@ -209,7 +217,7 @@ class DeleteBrickConfirmDialog(_ConfirmDialog):
 
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.YES:
-            self._brickfactory.remove_brick(self._brick)
+            self._engine.remove(self._brick).addErrback(_log_refusal)
         dialog.destroy()
 
 
@@ -218,8 +226,8 @@ class DeleteEventConfirmDialog(_ConfirmDialog):
     Ask to delete an event.
     """
 
-    def __init__(self, brickfactory, event):
-        self._brickfactory = brickfactory
+    def __init__(self, engine, event):
+        self._engine = engine
         self._event = event
         self.build_ui()
         qst_fmt = _("Do you really want to delete {event} ({type})?")
@@ -232,5 +240,5 @@ class DeleteEventConfirmDialog(_ConfirmDialog):
 
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.YES:
-            self._brickfactory.remove_event(self._event)
+            self._engine.remove(self._event).addErrback(_log_refusal)
         dialog.destroy()

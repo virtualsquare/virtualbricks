@@ -20,6 +20,8 @@
 
 import os
 
+from twisted.internet import defer
+
 from virtualbricks import locations
 from virtualbricks.config import workspace
 from virtualbricks.config.settings import set_current_project
@@ -197,13 +199,15 @@ class TestWindowFrontend(GuiTestCase):
         class Window:
             def on_open(self, name):
                 calls.append(("open", name))
-                return "report"
+                return defer.succeed("report")
 
             def on_new(self, name):
                 calls.append(("new", name))
+                return defer.succeed(None)
 
             def on_save(self):
                 calls.append(("save",))
+                return defer.succeed(None)
 
         frontend = gui.WindowFrontend(Window())
         self.assertEqual(frontend.open("lab", self.factory), "report")

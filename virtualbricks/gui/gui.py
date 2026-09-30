@@ -23,6 +23,7 @@ import sys
 
 from gi.repository import Gtk
 from twisted.internet import error, protocol, reactor
+from twisted.python.failure import Failure
 from twisted.logger import (
     FilteringLogObserver,
     LogLevel,
@@ -37,6 +38,7 @@ from virtualbricks import brickfactory, errors
 from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks.config.workspace import projects
 from virtualbricks.console.projects import use_frontend
+from virtualbricks.engine import LocalEngine
 from virtualbricks.gui.mainwindow import VBGUI
 from virtualbricks.gui.messages import MessageLog, MessageLogObserver
 from virtualbricks.gui.trash import DesktopTrash
@@ -167,23 +169,39 @@ def AppLoggerFactory(messages):
     return AppLogger
 
 
+def _now(deferred):
+    """
+    What a Deferred of the engine of this process gives, which has fired
+    already: its result, or its failure raised.
+    """
+
+    results = []
+    deferred.addBoth(results.append)
+    [result] = results
+    if isinstance(result, Failure):
+        result.raiseException()
+    return result
+
+
 class WindowFrontend:
     """
     How the console opens, makes and saves projects with the windows: through
     the main window, which saves what its tabs hold and shows the project.
+    Its engine is that of this process, which answers at once, as the
+    console wants.
     """
 
     def __init__(self, gui):
         self.gui = gui
 
     def open(self, name, factory):
-        return self.gui.on_open(name)
+        return _now(self.gui.on_open(name))
 
     def new(self, name, factory):
-        self.gui.on_new(name)
+        _now(self.gui.on_new(name))
 
     def save(self, factory):
-        self.gui.on_save()
+        _now(self.gui.on_save())
 
 
 class Application(brickfactory.Application):
@@ -207,7 +225,7 @@ class Application(brickfactory.Application):
         globalLogPublisher.addObserver(observer)
         # disable default link_button action
         # gtk.link_button_set_uri_hook(lambda b, s: None)
-        self.gui = VBGUI(factory, self.messages)
+        self.gui = VBGUI(LocalEngine(factory), self.messages)
         message_dialog.set_parent(self.gui.window)
         # The workspace has no desktop of its own: removing a project moves
         # it to the trash only in the GUI.

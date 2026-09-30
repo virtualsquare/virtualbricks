@@ -19,6 +19,7 @@
 
 from virtualbricks.config import images
 from virtualbricks.config.workspace import OpenProject
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests.config.test_images import INFO, FakeQemuImg
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 from virtualbricks.tests.gui.mainwindow.images.test_tab import LaterQemuImg
@@ -31,10 +32,10 @@ if has_display:
 
 
 class FakeDialog:
-    def __init__(self, shown, name, factory):
+    def __init__(self, shown, name, engine):
         self.shown = shown
         self.name = name
-        self.factory = factory
+        self.engine = engine
         self.on_added = None
 
     def show(self, parent):
@@ -65,7 +66,7 @@ class PickerTestCase(GuiTestCase):
 
     def picker(self, image=None, infos=None):
         picker = ImagePicker(
-            self.factory,
+            LocalEngine(self.factory, qemu_img=self.qemu_img),
             self.r1,
             image,
             self.infos if infos is None else infos,
@@ -213,7 +214,7 @@ class TestTheAddItems(PickerTestCase):
             self.patch(
                 imagepicker,
                 name,
-                lambda factory, n=name: FakeDialog(self.shown, n, factory),
+                lambda engine, n=name: FakeDialog(self.shown, n, engine),
             )
 
     def test_labels(self):
@@ -232,7 +233,7 @@ class TestTheAddItems(PickerTestCase):
         picker.add_buttons[0].clicked()
         dialog = picker.add_existing()
         self.assertEqual(self.shown[0], ("ExistingImageDialog", None))
-        self.assertIs(dialog.factory, self.factory)
+        self.assertIs(dialog.engine, picker.engine)
         dialog.on_added(self.pc)
         self.assertIs(picker.image, self.pc)
 

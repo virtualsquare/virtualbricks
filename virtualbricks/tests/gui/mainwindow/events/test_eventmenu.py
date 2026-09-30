@@ -21,6 +21,7 @@ from twisted.internet import task
 
 from virtualbricks.bricks import event as event_module
 from virtualbricks.bricks.eventaction import StartAction
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 from virtualbricks.tests.gui.mainwindow.bricks.test_brickmenu import (
@@ -52,6 +53,7 @@ class Recording(StartAction):
 class FakeGui:
     def __init__(self, factory):
         self.brickfactory = factory
+        self.engine = LocalEngine(factory)
         self.window = object()
         self.calls = []
 
@@ -218,7 +220,7 @@ class TestWhatTheItemsDo(EventMenuTestCase):
         self.patch(eventmenu, "RenameDialog", lambda *a: FakeDialog(shown, *a))
         event = self.ready()
         EventActions(self.gui, event).activate_action("rename", None)
-        self.assertEqual(shown, [((self.factory, event), self.gui.window)])
+        self.assertEqual(shown, [((self.gui.engine, event), self.gui.window)])
 
     def test_duplicate(self):
         event = self.ready()

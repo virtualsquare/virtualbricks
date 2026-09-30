@@ -87,7 +87,9 @@ class TestTheCdromSection(MachinePanelTestCase):
 
     def test_a_boot_order_of_its_own(self):
         self.vm.update_config({"boot_order": "cdn"})
-        panel = self.panel.__class__(self.panel.draft.__class__(self.vm))
+        panel = self.panel.__class__(
+            self.panel.draft.__class__(self.vm), self.gui
+        )
         self.addCleanup(panel.widget.destroy)
         boot = panel.rows["boot_order"].control
         self.assertEqual(boot.get_active_id(), "cdn")

@@ -250,12 +250,12 @@ class ImagesTab(RowsTab):
         self._add_menu = menu
 
     def add_existing(self) -> ExistingImageDialog:
-        dialog = ExistingImageDialog(self.factory)
+        dialog = ExistingImageDialog(self.gui.engine)
         dialog.show(self.gui.window)
         return dialog
 
     def add_new(self) -> NewDiskDialog:
-        dialog = NewDiskDialog(self.factory)
+        dialog = NewDiskDialog(self.gui.engine)
         dialog.show(self.gui.window)
         return dialog
 

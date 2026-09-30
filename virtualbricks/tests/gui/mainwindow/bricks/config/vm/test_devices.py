@@ -119,11 +119,7 @@ class TestTheUsbDevices(MachinePanelTestCase):
     def test_lsusb_fails(self):
         logger = FakeLogger()
         self.patch(devices, "logger", logger)
-        self.patch(
-            devices.virtualmachine,
-            "get_usb_devices",
-            lambda: defer.fail(OSError("no lsusb")),
-        )
+        self.patch(self, "lsusb", lambda: defer.fail(OSError("no lsusb")))
         listed = devices.UsbDevices(self.panel)
         self.addCleanup(listed.destroy)
         self.assertEqual(

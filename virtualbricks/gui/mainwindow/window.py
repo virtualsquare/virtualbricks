@@ -23,7 +23,9 @@ The main window of Virtualbricks.
 a notebook with the tabs of the other modules of this package, which it
 tells when a project opens, is saved, or Virtualbricks quits (see
 :mod:`virtualbricks.gui.mainwindow.tab`). It keeps what the menus of the
-bricks and the events call: configure, start or stop, remove.
+bricks and the events call: configure and remove. What the windows change,
+run or ask of the machine goes through its engine, ``engine``, and they
+read the bricks, the events and the images of ``engine.factory``.
 """
 
 import os
@@ -43,7 +45,6 @@ from virtualbricks.bricks.virtualmachine import is_disk_image
 from virtualbricks.config.settings import get_setting, set_setting
 from virtualbricks.config.workspace import projects
 from virtualbricks.programs import missing_programs
-from virtualbricks.bricks import is_running
 from virtualbricks.i18n import _
 from virtualbricks.gui.graphics import load_pixbuf
 from virtualbricks.gui.dialogs.about import AboutDialog
@@ -82,8 +83,7 @@ programs_not_found = (
     "Some programs of the bricks are missing, each with the package that has"
     " it: {programs}. Some bricks won't start."
 )
-stop_error = "Error on stopping brick."
-start_error = "Error on starting brick."
+quit_refused = "{error}"
 
 
 class Freezer:
@@ -200,8 +200,10 @@ class VBGUI:
     the widgets and the connections to the main engine.
     """
 
-    def __init__(self, factory, messages=None):
-        self.factory = self.brickfactory = factory
+    def __init__(self, engine, messages=None):
+        # what the windows call, and what they read
+        self.engine = engine
+        self.factory = self.brickfactory = factory = engine.factory
         self.build_ui()
         # the messages of this run, see virtualbricks.gui.messages
         self.messages = MessageLog() if messages is None else messages
@@ -315,7 +317,7 @@ class VBGUI:
         self.images = ImagesTab(self, self.factory)
         self.append_tab(self.images)
         self.append_tab(TopologyTab(self, self.factory))
-        self.append_tab(ReadmeTab())
+        self.append_tab(ReadmeTab(self.engine))
         vbox1.pack_start(self.main_notebook, True, True, 0)
         self.window.add(vbox1)
 
@@ -530,28 +532,43 @@ class VBGUI:
             tab.on_quit()
 
     def on_save(self):
+        """Save the open project, with what the tabs hold: a Deferred."""
+
         for tab in tabs(self.main_notebook):
             tab.on_save()
-        projects.save(self.brickfactory)
+        return self.engine.save_project()
 
     def on_open(self, name):
-        self.on_save()
-        report = projects.open(name, self.brickfactory)
+        """Save the open project and open name: a Deferred of the report."""
+
+        opening = self.on_save()
+        opening.addCallback(lambda _: self.engine.open_project(name))
+        opening.addCallback(self._opened)
+        return opening
+
+    def on_new(self, name, description=""):
+        """Save the open project, make name and open it: a Deferred."""
+
+        making = self.on_save()
+        making.addCallback(
+            lambda _: self.engine.new_project(name, description)
+        )
+        making.addCallback(self._opened)
+        return making
+
+    def _opened(self, report):
         for tab in tabs(self.main_notebook):
             tab.on_open()
         self.set_title()
         return report
 
-    def on_new(self, name, description=""):
-        self.on_save()
-        projects.create(name, description)
-        projects.open(name, self.brickfactory)
-        for tab in tabs(self.main_notebook):
-            tab.on_open()
-        self.set_title()
-
     def do_quit(self, *_):
-        self.factory.quit()
+        quitting = self.engine.quit()
+        quitting.addErrback(
+            lambda failure: logger.error(
+                quit_refused, error=failure.getErrorMessage()
+            )
+        )
         return True
 
     # end gui (programming) interface
@@ -564,13 +581,13 @@ class VBGUI:
             return True
 
     def ask_remove_brick(self, brick):
-        DeleteBrickConfirmDialog(self.brickfactory, brick).show(self.window)
+        DeleteBrickConfirmDialog(self.engine, brick).show(self.window)
 
     def ask_remove_event(self, event):
-        DeleteEventConfirmDialog(self.brickfactory, event).show(self.window)
+        DeleteEventConfirmDialog(self.engine, event).show(self.window)
 
     def ask_remove_image(self, image):
-        RemoveImageDialog(self.brickfactory, image).show(self.window)
+        RemoveImageDialog(self.engine, image).show(self.window)
 
     def show_images(self):
         """Show the Images tab."""
@@ -622,10 +639,14 @@ class VBGUI:
 
         for child in self.recent_menu.get_children():
             self.recent_menu.remove(child)
+        reading = self.engine.project_summaries()
+        reading.addCallback(self._fill_recent)
+
+    def _fill_recent(self, summaries):
         current = projects.current.name if projects.current else None
         recent = [
             summary
-            for summary in projects.summaries()
+            for summary in summaries
             if summary.name != current and summary.problem is None
         ][:RECENT]
         for summary in recent:
@@ -637,11 +658,12 @@ class VBGUI:
         self.projects_recent_item.set_sensitive(bool(recent))
 
     def on_recent_item_activate(self, menuitem, name):
-        try:
-            self.on_open(name)
-        except (OSError, errors.Error) as exc:
-            logger.error(cannot_open_project, name=name, error=exc)
+        self.on_open(name).addErrback(self._not_opened, name)
         return True
+
+    def _not_opened(self, failure, name):
+        failure.trap(OSError, errors.Error)
+        logger.error(cannot_open_project, name=name, error=failure.value)
 
     def on_projects_rename_item_activate(self, menuitem):
         self.project_name_dialog(projectname.RENAME, projects.current.name)
@@ -680,8 +702,8 @@ class VBGUI:
         def closed(widget):
             # closed without opening a project: the last one, or a new one
             if projects.current is None:
-                projects.restore_last(self.brickfactory)
-                self.set_title()
+                restoring = self.engine.restore_last()
+                restoring.addCallback(lambda _: self.set_title())
 
         window.get_root_widget().connect("destroy", closed)
         return window
@@ -734,18 +756,6 @@ class VBGUI:
         dialog = AboutDialog()
         dialog.show(self.window)
         return True
-
-    # What the menus and the lists of the bricks call
-
-    def startstop_brick(self, brick):
-        if is_running(brick):
-            brick.poweroff().addErrback(
-                lambda f: logger.failure(stop_error, f)
-            )
-        else:
-            brick.poweron().addErrback(
-                lambda f: logger.failure(start_error, f)
-            )
 
     def user_wait_action(self, action, *args):
         ProgressBar(self).wait_for(action, *args)

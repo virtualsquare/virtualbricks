@@ -31,7 +31,6 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks.bricks import virtualmachine  # noqa: E402
 from virtualbricks.config.settings import get_setting  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.picker import (  # noqa: E402
     Option,
@@ -136,7 +135,7 @@ class UsbDevices(Gtk.ListBox):
                 margin=12,
             )
         )
-        deferred = virtualmachine.get_usb_devices()
+        deferred = panel.engine.usb()
         deferred.addCallback(self.show_devices)
         deferred.addErrback(self.failed)
 

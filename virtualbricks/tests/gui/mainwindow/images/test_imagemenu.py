@@ -17,6 +17,7 @@
 
 """The menu of an image: its items, when they are enabled, what they do."""
 
+from virtualbricks.engine import LocalEngine
 from virtualbricks.tests.gui import GuiTestCase, has_display
 from virtualbricks.tests.gui.mainwindow.bricks.test_brickmenu import (
     attribute,
@@ -37,6 +38,7 @@ if has_display:
 class FakeGui:
     def __init__(self, factory):
         self.brickfactory = factory
+        self.engine = LocalEngine(factory)
         self.window = object()
         self.calls = []
 
@@ -151,11 +153,11 @@ class TestWhatTheyDo(ImageMenuTestCase):
             shown,
             [
                 (
-                    ("RenameDialog", self.factory, self.missing),
+                    ("RenameDialog", self.gui.engine, self.missing),
                     self.gui.window,
                 ),
                 (
-                    ("FindFileDialog", self.factory, self.missing),
+                    ("FindFileDialog", self.gui.engine, self.missing),
                     self.gui.window,
                 ),
             ],

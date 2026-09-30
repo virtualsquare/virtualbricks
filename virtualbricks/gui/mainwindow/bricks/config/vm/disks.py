@@ -86,7 +86,7 @@ class DiskRow(Gtk.ListBoxRow):
         device_label.get_style_context().add_class("monospace")
         grid.attach(device_label, 0, 0, 1, 1)
         self.picker = ImagePicker(
-            section.factory, vm, image, section.infos, section.manage
+            section.engine, vm, image, section.infos, section.manage
         )
         self.picker.connect("chosen", lambda picker: self._changed())
         grid.attach(self.picker, 1, 0, 1, 1)
@@ -221,7 +221,9 @@ class DiskRow(Gtk.ListBoxRow):
         return dialog
 
     def start_over(self) -> StartOverDialog:
-        dialog = StartOverDialog(self.section.vm, self.device)
+        dialog = StartOverDialog(
+            self.section.engine, self.section.vm, self.device
+        )
         dialog.on_done = self.update
         dialog.show(self._window())
         return dialog
@@ -238,16 +240,17 @@ class DiskRow(Gtk.ListBoxRow):
 
 
 class DisksSection(Gtk.Box):
-    """The disks of vm, and Add Disk."""
+    """The disks of vm, and Add Disk; engine starts a copy over."""
 
     def __init__(
-        self, vm, factory, infos=None, manage=None, changed=None
+        self, vm, engine, infos=None, manage=None, changed=None
     ) -> None:
         super().__init__(
             visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=8
         )
         self.vm = vm
-        self.factory = factory
+        self.engine = engine
+        self.factory = engine.factory
         # called after a change of the disks
         self.changed = changed
         # the facts of the files, for all the pickers

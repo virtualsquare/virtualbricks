@@ -27,7 +27,6 @@ from gi.repository import Gdk, Gtk
 
 from twisted.logger import Logger
 
-from virtualbricks import ksm
 from virtualbricks.config.settings import (
     COW_FORMATS,
     get_setting,
@@ -35,7 +34,6 @@ from virtualbricks.config.settings import (
     set_setting,
     store_settings,
 )
-from virtualbricks.config.workspace import projects
 from virtualbricks.i18n import _
 from virtualbricks.gui.dialogs.base import Window
 
@@ -357,7 +355,8 @@ class SettingsDialog(Window):
         # disable the switch, try to change the value of KSM and reactivate
         # the switch
         self.enable_ksm_switch.set_sensitive(False)
-        deferred = ksm.set_ksm(enable=self.enable_ksm_switch.get_active())
+        engine = self.virtualbricks_gui.engine
+        deferred = engine.set_ksm(self.enable_ksm_switch.get_active())
         deferred.addBoth(set_ksm_cb)
         self._setting_ksm_deferred = deferred
 
@@ -377,19 +376,25 @@ class SettingsDialog(Window):
 
     def store_settings(self):
         logger.debug(apply_settings)
+        # those of the windows
         set_setting("terminal", self.terminal_entry.get_text())
         set_setting("tray_icon", self.tray_icon_switch.get_active())
         set_setting(
             "warn_missing_programs", self.warn_missing_switch.get_active()
         )
-        set_setting("audio_driver", self.audio_driver_entry.get_text().strip())
-        if project_settings() is not None:
-            self.project_widgets.store(set_setting)
-            projects.save(self.virtualbricks_gui.brickfactory)
-        ksm_active = self.enable_ksm_switch.get_active()
-        set_setting("kernel_samepage_merging", ksm_active)
-        ksm.set_ksm(ksm_active)
         store_settings()
+        # those of the Virtualbricks of the bricks, and of its project,
+        # through the engine
+        ksm_active = self.enable_ksm_switch.get_active()
+        values = {
+            "audio_driver": self.audio_driver_entry.get_text().strip(),
+            "kernel_samepage_merging": ksm_active,
+        }
+        if project_settings() is not None:
+            self.project_widgets.store(values.__setitem__)
+        engine = self.virtualbricks_gui.engine
+        engine.set_settings(values)
+        engine.set_ksm(ksm_active)
         if self.tray_icon_switch.get_active():
             self.virtualbricks_gui.start_systray()
         else:

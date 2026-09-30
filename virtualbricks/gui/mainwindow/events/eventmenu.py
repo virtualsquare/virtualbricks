@@ -74,6 +74,15 @@ def menu(event, keys=False) -> Gio.Menu:
     )
 
 
+def startstop(engine, event) -> None:
+    """Stop event if it waits, or else start it."""
+
+    if event.scheduled is not None:
+        engine.stop_event(event)
+    else:
+        engine.start_event(event)
+
+
 class EventActions(Gio.SimpleActionGroup):
     """What the items of the menu of an event do."""
 
@@ -107,19 +116,19 @@ class EventActions(Gio.SimpleActionGroup):
             self.lookup_action(name).set_enabled(value)
 
     def startstop(self) -> None:
-        self.event.toggle()
+        startstop(self.gui.engine, self.event)
 
     def run_now(self) -> None:
-        self.event.run_actions()
+        self.gui.engine.run_event(self.event)
 
     def configure(self) -> None:
         self.gui.curtain_up(self.event)
 
     def rename(self) -> None:
-        RenameDialog(self.gui.brickfactory, self.event).show(self.gui.window)
+        RenameDialog(self.gui.engine, self.event).show(self.gui.window)
 
     def duplicate(self) -> None:
-        self.gui.brickfactory.duplicate_event(self.event)
+        self.gui.engine.duplicate(self.event)
 
     def delete(self) -> None:
         self.gui.ask_remove_event(self.event)

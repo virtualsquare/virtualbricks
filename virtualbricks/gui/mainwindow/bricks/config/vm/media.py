@@ -47,7 +47,7 @@ def build_disks(panel, page) -> None:
         section.to_draft(panel.draft)
         panel.on_changed()
 
-    section = DisksSection(vm, vm.factory, manage=manage, changed=changed)
+    section = DisksSection(vm, panel.engine, manage=manage, changed=changed)
     panel.disks = section
     form.add(section)
     form.section(_("Changes"))
