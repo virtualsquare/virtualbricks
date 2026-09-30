@@ -299,7 +299,7 @@ class Base:
 
     def set_name(self, name):
         self._name = name
-        self.notify_changed()
+        self.changed.notify(self)
 
     def get_type(self):
         return self.type
@@ -327,7 +327,7 @@ class Base:
                 setter = getattr(self, "cbset_" + name, None)
                 if setter:
                     setter(value)
-        self.notify_changed()
+        self.changed.notify(self)
 
     def rename_references(self, target, old, new):
         """Point the references to the image or event ``old`` at ``new``."""
@@ -338,9 +338,6 @@ class Base:
         """A block in which the object tells no one that it changes."""
 
         return self._observable.muted()
-
-    def notify_changed(self):
-        self.changed.notify(self)
 
 
 def is_running(brick):
@@ -488,7 +485,7 @@ class Brick(Base):
     def process_started(self, proc):
         started, self._started_d = self._started_d, None
         started.callback(self)
-        self.notify_changed()
+        self.changed.notify(self)
 
     def process_ended(self, proc, status):
         self.proc = None
@@ -498,7 +495,7 @@ class Brick(Base):
         # behind a lambda (lambda _: None)
         exited, self._exited_d = self._exited_d, None
         exited.callback((self, status))
-        self.notify_changed()
+        self.changed.notify(self)
 
     # Interal interface
 
@@ -585,14 +582,14 @@ class Brick(Base):
         for p in self.plugs:
             if not p.configured():
                 p.connect(endpoint)
-                self.notify_changed()
+                self.changed.notify(self)
                 return
 
     def disconnect(self):
         for p in self.plugs:
             if p.configured():
                 p.disconnect()
-        self.notify_changed()
+        self.changed.notify(self)
 
     ############################
     ########### Poweron/Poweroff

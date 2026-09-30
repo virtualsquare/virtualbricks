@@ -152,7 +152,7 @@ class BricksTestCase(GuiTestCase):
 
     def running(self, brick):
         brick.proc = FakeProcess()
-        brick.notify_changed()
+        brick.changed.notify(brick)
         return brick
 
     def select(self, brick):
@@ -728,14 +728,15 @@ class TestTheSettings(BricksTestCase):
         )
         # it stops, and starts again, while its settings show
         self.sw.proc = None
-        self.sw.notify_changed()
+        self.sw.changed.notify(self.sw)
         self.assertFalse(self.tab.running_bar.get_visible())
         self.running(self.sw)
         self.assertTrue(self.tab.running_bar.get_visible())
         # another brick doesn't count
         self.running(self.brick("switch", "sw2"))
         self.sw.proc = None
-        self.brick("switch", "sw3").notify_changed()
+        sw3 = self.brick("switch", "sw3")
+        sw3.changed.notify(sw3)
         self.assertTrue(self.tab.running_bar.get_visible())
 
     def test_closed(self):

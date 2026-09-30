@@ -96,7 +96,7 @@ class Event(Base):
         self.scheduled = reactor.callLater(
             self.config.delay, self.do_actions, deferred
         )
-        self.notify_changed()
+        self.changed.notify(self)
         return deferred
 
     def poweroff(self):
@@ -104,7 +104,7 @@ class Event(Base):
             return
         self.scheduled.cancel()
         self.scheduled = None
-        self.notify_changed()
+        self.changed.notify(self)
 
     def toggle(self):
         if self.scheduled is not None:
@@ -116,7 +116,7 @@ class Event(Base):
     def do_actions(self, deferred):
         self.scheduled = None
         self.run_actions().chainDeferred(deferred)
-        self.notify_changed()
+        self.changed.notify(self)
 
     def run_actions(self):
         """Run the actions now; a wait goes on. Each that fails is logged."""

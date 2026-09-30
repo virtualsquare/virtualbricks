@@ -407,7 +407,7 @@ class BrickFactory:
         brick.set_name(new_name)
         for obj in itertools.chain(self._bricks, self._events.values()):
             if obj.rename_references(target, prev_name, new_name):
-                obj.notify_changed()
+                obj.changed.notify(obj)
         return prev_name
 
     def check_name(self, name):

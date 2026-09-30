@@ -544,7 +544,7 @@ class TestLenientReading(ProjectFileTestCase):
         changed = []
         factory.brick_changed.connect(changed.append)
         sw1 = factory.get_brick("sw1")
-        sw1.notify_changed()
+        sw1.changed.notify(sw1)
         self.assertEqual(changed, [sw1])
 
     def test_bricks_heard_after_a_failure(self):
@@ -563,7 +563,7 @@ class TestLenientReading(ProjectFileTestCase):
         changed = []
         factory.brick_changed.connect(changed.append)
         for brick in bricks:
-            brick.notify_changed()
+            brick.changed.notify(brick)
         self.assertEqual(changed, bricks)
 
     def test_connections(self):

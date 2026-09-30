@@ -584,7 +584,7 @@ class Netemu(Wire):
 
         self._update("time", self.transPeriod)
 
-        self.notify_changed()
+        self.changed.notify(self)
 
     # utility function with logging like in base.py
     def _update(self, name, value, *args):

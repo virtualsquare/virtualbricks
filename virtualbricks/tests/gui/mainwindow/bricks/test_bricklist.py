@@ -94,7 +94,7 @@ class BrickListTestCase(GuiTestCase):
 
     def running(self, brick):
         brick.proc = FakeProcess()
-        brick.notify_changed()
+        brick.changed.notify(brick)
         return brick
 
     def row(self, brick):
@@ -133,7 +133,7 @@ class TestTheRows(BrickListTestCase):
         self.brick("qemu", "vm")
         self.factory.remove_brick(self.tap)
         self.sw.config.ports = 8
-        self.sw.notify_changed()
+        self.sw.changed.notify(self.sw)
         self.assertEqual(self.rows(), [self.sw, self.tap])
         self.assertEqual(
             self.row(self.sw).detail.get_text(), "Switch · 32 ports"
@@ -245,7 +245,7 @@ class TestTheRows(BrickListTestCase):
     def test_an_icon_not_there(self):
         vm = self.brick("qemu", "vm")
         vm.config.icon = "/nowhere.png"
-        vm.notify_changed()
+        vm.changed.notify(vm)
         row = self.row(vm)
         self.assertIsNone(row.icon.get_pixbuf())
         self.assertEqual(row.icon.get_icon_name()[0], "image-missing")
@@ -286,7 +286,7 @@ class TestTheRows(BrickListTestCase):
         self.assertTrue(row.startstop.get_sensitive())
         self.running(self.sw)
         self.sw.proc = None
-        self.sw.notify_changed()
+        self.sw.changed.notify(self.sw)
         self.assertFalse(row.dot.get_style_context().has_class("running"))
 
     def test_a_brick_not_connected(self):
@@ -441,7 +441,7 @@ class TestDragAndDrop(BrickListTestCase):
     def test_the_icon_of_a_brick_without_one(self):
         vm = self.brick("qemu", "vm")
         vm.config.icon = "/nowhere.png"
-        vm.notify_changed()
+        vm.changed.notify(vm)
         self.list.on_drag_begin(self.row(vm), None)
         image, label = self.drag.icons[0].get_children()
         self.assertIsNone(image.get_pixbuf())

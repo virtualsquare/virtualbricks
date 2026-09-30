@@ -251,4 +251,4 @@ def apply(draft: Draft) -> None:
     if changes:
         draft.give(changes)
     elif moved or extras:
-        brick.notify_changed()
+        brick.changed.notify(brick)

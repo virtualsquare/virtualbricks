@@ -144,7 +144,7 @@ class TestARow(RowTabTestCase):
 
     def test_waiting(self):
         self.event.scheduled = Scheduled()
-        self.event.notify_changed()
+        self.event.changed.notify(self.event)
         context = self.row.dot.get_style_context()
         self.assertTrue(context.has_class("waiting"))
         self.assertFalse(context.has_class("running"))
@@ -153,7 +153,7 @@ class TestARow(RowTabTestCase):
         self.assertEqual(self.row.state_label.get_text(), "Waiting")
         # and no more
         self.event.scheduled = None
-        self.event.notify_changed()
+        self.event.changed.notify(self.event)
         self.assertFalse(context.has_class("waiting"))
 
     def test_what_can_start(self):
