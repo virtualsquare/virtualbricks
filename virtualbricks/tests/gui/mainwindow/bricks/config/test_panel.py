@@ -156,7 +156,7 @@ class TestRunning(PanelTestCase):
         )
 
     def test_nothing_at_once(self):
-        tunnel = self.factory.new_brick("tunnell", "tl1")
+        tunnel = self.factory.new_brick("tunnellisten", "tl1")
 
         class Port(Panel):
             def build(self, form):

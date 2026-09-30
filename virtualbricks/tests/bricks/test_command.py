@@ -28,7 +28,7 @@ import os
 import attr
 
 from virtualbricks import bricks, errors
-from virtualbricks.brickfactory import install_brick_types
+from virtualbricks.brickfactory import BRICK_CLASSES
 from virtualbricks.bricks import virtualmachine
 from virtualbricks.bricks.command import (
     Command,
@@ -297,10 +297,8 @@ class TestPrograms(LinesTestCase):
         # every kind that runs a program of VDE
         kinds = {
             kind
-            for kind in install_brick_types().values()
-            if issubclass(kind, bricks.Brick)
-            and kind.programs
-            and kind is not virtualmachine.VirtualMachine
+            for kind in BRICK_CLASSES.values()
+            if kind.programs and kind is not virtualmachine.VirtualMachine
         }
         self.assertEqual({type(brick) for brick in tried}, kinds)
 

@@ -351,18 +351,11 @@ def project_document(
     return data
 
 
-@functools.cache
-def _brick_classes() -> dict[str, type[Brick]]:
+def _brick_class(brick_type: str) -> type[Brick] | None:
     # the bricks need the settings, which are in this package
-    from virtualbricks.brickfactory import install_brick_types
-    from virtualbricks.bricks import Brick
+    from virtualbricks.brickfactory import BRICK_CLASSES
 
-    # the types include "event", which isn't a brick
-    return {
-        name: cls
-        for name, cls in install_brick_types().items()
-        if issubclass(cls, Brick)
-    }
+    return BRICK_CLASSES.get(brick_type.lower())
 
 
 def _nics_notes(table: Table) -> Notes:
@@ -382,7 +375,7 @@ def _brick_notes(table: Table) -> Notes:
     brick_type = table.get("type")
     if not isinstance(brick_type, str):
         return {}
-    cls = _brick_classes().get(brick_type.lower())
+    cls = _brick_class(brick_type)
     if cls is None:
         return {}
     result = {("type",): Note(cls.summary), **cls.table_notes(table)}

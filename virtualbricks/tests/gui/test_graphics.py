@@ -22,7 +22,8 @@ import os
 
 from twisted.trial import unittest
 
-from virtualbricks.brickfactory import install_brick_types
+from virtualbricks.brickfactory import BRICK_CLASSES
+from virtualbricks.bricks.event import Event
 from virtualbricks.gui import graphics
 
 
@@ -46,7 +47,7 @@ def type_config(icon):
 
 class TestImages(unittest.TestCase):
     def test_every_brick_has_one(self):
-        for kind in set(install_brick_types().values()):
+        for kind in [*BRICK_CLASSES.values(), Event]:
             with self.subTest(type=kind.type):
                 path = graphics.image_file(kind.type.lower() + ".png")
                 self.assertTrue(os.path.isfile(path), path)

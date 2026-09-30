@@ -24,8 +24,7 @@ from unittest import mock
 
 from twisted.trial import unittest
 
-from virtualbricks.brickfactory import install_brick_types
-from virtualbricks.bricks.event import Event
+from virtualbricks.brickfactory import BRICK_CLASSES
 from virtualbricks.bricks.netemu import Netemu
 from virtualbricks.bricks.router import Router
 from virtualbricks.bricks.switch import Switch
@@ -323,7 +322,7 @@ class TestNewKinds(BrickInfoTestCase):
         self.assertEqual(len(set(classes)), len(classes))
         self.assertEqual(
             set(classes),
-            set(install_brick_types().values()) - {Event},
+            set(BRICK_CLASSES.values()),
         )
 
     def test_in_three_groups(self):

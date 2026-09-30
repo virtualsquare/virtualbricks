@@ -32,7 +32,7 @@ class EventsTestCase(ConsoleTestCase):
         self.patch(event_module, "reactor", self.clock())
         self.factory.runtime_dir = "/run/vb"
         self.sw1 = self.factory.new_brick("switch", "sw1")
-        self.vm1 = self.factory.new_brick("vm", "vm1")
+        self.vm1 = self.factory.new_brick("qemu", "vm1")
 
     def event(self, name, *actions, delay=0):
         event = self.factory.new_event(name)

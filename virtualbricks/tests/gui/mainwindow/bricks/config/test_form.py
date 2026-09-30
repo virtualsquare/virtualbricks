@@ -299,7 +299,7 @@ class TestTheWidgets(FormTestCase):
         self.assertEqual(bandwidth.get_range(), (form.LOWEST, form.HIGHEST))
 
     def test_an_entry(self):
-        tunnel = self.factory.new_brick("tunnelc", "tc1")
+        tunnel = self.factory.new_brick("tunnelconnect", "tc1")
         draft = Draft(tunnel)
         draft.set("server_host", "lab.example.org")
         made = self.make(draft)

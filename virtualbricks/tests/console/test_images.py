@@ -30,7 +30,7 @@ class TestImages(ConsoleTestCase):
         self.factory.runtime_dir = "/run/vb"
         self.path = os.path.abspath(self.mktemp())
         open(self.path, "w").close()
-        self.vm = self.factory.new_brick("vm", "vm1")
+        self.vm = self.factory.new_brick("qemu", "vm1")
 
     def test_add_and_list(self):
         self.assertEqual(self.run_line("image list"), ["No images"])

@@ -31,7 +31,7 @@ class TestTheTunnelServerPanel(GuiTestCase):
     def test_its_rows(self):
         untranslated(self)
         switch = self.factory.new_brick("switch", "sw1")
-        tunnel = self.factory.new_brick("tunnell", "tl1")
+        tunnel = self.factory.new_brick("tunnellisten", "tl1")
         tunnel.plugs[0].connect(switch.socks[0])
         tunnel.update_config({"password": "s3cret"})
         panel = new_panel(tunnel)

@@ -58,10 +58,7 @@ from virtualbricks.bricks import is_running
 from virtualbricks.bricks.virtualmachine import is_disk_image
 
 logger = Logger()
-reg_basic_types = "Registering basic types"
 engine_bye = "Engine: Bye!"
-reg_new_type = "Registering new brick type {type}"
-type_present = "Type {type} already present, overriding it"
 create_image = "Creating new disk image at '{path}'"
 remove_socks = "Removing socks: {socks}"
 disconnect_plug = "Disconnecting plug to {sock}"
@@ -71,35 +68,23 @@ new_event_ok = "New event {name} OK"
 uncaught_exception = "Uncaught exception: {error()}"
 
 
-def install_brick_types(registry=None):
-    if registry is None:
-        registry = {}
-
-    logger.debug(reg_basic_types)
-    registry.update(
-        {
-            "switch": switch.Switch,
-            "tap": tap.Tap,
-            "capture": capture.Capture,
-            "vm": virtualmachine.VirtualMachine,
-            "qemu": virtualmachine.VirtualMachine,
-            "wirefilter": netemu.Netemu,
-            "netemu": netemu.Netemu,
-            "wire": wire.Wire,
-            "tunnelc": tunnelconnect.TunnelConnect,
-            "tunnel client": tunnelconnect.TunnelConnect,
-            "tunnelclient": tunnelconnect.TunnelConnect,
-            "tunnelconnect": tunnelconnect.TunnelConnect,
-            "tunnell": tunnellisten.TunnelListen,
-            "tunnel server": tunnellisten.TunnelListen,
-            "tunnelserver": tunnellisten.TunnelListen,
-            "tunnellisten": tunnellisten.TunnelListen,
-            "event": Event,
-            "switchwrapper": switchwrapper.SwitchWrapper,
-            "router": router.Router,
-        }
+# The class of each type of brick, by its type in lower case: the name that
+# new_brick() takes and the project file writes.
+BRICK_CLASSES = {
+    cls.type.lower(): cls
+    for cls in (
+        capture.Capture,
+        netemu.Netemu,
+        router.Router,
+        switch.Switch,
+        switchwrapper.SwitchWrapper,
+        tap.Tap,
+        tunnelconnect.TunnelConnect,
+        tunnellisten.TunnelListen,
+        virtualmachine.VirtualMachine,
+        wire.Wire,
     )
-    return registry
+}
 
 
 def normalize_brick_name(name):
@@ -150,7 +135,6 @@ class BrickFactory:
         # Where the sockets of the running bricks are; each open project
         # gets a directory of its own.
         self.runtime_dir = locations.runtime_dir()
-        self.__factories = install_brick_types()
         self.__observable = observable = Observable("quit")
         self.changed = Signal(observable, "brick-changed")
         self.quit_signal = Signal(observable, "quit")
@@ -190,18 +174,6 @@ class BrickFactory:
         del self.socks[:]
         for image in list(self._disk_images.values()):
             self.remove_disk_image(image)
-
-    def register_brick_type(self, factory, *types):
-        """Register a new brick type.
-
-        Factory argument is a contructor (or factory but factory is overused as
-        term)"""
-
-        for type in types:
-            logger.debug(reg_new_type, type=type)
-            if type in self.__factories:
-                logger.debug(type_present, type=type)
-            self.__factories[type] = factory
 
     def connect(self, name, callback, *args, **kwds):
         self.__observable.add_observer(name, callback, args, kwds)
@@ -307,7 +279,7 @@ class BrickFactory:
 
     def _brick_class(self, type):
         try:
-            return self.__factories[type.lower()]
+            return BRICK_CLASSES[type.lower()]
         except KeyError:
             raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
 

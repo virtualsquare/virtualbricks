@@ -26,7 +26,7 @@ from virtualbricks.tests import BrickTestCase
 class TestTheDraft(BrickTestCase):
 
     def test_its_server(self):
-        tunnel = self.factory.new_brick("tunnelc", "tc1")
+        tunnel = self.factory.new_brick("tunnelconnect", "tc1")
         draft = tunnel.draft_factory(tunnel)
         self.assertIsInstance(draft, TunnelConnectDraft)
         self.assertEqual(

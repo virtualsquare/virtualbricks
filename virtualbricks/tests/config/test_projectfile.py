@@ -20,6 +20,7 @@ import os
 
 from twisted.trial import unittest
 
+from virtualbricks.brickfactory import BRICK_CLASSES
 from virtualbricks.bricks.eventaction import (
     ShellAction,
     StartAction,
@@ -326,10 +327,9 @@ class TestNotes(ProjectFileTestCase):
         self.assertNotIn(("bricks", "vm", "nics"), notes)
 
     def test_every_type_says_what_it_is(self):
-        classes = projectfile._brick_classes()
-        self.assertNotIn("event", classes)
-        for name, cls in classes.items():
+        for name, cls in BRICK_CLASSES.items():
             self.assertTrue(cls.summary, name)
+        self.assertIsNone(projectfile._brick_class("event"))
 
     def test_defaults(self):
         notes = project_notes(self.lab())

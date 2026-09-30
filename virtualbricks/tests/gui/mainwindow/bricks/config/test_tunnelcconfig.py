@@ -30,7 +30,7 @@ class TestTheTunnelClientPanel(GuiTestCase):
 
     def test_its_rows(self):
         untranslated(self)
-        tunnel = self.factory.new_brick("tunnelc", "tc1")
+        tunnel = self.factory.new_brick("tunnelconnect", "tc1")
         panel = new_panel(tunnel)
         self.addCleanup(panel.widget.destroy)
         self.assertIsInstance(panel, TunnelConnectPanel)

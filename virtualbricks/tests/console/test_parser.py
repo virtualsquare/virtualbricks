@@ -190,7 +190,7 @@ class TestComplete(ConsoleTestCase):
         self.factory.runtime_dir = "/run/vb"
         self.context = Context(self.factory)
         self.factory.new_brick("switch", "sw1")
-        self.factory.new_brick("vm", "vm1")
+        self.factory.new_brick("qemu", "vm1")
         self.factory.new_event("boot")
 
     def complete(self, text):

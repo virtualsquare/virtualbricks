@@ -169,7 +169,7 @@ class TestListAndShow(BricksTestCase):
 
     def test_show(self):
         sw1 = self.brick("switch", "sw1")
-        vm = self.running(self.brick("vm", "vm1"))
+        vm = self.running(self.brick("qemu", "vm1"))
         vm.add_plug(sw1.socks[0], "52:54:00:00:00:01", "e1000")
         vm.update_config({"use_vnc": True, "headless": True})
         lines = self.run_line("brick show vm1")
@@ -212,7 +212,7 @@ class TestKeys(BricksTestCase):
         )
 
     def test_of_a_brick_and_one_key(self):
-        self.brick("vm", "router")
+        self.brick("qemu", "router")
         self.assertEqual(
             self.run_line("brick keys router memory"),
             ["memory: Memory in MiB (1-99999; default 64)"],
@@ -226,7 +226,7 @@ class TestKeys(BricksTestCase):
 class TestSet(BricksTestCase):
 
     def test_set(self):
-        vm = self.brick("vm", "vm1")
+        vm = self.brick("qemu", "vm1")
         self.assertEqual(
             self.run_line(
                 'brick set vm1 memory=512 kernel_command_line="console=ttyS0'
@@ -240,7 +240,7 @@ class TestSet(BricksTestCase):
         )
 
     def test_all_or_none(self):
-        vm = self.brick("vm", "vm1")
+        vm = self.brick("qemu", "vm1")
         self.assertEqual(
             self.fails("brick set vm1 cpus=2 memory=99999999"),
             "vm1 memory: 99999999 is outside 1–99999",
@@ -257,7 +257,7 @@ class TestSet(BricksTestCase):
 
     def test_a_running_brick(self):
         sw = self.running(self.brick("switch", "sw1"))
-        vm = self.running(self.brick("vm", "vm1"))
+        vm = self.running(self.brick("qemu", "vm1"))
         # a switch takes its ports at once
         self.assertEqual(self.run_line("brick set sw1 ports=4"), [])
         self.assertEqual(sw.config.ports, 4)
@@ -268,7 +268,7 @@ class TestSet(BricksTestCase):
         self.assertEqual(vm.config.memory, 512)
 
     def test_unset(self):
-        vm = self.brick("vm", "vm1")
+        vm = self.brick("qemu", "vm1")
         vm.update_config({"memory": 512, "cpus": 4})
         self.assertEqual(self.run_line("brick unset vm1 memory cpus"), [])
         self.assertEqual((vm.config.memory, vm.config.cpus), (64, 1))
@@ -282,7 +282,7 @@ class TestStartAndStop(BricksTestCase):
 
     def test_start(self):
         sw = self.startable(self.brick("switch", "sw1"))
-        vm = self.startable(self.brick("vm", "vm1"))
+        vm = self.startable(self.brick("qemu", "vm1"))
         self.running(self.startable(self.brick("tap", "tap1")))
 
         def poweron(resume=""):
@@ -304,7 +304,7 @@ class TestStartAndStop(BricksTestCase):
     def test_a_start_that_fails(self):
         self.startable(self.brick("switch", "sw1"))
         self.startable(
-            self.brick("vm", "vm1"),
+            self.brick("qemu", "vm1"),
             errors.BadConfigError("Cannot start 'vm1': not configured"),
         )
         failure = self.failureResultOf(
@@ -375,7 +375,7 @@ class TestProcess(BricksTestCase):
         self.assertEqual(self.fails("brick pause tap1"), "tap1 isn't running")
 
     def test_suspend_and_resume(self):
-        vm = self.running(self.brick("vm", "vm1"))
+        vm = self.running(self.brick("qemu", "vm1"))
         self.brick("switch", "sw1")
         self.patch(
             console_bricks,
@@ -399,7 +399,7 @@ class TestProcess(BricksTestCase):
         self.assertEqual(self.fails("brick suspend vm1"), "vm1 isn't running")
 
     def test_reset(self):
-        vm = self.running(self.brick("vm", "vm1"))
+        vm = self.running(self.brick("qemu", "vm1"))
         sent = []
         vm.send = sent.append
         self.assertEqual(self.run_line("brick reset vm1"), [])
@@ -465,7 +465,7 @@ class TestLinks(BricksTestCase):
 
     def test_what_cant_be_plugged(self):
         self.brick("tap", "tap1")
-        vm = self.brick("vm", "vm1")
+        vm = self.brick("qemu", "vm1")
         vm.add_sock()
         self.assertEqual(
             self.fails("brick connect tap1 vm1"),
@@ -503,7 +503,7 @@ class TestCards(BricksTestCase):
     def setUp(self):
         super().setUp()
         self.sw1 = self.brick("switch", "sw1")
-        self.vm = self.brick("vm", "vm1")
+        self.vm = self.brick("qemu", "vm1")
 
     def test_add(self):
         self.assertEqual(
