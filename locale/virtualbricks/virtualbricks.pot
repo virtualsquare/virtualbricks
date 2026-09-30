@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 23:40+0200\n"
+"POT-Creation-Date: 2026-09-30 23:56+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1918,7 +1918,7 @@ msgstr ""
 msgid "Add an image file to the project; description= says what it is"
 msgstr ""
 
-#: virtualbricks/console/images.py
+#: virtualbricks/console/images.py virtualbricks/remote/facts.py
 #, python-brace-format
 msgid "No file {path}"
 msgstr ""
@@ -3330,7 +3330,8 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: virtualbricks/gui/imageinfo.py
-msgid "The file isn't on this computer"
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "The file isn't there"
 msgstr ""
 
 #: virtualbricks/gui/imageinfo.py
@@ -4122,10 +4123,6 @@ msgid "State"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/images/imagedetails.py
-msgid "The file isn't there"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/images/imagedetails.py
 #, python-brace-format
 msgid "{format}, above {file}"
 msgstr ""
@@ -4703,6 +4700,11 @@ msgstr ""
 #: virtualbricks/remote/facts.py
 #, python-brace-format
 msgid "No QEMU program {program}"
+msgstr ""
+
+#: virtualbricks/remote/facts.py
+#, python-brace-format
+msgid "No program {name}"
 msgstr ""
 
 #: virtualbricks/remote/mirror.py

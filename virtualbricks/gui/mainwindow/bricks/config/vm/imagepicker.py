@@ -27,8 +27,6 @@ file is missing can't be chosen. What the Add items add is chosen for the
 disk. Choosing emits ``chosen``.
 """
 
-import os
-
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -105,7 +103,7 @@ class ImagePicker(Gtk.MenuButton):
         self.vm = vm
         self.image = image
         # the facts of the files, which the other pickers share
-        self.infos = images.InfoCache() if infos is None else infos
+        self.infos = engine.machine.infos if infos is None else infos
         # shows the Images tab
         self.manage = manage
         self.build_ui()
@@ -199,7 +197,7 @@ class ImagePicker(Gtk.MenuButton):
             return
         self.name_label.set_text(image.name)
         path = image.path
-        if not os.path.exists(path):
+        if not self.engine.machine.exists(path):
             self.facts_label.set_text(
                 _("{path} isn't there").format(path=imageinfo.short_path(path))
             )
@@ -245,12 +243,15 @@ class ImagePicker(Gtk.MenuButton):
     def show_option(self, option, info=None) -> None:
         image = option.image
         path = image.path
-        there = os.path.exists(path)
+        machine = self.engine.machine
+        there = machine.exists(path)
         option.set_sensitive(there)
         if there and info is None:
             info = self.infos.get(path)
-        uses = images.uses(self.factory, image)
-        option.show_words(imageinfo.option_words(image, info, uses, self.vm))
+        uses = images.uses(self.factory, image, machine.taken)
+        option.show_words(
+            imageinfo.option_words(image, info, uses, self.vm, there)
+        )
         # the facts, once read: after what is known now
         if there and info is None:
             self.infos.read(path).addCallbacks(

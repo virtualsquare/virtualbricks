@@ -95,36 +95,40 @@ class TestState(BrickTestCase):
         self.image = FakeImage(self.path)
 
     def test_states(self):
-        self.assertIs(imageinfo.state(self.image, []), State.NO_DISK)
+        self.assertIs(imageinfo.state(self.image, [], True), State.NO_DISK)
         self.assertIs(
-            imageinfo.state(self.image, [use("r1")]), State.NOT_IN_USE
+            imageinfo.state(self.image, [use("r1")], True), State.NOT_IN_USE
         )
         self.assertIs(
-            imageinfo.state(self.image, [use("r1"), use("r2", running=True)]),
+            imageinfo.state(
+                self.image, [use("r1"), use("r2", running=True)], True
+            ),
             State.IN_USE,
         )
 
     def test_missing_first(self):
         image = FakeImage("/nowhere/frr.qcow2")
         self.assertIs(
-            imageinfo.state(image, [use("r1", running=True)]), State.MISSING
+            imageinfo.state(image, [use("r1", running=True)], False),
+            State.MISSING,
         )
 
     def test_summary(self):
         uses = [use("r1")]
         self.assertEqual(
-            imageinfo.summary(self.image, INFO, uses),
+            imageinfo.summary(self.image, INFO, uses, True),
             "qcow2 · 4.3 GB disk · 1.2 MB on disk · r1, private copy",
         )
         # before qemu-img says
         self.assertEqual(
-            imageinfo.summary(self.image, None, uses), "r1, private copy"
+            imageinfo.summary(self.image, None, uses, True),
+            "r1, private copy",
         )
 
     def test_summary_of_a_missing_file(self):
         image = FakeImage("/nowhere/frr.qcow2")
         self.assertEqual(
-            imageinfo.summary(image, INFO, []),
+            imageinfo.summary(image, INFO, [], False),
             "/nowhere/frr.qcow2 isn't there · no disk uses it",
         )
 
@@ -175,19 +179,20 @@ class TestThePicker(BrickTestCase):
     def test_an_option(self):
         uses = [use(self.r1), use("r2")]
         self.assertEqual(
-            imageinfo.option_words(self.image, INFO, uses, self.r1),
+            imageinfo.option_words(self.image, INFO, uses, self.r1, True),
             "qcow2 · 4.3 GB · r2 uses it",
         )
         # before qemu-img says, and used by none else
         self.assertEqual(
-            imageinfo.option_words(self.image, None, uses[:1], self.r1), ""
+            imageinfo.option_words(self.image, None, uses[:1], self.r1, True),
+            "",
         )
 
     def test_an_option_without_its_file(self):
         image = FakeImage("/nowhere/frr.qcow2")
         self.assertEqual(
-            imageinfo.option_words(image, INFO, [], self.r1),
-            "The file isn't on this computer",
+            imageinfo.option_words(image, INFO, [], self.r1, False),
+            "The file isn't there",
         )
 
 
@@ -202,8 +207,10 @@ class TestTheLineOfADisk(BrickTestCase):
         self.copy = "/lab/r1_hda.cow"
 
     def line(self, image, saved=None, private=True, size=None):
+        # the file of the image is there if it's on this machine
+        there = image is not None and os.path.exists(image.path)
         return imageinfo.disk_line(
-            "r1", image, saved, private, self.copy, size
+            "r1", image, saved, private, self.copy, size, there
         )
 
     def test_no_image(self):

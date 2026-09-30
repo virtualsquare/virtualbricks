@@ -63,6 +63,7 @@ Connect source:str target:str -> connected:bool ! NOT_FOUND BAD_ARGUMENT PROTOCO
 QemuFacts program:str -> path:str version:str options:str machines:str cpus:str devices:str displays:str audio_drivers:str netdevs:str accelerators:str ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 MachineProperties program:str machine:str -> text:str ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 UsbDevices -> devices:str ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
+ImageFacts path:str -> file:str info:str others:str ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 Opened project:str? settings:str machine:str -> !
 Changed kind:str name:str table:str state:str -> !
 Renamed kind:str old:str new:str -> !

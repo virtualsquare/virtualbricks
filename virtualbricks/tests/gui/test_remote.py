@@ -30,8 +30,9 @@ from twisted.test import iosim
 from virtualbricks import app
 from virtualbricks.bricks import FakeProcess
 from virtualbricks.config import images, settings
-from virtualbricks.config.workspace import OpenProject
+from virtualbricks.config.workspace import OpenProject, projects
 from virtualbricks.console import control
+from virtualbricks.engine import LocalMachine
 from virtualbricks.remote import client, follower, mirror
 from virtualbricks.remote.client import Refused, RemoteEngine, Windows, start
 from virtualbricks.remote.follower import LogKeeper
@@ -412,12 +413,16 @@ class TestTheMainWindow(GuiTestCase):
 
 
 class NotHere:
-    """The engine of windows over a connection, as the items see it."""
+    """
+    The engine of windows over a connection, as the items see it; its
+    machine is this one, for the test.
+    """
 
     local = False
 
     def __init__(self, factory):
         self.factory = factory
+        self.machine = LocalMachine(projects)
 
 
 class FakeGui:

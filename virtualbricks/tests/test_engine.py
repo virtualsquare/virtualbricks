@@ -27,7 +27,7 @@ from virtualbricks.bricks import FakeProcess
 from virtualbricks.bricks.brickinfo import NEW_KINDS
 from virtualbricks.bricks.eventaction import ShellAction
 from virtualbricks.bricks.virtualmachine import UsbDevice
-from virtualbricks.config import settings
+from virtualbricks.config import images, settings
 from virtualbricks.config.images import RunningError
 from virtualbricks.config.settings import get_setting
 from virtualbricks.config.tomlfile import load_toml
@@ -41,6 +41,8 @@ from virtualbricks.tests import (
 )
 from virtualbricks.tests.config.test_images import (
     INFO,
+    FakeQemuImg,
+    FakeWorkspace,
     ImagesTestCase,
 )
 
@@ -530,6 +532,35 @@ class TestMachine(EngineTestCase):
         machine = self.engine.machine
         self.assertEqual(machine.setting("qemu_path"), folder)
         self.assertEqual(machine.qemu_programs(), ["qemu-system-riscv64"])
+
+    def test_its_files(self):
+        path = os.path.abspath(self.mktemp())
+        with open(path, "wb") as fp:
+            fp.write(b"x" * 5000)
+        stat = os.stat(path)
+        machine = self.engine.machine
+        self.assertTrue(machine.exists(path))
+        self.assertEqual(machine.taken(path), stat.st_blocks * 512)
+        self.assertEqual(machine.changed(path), stat.st_mtime)
+        for gone in (machine.taken, machine.changed):
+            self.assertIsNone(gone("/nowhere/frr.qcow2"))
+        self.assertFalse(machine.exists("/nowhere/frr.qcow2"))
+
+    def test_what_qemu_img_says(self):
+        qemu_img = FakeQemuImg()
+        qemu_img.infos["/lab/frr.qcow2"] = INFO
+        engine = LocalEngine(self.factory, qemu_img=qemu_img)
+        # once, while the file doesn't change
+        self.assertIsInstance(engine.machine.infos, images.InfoCache)
+        self.assertIs(engine.machine.infos.run, qemu_img)
+
+    def test_the_other_projects(self):
+        workspace = FakeWorkspace("lab", ospf=[("debian", "/ws/frr.qcow2")])
+        engine = LocalEngine(self.factory, workspace=workspace)
+        self.assertEqual(
+            engine.machine.other_projects("/ws/frr.qcow2"),
+            [("ospf", "debian")],
+        )
 
     def test_quit(self):
         switch = self.factory.new_brick("switch", "sw1")

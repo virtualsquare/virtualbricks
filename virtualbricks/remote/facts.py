@@ -19,8 +19,9 @@
 """
 The facts of the machine of the bricks that the windows of another machine
 ask for (page 19 §7): what its QEMU programs have, the properties of a
-machine type, its USB devices. The texts of QEMU go as QEMU printed them;
-the windows read them with programs.py, as they read those of their own.
+machine type, its USB devices, what a file is. The texts of QEMU go as QEMU
+printed them; the windows read them with programs.py and config/images.py,
+as they read those of their own.
 
 They change nothing, so they don't wait in the queue of the commands of the
 connection: each answers when the programs have, the pushes that wait
@@ -34,11 +35,15 @@ from twisted.logger import Logger
 from twisted.protocols import amp
 
 from virtualbricks.bricks.virtualmachine import get_usb_devices
+from virtualbricks.config import images
+from virtualbricks.config.workspace import projects
 from virtualbricks.console import ampcommands, ampwire
+from virtualbricks.errors import CommandError
 from virtualbricks.i18n import _
 from virtualbricks.programs import ProgramError, programs
 from virtualbricks.qemu import run
 from virtualbricks.remote import commands
+from virtualbricks.remote.follower import file_facts
 
 logger = Logger()
 fact_failed = "{command} for the windows of another machine failed"
@@ -80,8 +85,13 @@ class Facts(amp.CommandLocator):
                 ampwire.AnswerTooLong,
             ):
                 return failure
-            if failure.check(ProgramError):
+            if failure.check(ProgramError, CommandError):
                 raise ampwire.CommandFailed(failure.getErrorMessage())
+            if failure.check(FileNotFoundError):
+                # the program that would say
+                raise ampwire.CommandFailed(
+                    _("No program {name}").format(name=failure.value.args[0])
+                )
             logger.failure(fact_failed, failure, command=command)
             raise ampwire.CommandFailed(
                 failure.getErrorMessage() or failure.type.__name__
@@ -144,3 +154,24 @@ class Facts(amp.CommandLocator):
             return asking.addCallback(answer)
 
         return self._answer_fact("UsbDevices", ask)
+
+    @commands.ImageFacts.responder
+    def image_facts(self, path):
+        def ask():
+            facts = file_facts(path)
+            if facts is None:
+                raise ampcommands.NotFound(
+                    _("No file {path}").format(path=path)
+                )
+            others = images.other_projects(projects, path)
+            # -U: a running machine locks the image it writes to
+            reading = run.qemu_img(["info", "--output=json", "-U", path])
+            return reading.addCallback(
+                lambda info: {
+                    "file": json.dumps(facts),
+                    "info": _value(info),
+                    "others": _value(json.dumps(others, ensure_ascii=False)),
+                }
+            )
+
+        return self._answer_fact("ImageFacts", ask)

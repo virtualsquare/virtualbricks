@@ -40,7 +40,6 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango  # noqa: E402
 
 from virtualbricks.config import images  # noqa: E402
-from virtualbricks.config.workspace import projects  # noqa: E402
 from virtualbricks.gui import imageinfo  # noqa: E402
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.form import (  # noqa: E402
@@ -88,16 +87,16 @@ def mode_words(use) -> str:
 class ImageDetails(Panel):
     """The name, the description and the facts of an image, on a draft."""
 
-    def __init__(self, draft, infos, workspace=None) -> None:
+    def __init__(self, draft, machine) -> None:
         self.image = draft.brick
         self.factory = draft.factory
-        # the facts of the files, which the list of the tab reads too
-        self.infos = infos
-        self.workspace = projects if workspace is None else workspace
+        # what the windows read of the machine of the bricks: the facts of
+        # the files, which the list of the tab reads too
+        self.machine = machine
+        self.infos = machine.infos
         super().__init__(draft)
 
     def build(self, form) -> Gtk.Box:
-        image = self.image
         self.panel = Gtk.Box(
             visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=14
         )
@@ -135,15 +134,21 @@ class ImageDetails(Panel):
 
         self.facts = Gtk.Grid(visible=True, row_spacing=4, column_spacing=18)
         self.panel.pack_start(self.facts, False, False, 0)
-        self.read_facts()
 
         self.panel.pack_start(_label(_("Used by"), bold=True), False, False, 0)
         self.uses = Gtk.Grid(visible=True, row_spacing=4, column_spacing=14)
         self.panel.pack_start(self.uses, False, False, 0)
         self.show_uses()
 
-        others = images.other_projects(self.workspace, image.path)
         self.others = _label(dim=True, wrap=True)
+        self.panel.pack_start(self.others, False, False, 0)
+        self.read_facts()
+        return self.panel
+
+    def show_others(self) -> None:
+        """The other projects with the file: known once the file is read."""
+
+        others = self.machine.other_projects(self.image.path)
         if others:
             self.others.set_text(
                 ngettext(
@@ -163,8 +168,6 @@ class ImageDetails(Panel):
             )
         # no gap for no project
         self.others.set_visible(bool(others))
-        self.panel.pack_start(self.others, False, False, 0)
-        return self.panel
 
     def refresh(self) -> None:
         super().refresh()
@@ -186,15 +189,19 @@ class ImageDetails(Panel):
 
         path = self.image.path
         info = self.infos.get(path)
-        if info is not None or not os.path.exists(path):
+        if info is not None or not self.machine.exists(path):
             self.show_facts(info)
+            self.show_others()
             return
         self.show_facts(READING)
+        self.show_others()
         # what the read says, once: a file that can't be read, or that a
         # machine keeps changing, is read again only when the details open
-        self.infos.read(path).addCallbacks(
+        reading = self.infos.read(path)
+        reading.addCallbacks(
             self.show_facts, lambda failure: self.show_facts(None)
         )
+        reading.addCallback(lambda _: self.show_others())
 
     def fact_rows(self, info) -> list[tuple[str, str]]:
         """
@@ -205,7 +212,7 @@ class ImageDetails(Panel):
 
         path = self.image.path
         rows = [(_("File"), imageinfo.short_path(path))]
-        if not os.path.exists(path):
+        if not self.machine.exists(path):
             rows.append((_("State"), _("The file isn't there")))
             return rows
         if info is READING:
@@ -238,8 +245,11 @@ class ImageDetails(Panel):
         )
         if info.snapshots:
             rows.append((_("Snapshots"), ", ".join(info.snapshots)))
-        changed = time.localtime(os.stat(path).st_mtime)
-        rows.append((_("Changed"), time.strftime("%x %X", changed)))
+        changed = self.machine.changed(path)
+        if changed is not None:
+            rows.append(
+                (_("Changed"), time.strftime("%x %X", time.localtime(changed)))
+            )
         return rows
 
     def show_facts(self, info) -> None:
@@ -260,7 +270,7 @@ class ImageDetails(Panel):
             )
 
     def show_uses(self) -> None:
-        uses = images.uses(self.factory, self.image)
+        uses = images.uses(self.factory, self.image, self.machine.taken)
         if not uses:
             self.uses.attach(
                 _label(_("No disk uses it."), dim=True), 0, 0, 1, 1

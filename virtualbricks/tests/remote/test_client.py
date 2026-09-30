@@ -33,6 +33,9 @@ from virtualbricks.bricks.eventaction import ShellAction
 from virtualbricks.config import settings
 from virtualbricks.console import ampcommands, ampwire, control, wire
 from virtualbricks.bricks.virtualmachine import UsbDevice
+from virtualbricks.config import images
+from virtualbricks.errors import CommandError
+from virtualbricks.qemu import run
 from virtualbricks.programs import (
     QEMU_QUESTIONS,
     Answer,
@@ -55,6 +58,11 @@ from virtualbricks.remote.mirror import MirrorFactory
 from virtualbricks.tests import FakeLogger, use_workspace
 from virtualbricks.tests.console import ConsoleTestCase
 from virtualbricks.tests.console.test_control import TOKEN, tls_file
+from virtualbricks.tests.config.test_images import (
+    INFO,
+    FakeQemuImg,
+    FakeWorkspace,
+)
 from virtualbricks.tests.remote.test_mirror import Project
 from virtualbricks.tests.test_programs import FakeRun, executable
 
@@ -524,6 +532,134 @@ class TestFacts(ClientTestCase):
         self.clock().advance(0)
         self.pump.flush()
         self.assertEqual(machine.setting("audio_driver"), "pa")
+
+
+class TestFileFacts(ClientTestCase):
+    """The files of the machine there: those of the project, then others."""
+
+    def setUp(self):
+        super().setUp()
+        folder = self.workspace.current.path
+        self.path = os.path.join(folder, "frr.qcow2")
+        with open(self.path, "wb") as fp:
+            fp.write(b"x" * 5000)
+        self.qemu_img = FakeQemuImg()
+        self.qemu_img.infos[self.path] = INFO
+        self.patch(run, "qemu_img", self.qemu_img)
+        # another project of the workspace there has the file
+        self.patch(
+            facts, "projects", FakeWorkspace("lab1", lab2=[("deb", self.path)])
+        )
+        self.logger = FakeLogger()
+        self.patch(facts, "logger", self.logger)
+        self.image = self.factory.new_image("frr", self.path)
+        self.vm = self.factory.new_brick("qemu", "vm1")
+        self.vm.update_config({"hda_image": "frr", "hda_private": True})
+        self.cow = self.vm.disk("hda").get_cow_path()
+        with open(self.cow, "wb") as fp:
+            fp.write(b"x" * 100)
+        self.done(self.start())
+        self.machine = self.engine.machine
+
+    def test_the_files_of_the_project(self):
+        machine = self.machine
+        stat = os.stat(self.path)
+        self.assertTrue(machine.exists(self.path))
+        self.assertEqual(machine.taken(self.path), stat.st_blocks * 512)
+        self.assertEqual(machine.changed(self.path), stat.st_mtime_ns / 1e9)
+        # the private copy of the machine there, where it is there
+        copy = self.copy.get_brick("vm1").disk("hda").get_cow_path()
+        self.assertEqual(copy, self.cow)
+        self.assertEqual(
+            machine.taken(copy), os.stat(self.cow).st_blocks * 512
+        )
+        self.assertFalse(machine.exists("/nowhere/frr.qcow2"))
+        # what the Virtualbricks there said, not what this machine has
+        os.remove(self.path)
+        self.assertTrue(machine.exists(self.path))
+
+    def test_what_a_file_is(self):
+        info = self.done(self.engine.image_info(self.path))
+        self.assertEqual(info, images.parse_info(INFO))
+        self.assertEqual(
+            self.qemu_img.calls, [["info", "--output=json", "-U", self.path]]
+        )
+        self.assertEqual(
+            self.machine.other_projects(self.path), [("lab2", "deb")]
+        )
+
+    def test_another_file(self):
+        other = os.path.join(self.workspace.current.path, "debian.qcow2")
+        with open(other, "wb") as fp:
+            fp.write(b"x" * 10)
+        self.qemu_img.infos[other] = INFO
+        self.assertFalse(self.machine.exists(other))
+        self.done(self.engine.image_info(other))
+        self.assertTrue(self.machine.exists(other))
+        self.assertEqual(
+            self.machine.taken(other), os.stat(other).st_blocks * 512
+        )
+
+    def test_no_such_file(self):
+        failure = self.refused(
+            self.engine.image_info("/nowhere/frr.qcow2"), ampcommands.NotFound
+        )
+        self.assertEqual(
+            failure.getErrorMessage(), "No file /nowhere/frr.qcow2"
+        )
+        self.assertEqual(self.qemu_img.calls, [])
+
+    def test_a_file_qemu_img_cant_read(self):
+        def qemu_img(args):
+            return defer.fail(CommandError(1, "qemu-img: Could not open it"))
+
+        self.patch(run, "qemu_img", qemu_img)
+        failure = self.refused(
+            self.engine.image_info(self.path), ampwire.CommandFailed
+        )
+        self.assertEqual(
+            failure.getErrorMessage(), "qemu-img: Could not open it"
+        )
+        self.assertEqual(self.logger.events, [])
+
+    def test_no_qemu_img(self):
+        def qemu_img(args):
+            return defer.fail(FileNotFoundError("qemu-img"))
+
+        self.patch(run, "qemu_img", qemu_img)
+        failure = self.refused(
+            self.engine.image_info(self.path), ampwire.CommandFailed
+        )
+        self.assertEqual(failure.getErrorMessage(), "No program qemu-img")
+
+    def test_read_once_while_the_file_is_the_same(self):
+        infos = self.machine.infos
+        self.assertIsNone(infos.get(self.path))
+        first = infos.read(self.path)
+        second = infos.read(self.path)
+        self.assertEqual(self.done(first), images.parse_info(INFO))
+        self.assertEqual(self.done(second), images.parse_info(INFO))
+        self.assertEqual(len(self.qemu_img.calls), 1)
+        self.assertEqual(infos.get(self.path), images.parse_info(INFO))
+        self.done(infos.read(self.path))
+        self.assertEqual(len(self.qemu_img.calls), 1)
+        # the machine ran, and wrote into the file
+        with open(self.path, "ab") as fp:
+            fp.write(b"y" * 5000)
+        self.vm.changed.notify(self.vm)
+        self.quiet(defer.succeed(None))
+        self.assertIsNone(infos.get(self.path))
+        self.done(infos.read(self.path))
+        self.assertEqual(len(self.qemu_img.calls), 2)
+
+    def test_a_read_that_fails(self):
+        infos = self.machine.infos
+        first = infos.read("/nowhere/frr.qcow2")
+        second = infos.read("/nowhere/frr.qcow2")
+        self.refused(first, ampcommands.NotFound)
+        self.refused(second, ampcommands.NotFound)
+        # asked again
+        self.refused(infos.read("/nowhere/frr.qcow2"), ampcommands.NotFound)
 
 
 class TestEndpoints(ConsoleTestCase):

@@ -452,7 +452,7 @@ class Disk:
         return getattr(self.vm.config, f"{self.device}_private")
 
     def _basefolder(self):
-        return projects.current.path
+        return self.vm.project_folder()
 
     def acquire(self):
         self.lock_image()
@@ -1508,6 +1508,15 @@ class VirtualMachine(bricks.Brick):
         self.logger.debug(release_lock)
         for disk in self.disks():
             disk.release()
+
+    def project_folder(self):
+        """
+        The folder of the project of the machine, where its private copies
+        are; None while no project is open, as while one loads.
+        """
+
+        current = projects.current
+        return None if current is None else current.path
 
     def disks(self):
         for dev in DISK_DEVICES:

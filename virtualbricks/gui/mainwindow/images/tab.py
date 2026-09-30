@@ -33,7 +33,6 @@ are :mod:`virtualbricks.gui.mainwindow.images.imagedetails`'s.
 
 from __future__ import annotations
 
-import os
 
 import gi
 
@@ -94,14 +93,19 @@ class ImageRow(Row):
         return imagemenu.ImageActions(self.gui, self.item)
 
     def menu_model(self):
-        return imagemenu.menu(self.item)
+        return imagemenu.menu(self.item, self.there())
+
+    def there(self) -> bool:
+        """Whether the file of the image is on the machine of the bricks."""
+
+        return self.gui.engine.machine.exists(self.item.path)
 
     def info(self):
         """What qemu-img info says of the file, once read; read it if not."""
 
         path = self.item.path
         info = self.infos.get(path)
-        if info is None and os.path.exists(path):
+        if info is None and self.there():
             reading = self.infos.read(path)
             reading.addErrback(lambda failure: None)
             reading.addCallback(self._read)
@@ -121,14 +125,16 @@ class ImageRow(Row):
         """Show the image with info, or what the cache has if read."""
 
         image = self.item
-        uses = images.uses(self.gui.brickfactory, image)
-        image_state = imageinfo.state(image, uses)
+        machine = self.gui.engine.machine
+        uses = images.uses(self.gui.brickfactory, image, machine.taken)
+        there = self.there()
+        image_state = imageinfo.state(image, uses, there)
         if image_state is State.MISSING:
             info = None
         elif read:
             info = self.info()
         self.show(
-            imageinfo.summary(image, info, uses),
+            imageinfo.summary(image, info, uses, there),
             LABELS[image_state],
             image_state is State.IN_USE,
             image_state is State.MISSING,
@@ -153,7 +159,7 @@ class ImageList(RowList):
 
     def __init__(self, gui, factory) -> None:
         # the rows need it, from the first
-        self.infos = images.InfoCache()
+        self.infos = gui.engine.machine.infos
         super().__init__(gui, factory)
         # what the rows of the images say of the bricks
         for signal in brick_signals(factory):
@@ -266,7 +272,9 @@ class ImagesTab(RowsTab):
         return imagemenu.popup(widget, event, self.gui, item, True)
 
     def panel_for(self, item) -> ImageDetails:
-        return ImageDetails(ImageDraft(item, self.factory), self.list.infos)
+        return ImageDetails(
+            ImageDraft(item, self.factory), self.gui.engine.machine
+        )
 
     def settings_words(self, item) -> str:
         return _("Disk image")

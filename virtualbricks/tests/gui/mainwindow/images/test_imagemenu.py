@@ -71,25 +71,33 @@ class TestTheMenu(ImageMenuTestCase):
 
     def test_an_image(self):
         self.assertEqual(
-            [section for section in content(menu(self.there)) if section],
+            [
+                section
+                for section in content(menu(self.there, True))
+                if section
+            ],
             [["Details…"], ["Rename…", "Show in Files"], ["Remove…"]],
         )
 
     def test_a_missing_file(self):
-        self.assertEqual(content(menu(self.missing))[0], ["Find the File…"])
+        self.assertEqual(
+            content(menu(self.missing, False))[0], ["Find the File…"]
+        )
 
     def test_the_keys(self):
-        model = menu(self.missing, keys=True)
+        model = menu(self.missing, False, keys=True)
         self.assertEqual(attribute(model, [1, 0], "accel"), "Return")
         self.assertEqual(attribute(model, [2, 0], "accel"), "F2")
         self.assertEqual(attribute(model, [3, 0], "accel"), "Delete")
         for path in ([0, 0], [2, 1]):
             self.assertIsNone(attribute(model, path, "accel"), path)
-        self.assertIsNone(attribute(menu(self.missing), [1, 0], "accel"))
+        self.assertIsNone(
+            attribute(menu(self.missing, False), [1, 0], "accel")
+        )
 
     def test_every_item_has_its_action(self):
         actions = set(ImageActions(self.gui, self.missing).list_actions())
-        model = menu(self.missing)
+        model = menu(self.missing, False)
         used = set()
         for i in range(model.get_n_items()):
             section = model.get_item_link(i, "section")

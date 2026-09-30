@@ -121,6 +121,9 @@ class MirrorFactory(BrickFactory):
         self.machine = {}
         # whether the whole project has come
         self.whole = False
+        # the states of the images and the bricks, by kind and name: the
+        # facts of their files, their processes
+        self._states = {}
         # the plugs whose sockets haven't come yet, and their targets
         self._waiting = []
         observable = Observable()
@@ -137,7 +140,15 @@ class MirrorFactory(BrickFactory):
     def new_brick(self, type, name, host="", remote=False):
         brick = BrickFactory.new_brick(self, type, name, host, remote)
         _refuse(brick, BRICK_CALLS)
+        if is_virtualmachine(brick):
+            # its private copies are in the project there
+            brick.project_folder = lambda: self.machine.get("project_folder")
         return brick
+
+    def state(self, kind, name) -> dict:
+        """The last state sent of an image or a brick."""
+
+        return self._states.get((kind, name), {})
 
     def new_event(self, name):
         event = BrickFactory.new_event(self, name)
@@ -176,6 +187,7 @@ class MirrorFactory(BrickFactory):
             brick.proc = None
         self.reset()
         self._waiting = []
+        self._states = {}
         self.project = project
         self.settings = settings
         self.machine = machine
@@ -190,8 +202,12 @@ class MirrorFactory(BrickFactory):
         """A new object, or one changed: its table and its state."""
 
         report = Report()
+        # before the object: what it tells shows the state
+        before = self._states.get((kind, name))
+        if kind != EVENT:
+            self._states[(kind, name)] = state
         if kind == IMAGE:
-            self._change_image(name, table)
+            self._change_image(name, table, before != state)
         elif kind == EVENT:
             self._change_event(name, table, state, report)
         else:
@@ -202,6 +218,8 @@ class MirrorFactory(BrickFactory):
         item = self._get(kind, old)
         if item is None:
             return
+        if (kind, old) in self._states:
+            self._states[(kind, new)] = self._states.pop((kind, old))
         if kind == IMAGE:
             self._disk_images[new] = self._disk_images.pop(old)
         elif kind == EVENT:
@@ -220,6 +238,7 @@ class MirrorFactory(BrickFactory):
         item = self._get(kind, name)
         if item is None:
             return
+        self._states.pop((kind, name), None)
         if kind == IMAGE:
             self.remove_image(item)
         elif kind == EVENT:
@@ -236,12 +255,17 @@ class MirrorFactory(BrickFactory):
 
     # Images
 
-    def _change_image(self, name, table) -> None:
+    def _change_image(self, name, table, state_changed) -> None:
         path = table.get("path", "")
         description = table.get("description", "")
         image = self.get_image(name)
         if image is None:
             self.new_image(name, path, description)
+            return
+        if image.path == path and image.description == description:
+            # its file changed: what shows it follows
+            if state_changed:
+                image.changed.notify(image)
             return
         if image.path != path:
             image.set_path(path)

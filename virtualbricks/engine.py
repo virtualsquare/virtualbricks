@@ -27,12 +27,15 @@ call returns a Deferred, so that the windows wait for an engine on this
 machine as they would for one on another, and a refusal is its failure.
 
 ``engine.machine`` has what the windows read of the machine of the bricks
-at once, without asking: its settings, its QEMU programs.
+at once, without asking: its settings, its QEMU programs, the files of the
+images and of the private copies; and the facts of the files that qemu-img
+reads, once each while a file doesn't change.
 
 ``LocalEngine`` does what the windows did before, on the factory of this
 process. It loads no GTK.
 """
 
+import os
 import signal
 
 from twisted.internet import defer, error, reactor, threads
@@ -61,6 +64,32 @@ from virtualbricks.qemu import run
 
 class LocalMachine:
     """What the windows read of this machine, which runs the bricks."""
+
+    def __init__(self, workspace, qemu_img=None) -> None:
+        self.workspace = workspace
+        # what qemu-img info says of each file, while it doesn't change
+        self.infos = images.InfoCache(qemu_img)
+
+    def exists(self, path) -> bool:
+        return os.path.exists(path)
+
+    def taken(self, path) -> int | None:
+        """The space the file path takes; None if it isn't there."""
+
+        return images.space_taken(path)
+
+    def changed(self, path) -> float | None:
+        """When the file path changed, in seconds; None if it isn't there."""
+
+        try:
+            return os.stat(path).st_mtime
+        except OSError:
+            return None
+
+    def other_projects(self, path) -> list[tuple[str, str]]:
+        """The images of the other projects whose file is path."""
+
+        return images.other_projects(self.workspace, path)
 
     def setting(self, name):
         """A setting of Virtualbricks, or of the open project."""
@@ -95,10 +124,10 @@ class LocalEngine:
     ) -> None:
         # what the windows read, and what the engine changes
         self.factory = factory
-        self.machine = LocalMachine()
         self.workspace = projects if workspace is None else workspace
         self.clock = reactor if clock is None else clock
         self.qemu_img = run.qemu_img if qemu_img is None else qemu_img
+        self.machine = LocalMachine(self.workspace, self.qemu_img)
         self.usb_devices = (
             get_usb_devices if usb_devices is None else usb_devices
         )

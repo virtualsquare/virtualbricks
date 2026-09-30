@@ -32,15 +32,12 @@ called after each change, and ``to_draft()`` writes the images and the modes
 into the machine's draft.
 """
 
-import os
-
 import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gio, GLib, Gtk, Pango
 
 from virtualbricks.bricks.virtualmachine import DISK_DEVICES
-from virtualbricks.config import images
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.gui.dialogs.imagedialogs import (
@@ -144,6 +141,8 @@ class DiskRow(Gtk.ListBoxRow):
         vm = self.section.vm
         disk = vm.disk(self.device)
         copy = disk.get_cow_path()
+        machine = self.section.engine.machine
+        there = self.image is not None and machine.exists(self.image.path)
         self.line.set_text(
             imageinfo.disk_line(
                 vm.name,
@@ -151,12 +150,12 @@ class DiskRow(Gtk.ListBoxRow):
                 disk.image,
                 self.private,
                 copy,
-                images.space_taken(copy),
+                machine.taken(copy),
+                there,
             )
         )
         # over a connection, the long work and the file manager wait
         local = self.section.engine.local
-        there = self.image is not None and os.path.exists(self.image.path)
         self.actions.lookup_action("show").set_enabled(there and local)
         changes = self.keeps_changes()
         for name in ("save", "merge", "start-over"):
@@ -192,13 +191,14 @@ class DiskRow(Gtk.ListBoxRow):
         """
 
         disk = self.section.vm.disk(self.device)
+        machine = self.section.engine.machine
         return (
             self.image is not None
             and self.image is disk.image
             and self.private
             and bool(disk.is_cow())
-            and os.path.exists(disk.get_cow_path())
-            and os.path.exists(self.image.path)
+            and machine.exists(disk.get_cow_path())
+            and machine.exists(self.image.path)
         )
 
     def save(self) -> SaveImageDialog:
@@ -256,7 +256,7 @@ class DisksSection(Gtk.Box):
         # called after a change of the disks
         self.changed = changed
         # the facts of the files, for all the pickers
-        self.infos = images.InfoCache() if infos is None else infos
+        self.infos = engine.machine.infos if infos is None else infos
         # shows the Images tab
         self.manage = manage
         self.pack_start(_label(_("Disks"), bold=True), False, False, 0)

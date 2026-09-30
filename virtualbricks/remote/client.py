@@ -39,11 +39,13 @@ import json
 
 from twisted.internet import defer, endpoints, error
 from twisted.protocols import amp
+from twisted.python.failure import Failure
 
 from virtualbricks import __version__, locations
 from virtualbricks.brickfactory import normalize_name
 from virtualbricks.bricks.brickinfo import NEW_KINDS, Issue
 from virtualbricks.bricks.virtualmachine import UsbDevice
+from virtualbricks.config.images import parse_info
 from virtualbricks.config.settings import setting_kind
 from virtualbricks.config.schema import kind_of
 from virtualbricks.console import ampcommands, ampwire, wire
@@ -224,14 +226,95 @@ def _text(kind, value) -> str:
     return value if isinstance(value, str) else kind.format(value)
 
 
+def _stamp(facts):
+    return None if facts is None else (facts["size"], facts["mtime"])
+
+
+class RemoteInfos:
+    """
+    What qemu-img info says of the files there, asked with ImageFacts, while
+    the facts that the Virtualbricks there sends of a file don't change: the
+    calls of images.InfoCache.
+    """
+
+    def __init__(self, machine, engine):
+        self.machine = machine
+        self.engine = engine
+        # the files asked, and who waits for them
+        self._reading = {}
+
+    def get(self, path):
+        found = self.machine.asked.get(path)
+        if found is None:
+            return None
+        if _stamp(found["file"]) != _stamp(self.machine.facts(path)):
+            return None
+        return found["info"]
+
+    def read(self, path) -> defer.Deferred:
+        info = self.get(path)
+        if info is not None:
+            return defer.succeed(info)
+        waiting = defer.Deferred()
+        if path in self._reading:
+            self._reading[path].append(waiting)
+            return waiting
+        self._reading[path] = [waiting]
+        reading = self.engine.image_facts(path)
+        reading.addBoth(self._read, path)
+        return waiting
+
+    def _read(self, result, path) -> None:
+        for waiting in self._reading.pop(path, []):
+            if isinstance(result, Failure):
+                waiting.errback(result)
+            else:
+                waiting.callback(result["info"])
+
+
 class RemoteMachine:
     """
     What the windows read of the machine of the bricks, from the copy: the
-    settings and the facts that the Virtualbricks there sent.
+    settings and the facts that the Virtualbricks there sent, those of the
+    files of the images and of the private copies with the rest; the facts
+    of the other files, once asked.
     """
 
-    def __init__(self, mirror):
+    def __init__(self, mirror, engine):
         self.mirror = mirror
+        # the answers of ImageFacts, by path
+        self.asked = {}
+        self.infos = RemoteInfos(self, engine)
+
+    def facts(self, path) -> dict | None:
+        """What the Virtualbricks there last said of the file path."""
+
+        mirror = self.mirror
+        for image in mirror.images:
+            if image.path == path:
+                return mirror.state(IMAGE, image.name).get("file")
+        for brick in mirror.bricks:
+            copies = mirror.state(BRICK, brick.name).get("copies", {})
+            for device, facts in copies.items():
+                if brick.disk(device).get_cow_path() == path:
+                    return facts
+        found = self.asked.get(path)
+        return None if found is None else found["file"]
+
+    def exists(self, path) -> bool:
+        return self.facts(path) is not None
+
+    def taken(self, path) -> int | None:
+        facts = self.facts(path)
+        return None if facts is None else facts["taken"]
+
+    def changed(self, path) -> float | None:
+        facts = self.facts(path)
+        return None if facts is None else facts["mtime"] / 1e9
+
+    def other_projects(self, path) -> list[tuple[str, str]]:
+        found = self.asked.get(path)
+        return [] if found is None else found["others"]
 
     def setting(self, name):
         return self.mirror.settings[name]
@@ -250,7 +333,7 @@ class RemoteEngine:
 
     def __init__(self, mirror, windows, where, quit=None):
         self.factory = mirror
-        self.machine = RemoteMachine(mirror)
+        self.machine = RemoteMachine(mirror, self)
         # the connection; Reconnect gives another
         self.windows = windows
         self.where = where
@@ -418,8 +501,29 @@ class RemoteEngine:
     def make_image(self, path, fmt, size):
         return defer.fail(NotYet("make_image"))
 
+    def image_facts(self, path):
+        """
+        What the file path is there: file, its facts; info, an ImageInfo;
+        others, the images of the other projects with that file.
+        """
+
+        asking = self.call(commands.ImageFacts, path=path)
+
+        def read(answer):
+            found = {
+                "file": json.loads(answer["file"]),
+                "info": parse_info(json.loads(answer["info"])),
+                "others": [
+                    tuple(other) for other in json.loads(answer["others"])
+                ],
+            }
+            self.machine.asked[path] = found
+            return found
+
+        return asking.addCallback(read)
+
     def image_info(self, path):
-        return defer.fail(NotYet("image_info"))
+        return self.image_facts(path).addCallback(lambda found: found["info"])
 
     def relink(self, image, path):
         return defer.fail(NotYet("relink"))

@@ -21,6 +21,7 @@ what changes, once a turn, before the answers.
 """
 
 import json
+import os
 
 from twisted.internet import defer
 from twisted.logger import LogLevel, LogPublisher
@@ -48,6 +49,7 @@ from virtualbricks.tests.console import ConsoleTestCase
 
 class Project:
     name = "lab1"
+    path = "/lab/lab1"
 
 
 class Program(amp.AMP):
@@ -213,12 +215,14 @@ class TestFollow(FollowTestCase):
         self.assertEqual(machine["version"], __version__)
         self.assertEqual(machine["runtime_dir"], "/run/vb")
         self.assertIn("Switch", machine["lacks"])
+        self.assertEqual(machine["project_folder"], "/lab/lab1")
         self.assertEqual(
             machine["qemu_programs"],
             qemu_programs(settings.get_setting("qemu_path")),
         )
         self.assertEqual(
-            got[1][3:], ({"path": "/lab/frr.qcow2", "description": ""}, {})
+            got[1][3:],
+            ({"path": "/lab/frr.qcow2", "description": ""}, {"file": None}),
         )
         self.assertEqual(got[3][3], table_of(tap))
         self.assertEqual(got[3][3]["connect"], "sw1")
@@ -381,6 +385,48 @@ class TestChanges(FollowTestCase):
         self.switch.changed.notify(self.switch)
         self.turn()
         self.assertEqual(self.got()[0][4], {"pid": -1})
+
+    def test_a_machine_that_runs(self):
+        # the files of its private copies, and its images again: it writes
+        # them
+        folder = os.path.abspath(self.mktemp())
+        os.makedirs(folder)
+        self.workspace.current.path = folder
+        image = self.factory.new_image("frr", os.path.join(folder, "frr"))
+        vm = self.factory.new_brick("qemu", "vm1")
+        vm.update_config(
+            {
+                "hda_image": "frr",
+                "hda_private": True,
+                "hdb_image": "frr",
+                "hdb_private": False,
+            }
+        )
+        copy = vm.disk("hda").get_cow_path()
+        with open(copy, "wb") as fp:
+            fp.write(b"x" * 100)
+        self.turn()
+        self.got()
+        vm.proc = FakeProcess(vm)
+        vm.changed.notify(vm)
+        self.turn()
+        got = self.got()
+        self.assertEqual(
+            [item[:3] for item in got],
+            [("Changed", "image", "frr"), ("Changed", "brick", "vm1")],
+        )
+        self.assertEqual(got[0][4], state_of(image))
+        stat = os.stat(copy)
+        self.assertEqual(
+            got[1][4]["copies"],
+            {
+                "hda": {
+                    "size": 100,
+                    "mtime": stat.st_mtime_ns,
+                    "taken": stat.st_blocks * 512,
+                }
+            },
+        )
 
     def test_an_event_that_waits(self):
         event = self.factory.new_event("boot")
@@ -625,4 +671,24 @@ class TestOrder(ConsoleTestCase):
 
     def test_the_state_of_an_image(self):
         image = self.factory.new_image("frr", "/lab/frr.qcow2")
-        self.assertEqual(state_of(image), {})
+        self.assertEqual(state_of(image), {"file": None})
+        path = os.path.abspath(self.mktemp())
+        with open(path, "wb") as fp:
+            fp.write(b"x" * 5000)
+        stat = os.stat(path)
+        self.assertEqual(
+            state_of(self.factory.new_image("pc", path)),
+            {
+                "file": {
+                    "size": 5000,
+                    "mtime": stat.st_mtime_ns,
+                    "taken": stat.st_blocks * 512,
+                }
+            },
+        )
+
+    def test_a_machine_without_a_project(self):
+        # its private copies aren't known
+        vm = self.factory.new_brick("qemu", "vm1")
+        vm.update_config({"hda_private": True})
+        self.assertEqual(state_of(vm), {"pid": None})

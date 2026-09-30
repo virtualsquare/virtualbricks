@@ -53,7 +53,6 @@ from twisted.internet import defer
 from twisted.logger import Logger
 
 from virtualbricks import errors
-from virtualbricks.config.workspace import projects
 from virtualbricks.qemu import run as qemu_run
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -212,18 +211,23 @@ def space_taken(path: str) -> int | None:
         return None
 
 
-def uses(factory: BrickFactory, image: Image) -> list[DiskUse]:
+def uses(
+    factory: BrickFactory,
+    image: Image,
+    taken: Callable[[str], int | None] = space_taken,
+) -> list[DiskUse]:
     """
     The disks that use image, machine by machine, in their order. The
-    private copies are in the open project: while none is, as while a
-    project loads, a disk's copy isn't known.
+    private copies are in the project of the machine: while none is open,
+    as while a project loads, a disk's copy isn't known. taken(path) is the
+    space a copy takes, where the machine is.
     """
 
     found = []
-    is_open = projects.current is not None
     for brick in factory.bricks:
         if brick.get_type() != "Qemu":
             continue
+        is_open = brick.project_folder() is not None
         for disk in brick.disks():
             if disk.image is not image:
                 continue
@@ -235,7 +239,7 @@ def uses(factory: BrickFactory, image: Image) -> list[DiskUse]:
                     device=disk.device,
                     private=private,
                     copy=copy,
-                    copy_size=None if copy is None else space_taken(copy),
+                    copy_size=None if copy is None else taken(copy),
                     running=brick.__isrunning__(),
                 )
             )

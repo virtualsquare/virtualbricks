@@ -80,10 +80,13 @@ def names(items: list[str]) -> str:
     )
 
 
-def state(image, uses) -> State:
-    """The state of image, which the disks of uses use."""
+def state(image, uses, there: bool) -> State:
+    """
+    The state of image, which the disks of uses use; there says whether its
+    file is on the machine of the bricks.
+    """
 
-    if not os.path.exists(image.path):
+    if not there:
         return State.MISSING
     if any(use.running for use in uses):
         return State.IN_USE
@@ -137,13 +140,13 @@ def use_words(uses) -> str:
     return SEPARATOR.join(parts)
 
 
-def summary(image, info, uses) -> str:
+def summary(image, info, uses, there: bool) -> str:
     """
     What the row of image says: its facts, once read, and who uses it; or
     that its file isn't there.
     """
 
-    if not os.path.exists(image.path):
+    if not there:
         first = _("{path} isn't there").format(path=short_path(image.path))
         return SEPARATOR.join((first, use_words(uses)))
     if info is None:
@@ -198,11 +201,11 @@ def others_words(uses, vm) -> str:
     return SEPARATOR.join(parts)
 
 
-def option_words(image, info, uses, vm) -> str:
+def option_words(image, info, uses, vm, there: bool) -> str:
     """What the picker of a disk of vm says of image, under its name."""
 
-    if not os.path.exists(image.path):
-        return _("The file isn't on this computer")
+    if not there:
+        return _("The file isn't there")
     parts = [short_facts(info)] if info is not None else []
     others = others_words(uses, vm)
     if others:
@@ -210,17 +213,18 @@ def option_words(image, info, uses, vm) -> str:
     return SEPARATOR.join(parts)
 
 
-def disk_line(vm, image, saved, private, copy, copy_size) -> str:
+def disk_line(vm, image, saved, private, copy, copy_size, there) -> str:
     """
     What a disk of the machine named vm does with image in its mode: its
     private copy, copy, which takes copy_size or isn't made yet (None), or
-    the image itself. saved is the image that the disk has now.
+    the image itself. saved is the image that the disk has now; there says
+    whether the file of image is on the machine of the bricks.
     """
 
     if image is None:
         return _("No image: {vm} starts without this disk.").format(vm=vm)
     name = image.name
-    if not os.path.exists(image.path):
+    if not there:
         return _(
             "The file of {image} isn't there: find it in the Images tab, or"
             " choose another image."

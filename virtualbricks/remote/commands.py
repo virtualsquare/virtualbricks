@@ -134,6 +134,23 @@ class UsbDevices(amp.Command):
     errors = ERRORS
 
 
+class ImageFacts(amp.Command):
+    """
+    What the file path is: ``file``, JSON ``{size, mtime, taken}``, the
+    time in nanoseconds; ``info``, what ``qemu-img info --output=json``
+    printed; ``others``, JSON ``[[project, image]]``, the images of the other
+    projects of the workspace with that file. NotFound if it isn't there.
+    """
+
+    arguments = [(b"path", amp.Unicode())]
+    response = [
+        (b"file", amp.Unicode()),
+        (b"info", amp.Unicode()),
+        (b"others", amp.Unicode()),
+    ]
+    errors = ERRORS
+
+
 class _Push(amp.Command):
     """A command that Virtualbricks calls on a program that follows it."""
 
@@ -211,6 +228,7 @@ FROM_PROGRAM = (
     QemuFacts,
     MachineProperties,
     UsbDevices,
+    ImageFacts,
 )
 PUSHES = (
     Opened,

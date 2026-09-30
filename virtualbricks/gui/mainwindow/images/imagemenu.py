@@ -28,7 +28,6 @@ the File comes first, and Show in Files can't show it.
 from __future__ import annotations
 
 import functools
-import os
 
 import gi
 
@@ -53,19 +52,18 @@ GROUP = "image"
 _item = functools.partial(menu_item, GROUP)
 
 
-def menu(image, keys=False) -> Gio.Menu:
+def menu(image, there, keys=False) -> Gio.Menu:
     """
-    The menu of image. keys shows the keys of the Images tab next to the
-    items: Enter, F2 and Delete.
+    The menu of image, whose file is there or not. keys shows the keys of
+    the Images tab next to the items: Enter, F2 and Delete.
     """
 
     def key(name):
         return name if keys else None
 
-    missing = not os.path.exists(image.path)
     return menu_of(
         menu_section(
-            _item(_("Find the File…"), "find-file") if missing else None
+            _item(_("Find the File…"), "find-file") if not there else None
         ),
         menu_section(_item(_("Details…"), "details", keys=key("Return"))),
         menu_section(
@@ -98,7 +96,7 @@ class ImageActions(Gio.SimpleActionGroup):
     def update(self) -> None:
         """The actions that the image allows now."""
 
-        there = os.path.exists(self.image.path)
+        there = self.gui.engine.machine.exists(self.image.path)
         self.lookup_action("find-file").set_enabled(not there)
         # the file manager shows the files of this machine only
         self.lookup_action("show").set_enabled(there and self.gui.engine.local)
@@ -126,6 +124,11 @@ def popup(widget, event, gui, image, keys=False) -> Gtk.Menu:
     returns while it shows.
     """
 
+    there = gui.engine.machine.exists(image.path)
     return tab.popup(
-        widget, event, menu(image, keys), GROUP, ImageActions(gui, image)
+        widget,
+        event,
+        menu(image, there, keys),
+        GROUP,
+        ImageActions(gui, image),
     )

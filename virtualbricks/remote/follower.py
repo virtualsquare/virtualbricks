@@ -38,6 +38,7 @@ first, then each new one.
 
 import collections
 import json
+import os
 import threading
 
 from twisted.logger import (
@@ -54,7 +55,10 @@ from virtualbricks import __version__, ksm
 from virtualbricks.bricks import Base, is_running
 from virtualbricks.bricks.brickinfo import NEW_KINDS, issue
 from virtualbricks.bricks.event import is_event
-from virtualbricks.bricks.virtualmachine import is_disk_image
+from virtualbricks.bricks.virtualmachine import (
+    is_disk_image,
+    is_virtualmachine,
+)
 from virtualbricks.config import settings
 from virtualbricks.config.projectfile import brick_table
 from virtualbricks.config.schema import dump_record, field_names
@@ -180,9 +184,12 @@ def machine_table(factory, workspace) -> dict:
         lacks[kind.type] = (
             None if found is None else {"line": found.line, "text": found.text}
         )
+    current = workspace.current
     return {
         "version": __version__,
         "workspace": workspace.path,
+        # where the private copies of the machines are
+        "project_folder": None if current is None else current.path,
         "runtime_dir": factory.runtime_dir,
         "missing": [str(missing) for missing in missing_programs(vde, qemu)],
         "qemu_programs": qemu_programs(qemu),
@@ -209,21 +216,46 @@ def table_of(item) -> dict:
     return brick_table(item)
 
 
+def file_facts(path: str) -> dict | None:
+    """
+    What the windows show of a file: its size, the time it changed, in
+    nanoseconds, and the space it takes; None if it isn't there.
+    """
+
+    try:
+        stat = os.stat(path)
+    except OSError:
+        return None
+    return {
+        "size": stat.st_size,
+        "mtime": stat.st_mtime_ns,
+        "taken": stat.st_blocks * 512,
+    }
+
+
 def state_of(item) -> dict:
     """
-    What the project file doesn't write: the process of a brick, the
-    seconds an event still waits.
+    What the project file doesn't write: the file of an image, the process
+    of a brick and the private copies of a machine, the seconds an event
+    still waits.
     """
 
     if is_disk_image(item):
-        return {}
+        return {"file": file_facts(item.path)}
     if is_event(item):
         call = item.scheduled
         left = None
         if call is not None and call.active():
             left = max(0.0, call.getTime() - call.seconds())
         return {"left": left}
-    return {"pid": item.pid if is_running(item) else None}
+    state = {"pid": item.pid if is_running(item) else None}
+    if is_virtualmachine(item) and item.project_folder() is not None:
+        state["copies"] = {
+            disk.device: file_facts(disk.get_cow_path())
+            for disk in item.disks()
+            if disk.is_cow()
+        }
+    return state
 
 
 def _targets(brick) -> list:
@@ -348,6 +380,11 @@ class Follower:
             self.queue.append(("renamed", kind, known, item.name))
             self.known[item] = item.name
         self.changed.setdefault(item, None)
+        if kind == BRICK and is_virtualmachine(item):
+            # a machine that runs or stops changes the files of its images
+            for disk in item.disks():
+                if disk.image is not None:
+                    self.changed.setdefault(disk.image, None)
         self._later()
 
     def on_removed(self, item) -> None:

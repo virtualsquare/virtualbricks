@@ -25,7 +25,7 @@ from virtualbricks.bricks.virtualmachine import (
     hostonly_sock,
 )
 from virtualbricks.config.settings import set_setting
-from virtualbricks.engine import LocalEngine
+from virtualbricks.engine import LocalEngine, LocalMachine
 from virtualbricks.programs import parse_machine_properties
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 from virtualbricks.tests.test_programs import load, recorded_info
@@ -251,7 +251,7 @@ class TestItsQemu(MachinePanelTestCase):
         )
 
 
-class MachineThere:
+class MachineThere(LocalMachine):
     """The machine of the bricks, when it isn't this one: its settings."""
 
     settings = {
@@ -271,7 +271,7 @@ class TestTheMachineThere(MachinePanelTestCase):
     """The panel says what the machine of the bricks has, not this one."""
 
     def prepare(self):
-        self.gui.engine.machine = MachineThere()
+        self.gui.engine.machine = MachineThere(self.manager)
         self.vm.update_config({"qemu_program": "qemu-system-aarch64"})
         self.vm.add_plug(self.switch.socks[0], "52:54:00:00:00:01", "e1000")
 

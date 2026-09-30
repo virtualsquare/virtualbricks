@@ -144,7 +144,7 @@ class TestTheList(PickerTestCase):
             [
                 "qcow2 · 4.0 GB · r2 uses it",
                 "qcow2 · 4.0 GB · gw writes into it",
-                "The file isn't on this computer",
+                "The file isn't there",
                 "",
             ],
         )

@@ -33,6 +33,7 @@ from virtualbricks.config.projectfile import project_document
 from virtualbricks.config.workspace import OpenProject
 from virtualbricks.console import ampwire, control
 from virtualbricks.remote import commands, follower, mirror
+from virtualbricks.remote.commands import BRICK, IMAGE
 from virtualbricks.remote.follower import LogKeeper, state_of
 from virtualbricks.remote.mirror import (
     MirrorFactory,
@@ -261,6 +262,74 @@ class TestTheProject(MirrorTestCase):
         self.factory.quit()
         self.pump.flush()
         self.assertEqual(self.told, ["ended"])
+
+
+class TestTheStates(MirrorTestCase):
+    """What the copy keeps of the states there: files, processes."""
+
+    def setUp(self):
+        super().setUp()
+        self.lab()
+        self.follow()
+
+    def test_what_came(self):
+        copy = self.copy
+        self.assertEqual(copy.state(IMAGE, "frr"), state_of(self.image))
+        self.assertEqual(copy.state(BRICK, "vm1"), state_of(self.vm1))
+        self.assertIn("copies", copy.state(BRICK, "vm1"))
+        self.assertEqual(copy.state(BRICK, "vm9"), {})
+
+    def test_renamed_then_removed(self):
+        state = self.copy.state(IMAGE, "frr")
+        self.factory.rename_item(self.image, "debian")
+        self.turn()
+        self.assertEqual(self.copy.state(IMAGE, "debian"), state)
+        self.assertEqual(self.copy.state(IMAGE, "frr"), {})
+        self.factory.remove_image(self.image)
+        self.turn()
+        self.assertEqual(self.copy.state(IMAGE, "debian"), {})
+
+    def test_a_project_opened(self):
+        self.factory.reset()
+        self.workspace.opened.notify(self.workspace)
+        self.turn()
+        self.assertEqual(self.copy.state(IMAGE, "frr"), {})
+        self.assertEqual(self.copy.state(BRICK, "vm1"), {})
+
+    def test_a_file_that_changed_there(self):
+        path = os.path.join(self.workspace.current.path, "pc.qcow2")
+        with open(path, "wb") as fp:
+            fp.write(b"x" * 10)
+        self.factory.new_image("pc", path)
+        self.vm1.update_config({"hdb_image": "pc"})
+        self.turn()
+        changed = []
+        self.copy.image_changed.connect(changed.append)
+        # the same state again: nothing to show
+        self.vm1.changed.notify(self.vm1)
+        self.turn()
+        self.assertEqual(changed, [])
+        # vm1 wrote into it
+        with open(path, "ab") as fp:
+            fp.write(b"y" * 10)
+        self.vm1.changed.notify(self.vm1)
+        self.turn()
+        pc = self.copy.get_image("pc")
+        self.assertEqual(changed, [pc])
+        self.assertEqual(self.copy.state(IMAGE, "pc")["file"]["size"], 20)
+
+    def test_the_private_copies_there(self):
+        vm1 = self.copy.get_brick("vm1")
+        self.assertEqual(vm1.project_folder(), self.workspace.current.path)
+        self.assertEqual(
+            vm1.disk("hda").get_cow_path(),
+            self.vm1.disk("hda").get_cow_path(),
+        )
+        # the folder there, whatever this process has open
+        self.copy.machine["project_folder"] = "/srv/labs/ospf"
+        self.assertEqual(
+            vm1.disk("hda").get_cow_path(), "/srv/labs/ospf/vm1_hda.cow"
+        )
 
 
 class TestChanges(MirrorTestCase):

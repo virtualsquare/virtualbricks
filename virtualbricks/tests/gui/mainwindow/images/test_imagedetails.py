@@ -26,6 +26,7 @@ from virtualbricks.bricks.draft import apply
 from virtualbricks.bricks.virtualmachine import ImageDraft
 from virtualbricks.config import images
 from virtualbricks.config.workspace import OpenProject
+from virtualbricks.engine import LocalMachine
 from virtualbricks.tests.config.test_images import (
     INFO,
     FakeQemuImg,
@@ -70,10 +71,12 @@ class DetailsTestCase(GuiTestCase):
         )
 
     def details(self, image=None, infos=None):
+        # this machine, with the workspace and the qemu-img of the test
+        machine = LocalMachine(self.workspace)
+        machine.infos = self.infos if infos is None else infos
         details = ImageDetails(
             ImageDraft(self.frr if image is None else image, self.factory),
-            self.infos if infos is None else infos,
-            self.workspace,
+            machine,
         )
         self.addCleanup(details.panel.destroy)
         return details
