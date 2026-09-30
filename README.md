@@ -100,33 +100,43 @@ The options are:
   read the console; with `--connect`, send them to the Virtualbricks that
   runs, and exit.
 - `--workspace FOLDER`: use the projects of another folder, made if it isn't
-  there, for this run only; see [Configuration](#configuration).
+  there, for this run only; see [Configuration](#configuration). Without
+  `--lock`, one Virtualbricks runs in each workspace, side by side. With
+  `--command`, the Virtualbricks that runs there.
 - `--lock MODE`: the single-instance mode, how many Virtualbricks can run at
   once; see below.
 - `--command WORD...`: send a command of the console to the Virtualbricks
   that runs, and print its answer; see [The console](#the-console).
 - `--socket [DESCRIPTION]`: listen on a control socket, `.control` in the
-  runtime directory, or the one of a description, as
+  runtime directory of the workspace, or the one of a description, as
   `unix:~/labs/lab1.amp:protocol=amp`, `tcp:8765` or
   `ssl:8765:privateKey=FILE`; it can be given more than once.
 - `--connect [DESCRIPTION]`: the Virtualbricks that runs that `--command`
-  and `--run` talk to, the one of `.control` or of a description, as
-  `tcp:lab.example:8765`.
+  and `--run` talk to, the one of `.control` of its workspace or of a
+  description, as `tcp:lab.example:8765`.
 - `--version`: print the version and exit.
 
 `--lock` sets the single-instance mode, one of:
 
-- `system`, the default: one Virtualbricks on the machine, whoever runs it
-  and whatever its workspace. It holds the lock `/tmp/virtualbricks.lock`
-  alone.
+- `system`, the default without `--workspace`: one Virtualbricks on the
+  machine, whoever runs it and whatever its workspace. It holds the lock
+  `/tmp/virtualbricks.lock` alone.
 - `user`: one for each user, so the users of a shared machine don't stop each
   other. It holds the lock `.lock` of the runtime directory,
   `$XDG_RUNTIME_DIR/virtualbricks/`, and shares `/tmp/virtualbricks.lock`
-  with the others in this mode: it doesn't start while one runs with
-  `system`, nor one with `system` while it runs.
+  with the others in this mode and the next: it doesn't start while one runs
+  with `system`, nor one with `system` while it runs.
+- `workspace`, the default with `--workspace`: one for each workspace, so a
+  lab of each course or client runs beside the others. It shares both locks,
+  and doesn't start beside one of yours with `user`, nor that one beside it.
 - `none`: no lock. It starts beside any other, and the others don't see it;
   two of yours share the settings, and nothing stops both from opening the
   same project.
+
+Each mode but `none` also holds `.virtualbricks.lock` in its workspace, so
+two Virtualbricks never share one, even a folder that two users share. The
+sockets of a project's bricks are in a folder of the workspace in the
+runtime directory, so two projects named alike in two workspaces are apart.
 
 The system releases the locks when Virtualbricks ends, even when it crashes,
 so none is ever left behind. When a lock refuses a start, the message names
@@ -161,15 +171,19 @@ pipe, and in an event, as its actions. With `--no-gui --noterm --run FILE`,
 Virtualbricks sets a lab up and runs it on a machine without a display.
 
 A Virtualbricks started with `--socket`, with the windows or without,
-listens on a control socket, `$XDG_RUNTIME_DIR/virtualbricks/.control`, and
-`--command` sends it a command from any terminal or script, and
-`--connect --run` the commands of a file:
+listens on the control socket of its workspace, `.control` in a folder of
+`$XDG_RUNTIME_DIR/virtualbricks/`, and `--command` sends it a command from
+any terminal or script, and `--connect --run` the commands of a file:
 
 ```
 virtualbricks --no-gui --socket
 virtualbricks --command brick start router
 virtualbricks --connect --run start-lab.vb
 ```
+
+When Virtualbricks of yours listen in several workspaces, `--workspace`
+names the one to talk to: `virtualbricks --workspace ~/labs/b --command
+status`.
 
 The answer goes to the standard output, an error to the standard error, and
 the exit status is 0 when the command was done, 1 when it failed, and 2 when

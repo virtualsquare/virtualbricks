@@ -257,16 +257,17 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 21 &middot; Design &middot; revision 2, decided</div>
+    <div class="eyebrow">Step 21 &middot; Design &middot; revision 3, implemented</div>
     <h1>Virtualbricks Workspaces Side by Side</h1>
     <p class="lede">A fourth single-instance mode, <code>--lock workspace</code>, which <code>--workspace</code> implies, lets one Virtualbricks run in each workspace at the same time, whether yours or another user&rsquo;s. Each workspace gets a lock of its own, a runtime folder of its own for the sockets of its bricks, and a control socket of its own. Two projects named <code>lab1</code> in two workspaces no longer meet, and <code>--command</code> reaches either one.</p>
     <ul class="meta">
       <li>branch <b>mg/typed-amp</b> at d713617</li>
-      <li>revision 2 &middot; 30 September 2026</li>
-      <li><span class="status">decided</span></li>
+      <li>revision 3 &middot; 30 September 2026</li>
+      <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> your request of today: implement the TODO item &ldquo;Run two Virtualbricks at once in different workspaces: a lock for each workspace, and runtime directories that tell apart two projects of the same name (13 &sect;10)&rdquo;, with its two notes: <code>--lock none</code> lets the second one start but nothing keeps them apart, and a control socket for each workspace, so that <code>--command</code> reaches either (15 &sect;11). You asked for a plan first. It builds on the single-instance mode of <a href="13%20-%20single-instance-mode.html">page 13</a>, the workspaces of <code>--workspace</code> (pages <a href="02%20-%20config-redesign.html">02</a> and <a href="04%20-%20projects-redesign.html">04</a>) and the control socket of pages <a href="15%20-%20control-socket.html">15</a> and <a href="16%20-%20amp-socket.html">16</a>. Revision 1 left six questions open, W1 to W6 in <a href="#decisions">&sect;13</a>, each with my recommendation.</p>
-    <p class="revision"><strong>What changed:</strong> revision 2 records your answers of today. W6 is B, so <code>settings.toml</code> and <code>state.toml</code> stay as they are today, and &sect;8 now says what that means when two Virtualbricks run. You added a rule, now W7: <code>--workspace</code> without <code>--lock</code> runs in the workspace mode. So two Virtualbricks started with <code>--workspace</code> run side by side with no other option (&sect;3). You didn&rsquo;t name W1 to W5, so I took them as recommended. The plan has four steps now, since the step for the settings is gone. The page is the first commit of <code>mg/side-by-side</code>.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 records your answers of today. W6 is B, so <code>settings.toml</code> and <code>state.toml</code> stay as they are today, and &sect;8 now says what that means when two Virtualbricks run. You added a rule, now W7: <code>--workspace</code> without <code>--lock</code> runs in the workspace mode. So two Virtualbricks started with <code>--workspace</code> run side by side with no other option (&sect;3). You didn&rsquo;t name W1 to W5, so I took them as recommended. The plan has four steps now, since the step for the settings is gone. The page is the first commit of <code>mg/side-by-side</code>. Revision 3 records what was implemented.</p>
+    <p class="revision"><strong>Implemented</strong> on 30 September 2026 on the branch <code>mg/side-by-side</code>, from <code>mg/typed-amp</code> at d713617: 0c67518 this page, 147d04c the runtime folders, 075426e the workspace lock, 70a61bc the control socket, and one for the documents; 2379 tests pass. The differences from the plan: a Virtualbricks stays in the workspace it started in, whose lock it holds, so <code>setting set workspace=</code> in the console, which moved it at once until now, is for the next start. <code>short_path()</code> moved from <code>gui/imageinfo.py</code> to <code>locations.py</code>, for the messages of the locks and of <code>--command</code>. <code>locks.held_alone()</code> tells, without connecting, whether a Virtualbricks holds the lock of a socket. The workspace folder is made before its lock, in each mode but <code>none</code>. A start in the workspace mode refused while the settings of 2.1 are converted, which &sect;9 doesn&rsquo;t list, reads <i>Another Virtualbricks of yours is running, and your settings of Virtualbricks 2.1 are converted only while none runs</i>. The Virtualbricks that listen are named as <i>~/labs/a (process 4300) and ~/labs/b (process 4400)</i>, and the examples of &sect;7 and &sect;9 now say so. The whole program ran with a throwaway home, runtime folder and system lock: two Virtualbricks started with <code>--workspace</code> alone and <code>--socket</code>, each with a project <code>lab1</code> whose <code>sw1</code> and <code>vm1</code> ran at once, their sockets apart; <code>--command</code> to each with <code>--workspace</code>, and without it the message of &sect;9, exit 2; a third one in <code>~/labs/a</code>, one in the system mode and one in the user mode refused as &sect;9 says; the migration&rsquo;s lock refused in <code>~/labs/a</code>; a third one with <code>--lock workspace</code> in the workspace of the settings, beside the two; <code>quit</code> to each, which removed its socket. The windows, on Broadway, had the title <i>Virtualbricks (project: lab1, workspace: ~/labs/b)</i> in <code>~/labs/b</code> and <i>Virtualbricks (project: new_project)</i> in the workspace of the settings. NFS wasn&rsquo;t tried.</p>
   </header>
 
   <div class="layout">
@@ -428,8 +429,8 @@ one in another, with --workspace. Held by process 4300 of marco.</code></pre>
         <figure class="code">
           <figcaption>two listen</figcaption>
 <pre><code><span class="prompt">$</span> virtualbricks --command status
-Virtualbricks of yours listen in 2 workspaces: ~/labs/a, process 4300,
-and ~/labs/b, process 4400. Name one with --workspace, as
+Virtualbricks of yours listen in 2 workspaces: ~/labs/a (process
+4300) and ~/labs/b (process 4400). Name one with --workspace, as
 virtualbricks --workspace ~/labs/a --command status
 <span class="prompt">$</span> virtualbricks --workspace ~/labs/a --command status
 Nothing runs</code></pre>
@@ -469,7 +470,7 @@ Nothing runs</code></pre>
         <table class="wide">
           <thead><tr><th>When</th><th><code>--command</code> says</th><th>Exit</th></tr></thead>
           <tbody>
-            <tr><td>Several listen, and neither <code>--connect</code> nor <code>--workspace</code> is given</td><td>Virtualbricks of yours listen in 2 workspaces: ~/labs/a, process 4300, and ~/labs/b, process 4400. Name one with --workspace, as virtualbricks --workspace ~/labs/a --command status</td><td>2</td></tr>
+            <tr><td>Several listen, and neither <code>--connect</code> nor <code>--workspace</code> is given</td><td>Virtualbricks of yours listen in 2 workspaces: ~/labs/a (process 4300) and ~/labs/b (process 4400). Name one with --workspace, as virtualbricks --workspace ~/labs/a --command status</td><td>2</td></tr>
             <tr><td><code>--workspace</code>: one runs there, without a socket</td><td>Your Virtualbricks in ~/labs/a, process 4300, doesn&rsquo;t listen: it was started without --socket, or its log says why</td><td>2</td></tr>
             <tr><td><code>--workspace</code>: none runs there</td><td>No Virtualbricks runs in ~/labs/a. Start one with a socket, as virtualbricks --workspace ~/labs/a --no-gui --socket</td><td>2</td></tr>
             <tr><td><code>--connect DESCRIPTION</code> with <code>--workspace</code></td><td>virtualbricks: --connect and --workspace each name a Virtualbricks: give one of them</td><td>1</td></tr>

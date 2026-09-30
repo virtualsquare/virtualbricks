@@ -16,16 +16,19 @@ virtualbricks - labs of QEMU machines and VDE networks, and their console
 
 **virtualbricks --no-gui** [*options*]
 
-**virtualbricks** [**--connect** [*description*]] **--command** [*word*...]
+**virtualbricks** [**--connect** [*description*]] [**--workspace**
+*directory*] **--command** [*word*...]
 
-**virtualbricks --connect** [*description*] **--run** *file*
+**virtualbricks --connect** [*description*] [**--workspace** *directory*]
+**--run** *file*
 
 # DESCRIPTION
 
 Virtualbricks makes and runs labs of virtual machines, run by QEMU, and of
 the VDE switches, cables, taps and tunnels between them. It opens the
 project that was open last in its workspace, a folder of projects; see
-**virtualbricks-config**(5).
+**virtualbricks-config**(5). Started with **--workspace**, one runs in each
+workspace, side by side.
 
 Started from a terminal, it reads the commands of its console there, beside
 the windows. With **--no-gui** it runs without them, and the console is the
@@ -73,22 +76,26 @@ SOCKET**.
 
 **--workspace** *directory*
 :   Use the projects of *directory* for this run, instead of the
-    **workspace** setting; it's made if it isn't there.
+    **workspace** setting; it's made if it isn't there. Without **--lock**,
+    the single-instance mode is then **workspace**. With **--command** or
+    **--connect --run**, the Virtualbricks that runs in *directory*.
 
 **--lock** *mode*
-:   The single-instance mode: **system**, the default, one Virtualbricks
-    on the machine; **user**, one for each user; **none**, no limit. See
-    **FILES**.
+:   The single-instance mode: **system**, one Virtualbricks on the
+    machine, the default without **--workspace**; **user**, one for each
+    user; **workspace**, one for each workspace, the default with
+    **--workspace**; **none**, no limit. Each mode but **none** holds the
+    lock of its workspace too, so two never share one. See **FILES**.
 
 **--command** [*word*...]
 :   Send the command of the words that follow to the Virtualbricks that
     runs, and print its answer; without words, send the lines of the
     standard input. It takes no lock, and no other option but
-    **--connect**. See **THE CONTROL SOCKET**.
+    **--connect** or **--workspace**. See **THE CONTROL SOCKET**.
 
 **--socket** [*description*]
 :   Listen on a control socket: alone, the text socket *.control* in the
-    runtime folder; with a *description*, as
+    runtime folder of the workspace; with a *description*, as
     **unix:~/labs/lab1.amp:protocol=amp** or **tcp:8765**, the socket it
     describes. It can be given more than once. The next word is the
     description when it starts with a type and a colon, as **unix:**;
@@ -96,12 +103,14 @@ SOCKET**.
 
 **--connect** [*description*]
 :   The Virtualbricks that runs that **--command** and **--run** talk
-    to: alone, the one of the text socket *.control* in the runtime
-    folder; with a *description*, the one of the socket it describes, as
+    to: alone, the one of the text socket *.control* of its workspace,
+    that of **--workspace** or the only one that listens; with a
+    *description*, the one of the socket it describes, as
     **unix:~/labs/lab1.amp:protocol=amp** or **tcp:lab.example:8765**. The
     next word is its description as for **--socket**. It goes with
-    **--command** or with **--run**, and takes no **--socket** and no
-    other option of a start. See **THE CONTROL SOCKET**.
+    **--command** or with **--run**, and takes no **--socket**, no other
+    option of a start, and no **--workspace** with a description. See
+    **THE CONTROL SOCKET**.
 
 **--version**
 :   Print the version and exit.
@@ -218,8 +227,10 @@ first error stops the file, saying where, as *lab.vb*:7.
 
 A Virtualbricks started with **--socket**, with the windows or without,
 listens on control sockets once its project is open; without it, on none.
-**--socket** alone is the text socket
-*\$XDG_RUNTIME_DIR*/virtualbricks/.control. A description, in the syntax
+**--socket** alone is the text socket of the workspace,
+*\$XDG_RUNTIME_DIR*/virtualbricks/*key*/.control, where *key* is named
+after the path of the workspace, and *.workspace* beside it links to the
+workspace. A description, in the syntax
 of Twisted's endpoints, names another: its type, **unix**, **tcp** or
 **ssl**; the path of a **unix** socket, or **address=***path*; the port of
 the others, or **port=***port*; and **protocol=text**, the default, or
@@ -235,12 +246,15 @@ virtualbricks --no-gui --socket tcp:8765
 ```
 
 **--command** sends a command, as typed in the console, to the socket of
-**--connect**, or to the text socket without it, in the protocol of its
-description:
+**--connect**, in the protocol of its description. Without it, it sends
+it to the text socket of the workspace of **--workspace**, or else of the
+only Virtualbricks of yours that listens on one; when several do, it names
+them and sends nothing:
 
 ```
 virtualbricks --command brick start sw1 vm1
 virtualbricks --command brick set vm1 memory=1024
+virtualbricks --workspace ~/labs/bgp --command status
 virtualbricks --connect unix:~/labs/lab1.sock --command status
 virtualbricks --connect tcp:8765 --command status
 virtualbricks --connect unix:~/labs/lab1.amp:protocol=amp \
@@ -276,7 +290,9 @@ Only you can connect to a **unix** socket: each is yours alone, and
 Virtualbricks doesn't listen in a runtime folder that isn't yours, or that
 others can write in. One Virtualbricks has each socket: the first to
 start, which holds the lock *path*.lock beside it; with **--lock none**,
-another one with the same **--socket** runs without that socket. A socket
+another one with the same **--socket** runs without that socket. Each
+workspace has its own text socket, so two Virtualbricks side by side
+both listen with **--socket** alone. A socket
 left by a crash is removed at the next start; nothing else at the path is.
 
 ## Sockets on the network
@@ -760,9 +776,10 @@ With **--command**, and with **--connect --run**:
     wrong, or the file of **--run** can't be read.
 
 **2**
-:   No Virtualbricks answered: none listens there, it ended before it
-    answered, it speaks another protocol, or it refused the token or the
-    certificate. The error says which.
+:   No Virtualbricks answered: none listens there, several listen and
+    none is named, it ended before it answered, it speaks another
+    protocol, or it refused the token or the certificate. The error says
+    which.
 
 **130**
 :   Ctrl+C stopped the wait.
@@ -775,9 +792,13 @@ With **--command**, and with **--connect --run**:
 */tmp/virtualbricks.lock*, *\$XDG_RUNTIME_DIR*/virtualbricks/.lock
 :   The locks of the single-instance mode, see **--lock**.
 
-*\$XDG_RUNTIME_DIR*/virtualbricks/.control, .control.lock
-:   The text socket of **--socket** alone and its lock, see **THE CONTROL
-    SOCKET**.
+*workspace*/.virtualbricks.lock
+:   The lock of a workspace, held by the Virtualbricks that runs there in
+    each mode but **none**, see **--lock**.
+
+*\$XDG_RUNTIME_DIR*/virtualbricks/*key*/.control, .control.lock
+:   The text socket of **--socket** alone of the workspace of *key* and
+    its lock, see **THE CONTROL SOCKET**.
 
 *\$XDG_CONFIG_HOME*/virtualbricks/token
 :   The token of the **tcp** and **ssl** sockets, see **THE CONTROL
@@ -836,6 +857,15 @@ virtualbricks --no-gui --noterm --run ~/labs/ospf.vb --socket \
 virtualbricks \
     --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
     --command brick start router
+```
+
+Two labs side by side, each in its workspace, both listening, and a
+command to one of them:
+
+```
+virtualbricks --no-gui --noterm --socket --workspace ~/labs/a &
+virtualbricks --no-gui --noterm --socket --workspace ~/labs/b &
+virtualbricks --workspace ~/labs/b --command status
 ```
 
 # SEE ALSO

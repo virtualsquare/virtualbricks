@@ -10,15 +10,19 @@ console
 \f[B]virtualbricks \-\-no\-gui\f[R] [\f[I]options\f[R]]
 .PP
 \f[B]virtualbricks\f[R] [\f[B]\-\-connect\f[R] [\f[I]description\f[R]]]
-\f[B]\-\-command\f[R] [\f[I]word\f[R]...]
+[\f[B]\-\-workspace\f[R] \f[I]directory\f[R]] \f[B]\-\-command\f[R]
+[\f[I]word\f[R]...]
 .PP
 \f[B]virtualbricks \-\-connect\f[R] [\f[I]description\f[R]]
-\f[B]\-\-run\f[R] \f[I]file\f[R]
+[\f[B]\-\-workspace\f[R] \f[I]directory\f[R]] \f[B]\-\-run\f[R]
+\f[I]file\f[R]
 .SH DESCRIPTION
 Virtualbricks makes and runs labs of virtual machines, run by QEMU, and
 of the VDE switches, cables, taps and tunnels between them.
 It opens the project that was open last in its workspace, a folder of
 projects; see \f[B]virtualbricks\-config\f[R](5).
+Started with \f[B]\-\-workspace\f[R], one runs in each workspace, side
+by side.
 .PP
 Started from a terminal, it reads the commands of its console there,
 beside the windows.
@@ -73,23 +77,31 @@ See \f[B]THE CONTROL SOCKET\f[R].
 \f[B]\-\-workspace\f[R] \f[I]directory\f[R]
 Use the projects of \f[I]directory\f[R] for this run, instead of the
 \f[B]workspace\f[R] setting; it\(aqs made if it isn\(aqt there.
+Without \f[B]\-\-lock\f[R], the single\-instance mode is then
+\f[B]workspace\f[R].
+With \f[B]\-\-command\f[R] or \f[B]\-\-connect \-\-run\f[R], the
+Virtualbricks that runs in \f[I]directory\f[R].
 .TP
 \f[B]\-\-lock\f[R] \f[I]mode\f[R]
-The single\-instance mode: \f[B]system\f[R], the default, one
-Virtualbricks on the machine; \f[B]user\f[R], one for each user;
-\f[B]none\f[R], no limit.
+The single\-instance mode: \f[B]system\f[R], one Virtualbricks on the
+machine, the default without \f[B]\-\-workspace\f[R]; \f[B]user\f[R],
+one for each user; \f[B]workspace\f[R], one for each workspace, the
+default with \f[B]\-\-workspace\f[R]; \f[B]none\f[R], no limit.
+Each mode but \f[B]none\f[R] holds the lock of its workspace too, so two
+never share one.
 See \f[B]FILES\f[R].
 .TP
 \f[B]\-\-command\f[R] [\f[I]word\f[R]...]
 Send the command of the words that follow to the Virtualbricks that
 runs, and print its answer; without words, send the lines of the
 standard input.
-It takes no lock, and no other option but \f[B]\-\-connect\f[R].
+It takes no lock, and no other option but \f[B]\-\-connect\f[R] or
+\f[B]\-\-workspace\f[R].
 See \f[B]THE CONTROL SOCKET\f[R].
 .TP
 \f[B]\-\-socket\f[R] [\f[I]description\f[R]]
 Listen on a control socket: alone, the text socket \f[I].control\f[R] in
-the runtime folder; with a \f[I]description\f[R], as
+the runtime folder of the workspace; with a \f[I]description\f[R], as
 \f[B]unix:\(ti/labs/lab1.amp:protocol=amp\f[R] or \f[B]tcp:8765\f[R],
 the socket it describes.
 It can be given more than once.
@@ -100,13 +112,14 @@ See \f[B]THE CONTROL SOCKET\f[R].
 \f[B]\-\-connect\f[R] [\f[I]description\f[R]]
 The Virtualbricks that runs that \f[B]\-\-command\f[R] and
 \f[B]\-\-run\f[R] talk to: alone, the one of the text socket
-\f[I].control\f[R] in the runtime folder; with a \f[I]description\f[R],
-the one of the socket it describes, as
-\f[B]unix:\(ti/labs/lab1.amp:protocol=amp\f[R] or
-\f[B]tcp:lab.example:8765\f[R].
+\f[I].control\f[R] of its workspace, that of \f[B]\-\-workspace\f[R] or
+the only one that listens; with a \f[I]description\f[R], the one of the
+socket it describes, as \f[B]unix:\(ti/labs/lab1.amp:protocol=amp\f[R]
+or \f[B]tcp:lab.example:8765\f[R].
 The next word is its description as for \f[B]\-\-socket\f[R].
 It goes with \f[B]\-\-command\f[R] or with \f[B]\-\-run\f[R], and takes
-no \f[B]\-\-socket\f[R] and no other option of a start.
+no \f[B]\-\-socket\f[R], no other option of a start, and no
+\f[B]\-\-workspace\f[R] with a description.
 See \f[B]THE CONTROL SOCKET\f[R].
 .TP
 \f[B]\-\-version\f[R]
@@ -222,8 +235,10 @@ file, saying where, as \f[I]lab.vb\f[R]:7.
 A Virtualbricks started with \f[B]\-\-socket\f[R], with the windows or
 without, listens on control sockets once its project is open; without
 it, on none.
-\f[B]\-\-socket\f[R] alone is the text socket
-\f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.control.
+\f[B]\-\-socket\f[R] alone is the text socket of the workspace,
+\f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/\f[I]key\f[R]/.control, where
+\f[I]key\f[R] is named after the path of the workspace, and
+\f[I].workspace\f[R] beside it links to the workspace.
 A description, in the syntax of Twisted\(aqs endpoints, names another:
 its type, \f[B]unix\f[R], \f[B]tcp\f[R] or \f[B]ssl\f[R]; the path of a
 \f[B]unix\f[R] socket, or \f[B]address=\f[R]\f[I]path\f[R]; the port of
@@ -242,12 +257,15 @@ virtualbricks \-\-no\-gui \-\-socket tcp:8765
 .EE
 .PP
 \f[B]\-\-command\f[R] sends a command, as typed in the console, to the
-socket of \f[B]\-\-connect\f[R], or to the text socket without it, in
-the protocol of its description:
+socket of \f[B]\-\-connect\f[R], in the protocol of its description.
+Without it, it sends it to the text socket of the workspace of
+\f[B]\-\-workspace\f[R], or else of the only Virtualbricks of yours that
+listens on one; when several do, it names them and sends nothing:
 .IP
 .EX
 virtualbricks \-\-command brick start sw1 vm1
 virtualbricks \-\-command brick set vm1 memory=1024
+virtualbricks \-\-workspace \(ti/labs/bgp \-\-command status
 virtualbricks \-\-connect unix:\(ti/labs/lab1.sock \-\-command status
 virtualbricks \-\-connect tcp:8765 \-\-command status
 virtualbricks \-\-connect unix:\(ti/labs/lab1.amp:protocol=amp \(rs
@@ -290,6 +308,8 @@ yours, or that others can write in.
 One Virtualbricks has each socket: the first to start, which holds the
 lock \f[I]path\f[R].lock beside it; with \f[B]\-\-lock none\f[R],
 another one with the same \f[B]\-\-socket\f[R] runs without that socket.
+Each workspace has its own text socket, so two Virtualbricks side by
+side both listen with \f[B]\-\-socket\f[R] alone.
 A socket left by a crash is removed at the next start; nothing else at
 the path is.
 .SS Sockets on the network
@@ -797,9 +817,9 @@ The command failed, its answer was too long for AMP, an option is wrong,
 or the file of \f[B]\-\-run\f[R] can\(aqt be read.
 .TP
 \f[B]2\f[R]
-No Virtualbricks answered: none listens there, it ended before it
-answered, it speaks another protocol, or it refused the token or the
-certificate.
+No Virtualbricks answered: none listens there, several listen and none
+is named, it ended before it answered, it speaks another protocol, or it
+refused the token or the certificate.
 The error says which.
 .TP
 \f[B]130\f[R]
@@ -812,9 +832,13 @@ The history of the console, the last 500 lines.
 \f[I]/tmp/virtualbricks.lock\f[R], \f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.lock
 The locks of the single\-instance mode, see \f[B]\-\-lock\f[R].
 .TP
-\f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.control, .control.lock
-The text socket of \f[B]\-\-socket\f[R] alone and its lock, see \f[B]THE
-CONTROL SOCKET\f[R].
+\f[I]workspace\f[R]/.virtualbricks.lock
+The lock of a workspace, held by the Virtualbricks that runs there in
+each mode but \f[B]none\f[R], see \f[B]\-\-lock\f[R].
+.TP
+\f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/\f[I]key\f[R]/.control, .control.lock
+The text socket of \f[B]\-\-socket\f[R] alone of the workspace of
+\f[I]key\f[R] and its lock, see \f[B]THE CONTROL SOCKET\f[R].
 .TP
 \f[I]$XDG_CONFIG_HOME\f[R]/virtualbricks/token
 The token of the \f[B]tcp\f[R] and \f[B]ssl\f[R] sockets, see \f[B]THE
@@ -871,6 +895,15 @@ virtualbricks \-\-no\-gui \-\-noterm \-\-run \(ti/labs/ospf.vb \-\-socket \(rs
 virtualbricks \(rs
     \-\-connect \(aqssl:lab.example:8765:caCertsDir=\(ti/vb/lab\(aq \(rs
     \-\-command brick start router
+.EE
+.PP
+Two labs side by side, each in its workspace, both listening, and a
+command to one of them:
+.IP
+.EX
+virtualbricks \-\-no\-gui \-\-noterm \-\-socket \-\-workspace \(ti/labs/a &
+virtualbricks \-\-no\-gui \-\-noterm \-\-socket \-\-workspace \(ti/labs/b &
+virtualbricks \-\-workspace \(ti/labs/b \-\-command status
 .EE
 .SH SEE ALSO
 \f[B]virtualbricks\-config\f[R](5), \f[B]virtualbricks\-archive\f[R](7),

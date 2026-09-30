@@ -5,24 +5,21 @@
 ## Config
 
 - [ ] Name the holders of the lock in the refusals of the migration
-  command and window too (13 §10)
+  command and window too, and those of the workspace lock (13 §10, 21 §14)
 - [ ] Add a `lock` setting, maybe, so a shared machine doesn't need
-  `--lock user` at every start (13 §9 L5)
+  `--lock user` at every start, nor the workspace of the settings
+  `--lock workspace` (13 §9 L5, 21 §14)
+- [ ] Follow a setting that another Virtualbricks of yours changes, without
+  a restart (21 §14)
 - [ ] Move `locations` into `config` (maybe)
 - [ ] Drop the `log_link_loops` setting, maybe: a loop always stops a
   start (10 §13)
 
 ## Projects
 
-- [ ] Run two Virtualbricks at once in different workspaces: a lock for
-  each workspace, and runtime directories that tell apart two projects
-  of the same name (13 §10)
-  - `--lock none` lets the second one start, but nothing keeps them
-    apart
-  - a control socket for each workspace too, so that `--command`
-    reaches either (15 §11)
 - [ ] Switch to another workspace from the GUI, and list the workspaces
-  used, which `state.toml` already has
+  used, which `state.toml` already has; the switch takes the lock of the
+  new workspace and releases the old one's (21 §14)
 - [ ] Open several projects at once (04 §11: D6 rules it out for now)
 - [ ] Make new projects from templates (04 §11)
 - [ ] Import an archive dropped on the Projects window (04 §3, §9)
@@ -214,6 +211,10 @@
   Virtualbricks sends to the program (16 §10)
 - [ ] Open the sockets of a setting, for a Virtualbricks started from the
   desktop's menu, which has no options (16 §10)
+- [ ] The workspace in the greeting of the control sockets and in the
+  answer of `status` (21 §14)
+- [ ] A command that lists the Virtualbricks of yours that run, with their
+  workspaces and sockets (21 §14)
 - [ ] Answers as data for the typed AMP commands: new optional keys of
   their answers, which keep protocol 2, first for `BrickList`, `BrickShow`
   and `Status` (20 §10 T3 B)
@@ -245,6 +246,13 @@
 
 # DONE
 
+- [x] Run two Virtualbricks at once in different workspaces (13 §10, 15
+  §11): `--lock workspace`, which `--workspace` implies, one for each
+  workspace; `.virtualbricks.lock` in the workspace, held in every mode
+  but `none`; a runtime folder for each workspace, named by a key of its
+  path, with its `.control`, so `--command` reaches either, by
+  `--workspace` or as the only one that listens; plan in
+  `docs/redesign/21 - workspaces-side-by-side.html`
 - [x] A typed AMP command for each command of the console, made from its
   table (16 §9 M2 B): protocol 2, beside protocol 1 on the same socket;
   `Hello` takes the protocols of the program and agrees on one for the

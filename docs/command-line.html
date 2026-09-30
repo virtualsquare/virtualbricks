@@ -206,7 +206,7 @@
   <header class="masthead">
     <div class="eyebrow">Reference &middot; virtualbricks(1)</div>
     <h1>Virtualbricks Command Line</h1>
-    <p class="lede">Virtualbricks makes and runs labs of virtual machines, run by QEMU, and of the VDE switches, cables, taps and tunnels between them. It opens the project that was open last in its workspace, a folder of projects; see <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>.</p>
+    <p class="lede">Virtualbricks makes and runs labs of virtual machines, run by QEMU, and of the VDE switches, cables, taps and tunnels between them. It opens the project that was open last in its workspace, a folder of projects; see <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>. Started with <code>--workspace</code>, one runs in each workspace, side by side.</p>
     <ul class="meta">
       <li><b>virtualbricks</b> 2.1.0</li>
       <li><b>59</b> commands</li>
@@ -294,8 +294,8 @@
 <h2>Synopsis</h2>
 <figure class="code"><pre><code>virtualbricks [options]
 virtualbricks --no-gui [options]
-virtualbricks [--connect [description]] --command [word...]
-virtualbricks --connect [description] --run file</code></pre></figure>
+virtualbricks [--connect [description]] [--workspace directory] --command [word...]
+virtualbricks --connect [description] [--workspace directory] --run file</code></pre></figure>
 </section>
 <section id="options">
 <h2>Options</h2>
@@ -308,11 +308,11 @@ virtualbricks --connect [description] --run file</code></pre></figure>
 <dt><code>--noterm</code></dt><dd><p>Don&#x27;t read the console in the terminal.</p></dd>
 <dt><code>--no-gui</code></dt><dd><p>Run without the windows: no GTK is loaded, and the console is the way in. With <code>--noterm</code> too, nothing is read: the lab runs until Virtualbricks gets <code>SIGTERM</code> or <code>SIGINT</code>.</p></dd>
 <dt><code>--run</code> <em>file</em></dt><dd><p>Run the commands of <em>file</em> once the project is open, as <code>source</code> does, then read the console. With <code>--connect</code>, send them to the Virtualbricks that runs instead, up to the first error, and exit. See <a href="#control-socket">The control socket</a>.</p></dd>
-<dt><code>--workspace</code> <em>directory</em></dt><dd><p>Use the projects of <em>directory</em> for this run, instead of the <code>workspace</code> setting; it&#x27;s made if it isn&#x27;t there.</p></dd>
-<dt><code>--lock</code> <em>mode</em></dt><dd><p>The single-instance mode: <code>system</code>, the default, one Virtualbricks on the machine; <code>user</code>, one for each user; <code>none</code>, no limit. See <a href="#files">Files</a>.</p></dd>
-<dt><code>--command</code> [<em>word</em>...]</dt><dd><p>Send the command of the words that follow to the Virtualbricks that runs, and print its answer; without words, send the lines of the standard input. It takes no lock, and no other option but <code>--connect</code>. See <a href="#control-socket">The control socket</a>.</p></dd>
-<dt><code>--socket</code> [<em>description</em>]</dt><dd><p>Listen on a control socket: alone, the text socket <em>.control</em> in the runtime folder; with a <em>description</em>, as <code>unix:~/labs/lab1.amp:protocol=amp</code> or <code>tcp:8765</code>, the socket it describes. It can be given more than once. The next word is the description when it starts with a type and a colon, as <code>unix:</code>; after <code>=</code> it is too. See <a href="#control-socket">The control socket</a>.</p></dd>
-<dt><code>--connect</code> [<em>description</em>]</dt><dd><p>The Virtualbricks that runs that <code>--command</code> and <code>--run</code> talk to: alone, the one of the text socket <em>.control</em> in the runtime folder; with a <em>description</em>, the one of the socket it describes, as <code>unix:~/labs/lab1.amp:protocol=amp</code> or <code>tcp:lab.example:8765</code>. The next word is its description as for <code>--socket</code>. It goes with <code>--command</code> or with <code>--run</code>, and takes no <code>--socket</code> and no other option of a start. See <a href="#control-socket">The control socket</a>.</p></dd>
+<dt><code>--workspace</code> <em>directory</em></dt><dd><p>Use the projects of <em>directory</em> for this run, instead of the <code>workspace</code> setting; it&#x27;s made if it isn&#x27;t there. Without <code>--lock</code>, the single-instance mode is then <code>workspace</code>. With <code>--command</code> or <code>--connect --run</code>, the Virtualbricks that runs in <em>directory</em>.</p></dd>
+<dt><code>--lock</code> <em>mode</em></dt><dd><p>The single-instance mode: <code>system</code>, one Virtualbricks on the machine, the default without <code>--workspace</code>; <code>user</code>, one for each user; <code>workspace</code>, one for each workspace, the default with <code>--workspace</code>; <code>none</code>, no limit. Each mode but <code>none</code> holds the lock of its workspace too, so two never share one. See <a href="#files">Files</a>.</p></dd>
+<dt><code>--command</code> [<em>word</em>...]</dt><dd><p>Send the command of the words that follow to the Virtualbricks that runs, and print its answer; without words, send the lines of the standard input. It takes no lock, and no other option but <code>--connect</code> or <code>--workspace</code>. See <a href="#control-socket">The control socket</a>.</p></dd>
+<dt><code>--socket</code> [<em>description</em>]</dt><dd><p>Listen on a control socket: alone, the text socket <em>.control</em> in the runtime folder of the workspace; with a <em>description</em>, as <code>unix:~/labs/lab1.amp:protocol=amp</code> or <code>tcp:8765</code>, the socket it describes. It can be given more than once. The next word is the description when it starts with a type and a colon, as <code>unix:</code>; after <code>=</code> it is too. See <a href="#control-socket">The control socket</a>.</p></dd>
+<dt><code>--connect</code> [<em>description</em>]</dt><dd><p>The Virtualbricks that runs that <code>--command</code> and <code>--run</code> talk to: alone, the one of the text socket <em>.control</em> of its workspace, that of <code>--workspace</code> or the only one that listens; with a <em>description</em>, the one of the socket it describes, as <code>unix:~/labs/lab1.amp:protocol=amp</code> or <code>tcp:lab.example:8765</code>. The next word is its description as for <code>--socket</code>. It goes with <code>--command</code> or with <code>--run</code>, and takes no <code>--socket</code>, no other option of a start, and no <code>--workspace</code> with a description. See <a href="#control-socket">The control socket</a>.</p></dd>
 <dt><code>--version</code></dt><dd><p>Print the version and exit.</p></dd>
 <dt><code>--help</code></dt><dd><p>Print the options and exit.</p></dd>
 </dl>
@@ -351,15 +351,16 @@ virtualbricks --connect [description] --run file</code></pre></figure>
 </section>
 <section id="control-socket">
 <h2>The control socket</h2>
-<p>A Virtualbricks started with <code>--socket</code>, with the windows or without, listens on control sockets once its project is open; without it, on none. <code>--socket</code> alone is the text socket <em>$XDG_RUNTIME_DIR</em>/virtualbricks/.control. A description, in the syntax of Twisted&#x27;s endpoints, names another: its type, <code>unix</code>, <code>tcp</code> or <code>ssl</code>; the path of a <code>unix</code> socket, or <code>address=</code><em>path</em>; the port of the others, or <code>port=</code><em>port</em>; and <code>protocol=text</code>, the default, or <code>protocol=amp</code>. <code>:</code> separates the parts, and a backslash makes the next character plain. The option can be given more than once:</p>
+<p>A Virtualbricks started with <code>--socket</code>, with the windows or without, listens on control sockets once its project is open; without it, on none. <code>--socket</code> alone is the text socket of the workspace, <em>$XDG_RUNTIME_DIR</em>/virtualbricks/<em>key</em>/.control, where <em>key</em> is named after the path of the workspace, and <em>.workspace</em> beside it links to the workspace. A description, in the syntax of Twisted&#x27;s endpoints, names another: its type, <code>unix</code>, <code>tcp</code> or <code>ssl</code>; the path of a <code>unix</code> socket, or <code>address=</code><em>path</em>; the port of the others, or <code>port=</code><em>port</em>; and <code>protocol=text</code>, the default, or <code>protocol=amp</code>. <code>:</code> separates the parts, and a backslash makes the next character plain. The option can be given more than once:</p>
 <figure class="code"><pre><code>virtualbricks --no-gui --socket
 virtualbricks --no-gui --socket unix:~/labs/lab1.sock
 virtualbricks --no-gui --socket \
     --socket unix:~/labs/lab1.amp:protocol=amp
 virtualbricks --no-gui --socket tcp:8765</code></pre></figure>
-<p><code>--command</code> sends a command, as typed in the console, to the socket of <code>--connect</code>, or to the text socket without it, in the protocol of its description:</p>
+<p><code>--command</code> sends a command, as typed in the console, to the socket of <code>--connect</code>, in the protocol of its description. Without it, it sends it to the text socket of the workspace of <code>--workspace</code>, or else of the only Virtualbricks of yours that listens on one; when several do, it names them and sends nothing:</p>
 <figure class="code"><pre><code>virtualbricks --command brick start sw1 vm1
 virtualbricks --command brick set vm1 memory=1024
+virtualbricks --workspace ~/labs/bgp --command status
 virtualbricks --connect unix:~/labs/lab1.sock --command status
 virtualbricks --connect tcp:8765 --command status
 virtualbricks --connect unix:~/labs/lab1.amp:protocol=amp \
@@ -369,7 +370,7 @@ virtualbricks --connect unix:~/labs/lab1.amp:protocol=amp \
 <figure class="code"><pre><code>virtualbricks --connect --run ~/labs/traffic.vb
 virtualbricks --connect tcp:lab.example:8765 --run traffic.vb</code></pre></figure>
 <p>The answer goes to the standard output. When a command fails, what it did first goes there too, and the error, <code>Error:</code> and why, to the standard error; see <a href="#exit-status">Exit status</a>. A relative path, as that of <code>source</code> <em>file</em>, is read from the folder where <code>virtualbricks</code> runs. Ctrl+C stops waiting, not the command. Virtualbricks logs each command it gets, and answers in its own language. Over AMP, what a command did before it failed doesn&#x27;t come, and an answer longer than 65535 bytes is an error; a text socket carries both.</p>
-<p>Only you can connect to a <code>unix</code> socket: each is yours alone, and Virtualbricks doesn&#x27;t listen in a runtime folder that isn&#x27;t yours, or that others can write in. One Virtualbricks has each socket: the first to start, which holds the lock <em>path</em>.lock beside it; with <code>--lock none</code>, another one with the same <code>--socket</code> runs without that socket. A socket left by a crash is removed at the next start; nothing else at the path is.</p>
+<p>Only you can connect to a <code>unix</code> socket: each is yours alone, and Virtualbricks doesn&#x27;t listen in a runtime folder that isn&#x27;t yours, or that others can write in. One Virtualbricks has each socket: the first to start, which holds the lock <em>path</em>.lock beside it; with <code>--lock none</code>, another one with the same <code>--socket</code> runs without that socket. Each workspace has its own text socket, so two Virtualbricks side by side both listen with <code>--socket</code> alone. A socket left by a crash is removed at the next start; nothing else at the path is.</p>
 <h3 id="control-socket-sockets-on-the-network">Sockets on the network</h3>
 <p>A <code>tcp</code> socket listens on this machine: on <code>127.0.0.1</code>, or on another loopback address of <code>interface=</code>, as <code>&#x27;interface=\:\:1&#x27;</code>, whose colons are escaped. Across the network, what passes on <code>tcp</code> could be read, so it is refused there. An <code>ssl</code> socket encrypts, and listens on <code>127.0.0.1</code> too, or on the address of <code>interface=</code>, as <code>0.0.0.0</code> for every IPv4 address of the machine. It needs the certificate of Virtualbricks: <code>privateKey=</code><em>file</em>, its key, and <code>certKey=</code><em>file</em>, the certificate, unless the key&#x27;s file holds it too, both in PEM; <code>extraCertChain=</code><em>file</em> holds the certificates between it and the authority that issued it. A port has no lock: the first Virtualbricks takes it, and another one runs without that socket.</p>
 <p>Whoever reaches a port can connect, and a connection can do all that the console does, the shell commands of an event&#x27;s actions included. So each client proves first that it knows the token of Virtualbricks: the line of <em>$XDG_CONFIG_HOME</em>/virtualbricks/token, which the first start with such a socket makes, or of the file of <code>tokenFile=</code>. Neither end sends it: each proves that it knows it, and a client without a proof in 10 seconds is cut off. The file must be yours, and nobody else may read it; copy it to the machines of the clients. With <code>caCertsDir=</code><em>directory</em>, an <code>ssl</code> socket asks each client for a certificate in place of the token: one that a .pem file of <em>directory</em> issued, or is. The files are read at start. The log names each client, by its address or by its certificate:</p>
@@ -592,7 +593,7 @@ task.react(lambda reactor: ensureDeferred(main(reactor)))</code></pre></figure>
 <dl class="terms">
 <dt><code>0</code></dt><dd><p>The command was done, or every command of the file.</p></dd>
 <dt><code>1</code></dt><dd><p>The command failed, its answer was too long for AMP, an option is wrong, or the file of <code>--run</code> can&#x27;t be read.</p></dd>
-<dt><code>2</code></dt><dd><p>No Virtualbricks answered: none listens there, it ended before it answered, it speaks another protocol, or it refused the token or the certificate. The error says which.</p></dd>
+<dt><code>2</code></dt><dd><p>No Virtualbricks answered: none listens there, several listen and none is named, it ended before it answered, it speaks another protocol, or it refused the token or the certificate. The error says which.</p></dd>
 <dt><code>130</code></dt><dd><p>Ctrl+C stopped the wait.</p></dd>
 </dl>
 </section>
@@ -601,7 +602,8 @@ task.react(lambda reactor: ensureDeferred(main(reactor)))</code></pre></figure>
 <dl class="terms">
 <dt><em>$XDG_STATE_HOME</em>/virtualbricks/history</dt><dd><p>The history of the console, the last 500 lines.</p></dd>
 <dt><em>/tmp/virtualbricks.lock</em>, <em>$XDG_RUNTIME_DIR</em>/virtualbricks/.lock</dt><dd><p>The locks of the single-instance mode, see <code>--lock</code>.</p></dd>
-<dt><em>$XDG_RUNTIME_DIR</em>/virtualbricks/.control, .control.lock</dt><dd><p>The text socket of <code>--socket</code> alone and its lock, see <a href="#control-socket">The control socket</a>.</p></dd>
+<dt><em>workspace</em>/.virtualbricks.lock</dt><dd><p>The lock of a workspace, held by the Virtualbricks that runs there in each mode but <code>none</code>, see <code>--lock</code>.</p></dd>
+<dt><em>$XDG_RUNTIME_DIR</em>/virtualbricks/<em>key</em>/.control, .control.lock</dt><dd><p>The text socket of <code>--socket</code> alone of the workspace of <em>key</em> and its lock, see <a href="#control-socket">The control socket</a>.</p></dd>
 <dt><em>$XDG_CONFIG_HOME</em>/virtualbricks/token</dt><dd><p>The token of the <code>tcp</code> and <code>ssl</code> sockets, see <a href="#control-socket">The control socket</a>.</p></dd>
 </dl>
 <p>The settings, the state and the projects are described in <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>.</p>
@@ -633,6 +635,10 @@ virtualbricks --connect --run ~/labs/traffic.vb</code></pre></figure>
 virtualbricks \
     --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
     --command brick start router</code></pre></figure>
+<p>Two labs side by side, each in its workspace, both listening, and a command to one of them:</p>
+<figure class="code"><pre><code>virtualbricks --no-gui --noterm --socket --workspace ~/labs/a &amp;
+virtualbricks --no-gui --noterm --socket --workspace ~/labs/b &amp;
+virtualbricks --workspace ~/labs/b --command status</code></pre></figure>
 </section>
 <section id="see-also">
 <h2>See also</h2>

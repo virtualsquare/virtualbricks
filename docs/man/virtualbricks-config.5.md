@@ -144,7 +144,8 @@ The file *\$XDG_CONFIG_HOME*/virtualbricks/settings.toml, or
 *~/.config/virtualbricks/settings.toml* when **XDG_CONFIG_HOME** is not set.
 Virtualbricks creates it with the default values at its first start, and
 rewrites it when the settings window is closed with OK and when Virtualbricks
-quits.
+quits. Two that run side by side, in two workspaces, each write all the
+settings they have: the last one to write wins.
 
 **workspace** = *path*, default `"~/.virtualbricks"`
 :   The directory of the projects, *.virtualbricks* in your home directory
@@ -152,7 +153,9 @@ quits.
     **virtualbricks --workspace** *directory* uses another directory for
     one run, made if it isn't there, and leaves this setting as it is. Each
     workspace has its images, in its *vimages* directory, and the project
-    that opens at start in it (see **STATE**).
+    that opens at start in it (see **STATE**). A Virtualbricks stays in the
+    workspace it started in, whose lock it holds: a new value is for the
+    next start.
 
 **terminal** = *string*, default `"/usr/bin/xterm"`
 :   The terminal that opens the console of a brick.
@@ -182,7 +185,8 @@ and dropped at the next save. Each project has its own.
 
 The file *\$XDG_STATE_HOME*/virtualbricks/state.toml, or
 *~/.local/state/virtualbricks/state.toml* when **XDG_STATE_HOME** is not set.
-Virtualbricks rewrites it whenever it opens a project.
+Virtualbricks rewrites it whenever it opens a project; of two that run side
+by side, the last one to write it wins.
 
 **workspaces** = *array*, default `[]`
 :   The workspaces used, the last used first: a table for each, with the
@@ -804,29 +808,43 @@ an old project is converted when it's imported.
 *workspace*/vimages/
 :   The images saved when a project is imported.
 
-*\$XDG_RUNTIME_DIR*/virtualbricks/*project*/
+*workspace*/.virtualbricks.lock
+:   The lock of the workspace: the Virtualbricks that runs there holds it
+    alone, in each single-instance mode but **none**, so two never share a
+    workspace, even a directory that two users share.
+
+*\$XDG_RUNTIME_DIR*/virtualbricks/*key*/
+:   The runtime directory of a workspace, named by a key of eight letters
+    and digits made from its path, so that two projects of the same name
+    in two workspaces are apart. *.workspace* in it links to the
+    workspace.
+
+*\$XDG_RUNTIME_DIR*/virtualbricks/*key*/*project*/
 :   The sockets and consoles of the running bricks, removed when you log out.
 
 */tmp/virtualbricks.lock*
-:   The system lock. In the single-instance mode **system**, the default,
-    Virtualbricks holds it alone: one runs on the machine, whoever runs it
-    and whatever its workspace. In the mode **user** it shares it with the
-    others in that mode, so it doesn't start while one holds it alone. The
-    mode is set by **virtualbricks --lock** *mode*.
+:   The system lock. In the single-instance mode **system**, the default
+    without **--workspace**, Virtualbricks holds it alone: one runs on the
+    machine, whoever runs it and whatever its workspace. In the modes
+    **user** and **workspace** it shares it with the others in those
+    modes, so it doesn't start while one holds it alone. The mode is set by
+    **virtualbricks --lock** *mode*.
 
 *\$XDG_RUNTIME_DIR*/virtualbricks/.lock
-:   The lock of your user, held in the single-instance mode **user**: one
-    Virtualbricks for each user. The migration of your files holds it too.
-    In the mode **none** Virtualbricks takes no lock, and the others don't
-    see it. The system releases the locks when Virtualbricks ends, even on
-    a crash.
+:   The lock of your user, held alone in the single-instance mode **user**:
+    one Virtualbricks for each user. In the mode **workspace**, the default
+    with **--workspace**, the Virtualbricks of your workspaces share it: one
+    for each workspace. The migration of your files holds it alone too. In
+    the mode **none** Virtualbricks takes no lock, and the others don't see
+    it. The system releases the locks when Virtualbricks ends, even on a
+    crash.
 
-*\$XDG_RUNTIME_DIR*/virtualbricks/.control
-:   The text socket, where a Virtualbricks started with **--socket**
-    answers **virtualbricks --command**; *.control.lock* beside it is held
-    by the one that listens. A description after **--socket** puts a
-    socket elsewhere, and with **protocol=amp** it speaks Twisted's AMP;
-    see **virtualbricks**(1).
+*\$XDG_RUNTIME_DIR*/virtualbricks/*key*/.control
+:   The text socket of a workspace, where a Virtualbricks started with
+    **--socket** answers **virtualbricks --command**; *.control.lock*
+    beside it is held by the one that listens. A description after
+    **--socket** puts a socket elsewhere, and with **protocol=amp** it
+    speaks Twisted's AMP; see **virtualbricks**(1).
 
 *\$XDG_CONFIG_HOME*/virtualbricks/token
 :   The token of the **tcp** and **ssl** control sockets: a client proves
