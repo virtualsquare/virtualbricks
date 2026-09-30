@@ -1,0 +1,739 @@
+<title>Typed AMP Commands</title>
+<meta name="description" content="Protocol 2 of the AMP socket: one typed AMP command for each command of the console, written from its table, beside protocol 1's Hello and Run on the same socket.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  .ref.open { color: var(--decide); background: var(--decide-soft); }
+
+  /* pages 14 to 19 */
+  .chip {
+    display: inline-block;
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.04em;
+    padding: 3px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    vertical-align: 1px;
+    color: var(--risk);
+    background: var(--risk-soft);
+  }
+  .prompt { color: var(--code-h); font-weight: 500; }
+  table.commands td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.commands td:last-child { color: var(--muted); font-size: 13.5px; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+  .note { font-size: 14px; color: var(--muted); }
+  /* page 20 */
+  table.mapping td { font-family: var(--font-mono); font-size: 13px; }
+  table.mapping td:first-child { white-space: nowrap; }
+  table.mapping td:last-child { color: var(--ink); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 20 &middot; Design &middot; revision 3, decided</div>
+    <h1>Virtualbricks Typed AMP Commands</h1>
+    <p class="lede">Every command of the console becomes a command of AMP. <code>BrickStart(name=["sw1", "vm1"])</code> starts two bricks, and <code>BrickSet(name="vm1", key_value=[{"key": "ram", "value": "1024"}])</code> changes one. The arguments are typed, nothing is quoted, and a brick that isn&rsquo;t there raises <code>NotFound</code>. This is protocol 2. Protocol 1, <code>Hello</code> and <code>Run</code>, stays on the same socket, unchanged. Each connection agrees on its protocol with <code>Hello</code>. When the two ends don&rsquo;t speak the same one, the program gets protocol 1 or an error it can catch, never a command read wrong.</p>
+    <ul class="meta">
+      <li>branch <b>develop</b> at bfc459b</li>
+      <li>revision 3 &middot; 30 September 2026</li>
+      <li><span class="status">decided</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your request of today: &ldquo;I want to implement a new AMP protocol where each console command is an AMP command. Propose a plan. AMP protocol version 1 and 2 should live together&rdquo;, for the IDEAS item &ldquo;A typed AMP command for each command of the console, made from its table (16 &sect;9 M2 B)&rdquo;. It builds on the AMP socket of <a href="16%20-%20amp-socket.html">page 16</a> and the tokens of <a href="17%20-%20network-sockets.html">page 17</a>, which don&rsquo;t change. The seven questions, T1 to T7 in <a href="#decisions">&sect;10</a>, are decided.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 follows your question of today, &ldquo;what if the two parts don&rsquo;t agree on a version?&rdquo; In revision 1 there were two cases where they silently didn&rsquo;t, both checked. An argument that a newer program sends and an older Virtualbricks doesn&rsquo;t know was dropped. A typed command sent without <code>Hello</code> to a Virtualbricks whose command had changed type was read wrong. Three changes close them (<a href="#versions">&sect;3</a>). <code>Hello</code> takes the list of protocols the program speaks, <code>protocols</code>, and answers the highest that both ends have. The typed commands wait for that agreement, with a new error, <code>ProtocolNeeded</code>. A typed command refuses an argument it doesn&rsquo;t declare. &sect;3 now has a table of the cases, and T1 says what the agreement is. My choice of revision 1, that the typed commands answer on any connection, is gone. Revision 3 records your answers: every question as recommended, with T3 B, answers as data, marked as a future improvement. The page is the first commit of <code>mg/typed-amp</code>.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>Today</a></li>
+        <li><a href="#versions"><span>3</span>Versions 1 and 2 together</a></li>
+        <li><a href="#commands"><span>4</span>The typed commands</a></li>
+        <li><a href="#all"><span>5</span>All 59</a></li>
+        <li><a href="#program"><span>6</span>A program</a></li>
+        <li><a href="#table"><span>7</span>Made from the table</a></li>
+        <li><a href="#code"><span>8</span>The code and the tests</a></li>
+        <li><a href="#plan"><span>9</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>10</span>Decisions</a></li>
+        <li><a href="#later"><span>11</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Commands</dt><dd>One AMP command for each of the 59 commands of the console. The name is the command&rsquo;s words, one capital each: <code>brick card add</code> is <code>BrickCardAdd</code>, <code>status</code> is <code>Status</code>. The arguments have the names the parser gives them (<a class="ref done" href="#decisions">T5</a>).</dd></div>
+          <div><dt>Types</dt><dd>A number is an <code>Integer</code>. A word that repeats, <code>NAME&hellip;</code>, is a <code>ListOf</code>. <code>KEY=VALUE&hellip;</code> is a list of <code>key</code> and <code>value</code> records (<a class="ref done" href="#decisions">T6</a>). An option such as <code>--force</code> is a <code>Boolean</code>. The rest is text.</dd></div>
+          <div><dt>Same checks</dt><dd>A typed value goes through the kinds of the command table, just like a word typed in the console: a name finds its brick, a choice is checked. The command then runs through the same function, with the same messages.</dd></div>
+          <div><dt>Answer</dt><dd>The lines the console would show, as <code>Run</code> answers them; data of its own is a future improvement (<a class="ref done" href="#decisions">T3</a>).</dd></div>
+          <div><dt>Errors</dt><dd><code>NotFound</code> and <code>BadArgument</code>, both kinds of <code>CommandFailed</code>, mean that nothing was done. <code>CommandFailed</code> itself means that the command ran and failed. <code>ProtocolNeeded</code> comes before <code>Hello</code> has agreed on 2. <code>AnswerTooLong</code> and <code>TokenNeeded</code> are as they were (<a class="ref done" href="#decisions">T4</a>).</dd></div>
+          <div><dt>Versions</dt><dd>One AMP socket speaks both. <code>Hello</code> takes an optional <code>protocols</code>, the list the program speaks, and answers the highest one both ends have; the connection then speaks it. Without the list, as <code>--command</code> and every program of page 16 call it, the answer is 1, as today. The typed commands wait for that agreement and refuse an argument they don&rsquo;t declare, so a mismatch ends in 1 or in an error, never in a command read wrong (<a class="ref done" href="#decisions">T1</a>).</dd></div>
+          <div><dt>Definitions</dt><dd><code>console/ampcommands.py</code>, written from the table by <code>ampgen.py</code> and committed. A test fails when the file and the table differ. As with <code>ampwire.py</code>, a program imports it without loading Virtualbricks, or copies it (<a class="ref done" href="#decisions">T2</a>).</dd></div>
+          <div><dt>Later changes</dt><dd>A new command or a new optional argument keeps protocol 2. Any other change to a command makes protocol 3. A record of protocol 2 in the tests catches the change that forgets to do so (<a class="ref done" href="#decisions">T7</a>).</dd></div>
+          <div><dt>Plan</dt><dd>Four steps after this page, a commit each, on a new branch <code>mg/typed-amp</code> from <code>develop</code> (<a href="#plan">&sect;9</a>).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>Today</h2>
+        <p>An AMP socket, <code>--socket &hellip;:protocol=amp</code>, answers four commands (page 16, page 17). <code>Hello</code> says who answers and gives protocol 1. <code>Run</code> takes a line of the console and answers its lines. <code>Challenge</code> and <code>Authenticate</code> prove the token on <code>tcp</code> and <code>ssl</code>. Every failure is <code>CommandFailed</code>, with the console&rsquo;s message.</p>
+        <p>A program therefore writes lines. To start the bricks a user picked, it has to quote each name as the shell would, since the parser splits lines with <code>shlex</code>. A name with a space or a <code>#</code> in it breaks a line that isn&rsquo;t quoted, or turns into a comment. To tell &ldquo;no brick named vm9&rdquo; from &ldquo;vm9 didn&rsquo;t start&rdquo;, the program has to read the message, in the language of the Virtualbricks that runs. That is what M2 B of page 16 left for later: &ldquo;about fifty commands to keep stable, and each change to the console changes the protocol&rdquo;. <a href="#table">&sect;7</a> answers that cost.</p>
+        <p>What holds it together today:</p>
+        <ul>
+          <li><strong>The table.</strong> Each command is a <code>Command</code> in <code>command.COMMANDS</code>: words, <code>Arg</code>s with a kind, <code>many</code> and <code>optional</code>, and <code>Flag</code>s. The parser reads a line with it, <code>help</code> writes it out, the terminal completes from it, and <code>test_docs</code> checks it against the manual page.</li>
+          <li><strong>The kinds read words.</strong> <code>Named</code> finds the brick, event or image, <code>Number</code> reads an integer, <code>Choice</code> checks, and <code>Pair</code> splits <code>KEY=VALUE</code>. Sixteen kinds in all, most of them in the modules of the nouns.</li>
+          <li><strong><code>--command</code> checks the protocol.</strong> <code>client.AMPConnection</code> refuses a <code>Hello</code> that answers anything but 1, with &ldquo;restart it&rdquo;. A Virtualbricks that answered 2 to everyone would lock out every <code>--command</code> of 2.1.</li>
+          <li><strong>Page 19</strong>, a proposal, has the remote windows send console lines through <code>Run</code> where a command exists, and keeps <code>Hello</code> at 1 (19 R4, &sect;7). With this page they can call the typed commands instead.</li>
+        </ul>
+      </section>
+
+      <section id="versions">
+        <h2><span class="num">&sect;3</span>Versions 1 and 2 together</h2>
+        <p>Protocol 1 is <code>Hello</code>, <code>Run</code>, <code>Challenge</code> and <code>Authenticate</code>, as page 16 and page 17 wrote them. Protocol 2 is all of that plus the 59 typed commands. Every AMP socket speaks both. A Virtualbricks always speaks 1, plus its newest typed protocol. Under <a class="ref done" href="#decisions">T7</a> A a typed protocol replaces the one before it rather than adding to it, so a program of 3 doesn&rsquo;t necessarily speak 2, nor a Virtualbricks of 3.</p>
+        <figure class="code">
+          <figcaption>virtualbricks/console/ampwire.py, what changes</figcaption>
+<pre><code><span class="c"># The protocols this Virtualbricks speaks: 1, and its typed commands.</span>
+PROTOCOLS = (1, 2)
+
+class Hello(amp.Command):
+    <span class="c">"""Who answers, and the protocol the connection speaks from now on."""</span>
+
+    <span class="h">arguments = [(b"protocols", amp.ListOf(amp.Integer(), optional=True))]</span>
+    response = [
+        (b"protocol", amp.Integer()),
+        (b"version", amp.Unicode()),
+        (b"pid", amp.Integer()),
+        (b"project", amp.Unicode(optional=True)),
+    ]
+    errors = {TokenNeeded: b"TOKEN_NEEDED"}</code></pre>
+        </figure>
+        <h3>The agreement</h3>
+        <ul>
+          <li><strong>The answer.</strong> <code>protocols</code> lists the protocols the program speaks. <code>Hello</code> answers, in <code>protocol</code>, the highest number that is both in that list and in <code>PROTOCOLS</code>. 1 counts as common even when the program leaves it out. So without the list, or with no number in common, the answer is 1.</li>
+          <li><strong>Binding.</strong> The connection speaks what <code>Hello</code> answered, until the next <code>Hello</code>. The typed commands of 2 answer only on a connection that agreed on 2. Before that they fail with <code>ProtocolNeeded</code>, &ldquo;The typed commands need protocol 2: call Hello with protocols [2] first&rdquo;, and nothing is done. <code>Run</code> answers on any connection. On <code>tcp</code> and <code>ssl</code> the proof of the token still comes first: <code>Challenge</code>, <code>Authenticate</code>, <code>Hello</code>, then the commands.</li>
+          <li><strong>Strict arguments.</strong> Before it runs, a typed command refuses with <code>BadArgument</code> any key it doesn&rsquo;t declare, such as &ldquo;ProjectDelete has no argument force&rdquo;. It also refuses a key it needs that is missing. Left to itself, AMP ignores the first and closes the connection on the second. The types are the agreement&rsquo;s job, since AMP can&rsquo;t check them: a text read as a <code>ListOf</code> comes out as an empty list.</li>
+          <li><strong>Nothing of 1 changes.</strong> <code>Run</code>, its errors, the order, the token and the 64 KiB limit stay as they are. A program that copied <code>ampwire.py</code> from the manual page never sends <code>protocols</code> and still gets 1. <code>--command</code> goes on sending lines through <code>Run</code>, and its check for 1 stays.</li>
+          <li><strong>The text socket</strong> keeps its own protocol 1, in its greeting. This page doesn&rsquo;t touch it.</li>
+        </ul>
+        <h3>When the two ends don&rsquo;t agree</h3>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>The program speaks</th><th>The Virtualbricks speaks</th><th>What happens</th></tr></thead>
+          <tbody>
+            <tr><td>1: <code>Hello()</code> with no list, as <code>--command</code> and the programs of page 16 call it</td><td>any</td><td>1, and <code>Run</code>, as today.</td></tr>
+            <tr><td>2</td><td>1 only: 2.1, today</td><td><code>Hello</code> answers 1, since it ignores the list. The program uses <code>Run</code>, or stops. A typed command gets AMP&rsquo;s <code>UnhandledCommand</code>.</td></tr>
+            <tr><td>2</td><td>1 and 2</td><td>2.</td></tr>
+            <tr><td>2</td><td>1 and 3: 2 replaced (T7 A)</td><td>1. The program&rsquo;s typed commands get <code>ProtocolNeeded</code>, since in 3 the same name may take other arguments.</td></tr>
+            <tr><td>3</td><td>1 and 2</td><td>1, unless the program speaks 2 as well: <code>protocols=[3, 2]</code> gets 2.</td></tr>
+            <tr><td>2, a later build that added an optional argument or a command</td><td>2, an earlier build</td><td>2. The new argument gets <code>BadArgument</code>, &ldquo;ProjectDelete has no argument force&rdquo;. A new command gets <code>UnhandledCommand</code>, and a new word of a choice gets the choice&rsquo;s own <code>BadArgument</code>. Nothing is dropped without a word.</td></tr>
+            <tr><td>2, an earlier build</td><td>2, a later build</td><td>2. The program never sends what is new, and ignores the keys of an answer it doesn&rsquo;t know.</td></tr>
+            <tr><td>typed commands, no <code>Hello</code></td><td>any</td><td><code>ProtocolNeeded</code> on the first typed command.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>So a mismatch ends in a protocol that both ends speak, if only 1, or in an error that the program can catch. It never ends in a command that runs on arguments the program didn&rsquo;t send.</p>
+        <p class="note">Checked on Twisted 26.4 and 22.1, with the definitions of two builds side by side. A <code>Hello</code> with no arguments ignores the list and answers 1. Without the strict check, an argument that the Virtualbricks doesn&rsquo;t declare is dropped and the command runs, and <code>BrickStart(name="sw1")</code> sent to a command that takes a <code>ListOf</code> runs with <code>name=[]</code>. A <code>locateResponder()</code> that refuses such keys with <code>RemoteAmpError(b"BAD_ARGUMENT", &hellip;)</code> reaches the program as its own <code>BadArgument</code>, and the connection stays open.</p>
+      </section>
+
+      <section id="commands">
+        <h2><span class="num">&sect;4</span>The typed commands</h2>
+        <h3>Names</h3>
+        <p>The name is the command&rsquo;s words, each starting with a capital: <code>brick start</code> is <code>BrickStart</code>, <code>event action add</code> is <code>EventActionAdd</code>, <code>help</code> is <code>Help</code>. The 59 names are all different, and none is <code>Hello</code>, <code>Run</code>, <code>Challenge</code> or <code>Authenticate</code>. A test keeps it that way.</p>
+        <h3>Arguments</h3>
+        <p>Each argument has the name the parser passes to the command&rsquo;s function, <code>command.keyword()</code>: <code>NAME</code> is <code>name</code>, <code>KEY=VALUE</code> is <code>key_value</code>, <code>KIND|NAME</code> is <code>kind_name</code> (<a class="ref done" href="#decisions">T5</a>). Its type follows from the kind, from <code>many</code> and from <code>optional</code>:</p>
+        <div class="scroll">
+        <table class="commands wide">
+          <thead><tr><th>In the table</th><th>In AMP</th></tr></thead>
+          <tbody>
+            <tr><td>Arg of Number</td><td><code>amp.Integer()</code></td></tr>
+            <tr><td>Arg of Pair or KeyValues, many</td><td><code>amp.AmpList([(b"key", amp.Unicode()), (b"value", amp.Unicode())])</code>. The value is text, read as the console reads it, since which keys a brick has, and their kinds, depend on the brick (<a class="ref done" href="#decisions">T6</a>).</td></tr>
+            <tr><td>Arg of any other kind</td><td><code>amp.Unicode()</code>: a name, a choice, a key, a path, a word of <code>OPTIONS</code></td></tr>
+            <tr><td>many</td><td><code>amp.ListOf(&hellip;)</code> of the above</td></tr>
+            <tr><td>optional</td><td><code>optional=True</code>; left out, it is <code>None</code>, or an empty list when many</td></tr>
+            <tr><td>Flag, no value</td><td><code>amp.Boolean(optional=True)</code>; left out, false</td></tr>
+            <tr><td>Flag with a value</td><td>the type of its value, optional</td></tr>
+            <tr><td>every command</td><td><code>cwd</code>, <code>amp.Unicode(optional=True)</code>, as on <code>Run</code></td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p><code>cwd</code> goes on every command, not only on <code>source</code> and <code>image add</code>, the two that read paths today. A command that learns to read a path later then needs no change to the protocol. It is checked with <code>wire.check_cwd()</code>, as on <code>Run</code>.</p>
+        <h3>Reading</h3>
+        <p>The typed values go through the same reading as the words of a line. The parser splits into two parts. <code>parse()</code> splits the line and finds the command. A new <code>bind()</code> reads the values of each argument with its kind and checks what is missing, what is too much and what is empty. <code>Run</code> goes through both, a typed command only through <code>bind()</code>. So <code>BrickStart(name=["vm9"])</code> fails with &ldquo;No brick named vm9&rdquo;, and <code>BrickStart(name=[])</code> with &ldquo;brick start NAME&hellip;: NAME is missing&rdquo;, the console&rsquo;s own messages.</p>
+        <p>A kind reads a word. A typed value that isn&rsquo;t a word, a number or a <code>key</code>/<code>value</code> record, goes through a new <code>take()</code> on the kind. Its default is <code>read()</code>. <code>Number</code> takes the integer as it comes, and <code>Pair</code> takes the record and refuses an empty key, as it does for <code>=VALUE</code>.</p>
+        <h3>Answer</h3>
+        <p><code>{"lines": [&hellip;]}</code>, the lines the console shows, as <code>Run</code> answers them. The same <code>AnswerTooLong</code> applies past 65&thinsp;535 bytes (<a class="ref done" href="#decisions">T3</a>).</p>
+        <h3>Errors</h3>
+        <div class="scroll">
+        <table class="commands wide">
+          <thead><tr><th>Error</th><th>When</th></tr></thead>
+          <tbody>
+            <tr><td>NotFound <span class="c">NOT_FOUND</span></td><td>An argument names a brick, event, image or project that isn&rsquo;t there: the &ldquo;No &hellip; named &hellip;&rdquo; of <code>Named</code>, <code>Target</code> and <code>ProjectName</code>. Nothing was done.</td></tr>
+            <tr><td>BadArgument <span class="c">BAD_ARGUMENT</span></td><td>Any other refusal before the command runs: an argument the command doesn&rsquo;t declare, or one it needs that is missing (&sect;3); not a virtual machine, not a card, no such kind or setting, not one of the choices, a missing name, an empty key, a <code>cwd</code> that isn&rsquo;t absolute. Nothing was done.</td></tr>
+            <tr><td>ProtocolNeeded <span class="c">PROTOCOL_NEEDED</span></td><td>A typed command on a connection that hasn&rsquo;t agreed on 2 with <code>Hello</code> (&sect;3). Nothing was done.</td></tr>
+            <tr><td>CommandFailed <span class="c">COMMAND_FAILED</span></td><td>The command ran and failed, as on <code>Run</code>. What it did first is dropped (16 M3 A).</td></tr>
+            <tr><td>AnswerTooLong, TokenNeeded</td><td>As on <code>Run</code>.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p><code>NotFound</code> and <code>BadArgument</code> are subclasses of <code>CommandFailed</code>, so <code>except CommandFailed</code> catches all three. <code>ProtocolNeeded</code> isn&rsquo;t one, just as <code>TokenNeeded</code> isn&rsquo;t: it says what the connection has to do first. In each command&rsquo;s <code>errors</code> they come before <code>CommandFailed</code>, since Twisted sends the code of the first class that matches. The console and the text socket don&rsquo;t change: there, <code>NotFound</code> is a <code>CommandError</code> like any other.</p>
+        <p class="note">Checked on Twisted 26.4 and 22.1: a program whose command doesn&rsquo;t declare <code>NOT_FOUND</code> gets <code>UnknownRemoteError</code>, not <code>CommandFailed</code>. So a new error can&rsquo;t be added to a command of protocol 2 later without breaking its programs. The three new errors come now or with protocol 3 (<a class="ref done" href="#decisions">T4</a>, <a class="ref done" href="#decisions">T7</a>).</p>
+        <h3>Order and the log</h3>
+        <p>Typed commands and <code>Run</code> share the queue of the connection: one after the other, in the order sent (16 M4 A). On <code>tcp</code> and <code>ssl</code> they wait for the proof of the token, as <code>Run</code> does, and on every socket for the agreement of <code>Hello</code>. The log shows the line the command would be in the console, <code>brick set vm1 ram=1024</code>, with the words quoted where needed, so that a typed command and <code>Run</code> read the same in the Messages window.</p>
+        <figure class="code">
+          <figcaption>virtualbricks/console/ampcommands.py, as ampgen.py writes it (part)</figcaption>
+<pre><code><span class="c"># Written by virtualbricks/console/ampgen.py from the table of the console:
+# don't change it by hand.</span>
+
+class NotFound(CommandFailed):
+    <span class="c">"""A name of the command names nothing of the project."""</span>
+
+class BadArgument(CommandFailed):
+    <span class="c">"""An argument of the command isn't one it takes."""</span>
+
+class ProtocolNeeded(Exception):
+    <span class="c">"""The connection hasn't agreed on this protocol with Hello."""</span>
+
+ERRORS = {
+    NotFound: b"NOT_FOUND",
+    BadArgument: b"BAD_ARGUMENT",
+    ProtocolNeeded: b"PROTOCOL_NEEDED",
+    CommandFailed: b"COMMAND_FAILED",
+    AnswerTooLong: b"ANSWER_TOO_LONG",
+    TokenNeeded: b"TOKEN_NEEDED",
+}
+LINES = [(b"lines", amp.ListOf(amp.Unicode()))]
+PAIRS = amp.AmpList([(b"key", amp.Unicode()), (b"value", amp.Unicode())])
+CWD = (b"cwd", amp.Unicode(optional=True))
+
+class BrickSet(amp.Command):
+    <span class="c">"""brick set NAME KEY=VALUE&hellip;: Change keys of a brick, all or none."""</span>
+
+    arguments = [(b"name", amp.Unicode()), (b"key_value", PAIRS), CWD]
+    response = LINES
+    errors = ERRORS
+
+class EventActionAdd(amp.Command):
+    <span class="c">"""event action add NAME WHAT [SUBJECT] [--at N]: &hellip;"""</span>
+
+    arguments = [
+        (b"name", amp.Unicode()),
+        (b"what", amp.Unicode()),  <span class="c"># start, stop, console or shell</span>
+        (b"subject", amp.Unicode(optional=True)),
+        (b"at", amp.Integer(optional=True)),
+        CWD,
+    ]
+    response = LINES
+    errors = ERRORS</code></pre>
+        </figure>
+        <p>Each class has the usage and the help of the table as its docstring, and each choice lists its words in a comment. The commands don&rsquo;t share a base class, since Twisted would put the <code>errors</code> of the base first and <code>CommandFailed</code> would then match before <code>NotFound</code>.</p>
+      </section>
+
+      <section id="all">
+        <h2><span class="num">&sect;5</span>All 59</h2>
+        <p>As <code>ampgen.py</code> would write them from the table at bfc459b. <code>str</code> is <code>Unicode</code>, <code>int</code> is <code>Integer</code>, <code>[&hellip;]</code> is <code>ListOf</code>, <code>pairs</code> is the list of <code>key</code>/<code>value</code> records, <code>?</code> is optional. Every command also takes <code>cwd: str?</code>.</p>
+        <div class="scroll">
+        <table class="commands mapping wide">
+          <thead><tr><th>Console</th><th>AMP</th></tr></thead>
+          <tbody>
+            <tr><td>brick types</td><td>BrickTypes()</td></tr>
+            <tr><td>brick list</td><td>BrickList()</td></tr>
+            <tr><td>brick new KIND [NAME]</td><td>BrickNew(kind: str, name: str?)</td></tr>
+            <tr><td>brick show NAME</td><td>BrickShow(name: str)</td></tr>
+            <tr><td>brick keys KIND|NAME [KEY]</td><td>BrickKeys(kind_name: str, key: str?)</td></tr>
+            <tr><td>brick set NAME KEY=VALUE&hellip;</td><td>BrickSet(name: str, key_value: pairs)</td></tr>
+            <tr><td>brick unset NAME KEY&hellip;</td><td>BrickUnset(name: str, key: [str])</td></tr>
+            <tr><td>brick start NAME&hellip;</td><td>BrickStart(name: [str])</td></tr>
+            <tr><td>brick stop NAME&hellip;</td><td>BrickStop(name: [str])</td></tr>
+            <tr><td>brick kill NAME&hellip;</td><td>BrickKill(name: [str])</td></tr>
+            <tr><td>brick restart NAME&hellip;</td><td>BrickRestart(name: [str])</td></tr>
+            <tr><td>brick pause NAME&hellip;</td><td>BrickPause(name: [str])</td></tr>
+            <tr><td>brick continue NAME&hellip;</td><td>BrickContinue(name: [str])</td></tr>
+            <tr><td>brick suspend VM</td><td>BrickSuspend(vm: str)</td></tr>
+            <tr><td>brick resume VM</td><td>BrickResume(vm: str)</td></tr>
+            <tr><td>brick reset VM</td><td>BrickReset(vm: str)</td></tr>
+            <tr><td>brick monitor NAME</td><td>BrickMonitor(name: str)</td></tr>
+            <tr><td>brick connect NAME TARGET&hellip;</td><td>BrickConnect(name: str, target: [str])</td></tr>
+            <tr><td>brick disconnect NAME [END]</td><td>BrickDisconnect(name: str, end: str?)</td></tr>
+            <tr><td>brick card add VM KIND [OPTIONS&hellip;]</td><td>BrickCardAdd(vm: str, kind: str, options: [str]?)</td></tr>
+            <tr><td>brick card set VM CARD KEY=VALUE&hellip;</td><td>BrickCardSet(vm: str, card: str, key_value: pairs)</td></tr>
+            <tr><td>brick card remove VM CARD&hellip;</td><td>BrickCardRemove(vm: str, card: [str])</td></tr>
+            <tr><td>brick rename NAME NEW</td><td>BrickRename(name: str, new: str)</td></tr>
+            <tr><td>brick duplicate NAME [NEW]</td><td>BrickDuplicate(name: str, new: str?)</td></tr>
+            <tr><td>brick delete NAME&hellip;</td><td>BrickDelete(name: [str])</td></tr>
+            <tr><td>event list</td><td>EventList()</td></tr>
+            <tr><td>event new [NAME]</td><td>EventNew(name: str?)</td></tr>
+            <tr><td>event show NAME</td><td>EventShow(name: str)</td></tr>
+            <tr><td>event set NAME KEY=VALUE&hellip;</td><td>EventSet(name: str, key_value: pairs)</td></tr>
+            <tr><td>event action add NAME WHAT [SUBJECT] [--at N]</td><td>EventActionAdd(name: str, what: str, subject: str?, at: int?)</td></tr>
+            <tr><td>event action remove NAME N&hellip;</td><td>EventActionRemove(name: str, n: [int])</td></tr>
+            <tr><td>event action move NAME N TO</td><td>EventActionMove(name: str, n: int, to: int)</td></tr>
+            <tr><td>event start NAME&hellip;</td><td>EventStart(name: [str])</td></tr>
+            <tr><td>event stop NAME&hellip;</td><td>EventStop(name: [str])</td></tr>
+            <tr><td>event run NAME&hellip;</td><td>EventRun(name: [str])</td></tr>
+            <tr><td>event rename NAME NEW</td><td>EventRename(name: str, new: str)</td></tr>
+            <tr><td>event duplicate NAME [NEW]</td><td>EventDuplicate(name: str, new: str?)</td></tr>
+            <tr><td>event delete NAME&hellip;</td><td>EventDelete(name: [str])</td></tr>
+            <tr><td>project list</td><td>ProjectList()</td></tr>
+            <tr><td>project show</td><td>ProjectShow()</td></tr>
+            <tr><td>project open NAME</td><td>ProjectOpen(name: str)</td></tr>
+            <tr><td>project new NAME</td><td>ProjectNew(name: str)</td></tr>
+            <tr><td>project save</td><td>ProjectSave()</td></tr>
+            <tr><td>project rename NAME NEW</td><td>ProjectRename(name: str, new: str)</td></tr>
+            <tr><td>project duplicate NAME NEW</td><td>ProjectDuplicate(name: str, new: str)</td></tr>
+            <tr><td>project delete NAME [--force]</td><td>ProjectDelete(name: str, force: bool?)</td></tr>
+            <tr><td>help [TOPIC&hellip;]</td><td>Help(topic: [str]?)</td></tr>
+            <tr><td>status</td><td>Status()</td></tr>
+            <tr><td>quit</td><td>Quit()</td></tr>
+            <tr><td>source FILE</td><td>Source(file: str)</td></tr>
+            <tr><td>image list</td><td>ImageList()</td></tr>
+            <tr><td>image add NAME PATH [KEY=VALUE&hellip;]</td><td>ImageAdd(name: str, path: str, key_value: pairs?)</td></tr>
+            <tr><td>image show NAME</td><td>ImageShow(name: str)</td></tr>
+            <tr><td>image set NAME KEY=VALUE&hellip;</td><td>ImageSet(name: str, key_value: pairs)</td></tr>
+            <tr><td>image rename NAME NEW</td><td>ImageRename(name: str, new: str)</td></tr>
+            <tr><td>image delete NAME</td><td>ImageDelete(name: str)</td></tr>
+            <tr><td>setting show [KEY]</td><td>SettingShow(key: str?)</td></tr>
+            <tr><td>setting set KEY=VALUE&hellip;</td><td>SettingSet(key_value: pairs)</td></tr>
+            <tr><td>setting unset KEY&hellip;</td><td>SettingUnset(key: [str])</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>All of them, <code>help</code>, <code>quit</code> and <code>brick monitor</code> included: each already works through <code>Run</code>, and you asked for each command. <code>Help</code> answers text meant for people, and <code>Quit</code> ends the Virtualbricks, as <code>Run("quit")</code> does today.</p>
+      </section>
+
+      <section id="program">
+        <h2><span class="num">&sect;6</span>A program</h2>
+        <p>For a Virtualbricks started with <code>--socket unix:~/labs/lab1.amp:protocol=amp</code>:</p>
+        <figure class="code">
+          <figcaption>make-lab.py</figcaption>
+<pre><code>import os
+
+from twisted.internet import endpoints, task
+from twisted.internet.defer import ensureDeferred
+from twisted.protocols import amp
+
+from virtualbricks.console.ampcommands import (
+    BrickConnect, BrickNew, BrickSet, BrickStart, NotFound,
+)
+from virtualbricks.console.ampwire import CommandFailed, Hello, Run
+
+SOCKET = os.path.expanduser("~/labs/lab1.amp")
+NAMES = ["sw 1", "vm 1"]  <span class="c"># spaces are fine: nothing is split</span>
+
+async def main(reactor):
+    endpoint = endpoints.UNIXClientEndpoint(reactor, SOCKET)
+    vb = await endpoints.connectProtocol(endpoint, amp.AMP())
+    if (await vb.callRemote(Hello, protocols=[2]))["protocol"] != 2:
+        raise SystemExit("This Virtualbricks knows only Run")
+    try:
+        await vb.callRemote(BrickSet, name="vm 1", key_value=[
+            {"key": "ram", "value": "1024"},
+        ])
+    except NotFound:
+        await vb.callRemote(BrickNew, kind="vm", name="vm 1")
+        await vb.callRemote(BrickConnect, name="vm 1", target=["sw 1"])
+    try:
+        answer = await vb.callRemote(BrickStart, name=NAMES)
+    except CommandFailed as exc:
+        print("Error:", exc)
+    else:
+        print("\n".join(answer["lines"]))
+    vb.transport.loseConnection()
+
+task.react(lambda reactor: ensureDeferred(main(reactor)))</code></pre>
+        </figure>
+        <ul>
+          <li>Where Virtualbricks isn&rsquo;t installed, the program copies <code>ampwire.py</code> and <code>ampcommands.py</code>, or only the classes it uses together with <code>ERRORS</code>.</li>
+          <li><code>Hello</code> comes first on every connection, since the typed commands wait for it. On <code>tcp</code> and <code>ssl</code>, <code>await authenticate(vb, token)</code> comes before it, as today.</li>
+          <li>With <code>cwd=os.getcwd()</code>, <code>Source(file="lab.vb")</code> reads the program&rsquo;s own <code>lab.vb</code>.</li>
+        </ul>
+      </section>
+
+      <section id="table">
+        <h2><span class="num">&sect;7</span>Made from the table</h2>
+        <h3>The file and its check</h3>
+        <ul>
+          <li><code>console/ampgen.py</code> has <code>source()</code>, the text of <code>ampcommands.py</code> made from <code>COMMANDS</code>, and a <code>main()</code>. <code>python -m virtualbricks.console.ampgen</code> writes the file again.</li>
+          <li><code>console/ampcommands.py</code> is committed and shipped. Like <code>ampwire.py</code>, it imports only Twisted&rsquo;s <code>amp</code> and <code>ampwire</code>, so a program loads nothing else of Virtualbricks (<a class="ref done" href="#decisions">T2</a>).</li>
+          <li><code>test_ampgen</code> fails when the file differs from <code>source()</code>, and its message gives the command that writes it. A change to the table therefore shows up in the diff as a change to the protocol, in the same commit. It is the same idea as <code>test_docs</code> for the manual page.</li>
+          <li><code>ampgen</code> refuses a kind it can&rsquo;t map, such as a <code>Pair</code> that isn&rsquo;t <code>many</code>, which no command has today, so that a new shape is a decision and not an accident.</li>
+        </ul>
+        <h3>When the console changes</h3>
+        <p>This is the cost M2 B named. The rule (<a class="ref done" href="#decisions">T7</a>):</p>
+        <ul>
+          <li><strong>Additive, protocol 2 stays:</strong> a new command; a new optional argument or option; a new word in a choice; a new optional key in the answer. A program of 2 never sends the new things, and ignores keys it doesn&rsquo;t know. The other way round, a program built on a later 2 that sends something an earlier Virtualbricks doesn&rsquo;t know gets <code>BadArgument</code> or <code>UnhandledCommand</code> (&sect;3).</li>
+          <li><strong>Anything else makes 3:</strong> a command removed or renamed; an argument removed, renamed, of another type, or no longer optional; a new error. <code>PROTOCOLS</code> becomes <code>(1, 3)</code>. A program that lists only 2 gets 1, and its typed commands get <code>ProtocolNeeded</code>. It falls back to <code>Run</code>, which never changes.</li>
+          <li><strong>The record.</strong> <code>tests/data/amp-protocol-2.txt</code> has one line for each command of protocol 2, its arguments with their types, and its errors. <code>test_ampgen</code> compares the table with it and fails on any change that isn&rsquo;t additive while <code>PROTOCOLS</code> still has 2. The message says: raise the protocol, and write <code>amp-protocol-3.txt</code>.</li>
+        </ul>
+        <figure class="code">
+          <figcaption>tests/data/amp-protocol-2.txt (part)</figcaption>
+<pre><code>BrickSet name:str key_value:pairs cwd:str? ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
+BrickStart name:[str] cwd:str? ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
+EventActionAdd name:str what:str subject:str? at:int? cwd:str? ! &hellip;</code></pre>
+        </figure>
+      </section>
+
+      <section id="code">
+        <h2><span class="num">&sect;8</span>The code and the tests</h2>
+        <h3>What changes</h3>
+        <ul>
+          <li><code>console/command.py</code>: <code>ArgKind.take()</code>, with <code>read()</code> as its default, plus <code>Number.take()</code> and <code>Pair.take()</code>; <code>NotFound(CommandError)</code>, raised by <code>Named.read()</code>.</li>
+          <li><code>console/bricks.py</code>, <code>projects.py</code>: <code>Target</code> and <code>ProjectName</code> raise <code>NotFound</code> for &ldquo;No &hellip; named &hellip;&rdquo;.</li>
+          <li><code>console/parser.py</code>: <code>bind(context, command, given)</code>, which <code>parse()</code> now calls, and <code>line_of(command, values)</code>, the line for the log.</li>
+          <li><code>console/dispatch.py</code>: <code>run_command(factory, command, given, reactor, cwd)</code> beside <code>run()</code>, which shares the rest of it: the call, the answer as a list, <code>_reason()</code>.</li>
+          <li><code>console/ampwire.py</code>: <code>PROTOCOLS</code> in place of <code>PROTOCOL</code>, <code>Hello</code>&rsquo;s <code>protocols</code>, the docstring.</li>
+          <li><code>console/ampgen.py</code>, <code>console/ampcommands.py</code>: new.</li>
+          <li><code>console/control.py</code>: <code>AMPControl</code> gets one responder for each typed command, registered in a loop with <code>Command.responder</code> (checked on Twisted 26.4 and 22.1). Each one checks the proof, the agreement and <code>cwd</code>, logs the line, queues the call in <code>self.requests</code>, and maps the errors: <code>NotFound</code> to <code>NOT_FOUND</code>, any other error of <code>bind()</code> to <code>BAD_ARGUMENT</code>, the rest as <code>Run</code> does. <code>hello()</code> answers the highest protocol in both lists and keeps it as the connection&rsquo;s. For a typed command, <code>locateResponder()</code> refuses a key of the box that the command doesn&rsquo;t declare, and one it needs that is missing, before AMP reads the box.</li>
+          <li>Not changed: <code>client.py</code> and <code>ampbox.py</code>. <code>--command</code> sends lines through <code>Run</code> and asks for no protocol.</li>
+        </ul>
+        <h3>Tests</h3>
+        <ul>
+          <li><strong>Reading:</strong> <code>bind()</code> for each shape: a list, an optional list left out, pairs, a flag, a flag with a number, an optional argument left out, a missing name, an empty list; and every existing test of <code>parse()</code> passing unchanged.</li>
+          <li><strong>The file:</strong> equal to <code>source()</code>; a class for each command; names unique and apart from <code>ampwire</code>&rsquo;s; the types of &sect;4; the record of protocol 2, including one additive change and one change that isn&rsquo;t, made on a copy of the table.</li>
+          <li><strong>The socket</strong>, with <code>iosim</code>: <code>Hello</code> with no list, with <code>[2]</code>, <code>[3]</code>, <code>[3, 2]</code> and <code>[5, 1]</code>; the old <code>Hello</code> definition against the new one; each row of the table of &sect;3, with the definitions of two builds side by side; a typed command before <code>Hello</code>, after an agreement on 1 and after one on 2; a key too many and one missing, and the connection still open after either; a typed command of each shape against a real factory; <code>NotFound</code>, <code>BadArgument</code>, <code>CommandFailed</code> and <code>AnswerTooLong</code>; <code>TokenNeeded</code> before the proof; a typed command and <code>Run</code> in order on one connection; <code>cwd</code>; the line in the log.</li>
+          <li>The new tests also run in the Twisted 22.1 environment of page 17. The tests that patch <code>amp._log</code> already fail there, an item of the IDEAS.</li>
+        </ul>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;9</span>Implementation plan</h2>
+        <p>A new branch, <code>mg/typed-amp</code>, from <code>develop</code>, with this page as its first commit and a commit per step. Your own changes in the working tree stay out of every commit. Step 1 changes nothing you can see.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">1 Reading</td><td><code>bind()</code> out of <code>parse()</code>, <code>take()</code> on the kinds, <code>NotFound</code>, <code>line_of()</code>, <code>dispatch.run_command()</code>.</td><td><code>bind()</code> for each shape; the tests of today unchanged.</td></tr>
+            <tr><td class="nowrap">2 The commands</td><td><code>ampgen.py</code>, the generated <code>ampcommands.py</code>, <code>tests/data/amp-protocol-2.txt</code>.</td><td>The file against the table; the record.</td></tr>
+            <tr><td class="nowrap">3 The socket</td><td><code>Hello(protocols)</code>, <code>PROTOCOLS</code> and the agreement of each connection; the typed responders in <code>AMPControl</code>, the check of their keys, their errors and their log.</td><td>&sect;8, the socket; on 26.4 and 22.1.</td></tr>
+            <tr><td class="nowrap">4 Docs</td><td><code>virtualbricks(1)</code>, &ldquo;The AMP protocol&rdquo;: <code>Hello</code>&rsquo;s argument, the rule for names and types, the errors, a short program, within 64 columns; <code>command-line.html</code> rebuilt. &ldquo;Since then&rdquo; on pages 16 (M2 B done) and 19 (<code>Hello</code>, and the typed commands for R4). This page&rsquo;s &ldquo;Implemented&rdquo;. The TODO item to DONE, and &sect;11 to IDEAS.</td><td>The manual page against the table, as today.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Before step 4, a run of the whole program with a throwaway home, runtime folder and workspace, <code>--lock none</code>, and an AMP socket on <code>unix</code> and on <code>tcp</code> with a token. A Twisted program calls a typed command before <code>Hello</code>, then <code>Hello(protocols=[2])</code>, <code>BrickNew</code>, <code>BrickSet</code>, <code>BrickConnect</code>, <code>BrickStart</code>, a <code>NotFound</code> and a <code>BadArgument</code>, and <code>Hello()</code> with no list. <code>--connect &hellip; --command status</code> still answers. Your own Virtualbricks, its lock and its sockets are never touched.</p>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;10</span>Decisions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>T1</td>
+              <td>How 1 and 2 live together</td>
+              <td>
+                <p><b>A</b> On the same socket, agreed per connection. <code>Hello</code> takes the list of protocols the program speaks and answers the highest in both, 1 without the list. The typed commands wait for that agreement, with <code>ProtocolNeeded</code>, and refuse an argument they don&rsquo;t declare. Nothing of 1 changes, a Virtualbricks of today answers 1, and every mismatch ends in 1 or in an error (&sect;3).</p>
+                <p><b>B</b> As A, without the agreement: the typed commands answer on any connection, as in revision 1. One call fewer, but a program that skips <code>Hello</code>, or an end of another build, can get a command read wrong or an argument dropped (&sect;3).</p>
+                <p><b>C</b> On separate sockets: <code>protocol=amp</code> speaks 1, a new <code>protocol=amp2</code> speaks 2, and <code>--socket</code> picks one for each socket. A program has to know which socket to use, and a Virtualbricks that wants both opens two sockets.</p>
+                <p><b>D</b> On the same socket, with <code>Hello</code> answering 2 to everyone. <code>--command</code> of 2.1, and any program that checks for 1, then refuse the socket.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>T2</td>
+              <td>Where the definitions come from</td>
+              <td>
+                <p><b>A</b> A file written from the table and committed, <code>ampcommands.py</code>, which a test keeps equal to the table. A program imports it without loading Virtualbricks, or copies it, and each change to the protocol shows up in a diff.</p>
+                <p><b>B</b> Classes built from the table when the module is imported. Nothing to write again, but a program loads the whole console (the factory, the config, the bricks), can&rsquo;t copy the definitions, and a change to the table changes the protocol without a trace.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>T3</td>
+              <td>What a command answers</td>
+              <td>
+                <p><b>A</b> Its lines, as <code>Run</code> answers them: typed in, text out. The functions of the console don&rsquo;t change.</p>
+                <p><b>B</b> Data of its own: <code>BrickList</code> a list of name, kind, state and summary records, <code>BrickStart</code> the processes, and so on. Each of the 59 functions splits into its data and the lines made from it.</p>
+              </td>
+              <td class="rec decided">A; B a future improvement, as new optional keys of the answer, which keep protocol 2</td>
+            </tr>
+            <tr>
+              <td>T4</td>
+              <td>The errors</td>
+              <td>
+                <p><b>A</b> Those of <code>Run</code>: <code>CommandFailed</code>, <code>AnswerTooLong</code>, <code>TokenNeeded</code>.</p>
+                <p><b>B</b> Those, plus <code>NotFound</code> and <code>BadArgument</code>, subclasses of <code>CommandFailed</code>, which mean that nothing was done (&sect;4). Adding them later needs protocol 3, since a program that doesn&rsquo;t declare a code gets <code>UnknownRemoteError</code>.</p>
+              </td>
+              <td class="rec decided">B</td>
+            </tr>
+            <tr>
+              <td>T5</td>
+              <td>The names of the arguments</td>
+              <td>
+                <p><b>A</b> The parser&rsquo;s keywords: <code>BrickStart(name=[&hellip;])</code>, <code>EventActionRemove(name=, n=[&hellip;])</code>. One name for each argument, the one the functions already take.</p>
+                <p><b>B</b> Plural for a list: <code>names=</code>, <code>key_values=</code>, <code>numbers=</code>. Reads better, but where adding an s doesn&rsquo;t work (<code>n</code>, <code>options</code>, <code>key_value</code>), <code>Arg</code> needs a second name of its own.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>T6</td>
+              <td><code>KEY=VALUE&hellip;</code></td>
+              <td>
+                <p><b>A</b> A list of records with <code>key</code> and <code>value</code>, both text, the value read as the console reads it.</p>
+                <p><b>B</b> A list of <code>"KEY=VALUE"</code> texts, as typed in the console.</p>
+                <p><b>C</b> One JSON object in a text, <code>{"ram": 1024}</code>, whose values are turned into the kinds of the brick&rsquo;s schema.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>T7</td>
+              <td>When a command of the console changes</td>
+              <td>
+                <p><b>A</b> Additive changes keep 2. Any other change makes 3, which replaces 2: a program of 2 then gets 1 and uses <code>Run</code>. A record of protocol 2 in the tests catches a change that forgets (&sect;7).</p>
+                <p><b>B</b> A command of 2 never changes. A console command that changes gets a new AMP name, <code>BrickSet2</code>, and the old one stays, translated into the new call, for as long as Virtualbricks lives.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Your answer, 30 September: as recommended; T3 B marked as a future improvement.</p>
+        <p>My choices, which the questions don&rsquo;t cover: every command of the console, <code>help</code>, <code>quit</code> and <code>brick monitor</code> included; <code>cwd</code> on every command; a second <code>Hello</code> agrees again, and the connection speaks its answer from then on; <code>ProtocolNeeded</code> is not a <code>CommandFailed</code>; <code>--command</code> keeps sending lines and asking for nothing; the log shows the equivalent console line; the commands share no base class; <code>ampgen</code> lives in the package, beside what it writes.</p>
+        <p class="note">Checked on 30 September, in the code at bfc459b, and with probes on Twisted 26.4 and 22.1: the table has 59 commands, and the kinds <code>Number</code> and <code>Pair</code>/<code>KeyValues</code> are the only ones that aren&rsquo;t text; no <code>Pair</code> is used alone, not as <code>many</code>; <code>client.AMPConnection</code> refuses any protocol but 1; an older <code>Hello</code> ignores an argument it doesn&rsquo;t declare; a responder drops an argument it doesn&rsquo;t declare, and a text sent where a <code>ListOf</code> is declared reads as an empty list; a <code>locateResponder()</code> can refuse such keys with a declared code and keep the connection open; a box without a key the command needs gets <code>UNKNOWN</code> and the connection closes; an <code>AmpList</code> of records and an empty or missing optional <code>ListOf</code> go through; responders registered in a loop work; an undeclared error code reaches the program as <code>UnknownRemoteError</code>; Twisted sends the code of the first class in <code>errors</code> that matches.</p>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;11</span>Later</h2>
+        <p>These go under IDEAS in the TODO.</p>
+        <ul>
+          <li>Answers as data (T3 B, a future improvement), as new optional keys of the answer, command by command, starting with those that read: <code>BrickList</code>, <code>BrickShow</code>, <code>Status</code>. This goes with the <code>brick list --json</code> already in the IDEAS.</li>
+          <li>The typed calls in the remote windows of page 19, in place of the lines of R4.</li>
+          <li>A client in Python for the typed commands without Twisted, on <code>ampbox.py</code>, for scripts.</li>
+          <li>The messages of <code>NotFound</code> and <code>BadArgument</code> with the argument they are about, as keys of their own.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
