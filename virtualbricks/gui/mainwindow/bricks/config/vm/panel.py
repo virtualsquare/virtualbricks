@@ -127,7 +127,7 @@ class VirtualMachinePanel(Panel):
                 (
                     form
                     if key == "machine"
-                    else Form(self.draft, self.on_changed)
+                    else Form(self.draft, self.on_changed, self.form.engine)
                 ),
             )
             build(self, page)

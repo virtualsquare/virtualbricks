@@ -804,6 +804,12 @@ class RemoteEngine:
             lambda answer: parse_machine_properties(answer["text"])
         )
 
+    def folder(self, path):
+        asking = self.call(commands.Folder, path=path)
+        return asking.addCallback(
+            lambda answer: (list(answer["entries"]), answer["more"])
+        )
+
     def usb(self):
         asking = self.call(commands.UsbDevices)
         return asking.addCallback(

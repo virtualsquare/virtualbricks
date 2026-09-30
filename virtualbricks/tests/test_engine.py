@@ -20,6 +20,7 @@
 import os
 import signal
 
+from twisted.trial import unittest
 from twisted.internet import defer, error, task
 
 from virtualbricks import errors, ksm
@@ -32,10 +33,11 @@ from virtualbricks.config.images import RunningError
 from virtualbricks.config.settings import get_setting
 from virtualbricks.config.tomlfile import load_toml
 from virtualbricks.config.workspace import Workspace
-from virtualbricks.engine import LocalEngine
+from virtualbricks.engine import LocalEngine, folder_entries
 from virtualbricks.tests import (
     BrickTestCase,
     FakeTrash,
+    isolate,
     short_folder,
     use_workspace,
 )
@@ -583,3 +585,56 @@ class TestMachine(EngineTestCase):
         switch.proc = None
         self.successResultOf(self.engine.quit())
         self.assertTrue(self.factory.quit_d.called)
+
+
+class TestFolder(unittest.TestCase):
+    """What completes a path typed in the windows."""
+
+    def setUp(self):
+        self.root = isolate(self)
+        self.folder = os.path.join(self.root, "lab")
+        os.makedirs(os.path.join(self.folder, "images"))
+        for name in ("frr.qcow2", "pc.qcow2", ".hidden"):
+            with open(os.path.join(self.folder, name), "w"):
+                pass
+
+    def test_a_folder(self):
+        entries, more = folder_entries(self.folder + "/")
+        self.assertEqual(
+            entries,
+            [
+                self.folder + "/frr.qcow2",
+                self.folder + "/images/",
+                self.folder + "/pc.qcow2",
+            ],
+        )
+        self.assertFalse(more)
+
+    def test_the_start_of_a_name(self):
+        self.assertEqual(
+            folder_entries(self.folder + "/f"),
+            ([self.folder + "/frr.qcow2"], False),
+        )
+        # the hidden ones, once a dot is typed
+        self.assertEqual(
+            folder_entries(self.folder + "/.h")[0], [self.folder + "/.hidden"]
+        )
+
+    def test_more(self):
+        entries, more = folder_entries(self.folder + "/", limit=2)
+        self.assertEqual(len(entries), 2)
+        self.assertTrue(more)
+
+    def test_home(self):
+        # isolate() made the root the home folder
+        self.assertEqual(folder_entries("~/l"), (["~/lab/"], False))
+
+    def test_no_such_folder(self):
+        self.assertEqual(folder_entries("/nowhere/x"), ([], False))
+
+    def test_the_engine(self):
+        engine = LocalEngine(None)
+        self.assertEqual(
+            self.successResultOf(engine.folder(self.folder + "/p")),
+            ([self.folder + "/pc.qcow2"], False),
+        )

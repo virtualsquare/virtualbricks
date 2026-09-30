@@ -292,6 +292,19 @@ class TestTheMachineThere(MachinePanelTestCase):
         self.assertEqual(card.plugged.get_model()[-1][1], "socket")
 
 
+class TestOverAConnection(MachinePanelTestCase):
+    """The paths of the machine are typed: those of the machine there."""
+
+    def prepare(self):
+        self.gui.engine.local = False
+
+    def test_no_browse_button(self):
+        for key, name in (("kernel", "kernel"), ("cdrom", "cdrom_image")):
+            # the entry alone in its box, without the Browse button
+            [entry] = self.page(key).form.rows[name].control.get_children()
+            self.assertIsNotNone(entry.get_completion(), name)
+
+
 class TestWhatItLacks(MachinePanelTestCase):
 
     target = "ubuntu-22.04"

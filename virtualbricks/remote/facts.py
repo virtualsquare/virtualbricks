@@ -38,6 +38,7 @@ from virtualbricks.bricks.virtualmachine import get_usb_devices
 from virtualbricks.config import images
 from virtualbricks.config.workspace import projects
 from virtualbricks.console import ampcommands, ampwire
+from virtualbricks.engine import folder_entries
 from virtualbricks.errors import CommandError
 from virtualbricks.i18n import _
 from virtualbricks.programs import ProgramError, programs
@@ -195,3 +196,11 @@ class Facts(amp.CommandLocator):
             )
 
         return self._answer_fact("DiskUsage", ask)
+
+    @commands.Folder.responder
+    def folder(self, path):
+        def ask():
+            entries, more = folder_entries(path)
+            return {"entries": entries, "more": more}
+
+        return self._answer_fact("Folder", ask)

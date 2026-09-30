@@ -529,6 +529,21 @@ class TestFacts(ClientTestCase):
         self.done(self.windows.callRemote(ampwire.Hello))
         self.refused(self.engine.usb(), ampcommands.ProtocolNeeded)
 
+    def test_a_folder_there(self):
+        folder = os.path.dirname(self.qemu)
+        self.assertEqual(
+            self.done(self.engine.folder(folder + "/q")),
+            ([self.qemu], False),
+        )
+        self.assertEqual(
+            self.done(self.engine.folder("/nowhere/x")), ([], False)
+        )
+        # a folder of more than it gives
+        self.patch(facts, "folder_entries", lambda path: (["/usr/a/"], True))
+        self.assertEqual(
+            self.done(self.engine.folder("/usr/")), (["/usr/a/"], True)
+        )
+
     def test_what_the_windows_read(self):
         machine = self.engine.machine
         self.assertEqual(machine.qemu_programs(), ["qemu-system-x86_64"])

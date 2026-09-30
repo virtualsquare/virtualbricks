@@ -47,9 +47,10 @@ from twisted.internet import defer, threads
 
 from virtualbricks import errors
 from virtualbricks.config import images
-from virtualbricks.config.workspace import copy_sparse, projects
+from virtualbricks.config.workspace import copy_sparse
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.pango import pango_attr_list
+from virtualbricks.gui.pathentry import PathCompletion
 from virtualbricks.i18n import _
 
 MARGIN = 18
@@ -179,7 +180,8 @@ class ExistingImageDialog(_AddDialog):
     def __init__(self, engine, workspace=None):
         self.engine = engine
         self.factory = engine.factory
-        self.workspace = projects if workspace is None else workspace
+        # the workspace of the machine of the bricks
+        self.workspace = engine.workspace if workspace is None else workspace
         self.path = None
         self.info = None
         self.working = False
@@ -192,16 +194,31 @@ class ExistingImageDialog(_AddDialog):
         )
         grid = self._grid()
         label = _label(_("File"), bold=True)
-        self.file_chooser = Gtk.FileChooserButton(
-            visible=True,
-            hexpand=True,
-            action=Gtk.FileChooserAction.OPEN,
-            title=_("Choose a Disk Image"),
-        )
-        label.set_mnemonic_widget(self.file_chooser)
+        if self.engine.local:
+            self.file_chooser = Gtk.FileChooserButton(
+                visible=True,
+                hexpand=True,
+                action=Gtk.FileChooserAction.OPEN,
+                title=_("Choose a Disk Image"),
+            )
+            self.file_chooser.connect("file-set", self.on_file_set)
+            self.file_entry = None
+            chooser = self.file_chooser
+        else:
+            # a file there: typed, with the folders there to complete it,
+            # and read when Enter is pressed or the entry is left
+            self.file_chooser = None
+            self.file_entry = Gtk.Entry(visible=True, hexpand=True)
+            self.file_entry.completer = PathCompletion(
+                self.engine, self.file_entry
+            )
+            self.file_entry.connect("activate", self.on_file_typed)
+            self.file_entry.connect("focus-out-event", self.on_file_left)
+            chooser = self.file_entry
+        label.set_mnemonic_widget(chooser)
         self.file_facts = _label(dim=True, wrap=True, visible=False)
         grid.attach(label, 0, 0, 1, 1)
-        grid.attach(self.file_chooser, 1, 0, 1, 1)
+        grid.attach(chooser, 1, 0, 1, 1)
         grid.attach(self.file_facts, 1, 1, 1, 1)
         self._name_rows(grid, 2)
 
@@ -236,7 +253,6 @@ class ExistingImageDialog(_AddDialog):
         grid.attach(self.progress, 0, 8, 2, 1)
         self._error_row(grid, 9)
 
-        self.file_chooser.connect("file-set", self.on_file_set)
         self.dialog.connect("response", self.on_response)
 
     # The file
@@ -245,6 +261,15 @@ class ExistingImageDialog(_AddDialog):
         path = chooser.get_filename()
         if path is not None:
             self.choose(path)
+
+    def on_file_typed(self, entry):
+        path = entry.get_text().strip()
+        if path and path != self.path:
+            self.choose(path)
+
+    def on_file_left(self, entry, event):
+        self.on_file_typed(entry)
+        return False
 
     def choose(self, path):
         """Read path with qemu-img info, and start the name from it."""
@@ -257,7 +282,8 @@ class ExistingImageDialog(_AddDialog):
         if not self.name_entry.get_text():
             self.name_entry.set_text(name_from_file(path))
         buffer = self.description_view.get_buffer()
-        if not buffer.get_char_count():
+        if not buffer.get_char_count() and self.engine.local:
+            # what the file says of itself, beside it here
             buffer.set_text(read_description(self.path))
         reading = self.engine.image_info(self.path)
         reading.addCallbacks(
@@ -393,7 +419,8 @@ class NewDiskDialog(_AddDialog):
     def __init__(self, engine, workspace=None):
         self.engine = engine
         self.factory = engine.factory
-        self.workspace = projects if workspace is None else workspace
+        # the workspace of the machine of the bricks
+        self.workspace = engine.workspace if workspace is None else workspace
         self.working = False
         self.build_ui()
         self.check()
@@ -450,11 +477,19 @@ class NewDiskDialog(_AddDialog):
             label.set_mnemonic_widget(self.folder_chooser)
             folder = self.folder_chooser
         else:
-            # the image folder there: a file chooser shows those of here
+            # the image folder there, or another: a file chooser shows
+            # those of here
             self.folder_chooser = None
-            folder = _label(
-                imageinfo.short_path(self.engine.machine.image_folder())
+            self.folder_entry = folder = Gtk.Entry(
+                visible=True,
+                hexpand=True,
+                text=self.engine.machine.image_folder(),
             )
+            folder.completer = PathCompletion(
+                self.engine, folder, folders=True
+            )
+            folder.connect("changed", lambda entry: self.check())
+            label.set_mnemonic_widget(folder)
         self.file_label = _label(dim=True, wrap=True)
         grid.attach(label, 0, 4, 1, 1)
         grid.attach(folder, 1, 4, 1, 1)
@@ -470,7 +505,7 @@ class NewDiskDialog(_AddDialog):
 
     def folder(self) -> str:
         if self.folder_chooser is None:
-            return self.engine.machine.image_folder()
+            return self.folder_entry.get_text().strip()
         return self.folder_chooser.get_filename() or images.image_folder(
             self.workspace
         )

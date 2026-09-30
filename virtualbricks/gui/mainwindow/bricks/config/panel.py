@@ -65,7 +65,9 @@ class Panel:
         self.draft = draft
         self.gui = gui
         self._callbacks: list[Callable[[Panel], None]] = []
-        self.form = Form(draft, self.on_changed)
+        self.form = Form(
+            draft, self.on_changed, gui.engine if gui is not None else None
+        )
         root = self.build(self.form)
         self.widget = self.form.widget if root is None else root
         self.refresh()

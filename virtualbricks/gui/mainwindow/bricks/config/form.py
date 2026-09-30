@@ -51,6 +51,7 @@ from gi.repository import Gtk, Pango  # noqa: E402
 from virtualbricks.bricks.draft import Problem  # noqa: E402
 from virtualbricks.config.schema import Float, info_of, kind_of  # noqa: E402
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
+from virtualbricks.gui.pathentry import PathCompletion  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 
 # Between the sections, and around the texts of a row, in pixels.
@@ -182,9 +183,13 @@ class Row(Gtk.ListBoxRow):
 class Form:
     """The sections and the rows of a panel, on a draft."""
 
-    def __init__(self, draft, changed: Callable[[], None]) -> None:
+    def __init__(
+        self, draft, changed: Callable[[], None], engine=None
+    ) -> None:
         self.draft = draft
         self.changed = changed
+        # over a connection, the paths are of the machine of the bricks
+        self.engine = engine
         self.widget = Gtk.Box(
             visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=6
         )
@@ -381,16 +386,21 @@ class Form:
         entry.connect(
             "changed", lambda widget: self._set(name, widget.get_text())
         )
-        button = Gtk.Button.new_from_icon_name(
-            "document-open-symbolic", Gtk.IconSize.BUTTON
-        )
-        button.set_tooltip_text(_("Choose…"))
-        button.show()
-        button.connect("clicked", self._choose, entry, title, folder)
         box = Gtk.Box(visible=True)
         box.get_style_context().add_class("linked")
         box.pack_start(entry, True, True, 0)
-        box.pack_start(button, False, False, 0)
+        if self.engine is not None and not self.engine.local:
+            # a chooser shows the files of this computer: typed, with the
+            # folders there to complete it (19 R9)
+            entry.completer = PathCompletion(self.engine, entry, folder)
+        else:
+            button = Gtk.Button.new_from_icon_name(
+                "document-open-symbolic", Gtk.IconSize.BUTTON
+            )
+            button.set_tooltip_text(_("Choose…"))
+            button.show()
+            button.connect("clicked", self._choose, entry, title, folder)
+            box.pack_start(button, False, False, 0)
         row = self._row(name, box)
         row.title.set_mnemonic_widget(entry)
         row.load = lambda: entry.set_text(self.draft.get(name))

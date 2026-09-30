@@ -41,6 +41,7 @@ from virtualbricks.config.settings import (
 )
 from virtualbricks.i18n import _
 from virtualbricks.gui.dialogs.base import Window
+from virtualbricks.gui.pathentry import PathCompletion
 
 logger = Logger()
 
@@ -75,10 +76,14 @@ def _folder_chooser():
 
 
 class _FolderEntry(Gtk.Entry):
-    """A folder of another machine, which a file chooser can't show."""
+    """
+    A folder of another machine, which a file chooser can't show: typed,
+    with the folders there to complete it.
+    """
 
-    def __init__(self):
+    def __init__(self, engine):
         super().__init__(visible=True, can_focus=True, hexpand=True)
+        self.completer = PathCompletion(engine, self, folders=True)
 
     def set_current_folder(self, folder):
         self.set_text(folder)
@@ -90,8 +95,11 @@ class _FolderEntry(Gtk.Entry):
 class ProjectSettingsWidgets:
     """The settings of the open project."""
 
-    def __init__(self, note, local=True):
-        folder = _folder_chooser if local else _FolderEntry
+    def __init__(self, note, engine=None):
+        if engine is None or engine.local:
+            folder = _folder_chooser
+        else:
+            folder = lambda: _FolderEntry(engine)  # noqa: E731
         self.grid = grid = _grid()
         grid.attach(
             Gtk.Label(visible=True, label=note, xalign=0, wrap=True),
@@ -286,7 +294,7 @@ class SettingsDialog(Window):
                 "doesn't change the other projects. A new project starts "
                 "with a copy of them."
             ),
-            local=self.engine.local,
+            self.engine,
         )
         notebook.append_page(
             self.project_widgets.grid,

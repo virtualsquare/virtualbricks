@@ -58,6 +58,7 @@ from virtualbricks.gui import imageinfo
 from virtualbricks.gui.dialogs.addimage import check_name
 from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.gui.pango import pango_attr_list
+from virtualbricks.gui.pathentry import PathCompletion
 from virtualbricks.i18n import _, ngettext
 
 logger = Logger()
@@ -270,6 +271,9 @@ class FindFileDialog(Window):
     def found(self) -> str | None:
         """The file of the same name in the image folder, if there's one."""
 
+        if not self.engine.local:
+            # there: not known here before it's asked
+            return None
         folder = os.path.join(self.workspace.path, images.IMAGE_FOLDER)
         path = os.path.join(folder, os.path.basename(self.image.path))
         return path if os.path.isfile(path) else None
@@ -297,11 +301,23 @@ class FindFileDialog(Window):
             False,
             0,
         )
-        self.file_chooser = Gtk.FileChooserButton(
-            visible=True,
-            action=Gtk.FileChooserAction.OPEN,
-            title=_("Choose the File"),
-        )
+        if self.engine.local:
+            self.file_chooser = Gtk.FileChooserButton(
+                visible=True,
+                action=Gtk.FileChooserAction.OPEN,
+                title=_("Choose the File"),
+            )
+            self.file_chooser.connect("file-set", self.on_file_set)
+        else:
+            # a file there: typed, with the folders there to complete it
+            self.file_chooser = Gtk.Entry(visible=True, hexpand=True)
+            self.file_chooser.completer = PathCompletion(
+                self.engine, self.file_chooser
+            )
+            self.file_chooser.connect(
+                "changed",
+                lambda entry: self.choose(entry.get_text().strip() or None),
+            )
         found = self.found()
         if found is not None:
             self.file_chooser.set_filename(found)
@@ -332,7 +348,6 @@ class FindFileDialog(Window):
         box.pack_start(self.error_label, False, False, 0)
         self.chosen = found
         self.use_button.set_sensitive(found is not None)
-        self.file_chooser.connect("file-set", self.on_file_set)
         self.dialog.connect("response", self.on_response)
 
     def on_file_set(self, chooser):

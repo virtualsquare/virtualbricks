@@ -230,6 +230,8 @@ class TestOverAConnection(GuiTestCase):
         self.assertTrue(widgets.grid.get_sensitive())
         # typed: a chooser shows the folders of this computer
         self.assertIsInstance(widgets.qemu_path_chooser, Gtk.Entry)
+        # completed from the folders there
+        self.assertTrue(widgets.qemu_path_chooser.completer.folders)
         self.assertEqual(widgets.qemu_path_chooser.get_text(), "/opt/qemu/bin")
         self.assertTrue(widgets.female_plugs_switch.get_active())
         # those of the windows are this computer's

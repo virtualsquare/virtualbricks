@@ -21,11 +21,12 @@ engine.machine knows them, not those of this one (page 19 §8): an image
 whose file is there, and not here, isn't missing.
 """
 
+import os
 import time
 
 from twisted.internet import defer
 
-from virtualbricks.bricks.virtualmachine import ImageDraft
+from virtualbricks.bricks.virtualmachine import ImageDraft, VirtualMachineDraft
 from virtualbricks.config import images
 from virtualbricks.config.workspace import OpenProject
 from virtualbricks.console import ampcommands
@@ -38,11 +39,16 @@ if has_display:
     from gi.repository import Gtk
 
     from virtualbricks.gui.dialogs import imagedialogs
-    from virtualbricks.gui.dialogs.addimage import NewDiskDialog
+    from virtualbricks.gui.dialogs.addimage import (
+        ExistingImageDialog,
+        NewDiskDialog,
+    )
     from virtualbricks.gui.dialogs.imagedialogs import (
+        FindFileDialog,
         RemoveImageDialog,
         StartOverDialog,
     )
+    from virtualbricks.gui.mainwindow.bricks.config.form import Form
     from virtualbricks.gui.mainwindow.bricks.config.vm.disks import (
         DisksSection,
     )
@@ -67,6 +73,13 @@ def texts(box):
         elif isinstance(child, Gtk.Box):
             found.extend(texts(child))
     return found
+
+
+class WorkspaceThere:
+    """The workspace of the Virtualbricks there."""
+
+    path = "/lab"
+    current = None
 
 
 class KnownInfos:
@@ -355,3 +368,98 @@ class TestTheDialogs(ThereTestCase):
         self.machine.files["/lab/vimages/pc.qcow2"] = 10
         self.assertFalse(dialog.check())
         self.assertIn("is there already", dialog.file_label.get_text())
+
+
+class TestTypedPaths(ThereTestCase):
+    """Over a connection, a path is typed, completed from there (19 R9)."""
+
+    def setUp(self):
+        super().setUp()
+        self.engine.local = False
+        self.asked = []
+        self.engine.folder = lambda path: (
+            self.asked.append(path) or defer.succeed(([], False))
+        )
+        self.read = []
+
+        def image_info(path):
+            self.read.append(path)
+            return defer.succeed(images.parse_info(INFO))
+
+        self.engine.image_info = image_info
+        self.engine.workspace = WorkspaceThere()
+
+    def test_what_a_file_says_here(self):
+        # a file of the same path here, which isn't the one there
+        path = os.path.join(self.folder("disks"), "frr.qcow2")
+        with open(path + ".md", "w") as fp:
+            fp.write("Not the one there")
+        dialog = ExistingImageDialog(self.engine)
+        self.addCleanup(dialog.dialog.destroy)
+        dialog.file_entry.set_text(path)
+        dialog.file_entry.emit("activate")
+        buffer = dialog.description_view.get_buffer()
+        self.assertEqual(buffer.get_char_count(), 0)
+
+    def test_add_an_image(self):
+        dialog = ExistingImageDialog(self.engine)
+        self.addCleanup(dialog.dialog.destroy)
+        self.assertIsNone(dialog.file_chooser)
+        entry = dialog.file_entry
+        entry.set_text("/lab/vimages/")
+        self.assertEqual(self.asked, ["/lab/vimages/"])
+        entry.set_text("/lab/vimages/frr.qcow2")
+        entry.emit("activate")
+        self.assertEqual(self.read, ["/lab/vimages/frr.qcow2"])
+        # the same again: read once
+        dialog.on_file_left(entry, None)
+        self.assertEqual(self.read, ["/lab/vimages/frr.qcow2"])
+        self.assertEqual(dialog.name_entry.get_text(), "frr")
+        # what a file beside it says is here only
+        buffer = dialog.description_view.get_buffer()
+        self.assertEqual(buffer.get_char_count(), 0)
+        # inside the workspace there
+        self.assertFalse(dialog.outside())
+
+    def test_a_new_disk_elsewhere(self):
+        dialog = NewDiskDialog(self.engine)
+        self.addCleanup(dialog.dialog.destroy)
+        self.assertEqual(dialog.folder_entry.get_text(), "/lab/vimages")
+        dialog.folder_entry.set_text("/srv/disks/")
+        self.assertEqual(self.asked[-1], "/srv/disks/")
+        dialog.name_entry.set_text("pc")
+        self.assertEqual(dialog.target(), "/srv/disks/pc.qcow2")
+
+    def test_find_the_file(self):
+        # a file of that name in the image folder here: not the one there
+        folder = os.path.join(self.manager.path, "vimages")
+        os.makedirs(folder)
+        with open(os.path.join(folder, "here.qcow2"), "w"):
+            pass
+        dialog = FindFileDialog(self.engine, self.here)
+        self.addCleanup(dialog.dialog.destroy)
+        self.assertIsNone(dialog.found())
+        self.assertFalse(dialog.use_button.get_sensitive())
+        dialog.file_chooser.set_text("/lab/vimages/here.qcow2")
+        self.assertEqual(dialog.chosen, "/lab/vimages/here.qcow2")
+        self.assertTrue(dialog.use_button.get_sensitive())
+        dialog.file_chooser.set_text("")
+        self.assertFalse(dialog.use_button.get_sensitive())
+
+    def test_a_path_of_a_panel(self):
+        form = Form(VirtualMachineDraft(self.r1), lambda: None, self.engine)
+        form.section("System")
+        entry = form.path("kernel", "The kernel to boot")
+        # no Browse button
+        self.assertEqual(entry.get_parent().get_children(), [entry])
+        self.assertIsNotNone(entry.get_completion())
+        entry.set_text("/boot/")
+        self.assertEqual(self.asked, ["/boot/"])
+
+    def test_a_path_here(self):
+        self.engine.local = True
+        form = Form(VirtualMachineDraft(self.r1), lambda: None, self.engine)
+        form.section("System")
+        entry = form.path("kernel", "The kernel to boot")
+        [_entry, button] = entry.get_parent().get_children()
+        self.assertIsNone(entry.get_completion())

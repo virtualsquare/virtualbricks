@@ -253,6 +253,21 @@ class SetKsm(amp.Command):
     errors = ERRORS
 
 
+class Folder(amp.Command):
+    """
+    What completes path, a file or a folder there: the entries of its
+    folder that start with its last part, folders with a / after them, at
+    most 200, and whether there are more.
+    """
+
+    arguments = [(b"path", amp.Unicode())]
+    response = [
+        (b"entries", amp.ListOf(amp.Unicode())),
+        (b"more", amp.Boolean()),
+    ]
+    errors = ERRORS
+
+
 class _Push(amp.Command):
     """A command that Virtualbricks calls on a program that follows it."""
 
@@ -341,6 +356,7 @@ FROM_PROGRAM = (
     Readme,
     SetReadme,
     SetKsm,
+    Folder,
 )
 PUSHES = (
     Opened,

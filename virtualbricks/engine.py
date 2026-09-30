@@ -61,6 +61,38 @@ from virtualbricks.config.workspace import projects
 from virtualbricks.programs import programs as known_programs, qemu_programs
 from virtualbricks.qemu import run
 
+# How many entries of a folder the completion of a path gets at once.
+FOLDER_LIMIT = 200
+
+
+def folder_entries(path: str, limit: int = FOLDER_LIMIT):
+    """
+    The entries of the folder of path that start with its last part, as
+    paths written as path is, a folder with a / after it, sorted: the first
+    limit of them, and whether there are more. The hidden ones only when
+    the last part starts with a dot; ~ is the home folder.
+    """
+
+    folder, slash, start = path.rpartition("/")
+    folder += slash
+    try:
+        names = os.listdir(os.path.expanduser(folder or "."))
+    except OSError:
+        return [], False
+    found = sorted(
+        name
+        for name in names
+        if name.startswith(start)
+        and (start.startswith(".") or not name.startswith("."))
+    )
+    entries = []
+    for name in found[:limit]:
+        entry = folder + name
+        if os.path.isdir(os.path.expanduser(entry)):
+            entry += "/"
+        entries.append(entry)
+    return entries, len(found) > limit
+
 
 class LocalMachine:
     """What the windows read of this machine, which runs the bricks."""
@@ -431,6 +463,14 @@ class LocalEngine:
         """The USB devices of the machine."""
 
         return defer.maybeDeferred(self.usb_devices)
+
+    def folder(self, path) -> defer.Deferred:
+        """
+        What completes path: the entries of its folder, and whether there
+        are more than those.
+        """
+
+        return defer.succeed(folder_entries(path))
 
     def quit(self) -> defer.Deferred:
         """Quit Virtualbricks, refused while bricks run."""

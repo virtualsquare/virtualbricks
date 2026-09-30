@@ -423,6 +423,7 @@ class NotHere:
     def __init__(self, factory):
         self.factory = factory
         self.machine = LocalMachine(projects)
+        self.workspace = projects
 
 
 class FakeGui:
