@@ -1,0 +1,635 @@
+<title>Workspaces Side by Side</title>
+<meta name="description" content="A fourth single-instance mode, --lock workspace, runs one Virtualbricks in each workspace at once: a lock in each workspace, a runtime folder and a control socket for each, and settings that two Virtualbricks share without undoing each other's changes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  .ref.open { color: var(--decide); background: var(--decide-soft); }
+
+  /* pages 14 to 19 */
+  .chip {
+    display: inline-block;
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.04em;
+    padding: 3px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    vertical-align: 1px;
+    color: var(--risk);
+    background: var(--risk-soft);
+  }
+  .prompt { color: var(--code-h); font-weight: 500; }
+  table.commands td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.commands td:last-child { color: var(--muted); font-size: 13.5px; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+  .note { font-size: 14px; color: var(--muted); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 21 &middot; Design &middot; revision 2, decided</div>
+    <h1>Virtualbricks Workspaces Side by Side</h1>
+    <p class="lede">A fourth single-instance mode, <code>--lock workspace</code>, which <code>--workspace</code> implies, lets one Virtualbricks run in each workspace at the same time, whether yours or another user&rsquo;s. Each workspace gets a lock of its own, a runtime folder of its own for the sockets of its bricks, and a control socket of its own. Two projects named <code>lab1</code> in two workspaces no longer meet, and <code>--command</code> reaches either one.</p>
+    <ul class="meta">
+      <li>branch <b>mg/typed-amp</b> at d713617</li>
+      <li>revision 2 &middot; 30 September 2026</li>
+      <li><span class="status">decided</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your request of today: implement the TODO item &ldquo;Run two Virtualbricks at once in different workspaces: a lock for each workspace, and runtime directories that tell apart two projects of the same name (13 &sect;10)&rdquo;, with its two notes: <code>--lock none</code> lets the second one start but nothing keeps them apart, and a control socket for each workspace, so that <code>--command</code> reaches either (15 &sect;11). You asked for a plan first. It builds on the single-instance mode of <a href="13%20-%20single-instance-mode.html">page 13</a>, the workspaces of <code>--workspace</code> (pages <a href="02%20-%20config-redesign.html">02</a> and <a href="04%20-%20projects-redesign.html">04</a>) and the control socket of pages <a href="15%20-%20control-socket.html">15</a> and <a href="16%20-%20amp-socket.html">16</a>. Revision 1 left six questions open, W1 to W6 in <a href="#decisions">&sect;13</a>, each with my recommendation.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 records your answers of today. W6 is B, so <code>settings.toml</code> and <code>state.toml</code> stay as they are today, and &sect;8 now says what that means when two Virtualbricks run. You added a rule, now W7: <code>--workspace</code> without <code>--lock</code> runs in the workspace mode. So two Virtualbricks started with <code>--workspace</code> run side by side with no other option (&sect;3). You didn&rsquo;t name W1 to W5, so I took them as recommended. The plan has four steps now, since the step for the settings is gone. The page is the first commit of <code>mg/side-by-side</code>.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>Today</a></li>
+        <li><a href="#mode"><span>3</span>The workspace mode</a></li>
+        <li><a href="#beside"><span>4</span>Who starts beside whom</a></li>
+        <li><a href="#lock"><span>5</span>The workspace lock</a></li>
+        <li><a href="#runtime"><span>6</span>The runtime folders</a></li>
+        <li><a href="#socket"><span>7</span>The control socket</a></li>
+        <li><a href="#settings"><span>8</span>Settings and state</a></li>
+        <li><a href="#messages"><span>9</span>Messages</a></li>
+        <li><a href="#shared"><span>10</span>What stays shared</a></li>
+        <li><a href="#code"><span>11</span>The code and the tests</a></li>
+        <li><a href="#plan"><span>12</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>13</span>Decisions</a></li>
+        <li><a href="#later"><span>14</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Mode</dt><dd><code>virtualbricks --lock workspace</code> runs one Virtualbricks for each workspace. A second one in the same workspace is refused (<a class="ref done" href="#decisions">W1</a>).</dd></div>
+          <div><dt>Implied</dt><dd><code>--workspace</code> without <code>--lock</code> runs in the workspace mode, so <code>virtualbricks --workspace ~/labs/a</code> and <code>virtualbricks --workspace ~/labs/b</code> start side by side. An explicit <code>--lock</code> wins. Without either, the default stays <code>system</code>, as page 13 decided (<a class="ref done" href="#decisions">W7</a>).</dd></div>
+          <div><dt>Levels</dt><dd>The modes nest: the machine, then the user, then the workspace. Each mode holds the lock of its own level alone and shares the locks of the levels above it. The workspace mode shares the system lock and your user lock, and holds the lock of its workspace alone.</dd></div>
+          <div><dt>The lock</dt><dd>The lock is <code>.virtualbricks.lock</code> in the workspace folder (<a class="ref done" href="#decisions">W3</a>). Every mode except <code>none</code> holds it, so two Virtualbricks never share a workspace, even when two users share its folder (<a class="ref done" href="#decisions">W2</a>).</dd></div>
+          <div><dt>Runtime</dt><dd>Each workspace has a folder in the runtime folder, named by a key of eight characters made from the workspace&rsquo;s path, for example <code>$XDG_RUNTIME_DIR/virtualbricks/fnknanf4/lab1/</code>. The link <code>.workspace</code> in that folder points to the workspace (<a class="ref done" href="#decisions">W4</a>).</dd></div>
+          <div><dt>Socket</dt><dd><code>--socket</code> alone listens on <code>.control</code> in the workspace&rsquo;s runtime folder. <code>--command</code> talks to the only Virtualbricks of yours that listens there, or to the one in the workspace of <code>--workspace FOLDER</code>. When several listen, it names them and sends nothing (<a class="ref done" href="#decisions">W5</a>).</dd></div>
+          <div><dt>Settings</dt><dd>All your Virtualbricks share <code>settings.toml</code> and <code>state.toml</code>, as today, and the last one to write them wins (<a class="ref done" href="#decisions">W6</a>).</dd></div>
+          <div><dt>Windows</dt><dd>When the workspace isn&rsquo;t the one of the settings, the title names it: <i>Virtualbricks (project: lab1, workspace: ~/labs/b)</i>.</dd></div>
+          <div><dt>Plan</dt><dd>Four steps, a commit each, on a new branch <code>mg/side-by-side</code> from <code>mg/typed-amp</code> (<a href="#plan">&sect;12</a>).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>Today</h2>
+        <p><code>--workspace</code> picks the folder of the projects for one run. The single-instance mode of page 13 doesn&rsquo;t know about workspaces. <code>system</code> lets one Virtualbricks run on the machine, and <code>user</code> one for each user. Only <code>--lock none</code> lets a second one of yours start, and then nothing keeps the two apart:</p>
+        <ul>
+          <li><strong>The runtime folder of a project is named after the project alone:</strong> <code>$XDG_RUNTIME_DIR/virtualbricks/lab1/</code>. Two projects named <code>lab1</code> in two workspaces share it. I tried both programs today. A second <code>vde_switch</code> on the same folder stops with <code>Could not bind to socket &hellip;: Address already in use</code>. A second QEMU takes over the first one&rsquo;s monitor socket without a word, and removes it when it ends, so the first machine no longer has a monitor.</li>
+          <li><strong>One control socket for each user.</strong> The first Virtualbricks started with <code>--socket</code> alone gets <code>.control</code>. The others run without a socket (15 Q4 A), so <code>--command</code> reaches only the first.</li>
+          <li><strong>The settings.</strong> Each Virtualbricks keeps the settings in memory and writes all of them when it ends. The one that ends last undoes a setting that was changed in the other.</li>
+          <li><strong>The state.</strong> Each writes the whole of <code>state.toml</code> when it opens a project. The entry of the other&rsquo;s workspace goes back to what it was when this one started.</li>
+          <li><strong>The workspace.</strong> Nothing stops two of them from opening the same workspace, or the same project.</li>
+        </ul>
+      </section>
+
+      <section id="mode">
+        <h2><span class="num">&sect;3</span>The workspace mode</h2>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Mode</th><th>At most</th><th>Holds</th><th>Doesn&rsquo;t start while</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap"><code>system</code>, the default</td><td>one Virtualbricks on the machine</td><td>the system lock alone; the workspace lock</td><td>any other holds the system lock</td></tr>
+            <tr><td class="nowrap"><code>user</code></td><td>one for each user</td><td>the system lock, shared; the user lock alone; the workspace lock</td><td>one in the system mode runs, or one of yours in the user or the workspace mode, or any in its workspace</td></tr>
+            <tr><td class="nowrap"><code>workspace</code> <span class="chip">new</span></td><td>one for each workspace</td><td>the system lock and the user lock, shared; the workspace lock alone</td><td>one in the system mode runs, or one of yours in the user mode, or any in its workspace</td></tr>
+            <tr><td class="nowrap"><code>none</code></td><td>no limit</td><td>nothing</td><td>never refused</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>This adds one level to the readers&ndash;writer lock of 13 &sect;3. The machine holds users, and a user holds workspaces. Each mode is the writer of its own level and a reader of the levels above it. The workspace mode shares the machine with other users, shares your user with your other workspaces, and has its workspace to itself.</p>
+        <p>So the workspace mode complies with the other two modes, as the user mode complies with the system mode. A Virtualbricks of yours in the user mode means that you run only one, so the workspace mode doesn&rsquo;t start beside it, and the user mode doesn&rsquo;t start beside one in the workspace mode. Other users are free: their modes never meet yours unless you share a workspace folder.</p>
+        <p>The default stays <code>system</code>, as page 13 decided at your request, except with <code>--workspace</code>. A Virtualbricks started with <code>--workspace</code> and without <code>--lock</code> runs in the workspace mode (<a class="ref done" href="#decisions">W7</a>). An explicit <code>--lock</code> wins, <code>--lock none</code> included. The client options, <code>--command</code> and <code>--connect --run</code>, take no lock, and there <code>--workspace</code> only picks the Virtualbricks to talk to (&sect;7).</p>
+        <p>A Virtualbricks started with neither option runs in the workspace of the settings, in the system mode, and so has the machine to itself. To run it beside others, start it with <code>--lock workspace</code>. The refusal says so (&sect;9).</p>
+        <figure class="code">
+          <figcaption>two workspaces side by side</figcaption>
+<pre><code><span class="prompt">$</span> virtualbricks --workspace ~/labs/a &amp;
+<span class="prompt">$</span> virtualbricks --workspace ~/labs/b &amp;
+<span class="prompt">$</span> virtualbricks --lock workspace &amp;       <span class="c"># the workspace of the settings</span>
+<span class="prompt">$</span> virtualbricks --workspace ~/labs/a
+Another Virtualbricks is running in the workspace ~/labs/a: start this
+one in another, with --workspace. Held by process 4300 of marco.</code></pre>
+        </figure>
+      </section>
+
+      <section id="beside">
+        <h2><span class="num">&sect;4</span>Who starts beside whom</h2>
+        <p>Each row is a Virtualbricks that is already running. Each column is the mode of the one you start; <code>--workspace</code> without <code>--lock</code> counts as <code>--lock workspace</code>.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Already running</th><th class="nowrap">--lock system</th><th class="nowrap">--lock user</th><th class="nowrap">--lock workspace</th><th class="nowrap">--lock none</th></tr></thead>
+          <tbody>
+            <tr><td>A Virtualbricks with <code>system</code>, yours or another user&rsquo;s</td><td class="no">refused</td><td class="no">refused</td><td class="no">refused</td><td class="yes">starts</td></tr>
+            <tr><td>Yours with <code>user</code></td><td class="no">refused</td><td class="no">refused</td><td class="no">refused</td><td class="yes">starts</td></tr>
+            <tr><td>Yours with <code>workspace</code>, in another workspace</td><td class="no">refused</td><td class="no">refused</td><td class="yes">starts</td><td class="yes">starts</td></tr>
+            <tr><td>Any with <code>user</code> or <code>workspace</code>, in the same workspace</td><td class="no">refused</td><td class="no">refused</td><td class="no">refused</td><td class="yes">starts</td></tr>
+            <tr><td>Another user&rsquo;s with <code>user</code> or <code>workspace</code>, in another workspace</td><td class="no">refused</td><td class="yes">starts</td><td class="yes">starts</td><td class="yes">starts</td></tr>
+            <tr><td>Any with <code>none</code></td><td class="yes">starts</td><td class="yes">starts</td><td class="yes">starts</td><td class="yes">starts</td></tr>
+            <tr><td>The migration of your files</td><td class="no">refused</td><td class="no">refused</td><td class="no">refused</td><td class="yes">starts</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>&ldquo;The same workspace&rdquo; means the same folder, whatever path you give for it. The lock is a file in the folder, so a link or another path to the folder reaches the same file.</p>
+        <p>The <code>none</code> mode still takes nothing and checks nothing (13 L2), so it starts even in a workspace that another Virtualbricks has, as it does today. The runtime folders and the sockets of &sect;6 and &sect;7 apply to every mode, <code>none</code> included. Two Virtualbricks with <code>--lock none</code> in two workspaces are now kept apart; in one workspace they still aren&rsquo;t.</p>
+      </section>
+
+      <section id="lock">
+        <h2><span class="num">&sect;5</span>The workspace lock</h2>
+        <h3>Where</h3>
+        <p><code>.virtualbricks.lock</code> in the workspace folder (<a class="ref done" href="#decisions">W3</a>). A project&rsquo;s name never starts with a dot, so no project can be named like it. The name is longer than the runtime folder&rsquo;s <code>.lock</code> because <code>--workspace</code> can name any folder, even one that other programs use. The lock is in the folder itself, so every Virtualbricks that opens the folder sees it: yours through another path, and another user&rsquo;s in a folder you share.</p>
+        <h3>Opening it</h3>
+        <ul>
+          <li>It is opened the same way as the system lock (13 &sect;5): without following a link, made only when it is missing, and readable by everyone.</li>
+          <li>It is opened for reading and writing when possible, and read-only otherwise. On NFS, Linux turns a flock into a lock of the whole file that the server keeps, and an exclusive lock then needs a file opened for writing (flock(2), NOTES). On a local disk, read-only is enough. I haven&rsquo;t tried NFS here.</li>
+          <li>When the file isn&rsquo;t there yet and you can&rsquo;t write to the folder, the start is refused with the message of 13 &sect;6: <i>Cannot take the lock ~/labs/a/.virtualbricks.lock: Permission denied. With --lock none, Virtualbricks runs without locks.</i> Such a workspace couldn&rsquo;t save its projects anyway.</li>
+        </ul>
+        <h3>When</h3>
+        <p>The locks of the mode come first, as today. The workspace lock comes right after them, before the migration at startup, which may change the projects of the workspace. The workspace is the one of <code>--workspace</code>, and otherwise the one of the settings, read the way the migration reads it: from <code>settings.toml</code>, or on the first start from the settings of 2.1. A missing workspace folder is made first, as today.</p>
+        <p>On the first start, when <code>settings.toml</code> isn&rsquo;t there yet, the migration at startup also converts your settings from 2.1, once. These are files of your user, not of the workspace. In the user mode this already happens under the user lock. The workspace mode only shares that lock. So when a Virtualbricks in the workspace mode finds settings from 2.1 to convert, it takes the user lock alone, converts them, and then shares the lock. Another one of yours that starts during those seconds is refused, just as one in the user mode would refuse it.</p>
+        <p>The migration command and window (13 &sect;7) hold the user lock alone, as today. They now also hold the lock of the workspace they migrate.</p>
+        <p>The kernel releases the lock when Virtualbricks ends, as it does the others (13 &sect;5). The file stays in the workspace.</p>
+      </section>
+
+      <section id="runtime">
+        <h2><span class="num">&sect;6</span>The runtime folders</h2>
+        <figure class="code">
+          <figcaption>the runtime folder</figcaption>
+<pre><code>$XDG_RUNTIME_DIR/virtualbricks/       <span class="c">0700, yours alone</span>
+&#9500;&#9472;&#9472; .lock                   <span class="c">the lock of --lock user and workspace</span>
+&#9500;&#9472;&#9472; 6tmyawcm/               <span class="c">the workspace ~/.virtualbricks</span>      <span class="h">new</span>
+&#9474;   &#9500;&#9472;&#9472; .workspace          <span class="c">&rarr; /home/marco/.virtualbricks</span>        <span class="h">new</span>
+&#9474;   &#9500;&#9472;&#9472; .control            <span class="c">the socket of --socket alone</span>       <span class="h">moved</span>
+&#9474;   &#9500;&#9472;&#9472; .control.lock
+&#9474;   &#9492;&#9472;&#9472; lab1/               <span class="c">the sockets of the bricks of lab1</span>
+&#9492;&#9472;&#9472; fnknanf4/               <span class="c">the workspace ~/labs/a</span>              <span class="h">new</span>
+    &#9500;&#9472;&#9472; .workspace          <span class="c">&rarr; /home/marco/labs/a</span>
+    &#9492;&#9472;&#9472; lab1/               <span class="c">another lab1, apart</span></code></pre>
+        </figure>
+        <ul>
+          <li><strong>The key</strong> is the first eight characters of the SHA-256 of the workspace&rsquo;s real path, in lowercase base32: letters and the digits 2 to 7 (<a class="ref done" href="#decisions">W4</a>). The real path resolves links, so the same folder has the same key whatever path you give. The key doesn&rsquo;t depend on the settings, so every Virtualbricks, and <code>--command</code>, computes the same one. It has 40 bits, so in practice two of your workspaces never get the same key.</li>
+          <li><strong><code>.workspace</code></strong> is a link to the workspace, made again at each start, so that <code>ls -l</code> and <code>--command</code> (&sect;7) can tell which folder is which. Its name starts with a dot, like <code>.lock</code> and <code>.control</code>, so no project can be named like it.</li>
+          <li><strong>The bricks</strong> keep their sockets in <code><i>key</i>/<i>project</i>/</code>: the folders of the switches and the monitors and serial ports of the machines, all one level down from today. Their paths come from the factory&rsquo;s <code>runtime_dir</code>, set when the project opens. No project file names them, so no project changes.</li>
+          <li><strong>The room for names.</strong> A Unix socket path has at most 107 bytes. The key and its slash take 9 bytes away from the names of the bricks. In <code>/run/user/1000</code>, the bricks of <code>lab1</code> had 54 bytes and now have 45, and those of <code>new_project</code> go from 47 to 38. The existing checks still apply: New Brick and Rename refuse a name that doesn&rsquo;t fit, and a project with a brick whose name no longer fits opens with the warning to rename it before starting it. Names that long are rare. W4 B, not taken, would have kept the old room for the default workspace.</li>
+          <li><strong>The old folders.</strong> The runtime folders that projects got before this change, at the top, stay where they are. Nothing reads them, and the system empties <code>$XDG_RUNTIME_DIR</code> when you log out.</li>
+          <li><strong>Without <code>XDG_RUNTIME_DIR</code></strong>, the layout is the same under <code>/tmp/virtualbricks-<i>uid</i>/</code>.</li>
+        </ul>
+      </section>
+
+      <section id="socket">
+        <h2><span class="num">&sect;7</span>The control socket</h2>
+        <p><code>--socket</code> alone listens on <code>.control</code> in the runtime folder of its workspace, with <code>.control.lock</code> beside it (<a class="ref done" href="#decisions">W5</a>). Each workspace has its own, so two Virtualbricks of yours in the workspace mode can both listen. The descriptions, <code>unix:PATH</code>, <code>tcp:PORT</code> and <code>ssl:&hellip;</code>, don&rsquo;t change: a path or a port still belongs to whichever Virtualbricks takes it first.</p>
+        <h3>Which one <code>--command</code> talks to</h3>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Given</th><th><code>--command</code> and <code>--connect --run</code> talk to</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap"><code>--connect DESCRIPTION</code></td><td>the socket of the description, as today</td></tr>
+            <tr><td class="nowrap"><code>--workspace FOLDER</code> <span class="chip">new</span></td><td>the Virtualbricks of that workspace, at its <code>.control</code>. Until now, <code>--command</code> refused <code>--workspace</code>.</td></tr>
+            <tr><td class="nowrap">neither</td><td>the only Virtualbricks of yours that listens on the <code>.control</code> of its workspace. When several do, it names them and sends nothing (exit 2).</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p><code>--connect</code> with a description and <code>--workspace</code> are refused together, since each names a Virtualbricks.</p>
+        <p>To find who listens, <code>--command</code> looks at <code>.control.lock</code> in each folder of the runtime folder, without connecting. A lock that is held means a Virtualbricks listens there. The <code>.workspace</code> link names the workspace, and <code>/proc/locks</code> names the process, as in the messages of page 13.</p>
+        <figure class="code">
+          <figcaption>two listen</figcaption>
+<pre><code><span class="prompt">$</span> virtualbricks --command status
+Virtualbricks of yours listen in 2 workspaces: ~/labs/a, process 4300,
+and ~/labs/b, process 4400. Name one with --workspace, as
+virtualbricks --workspace ~/labs/a --command status
+<span class="prompt">$</span> virtualbricks --workspace ~/labs/a --command status
+Nothing runs</code></pre>
+        </figure>
+        <p>With a single Virtualbricks, which is the common case, the commands you type don&rsquo;t change: <code>--socket</code>, then <code>--command status</code>, as today. What changes is the path. The <code>$XDG_RUNTIME_DIR/virtualbricks/.control</code> of pages 15 and 16 moves one folder down, under the key of the workspace. A program that connects by itself, such as <code>socat</code> or a program that speaks Twisted&rsquo;s AMP, can read the path from the log line <i>Listening on &hellip;</i>, or get a fixed path with <code>--socket unix:PATH</code>. W5 C, not taken, would have kept the old path for the workspace of the settings.</p>
+        <p>When nobody listens in the workspace of <code>--workspace</code>, <code>--command</code> says so, and exits with 2. If a Virtualbricks runs there without a socket, the holders of the workspace lock tell <code>--command</code> which process it is, and the message names it: <i>Your Virtualbricks in ~/labs/a, process 4300, doesn&rsquo;t listen: it was started without --socket, or its log says why.</i></p>
+      </section>
+
+      <section id="settings">
+        <h2><span class="num">&sect;8</span>Settings and state</h2>
+        <p><code>settings.toml</code> and <code>state.toml</code> belong to your user, and every Virtualbricks of yours reads them at start. They stay as they are today (<a class="ref done" href="#decisions">W6</a>), so when two Virtualbricks run, the last one to write a file wins:</p>
+        <ul>
+          <li><strong><code>settings.toml</code>:</strong> the Settings dialog, <code>settings set</code> in the console and the end of each Virtualbricks write every setting that Virtualbricks holds. A setting changed in one Virtualbricks is undone when the other one ends. Restart the other one before you change a setting, or change it again afterwards.</li>
+          <li><strong><code>state.toml</code>:</strong> opening a project writes the whole file, with this Virtualbricks&rsquo; view of the other workspaces. The other workspace&rsquo;s entry can go back to what it was when this Virtualbricks started, so the next start there may open the project that was open before the last one.</li>
+          <li>Both files are still replaced whole and atomically, as page 02 made them, so neither is ever left half written.</li>
+          <li>The settings of a project live in the project, so two workspaces never share them.</li>
+        </ul>
+      </section>
+
+      <section id="messages">
+        <h2><span class="num">&sect;9</span>Messages</h2>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Starting</th><th>Held by</th><th>Message</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap"><code>workspace</code></td><td>one in the system mode</td><td>Another Virtualbricks is running on this machine with --lock system, the default, which lets only one run at a time. To run one in each workspace, start that one with --lock workspace too. <span class="note">(today it ends at &ldquo;a time&rdquo;)</span></td></tr>
+            <tr><td class="nowrap"><code>system</code></td><td>some in the user or the workspace mode</td><td>Virtualbricks is running on this machine with --lock user or --lock workspace, which let others run beside it: start this one with one of them as well. <span class="note">(today it names only user)</span></td></tr>
+            <tr><td class="nowrap"><code>workspace</code></td><td>yours, in the user mode</td><td>Another Virtualbricks of yours is running with --lock user, which lets each user run one: to run one in each workspace, start both with --lock workspace.</td></tr>
+            <tr><td class="nowrap"><code>user</code></td><td>yours, in the workspace mode</td><td>Virtualbricks of yours are running with --lock workspace, one for each workspace: start this one with --lock workspace as well.</td></tr>
+            <tr><td class="nowrap"><code>user</code>, <code>workspace</code></td><td>any, in the same workspace</td><td>Another Virtualbricks is running in the workspace ~/labs/a: start this one in another, with --workspace.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Each message ends with the processes that hold the lock and their users, as in 13 &sect;6: <i>Held by process 4300 of marco.</i> To find which mode holds your user lock, Virtualbricks does what it does for the system lock: when an exclusive lock is refused, it tries a shared one, and if that succeeds, the holders are in the workspace mode.</p>
+        <p><code>--command</code> adds these:</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>When</th><th><code>--command</code> says</th><th>Exit</th></tr></thead>
+          <tbody>
+            <tr><td>Several listen, and neither <code>--connect</code> nor <code>--workspace</code> is given</td><td>Virtualbricks of yours listen in 2 workspaces: ~/labs/a, process 4300, and ~/labs/b, process 4400. Name one with --workspace, as virtualbricks --workspace ~/labs/a --command status</td><td>2</td></tr>
+            <tr><td><code>--workspace</code>: one runs there, without a socket</td><td>Your Virtualbricks in ~/labs/a, process 4300, doesn&rsquo;t listen: it was started without --socket, or its log says why</td><td>2</td></tr>
+            <tr><td><code>--workspace</code>: none runs there</td><td>No Virtualbricks runs in ~/labs/a. Start one with a socket, as virtualbricks --workspace ~/labs/a --no-gui --socket</td><td>2</td></tr>
+            <tr><td><code>--connect DESCRIPTION</code> with <code>--workspace</code></td><td>virtualbricks: --connect and --workspace each name a Virtualbricks: give one of them</td><td>1</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="shared">
+        <h2><span class="num">&sect;10</span>What stays shared</h2>
+        <ul>
+          <li><strong>The <code>none</code> mode</strong> still takes and checks nothing (13 L2), so two Virtualbricks can still start in one workspace, as today.</li>
+          <li><strong>What belongs to the machine:</strong> tap interfaces, the ports of tunnels and of VNC displays, and the USB devices of the host. The Virtualbricks that starts its brick second gets the program&rsquo;s error, as it would beside any other program.</li>
+          <li><strong>A disk image outside the workspaces</strong> that projects in both use: QEMU locks an image it writes, so the second machine stops with <code>Failed to get "write" lock</code>. I tried it today. The images of a workspace, in its <code>vimages/</code>, belong to that workspace alone.</li>
+          <li><strong>The token</strong> of the <code>tcp</code> and <code>ssl</code> sockets, which is one for all your Virtualbricks (<a href="17%20-%20network-sockets.html">page 17</a>).</li>
+          <li><strong>The settings and the state</strong>, where the last to write wins (&sect;8).</li>
+        </ul>
+      </section>
+
+      <section id="code">
+        <h2><span class="num">&sect;11</span>The code and the tests</h2>
+        <figure class="code">
+          <figcaption>what changes</figcaption>
+<pre><code>virtualbricks/
+&#9500;&#9472;&#9472; locations.py              <span class="c">workspace_key(), workspace_runtime_dir(), workspace_lock_file(),</span>
+&#9474;                             <span class="c">control_socket(workspace)</span>
+&#9500;&#9472;&#9472; locks.py                  <span class="c">WORKSPACE; the workspace lock; Held.workspace</span>
+&#9500;&#9472;&#9472; app.py                    <span class="c">--lock workspace, and implied by --workspace; --workspace with</span>
+&#9474;                             <span class="c">--command; the workspace lock</span>
+&#9474;                             <span class="c">before the migration; --socket alone once the workspace is known</span>
+&#9500;&#9472;&#9472; brickfactory.py           <span class="c">the workspace's runtime folder and its link; listen() there</span>
+&#9500;&#9472;&#9472; config/workspace.py       <span class="c">Workspace.runtime_dir(name), for open() and the name checks</span>
+&#9500;&#9472;&#9472; migrate/engine.py         <span class="c">workspace_of(), shared with startup_migration(); lock_in_place()</span>
+&#9474;                             <span class="c">holds the workspace lock</span>
+&#9500;&#9472;&#9472; console/wire.py           <span class="c">in_runtime_dir() takes the folders of the workspaces</span>
+&#9500;&#9472;&#9472; console/client.py         <span class="c">who listens, found by their locks; --workspace</span>
+&#9492;&#9472;&#9472; gui/mainwindow/window.py  <span class="c">the workspace in the title</span></code></pre>
+        </figure>
+        <ul>
+          <li><strong>Locks.</strong> <code>acquire(policy)</code> keeps its locks. The workspace lock is taken once the workspace is known, by the <code>Lock</code> that holds the others, so that all of them are released together.</li>
+          <li><strong>The workspace.</strong> <code>project_runtime_dir(name)</code> goes. <code>Workspace.runtime_dir(name)</code> builds the path from the workspace&rsquo;s own path, so the <code>projects</code> of <code>--workspace</code> and the dialogs that take a <code>workspace=</code> all agree.</li>
+        </ul>
+        <p>The tests go next to their modules:</p>
+        <ul>
+          <li><code>tests/test_locks.py</code>: the workspace mode against each of the others, the whole of &sect;4. Another user in a shared folder is played by another runtime folder, as page 13&rsquo;s tests do. A link to the folder meets the same lock. The probe of the user lock&rsquo;s holder. The user lock taken alone for the migration of the settings, then shared.</li>
+          <li><code>tests/test_locations.py</code>: the key, the same key through a link, the paths.</li>
+          <li><code>tests/config/test_workspace.py</code>: two workspaces with a <code>lab1</code> each get two runtime folders; the room for names comes from the workspace&rsquo;s folder.</li>
+          <li><code>tests/test_app.py</code>: <code>--lock workspace</code>, the mode that <code>--workspace</code> implies and an explicit <code>--lock</code> that wins, <code>--workspace</code> with <code>--command</code>, and <code>--connect DESCRIPTION</code> with <code>--workspace</code> refused; the workspace lock taken before the migration.</li>
+          <li><code>tests/console/test_client.py</code>: none, one or several listening; <code>--workspace</code>; the messages of &sect;9. <code>tests/console/test_control.py</code>: <code>--socket</code> alone at the <code>.control</code> of the workspace.</li>
+        </ul>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;12</span>Implementation plan</h2>
+        <p>The work goes on a new branch, <code>mg/side-by-side</code>, from <code>mg/typed-amp</code> at d713617, which isn&rsquo;t in <code>develop</code> yet. Steps 3 and 4 change the client and the documents that <code>mg/typed-amp</code> changed. This page is the first commit, then there is a commit for each step. Your own files in the working tree stay out of every commit.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">1 Runtime folders</td><td><code>workspace_key()</code>, a folder for each workspace with its <code>.workspace</code> link, <code>Workspace.runtime_dir()</code>, the room for names.</td><td>Keys and links; two projects named <code>lab1</code> kept apart; the room.</td></tr>
+            <tr><td class="nowrap">2 Workspace lock</td><td><code>--lock workspace</code>, and <code>--workspace</code> that implies it; the workspace lock in every mode but <code>none</code>, taken before the migration; the user lock alone for the migration of the settings; the migration command; the messages of &sect;9.</td><td>The whole of &sect;4, the messages, a link to the folder.</td></tr>
+            <tr><td class="nowrap">3 Control socket</td><td><code>--socket</code> alone for each workspace; <code>--command</code> finds who listens; <code>--workspace</code> with <code>--command</code>; the title of the window.</td><td>As in &sect;11.</td></tr>
+            <tr><td class="nowrap">4 Docs</td><td><code>virtualbricks(1)</code>: <code>--lock workspace</code>, the mode of <code>--workspace</code>, <code>--workspace</code> with <code>--command</code>, THE CONTROL SOCKET, FILES, EXAMPLES, within 64 columns; its web page <code>command-line.html</code>. <code>virtualbricks-config(5)</code> and <code>config-files.html</code>: FILES, with the runtime folder and the workspace lock. The README: the modes and <code>--command</code>. &ldquo;Since then&rdquo; of pages 13 (a fourth mode; the item of 13 &sect;10 done), 15 (Q4 C; the default path), 16 (the default path), 02 and 04 (the lock is no longer global; the runtime folders); this page&rsquo;s &ldquo;Implemented&rdquo;. In the TODO, the item goes to DONE and &sect;14 goes under IDEAS.</td><td>The manual page lists every option.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Before step 4, I run the whole program in a throwaway home, runtime folder and two workspaces, each with a project <code>lab1</code> that has a switch and a machine. Two Virtualbricks run with <code>--workspace</code> and <code>--socket</code>, with the bricks of both running at once. <code>--command</code> goes to each of them, and once without <code>--workspace</code>. A third Virtualbricks meets the refusals of &sect;4. One run with the windows, on Broadway, shows the title. Your own Virtualbricks, its locks and its sockets are never touched.</p>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;13</span>Decisions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>W1</td>
+              <td>How a second Virtualbricks starts in another workspace</td>
+              <td>
+                <p><b>A</b> A fourth mode, <code>--lock workspace</code>: one for each workspace, nested under the user and the system modes. The three modes of page 13 keep their meaning.</p>
+                <p><b>B</b> The user mode becomes one for each workspace of each user. No new word, but then nothing keeps one Virtualbricks for each user, which is what you asked of page 13.</p>
+                <p><b>C</b> The <code>none</code> mode takes the workspace lock: no limit on the machine or the user, one for each workspace. This changes 13 L2, &ldquo;no lock at all&rdquo;, and still shares nothing with the modes that lock.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>W2</td>
+              <td>Which modes hold the workspace lock</td>
+              <td>
+                <p><b>A</b> Every mode but <code>none</code>: two users can&rsquo;t both open a folder they share, whatever their modes.</p>
+                <p><b>B</b> The workspace mode only: two users in the user mode can still open one shared folder, as today.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>W3</td>
+              <td>Where the workspace lock is</td>
+              <td>
+                <p><b>A</b> <code>.virtualbricks.lock</code> in the workspace folder: every path to the folder, and every user who opens it, meets the lock. The folder gets one more file, and must be writable the first time.</p>
+                <p><b>B</b> In the runtime folder, beside the workspace&rsquo;s sockets: only your own Virtualbricks see it, and nothing is written in the workspace.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>W4</td>
+              <td>The runtime folders</td>
+              <td>
+                <p><b>A</b> A folder for each workspace, <code><i>key</i>/<i>project</i>/</code>: one rule for all workspaces. The names of bricks lose 9 bytes of room.</p>
+                <p><b>B</b> The same, but <code>~/.virtualbricks</code> keeps <code><i>project</i>/</code> at the top: its projects keep their room and their paths, at the cost of two rules.</p>
+                <p><b>C</b> A folder for each process, <code><i>pid</i>/<i>project</i>/</code>: nothing to compute, but the paths change at every start, and nothing tells which process has which workspace.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>W5</td>
+              <td>The socket of <code>--socket</code> alone</td>
+              <td>
+                <p><b>A</b> <code>.control</code> in the workspace&rsquo;s runtime folder. <code>--command</code> finds the only one that listens, or takes <code>--workspace</code>. The fixed path of pages 15 and 16 moves one folder down.</p>
+                <p><b>B</b> <code>.control</code> stays at the top and belongs to the first to take it (15 Q4 A). Another Virtualbricks listens where you tell it with <code>--socket unix:PATH</code>, and <code>--command</code> reaches it with <code>--connect unix:PATH</code>.</p>
+                <p><b>C</b> <code>.control</code> at the top for the workspace of the settings, and in their own folders for the others. The fixed path stays, but <code>--command</code> has to read the settings to know which is which.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>W6</td>
+              <td><code>settings.toml</code> and <code>state.toml</code></td>
+              <td>
+                <p><b>A</b> Each write reads the file as it is at that moment and changes only what this Virtualbricks changed, under a short lock. Nothing is written at the end without a change.</p>
+                <p><b>B</b> As today: the last to write wins, and the end of one Virtualbricks undoes a setting changed in the other.</p>
+              </td>
+              <td class="rec decided">B</td>
+            </tr>
+            <tr>
+              <td>W7</td>
+              <td>What <code>--workspace</code> does to the mode</td>
+              <td>
+                <p><b>A</b> <code>--workspace</code> without <code>--lock</code> runs in the workspace mode; an explicit <code>--lock</code> wins. Yours, added in revision 2.</p>
+                <p><b>B</b> Nothing: the default stays <code>system</code>, and two side by side need <code>--lock workspace</code> each.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Your answers, 30 September: W6 B, and W7, <code>--workspace</code> implies <code>--lock workspace</code> when no <code>--lock</code> is given. You didn&rsquo;t name W1 to W5, so I took them as recommended.</p>
+        <p>My choices, which the questions don&rsquo;t cover: the name <code>.virtualbricks.lock</code>; a key of eight characters and the <code>.workspace</code> link; the user lock taken alone while the settings of 2.1 are converted; <code>--connect</code> without a description and <code>--workspace</code> together pick the Virtualbricks of that workspace; the words of the messages of &sect;9; the workspace in the title only when it isn&rsquo;t the one of the settings.</p>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;14</span>Later</h2>
+        <p>These go under IDEAS in the TODO.</p>
+        <ul>
+          <li>Switch to another workspace from the windows (already in the TODO). The switch takes the lock of the new workspace and releases the old one&rsquo;s.</li>
+          <li>A lock setting (13 L5 B), so that the workspace of the settings runs in the workspace mode without <code>--lock workspace</code>.</li>
+          <li>Follow a setting that another Virtualbricks of yours changes, without a restart.</li>
+          <li>The workspace in the greeting of the sockets and in the answer of <code>status</code>.</li>
+          <li>A command that lists the Virtualbricks of yours that run, with their workspaces and sockets.</li>
+          <li>The holders in the refusals of the migration command and window (13 &sect;10), for the workspace lock too.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
