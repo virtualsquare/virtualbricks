@@ -46,7 +46,14 @@ def run():
         i18n.install()
         # --connect alone sends the commands of --run
         script = None if config["command"] else config["run"]
-        sys.exit(client.main(config["words"], config["target"], script=script))
+        sys.exit(
+            client.main(
+                config["words"],
+                config["target"],
+                script=script,
+                workspace=config["workspace"],
+            )
+        )
     if config["no-gui"]:
         factory = make_plain_application
     else:

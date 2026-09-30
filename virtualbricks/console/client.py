@@ -32,6 +32,10 @@ the file of ``--run``, each sent after the answer to the one before, up to
 the first error. The answer goes
 to the standard output, an error to the standard error. It loads neither
 Twisted's reactor nor GTK, takes no lock and opens no project.
+
+Without ``--connect``, it talks to the socket of ``--socket`` alone of the
+workspace of ``--workspace``, or else of the only workspace where a
+Virtualbricks of yours listens on it: the lock of the socket, held, tells.
 """
 
 from __future__ import annotations
@@ -351,27 +355,37 @@ def _timed_out(where: str) -> str:
 
 
 def _processes(holders) -> str:
-    names = [f"{pid} of {user}" for pid, user in holders]
-    if len(names) > 1:
-        names[-2:] = [
-            _("{one} and {other}").format(one=names[-2], other=names[-1])
-        ]
-    return ", ".join(names)
+    return _and([f"{pid} of {user}" for pid, user in holders])
 
 
-def _nobody(path: str) -> str:
-    """Why nothing answers on path: the Virtualbricks that runs, if any."""
-
-    if not wire.in_runtime_dir(path):
-        return _("No Virtualbricks listens on {path}").format(path=path)
+def _me() -> str:
     try:
-        me = pwd.getpwuid(os.getuid()).pw_name
+        return pwd.getpwuid(os.getuid()).pw_name
     except KeyError:
         # as locks names a user without a name
-        me = str(os.getuid())
+        return str(os.getuid())
+
+
+def _nobody(path: str | None = None, workspace: str | None = None) -> str:
+    """
+    Why nothing answers on path, or in workspace, or on the socket of any
+    workspace: the Virtualbricks that runs, if any.
+    """
+
+    if path is not None and not wire.in_runtime_dir(path):
+        return _("No Virtualbricks listens on {path}").format(path=path)
+    if workspace is not None:
+        return _nobody_in(workspace)
+    me = _me()
     holders = locks.holders(locations.SYSTEM_LOCK_FILE)
     holders += locks.holders(locations.user_lock_file())
     mine = [pid for pid, user in holders if user == me]
+    if mine and path is None:
+        return _(
+            "Your Virtualbricks, process {pid}, doesn't listen: it was"
+            " started without --socket or with another one, or its log says"
+            " why"
+        ).format(pid=mine[0])
     if mine:
         return _(
             "Your Virtualbricks, process {pid}, doesn't listen on {path}: it"
@@ -393,15 +407,140 @@ def _nobody(path: str) -> str:
     )
 
 
-def connect(target: wire.Socket | None = None) -> Connection:
+def _nobody_in(workspace: str) -> str:
+    """Why nothing answers in workspace: the Virtualbricks there, if any."""
+
+    where = locations.short_path(workspace)
+    holders = locks.holders(locations.workspace_lock_file(workspace))
+    me = _me()
+    mine = [pid for pid, user in holders if user == me]
+    if mine:
+        return _(
+            "Your Virtualbricks in {workspace}, process {pid}, doesn't"
+            " listen: it was started without --socket, or its log says why"
+        ).format(workspace=where, pid=mine[0])
+    theirs = [(pid, user) for pid, user in holders if user is not None]
+    if theirs:
+        return _(
+            "No Virtualbricks of yours runs in {workspace}; the one there is"
+            " process {processes}"
+        ).format(workspace=where, processes=_processes(theirs))
+    return _(
+        "No Virtualbricks runs in {workspace}. Start one with a socket, as"
+        " virtualbricks --workspace {workspace} --no-gui --socket"
+    ).format(workspace=where)
+
+
+# A Virtualbricks of yours that listens on the socket of its workspace: the
+# socket, the workspace, None if its link is gone, and the processes.
+Listening = tuple[str, "str | None", list[int]]
+
+
+def listening() -> list[Listening]:
     """
-    Connect to the Virtualbricks that listens on target, a wire.Socket, the
-    socket in the runtime folder if None; raise Unanswered if none can be
-    reached.
+    The Virtualbricks of yours that listen on the socket of --socket alone
+    of their workspaces, as the locks of the sockets say.
+    """
+
+    runtime = locations.runtime_dir()
+    try:
+        names = sorted(os.listdir(runtime))
+    except OSError:
+        return []
+    found: list[Listening] = []
+    for name in names:
+        # the folders of the workspaces; those with a dot are files
+        if name.startswith("."):
+            continue
+        folder = os.path.join(runtime, name)
+        path = os.path.join(folder, locations.CONTROL_SOCKET)
+        lock_file = locations.control_lock_file(path)
+        if not locks.held_alone(lock_file):
+            continue
+        try:
+            workspace = os.readlink(
+                os.path.join(folder, locations.WORKSPACE_LINK)
+            )
+        except OSError:
+            workspace = None
+        pids = [pid for pid, _user in locks.holders(lock_file)]
+        found.append((path, workspace, pids))
+    return found
+
+
+def _several(found: list[Listening], argv: list[str] | None = None) -> str:
+    """Which Virtualbricks listen, and how to name one."""
+
+    argv = sys.argv[1:] if argv is None else argv
+    places = []
+    for path, workspace, pids in found:
+        place = locations.short_path(workspace or os.path.dirname(path))
+        if pids:
+            place = ngettext(
+                "{place} (process {processes})",
+                "{place} (processes {processes})",
+                len(pids),
+            ).format(place=place, processes=", ".join(map(str, pids)))
+        places.append(place)
+    text = ngettext(
+        "Virtualbricks of yours listen in {count} workspace: {places}",
+        "Virtualbricks of yours listen in {count} workspaces: {places}",
+        len(found),
+    ).format(count=len(found), places=_and(places))
+    named = [workspace for _path, workspace, _pids in found if workspace]
+    if not named:
+        return text
+    example = " ".join(
+        ["virtualbricks", "--workspace", locations.short_path(named[0])]
+        + ([shlex.join(argv)] if argv else [])
+    )
+    return (
+        text
+        + ". "
+        + _("Name one with --workspace, as {example}").format(example=example)
+    )
+
+
+def _and(names: list[str]) -> str:
+    names = list(names)
+    if len(names) > 1:
+        names[-2:] = [
+            _("{one} and {other}").format(one=names[-2], other=names[-1])
+        ]
+    return ", ".join(names)
+
+
+def _default_socket(workspace: str | None) -> str:
+    """
+    The socket of --socket alone of workspace, or else of the only
+    Virtualbricks of yours that listens on one; raise Unanswered if none
+    does, or several do.
+    """
+
+    if workspace is not None:
+        return locations.control_socket(workspace)
+    found = listening()
+    if len(found) > 1:
+        raise Unanswered(_several(found))
+    if not found:
+        raise Unanswered(_nobody())
+    return found[0][0]
+
+
+def connect(
+    target: wire.Socket | None = None, workspace: str | None = None
+) -> Connection:
+    """
+    Connect to the Virtualbricks that listens on target, a wire.Socket; if
+    None or a unix socket without a path, on the socket of --socket alone of
+    workspace, or else of the only Virtualbricks of yours that listens on
+    one. Raise Unanswered if none can be reached.
     """
 
     if target is None:
-        target = wire.Socket(locations.control_socket())
+        target = wire.Socket(None)
+    if target.kind == "unix" and target.path is None:
+        target = target._replace(path=_default_socket(workspace))
     if target.kind != "unix":
         return _connect_network(target)
     path = target.path
@@ -415,7 +554,7 @@ def connect(target: wire.Socket | None = None) -> Connection:
             _("{reason}: no command sent").format(reason=exc)
         ) from None
     if not there:
-        raise Unanswered(_nobody(path))
+        raise Unanswered(_nobody(path, workspace))
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
         sock.connect(path)
@@ -425,7 +564,7 @@ def connect(target: wire.Socket | None = None) -> Connection:
     except (ConnectionRefusedError, FileNotFoundError):
         # a socket left by a crash
         sock.close()
-        raise Unanswered(_nobody(path)) from None
+        raise Unanswered(_nobody(path, workspace)) from None
     except OSError as exc:
         sock.close()
         raise Unanswered(f"{path}: {exc.strerror}") from None
@@ -605,13 +744,19 @@ def _commands(words, stdin):
 
 
 def main(
-    words, target=None, stdin=None, stdout=None, stderr=None, script=None
+    words,
+    target=None,
+    stdin=None,
+    stdout=None,
+    stderr=None,
+    script=None,
+    workspace=None,
 ) -> int:
     """
     Send the command of words, the lines of the file script, or else the
     lines of stdin, to the Virtualbricks that listens on target, a
-    wire.Socket, the default socket if None; write the answers and return
-    the exit status.
+    wire.Socket, the default socket of workspace if None, as connect()
+    finds it; write the answers and return the exit status.
     """
 
     stdin = sys.stdin if stdin is None else stdin
@@ -630,7 +775,7 @@ def main(
             return FAILED
     connection = None
     try:
-        connection = connect(target)
+        connection = connect(target, workspace)
         # the folders of another machine aren't those of this one
         cwd = os.getcwd() if connection.local() else None
         for number, line in _commands(words, stdin):

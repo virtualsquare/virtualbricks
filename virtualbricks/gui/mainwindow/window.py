@@ -26,6 +26,8 @@ tells when a project opens, is saved, or Virtualbricks quits (see
 bricks and the events call: configure, start or stop, remove.
 """
 
+import os
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -35,6 +37,7 @@ from twisted.internet import defer, task
 from twisted.logger import Logger
 
 from virtualbricks import errors, ksm
+from virtualbricks.locations import short_path
 from virtualbricks.bricks.event import is_event
 from virtualbricks.bricks.virtualmachine import is_disk_image
 from virtualbricks.config.settings import get_setting, set_setting
@@ -497,7 +500,14 @@ class VBGUI:
     def set_title(self):
         if projects.current:
             name = projects.current.name
-            title = _("Virtualbricks (project: {0})").format(name)
+            workspace = os.path.abspath(projects.path)
+            if workspace == os.path.abspath(str(get_setting("workspace"))):
+                title = _("Virtualbricks (project: {0})").format(name)
+            else:
+                # another beside it may have a project of the same name
+                title = _(
+                    "Virtualbricks (project: {name}, workspace: {workspace})"
+                ).format(name=name, workspace=short_path(workspace))
             self.window.set_title(title)
 
     """ ******************************************************** """

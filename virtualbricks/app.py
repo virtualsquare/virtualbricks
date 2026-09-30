@@ -64,15 +64,15 @@ class Options(usage.Options):
             "command",
             None,
             "Send the command of the words that follow to the Virtualbricks "
-            "that runs, the one of --connect, and print its answer; without "
-            "words, the lines of the standard input.",
+            "that runs, the one of --connect or of --workspace, and print "
+            "its answer; without words, the lines of the standard input.",
         ],
         # read before getopt, which has no optional arguments
         [
             "socket",
             None,
-            "Listen on a control socket: .control in the runtime folder, or "
-            "the one of the description after it, as "
+            "Listen on a control socket: .control in the runtime folder of "
+            "the workspace, or the one of the description after it, as "
             "unix:PATH:protocol=amp, tcp:PORT or ssl:PORT:privateKey=FILE. "
             "Give it again for more sockets.",
         ],
@@ -80,8 +80,9 @@ class Options(usage.Options):
             "connect",
             None,
             "The Virtualbricks that runs that --command and --run talk to: "
-            "the one of .control in the runtime folder, or the one of the "
-            "socket of the description after it, as tcp:HOST:PORT.",
+            "the one of .control in the runtime folder of its workspace, or "
+            "the one of the socket of the description after it, as "
+            "tcp:HOST:PORT.",
         ],
     ]
     optParameters = [
@@ -97,7 +98,8 @@ class Options(usage.Options):
             "workspace",
             None,
             None,
-            "The folder of the projects for this run, instead of the setting.",
+            "The folder of the projects for this run, instead of the "
+            "setting; with --command, the Virtualbricks that runs there.",
         ],
         [
             "lock",
@@ -123,7 +125,6 @@ class Options(usage.Options):
         "no-gui",
         "noterm",
         "run",
-        "workspace",
         "lock",
         "logfile",
         "logger",
@@ -232,7 +233,11 @@ class Options(usage.Options):
 
         client = option == "connect"
         if description is None:
-            socket = wire.Socket(locations.control_socket())
+            # .control of the workspace, known once the settings are read
+            socket = wire.Socket(None)
+            if client or wire.Socket(None) not in self["sockets"]:
+                return socket
+            raise usage.UsageError("--socket alone is given twice")
         else:
             try:
                 socket = wire.parse_socket(description, client)
@@ -323,7 +328,10 @@ class Options(usage.Options):
         self["logger"] = _file_logger(arg)
 
     def opt_workspace(self, arg):
-        """The folder of the projects for this run, instead of the setting."""
+        """
+        The folder of the projects for this run, instead of the setting;
+        with --command, the Virtualbricks that runs there.
+        """
 
         # a folder that isn't there is made, as the workspace of the setting
         if not arg:
@@ -407,6 +415,11 @@ class Options(usage.Options):
             )
         if len(self.targets) > 1:
             raise usage.UsageError("--connect names one Virtualbricks")
+        if self["workspace"] and any(self.targets):
+            raise usage.UsageError(
+                "--connect and --workspace each name a Virtualbricks: give"
+                " one of them"
+            )
         if (
             self["command"]
             and not words

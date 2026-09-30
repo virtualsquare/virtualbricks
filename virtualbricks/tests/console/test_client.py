@@ -28,12 +28,14 @@ import threading
 from twisted.trial import unittest
 
 from virtualbricks import locations, locks
+from virtualbricks.config.workspace import Workspace
 from virtualbricks.console import client, wire
 from virtualbricks.tests import (
     DATA,
     hold_lock,
     isolate,
     make_socket,
+    release,
     short_folder,
 )
 
@@ -72,6 +74,9 @@ class FakeVirtualbricks:
             self.server = socket.socket(socket.AF_UNIX)
             self.server.bind(path)
             self.target = wire.Socket(path)
+            # as a Virtualbricks that listens: the lock of the socket
+            self.lock = locks.hold(locations.control_lock_file(path))
+            test.addCleanup(release, self.lock)
         self.server.listen(1)
         self.thread = threading.Thread(target=self.serve, daemon=True)
         self.thread.start()
@@ -117,6 +122,11 @@ class FakeVirtualbricks:
         return dict(self.greeting, proof=proof)
 
     def stop(self):
+        # wakes an accept() that waits: nobody connected
+        try:
+            self.server.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
         self.server.close()
         self.thread.join(5)
 
@@ -124,19 +134,26 @@ class FakeVirtualbricks:
 class ClientTestCase(unittest.TestCase):
 
     def setUp(self):
-        isolate(self)
-        # the runtime folder, and a socket there, where a path fits
+        self.root = isolate(self)
+        # the runtime folder, and a socket of a workspace there, where a
+        # path fits
         os.environ["XDG_RUNTIME_DIR"] = short_folder(self)
-        locations.ensure_private_dir(locations.runtime_dir())
-        self.path = locations.control_socket()
+        self.workspace = os.path.join(self.root, "labs")
+        Workspace(self.workspace).make_runtime_dir()
+        self.path = locations.control_socket(self.workspace)
         self.stdout = io.StringIO()
         self.stderr = io.StringIO()
 
-    def main(self, *words, stdin="", path=None, target=None):
+    def main(self, *words, stdin="", path=None, target=None, workspace=None):
         if path is not None:
             target = wire.Socket(path)
         return client.main(
-            list(words), target, io.StringIO(stdin), self.stdout, self.stderr
+            list(words),
+            target,
+            io.StringIO(stdin),
+            self.stdout,
+            self.stderr,
+            workspace=workspace,
         )
 
     def assertOutput(self, status, stdout, stderr=""):
@@ -257,8 +274,10 @@ class TestCommands(ClientTestCase):
 
 class TestUnanswered(ClientTestCase):
 
-    def unanswered(self, *words, path=None):
-        status = self.main(*(words or ["status"]), path=path)
+    def unanswered(self, *words, path=None, workspace=None):
+        status = self.main(
+            *(words or ["status"]), path=path, workspace=workspace
+        )
         self.assertEqual(status, client.UNANSWERED)
         self.assertEqual(self.stdout.getvalue(), "")
         return self.stderr.getvalue()
@@ -291,6 +310,14 @@ class TestUnanswered(ClientTestCase):
         hold_lock(self, locks.USER)
         self.assertEqual(
             self.unanswered(),
+            f"Your Virtualbricks, process {os.getpid()}, doesn't listen: it"
+            " was started without --socket or with another one, or its log"
+            " says why\n",
+        )
+        # at the path of the socket of --socket alone
+        self.stderr = io.StringIO()
+        self.assertEqual(
+            self.unanswered(path=self.path),
             f"Your Virtualbricks, process {os.getpid()}, doesn't listen on"
             f" {self.path}: it was started without --socket or with another"
             " one, or its log says why\n",
@@ -322,7 +349,8 @@ class TestUnanswered(ClientTestCase):
     def test_not_a_socket(self):
         open(self.path, "w").close()
         self.assertEqual(
-            self.unanswered(), f"{self.path} isn't a socket: no command sent\n"
+            self.unanswered(workspace=self.workspace),
+            f"{self.path} isn't a socket: no command sent\n",
         )
 
     def test_not_yours(self):
@@ -330,7 +358,8 @@ class TestUnanswered(ClientTestCase):
         uid = os.getuid()
         self.patch(os, "getuid", lambda: uid + 1)
         self.assertEqual(
-            self.unanswered(), f"{self.path} isn't yours: no command sent\n"
+            self.unanswered(workspace=self.workspace),
+            f"{self.path} isn't yours: no command sent\n",
         )
 
     def test_a_folder_others_can_write_in(self):
@@ -338,7 +367,7 @@ class TestUnanswered(ClientTestCase):
         folder = os.path.dirname(self.path)
         os.chmod(folder, 0o777)
         self.assertEqual(
-            self.unanswered(),
+            self.unanswered(workspace=self.workspace),
             f"Others can write in the runtime folder {folder}: no command"
             " sent\n",
         )
@@ -383,6 +412,116 @@ class TestUnanswered(ClientTestCase):
                 "Virtualbricks closed the connection before it answered: it"
                 " may have ended",
             )
+
+
+class TestWorkspaces(ClientTestCase):
+    """The socket of --socket alone of each workspace, and --workspace."""
+
+    def setUp(self):
+        super().setUp()
+        self.other = os.path.join(self.root, "other")
+        os.makedirs(self.other)
+        Workspace(self.other).make_runtime_dir()
+        self.other_path = locations.control_socket(self.other)
+
+    def test_the_only_one_that_listens(self):
+        # the other workspace has a socket left by a crash
+        make_socket(self.other_path)
+        FakeVirtualbricks(self, self.path, wire.answer(["Nothing runs"]))
+        self.assertOutput(self.main("status"), "Nothing runs\n")
+
+    def test_the_one_of_workspace(self):
+        FakeVirtualbricks(self, self.path, wire.answer(["labs"]))
+        FakeVirtualbricks(self, self.other_path, wire.answer(["other"]))
+        status = self.main("status", workspace=self.other)
+        self.assertOutput(status, "other\n")
+
+    def test_several_listen(self):
+        FakeVirtualbricks(self, self.path, wire.answer([]))
+        FakeVirtualbricks(self, self.other_path, wire.answer([]))
+        self.patch(sys, "argv", ["virtualbricks", "--command", "status"])
+        status = self.main("status")
+        self.assertEqual(status, client.UNANSWERED)
+        # in the order of their keys
+        places = sorted(
+            [(self.path, "~/labs"), (self.other_path, "~/other")],
+            key=lambda place: os.path.dirname(place[0]),
+        )
+        pid = os.getpid()
+        self.assertOutput(
+            status,
+            "",
+            "Virtualbricks of yours listen in 2 workspaces:"
+            f" {places[0][1]} (process {pid}) and {places[1][1]} (process"
+            f" {pid}). Name one with --workspace, as virtualbricks"
+            f" --workspace {places[0][1]} --command status\n",
+        )
+
+    def test_listening(self):
+        server = FakeVirtualbricks(self, self.path)
+        # a workspace whose link is gone, and files of the runtime folder
+        os.unlink(os.path.join(os.path.dirname(self.other_path), ".workspace"))
+        FakeVirtualbricks(self, self.other_path)
+        hold_lock(self, locks.USER)
+        found = sorted(client.listening())
+        expected = sorted(
+            [
+                (self.path, self.workspace, [os.getpid()]),
+                (self.other_path, None, [os.getpid()]),
+            ]
+        )
+        self.assertEqual(found, expected)
+        server.stop()
+        release(server.lock)
+        self.assertEqual(len(client.listening()), 1)
+
+    def test_several_without_their_links(self):
+        found = [
+            ("/run/vb/aaaaaaaa/.control", None, []),
+            ("/run/vb/bbbbbbbb/.control", None, [4300, 4400]),
+        ]
+        self.assertEqual(
+            client._several(found, ["--command", "status"]),
+            "Virtualbricks of yours listen in 2 workspaces: /run/vb/aaaaaaaa"
+            " and /run/vb/bbbbbbbb (processes 4300, 4400)",
+        )
+
+    def test_nobody_in_the_workspace(self):
+        status = self.main("status", workspace=self.other)
+        self.assertOutput(
+            status,
+            "",
+            "No Virtualbricks runs in ~/other. Start one with a socket, as"
+            " virtualbricks --workspace ~/other --no-gui --socket\n",
+        )
+        self.assertEqual(status, client.UNANSWERED)
+
+    def test_yours_in_the_workspace_without_the_socket(self):
+        FakeVirtualbricks(self, self.path, wire.answer([]))
+        hold_lock(self, locks.WORKSPACE, workspace=self.other)
+        status = self.main("status", workspace=self.other)
+        self.assertOutput(
+            status,
+            "",
+            f"Your Virtualbricks in ~/other, process {os.getpid()}, doesn't"
+            " listen: it was started without --socket, or its log says"
+            " why\n",
+        )
+
+    def test_another_users_in_the_workspace(self):
+        lock_file = locations.workspace_lock_file(self.other)
+        self.patch(
+            locks,
+            "holders",
+            lambda path: ((4242, "bob"),) if path == lock_file else (),
+        )
+        status = self.main("status", workspace=self.other)
+        self.assertOutput(
+            status,
+            "",
+            "No Virtualbricks of yours runs in ~/other; the one there is"
+            " process 4242 of bob\n",
+        )
 
 
 class TestTcp(ClientTestCase):

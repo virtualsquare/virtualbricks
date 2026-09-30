@@ -570,7 +570,8 @@ class Application:
             )
 
     def install_home(self):
-        locations.ensure_private_dir(locations.runtime_dir())
+        # with the link to the workspace, and room for its socket
+        projects.make_runtime_dir()
 
     def get_namespace(self):
         return {}

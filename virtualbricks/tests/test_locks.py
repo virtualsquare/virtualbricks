@@ -400,6 +400,22 @@ class TestHold(unittest.TestCase):
         self.assertEqual(error.errno, errno.ELOOP)
         self.assertFalse(os.path.exists(target))
 
+    def test_held_alone(self):
+        # as the socket's, whose Virtualbricks listens
+        self.assertFalse(locks.held_alone(self.path))
+        self.assertFalse(os.path.exists(self.path))
+        lock = self.hold()
+        self.assertTrue(locks.held_alone(self.path))
+        # the lock stays held
+        self.assertIsNone(locks.hold(self.path))
+        lock.unlock()
+        self.assertFalse(locks.held_alone(self.path))
+
+    def test_held_but_shared(self):
+        # the user lock of the workspace policy: not alone
+        hold_lock(self, WORKSPACE)
+        self.assertFalse(locks.held_alone(locations.user_lock_file()))
+
 
 class TestProcesses(unittest.TestCase):
 

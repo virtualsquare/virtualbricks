@@ -729,7 +729,8 @@ PROTOCOLS = {wire.TEXT: ControlProtocol, wire.AMP: AMPControl}
 def listen(brickfactory, socket=None, reactor=None):
     """
     Answer the commands of socket, a wire.Socket of --socket: the text
-    socket at ``.control`` in the runtime folder if None.
+    socket at ``.control`` in the runtime folder of the workspace if None,
+    or if a unix socket without a path, as --socket alone.
 
     Return the Control, None if this Virtualbricks goes without: another
     one answers there, or the socket can't be there; the log says which.
@@ -739,7 +740,9 @@ def listen(brickfactory, socket=None, reactor=None):
     if reactor is None:
         from twisted.internet import reactor
     if socket is None:
-        socket = wire.Socket(locations.control_socket())
+        socket = wire.Socket(None)
+    if socket.kind == "unix" and socket.path is None:
+        socket = socket._replace(path=locations.control_socket(projects.path))
     if socket.kind != "unix":
         return _listen_network(brickfactory, socket, reactor)
     path = socket.path

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 14:16+0200\n"
+"POT-Creation-Date: 2026-09-30 17:14+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1465,12 +1465,14 @@ msgstr ""
 
 #: virtualbricks/console/client.py
 #, python-brace-format
-msgid "{one} and {other}"
+msgid "No Virtualbricks listens on {path}"
 msgstr ""
 
 #: virtualbricks/console/client.py
 #, python-brace-format
-msgid "No Virtualbricks listens on {path}"
+msgid ""
+"Your Virtualbricks, process {pid}, doesn't listen: it was started without --"
+"socket or with another one, or its log says why"
 msgstr ""
 
 #: virtualbricks/console/client.py
@@ -1495,6 +1497,51 @@ msgstr[1] ""
 msgid ""
 "No Virtualbricks of yours runs. Start one with a socket, as virtualbricks --"
 "no-gui --socket"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid ""
+"Your Virtualbricks in {workspace}, process {pid}, doesn't listen: it was "
+"started without --socket, or its log says why"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid ""
+"No Virtualbricks of yours runs in {workspace}; the one there is process "
+"{processes}"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid ""
+"No Virtualbricks runs in {workspace}. Start one with a socket, as "
+"virtualbricks --workspace {workspace} --no-gui --socket"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "{place} (process {processes})"
+msgid_plural "{place} (processes {processes})"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "Virtualbricks of yours listen in {count} workspace: {places}"
+msgid_plural "Virtualbricks of yours listen in {count} workspaces: {places}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "Name one with --workspace, as {example}"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid "{one} and {other}"
 msgstr ""
 
 #: virtualbricks/console/client.py
@@ -4366,6 +4413,11 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/window.py
 #, python-brace-format
 msgid "Virtualbricks (project: {0})"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+#, python-brace-format
+msgid "Virtualbricks (project: {name}, workspace: {workspace})"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/window.py

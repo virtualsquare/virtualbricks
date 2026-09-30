@@ -673,9 +673,11 @@ class TestTheRuntimeFolder(unittest.TestCase):
     def test_in_it(self):
         isolate(self)
         folder = locations.runtime_dir()
-        self.assertTrue(wire.in_runtime_dir(locations.control_socket()))
+        # the socket of a workspace, in its folder there
+        self.assertTrue(wire.in_runtime_dir(locations.control_socket("/w")))
         self.assertTrue(wire.in_runtime_dir(os.path.join(folder, "a.sock")))
+        # a project's runtime folder, one deeper
         self.assertFalse(
-            wire.in_runtime_dir(os.path.join(folder, "lab1", "a"))
+            wire.in_runtime_dir(os.path.join(folder, "key", "lab1", "a"))
         )
         self.assertFalse(wire.in_runtime_dir("/tmp/lab.sock"))

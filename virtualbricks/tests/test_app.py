@@ -280,7 +280,8 @@ class TestSocket(unittest.TestCase):
         # a runtime folder short enough for a socket's path, not made yet
         self.runtime = os.path.join(short_folder(self), "run")
         os.environ["XDG_RUNTIME_DIR"] = self.runtime
-        self.default = locations.control_socket()
+        # .control of the workspace, known once the settings are read
+        self.default = None
 
     def parse(self, *args):
         options = app.Options()
@@ -298,9 +299,7 @@ class TestSocket(unittest.TestCase):
         self.assertNotIn("socket", self.parse())
 
     def test_alone(self):
-        # the runtime folder is made at start
-        self.assertFalse(os.path.exists(os.path.dirname(self.default)))
-        self.assertEqual(self.sockets("--socket"), [wire.Socket(self.default)])
+        self.assertEqual(self.sockets("--socket"), [wire.Socket(None)])
 
     def test_a_description(self):
         self.assertEqual(
@@ -366,11 +365,11 @@ class TestSocket(unittest.TestCase):
         )
         self.assertEqual(
             self.refused("--socket", "--socket"),
-            f"--socket: {self.default} is given twice",
+            "--socket alone is given twice",
         )
         self.assertEqual(
-            self.refused("--socket", f"unix:{self.default}", "--socket"),
-            f"--socket: {self.default} is given twice",
+            self.refused("--socket", "unix:/tmp/a", "--socket=unix:/tmp/a"),
+            "--socket: /tmp/a is given twice",
         )
 
     def test_a_path(self):
@@ -451,7 +450,7 @@ class TestTcpSocket(unittest.TestCase):
                 r"--socket=tcp:8765:interface=\:\:1",
             ),
             [
-                wire.Socket(locations.control_socket()),
+                wire.Socket(None),
                 self.tcp(8766, protocol="amp"),
                 self.tcp(8765, "::1"),
             ],
@@ -739,7 +738,6 @@ class TestCommand(unittest.TestCase):
             ["--no-gui"],
             ["--noterm"],
             ["--run", script],
-            ["--workspace", self.root],
             ["--lock", "system"],
             ["--logfile", "-"],
             ["--logger", "virtualbricks.app.file_logger"],
@@ -750,6 +748,12 @@ class TestCommand(unittest.TestCase):
                 f"--command takes no --{name}: it talks to a Virtualbricks"
                 " that runs",
             )
+
+    def test_the_workspace(self):
+        # the Virtualbricks that runs there
+        options = self.parse("--workspace", self.root, "--command", "status")
+        self.assertEqual(options["workspace"], self.root)
+        self.assertEqual(options["words"], ["status"])
 
     def test_the_standard_input(self):
         self.assertEqual(self.parse("--command")["words"], [])
@@ -786,9 +790,7 @@ class TestConnect(unittest.TestCase):
         self.assertTrue(options["connect"])
         self.assertFalse(options["command"])
         self.assertEqual(options["run"], self.script)
-        self.assertEqual(
-            options["target"], wire.Socket(locations.control_socket())
-        )
+        self.assertEqual(options["target"], wire.Socket(None))
         options = self.parse(
             "--connect", "unix:/tmp/lab.sock", "--run", self.script
         )
@@ -809,7 +811,6 @@ class TestConnect(unittest.TestCase):
         for args in (
             ["--no-gui"],
             ["--noterm"],
-            ["--workspace", self.root],
             ["--lock", "system"],
             ["--logfile", "-"],
             ["--logger", "virtualbricks.app.file_logger"],
@@ -824,6 +825,26 @@ class TestConnect(unittest.TestCase):
             self.refused("--socket", "--connect", "--run", self.script),
             "--connect takes no --socket, which listens: --connect names the"
             " Virtualbricks to talk to",
+        )
+
+    def test_the_workspace(self):
+        # the Virtualbricks that runs there, which --connect can't name too
+        options = self.parse(
+            "--workspace", self.root, "--connect", "--run", self.script
+        )
+        self.assertEqual(options["workspace"], self.root)
+        self.assertEqual(options["target"], wire.Socket(None))
+        self.assertEqual(
+            self.refused(
+                "--workspace",
+                self.root,
+                "--connect",
+                "tcp:8765",
+                "--run",
+                self.script,
+            ),
+            "--connect and --workspace each name a Virtualbricks: give one of"
+            " them",
         )
 
     def test_command_or_run(self):

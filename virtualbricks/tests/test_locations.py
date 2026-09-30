@@ -118,13 +118,17 @@ class TestLocations(unittest.TestCase):
         )
 
     def test_control_socket(self):
-        # beside the runtime directories of the projects, and its lock too
+        # beside the runtime directories of the workspace's projects, and
+        # its lock too
         self.env["XDG_RUNTIME_DIR"] = "/run/user/1000"
-        socket = locations.control_socket()
-        self.assertEqual(socket, "/run/user/1000/virtualbricks/.control")
+        key = locations.workspace_key("/home/alice/labs")
+        socket = locations.control_socket("/home/alice/labs")
+        self.assertEqual(
+            socket, f"/run/user/1000/virtualbricks/{key}/.control"
+        )
         self.assertEqual(
             locations.control_lock_file(socket),
-            "/run/user/1000/virtualbricks/.control.lock",
+            f"/run/user/1000/virtualbricks/{key}/.control.lock",
         )
         self.assertEqual(
             locations.control_lock_file("/home/alice/lab.sock"),

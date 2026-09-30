@@ -293,6 +293,12 @@ class TestInstall(AppTestCase):
         mode = os.stat(locations.runtime_dir()).st_mode
         self.assertTrue(stat.S_ISDIR(mode))
         self.assertEqual(stat.S_IMODE(mode), 0o700)
+        # and the folder of the workspace, with its link, for its socket
+        self.app.install_workspace()
+        self.app.install_home()
+        folder = locations.workspace_runtime_dir(self.manager.path)
+        link = os.path.join(folder, locations.WORKSPACE_LINK)
+        self.assertEqual(os.readlink(link), self.manager.path)
 
 
 class TestMigrate(AppTestCase):

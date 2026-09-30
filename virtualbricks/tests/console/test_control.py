@@ -1101,11 +1101,12 @@ class TestListen(ConsoleTestCase):
         self.factory.runtime_dir = "/run/vb"
         self.logger = FakeLogger()
         self.patch(control, "logger", self.logger)
-        use_workspace(self)
+        projects = use_workspace(self)
         folder = short_folder(self)
         os.environ["XDG_RUNTIME_DIR"] = folder
-        locations.ensure_private_dir(locations.runtime_dir())
-        self.path = locations.control_socket()
+        # the socket of --socket alone, in the folder of the workspace
+        projects.make_runtime_dir()
+        self.path = locations.control_socket(projects.path)
         self.lock_file = locations.control_lock_file(self.path)
         self.reactor = Reactor()
 

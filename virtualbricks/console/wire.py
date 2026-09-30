@@ -566,9 +566,14 @@ def check_length(path: str) -> None:
 
 
 def in_runtime_dir(path: str) -> bool:
-    """Whether path is in the runtime folder, as the default socket."""
+    """
+    Whether path is in the runtime folder, or in the folder of a workspace
+    there, as the default socket.
+    """
 
-    return os.path.dirname(path) == locations.runtime_dir()
+    folder = os.path.dirname(path)
+    runtime = locations.runtime_dir()
+    return folder == runtime or os.path.dirname(folder) == runtime
 
 
 def check_path(path: str, private: bool) -> None:

@@ -316,6 +316,25 @@ def _open(path: str, write: bool = False) -> int:
         return fd
 
 
+def held_alone(path: str) -> bool:
+    """
+    Whether a process holds the lock of the file at path alone, as the one
+    that listens on a control socket; False if there is no file.
+    """
+
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    except OSError:
+        return False
+    try:
+        fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
+    except BlockingIOError:
+        return True
+    finally:
+        os.close(fd)
+    return False
+
+
 def hold(path: str) -> Lock | None:
     """
     Lock the file at path alone, without waiting, as the control socket's.

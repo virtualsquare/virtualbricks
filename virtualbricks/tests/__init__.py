@@ -142,6 +142,9 @@ def hold_lock(test, policy=locks.SYSTEM, user=None, workspace=None):
     except locks.Held:
         release(lock)
         test.fail(f"the lock is already held ({policy}, {user}, {workspace})")
+    except BaseException:
+        release(lock)
+        raise
     finally:
         if user is not None:
             os.environ["XDG_RUNTIME_DIR"] = runtime
