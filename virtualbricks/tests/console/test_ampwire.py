@@ -25,7 +25,7 @@ from twisted.protocols import amp
 from twisted.test import iosim
 from twisted.trial import unittest
 
-from virtualbricks.console import ampwire, wire
+from virtualbricks.console import ampcommands, ampwire, wire
 
 
 class TestTheImport(unittest.TestCase):
@@ -92,3 +92,31 @@ class TestAuthenticate(unittest.TestCase):
         self.assertEqual(
             failure.getErrorMessage(), "The other end doesn't know the token"
         )
+
+
+class OlderHello(amp.Command):
+    """Hello as Virtualbricks 2.1 declares it: no arguments."""
+
+    commandName = b"Hello"
+    response = ampwire.Hello.response
+
+
+class Older(amp.AMP):
+    """A Virtualbricks that speaks protocol 1 only."""
+
+    @OlderHello.responder
+    def hello(self):
+        return {"protocol": 1, "version": "2.1.0", "pid": 1, "project": None}
+
+
+class TestTheProtocols(unittest.TestCase):
+
+    def test_the_typed_commands(self):
+        self.assertEqual(ampwire.PROTOCOLS, (1, ampcommands.PROTOCOL))
+
+    def test_an_older_virtualbricks(self):
+        # it ignores the protocols of the program, and answers 1
+        program, older, pump = iosim.connectedServerAndClient(Older, amp.AMP)
+        answer = program.callRemote(ampwire.Hello, protocols=[2])
+        pump.flush()
+        self.assertEqual(self.successResultOf(answer)["protocol"], 1)

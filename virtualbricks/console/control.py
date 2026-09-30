@@ -20,7 +20,8 @@
 The control sockets: the Virtualbricks that runs answers the commands of
 ``virtualbricks --command``, and of any program that speaks the text
 protocol of :mod:`virtualbricks.console.wire`, or the AMP commands of
-:mod:`virtualbricks.console.ampwire`.
+:mod:`virtualbricks.console.ampwire`, and, once a connection agrees on
+protocol 2, the typed commands of :mod:`virtualbricks.console.ampcommands`.
 
 :func:`listen` listens on a socket of ``--socket``. A unix socket is
 ``.control`` in the runtime folder or the path of its description, while it
@@ -49,8 +50,10 @@ from zope.interface import implementer
 
 from virtualbricks import __version__, locations, locks
 from virtualbricks.config.workspace import projects
-from virtualbricks.console import ampwire, wire
-from virtualbricks.console.dispatch import run
+from virtualbricks.console import ampcommands, ampgen, ampwire, wire
+from virtualbricks.console.command import COMMANDS, CommandError, NotFound
+from virtualbricks.console.dispatch import run, run_command
+from virtualbricks.console.parser import line_of
 from virtualbricks.i18n import _
 
 logger = Logger()
@@ -319,10 +322,41 @@ class ControlProtocol(Visitor, basic.LineOnlyReceiver):
         self.send(wire.refusal(message, getattr(exc, "lines", [])))
 
 
-class AMPControl(Visitor, amp.AMP):
+# The typed commands, by their names: the command of the console, and the
+# AMP command of ampcommands.
+TYPED = {
+    ampgen.name(found).encode(): (
+        found,
+        getattr(ampcommands, ampgen.name(found)),
+    )
+    for found in COMMANDS
+}
+
+
+def _responder(found, typed):
+    def respond(self, cwd, **given):
+        return self.requests.add(lambda: self.run_typed(found, given, cwd))
+
+    return typed.responder(respond)
+
+
+# The responders of the typed commands, which AMP finds by their commands;
+# Twisted collects them when the class is made.
+TypedCommands = type(
+    "TypedCommands",
+    (amp.CommandLocator,),
+    {
+        f"typed_{name.decode()}": _responder(found, typed)
+        for name, (found, typed) in TYPED.items()
+    },
+)
+
+
+class AMPControl(Visitor, TypedCommands, amp.AMP):
     """
-    A connection of the AMP protocol: the commands of ampwire. On a socket
-    with a token, Hello and Run wait for the proof, by Challenge and
+    A connection of the AMP protocol: the commands of ampwire, and, once
+    Hello agrees on protocol 2, the typed commands of ampcommands. On a
+    socket with a token, they wait for the proof, by Challenge and
     Authenticate.
     """
 
@@ -339,6 +373,8 @@ class AMPControl(Visitor, amp.AMP):
         # its Challenge
         self.owes_proof = False
         self.nonce = None
+        # the protocol that Hello agreed on
+        self.agreed = 1
 
     def makeConnection(self, transport):
         # AMP logs each connection with the addresses of its objects: listen()
@@ -406,12 +442,51 @@ class AMPControl(Visitor, amp.AMP):
 
         self.reactor.callLater(0, close)
 
+    def locateResponder(self, name):
+        responder = super().locateResponder(name)
+        if responder is None or name not in TYPED:
+            return responder
+        _, typed = TYPED[name]
+
+        def checked(box):
+            # what AMP would drop, or close the connection on
+            try:
+                self._check_proved()
+                self._check_agreed()
+                _check_keys(typed, box)
+            except (ampwire.TokenNeeded, ampcommands.ProtocolNeeded) as exc:
+                raise amp.RemoteAmpError(
+                    ampcommands.ERRORS[type(exc)], str(exc)
+                ) from None
+            except ampcommands.BadArgument as exc:
+                self._log_failed(str(exc))
+                raise amp.RemoteAmpError(
+                    ampcommands.ERRORS[type(exc)], str(exc)
+                ) from None
+            return responder(box)
+
+        return checked
+
+    def _check_agreed(self):
+        if self.agreed != ampcommands.PROTOCOL:
+            raise ampcommands.ProtocolNeeded(
+                _(
+                    "The typed commands need protocol {protocol}: call Hello"
+                    " with protocols [{protocol}] first"
+                ).format(protocol=ampcommands.PROTOCOL)
+            )
+
     @ampwire.Hello.responder
-    def hello(self):
+    def hello(self, protocols):
         self._check_proved()
+        asked = {1, *(protocols or ())}
+        self.agreed = max(
+            (number for number in ampwire.PROTOCOLS if number in asked),
+            default=ampwire.PROTOCOLS[0],
+        )
         current = projects.current
         return {
-            "protocol": ampwire.PROTOCOL,
+            "protocol": self.agreed,
             "version": __version__,
             "pid": os.getpid(),
             "project": current.name if current is not None else None,
@@ -427,13 +502,43 @@ class AMPControl(Visitor, amp.AMP):
             wire.check_cwd(cwd)
         except wire.BadRequest as exc:
             raise ampwire.CommandFailed(str(exc)) from None
+        self._log_line(line)
+        done = run(self.brickfactory, line, self.reactor, cwd=cwd)
+        done.addCallbacks(self._answer, self._refuse)
+        return done
+
+    def run_typed(self, found, given, cwd):
+        """Run the typed command of found, a command of the console."""
+
+        try:
+            wire.check_cwd(cwd)
+        except wire.BadRequest as exc:
+            raise ampcommands.BadArgument(str(exc)) from None
+        self._log_line(line_of(found, given))
+        try:
+            done = run_command(
+                self.brickfactory, found, given, self.reactor, cwd
+            )
+        except NotFound as exc:
+            self._log_failed(str(exc))
+            raise ampcommands.NotFound(str(exc)) from None
+        except CommandError as exc:
+            self._log_failed(str(exc))
+            raise ampcommands.BadArgument(str(exc)) from None
+        done.addCallbacks(self._answer, self._refuse)
+        return done
+
+    def _log_line(self, line):
         if self.who is None:
             logger.info(amp_command_received, line=line)
         else:
             logger.info(command_from, who=self.who, line=line)
-        done = run(self.brickfactory, line, self.reactor, cwd=cwd)
-        done.addCallbacks(self._answer, self._refuse)
-        return done
+
+    def _log_failed(self, message):
+        if self.who is None:
+            logger.info(amp_command_failed, error=message)
+        else:
+            logger.info(command_from_failed, who=self.who, error=message)
 
     def _answer(self, lines):
         size = len(self.LINES.toString(lines))
@@ -453,11 +558,38 @@ class AMPControl(Visitor, amp.AMP):
         # what the command did first is dropped
         exc = failure.value
         message = str(exc) or type(exc).__name__
-        if self.who is None:
-            logger.info(amp_command_failed, error=message)
-        else:
-            logger.info(command_from_failed, who=self.who, error=message)
+        self._log_failed(message)
         raise ampwire.CommandFailed(message)
+
+
+def _check_keys(typed, box):
+    """
+    BadArgument if box has a key that typed doesn't declare, or lacks one it
+    needs: AMP drops the first, and closes the connection on the second.
+    """
+
+    declared = {key for key, _ in typed.arguments}
+    extra = sorted(
+        key.decode("utf-8", "replace")
+        for key in set(box) - declared - {amp.ASK, amp.COMMAND}
+    )
+    if extra:
+        raise ampcommands.BadArgument(
+            _("{command} has no argument {names}").format(
+                command=typed.commandName.decode(), names=", ".join(extra)
+            )
+        )
+    missing = sorted(
+        key.decode()
+        for key, argument in typed.arguments
+        if not argument.optional and key not in box
+    )
+    if missing:
+        raise ampcommands.BadArgument(
+            _("{command} needs {names}").format(
+                command=typed.commandName.decode(), names=", ".join(missing)
+            )
+        )
 
 
 class ControlFactory(protocol.Factory):

@@ -27,7 +27,7 @@ from twisted.protocols import amp, basic
 from twisted.test import iosim
 
 from virtualbricks import __version__, locations, locks
-from virtualbricks.console import ampwire, client, control, wire
+from virtualbricks.console import ampcommands, ampwire, client, control, wire
 from virtualbricks.console.command import Arg, CommandError, command
 from virtualbricks.tests import (
     DATA,
@@ -434,7 +434,7 @@ class TestTheToken(TestProtocol):
         super().test_lost_while_it_runs()
 
 
-class TestAMP(ConsoleTestCase):
+class AMPTestCase(ConsoleTestCase):
     """A connection of the AMP socket, to a program on fake transports."""
 
     def setUp(self):
@@ -487,6 +487,9 @@ class TestAMP(ConsoleTestCase):
         @command(None, "long", help="An answer too long")
         def long(context):
             return ["x" * 1000] * 70
+
+
+class TestAMP(AMPTestCase):
 
     def test_hello(self):
         hello = {
@@ -623,6 +626,219 @@ class TestAMP(ConsoleTestCase):
         self.successResultOf(closed)
 
 
+class TestTyped(AMPTestCase):
+    """The typed commands of protocol 2."""
+
+    def agree(self, protocols=(2,)):
+        answer = self.call(ampwire.Hello, protocols=list(protocols))
+        return self.successResultOf(answer)["protocol"]
+
+    def test_the_agreement(self):
+        # the highest that both speak; 1 always
+        for protocols, agreed in (
+            ([2], 2),
+            ([3, 2], 2),
+            ([3], 1),
+            ([5, 1], 1),
+            ([], 1),
+        ):
+            self.assertEqual(self.agree(protocols), agreed, protocols)
+        self.assertEqual(
+            self.successResultOf(self.call(ampwire.Hello))["protocol"], 1
+        )
+
+    def test_before_the_agreement(self):
+        message = (
+            "The typed commands need protocol 2: call Hello with protocols"
+            " [2] first"
+        )
+        failure = self.failureResultOf(
+            self.call(ampcommands.BrickNew, kind="switch"),
+            ampcommands.ProtocolNeeded,
+        )
+        self.assertEqual(failure.getErrorMessage(), message)
+        # Hello without protocols agrees on 1
+        self.successResultOf(self.call(ampwire.Hello))
+        failure = self.failureResultOf(
+            self.call(ampcommands.BrickNew, kind="switch"),
+            ampcommands.ProtocolNeeded,
+        )
+        self.assertEqual(list(self.factory.bricks), [])
+        self.assertEqual(self.logger.formatted(), [])
+        # Run needs no agreement
+        answer = self.call(ampwire.Run, line="status")
+        self.assertEqual(
+            self.successResultOf(answer), {"lines": ["Nothing runs"]}
+        )
+        self.agree()
+        answer = self.call(ampcommands.BrickNew, kind="switch")
+        self.assertEqual(self.successResultOf(answer), {"lines": ["sw1"]})
+        # a Hello that agrees on 1 again
+        self.agree([1])
+        self.failureResultOf(
+            self.call(ampcommands.BrickList), ampcommands.ProtocolNeeded
+        )
+
+    def test_commands(self):
+        self.agree()
+        answer = self.call(ampcommands.BrickNew, kind="switch", name="sw1")
+        self.assertEqual(self.successResultOf(answer), {"lines": ["sw1"]})
+        answer = self.call(
+            ampcommands.BrickSet,
+            name="sw1",
+            key_value=[{"key": "ports", "value": "8"}],
+        )
+        self.assertEqual(self.successResultOf(answer), {"lines": []})
+        self.assertEqual(self.factory.get_brick("sw1").config.ports, 8)
+        answer = self.call(ampcommands.EventNew, name="boot")
+        self.assertEqual(self.successResultOf(answer), {"lines": ["boot"]})
+        answer = self.call(
+            ampcommands.EventActionAdd,
+            name="boot",
+            what="start",
+            subject="sw1",
+            at=1,
+        )
+        self.successResultOf(answer)
+        answer = self.call(ampcommands.Help, topic=["brick", "set"])
+        self.assertEqual(
+            self.successResultOf(answer)["lines"][0],
+            "brick set NAME KEY=VALUE…",
+        )
+        # the log has the line of the console
+        self.assertEqual(
+            self.logger.formatted(),
+            [
+                "Command from the AMP socket: brick new switch sw1",
+                "Command from the AMP socket: brick set sw1 ports=8",
+                "Command from the AMP socket: event new boot",
+                "Command from the AMP socket: event action add boot start"
+                " sw1 --at 1",
+                "Command from the AMP socket: help brick set",
+            ],
+        )
+
+    def test_not_found(self):
+        self.agree()
+        failure = self.failureResultOf(
+            self.call(ampcommands.BrickStart, name=["vm9"]),
+            ampcommands.NotFound,
+        )
+        self.assertEqual(failure.getErrorMessage(), "No brick named vm9")
+        self.assertIsInstance(failure.value, ampwire.CommandFailed)
+        self.assertEqual(
+            self.logger.formatted(),
+            [
+                "Command from the AMP socket: brick start vm9",
+                "The command from the AMP socket failed: No brick named vm9",
+            ],
+        )
+
+    def test_bad_arguments(self):
+        self.agree()
+        for amp_command, arguments, message in (
+            (
+                ampcommands.BrickStart,
+                {"name": []},
+                "brick start NAME…: NAME is missing",
+            ),
+            (
+                ampcommands.BrickNew,
+                {"kind": "teapot"},
+                "No kind teapot: brick types lists them",
+            ),
+            (
+                ampcommands.BrickList,
+                {"cwd": "labs"},
+                'Not a request: "cwd" is not an absolute path',
+            ),
+        ):
+            failure = self.failureResultOf(
+                self.call(amp_command, **arguments), ampcommands.BadArgument
+            )
+            self.assertEqual(failure.getErrorMessage(), message)
+        self.assertEqual(list(self.factory.bricks), [])
+
+    def test_a_command_that_fails(self):
+        self.agree()
+        self.successResultOf(self.call(ampcommands.BrickNew, kind="switch"))
+        failure = self.failureResultOf(
+            self.call(
+                ampcommands.BrickSet,
+                name="sw1",
+                key_value=[{"key": "nope", "value": "1"}],
+            ),
+            ampwire.CommandFailed,
+        )
+        self.assertIs(failure.type, ampwire.CommandFailed)
+
+    def test_keys(self):
+        class Later(amp.Command):
+            # BrickShow of a later build, with an option
+            commandName = b"BrickShow"
+            arguments = [
+                (b"name", amp.Unicode()),
+                (b"all", amp.Boolean(optional=True)),
+                (b"nothing", amp.Boolean(optional=True)),
+            ]
+            response = ampcommands.LINES
+            errors = ampcommands.ERRORS
+
+        class Short(amp.Command):
+            commandName = b"BrickShow"
+            response = ampcommands.LINES
+            errors = ampcommands.ERRORS
+
+        self.agree()
+        self.successResultOf(self.call(ampcommands.BrickNew, kind="switch"))
+        failure = self.failureResultOf(
+            self.call(Later, name="sw1", all=True, nothing=False),
+            ampcommands.BadArgument,
+        )
+        self.assertEqual(
+            failure.getErrorMessage(), "BrickShow has no argument all, nothing"
+        )
+        # AMP leaves out what is None
+        answer = self.call(Later, name="sw1")
+        self.assertTrue(
+            self.successResultOf(answer)["lines"][0].startswith("sw1 ")
+        )
+        failure = self.failureResultOf(
+            self.call(Short), ampcommands.BadArgument
+        )
+        self.assertEqual(failure.getErrorMessage(), "BrickShow needs name")
+        # the connection stays
+        answer = self.call(ampcommands.BrickShow, name="sw1")
+        self.assertTrue(
+            self.successResultOf(answer)["lines"][0].startswith("sw1 ")
+        )
+        self.assertEqual(
+            self.logger.formatted(),
+            [
+                "Command from the AMP socket: brick new switch",
+                "The command from the AMP socket failed: BrickShow has no"
+                " argument all, nothing",
+                "Command from the AMP socket: brick show sw1",
+                "The command from the AMP socket failed: BrickShow needs"
+                " name",
+                "Command from the AMP socket: brick show sw1",
+            ],
+        )
+
+    def test_in_order_with_run(self):
+        self.declare()
+        self.agree()
+        first = self.call(ampwire.Run, line="wait a")
+        second = self.call(ampcommands.Status)
+        self.assertNoResult(second)
+        self.waiting["a"].callback(["a done"])
+        self.pump.flush()
+        self.assertEqual(self.successResultOf(first), {"lines": ["a done"]})
+        self.assertEqual(
+            self.successResultOf(second), {"lines": ["Nothing runs"]}
+        )
+
+
 class TestAMPToken(ConsoleTestCase):
     """A connection of an AMP socket on tcp, whose program proves the token."""
 
@@ -691,6 +907,17 @@ class TestAMPToken(ConsoleTestCase):
         # no timer left to close it
         self.assertEqual(self.clock().getDelayedCalls(), [])
 
+    def test_typed(self):
+        self.successResultOf(self.authenticate())
+        hello = self.successResultOf(self.call(ampwire.Hello, protocols=[2]))
+        self.assertEqual(hello["protocol"], 2)
+        answer = self.call(ampcommands.BrickNew, kind="switch")
+        self.assertEqual(self.successResultOf(answer), {"lines": ["sw1"]})
+        self.assertEqual(
+            self.logger.formatted()[-1],
+            "Command from 127.0.0.1 port 50412: brick new switch",
+        )
+
     def test_a_command_that_fails(self):
         self.successResultOf(self.authenticate())
         failure = self.failureResultOf(
@@ -716,6 +943,11 @@ class TestAMPToken(ConsoleTestCase):
                 failure.getErrorMessage(),
                 "Prove the token first: Challenge, then Authenticate",
             )
+        # before the agreement, too
+        failure = self.failureResultOf(
+            self.call(ampcommands.BrickNew, kind="switch"),
+            ampwire.TokenNeeded,
+        )
         self.assertEqual(list(self.factory.bricks), [])
         # the connection stays, for the proof
         self.successResultOf(self.authenticate())
@@ -1084,7 +1316,7 @@ class TestListen(ConsoleTestCase):
 
     @defer.inlineCallbacks
     def test_another_amp_protocol(self):
-        self.patch(ampwire, "PROTOCOL", 2)
+        self.patch(ampwire, "PROTOCOLS", (5,))
         found = self.listen(self.path + ".amp", wire.AMP)
         result = yield command_in_thread(found, "status")
         self.assertEqual(

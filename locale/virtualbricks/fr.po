@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 14:07+0200\n"
+"POT-Creation-Date: 2026-09-30 14:16+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1626,8 +1626,25 @@ msgstr ""
 #: virtualbricks/console/control.py
 #, python-brace-format
 msgid ""
+"The typed commands need protocol {protocol}: call Hello with protocols "
+"[{protocol}] first"
+msgstr ""
+
+#: virtualbricks/console/control.py
+#, python-brace-format
+msgid ""
 "The command was done, but its answer, {size} bytes, is longer than the "
 "{most} that AMP carries; a text socket carries it"
+msgstr ""
+
+#: virtualbricks/console/control.py
+#, python-brace-format
+msgid "{command} has no argument {names}"
+msgstr ""
+
+#: virtualbricks/console/control.py
+#, python-brace-format
+msgid "{command} needs {names}"
 msgstr ""
 
 #: virtualbricks/console/dispatch.py

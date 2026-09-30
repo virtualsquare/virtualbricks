@@ -28,10 +28,13 @@ them on PATH::
     vb = await endpoints.connectProtocol(endpoint, amp.AMP())
     answer = await vb.callRemote(Run, line="brick start sw1")
 
-``Hello`` says who answers. ``Run`` runs a line of the console and answers
+``Hello`` says who answers, and agrees on the protocol of the connection:
+the highest of ``protocols``, those the program speaks, that Virtualbricks
+speaks too; 1 without them. ``Run`` runs a line of the console and answers
 its lines; the paths of the command are read from ``cwd``, from the folder
 of Virtualbricks without it. The requests of a connection run one after the
-other.
+other. Protocol 2 adds a typed command for each command of the console, in
+:mod:`virtualbricks.console.ampcommands`.
 
 A tcp socket answers once the program proves that it knows the token, with
 :func:`authenticate`, which calls ``Challenge`` and ``Authenticate``::
@@ -46,9 +49,9 @@ import secrets
 
 from twisted.protocols import amp
 
-# The version of the commands, in the answer to Hello: a command that
-# changes gets a new name, and this number.
-PROTOCOL = 1
+# The protocols that Virtualbricks speaks, for Hello to agree on: 1, these
+# commands, and the typed commands of ampcommands.PROTOCOL.
+PROTOCOLS = (1, 2)
 
 
 class CommandFailed(Exception):
@@ -68,8 +71,9 @@ class WrongToken(Exception):
 
 
 class Hello(amp.Command):
-    """Who answers."""
+    """Who answers, and the protocol the connection speaks from now on."""
 
+    arguments = [(b"protocols", amp.ListOf(amp.Integer(), optional=True))]
     response = [
         (b"protocol", amp.Integer()),
         (b"version", amp.Unicode()),
