@@ -27,6 +27,9 @@ them, and the terminal completes them.
 A command's function takes the :class:`Context` and its arguments by name,
 and returns the lines of its answer, or a Deferred of them. A command that
 can't be done raises :class:`CommandError`, whose text is the message.
+
+The kinds read the words of a line; the typed commands of the AMP socket
+give them values of their own, which :meth:`ArgKind.take` reads.
 """
 
 from __future__ import annotations
@@ -50,6 +53,10 @@ class CommandError(Exception):
     def __init__(self, message: str, lines: Sequence[str] = ()):
         super().__init__(message)
         self.lines = list(lines)
+
+
+class NotFound(CommandError):
+    """A name of the command that names nothing of the project."""
 
 
 @attr.define
@@ -78,6 +85,14 @@ class ArgKind:
     def read(self, context: Context, word: str) -> object:
         return word
 
+    def take(self, context: Context, value: Any) -> object:
+        """
+        What value is: a word of a line, or a value of a typed command of
+        the AMP socket, whose type the kind gives.
+        """
+
+        return self.read(context, value)
+
     def candidates(self, context: Context, done: dict) -> list[str]:
         """The words it can be, for the completion; done is what's read."""
 
@@ -96,6 +111,11 @@ class Number(ArgKind):
             raise CommandError(
                 _('"{word}" is not a number').format(word=word)
             ) from None
+
+    def take(self, context: Context, value: Any) -> object:
+        if isinstance(value, int):
+            return value
+        return self.read(context, value)
 
 
 class Choice(ArgKind):
@@ -132,7 +152,7 @@ class Named(ArgKind):
     def read(self, context: Context, word: str) -> object:
         found = self.find(context.factory, word)
         if found is None:
-            raise CommandError(_(self.missing).format(name=word))
+            raise NotFound(_(self.missing).format(name=word))
         return found
 
     def candidates(self, context: Context, done: dict) -> list[str]:
@@ -140,7 +160,10 @@ class Named(ArgKind):
 
 
 class Pair(ArgKind):
-    """KEY=VALUE, read as the pair; the command checks the key."""
+    """
+    KEY=VALUE, read as the pair; the command checks the key. A typed command
+    gives a mapping of key and value.
+    """
 
     def read(self, context: Context, word: str) -> object:
         key, sep, value = word.partition("=")
@@ -149,6 +172,17 @@ class Pair(ArgKind):
                 _('"{word}" is not KEY=VALUE').format(word=word)
             )
         return key, value
+
+    def take(self, context: Context, value: Any) -> object:
+        if isinstance(value, str):
+            return self.read(context, value)
+        if not value["key"]:
+            raise CommandError(
+                _('"{word}" is not KEY=VALUE').format(
+                    word=f"={value['value']}"
+                )
+            )
+        return value["key"], value["value"]
 
 
 class KeyValues(Pair):

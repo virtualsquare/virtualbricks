@@ -42,7 +42,7 @@ from virtualbricks.console import (  # noqa: F401
     settings,
 )
 from virtualbricks.console.command import CommandError, Context
-from virtualbricks.console.parser import parse
+from virtualbricks.console.parser import bind, line_of, parse
 from virtualbricks.i18n import _
 
 logger = Logger()
@@ -79,6 +79,27 @@ def run(factory, line, reactor=None, terminal=None, cwd=None):
         return defer.fail()
     if parsed is None:
         return defer.succeed([])
+    return _call(context, parsed, line)
+
+
+def run_command(factory, command, given, reactor=None, cwd=None):
+    """
+    Run command on factory, with given, its arguments by keyword as a typed
+    command of the AMP socket gives them; its paths are read from cwd.
+
+    Raise a CommandError at once if the arguments don't read, a NotFound if
+    one names nothing: nothing is done then. Otherwise, return a Deferred of
+    the lines of the answer, which fails with a CommandError.
+    """
+
+    if reactor is None:
+        from twisted.internet import reactor
+    context = Context(factory, reactor, cwd=cwd)
+    parsed = bind(context, command, given)
+    return _call(context, parsed, line_of(command, given))
+
+
+def _call(context, parsed, line):
     done = defer.maybeDeferred(
         parsed.command.function, context, **parsed.values
     )

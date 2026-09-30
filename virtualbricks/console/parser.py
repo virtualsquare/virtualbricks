@@ -90,7 +90,7 @@ def parse(context: Context, line: str) -> Parsed | None:
     command, used = find(words)
     if command is None:
         raise _not_a_command(words)
-    values: dict = {}
+    given: dict = {}
     positional = []
     rest = list(words[used:])
     while rest:
@@ -106,7 +106,7 @@ def parse(context: Context, line: str) -> Parsed | None:
                 )
             )
         if flag.value is None:
-            values[keyword(flag)] = True
+            given[keyword(flag)] = True
         elif not rest:
             raise CommandError(
                 _("{option} needs {value}").format(
@@ -114,12 +114,47 @@ def parse(context: Context, line: str) -> Parsed | None:
                 )
             )
         else:
-            values[keyword(flag)] = flag.value.kind.read(context, rest.pop(0))
+            given[keyword(flag)] = rest.pop(0)
+    for arg in command.args:
+        if not positional:
+            break
+        if arg.many:
+            given[keyword(arg)] = positional
+            positional = []
+        else:
+            given[keyword(arg)] = positional.pop(0)
+    parsed = bind(context, command, given)
+    if positional:
+        raise CommandError(
+            _("{usage}: too many words: {words}").format(
+                usage=command.usage(), words=" ".join(positional)
+            )
+        )
+    return parsed
+
+
+def bind(context: Context, command: Command, given: dict) -> Parsed:
+    """
+    The command with its arguments read. given has the arguments by keyword:
+    the words of a line, or the values of a typed command of the AMP socket,
+    a list for one that repeats. One that isn't there, or is None or an empty
+    list, is left out; an option left out is off.
+    """
+
+    values: dict = {}
     for flag in command.flags:
-        values.setdefault(keyword(flag), None if flag.value else False)
+        key = keyword(flag)
+        value = given.get(key)
+        if flag.value is None:
+            values[key] = bool(value)
+        elif value is None:
+            values[key] = None
+        else:
+            values[key] = flag.value.kind.take(context, value)
     for arg in command.args:
         key = keyword(arg)
-        if not positional:
+        value = given.get(key)
+        if value is None or (arg.many and not value):
             if not arg.optional:
                 raise CommandError(
                     _("{usage}: {name} is missing").format(
@@ -128,17 +163,36 @@ def parse(context: Context, line: str) -> Parsed | None:
                 )
             values[key] = [] if arg.many else None
         elif arg.many:
-            values[key] = [arg.kind.read(context, w) for w in positional]
-            positional = []
+            values[key] = [arg.kind.take(context, item) for item in value]
         else:
-            values[key] = arg.kind.read(context, positional.pop(0))
-    if positional:
-        raise CommandError(
-            _("{usage}: too many words: {words}").format(
-                usage=command.usage(), words=" ".join(positional)
-            )
-        )
+            values[key] = arg.kind.take(context, value)
     return Parsed(command, values)
+
+
+def _word(value) -> str:
+    if isinstance(value, dict):
+        return f"{value['key']}={value['value']}"
+    return str(value)
+
+
+def line_of(command: Command, given: dict) -> str:
+    """The line of the console for command with given, as bind() takes it."""
+
+    words = list(command.words)
+    for arg in command.args:
+        value = given.get(keyword(arg))
+        if value is None:
+            continue
+        items = value if arg.many else [value]
+        words += [_word(item) for item in items]
+    for flag in command.flags:
+        value = given.get(keyword(flag))
+        if value is None or value is False:
+            continue
+        words.append(f"--{flag.name}")
+        if flag.value is not None:
+            words.append(_word(value))
+    return shlex.join(words)
 
 
 def _verbs(words: Sequence[str]) -> list[str]:

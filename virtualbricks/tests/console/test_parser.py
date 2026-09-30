@@ -28,7 +28,8 @@ from virtualbricks.console.command import (
     Pair,
     command,
 )
-from virtualbricks.console.parser import complete, parse, split
+from virtualbricks.console.command import find
+from virtualbricks.console.parser import bind, complete, line_of, parse, split
 from virtualbricks.tests.console import ConsoleTestCase, own_commands
 
 
@@ -179,6 +180,169 @@ class TestParse(unittest.TestCase):
         self.assertEqual(
             self.error("sw1 start"),
             "No command sw1; type help for the commands",
+        )
+
+
+class TestBind(unittest.TestCase):
+    """The arguments of a typed command, read as those of a line."""
+
+    def setUp(self):
+        own_commands(self)
+        self.context = Context(factory=None)
+        command(
+            "brick",
+            "set",
+            Arg("NAME"),
+            Arg("KEY=VALUE", Pair(), many=True),
+            help="help",
+        )(nothing)
+        command(
+            "event",
+            "action add",
+            Arg("NAME"),
+            Arg("WHAT"),
+            Arg("SUBJECT", optional=True),
+            flags=[Flag("at", Arg("N", Number())), Flag("force")],
+            help="help",
+        )(nothing)
+        command(
+            "event",
+            "action remove",
+            Arg("NAME"),
+            Arg("N", Number(), many=True),
+            help="help",
+        )(nothing)
+        command(
+            None, "help", Arg("TOPIC", many=True, optional=True), help="h"
+        )(nothing)
+
+    def bind(self, *words, **given):
+        return bind(self.context, find(words)[0], given).values
+
+    def error(self, *words, **given):
+        return str(
+            self.assertRaises(
+                CommandError, bind, self.context, find(words)[0], given
+            )
+        )
+
+    def test_values(self):
+        self.assertEqual(
+            self.bind(
+                "brick",
+                "set",
+                name="sw1",
+                key_value=[
+                    {"key": "ports", "value": "4"},
+                    {"key": "hub_mode", "value": "true"},
+                ],
+            ),
+            {
+                "name": "sw1",
+                "key_value": [("ports", "4"), ("hub_mode", "true")],
+            },
+        )
+        self.assertEqual(
+            self.bind("event", "action", "remove", name="boot", n=[2, 1]),
+            {"name": "boot", "n": [2, 1]},
+        )
+
+    def test_options(self):
+        self.assertEqual(
+            self.bind(
+                "event", "action", "add", name="boot", what="start", at=2
+            ),
+            {
+                "name": "boot",
+                "what": "start",
+                "subject": None,
+                "at": 2,
+                "force": False,
+            },
+        )
+        # AMP gives None for what a program leaves out
+        self.assertEqual(
+            self.bind(
+                "event",
+                "action",
+                "add",
+                name="boot",
+                what="start",
+                subject=None,
+                at=None,
+                force=True,
+            ),
+            {
+                "name": "boot",
+                "what": "start",
+                "subject": None,
+                "at": None,
+                "force": True,
+            },
+        )
+        self.assertEqual(self.bind("help", topic=None), {"topic": []})
+        self.assertEqual(self.bind("help", topic=[]), {"topic": []})
+
+    def test_what_is_wrong(self):
+        # an empty list is missing, as no word is in a line
+        self.assertEqual(
+            self.error("brick", "set", name="sw1", key_value=[]),
+            "brick set NAME KEY=VALUE…: KEY=VALUE is missing",
+        )
+        self.assertEqual(
+            self.error("event", "action", "add", what="start"),
+            "event action add NAME WHAT [SUBJECT] [--at N] [--force]:"
+            " NAME is missing",
+        )
+        self.assertEqual(
+            self.error(
+                "brick",
+                "set",
+                name="sw1",
+                key_value=[{"key": "", "value": "4"}],
+            ),
+            '"=4" is not KEY=VALUE',
+        )
+
+    def test_the_line(self):
+        found = find(["brick", "set"])[0]
+        self.assertEqual(
+            line_of(
+                found,
+                {
+                    "name": "sw 1",
+                    "key_value": [{"key": "ports", "value": "4"}],
+                },
+            ),
+            "brick set 'sw 1' ports=4",
+        )
+        found = find(["event", "action", "add"])[0]
+        self.assertEqual(
+            line_of(
+                found,
+                {
+                    "name": "boot",
+                    "what": "shell",
+                    "subject": "echo #1",
+                    "at": 2,
+                    "force": True,
+                },
+            ),
+            "event action add boot shell 'echo #1' --at 2 --force",
+        )
+        self.assertEqual(
+            line_of(found, {"name": "boot", "what": "start", "force": False}),
+            "event action add boot start",
+        )
+        found = find(["event", "action", "remove"])[0]
+        self.assertEqual(
+            line_of(found, {"name": "boot", "n": [2, 1]}),
+            "event action remove boot 2 1",
+        )
+        # the line reads as the same command
+        self.assertEqual(
+            parse(self.context, "event action remove boot 2 1").values,
+            {"name": "boot", "n": [2, 1]},
         )
 
 

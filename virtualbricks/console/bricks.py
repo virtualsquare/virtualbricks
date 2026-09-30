@@ -66,6 +66,7 @@ from virtualbricks.console.command import (
     CommandError,
     KeyValues,
     Named,
+    NotFound,
     Text,
     command,
 )
@@ -170,7 +171,7 @@ class Target(ArgKind):
                 return sock
         brick = factory.get_brick(word)
         if brick is None:
-            raise CommandError(_("No brick named {name}").format(name=word))
+            raise NotFound(_("No brick named {name}").format(name=word))
         raise CommandError(
             _("{name} has no socket to plug into").format(name=word)
         )

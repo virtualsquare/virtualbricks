@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 12:02+0200\n"
+"POT-Creation-Date: 2026-09-30 14:07+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -1967,12 +1967,12 @@ msgstr ""
 
 #: virtualbricks/console/parser.py
 #, python-brace-format
-msgid "{usage}: {name} is missing"
+msgid "{usage}: too many words: {words}"
 msgstr ""
 
 #: virtualbricks/console/parser.py
 #, python-brace-format
-msgid "{usage}: too many words: {words}"
+msgid "{usage}: {name} is missing"
 msgstr ""
 
 #: virtualbricks/console/projects.py

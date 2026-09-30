@@ -34,6 +34,7 @@ from virtualbricks.console.command import (
     ArgKind,
     CommandError,
     Flag,
+    NotFound,
     command,
 )
 from virtualbricks.console.output import table
@@ -70,7 +71,7 @@ def use_frontend(new):
 class ProjectName(ArgKind):
     def read(self, context, word):
         if not projects.exists(word):
-            raise CommandError(_("No project named {name}").format(name=word))
+            raise NotFound(_("No project named {name}").format(name=word))
         return word
 
     def candidates(self, context, done):

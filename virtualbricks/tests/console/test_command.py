@@ -28,6 +28,7 @@ from virtualbricks.console.command import (
     Context,
     Flag,
     Named,
+    NotFound,
     Number,
     Pair,
     command,
@@ -108,6 +109,12 @@ class TestKinds(unittest.TestCase):
         )
         self.assertEqual(str(error), '"x" is not a number')
 
+    def test_number_taken(self):
+        # a typed command gives the number, a line its word
+        self.assertEqual(Number().take(self.context, 12), 12)
+        self.assertEqual(Number().take(self.context, "12"), 12)
+        self.assertRaises(CommandError, Number().take, self.context, "x")
+
     def test_choice(self):
         choice = Choice("left", "right")
         self.assertEqual(choice.read(self.context, "left"), "left")
@@ -127,8 +134,9 @@ class TestKinds(unittest.TestCase):
             "No thing named {name}",
         )
         self.assertEqual(named.read(self.context, "a"), 1)
-        error = self.assertRaises(CommandError, named.read, self.context, "c")
+        error = self.assertRaises(NotFound, named.read, self.context, "c")
         self.assertEqual(str(error), "No thing named c")
+        self.assertEqual(named.take(self.context, "a"), 1)
         self.assertEqual(named.candidates(self.context, {}), ["a", "b"])
 
     def test_pair(self):
@@ -145,6 +153,22 @@ class TestKinds(unittest.TestCase):
                 CommandError, pair.read, self.context, word
             )
             self.assertEqual(str(error), f'"{word}" is not KEY=VALUE')
+
+    def test_pair_taken(self):
+        pair = Pair()
+        self.assertEqual(
+            pair.take(self.context, {"key": "ports", "value": "16"}),
+            ("ports", "16"),
+        )
+        self.assertEqual(
+            pair.take(self.context, {"key": "icon", "value": ""}),
+            ("icon", ""),
+        )
+        self.assertEqual(pair.take(self.context, "ports=16"), ("ports", "16"))
+        error = self.assertRaises(
+            CommandError, pair.take, self.context, {"key": "", "value": "16"}
+        )
+        self.assertEqual(str(error), '"=16" is not KEY=VALUE')
 
 
 class TestContext(unittest.TestCase):
