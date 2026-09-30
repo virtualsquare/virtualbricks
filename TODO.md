@@ -214,8 +214,13 @@
   Virtualbricks sends to the program (16 §10)
 - [ ] Open the sockets of a setting, for a Virtualbricks started from the
   desktop's menu, which has no options (16 §10)
-- [ ] A typed AMP command for each command of the console, made from its
-  table (16 §9 M2 B)
+- [ ] Answers as data for the typed AMP commands: new optional keys of
+  their answers, which keep protocol 2, first for `BrickList`, `BrickShow`
+  and `Status` (20 §10 T3 B)
+- [ ] Call the typed AMP commands from the remote windows of page 19, in
+  place of the lines of its R4 (20 §11)
+- [ ] A client of the typed AMP commands in Python without Twisted, on
+  `console/ampbox.py`, for scripts (20 §11)
 - [ ] Carry the answers longer than 64 KiB over AMP, spread over several
   keys, if one is ever needed (16 §9 M5 B)
 - [ ] Read the token and the client certificates again without a
@@ -240,6 +245,12 @@
 
 # DONE
 
+- [x] A typed AMP command for each command of the console, made from its
+  table (16 §9 M2 B): protocol 2, beside protocol 1 on the same socket;
+  `Hello` takes the protocols of the program and agrees on one for the
+  connection; `console/ampgen.py` writes `console/ampcommands.py`, and
+  `tests/data/amp-protocol-2.txt` keeps the protocol; plan in
+  `docs/redesign/20 - typed-amp-commands.html`
 - [x] Teach `--command` AMP too: with `protocol=amp` it talks to an AMP
   socket, on unix, tcp or ssl, through `console/ampbox.py`, which reads
   and writes the boxes of AMP without Twisted

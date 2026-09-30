@@ -403,9 +403,13 @@ printf \(aqvirtualbricks client %s %s\(aq \(dq$nonce\(dq \(dq$mine\(dq |
     openssl dgst \-sha256 \-hmac \(dq$token\(dq
 .EE
 .SS The AMP protocol
-A program written with Twisted drives an AMP socket with two commands.
-\f[B]Hello\f[R] answers the \f[B]protocol\f[R], 1, the
-\f[B]version\f[R], the \f[B]pid\f[R] and the \f[B]project\f[R].
+A program written with Twisted drives an AMP socket with the commands of
+protocol 1, and with the typed commands of protocol 2 too.
+\f[B]Hello\f[R] agrees on the protocol of the connection: it takes
+\f[B]protocols\f[R], those the program speaks, optional, and answers in
+\f[B]protocol\f[R] the highest that Virtualbricks speaks too, 1 without
+them; and the \f[B]version\f[R], the \f[B]pid\f[R] and the
+\f[B]project\f[R].
 \f[B]Run\f[R] takes a \f[B]line\f[R] of the console and its
 \f[B]cwd\f[R], optional, and answers its \f[B]lines\f[R].
 A command that fails raises \f[B]CommandFailed\f[R], with its error;
@@ -434,6 +438,12 @@ class WrongToken(Exception):
     pass
 
 class Hello(amp.Command):
+    arguments = [
+        (
+            b\(dqprotocols\(dq,
+            amp.ListOf(amp.Integer(), optional=True),
+        ),
+    ]
     response = [
         (b\(dqprotocol\(dq, amp.Integer()),
         (b\(dqversion\(dq, amp.Unicode()),
@@ -505,6 +515,60 @@ Over \f[B]ssl\f[R], Twisted\(aqs
 checks the certificate of Virtualbricks and its name;
 \f[B]certificate=\f[R] and \f[B]privateKey=\f[R] add the program\(aqs
 own.
+.SS The typed commands
+Protocol 2 adds a typed AMP command for each command of the console, in
+the module \f[B]virtualbricks.console.ampcommands\f[R], which loads
+nothing else of Virtualbricks but \f[B]ampwire\f[R]; a program imports
+it, or copies it.
+A connection speaks them once \f[B]Hello\f[R] has agreed on 2; before,
+they fail with \f[B]ProtocolNeeded\f[R].
+The name of a command is its words, each with a capital: \f[B]brick card
+add\f[R] is \f[B]BrickCardAdd\f[R], \f[B]status\f[R] is
+\f[B]Status\f[R].
+Its arguments are named after those of \f[B]COMMANDS\f[R], in lower
+case, with **_** for what isn\(aqt a letter or a digit: \f[B]NAME\f[R]
+is \f[B]name\f[R], \f[B]KEY=VALUE\f[R] is \f[B]key_value\f[R],
+\f[B]\-\-at\f[R] is \f[B]at\f[R].
+A number is an \f[B]Integer\f[R], an argument that repeats a
+\f[B]ListOf\f[R], \f[B]KEY=VALUE\f[R] a list of records of \f[B]key\f[R]
+and \f[B]value\f[R], both text, an option without a value a
+\f[B]Boolean\f[R]; the rest is text, and what is in brackets is
+optional.
+Each command takes \f[B]cwd\f[R] too, as \f[B]Run\f[R] does, and answers
+the \f[B]lines\f[R] of the console.
+.PP
+\f[B]NotFound\f[R] says that a name of the command names nothing of the
+project, \f[B]BadArgument\f[R] that an argument isn\(aqt one the command
+takes, or that the program sent a key the command doesn\(aqt have, or
+left out one it needs: nothing was done.
+Both are kinds of \f[B]CommandFailed\f[R], which says that the command
+failed on the way.
+The typed commands run in turn with \f[B]Run\f[R], and on a socket that
+asks for the token they wait for the proof too.
+.IP
+.EX
+async def main(reactor):
+    path = os.path.expanduser(\(dq\(ti/labs/lab1.amp\(dq)
+    endpoint = endpoints.UNIXClientEndpoint(reactor, path)
+    vb = await endpoints.connectProtocol(endpoint, amp.AMP())
+    hello = await vb.callRemote(Hello, protocols=[2])
+    if hello[\(dqprotocol\(dq] != 2:
+        raise SystemExit(\(dqIt knows protocol 1 only\(dq)
+    memory = {\(dqkey\(dq: \(dqmemory\(dq, \(dqvalue\(dq: \(dq1024\(dq}
+    await vb.callRemote(
+        BrickSet, name=\(dqvm1\(dq, key_value=[memory]
+    )
+    try:
+        await vb.callRemote(BrickStart, name=[\(dqsw1\(dq, \(dqvm1\(dq])
+    except NotFound as exc:
+        print(exc)
+.EE
+.PP
+Protocol 2 keeps its commands.
+A later Virtualbricks may add commands to it, or optional arguments,
+which an older one refuses with \f[B]UnhandledCommand\f[R] or
+\f[B]BadArgument\f[R]; a change of any other kind is protocol 3, and a
+program that asks for 2 then gets 1, with \f[B]Run\f[R].
 .SH COMMANDS
 .SS Bricks
 .TP

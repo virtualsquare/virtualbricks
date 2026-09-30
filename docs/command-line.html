@@ -262,7 +262,7 @@
       <dl>
         <dt>Reaches</dt><dd>one started with <code>--socket</code>, with windows or not</dd>
         <dt>Answers</dt><dd>output, error, exit status</dd>
-        <dt>AMP</dt><dd><code>protocol=amp</code>, for a program with Twisted or <code>--command</code></dd>
+        <dt>AMP</dt><dd><code>protocol=amp</code>, for <code>--command</code>, or a program with Twisted: a typed command for each</dd>
       </dl>
     </li>
   </ul>
@@ -404,7 +404,7 @@ openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
 <figure class="code"><pre><code>printf 'virtualbricks client %s %s' "$nonce" "$mine" |
     openssl dgst -sha256 -hmac "$token"</code></pre></figure>
 <h3 id="control-socket-the-amp-protocol">The AMP protocol</h3>
-<p>A program written with Twisted drives an AMP socket with two commands. <code>Hello</code> answers the <code>protocol</code>, 1, the <code>version</code>, the <code>pid</code> and the <code>project</code>. <code>Run</code> takes a <code>line</code> of the console and its <code>cwd</code>, optional, and answers its <code>lines</code>. A command that fails raises <code>CommandFailed</code>, with its error; <code>AnswerTooLong</code> says that a command was done, but its answer is longer than the 65535 bytes of an AMP value. The requests of a connection run in turn. On a socket that asks for the token, <code>Hello</code> and <code>Run</code> fail with <code>TokenNeeded</code> until the program proves it: <code>authenticate</code>(<em>vb</em>, <em>token</em>) calls <code>Challenge</code>, then <code>Authenticate</code>, and raises <code>WrongToken</code> if either end doesn&#x27;t know the token. The module <code>virtualbricks.console.ampwire</code> has the commands; a program that can&#x27;t import it declares them:</p>
+<p>A program written with Twisted drives an AMP socket with the commands of protocol 1, and with the typed commands of protocol 2 too. <code>Hello</code> agrees on the protocol of the connection: it takes <code>protocols</code>, those the program speaks, optional, and answers in <code>protocol</code> the highest that Virtualbricks speaks too, 1 without them; and the <code>version</code>, the <code>pid</code> and the <code>project</code>. <code>Run</code> takes a <code>line</code> of the console and its <code>cwd</code>, optional, and answers its <code>lines</code>. A command that fails raises <code>CommandFailed</code>, with its error; <code>AnswerTooLong</code> says that a command was done, but its answer is longer than the 65535 bytes of an AMP value. The requests of a connection run in turn. On a socket that asks for the token, <code>Hello</code> and <code>Run</code> fail with <code>TokenNeeded</code> until the program proves it: <code>authenticate</code>(<em>vb</em>, <em>token</em>) calls <code>Challenge</code>, then <code>Authenticate</code>, and raises <code>WrongToken</code> if either end doesn&#x27;t know the token. The module <code>virtualbricks.console.ampwire</code> has the commands; a program that can&#x27;t import it declares them:</p>
 <figure class="code"><pre><code>class CommandFailed(Exception):
     pass
 
@@ -418,6 +418,12 @@ class WrongToken(Exception):
     pass
 
 class Hello(amp.Command):
+    arguments = [
+        (
+            b"protocols",
+            amp.ListOf(amp.Integer(), optional=True),
+        ),
+    ]
     response = [
         (b"protocol", amp.Integer()),
         (b"version", amp.Unicode()),
@@ -476,6 +482,25 @@ async def authenticate(vb, token):
 
 task.react(lambda reactor: ensureDeferred(main(reactor)))</code></pre></figure>
 <p>Over <code>tcp</code>, the endpoint is <code>tcp:127.0.0.1:</code><em>port</em>, and the program calls <code>authenticate</code>() before the other commands. Over <code>ssl</code>, Twisted&#x27;s <code>tls:</code><em>host</em><code>:</code><em>port</em><code>:trustRoots=</code><em>directory</em> checks the certificate of Virtualbricks and its name; <code>certificate=</code> and <code>privateKey=</code> add the program&#x27;s own.</p>
+<h3 id="control-socket-the-typed-commands">The typed commands</h3>
+<p>Protocol 2 adds a typed AMP command for each command of the console, in the module <code>virtualbricks.console.ampcommands</code>, which loads nothing else of Virtualbricks but <code>ampwire</code>; a program imports it, or copies it. A connection speaks them once <code>Hello</code> has agreed on 2; before, they fail with <code>ProtocolNeeded</code>. The name of a command is its words, each with a capital: <code>brick card add</code> is <code>BrickCardAdd</code>, <code>status</code> is <code>Status</code>. Its arguments are named after those of <code>COMMANDS</code>, in lower case, with <code>_</code> for what isn&#x27;t a letter or a digit: <code>NAME</code> is <code>name</code>, <code>KEY=VALUE</code> is <code>key_value</code>, <code>--at</code> is <code>at</code>. A number is an <code>Integer</code>, an argument that repeats a <code>ListOf</code>, <code>KEY=VALUE</code> a list of records of <code>key</code> and <code>value</code>, both text, an option without a value a <code>Boolean</code>; the rest is text, and what is in brackets is optional. Each command takes <code>cwd</code> too, as <code>Run</code> does, and answers the <code>lines</code> of the console.</p>
+<p><code>NotFound</code> says that a name of the command names nothing of the project, <code>BadArgument</code> that an argument isn&#x27;t one the command takes, or that the program sent a key the command doesn&#x27;t have, or left out one it needs: nothing was done. Both are kinds of <code>CommandFailed</code>, which says that the command failed on the way. The typed commands run in turn with <code>Run</code>, and on a socket that asks for the token they wait for the proof too.</p>
+<figure class="code"><pre><code>async def main(reactor):
+    path = os.path.expanduser("~/labs/lab1.amp")
+    endpoint = endpoints.UNIXClientEndpoint(reactor, path)
+    vb = await endpoints.connectProtocol(endpoint, amp.AMP())
+    hello = await vb.callRemote(Hello, protocols=[2])
+    if hello["protocol"] != 2:
+        raise SystemExit("It knows protocol 1 only")
+    memory = {"key": "memory", "value": "1024"}
+    await vb.callRemote(
+        BrickSet, name="vm1", key_value=[memory]
+    )
+    try:
+        await vb.callRemote(BrickStart, name=["sw1", "vm1"])
+    except NotFound as exc:
+        print(exc)</code></pre></figure>
+<p>Protocol 2 keeps its commands. A later Virtualbricks may add commands to it, or optional arguments, which an older one refuses with <code>UnhandledCommand</code> or <code>BadArgument</code>; a change of any other kind is protocol 3, and a program that asks for 2 then gets 1, with <code>Run</code>.</p>
 </section>
 <section id="commands">
 <h2>Commands</h2>

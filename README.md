@@ -180,7 +180,10 @@ A description after `--socket`, in the syntax of Twisted's endpoints, puts a
 socket elsewhere, and `protocol=amp` makes it speak Twisted's AMP, for a
 program written with Twisted: `--socket unix:~/labs/lab1.amp:protocol=amp`.
 The program calls `Run` with a line of the console and gets a Deferred of
-its answer; `virtualbricks/console/ampwire.py` has the commands. The option
+its answer; `virtualbricks/console/ampwire.py` has the commands. Once
+`Hello` agrees on protocol 2, each command of the console is an AMP command
+of its own, with typed arguments, as `BrickStart(name=["sw1", "vm1"])`:
+`virtualbricks/console/ampcommands.py` has them. The option
 can be given more than once, for a JSON socket and an AMP one at once.
 `--command` talks to either: `--connect unix:~/labs/lab1.amp:protocol=amp
 --command status`.

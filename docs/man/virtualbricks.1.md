@@ -380,9 +380,12 @@ printf 'virtualbricks client %s %s' "$nonce" "$mine" |
 
 ## The AMP protocol
 
-A program written with Twisted drives an AMP socket with two commands.
-**Hello** answers the **protocol**, 1, the **version**, the **pid** and
-the **project**. **Run** takes a **line** of the console and its **cwd**,
+A program written with Twisted drives an AMP socket with the commands of
+protocol 1, and with the typed commands of protocol 2 too. **Hello**
+agrees on the protocol of the connection: it takes **protocols**, those
+the program speaks, optional, and answers in **protocol** the highest that
+Virtualbricks speaks too, 1 without them; and the **version**, the **pid**
+and the **project**. **Run** takes a **line** of the console and its **cwd**,
 optional, and answers its **lines**. A command that fails raises
 **CommandFailed**, with its error; **AnswerTooLong** says that a command
 was done, but its answer is longer than the 65535 bytes of an AMP value.
@@ -407,6 +410,12 @@ class WrongToken(Exception):
     pass
 
 class Hello(amp.Command):
+    arguments = [
+        (
+            b"protocols",
+            amp.ListOf(amp.Integer(), optional=True),
+        ),
+    ]
     response = [
         (b"protocol", amp.Integer()),
         (b"version", amp.Unicode()),
@@ -475,6 +484,54 @@ calls **authenticate**() before the other commands. Over **ssl**, Twisted's
 **tls:***host***:***port***:trustRoots=***directory* checks the certificate
 of Virtualbricks and its name; **certificate=** and **privateKey=** add
 the program's own.
+
+## The typed commands
+
+Protocol 2 adds a typed AMP command for each command of the console, in
+the module **virtualbricks.console.ampcommands**, which loads nothing else
+of Virtualbricks but **ampwire**; a program imports it, or copies it. A
+connection speaks them once **Hello** has agreed on 2; before, they fail
+with **ProtocolNeeded**. The name of a command is its words, each with a
+capital: **brick card add** is **BrickCardAdd**, **status** is **Status**.
+Its arguments are named after those of **COMMANDS**, in lower case, with
+**_** for what isn't a letter or a digit: **NAME** is **name**,
+**KEY=VALUE** is **key_value**, **--at** is **at**. A number is an
+**Integer**, an argument that repeats a **ListOf**, **KEY=VALUE** a list of
+records of **key** and **value**, both text, an option without a value a
+**Boolean**; the rest is text, and what is in brackets is optional. Each
+command takes **cwd** too, as **Run** does, and answers the **lines** of
+the console.
+
+**NotFound** says that a name of the command names nothing of the
+project, **BadArgument** that an argument isn't one the command takes, or
+that the program sent a key the command doesn't have, or left out one it
+needs: nothing was done. Both are kinds of **CommandFailed**, which says
+that the command failed on the way. The typed commands run in turn with
+**Run**, and on a socket that asks for the token they wait for the proof
+too.
+
+```
+async def main(reactor):
+    path = os.path.expanduser("~/labs/lab1.amp")
+    endpoint = endpoints.UNIXClientEndpoint(reactor, path)
+    vb = await endpoints.connectProtocol(endpoint, amp.AMP())
+    hello = await vb.callRemote(Hello, protocols=[2])
+    if hello["protocol"] != 2:
+        raise SystemExit("It knows protocol 1 only")
+    memory = {"key": "memory", "value": "1024"}
+    await vb.callRemote(
+        BrickSet, name="vm1", key_value=[memory]
+    )
+    try:
+        await vb.callRemote(BrickStart, name=["sw1", "vm1"])
+    except NotFound as exc:
+        print(exc)
+```
+
+Protocol 2 keeps its commands. A later Virtualbricks may add commands to
+it, or optional arguments, which an older one refuses with
+**UnhandledCommand** or **BadArgument**; a change of any other kind is
+protocol 3, and a program that asks for 2 then gets 1, with **Run**.
 
 # COMMANDS
 
