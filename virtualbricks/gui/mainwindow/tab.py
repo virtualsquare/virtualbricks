@@ -61,6 +61,12 @@ class Tab:
         """Another tab is about to show instead."""
 
 
+def brick_signals(factory) -> tuple:
+    """The factory's signals of the bricks: one added, removed, changed."""
+
+    return factory.brick_added, factory.brick_removed, factory.brick_changed
+
+
 def tabs(notebook) -> list[Tab]:
     """The tabs of a notebook, in their order."""
 

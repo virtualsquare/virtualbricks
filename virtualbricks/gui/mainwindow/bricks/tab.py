@@ -83,14 +83,19 @@ class BricksTab(RowsTab):
         "Add the first one to start the lab."
     )
     EMPTY_ICON = "switch.png"
-    ADDED = "brick-added"
-    REMOVED = "brick-removed"
-    CHANGED = "brick-changed"
     # made at the first New Brick, and kept
     new_popover: NewBrickPopover | None = None
 
     def make_list(self) -> BrickList:
         return BrickList(self.gui, self.factory)
+
+    def signals(self) -> tuple:
+        factory = self.factory
+        return (
+            factory.brick_added,
+            factory.brick_removed,
+            factory.brick_changed,
+        )
 
     def items(self) -> list:
         return list(self.factory.bricks)

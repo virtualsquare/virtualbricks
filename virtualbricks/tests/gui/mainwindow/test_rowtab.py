@@ -69,9 +69,13 @@ if has_display:
             )
 
     class EventList(RowList):
-        ADDED = "event-added"
-        REMOVED = "event-removed"
-        CHANGED = "event-changed"
+        def signals(self):
+            factory = self.factory
+            return (
+                factory.event_added,
+                factory.event_removed,
+                factory.event_changed,
+            )
 
         def items(self):
             return list(self.factory.events)

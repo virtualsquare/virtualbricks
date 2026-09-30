@@ -64,7 +64,7 @@ from virtualbricks.programs import (
     decode_output,
     programs,
 )
-from virtualbricks.observable import Event, Observable
+from virtualbricks.observable import Observable, Signal
 from virtualbricks.qemu import imageformat
 from virtualbricks.qemu.imageformat import NotCowFileError
 from virtualbricks.qemu.run import qemu_img, which
@@ -267,7 +267,7 @@ class Image:
         self._name = name
         self._path = os.path.abspath(path)
         self._description = description
-        self.changed = Event(Observable(), "changed")
+        self.changed = Signal(Observable(), "changed")
 
     @property
     def name(self) -> str:
@@ -1181,7 +1181,7 @@ class VirtualMachine(bricks.Brick):
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         self._observable.add_event("image-changed")
-        self.image_changed = Event(self._observable, "image-changed")
+        self.image_changed = Signal(self._observable, "image-changed")
         self._disks = {dev: Disk(self, dev) for dev in DISK_DEVICES}
 
     def set_name(self, name):

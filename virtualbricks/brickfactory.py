@@ -52,7 +52,7 @@ from virtualbricks.errors import NameAlreadyInUseError
 from virtualbricks.bricks.event import Event, is_event
 from virtualbricks.bricks.sock import Sock
 from virtualbricks.i18n import _
-from virtualbricks.observable import Event as Signal, Observable
+from virtualbricks.observable import Observable, Signal
 from virtualbricks.bricks import is_running
 from virtualbricks.bricks.virtualmachine import is_disk_image
 
@@ -148,9 +148,9 @@ class BrickFactory:
         # Where the sockets of the running bricks are; each open project
         # gets a directory of its own.
         self.runtime_dir = locations.runtime_dir()
-        self.__observable = observable = Observable("quit")
+        observable = Observable()
         self.changed = Signal(observable, "brick-changed")
-        self.quit_signal = Signal(observable, "quit")
+        self.quitting = Signal(observable, "quit")
         self.brick_added = Signal(observable, "brick-added")
         self.brick_removed = Signal(observable, "brick-removed")
         self.brick_changed = Signal(observable, "brick-changed")
@@ -168,7 +168,7 @@ class BrickFactory:
         logger.info(engine_bye)
         for e in self._events.values():
             e.poweroff()
-        self.quit_signal.notify(self)
+        self.quitting.notify(self)
         if not self.quit_d.called:
             self.quit_d.callback(None)
 
@@ -187,12 +187,6 @@ class BrickFactory:
         del self.socks[:]
         for image in list(self._disk_images.values()):
             self.remove_image(image)
-
-    def connect(self, name, callback, *args, **kwds):
-        self.__observable.add_observer(name, callback, args, kwds)
-
-    def disconnect(self, name, callback, *args, **kwds):
-        self.__observable.remove_observer(name, callback, args, kwds)
 
     # Disk Images
 

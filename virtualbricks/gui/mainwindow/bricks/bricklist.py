@@ -102,9 +102,6 @@ class BrickRow(Row):
 class BrickList(RowList):
     """The bricks of the factory, a row each."""
 
-    ADDED = "brick-added"
-    REMOVED = "brick-removed"
-    CHANGED = "brick-changed"
     NONE = _("No bricks")
     NO_MATCH = _("No brick matches “{text}”")
     NONE_RUNNING = _("No brick is running")
@@ -114,6 +111,14 @@ class BrickList(RowList):
         super().__init__(gui, factory)
         self._drag_icon: Gtk.Widget | None = None
         self._drag_label: Gtk.Label | None = None
+
+    def signals(self) -> tuple:
+        factory = self.factory
+        return (
+            factory.brick_added,
+            factory.brick_removed,
+            factory.brick_changed,
+        )
 
     def items(self) -> list:
         return list(self.factory.bricks)

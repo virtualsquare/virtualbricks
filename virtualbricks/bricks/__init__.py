@@ -287,7 +287,7 @@ class Base:
 
     def __init__(self, factory, name):
         self._observable = observable.Observable("changed")
-        self.changed = observable.Event(self._observable, "changed")
+        self.changed = observable.Signal(self._observable, "changed")
         self.factory = factory
         self._name = name
         self.config = self.config_factory()

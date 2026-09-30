@@ -60,13 +60,12 @@ from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     RowList,
     RowsTab,
 )
+from virtualbricks.gui.mainwindow.tab import brick_signals  # noqa: E402
 from virtualbricks.i18n import _, ngettext  # noqa: E402
 from virtualbricks.bricks import is_running  # noqa: E402
 
 # How often the countdown moves, in seconds.
 TICK = 1
-# What the rows of the events say of the bricks.
-BRICK_SIGNALS = ("brick-added", "brick-removed", "brick-changed")
 
 
 def count(events) -> str:
@@ -128,9 +127,6 @@ class EventList(RowList):
     they say which ones start the events.
     """
 
-    ADDED = "event-added"
-    REMOVED = "event-removed"
-    CHANGED = "event-changed"
     NONE = _("No events")
     NO_MATCH = _("No event matches “{text}”")
     NONE_RUNNING = _("No event is waiting")
@@ -142,8 +138,17 @@ class EventList(RowList):
         self._countdown = task.LoopingCall(self._tick)
         self._countdown.clock = self.clock
         super().__init__(gui, factory)
-        for signal in BRICK_SIGNALS:
-            factory.connect(signal, self.on_brick_changed)
+        # what the rows of the events say of the bricks
+        for signal in brick_signals(factory):
+            signal.connect(self.on_brick_changed)
+
+    def signals(self) -> tuple:
+        factory = self.factory
+        return (
+            factory.event_added,
+            factory.event_removed,
+            factory.event_changed,
+        )
 
     def items(self) -> list:
         return list(self.factory.events)
@@ -153,8 +158,8 @@ class EventList(RowList):
 
     def close(self) -> None:
         super().close()
-        for signal in BRICK_SIGNALS:
-            self.factory.disconnect(signal, self.on_brick_changed)
+        for signal in brick_signals(self.factory):
+            signal.disconnect(self.on_brick_changed)
         if self._countdown.running:
             self._countdown.stop()
 
@@ -197,9 +202,6 @@ class EventsTab(RowsTab):
         "Add one to script the lab."
     )
     EMPTY_ICON = "event.png"
-    ADDED = "event-added"
-    REMOVED = "event-removed"
-    CHANGED = "event-changed"
 
     def __init__(self, gui, factory, clock=None) -> None:
         # for the list, which the tab makes first
@@ -208,6 +210,14 @@ class EventsTab(RowsTab):
 
     def make_list(self) -> EventList:
         return EventList(self.gui, self.factory, self.clock)
+
+    def signals(self) -> tuple:
+        factory = self.factory
+        return (
+            factory.event_added,
+            factory.event_removed,
+            factory.event_changed,
+        )
 
     def items(self) -> list:
         return list(self.factory.events)

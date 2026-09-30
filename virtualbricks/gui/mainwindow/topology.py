@@ -43,7 +43,11 @@ from twisted.logger import Logger  # noqa: E402
 from virtualbricks.config.workspace import projects  # noqa: E402
 from virtualbricks.gui.mainwindow import picture  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks import brickmenu  # noqa: E402
-from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
+from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
+    Tab,
+    brick_signals,
+    icon_button,
+)
 from virtualbricks.gui.mainwindow.topologyview import (  # noqa: E402
     EPSILON,
     LEVELS,
@@ -59,8 +63,6 @@ top_invalid_format = "Error saving topology: Invalid image format"
 top_write_error = "Error saving topology: Could not write file"
 top_unknown = "Error saving topology: Unknown error"
 
-# The signals of the factory after which the lab is laid out again.
-BRICK_SIGNALS = ("brick-changed", "brick-added", "brick-removed")
 # Between the bar and the corner, and between the bar's groups, in pixels.
 GAP = 6
 ACTIONS = "topology"
@@ -182,8 +184,9 @@ class TopologyTab(Tab, Gtk.Overlay):
         self.view.area.connect("button-press-event", self.on_button_press)
         self.bar.connect("size-allocate", self.on_bar_allocated)
         self.connect("destroy", self.on_destroy)
-        for signal in BRICK_SIGNALS:
-            factory.connect(signal, self.on_brick_changed)
+        # the lab is laid out again after a brick comes, goes or changes
+        for signal in brick_signals(factory):
+            signal.connect(self.on_brick_changed)
         self._update()
 
     def draw(self) -> None:
@@ -242,8 +245,8 @@ class TopologyTab(Tab, Gtk.Overlay):
         self._shown = False
 
     def on_quit(self) -> None:
-        for signal in BRICK_SIGNALS:
-            self.factory.disconnect(signal, self.on_brick_changed)
+        for signal in brick_signals(self.factory):
+            signal.disconnect(self.on_brick_changed)
 
     # Signals
 

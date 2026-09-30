@@ -85,9 +85,6 @@ class Signal:
         return ThawingSignalContextManager(self)
 
 
-Event = Signal
-
-
 class ThawingSignalContextManager:
 
     def __init__(self, signal_or_observer):

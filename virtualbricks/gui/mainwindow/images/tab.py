@@ -58,6 +58,7 @@ from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     ThemeIcons,
     theme_icon,
 )
+from virtualbricks.gui.mainwindow.tab import brick_signals  # noqa: E402
 from virtualbricks.gui.dialogs.addimage import (  # noqa: E402
     ExistingImageDialog,
     NewDiskDialog,
@@ -66,8 +67,6 @@ from virtualbricks.i18n import _, ngettext  # noqa: E402
 
 # The icon of an image, the first that the theme has.
 ICONS = ("drive-harddisk", "drive-harddisk-symbolic", "media-floppy")
-# What the rows of the images say of the bricks.
-BRICK_SIGNALS = ("brick-added", "brick-removed", "brick-changed")
 
 
 def count(image_list, items) -> str:
@@ -147,9 +146,6 @@ class ImageList(RowList):
     they say which machines use the images.
     """
 
-    ADDED = "image-added"
-    REMOVED = "image-removed"
-    CHANGED = "image-changed"
     NONE = _("No images")
     NO_MATCH = _("No image matches “{text}”")
     NONE_RUNNING = _("No image is in use")
@@ -159,8 +155,17 @@ class ImageList(RowList):
         # the rows need it, from the first
         self.infos = images.InfoCache()
         super().__init__(gui, factory)
-        for signal in BRICK_SIGNALS:
-            factory.connect(signal, self.on_brick_changed)
+        # what the rows of the images say of the bricks
+        for signal in brick_signals(factory):
+            signal.connect(self.on_brick_changed)
+
+    def signals(self) -> tuple:
+        factory = self.factory
+        return (
+            factory.image_added,
+            factory.image_removed,
+            factory.image_changed,
+        )
 
     def items(self) -> list:
         return list(self.factory.images)
@@ -176,8 +181,8 @@ class ImageList(RowList):
 
     def close(self) -> None:
         super().close()
-        for signal in BRICK_SIGNALS:
-            self.factory.disconnect(signal, self.on_brick_changed)
+        for signal in brick_signals(self.factory):
+            signal.disconnect(self.on_brick_changed)
 
     def on_brick_changed(self, brick) -> None:
         self.update()
@@ -195,23 +200,28 @@ class ImagesTab(RowsTab):
         "A disk image is the disk a virtual machine starts from. Add one to"
         " give a machine its disk."
     )
-    ADDED = "image-added"
-    REMOVED = "image-removed"
-    CHANGED = "image-changed"
     STARTS = False
 
     def __init__(self, gui, factory) -> None:
         super().__init__(gui, factory)
         # the menu of Add Image, while it shows
         self._add_menu: Gtk.Menu | None = None
-        for signal in BRICK_SIGNALS:
-            factory.connect(signal, self.on_changed)
+        for signal in brick_signals(factory):
+            signal.connect(self.on_changed)
 
     def empty_picture(self):
         return theme_icon(ICONS, EMPTY_ICON_SIZE, grey=True)
 
     def make_list(self) -> ImageList:
         return ImageList(self.gui, self.factory)
+
+    def signals(self) -> tuple:
+        factory = self.factory
+        return (
+            factory.image_added,
+            factory.image_removed,
+            factory.image_changed,
+        )
 
     def items(self) -> list:
         return list(self.factory.images)
@@ -263,5 +273,5 @@ class ImagesTab(RowsTab):
 
     def on_quit(self) -> None:
         super().on_quit()
-        for signal in BRICK_SIGNALS:
-            self.factory.disconnect(signal, self.on_changed)
+        for signal in brick_signals(self.factory):
+            signal.disconnect(self.on_changed)

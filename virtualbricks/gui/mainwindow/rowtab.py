@@ -351,8 +351,6 @@ class Row(Gtk.ListBoxRow):
 class RowList(Gtk.ListBox):
     """The objects of a kind, a row each."""
 
-    # The factory's signals: an object added, removed, changed.
-    ADDED = REMOVED = CHANGED = ""
     # When no row is left: without a search or the running switch, with a
     # search, with the switch, with both.
     NONE = NO_MATCH = NONE_RUNNING = NO_RUNNING_MATCH = ""
@@ -383,11 +381,17 @@ class RowList(Gtk.ListBox):
         for item in self.items():
             self._add(item)
         self._update_placeholder()
-        factory.connect(self.ADDED, self.on_added)
-        factory.connect(self.REMOVED, self.on_removed)
-        factory.connect(self.CHANGED, self.on_changed)
+        added, removed, changed = self.signals()
+        added.connect(self.on_added)
+        removed.connect(self.on_removed)
+        changed.connect(self.on_changed)
 
     # What each kind of list says
+
+    def signals(self) -> tuple:
+        """The factory's signals: an object added, removed, changed."""
+
+        raise NotImplementedError
 
     def items(self) -> list:
         """The objects, in their order."""
@@ -420,9 +424,10 @@ class RowList(Gtk.ListBox):
     def close(self) -> None:
         """Stop following the factory."""
 
-        self.factory.disconnect(self.ADDED, self.on_added)
-        self.factory.disconnect(self.REMOVED, self.on_removed)
-        self.factory.disconnect(self.CHANGED, self.on_changed)
+        added, removed, changed = self.signals()
+        added.disconnect(self.on_added)
+        removed.disconnect(self.on_removed)
+        changed.disconnect(self.on_changed)
 
     def row_of(self, item) -> Row | None:
         return self._rows.get(item)
@@ -504,8 +509,6 @@ class RowsTab(Tab, Gtk.Stack):
     EMPTY_ICON = ""
     # Whether the objects start and stop: then Start All and Stop All.
     STARTS = True
-    # The factory's signals: an object added, removed, changed.
-    ADDED = REMOVED = CHANGED = ""
 
     def __init__(self, gui, factory) -> None:
         super().__init__(visible=True)
@@ -591,13 +594,16 @@ class RowsTab(Tab, Gtk.Stack):
         self.list.connect("key-press-event", self.on_list_key_press)
         self.list.connect("row-activated", self.on_row_activated)
         self.connect("key-press-event", self.on_key_press)
-        for signal in self._signals():
-            factory.connect(signal, self.on_changed)
-        factory.connect(self.REMOVED, self.on_removed)
+        added, removed, changed = self.signals()
+        for signal in (added, removed, changed):
+            signal.connect(self.on_changed)
+        removed.connect(self.on_removed)
         self.update()
 
-    def _signals(self):
-        return (self.ADDED, self.REMOVED, self.CHANGED)
+    def signals(self) -> tuple:
+        """The factory's signals: an object added, removed, changed."""
+
+        raise NotImplementedError
 
     def _empty_page(self) -> Gtk.Box:
         page = Gtk.Box(
@@ -874,9 +880,10 @@ class RowsTab(Tab, Gtk.Stack):
 
     def on_quit(self) -> None:
         self.list.close()
-        for signal in self._signals():
-            self.factory.disconnect(signal, self.on_changed)
-        self.factory.disconnect(self.REMOVED, self.on_removed)
+        added, removed, changed = self.signals()
+        for signal in (added, removed, changed):
+            signal.disconnect(self.on_changed)
+        removed.disconnect(self.on_removed)
 
     # Signals
 

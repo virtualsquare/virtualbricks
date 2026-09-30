@@ -210,7 +210,7 @@ class VBGUI:
         # attach the quit callback at the end, so it is not called if an
         # exception is raised before because of a syntax error of another kind
         # of error
-        factory.connect("quit", self.on_quit)
+        factory.quitting.connect(self.on_quit)
 
         # Show the main window
         self.window.show()
