@@ -359,9 +359,6 @@ class BrickFactory:
                 return brick
         return None
 
-    def iter_bricks(self):
-        return iter(self._bricks)
-
     # Events
 
     def new_event(self, name):
