@@ -580,7 +580,7 @@ class TestOpen(WorkspaceTestCase):
         self.assertEqual(len(report), 0)
         self.assertIsInstance(self.projects.current, OpenProject)
         self.assertEqual(self.projects.current.name, "lab")
-        self.assertEqual(self.factory.bricks, [])
+        self.assertEqual(list(self.factory.bricks), [])
         self.assertIs(project_settings(), self.projects.current.settings)
         self.assertEqual(current_project(self.path), "lab")
         self.assertEqual(
@@ -596,7 +596,7 @@ class TestOpen(WorkspaceTestCase):
         self.factory.new_brick("switch", "sw")
         self.assertEqual(len(self.projects.open("lab", self.factory)), 0)
         self.assertIs(self.projects.current, current)
-        self.assertEqual(len(self.factory.bricks), 1)
+        self.assertEqual(len(list(self.factory.bricks)), 1)
 
     def test_missing(self):
         self.assertRaises(
@@ -622,7 +622,7 @@ class TestOpen(WorkspaceTestCase):
         with open(os.path.join(self.path, "lab", "README")) as fp:
             self.assertEqual(fp.read(), "A lab")
         self.assertEqual(self.projects.current.name, "other")
-        self.assertEqual(self.factory.bricks, [])
+        self.assertEqual(list(self.factory.bricks), [])
         # and it comes back
         self.projects.open("lab", self.factory)
         self.assertEqual([b.name for b in self.factory.bricks], ["sw"])
@@ -651,7 +651,7 @@ class TestOpen(WorkspaceTestCase):
             ProjectFormatError, self.projects.open, "bad", self.factory
         )
         self.assertNotIn("bricks", load_toml(self.project_file("lab")))
-        self.assertEqual(len(self.factory.bricks), 1)
+        self.assertEqual(len(list(self.factory.bricks)), 1)
 
     def test_a_bad_file_keeps_the_open_project(self):
         self.projects.create("good")
@@ -662,7 +662,7 @@ class TestOpen(WorkspaceTestCase):
             ProjectFormatError, self.projects.open, "bad", self.factory
         )
         self.assertEqual(self.projects.current.name, "good")
-        self.assertEqual(len(self.factory.bricks), 1)
+        self.assertEqual(len(list(self.factory.bricks)), 1)
         self.write("bad", {"format": 9})
         self.assertRaises(
             ProjectFormatError, self.projects.open, "bad", self.factory
@@ -689,7 +689,7 @@ class TestOpen(WorkspaceTestCase):
         self.write("x" * 40, data)
         report = self.projects.open("x" * 40, self.factory)
         # the brick is there, and the report names it
-        self.assertEqual(len(self.factory.bricks), 2)
+        self.assertEqual(len(list(self.factory.bricks)), 2)
         messages = [str(m) for m in report if "sockets" in str(m)]
         [message] = messages
         self.assertIn(f"bricks.{'b' * 19}:", message)
@@ -702,7 +702,7 @@ class TestOpen(WorkspaceTestCase):
         self.projects.close(self.factory)
         self.assertIsNone(self.projects.current)
         self.assertIsNone(project_settings())
-        self.assertEqual(self.factory.bricks, [])
+        self.assertEqual(list(self.factory.bricks), [])
         # closing when nothing is open
         self.projects.close(self.factory)
 

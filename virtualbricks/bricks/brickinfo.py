@@ -456,7 +456,7 @@ def new_name(factory, kind: Kind) -> str:
 
     for number in itertools.count(1):
         name = f"{kind.prefix}{number}"
-        if not factory.is_in_use(name):
+        if not factory.name_in_use(name):
             return name
 
 

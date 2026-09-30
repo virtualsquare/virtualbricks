@@ -134,9 +134,9 @@ def show(context):
         current.name,
         current.path,
         _("{bricks} bricks, {events} events, {images} images").format(
-            bricks=len(factory.bricks),
-            events=len(list(factory.iter_events())),
-            images=len(list(factory.iter_disk_images())),
+            bricks=len(list(factory.bricks)),
+            events=len(list(factory.events)),
+            images=len(list(factory.images)),
         ),
     ]
 

@@ -252,10 +252,10 @@ class BrickActions(Gio.SimpleActionGroup):
         RenameDialog(self.gui.brickfactory, self.brick).show(self.gui.window)
 
     def duplicate(self) -> None:
-        self.gui.brickfactory.dup_brick(self.brick)
+        self.gui.brickfactory.duplicate_brick(self.brick)
 
     def on_connect(self, action, target) -> None:
-        other = self.gui.brickfactory.get_brick_by_name(target.get_string())
+        other = self.gui.brickfactory.get_brick(target.get_string())
         if other is not None:
             brickinfo.connect(self.brick, other)
 
@@ -319,7 +319,7 @@ def popup(widget, event, gui, brick, keys=False) -> Gtk.Menu:
     return tab.popup(
         widget,
         event,
-        menu(brick, factory.bricks, list(factory.iter_events()), keys),
+        menu(brick, factory.bricks, list(factory.events), keys),
         GROUP,
         BrickActions(gui, brick),
     )

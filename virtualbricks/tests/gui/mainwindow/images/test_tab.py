@@ -215,7 +215,7 @@ class TestTheRows(ImagesTestCase):
         self.assertEqual(self.row().state_label.get_text(), "Not in use")
 
     def test_a_missing_file(self):
-        image = self.factory.new_disk_image("old", "/gone/old.qcow2")
+        image = self.factory.new_image("old", "/gone/old.qcow2")
         row = self.row(image)
         self.assertEqual(
             row.detail.get_text(),
@@ -230,7 +230,7 @@ class TestTheRows(ImagesTestCase):
     def test_the_rows_follow_the_images(self):
         other = self.image("pc")
         self.assertEqual(self.listed(), [self.frr, other])
-        self.factory.remove_disk_image(self.frr)
+        self.factory.remove_image(self.frr)
         self.assertEqual(self.listed(), [other])
         self.assertIsNone(self.row())
 
@@ -248,7 +248,7 @@ class TestTheRows(ImagesTestCase):
         self.manager.close(self.factory)
         self.assertIsNone(self.manager.current)
         self.manager.open("dtn", self.factory)
-        frr = self.factory.get_image_by_name("frr")
+        frr = self.factory.get_image("frr")
         self.qemu_img.answer()
         self.assertEqual(
             self.row(frr).detail.get_text(),
@@ -259,7 +259,7 @@ class TestTheRows(ImagesTestCase):
     def test_the_rows_follow_the_bricks(self):
         vm = self.vm("r1")
         self.assertIn("r1, private copy", self.row().detail.get_text())
-        self.factory.del_brick(vm)
+        self.factory.remove_brick(vm)
         self.assertIn("no disk uses it", self.row().detail.get_text())
 
 
@@ -335,7 +335,7 @@ class TestAProjectWithoutImages(ImagesTestCase):
 
     def setUp(self):
         super().setUp()
-        self.factory.remove_disk_image(self.frr)
+        self.factory.remove_image(self.frr)
 
     def test_the_page(self):
         tab = self.tab
@@ -412,7 +412,7 @@ class TestTheDetails(ImagesTestCase):
         details.name_entry.set_text("frr-debian")
         details.description_view.get_buffer().set_text("FRR on Debian.")
         tab.ok_button.clicked()
-        self.assertIs(self.factory.get_image_by_name("frr-debian"), self.frr)
+        self.assertIs(self.factory.get_image("frr-debian"), self.frr)
         self.assertEqual(self.frr.description, "FRR on Debian.")
         self.assertIs(tab.get_visible_child(), tab.main_page)
         self.assertEqual(self.row().name.get_text(), "frr-debian")
@@ -426,7 +426,7 @@ class TestTheDetails(ImagesTestCase):
 
     def test_removing_the_image(self):
         self.tab.configure(self.frr)
-        self.factory.remove_disk_image(self.frr)
+        self.factory.remove_image(self.frr)
         self.assertIsNone(self.tab.configuring)
         self.assertIs(self.tab.get_visible_child(), self.tab.main_page)
 

@@ -50,7 +50,6 @@ from virtualbricks.bricks import switchwrapper, tap, tunnelconnect
 from virtualbricks.bricks import tunnellisten, virtualmachine, wire
 from virtualbricks.errors import NameAlreadyInUseError
 from virtualbricks.bricks.event import Event, is_event
-from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.sock import Sock
 from virtualbricks.i18n import _
 from virtualbricks.observable import Event as Signal, Observable
@@ -62,7 +61,7 @@ engine_bye = "Engine: Bye!"
 create_image = "Creating new disk image at '{path}'"
 remove_socks = "Removing socks: {socks}"
 disconnect_plug = "Disconnecting plug to {sock}"
-remove_brick = "Removing brick {brick}"
+removing_brick = "Removing brick {brick}"
 shut_down = "Server Shut Down."
 new_event_ok = "New event {name} OK"
 uncaught_exception = "Uncaught exception: {error()}"
@@ -87,7 +86,7 @@ BRICK_CLASSES = {
 }
 
 
-def normalize_brick_name(name):
+def normalize_name(name):
     """
     Return the new normalized name or raise InvalidNameError.
 
@@ -124,7 +123,21 @@ class BrickFactory:
 
     @property
     def bricks(self):
-        return self._bricks
+        """The bricks, in the order they came in."""
+
+        return iter(self._bricks)
+
+    @property
+    def events(self):
+        """The events, in the order they came in."""
+
+        return iter(self._events.values())
+
+    @property
+    def images(self):
+        """The disk images, in the order they came in."""
+
+        return iter(self._disk_images.values())
 
     def __init__(self, quit):
         self.quit_d = quit
@@ -165,15 +178,15 @@ class BrickFactory:
             raise errors.BrickRunningError(msg)
         # Don't change the list while iterating over it
         for brick in list(self._bricks):
-            self.del_brick(brick)
+            self.remove_brick(brick)
 
         # Don't change the list while iterating over it
         for e in list(self._events.values()):
-            self.del_event(e)
+            self.remove_event(e)
 
         del self.socks[:]
         for image in list(self._disk_images.values()):
-            self.remove_disk_image(image)
+            self.remove_image(image)
 
     def connect(self, name, callback, *args, **kwds):
         self.__observable.add_observer(name, callback, args, kwds)
@@ -181,18 +194,15 @@ class BrickFactory:
     def disconnect(self, name, callback, *args, **kwds):
         self.__observable.remove_observer(name, callback, args, kwds)
 
-    def set_restore(self, restore):
-        pass
-
     # Disk Images
 
-    def new_disk_image(self, name, path, description=""):
+    def new_image(self, name, path, description=""):
         """Add one disk image to the library."""
 
         logger.info(create_image, path=path)
-        new_name = normalize_brick_name(name)
+        new_name = normalize_name(name)
         path = os.path.abspath(path)
-        if self.get_image_by_name(new_name) is not None:
+        if self.get_image(new_name) is not None:
             raise NameAlreadyInUseError(new_name)
         if self.get_image_by_path(path) is not None:
             raise errors.ImageAlreadyInUseError(path)
@@ -202,7 +212,7 @@ class BrickFactory:
         self.image_added.notify(disk_image)
         return disk_image
 
-    def remove_disk_image(self, disk_image):
+    def remove_image(self, disk_image):
         """
         Remove an image from the library. The disks that used it are left
         without an image, and returned; their private copies stay.
@@ -223,7 +233,7 @@ class BrickFactory:
         self.image_removed.notify(disk_image)
         return disks
 
-    def get_image_by_name(self, name):
+    def get_image(self, name):
         """
         Return a disk image given its name.
 
@@ -245,13 +255,6 @@ class BrickFactory:
             if disk_image.path == path:
                 return disk_image
 
-    def iter_disk_images(self):
-        """
-        :rtype: Iterable[virtualbricks.bricks.virtualmachine.Image]
-        """
-
-        return iter(self._disk_images.values())
-
     # Bricks
 
     def new_brick(self, type, name, host="", remote=False):
@@ -268,8 +271,8 @@ class BrickFactory:
         """
 
         BrickClass = self._brick_class(type)
-        name = normalize_brick_name(name)
-        if self.get_brick_by_name(name) is not None:
+        name = normalize_name(name)
+        if self.get_brick(name) is not None:
             raise NameAlreadyInUseError(name)
         brick = BrickClass(self, name)
         self._bricks.append(brick)
@@ -283,8 +286,8 @@ class BrickFactory:
         except KeyError:
             raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
 
-    def dup_brick(self, brick):
-        name = self.next_name("copy_of_" + brick.name)
+    def duplicate_brick(self, brick):
+        name = self.unused_name("copy_of_" + brick.name)
         new_brick = self.new_brick(brick.get_type(), name)
         new_brick.update_config(copy.deepcopy(field_values(brick.config)))
 
@@ -294,11 +297,11 @@ class BrickFactory:
 
         return new_brick
 
-    def del_brick(self, brick):
+    def remove_brick(self, brick):
         if is_running(brick):
             msg = f"Cannot delete brick {brick.name}: brick is running"
             raise errors.BrickRunningError(msg)
-        logger.info(remove_brick, brick=brick.name)
+        logger.info(removing_brick, brick=brick.name)
         socks = set(brick.socks)
         if socks:
             logger.info(
@@ -318,7 +321,7 @@ class BrickFactory:
         self._bricks.remove(brick)
         self.brick_removed.notify(brick)
 
-    def get_brick_by_name(self, name):
+    def get_brick(self, name):
         """
         Return a brick given its name.
 
@@ -342,8 +345,8 @@ class BrickFactory:
         @raises: InvalidNameError, InvalidTypeError
         """
 
-        norm_name = normalize_brick_name(name)
-        if self.get_event_by_name(norm_name) is not None:
+        norm_name = normalize_name(name)
+        if self.get_event(norm_name) is not None:
             raise NameAlreadyInUseError(norm_name)
         event = Event(self, norm_name)
         logger.debug(new_event_ok, name=norm_name)
@@ -352,19 +355,19 @@ class BrickFactory:
         self.event_added.notify(event)
         return event
 
-    def dup_event(self, event):
-        name = self.next_name("copy_of_" + event.name)
+    def duplicate_event(self, event):
+        name = self.unused_name("copy_of_" + event.name)
         new = self.new_event(name)
         new.config = copy.deepcopy(event.config)
         return new
 
-    def del_event(self, event):
+    def remove_event(self, event):
         event.poweroff()
         event.changed.disconnect(self.event_changed.notify)
         del self._events[event.name]
         self.event_removed.notify(event)
 
-    def get_event_by_name(self, name):
+    def get_event(self, name):
         """
         Return an event given its name.
 
@@ -374,31 +377,28 @@ class BrickFactory:
 
         return self._events.get(name)
 
-    def iter_events(self):
-        return iter(self._events.values())
-
-    def next_name(self, name):
+    def unused_name(self, name):
         c = 1
         orig_name = name
-        while self.is_in_use(name):
+        while self.name_in_use(name):
             name = f"{orig_name}.{c}"
             c += 1
         return name
 
-    def is_in_use(self, name):
+    def name_in_use(self, name):
         """Whether a brick, an event or a disk image already has the name."""
 
         return (
-            self.get_brick_by_name(name) is not None
-            or self.get_event_by_name(name) is not None
-            or self.get_image_by_name(name) is not None
+            self.get_brick(name) is not None
+            or self.get_event(name) is not None
+            or self.get_image(name) is not None
         )
 
     def rename_item(self, brick, name):
         """Rename a brick, event or image, and every reference to it."""
 
         prev_name = brick.name
-        new_name = self.normalize_name(name)
+        new_name = self.check_name(name)
         # the actions of the events name bricks too
         target = "brick"
         # Update indexes
@@ -416,7 +416,7 @@ class BrickFactory:
                 obj.notify_changed()
         return prev_name
 
-    def normalize_name(self, name):
+    def check_name(self, name):
         """
         Return the new normalized name or raise InvalidNameError.
 
@@ -426,8 +426,8 @@ class BrickFactory:
         :raise NameAlreadyInUseError: if the name is already in use.
         """
 
-        normalized_name = normalize_brick_name(name)
-        if self.is_in_use(normalized_name):
+        normalized_name = normalize_name(name)
+        if self.name_in_use(normalized_name):
             raise errors.NameAlreadyInUseError(normalized_name)
         return normalized_name
 
@@ -448,7 +448,7 @@ class BrickFactory:
             )
             raise errors.InvalidNameError(msg.format(size=size, room=room))
 
-    def check_name(self, type, name):
+    def check_brick_name(self, type, name):
         """
         Return name normalized, or raise InvalidNameError if a brick of type
         can't have it: it is in use, too long for the sockets of the project,
@@ -459,20 +459,17 @@ class BrickFactory:
         """
 
         brick_class = self._brick_class(type)
-        normalized_name = self.normalize_name(name)
+        normalized_name = self.check_name(name)
         self.check_socket_room(normalized_name)
         brick_class.check_name(normalized_name)
         return normalized_name
-
-    def new_plug(self, brick):
-        return Plug(brick)
 
     def new_sock(self, brick, name=""):
         sock = Sock(brick, name)
         self.socks.append(sock)
         return sock
 
-    def get_sock_by_name(self, name):
+    def get_sock(self, name):
         if name == "_hostonly":
             return virtualmachine.hostonly_sock
         for sock in self.socks:

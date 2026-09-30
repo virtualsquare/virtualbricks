@@ -311,7 +311,7 @@ class TestTheToken(TestProtocol):
         self.send(answer, wire.request("brick new switch"))
         self.assertEqual(self.received(), [wire.refusal("Wrong token")])
         self.assertTrue(self.transport.disconnecting)
-        self.assertEqual(self.factory.bricks, [])
+        self.assertEqual(list(self.factory.bricks), [])
         self.assertEqual(
             self.logger.formatted(),
             ["127.0.0.1 port 50412 on tcp port 8765: wrong token"],
@@ -335,7 +335,7 @@ class TestTheToken(TestProtocol):
             [wire.refusal('Not a proof: "nonce" and "proof" come first')],
         )
         self.assertTrue(self.transport.disconnecting)
-        self.assertEqual(self.factory.bricks, [])
+        self.assertEqual(list(self.factory.bricks), [])
         self.assertEqual(
             self.logger.formatted(),
             ["127.0.0.1 port 50412 on tcp port 8765: not a proof"],
@@ -716,7 +716,7 @@ class TestAMPToken(ConsoleTestCase):
                 failure.getErrorMessage(),
                 "Prove the token first: Challenge, then Authenticate",
             )
-        self.assertEqual(self.factory.bricks, [])
+        self.assertEqual(list(self.factory.bricks), [])
         # the connection stays, for the proof
         self.successResultOf(self.authenticate())
 

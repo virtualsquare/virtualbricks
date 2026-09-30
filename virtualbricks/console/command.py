@@ -185,9 +185,9 @@ def values_of(kind: Any, factory: Any) -> list[str]:
     if isinstance(kind, SchemaChoice):
         return list(kind.choices)
     if isinstance(kind, Ref) and kind.target == "event":
-        return [event.name for event in factory.iter_events()]
+        return [event.name for event in factory.events]
     if isinstance(kind, Ref) and kind.target == "image":
-        return [image.name for image in factory.iter_disk_images()]
+        return [image.name for image in factory.images]
     return []
 
 

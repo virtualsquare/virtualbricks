@@ -223,7 +223,7 @@ class ImagesTestCase(BrickTestCase):
             os.path.abspath(self.mktemp()), None
         )
         os.makedirs(self.projects.current.path)
-        self.image = self.factory.new_disk_image("frr", "/lab/frr.qcow2")
+        self.image = self.factory.new_image("frr", "/lab/frr.qcow2")
         self.qemu_img = FakeQemuImg()
         self.qemu_img.infos["/new/frr.qcow2"] = dict(INFO, format="qcow2")
 
@@ -255,7 +255,7 @@ class TestUses(ImagesTestCase):
     def test_the_disks(self):
         r1 = self.vm("r1")
         r2 = self.running(self.vm("r2", "hdb", private=False))
-        other = self.factory.new_disk_image("debian", "/lab/debian.raw")
+        other = self.factory.new_image("debian", "/lab/debian.raw")
         self.vm("vm", image=other)
         copy = self.copy(r1)
         found = uses(self.factory, self.image)
@@ -334,7 +334,7 @@ class TestRelink(ImagesTestCase):
         self.assertEqual(self.qemu_img.calls, [])
 
     def test_the_path_of_another_image(self):
-        self.factory.new_disk_image("debian", "/new/frr.qcow2")
+        self.factory.new_image("debian", "/new/frr.qcow2")
         self.failureResultOf(self.relink(), errors.ImageAlreadyInUseError)
         self.assertEqual(self.qemu_img.calls, [])
         self.assertEqual(self.image.path, "/lab/frr.qcow2")
@@ -556,7 +556,7 @@ class TestPrivateCopies(ImagesTestCase):
         image = adopt(
             self.factory, vm, "hda", "frr-r1", "/lab/frr-r1.qcow2", True, trash
         )
-        self.assertIs(self.factory.get_image_by_name("frr-r1"), image)
+        self.assertIs(self.factory.get_image("frr-r1"), image)
         self.assertEqual(image.path, "/lab/frr-r1.qcow2")
         self.assertIs(vm.disk("hda").image, image)
         # its changes are in the image now

@@ -117,7 +117,7 @@ class BrickMenuTestCase(GuiTestCase):
         return brick
 
     def events(self):
-        return list(self.factory.iter_events())
+        return list(self.factory.events)
 
     def menu(self, brick, keys=False):
         return content(menu(brick, self.factory.bricks, self.events(), keys))
@@ -355,7 +355,7 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
 
     def test_duplicate(self):
         self.activate("duplicate")
-        self.assertIsNotNone(self.factory.get_brick_by_name("copy_of_sw"))
+        self.assertIsNotNone(self.factory.get_brick("copy_of_sw"))
 
     def test_connect(self):
         tap = self.brick("tap", "tap")
@@ -476,7 +476,7 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
 
     def test_no_events(self):
         for event in self.events():
-            self.factory.del_event(event)
+            self.factory.remove_event(event)
         self.assertEqual(
             content(self.submenu("When It Starts")), [["No Event"]]
         )

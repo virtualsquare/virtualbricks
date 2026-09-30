@@ -62,7 +62,7 @@ class ImageMenuTestCase(GuiTestCase):
         super().setUp()
         self.gui = FakeGui(self.factory)
         self.there = self.image("frr")
-        self.missing = self.factory.new_disk_image("old", "/gone/old.qcow2")
+        self.missing = self.factory.new_image("old", "/gone/old.qcow2")
 
 
 class TestTheMenu(ImageMenuTestCase):

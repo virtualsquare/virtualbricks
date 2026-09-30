@@ -469,7 +469,7 @@ class _Converter:
                 where,
             )
         try:
-            self.factory.new_disk_image(section.name, path, description)
+            self.factory.new_image(section.name, path, description)
         except errors.ImageAlreadyInUseError:
             same = self.factory.get_image_by_path(os.path.abspath(path))
             self.image_aliases[section.name] = same.name
@@ -647,7 +647,7 @@ class _Converter:
             if link.kind != "sock":
                 continue
             where = self.where(link.lineno)
-            vm = self.factory.get_brick_by_name(link.owner)
+            vm = self.factory.get_brick(link.owner)
             if vm is None or vm.connections != "nics":
                 self.report.warning(
                     f'socket card of "{link.owner}", which is not a virtual '
@@ -676,7 +676,7 @@ class _Converter:
             if link.kind != "link":
                 continue
             where = self.where(link.lineno)
-            brick = self.factory.get_brick_by_name(link.owner)
+            brick = self.factory.get_brick(link.owner)
             if brick is None:
                 self.report.warning(
                     f'link of "{link.owner}", which does not exist, dropped',
@@ -685,7 +685,7 @@ class _Converter:
                 continue
             sock: Sock | None = None
             if link.socket:
-                sock = self.factory.get_sock_by_name(link.socket)
+                sock = self.factory.get_sock(link.socket)
                 if sock is None:
                     self.report.warning(
                         f'no socket "{link.socket}", left unconnected', where
@@ -722,8 +722,8 @@ class _Converter:
         from virtualbricks.bricks.eventaction import ConsoleAction, EventAction
 
         bricks = {brick.name for brick in self.factory.bricks}
-        events = {event.name for event in self.factory.iter_events()}
-        for event in self.factory.iter_events():
+        events = {event.name for event in self.factory.events}
+        for event in self.factory.events:
             where = self.where(self.seen["event"][event.name])
             actions: list[object] = []
             for action in event.config.actions:
@@ -794,7 +794,7 @@ def convert_command(factory: BrickFactory, text: str) -> str:
     words = text.split()
     if len(words) < 3 or words[1] != "config":
         return text
-    brick = factory.get_brick_by_name(words[0])
+    brick = factory.get_brick(words[0])
     if brick is None:
         return text
     brick_type = brick.get_type().lower()
@@ -820,4 +820,4 @@ def convert_project(
 
     converter = _Converter(legacy_project, report, directory)
     data = converter.convert(project_settings)
-    return data, len(converter.factory.bricks)
+    return data, len(list(converter.factory.bricks))

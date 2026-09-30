@@ -149,7 +149,7 @@ class TestRemove(DialogTestCase):
         return dialog
 
     def test_the_disks_lose_the_image(self):
-        image = self.factory.new_disk_image("frr", self.file(self.vimages))
+        image = self.factory.new_image("frr", self.file(self.vimages))
         vm = self.vm("r1", image)
         dialog = self.dialog(image)
         self.assertIn(
@@ -157,13 +157,13 @@ class TestRemove(DialogTestCase):
             texts(dialog.dialog),
         )
         dialog.dialog.response(Gtk.ResponseType.OK)
-        self.assertIsNone(self.factory.get_image_by_name("frr"))
+        self.assertIsNone(self.factory.get_image("frr"))
         self.assertIsNone(vm.disk("hda").image)
         # the file stays unless asked
         self.assertTrue(os.path.exists(image.path))
 
     def test_the_file_to_the_trash(self):
-        image = self.factory.new_disk_image("frr", self.file(self.vimages))
+        image = self.factory.new_image("frr", self.file(self.vimages))
         dialog = self.dialog(image)
         self.assertEqual(
             dialog.file_check.get_label(),
@@ -175,7 +175,7 @@ class TestRemove(DialogTestCase):
 
     def test_no_trash(self):
         self.workspace.trasher = None
-        image = self.factory.new_disk_image("frr", self.file(self.vimages))
+        image = self.factory.new_image("frr", self.file(self.vimages))
         dialog = self.dialog(image)
         self.assertIn("there is no trash", dialog.file_check.get_label())
         dialog.file_check.set_active(True)
@@ -184,16 +184,16 @@ class TestRemove(DialogTestCase):
 
     def test_the_trash_fails(self):
         self.trash.error = OSError(13, "Permission denied")
-        image = self.factory.new_disk_image("frr", self.file(self.vimages))
+        image = self.factory.new_image("frr", self.file(self.vimages))
         dialog = self.dialog(image)
         dialog.file_check.set_active(True)
         dialog.remove()
-        self.assertIsNone(self.factory.get_image_by_name("frr"))
+        self.assertIsNone(self.factory.get_image("frr"))
         self.assertEqual(self.logger.levels(), ["error"])
 
     def test_a_file_outside_the_image_folder(self):
         path = self.file(self.folder("lab"))
-        image = self.factory.new_disk_image("frr", path)
+        image = self.factory.new_image("frr", path)
         dialog = self.dialog(image)
         self.assertIsNone(dialog.file_check)
         self.assertIn(
@@ -209,7 +209,7 @@ class TestRemove(DialogTestCase):
             None, ospf=[("router", path)], bgp=[("a", path), ("b", path)]
         )
         self.workspace.others = others.summaries()
-        image = self.factory.new_disk_image("frr", path)
+        image = self.factory.new_image("frr", path)
         dialog = self.dialog(image)
         self.assertIsNone(dialog.file_check)
         self.assertIn(
@@ -218,10 +218,10 @@ class TestRemove(DialogTestCase):
         )
 
     def test_cancel(self):
-        image = self.factory.new_disk_image("frr", self.file(self.vimages))
+        image = self.factory.new_image("frr", self.file(self.vimages))
         dialog = self.dialog(image)
         dialog.dialog.response(Gtk.ResponseType.CANCEL)
-        self.assertIs(self.factory.get_image_by_name("frr"), image)
+        self.assertIs(self.factory.get_image("frr"), image)
 
 
 class TestFindFile(DialogTestCase):
@@ -229,7 +229,7 @@ class TestFindFile(DialogTestCase):
     def setUp(self):
         super().setUp()
         self.qemu_img = FakeQemuImg()
-        self.image = self.factory.new_disk_image("frr", "/gone/frr.qcow2")
+        self.image = self.factory.new_image("frr", "/gone/frr.qcow2")
 
     def dialog(self):
         dialog = FindFileDialog(
@@ -312,7 +312,7 @@ class DiskTestCase(DialogTestCase):
 
     def setUp(self):
         super().setUp()
-        self.frr = self.factory.new_disk_image("frr", self.file(self.vimages))
+        self.frr = self.factory.new_image("frr", self.file(self.vimages))
         self.r1 = self.vm("r1", self.frr)
         self.copy = self.r1.disk("hda").get_cow_path()
         with open(self.copy, "wb") as fp:
@@ -349,7 +349,7 @@ class TestSave(DiskTestCase):
         self.assertEqual(
             dialog.output(), os.path.join(self.vimages, "frr-r1.qcow2")
         )
-        self.factory.new_disk_image("frr-r1", "/lab/other.qcow2")
+        self.factory.new_image("frr-r1", "/lab/other.qcow2")
         self.assertEqual(self.dialog().name_entry.get_text(), "frr-r1-2")
 
     def test_a_name_in_use(self):
@@ -382,7 +382,7 @@ class TestSave(DiskTestCase):
         self.assertEqual(dialog.progress.get_fraction(), 0.5)
         self.assertEqual(dialog.progress.get_text(), "50%")
         job.done.callback({"output": output, "size": 4096})
-        image = self.factory.get_image_by_name("frr-r1")
+        image = self.factory.get_image("frr-r1")
         self.assertEqual(image.path, output)
         self.assertIs(self.r1.disk("hda").image, image)
         self.assertEqual(self.trash.trashed, [self.copy])
@@ -427,7 +427,7 @@ class TestSave(DiskTestCase):
         self.assertEqual(
             dialog.error_label.get_text(), "qemu-img: No space left"
         )
-        self.assertIsNone(self.factory.get_image_by_name("frr-r1"))
+        self.assertIsNone(self.factory.get_image("frr-r1"))
 
     def test_cancel(self):
         dialog = self.dialog()

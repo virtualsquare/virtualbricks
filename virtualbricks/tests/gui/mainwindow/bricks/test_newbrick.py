@@ -152,7 +152,7 @@ class TestOpenAndMake(NewBrickTestCase):
         tap = self.make("Tap")
         self.assertIsInstance(tap, Tap)
         self.assertEqual(tap.name, "tap1")
-        self.assertIs(self.factory.get_brick_by_name("tap1"), tap)
+        self.assertIs(self.factory.get_brick("tap1"), tap)
         self.assertEqual(self.make("Tap").name, "tap2")
 
     def test_under_the_button(self):

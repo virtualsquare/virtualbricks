@@ -119,7 +119,7 @@ class EventActions(Gio.SimpleActionGroup):
         RenameDialog(self.gui.brickfactory, self.event).show(self.gui.window)
 
     def duplicate(self) -> None:
-        self.gui.brickfactory.dup_event(self.event)
+        self.gui.brickfactory.duplicate_event(self.event)
 
     def delete(self) -> None:
         self.gui.ask_remove_event(self.event)

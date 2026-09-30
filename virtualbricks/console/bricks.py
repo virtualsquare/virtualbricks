@@ -86,7 +86,7 @@ def _bricks(factory):
 
 
 BRICK = Named(
-    lambda factory, name: factory.get_brick_by_name(name),
+    lambda factory, name: factory.get_brick(name),
     _bricks,
     N_("No brick named {name}"),
 )
@@ -97,7 +97,7 @@ class VirtualMachineArg(Named):
 
     def __init__(self):
         super().__init__(
-            lambda factory, name: factory.get_brick_by_name(name),
+            lambda factory, name: factory.get_brick(name),
             lambda factory: [
                 b.name for b in factory.bricks if is_virtualmachine(b)
             ],
@@ -142,7 +142,7 @@ class KindOrBrick(ArgKind):
     """A brick of the project, or else a kind of brick."""
 
     def read(self, context, word):
-        brick = context.factory.get_brick_by_name(word)
+        brick = context.factory.get_brick(word)
         if brick is not None:
             return brick
         return KindArg().read(context, word)
@@ -168,7 +168,7 @@ class Target(ArgKind):
         for sock in factory.socks:
             if sock.brick is not None and _socket_name(sock) == word:
                 return sock
-        brick = factory.get_brick_by_name(word)
+        brick = factory.get_brick(word)
         if brick is None:
             raise CommandError(_("No brick named {name}").format(name=word))
         raise CommandError(
@@ -373,7 +373,7 @@ def new(context, kind, name):
     if name is None:
         name = new_name(factory, kind)
     else:
-        name = factory.check_name(kind.type, name)
+        name = factory.check_brick_name(kind.type, name)
     factory.new_brick(kind.type, name)
     lines = [name]
     found = issue(kind, get_setting("vde_path"), get_setting("qemu_path"))
@@ -904,7 +904,7 @@ def rename(context, name, new):
     brick = name
     _stopped(brick)
     factory = context.factory
-    final = factory.check_name(brick.get_type(), new)
+    final = factory.check_brick_name(brick.get_type(), new)
     factory.rename_item(brick, final)
     return [final] if final != new else []
 
@@ -919,8 +919,8 @@ def rename(context, name, new):
 def duplicate(context, name, new):
     factory = context.factory
     if new is not None:
-        new = factory.check_name(name.get_type(), new)
-    copy = factory.dup_brick(name)
+        new = factory.check_brick_name(name.get_type(), new)
+    copy = factory.duplicate_brick(name)
     if new is not None:
         factory.rename_item(copy, new)
     return [copy.name]
@@ -936,4 +936,4 @@ def delete(context, name):
     for brick in name:
         _stopped(brick)
     for brick in name:
-        context.factory.del_brick(brick)
+        context.factory.remove_brick(brick)

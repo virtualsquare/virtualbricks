@@ -74,7 +74,7 @@ class TestVirtualMachine(BrickTestCase):
         vm = self.factory.new_brick("qemu", "vm")
         disk = vm.disk("hda")
         self.assertIsNone(disk.image)
-        image = self.factory.new_disk_image("deb", "/i/deb.qcow2")
+        image = self.factory.new_image("deb", "/i/deb.qcow2")
         changes = []
         vm.image_changed.connect(lambda payload: changes.append(payload))
         vm.set_image("hda", image)
@@ -92,7 +92,7 @@ class TestVirtualMachine(BrickTestCase):
 
     def test_image_rename_updates_the_disks(self):
         vm = self.factory.new_brick("qemu", "vm")
-        image = self.factory.new_disk_image("deb", "/i/deb.qcow2")
+        image = self.factory.new_image("deb", "/i/deb.qcow2")
         vm.set_image("hda", image)
         self.factory.rename_item(image, "debian")
         self.assertEqual(vm.config.hda_image, "debian")
@@ -617,7 +617,7 @@ class TestTheCards(DraftTestCase):
 class TestApply(DraftTestCase):
 
     def test_the_images(self):
-        image = self.factory.new_disk_image("deb", "/i/deb.qcow2")
+        image = self.factory.new_image("deb", "/i/deb.qcow2")
         self.vm.update_config({"hdb_image": "gone"})
         images = []
         self.vm.image_changed.connect(images.append)
@@ -692,7 +692,7 @@ class TestTheDraftOfAnImage(BrickTestCase):
 
     def setUp(self):
         super().setUp()
-        self.image = self.factory.new_disk_image("frr", "/i/frr.qcow2")
+        self.image = self.factory.new_image("frr", "/i/frr.qcow2")
         self.image.set_description("FRR")
         self.draft = ImageDraft(self.image, self.factory)
 
@@ -712,7 +712,7 @@ class TestTheDraftOfAnImage(BrickTestCase):
         self.draft.set("description", "FRR on Debian.")
         apply(self.draft)
         # the name as the factory writes it
-        self.assertIs(self.factory.get_image_by_name("frr_debian"), self.image)
+        self.assertIs(self.factory.get_image("frr_debian"), self.image)
         self.assertEqual(self.image.description, "FRR on Debian.")
         # the disks follow
         self.assertEqual(vm.config.hda_image, "frr_debian")

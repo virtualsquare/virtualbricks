@@ -343,7 +343,9 @@ class TestNewKinds(BrickInfoTestCase):
             name = new_name(self.factory, new)
             self.assertEqual(name, new.prefix + "1")
             # a name that passes the checks of any name
-            self.assertEqual(self.factory.check_name(new.type, name), name)
+            self.assertEqual(
+                self.factory.check_brick_name(new.type, name), name
+            )
             brick = self.factory.new_brick(new.type, name)
             self.assertIsInstance(brick, new.brick)
 
@@ -358,7 +360,7 @@ class TestNewName(BrickInfoTestCase):
 
     def test_free_in_the_whole_project(self):
         self.factory.new_event("vm1")
-        self.factory.new_disk_image("vm2", "/images/vm2.qcow2")
+        self.factory.new_image("vm2", "/images/vm2.qcow2")
         self.brick("qemu", "vm3")
         self.assertEqual(
             new_name(self.factory, new_kind(VirtualMachine)), "vm4"

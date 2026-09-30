@@ -19,6 +19,7 @@
 
 from virtualbricks import bricks
 from virtualbricks.bricks.command import Command, socket_path, vde_program
+from virtualbricks.bricks.plug import Plug
 
 
 class Wire(bricks.Brick):
@@ -31,8 +32,8 @@ class Wire(bricks.Brick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.plugs.append(factory.new_plug(self))
-        self.plugs.append(factory.new_plug(self))
+        self.plugs.append(Plug(self))
+        self.plugs.append(Plug(self))
 
     def configured(self):
         return len(self.plugs) == 2 and all(map(lambda p: p.sock, self.plugs))

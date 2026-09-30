@@ -105,8 +105,8 @@ def build(factory: Any, folder: str, root: bool | None = None) -> None:
     sw1.update_config({"fast_spanning_tree": True, "on_start": "configure"})
     sw2 = factory.new_brick("switch", "sw2")
     sw3 = factory.new_brick("switch", "sw3")
-    factory.new_disk_image("deb", _image(folder, "deb", "qcow2"))
-    factory.new_disk_image("raw", _image(folder, "raw", "raw"))
+    factory.new_image("deb", _image(folder, "deb", "qcow2"))
+    factory.new_image("raw", _image(folder, "raw", "raw"))
     vm = factory.new_brick("qemu", "vm1")
     vm.update_config(
         {
@@ -121,10 +121,10 @@ def build(factory: Any, folder: str, root: bool | None = None) -> None:
             "hdb_private": True,
         }
     )
-    vm.set_image("hda", factory.get_image_by_name("deb"))
-    vm.set_image("hdb", factory.get_image_by_name("raw"))
+    vm.set_image("hda", factory.get_image("deb"))
+    vm.set_image("hdb", factory.get_image("raw"))
     vm.add_plug(sw1.socks[0], "52:54:00:00:00:01", "e1000")
-    vm.add_plug(factory.get_sock_by_name("_hostonly"), "52:54:00:00:00:02")
+    vm.add_plug(factory.get_sock("_hostonly"), "52:54:00:00:00:02")
     card = vm.add_sock("52:54:00:00:00:03", "rtl8139", "lan")
     wire = factory.new_brick("wire", "w0")
     wire.plugs[0].connect(sw3.socks[0])
@@ -227,7 +227,7 @@ def run(factory: Any) -> Any:
     ports of sw2, which the event set.
     """
 
-    vm = factory.get_brick_by_name("vm1")
+    vm = factory.get_brick("vm1")
     if vm is not None:
         vm.command = _paused(vm.command)
     messages = _Messages()
@@ -248,12 +248,12 @@ def run(factory: Any) -> Any:
         yield _sleep(RUNNING)
         for brick in factory.bricks:
             report["bricks"][brick.name]["running"] = brick.proc is not None
-        sw2 = factory.get_brick_by_name("sw2")
+        sw2 = factory.get_brick("sw2")
         report["sw2_ports"] = sw2.config.ports if sw2 is not None else None
     finally:
         messages.stopping = {}
         # the reverse of the start: the switches last
-        for brick in reversed(factory.bricks):
+        for brick in reversed(list(factory.bricks)):
             status = yield _stop(brick)
             if status is not None and brick.name in report["bricks"]:
                 report["bricks"][brick.name]["exit"] = status

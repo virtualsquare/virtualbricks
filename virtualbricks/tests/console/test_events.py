@@ -223,9 +223,7 @@ class TestNames(EventsTestCase):
         self.assertEqual(
             self.run_line("event duplicate boot boot2"), ["boot2"]
         )
-        copy = self.factory.get_event_by_name("boot2")
+        copy = self.factory.get_event("boot2")
         self.assertEqual(copy.config.delay, 3)
         self.assertEqual(self.run_line("event delete boot copy_of_boot"), [])
-        self.assertEqual(
-            [e.name for e in self.factory.iter_events()], ["boot2"]
-        )
+        self.assertEqual([e.name for e in self.factory.events], ["boot2"])

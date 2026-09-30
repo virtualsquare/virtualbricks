@@ -280,7 +280,7 @@ class TestSwitcher(TerminalTestCase):
         transport = StringTransport()
         server.makeConnection(transport)
         server.dataReceived(b"python\r")
-        server.dataReceived(b"answer, len(factory.bricks)\r")
+        server.dataReceived(b"answer, len(list(factory.bricks))\r")
         self.assertIn(b"(42, 0)", transport.value())
         switcher = server.terminalProtocol
         server.dataReceived(CTRL_D)

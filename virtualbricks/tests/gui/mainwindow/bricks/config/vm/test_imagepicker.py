@@ -51,7 +51,7 @@ class PickerTestCase(GuiTestCase):
         self.infos = images.InfoCache(self.qemu_img)
         self.frr = self.image("frr")
         self.pc = self.image("pc")
-        self.old = self.factory.new_disk_image("old", "/gone/old.qcow2")
+        self.old = self.factory.new_image("old", "/gone/old.qcow2")
         for image in (self.frr, self.pc):
             self.qemu_img.infos[image.path] = INFO
         self.r1 = self.vm("r1", self.frr)
@@ -164,7 +164,7 @@ class TestTheList(PickerTestCase):
         picker = self.picker(self.frr)
         picker.fill()
         picker.search.set_text("pc")
-        self.factory.new_disk_image("new", "/lab/new.qcow2")
+        self.factory.new_image("new", "/lab/new.qcow2")
         picker.fill()
         self.assertEqual(picker.search.get_text(), "")
         self.assertEqual(len(picker.options()), 5)

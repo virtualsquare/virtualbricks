@@ -34,8 +34,8 @@ from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _
 
 IMAGE = Named(
-    lambda factory, name: factory.get_image_by_name(name),
-    lambda factory: [image.name for image in factory.iter_disk_images()],
+    lambda factory, name: factory.get_image(name),
+    lambda factory: [image.name for image in factory.images],
     N_("No image named {name}"),
 )
 
@@ -68,7 +68,7 @@ def _description(pairs):
 @command("image", "list", help=N_("The disk images and their users"))
 def list_(context):
     factory = context.factory
-    images = list(factory.iter_disk_images())
+    images = list(factory.images)
     if not images:
         return [_("No images")]
     rows = [
@@ -90,11 +90,11 @@ def list_(context):
 def add(context, name, path, key_value):
     factory = context.factory
     description = _description(key_value) or ""
-    name = factory.normalize_name(name)
+    name = factory.check_name(name)
     path = context.path(path)
     if not os.path.isfile(path):
         raise CommandError(_("No file {path}").format(path=path))
-    return [factory.new_disk_image(name, path, description).name]
+    return [factory.new_image(name, path, description).name]
 
 
 @command(
@@ -150,7 +150,7 @@ def rename(context, name, new):
     ),
 )
 def delete(context, name):
-    disks = context.factory.remove_disk_image(name)
+    disks = context.factory.remove_image(name)
     return [
         _("{brick} {device} has no image now").format(
             brick=disk.vm.name, device=disk.device

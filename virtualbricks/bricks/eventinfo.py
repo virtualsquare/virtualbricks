@@ -103,7 +103,7 @@ def read(command, factory) -> Action:
     if isinstance(command, ConsoleAction):
         return Action(Kind.CONSOLE, command.command)
     start = isinstance(command, StartAction)
-    if factory.get_event_by_name(command.target) is not None:
+    if factory.get_event(command.target) is not None:
         kind = Kind.START_EVENT if start else Kind.STOP_EVENT
     else:
         # a brick, there or gone
@@ -127,9 +127,9 @@ def missing(action: Action, factory) -> bool:
     """Whether the brick or the event of an action is not in the project."""
 
     if action.kind in (Kind.START_BRICK, Kind.STOP_BRICK):
-        return factory.get_brick_by_name(action.subject) is None
+        return factory.get_brick(action.subject) is None
     if action.kind in (Kind.START_EVENT, Kind.STOP_EVENT):
-        return factory.get_event_by_name(action.subject) is None
+        return factory.get_event(action.subject) is None
     return False
 
 

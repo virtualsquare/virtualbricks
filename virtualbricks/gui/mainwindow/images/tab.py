@@ -163,7 +163,7 @@ class ImageList(RowList):
             factory.connect(signal, self.on_brick_changed)
 
     def items(self) -> list:
-        return list(self.factory.iter_disk_images())
+        return list(self.factory.images)
 
     def make_row(self, item) -> ImageRow:
         return ImageRow(self.gui, item, self.icons, self._sizes, self.infos)
@@ -214,7 +214,7 @@ class ImagesTab(RowsTab):
         return ImageList(self.gui, self.factory)
 
     def items(self) -> list:
-        return list(self.factory.iter_disk_images())
+        return list(self.factory.images)
 
     def count_text(self, items) -> str:
         return count(self.list, items)

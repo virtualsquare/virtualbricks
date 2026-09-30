@@ -322,7 +322,7 @@ class TestChangingAnAction(EditorTestCase):
         )
 
     def test_no_event_to_choose(self):
-        self.factory.del_event(self.boot)
+        self.factory.remove_event(self.boot)
         editor = self.edit(5, vb("sw1 on"))
         [row] = editor.rows()
         row.kind_combo.set_active_id("start-event")
@@ -364,7 +364,7 @@ class TestAddingAndRemoving(EditorTestCase):
 
     def test_add_without_bricks(self):
         for brick in list(self.factory.bricks):
-            self.factory.del_brick(brick)
+            self.factory.remove_brick(brick)
         editor = self.edit()
         editor.add_button.clicked()
         [row] = editor.rows()

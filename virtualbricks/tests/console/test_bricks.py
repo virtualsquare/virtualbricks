@@ -617,12 +617,12 @@ class TestNames(BricksTestCase):
         sw.update_config({"ports": 4})
         self.assertEqual(self.run_line("brick duplicate sw1"), ["copy_of_sw1"])
         self.assertEqual(self.run_line("brick duplicate sw1 sw2"), ["sw2"])
-        self.assertEqual(self.factory.get_brick_by_name("sw2").config.ports, 4)
+        self.assertEqual(self.factory.get_brick("sw2").config.ports, 4)
         self.assertEqual(
             self.fails("brick duplicate sw1 sw2"),
             "Normalized name sw2 already in use",
         )
-        self.assertEqual(len(self.factory.bricks), 3)
+        self.assertEqual(len(list(self.factory.bricks)), 3)
 
     def test_delete(self):
         self.brick("switch", "sw1")
@@ -632,6 +632,6 @@ class TestNames(BricksTestCase):
             self.fails("brick delete sw1 tap1"),
             "tap1 is running: stop it first",
         )
-        self.assertEqual(len(self.factory.bricks), 3)
+        self.assertEqual(len(list(self.factory.bricks)), 3)
         self.assertEqual(self.run_line("brick delete sw1 sw2"), [])
         self.assertEqual([b.name for b in self.factory.bricks], ["tap1"])

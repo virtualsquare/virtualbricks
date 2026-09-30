@@ -704,8 +704,7 @@ class VBGUI:
             self.on_save()
             path = projects.current.path
             images = [
-                (image.name, image.path)
-                for image in self.brickfactory.iter_disk_images()
+                (image.name, image.path) for image in self.brickfactory.images
             ]
         else:
             path = summary.path

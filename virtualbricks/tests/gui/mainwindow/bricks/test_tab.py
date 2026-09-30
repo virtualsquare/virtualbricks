@@ -317,7 +317,7 @@ class TestTheRowAboveTheList(BricksTestCase):
         popover = self.tab.new_popover
         self.addCleanup(popover.destroy)
         # in a project without bricks too; the popover stays
-        self.factory.del_brick(self.sw)
+        self.factory.remove_brick(self.sw)
         self.tab.new_button.clicked()
         self.assertEqual(opened, [(popover, self.tab.new_button)] * 2)
 
@@ -328,7 +328,7 @@ class TestTheRowAboveTheList(BricksTestCase):
         self.addCleanup(popover.destroy)
         row = next(row for row in popover.rows if row.kind.type == "Tap")
         popover.on_row_activated(popover.list, row)
-        tap = self.factory.get_brick_by_name("tap1")
+        tap = self.factory.get_brick("tap1")
         self.assertIsNotNone(tap)
         self.assertIs(self.tab.list.selected(), tap)
         self.assertEqual(self.gui.configured, [tap])
@@ -391,7 +391,7 @@ class TestAProjectWithoutBricks(BricksTestCase):
 
     def setUp(self):
         super().setUp()
-        self.factory.del_brick(self.sw)
+        self.factory.remove_brick(self.sw)
 
     def test_the_page(self):
         tab = self.tab
@@ -503,7 +503,7 @@ class TestTheKeys(BricksTestCase):
         self.assertIs(window.get_focus(), row)
 
     def test_escape_without_bricks(self):
-        self.factory.del_brick(self.sw)
+        self.factory.remove_brick(self.sw)
         self.tab.search.set_text("vm")
         self.tab.on_stop_search(self.tab.search)
         self.assertEqual(self.tab.search.get_text(), "")
@@ -522,7 +522,7 @@ class TestTheKeys(BricksTestCase):
             self.assertIs(types(event.key), expected, (keyval, state))
 
     def test_nothing_to_search(self):
-        self.factory.del_brick(self.sw)
+        self.factory.remove_brick(self.sw)
         self.assertFalse(self.press(Gdk.KEY_v, string="v"))
         self.assertEqual(self.tab.search.get_text(), "")
 
@@ -564,16 +564,16 @@ class TestTheMouse(BricksTestCase):
         self.brick("qemu", "vm")
         self.show()
         self.assertTrue(self.click(3, 70))
-        self.assertIs(self.tab.list.selected(), self.factory.bricks[1])
+        self.assertIs(self.tab.list.selected(), list(self.factory.bricks)[1])
         self.assertIs(
             self.tab.get_toplevel().get_focus(),
-            self.tab.list.row_of(self.factory.bricks[1]),
+            self.tab.list.row_of(list(self.factory.bricks)[1]),
         )
         [(widget, event, gui, brick, keys)] = shown
         self.assertIs(widget, self.tab.list)
         self.assertEqual(event.button, 3)
         self.assertEqual(
-            (gui, brick, keys), (self.gui, self.factory.bricks[1], True)
+            (gui, brick, keys), (self.gui, list(self.factory.bricks)[1], True)
         )
 
     def test_not_on_a_brick(self):
@@ -606,7 +606,7 @@ class TestWhatTheWindowTells(BricksTestCase):
         self.tab.on_quit()
         self.brick("qemu", "vm")
         self.assertEqual(self.tab.count.get_text(), "0 of 1 running")
-        self.assertIsNone(self.tab.list.row_of(self.factory.bricks[1]))
+        self.assertIsNone(self.tab.list.row_of(list(self.factory.bricks)[1]))
         self.tab.on_quit = lambda: None
 
 
@@ -873,9 +873,9 @@ class TestTheSettings(BricksTestCase):
         calls, controllers = self.fake_panels()
         vm = self.brick("qemu", "vm")
         self.tab.configure(self.sw)
-        self.factory.del_brick(vm)
+        self.factory.remove_brick(vm)
         self.assertIs(self.tab.configuring, self.sw)
-        self.factory.del_brick(self.sw)
+        self.factory.remove_brick(self.sw)
         self.assertIsNone(self.tab.configuring)
 
     def test_another_project(self):
@@ -915,6 +915,6 @@ class TestTheSettings(BricksTestCase):
         self.tab.on_quit()
         self.tab.on_quit = lambda: None
         self.tab.configure(self.sw)
-        self.factory.del_brick(self.sw)
+        self.factory.remove_brick(self.sw)
         # not told any more
         self.assertIs(self.tab.configuring, self.sw)

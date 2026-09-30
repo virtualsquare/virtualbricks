@@ -72,7 +72,7 @@ class TestTheWorkspace(ProjectsTestCase):
         self.factory.new_brick("switch", "sw1")
         self.assertEqual(self.run_line("project open other"), [])
         self.assertEqual(self.workspace.current.name, "other")
-        self.assertEqual(self.factory.bricks, [])
+        self.assertEqual(list(self.factory.bricks), [])
         self.assertEqual(self.run_line("project new third"), [])
         self.assertEqual(self.workspace.current.name, "third")
         self.factory.new_brick("switch", "sw9")

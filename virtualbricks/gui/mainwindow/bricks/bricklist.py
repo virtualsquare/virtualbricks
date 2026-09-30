@@ -73,9 +73,7 @@ class BrickRow(Row):
 
     def menu_model(self):
         factory = self.gui.brickfactory
-        return brickmenu.menu(
-            self.item, factory.bricks, list(factory.iter_events())
-        )
+        return brickmenu.menu(self.item, factory.bricks, list(factory.events))
 
     def update(self, processes=False) -> None:
         brick = self.item
@@ -118,7 +116,7 @@ class BrickList(RowList):
         self._drag_label: Gtk.Label | None = None
 
     def items(self) -> list:
-        return self.factory.bricks
+        return list(self.factory.bricks)
 
     def make_row(self, item) -> BrickRow:
         return BrickRow(self.gui, item, self.icons, self._sizes)

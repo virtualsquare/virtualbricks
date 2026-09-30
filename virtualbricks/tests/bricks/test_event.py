@@ -275,8 +275,8 @@ class TestEvent(BrickTestCase):
     def test_rename(self):
         self.factory.rename_item(self.event, "start")
         self.assertEqual(self.event.name, "start")
-        self.assertIs(self.factory.get_event_by_name("start"), self.event)
-        self.assertIsNone(self.factory.get_event_by_name("boot"))
+        self.assertIs(self.factory.get_event("start"), self.event)
+        self.assertIsNone(self.factory.get_event("boot"))
 
     def test_is_event(self):
         self.assertTrue(is_event(self.event))
@@ -284,7 +284,7 @@ class TestEvent(BrickTestCase):
 
     def test_dup_event(self):
         self.event.update_config({"delay": 2, "actions": [StartAction("a")]})
-        copy = self.factory.dup_event(self.event)
+        copy = self.factory.duplicate_event(self.event)
         self.assertEqual(copy.config, self.event.config)
         copy.config.actions.append(StartAction("b"))
         self.assertEqual(len(self.event.config.actions), 1)
@@ -292,6 +292,6 @@ class TestEvent(BrickTestCase):
     def test_del_event_stops_it(self):
         self.configure(3, Recording("a on"))
         self.event.poweron()
-        self.factory.del_event(self.event)
+        self.factory.remove_event(self.event)
         self.assertEqual(self.clock.getDelayedCalls(), [])
-        self.assertIsNone(self.factory.get_event_by_name("boot"))
+        self.assertIsNone(self.factory.get_event("boot"))

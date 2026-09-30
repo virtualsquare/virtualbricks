@@ -146,7 +146,7 @@ class EventList(RowList):
             factory.connect(signal, self.on_brick_changed)
 
     def items(self) -> list:
-        return list(self.factory.iter_events())
+        return list(self.factory.events)
 
     def make_row(self, item) -> EventRow:
         return EventRow(self.gui, item, self.icons, self._sizes, self.clock)
@@ -210,7 +210,7 @@ class EventsTab(RowsTab):
         return EventList(self.gui, self.factory, self.clock)
 
     def items(self) -> list:
-        return list(self.factory.iter_events())
+        return list(self.factory.events)
 
     def count_text(self, items) -> str:
         return count(items)

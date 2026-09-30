@@ -382,7 +382,7 @@ def adopt(
     image now.
     """
 
-    image = factory.new_disk_image(name, path)
+    image = factory.new_image(name, path)
     if use_it:
         copy = vm.disk(device).get_cow_path()
         vm.set_image(device, image)

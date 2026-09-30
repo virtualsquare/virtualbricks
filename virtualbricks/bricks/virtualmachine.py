@@ -38,6 +38,7 @@ from virtualbricks.bricks.command import (
     vde_socket,
 )
 from virtualbricks.bricks.draft import Draft, Problem
+from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.images import read_info
 from virtualbricks.config.projectfile import DEFAULT_MODEL
 from virtualbricks.config.schema import (
@@ -378,7 +379,7 @@ class ImageDraft(Draft):
         if name == self.original.name:
             return None
         try:
-            return self.factory.normalize_name(name)
+            return self.factory.check_name(name)
         except errors.NameAlreadyInUseError as exc:
             # its own name, written another way
             if exc.name == self.original.name:
@@ -441,7 +442,7 @@ class Disk:
         name = getattr(self.vm.config, f"{self.device}_image")
         if not name:
             return None
-        return self.vm.factory.get_image_by_name(name)
+        return self.vm.factory.get_image(name)
 
     def set_image(self, image):
         name = "" if image is None else image.name
@@ -1116,7 +1117,7 @@ class VirtualMachineDraft(Draft):
             name = getattr(self.settings, f"{device}_image")
             if name == getattr(self.original, f"{device}_image"):
                 continue
-            image = brick.factory.get_image_by_name(name) if name else None
+            image = brick.factory.get_image(name) if name else None
             if name and image is None:
                 # an image not in the library keeps its name
                 setattr(brick.config, f"{device}_image", name)
@@ -1459,7 +1460,7 @@ class VirtualMachine(bricks.Brick):
         return sock
 
     def add_plug(self, sock, mac=None, model=None):
-        plug = VMPlug(self.factory.new_plug(self))
+        plug = VMPlug(Plug(self))
         self.plugs.append(plug)
         if sock:
             plug.connect(sock)

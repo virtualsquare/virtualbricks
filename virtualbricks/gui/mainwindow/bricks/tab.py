@@ -93,7 +93,7 @@ class BricksTab(RowsTab):
         return BrickList(self.gui, self.factory)
 
     def items(self) -> list:
-        return self.factory.bricks
+        return list(self.factory.bricks)
 
     def count_text(self, items) -> str:
         return count(items)

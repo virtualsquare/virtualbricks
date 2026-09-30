@@ -127,7 +127,7 @@ class TestTheFacts(DetailsTestCase):
         self.assertEqual(len(self.qemu_img.calls), 1)
 
     def test_a_missing_file(self):
-        image = self.factory.new_disk_image("old", "/gone/old.qcow2")
+        image = self.factory.new_image("old", "/gone/old.qcow2")
         self.assertEqual(
             cells(self.details(image).facts),
             [["File", "/gone/old.qcow2"], ["State", "The file isn't there"]],
@@ -205,7 +205,7 @@ class TestSaving(DetailsTestCase):
         self.assertEqual(vm.config.hda_image, "frr-debian")
 
     def test_a_name_in_use(self):
-        self.factory.new_disk_image("pc", "/lab/pc.qcow2")
+        self.factory.new_image("pc", "/lab/pc.qcow2")
         details = self.details()
         self.assertFalse(details.name_problem.get_visible())
         details.name_entry.set_text("pc")

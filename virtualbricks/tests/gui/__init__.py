@@ -126,7 +126,7 @@ class GuiTestCase(unittest.TestCase):
         path = os.path.join(self.root, name + ".qcow2")
         with open(path, "w"):
             pass
-        return self.factory.new_disk_image(name, path)
+        return self.factory.new_image(name, path)
 
 
 # Thursday 24 September 2026, 17:47:09.250, local time

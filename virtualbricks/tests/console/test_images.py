@@ -59,7 +59,7 @@ class TestImages(ConsoleTestCase):
             self.factory, f"image add deb {name}", self.clock(), cwd=folder
         )
         self.assertEqual(self.successResultOf(answer), ["deb"])
-        image = self.factory.get_image_by_name("deb")
+        image = self.factory.get_image("deb")
         self.assertEqual(image.path, self.path)
 
     def test_what_is_wrong(self):
@@ -80,7 +80,7 @@ class TestImages(ConsoleTestCase):
         self.run_line(f"image add deb {self.path}")
         self.vm.update_config({"hda_image": "deb"})
         self.assertEqual(self.run_line("image set deb description=Other"), [])
-        image = self.factory.get_image_by_name("deb")
+        image = self.factory.get_image("deb")
         self.assertEqual(image.description, "Other")
         self.assertEqual(self.run_line("image rename deb debian"), [])
         self.assertEqual(self.vm.config.hda_image, "debian")

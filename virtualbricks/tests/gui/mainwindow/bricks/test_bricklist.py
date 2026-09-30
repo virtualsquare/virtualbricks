@@ -116,14 +116,14 @@ class TestTheRows(BrickListTestCase):
     def test_in_the_order_they_were_made(self):
         vm = self.brick("qemu", "vm")
         self.assertEqual(self.rows(), [self.sw, self.tap, vm])
-        self.factory.del_brick(self.tap)
+        self.factory.remove_brick(self.tap)
         self.assertEqual(self.rows(), [self.sw, vm])
         self.assertIsNone(self.row(self.tap))
 
     def test_a_brick_removed_unplugs_the_others(self):
         # the factory doesn't tell the tap
         self.tap.connect(self.sw.socks[0])
-        self.factory.del_brick(self.sw)
+        self.factory.remove_brick(self.sw)
         self.assertEqual(
             self.row(self.tap).state_label.get_text(), "Not connected"
         )
@@ -131,7 +131,7 @@ class TestTheRows(BrickListTestCase):
     def test_not_after_close(self):
         self.list.close()
         self.brick("qemu", "vm")
-        self.factory.del_brick(self.tap)
+        self.factory.remove_brick(self.tap)
         self.sw.config.ports = 8
         self.sw.notify_changed()
         self.assertEqual(self.rows(), [self.sw, self.tap])

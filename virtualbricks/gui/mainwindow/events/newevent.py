@@ -58,7 +58,7 @@ class NewEventDialog:
         self.gui = gui
         self.factory = gui.brickfactory
         self.build_ui()
-        self.name_entry.set_text(self.factory.next_name(NAME))
+        self.name_entry.set_text(self.factory.unused_name(NAME))
         self.check()
 
     def build_ui(self):
@@ -129,7 +129,7 @@ class NewEventDialog:
 
         message = None
         try:
-            self.factory.normalize_name(self.name_entry.get_text())
+            self.factory.check_name(self.name_entry.get_text())
         except errors.NameAlreadyInUseError as exc:
             message = _("The name “{name}” is in use").format(name=exc.name)
         except errors.InvalidNameError as exc:

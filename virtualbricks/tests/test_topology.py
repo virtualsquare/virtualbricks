@@ -88,7 +88,7 @@ class TestLayout(TopologyTestCase):
         self.wire = self.brick(
             "wire", "w1", self.sw1.socks[0], self.sw2.socks[0]
         )
-        return self.factory.bricks
+        return list(self.factory.bricks)
 
     def nodes(self, result):
         return {node.brick.name: node for node in result.nodes}

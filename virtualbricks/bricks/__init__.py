@@ -559,7 +559,7 @@ class Brick(Base):
         else:
             return
 
-        event = self.factory.get_event_by_name(name)
+        event = self.factory.get_event(name)
         if event is None:
             self.logger.info(event_unavailable, name=name, brick=self.name)
         elif not event.configured():

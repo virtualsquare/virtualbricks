@@ -102,6 +102,7 @@ class TopologyTestCase(GuiTestCase):
         self.laid_out = []
 
         def layout(bricks, direction, measure):
+            bricks = list(bricks)
             # the names measured by the view
             self.assertEqual(measure, self.view.measure)
             self.laid_out.append(([b.name for b in bricks], direction))
@@ -134,7 +135,7 @@ class TestLayingOut(TopologyTestCase):
     def test_when_it_shows(self):
         self.factory.new_brick("switch", "sw0")
         self.assertEqual(self.laid_out, [])
-        self.factory.del_brick(self.factory.get_brick_by_name("sw0"))
+        self.factory.remove_brick(self.factory.get_brick("sw0"))
         self.tab.on_shown()
         self.assertEqual(self.laid_out, [(["sw1", "vm"], "LR")])
         self.assertEqual(
@@ -225,7 +226,7 @@ class TestTheBar(TopologyTestCase):
 
     def test_a_project_without_bricks(self):
         for brick in list(self.factory.bricks):
-            self.factory.del_brick(brick)
+            self.factory.remove_brick(brick)
         self.show()
         tab = self.tab
         self.assertTrue(tab.hint.get_visible())
@@ -249,7 +250,7 @@ class TestTheBar(TopologyTestCase):
         self.show()
         self.view.set_zoom(2.0)
         for brick in list(self.factory.bricks):
-            self.factory.del_brick(brick)
+            self.factory.remove_brick(brick)
         self.assertTrue(self.tab.hint.get_visible())
         self.assertFalse(self.tab.export_action.get_enabled())
         self.assertFalse(self.tab.in_button.get_sensitive())
@@ -498,7 +499,7 @@ class TestExport(TopologyTestCase):
     def test_disabled_without_a_lab(self):
         self.tab.on_left()
         for brick in list(self.factory.bricks):
-            self.factory.del_brick(brick)
+            self.factory.remove_brick(brick)
         self.tab.on_shown()
         self.tab.export_action.activate(None)
         self.assertFalse(

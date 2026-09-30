@@ -215,13 +215,13 @@ class TestTheRows(EventsTestCase):
         self.assertEqual(
             row.detail.get_text(), "After 5 s, starts vm1 · when sw9 starts"
         )
-        self.factory.dup_brick(sw)
+        self.factory.duplicate_brick(sw)
         self.assertEqual(
             row.detail.get_text(),
             "After 5 s, starts vm1 · when sw9 starts · when copy_of_sw9 "
             "starts",
         )
-        self.factory.del_brick(sw)
+        self.factory.remove_brick(sw)
         self.assertEqual(
             row.detail.get_text(),
             "After 5 s, starts vm1 · when copy_of_sw9 starts",
@@ -233,7 +233,7 @@ class TestTheRows(EventsTestCase):
         self.assertEqual(
             self.row(other).detail.get_text(), "After 1 s, starts vm2"
         )
-        self.factory.del_event(self.ev)
+        self.factory.remove_event(self.ev)
         self.assertEqual(self.listed(), [other])
         self.assertIsNone(self.row())
 
@@ -345,7 +345,7 @@ class TestAProjectWithoutEvents(EventsTestCase):
 
     def setUp(self):
         super().setUp()
-        self.factory.del_event(self.ev)
+        self.factory.remove_event(self.ev)
 
     def test_the_page(self):
         tab = self.tab
@@ -441,6 +441,6 @@ class TestTheSettings(EventsTestCase):
 
     def test_deleting_the_event(self):
         self.tab.configure(self.ev)
-        self.factory.del_event(self.ev)
+        self.factory.remove_event(self.ev)
         self.assertIsNone(self.tab.configuring)
         self.assertIs(self.tab.get_visible_child(), self.tab.main_page)

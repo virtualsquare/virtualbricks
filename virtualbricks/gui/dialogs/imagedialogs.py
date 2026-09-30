@@ -215,7 +215,7 @@ class RemoveImageDialog(Window):
         dialog.destroy()
 
     def remove(self):
-        self.factory.remove_disk_image(self.image)
+        self.factory.remove_image(self.image)
         if self.file_check is None or not self.file_check.get_active():
             return
         path = self.image.path

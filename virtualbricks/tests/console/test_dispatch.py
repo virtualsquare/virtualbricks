@@ -98,6 +98,4 @@ class TestCheck(ConsoleTestCase):
             "No command sw1; type help for the commands",
         )
         # nothing runs
-        self.assertEqual(
-            self.factory.get_brick_by_name("sw1").config.ports, 32
-        )
+        self.assertEqual(self.factory.get_brick("sw1").config.ports, 32)

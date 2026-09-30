@@ -233,7 +233,7 @@ class ImagePicker(Gtk.MenuButton):
         for option in self.options():
             option.destroy()
         self.search.set_text("")
-        for image in self.factory.iter_disk_images():
+        for image in self.factory.images:
             option = ImageOption(image, image is self.image)
             self.list.add(option)
             self.show_option(option)

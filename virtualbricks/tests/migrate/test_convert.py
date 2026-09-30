@@ -593,7 +593,7 @@ class TestNetemu(ConvertTestCase):
             self.directory,
         )
         factory.convert(ProjectSettings())
-        brick = factory.factory.get_brick_by_name("wan")
+        brick = factory.factory.get_brick("wan")
         self.assertEqual(
             [state.on_start for state in brick.markov_manager.states],
             ["on", "on", "on"],

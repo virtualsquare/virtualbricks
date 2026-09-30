@@ -66,7 +66,7 @@ from virtualbricks.bricks.virtualmachine import UsbDevice
 def build_lab(factory, image_path="/images/deb.qcow2"):
     """A project with a brick of each kind and each kind of connection."""
 
-    image = factory.new_disk_image("deb", image_path, "Debian\nbase")
+    image = factory.new_image("deb", image_path, "Debian\nbase")
     event = factory.new_event("boot")
     event.update_config(
         {
@@ -90,7 +90,7 @@ def build_lab(factory, image_path="/images/deb.qcow2"):
     )
     vm.set_image("hda", image)
     vm.add_plug(sw1.socks[0], "00:aa:00:00:00:01", "e1000")
-    vm.add_plug(factory.get_sock_by_name("_hostonly"), "00:aa:00:00:00:02")
+    vm.add_plug(factory.get_sock("_hostonly"), "00:aa:00:00:00:02")
     vm.add_plug(None, "00:aa:00:00:00:03", "rtl8139")
     vm.add_sock("00:aa:00:00:00:04", "virtio")
     tap = factory.new_brick("tap", "tap0")
@@ -103,7 +103,7 @@ def build_lab(factory, image_path="/images/deb.qcow2"):
     wan.markov_manager.states[1].delay = 200
     wan.markov_manager.weights[0][1] = 0.2
     wire = factory.new_brick("wire", "w")
-    wire.plugs[1].connect(factory.get_sock_by_name("vm_sock_eth3"))
+    wire.plugs[1].connect(factory.get_sock("vm_sock_eth3"))
     factory.new_brick("capture", "cap")
     factory.new_brick("tunnellisten", "tl").connect(sw1.socks[0])
     factory.new_brick("switchwrapper", "wr")
@@ -227,12 +227,12 @@ class TestRoundTrip(ProjectFileTestCase):
         )
         self.assertEqual(project_settings.vde_path, "/opt")
         self.assertEqual(project_document(factory, project_settings), data)
-        vm = factory.get_brick_by_name("vm")
-        self.assertIs(vm.disk("hda").image, factory.get_image_by_name("deb"))
+        vm = factory.get_brick("vm")
+        self.assertIs(vm.disk("hda").image, factory.get_image("deb"))
         self.assertEqual(len(vm.plugs), 3)
         self.assertEqual(vm.plugs[1].sock.nickname, "_hostonly")
         self.assertIsNone(vm.plugs[2].sock)
-        wire = factory.get_brick_by_name("w")
+        wire = factory.get_brick("w")
         self.assertIsNone(wire.plugs[0].sock)
         self.assertEqual(wire.plugs[1].sock.nickname, "vm_sock_eth3")
 
@@ -271,7 +271,7 @@ class TestRoundTrip(ProjectFileTestCase):
         factory = make_factory(self)
         load_project(factory, path, self.report)
         self.assertEqual(self.messages(), [])
-        image = factory.get_image_by_name("deb")
+        image = factory.get_image("deb")
         self.assertEqual(image.path, os.path.join(directory, "deb.qcow2"))
 
 
@@ -496,7 +496,7 @@ class TestLenientReading(ProjectFileTestCase):
             },
         }
         factory, _ = self.restore(data)
-        self.assertEqual([i.name for i in factory.iter_disk_images()], ["one"])
+        self.assertEqual([i.name for i in factory.images], ["one"])
         self.assertEqual(
             self.messages(),
             [
@@ -517,7 +517,7 @@ class TestLenientReading(ProjectFileTestCase):
             },
         }
         factory, _ = self.restore(data)
-        self.assertEqual([e.name for e in factory.iter_events()], ["ok"])
+        self.assertEqual([e.name for e in factory.events], ["ok"])
         self.assertEqual(len(self.messages()), 1)
 
     def test_bricks(self):
@@ -528,9 +528,9 @@ class TestLenientReading(ProjectFileTestCase):
         data["bricks"]["sw1"]["ports"] = 500
         data["bricks"]["sw1"]["color"] = "red"
         factory, _ = self.restore(data)
-        self.assertIsNone(factory.get_brick_by_name("x"))
-        self.assertIsNone(factory.get_brick_by_name("y"))
-        self.assertEqual(factory.get_brick_by_name("sw1").config.ports, 32)
+        self.assertIsNone(factory.get_brick("x"))
+        self.assertIsNone(factory.get_brick("y"))
+        self.assertEqual(factory.get_brick("sw1").config.ports, 32)
         messages = self.messages()
         self.assertIn(
             "bricks.sw1.ports: 500 is outside 1–128, using the default 32",
@@ -552,9 +552,9 @@ class TestLenientReading(ProjectFileTestCase):
         bricks["w"]["endpoints"] = ["vm", "vm:sock_eth9"]
         bricks["tl"]["connect"] = "wr:nope"
         factory, _ = self.restore(data)
-        self.assertIsNone(factory.get_brick_by_name("tap0").plugs[0].sock)
+        self.assertIsNone(factory.get_brick("tap0").plugs[0].sock)
         self.assertEqual(
-            [p.sock for p in factory.get_brick_by_name("wan").plugs],
+            [p.sock for p in factory.get_brick("wan").plugs],
             [None, None],
         )
         messages = self.messages()
@@ -583,7 +583,7 @@ class TestLenientReading(ProjectFileTestCase):
         # "vm_sock_eth3" is the nickname of both; the owner decides.
         self.assertIs(
             resolve_socket(self.factory, "vm:sock_eth3").brick,
-            self.factory.get_brick_by_name("vm"),
+            self.factory.get_brick("vm"),
         )
         self.assertIsNone(resolve_socket(self.factory, "sw1:sock_eth3"))
 
@@ -598,7 +598,7 @@ class TestLenientReading(ProjectFileTestCase):
             {"kind": "hostonly", "mac": "00:aa:00:00:00:08", "vlan": 1},
         ]
         factory, _ = self.restore(data)
-        vm = factory.get_brick_by_name("vm")
+        vm = factory.get_brick("vm")
         self.assertEqual(len(vm.plugs), 3)
         self.assertEqual(vm.plugs[0].model, "rtl8139")
         self.assertEqual([s.nickname for s in vm.socks], ["vm_sock_eth4"])
@@ -625,7 +625,7 @@ class TestLenientReading(ProjectFileTestCase):
         data = self.lab()
         data["bricks"]["vm"]["nics"] = "none"
         factory, _ = self.restore(data)
-        self.assertEqual(factory.get_brick_by_name("vm").plugs, [])
+        self.assertEqual(factory.get_brick("vm").plugs, [])
         self.assertIn(
             "bricks.vm: nics: is not a list, cards dropped", self.messages()
         )
@@ -636,8 +636,8 @@ class TestLenientReading(ProjectFileTestCase):
         del data["bricks"]["tap0"]["connect"]
         del data["bricks"]["vm"]["nics"]
         factory, _ = self.restore(data)
-        self.assertEqual(factory.get_brick_by_name("vm").plugs, [])
-        self.assertIsNone(factory.get_brick_by_name("tap0").plugs[0].sock)
+        self.assertEqual(factory.get_brick("vm").plugs, [])
+        self.assertIsNone(factory.get_brick("tap0").plugs[0].sock)
 
     def test_dangling_references(self):
         data = self.lab()

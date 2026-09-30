@@ -333,13 +333,12 @@ def project_document(
             "path": image.path,
             "description": image.description,
         }
-        for image in factory.iter_disk_images()
+        for image in factory.images
     }
     if images:
         data["images"] = images
     events: Table = {
-        event.name: dump_record(event.config)
-        for event in factory.iter_events()
+        event.name: dump_record(event.config) for event in factory.events
     }
     if events:
         data["events"] = events
@@ -479,11 +478,11 @@ def resolve(factory: BrickFactory, target: str) -> Sock | None:
 
     if ":" in target:
         brick_name, _, socket_name = target.partition(":")
-        sock = factory.get_sock_by_name(f"{brick_name}_{socket_name}")
+        sock = factory.get_sock(f"{brick_name}_{socket_name}")
         if sock is not None and sock.brick.name == brick_name:
             return sock
         return None
-    brick = factory.get_brick_by_name(target)
+    brick = factory.get_brick(target)
     if brick is not None and brick.socks and brick.connections != "nics":
         return brick.socks[0]
     return None
@@ -593,7 +592,7 @@ def _connect(
         vm = cast("VirtualMachine", brick)
         for nic in cast("list[Nic]", targets):
             if nic["kind"] == "hostonly":
-                sock = factory.get_sock_by_name(HOSTONLY)
+                sock = factory.get_sock(HOSTONLY)
             else:
                 sock = _find_socket(factory, nic["connect"], report, where)
             vm.add_plug(sock, nic["mac"], nic["model"])
@@ -630,7 +629,7 @@ def _read_images(
         if not os.path.exists(path):
             report.warning(f"{path} not found, kept in the library", where)
         try:
-            factory.new_disk_image(name, path, image.description)
+            factory.new_image(name, path, image.description)
         except errors.ImageAlreadyInUseError:
             report.warning(
                 "uses the file of another image, image dropped", where
@@ -681,11 +680,11 @@ def _read_bricks(factory: BrickFactory, data: Table, report: Report) -> None:
 
 def _check_references(factory: BrickFactory, report: Report) -> None:
     lookups: dict[str, Callable[[str], object]] = {
-        "event": factory.get_event_by_name,
-        "image": factory.get_image_by_name,
+        "event": factory.get_event,
+        "image": factory.get_image,
     }
     objects = [("bricks", brick) for brick in factory.bricks]
-    objects += [("events", event) for event in factory.iter_events()]
+    objects += [("events", event) for event in factory.events]
     for kind, obj in objects:
         for name, target, value in references(obj.config):
             if lookups[target](value) is None:

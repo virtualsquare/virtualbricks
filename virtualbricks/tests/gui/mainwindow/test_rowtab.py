@@ -74,7 +74,7 @@ if has_display:
         CHANGED = "event-changed"
 
         def items(self):
-            return list(self.factory.iter_events())
+            return list(self.factory.events)
 
         def make_row(self, item):
             return EventRow(self.gui, item, self.icons, self._sizes)
@@ -190,7 +190,7 @@ class TestAList(RowTabTestCase):
             [row.item for row in self.list.get_children()],
             [self.event, other],
         )
-        self.factory.del_event(self.event)
+        self.factory.remove_event(self.event)
         self.assertEqual(
             [row.item for row in self.list.get_children()], [other]
         )

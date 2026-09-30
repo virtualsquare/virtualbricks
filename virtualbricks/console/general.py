@@ -116,7 +116,7 @@ def status(context):
                 seconds=eventinfo.seconds_left(event, context.reactor)
             ),
         )
-        for event in factory.iter_events()
+        for event in factory.events
         if is_running(event)
     ]
     if not bricks and not events:

@@ -27,7 +27,7 @@ class TestTheDisksSection(MachinePanelTestCase):
 
     def prepare(self):
         self.manager.current = OpenProject(self.folder("lab"), None)
-        self.image = self.factory.new_disk_image("deb", "/i/deb.qcow2")
+        self.image = self.factory.new_image("deb", "/i/deb.qcow2")
         self.vm.update_config({"hda_image": "deb", "hda_private": True})
 
     def test_a_change_goes_to_the_draft(self):

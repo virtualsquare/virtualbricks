@@ -209,7 +209,7 @@ class DeleteBrickConfirmDialog(_ConfirmDialog):
 
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.YES:
-            self._brickfactory.del_brick(self._brick)
+            self._brickfactory.remove_brick(self._brick)
         dialog.destroy()
 
 
@@ -232,5 +232,5 @@ class DeleteEventConfirmDialog(_ConfirmDialog):
 
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.YES:
-            self._brickfactory.del_event(self._event)
+            self._brickfactory.remove_event(self._event)
         dialog.destroy()

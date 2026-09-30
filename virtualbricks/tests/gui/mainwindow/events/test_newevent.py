@@ -57,7 +57,7 @@ class NewEventTestCase(GuiTestCase):
         )
 
     def events(self):
-        return [event.name for event in self.factory.iter_events()]
+        return [event.name for event in self.factory.events]
 
 
 class TestTheWindow(NewEventTestCase):
@@ -132,7 +132,7 @@ class TestCreate(NewEventTestCase):
         self.type(dialog, "start lab")
         dialog.delay.set_value(5)
         dialog.dialog.response(Gtk.ResponseType.OK)
-        event = self.factory.get_event_by_name("start_lab")
+        event = self.factory.get_event("start_lab")
         self.assertEqual(event.config.delay, 5)
         self.assertEqual(event.config.actions, [])
         # its settings, to add its actions
@@ -143,7 +143,7 @@ class TestCreate(NewEventTestCase):
         dialog = self.dialog()
         dialog.delay.set_text("30")
         dialog.dialog.response(Gtk.ResponseType.OK)
-        event = self.factory.get_event_by_name("new_event")
+        event = self.factory.get_event("new_event")
         self.assertEqual(event.config.delay, 30)
 
     def test_cancel(self):

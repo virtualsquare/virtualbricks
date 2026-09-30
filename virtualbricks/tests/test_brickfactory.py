@@ -60,21 +60,21 @@ class TestFactory(BrickTestCase):
 
     def test_get_event_by_name(self):
         event = self.factory.new_event("boot")
-        self.factory.new_disk_image("boot2", "/x")
-        self.assertIs(self.factory.get_event_by_name("boot"), event)
-        self.assertIsNone(self.factory.get_event_by_name("boot2"))
+        self.factory.new_image("boot2", "/x")
+        self.assertIs(self.factory.get_event("boot"), event)
+        self.assertIsNone(self.factory.get_event("boot2"))
 
     def test_next_name(self):
         self.factory.new_brick("switch", "sw")
         self.factory.new_brick("switch", "sw.1")
-        self.assertEqual(self.factory.next_name("sw"), "sw.2")
+        self.assertEqual(self.factory.unused_name("sw"), "sw.2")
 
     def test_dup_brick(self):
         vm = self.factory.new_brick("qemu", "vm")
         vm.update_config(
             {"memory": 256, "usb_devices": [UsbDevice("1d6b:0002", "hub")]}
         )
-        copy = self.factory.dup_brick(vm)
+        copy = self.factory.duplicate_brick(vm)
         self.assertEqual(copy.config.memory, 256)
         self.assertEqual(copy.config.usb_devices, vm.config.usb_devices)
         self.assertIsNot(copy.config.usb_devices, vm.config.usb_devices)
@@ -107,9 +107,11 @@ class TestFactory(BrickTestCase):
         self.factory.runtime_dir = "/run/vb"
         self.factory.new_brick("switch", "sw")
         self.assertEqual(
-            self.factory.check_name("switch", " my switch "), "my_switch"
+            self.factory.check_brick_name("switch", " my switch "), "my_switch"
         )
-        self.assertEqual(self.factory.check_name("Tap", "t" * 15), "t" * 15)
+        self.assertEqual(
+            self.factory.check_brick_name("Tap", "t" * 15), "t" * 15
+        )
         # in use, too long for the sockets, refused by the kind
         for type, name in (
             ("switch", "sw"),
@@ -117,9 +119,9 @@ class TestFactory(BrickTestCase):
             ("tap", "t" * 16),
         ):
             with self.assertRaises(errors.InvalidNameError, msg=name):
-                self.factory.check_name(type, name)
+                self.factory.check_brick_name(type, name)
         with self.assertRaises(errors.InvalidTypeError):
-            self.factory.check_name("nope", "nope")
+            self.factory.check_brick_name("nope", "nope")
 
     def test_a_project_opens_with_names_no_longer_taken(self):
         # a tap named before the check
@@ -143,7 +145,7 @@ class TestFactory(BrickTestCase):
         )
         changed = []
         boot.changed.connect(changed.append)
-        self.factory.rename_item(self.factory.get_brick_by_name("sw1"), "core")
+        self.factory.rename_item(self.factory.get_brick("sw1"), "core")
         self.factory.rename_item(later, "after")
         self.assertEqual(
             boot.config.actions,
@@ -168,7 +170,7 @@ class TestFactory(BrickTestCase):
             self.factory.new_brick("switch", "sw"),
             self.factory.new_brick("qemu", "vm"),
             self.factory.new_event("ev"),
-            self.factory.new_disk_image("deb", "/lab/deb.qcow2"),
+            self.factory.new_image("deb", "/lab/deb.qcow2"),
         ):
             name = item.name
             with self.assertRaises(AttributeError):

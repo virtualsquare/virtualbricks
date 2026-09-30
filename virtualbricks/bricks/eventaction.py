@@ -37,7 +37,7 @@ from virtualbricks.i18n import _
 
 
 def _target(factory, name):
-    found = factory.get_brick_by_name(name) or factory.get_event_by_name(name)
+    found = factory.get_brick(name) or factory.get_event(name)
     if found is None:
         raise ValueError(_("No brick or event named {name}").format(name=name))
     return found

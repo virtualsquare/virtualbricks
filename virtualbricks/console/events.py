@@ -54,11 +54,11 @@ NEW_EVENT = "new_event"
 
 
 def _events(factory):
-    return [event.name for event in factory.iter_events()]
+    return [event.name for event in factory.events]
 
 
 EVENT = Named(
-    lambda factory, name: factory.get_event_by_name(name),
+    lambda factory, name: factory.get_event(name),
     _events,
     N_("No event named {name}"),
 )
@@ -105,9 +105,9 @@ def _action(context, what, subject):
         raise CommandError(_("{what} needs a subject").format(what=what))
     factory = context.factory
     if what in ("start", "stop"):
-        if factory.get_brick_by_name(subject) is not None:
+        if factory.get_brick(subject) is not None:
             kind = Kind.START_BRICK if what == "start" else Kind.STOP_BRICK
-        elif factory.get_event_by_name(subject) is not None:
+        elif factory.get_event(subject) is not None:
             kind = Kind.START_EVENT if what == "start" else Kind.STOP_EVENT
         else:
             raise CommandError(
@@ -157,7 +157,7 @@ def _index(event, number, count):
 @command("event", "list", help=N_("The events, their state and actions"))
 def list_(context):
     factory = context.factory
-    events = list(factory.iter_events())
+    events = list(factory.events)
     if not events:
         return [_("No events")]
     rows = [
@@ -180,9 +180,9 @@ def list_(context):
 def new(context, name):
     factory = context.factory
     if name is None:
-        name = factory.next_name(NEW_EVENT)
+        name = factory.unused_name(NEW_EVENT)
     else:
-        name = factory.normalize_name(name)
+        name = factory.check_name(name)
     return [factory.new_event(name).name]
 
 
@@ -388,8 +388,8 @@ def rename(context, name, new):
 def duplicate(context, name, new):
     factory = context.factory
     if new is not None:
-        new = factory.normalize_name(new)
-    copy = factory.dup_event(name)
+        new = factory.check_name(new)
+    copy = factory.duplicate_event(name)
     if new is not None:
         factory.rename_item(copy, new)
     return [copy.name]
@@ -403,4 +403,4 @@ def duplicate(context, name, new):
 )
 def delete(context, name):
     for event in name:
-        context.factory.del_event(event)
+        context.factory.remove_event(event)

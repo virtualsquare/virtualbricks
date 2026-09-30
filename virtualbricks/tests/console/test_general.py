@@ -134,7 +134,7 @@ class TestStatusAndQuit(ConsoleTestCase):
         self.running("switch", "sw1", 41822)
         self.assertEqual(self.fails("quit"), "sw1 is running: stop it first")
         self.assertFalse(self.factory.quit_d.called)
-        self.factory.get_brick_by_name("sw1").proc = None
+        self.factory.get_brick("sw1").proc = None
         self.assertEqual(self.run_line("quit"), [])
         self.assertTrue(self.factory.quit_d.called)
 
@@ -179,7 +179,7 @@ class TestSource(ConsoleTestCase):
             fp.write("image add deb deb.qcow2\n")
         answer = run(self.factory, "source lab.vb", self.clock(), cwd=folder)
         self.assertEqual(self.successResultOf(answer), ["deb"])
-        image = self.factory.get_image_by_name("deb")
+        image = self.factory.get_image("deb")
         self.assertEqual(image.path, os.path.join(folder, "deb.qcow2"))
 
     def test_a_file_that_cant_be_read(self):

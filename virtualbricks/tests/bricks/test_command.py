@@ -747,7 +747,7 @@ class TestPrepare(CommandTestCase):
 
     def test_machine(self):
         set_setting("audio_driver", "pipewire")
-        self.factory.new_disk_image("debian", "/images/debian.qcow2")
+        self.factory.new_image("debian", "/images/debian.qcow2")
         vm = self.factory.new_brick("qemu", "vm")
         vm.update_config({"hdb_image": "debian", "machine_type": "q35"})
         prepared = self.successResultOf(vm.prepare())

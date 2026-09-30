@@ -224,9 +224,7 @@ class EventEditor(Panel):
         self.choices = {
             BRICK: [brick.name for brick in factory.bricks],
             EVENT: [
-                other.name
-                for other in factory.iter_events()
-                if other is not event
+                other.name for other in factory.events if other is not event
             ],
         }
         self.panel = Gtk.Box(

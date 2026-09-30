@@ -90,7 +90,7 @@ def check_name(factory, name) -> str | None:
     """What is wrong with a name for a new image, if anything."""
 
     try:
-        factory.normalize_name(name)
+        factory.check_name(name)
     except errors.NameAlreadyInUseError as exc:
         return _("The name “{name}” is in use").format(name=exc.name)
     except errors.InvalidNameError as exc:
@@ -364,7 +364,7 @@ class ExistingImageDialog(_AddDialog):
         else:
             copying = defer.succeed(None)
         copying.addCallback(
-            lambda _: self.factory.new_disk_image(name, path, description)
+            lambda _: self.factory.new_image(name, path, description)
         )
         copying.addCallbacks(
             self._added, self._copy_failed, errbackArgs=(path,)
@@ -504,6 +504,6 @@ class NewDiskDialog(_AddDialog):
         creating = self.qemu_img(
             ["create", "-q", "-f", fmt, path, str(self.size())]
         )
-        creating.addCallback(lambda _: self.factory.new_disk_image(name, path))
+        creating.addCallback(lambda _: self.factory.new_image(name, path))
         creating.addCallbacks(self._added, self._failed)
         return creating

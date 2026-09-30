@@ -224,7 +224,7 @@ class NewBrickPopover(Gtk.Popover):
         for row in self.rows:
             kind = row.kind
             try:
-                self.factory.check_name(
+                self.factory.check_brick_name(
                     kind.type, new_name(self.factory, kind)
                 )
             except errors.InvalidNameError as exc:

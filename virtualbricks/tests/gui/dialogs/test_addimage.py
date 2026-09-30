@@ -77,7 +77,7 @@ class TestWords(AddTestCase):
 
     def test_names(self):
         self.assertIsNone(check_name(self.factory, "frr"))
-        self.factory.new_disk_image("frr", "/lab/frr.qcow2")
+        self.factory.new_image("frr", "/lab/frr.qcow2")
         self.assertEqual(
             check_name(self.factory, "frr"), "The name “frr” is in use"
         )
@@ -169,7 +169,7 @@ class TestExistingImage(AddTestCase):
         self.assertFalse(self.dialog.add_button.get_sensitive())
 
     def test_a_name_in_use(self):
-        self.factory.new_disk_image("frr", "/lab/other.qcow2")
+        self.factory.new_image("frr", "/lab/other.qcow2")
         self.dialog.choose(self.file("lab", "frr.qcow2"))
         self.assertTrue(self.dialog.name_message.get_visible())
         self.assertFalse(self.dialog.add_button.get_sensitive())
@@ -186,7 +186,7 @@ class TestExistingImage(AddTestCase):
         self.assertEqual(self.copies, [(path, copy)])
         with open(copy, "rb") as fp:
             self.assertEqual(fp.read(), b"disk")
-        image = self.factory.get_image_by_name("frr")
+        image = self.factory.get_image("frr")
         self.assertEqual(image.path, copy)
         self.assertEqual(self.added, [image])
 
@@ -197,7 +197,7 @@ class TestExistingImage(AddTestCase):
         self.dialog.name_entry.set_text("frr2")
         self.dialog.add()
         self.assertEqual(
-            self.factory.get_image_by_name("frr2").path,
+            self.factory.get_image("frr2").path,
             os.path.join(folder, "frr-2.qcow2"),
         )
 
@@ -207,7 +207,7 @@ class TestExistingImage(AddTestCase):
         self.dialog.in_place_radio.set_active(True)
         self.successResultOf(self.dialog.add())
         self.assertEqual(self.copies, [])
-        self.assertEqual(self.factory.get_image_by_name("frr").path, path)
+        self.assertEqual(self.factory.get_image("frr").path, path)
 
     def test_above_a_backing_file(self):
         path = self.file(
@@ -225,7 +225,7 @@ class TestExistingImage(AddTestCase):
         self.assertFalse(self.dialog.copy_radio.get_visible())
         self.dialog.add()
         self.assertEqual(self.copies, [])
-        self.assertEqual(self.factory.get_image_by_name("frr").path, path)
+        self.assertEqual(self.factory.get_image("frr").path, path)
 
     def test_a_copy_that_fails(self):
         def fail(source, target):
@@ -238,7 +238,7 @@ class TestExistingImage(AddTestCase):
         self.dialog.add()
         folder = os.path.join(self.manager.path, "vimages")
         self.assertEqual(os.listdir(folder), [])
-        self.assertIsNone(self.factory.get_image_by_name("frr"))
+        self.assertIsNone(self.factory.get_image("frr"))
         self.assertIn("No space left", self.dialog.error_label.get_text())
         self.assertTrue(self.dialog.add_button.get_sensitive())
         self.assertEqual(self.added, [])
@@ -304,7 +304,7 @@ class TestNewDisk(AddTestCase):
             self.qemu_img.calls,
             [["create", "-q", "-f", "qcow2", path, str(10 * 1000**3)]],
         )
-        image = self.factory.get_image_by_name("scratch")
+        image = self.factory.get_image("scratch")
         self.assertEqual(image.path, path)
         self.assertEqual(self.added, [image])
 
@@ -321,7 +321,7 @@ class TestNewDisk(AddTestCase):
         self.qemu_img.failing.add(("create", "-q"))
         self.dialog.name_entry.set_text("scratch")
         self.dialog.create()
-        self.assertIsNone(self.factory.get_image_by_name("scratch"))
+        self.assertIsNone(self.factory.get_image("scratch"))
         self.assertEqual(
             self.dialog.error_label.get_text(), "qemu-img: create failed"
         )

@@ -223,7 +223,7 @@ class TestWhatTheItemsDo(EventMenuTestCase):
     def test_duplicate(self):
         event = self.ready()
         EventActions(self.gui, event).activate_action("duplicate", None)
-        copy = self.factory.get_event_by_name("copy_of_ev")
+        copy = self.factory.get_event("copy_of_ev")
         self.assertEqual(copy.config, event.config)
 
     def test_start_and_stop(self):
