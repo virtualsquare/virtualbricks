@@ -25,6 +25,14 @@ def make_application(config):
     return gui.Application(config)
 
 
+def make_remote_application(config):
+    """The windows of another Virtualbricks: no lock, no project here."""
+
+    from virtualbricks.gui import gui
+
+    return gui.RemoteApplication(config)
+
+
 def make_plain_application(config):
     """The application without the windows: no GTK is loaded."""
 
@@ -33,11 +41,25 @@ def make_plain_application(config):
     return brickfactory.Application(config)
 
 
+def install_gtk_reactor():
+    import gi
+
+    gi.require_version("Gtk", "3.0")
+    gi.require_version("Gdk", "3.0")
+    from twisted.internet import gtk3reactor
+
+    gtk3reactor.install()
+
+
 def run():
     from virtualbricks import app
 
     config = app.Options()
     app.parse_options(config)
+    if config["windows"]:
+        install_gtk_reactor()
+        app.run_app(make_remote_application, config)
+        return
     if config["command"] or config["connect"]:
         # no lock, no reactor, no GTK: the Virtualbricks that runs has them
         from virtualbricks import i18n
@@ -57,12 +79,6 @@ def run():
     if config["no-gui"]:
         factory = make_plain_application
     else:
-        import gi
-
-        gi.require_version("Gtk", "3.0")
-        gi.require_version("Gdk", "3.0")
-        from twisted.internet import gtk3reactor
-
-        gtk3reactor.install()
+        install_gtk_reactor()
         factory = make_application
     app.run_app(app.LockedApplication(factory), config)

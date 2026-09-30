@@ -227,18 +227,22 @@ class BrickActions(Gio.SimpleActionGroup):
         state = brickinfo.state(self.brick)
         running = state is State.RUNNING
         vm = isinstance(self.brick, VirtualMachine)
+        # over a connection, the console and SIGTERM wait
+        local = self.engine.local
         enabled = {
             "startstop": state in (State.RUNNING, State.STOPPED),
             "configure": self.brick.get_type() not in NO_PANEL,
             "rename": not running,
             "resume": vm,
-            "console": running and self.brick.get_type() not in NO_CONSOLE,
+            "console": running
+            and local
+            and self.brick.get_type() not in NO_CONSOLE,
             "pause": running,
             "continue": running,
             "suspend": running and vm,
             "reset": running and vm,
             "restart": running,
-            "terminate": running and vm,
+            "terminate": running and vm and local,
             "kill": running,
         }
         for name, value in enabled.items():

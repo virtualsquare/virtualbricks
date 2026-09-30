@@ -100,7 +100,8 @@ class ImageActions(Gio.SimpleActionGroup):
 
         there = os.path.exists(self.image.path)
         self.lookup_action("find-file").set_enabled(not there)
-        self.lookup_action("show").set_enabled(there)
+        # the file manager shows the files of this machine only
+        self.lookup_action("show").set_enabled(there and self.gui.engine.local)
 
     def find_file(self) -> None:
         FindFileDialog(self.gui.engine, self.image).show(self.gui.window)

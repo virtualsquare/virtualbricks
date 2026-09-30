@@ -17,6 +17,9 @@
 
 """The messages of the messages window: entries, filter and log."""
 
+import json
+
+import attr
 from twisted.logger import (
     ILogObserver,
     LogLevel,
@@ -30,6 +33,7 @@ from zope.interface.verify import verifyObject
 
 from virtualbricks import bricks
 from virtualbricks.gui import messages
+from virtualbricks.remote.follower import message_of
 from virtualbricks.tests import make_factory
 from virtualbricks.tests.gui import TIME, entry, event, untranslated
 
@@ -465,6 +469,68 @@ class TestMessageLog(unittest.TestCase):
         self.assertEqual(
             self.log.text(), eventAsText(one) + "\n" + eventAsText(two) + "\n"
         )
+
+
+class TestAddMessage(unittest.TestCase):
+    """The messages of another Virtualbricks, in the log of its windows."""
+
+    def setUp(self):
+        untranslated(self)
+        self.log = messages.MessageLog()
+        self.listener = Listener()
+        self.log.subscribe(self.listener)
+
+    def check(self, event, source):
+        """
+        The entry of the message of event, sent by the Virtualbricks on
+        lab: that of event here, but for its source.
+        """
+
+        message = json.loads(json.dumps(message_of(event)))
+        there = self.log.add_message(message, "lab")
+        self.assertEqual(there.source, source)
+        here = messages.entry_from_event(event, there.number)
+        self.assertEqual(attr.evolve(there, source=here.source), here)
+        return there
+
+    def test_a_message(self):
+        there = self.check(event("one\ntwo", LogLevel.warn), "Project on lab")
+        self.assertEqual(list(self.log.entries), [there])
+        self.assertEqual(self.listener.calls, [("added", there, None)])
+        self.assertEqual(self.log.counts["warn"], 1)
+
+    def test_from_a_brick(self):
+        switch = make_factory(self).new_brick("switch", "sw1")
+        events = []
+        logger = Logger(source=switch, observer=events.append)
+        logger.info("Starting: {args}", args="vde_switch -n 32")
+        there = self.check(events[0], "sw1 on lab")
+        self.assertEqual(there.source_type, "switch")
+
+    def test_the_output_of_a_program(self):
+        there = self.check(
+            event("one\n", LogLevel.error, stream="stderr", pid=41851),
+            "Project on lab",
+        )
+        self.assertEqual((there.stream, there.pid), ("stderr", 41851))
+        self.assertEqual(self.log.counts["output lines"], 1)
+
+    def test_traceback(self):
+        there = self.check(
+            event(
+                "Error while saving", LogLevel.critical, log_failure=failure()
+            ),
+            "Project on lab",
+        )
+        self.assertIn("no space left", there.traceback[-1])
+
+    def test_what_it_doesnt_know(self):
+        there = self.log.add_message({"level": "loud", "text": "x"}, "lab")
+        self.assertEqual(there.level, "info")
+        self.assertEqual(there.lines, ["x"])
+        self.assertEqual(there.source, "Virtualbricks on lab")
+        self.assertEqual(there.traceback, [])
+        self.assertEqual(there.time, 0.0)
 
 
 class TestMessageLogObserver(unittest.TestCase):

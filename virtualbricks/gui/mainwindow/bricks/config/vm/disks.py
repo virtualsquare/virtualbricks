@@ -154,11 +154,13 @@ class DiskRow(Gtk.ListBoxRow):
                 images.space_taken(copy),
             )
         )
+        # over a connection, the long work and the file manager wait
+        local = self.section.engine.local
         there = self.image is not None and os.path.exists(self.image.path)
-        self.actions.lookup_action("show").set_enabled(there)
+        self.actions.lookup_action("show").set_enabled(there and local)
         changes = self.keeps_changes()
         for name in ("save", "merge", "start-over"):
-            self.actions.lookup_action(name).set_enabled(changes)
+            self.actions.lookup_action(name).set_enabled(changes and local)
         self._make_menu()
 
     def _make_menu(self) -> None:

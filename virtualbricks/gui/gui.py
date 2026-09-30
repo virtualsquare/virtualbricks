@@ -22,7 +22,7 @@ import os
 import sys
 
 from gi.repository import Gtk
-from twisted.internet import error, protocol, reactor
+from twisted.internet import defer, error, protocol, reactor
 from twisted.python.failure import Failure
 from twisted.logger import (
     FilteringLogObserver,
@@ -34,12 +34,17 @@ from twisted.logger import (
     globalLogPublisher,
 )
 
-from virtualbricks import brickfactory, errors
+from virtualbricks import brickfactory, errors, i18n
 from virtualbricks.config.projectfile import ProjectFormatError
+from virtualbricks.config.settings import (
+    get_setting,
+    load_settings,
+    store_settings,
+)
 from virtualbricks.config.workspace import projects
 from virtualbricks.console.projects import use_frontend
 from virtualbricks.engine import LocalEngine
-from virtualbricks.gui.mainwindow import VBGUI
+from virtualbricks.gui.mainwindow import VBGUI, window
 from virtualbricks.gui.messages import MessageLog, MessageLogObserver
 from virtualbricks.gui.trash import DesktopTrash
 from virtualbricks.i18n import _
@@ -276,3 +281,159 @@ class Application(brickfactory.Application):
         # the folders of QEMU and VDE are those of the project, open by now
         self.gui.check_prerequisites()
         return ret
+
+
+class RemoteApplication:
+    """
+    The windows of another Virtualbricks, the one of the socket of
+    ``--connect`` (page 19): its copy, and an engine that sends there what
+    the windows do. No lock, no migration, no workspace, no autosave, no
+    socket and no console of their own; the settings are those of this
+    computer. Quit closes the windows; the Virtualbricks there goes on.
+    """
+
+    def __init__(self, config):
+        self.config = config
+        self.target = config["target"]
+        self.messages = MessageLog()
+        self.logger = AppLoggerFactory(self.messages)(config)
+        self.gui = None
+        self.engine = None
+        self.quitting = False
+        # the Virtualbricks there said it quits
+        self.ended = False
+
+    def getComponent(self, interface, default):
+        return default
+
+    def install_locale(self):
+        i18n.install()
+
+    def install_settings(self):
+        load_settings()
+
+    def run(self, reactor):
+        """Connect, then show the windows: a Deferred of their end."""
+
+        from virtualbricks.remote import client
+        from virtualbricks.remote.mirror import MirrorFactory
+
+        self.install_locale()
+        self.install_settings()
+        self.logger.start(self)
+        reactor.addSystemEventTrigger("before", "shutdown", store_settings)
+        reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
+        self.reactor = reactor
+        self.where = client.where(self.target)
+        self.copy = MirrorFactory(reactor)
+        self.done = defer.Deferred()
+        connecting = defer.ensureDeferred(
+            client.connect(self.target, self.copy, reactor)
+        )
+        connecting.addCallbacks(self.show, self.not_connected)
+        return self.done
+
+    def not_connected(self, failure):
+        from virtualbricks.remote.client import Refused
+
+        failure.trap(Refused)
+        self.done.errback(SystemExit(failure.getErrorMessage()))
+
+    def show(self, windows):
+        """The windows, on the copy that the connection keeps."""
+
+        from virtualbricks.remote.client import RemoteEngine
+
+        message_dialog = MessageDialogObserver()
+        globalLogPublisher.addObserver(
+            FilteringLogObserver(message_dialog, [should_show_to_user])
+        )
+        self.engine = RemoteEngine(self.copy, windows, self.where, self.quit)
+        self.watch(windows)
+        self.gui = VBGUI(self.engine, self.messages)
+        message_dialog.set_parent(self.gui.window)
+        self.copy.synced.connect(self.synced)
+        self.copy.ended.connect(self.on_ended)
+        self.gui.set_title()
+        self.warn(self.copy.machine)
+
+    def watch(self, windows):
+        windows.logged = self.logged
+        windows.lost.addCallback(self.lost)
+
+    def logged(self, message):
+        self.messages.add_message(message, self.where)
+
+    def synced(self, copy):
+        # a project opened there, or the same again after Reconnect
+        self.gui.on_opened()
+
+    def on_ended(self, copy):
+        self.ended = True
+
+    def warn(self, machine):
+        """What the machine of the bricks lacks, as the warning at start."""
+
+        if not get_setting("warn_missing_programs"):
+            return
+        lines = []
+        if not machine.get("ksm", True):
+            lines.append(window.ksm_not_found)
+        missing = machine.get("missing") or []
+        if missing:
+            lines.append(
+                window.programs_not_found.format(programs=", ".join(missing))
+            )
+        if lines:
+            logger.error(window.components_not_found, text="\n".join(lines))
+
+    def lost(self, reason):
+        if self.quitting:
+            return
+        if self.ended:
+            text = _("Virtualbricks on {where} quit").format(where=self.where)
+        else:
+            text = _("The connection to {where} is lost: {reason}").format(
+                where=self.where, reason=reason
+            )
+        self.gui.connection_lost(text, self.reconnect)
+
+    def reconnect(self):
+        """Connect again; the copy starts again, from nothing."""
+
+        from virtualbricks.remote import client
+
+        self.ended = False
+        connecting = defer.ensureDeferred(
+            client.connect(self.target, self.copy, self.reactor)
+        )
+        connecting.addCallbacks(self.reconnected, self.not_reconnected)
+        return connecting
+
+    def reconnected(self, windows):
+        self.engine.windows = windows
+        self.watch(windows)
+        self.gui.reconnected()
+
+    def not_reconnected(self, failure):
+        from virtualbricks.remote.client import Refused
+
+        failure.trap(Refused)
+        self.gui.connection_lost(failure.getErrorMessage(), self.reconnect)
+
+    def quit(self):
+        """The windows close; the Virtualbricks there goes on."""
+
+        if self.quitting:
+            return
+        self.quitting = True
+        if self.gui is not None:
+            self.gui.on_quit(None)
+            # closing the window quits too
+            if not self.gui.window.in_destruction():
+                self.gui.window.destroy()
+        windows = self.engine.windows if self.engine is not None else None
+        if windows is not None and windows.transport is not None:
+            windows.transport.loseConnection()
+        if not self.done.called:
+            self.done.callback(None)

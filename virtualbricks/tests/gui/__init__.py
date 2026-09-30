@@ -53,6 +53,8 @@ class RecordingEngine:
     the tests start no program. It knows the calls of LocalEngine only.
     """
 
+    local = True
+
     def __init__(self, factory):
         self.factory = factory
         self.calls = []

@@ -272,7 +272,45 @@ class MessageLog:
             self.counts[entry.category] += sign
 
     def add_event(self, event):
+        return self._add(entry_from_event(event, next(self._numbers)))
+
+    def add_message(self, message, where):
+        """
+        A message of the log of the Virtualbricks at where, as the windows
+        of another machine get it: its source says where it comes from.
+        """
+
+        level = message.get("level", "info")
+        event = {
+            "log_time": message.get("time", 0.0),
+            "log_level": LogLevel.levelWithName(
+                level if level in LEVELS else "info"
+            ),
+            "log_namespace": message.get("namespace", ""),
+            "log_format": "{text}",
+            "text": message.get("text", ""),
+            "stream": message.get("stream"),
+            "pid": message.get("pid"),
+        }
         entry = entry_from_event(event, next(self._numbers))
+        source = message.get("source") or entry.source
+        entry = attr.evolve(
+            entry,
+            source=_("{source} on {where}").format(source=source, where=where),
+            source_type=message.get("source_type"),
+        )
+        traceback = message.get("traceback")
+        if traceback:
+            # as eventAsText writes the failure of an event
+            text = "\n".join((event["text"], traceback))
+            entry = attr.evolve(
+                entry,
+                traceback=traceback.rstrip("\n").split("\n"),
+                text=eventAsText(dict(event, text=text)),
+            )
+        return self._add(entry)
+
+    def _add(self, entry):
         dropped = None
         if len(self.entries) == self.entries.maxlen:
             dropped = self.entries[0]

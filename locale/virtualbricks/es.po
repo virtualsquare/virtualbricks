@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 22:44+0200\n"
+"POT-Creation-Date: 2026-09-30 23:01+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -2327,6 +2327,10 @@ msgid "It is above another file, so it's used where it is."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/addimage.py
+msgid "No copy over a connection, for now: it's used where it is."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/addimage.py
 #, python-brace-format
 msgid "The copy takes {size}, and keeps the file as it is."
 msgstr ""
@@ -3333,6 +3337,16 @@ msgstr ""
 msgid ""
 "The project \"{name}\" that was open last doesn't exist any more. Open "
 "another one, or create one."
+msgstr ""
+
+#: virtualbricks/gui/gui.py
+#, fuzzy, python-brace-format
+msgid "Virtualbricks on {where} quit"
+msgstr "Virtualbricks"
+
+#: virtualbricks/gui/gui.py
+#, python-brace-format
+msgid "The connection to {where} is lost: {reason}"
 msgstr ""
 
 #: virtualbricks/gui/imageinfo.py virtualbricks/gui/mainwindow/images/tab.py
@@ -4489,6 +4503,21 @@ msgid "Export as Image"
 msgstr "Exportar como imagen"
 
 #: virtualbricks/gui/mainwindow/window.py
+#, fuzzy, python-brace-format
+msgid "Virtualbricks on {where}"
+msgstr "Virtualbricks"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy, python-brace-format
+msgid "Virtualbricks (project: {name}, workspace: {workspace} on {where})"
+msgstr "Virtualbricks"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy, python-brace-format
+msgid "Virtualbricks (project: {name} on {where})"
+msgstr "Virtualbricks"
+
+#: virtualbricks/gui/mainwindow/window.py
 msgid "Virtualbricks: action in progress"
 msgstr ""
 
@@ -4556,9 +4585,18 @@ msgstr "Importar bricks"
 msgid "E_xport…"
 msgstr ""
 
+#: virtualbricks/gui/mainwindow/window.py virtualbricks/remote/client.py
+msgid "Not over a connection, for now"
+msgstr ""
+
 #: virtualbricks/gui/mainwindow/window.py
 msgid "_Help"
 msgstr "_Ayuda"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "_Reconnect"
+msgstr "Conectar con:"
 
 #: virtualbricks/gui/mainwindow/window.py
 msgid "Toggle window"
@@ -4664,6 +4702,11 @@ msgstr ""
 
 #: virtualbricks/gui/messages.py
 msgid "wire"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+#, python-brace-format
+msgid "{source} on {where}"
 msgstr ""
 
 #: virtualbricks/migrate/gui.py
@@ -4776,10 +4819,6 @@ msgstr ""
 
 #: virtualbricks/migrate/gui.py
 msgid "Save report"
-msgstr ""
-
-#: virtualbricks/remote/client.py
-msgid "Not over a connection, for now"
 msgstr ""
 
 #: virtualbricks/remote/client.py
@@ -5356,10 +5395,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Image path:"
 #~ msgstr "Creación de imagen"
-
-#, fuzzy
-#~ msgid "Virtualbricks name:"
-#~ msgstr "Virtualbricks"
 
 #, fuzzy
 #~ msgid "<b>Vde options</b>"

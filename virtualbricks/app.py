@@ -82,7 +82,8 @@ class Options(usage.Options):
             "The Virtualbricks that runs that --command and --run talk to: "
             "the one of .control in the runtime folder of its workspace, or "
             "the one of the socket of the description after it, as "
-            "tcp:HOST:PORT.",
+            "tcp:HOST:PORT. Without them, the windows of the Virtualbricks "
+            "of the description open, over AMP.",
         ],
     ]
     optParameters = [
@@ -139,6 +140,8 @@ class Options(usage.Options):
         self["sockets"] = []
         # the socket of --connect, a wire.Socket; the flag says it's given
         self["target"] = None
+        # --connect without --command or --run: the windows of the target
+        self["windows"] = False
         # the descriptions of --socket and of --connect, None for the option
         # alone, read once the options are known to go together
         self.descriptions = []
@@ -225,10 +228,11 @@ class Options(usage.Options):
                 return position == len(arg) - 1
         return False
 
-    def socket(self, description, option):
+    def socket(self, description, option, protocol=wire.TEXT):
         """
         The socket of description, or the default one if None: one to
-        listen on for --socket, the one to talk to for --connect.
+        listen on for --socket, the one to talk to for --connect. A
+        description that names no protocol speaks protocol.
         """
 
         client = option == "connect"
@@ -240,7 +244,7 @@ class Options(usage.Options):
             raise usage.UsageError("--socket alone is given twice")
         else:
             try:
-                socket = wire.parse_socket(description, client)
+                socket = wire.parse_socket(description, client, protocol)
             except ValueError as exc:
                 raise usage.UsageError(f"--{option}: {exc}") from None
         if socket.kind == "unix":
@@ -392,10 +396,8 @@ class Options(usage.Options):
             if not self.targets:
                 return
             if not self["run"]:
-                raise usage.UsageError(
-                    "--connect needs --command or --run: it talks to a"
-                    " Virtualbricks that runs"
-                )
+                self.check_windows()
+                return
         client = "--command" if self["command"] else "--connect"
         for name in self.RUN_OPTIONS:
             # --connect sends the commands of --run
@@ -431,16 +433,57 @@ class Options(usage.Options):
                 " list, or lines on its standard input"
             )
 
+    def check_windows(self):
+        """
+        Refuse, with the windows of another Virtualbricks, --connect alone
+        and what is for the Virtualbricks that runs the bricks.
+        """
+
+        if len(self.targets) > 1:
+            raise usage.UsageError("--connect names one Virtualbricks")
+        if not any(self.targets):
+            raise usage.UsageError(
+                "--connect opens the windows of the Virtualbricks of an AMP"
+                " socket: give its description, as unix:PATH or"
+                " tcp:HOST:PORT"
+            )
+        given = [
+            name
+            for name in ("no-gui", "lock", "workspace")
+            if name in self.given or (name != "lock" and self[name])
+        ]
+        if self.descriptions:
+            given.append("socket")
+        if given:
+            raise usage.UsageError(
+                "--connect opens the windows of another Virtualbricks:"
+                f" --{given[0]} is for the one that runs the bricks"
+            )
+
     def postOptions(self):
         self.check_client()
+        # the windows of another Virtualbricks, which speak AMP
+        windows = bool(self.targets) and not self["command"]
+        windows = windows and not self["run"]
         if self["workspace"] and "lock" not in self.given:
             # one Virtualbricks for each workspace, side by side
             self["lock"] = locks.WORKSPACE
         for description in self.descriptions:
             self["sockets"].append(self.socket(description, "socket"))
         for description in self.targets:
-            self["target"] = self.socket(description, "connect")
+            self["target"] = self.socket(
+                description, "connect", wire.AMP if windows else wire.TEXT
+            )
+        if windows and self["target"].protocol != wire.AMP:
+            raise usage.UsageError(
+                "--connect opens the windows, which speak AMP:"
+                " protocol=text is for --command"
+            )
         self["connect"] = bool(self.targets)
+        self["windows"] = windows
+        if windows:
+            # their terminal reads no console
+            self["noterm"] = True
         if self["logger"]:
             try:
                 self["logger"] = reflect.namedAny(self["logger"])

@@ -84,6 +84,27 @@ programs_not_found = (
     " it: {programs}. Some bricks won't start."
 )
 quit_refused = "{error}"
+# the answers of the bar of a connection lost
+RECONNECT = 1
+QUIT = 2
+
+
+def remote_title(engine):
+    """The title of the windows of another Virtualbricks: its project."""
+
+    copy = engine.factory
+    if copy.project is None:
+        return _("Virtualbricks on {where}").format(where=engine.where)
+    workspace = copy.machine.get("workspace")
+    if workspace and workspace != copy.settings.get("workspace", workspace):
+        # not the workspace of its setting: another beside it may be
+        return _(
+            "Virtualbricks (project: {name}, workspace: {workspace} on"
+            " {where})"
+        ).format(name=copy.project, workspace=workspace, where=engine.where)
+    return _("Virtualbricks (project: {name} on {where})").format(
+        name=copy.project, where=engine.where
+    )
 
 
 class Freezer:
@@ -289,6 +310,13 @@ class VBGUI:
         separator(projects_menu)
         projects_import_item = item(projects_menu, _("_Import…"))
         projects_export_item = item(projects_menu, _("E_xport…"))
+        self.import_item = projects_import_item
+        self.export_item = projects_export_item
+        if not self.engine.local:
+            # the archives stay on their machine, for now (19 R12)
+            for greyed in (projects_import_item, projects_export_item):
+                greyed.set_sensitive(False)
+                greyed.set_tooltip_text(_("Not over a connection, for now"))
         menu_projects.connect("activate", self.on_projects_menu_activate)
 
         menu_help = Gtk.MenuItem(
@@ -309,6 +337,18 @@ class VBGUI:
         menu_help.set_submenu(menu5)
         menubar1.append(menu_help)
         vbox1.pack_start(menubar1, False, False, 0)
+        self.menubar = menubar1
+        # the connection to the Virtualbricks of the bricks is lost
+        self.lost_bar = Gtk.InfoBar(
+            message_type=Gtk.MessageType.WARNING, no_show_all=True
+        )
+        self.lost_words = Gtk.Label(visible=True, xalign=0.0, wrap=True)
+        self.lost_bar.get_content_area().add(self.lost_words)
+        self.lost_bar.add_button(_("_Reconnect"), RECONNECT)
+        self.lost_bar.add_button(_("_Quit"), QUIT)
+        self.lost_bar.connect("response", self.on_lost_bar_response)
+        self._reconnect = None
+        vbox1.pack_start(self.lost_bar, False, False, 0)
         self.main_notebook = Gtk.Notebook(visible=True, can_focus=True)
         self.bricks = BricksTab(self, self.factory)
         self.append_tab(self.bricks)
@@ -500,6 +540,9 @@ class VBGUI:
         tab.configure(item)
 
     def set_title(self):
+        if not self.engine.local:
+            self.window.set_title(remote_title(self.engine))
+            return
         if projects.current:
             name = projects.current.name
             workspace = os.path.abspath(projects.path)
@@ -557,10 +600,15 @@ class VBGUI:
         return making
 
     def _opened(self, report):
+        self.on_opened()
+        return report
+
+    def on_opened(self):
+        """A project opened: the tabs show it, and the title names it."""
+
         for tab in tabs(self.main_notebook):
             tab.on_open()
         self.set_title()
-        return report
 
     def do_quit(self, *_):
         quitting = self.engine.quit()
@@ -756,6 +804,31 @@ class VBGUI:
         dialog = AboutDialog()
         dialog.show(self.window)
         return True
+
+    # The connection to another Virtualbricks, for its windows
+
+    def connection_lost(self, text, reconnect):
+        """
+        Say that the connection is lost, and why; the windows wait, while
+        reconnect() tries again.
+        """
+
+        self._reconnect = reconnect
+        self.lost_words.set_text(text)
+        self.lost_bar.show()
+        self.menubar.set_sensitive(False)
+        self.main_notebook.set_sensitive(False)
+
+    def reconnected(self):
+        self.lost_bar.hide()
+        self.menubar.set_sensitive(True)
+        self.main_notebook.set_sensitive(True)
+
+    def on_lost_bar_response(self, bar, response):
+        if response == RECONNECT and self._reconnect is not None:
+            self._reconnect()
+        elif response == QUIT:
+            self.do_quit()
 
     def user_wait_action(self, action, *args):
         ProgressBar(self).wait_for(action, *args)

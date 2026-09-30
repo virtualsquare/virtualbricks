@@ -316,11 +316,18 @@ class ExistingImageDialog(_AddDialog):
         backing = outside and bool(self.info.backing_file)
         for widget in (self.copy_radio, self.in_place_radio):
             widget.set_visible(outside)
-        self.copy_radio.set_sensitive(not backing)
+        # over a connection, a copy waits (19 R13)
+        local = self.engine.local
+        self.copy_radio.set_sensitive(not backing and local)
         if backing:
             self.in_place_radio.set_active(True)
             self.copy_note.set_text(
                 _("It is above another file, so it's used where it is.")
+            )
+        elif outside and not local:
+            self.in_place_radio.set_active(True)
+            self.copy_note.set_text(
+                _("No copy over a connection, for now: it's used where it is.")
             )
         elif outside:
             size = imageinfo.human_size(os.stat(self.path).st_blocks * 512)

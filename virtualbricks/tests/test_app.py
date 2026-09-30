@@ -801,10 +801,65 @@ class TestConnect(unittest.TestCase):
         self.assertIsNone(options["target"])
 
     def test_alone(self):
+        # the windows want a socket that speaks AMP: .control speaks text
         self.assertEqual(
             self.refused("--connect"),
-            "--connect needs --command or --run: it talks to a Virtualbricks"
-            " that runs",
+            "--connect opens the windows of the Virtualbricks of an AMP"
+            " socket: give its description, as unix:PATH or tcp:HOST:PORT",
+        )
+
+
+class TestWindows(TestConnect):
+    """--connect without --command or --run: the windows of the target."""
+
+    def test_the_windows(self):
+        options = self.parse("--connect", "tcp:lab.example:8765")
+        self.assertTrue(options["windows"])
+        self.assertTrue(options["connect"])
+        # AMP, which the description leaves out
+        self.assertEqual(options["target"].protocol, wire.AMP)
+        self.assertEqual(options["target"].host, "lab.example")
+        self.assertTrue(options["noterm"])
+        options = self.parse("--connect", "unix:/tmp/lab.amp:protocol=amp")
+        self.assertEqual(
+            options["target"], wire.Socket("/tmp/lab.amp", wire.AMP)
+        )
+
+    def test_not_for_the_clients(self):
+        # the same description speaks text to --command and --run
+        for args in (
+            ["--command", "status"],
+            ["--run", self.script],
+        ):
+            options = self.parse("--connect", "tcp:lab:8765", *args)
+            self.assertFalse(options["windows"])
+            self.assertEqual(options["target"].protocol, wire.TEXT)
+        self.assertFalse(self.parse()["windows"])
+
+    def test_text(self):
+        self.assertEqual(
+            self.refused("--connect", "tcp:lab:8765:protocol=text"),
+            "--connect opens the windows, which speak AMP: protocol=text is"
+            " for --command",
+        )
+
+    def test_what_is_for_the_bricks(self):
+        for args, name in (
+            (["--no-gui"], "no-gui"),
+            (["--lock", "none"], "lock"),
+            (["--workspace", self.root], "workspace"),
+            (["--socket", "tcp:8765"], "socket"),
+        ):
+            self.assertEqual(
+                self.refused("--connect", "tcp:lab:8765", *args),
+                "--connect opens the windows of another Virtualbricks:"
+                f" --{name} is for the one that runs the bricks",
+            )
+
+    def test_one(self):
+        self.assertEqual(
+            self.refused("--connect", "tcp:a:1", "--connect", "tcp:b:2"),
+            "--connect names one Virtualbricks",
         )
 
     def test_the_options_of_a_run(self):

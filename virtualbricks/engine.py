@@ -63,6 +63,9 @@ class LocalEngine:
     machine.
     """
 
+    # the windows are those of the Virtualbricks of this process
+    local = True
+
     def __init__(
         self,
         factory,

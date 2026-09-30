@@ -244,13 +244,15 @@ def _parts(text: str) -> list[list[str]]:
     return parts
 
 
-def parse_socket(text: str, client: bool = False) -> Socket:
+def parse_socket(
+    text: str, client: bool = False, protocol: str = TEXT
+) -> Socket:
     """
     The socket of a description: its type, its path or its port, and its
     keywords, as ``unix:PATH:protocol=text`` or ``tcp:8765``. The protocol
-    is text if left out. With client, the description of --connect, which
-    names the machine to talk to: ``tcp:HOST:PORT``, or ``tcp:PORT`` for
-    this one.
+    is protocol, text, if left out. With client, the description of
+    --connect, which names the machine to talk to: ``tcp:HOST:PORT``, or
+    ``tcp:PORT`` for this one.
 
     Raise ValueError if text isn't one; str() says why, to the user.
     """
@@ -292,7 +294,7 @@ def parse_socket(text: str, client: bool = False) -> Socket:
         if key in keywords:
             raise ValueError(f"{text}: {key} is given twice")
         keywords[key] = value
-    protocol = keywords.get("protocol", TEXT).lower()
+    protocol = keywords.get("protocol", protocol).lower()
     if protocol not in PROTOCOLS:
         raise ValueError(f"{text}: the protocol is {' or '.join(PROTOCOLS)}")
     if kind == "unix":
