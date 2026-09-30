@@ -28,10 +28,14 @@ package.
 
 from virtualbricks.migrate.engine import (
     convert_imported_project,
+    settings_to_convert,
     startup_migration,
+    startup_workspace,
 )
 
 __all__ = [
     "convert_imported_project",
+    "settings_to_convert",
     "startup_migration",
+    "startup_workspace",
 ]

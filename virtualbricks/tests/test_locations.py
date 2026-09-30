@@ -131,6 +131,23 @@ class TestLocations(unittest.TestCase):
             "/home/alice/lab.sock.lock",
         )
 
+    def test_short_path(self):
+        self.assertEqual(
+            locations.short_path("/home/alice/vm/a.img"), "~/vm/a.img"
+        )
+        self.assertEqual(locations.short_path("/home/alice"), "~")
+        # a folder whose name starts as the home's
+        self.assertEqual(
+            locations.short_path("/home/alice2/a"), "/home/alice2/a"
+        )
+        self.assertEqual(locations.short_path("/srv/a.img"), "/srv/a.img")
+
+    def test_workspace_lock_file(self):
+        self.assertEqual(
+            locations.workspace_lock_file("/home/alice/labs"),
+            "/home/alice/labs/.virtualbricks.lock",
+        )
+
     def test_token_file(self):
         # beside the settings
         self.env["XDG_CONFIG_HOME"] = "/home/alice/.config"

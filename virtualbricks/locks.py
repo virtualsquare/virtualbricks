@@ -23,10 +23,19 @@ system
     One on the machine, the default: it holds the system lock alone.
 user
     One for each user: it shares the system lock with the others that run
-    with this policy, so it doesn't start while one runs with the system
-    policy, nor that one while it runs, and holds the lock of its user alone.
+    with this policy or the workspace one, so it doesn't start while one runs
+    with the system policy, nor that one while it runs, and holds the lock of
+    its user alone.
+workspace
+    One for each workspace: it shares the system lock, and the lock of its
+    user with the others of the user that run with this policy.
 none
     No lock: it starts beside any other, and the others don't see it.
+
+The levels nest: the machine holds users, a user holds workspaces. Each
+policy but none holds the lock of its workspace alone too, a file in the
+workspace folder, so that two Virtualbricks never share a workspace, even one
+that two users share.
 
 The migration of a user's files holds the locks of the user policy.
 
@@ -44,8 +53,9 @@ from virtualbricks import locations
 
 SYSTEM = "system"
 USER = "user"
+WORKSPACE = "workspace"
 NONE = "none"
-POLICIES = (SYSTEM, USER, NONE)
+POLICIES = (SYSTEM, USER, WORKSPACE, NONE)
 PROC = "/proc"
 
 # A process that holds a lock, and the name of its user, None if hidden.
@@ -56,8 +66,10 @@ class Held(Exception):
     """
     Another Virtualbricks holds a lock that policy needs.
 
-    holder is the policy the other runs with, as the lock at path tells it;
+    holder is the policy the other runs with, as the lock at path tells it:
+    user for the system lock shared, by the user or the workspace policy;
     holders are the processes that hold the lock, as far as they are known.
+    workspace is the folder whose lock is held, if that is the lock.
     """
 
     def __init__(
@@ -66,24 +78,57 @@ class Held(Exception):
         holder: str,
         path: str,
         holders: tuple[Holder, ...] = (),
+        workspace: str | None = None,
     ):
-        super().__init__(policy, holder, path, holders)
+        super().__init__(policy, holder, path, holders, workspace)
         self.policy = policy
         self.holder = holder
         self.path = path
         self.holders = holders
+        self.workspace = workspace
 
     def __str__(self) -> str:
-        if self.holder == SYSTEM:
+        if self.workspace is not None:
+            text = (
+                "Another Virtualbricks is running in the workspace "
+                f"{locations.short_path(self.workspace)}: start this one in "
+                "another, with --workspace."
+            )
+        elif self.holder == SYSTEM:
             text = (
                 "Another Virtualbricks is running on this machine with "
                 "--lock system, the default, which lets only one run at a "
                 "time."
             )
+            if self.policy == WORKSPACE:
+                text += (
+                    " To run one in each workspace, start that one with "
+                    "--lock workspace too."
+                )
         elif self.policy == SYSTEM:
             text = (
-                "Virtualbricks is running on this machine with --lock user, "
-                "one for each user: start this one with --lock user as well."
+                "Virtualbricks is running on this machine with --lock user or "
+                "--lock workspace, which let others run beside it: start "
+                "this one with one of them as well."
+            )
+        elif self.holder == WORKSPACE and self.policy == USER:
+            text = (
+                "Virtualbricks of yours are running with --lock workspace, "
+                "one for each workspace: start this one with --lock "
+                "workspace as well."
+            )
+        elif self.holder == WORKSPACE:
+            # the workspace policy, for the settings of 2.1 to convert
+            text = (
+                "Another Virtualbricks of yours is running, and your "
+                "settings of Virtualbricks 2.1 are converted only while none "
+                "runs."
+            )
+        elif self.policy == WORKSPACE:
+            text = (
+                "Another Virtualbricks of yours is running with --lock user, "
+                "which lets each user run one: to run one in each workspace, "
+                "start both with --lock workspace."
             )
         else:
             text = (
@@ -108,6 +153,8 @@ class Lock:
     def __init__(self, policy: str):
         self.policy = policy
         self._fds: list[int] = []
+        # the descriptor of the user lock, if held
+        self._user: int | None = None
 
     @property
     def locked(self) -> bool:
@@ -116,13 +163,45 @@ class Lock:
     def unlock(self) -> None:
         """Release the locks; nothing if they are released already."""
 
+        self._user = None
         while self._fds:
             os.close(self._fds.pop())
 
-    def _take(self, path: str, operation: int) -> bool:
+    def take_workspace(self, workspace: str) -> None:
+        """
+        Hold the lock of workspace alone, as each policy but none does.
+
+        Raise Held if another Virtualbricks holds it, OSError if its file
+        can't be opened; the locks held already stay held.
+        """
+
+        if self.policy == NONE:
+            return
+        path = locations.workspace_lock_file(workspace)
+        # over NFS, an exclusive flock needs a file open for writing
+        if not self._take(path, fcntl.LOCK_EX, write=True):
+            raise Held(self.policy, WORKSPACE, path, holders(path), workspace)
+
+    def share_user(self) -> None:
+        """
+        Share the user lock taken alone, as the workspace policy does once
+        the settings of 2.1 are converted.
+
+        Raise Held if another Virtualbricks took it in between: the change
+        isn't atomic, and this lock then holds none of it.
+        """
+
+        assert self._user is not None, "the user lock is not held"
+        try:
+            fcntl.flock(self._user, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        except BlockingIOError:
+            path = locations.user_lock_file()
+            raise Held(self.policy, USER, path, holders(path)) from None
+
+    def _take(self, path: str, operation: int, write: bool = False) -> bool:
         """Lock the file at path; False if another Virtualbricks holds it."""
 
-        fd = _open(path)
+        fd = _open(path, write)
         try:
             fcntl.flock(fd, operation | fcntl.LOCK_NB)
         except BlockingIOError:
@@ -135,18 +214,20 @@ class Lock:
         return True
 
 
-def _system_holder() -> str:
-    """The policy of the Virtualbricks that holds the system lock."""
+def _holder(path: str, alone: str, shared: str) -> str:
+    """
+    The policy of the Virtualbricks that holds the lock at path: alone if
+    it holds it alone, shared if some share it.
+    """
 
-    # a Virtualbricks of the system policy doesn't share it
-    fd = _open(locations.SYSTEM_LOCK_FILE)
+    fd = _open(path)
     try:
         fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
     except BlockingIOError:
-        return SYSTEM
+        return alone
     finally:
         os.close(fd)
-    return USER
+    return shared
 
 
 def holders(path: str) -> tuple[Holder, ...]:
@@ -205,18 +286,27 @@ def _user(pid: int) -> str | None:
         return str(uid)
 
 
-def _open(path: str) -> int:
-    """Open the lock file at path, made readable by everyone if missing."""
+def _open(path: str, write: bool = False) -> int:
+    """
+    Open the lock file at path, made readable by everyone if missing; for
+    reading and writing if write and it can be, else read-only.
+    """
 
     # The fd isn't inherited: the programs of the bricks don't keep the lock.
     # O_CREAT on another user's file of /tmp fails when fs.protected_regular
     # is set, as on Debian, so the file is made only if it isn't there.
-    flags = os.O_RDONLY | os.O_NOFOLLOW
+    flags = (os.O_RDWR if write else os.O_RDONLY) | os.O_NOFOLLOW
     while True:
         try:
             return os.open(path, flags)
         except FileNotFoundError:
             pass
+        except PermissionError:
+            if flags & os.O_RDWR:
+                # another user's file: read-only is enough on a local disk
+                flags = os.O_RDONLY | os.O_NOFOLLOW
+                continue
+            raise
         try:
             fd = os.open(path, flags | os.O_CREAT | os.O_EXCL, 0o644)
         except FileExistsError:
@@ -241,12 +331,14 @@ def hold(path: str) -> Lock | None:
     return lock
 
 
-def acquire(policy: str = SYSTEM) -> Lock:
+def acquire(policy: str = SYSTEM, user_alone: bool = False) -> Lock:
     """
-    Take the locks of policy and return them.
+    Take the locks of policy and return them; with user_alone, the workspace
+    policy holds the user lock alone, until Lock.share_user().
 
-    Raise Held if another Virtualbricks holds one of them, OSError if a lock
-    file can't be opened.
+    The lock of the workspace comes after, with Lock.take_workspace(). Raise
+    Held if another Virtualbricks holds one of them, OSError if a lock file
+    can't be opened.
     """
 
     if policy not in POLICIES:
@@ -256,14 +348,20 @@ def acquire(policy: str = SYSTEM) -> Lock:
     try:
         # a refused lock asks its holders once this process holds none of it
         if policy == SYSTEM and not lock._take(path, fcntl.LOCK_EX):
-            raise Held(policy, _system_holder(), path, holders(path))
-        if policy == USER:
+            raise Held(
+                policy, _holder(path, SYSTEM, USER), path, holders(path)
+            )
+        if policy in (USER, WORKSPACE):
             if not lock._take(path, fcntl.LOCK_SH):
                 raise Held(policy, SYSTEM, path, holders(path))
             locations.ensure_private_dir(locations.runtime_dir())
             path = locations.user_lock_file()
-            if not lock._take(path, fcntl.LOCK_EX):
-                raise Held(policy, USER, path, holders(path))
+            alone = policy == USER or user_alone
+            operation = fcntl.LOCK_EX if alone else fcntl.LOCK_SH
+            if not lock._take(path, operation):
+                holder = _holder(path, USER, WORKSPACE) if alone else USER
+                raise Held(policy, holder, path, holders(path))
+            lock._user = lock._fds[-1]
     except BaseException:
         lock.unlock()
         raise

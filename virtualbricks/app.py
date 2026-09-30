@@ -104,7 +104,8 @@ class Options(usage.Options):
             None,
             locks.SYSTEM,
             "The single-instance mode: system, one Virtualbricks on the "
-            "machine; user, one for each user; none, no limit.",
+            "machine; user, one for each user; workspace, one for each "
+            "workspace, the default with --workspace; none, no limit.",
         ],
         [
             "logger",
@@ -419,6 +420,9 @@ class Options(usage.Options):
 
     def postOptions(self):
         self.check_client()
+        if self["workspace"] and "lock" not in self.given:
+            # one Virtualbricks for each workspace, side by side
+            self["lock"] = locks.WORKSPACE
         for description in self.descriptions:
             self["sockets"].append(self.socket(description, "socket"))
         for description in self.targets:
@@ -462,8 +466,17 @@ class _LockedApplication:
 
     def run(self, reactor):
         assert self.factory is not None, "factory attribute is not set"
+        from virtualbricks.migrate import settings_to_convert
+        from virtualbricks.migrate import startup_workspace
+
+        policy = self.config.get("lock", locks.SYSTEM)
+        # the settings of 2.1 are the user's: converted by one alone
+        user_alone = policy == locks.WORKSPACE and bool(settings_to_convert())
+        workspace = os.path.abspath(
+            startup_workspace(self.config.get("workspace"))
+        )
         try:
-            lock = locks.acquire(self.config.get("lock", locks.SYSTEM))
+            lock = self.lock(policy, user_alone, workspace)
         except locks.Held as held:
             return defer.fail(SystemExit(str(held)))
         except OSError as error:
@@ -474,7 +487,35 @@ class _LockedApplication:
             return defer.fail(SystemExit(msg))
         reactor.addSystemEventTrigger("after", "shutdown", lock.unlock)
         app = self.factory(self.config)
+        if user_alone:
+            migrate = app.migrate
+            app.migrate = lambda: self.migrate_then_share(migrate, lock)
         return app.run(reactor)
+
+    def lock(self, policy, user_alone, workspace):
+        """The locks of policy, and that of workspace, made if missing."""
+
+        lock = locks.acquire(policy, user_alone)
+        try:
+            if lock.locked:
+                os.makedirs(workspace, exist_ok=True)
+            lock.take_workspace(workspace)
+        except BaseException:
+            lock.unlock()
+            raise
+        return lock
+
+    def migrate_then_share(self, migrate, lock):
+        """Migrate, then share the user lock with the other workspaces."""
+
+        def share(result):
+            try:
+                lock.share_user()
+            except locks.Held as held:
+                raise SystemExit(str(held)) from None
+            return result
+
+        return defer.maybeDeferred(migrate).addCallback(share)
 
 
 def LockedApplication(factory):

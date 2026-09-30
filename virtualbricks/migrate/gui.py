@@ -420,7 +420,7 @@ class MigrationWindow:
             self.show_text(str(exc))
             return None
         if isinstance(migration.target, engine.InPlace) and not dry_run:
-            self.lock = engine.lock_in_place()
+            self.lock = engine.lock_in_place(migration.workspace)
             if self.lock is None:
                 self.show_text(
                     _(

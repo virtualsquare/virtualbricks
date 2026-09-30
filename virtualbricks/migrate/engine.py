@@ -453,18 +453,64 @@ def _describe_error(exc: Exception) -> str:
     return f"{exc}; project not migrated"
 
 
-def lock_in_place() -> locks.Lock | None:
+def lock_in_place(workspace: str | None = None) -> locks.Lock | None:
     """
-    Hold the locks of the user policy while the files of the user change.
+    Hold the locks of the user policy while the files of the user change,
+    and the lock of workspace, whose projects change too.
 
     Return them, to unlock when done, or None if Virtualbricks is running,
     unless with --lock none. At startup the application holds its own.
     """
 
     try:
-        return locks.acquire(locks.USER)
+        lock = locks.acquire(locks.USER)
     except locks.Held:
         return None
+    if workspace is not None and os.path.isdir(workspace):
+        try:
+            lock.take_workspace(workspace)
+        except locks.Held:
+            lock.unlock()
+            return None
+        except BaseException:
+            lock.unlock()
+            raise
+    return lock
+
+
+def settings_to_convert() -> str | None:
+    """
+    The settings file of 2.1 that the migration at startup converts, None
+    if there is nothing to convert.
+    """
+
+    legacy_settings = locations.legacy_settings_file()
+    new_settings = locations.settings_file()
+    if os.path.isfile(legacy_settings) and not os.path.exists(new_settings):
+        return legacy_settings
+    return None
+
+
+def _startup_settings() -> tuple[str | None, AppSettings, ProjectSettings]:
+    """The settings file of 2.1 to convert, if any, and the settings."""
+
+    legacy_settings = settings_to_convert()
+    if legacy_settings is not None:
+        return legacy_settings, *_legacy_settings(legacy_settings)
+    app = _read_app_settings(locations.settings_file())
+    return None, app, ProjectSettings()
+
+
+def startup_workspace(workspace: str | None = None) -> str:
+    """
+    The workspace of the app: workspace, the folder given on the command
+    line, or else that of the settings, as the migration at startup reads
+    them.
+    """
+
+    if workspace:
+        return workspace
+    return _startup_settings()[1].workspace
 
 
 def startup_migration(workspace: str | None = None) -> Migration | None:
@@ -475,13 +521,7 @@ def startup_migration(workspace: str | None = None) -> Migration | None:
     command line, or else of the workspace setting.
     """
 
-    legacy_settings = locations.legacy_settings_file()
-    new_settings = locations.settings_file()
-    if os.path.isfile(legacy_settings) and not os.path.exists(new_settings):
-        app, project = _legacy_settings(legacy_settings)
-    else:
-        legacy_settings = None
-        app, project = _read_app_settings(new_settings), ProjectSettings()
+    legacy_settings, app, project = _startup_settings()
     workspace = workspace or app.workspace
     migration = Migration(
         workspace, InPlace(workspace), legacy_settings, app, project

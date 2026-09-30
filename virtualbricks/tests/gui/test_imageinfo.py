@@ -65,17 +65,6 @@ class TestWords(BrickTestCase):
         self.assertEqual(imageinfo.names(["r1", "r2"]), "r1 and r2")
         self.assertEqual(imageinfo.names(["r1", "r2", "r3"]), "r1, r2 and r3")
 
-    def test_short_path(self):
-        home = os.path.expanduser("~")
-        self.assertEqual(
-            imageinfo.short_path(os.path.join(home, "vm", "a.img")),
-            os.path.join("~", "vm", "a.img"),
-        )
-        self.assertEqual(imageinfo.short_path(home), "~")
-        # a folder whose name starts as the home's
-        self.assertEqual(imageinfo.short_path(home + "2/a"), home + "2/a")
-        self.assertEqual(imageinfo.short_path("/srv/a.img"), "/srv/a.img")
-
     def test_facts(self):
         self.assertEqual(
             imageinfo.facts(INFO), "qcow2 · 4.3 GB disk · 1.2 MB on disk"

@@ -37,6 +37,7 @@ import enum
 import os
 
 from virtualbricks.i18n import _, ngettext
+from virtualbricks.locations import short_path
 
 # Between the parts of a line.
 SEPARATOR = " · "
@@ -77,15 +78,6 @@ def names(items: list[str]) -> str:
     return _("{first} and {last}").format(
         first=", ".join(items[:-1]), last=items[-1]
     )
-
-
-def short_path(path: str) -> str:
-    """A path, with ~ for the home folder."""
-
-    home = os.path.expanduser("~")
-    if path == home or path.startswith(home + os.sep):
-        return "~" + path[len(home) :]
-    return path
 
 
 def state(image, uses) -> State:

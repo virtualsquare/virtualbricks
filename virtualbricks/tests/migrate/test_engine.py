@@ -678,8 +678,8 @@ class TestLock(unittest.TestCase):
     def setUp(self):
         isolate(self)
 
-    def lock_in_place(self):
-        lock = lock_in_place()
+    def lock_in_place(self, workspace=None):
+        lock = lock_in_place(workspace)
         self.addCleanup(release, lock)
         return lock
 
@@ -698,6 +698,7 @@ class TestLock(unittest.TestCase):
         running = (
             (locks.SYSTEM, None),
             (locks.USER, None),
+            (locks.WORKSPACE, None),
             (locks.SYSTEM, "bob"),
         )
         for policy, user in running:
@@ -708,3 +709,15 @@ class TestLock(unittest.TestCase):
     def test_lock_of_another_user(self):
         hold_lock(self, locks.USER, "bob")
         self.assertTrue(self.lock_in_place().locked)
+
+    def test_the_lock_of_the_workspace(self):
+        workspace = os.path.abspath(self.mktemp())
+        os.makedirs(workspace)
+        # another user's Virtualbricks, in a folder you share
+        lock = hold_lock(self, locks.USER, "bob", workspace)
+        self.assertIsNone(self.lock_in_place(workspace))
+        # refused, it holds nothing
+        lock.unlock()
+        self.assertTrue(self.lock_in_place(workspace).locked)
+        path = locations.workspace_lock_file(workspace)
+        self.assertEqual(locks.holders(path)[0][0], os.getpid())

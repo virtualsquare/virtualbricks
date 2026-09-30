@@ -43,6 +43,9 @@ BRICK_SOCKET_SUFFIX = len(".ctl/.4194304-00000")
 WORKSPACE_KEY_SIZE = 8
 # The link, in that folder, to the workspace.
 WORKSPACE_LINK = ".workspace"
+# The lock of a workspace, in its folder, see virtualbricks.locks: no project
+# is named with a dot, and a workspace can be any folder.
+WORKSPACE_LOCK_FILE = ".virtualbricks.lock"
 # The lock that every user's Virtualbricks takes, see virtualbricks.locks. It
 # isn't in the temporary directory of TMPDIR, which may be the user's own.
 SYSTEM_LOCK_FILE = "/tmp/virtualbricks.lock"
@@ -50,6 +53,15 @@ SYSTEM_LOCK_FILE = "/tmp/virtualbricks.lock"
 
 def home():
     return os.path.expanduser("~")
+
+
+def short_path(path):
+    """A path, with ~ for the home folder."""
+
+    folder = home()
+    if path == folder or path.startswith(folder + os.sep):
+        return "~" + path[len(folder) :]
+    return path
 
 
 def _xdg_dir(variable, fallback):
@@ -108,6 +120,12 @@ def workspace_runtime_dir(workspace):
     """The runtime directory of workspace: its projects' own are in it."""
 
     return os.path.join(runtime_dir(), workspace_key(workspace))
+
+
+def workspace_lock_file(workspace):
+    """The lock of workspace, which one Virtualbricks at a time holds."""
+
+    return os.path.join(workspace, WORKSPACE_LOCK_FILE)
 
 
 def user_lock_file():

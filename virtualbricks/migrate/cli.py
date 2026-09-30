@@ -181,7 +181,7 @@ def main(
     migration = make_migration(args, arguments.error)
     lock = None
     if isinstance(migration.target, engine.InPlace) and not args.dry_run:
-        lock = engine.lock_in_place()
+        lock = engine.lock_in_place(migration.workspace)
         if lock is None:
             arguments.exit(EXIT_RUNNING, f"{arguments.prog}: {RUNNING}\n")
     try:

@@ -39,6 +39,7 @@ from twisted.logger import (
 from virtualbricks import errors, locations
 from virtualbricks.config.schema import field_values
 from virtualbricks.config.settings import (
+    get_setting,
     load_settings,
     load_state,
     store_settings,
@@ -541,9 +542,11 @@ class Application:
 
     def install_workspace(self):
         # the folder of the command line, for this run only: the setting
-        # stays as it is
-        if self.config.get("workspace"):
-            projects.path = self.config["workspace"]
+        # stays as it is. Either stays for the run, whose lock is that of
+        # this folder: a new setting is for the next start.
+        projects.path = self.config.get("workspace") or str(
+            get_setting("workspace")
+        )
 
     def install_sys_hooks(self):
         sys.excepthook = self.excepthook

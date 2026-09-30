@@ -28,6 +28,7 @@ from twisted.python import usage
 from twisted.trial import unittest
 
 from virtualbricks import app, locations, locks
+from virtualbricks.config.settings import AppSettings, write_settings
 from virtualbricks.console import wire
 from virtualbricks.tests import (
     DATA,
@@ -36,6 +37,8 @@ from virtualbricks.tests import (
     lock_is_free,
     short_folder,
 )
+
+ME = pwd.getpwuid(os.getuid()).pw_name
 
 
 class FakeReactor:
@@ -56,18 +59,27 @@ class FakeApplication:
     def __init__(self, started, config):
         self.started = started
         self.config = config
+        # called by migrate, as the startup migration runs
+        self.migrating = None
+
+    def migrate(self):
+        if self.migrating is not None:
+            self.migrating()
 
     def run(self, reactor):
-        self.started.append(self.config["lock"])
-        return defer.succeed(None)
+        d = defer.maybeDeferred(self.migrate)
+        d.addCallback(lambda _: self.started.append(self.config["lock"]))
+        return d
 
 
 class TestLock(unittest.TestCase):
 
     def setUp(self):
-        isolate(self)
+        self.root = isolate(self)
         self.reactor = FakeReactor()
         self.started = []
+        # the workspace of the settings
+        self.workspace = os.path.join(self.root, ".virtualbricks")
 
     def parse(self, *args):
         options = app.Options()
@@ -85,11 +97,21 @@ class TestLock(unittest.TestCase):
             self.assertEqual(self.parse("--lock", policy)["lock"], policy)
         self.assertEqual(self.parse("--lock=user")["lock"], locks.USER)
         error = self.assertRaises(
-            usage.UsageError, self.parse, "--lock", "workspace"
+            usage.UsageError, self.parse, "--lock", "group"
         )
         self.assertEqual(
-            str(error), "--lock: 'workspace' is not one of system, user, none"
+            str(error),
+            "--lock: 'group' is not one of system, user, workspace, none",
         )
+
+    def test_the_policy_of_a_workspace(self):
+        # one Virtualbricks for each workspace, unless --lock says otherwise
+        self.assertEqual(
+            self.parse("--workspace", "/srv/labs")["lock"], locks.WORKSPACE
+        )
+        for policy in locks.POLICIES:
+            options = self.parse("--lock", policy, "--workspace", "/srv/a")
+            self.assertEqual(options["lock"], policy)
 
     def test_held_until_shutdown(self):
         self.successResultOf(self.run_app("--lock", "user"))
@@ -104,9 +126,10 @@ class TestLock(unittest.TestCase):
         user = pwd.getpwuid(os.getuid()).pw_name
         self.assertEqual(
             str(failure.value),
-            "Virtualbricks is running on this machine with --lock user, one "
-            "for each user: start this one with --lock user as well. Held by "
-            f"process {os.getpid()} of {user}.",
+            "Virtualbricks is running on this machine with --lock user or "
+            "--lock workspace, which let others run beside it: start this "
+            f"one with one of them as well. Held by process {os.getpid()} of "
+            f"{user}.",
         )
         self.assertEqual(self.started, [])
         self.successResultOf(self.run_app("--lock", "user"))
@@ -117,6 +140,88 @@ class TestLock(unittest.TestCase):
         hold_lock(self)
         self.successResultOf(self.run_app("--lock", "none"))
         self.assertEqual(self.started, [locks.NONE])
+        # no lock in the workspace, not even the folder
+        self.assertFalse(os.path.exists(self.workspace))
+
+    def test_the_workspace_of_the_settings(self):
+        self.successResultOf(self.run_app())
+        path = locations.workspace_lock_file(self.workspace)
+        self.assertEqual(locks.holders(path), ((os.getpid(), ME),))
+        self.reactor.shutdown()
+        self.assertEqual(locks.holders(path), ())
+
+    def test_the_workspace_of_the_settings_file(self):
+        labs = os.path.join(self.root, "labs")
+        write_settings(AppSettings(workspace=labs), locations.settings_file())
+        self.successResultOf(self.run_app("--lock", "user"))
+        path = locations.workspace_lock_file(labs)
+        self.assertEqual(locks.holders(path), ((os.getpid(), ME),))
+        self.reactor.shutdown()
+
+    def test_side_by_side(self):
+        a = os.path.join(self.root, "labs", "a")
+        b = os.path.join(self.root, "labs", "b")
+        self.successResultOf(self.run_app("--workspace", a))
+        # the folder is made for its lock
+        self.assertTrue(os.path.isfile(locations.workspace_lock_file(a)))
+        self.successResultOf(self.run_app("--workspace", b))
+        self.assertEqual(self.started, [locks.WORKSPACE, locks.WORKSPACE])
+        failure = self.failureResultOf(
+            self.run_app("--workspace", a), SystemExit
+        )
+        self.assertEqual(
+            str(failure.value),
+            "Another Virtualbricks is running in the workspace ~/labs/a: "
+            "start this one in another, with --workspace. Held by process "
+            f"{os.getpid()} of {ME}.",
+        )
+        # nor the one of the settings, in the system mode
+        failure = self.failureResultOf(self.run_app(), SystemExit)
+        self.assertIn("--lock user or --lock workspace", str(failure.value))
+        self.successResultOf(self.run_app("--lock", "workspace"))
+        self.assertEqual(len(self.started), 3)
+        self.reactor.shutdown()
+
+    def test_the_settings_of_2_1_are_converted_alone(self):
+        with open(locations.legacy_settings_file(), "w"):
+            pass
+        refused = []
+
+        def migrating():
+            # the user lock alone: no other workspace starts meanwhile
+            other = os.path.join(self.root, "other")
+            refused.append(self.run_app("--workspace", other))
+            write_settings(AppSettings(), locations.settings_file())
+
+        def application(config):
+            fake = FakeApplication(self.started, config)
+            fake.migrating = migrating
+            return fake
+
+        config = self.parse("--workspace", os.path.join(self.root, "a"))
+        running = app.LockedApplication(application)(config)
+        self.successResultOf(running.run(self.reactor))
+        [d] = refused
+        failure = self.failureResultOf(d, SystemExit)
+        self.assertIn("--lock user", str(failure.value))
+        # then shared: another workspace starts
+        self.successResultOf(
+            self.run_app("--workspace", os.path.join(self.root, "b"))
+        )
+        self.assertEqual(self.started, [locks.WORKSPACE, locks.WORKSPACE])
+        self.reactor.shutdown()
+
+    def test_a_workspace_lock_that_cannot_be_opened(self):
+        os.makedirs(self.workspace)
+        path = locations.workspace_lock_file(self.workspace)
+        os.symlink("elsewhere", path)
+        failure = self.failureResultOf(self.run_app(), SystemExit)
+        self.assertEqual(
+            str(failure.value),
+            f"Cannot take the lock {path}: Too many levels of symbolic links."
+            " With --lock none, Virtualbricks runs without locks.",
+        )
+        self.assertEqual(self.started, [])
 
     def test_a_lock_that_cannot_be_opened(self):
         os.symlink("elsewhere", locations.SYSTEM_LOCK_FILE)

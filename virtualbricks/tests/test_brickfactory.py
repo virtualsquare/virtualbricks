@@ -38,6 +38,7 @@ from virtualbricks.config import workspace
 from virtualbricks.config.settings import (
     current_project,
     get_setting,
+    set_setting,
     store_settings,
 )
 from virtualbricks.config.tomlfile import load_toml
@@ -276,6 +277,15 @@ class TestInstall(AppTestCase):
         # the setting doesn't change
         self.assertEqual(
             get_setting("workspace"), os.path.join(self.root, ".virtualbricks")
+        )
+
+    def test_the_workspace_stays_for_the_run(self):
+        # whose lock is that of its folder: a new setting is for the next
+        # start
+        self.app.install_workspace()
+        set_setting("workspace", "/srv/labs")
+        self.assertEqual(
+            self.manager.path, os.path.join(self.root, ".virtualbricks")
         )
 
     def test_install_home(self):

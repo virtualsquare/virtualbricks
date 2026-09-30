@@ -121,9 +121,10 @@ def release(lock):
         lock.unlock()
 
 
-def hold_lock(test, policy=locks.SYSTEM, user=None):
+def hold_lock(test, policy=locks.SYSTEM, user=None, workspace=None):
     """
-    Hold the locks of policy, as a running Virtualbricks does.
+    Hold the locks of policy, as a running Virtualbricks does, and that of
+    workspace, a folder, if given.
 
     With user, the name of another user, the locks of a Virtualbricks of
     theirs: another runtime directory. They are released when the test ends,
@@ -133,10 +134,14 @@ def hold_lock(test, policy=locks.SYSTEM, user=None):
     runtime = os.environ.get("XDG_RUNTIME_DIR", "")
     if user is not None:
         os.environ["XDG_RUNTIME_DIR"] = f"{runtime}-{user}"
+    lock = None
     try:
         lock = locks.acquire(policy)
+        if workspace is not None:
+            lock.take_workspace(workspace)
     except locks.Held:
-        test.fail(f"the lock is already held ({policy}, {user})")
+        release(lock)
+        test.fail(f"the lock is already held ({policy}, {user}, {workspace})")
     finally:
         if user is not None:
             os.environ["XDG_RUNTIME_DIR"] = runtime
