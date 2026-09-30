@@ -70,6 +70,16 @@ class FakeProcess:
 
 class TestVirtualMachine(BrickTestCase):
 
+    def test_an_image_set_muted(self):
+        vm = self.factory.new_brick("qemu", "vm")
+        image = self.factory.new_image("deb", "/i/deb.qcow2")
+        changes = []
+        vm.image_changed.connect(changes.append)
+        with vm.muted():
+            vm.set_image("hda", image)
+        self.assertIs(vm.disk("hda").image, image)
+        self.assertEqual(changes, [])
+
     def test_disks_refer_to_images_by_name(self):
         vm = self.factory.new_brick("qemu", "vm")
         disk = vm.disk("hda")

@@ -540,8 +540,31 @@ class TestLenientReading(ProjectFileTestCase):
         self.assertEqual(
             sum(1 for m in messages if m.endswith("brick dropped")), 3
         )
-        for brick in factory.bricks:
-            self.assertFalse(brick._restore)
+        # read, they are heard again
+        changed = []
+        factory.brick_changed.connect(changed.append)
+        sw1 = factory.get_brick("sw1")
+        sw1.notify_changed()
+        self.assertEqual(changed, [sw1])
+
+    def test_bricks_heard_after_a_failure(self):
+        data = self.lab()
+        factory = make_factory(self)
+
+        def fail(*args):
+            raise RuntimeError("a bug")
+
+        self.patch(projectfile, "_connect", fail)
+        self.assertRaises(
+            RuntimeError, restore_project, factory, data, self.report, "/"
+        )
+        bricks = list(factory.bricks)
+        self.assertTrue(bricks)
+        changed = []
+        factory.brick_changed.connect(changed.append)
+        for brick in bricks:
+            brick.notify_changed()
+        self.assertEqual(changed, bricks)
 
     def test_connections(self):
         data = self.lab()

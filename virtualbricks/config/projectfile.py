@@ -33,6 +33,7 @@ The file starts with a header and has a comment above every key, see
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import os
 import re
@@ -655,25 +656,27 @@ def _read_events(factory: BrickFactory, data: Table, report: Report) -> None:
 
 def _read_bricks(factory: BrickFactory, data: Table, report: Report) -> None:
     connections: list[tuple[Brick, Targets, str]] = []
-    for name, table in _tables(data, "bricks", report):
-        where = f"bricks.{name}"
-        brick_type = table.get("type")
-        try:
-            if not isinstance(brick_type, str):
-                raise errors.InvalidTypeError(f"type {brick_type!r}")
-            brick = factory.new_brick(brick_type, name)
-        except (errors.InvalidTypeError, errors.InvalidNameError) as exc:
-            report.warning(f"{exc}, brick dropped", where)
-            continue
-        brick.set_restore(True)
-        ignore = {"type"} | CONNECTION_KEYS[brick.connections]
-        brick.load_config_table(table, report, where, ignore)
-        targets = _read_connections(brick, table, report, where)
-        connections.append((brick, targets, where))
-    # Connect once every socket exists.
-    for brick, targets, where in connections:
-        _connect(factory, brick, targets, report, where)
-        brick.set_restore(False)
+    # the bricks say nothing until they are whole, even if reading fails
+    with contextlib.ExitStack() as quiet:
+        for name, table in _tables(data, "bricks", report):
+            where = f"bricks.{name}"
+            brick_type = table.get("type")
+            try:
+                if not isinstance(brick_type, str):
+                    raise errors.InvalidTypeError(f"type {brick_type!r}")
+                brick = factory.new_brick(brick_type, name)
+            except (errors.InvalidTypeError, errors.InvalidNameError) as exc:
+                report.warning(f"{exc}, brick dropped", where)
+                continue
+            quiet.enter_context(brick.muted())
+            ignore = {"type"} | CONNECTION_KEYS[brick.connections]
+            brick.load_config_table(table, report, where, ignore)
+            targets = _read_connections(brick, table, report, where)
+            connections.append((brick, targets, where))
+        # Connect once every socket exists.
+        for brick, targets, where in connections:
+            _connect(factory, brick, targets, report, where)
+    for brick, _targets, _where in connections:
         # what shows the brick learns its configuration and its links
         brick.notify_changed()
 

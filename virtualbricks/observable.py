@@ -16,18 +16,30 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+import contextlib
+
+
 class Observable:
     # TODO: investigate if weakref.WeakValueDictionary can be used to ease the
     # disponse of observables.
 
     def __init__(self, *names):
         self.__events = {}
-        self._thawed = False
+        # how many muted() blocks are open: while there is one, notify()
+        # tells no one
+        self._muted = 0
         for name in names:
             self.add_event(name)
 
-    def thaw(self):
-        return ThawingSignalContextManager(self)
+    @contextlib.contextmanager
+    def muted(self):
+        """A block in which notify() tells no one; the blocks can nest."""
+
+        self._muted += 1
+        try:
+            yield
+        finally:
+            self._muted -= 1
 
     def add_event(self, name):
         if name in self.__events:
@@ -47,7 +59,7 @@ class Observable:
 
     def notify(self, name, emitter):
         assert name in self.__events, f"Event {name} not present"
-        if not self._thawed:
+        if not self._muted:
             for callback, args, kwds in self.__events[name]:
                 callback(emitter, *args, **kwds)
 
@@ -63,7 +75,6 @@ class Signal:
     def __init__(self, observable, name):
         self.__observable = observable
         self.__name = name
-        self.__thawed = False
         try:
             observable.add_event(name)
         except ValueError:
@@ -78,25 +89,4 @@ class Signal:
         self.__observable.remove_observer(self.__name, callback, args, kwds)
 
     def notify(self, emitter):
-        if not self.__thawed:
-            self.__observable.notify(self.__name, emitter)
-
-    def thaw(self):
-        return ThawingSignalContextManager(self)
-
-
-class ThawingSignalContextManager:
-
-    def __init__(self, signal_or_observer):
-        self.context = signal_or_observer
-        self.count = 0
-
-    def __enter__(self):
-        self.counter += 1
-        self.context._thawed = True
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if self.counter > 0:
-            self.counter -= 1
-            if self.counter == 0:
-                self.context._thawed = False
+        self.__observable.notify(self.__name, emitter)

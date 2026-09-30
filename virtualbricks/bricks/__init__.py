@@ -279,7 +279,6 @@ class BaseConfig:
 
 class Base:
 
-    _restore = False
     # type = None  # if not set in a subclass will raise an AttributeError
     _name = None
     config_factory = None
@@ -335,12 +334,13 @@ class Base:
 
         return rename_references(self.config, target, old, new)
 
-    def set_restore(self, restore):
-        self._restore = restore
+    def muted(self):
+        """A block in which the object tells no one that it changes."""
+
+        return self._observable.muted()
 
     def notify_changed(self):
-        if not self._restore:
-            self._observable.notify("changed", self)
+        self._observable.notify("changed", self)
 
 
 def is_running(brick):

@@ -45,6 +45,16 @@ class TestBase(BrickTestCase):
         self.assertRaises(KeyError, switch.update_config, {"nope": 1})
         self.assertRaises(ValueError, switch.update_config, {"ports": 500})
 
+    def test_muted(self):
+        switch = self.factory.new_brick("switch", "sw")
+        changed = []
+        switch.changed.connect(changed.append)
+        with switch.muted():
+            switch.update_config({"ports": 16})
+        self.assertEqual(changed, [])
+        switch.update_config({"ports": 8})
+        self.assertEqual(changed, [switch])
+
     def test_config_table(self):
         tap = self.factory.new_brick("tap", "tap0")
         tap.update_config({"address_mode": "manual"})

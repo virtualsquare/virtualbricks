@@ -1514,8 +1514,7 @@ class VirtualMachine(bricks.Brick):
 
     def set_image(self, dev, image):
         self._disks[dev].set_image(image)
-        if not self._restore:
-            self._observable.notify("image-changed", (self, image))
+        self._observable.notify("image-changed", (self, image))
 
 
 def _netdev(link, index, vde):
