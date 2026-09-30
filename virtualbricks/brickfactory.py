@@ -66,7 +66,6 @@ create_image = "Creating new disk image at '{path}'"
 remove_socks = "Removing socks: {socks}"
 disconnect_plug = "Disconnecting plug to {sock}"
 remove_brick = "Removing brick {brick}"
-endpoint_not_found = "Endpoint {nick} not found."
 shut_down = "Server Shut Down."
 new_event_ok = "New event {name} OK"
 uncaught_exception = "Uncaught exception: {error()}"
@@ -510,19 +509,6 @@ class BrickFactory:
         for sock in self.socks:
             if sock.nickname == name:
                 return sock
-
-    def connect_to(self, brick, nick):
-        endpoint = None
-        if not nick:
-            return None
-        for n in self.socks:
-            if n.nickname == nick:
-                endpoint = n
-        if endpoint is not None:
-            return brick.connect(endpoint)
-        else:
-            logger.debug(endpoint_not_found, nick=nick)
-            return None
 
 
 def AutosaveTimer(factory, interval=180):
