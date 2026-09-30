@@ -136,7 +136,7 @@ def set_(context, name, key_value):
     help=N_("Rename an image, in the disks that use it too"),
 )
 def rename(context, name, new):
-    context.factory.rename(name, new)
+    context.factory.rename_item(name, new)
     return [name.name] if name.name != new else []
 
 

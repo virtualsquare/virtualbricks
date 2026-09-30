@@ -211,7 +211,7 @@ class TestTheRows(EventsTestCase):
         self.assertEqual(
             row.detail.get_text(), "After 5 s, starts vm1 · when sw1 starts"
         )
-        self.factory.rename(sw, "sw9")
+        self.factory.rename_item(sw, "sw9")
         self.assertEqual(
             row.detail.get_text(), "After 5 s, starts vm1 · when sw9 starts"
         )

@@ -69,7 +69,7 @@ class TestBase(BrickTestCase):
             switch.console(), os.path.join(self.factory.runtime_dir, "sw.mgmt")
         )
         self.assertEqual(switch.socks[0].path, switch.path())
-        self.factory.rename(switch, "sw2")
+        self.factory.rename_item(switch, "sw2")
         self.assertEqual(switch.socks[0].nickname, "sw2_port")
         self.assertEqual(
             switch.socks[0].path,

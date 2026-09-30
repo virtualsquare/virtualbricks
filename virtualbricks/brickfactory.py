@@ -422,7 +422,7 @@ class BrickFactory:
             or self.get_image_by_name(name) is not None
         )
 
-    def rename(self, brick, name):
+    def rename_item(self, brick, name):
         """Rename a brick, event or image, and every reference to it."""
 
         prev_name = brick.name

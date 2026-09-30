@@ -87,7 +87,7 @@ class TestFactory(BrickTestCase):
         other.update_config({"delay": 1})
         changed = []
         switch.changed.connect(changed.append)
-        self.factory.rename(event, "start")
+        self.factory.rename_item(event, "start")
         self.assertEqual(switch.config.on_start, "start")
         self.assertEqual(switch.config.on_stop, "start")
         self.assertEqual(changed, [switch])
@@ -143,8 +143,8 @@ class TestFactory(BrickTestCase):
         )
         changed = []
         boot.changed.connect(changed.append)
-        self.factory.rename(self.factory.get_brick_by_name("sw1"), "core")
-        self.factory.rename(later, "after")
+        self.factory.rename_item(self.factory.get_brick_by_name("sw1"), "core")
+        self.factory.rename_item(later, "after")
         self.assertEqual(
             boot.config.actions,
             [
@@ -158,7 +158,7 @@ class TestFactory(BrickTestCase):
 
     def test_rename_brick(self):
         switch = self.factory.new_brick("switch", "sw")
-        self.assertEqual(self.factory.rename(switch, "sw2"), "sw")
+        self.assertEqual(self.factory.rename_item(switch, "sw2"), "sw")
         self.assertEqual(switch.name, "sw2")
 
     def test_only_rename_changes_the_name(self):
@@ -174,7 +174,7 @@ class TestFactory(BrickTestCase):
             with self.assertRaises(AttributeError):
                 item.name = "other"
             self.assertEqual(item.name, name)
-            self.factory.rename(item, name + "2")
+            self.factory.rename_item(item, name + "2")
             self.assertEqual(item.name, name + "2")
 
     def test_autosave_timer(self):

@@ -271,7 +271,7 @@ class Image:
 
     @property
     def name(self) -> str:
-        """Read-only: the factory's rename() changes it, with set_name()."""
+        """Read-only: the factory's rename_item() changes it, with set_name()."""
 
         return self._name
 
@@ -401,7 +401,7 @@ class ImageDraft(Draft):
         name = self.new_name()
         if name is not None:
             # through the factory: the disks follow
-            self.factory.rename(image, name)
+            self.factory.rename_item(image, name)
         if "description" in changes:
             image.set_description(self.settings.description)
 

@@ -374,7 +374,7 @@ def run(context, name):
 )
 def rename(context, name, new):
     factory = context.factory
-    factory.rename(name, new)
+    factory.rename_item(name, new)
     return [name.name] if name.name != new else []
 
 
@@ -391,7 +391,7 @@ def duplicate(context, name, new):
         new = factory.normalize_name(new)
     copy = factory.dup_event(name)
     if new is not None:
-        factory.rename(copy, new)
+        factory.rename_item(copy, new)
     return [copy.name]
 
 

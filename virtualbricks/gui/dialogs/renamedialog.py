@@ -212,7 +212,7 @@ class RenameDialog(Window):
         if response_id == Gtk.ResponseType.OK:
             name = self.brick_name_entry.get_text()
             try:
-                self._factory.rename(self._brick, name)
+                self._factory.rename_item(self._brick, name)
                 # TODO: add debugging log
                 # logger.debug(renamed)
             except errors.InvalidNameError:

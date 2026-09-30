@@ -63,7 +63,7 @@ class Base:
 
     @property
     def name(self):
-        """Read-only: the factory's rename() changes it, with set_name()."""
+        """Read-only: the factory's rename_item() changes it, with set_name()."""
 
         return self._name
 
@@ -100,7 +100,7 @@ class Base:
         self.notify_changed()
 
     def rename(self, name):
-        return self.factory.rename(self, name)
+        return self.factory.rename_item(self, name)
 
     def rename_references(self, target, old, new):
         """Point the references to the image or event ``old`` at ``new``."""

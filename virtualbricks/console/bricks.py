@@ -905,7 +905,7 @@ def rename(context, name, new):
     _stopped(brick)
     factory = context.factory
     final = factory.check_name(brick.get_type(), new)
-    factory.rename(brick, final)
+    factory.rename_item(brick, final)
     return [final] if final != new else []
 
 
@@ -922,7 +922,7 @@ def duplicate(context, name, new):
         new = factory.check_name(name.get_type(), new)
     copy = factory.dup_brick(name)
     if new is not None:
-        factory.rename(copy, new)
+        factory.rename_item(copy, new)
     return [copy.name]
 
 

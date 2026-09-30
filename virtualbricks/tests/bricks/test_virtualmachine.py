@@ -94,7 +94,7 @@ class TestVirtualMachine(BrickTestCase):
         vm = self.factory.new_brick("qemu", "vm")
         image = self.factory.new_disk_image("deb", "/i/deb.qcow2")
         vm.set_image("hda", image)
-        self.factory.rename(image, "debian")
+        self.factory.rename_item(image, "debian")
         self.assertEqual(vm.config.hda_image, "debian")
         self.assertIs(vm.disk("hda").image, image)
 
@@ -676,7 +676,9 @@ class TestTheDraftOfAnImage(BrickTestCase):
 
     def test_the_description_alone(self):
         renamed = []
-        self.patch(self.factory, "rename", lambda *args: renamed.append(args))
+        self.patch(
+            self.factory, "rename_item", lambda *args: renamed.append(args)
+        )
         self.draft.set("description", "FRR on Debian.")
         apply(self.draft)
         self.assertEqual(renamed, [])
@@ -702,7 +704,9 @@ class TestTheDraftOfAnImage(BrickTestCase):
 
     def test_its_own_name_written_another_way(self):
         renamed = []
-        self.patch(self.factory, "rename", lambda *args: renamed.append(args))
+        self.patch(
+            self.factory, "rename_item", lambda *args: renamed.append(args)
+        )
         self.draft.set("name", " frr ")
         self.assertEqual(self.draft.problems(), [])
         apply(self.draft)
