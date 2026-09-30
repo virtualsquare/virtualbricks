@@ -27,7 +27,9 @@ A command's name is its words, each with a capital: ``brick card add`` is
 types follow from their kinds: a Number is an integer, KEY=VALUE a list of
 records of key and value, an argument that repeats a list, an option without
 a value a boolean; the rest is text. Every command takes ``cwd`` too, and
-answers the lines of the console.
+answers the lines of the console. The record of the protocol has the
+commands of the windows of another machine too, those of
+:mod:`virtualbricks.remote.commands`, read from their classes.
 """
 
 from __future__ import annotations
@@ -37,6 +39,8 @@ import sys
 import textwrap
 
 # the modules of the nouns declare their commands
+from twisted.protocols import amp
+
 from virtualbricks.console import command as table, dispatch  # noqa: F401
 from virtualbricks.console.command import (
     Arg,
@@ -182,8 +186,11 @@ def arguments(command: Command) -> list[tuple[str, str, bool]]:
 def record() -> str:
     """
     The lines of the record of the protocol, a line for each command: its
-    arguments, ? after the optional ones, its answer and its errors.
+    arguments, ? after the optional ones, its answer and its errors; then
+    those of the windows of another machine, the pushes without an answer.
     """
+
+    from virtualbricks.remote import commands as windows
 
     lines = []
     for command in table.COMMANDS:
@@ -194,7 +201,36 @@ def record() -> str:
         ]
         words += ["->", "lines:[str]", "!"] + [code for _, code in ERRORS]
         lines.append(" ".join(words))
+    for command in windows.FROM_PROGRAM + windows.PUSHES:
+        lines.append(class_record(command))
     return "\n".join(lines) + "\n"
+
+
+def _recorded_type(argument) -> str:
+    if isinstance(argument, amp.ListOf):
+        return f"[{_recorded_type(argument.elementType)}]"
+    if isinstance(argument, amp.AmpList):
+        return "pairs"
+    return {amp.Unicode: "str", amp.Integer: "int", amp.Boolean: "bool"}[
+        type(argument)
+    ]
+
+
+def _recorded(pairs) -> list[str]:
+    return [
+        f"{key.decode()}:{_recorded_type(argument)}"
+        f"{'?' if argument.optional else ''}"
+        for key, argument in pairs
+    ]
+
+
+def class_record(command: type[amp.Command]) -> str:
+    """The line of the record of a command, read from its class."""
+
+    words = [command.commandName.decode()] + _recorded(command.arguments)
+    words += ["->"] + _recorded(command.response) + ["!"]
+    words += [code.decode() for code in command.errors.values()]
+    return " ".join(words)
 
 
 def _declared(key: str, kind: str, optional: bool) -> str:

@@ -55,6 +55,7 @@ from virtualbricks.console.command import COMMANDS, CommandError, NotFound
 from virtualbricks.console.dispatch import run, run_command
 from virtualbricks.console.parser import line_of
 from virtualbricks.i18n import _
+from virtualbricks.remote import commands as remote_commands, follower
 
 logger = Logger()
 listening = "Listening on {path}, protocol {protocol}"
@@ -335,7 +336,8 @@ TYPED = {
 
 def _responder(found, typed):
     def respond(self, cwd, **given):
-        return self.requests.add(lambda: self.run_typed(found, given, cwd))
+        running = self.requests.add(lambda: self.run_typed(found, given, cwd))
+        return running.addBoth(self.pushes_first)
 
     return typed.responder(respond)
 
@@ -352,12 +354,20 @@ TypedCommands = type(
 )
 
 
-class AMPControl(Visitor, TypedCommands, amp.AMP):
+# The commands of the windows of another machine, which have the checks of
+# the typed ones.
+WINDOWS = {
+    command.commandName: command for command in remote_commands.FROM_PROGRAM
+}
+
+
+class AMPControl(Visitor, TypedCommands, follower.Following, amp.AMP):
     """
     A connection of the AMP protocol: the commands of ampwire, and, once
-    Hello agrees on protocol 2, the typed commands of ampcommands. On a
-    socket with a token, they wait for the proof, by Challenge and
-    Authenticate.
+    Hello agrees on protocol 2, the typed commands of ampcommands and those
+    of the windows of another machine, as Follow. On a socket with a token,
+    they wait for the proof, by Challenge and Authenticate. A connection
+    that follows sends the pushes that wait before each answer.
     """
 
     # how Run writes its answer, to measure it first
@@ -391,6 +401,7 @@ class AMPControl(Visitor, TypedCommands, amp.AMP):
         amp.BinaryBoxProtocol.connectionLost(self, reason)
         self.transport = None
         self.leave(reason)
+        self.unfollow()
         self.requests.stop()
         self.factory.lost(self)
 
@@ -444,9 +455,9 @@ class AMPControl(Visitor, TypedCommands, amp.AMP):
 
     def locateResponder(self, name):
         responder = super().locateResponder(name)
-        if responder is None or name not in TYPED:
+        typed = TYPED[name][1] if name in TYPED else WINDOWS.get(name)
+        if responder is None or typed is None:
             return responder
-        _, typed = TYPED[name]
 
         def checked(box):
             # what AMP would drop, or close the connection on
@@ -495,7 +506,8 @@ class AMPControl(Visitor, TypedCommands, amp.AMP):
     @ampwire.Run.responder
     def run_line(self, line, cwd):
         self._check_proved()
-        return self.requests.add(lambda: self.handle(line, cwd))
+        running = self.requests.add(lambda: self.handle(line, cwd))
+        return running.addBoth(self.pushes_first)
 
     def handle(self, line, cwd):
         try:
@@ -678,6 +690,9 @@ class Control:
         self.lock = lock
         self.factory = factory
         self.closed = False
+        if socket.protocol == wire.AMP:
+            # the log, for the programs that follow, while it listens
+            follower.keeper.start()
 
     @property
     def path(self):
@@ -689,6 +704,8 @@ class Control:
         if self.closed:
             return defer.succeed(None)
         self.closed = True
+        if self.socket.protocol == wire.AMP:
+            follower.keeper.stop()
         # Twisted removes the socket as it stops listening
         done = defer.maybeDeferred(self.port.stopListening)
         done.addCallback(lambda _: self.factory.close())

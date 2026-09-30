@@ -236,11 +236,12 @@ class TestWriting(unittest.TestCase):
             "    response = LINES\n"
             "    errors = ERRORS\n",
         )
+        # then those of the windows of another machine
         self.assertEqual(
-            ampgen.record(),
+            ampgen.record().splitlines()[0],
             "EventActionRemove name:str n:[int] force:bool? cwd:str?"
             " -> lines:[str] ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED"
-            " COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED\n",
+            " COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED",
         )
 
     def test_a_kind_it_cant_write(self):
@@ -276,6 +277,32 @@ class TestMain(unittest.TestCase):
 
 class TestTheRecord(unittest.TestCase):
     """What a change of the table does to the protocol."""
+
+    def test_a_class(self):
+        class Show(amp.Command):
+            arguments = [
+                (b"name", amp.Unicode()),
+                (b"n", amp.ListOf(amp.Integer(), optional=True)),
+                (b"key_value", amp.AmpList(ampcommands.PAIR)),
+                (b"all", amp.Boolean(optional=True)),
+            ]
+            response = [(b"text", amp.Unicode(optional=True))]
+            errors = {ampwire.CommandFailed: b"COMMAND_FAILED"}
+
+        class Told(amp.Command):
+            arguments = [(b"what", amp.Unicode())]
+            requiresAnswer = False
+
+        self.assertEqual(
+            ampgen.class_record(Show),
+            "Show name:str n:[int]? key_value:pairs all:bool? -> text:str?"
+            " ! COMMAND_FAILED",
+        )
+        # a push: no answer
+        self.assertEqual(ampgen.class_record(Told), "Told what:str -> !")
+        self.assertEqual(
+            breaks("Told what:str -> !", "Told what:str -> !"), []
+        )
 
     def test_the_protocol_is_kept(self):
         path = os.path.join(DATA, f"amp-protocol-{ampgen.PROTOCOL}.txt")

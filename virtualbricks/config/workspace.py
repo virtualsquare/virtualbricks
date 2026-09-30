@@ -30,6 +30,7 @@ A project's name is at most 40 bytes, so that its bricks' names have room in
 their socket paths.
 
 Hidden folders are never projects: they are for imports in progress.
+``opened`` tells when a project opens, or the open one is renamed.
 """
 
 from __future__ import annotations
@@ -65,6 +66,7 @@ from virtualbricks.config.settings import (
     use_project,
 )
 from virtualbricks.i18n import _
+from virtualbricks.observable import Observable, Signal
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
@@ -259,6 +261,8 @@ class Workspace:
 
     def __init__(self, path: str | None = None) -> None:
         self._path = path
+        # the workspace, when a project opens, or the open one is renamed
+        self.opened = Signal(Observable(), "opened")
         # name -> (the time of the project file, its summary)
         self._summaries: dict[str, tuple[float, ProjectSummary]] = {}
 
@@ -509,6 +513,7 @@ class Workspace:
         if self.current is not None and self.current.name == name:
             self.current.path = self.project_path(new)
             set_current_project(self.path, new)
+            self.opened.notify(self)
 
     def duplicate(self, name: str, new: str) -> None:
         """Copy a project with its private disks; the copy is used now."""
@@ -606,6 +611,7 @@ class Workspace:
         self.current = OpenProject(path, project_settings)
         use_project(project_settings)
         set_current_project(self.path, name)
+        self.opened.notify(self)
         return report
 
     def close(self, factory: BrickFactory) -> None:

@@ -57,3 +57,12 @@ ImageDelete name:str cwd:str? -> lines:[str] ! NOT_FOUND BAD_ARGUMENT PROTOCOL_N
 SettingShow key:str? cwd:str? -> lines:[str] ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 SettingSet key_value:pairs cwd:str? -> lines:[str] ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 SettingUnset key:[str] cwd:str? -> lines:[str] ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
+Follow -> project:str? version:str ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
+Opened project:str? settings:str machine:str -> !
+Changed kind:str name:str table:str state:str -> !
+Renamed kind:str old:str new:str -> !
+Removed kind:str name:str -> !
+Synced -> !
+SettingsChanged settings:str -> !
+Logged message:str -> !
+Quitting -> !

@@ -103,6 +103,14 @@ class TestValues(SettingsTestCase):
 
     def test_set_validates(self):
         self.assertRaises(ValueError, set_setting, "tray_icon", "maybe")
+
+    def test_set_tells(self):
+        told = []
+        settings.changed.connect(told.append)
+        self.addCleanup(settings.changed.disconnect, told.append)
+        set_setting("terminal", "/usr/bin/foot")
+        self.assertRaises(ValueError, set_setting, "tray_icon", "maybe")
+        self.assertEqual(told, ["terminal"])
         set_setting("tray_icon", False)
         self.assertIs(get_setting("tray_icon"), False)
         use_project(ProjectSettings())

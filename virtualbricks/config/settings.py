@@ -37,6 +37,7 @@ from twisted.logger import Logger
 
 from virtualbricks import locations
 from virtualbricks.config.report import Report
+from virtualbricks.observable import Observable, Signal
 from virtualbricks.config.schema import (
     Bool,
     Choice,
@@ -235,6 +236,10 @@ def get_setting(name: str) -> SettingValue:
     return getattr(_project or ProjectSettings(), name)
 
 
+# Its observers get the name of each setting that set_setting() sets.
+changed = Signal(Observable(), "changed")
+
+
 def set_setting(name: str, value: SettingValue) -> None:
     """Change a setting; ValueError for one of a project, if none is open."""
 
@@ -244,6 +249,7 @@ def set_setting(name: str, value: SettingValue) -> None:
         raise ValueError(f"{name} is a setting of a project, and none is open")
     else:
         setattr(_project, name, value)
+    changed.notify(name)
 
 
 def parse_setting(name: str, text: str) -> SettingValue:

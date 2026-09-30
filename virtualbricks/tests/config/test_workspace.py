@@ -309,6 +309,17 @@ class TestRename(WorkspaceTestCase):
         self.projects.rename("ospf", "ospf")
         self.assertEqual(self.projects.names(), ["ospf"])
 
+    def test_rename_tells_of_the_open_project(self):
+        told = []
+        self.projects.opened.connect(told.append)
+        self.projects.create("lab")
+        self.projects.create("other")
+        self.projects.open("lab", self.factory)
+        self.projects.rename("other", "bgp")
+        self.assertEqual(told, [self.projects])
+        self.projects.rename("lab", "ospf")
+        self.assertEqual(told, [self.projects] * 2)
+
     def test_rename_the_open_project(self):
         self.projects.create("lab")
         self.projects.open("lab", self.factory)
@@ -617,6 +628,20 @@ class TestSummaries(WorkspaceTestCase):
 
 
 class TestOpen(WorkspaceTestCase):
+
+    def test_open_tells(self):
+        told = []
+        self.projects.opened.connect(told.append)
+        self.projects.create("lab")
+        self.assertEqual(told, [])
+        self.projects.open("lab", self.factory)
+        self.assertEqual(told, [self.projects])
+        # open already: nothing opens
+        self.projects.open("lab", self.factory)
+        self.assertRaises(
+            errors.InvalidNameError, self.projects.open, "no", self.factory
+        )
+        self.assertEqual(told, [self.projects])
 
     def test_open(self):
         self.projects.create("lab")
