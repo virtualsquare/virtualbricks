@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 17:14+0200\n"
+"POT-Creation-Date: 2026-09-30 22:20+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -4776,6 +4776,12 @@ msgstr ""
 
 #: virtualbricks/migrate/gui.py
 msgid "Save report"
+msgstr ""
+
+#: virtualbricks/remote/mirror.py
+#, python-brace-format
+msgid ""
+"{call} of {name} is for the Virtualbricks of the bricks: here is its copy"
 msgstr ""
 
 #~ msgid "Connect to:"

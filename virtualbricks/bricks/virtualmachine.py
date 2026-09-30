@@ -1186,10 +1186,15 @@ class VirtualMachine(bricks.Brick):
     def set_name(self, name):
         """The sockets and the private disks named after it follow."""
 
-        prefix = f"{self.name}_"
         if projects.current is not None:
             _rename_private_disks(projects.current.path, self.name, name)
+        self.rename_sockets(name)
         bricks.Brick.set_name(self, name)
+
+    def rename_sockets(self, name):
+        """Name the sockets named after the machine after name."""
+
+        prefix = f"{self.name}_"
         for sock in self.socks:
             if sock.nickname.startswith(prefix):
                 suffix = sock.nickname[len(prefix) :]
