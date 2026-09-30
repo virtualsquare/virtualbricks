@@ -245,6 +245,14 @@ class SetReadme(amp.Command):
     errors = ERRORS
 
 
+class SetKsm(amp.Command):
+    """Turn KSM on or off: whether it runs afterwards."""
+
+    arguments = [(b"enable", amp.Boolean())]
+    response = [(b"enabled", amp.Boolean())]
+    errors = ERRORS
+
+
 class _Push(amp.Command):
     """A command that Virtualbricks calls on a program that follows it."""
 
@@ -332,6 +340,7 @@ FROM_PROGRAM = (
     DiskUsage,
     Readme,
     SetReadme,
+    SetKsm,
 )
 PUSHES = (
     Opened,

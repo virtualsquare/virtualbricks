@@ -1018,6 +1018,20 @@ class TestProjects(ClientTestCase):
         self.done(self.engine.remove_project("lab2", trash=False))
         self.assertNotIn("lab2", workspace.names)
 
+    def test_ksm(self):
+        asked = []
+
+        def set_ksm(enable):
+            asked.append(enable)
+            # the sudo there said no
+            return defer.succeed(False)
+
+        self.patch(answers.ksm, "set_ksm", set_ksm)
+        self.assertFalse(self.done(self.engine.set_ksm(True)))
+        self.assertFalse(self.done(self.engine.set_ksm(False)))
+        self.assertEqual(asked, [True, False])
+        self.assertIn("ksm on", " ".join(self.logger.formatted()))
+
     def test_the_checks_of_a_name(self):
         workspace = self.engine.workspace
         self.done(self.engine.project_names())

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 00:19+0200\n"
+"POT-Creation-Date: 2026-10-01 00:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -212,7 +212,7 @@ msgstr ""
 msgid "Links"
 msgstr ""
 
-#: virtualbricks/bricks/brickinfo.py
+#: virtualbricks/bricks/brickinfo.py virtualbricks/gui/dialogs/settings.py
 msgid "This computer"
 msgstr ""
 
@@ -3246,6 +3246,10 @@ msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
 msgid "Audio driver of QEMU, as alsa, pa or pipewire"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid "Workspace"
 msgstr ""
 
 #: virtualbricks/gui/gui.py

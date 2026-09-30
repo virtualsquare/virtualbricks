@@ -21,9 +21,9 @@ The answers of the Virtualbricks of the bricks to the commands of the
 windows of another machine that the console has none for (page 19 §7):
 ``Apply``, the OK of a panel, ``Connect``, a drop, the commands of the
 files of the images: ``MakeImage``, ``StartOver``, ``TrashFile`` and
-``Relink``, and those of the projects and the README: ``ProjectNames``,
-``ProjectSummary``, ``Readme`` and ``SetReadme``. The reads go to the log
-only if they fail.
+``Relink``, those of the projects and the README: ``ProjectNames``,
+``ProjectSummary``, ``Readme`` and ``SetReadme``, and ``SetKsm``. The reads
+go to the log only if they fail.
 
 The AMP connections of the control sockets take them on, beside Follow.
 Like the typed commands, they run in the order they came, their line goes to
@@ -43,7 +43,7 @@ from twisted.internet import defer
 from twisted.logger import Logger
 from twisted.protocols import amp
 
-from virtualbricks import errors
+from virtualbricks import errors, ksm
 from virtualbricks.bricks import brickinfo
 from virtualbricks.bricks.virtualmachine import DISK_DEVICES, is_virtualmachine
 from virtualbricks.config import images
@@ -263,3 +263,15 @@ class Answers(amp.CommandLocator):
             return {}
 
         return self._answer_in_order("set readme", "the README", call)
+
+    # The machine
+
+    @commands.SetKsm.responder
+    def set_ksm(self, enable):
+        def call():
+            # it logs why KSM didn't change, and says whether it runs
+            setting = ksm.set_ksm(enable)
+            return setting.addCallback(lambda enabled: {"enabled": enabled})
+
+        state = "on" if enable else "off"
+        return self._answer_in_order(f"ksm {state}", "KSM", call)

@@ -764,8 +764,8 @@ class RemoteEngine:
         return self.call(ampcommands.SettingSet, key_value=_pairs(texts))
 
     def set_ksm(self, enable):
-        setting = self.set_settings({"kernel_samepage_merging": enable})
-        return self._then(setting, lambda: enable)
+        setting = self.call(commands.SetKsm, enable=enable)
+        return setting.addCallback(lambda answer: answer["enabled"])
 
     # What the machine has
 

@@ -20,6 +20,8 @@
 
 import os
 
+from twisted.internet import defer
+
 
 from virtualbricks import locations
 from virtualbricks.config.settings import get_setting, set_setting
@@ -60,6 +62,16 @@ class TestSettingsDialog(GuiTestCase):
             for i in range(notebook.get_n_pages())
         ]
         self.assertEqual(labels, ["Application", "This project"])
+
+    def test_one_page_here(self):
+        # the rows of the machine of the bricks under those of the windows
+        dialog = self.dialog()
+        grid = dialog.terminal_entry.get_parent()
+        self.assertIs(dialog.enable_ksm_switch.get_parent(), grid)
+        self.assertEqual(
+            grid.child_get_property(dialog.enable_ksm_switch, "top-attach"), 3
+        )
+        self.assertIsNone(dialog.workspace_label)
 
     def test_no_open_project(self):
         dialog = self.dialog()
@@ -137,3 +149,118 @@ class TestSettingsDialog(GuiTestCase):
         self.assertEqual(
             values, {"allow_female_plugs": False, "log_link_loops": False}
         )
+
+
+class SettingsThere:
+    """The settings of the Virtualbricks there, as its copy has them."""
+
+    def __init__(self, values):
+        self.values = values
+
+    def setting(self, name):
+        return self.values[name]
+
+
+class OpenThere:
+    name = "ospf"
+
+
+class WorkspaceThere:
+    path = "/srv/labs"
+    current = OpenThere()
+
+
+class EngineThere:
+    """The engine of windows over a connection: what it sends there."""
+
+    local = False
+    where = "lab.example"
+
+    def __init__(self, values):
+        self.machine = SettingsThere(values)
+        self.workspace = WorkspaceThere()
+        self.sent = []
+
+    def set_settings(self, values):
+        self.sent.append(("settings", values))
+        return defer.succeed(None)
+
+    def set_ksm(self, enable):
+        self.sent.append(("ksm", enable))
+        return defer.succeed(enable)
+
+
+class TestOverAConnection(GuiTestCase):
+    """This computer, the machine there, the project there (19 R10)."""
+
+    def setUp(self):
+        super().setUp()
+        self.engine = EngineThere(
+            {
+                "kernel_samepage_merging": False,
+                "audio_driver": "pipewire",
+                "vde_path": "/opt/vde/bin",
+                "qemu_path": "/opt/qemu/bin",
+                "allow_female_plugs": True,
+                "log_link_loops": False,
+                "cow_format": "qcow2",
+            }
+        )
+        gui = FakeGui(self.factory)
+        gui.engine = self.engine
+        self.dialog = settings_window.SettingsDialog(gui)
+        self.addCleanup(self.dialog.dialog.destroy)
+
+    def test_three_pages(self):
+        children = self.dialog.dialog.get_content_area().get_children()
+        [notebook] = [c for c in children if isinstance(c, Gtk.Notebook)]
+        labels = [
+            notebook.get_tab_label_text(notebook.get_nth_page(i))
+            for i in range(notebook.get_n_pages())
+        ]
+        self.assertEqual(
+            labels, ["This computer", "lab.example", "This project"]
+        )
+        self.assertEqual(self.dialog.workspace_label.get_text(), "/srv/labs")
+
+    def test_the_settings_there(self):
+        dialog = self.dialog
+        self.assertEqual(dialog.audio_driver_entry.get_text(), "pipewire")
+        widgets = dialog.project_widgets
+        self.assertTrue(widgets.grid.get_sensitive())
+        # typed: a chooser shows the folders of this computer
+        self.assertIsInstance(widgets.qemu_path_chooser, Gtk.Entry)
+        self.assertEqual(widgets.qemu_path_chooser.get_text(), "/opt/qemu/bin")
+        self.assertTrue(widgets.female_plugs_switch.get_active())
+        # those of the windows are this computer's
+        self.assertEqual(
+            dialog.terminal_entry.get_text(), get_setting("terminal")
+        )
+
+    def test_ksm_there(self):
+        # KSM runs there, not here
+        self.engine.machine.values["kernel_samepage_merging"] = True
+        gui = FakeGui(self.factory)
+        gui.engine = self.engine
+        dialog = settings_window.SettingsDialog(gui)
+        self.addCleanup(dialog.dialog.destroy)
+        self.assertTrue(dialog.enable_ksm_switch.get_active())
+
+    def test_ok(self):
+        dialog = self.dialog
+        audio_here = get_setting("audio_driver")
+        dialog.terminal_entry.set_text("/usr/bin/foot")
+        dialog.audio_driver_entry.set_text("pa")
+        dialog.project_widgets.qemu_path_chooser.set_text("/usr/local/bin")
+        dialog.on_dialog_response(dialog.dialog, Gtk.ResponseType.OK)
+        # here
+        self.assertEqual(get_setting("terminal"), "/usr/bin/foot")
+        self.assertEqual(get_setting("audio_driver"), audio_here)
+        # there
+        [(kind, values), ksm] = self.engine.sent
+        self.assertEqual(kind, "settings")
+        self.assertEqual(values["audio_driver"], "pa")
+        self.assertEqual(values["qemu_path"], "/usr/local/bin")
+        self.assertEqual(values["vde_path"], "/opt/vde/bin")
+        self.assertNotIn("terminal", values)
+        self.assertEqual(ksm, ("ksm", False))

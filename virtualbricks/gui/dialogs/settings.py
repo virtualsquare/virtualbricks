@@ -17,6 +17,12 @@
 
 """
 Preferences dialog.
+
+On the machine of the bricks, two pages: Application and This project. Over
+a connection, three (page 19 R10): This computer, the settings of these
+windows; the machine of the bricks, its KSM and its audio driver, with its
+workspace shown; and the project open there, whose folders are paths of
+that machine, typed rather than chosen.
 """
 
 import gi
@@ -30,7 +36,6 @@ from twisted.logger import Logger
 from virtualbricks.config.settings import (
     COW_FORMATS,
     get_setting,
-    project_settings,
     set_setting,
     store_settings,
 )
@@ -69,10 +74,24 @@ def _folder_chooser():
     )
 
 
+class _FolderEntry(Gtk.Entry):
+    """A folder of another machine, which a file chooser can't show."""
+
+    def __init__(self):
+        super().__init__(visible=True, can_focus=True, hexpand=True)
+
+    def set_current_folder(self, folder):
+        self.set_text(folder)
+
+    def get_current_folder(self):
+        return self.get_text().strip() or None
+
+
 class ProjectSettingsWidgets:
     """The settings of the open project."""
 
-    def __init__(self, note):
+    def __init__(self, note, local=True):
+        folder = _folder_chooser if local else _FolderEntry
         self.grid = grid = _grid()
         grid.attach(
             Gtk.Label(visible=True, label=note, xalign=0, wrap=True),
@@ -81,10 +100,10 @@ class ProjectSettingsWidgets:
             2,
             1,
         )
-        self.vde_path_chooser = _folder_chooser()
+        self.vde_path_chooser = folder()
         self.female_plugs_switch = _switch()
         self.link_loops_switch = _switch()
-        self.qemu_path_chooser = _folder_chooser()
+        self.qemu_path_chooser = folder()
         formats = Gtk.ListStore(str)
         for cow_format in COW_FORMATS:
             formats.append([cow_format])
@@ -175,6 +194,9 @@ class SettingsDialog(Window):
 
         self._setting_ksm_deferred = None
         self.virtualbricks_gui = virtualbricks_gui
+        # the settings of the machine of the bricks and of its project go
+        # through it
+        self.engine = virtualbricks_gui.engine
         self.build_ui()
         self.load_settings()
 
@@ -242,16 +264,29 @@ class SettingsDialog(Window):
         )
         content_area.child_set(action_area, expand=False, fill=False)
         notebook = Gtk.Notebook(visible=True, can_focus=True)
-        notebook.append_page(
-            self._build_application_page(),
-            Gtk.Label(visible=True, label=_("Application")),
-        )
+        this_computer = self._build_this_computer_page()
+        if self.engine.local:
+            # one page: the windows and the bricks are on this computer
+            self._build_machine_page(this_computer)
+            notebook.append_page(
+                this_computer, Gtk.Label(visible=True, label=_("Application"))
+            )
+        else:
+            notebook.append_page(
+                this_computer,
+                Gtk.Label(visible=True, label=_("This computer")),
+            )
+            notebook.append_page(
+                self._build_machine_page(_grid()),
+                Gtk.Label(visible=True, label=self.engine.where),
+            )
         self.project_widgets = ProjectSettingsWidgets(
             _(
                 "These settings belong to the open project: changing them "
                 "doesn't change the other projects. A new project starts "
                 "with a copy of them."
-            )
+            ),
+            local=self.engine.local,
         )
         notebook.append_page(
             self.project_widgets.grid,
@@ -273,17 +308,15 @@ class SettingsDialog(Window):
             self.on_enable_ksm_switch_active_notify,
         )
 
-    def _build_application_page(self):
+    def _build_this_computer_page(self):
+        """The settings of the windows."""
+
         grid = _grid()
         self.terminal_entry = Gtk.Entry(
             visible=True, can_focus=True, hexpand=True
         )
         self.tray_icon_switch = _switch()
         self.warn_missing_switch = _switch()
-        self.enable_ksm_switch = _switch()
-        self.audio_driver_entry = Gtk.Entry(
-            visible=True, can_focus=True, hexpand=True
-        )
         rows = (
             (_("X-window terminal command"), self.terminal_entry),
             (_("Enable systray"), self.tray_icon_switch),
@@ -291,13 +324,34 @@ class SettingsDialog(Window):
                 _("Warn about missing components at startup"),
                 self.warn_missing_switch,
             ),
+        )
+        for row, (text, widget) in enumerate(rows):
+            grid.attach(_label(text), 0, row, 1, 1)
+            grid.attach(widget, 1, row, 1, 1)
+        return grid
+
+    def _build_machine_page(self, grid):
+        """The settings of the machine of the bricks, under those in grid."""
+
+        first = len(grid.get_children()) // 2
+        self.enable_ksm_switch = _switch()
+        self.audio_driver_entry = Gtk.Entry(
+            visible=True, can_focus=True, hexpand=True
+        )
+        rows = [
             (_("Enable KSM"), self.enable_ksm_switch),
             (
                 _("Audio driver of QEMU, as alsa, pa or pipewire"),
                 self.audio_driver_entry,
             ),
-        )
-        for row, (text, widget) in enumerate(rows):
+        ]
+        self.workspace_label = None
+        if not self.engine.local:
+            # shown, not changed: its command line chose it
+            self.workspace_label = _label(self.engine.workspace.path)
+            self.workspace_label.set_selectable(True)
+            rows.append((_("Workspace"), self.workspace_label))
+        for row, (text, widget) in enumerate(rows, first):
             grid.attach(_label(text), 0, row, 1, 1)
             grid.attach(widget, 1, row, 1, 1)
         return grid
@@ -355,24 +409,29 @@ class SettingsDialog(Window):
         # disable the switch, try to change the value of KSM and reactivate
         # the switch
         self.enable_ksm_switch.set_sensitive(False)
-        engine = self.virtualbricks_gui.engine
-        deferred = engine.set_ksm(self.enable_ksm_switch.get_active())
+        deferred = self.engine.set_ksm(self.enable_ksm_switch.get_active())
         deferred.addBoth(set_ksm_cb)
         self._setting_ksm_deferred = deferred
 
     def load_settings(self):
+        # those of the windows, of this computer
         self.terminal_entry.set_text(get_setting("terminal"))
         self.tray_icon_switch.set_active(get_setting("tray_icon"))
         self.warn_missing_switch.set_active(
             get_setting("warn_missing_programs")
         )
+        # those of the machine of the bricks and of its project
+        machine = self.engine.machine
         self.enable_ksm_switch.set_active(
-            get_setting("kernel_samepage_merging")
+            machine.setting("kernel_samepage_merging")
         )
-        self.audio_driver_entry.set_text(get_setting("audio_driver"))
+        self.audio_driver_entry.set_text(machine.setting("audio_driver"))
         # with no project open, the defaults
-        self.project_widgets.load(get_setting)
-        self.project_widgets.grid.set_sensitive(project_settings() is not None)
+        self.project_widgets.load(machine.setting)
+        self.project_widgets.grid.set_sensitive(self.project_open())
+
+    def project_open(self) -> bool:
+        return self.engine.workspace.current is not None
 
     def store_settings(self):
         logger.debug(apply_settings)
@@ -390,9 +449,9 @@ class SettingsDialog(Window):
             "audio_driver": self.audio_driver_entry.get_text().strip(),
             "kernel_samepage_merging": ksm_active,
         }
-        if project_settings() is not None:
+        if self.project_open():
             self.project_widgets.store(values.__setitem__)
-        engine = self.virtualbricks_gui.engine
+        engine = self.engine
         engine.set_settings(values)
         engine.set_ksm(ksm_active)
         if self.tray_icon_switch.get_active():
