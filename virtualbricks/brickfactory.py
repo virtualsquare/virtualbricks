@@ -347,11 +347,6 @@ class BrickFactory:
         self._bricks.remove(brick)
         self.brick_removed.notify(brick)
 
-    def _get_element_by_name(self, name, sequence):
-        for item in sequence:
-            if item.name == name:
-                return item
-
     def get_brick_by_name(self, name):
         """
         Return a brick given its name.
@@ -360,7 +355,10 @@ class BrickFactory:
         :rtype: Optional[virtualbricks.bricks.Brick]
         """
 
-        return self._get_element_by_name(name, self.iter_bricks())
+        for brick in self._bricks:
+            if brick.name == name:
+                return brick
+        return None
 
     def iter_bricks(self):
         return iter(self._bricks)
@@ -420,25 +418,13 @@ class BrickFactory:
         return name
 
     def is_in_use(self, name):
-        """used to determine whether the chosen name can be used or
-        it has already a duplicate among bricks or events."""
+        """Whether a brick, an event or a disk image already has the name."""
 
-        if self._get_brick_event_disk(name) is not None:
-            return True
-        else:
-            return False
-
-    def _get_brick_event_disk(self, name):
-        brick = self.get_brick_by_name(name)
-        if brick is not None:
-            return brick
-        event = self.get_event_by_name(name)
-        if event is not None:
-            return event
-        disk_image = self.get_image_by_name(name)
-        if disk_image is not None:
-            return disk_image
-        return None
+        return (
+            self.get_brick_by_name(name) is not None
+            or self.get_event_by_name(name) is not None
+            or self.get_image_by_name(name) is not None
+        )
 
     def rename(self, brick, name):
         """Rename a brick, event or image, and every reference to it."""
