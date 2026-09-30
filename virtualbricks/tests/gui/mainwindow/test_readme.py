@@ -20,15 +20,18 @@ The Readme tab: the preview, the editor, the buttons over them, and the
 README it loads and saves.
 """
 
-from twisted.internet import task
+from twisted.internet import defer, task
 from twisted.trial import unittest
 
+from virtualbricks.console import ampwire
 from virtualbricks.engine import LocalEngine
+from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import has_display
 
 if has_display:
     from gi.repository import Gtk
 
+    from virtualbricks.gui.mainwindow import readme
     from virtualbricks.gui.mainwindow.readme import (
         GAP,
         SAVE_AFTER,
@@ -254,6 +257,22 @@ class TestLoadAndSave(unittest.TestCase):
             self.assertEqual(self.project.saved, [self.text()], hook)
             # not twice
             self.assertEqual(self.clock.getDelayedCalls(), [], hook)
+
+    def test_a_save_that_fails(self):
+        # over a connection: the edits stay, for the next save
+        logger = FakeLogger()
+        self.patch(readme, "logger", logger)
+        self.tab.engine.set_readme = lambda text: defer.fail(
+            ampwire.CommandFailed("The connection to lab is lost")
+        )
+        self.tab.on_open()
+        self.edit()
+        self.tab.on_save()
+        self.assertTrue(self.buffer.get_modified())
+        self.assertEqual(
+            logger.formatted(),
+            ["Cannot save the README: The connection to lab is lost"],
+        )
 
     def test_nothing_to_save(self):
         self.tab.on_open()

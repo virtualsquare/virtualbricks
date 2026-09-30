@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 00:06+0200\n"
+"POT-Creation-Date: 2026-10-01 00:19+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1084,6 +1084,10 @@ msgid "There is no project \"{name}\""
 msgstr ""
 
 #: virtualbricks/config/workspace.py
+msgid "A project with this name already exists"
+msgstr ""
+
+#: virtualbricks/config/workspace.py
 msgid "The name is empty"
 msgstr ""
 
@@ -1098,10 +1102,6 @@ msgstr ""
 #: virtualbricks/config/workspace.py
 #, python-brace-format
 msgid "The name is {size} bytes long, at most {max}"
-msgstr ""
-
-#: virtualbricks/config/workspace.py
-msgid "A project with this name already exists"
 msgstr ""
 
 #: virtualbricks/config/workspace.py
@@ -1990,7 +1990,8 @@ msgstr ""
 msgid "{usage}: {name} is missing"
 msgstr ""
 
-#: virtualbricks/console/projects.py
+#: virtualbricks/console/projects.py virtualbricks/remote/answers.py
+#: virtualbricks/remote/facts.py
 #, python-brace-format
 msgid "No project named {name}"
 msgstr ""
@@ -3009,6 +3010,11 @@ msgstr ""
 msgid "Import…"
 msgstr ""
 
+#: virtualbricks/gui/dialogs/projects.py virtualbricks/gui/mainwindow/window.py
+#: virtualbricks/remote/client.py
+msgid "Not over a connection, for now"
+msgstr ""
+
 #: virtualbricks/gui/dialogs/projects.py
 msgid "No projects yet"
 msgstr ""
@@ -3079,6 +3085,11 @@ msgstr ""
 #: virtualbricks/gui/dialogs/projects.py
 #: virtualbricks/gui/mainwindow/images/imagemenu.py
 msgid "Remove…"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, python-brace-format
+msgid "Cannot list the projects: {error}"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/projects.py
@@ -4428,10 +4439,6 @@ msgstr ""
 msgid "E_xport…"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/window.py virtualbricks/remote/client.py
-msgid "Not over a connection, for now"
-msgstr ""
-
 #: virtualbricks/gui/mainwindow/window.py
 msgid "_Help"
 msgstr ""
@@ -4727,6 +4734,11 @@ msgstr ""
 #: virtualbricks/remote/client.py
 #, python-brace-format
 msgid "The connection to {where} is lost"
+msgstr ""
+
+#: virtualbricks/remote/client.py
+#, python-brace-format
+msgid "The README is {size} bytes, longer than the {most} that AMP carries"
 msgstr ""
 
 #: virtualbricks/remote/facts.py

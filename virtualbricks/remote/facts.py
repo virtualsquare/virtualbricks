@@ -30,7 +30,7 @@ first. Nothing goes to the log but the failures.
 
 import json
 
-from twisted.internet import defer
+from twisted.internet import defer, threads
 from twisted.logger import Logger
 from twisted.protocols import amp
 
@@ -49,7 +49,7 @@ logger = Logger()
 fact_failed = "{command} for the windows of another machine failed"
 
 
-def _value(text: str) -> str:
+def one_value(text: str) -> str:
     """text, if AMP carries it in one value."""
 
     size = len(text.encode("utf-8"))
@@ -110,7 +110,7 @@ class Facts(amp.CommandLocator):
             def answer(answers):
                 box = {"path": path}
                 for name in commands.QEMU_ANSWERS:
-                    box[name] = _value(
+                    box[name] = one_value(
                         json.dumps(list(answers[name]), ensure_ascii=False)
                     )
                 return box
@@ -132,7 +132,7 @@ class Facts(amp.CommandLocator):
                 lambda chosen: programs.machine_answer(path, chosen)
             )
             return asking.addCallback(
-                lambda answer: {"text": _value(answer.out)}
+                lambda answer: {"text": one_value(answer.out)}
             )
 
         return self._answer_fact("MachineProperties", ask)
@@ -148,7 +148,7 @@ class Facts(amp.CommandLocator):
                     for device in devices
                 ]
                 return {
-                    "devices": _value(json.dumps(found, ensure_ascii=False))
+                    "devices": one_value(json.dumps(found, ensure_ascii=False))
                 }
 
             return asking.addCallback(answer)
@@ -169,9 +169,29 @@ class Facts(amp.CommandLocator):
             return reading.addCallback(
                 lambda info: {
                     "file": json.dumps(facts),
-                    "info": _value(info),
-                    "others": _value(json.dumps(others, ensure_ascii=False)),
+                    "info": one_value(info),
+                    "others": one_value(
+                        json.dumps(others, ensure_ascii=False)
+                    ),
                 }
             )
 
         return self._answer_fact("ImageFacts", ask)
+
+    @commands.DiskUsage.responder
+    def disk_usage(self, name):
+        def ask():
+            if not projects.exists(name):
+                raise ampcommands.NotFound(
+                    _("No project named {name}").format(name=name)
+                )
+            # the files of a project may be many: counted in a thread
+            counting = threads.deferToThread(projects.disk_usage, name)
+            return counting.addCallback(
+                lambda usage: {
+                    "private_disks": usage.private_disks,
+                    "other_files": usage.other_files,
+                }
+            )
+
+        return self._answer_fact("DiskUsage", ask)

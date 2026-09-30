@@ -39,6 +39,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk  # noqa: E402
 from twisted.internet import reactor  # noqa: E402
+from twisted.logger import Logger  # noqa: E402
 
 from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
 from virtualbricks.gui.markdownview import MarkdownView  # noqa: E402
@@ -46,6 +47,9 @@ from virtualbricks.i18n import _  # noqa: E402
 
 # The room around the text, and between the buttons and the corner, in
 # pixels.
+logger = Logger()
+readme_not_saved = "Cannot save the README: {error}"
+
 MARGIN = 12
 GAP = 6
 # The seconds from an edit to its save.
@@ -198,8 +202,14 @@ class ReadmeTab(Tab, Gtk.Overlay):
         textbuffer = self.editor.get_buffer()
         if textbuffer.get_modified():
             text = textbuffer.get_property("text")
-            self.engine.set_readme(text)
+            saving = self.engine.set_readme(text)
             textbuffer.set_modified(False)
+            saving.addErrback(self._not_saved, textbuffer)
+
+    def _not_saved(self, failure, textbuffer) -> None:
+        # over a connection: the edits wait for the next save
+        logger.error(readme_not_saved, error=failure.getErrorMessage())
+        textbuffer.set_modified(True)
 
     def _save_later(self) -> None:
         self._saving = None

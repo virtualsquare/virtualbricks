@@ -51,7 +51,7 @@ from twisted.logger import (
 from twisted.protocols import amp
 from zope.interface import implementer
 
-from virtualbricks import __version__, ksm
+from virtualbricks import __version__, ksm, locations
 from virtualbricks.bricks import Base, is_running
 from virtualbricks.bricks.brickinfo import NEW_KINDS, issue
 from virtualbricks.bricks.event import is_event
@@ -192,6 +192,10 @@ def machine_table(factory, workspace) -> dict:
         "project_folder": None if current is None else current.path,
         # whether the files removed go to a trash: the windows there give one
         "trash": workspace.trasher is not None,
+        # where the sockets of the bricks of each project are
+        "workspace_runtime_dir": locations.workspace_runtime_dir(
+            workspace.path
+        ),
         "runtime_dir": factory.runtime_dir,
         "missing": [str(missing) for missing in missing_programs(vde, qemu)],
         "qemu_programs": qemu_programs(qemu),

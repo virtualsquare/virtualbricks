@@ -29,7 +29,7 @@ from twisted.protocols import amp
 from twisted.python.failure import Failure
 from twisted.test import iosim
 
-from virtualbricks import __version__
+from virtualbricks import __version__, locations
 from virtualbricks.bricks import FakeProcess
 from virtualbricks.bricks.eventaction import ShellAction
 from virtualbricks.config import settings
@@ -218,6 +218,10 @@ class TestFollow(FollowTestCase):
         self.assertEqual(machine["project_folder"], "/lab/lab1")
         # no windows there, no trash
         self.assertFalse(machine["trash"])
+        self.assertEqual(
+            machine["workspace_runtime_dir"],
+            locations.workspace_runtime_dir(self.workspace.path),
+        )
         self.assertEqual(
             machine["qemu_programs"],
             qemu_programs(settings.get_setting("qemu_path")),

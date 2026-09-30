@@ -691,7 +691,8 @@ class VBGUI:
         reading.addCallback(self._fill_recent)
 
     def _fill_recent(self, summaries):
-        current = projects.current.name if projects.current else None
+        current = self.engine.workspace.current
+        current = current.name if current is not None else None
         recent = [
             summary
             for summary in summaries
@@ -714,7 +715,9 @@ class VBGUI:
         logger.error(cannot_open_project, name=name, error=failure.value)
 
     def on_projects_rename_item_activate(self, menuitem):
-        self.project_name_dialog(projectname.RENAME, projects.current.name)
+        self.project_name_dialog(
+            projectname.RENAME, self.engine.workspace.current.name
+        )
         return True
 
     def on_projects_save_item_activate(self, menuitem):
@@ -722,7 +725,9 @@ class VBGUI:
         return True
 
     def on_projects_duplicate_item_activate(self, menuitem):
-        self.project_name_dialog(projectname.DUPLICATE, projects.current.name)
+        self.project_name_dialog(
+            projectname.DUPLICATE, self.engine.workspace.current.name
+        )
         return True
 
     def on_projects_import_item_activate(self, menuitem):
@@ -749,7 +754,7 @@ class VBGUI:
 
         def closed(widget):
             # closed without opening a project: the last one, or a new one
-            if projects.current is None:
+            if self.engine.workspace.current is None:
                 restoring = self.engine.restore_last()
                 restoring.addCallback(lambda _: self.set_title())
 

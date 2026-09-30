@@ -41,6 +41,7 @@ from virtualbricks.config.workspace import (
     ImageSummary,
     OpenProject,
     Workspace,
+    free_name,
 )
 from virtualbricks.config.settings import set_current_project
 from virtualbricks.tests import FakeLogger, FakeTrash, isolate, make_factory
@@ -230,6 +231,13 @@ class TestNames(WorkspaceTestCase):
         self.file("lab", locations.PROJECT_FILE, text="[bricks\n")
         self.assertIsNone(self.projects.check_name("x" * 40, "lab"))
         self.assertIsNone(self.projects.check_name("x" * 40, "gone"))
+
+    def test_free_name_of_taken(self):
+        taken = {"lab", "lab-2", "ospf-7"}
+        self.assertEqual(free_name("bgp", taken.__contains__), "bgp")
+        self.assertEqual(free_name("lab", taken.__contains__), "lab-3")
+        # from the base of the name
+        self.assertEqual(free_name("ospf-7", taken.__contains__), "ospf-2")
 
     def test_free_name(self):
         free = self.projects.free_name

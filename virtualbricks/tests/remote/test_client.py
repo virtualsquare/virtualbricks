@@ -377,7 +377,6 @@ class TestEngine(ClientTestCase):
         for deferred in (
             self.engine.terminate(copy),
             self.engine.open_console(copy),
-            self.engine.set_readme("# lab"),
         ):
             failure = self.failureResultOf(deferred, NotYet)
             self.assertEqual(
@@ -906,6 +905,139 @@ class TestFileCommands(ClientTestCase):
             ampcommands.NotFound,
         )
         self.assertEqual(self.image.path, self.frr)
+
+
+class TestProjects(ClientTestCase):
+    """The projects of the workspace there, and the README of the open one."""
+
+    def setUp(self):
+        super().setUp()
+        root = os.path.abspath(self.mktemp())
+        os.makedirs(root)
+        self.workspace = use_workspace(self, root)
+        self.workspace.create("lab1", "The first")
+        self.workspace.create("ospf", "## OSPF")
+        self.workspace.open("lab1", self.factory)
+        self.logger = FakeLogger()
+        self.patch(control, "logger", self.logger)
+        self.done(self.start())
+
+    def test_the_workspace_there(self):
+        workspace = self.engine.workspace
+        self.assertEqual(workspace.path, self.workspace.path)
+        self.assertEqual(workspace.current.name, "lab1")
+        self.assertEqual(workspace.current.path, self.workspace.current.path)
+        self.assertEqual(
+            workspace.runtime_dir("ospf"), self.workspace.runtime_dir("ospf")
+        )
+        self.assertFalse(workspace.can_trash("ospf"))
+        # no project open there
+        self.copy.project = None
+        self.assertIsNone(workspace.current)
+
+    def test_the_names(self):
+        self.assertEqual(
+            self.done(self.engine.project_names()), ["lab1", "ospf"]
+        )
+        self.assertEqual(self.engine.workspace.names, ["lab1", "ospf"])
+        # the reads aren't in the log
+        self.assertEqual(self.logger.formatted(), [])
+
+    def test_the_summaries(self):
+        summaries = self.done(self.engine.project_summaries())
+        self.assertEqual(summaries, self.workspace.summaries())
+        ospf = {summary.name: summary for summary in summaries}["ospf"]
+        self.assertEqual(ospf.description, "## OSPF")
+
+    def test_a_project_gone_meanwhile(self):
+        self.engine.project_names = lambda: defer.succeed(["lab1", "gone"])
+        summaries = self.done(self.engine.project_summaries())
+        self.assertEqual([summary.name for summary in summaries], ["lab1"])
+
+    def test_a_summary_too_long(self):
+        # more than AMP carries: the list can't come
+        self.workspace.create("bgp", "x" * 70000)
+        self.refused(self.engine.project_summaries(), ampwire.AnswerTooLong)
+
+    def test_a_project_it_cant_read(self):
+        with open(self.workspace._project_file("ospf"), "w") as fp:
+            fp.write("[[[")
+        summaries = self.done(self.engine.project_summaries())
+        ospf = {summary.name: summary for summary in summaries}["ospf"]
+        self.assertIsNotNone(ospf.problem)
+
+    def test_disk_usage(self):
+        # counted at once, not in a thread
+        self.patch(
+            facts.threads,
+            "deferToThread",
+            lambda call, *args: defer.maybeDeferred(call, *args),
+        )
+        copy = os.path.join(self.workspace.project_path("lab1"), "vm1_hda.cow")
+        with open(copy, "wb") as fp:
+            fp.write(b"x" * 5000)
+        usage = self.done(self.engine.disk_usage("lab1"))
+        self.assertGreater(usage.private_disks, 0)
+        self.assertEqual(usage, self.workspace.disk_usage("lab1"))
+        self.refused(self.engine.disk_usage("gone"), ampcommands.NotFound)
+
+    def test_the_readme(self):
+        self.assertEqual(self.done(self.engine.readme()), "The first")
+        self.done(self.engine.set_readme("# Lab one"))
+        self.assertEqual(self.workspace.current.get_description(), "# Lab one")
+        self.assertEqual(self.done(self.engine.readme()), "# Lab one")
+        self.assertIn("set readme", " ".join(self.logger.formatted()))
+
+    def test_no_project_open(self):
+        self.workspace.current = None
+        failure = self.refused(self.engine.readme(), ampcommands.BadArgument)
+        self.assertEqual(failure.getErrorMessage(), "No project is open")
+        self.refused(self.engine.set_readme("x"), ampcommands.BadArgument)
+
+    def test_a_readme_too_long(self):
+        # not sent
+        failure = self.refused(
+            self.engine.set_readme("é" * 40000), ampwire.AnswerTooLong
+        )
+        self.assertIn("80000 bytes", failure.getErrorMessage())
+        self.assertEqual(self.workspace.current.get_description(), "The first")
+        # nor answered
+        self.workspace.current.set_description("x" * 70000)
+        self.refused(self.engine.readme(), ampwire.AnswerTooLong)
+
+    def test_the_names_follow(self):
+        workspace = self.engine.workspace
+        self.done(self.engine.new_project("bgp", "## BGP"))
+        self.assertEqual(workspace.names, ["bgp", "lab1", "ospf"])
+        self.assertEqual(self.workspace.current.name, "bgp")
+        self.assertEqual(self.workspace.current.get_description(), "## BGP")
+        self.done(self.engine.rename_project("ospf", "ospf2"))
+        self.assertEqual(workspace.names, ["bgp", "lab1", "ospf2"])
+        self.done(self.engine.duplicate_project("lab1", "lab2"))
+        self.assertIn("lab2", workspace.names)
+        self.done(self.engine.remove_project("lab2", trash=False))
+        self.assertNotIn("lab2", workspace.names)
+
+    def test_the_checks_of_a_name(self):
+        workspace = self.engine.workspace
+        self.done(self.engine.project_names())
+        self.assertEqual(workspace.check_name(""), "The name is empty")
+        self.assertEqual(
+            workspace.check_name("ospf"),
+            "A project with this name already exists",
+        )
+        self.assertIsNone(workspace.check_name("ospf", renaming="ospf"))
+        self.assertIsNone(workspace.check_name("bgp"))
+        long_brick = "b" * 200
+        self.assertIn(
+            "leaves", workspace.check_name("bgp", bricks=[long_brick])
+        )
+        self.assertEqual(
+            workspace.check_name("bgp", bricks=[long_brick]),
+            self.workspace.check_name("bgp", bricks=[long_brick]),
+        )
+        self.assertEqual(workspace.free_name("ospf"), "ospf-2")
+        self.assertEqual(workspace.free_name("bgp"), "bgp")
 
 
 class TestEndpoints(ConsoleTestCase):

@@ -38,7 +38,6 @@ from twisted.internet import defer
 from twisted.logger import Logger
 
 from virtualbricks import errors
-from virtualbricks.config.workspace import projects
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.markdownview import MarkdownView
 from virtualbricks.gui.dialogs import projectname
@@ -168,7 +167,10 @@ class ProjectsWindow:
 
     def __init__(self, gui, workspace=None, disk_usage=None):
         self.gui = gui
-        self.workspace = projects if workspace is None else workspace
+        # the workspace of the Virtualbricks of the bricks
+        self.workspace = (
+            gui.engine.workspace if workspace is None else workspace
+        )
         if disk_usage is None:
             disk_usage = gui.engine.disk_usage
         self._disk_usage = disk_usage
@@ -229,6 +231,17 @@ class ProjectsWindow:
         self.open_button.connect("clicked", self.on_open_clicked)
         self.duplicate_button.connect("clicked", self.on_duplicate_clicked)
         self.export_button.connect("clicked", self.on_export_clicked)
+        self.local = self.gui.engine.local
+        if not self.local:
+            # the archives stay on their machine, for now (19 R12), and
+            # the file manager shows the files of this one
+            for button in (self.import_button, self.empty_import_button):
+                button.set_sensitive(False)
+                button.set_tooltip_text(_("Not over a connection, for now"))
+            self.export_button.set_tooltip_text(
+                _("Not over a connection, for now")
+            )
+            self.actions.lookup_action("show").set_enabled(False)
 
     def _build_empty(self):
         box = Gtk.Box(
@@ -403,7 +416,16 @@ class ProjectsWindow:
 
         selected = self.selected.name if self.selected else None
         reading = self.gui.engine.project_summaries()
-        reading.addCallback(self._fill, selected)
+        reading.addCallbacks(self._fill, self._not_listed, (selected,))
+
+    def _not_listed(self, failure):
+        # over a connection: lost, or a summary more than AMP carries
+        if not self.destroyed:
+            self.show_problem(
+                _("Cannot list the projects: {error}").format(
+                    error=failure.getErrorMessage()
+                )
+            )
 
     def _fill(self, summaries, selected):
         if self.destroyed:
@@ -499,7 +521,7 @@ class ProjectsWindow:
             _("This project is open") if is_open else None
         )
         self.duplicate_button.set_sensitive(readable)
-        self.export_button.set_sensitive(readable)
+        self.export_button.set_sensitive(readable and self.local)
         self.actions.lookup_action("rename").set_enabled(readable)
         self.read_usage(summary.name)
 
@@ -648,13 +670,9 @@ class RemoveDialog:
             workspace.current.name == self.name
         )
         self.can_trash = not is_open and workspace.can_trash(self.name)
-        if disk_usage is None:
-            try:
-                usage = workspace.disk_usage(self.name)
-            except OSError:
-                usage = None
-        else:
-            usage = disk_usage
+        # the space it takes, counted by the engine if not given: there,
+        # over a connection
+        usage = disk_usage
         self.dialog = Gtk.MessageDialog(
             modal=True,
             destroy_with_parent=True,
@@ -690,7 +708,13 @@ class RemoveDialog:
                 )
                 self.dialog.set_default_response(self.TRASH)
             self.dialog.format_secondary_text(self.explain(usage))
+            if usage is None:
+                counting = engine.disk_usage(self.name)
+                counting.addCallbacks(self._counted, lambda failure: None)
         self.dialog.connect("response", self.on_response)
+
+    def _counted(self, usage):
+        self.dialog.format_secondary_text(self.explain(usage))
 
     def explain(self, usage):
         if usage is not None and usage.private_disks:

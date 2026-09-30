@@ -43,7 +43,7 @@ import os
 import re
 import shutil
 import time
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Protocol
 
 from twisted.logger import Logger
@@ -65,7 +65,7 @@ from virtualbricks.config.settings import (
     set_current_project,
     use_project,
 )
-from virtualbricks.i18n import _
+from virtualbricks.i18n import N_, _
 from virtualbricks.observable import Observable, Signal
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -252,6 +252,56 @@ class Trasher(Protocol):
         """Move path to the trash; TrashNotSupportedError if it can't."""
 
 
+# why a name can't be that of a new project
+TAKEN = N_("A project with this name already exists")
+
+
+def name_problem(name: str) -> str | None:
+    """Why name can't be a project's name, whatever the projects; or None."""
+
+    if not name:
+        return _("The name is empty")
+    if "/" in name:
+        return _('The name cannot contain "/"')
+    if name.startswith("."):
+        return _("The name cannot start with a dot")
+    size = len(os.fsencode(name))
+    if size > NAME_MAX:
+        return _("The name is {size} bytes long, at most {max}").format(
+            size=size, max=NAME_MAX
+        )
+    return None
+
+
+def room_problem(runtime_dir: str, bricks: Iterable[str] | None) -> str | None:
+    """
+    Why the bricks can't have their sockets in runtime_dir, the runtime
+    folder of a project: their names are too long; or None.
+    """
+
+    room = locations.brick_name_room(runtime_dir)
+    longest = max((len(os.fsencode(b)) for b in bricks or ()), default=0)
+    if longest and longest > room:
+        return _(
+            "The name leaves {room} bytes to the names of the bricks,"
+            " and the longest has {longest}"
+        ).format(room=max(room, 0), longest=longest)
+    return None
+
+
+def free_name(name: str, taken: Callable[[str], bool]) -> str:
+    """name, or name-2, name-3... the first that isn't taken(name)."""
+
+    if not taken(name):
+        return name
+    match = re.fullmatch(r"(.*)-(\d+)", name)
+    base = match.group(1) if match else name
+    for i in itertools.count(2):  # pragma: no branch
+        candidate = f"{base}-{i}"
+        if not taken(candidate):
+            return candidate
+
+
 class Workspace:
     """The projects in the workspace folder, and the one that is open."""
 
@@ -352,29 +402,14 @@ class Workspace:
         file of renaming.
         """
 
-        if not name:
-            return _("The name is empty")
-        if "/" in name:
-            return _('The name cannot contain "/"')
-        if name.startswith("."):
-            return _("The name cannot start with a dot")
-        size = len(os.fsencode(name))
-        if size > NAME_MAX:
-            return _("The name is {size} bytes long, at most {max}").format(
-                size=size, max=NAME_MAX
-            )
+        message = name_problem(name)
+        if message is not None:
+            return message
         if name != renaming and os.path.lexists(self.project_path(name)):
-            return _("A project with this name already exists")
-        room = locations.brick_name_room(self.runtime_dir(name))
+            return _(TAKEN)
         if renaming is not None and bricks is None:
             bricks = self._brick_names(renaming)
-        longest = max((len(os.fsencode(b)) for b in bricks or ()), default=0)
-        if longest and longest > room:
-            return _(
-                "The name leaves {room} bytes to the names of the bricks,"
-                " and the longest has {longest}"
-            ).format(room=max(room, 0), longest=longest)
-        return None
+        return room_problem(self.runtime_dir(name), bricks)
 
     def _brick_names(self, name: str) -> list[str]:
         """The names of the bricks in the project file of name, if any."""
@@ -392,14 +427,9 @@ class Workspace:
     def free_name(self, name: str) -> str:
         """Return name, or name-2, name-3... the first that isn't taken."""
 
-        if not os.path.lexists(self.project_path(name)):
-            return name
-        match = re.fullmatch(r"(.*)-(\d+)", name)
-        base = match.group(1) if match else name
-        for i in itertools.count(2):  # pragma: no branch
-            candidate = f"{base}-{i}"
-            if not os.path.lexists(self.project_path(candidate)):
-                return candidate
+        return free_name(
+            name, lambda name: os.path.lexists(self.project_path(name))
+        )
 
     # Listing
 

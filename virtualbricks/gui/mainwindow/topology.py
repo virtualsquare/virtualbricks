@@ -40,7 +40,6 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks.config.workspace import projects  # noqa: E402
 from virtualbricks.gui.mainwindow import picture  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks import brickmenu  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
@@ -289,7 +288,7 @@ class TopologyTab(Tab, Gtk.Overlay):
             kind.add_pattern(f"*{extension.upper()}")
             chooser.add_filter(kind)
             formats[kind] = extension
-        current = projects.current
+        current = self.gui.engine.workspace.current
         name = current.name if current is not None else "topology"
         chooser.set_current_name(f"{name}.png")
         chooser.connect("notify::filter", self.on_export_format, formats)

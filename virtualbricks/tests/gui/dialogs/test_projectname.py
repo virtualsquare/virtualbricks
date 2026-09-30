@@ -22,6 +22,7 @@ import os
 from virtualbricks import locations
 from virtualbricks.config.settings import current_project
 from virtualbricks.config.tomlfile import dump_toml, load_toml
+from virtualbricks.tests.config.test_images import FakeWorkspace
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, ProjectsGui, has_display
 
@@ -62,6 +63,21 @@ class NameTestCase(GuiTestCase):
 
     def ok(self, dialog):
         dialog.dialog.response(Gtk.ResponseType.OK)
+
+
+class TestTheWorkspaceThere(NameTestCase):
+    """The names checked are those of the workspace of the engine."""
+
+    def test_its_names(self):
+        there = FakeWorkspace(None)
+        there.check_name = lambda name, renaming=None, bricks=None: (
+            "Taken there" if name == "ospf" else None
+        )
+        there.free_name = lambda name: name + "-9"
+        self.gui.engine.workspace = there
+        dialog = self.dialog(projectname.NEW)
+        self.assertEqual(dialog.name_entry.get_text(), "new_project-9")
+        self.assertEqual(self.type(dialog, "ospf"), (False, "Taken there"))
 
 
 class TestNew(NameTestCase):

@@ -32,7 +32,6 @@ from twisted.internet import defer
 from twisted.logger import Logger
 
 from virtualbricks import errors
-from virtualbricks.config.workspace import projects
 from virtualbricks.i18n import _
 from virtualbricks.gui.pango import pango_attr_list
 
@@ -71,7 +70,10 @@ class ProjectNameDialog:
         self.gui = gui
         self.kind = kind
         self.original = original
-        self.workspace = projects if workspace is None else workspace
+        # the workspace of the Virtualbricks of the bricks
+        self.workspace = (
+            gui.engine.workspace if workspace is None else workspace
+        )
         self.build_ui()
         self.name_entry.set_text(self.suggested_name())
         self.check()

@@ -26,6 +26,8 @@ from twisted.internet import defer
 from virtualbricks import engine, errors, locations
 from virtualbricks.config.tomlfile import dump_toml, load_toml
 from virtualbricks.config.workspace import DiskUsage
+from virtualbricks.console import ampwire
+from virtualbricks.tests.config.test_images import FakeWorkspace
 from virtualbricks.tests import FakeLogger, FakeTrash
 from virtualbricks.tests.gui import GuiTestCase, ProjectsGui, has_display
 
@@ -93,6 +95,43 @@ class ProjectsTestCase(GuiTestCase):
 
     def names(self, window):
         return [row.summary.name for row in window.rows]
+
+
+class TestOverAConnection(ProjectsTestCase):
+    """The projects of another Virtualbricks: no archives, no file manager."""
+
+    def test_what_waits(self):
+        self.lab("ospf")
+        self.gui.engine.local = False
+        window = self.window()
+        for button in (window.import_button, window.empty_import_button):
+            self.assertFalse(button.get_sensitive())
+            self.assertEqual(
+                button.get_tooltip_text(), "Not over a connection, for now"
+            )
+        window.select("ospf")
+        self.assertTrue(window.duplicate_button.get_sensitive())
+        self.assertFalse(window.export_button.get_sensitive())
+        self.assertFalse(window.actions.lookup_action("show").get_enabled())
+
+    def test_the_list_cant_come(self):
+        self.gui.engine.project_summaries = lambda: defer.fail(
+            ampwire.CommandFailed("The connection to lab is lost")
+        )
+        window = self.window()
+        self.assertTrue(window.info_bar.get_visible())
+        self.assertEqual(
+            window.info_label.get_text(),
+            "Cannot list the projects: The connection to lab is lost",
+        )
+
+    def test_its_workspace(self):
+        # the engine's, which is the one there over a connection
+        other = FakeWorkspace(None)
+        other.path = "/srv/labs"
+        self.gui.engine.workspace = other
+        window = self.window()
+        self.assertIs(window.workspace, other)
 
 
 class TestList(ProjectsTestCase):
@@ -487,16 +526,19 @@ class TestRemove(ProjectsTestCase):
         self.assertIn("no trash", self.secondary(dialog))
 
     def test_the_size_is_read(self):
+        # by the engine, which counts in a thread or there
+        counting = defer.Deferred()
+        self.gui.engine.disk_usage = lambda name: counting
         dialog = projects.RemoveDialog(
             self.gui.engine, self.manager, self.manager.summary("lab")
         )
         self.addCleanup(dialog.dialog.destroy)
-        self.assertIn("Its folder,", self.secondary(dialog))
+        self.assertIn("Its folder goes", self.secondary(dialog))
+        counting.callback(DiskUsage(0, 2000))
+        self.assertIn("Its folder, 2.0 KB, goes", self.secondary(dialog))
 
-        def fail(name):
-            raise OSError("gone")
-
-        self.patch(self.manager, "disk_usage", fail)
+    def test_the_size_cant_be_read(self):
+        self.gui.engine.disk_usage = lambda name: defer.fail(OSError("gone"))
         dialog = projects.RemoveDialog(
             self.gui.engine, self.manager, self.manager.summary("lab")
         )

@@ -47,6 +47,15 @@ from virtualbricks.brickfactory import normalize_name
 from virtualbricks.bricks.brickinfo import NEW_KINDS, Issue
 from virtualbricks.bricks.virtualmachine import UsbDevice
 from virtualbricks.config.images import IMAGE_FOLDER, parse_info
+from virtualbricks.config.workspace import (
+    TAKEN,
+    DiskUsage,
+    ImageSummary,
+    ProjectSummary,
+    free_name,
+    name_problem,
+    room_problem,
+)
 from virtualbricks.config.settings import setting_kind
 from virtualbricks.config.schema import kind_of
 from virtualbricks.console import ampcommands, ampwire, wire
@@ -332,6 +341,73 @@ class RemoteMachine:
         return list(self.mirror.machine.get("qemu_programs", []))
 
 
+class OpenThere:
+    """The project open there: its name and its folder."""
+
+    def __init__(self, name, path):
+        self.name = name
+        self.path = path
+
+
+def summary_of(table) -> ProjectSummary:
+    """The summary of a project, from the JSON of ProjectSummary."""
+
+    return ProjectSummary(
+        **dict(
+            table,
+            images=tuple(ImageSummary(**image) for image in table["images"]),
+        )
+    )
+
+
+class RemoteWorkspace:
+    """
+    The workspace of the Virtualbricks there, as the windows read it: its
+    folder, the project open, the names of its projects as ProjectNames
+    said them last, the checks of a name, whether it has a trash. What
+    changes it goes through the engine, and the Virtualbricks there checks
+    the names again.
+    """
+
+    def __init__(self, mirror):
+        self.mirror = mirror
+        self.names = []
+
+    @property
+    def path(self) -> str:
+        return self.mirror.machine.get("workspace", "")
+
+    @property
+    def current(self) -> OpenThere | None:
+        if self.mirror.project is None:
+            return None
+        return OpenThere(
+            self.mirror.project, self.mirror.machine.get("project_folder")
+        )
+
+    def runtime_dir(self, name) -> str:
+        """The runtime folder of the project name there."""
+
+        return os.path.join(
+            self.mirror.machine.get("workspace_runtime_dir", ""), name
+        )
+
+    def can_trash(self, name) -> bool:
+        return bool(self.mirror.machine.get("trash"))
+
+    def check_name(self, name, renaming=None, bricks=None) -> str | None:
+        message = name_problem(name)
+        if message is not None:
+            return message
+        if name != renaming and name in self.names:
+            return _(TAKEN)
+        # the bricks of a project that isn't open are known there only
+        return room_problem(self.runtime_dir(name), bricks)
+
+    def free_name(self, name) -> str:
+        return free_name(name, lambda name: name in self.names)
+
+
 class RemoteEngine:
     """
     The engine of the windows of the Virtualbricks at where, over the
@@ -343,6 +419,7 @@ class RemoteEngine:
     def __init__(self, mirror, windows, where, quit=None):
         self.factory = mirror
         self.machine = RemoteMachine(mirror, self)
+        self.workspace = RemoteWorkspace(mirror)
         # the connection; Reconnect gives another
         self.windows = windows
         self.where = where
@@ -553,12 +630,69 @@ class RemoteEngine:
 
     # The projects
 
+    def project_names(self):
+        """The names of the projects there, which the workspace keeps."""
+
+        asking = self.call(commands.ProjectNames)
+
+        def keep(answer):
+            self.workspace.names = list(answer["names"])
+            return self.workspace.names
+
+        return asking.addCallback(keep)
+
+    def _then_names(self, deferred):
+        """deferred, with the names of the projects asked again after it."""
+
+        def again(result):
+            asking = self.project_names()
+            # the names are for the checks: the change is done anyway
+            asking.addErrback(lambda failure: None)
+            return asking.addCallback(lambda _: result)
+
+        return deferred.addCallback(again)
+
     def project_summaries(self):
-        # the Projects window over the connection comes in step 5
-        return defer.succeed([])
+        """The summaries of the projects there, the most recently used first."""
+
+        def gone(failure):
+            # a project gone meanwhile isn't listed
+            failure.trap(ampcommands.NotFound)
+            return None
+
+        def summary(name):
+            asking = self.call(commands.ProjectSummary, name=name)
+            asking.addCallback(lambda answer: json.loads(answer["summary"]))
+            return asking.addErrback(gone)
+
+        def first(failure):
+            # the failure of the summary that failed first
+            failure.trap(defer.FirstError)
+            return failure.value.subFailure
+
+        def each(names):
+            summaries = [summary(name) for name in names]
+            gathering = defer.gatherResults(summaries, consumeErrors=True)
+            return gathering.addErrback(first)
+
+        def listed(tables):
+            summaries = [
+                summary_of(table) for table in tables if table is not None
+            ]
+            # as the Virtualbricks there sorts them
+            return sorted(summaries, key=lambda s: (-s.modified, s.name))
+
+        asking = self.project_names()
+        asking.addCallback(each)
+        return asking.addCallback(listed)
 
     def disk_usage(self, name):
-        return defer.fail(NotYet("disk_usage"))
+        asking = self.call(commands.DiskUsage, name=name)
+        return asking.addCallback(
+            lambda answer: DiskUsage(
+                answer["private_disks"], answer["other_files"]
+            )
+        )
 
     def save_project(self):
         return self.call(ampcommands.ProjectSave)
@@ -574,26 +708,51 @@ class RemoteEngine:
     def new_project(self, name, description=""):
         from virtualbricks.config.report import Report
 
-        return self._then(self.call(ampcommands.ProjectNew, name=name), Report)
+        making = self.call(ampcommands.ProjectNew, name=name)
+        if description:
+            # its README, once it is open there
+            making.addCallback(
+                lambda _: self.call(commands.SetReadme, text=description)
+            )
+        return self._then_names(self._then(making, Report))
 
     def restore_last(self):
         # the Virtualbricks there has a project open, or its own way
         return defer.succeed(None)
 
     def rename_project(self, name, new):
-        return self.call(ampcommands.ProjectRename, name=name, new=new)
+        return self._then_names(
+            self.call(ampcommands.ProjectRename, name=name, new=new)
+        )
 
     def duplicate_project(self, name, new):
-        return self.call(ampcommands.ProjectDuplicate, name=name, new=new)
+        return self._then_names(
+            self.call(ampcommands.ProjectDuplicate, name=name, new=new)
+        )
 
     def remove_project(self, name, trash):
-        return self.call(ampcommands.ProjectDelete, name=name, force=not trash)
+        return self._then_names(
+            self.call(ampcommands.ProjectDelete, name=name, force=not trash)
+        )
 
     def readme(self):
-        return defer.succeed("")
+        return self.call(commands.Readme).addCallback(
+            lambda answer: answer["text"]
+        )
 
     def set_readme(self, text):
-        return defer.fail(NotYet("set_readme"))
+        size = len(text.encode("utf-8"))
+        if size > amp.MAX_VALUE_LENGTH:
+            # more than AMP carries: said here, before it's sent
+            return defer.fail(
+                ampwire.AnswerTooLong(
+                    _(
+                        "The README is {size} bytes, longer than the {most}"
+                        " that AMP carries"
+                    ).format(size=size, most=amp.MAX_VALUE_LENGTH)
+                )
+            )
+        return self.call(commands.SetReadme, text=text)
 
     # The settings
 

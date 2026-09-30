@@ -19,9 +19,11 @@
 """
 The answers of the Virtualbricks of the bricks to the commands of the
 windows of another machine that the console has none for (page 19 §7):
-``Apply``, the OK of a panel, ``Connect``, a drop, and the commands of the
+``Apply``, the OK of a panel, ``Connect``, a drop, the commands of the
 files of the images: ``MakeImage``, ``StartOver``, ``TrashFile`` and
-``Relink``.
+``Relink``, and those of the projects and the README: ``ProjectNames``,
+``ProjectSummary``, ``Readme`` and ``SetReadme``. The reads go to the log
+only if they fail.
 
 The AMP connections of the control sockets take them on, beside Follow.
 Like the typed commands, they run in the order they came, their line goes to
@@ -33,6 +35,7 @@ project or of another: the windows offer no more, and a connection gets no
 more than they offer.
 """
 
+import dataclasses
 import json
 import os
 
@@ -51,6 +54,7 @@ from virtualbricks.i18n import _
 from virtualbricks.qemu import run as qemu_run
 from virtualbricks.remote import commands
 from virtualbricks.remote.drafts import apply_changes
+from virtualbricks.remote.facts import one_value
 
 logger = Logger()
 failed = "{command} of {name} failed"
@@ -66,7 +70,7 @@ class Answers(amp.CommandLocator):
     _log_failed().
     """
 
-    def _answer_in_order(self, line, name, call):
+    def _answer_in_order(self, line, name, call, log=True):
         def refused(failure):
             exc = failure.value
             if failure.check(LookupError):
@@ -77,6 +81,9 @@ class Answers(amp.CommandLocator):
             if failure.check(ValueError, errors.Error):
                 self._log_failed(str(exc))
                 raise ampcommands.BadArgument(str(exc))
+            if failure.check(ampwire.AnswerTooLong):
+                self._log_failed(str(exc))
+                raise exc
             if failure.check(CommandError, OSError):
                 # a program or a file said no: nothing to fix here
                 self._log_failed(str(exc))
@@ -85,7 +92,8 @@ class Answers(amp.CommandLocator):
             raise ampwire.CommandFailed(str(exc) or type(exc).__name__)
 
         def run():
-            self._log_line(line)
+            if log:
+                self._log_line(line)
             return defer.maybeDeferred(call).addErrback(refused)
 
         return self.requests.add(run).addBoth(self.pushes_first)
@@ -206,3 +214,52 @@ class Answers(amp.CommandLocator):
             return relinking.addCallback(lambda _: {})
 
         return self._answer_in_order(f"relink {name} {path}", name, call)
+
+    # The projects and the README
+
+    @commands.ProjectNames.responder
+    def project_names(self):
+        return self._answer_in_order(
+            "project names",
+            "the workspace",
+            lambda: {"names": projects.names()},
+            log=False,
+        )
+
+    @commands.ProjectSummary.responder
+    def project_summary(self, name):
+        def call():
+            if not projects.exists(name):
+                raise LookupError(
+                    _("No project named {name}").format(name=name)
+                )
+            summary = dataclasses.asdict(projects.summary(name))
+            return {
+                "summary": one_value(json.dumps(summary, ensure_ascii=False))
+            }
+
+        return self._answer_in_order(
+            f"project summary {name}", name, call, log=False
+        )
+
+    def _open_project(self):
+        current = projects.current
+        if current is None:
+            raise ValueError(_("No project is open"))
+        return current
+
+    @commands.Readme.responder
+    def readme(self):
+        def call():
+            text = self._open_project().get_description()
+            return {"text": one_value(text)}
+
+        return self._answer_in_order("readme", "the README", call, log=False)
+
+    @commands.SetReadme.responder
+    def set_readme(self, text):
+        def call():
+            self._open_project().set_description(text)
+            return {}
+
+        return self._answer_in_order("set readme", "the README", call)

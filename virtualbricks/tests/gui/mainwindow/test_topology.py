@@ -55,9 +55,16 @@ def run_idle_calls():
         Gtk.main_iteration()
 
 
+class FakeEngine:
+    """The engine of the main window, as the tab reads it: the workspace."""
+
+    workspace = projects
+
+
 class FakeGui:
     def __init__(self):
         self.configured = []
+        self.engine = FakeEngine()
 
     def curtain_up(self, brick):
         self.configured.append(brick)

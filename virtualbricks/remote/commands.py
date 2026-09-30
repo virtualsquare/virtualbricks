@@ -199,6 +199,52 @@ class Relink(amp.Command):
     errors = ERRORS
 
 
+class ProjectNames(amp.Command):
+    """The names of the projects of the workspace, sorted."""
+
+    response = [(b"names", amp.ListOf(amp.Unicode()))]
+    errors = ERRORS
+
+
+class ProjectSummary(amp.Command):
+    """
+    What the list of the projects shows of one, as JSON: its name, path,
+    description, modified, bricks ``{type: count}``, events, images
+    ``[{name, path, found}]`` and problem, null if the project file reads.
+    NotFound if there is none.
+    """
+
+    arguments = [(b"name", amp.Unicode())]
+    response = [(b"summary", amp.Unicode())]
+    errors = ERRORS
+
+
+class DiskUsage(amp.Command):
+    """The space that a project takes, in bytes: its private disks, the rest."""
+
+    arguments = [(b"name", amp.Unicode())]
+    response = [
+        (b"private_disks", amp.Integer()),
+        (b"other_files", amp.Integer()),
+    ]
+    errors = ERRORS
+
+
+class Readme(amp.Command):
+    """The README of the open project."""
+
+    response = [(b"text", amp.Unicode())]
+    errors = ERRORS
+
+
+class SetReadme(amp.Command):
+    """Write the README of the open project, when the project is saved."""
+
+    arguments = [(b"text", amp.Unicode())]
+    response = []
+    errors = ERRORS
+
+
 class _Push(amp.Command):
     """A command that Virtualbricks calls on a program that follows it."""
 
@@ -281,6 +327,11 @@ FROM_PROGRAM = (
     StartOver,
     TrashFile,
     Relink,
+    ProjectNames,
+    ProjectSummary,
+    DiskUsage,
+    Readme,
+    SetReadme,
 )
 PUSHES = (
     Opened,
