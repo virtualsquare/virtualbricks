@@ -54,7 +54,7 @@ from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.sock import Sock
 from virtualbricks.i18n import _
 from virtualbricks.observable import Event as Signal, Observable
-from virtualbricks.base import is_running
+from virtualbricks.bricks import is_running
 from virtualbricks.bricks.virtualmachine import is_disk_image
 
 logger = Logger()

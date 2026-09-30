@@ -21,7 +21,8 @@
 import attr
 from twisted.internet import defer, reactor
 
-from virtualbricks import base, errors
+from virtualbricks import errors
+from virtualbricks.bricks import Base, BaseConfig
 from virtualbricks.bricks.eventaction import (
     EventAction,
     ShellAction,
@@ -38,7 +39,7 @@ action_failed = "Event {event}, action {number}, {action}: {error}"
 
 
 @define
-class EventConfig(base.BaseConfig):
+class EventConfig(BaseConfig):
 
     delay = field(
         Int(), default=0, help="Seconds to wait before the actions run"
@@ -51,7 +52,7 @@ class EventConfig(base.BaseConfig):
     )
 
 
-class Event(base.Base):
+class Event(Base):
 
     type = "Event"
     scheduled = None

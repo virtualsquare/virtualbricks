@@ -17,7 +17,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The bricks: the base class of every brick and the processes they run.
+The bricks: the base class of every brick and the processes they run, and
+Base, what bricks and events share.
 
 Each brick has its own module: capture, event, netemu (network emulator),
 router, switch, switchwrapper, tap, tunnelconnect (tunnel client),
@@ -35,24 +36,34 @@ import re
 from twisted.internet import protocol, reactor, error, defer
 from twisted.logger import Logger
 
-from virtualbricks import base, errors
+from virtualbricks import errors, observable
 from virtualbricks.bricks.command import Prepared
 from virtualbricks.bricks.draft import Draft
 from virtualbricks.config.schema import (
+    Path,
     Ref,
     define,
     dump_record,
     field,
+    field_names,
     load_record,
     notes,
+    rename_references,
 )
 from virtualbricks.config.settings import get_setting
-from virtualbricks.i18n import _
+from virtualbricks.i18n import N_, _
 from virtualbricks.programs import programs
 from virtualbricks.sudo import sudo_command
 from virtualbricks.vde import which
 
-__all__ = ["Brick", "BrickConfig", "PrivilegedBrick"]
+__all__ = [
+    "Base",
+    "BaseConfig",
+    "Brick",
+    "BrickConfig",
+    "PrivilegedBrick",
+    "is_running",
+]
 
 
 system_encoding = locale.getpreferredencoding(do_setlocale=True)
@@ -68,6 +79,7 @@ event_without_actions = (
     "The event {name} of the brick {brick} has no actions: skipping it."
 )
 shutdown_brick = "Shutting down {name} (pid: {pid})"
+attribute_set = "Attribute {attr} set in {brick} with value {value}."
 start_brick = "Starting: {args}"
 left_out = "{warning}"
 open_console = "Opening console for {name}\n%{args}\n"
@@ -252,7 +264,93 @@ class TermProtocol(protocol.ProcessProtocol):
 
 
 @define
-class BrickConfig(base.BaseConfig):
+class BaseConfig:
+    """What the configuration of every brick and every event has."""
+
+    # an image file to show instead of the icon of the type; not shown yet
+    # but for virtual machines
+    icon = field(
+        Path(),
+        default="",
+        label=N_("Icon"),
+        help=N_("An image file to show instead of the icon of its type"),
+    )
+
+
+class Base:
+
+    _restore = False
+    # type = None  # if not set in a subclass will raise an AttributeError
+    _name = None
+    config_factory = None
+    logger = Logger()
+
+    def __init__(self, factory, name):
+        self._observable = observable.Observable("changed")
+        self.changed = observable.Event(self._observable, "changed")
+        self.factory = factory
+        self._name = name
+        self.config = self.config_factory()
+
+    @property
+    def name(self):
+        """Read-only: the factory's rename_item() changes it, with set_name()."""
+
+        return self._name
+
+    def set_name(self, name):
+        self._name = name
+        self.notify_changed()
+
+    def get_type(self):
+        return self.type
+
+    def _check_option(self, name):
+        if name not in field_names(self.config):
+            raise KeyError(
+                _("%(config)s config has no %(option)s option.")
+                % {"config": self.name, "option": name}
+            )
+
+    def update_config(self, changes):
+        """
+        Set the settings in changes, a mapping of names to values: KeyError
+        for a name the config doesn't have. Each value that changes goes to
+        the ``cbset_<name>`` method of the brick, if it has one, and the
+        brick says it changed, once.
+        """
+
+        for name, value in changes.items():
+            self._check_option(name)
+            if value != getattr(self.config, name):
+                logger.info(attribute_set, attr=name, brick=self, value=value)
+                setattr(self.config, name, value)
+                setter = getattr(self, "cbset_" + name, None)
+                if setter:
+                    setter(value)
+        self.notify_changed()
+
+    def rename_references(self, target, old, new):
+        """Point the references to the image or event ``old`` at ``new``."""
+
+        return rename_references(self.config, target, old, new)
+
+    def set_restore(self, restore):
+        self._restore = restore
+
+    def notify_changed(self):
+        if not self._restore:
+            self._observable.notify("changed", self)
+
+
+def is_running(brick):
+    """Whether a brick or an event is running."""
+
+    return brick.__isrunning__()
+
+
+@define
+class BrickConfig(BaseConfig):
 
     # the events to run when the brick starts and when it stops
     on_start = field(
@@ -263,7 +361,7 @@ class BrickConfig(base.BaseConfig):
     )
 
 
-class Brick(base.Base):
+class Brick(Base):
 
     proc = None
     term_command = "vdeterm"
@@ -292,7 +390,7 @@ class Brick(base.Base):
         return self.proc.pid
 
     def __init__(self, factory, name):
-        base.Base.__init__(self, factory, name)
+        Base.__init__(self, factory, name)
         self.plugs = []
         self.socks = []
         self.config_socks = []

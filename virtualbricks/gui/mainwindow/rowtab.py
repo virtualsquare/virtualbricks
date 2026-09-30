@@ -66,7 +66,7 @@ from virtualbricks.gui.mainwindow.picture import Icons  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.base import is_running  # noqa: E402
+from virtualbricks.bricks import is_running  # noqa: E402
 
 ICON_SIZE = 32
 # A stopped object's icon, this opaque.

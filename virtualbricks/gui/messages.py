@@ -32,7 +32,7 @@ from gi.repository import GLib
 from twisted.logger import ILogObserver, LogLevel, eventAsText, formatEvent
 from zope.interface import implementer
 
-from virtualbricks import base
+from virtualbricks.bricks import Base
 from virtualbricks.i18n import _
 
 # The output of a brick's program is logged with one of these as "stream".
@@ -142,10 +142,10 @@ def describe_source(event):
     """Return the name and the type of the brick of an event, or its part."""
 
     source = event.get("log_source")
-    if not isinstance(source, base.Base):
+    if not isinstance(source, Base):
         # the process of a brick, a plug, a socket...
         source = getattr(source, "brick", None)
-    if isinstance(source, base.Base):
+    if isinstance(source, Base):
         return source.name, source.get_type().lower()
     return part_name(event.get("log_namespace", "")), None
 

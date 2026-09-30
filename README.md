@@ -363,16 +363,16 @@ To add a language, see the top of `l10n.sh`.
   installed QEMU and VDE programs and asks them what they have; `vde.py`
   finds the VDE programs of the settings; `sudo.py` writes the `sudo`
   command of what needs root, and `ksm.py` turns Kernel Samepage Merging on
-  and off; `base.py` has what bricks and events share; `markdown.py` reads
-  the README of a project, and `topology.py` lays the lab out with Graphviz;
-  `locations.py` has the paths of the files.
-- `virtualbricks/bricks/`: a module for each kind of brick: virtual machine,
-  switch, tap, wire, and so on; each writes its command line with
-  `command.py`. `draft.py` is what the settings panels work on: a copy of a
-  brick's settings, checked as it's set, given to the brick at OK; a brick
-  with checks of its own has its draft in its module. `brickinfo.py` and
-  `eventinfo.py` say in words what a brick or an event is and does, for the
-  tabs of the main window and for the console.
+  and off; `markdown.py` reads the README of a project, and `topology.py`
+  lays the lab out with Graphviz; `locations.py` has the paths of the files.
+- `virtualbricks/bricks/`: `__init__.py` has what bricks and events share,
+  and the base class of the bricks; a module for each kind of brick:
+  virtual machine, switch, tap, wire, and so on; each writes its command
+  line with `command.py`. `draft.py` is what the settings panels work on: a
+  copy of a brick's settings, checked as it's set, given to the brick at
+  OK; a brick with checks of its own has its draft in its module.
+  `brickinfo.py` and `eventinfo.py` say in words what a brick or an event
+  is and does, for the tabs of the main window and for the console.
 - `virtualbricks/qemu/`: what Virtualbricks knows of QEMU itself.
   `imageformat.py` tells the format of a disk image, and its backing file,
   from the first bytes of the file; `run.py` finds the QEMU programs and

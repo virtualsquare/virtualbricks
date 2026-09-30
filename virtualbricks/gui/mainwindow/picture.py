@@ -48,7 +48,7 @@ from gi.repository import (  # noqa: E402
 
 from virtualbricks.gui import graphics  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.base import is_running  # noqa: E402
+from virtualbricks.bricks import is_running  # noqa: E402
 from virtualbricks.topology import ICON  # noqa: E402
 
 # Around the lab, in pixels.

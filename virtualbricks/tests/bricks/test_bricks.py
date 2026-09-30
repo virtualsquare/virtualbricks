@@ -23,7 +23,7 @@ import os
 from twisted.internet import defer, task
 
 from virtualbricks import bricks, errors
-from virtualbricks.base import BaseConfig
+from virtualbricks.bricks import BaseConfig
 from virtualbricks.bricks import BrickConfig
 from virtualbricks.bricks.eventaction import StartAction
 from virtualbricks.config.report import Report

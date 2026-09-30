@@ -38,7 +38,7 @@ from virtualbricks.console.command import (
 )
 from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _, ngettext
-from virtualbricks.base import is_running
+from virtualbricks.bricks import is_running
 
 
 class Frontend:

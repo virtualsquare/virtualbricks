@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 00:08+0200\n"
+"POT-Creation-Date: 2026-09-30 09:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,20 +17,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
-
-#: virtualbricks/base.py
-#: virtualbricks/gui/mainwindow/bricks/config/vm/system.py
-msgid "Icon"
-msgstr ""
-
-#: virtualbricks/base.py
-msgid "An image file to show instead of the icon of its type"
-msgstr ""
-
-#: virtualbricks/base.py
-#, python-format
-msgid "%(config)s config has no %(option)s option."
-msgstr ""
 
 #: virtualbricks/brickfactory.py
 msgid "Name must be a string"
@@ -463,6 +449,20 @@ msgstr ""
 
 #: virtualbricks/bricks/event.py virtualbricks/bricks/__init__.py
 msgid "off"
+msgstr ""
+
+#: virtualbricks/bricks/__init__.py
+#: virtualbricks/gui/mainwindow/bricks/config/vm/system.py
+msgid "Icon"
+msgstr ""
+
+#: virtualbricks/bricks/__init__.py
+msgid "An image file to show instead of the icon of its type"
+msgstr ""
+
+#: virtualbricks/bricks/__init__.py
+#, python-format
+msgid "%(config)s config has no %(option)s option."
 msgstr ""
 
 #: virtualbricks/bricks/__init__.py

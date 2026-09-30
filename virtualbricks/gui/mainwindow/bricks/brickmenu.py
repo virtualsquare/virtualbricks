@@ -60,7 +60,7 @@ from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
 )
 from virtualbricks.gui.dialogs.renamedialog import RenameDialog  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.base import is_running  # noqa: E402
+from virtualbricks.bricks import is_running  # noqa: E402
 
 logger = Logger()
 resuming = "Resuming virtual machine {name}"

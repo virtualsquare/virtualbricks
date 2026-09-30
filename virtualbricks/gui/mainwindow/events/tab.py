@@ -61,7 +61,7 @@ from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     RowsTab,
 )
 from virtualbricks.i18n import _, ngettext  # noqa: E402
-from virtualbricks.base import is_running  # noqa: E402
+from virtualbricks.bricks import is_running  # noqa: E402
 
 # How often the countdown moves, in seconds.
 TICK = 1

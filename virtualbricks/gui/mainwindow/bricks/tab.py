@@ -53,7 +53,7 @@ from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     log_failures,
 )
 from virtualbricks.i18n import _, ngettext  # noqa: E402
-from virtualbricks.base import is_running  # noqa: E402
+from virtualbricks.bricks import is_running  # noqa: E402
 
 logger = Logger()
 not_started = "Brick not started."

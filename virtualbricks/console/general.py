@@ -36,7 +36,7 @@ from virtualbricks.bricks import brickinfo, eventinfo
 from virtualbricks.console.output import table
 from virtualbricks.console.projects import refuse_running
 from virtualbricks.i18n import N_, _
-from virtualbricks.base import is_running
+from virtualbricks.bricks import is_running
 
 
 class Topic(ArgKind):

@@ -47,7 +47,7 @@ from virtualbricks.console.command import (
 )
 from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _
-from virtualbricks.base import is_running
+from virtualbricks.bricks import is_running
 
 # the name an event gets, as New Event, when none is given
 NEW_EVENT = "new_event"
