@@ -79,7 +79,7 @@ PROTOCOLS = (TEXT, AMP)
 # The types of socket.
 TYPES = ("unix", "tcp", "ssl")
 # The keywords of a description of each type, after its path or its port:
-# of a socket to listen on, and of one that --command talks to. Those of
+# of a socket to listen on, and of the one of --connect. Those of
 # ssl are Twisted's, but caCertsDir, which only its clients have.
 KEYWORDS = {
     "unix": ("address", "protocol"),
@@ -119,7 +119,7 @@ FILES = {
 # What a type looks like, as unix, tcp or ssl.
 TYPE = re.compile(r"[a-z][a-z0-9]*", re.IGNORECASE)
 PORT = re.compile(r"[0-9]+")
-# Where a network socket listens without interface=, and where --command
+# Where a network socket listens without interface=, and where --connect
 # looks for it without a host: this machine.
 LOOPBACK = "127.0.0.1"
 
@@ -151,9 +151,9 @@ class Socket(NamedTuple):
     files of its certificate and of those it trusts.
 
     The host of a socket to listen on is the address of its interface; with
-    --command, it is the machine to talk to. The certificate of a socket to
+    --connect, it is the machine to talk to. The certificate of a socket to
     listen on is that of Virtualbricks, and its clients show one that
-    ca_dir trusts; with --command, the certificate is that of the client,
+    ca_dir trusts; with --connect, the certificate is that of the client,
     which trusts the certificate of Virtualbricks by ca_dir.
     """
 
@@ -248,7 +248,7 @@ def parse_socket(text: str, client: bool = False) -> Socket:
     """
     The socket of a description: its type, its path or its port, and its
     keywords, as ``unix:PATH:protocol=text`` or ``tcp:8765``. The protocol
-    is text if left out. With client, the description of --command, which
+    is text if left out. With client, the description of --connect, which
     names the machine to talk to: ``tcp:HOST:PORT``, or ``tcp:PORT`` for
     this one.
 
@@ -281,7 +281,7 @@ def parse_socket(text: str, client: bool = False) -> Socket:
         if key not in allowed:
             if client and key == "interface":
                 raise ValueError(
-                    f"{text}: --command reaches the machine of host=, as"
+                    f"{text}: --connect reaches the machine of host=, as"
                     f" {kind}:lab.example:8765; interface= is where"
                     " Virtualbricks listens"
                 )
@@ -363,7 +363,7 @@ def _interface_and_port(text, kind, args, keywords):
 
 def _host_and_port(text, kind, args, keywords):
     """
-    The machine and the port that --command talks to, as Twisted's clients
+    The machine and the port that --connect names, as Twisted's clients
     read them: HOST:PORT, host= and port=; PORT alone is this machine.
     """
 

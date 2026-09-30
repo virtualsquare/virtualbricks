@@ -38,15 +38,15 @@ def run():
 
     config = app.Options()
     app.parse_options(config)
-    if config["command"]:
+    if config["command"] or config["connect"]:
         # no lock, no reactor, no GTK: the Virtualbricks that runs has them
         from virtualbricks import i18n
         from virtualbricks.console import client
 
         i18n.install()
-        # one socket at most, of the text protocol
-        sockets = config["sockets"]
-        sys.exit(client.main(config["words"], sockets[0] if sockets else None))
+        # --connect alone sends the commands of --run
+        script = None if config["command"] else config["run"]
+        sys.exit(client.main(config["words"], config["target"], script=script))
     if config["no-gui"]:
         factory = make_plain_application
     else:

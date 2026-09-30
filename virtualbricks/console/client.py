@@ -18,7 +18,8 @@
 
 """
 ``virtualbricks --command``: a command of the console, sent to the
-Virtualbricks that runs through its control socket, and its answer. It
+Virtualbricks that runs through its control socket, the one of
+``--connect``, and its answer; ``--connect --run`` sends those of a file. It
 speaks the text protocol, or AMP to a socket with ``protocol=amp``, through
 :mod:`virtualbricks.console.ampbox`. Over tcp, it proves first that it knows
 the token, and checks that the other end knows it too. Over ssl, it checks
@@ -26,8 +27,9 @@ the certificate of Virtualbricks, shows its own if it has one, and proves
 the token when asked.
 
 The words after ``--command`` are the command, quoted again for the
-console; without words, the lines of the standard input are, each sent
-after the answer to the one before, up to the first error. The answer goes
+console; without words, the lines of the standard input are, or those of
+the file of ``--run``, each sent after the answer to the one before, up to
+the first error. The answer goes
 to the standard output, an error to the standard error. It loads neither
 Twisted's reactor nor GTK, takes no lock and opens no project.
 """
@@ -602,16 +604,30 @@ def _commands(words, stdin):
             yield number, line
 
 
-def main(words, target=None, stdin=None, stdout=None, stderr=None) -> int:
+def main(
+    words, target=None, stdin=None, stdout=None, stderr=None, script=None
+) -> int:
     """
-    Send the command of words, or the lines of stdin without words, to the
-    Virtualbricks that listens on target, a wire.Socket, the default socket
-    if None; write the answers and return the exit status.
+    Send the command of words, the lines of the file script, or else the
+    lines of stdin, to the Virtualbricks that listens on target, a
+    wire.Socket, the default socket if None; write the answers and return
+    the exit status.
     """
 
     stdin = sys.stdin if stdin is None else stdin
     stdout = sys.stdout if stdout is None else stdout
     stderr = sys.stderr if stderr is None else stderr
+    if script is not None:
+        try:
+            with open(script, encoding="utf-8") as fp:
+                stdin = fp.read().splitlines()
+        except OSError as exc:
+            message = _("{file} can't be read: {error}").format(
+                file=script, error=exc.strerror
+            )
+            stderr.write(f"{message}\n")
+            # as a wrong option: nothing is sent
+            return FAILED
     connection = None
     try:
         connection = connect(target)
@@ -624,7 +640,10 @@ def main(words, target=None, stdin=None, stdout=None, stderr=None) -> int:
             stdout.flush()
             if not answer.get("ok"):
                 error = str(answer.get("error"))
-                if number is not None:
+                if script is not None:
+                    # where it stopped, as source says it
+                    error = f"{script}:{number}: {error}"
+                elif number is not None:
                     error = _("line {number}: {error}").format(
                         number=number, error=error
                     )

@@ -276,15 +276,16 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 19 &middot; Design &middot; revision 1, proposal</div>
+    <div class="eyebrow">Step 19 &middot; Design &middot; revision 2, proposal</div>
     <h1>Virtualbricks Remote GUI</h1>
     <p class="lede"><code>virtualbricks --connect ssl:lab.example:8765</code> opens the windows of the Virtualbricks that runs on another machine. The project you see is the one open there, and whatever you do in the windows, from starting a brick to the OK of its settings, happens there. The windows keep a copy of that project, which the other end keeps up to date, so they read it as fast as today and only the actions cross the network.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 6430114</li>
-      <li>revision 1 &middot; 29 September 2026</li>
+      <li>revision 2 &middot; 30 September 2026</li>
       <li><span class="status">proposal</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> your request of today: &ldquo;With <code>virtualbricks --command</code> it is possible to control an instance of Virtualbricks via CLI. I want to be able to control a remote instance of Virtualbricks through the GUI via the control sockets. The open project is the remote one and the actions affect the remote bricks. Create a plan.&rdquo; It builds on the sockets of pages <a href="15%20-%20control-socket.html">15</a>, <a href="16%20-%20amp-socket.html">16</a> and <a href="17%20-%20network-sockets.html">17</a>: AMP, <code>tcp</code> and <code>ssl</code>, the token and the client certificates stay as they are. The twelve questions, R1 to R12 in <a href="#decisions">&sect;12</a>, are open; each has my recommendation. At your request, the page is committed on <code>develop</code>; nothing of it is implemented yet.</p>
+    <p class="revision"><strong>Since then:</strong> <code>--connect</code> exists, on 30 September, for the clients of the command line: it names the Virtualbricks that <code>--command</code> and <code>--run</code> talk to, with the descriptions of <code>--command</code> in <a href="17%20-%20network-sockets.html">page 17</a>, text or AMP, and <code>--socket</code> only listens. <code>--connect --run</code> <i>file</i> sends the commands of a file and exits, where this page refuses <code>--run</code>. <code>--connect</code> alone is refused, <code>--connect needs --command or --run</code>, until it opens the windows. So R1 A is the form it already has, and B, <code>--socket DESCRIPTION --connect</code>, is no longer open.</p>
   </header>
 
   <div class="layout">

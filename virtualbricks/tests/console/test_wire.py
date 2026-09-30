@@ -406,7 +406,7 @@ class TestTcpDescriptions(unittest.TestCase):
         )
         self.assertEqual(
             self.refused("tcp:8765:interface=192.0.2.7", client=True),
-            "tcp:8765:interface=192.0.2.7: --command reaches the machine of"
+            "tcp:8765:interface=192.0.2.7: --connect reaches the machine of"
             " host=, as tcp:lab.example:8765; interface= is where"
             " Virtualbricks listens",
         )

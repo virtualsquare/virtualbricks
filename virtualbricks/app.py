@@ -64,8 +64,8 @@ class Options(usage.Options):
             "command",
             None,
             "Send the command of the words that follow to the Virtualbricks "
-            "that runs, and print its answer; without words, the lines of "
-            "the standard input.",
+            "that runs, the one of --connect, and print its answer; without "
+            "words, the lines of the standard input.",
         ],
         # read before getopt, which has no optional arguments
         [
@@ -74,8 +74,14 @@ class Options(usage.Options):
             "Listen on a control socket: .control in the runtime folder, or "
             "the one of the description after it, as "
             "unix:PATH:protocol=amp, tcp:PORT or ssl:PORT:privateKey=FILE. "
-            "Give it again for more sockets. With --command, the socket to "
-            "talk to, as tcp:HOST:PORT.",
+            "Give it again for more sockets.",
+        ],
+        [
+            "connect",
+            None,
+            "The Virtualbricks that runs that --command and --run talk to: "
+            "the one of .control in the runtime folder, or the one of the "
+            "socket of the description after it, as tcp:HOST:PORT.",
         ],
     ]
     optParameters = [
@@ -84,7 +90,8 @@ class Options(usage.Options):
             "run",
             None,
             None,
-            "Run the commands of a file once the project is open.",
+            "Run the commands of a file once the project is open; with "
+            "--connect, send them to the Virtualbricks that runs, and exit.",
         ],
         [
             "workspace",
@@ -128,9 +135,12 @@ class Options(usage.Options):
         # the sockets of --socket, a wire.Socket each; the flag is never set
         del self["socket"]
         self["sockets"] = []
-        # the descriptions of --socket, None for --socket alone, read once
-        # it is known whether --command talks to them
+        # the socket of --connect, a wire.Socket; the flag says it's given
+        self["target"] = None
+        # the descriptions of --socket and of --connect, None for the option
+        # alone, read once the options are known to go together
         self.descriptions = []
+        self.targets = []
         # the options given whose value doesn't tell
         self.given = set()
 
@@ -145,11 +155,12 @@ class Options(usage.Options):
 
     def take_sockets(self, args):
         """
-        Read each --socket of args, and return the other arguments.
+        Read each --socket and --connect of args, and return the other
+        arguments.
 
-        getopt has no optional arguments: --socket takes the next word when
-        it starts with a type, as unix:, or the description after =. It
-        stops where getopt does, at the first word or at --.
+        getopt has no optional arguments: --socket and --connect take the
+        next word when it starts with a type, as unix:, or the description
+        after =. It stops where getopt does, at the first word or at --.
         """
 
         args = list(args)
@@ -161,18 +172,22 @@ class Options(usage.Options):
                 rest.extend(args)
                 break
             name, equals, description = arg.partition("=")
-            if self._long_option(name) == "socket":
+            option = self._long_option(name)
+            if option in ("socket", "connect"):
+                found = (
+                    self.descriptions if option == "socket" else self.targets
+                )
                 if equals:
-                    self.descriptions.append(description)
+                    found.append(description)
                 elif args and DESCRIPTION.match(args[0]):
-                    self.descriptions.append(args.pop(0))
+                    found.append(args.pop(0))
                 elif args and args[0].startswith(("/", "~", ".")):
                     raise usage.UsageError(
-                        f"--socket: {args[0]} needs its type:"
+                        f"--{option}: {args[0]} needs its type:"
                         f" unix:{args[0]}"
                     )
                 else:
-                    self.descriptions.append(None)
+                    found.append(None)
                 continue
             rest.append(arg)
             if args and self._takes_value(arg):
@@ -208,36 +223,35 @@ class Options(usage.Options):
                 return position == len(arg) - 1
         return False
 
-    def add_socket(self, description, client=False):
+    def socket(self, description, option):
         """
-        Listen on the socket of description, or on the default one; with
-        client, talk to it with --command.
+        The socket of description, or the default one if None: one to
+        listen on for --socket, the one to talk to for --connect.
         """
 
+        client = option == "connect"
         if description is None:
             socket = wire.Socket(locations.control_socket())
         else:
             try:
                 socket = wire.parse_socket(description, client)
             except ValueError as exc:
-                raise usage.UsageError(f"--socket: {exc}") from None
+                raise usage.UsageError(f"--{option}: {exc}") from None
         if socket.kind == "unix":
-            socket = self._unix_socket(socket)
-        else:
-            socket = self._network_socket(socket, client)
-        self["sockets"].append(socket)
+            return self._unix_socket(socket, option)
+        return self._network_socket(socket, client)
 
-    def _unix_socket(self, socket):
+    def _unix_socket(self, socket, option):
         path = os.path.abspath(os.path.expanduser(socket.path))
         folder = os.path.dirname(path)
         # Virtualbricks makes the runtime folder at start
         if not os.path.isdir(folder) and not wire.in_runtime_dir(path):
-            raise usage.UsageError(f"--socket: {folder} doesn't exist")
+            raise usage.UsageError(f"--{option}: {folder} doesn't exist")
         if os.path.isdir(path):
-            raise usage.UsageError(f"--socket: {path} is a folder")
+            raise usage.UsageError(f"--{option}: {path} is a folder")
         if len(os.fsencode(path)) > locations.SOCKET_PATH_MAX:
             raise usage.UsageError(
-                f"--socket: {path} is longer than"
+                f"--{option}: {path} is longer than"
                 f" {locations.SOCKET_PATH_MAX} bytes, the most a socket's"
                 " path can have"
             )
@@ -253,7 +267,7 @@ class Options(usage.Options):
             }
         )
         if client:
-            # --command reads its files, and says what is wrong with them
+            # the client reads its files, and says what is wrong with them
             return socket
         address = (socket.host, socket.port)
         if any(
@@ -352,8 +366,11 @@ class Options(usage.Options):
         print("Virtualbricks", __version__)
         sys.exit(0)
 
-    def check_command(self):
-        """Refuse words without --command, and the options of a run with it."""
+    def check_client(self):
+        """
+        Refuse words without --command, --connect without --command or
+        --run, and with either the options of a run and --socket.
+        """
 
         words = self["words"]
         if not self["command"]:
@@ -363,27 +380,50 @@ class Options(usage.Options):
                     " the Virtualbricks that runs: virtualbricks --command"
                     f" {shlex.join(words)}"
                 )
-            return
+            if not self.targets:
+                return
+            if not self["run"]:
+                raise usage.UsageError(
+                    "--connect needs --command or --run: it talks to a"
+                    " Virtualbricks that runs"
+                )
+        client = "--command" if self["command"] else "--connect"
         for name in self.RUN_OPTIONS:
+            # --connect sends the commands of --run
+            if name == "run" and not self["command"]:
+                continue
             if name in self.given or (
                 name not in ("lock", "logfile") and self[name]
             ):
                 raise usage.UsageError(
-                    f"--command takes no --{name}: it talks to a Virtualbricks"
+                    f"{client} takes no --{name}: it talks to a Virtualbricks"
                     " that runs"
                 )
-        if len(self["sockets"]) > 1:
-            raise usage.UsageError("--command talks to one --socket")
-        if not words and sys.stdin is not None and sys.stdin.isatty():
+        if self.descriptions:
+            raise usage.UsageError(
+                f"{client} takes no --socket, which listens: --connect names"
+                " the Virtualbricks to talk to"
+            )
+        if len(self.targets) > 1:
+            raise usage.UsageError("--connect names one Virtualbricks")
+        if (
+            self["command"]
+            and not words
+            and sys.stdin is not None
+            and sys.stdin.isatty()
+        ):
             raise usage.UsageError(
                 "--command needs a command, as virtualbricks --command brick"
                 " list, or lines on its standard input"
             )
 
     def postOptions(self):
+        self.check_client()
         for description in self.descriptions:
-            self.add_socket(description, client=self["command"])
-        self.check_command()
+            self["sockets"].append(self.socket(description, "socket"))
+        for description in self.targets:
+            self["target"] = self.socket(description, "connect")
+        self["connect"] = bool(self.targets)
         if self["logger"]:
             try:
                 self["logger"] = reflect.namedAny(self["logger"])

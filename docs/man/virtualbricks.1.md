@@ -16,7 +16,9 @@ virtualbricks - labs of QEMU machines and VDE networks, and their console
 
 **virtualbricks --no-gui** [*options*]
 
-**virtualbricks** [**--socket** [*description*]] **--command** [*word*...]
+**virtualbricks** [**--connect** [*description*]] **--command** [*word*...]
+
+**virtualbricks --connect** [*description*] **--run** *file*
 
 # DESCRIPTION
 
@@ -31,7 +33,8 @@ way in: a lab on a machine without a display.
 
 Started with **--socket**, it listens on control sockets, on this machine
 or across the network: **virtualbricks --command** sends it a command of
-the console from any terminal or script, and prints its answer, and a
+the console from any terminal or script, and prints its answer,
+**virtualbricks --connect --run** sends it the commands of a file, and a
 program written with Twisted can drive it through AMP. See **THE CONTROL
 SOCKET**.
 
@@ -64,7 +67,9 @@ SOCKET**.
 
 **--run** *file*
 :   Run the commands of *file* once the project is open, as **source**
-    does, then read the console.
+    does, then read the console. With **--connect**, send them to the
+    Virtualbricks that runs instead, up to the first error, and exit. See
+    **THE CONTROL SOCKET**.
 
 **--workspace** *directory*
 :   Use the projects of *directory* for this run, instead of the
@@ -78,8 +83,8 @@ SOCKET**.
 **--command** [*word*...]
 :   Send the command of the words that follow to the Virtualbricks that
     runs, and print its answer; without words, send the lines of the
-    standard input. It takes no lock, and no other option but one
-    **--socket**, text or AMP. See **THE CONTROL SOCKET**.
+    standard input. It takes no lock, and no other option but
+    **--connect**. See **THE CONTROL SOCKET**.
 
 **--socket** [*description*]
 :   Listen on a control socket: alone, the text socket *.control* in the
@@ -87,8 +92,16 @@ SOCKET**.
     **unix:~/labs/lab1.amp:protocol=amp** or **tcp:8765**, the socket it
     describes. It can be given more than once. The next word is the
     description when it starts with a type and a colon, as **unix:**;
-    after **=** it is too. With **--command**, the socket to talk to, as
-    **tcp:lab.example:8765**. See **THE CONTROL SOCKET**.
+    after **=** it is too. See **THE CONTROL SOCKET**.
+
+**--connect** [*description*]
+:   The Virtualbricks that runs that **--command** and **--run** talk
+    to: alone, the one of the text socket *.control* in the runtime
+    folder; with a *description*, the one of the socket it describes, as
+    **unix:~/labs/lab1.amp:protocol=amp** or **tcp:lab.example:8765**. The
+    next word is its description as for **--socket**. It goes with
+    **--command** or with **--run**, and takes no **--socket** and no
+    other option of a start. See **THE CONTROL SOCKET**.
 
 **--version**
 :   Print the version and exit.
@@ -221,15 +234,16 @@ virtualbricks --no-gui --socket \
 virtualbricks --no-gui --socket tcp:8765
 ```
 
-**--command** sends a command to a socket, as typed in the console, in
-the protocol of its description:
+**--command** sends a command, as typed in the console, to the socket of
+**--connect**, or to the text socket without it, in the protocol of its
+description:
 
 ```
 virtualbricks --command brick start sw1 vm1
 virtualbricks --command brick set vm1 memory=1024
-virtualbricks --socket unix:~/labs/lab1.sock --command status
-virtualbricks --socket tcp:8765 --command status
-virtualbricks --socket unix:~/labs/lab1.amp:protocol=amp \
+virtualbricks --connect unix:~/labs/lab1.sock --command status
+virtualbricks --connect tcp:8765 --command status
+virtualbricks --connect unix:~/labs/lab1.amp:protocol=amp \
     --command status
 ```
 
@@ -240,10 +254,19 @@ word. Without words, the lines of the standard input are the commands, each
 sent after the answer to the one before, up to the first error, which names
 its line.
 
+**--connect --run** *file* sends the lines of *file* in the same way, and
+the first error names the file and its line, as *lab.vb*:7, as **source**
+says it. Empty lines aren't sent; comments are, and do nothing.
+
+```
+virtualbricks --connect --run ~/labs/traffic.vb
+virtualbricks --connect tcp:lab.example:8765 --run traffic.vb
+```
+
 The answer goes to the standard output. When a command fails, what it did
 first goes there too, and the error, **Error:** and why, to the standard
 error; see **EXIT STATUS**. A relative path, as that of **source** *file*,
-is read from the folder where **--command** runs. Ctrl+C stops waiting, not
+is read from the folder where **virtualbricks** runs. Ctrl+C stops waiting, not
 the command. Virtualbricks logs each command it gets, and answers in its
 own language. Over AMP, what a command did before it failed doesn't come,
 and an answer longer than 65535 bytes is an error; a text socket carries
@@ -289,19 +312,19 @@ virtualbricks --no-gui --socket \
     'ssl:8765:privateKey=~/vb/lab.pem:caCertsDir=~/vb/clients'
 ```
 
-**--command** names the machine as **tcp:***host***:***port*, or with
+**--connect** names the machine as **tcp:***host***:***port*, or with
 **host=** and **port=**; **tcp:***port* alone is this machine. Over
 **ssl**, **caCertsDir=***directory* holds the certificate of Virtualbricks,
 or that of its authority; without it, the authorities of the system are
 trusted. **privateKey=** and **certKey=** are the certificate of the
 client, for a Virtualbricks that asks for one. The token is that of
-**tokenFile=**, or the default one. To another machine, **--command**
+**tokenFile=**, or the default one. To another machine, **virtualbricks**
 doesn't send its folder: a relative path is read from the folder of that
 Virtualbricks.
 
 ```
 virtualbricks \
-    --socket 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
+    --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
     --command status
 ```
 
@@ -670,14 +693,14 @@ number of the action and the reason. The project file keeps the actions as
 
 # EXIT STATUS
 
-With **--command**:
+With **--command**, and with **--connect --run**:
 
 **0**
-:   The command was done.
+:   The command was done, or every command of the file.
 
 **1**
-:   The command failed, its answer was too long for AMP, or an option is
-    wrong.
+:   The command failed, its answer was too long for AMP, an option is
+    wrong, or the file of **--run** can't be read.
 
 **2**
 :   No Virtualbricks answered: none listens there, it ended before it
@@ -743,7 +766,7 @@ file, sent to it one after the other:
 
 ```
 virtualbricks --command brick start router
-virtualbricks --command < ~/labs/traffic.vb
+virtualbricks --connect --run ~/labs/traffic.vb
 ```
 
 The same lab, open to the network over **ssl**, and its machine, started
@@ -754,7 +777,7 @@ from a laptop that has a copy of the token and of **lab.pem**, in
 virtualbricks --no-gui --noterm --run ~/labs/ospf.vb --socket \
     'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.pem'
 virtualbricks \
-    --socket 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
+    --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
     --command brick start router
 ```
 

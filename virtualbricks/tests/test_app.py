@@ -229,8 +229,8 @@ class TestSocket(unittest.TestCase):
         options = self.parse("--socket", "--no-gui")
         self.assertEqual(options["sockets"], [wire.Socket(self.default)])
         self.assertTrue(options["no-gui"])
-        options = self.parse("--command", "--socket", "brick", "list")
-        self.assertEqual(options["sockets"], [wire.Socket(self.default)])
+        options = self.parse("--command", "--connect", "brick", "list")
+        self.assertEqual(options["target"], wire.Socket(self.default))
         self.assertEqual(options["words"], ["brick", "list"])
         # the value of another option isn't one
         options = self.parse("--workspace", "--socket")
@@ -395,28 +395,30 @@ class TestTcpSocket(unittest.TestCase):
             " least 16",
         )
 
-    def test_with_command(self):
-        # the machine to talk to; the token is --command's to read
+    def test_with_connect(self):
+        # the machine to talk to; the token is the client's to read
         self.write_token(locations.token_file(), 0o644)
         for args in (
-            ["--socket", "tcp:lab.example:8765", "--command", "status"],
-            ["--command", "--socket", "tcp:lab.example:8765", "status"],
+            ["--connect", "tcp:lab.example:8765", "--command", "status"],
+            ["--command", "--connect", "tcp:lab.example:8765", "status"],
         ):
-            self.assertEqual(
-                self.sockets(*args), [self.tcp(8765, "lab.example")]
-            )
+            options = self.parse(*args)
+            self.assertEqual(options["target"], self.tcp(8765, "lab.example"))
+            self.assertEqual(options["sockets"], [])
         self.assertEqual(
-            self.sockets("--socket", "tcp:8765", "--command", "status"),
-            [self.tcp(8765)],
+            self.parse("--connect", "tcp:8765", "--command", "status")[
+                "target"
+            ],
+            self.tcp(8765),
         )
         self.assertEqual(
             self.refused(
-                "--socket",
+                "--connect",
                 "tcp:8765:interface=127.0.0.1",
                 "--command",
                 "status",
             ),
-            "--socket: tcp:8765:interface=127.0.0.1: --command reaches the"
+            "--connect: tcp:8765:interface=127.0.0.1: --connect reaches the"
             " machine of host=, as tcp:lab.example:8765; interface= is where"
             " Virtualbricks listens",
         )
@@ -520,14 +522,14 @@ class TestSslSocket(unittest.TestCase):
             "--socket: ssl needs pyOpenSSL: the package python3-openssl",
         )
 
-    def test_with_command(self):
-        # its files are --command's to read
-        [socket] = self.parse(
-            "--socket",
+    def test_with_connect(self):
+        # its files are the client's to read
+        socket = self.parse(
+            "--connect",
             "ssl:lab.example:8765:caCertsDir=~/vb/lab:privateKey=~/a.key",
             "--command",
             "status",
-        )["sockets"]
+        )["target"]
         self.assertEqual(
             socket,
             wire.Socket(
@@ -572,33 +574,50 @@ class TestCommand(unittest.TestCase):
             options["words"], ["brick", "start", "--force", "vm1"]
         )
         options = self.parse(
-            "--socket", "unix:/tmp/lab.sock", "--command", "status"
+            "--connect", "unix:/tmp/lab.sock", "--command", "status"
         )
-        self.assertEqual(options["sockets"], [wire.Socket("/tmp/lab.sock")])
+        self.assertEqual(options["target"], wire.Socket("/tmp/lab.sock"))
+        self.assertTrue(options["connect"])
+        # without --connect, the default socket
+        options = self.parse("--command", "status")
+        self.assertIsNone(options["target"])
+        self.assertFalse(options["connect"])
         self.assertFalse(self.parse()["command"])
 
-    def test_one_socket(self):
+    def test_one_virtualbricks(self):
         self.assertEqual(
             self.refused(
-                "--socket",
+                "--connect",
                 "unix:/tmp/a.sock",
-                "--socket",
+                "--connect",
                 "unix:/tmp/b.sock",
                 "--command",
                 "status",
             ),
-            "--command talks to one --socket",
+            "--connect names one Virtualbricks",
         )
         # either protocol
         self.assertEqual(
             self.parse(
-                "--socket",
+                "--connect",
                 "unix:/tmp/a.amp:protocol=amp",
                 "--command",
                 "status",
-            )["sockets"],
-            [wire.Socket("/tmp/a.amp", wire.AMP)],
+            )["target"],
+            wire.Socket("/tmp/a.amp", wire.AMP),
         )
+
+    def test_no_socket(self):
+        # --socket listens, which a client doesn't
+        for args in (
+            ["--socket", "--command", "status"],
+            ["--socket", "unix:/tmp/a.sock", "--command", "status"],
+        ):
+            self.assertEqual(
+                self.refused(*args),
+                "--command takes no --socket, which listens: --connect names"
+                " the Virtualbricks to talk to",
+            )
 
     def test_words_without_it(self):
         self.assertEqual(
@@ -636,6 +655,79 @@ class TestCommand(unittest.TestCase):
             " or lines on its standard input",
         )
         self.parse("--command", "status")
+
+
+class TestConnect(unittest.TestCase):
+
+    def setUp(self):
+        self.root = isolate(self)
+        # a runtime folder short enough for a socket's path
+        os.environ["XDG_RUNTIME_DIR"] = os.path.join(short_folder(self), "run")
+        self.patch(sys, "stdin", Input(False))
+        self.script = os.path.join(self.root, "lab.vb")
+        open(self.script, "w").close()
+
+    def parse(self, *args):
+        options = app.Options()
+        options.parseOptions(list(args))
+        return options
+
+    def refused(self, *args):
+        return str(self.assertRaises(usage.UsageError, self.parse, *args))
+
+    def test_run(self):
+        # the commands of the file go to the Virtualbricks that runs
+        options = self.parse("--connect", "--run", self.script)
+        self.assertTrue(options["connect"])
+        self.assertFalse(options["command"])
+        self.assertEqual(options["run"], self.script)
+        self.assertEqual(
+            options["target"], wire.Socket(locations.control_socket())
+        )
+        options = self.parse(
+            "--connect", "unix:/tmp/lab.sock", "--run", self.script
+        )
+        self.assertEqual(options["target"], wire.Socket("/tmp/lab.sock"))
+        # without it, those of the Virtualbricks that starts
+        options = self.parse("--run", self.script)
+        self.assertFalse(options["connect"])
+        self.assertIsNone(options["target"])
+
+    def test_alone(self):
+        self.assertEqual(
+            self.refused("--connect"),
+            "--connect needs --command or --run: it talks to a Virtualbricks"
+            " that runs",
+        )
+
+    def test_the_options_of_a_run(self):
+        for args in (
+            ["--no-gui"],
+            ["--noterm"],
+            ["--workspace", self.root],
+            ["--lock", "system"],
+            ["--logfile", "-"],
+            ["--logger", "virtualbricks.app.file_logger"],
+        ):
+            name = args[0][2:]
+            self.assertEqual(
+                self.refused(*args, "--connect", "--run", self.script),
+                f"--connect takes no --{name}: it talks to a Virtualbricks"
+                " that runs",
+            )
+        self.assertEqual(
+            self.refused("--socket", "--connect", "--run", self.script),
+            "--connect takes no --socket, which listens: --connect names the"
+            " Virtualbricks to talk to",
+        )
+
+    def test_command_or_run(self):
+        self.assertEqual(
+            self.refused(
+                "--connect", "--run", self.script, "--command", "status"
+            ),
+            "--command takes no --run: it talks to a Virtualbricks that runs",
+        )
 
 
 class TestTheConsoleOptions(unittest.TestCase):

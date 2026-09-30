@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 09:38+0200\n"
+"POT-Creation-Date: 2026-09-30 12:02+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1554,6 +1554,11 @@ msgid ""
 "its certificate with caCertsDir="
 msgstr ""
 
+#: virtualbricks/console/client.py virtualbricks/console/general.py
+#, python-brace-format
+msgid "{file} can't be read: {error}"
+msgstr ""
+
 #: virtualbricks/console/client.py
 #, python-brace-format
 msgid "line {number}: {error}"
@@ -1817,11 +1822,6 @@ msgstr ""
 
 #: virtualbricks/console/general.py
 msgid "Run the commands of a file, one a line, up to the first error"
-msgstr ""
-
-#: virtualbricks/console/general.py
-#, python-brace-format
-msgid "{file} can't be read: {error}"
 msgstr ""
 
 #: virtualbricks/console/images.py

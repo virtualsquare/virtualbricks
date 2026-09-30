@@ -193,6 +193,51 @@ class TestCommands(ClientTestCase):
         )
         self.assertEqual(status, client.FAILED)
 
+    def test_a_script(self):
+        script = self.mktemp() + ".vb"
+        with open(script, "w", encoding="utf-8") as fp:
+            fp.write("brick start sw1\n\n# vm1\nbrick start vm9\nstatus\n")
+        server = FakeVirtualbricks(
+            self,
+            self.path,
+            wire.answer(["sw1 runs"]),
+            wire.answer([]),
+            wire.refusal("No brick named vm9"),
+            wire.answer(["never"]),
+        )
+        status = client.main(
+            [],
+            None,
+            io.StringIO("never read\n"),
+            self.stdout,
+            self.stderr,
+            script=script,
+        )
+        # the lines of the file, not of the standard input; the first
+        # error stops, where source says it
+        self.assertEqual(
+            [request["line"] for request in server.requests],
+            ["brick start sw1", "# vm1", "brick start vm9"],
+        )
+        self.assertOutput(
+            status, "sw1 runs\n", f"Error: {script}:4: No brick named vm9\n"
+        )
+        self.assertEqual(status, client.FAILED)
+
+    def test_a_script_that_cannot_be_read(self):
+        server = FakeVirtualbricks(self, self.path, wire.answer([]))
+        script = os.path.join(self.mktemp(), "lab.vb")
+        status = client.main(
+            [], None, io.StringIO(), self.stdout, self.stderr, script=script
+        )
+        self.assertOutput(
+            status,
+            "",
+            f"{script} can't be read: No such file or directory\n",
+        )
+        self.assertEqual(status, client.FAILED)
+        self.assertEqual(server.requests, [])
+
     def test_another_path(self):
         path = os.path.join(short_folder(self), "lab.sock")
         FakeVirtualbricks(self, path, wire.answer(["Nothing runs"]))
@@ -551,9 +596,39 @@ class TestTheProcess(unittest.TestCase):
         code = (
             "import sys\n"
             "from virtualbricks.scripts import virtualbricks\n"
-            f"sys.argv = ['virtualbricks', '--socket', 'unix:{path}',"
+            f"sys.argv = ['virtualbricks', '--connect', 'unix:{path}',"
             " '--command',"
             " 'status']\n"
+            "try:\n"
+            "    virtualbricks.run()\n"
+            "except SystemExit as exc:\n"
+            "    print(exc.code, 'twisted.internet.reactor' in sys.modules,"
+            " 'gi' in sys.modules)\n"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            encoding="utf-8",
+            check=True,
+            stdin=subprocess.DEVNULL,
+        )
+        self.assertEqual(result.stdout, "2 False False\n")
+        self.assertEqual(
+            result.stderr, f"No Virtualbricks listens on {path}\n"
+        )
+
+    def test_a_script(self):
+        # virtualbricks --connect --run: the client sends the file
+        folder = short_folder(self)
+        path = os.path.join(folder, "lab.sock")
+        script = os.path.join(folder, "lab.vb")
+        with open(script, "w", encoding="utf-8") as fp:
+            fp.write("status\n")
+        code = (
+            "import sys\n"
+            "from virtualbricks.scripts import virtualbricks\n"
+            f"sys.argv = ['virtualbricks', '--connect', 'unix:{path}',"
+            f" '--run', '{script}']\n"
             "try:\n"
             "    virtualbricks.run()\n"
             "except SystemExit as exc:\n"
