@@ -34,3 +34,9 @@ _trial_temp/
 # Allure: the results of pytest --alluredir, and the report
 /allure-results/
 /allure-report/
+
+# pycharm
+/.idea/
+
+# Ignore python version because we should support many
+/.python-version
