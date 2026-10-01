@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 /dist/
 /build/
-/_trial_temp/
+_trial_temp/
 /.pytest_cache/
 /.coverage
 /htmlcov
@@ -27,3 +27,10 @@ __pycache__/
 
 # Vim swap files
 *.sw?
+
+# Node installation
+/node_modules/
+
+# Allure: the results of pytest --alluredir, and the report
+/allure-results/
+/allure-report/
