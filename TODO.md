@@ -267,11 +267,27 @@
 - [ ] Read the icon of a machine, and the description beside an image
   file, from the lab machine (19 §13)
 
+## End-to-end tests
+
+- [ ] Type text in the windows, as names and paths: the browser of
+  `e2e/broadway.py` sends keys as `broadway.js` does, `k` and `K` with a
+  keysym
+- [ ] Write the scenarios of the main use cases: projects, events, disk
+  images, virtual machines, the topology
+- [ ] Stop `dbus-daemon` and `broadwayd` of the tests when `pytest` is
+  killed, with the parent-death signal
+
 ## Misc
 
 - [ ] Update the copyright notice
 
 # DONE
+
+- [x] End-to-end tests: scenarios in words in `e2e/features/`, which
+  `pytest` runs with pytest-bdd; Virtualbricks on `broadwayd` with a
+  session bus of its own, the widgets found through AT-SPI and clicked by
+  a browser of `broadwayd`; `/e2e`, a skill of Claude Code, writes a
+  scenario from a use case in words; guide in `e2e/README.md`
 
 - [x] Document the protocols of the control sockets, the text one and
   protocols 1 and 2 of AMP, with the proof of the token:

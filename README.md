@@ -305,12 +305,12 @@ pip install -e . --group dev
 pre-commit install
 ```
 
-The `dev` dependency group has the tools of the project: `coverage`, `black`,
-`ruff`, `pyflakes`, `pre-commit`, `pypandoc-binary`, which brings pandoc for
-the manual page, and `PyGObject-stubs`, the types of GTK. `--group` needs pip
-25.1 or newer, and the pip of a new environment is often older, hence the
-upgrade. The editable install (`-e`) makes the `virtualbricks` command run your
-working copy.
+The `dev` dependency group has the tools of the project: `coverage`, `pytest`
+and `pytest-bdd` for the end-to-end tests, `black`, `ruff`, `pyflakes`,
+`pre-commit`, `pypandoc-binary`, which brings pandoc for the manual page, and
+`PyGObject-stubs`, the types of GTK. `--group` needs pip 25.1 or newer, and
+the pip of a new environment is often older, hence the upgrade. The editable
+install (`-e`) makes the `virtualbricks` command run your working copy.
 
 The code has to run on Python 3.10, the oldest that is supported, so it is
 best to work with that one.
@@ -379,6 +379,30 @@ coverage report
   console as the table of the commands has them, and that the pages are up to
   date with their sources: when you change one of them, update
   `docs/man/virtualbricks-config.5.md` or `docs/man/virtualbricks.1.md`.
+
+### End-to-end tests
+
+The end-to-end tests, in `e2e/`, start Virtualbricks as a user does, click
+in its windows and quit it. Each is a scenario in words, in `e2e/features/`,
+which `pytest` runs with pytest-bdd:
+
+```gherkin
+Given Virtualbricks is running
+When I add the switch sw1
+And I start sw1
+Then sw1 is running
+```
+
+```sh
+pip install --group e2e      # pytest and pytest-bdd; dev has them too
+pytest                       # every scenario
+```
+
+They need `broadwayd` (`libgtk-3-bin`), `at-spi2-core` and
+`gir1.2-atspi-2.0`, and are skipped without them. Nothing shows on your
+screen, and they run beside your own Virtualbricks. `e2e/README.md` tells how
+to run them, write a scenario and add a step; with Claude Code, `/e2e` writes
+a scenario from a use case in words.
 
 ### Code style
 
