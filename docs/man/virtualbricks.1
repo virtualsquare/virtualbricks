@@ -405,8 +405,11 @@ openssl req \-x509 \-newkey ec \-pkeyopt ec_paramgen_curve:P\-256 \(rs
     \-keyout alice.key \-out alice.pem
 .EE
 .SS The text protocol
-Any program can talk to a text socket, one of \f[B]protocol=text\f[R]:
-UTF\-8 JSON, an object on each line.
+\f[B]virtualbricks\-control\f[R](7) describes the protocols in full, for
+whoever writes a client: the text protocol, and protocols 1 and 2 of
+AMP, with the proof of the token.
+In short, any program can talk to a text socket, one of
+\f[B]protocol=text\f[R]: UTF\-8 JSON, an object on each line.
 Virtualbricks greets with the \f[B]protocol\f[R], 1, its
 \f[B]version\f[R], its \f[B]pid\f[R] and the open \f[B]project\f[R];
 then it answers each request in turn.
@@ -1031,4 +1034,5 @@ virtualbricks \-\-workspace \(ti/labs/b \-\-command status
 .EE
 .SH SEE ALSO
 \f[B]virtualbricks\-config\f[R](5), \f[B]virtualbricks\-archive\f[R](7),
-\f[B]qemu\f[R](1), \f[B]vde_switch\f[R](1), \f[B]openssl\f[R](1)
+\f[B]virtualbricks\-control\f[R](7), \f[B]qemu\f[R](1),
+\f[B]vde_switch\f[R](1), \f[B]openssl\f[R](1)

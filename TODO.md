@@ -273,6 +273,9 @@
 
 # DONE
 
+- [x] Document the protocols of the control sockets, the text one and
+  protocols 1 and 2 of AMP, with the proof of the token:
+  `virtualbricks-control(7)` and `docs/control-protocols.html`
 - [x] Open the windows of another Virtualbricks: `virtualbricks --connect
   DESCRIPTION`, over AMP (19): the copy of the project there, kept up to
   date by `Follow`; what the windows do goes through an engine,

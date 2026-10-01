@@ -213,6 +213,11 @@ certificate instead, and the log names it. `--command` talks to them as
 `--connect tcp:8765` on this machine, or as
 `--connect ssl:lab.example:8765:caCertsDir=FOLDER` from another.
 
+The three protocols of the sockets, the text one and protocols 1 and 2 of
+AMP, and the proof of the token are described for whoever writes a client in
+`man ./docs/man/virtualbricks-control.7` and
+[`docs/control-protocols.html`](docs/control-protocols.html).
+
 ### The windows of another Virtualbricks
 
 `virtualbricks --connect DESCRIPTION` alone opens the windows of the
@@ -467,9 +472,10 @@ To add a language, see the top of `l10n.sh`.
   messages of the Logs window.
 - `virtualbricks/tests/`: the tests, in the layout of the package.
 - `docs/`: the manual pages, in `man/`, and their web pages,
-  `command-line.html`, `config-files.html` and `archive-protocol.html`; in
-  `redesign/`, the designs of the parts that were rewritten, numbered in the
-  order of the work, from the conversion of the Glade files to the console.
+  `command-line.html`, `config-files.html`, `archive-protocol.html` and
+  `control-protocols.html`; in `redesign/`, the designs of the parts that
+  were rewritten, numbered in the order of the work, from the conversion of
+  the Glade files to the console.
 - `locale/`: the translations; `share/`: the desktop file and the icon.
 
 ## License

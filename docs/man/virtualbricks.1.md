@@ -375,7 +375,9 @@ openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
 
 ## The text protocol
 
-Any program can talk to a text socket, one of **protocol=text**: UTF-8
+**virtualbricks-control**(7) describes the protocols in full, for whoever
+writes a client: the text protocol, and protocols 1 and 2 of AMP, with the
+proof of the token. In short, any program can talk to a text socket, one of **protocol=text**: UTF-8
 JSON, an object on each line.
 Virtualbricks greets with the **protocol**, 1, its **version**, its
 **pid** and the open **project**; then it answers each request in turn.
@@ -979,5 +981,6 @@ virtualbricks --workspace ~/labs/b --command status
 
 # SEE ALSO
 
-**virtualbricks-config**(5), **virtualbricks-archive**(7), **qemu**(1),
-**vde_switch**(1), **openssl**(1)
+**virtualbricks-config**(5), **virtualbricks-archive**(7),
+**virtualbricks-control**(7), **qemu**(1), **vde_switch**(1),
+**openssl**(1)

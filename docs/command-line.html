@@ -404,7 +404,7 @@ openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
     -nodes -days 3650 -subj /CN=alice-laptop \
     -keyout alice.key -out alice.pem</code></pre></figure>
 <h3 id="control-socket-the-text-protocol">The text protocol</h3>
-<p>Any program can talk to a text socket, one of <code>protocol=text</code>: UTF-8 JSON, an object on each line. Virtualbricks greets with the <code>protocol</code>, 1, its <code>version</code>, its <code>pid</code> and the open <code>project</code>; then it answers each request in turn. A request&#x27;s <code>cwd</code>, the folder of its paths, is optional:</p>
+<p><a class="man" href="control-protocols.html"><code>virtualbricks-control</code>(7)</a> describes the protocols in full, for whoever writes a client: the text protocol, and protocols 1 and 2 of AMP, with the proof of the token. In short, any program can talk to a text socket, one of <code>protocol=text</code>: UTF-8 JSON, an object on each line. Virtualbricks greets with the <code>protocol</code>, 1, its <code>version</code>, its <code>pid</code> and the open <code>project</code>; then it answers each request in turn. A request&#x27;s <code>cwd</code>, the folder of its paths, is optional:</p>
 <figure class="code"><pre><code>{"line": "brick start sw1", "cwd": "/home/alice/labs"}
 {"ok": true, "lines": ["sw1 runs, process 4242"]}
 {"line": "brick start vm9"}
@@ -676,7 +676,7 @@ virtualbricks --workspace ~/labs/b --command status</code></pre></figure>
 </section>
 <section id="see-also">
 <h2>See also</h2>
-<p><a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>, <a class="man" href="archive-protocol.html"><code>virtualbricks-archive</code>(7)</a>, <a class="man" href="https://manpages.debian.org/qemu.1"><code>qemu</code>(1)</a>, <a class="man" href="https://manpages.debian.org/vde_switch.1"><code>vde_switch</code>(1)</a>, <a class="man" href="https://manpages.debian.org/openssl.1"><code>openssl</code>(1)</a></p>
+<p><a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>, <a class="man" href="archive-protocol.html"><code>virtualbricks-archive</code>(7)</a>, <a class="man" href="control-protocols.html"><code>virtualbricks-control</code>(7)</a>, <a class="man" href="https://manpages.debian.org/qemu.1"><code>qemu</code>(1)</a>, <a class="man" href="https://manpages.debian.org/vde_switch.1"><code>vde_switch</code>(1)</a>, <a class="man" href="https://manpages.debian.org/openssl.1"><code>openssl</code>(1)</a></p>
 </section>
       <p class="footnote">Written from <code>docs/man/virtualbricks.1.md</code>, the source of the man page, so the two say the same. Its commands and options are checked against the code by <code>virtualbricks/tests/test_docs.py</code>.</p>
     </main>

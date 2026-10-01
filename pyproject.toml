@@ -69,7 +69,10 @@ include = ["virtualbricks*"]
 "share/pixmaps" = ["share/virtualbricks.xpm"]
 "share/man/man1" = ["docs/man/virtualbricks.1"]
 "share/man/man5" = ["docs/man/virtualbricks-config.5"]
-"share/man/man7" = ["docs/man/virtualbricks-archive.7"]
+"share/man/man7" = [
+    "docs/man/virtualbricks-archive.7",
+    "docs/man/virtualbricks-control.7",
+]
 "share/locale/de/LC_MESSAGES" = ["locale/de/LC_MESSAGES/virtualbricks.mo"]
 "share/locale/es/LC_MESSAGES" = ["locale/es/LC_MESSAGES/virtualbricks.mo"]
 "share/locale/fr/LC_MESSAGES" = ["locale/fr/LC_MESSAGES/virtualbricks.mo"]
