@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Virtualbricks - News</title><link href="http://www.virtualbricks.it/" rel="alternate"/><link href="http://www.virtualbricks.it/feeds/news.atom.xml" rel="self"/><id>http://www.virtualbricks.it/</id><updated>2026-10-01T12:00:00+02:00</updated><entry><title>What's coming in Virtualbricks 3.0</title><link href="http://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html" rel="alternate"/><published>2026-10-01T12:00:00+02:00</published><updated>2026-10-01T12:00:00+02:00</updated><author><name>Marco Giusti</name></author><id>tag:www.virtualbricks.it,2026-10-01:/whats-coming-in-virtualbricks-3-0.html</id><summary type="html">&lt;p class="first last"&gt;Since 2.1 the develop branch has been rewritten, from the windows
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Virtualbricks - News</title><link href="https://www.virtualbricks.it/" rel="alternate"/><link href="https://www.virtualbricks.it/feeds/news.atom.xml" rel="self"/><id>https://www.virtualbricks.it/</id><updated>2026-10-01T12:00:00+02:00</updated><entry><title>What's coming in Virtualbricks 3.0</title><link href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html" rel="alternate"/><published>2026-10-01T12:00:00+02:00</published><updated>2026-10-01T12:00:00+02:00</updated><author><name>Marco Giusti</name></author><id>tag:www.virtualbricks.it,2026-10-01:/whats-coming-in-virtualbricks-3-0.html</id><summary type="html">&lt;p class="first last"&gt;Since 2.1 the develop branch has been rewritten, from the windows
 to the command line: new tabs, workspaces side by side, and a
 Virtualbricks you can drive, and open, from another machine.&lt;/p&gt;
 </summary><content type="html">&lt;p&gt;Since version 2.1, the &lt;tt class="docutils literal"&gt;develop&lt;/tt&gt; branch of Virtualbricks has gone through
@@ -11,11 +11,11 @@ topic will get a post of its own in the coming weeks. We start with what you
 see, the windows; then the workspaces; and last, how to drive Virtualbricks
 from a terminal, a script or another machine.&lt;/p&gt;
 &lt;div class="figure"&gt;
-&lt;img alt="The main window and the messages window of Virtualbricks 2.1" src="http://www.virtualbricks.it/images/virtualbricks-2.1.0.png" /&gt;
+&lt;img alt="The main window and the messages window of Virtualbricks 2.1" src="https://www.virtualbricks.it/images/virtualbricks-2.1.0.png" /&gt;
 &lt;p class="caption"&gt;Virtualbricks 2.1: the Bricks tab and the messages window.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class="figure"&gt;
-&lt;img alt="The main window, the About dialog and the Logs window of Virtualbricks 3.0.0.dev1" src="http://www.virtualbricks.it/images/virtualbricks-3.0.0.dev1.png" /&gt;
+&lt;img alt="The main window, the About dialog and the Logs window of Virtualbricks 3.0.0.dev1" src="https://www.virtualbricks.it/images/virtualbricks-3.0.0.dev1.png" /&gt;
 &lt;p class="caption"&gt;Virtualbricks 3.0.0.dev1: the new Bricks tab, with the Logs window
 showing the migration of a 2.1 project.&lt;/p&gt;
 &lt;/div&gt;
