@@ -1196,6 +1196,29 @@ class TestConnect(ConsoleTestCase):
         self.assertEqual(answer["names"], [])
 
     @defer.inlineCallbacks
+    def test_the_connection_before_it_follows(self):
+        token_file = locations.token_file()
+        os.makedirs(os.path.dirname(token_file), exist_ok=True)
+        with open(token_file, "w") as file:
+            file.write(TOKEN + "\n")
+        os.chmod(token_file, 0o600)
+        found = self.listen(wire.Socket(None, wire.AMP, "tcp", "127.0.0.1", 0))
+        target = wire.parse_socket(
+            f"tcp:127.0.0.1:{found.socket.port}:protocol=amp", client=True
+        )
+        copy = MirrorFactory()
+        made = []
+        windows = yield defer.ensureDeferred(
+            client.connect(
+                target, copy, reactor, lambda w: made.append((w, copy.whole))
+            )
+        )
+        self.addCleanup(windows.transport.loseConnection)
+        # given, and the project not there yet
+        self.assertEqual(made, [(windows, False)])
+        self.assertTrue(copy.whole)
+
+    @defer.inlineCallbacks
     def test_nothing_there(self):
         target = wire.parse_socket("tcp:127.0.0.1:1:protocol=amp", client=True)
         with self.assertRaises(Refused) as cm:

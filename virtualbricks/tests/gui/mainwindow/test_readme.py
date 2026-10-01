@@ -258,6 +258,15 @@ class TestLoadAndSave(unittest.TestCase):
             # not twice
             self.assertEqual(self.clock.getDelayedCalls(), [], hook)
 
+    def test_a_load_that_fails(self):
+        # over a connection lost: what shows stays
+        self.tab.on_open()
+        self.tab.engine.readme = lambda: defer.fail(
+            ampwire.CommandFailed("The connection to lab is lost")
+        )
+        self.tab.on_shown()
+        self.assertEqual(self.text(), README)
+
     def test_a_save_that_fails(self):
         # over a connection: the edits stay, for the next save
         logger = FakeLogger()

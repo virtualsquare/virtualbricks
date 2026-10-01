@@ -189,7 +189,8 @@ class ReadmeTab(Tab, Gtk.Overlay):
     def load(self) -> None:
         """The README of the open project, in the editor: not an edit."""
 
-        self.engine.readme().addCallback(self._loaded)
+        # over a connection lost, it stays as it is
+        self.engine.readme().addCallbacks(self._loaded, lambda failure: None)
 
     def _loaded(self, text) -> None:
         textbuffer = self.editor.get_buffer()

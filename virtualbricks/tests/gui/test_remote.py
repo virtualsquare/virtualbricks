@@ -114,6 +114,8 @@ class FakeWindows:
 
     def on_opened(self):
         self.calls.append(("opened",))
+        # what a tab asks then goes through the connection that follows
+        self.opened_over = self.engine.windows
 
     def on_quit(self, factory):
         self.calls.append(("quit",))
@@ -155,7 +157,7 @@ class RemoteTestCase(GuiTestCase):
         self.patch(follower.ksm, "check_ksm", lambda: True)
         self.patch(follower, "missing_programs", lambda vde, qemu: [])
 
-    def connect(self, target, copy, reactor):
+    def connect(self, target, copy, reactor, made=None):
         """The connection to the Virtualbricks of the test, followed."""
 
         if self.refusal is not None:
@@ -164,6 +166,8 @@ class RemoteTestCase(GuiTestCase):
             lambda: self.server.buildProtocol(None), lambda: Windows(copy)
         )
         self.connections.append((windows, connection, pump))
+        if made is not None:
+            made(windows)
         started = defer.ensureDeferred(start(windows, target))
         pump.flush()
         return started.addCallback(lambda _: windows)
@@ -261,6 +265,13 @@ class TestRemoteApplication(RemoteTestCase):
         self.assertEqual(entry.level, "warn")
         self.assertEqual(entry.lines, ["sw1 started"])
 
+    def test_the_messages_before(self):
+        # those the Virtualbricks there had, which come with the project
+        self.keeper(event("sw1 started", LogLevel.warn))
+        application = self.launch()
+        [entry] = list(application.messages.entries)
+        self.assertEqual(entry.lines, ["sw1 started"])
+
     def test_a_project_opened_there(self):
         self.launch()
         [windows] = self.shown
@@ -284,6 +295,9 @@ class TestRemoteApplication(RemoteTestCase):
         self.turn()
         self.assertIsNot(application.engine.windows, first)
         self.assertEqual(windows.calls[-2:], [("opened",), ("reconnected",)])
+        # while the project came again, the engine had the new connection
+        self.assertIs(windows.opened_over, application.engine.windows)
+        self.assertTrue(windows.opened_over.connected)
         self.assertIsNotNone(application.copy.get_brick("sw2"))
         # the new connection, watched as the first
         self.keeper(event("sw2 started"))

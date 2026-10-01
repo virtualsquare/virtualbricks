@@ -227,10 +227,16 @@ async def _reach(target, reactor, connection):
         ) from None
 
 
-async def connect(target, mirror, reactor) -> Windows:
-    """The connection to target, following it with the copy mirror."""
+async def connect(target, mirror, reactor, made=None) -> Windows:
+    """
+    The connection to target, following it with the copy mirror. made, if
+    given, is called with the connection before it follows: what comes with
+    the project, as the messages of the log, goes where it says.
+    """
 
     windows = await _reach(target, reactor, Windows(mirror))
+    if made is not None:
+        made(windows)
     try:
         await start(windows, target)
     except BaseException:

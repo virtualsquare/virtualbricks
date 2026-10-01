@@ -328,7 +328,7 @@ class RemoteApplication:
         self.copy = MirrorFactory(reactor)
         self.done = defer.Deferred()
         connecting = defer.ensureDeferred(
-            client.connect(self.target, self.copy, reactor)
+            client.connect(self.target, self.copy, reactor, self.made)
         )
         connecting.addCallbacks(self.show, self.not_connected)
         return self.done
@@ -360,7 +360,7 @@ class RemoteApplication:
         self.engine = RemoteEngine(
             self.copy, windows, self.where, self.quit, self.consoles
         )
-        self.watch(windows)
+        windows.lost.addCallback(self.lost)
         self.gui = VBGUI(self.engine, self.messages)
         message_dialog.set_parent(self.gui.window)
         self.copy.synced.connect(self.synced)
@@ -368,9 +368,16 @@ class RemoteApplication:
         self.gui.set_title()
         self.warn(self.copy.machine)
 
-    def watch(self, windows):
+    def made(self, windows):
+        """
+        A connection, before it follows: the messages of the log that come
+        with the project go to the windows, and so do the calls of the
+        windows that the project makes, as the Readme tab's.
+        """
+
         windows.logged = self.logged
-        windows.lost.addCallback(self.lost)
+        if self.engine is not None:
+            self.engine.windows = windows
 
     def logged(self, message):
         self.messages.add_message(message, self.where)
@@ -416,14 +423,13 @@ class RemoteApplication:
 
         self.ended = False
         connecting = defer.ensureDeferred(
-            client.connect(self.target, self.copy, self.reactor)
+            client.connect(self.target, self.copy, self.reactor, self.made)
         )
         connecting.addCallbacks(self.reconnected, self.not_reconnected)
         return connecting
 
     def reconnected(self, windows):
-        self.engine.windows = windows
-        self.watch(windows)
+        windows.lost.addCallback(self.lost)
         self.gui.reconnected()
 
     def not_reconnected(self, failure):
