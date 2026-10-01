@@ -32,7 +32,7 @@ beside the windows.
 With \f[B]\-\-no\-gui\f[R] it runs without them, and the console is the
 way in: a lab on a machine without a display.
 .PP
-Started with \f[B]\-\-socket\f[R], it listens on control sockets, on
+Started with \f[B]\-\-listen\f[R], it listens on control sockets, on
 this machine or across the network: \f[B]virtualbricks \-\-command\f[R]
 sends it a command of the console from any terminal or script, and
 prints its answer, \f[B]virtualbricks \-\-connect \-\-run\f[R] sends it
@@ -40,7 +40,7 @@ the commands of a file, and a program written with Twisted can drive it
 through AMP.
 See \f[B]THE CONTROL SOCKET\f[R].
 .PP
-Started with \f[B]\-\-connect\f[R] and the description of an AMP socket
+Started with \f[B]\-\-connect\f[R] and the description of a socket
 alone, it opens the windows of the Virtualbricks that listens there, on
 this machine or another: the bricks run there, the windows here.
 See \f[B]THE WINDOWS OF ANOTHER VIRTUALBRICKS\f[R].
@@ -107,11 +107,12 @@ It takes no lock, and no other option but \f[B]\-\-connect\f[R] or
 \f[B]\-\-workspace\f[R].
 See \f[B]THE CONTROL SOCKET\f[R].
 .TP
-\f[B]\-\-socket\f[R] [\f[I]description\f[R]]
-Listen on a control socket: alone, the text socket \f[I].control\f[R] in
-the runtime folder of the workspace; with a \f[I]description\f[R], as
-\f[B]unix:\(ti/labs/lab1.amp:protocol=amp\f[R] or \f[B]tcp:8765\f[R],
-the socket it describes.
+\f[B]\-\-listen\f[R] [\f[I]description\f[R]]
+Listen on a control socket: alone, the socket \f[I].control\f[R] in the
+runtime folder of the workspace; with a \f[I]description\f[R], as
+\f[B]unix:\(ti/labs/lab1.sock\f[R] or \f[B]tcp:8765\f[R], the socket it
+describes.
+It speaks AMP, or the text protocol with \f[B]protocol=text\f[R].
 It can be given more than once.
 The next word is the description when it starts with a type and a colon,
 as \f[B]unix:\f[R]; after \f[B]=\f[R] it is too.
@@ -119,23 +120,23 @@ See \f[B]THE CONTROL SOCKET\f[R].
 .TP
 \f[B]\-\-connect\f[R] [\f[I]description\f[R]]
 The Virtualbricks that runs that \f[B]\-\-command\f[R] and
-\f[B]\-\-run\f[R] talk to: alone, the one of the text socket
+\f[B]\-\-run\f[R] talk to: alone, the one of the socket
 \f[I].control\f[R] of its workspace, that of \f[B]\-\-workspace\f[R] or
 the only one that listens; with a \f[I]description\f[R], the one of the
-socket it describes, as \f[B]unix:\(ti/labs/lab1.amp:protocol=amp\f[R]
-or \f[B]tcp:lab.example:8765\f[R].
-The next word is its description as for \f[B]\-\-socket\f[R].
+socket it describes, as \f[B]unix:\(ti/labs/lab1.sock\f[R] or
+\f[B]tcp:lab.example:8765\f[R].
+It speaks AMP, or the text protocol with \f[B]protocol=text\f[R].
+The next word is its description as for \f[B]\-\-listen\f[R].
 With \f[B]\-\-command\f[R] or \f[B]\-\-run\f[R], it takes no
-\f[B]\-\-socket\f[R], no other option of a start, and no
+\f[B]\-\-listen\f[R], no other option of a start, and no
 \f[B]\-\-workspace\f[R] with a description.
 See \f[B]THE CONTROL SOCKET\f[R].
 .RS
-Without them, it opens the windows of the Virtualbricks of the AMP
-socket of \f[I]description\f[R], which speaks \f[B]protocol=amp\f[R]
-when it names no protocol.
-It takes no \f[B]protocol=text\f[R], no \f[B]\-\-no\-gui\f[R],
-\f[B]\-\-lock\f[R], \f[B]\-\-workspace\f[R] or \f[B]\-\-socket\f[R]:
-they are for the Virtualbricks that runs the bricks.
+Without them, it opens the windows of the Virtualbricks of the socket of
+\f[I]description\f[R], which speak AMP, so it takes no
+\f[B]protocol=text\f[R]; nor \f[B]\-\-no\-gui\f[R], \f[B]\-\-lock\f[R],
+\f[B]\-\-workspace\f[R] or \f[B]\-\-listen\f[R], which are for the
+Virtualbricks that runs the bricks.
 See \f[B]THE WINDOWS OF ANOTHER VIRTUALBRICKS\f[R].
 .RE
 .TP
@@ -249,10 +250,10 @@ start.
 Empty lines and comments are skipped, and the first error stops the
 file, saying where, as \f[I]lab.vb\f[R]:7.
 .SH THE CONTROL SOCKET
-A Virtualbricks started with \f[B]\-\-socket\f[R], with the windows or
+A Virtualbricks started with \f[B]\-\-listen\f[R], with the windows or
 without, listens on control sockets once its project is open; without
 it, on none.
-\f[B]\-\-socket\f[R] alone is the text socket of the workspace,
+\f[B]\-\-listen\f[R] alone is the socket of the workspace,
 \f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/\f[I]key\f[R]/.control, where
 \f[I]key\f[R] is named after the path of the workspace, and
 \f[I].workspace\f[R] beside it links to the workspace.
@@ -260,24 +261,25 @@ A description, in the syntax of Twisted\(aqs endpoints, names another:
 its type, \f[B]unix\f[R], \f[B]tcp\f[R] or \f[B]ssl\f[R]; the path of a
 \f[B]unix\f[R] socket, or \f[B]address=\f[R]\f[I]path\f[R]; the port of
 the others, or \f[B]port=\f[R]\f[I]port\f[R]; and
-\f[B]protocol=text\f[R], the default, or \f[B]protocol=amp\f[R].
+\f[B]protocol=amp\f[R], the default, or \f[B]protocol=text\f[R].
 \f[B]:\f[R] separates the parts, and a backslash makes the next
 character plain.
 The option can be given more than once:
 .IP
 .EX
-virtualbricks \-\-no\-gui \-\-socket
-virtualbricks \-\-no\-gui \-\-socket unix:\(ti/labs/lab1.sock
-virtualbricks \-\-no\-gui \-\-socket \(rs
-    \-\-socket unix:\(ti/labs/lab1.amp:protocol=amp
-virtualbricks \-\-no\-gui \-\-socket tcp:8765
+virtualbricks \-\-no\-gui \-\-listen
+virtualbricks \-\-no\-gui \-\-listen unix:\(ti/labs/lab1.sock
+virtualbricks \-\-no\-gui \-\-listen \(rs
+    \-\-listen unix:\(ti/labs/lab1.text:protocol=text
+virtualbricks \-\-no\-gui \-\-listen tcp:8765
 .EE
 .PP
 \f[B]\-\-command\f[R] sends a command, as typed in the console, to the
 socket of \f[B]\-\-connect\f[R], in the protocol of its description.
-Without it, it sends it to the text socket of the workspace of
-\f[B]\-\-workspace\f[R], or else of the only Virtualbricks of yours that
-listens on one; when several do, it names them and sends nothing:
+Without it, it sends it to the socket \f[I].control\f[R] of the
+workspace of \f[B]\-\-workspace\f[R], or else of the only Virtualbricks
+of yours that listens on one; when several do, it names them and sends
+nothing:
 .IP
 .EX
 virtualbricks \-\-command brick start sw1 vm1
@@ -285,7 +287,7 @@ virtualbricks \-\-command brick set vm1 memory=1024
 virtualbricks \-\-workspace \(ti/labs/bgp \-\-command status
 virtualbricks \-\-connect unix:\(ti/labs/lab1.sock \-\-command status
 virtualbricks \-\-connect tcp:8765 \-\-command status
-virtualbricks \-\-connect unix:\(ti/labs/lab1.amp:protocol=amp \(rs
+virtualbricks \-\-connect unix:\(ti/labs/lab1.text:protocol=text \(rs
     \-\-command status
 .EE
 .PP
@@ -308,25 +310,26 @@ virtualbricks \-\-connect tcp:lab.example:8765 \-\-run traffic.vb
 .EE
 .PP
 The answer goes to the standard output.
-When a command fails, what it did first goes there too, and the error,
-\f[B]Error:\f[R] and why, to the standard error; see \f[B]EXIT
-STATUS\f[R].
+When a command fails, the error, \f[B]Error:\f[R] and why, goes to the
+standard error; see \f[B]EXIT STATUS\f[R].
 A relative path, as that of \f[B]source\f[R] \f[I]file\f[R], is read
 from the folder where \f[B]virtualbricks\f[R] runs.
 Ctrl+C stops waiting, not the command.
 Virtualbricks logs each command it gets, and answers in its own
 language.
 Over AMP, what a command did before it failed doesn\(aqt come, and an
-answer longer than 65535 bytes is an error; a text socket carries both.
+answer longer than 65535 bytes is an error; a text socket carries both,
+and what a command did first goes to the standard output before its
+error.
 .PP
 Only you can connect to a \f[B]unix\f[R] socket: each is yours alone,
 and Virtualbricks doesn\(aqt listen in a runtime folder that isn\(aqt
 yours, or that others can write in.
 One Virtualbricks has each socket: the first to start, which holds the
 lock \f[I]path\f[R].lock beside it; with \f[B]\-\-lock none\f[R],
-another one with the same \f[B]\-\-socket\f[R] runs without that socket.
-Each workspace has its own text socket, so two Virtualbricks side by
-side both listen with \f[B]\-\-socket\f[R] alone.
+another one with the same \f[B]\-\-listen\f[R] runs without that socket.
+Each workspace has its own socket \f[I].control\f[R], so two
+Virtualbricks side by side both listen with \f[B]\-\-listen\f[R] alone.
 A socket left by a crash is removed at the next start; nothing else at
 the path is.
 .SS Sockets on the network
@@ -363,9 +366,9 @@ The files are read at start.
 The log names each client, by its address or by its certificate:
 .IP
 .EX
-virtualbricks \-\-no\-gui \-\-socket \(rs
+virtualbricks \-\-no\-gui \-\-listen \(rs
     \(aqssl:8765:interface=0.0.0.0:privateKey=\(ti/vb/lab.pem\(aq
-virtualbricks \-\-no\-gui \-\-socket \(rs
+virtualbricks \-\-no\-gui \-\-listen \(rs
     \(aqssl:8765:privateKey=\(ti/vb/lab.pem:caCertsDir=\(ti/vb/clients\(aq
 .EE
 .PP
@@ -402,8 +405,8 @@ openssl req \-x509 \-newkey ec \-pkeyopt ec_paramgen_curve:P\-256 \(rs
     \-keyout alice.key \-out alice.pem
 .EE
 .SS The text protocol
-Any program can talk to a text socket: UTF\-8 JSON, an object on each
-line.
+Any program can talk to a text socket, one of \f[B]protocol=text\f[R]:
+UTF\-8 JSON, an object on each line.
 Virtualbricks greets with the \f[B]protocol\f[R], 1, its
 \f[B]version\f[R], its \f[B]pid\f[R] and the open \f[B]project\f[R];
 then it answers each request in turn.
@@ -440,8 +443,9 @@ printf \(aqvirtualbricks client %s %s\(aq \(dq$nonce\(dq \(dq$mine\(dq |
     openssl dgst \-sha256 \-hmac \(dq$token\(dq
 .EE
 .SS The AMP protocol
-A program written with Twisted drives an AMP socket with the commands of
-protocol 1, and with the typed commands of protocol 2 too.
+A program written with Twisted drives an AMP socket, as one is without
+\f[B]protocol=text\f[R], with the commands of protocol 1, and with the
+typed commands of protocol 2 too.
 \f[B]Hello\f[R] agrees on the protocol of the connection: it takes
 \f[B]protocols\f[R], those the program speaks, optional, and answers in
 \f[B]protocol\f[R] the highest that Virtualbricks speaks too, 1 without
@@ -531,11 +535,11 @@ async def authenticate(vb, token):
         raise WrongToken(\(dqThe other end doesn\(aqt know the token\(dq)
 .EE
 .PP
-Then a program, for the AMP socket of the third example above:
+Then a program, for the socket of the second example above:
 .IP
 .EX
 async def main(reactor):
-    path = os.path.expanduser(\(dq\(ti/labs/lab1.amp\(dq)
+    path = os.path.expanduser(\(dq\(ti/labs/lab1.sock\(dq)
     endpoint = endpoints.UNIXClientEndpoint(reactor, path)
     vb = await endpoints.connectProtocol(endpoint, amp.AMP())
     answer = await vb.callRemote(Run, line=\(dqbrick start sw1\(dq)
@@ -585,7 +589,7 @@ asks for the token they wait for the proof too.
 .IP
 .EX
 async def main(reactor):
-    path = os.path.expanduser(\(dq\(ti/labs/lab1.amp\(dq)
+    path = os.path.expanduser(\(dq\(ti/labs/lab1.sock\(dq)
     endpoint = endpoints.UNIXClientEndpoint(reactor, path)
     vb = await endpoints.connectProtocol(endpoint, amp.AMP())
     hello = await vb.callRemote(Hello, protocols=[2])
@@ -638,17 +642,17 @@ path being typed.
 a brick, AMP\(aqs \f[B]ProtocolSwitchCommand\f[R].
 .SH THE WINDOWS OF ANOTHER VIRTUALBRICKS
 \f[B]virtualbricks \-\-connect\f[R] \f[I]description\f[R] opens the
-windows of the Virtualbricks of the AMP socket of \f[I]description\f[R]:
-the lab machine, which runs the bricks, this machine or another, and the
+windows of the Virtualbricks of the socket of \f[I]description\f[R]: the
+lab machine, which runs the bricks, this machine or another, and the
 desktop, which shows them.
-The Virtualbricks there listens with \f[B]\-\-socket\f[R] and
-\f[B]protocol=amp\f[R], with its own windows or with
-\f[B]\-\-no\-gui\f[R], and both run the same version:
+The Virtualbricks there listens with \f[B]\-\-listen\f[R], on a socket
+that speaks AMP, as one does without \f[B]protocol=text\f[R], with its
+own windows or with \f[B]\-\-no\-gui\f[R], and both run the same
+version:
 .IP
 .EX
-key=\(ti/vb/lab.pem
-virtualbricks \-\-no\-gui \-\-noterm \-\-socket \(rs
-    \(dqssl:8765:interface=0.0.0.0:privateKey=$key:protocol=amp\(dq
+virtualbricks \-\-no\-gui \-\-noterm \-\-listen \(rs
+    \(aqssl:8765:interface=0.0.0.0:privateKey=\(ti/vb/lab.pem\(aq
 virtualbricks \-\-connect \(rs
     \(aqssl:lab.example:8765:caCertsDir=\(ti/vb/lab\(aq
 .EE
@@ -945,7 +949,7 @@ The lock of a workspace, held by the Virtualbricks that runs there in
 each mode but \f[B]none\f[R], see \f[B]\-\-lock\f[R].
 .TP
 \f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/\f[I]key\f[R]/.control, .control.lock
-The text socket of \f[B]\-\-socket\f[R] alone of the workspace of
+The socket of \f[B]\-\-listen\f[R] alone of the workspace of
 \f[I]key\f[R] and its lock, see \f[B]THE CONTROL SOCKET\f[R].
 .TP
 \f[I]$XDG_CONFIG_HOME\f[R]/virtualbricks/token
@@ -984,10 +988,10 @@ event start up down
 .EE
 .PP
 A lab on a server, from a file, without windows or console, with the
-text socket:
+socket of its workspace:
 .IP
 .EX
-virtualbricks \-\-no\-gui \-\-noterm \-\-socket \-\-run \(ti/labs/ospf.vb
+virtualbricks \-\-no\-gui \-\-noterm \-\-listen \-\-run \(ti/labs/ospf.vb
 .EE
 .PP
 The machine of that lab, from another terminal, and the commands of a
@@ -1003,30 +1007,26 @@ started from a laptop that has a copy of the token and of
 \f[B]lab.pem\f[R], in \f[I]\(ti/vb/lab\f[R]:
 .IP
 .EX
-virtualbricks \-\-no\-gui \-\-noterm \-\-run \(ti/labs/ospf.vb \-\-socket \(rs
+virtualbricks \-\-no\-gui \-\-noterm \-\-run \(ti/labs/ospf.vb \-\-listen \(rs
     \(aqssl:8765:interface=0.0.0.0:privateKey=\(ti/vb/lab.pem\(aq
 virtualbricks \(rs
     \-\-connect \(aqssl:lab.example:8765:caCertsDir=\(ti/vb/lab\(aq \(rs
     \-\-command brick start router
 .EE
 .PP
-The windows of a lab of another machine, which listens on an AMP socket,
-from a desktop with the token:
+The windows of that lab, on the same laptop:
 .IP
 .EX
-key=\(ti/vb/lab.pem
-virtualbricks \-\-no\-gui \-\-noterm \-\-run \(ti/labs/ospf.vb \-\-socket \(rs
-    \(dqssl:8766:interface=0.0.0.0:privateKey=$key:protocol=amp\(dq
 virtualbricks \-\-connect \(rs
-    \(aqssl:lab.example:8766:caCertsDir=\(ti/vb/lab\(aq
+    \(aqssl:lab.example:8765:caCertsDir=\(ti/vb/lab\(aq
 .EE
 .PP
 Two labs side by side, each in its workspace, both listening, and a
 command to one of them:
 .IP
 .EX
-virtualbricks \-\-no\-gui \-\-noterm \-\-socket \-\-workspace \(ti/labs/a &
-virtualbricks \-\-no\-gui \-\-noterm \-\-socket \-\-workspace \(ti/labs/b &
+virtualbricks \-\-no\-gui \-\-noterm \-\-listen \-\-workspace \(ti/labs/a &
+virtualbricks \-\-no\-gui \-\-noterm \-\-listen \-\-workspace \(ti/labs/b &
 virtualbricks \-\-workspace \(ti/labs/b \-\-command status
 .EE
 .SH SEE ALSO

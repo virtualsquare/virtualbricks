@@ -194,7 +194,7 @@ class TestDescriptions(unittest.TestCase):
         parse = wire.parse_socket
         self.assertEqual(
             parse("unix:/tmp/lab.sock"),
-            wire.Socket("/tmp/lab.sock", "text", "unix"),
+            wire.Socket("/tmp/lab.sock", "amp", "unix"),
         )
         self.assertEqual(parse("unix:~/lab.sock"), wire.Socket("~/lab.sock"))
         self.assertEqual(
@@ -208,11 +208,11 @@ class TestDescriptions(unittest.TestCase):
         parse = wire.parse_socket
         self.assertEqual(
             parse("unix:/tmp/lab.sock:protocol=text"),
-            wire.Socket("/tmp/lab.sock"),
+            wire.Socket("/tmp/lab.sock", "text"),
         )
         self.assertEqual(
             parse("unix:protocol=TEXT:address=/tmp/lab.sock"),
-            wire.Socket("/tmp/lab.sock"),
+            wire.Socket("/tmp/lab.sock", "text"),
         )
         self.assertEqual(
             parse("unix:/tmp/lab.amp:protocol=amp"),
@@ -304,7 +304,7 @@ class TestTcpDescriptions(unittest.TestCase):
             self.assertRaises(ValueError, wire.parse_socket, text, client)
         )
 
-    def tcp(self, port, host="127.0.0.1", protocol="text", token_file=None):
+    def tcp(self, port, host="127.0.0.1", protocol="amp", token_file=None):
         return wire.Socket(None, protocol, "tcp", host, port, token_file)
 
     def test_to_listen_on(self):
@@ -312,7 +312,7 @@ class TestTcpDescriptions(unittest.TestCase):
         self.assertEqual(parse("tcp:8765"), self.tcp(8765))
         self.assertEqual(parse("TCP:port=8765"), self.tcp(8765))
         self.assertEqual(
-            parse("tcp:8765:protocol=amp"), self.tcp(8765, protocol="amp")
+            parse("tcp:8765:protocol=text"), self.tcp(8765, protocol="text")
         )
         self.assertEqual(
             parse(r"tcp:8765:interface=\:\:1"), self.tcp(8765, "::1")
@@ -448,7 +448,7 @@ class TestSslDescriptions(unittest.TestCase):
             socket,
             wire.Socket(
                 None,
-                "text",
+                "amp",
                 "ssl",
                 "127.0.0.1",
                 8765,
@@ -461,13 +461,13 @@ class TestSslDescriptions(unittest.TestCase):
         socket = wire.parse_socket(
             "ssl:8765:interface=0.0.0.0:privateKey=/vb/lab.key"
             ":certKey=/vb/lab.pem:extraCertChain=/vb/chain.pem"
-            ":caCertsDir=/vb/clients:protocol=amp"
+            ":caCertsDir=/vb/clients:protocol=text"
         )
         self.assertEqual(
             socket,
             wire.Socket(
                 None,
-                "amp",
+                "text",
                 "ssl",
                 "0.0.0.0",
                 8765,
@@ -504,14 +504,14 @@ class TestSslDescriptions(unittest.TestCase):
         self.assertEqual(
             parse("ssl:lab.example:8765:caCertsDir=/vb/lab"),
             wire.Socket(
-                None, "text", "ssl", "lab.example", 8765, ca_dir="/vb/lab"
+                None, "amp", "ssl", "lab.example", 8765, ca_dir="/vb/lab"
             ),
         )
         self.assertEqual(
             parse("ssl:8765:privateKey=/vb/alice.key:certKey=/vb/alice.pem"),
             wire.Socket(
                 None,
-                "text",
+                "amp",
                 "ssl",
                 "127.0.0.1",
                 8765,

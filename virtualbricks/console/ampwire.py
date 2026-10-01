@@ -21,8 +21,8 @@ The commands of the AMP socket: what a program written with Twisted needs
 to drive the Virtualbricks that runs. It loads no reactor and nothing else
 of Virtualbricks, so that a program can import it, or copy it.
 
-A Virtualbricks started with ``--socket unix:PATH:protocol=amp`` answers
-them on PATH::
+A Virtualbricks started with ``--listen unix:PATH`` answers them on
+PATH::
 
     endpoint = endpoints.UNIXClientEndpoint(reactor, PATH)
     vb = await endpoints.connectProtocol(endpoint, amp.AMP())

@@ -252,9 +252,9 @@
 - [ ] Open the display of a machine there: a VNC viewer here, through the
   connection, with the VNC of QEMU on the loopback of the lab machine
   (19 §13)
-- [ ] `--connect` alone for the windows: the socket of `--socket` alone
-  speaking AMP, so that the windows reach the Virtualbricks of a workspace
-  of this machine without a path (19 §13)
+- [ ] `--connect` alone for the windows: the socket of `--listen` alone,
+  which speaks AMP since 1 October, so that the windows reach the
+  Virtualbricks of a workspace of this machine without a path (19 §13)
 - [ ] The data of `ProjectNames` and `ProjectSummary` as optional keys of
   `ProjectList` and `ProjectShow`, once answers are data (19 §13)
 - [ ] Windows and a lab machine of different versions (19 §13)

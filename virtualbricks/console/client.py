@@ -20,11 +20,11 @@
 ``virtualbricks --command``: a command of the console, sent to the
 Virtualbricks that runs through its control socket, the one of
 ``--connect``, and its answer; ``--connect --run`` sends those of a file. It
-speaks the text protocol, or AMP to a socket with ``protocol=amp``, through
-:mod:`virtualbricks.console.ampbox`. Over tcp, it proves first that it knows
-the token, and checks that the other end knows it too. Over ssl, it checks
-the certificate of Virtualbricks, shows its own if it has one, and proves
-the token when asked.
+speaks AMP, through :mod:`virtualbricks.console.ampbox`, or the text
+protocol to a socket with ``protocol=text``. Over tcp, it proves first that
+it knows the token, and checks that the other end knows it too. Over ssl, it
+checks the certificate of Virtualbricks, shows its own if it has one, and
+proves the token when asked.
 
 The words after ``--command`` are the command, quoted again for the
 console; without words, the lines of the standard input are, or those of
@@ -33,7 +33,7 @@ the first error. The answer goes
 to the standard output, an error to the standard error. It loads neither
 Twisted's reactor nor GTK, takes no lock and opens no project.
 
-Without ``--connect``, it talks to the socket of ``--socket`` alone of the
+Without ``--connect``, it talks to the socket of ``--listen`` alone of the
 workspace of ``--workspace``, or else of the only workspace where a
 Virtualbricks of yours listens on it: the lock of the socket, held, tells.
 """
@@ -197,8 +197,8 @@ class Connection:
 
         # an AMP socket waits for the first box
         return _(
-            "{where} didn't greet in {seconds} seconds: if it speaks AMP, add"
-            " protocol=amp"
+            "{where} didn't greet in {seconds} seconds: if it speaks AMP,"
+            " leave out protocol=text"
         ).format(where=self.where(), seconds=CONNECT_TIMEOUT)
 
     def receive(self) -> dict:
@@ -233,6 +233,8 @@ class AMPConnection(Connection):
     """
 
     tag = 0
+    # whether a box came: a text socket greets with what isn't one
+    boxed = False
 
     def open(self) -> dict:
         try:
@@ -300,13 +302,22 @@ class AMPConnection(Connection):
 
     def receive_box(self) -> dict:
         try:
-            return ampbox.read(
+            box = ampbox.read(
                 lambda size: self.reading(lambda: self.reader.read(size))
             )
         except ampbox.Closed:
             raise Unanswered(_closed()) from None
         except ampbox.BadBox:
-            raise Unanswered(_not_the_protocol()) from None
+            if self.boxed:
+                raise Unanswered(_not_the_protocol()) from None
+            raise Unanswered(
+                _(
+                    "What answers on {where} doesn't speak AMP: if it speaks"
+                    " the text protocol, add protocol=text"
+                ).format(where=self.where())
+            ) from None
+        self.boxed = True
+        return box
 
     def unexpected(self, exc: AMPError) -> Unanswered:
         """An error that --command doesn't expect, to the user."""
@@ -383,13 +394,13 @@ def _nobody(path: str | None = None, workspace: str | None = None) -> str:
     if mine and path is None:
         return _(
             "Your Virtualbricks, process {pid}, doesn't listen: it was"
-            " started without --socket or with another one, or its log says"
+            " started without --listen or with another one, or its log says"
             " why"
         ).format(pid=mine[0])
     if mine:
         return _(
             "Your Virtualbricks, process {pid}, doesn't listen on {path}: it"
-            " was started without --socket or with another one, or its log"
+            " was started without --listen or with another one, or its log"
             " says why"
         ).format(pid=mine[0], path=path)
     theirs = [(pid, user) for pid, user in holders if user is not None]
@@ -403,7 +414,7 @@ def _nobody(path: str | None = None, workspace: str | None = None) -> str:
         ).format(processes=_processes(theirs))
     return _(
         "No Virtualbricks of yours runs. Start one with a socket, as"
-        " virtualbricks --no-gui --socket"
+        " virtualbricks --no-gui --listen"
     )
 
 
@@ -417,7 +428,7 @@ def _nobody_in(workspace: str) -> str:
     if mine:
         return _(
             "Your Virtualbricks in {workspace}, process {pid}, doesn't"
-            " listen: it was started without --socket, or its log says why"
+            " listen: it was started without --listen, or its log says why"
         ).format(workspace=where, pid=mine[0])
     theirs = [(pid, user) for pid, user in holders if user is not None]
     if theirs:
@@ -427,7 +438,7 @@ def _nobody_in(workspace: str) -> str:
         ).format(workspace=where, processes=_processes(theirs))
     return _(
         "No Virtualbricks runs in {workspace}. Start one with a socket, as"
-        " virtualbricks --workspace {workspace} --no-gui --socket"
+        " virtualbricks --workspace {workspace} --no-gui --listen"
     ).format(workspace=where)
 
 
@@ -438,7 +449,7 @@ Listening = tuple[str, "str | None", list[int]]
 
 def listening() -> list[Listening]:
     """
-    The Virtualbricks of yours that listen on the socket of --socket alone
+    The Virtualbricks of yours that listen on the socket of --listen alone
     of their workspaces, as the locks of the sockets say.
     """
 
@@ -512,7 +523,7 @@ def _and(names: list[str]) -> str:
 
 def _default_socket(workspace: str | None) -> str:
     """
-    The socket of --socket alone of workspace, or else of the only
+    The socket of --listen alone of workspace, or else of the only
     Virtualbricks of yours that listens on one; raise Unanswered if none
     does, or several do.
     """
@@ -532,7 +543,7 @@ def connect(
 ) -> Connection:
     """
     Connect to the Virtualbricks that listens on target, a wire.Socket; if
-    None or a unix socket without a path, on the socket of --socket alone of
+    None or a unix socket without a path, on the socket of --listen alone of
     workspace, or else of the only Virtualbricks of yours that listens on
     one. Raise Unanswered if none can be reached.
     """
@@ -558,7 +569,7 @@ def connect(
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
         sock.connect(path)
-        # the socket greets at once, or it isn't one of the text protocol
+        # a text socket greets at once, an AMP one answers Hello at once
         sock.settimeout(CONNECT_TIMEOUT)
         return _open(sock, target)
     except (ConnectionRefusedError, FileNotFoundError):
@@ -679,7 +690,7 @@ def _connect_network(target: wire.Socket) -> Connection:
         if _loopback(target.host):
             message = _(
                 "Nothing listens on {where}. Start Virtualbricks with"
-                " --socket {kind}:{port}"
+                " --listen {kind}:{port}"
             ).format(where=where, kind=target.kind, port=target.port)
         raise Unanswered(message) from None
     except TimeoutError:

@@ -43,7 +43,7 @@ BRICK_SOCKET_SUFFIX = len(".ctl/.4194304-00000")
 WORKSPACE_KEY_SIZE = 8
 # The link, in that folder, to the workspace.
 WORKSPACE_LINK = ".workspace"
-# The socket of --socket alone, in that folder.
+# The socket of --listen alone, in that folder.
 CONTROL_SOCKET = ".control"
 # The lock of a workspace, in its folder, see virtualbricks.locks: no project
 # is named with a dot, and a workspace can be any folder.
@@ -137,7 +137,7 @@ def user_lock_file():
 
 
 def control_socket(workspace):
-    """The socket of --socket alone, of the Virtualbricks of workspace."""
+    """The socket of --listen alone, of the Virtualbricks of workspace."""
 
     # named with a dot, as the link to the workspace
     return os.path.join(workspace_runtime_dir(workspace), CONTROL_SOCKET)

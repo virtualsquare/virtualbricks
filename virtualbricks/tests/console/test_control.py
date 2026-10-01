@@ -1104,13 +1104,13 @@ class TestListen(ConsoleTestCase):
         projects = use_workspace(self)
         folder = short_folder(self)
         os.environ["XDG_RUNTIME_DIR"] = folder
-        # the socket of --socket alone, in the folder of the workspace
+        # the socket of --listen alone, in the folder of the workspace
         projects.make_runtime_dir()
         self.path = locations.control_socket(projects.path)
         self.lock_file = locations.control_lock_file(self.path)
         self.reactor = Reactor()
 
-    def listen(self, path=None, protocol=wire.TEXT):
+    def listen(self, path=None, protocol=wire.AMP):
         socket = None if path is None else wire.Socket(path, protocol)
         found = control.listen(self.factory, socket, self.reactor)
         if found is not None:
@@ -1133,35 +1133,14 @@ class TestListen(ConsoleTestCase):
 
     @defer.inlineCallbacks
     def test_listen(self):
+        # .control speaks AMP
         found = self.listen()
         self.assertListening(found, self.path)
         self.assertEqual(
             self.logger.formatted(),
-            [f"Listening on {self.path}, protocol text"],
+            [f"Listening on {self.path}, protocol amp"],
         )
-        client = yield self.connect(self.path)
-        greeting = yield client.messages.get()
-        self.assertEqual(greeting["pid"], os.getpid())
-        client.sendLine(wire.encode(wire.request("brick new switch"))[:-1])
-        answer = yield client.messages.get()
-        self.assertEqual(answer, wire.answer(["sw1"]))
-        # the end: the connection closes, the socket goes, the lock is free
-        yield found.close()
-        yield client.lost
-        self.assertFalse(os.path.exists(self.path))
-        lock = locks.hold(self.lock_file)
-        self.assertIsNotNone(lock)
-        lock.unlock()
-
-    @defer.inlineCallbacks
-    def test_amp(self):
-        path = os.path.join(os.path.dirname(self.path), ".control.amp")
-        found = self.listen(path, wire.AMP)
-        self.assertListening(found, path)
-        self.assertEqual(
-            self.logger.formatted(), [f"Listening on {path}, protocol amp"]
-        )
-        endpoint = endpoints.UNIXClientEndpoint(reactor, path)
+        endpoint = endpoints.UNIXClientEndpoint(reactor, self.path)
         program = yield endpoints.connectProtocol(endpoint, AMPProgram())
         hello = yield program.callRemote(ampwire.Hello)
         self.assertEqual(hello["pid"], os.getpid())
@@ -1170,18 +1149,40 @@ class TestListen(ConsoleTestCase):
         # the end: the connection closes, the socket goes, the lock is free
         yield found.close()
         yield program.lost
+        self.assertFalse(os.path.exists(self.path))
+        lock = locks.hold(self.lock_file)
+        self.assertIsNotNone(lock)
+        lock.unlock()
+
+    @defer.inlineCallbacks
+    def test_text(self):
+        path = os.path.join(os.path.dirname(self.path), ".control.text")
+        found = self.listen(path, wire.TEXT)
+        self.assertListening(found, path)
+        self.assertEqual(
+            self.logger.formatted(), [f"Listening on {path}, protocol text"]
+        )
+        client = yield self.connect(path)
+        greeting = yield client.messages.get()
+        self.assertEqual(greeting["pid"], os.getpid())
+        client.sendLine(wire.encode(wire.request("brick new switch"))[:-1])
+        answer = yield client.messages.get()
+        self.assertEqual(answer, wire.answer(["sw1"]))
+        # the end: the connection closes, the socket goes, the lock is free
+        yield found.close()
+        yield client.lost
         self.assertFalse(os.path.exists(path))
         locks.hold(locations.control_lock_file(path)).unlock()
 
     def test_both(self):
-        # a text socket and an AMP one, a lock each; a crash left the second
-        path = os.path.join(short_folder(self), "lab.amp")
+        # an AMP socket and a text one, a lock each; a crash left the second
+        path = os.path.join(short_folder(self), "lab.sock")
         make_socket(path)
         self.assertListening(self.listen(), self.path)
-        self.assertListening(self.listen(path, wire.AMP), path)
+        self.assertListening(self.listen(path, wire.TEXT), path)
         # another Virtualbricks goes without both
         self.assertIsNone(self.listen())
-        self.assertIsNone(self.listen(path, wire.AMP))
+        self.assertIsNone(self.listen(path, wire.TEXT))
         self.assertEqual(
             self.logger.formatted()[2:],
             [
@@ -1289,15 +1290,16 @@ class TestListen(ConsoleTestCase):
 
     @defer.inlineCallbacks
     def test_the_wrong_protocol(self):
-        text = self.listen()
-        amp_socket = self.listen(self.path + ".amp", wire.AMP)
+        text = self.listen(self.path + ".text", wire.TEXT)
+        amp_socket = self.listen()
         result = yield command_in_thread(text, "status", protocol=wire.AMP)
         self.assertEqual(
             result,
             (
                 client.UNANSWERED,
                 "",
-                "What answers on the socket doesn't speak its protocol\n",
+                f"What answers on {text.path} doesn't speak AMP: if it speaks"
+                " the text protocol, add protocol=text\n",
             ),
         )
         # an AMP socket waits for the first box
@@ -1311,7 +1313,7 @@ class TestListen(ConsoleTestCase):
                 client.UNANSWERED,
                 "",
                 f"{amp_socket.path} didn't greet in 0.2 seconds: if it speaks"
-                " AMP, add protocol=amp\n",
+                " AMP, leave out protocol=text\n",
             ),
         )
 
@@ -1530,7 +1532,10 @@ class TestListenSsl(ListenTestCase):
         return os.path.abspath(folder)
 
     def target(self, found, *mine, **fields):
-        """--command to found, which trusts its certificate; mine, its own."""
+        """
+        --command to found, in its protocol, which trusts its certificate;
+        mine, its own.
+        """
 
         target = wire.parse_socket(
             f"ssl:127.0.0.1:{found.socket.port}", client=True
@@ -1540,7 +1545,11 @@ class TestListenSsl(ListenTestCase):
                 private_key=tls_file(f"{mine[0]}.key"),
                 cert=tls_file(f"{mine[0]}.pem"),
             )
-        return target._replace(ca_dir=self.folder("server.pem"), **fields)
+        return target._replace(
+            protocol=found.socket.protocol,
+            ca_dir=self.folder("server.pem"),
+            **fields,
+        )
 
     @defer.inlineCallbacks
     def logged(self, count):
@@ -1665,7 +1674,7 @@ class TestListenSsl(ListenTestCase):
     @defer.inlineCallbacks
     def test_command_over_amp(self):
         found = self.listen(protocol=wire.AMP, ca_dir=self.folder("alice.pem"))
-        target = self.target(found, "alice")._replace(protocol=wire.AMP)
+        target = self.target(found, "alice")
         result = yield self.command(target, "brick", "new", "switch")
         self.assertEqual(result, (client.DONE, "sw1\n", ""))
         log = yield self.logged(3)

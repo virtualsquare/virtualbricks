@@ -637,7 +637,7 @@ class Application:
         start(factory, self.get_namespace())
 
     def listen(self, factory, reactor):
-        """Answer on the control sockets of --socket; on none without it."""
+        """Answer on the control sockets of --listen; on none without it."""
 
         sockets = self.config.get("sockets")
         if not sockets:

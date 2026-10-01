@@ -36,14 +36,14 @@ Started from a terminal, it reads the commands of its console there, beside
 the windows. With **--no-gui** it runs without them, and the console is the
 way in: a lab on a machine without a display.
 
-Started with **--socket**, it listens on control sockets, on this machine
+Started with **--listen**, it listens on control sockets, on this machine
 or across the network: **virtualbricks --command** sends it a command of
 the console from any terminal or script, and prints its answer,
 **virtualbricks --connect --run** sends it the commands of a file, and a
 program written with Twisted can drive it through AMP. See **THE CONTROL
 SOCKET**.
 
-Started with **--connect** and the description of an AMP socket alone,
+Started with **--connect** and the description of a socket alone,
 it opens the windows of the Virtualbricks that listens there, on this
 machine or another: the bricks run there, the windows here. See **THE
 WINDOWS OF ANOTHER VIRTUALBRICKS**.
@@ -100,31 +100,31 @@ WINDOWS OF ANOTHER VIRTUALBRICKS**.
     standard input. It takes no lock, and no other option but
     **--connect** or **--workspace**. See **THE CONTROL SOCKET**.
 
-**--socket** [*description*]
-:   Listen on a control socket: alone, the text socket *.control* in the
+**--listen** [*description*]
+:   Listen on a control socket: alone, the socket *.control* in the
     runtime folder of the workspace; with a *description*, as
-    **unix:~/labs/lab1.amp:protocol=amp** or **tcp:8765**, the socket it
-    describes. It can be given more than once. The next word is the
-    description when it starts with a type and a colon, as **unix:**;
-    after **=** it is too. See **THE CONTROL SOCKET**.
+    **unix:~/labs/lab1.sock** or **tcp:8765**, the socket it describes.
+    It speaks AMP, or the text protocol with **protocol=text**. It can be
+    given more than once. The next word is the description when it starts
+    with a type and a colon, as **unix:**; after **=** it is too. See
+    **THE CONTROL SOCKET**.
 
 **--connect** [*description*]
 :   The Virtualbricks that runs that **--command** and **--run** talk
-    to: alone, the one of the text socket *.control* of its workspace,
-    that of **--workspace** or the only one that listens; with a
-    *description*, the one of the socket it describes, as
-    **unix:~/labs/lab1.amp:protocol=amp** or **tcp:lab.example:8765**. The
-    next word is its description as for **--socket**. With **--command**
-    or **--run**, it takes no **--socket**, no other option of a start,
-    and no **--workspace** with a description. See **THE CONTROL
-    SOCKET**.
+    to: alone, the one of the socket *.control* of its workspace, that of
+    **--workspace** or the only one that listens; with a *description*,
+    the one of the socket it describes, as **unix:~/labs/lab1.sock** or
+    **tcp:lab.example:8765**. It speaks AMP, or the text protocol with
+    **protocol=text**. The next word is its description as for
+    **--listen**. With **--command** or **--run**, it takes no
+    **--listen**, no other option of a start, and no **--workspace** with
+    a description. See **THE CONTROL SOCKET**.
 
-    Without them, it opens the windows of the Virtualbricks of the AMP
-    socket of *description*, which speaks **protocol=amp** when it names
-    no protocol. It takes no **protocol=text**, no **--no-gui**,
-    **--lock**, **--workspace** or **--socket**: they are for the
-    Virtualbricks that runs the bricks. See **THE WINDOWS OF ANOTHER
-    VIRTUALBRICKS**.
+    Without them, it opens the windows of the Virtualbricks of the socket
+    of *description*, which speak AMP, so it takes no **protocol=text**;
+    nor **--no-gui**, **--lock**, **--workspace** or **--listen**, which
+    are for the Virtualbricks that runs the bricks. See **THE WINDOWS OF
+    ANOTHER VIRTUALBRICKS**.
 
 **--version**
 :   Print the version and exit.
@@ -239,31 +239,31 @@ first error stops the file, saying where, as *lab.vb*:7.
 
 # THE CONTROL SOCKET
 
-A Virtualbricks started with **--socket**, with the windows or without,
+A Virtualbricks started with **--listen**, with the windows or without,
 listens on control sockets once its project is open; without it, on none.
-**--socket** alone is the text socket of the workspace,
+**--listen** alone is the socket of the workspace,
 *\$XDG_RUNTIME_DIR*/virtualbricks/*key*/.control, where *key* is named
 after the path of the workspace, and *.workspace* beside it links to the
 workspace. A description, in the syntax
 of Twisted's endpoints, names another: its type, **unix**, **tcp** or
 **ssl**; the path of a **unix** socket, or **address=***path*; the port of
-the others, or **port=***port*; and **protocol=text**, the default, or
-**protocol=amp**. **:** separates the parts, and a backslash makes the
+the others, or **port=***port*; and **protocol=amp**, the default, or
+**protocol=text**. **:** separates the parts, and a backslash makes the
 next character plain. The option can be given more than once:
 
 ```
-virtualbricks --no-gui --socket
-virtualbricks --no-gui --socket unix:~/labs/lab1.sock
-virtualbricks --no-gui --socket \
-    --socket unix:~/labs/lab1.amp:protocol=amp
-virtualbricks --no-gui --socket tcp:8765
+virtualbricks --no-gui --listen
+virtualbricks --no-gui --listen unix:~/labs/lab1.sock
+virtualbricks --no-gui --listen \
+    --listen unix:~/labs/lab1.text:protocol=text
+virtualbricks --no-gui --listen tcp:8765
 ```
 
 **--command** sends a command, as typed in the console, to the socket of
 **--connect**, in the protocol of its description. Without it, it sends
-it to the text socket of the workspace of **--workspace**, or else of the
-only Virtualbricks of yours that listens on one; when several do, it names
-them and sends nothing:
+it to the socket *.control* of the workspace of **--workspace**, or else
+of the only Virtualbricks of yours that listens on one; when several do,
+it names them and sends nothing:
 
 ```
 virtualbricks --command brick start sw1 vm1
@@ -271,7 +271,7 @@ virtualbricks --command brick set vm1 memory=1024
 virtualbricks --workspace ~/labs/bgp --command status
 virtualbricks --connect unix:~/labs/lab1.sock --command status
 virtualbricks --connect tcp:8765 --command status
-virtualbricks --connect unix:~/labs/lab1.amp:protocol=amp \
+virtualbricks --connect unix:~/labs/lab1.text:protocol=text \
     --command status
 ```
 
@@ -291,22 +291,23 @@ virtualbricks --connect --run ~/labs/traffic.vb
 virtualbricks --connect tcp:lab.example:8765 --run traffic.vb
 ```
 
-The answer goes to the standard output. When a command fails, what it did
-first goes there too, and the error, **Error:** and why, to the standard
-error; see **EXIT STATUS**. A relative path, as that of **source** *file*,
-is read from the folder where **virtualbricks** runs. Ctrl+C stops waiting, not
-the command. Virtualbricks logs each command it gets, and answers in its
-own language. Over AMP, what a command did before it failed doesn't come,
-and an answer longer than 65535 bytes is an error; a text socket carries
-both.
+The answer goes to the standard output. When a command fails, the
+error, **Error:** and why, goes to the standard error; see **EXIT
+STATUS**. A relative path, as that of **source** *file*, is read from the
+folder where **virtualbricks** runs. Ctrl+C stops waiting, not the
+command. Virtualbricks logs each command it gets, and answers in its own
+language. Over AMP, what a command did before it failed doesn't come, and
+an answer longer than 65535 bytes is an error; a text socket carries
+both, and what a command did first goes to the standard output before
+its error.
 
 Only you can connect to a **unix** socket: each is yours alone, and
 Virtualbricks doesn't listen in a runtime folder that isn't yours, or that
 others can write in. One Virtualbricks has each socket: the first to
 start, which holds the lock *path*.lock beside it; with **--lock none**,
-another one with the same **--socket** runs without that socket. Each
-workspace has its own text socket, so two Virtualbricks side by side
-both listen with **--socket** alone. A socket
+another one with the same **--listen** runs without that socket. Each
+workspace has its own socket *.control*, so two Virtualbricks side by side
+both listen with **--listen** alone. A socket
 left by a crash is removed at the next start; nothing else at the path is.
 
 ## Sockets on the network
@@ -336,9 +337,9 @@ a .pem file of *directory* issued, or is. The files are read at start. The
 log names each client, by its address or by its certificate:
 
 ```
-virtualbricks --no-gui --socket \
+virtualbricks --no-gui --listen \
     'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.pem'
-virtualbricks --no-gui --socket \
+virtualbricks --no-gui --listen \
     'ssl:8765:privateKey=~/vb/lab.pem:caCertsDir=~/vb/clients'
 ```
 
@@ -374,7 +375,8 @@ openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
 
 ## The text protocol
 
-Any program can talk to a text socket: UTF-8 JSON, an object on each line.
+Any program can talk to a text socket, one of **protocol=text**: UTF-8
+JSON, an object on each line.
 Virtualbricks greets with the **protocol**, 1, its **version**, its
 **pid** and the open **project**; then it answers each request in turn.
 A request's **cwd**, the folder of its paths, is optional:
@@ -410,13 +412,14 @@ printf 'virtualbricks client %s %s' "$nonce" "$mine" |
 
 ## The AMP protocol
 
-A program written with Twisted drives an AMP socket with the commands of
-protocol 1, and with the typed commands of protocol 2 too. **Hello**
-agrees on the protocol of the connection: it takes **protocols**, those
-the program speaks, optional, and answers in **protocol** the highest that
-Virtualbricks speaks too, 1 without them; and the **version**, the **pid**
-and the **project**. **Run** takes a **line** of the console and its **cwd**,
-optional, and answers its **lines**. A command that fails raises
+A program written with Twisted drives an AMP socket, as one is without
+**protocol=text**, with the commands of protocol 1, and with the typed
+commands of protocol 2 too. **Hello** agrees on the protocol of the
+connection: it takes **protocols**, those the program speaks, optional,
+and answers in **protocol** the highest that Virtualbricks speaks too, 1
+without them; and the **version**, the **pid** and the **project**.
+**Run** takes a **line** of the console and its **cwd**, optional, and
+answers its **lines**. A command that fails raises
 **CommandFailed**, with its error; **AnswerTooLong** says that a command
 was done, but its answer is longer than the 65535 bytes of an AMP value.
 The requests of a connection run in turn. On a socket that asks for the
@@ -496,11 +499,11 @@ async def authenticate(vb, token):
         raise WrongToken("The other end doesn't know the token")
 ```
 
-Then a program, for the AMP socket of the third example above:
+Then a program, for the socket of the second example above:
 
 ```
 async def main(reactor):
-    path = os.path.expanduser("~/labs/lab1.amp")
+    path = os.path.expanduser("~/labs/lab1.sock")
     endpoint = endpoints.UNIXClientEndpoint(reactor, path)
     vb = await endpoints.connectProtocol(endpoint, amp.AMP())
     answer = await vb.callRemote(Run, line="brick start sw1")
@@ -542,7 +545,7 @@ too.
 
 ```
 async def main(reactor):
-    path = os.path.expanduser("~/labs/lab1.amp")
+    path = os.path.expanduser("~/labs/lab1.sock")
     endpoint = endpoints.UNIXClientEndpoint(reactor, path)
     vb = await endpoints.connectProtocol(endpoint, amp.AMP())
     hello = await vb.callRemote(Hello, protocols=[2])
@@ -592,16 +595,15 @@ switches the connection to the bytes of the console of a brick, AMP's
 # THE WINDOWS OF ANOTHER VIRTUALBRICKS
 
 **virtualbricks --connect** *description* opens the windows of the
-Virtualbricks of the AMP socket of *description*: the lab machine, which
+Virtualbricks of the socket of *description*: the lab machine, which
 runs the bricks, this machine or another, and the desktop, which shows
-them. The Virtualbricks there listens with **--socket** and
-**protocol=amp**, with its own windows or with **--no-gui**, and both run
-the same version:
+them. The Virtualbricks there listens with **--listen**, on a socket that
+speaks AMP, as one does without **protocol=text**, with its own windows
+or with **--no-gui**, and both run the same version:
 
 ```
-key=~/vb/lab.pem
-virtualbricks --no-gui --noterm --socket \
-    "ssl:8765:interface=0.0.0.0:privateKey=$key:protocol=amp"
+virtualbricks --no-gui --noterm --listen \
+    'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.pem'
 virtualbricks --connect \
     'ssl:lab.example:8765:caCertsDir=~/vb/lab'
 ```
@@ -893,8 +895,8 @@ Virtualbricks there, it refused them, or it runs another version.
     each mode but **none**, see **--lock**.
 
 *\$XDG_RUNTIME_DIR*/virtualbricks/*key*/.control, .control.lock
-:   The text socket of **--socket** alone of the workspace of *key* and
-    its lock, see **THE CONTROL SOCKET**.
+:   The socket of **--listen** alone of the workspace of *key* and its
+    lock, see **THE CONTROL SOCKET**.
 
 *\$XDG_CONFIG_HOME*/virtualbricks/token
 :   The token of the **tcp** and **ssl** sockets, see **THE CONTROL
@@ -933,10 +935,10 @@ event start up down
 ```
 
 A lab on a server, from a file, without windows or console, with the
-text socket:
+socket of its workspace:
 
 ```
-virtualbricks --no-gui --noterm --socket --run ~/labs/ospf.vb
+virtualbricks --no-gui --noterm --listen --run ~/labs/ospf.vb
 ```
 
 The machine of that lab, from another terminal, and the commands of a
@@ -952,30 +954,26 @@ from a laptop that has a copy of the token and of **lab.pem**, in
 *~/vb/lab*:
 
 ```
-virtualbricks --no-gui --noterm --run ~/labs/ospf.vb --socket \
+virtualbricks --no-gui --noterm --run ~/labs/ospf.vb --listen \
     'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.pem'
 virtualbricks \
     --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
     --command brick start router
 ```
 
-The windows of a lab of another machine, which listens on an AMP
-socket, from a desktop with the token:
+The windows of that lab, on the same laptop:
 
 ```
-key=~/vb/lab.pem
-virtualbricks --no-gui --noterm --run ~/labs/ospf.vb --socket \
-    "ssl:8766:interface=0.0.0.0:privateKey=$key:protocol=amp"
 virtualbricks --connect \
-    'ssl:lab.example:8766:caCertsDir=~/vb/lab'
+    'ssl:lab.example:8765:caCertsDir=~/vb/lab'
 ```
 
 Two labs side by side, each in its workspace, both listening, and a
 command to one of them:
 
 ```
-virtualbricks --no-gui --noterm --socket --workspace ~/labs/a &
-virtualbricks --no-gui --noterm --socket --workspace ~/labs/b &
+virtualbricks --no-gui --noterm --listen --workspace ~/labs/a &
+virtualbricks --no-gui --noterm --listen --workspace ~/labs/b &
 virtualbricks --workspace ~/labs/b --command status
 ```
 

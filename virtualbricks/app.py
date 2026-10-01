@@ -29,7 +29,7 @@ from virtualbricks import locations, locks
 from virtualbricks.console import wire
 
 _log_file = sys.stdout
-# The word after --socket is its description when it starts with a type.
+# The word after --listen is its description when it starts with a type.
 DESCRIPTION = re.compile(r"[a-z][a-z0-9]*:", re.IGNORECASE)
 
 
@@ -69,12 +69,13 @@ class Options(usage.Options):
         ],
         # read before getopt, which has no optional arguments
         [
-            "socket",
+            "listen",
             None,
             "Listen on a control socket: .control in the runtime folder of "
             "the workspace, or the one of the description after it, as "
-            "unix:PATH:protocol=amp, tcp:PORT or ssl:PORT:privateKey=FILE. "
-            "Give it again for more sockets.",
+            "unix:PATH, tcp:PORT or ssl:PORT:privateKey=FILE. It speaks AMP, "
+            "or the text protocol with protocol=text. Give it again for more "
+            "sockets.",
         ],
         [
             "connect",
@@ -83,7 +84,7 @@ class Options(usage.Options):
             "the one of .control in the runtime folder of its workspace, or "
             "the one of the socket of the description after it, as "
             "tcp:HOST:PORT. Without them, the windows of the Virtualbricks "
-            "of the description open, over AMP.",
+            "of the description open.",
         ],
     ]
     optParameters = [
@@ -135,14 +136,14 @@ class Options(usage.Options):
         usage.Options.__init__(self)
         self["verbosity"] = 0
         self["words"] = []
-        # the sockets of --socket, a wire.Socket each; the flag is never set
-        del self["socket"]
+        # the sockets of --listen, a wire.Socket each; the flag is never set
+        del self["listen"]
         self["sockets"] = []
         # the socket of --connect, a wire.Socket; the flag says it's given
         self["target"] = None
         # --connect without --command or --run: the windows of the target
         self["windows"] = False
-        # the descriptions of --socket and of --connect, None for the option
+        # the descriptions of --listen and of --connect, None for the option
         # alone, read once the options are known to go together
         self.descriptions = []
         self.targets = []
@@ -160,10 +161,10 @@ class Options(usage.Options):
 
     def take_sockets(self, args):
         """
-        Read each --socket and --connect of args, and return the other
+        Read each --listen and --connect of args, and return the other
         arguments.
 
-        getopt has no optional arguments: --socket and --connect take the
+        getopt has no optional arguments: --listen and --connect take the
         next word when it starts with a type, as unix:, or the description
         after =. It stops where getopt does, at the first word or at --.
         """
@@ -178,9 +179,9 @@ class Options(usage.Options):
                 break
             name, equals, description = arg.partition("=")
             option = self._long_option(name)
-            if option in ("socket", "connect"):
+            if option in ("listen", "connect"):
                 found = (
-                    self.descriptions if option == "socket" else self.targets
+                    self.descriptions if option == "listen" else self.targets
                 )
                 if equals:
                     found.append(description)
@@ -228,11 +229,11 @@ class Options(usage.Options):
                 return position == len(arg) - 1
         return False
 
-    def socket(self, description, option, protocol=wire.TEXT):
+    def socket(self, description, option):
         """
         The socket of description, or the default one if None: one to
-        listen on for --socket, the one to talk to for --connect. A
-        description that names no protocol speaks protocol.
+        listen on for --listen, the one to talk to for --connect. A
+        description that names no protocol speaks AMP.
         """
 
         client = option == "connect"
@@ -241,10 +242,10 @@ class Options(usage.Options):
             socket = wire.Socket(None)
             if client or wire.Socket(None) not in self["sockets"]:
                 return socket
-            raise usage.UsageError("--socket alone is given twice")
+            raise usage.UsageError("--listen alone is given twice")
         else:
             try:
-                socket = wire.parse_socket(description, client, protocol)
+                socket = wire.parse_socket(description, client)
             except ValueError as exc:
                 raise usage.UsageError(f"--{option}: {exc}") from None
         if socket.kind == "unix":
@@ -266,7 +267,7 @@ class Options(usage.Options):
                 " path can have"
             )
         if any(other.path == path for other in self["sockets"]):
-            raise usage.UsageError(f"--socket: {path} is given twice")
+            raise usage.UsageError(f"--listen: {path} is given twice")
         return socket._replace(path=path)
 
     def _network_socket(self, socket, client):
@@ -285,13 +286,13 @@ class Options(usage.Options):
             for other in self["sockets"]
         ):
             raise usage.UsageError(
-                f"--socket: {socket.where()} is given twice"
+                f"--listen: {socket.where()} is given twice"
             )
         if socket.kind == "ssl":
             try:
                 self._tls().server_options(socket)
             except wire.Unusable as exc:
-                raise usage.UsageError(f"--socket: {exc}") from None
+                raise usage.UsageError(f"--listen: {exc}") from None
         if socket.uses_token():
             self._check_token(socket.token_file)
         return socket
@@ -303,7 +304,7 @@ class Options(usage.Options):
             return importlib.import_module("virtualbricks.console.tls")
         except ImportError:
             raise usage.UsageError(
-                "--socket: ssl needs pyOpenSSL: the package python3-openssl"
+                "--listen: ssl needs pyOpenSSL: the package python3-openssl"
             ) from None
 
     def _check_token(self, path):
@@ -316,14 +317,14 @@ class Options(usage.Options):
             path = locations.token_file()
         elif not os.path.isdir(os.path.dirname(path)):
             raise usage.UsageError(
-                f"--socket: {os.path.dirname(path)} doesn't exist"
+                f"--listen: {os.path.dirname(path)} doesn't exist"
             )
         try:
             wire.read_token(path)
         except wire.NoToken:
             pass
         except wire.Unusable as exc:
-            raise usage.UsageError(f"--socket: {exc}") from None
+            raise usage.UsageError(f"--listen: {exc}") from None
 
     def opt_logfile(self, arg):
         """Write log messages to file."""
@@ -382,7 +383,7 @@ class Options(usage.Options):
     def check_client(self):
         """
         Refuse words without --command, --connect without --command or
-        --run, and with either the options of a run and --socket.
+        --run, and with either the options of a run and --listen.
         """
 
         words = self["words"]
@@ -412,8 +413,8 @@ class Options(usage.Options):
                 )
         if self.descriptions:
             raise usage.UsageError(
-                f"{client} takes no --socket, which listens: --connect names"
-                " the Virtualbricks to talk to"
+                f"{client} takes no --listen: --connect names the"
+                " Virtualbricks to talk to"
             )
         if len(self.targets) > 1:
             raise usage.UsageError("--connect names one Virtualbricks")
@@ -443,7 +444,7 @@ class Options(usage.Options):
             raise usage.UsageError("--connect names one Virtualbricks")
         if not any(self.targets):
             raise usage.UsageError(
-                "--connect opens the windows of the Virtualbricks of an AMP"
+                "--connect opens the windows of the Virtualbricks of a"
                 " socket: give its description, as unix:PATH or"
                 " tcp:HOST:PORT"
             )
@@ -453,7 +454,7 @@ class Options(usage.Options):
             if name in self.given or (name != "lock" and self[name])
         ]
         if self.descriptions:
-            given.append("socket")
+            given.append("listen")
         if given:
             raise usage.UsageError(
                 "--connect opens the windows of another Virtualbricks:"
@@ -469,11 +470,9 @@ class Options(usage.Options):
             # one Virtualbricks for each workspace, side by side
             self["lock"] = locks.WORKSPACE
         for description in self.descriptions:
-            self["sockets"].append(self.socket(description, "socket"))
+            self["sockets"].append(self.socket(description, "listen"))
         for description in self.targets:
-            self["target"] = self.socket(
-                description, "connect", wire.AMP if windows else wire.TEXT
-            )
+            self["target"] = self.socket(description, "connect")
         if windows and self["target"].protocol != wire.AMP:
             raise usage.UsageError(
                 "--connect opens the windows, which speak AMP:"

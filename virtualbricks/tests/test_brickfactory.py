@@ -426,7 +426,7 @@ class TestTheConsole(AppTestCase):
         self.assertEqual(len(self.started), 1)
 
     def test_the_control_sockets(self):
-        # none without --socket
+        # none without --listen
         self.application().run(FakeReactor())
         self.assertEqual(self.listened, [])
         sockets = [wire.Socket("/srv/lab.sock"), wire.Socket("/srv/lab2.sock")]

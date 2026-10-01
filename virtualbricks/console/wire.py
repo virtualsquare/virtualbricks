@@ -158,7 +158,7 @@ class Socket(NamedTuple):
     """
 
     path: str | None
-    protocol: str = TEXT
+    protocol: str = AMP
     kind: str = "unix"
     host: str | None = None
     port: int | None = None
@@ -244,13 +244,11 @@ def _parts(text: str) -> list[list[str]]:
     return parts
 
 
-def parse_socket(
-    text: str, client: bool = False, protocol: str = TEXT
-) -> Socket:
+def parse_socket(text: str, client: bool = False) -> Socket:
     """
     The socket of a description: its type, its path or its port, and its
     keywords, as ``unix:PATH:protocol=text`` or ``tcp:8765``. The protocol
-    is protocol, text, if left out. With client, the description of
+    is AMP if left out. With client, the description of
     --connect, which names the machine to talk to: ``tcp:HOST:PORT``, or
     ``tcp:PORT`` for this one.
 
@@ -294,7 +292,7 @@ def parse_socket(
         if key in keywords:
             raise ValueError(f"{text}: {key} is given twice")
         keywords[key] = value
-    protocol = keywords.get("protocol", protocol).lower()
+    protocol = keywords.get("protocol", AMP).lower()
     if protocol not in PROTOCOLS:
         raise ValueError(f"{text}: the protocol is {' or '.join(PROTOCOLS)}")
     if kind == "unix":

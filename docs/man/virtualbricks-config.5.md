@@ -840,11 +840,12 @@ an old project is converted when it's imported.
     crash.
 
 *\$XDG_RUNTIME_DIR*/virtualbricks/*key*/.control
-:   The text socket of a workspace, where a Virtualbricks started with
-    **--socket** answers **virtualbricks --command**; *.control.lock*
-    beside it is held by the one that listens. A description after
-    **--socket** puts a socket elsewhere, and with **protocol=amp** it
-    speaks Twisted's AMP; see **virtualbricks**(1).
+:   The control socket of a workspace, where a Virtualbricks started with
+    **--listen** answers **virtualbricks --command** in Twisted's AMP;
+    *.control.lock* beside it is held by the one that listens. A
+    description after **--listen** puts a socket elsewhere, and with
+    **protocol=text** it speaks the text protocol; see
+    **virtualbricks**(1).
 
 *\$XDG_RUNTIME_DIR*/virtualbricks/.connect-*pid*/
 :   The sockets of the terminals of the consoles that the windows of

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 06:28+0200\n"
+"POT-Creation-Date: 2026-10-01 07:48+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1446,7 +1446,15 @@ msgstr ""
 #: virtualbricks/console/client.py
 #, python-brace-format
 msgid ""
-"{where} didn't greet in {seconds} seconds: if it speaks AMP, add protocol=amp"
+"{where} didn't greet in {seconds} seconds: if it speaks AMP, leave out "
+"protocol=text"
+msgstr ""
+
+#: virtualbricks/console/client.py
+#, python-brace-format
+msgid ""
+"What answers on {where} doesn't speak AMP: if it speaks the text protocol, "
+"add protocol=text"
 msgstr ""
 
 #: virtualbricks/console/client.py
@@ -1472,14 +1480,14 @@ msgstr ""
 #, python-brace-format
 msgid ""
 "Your Virtualbricks, process {pid}, doesn't listen: it was started without --"
-"socket or with another one, or its log says why"
+"listen or with another one, or its log says why"
 msgstr ""
 
 #: virtualbricks/console/client.py
 #, python-brace-format
 msgid ""
 "Your Virtualbricks, process {pid}, doesn't listen on {path}: it was started "
-"without --socket or with another one, or its log says why"
+"without --listen or with another one, or its log says why"
 msgstr ""
 
 #: virtualbricks/console/client.py
@@ -1496,14 +1504,14 @@ msgstr[1] ""
 #: virtualbricks/console/client.py
 msgid ""
 "No Virtualbricks of yours runs. Start one with a socket, as virtualbricks --"
-"no-gui --socket"
+"no-gui --listen"
 msgstr ""
 
 #: virtualbricks/console/client.py
 #, python-brace-format
 msgid ""
 "Your Virtualbricks in {workspace}, process {pid}, doesn't listen: it was "
-"started without --socket, or its log says why"
+"started without --listen, or its log says why"
 msgstr ""
 
 #: virtualbricks/console/client.py
@@ -1517,7 +1525,7 @@ msgstr ""
 #, python-brace-format
 msgid ""
 "No Virtualbricks runs in {workspace}. Start one with a socket, as "
-"virtualbricks --workspace {workspace} --no-gui --socket"
+"virtualbricks --workspace {workspace} --no-gui --listen"
 msgstr ""
 
 #: virtualbricks/console/client.py
@@ -1589,7 +1597,7 @@ msgstr ""
 #: virtualbricks/console/client.py
 #, python-brace-format
 msgid ""
-"Nothing listens on {where}. Start Virtualbricks with --socket {kind}:{port}"
+"Nothing listens on {where}. Start Virtualbricks with --listen {kind}:{port}"
 msgstr ""
 
 #: virtualbricks/console/client.py

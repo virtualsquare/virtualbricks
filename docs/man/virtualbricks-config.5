@@ -873,11 +873,12 @@ don\(aqt see it.
 The system releases the locks when Virtualbricks ends, even on a crash.
 .TP
 \f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/\f[I]key\f[R]/.control
-The text socket of a workspace, where a Virtualbricks started with
-\f[B]\-\-socket\f[R] answers \f[B]virtualbricks \-\-command\f[R];
-\f[I].control.lock\f[R] beside it is held by the one that listens.
-A description after \f[B]\-\-socket\f[R] puts a socket elsewhere, and
-with \f[B]protocol=amp\f[R] it speaks Twisted\(aqs AMP; see
+The control socket of a workspace, where a Virtualbricks started with
+\f[B]\-\-listen\f[R] answers \f[B]virtualbricks \-\-command\f[R] in
+Twisted\(aqs AMP; \f[I].control.lock\f[R] beside it is held by the one
+that listens.
+A description after \f[B]\-\-listen\f[R] puts a socket elsewhere, and
+with \f[B]protocol=text\f[R] it speaks the text protocol; see
 \f[B]virtualbricks\f[R](1).
 .TP
 \f[I]$XDG_RUNTIME_DIR\f[R]/virtualbricks/.connect\-\f[I]pid\f[R]/

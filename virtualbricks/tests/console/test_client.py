@@ -25,11 +25,12 @@ import subprocess
 import sys
 import threading
 
+from twisted.protocols import amp
 from twisted.trial import unittest
 
 from virtualbricks import locations, locks
 from virtualbricks.config.workspace import Workspace
-from virtualbricks.console import client, wire
+from virtualbricks.console import ampbox, client, wire
 from virtualbricks.tests import (
     DATA,
     hold_lock,
@@ -40,6 +41,8 @@ from virtualbricks.tests import (
 )
 
 GREETING = wire.greeting("2.1.0", 4200, "lab1")
+# The lines of the answer of Run.
+LINES = amp.ListOf(amp.Unicode())
 
 
 TOKEN = "0123456789abcdef"
@@ -49,31 +52,41 @@ class FakeVirtualbricks:
     """
     A Virtualbricks that listens on path in a thread, or on a free tcp port
     of this machine without it: it greets, keeps the requests, and gives the
-    answers in order; it closes when they are over.
+    answers in order, in AMP or in the text protocol; it closes when they
+    are over. A greeting of bytes is what something else sends first.
 
-    With a token, it asks for the proof first, and refuses a wrong one; with
-    lie too, it doesn't know the token and sends a proof of its own.
+    With a token, the text protocol asks for the proof first, and refuses a
+    wrong one; with lie too, it doesn't know the token and sends a proof of
+    its own.
     """
 
     def __init__(
-        self, test, path, *answers, greeting=GREETING, token=None, lie=False
+        self,
+        test,
+        path,
+        *answers,
+        greeting=GREETING,
+        token=None,
+        lie=False,
+        protocol=wire.AMP,
     ):
         self.answers = list(answers)
         self.greeting = greeting
         self.token = token
         self.lie = lie
+        self.protocol = protocol
         self.requests = []
         if path is None:
             self.server = socket.socket(socket.AF_INET)
             self.server.bind(("127.0.0.1", 0))
             self.port = self.server.getsockname()[1]
             self.target = wire.Socket(
-                None, "text", "tcp", "127.0.0.1", self.port
+                None, protocol, "tcp", "127.0.0.1", self.port
             )
         else:
             self.server = socket.socket(socket.AF_UNIX)
             self.server.bind(path)
-            self.target = wire.Socket(path)
+            self.target = wire.Socket(path, protocol)
             # as a Virtualbricks that listens: the lock of the socket
             self.lock = locks.hold(locations.control_lock_file(path))
             test.addCleanup(release, self.lock)
@@ -89,21 +102,69 @@ class FakeVirtualbricks:
             # stopped before anyone connected
             return
         with conn, conn.makefile("rb") as reader:
-            greeting = self.greeting
-            if self.token is not None:
-                greeting = self.prove(conn, reader)
-                if greeting is None:
-                    return
-            if isinstance(greeting, bytes):
-                conn.sendall(greeting)
+            if self.protocol == wire.AMP:
+                self.serve_amp(conn, reader)
             else:
-                conn.sendall(wire.encode(greeting))
-            while self.answers:
-                line = reader.readline()
-                if not line:
-                    return
-                self.requests.append(wire.decode(line))
-                conn.sendall(wire.encode(self.answers.pop(0)))
+                self.serve_text(conn, reader)
+
+    def serve_text(self, conn, reader):
+        greeting = self.greeting
+        if self.token is not None:
+            greeting = self.prove(conn, reader)
+            if greeting is None:
+                return
+        if isinstance(greeting, bytes):
+            conn.sendall(greeting)
+        else:
+            conn.sendall(wire.encode(greeting))
+        while self.answers:
+            line = reader.readline()
+            if not line:
+                return
+            self.requests.append(wire.decode(line))
+            conn.sendall(wire.encode(self.answers.pop(0)))
+
+    def serve_amp(self, conn, reader):
+        """Hello, then Run, each request a request of the text protocol."""
+
+        if isinstance(self.greeting, bytes):
+            conn.sendall(self.greeting)
+            return
+        while self.answers:
+            try:
+                box = ampbox.read(reader.read)
+            except ampbox.Closed:
+                return
+            tag = box[ampbox.ASK]
+            if box[ampbox.COMMAND] == b"Hello":
+                conn.sendall(
+                    ampbox.encode(
+                        {
+                            ampbox.ANSWER: tag,
+                            b"protocol": b"%d" % self.greeting["protocol"],
+                            b"version": self.greeting["version"].encode(),
+                            b"pid": b"%d" % self.greeting["pid"],
+                        }
+                    )
+                )
+                continue
+            cwd = box.get(b"cwd")
+            self.requests.append(
+                wire.request(box[b"line"].decode(), cwd and cwd.decode())
+            )
+            answer = self.answers.pop(0)
+            if answer["ok"]:
+                reply = {
+                    ampbox.ANSWER: tag,
+                    b"lines": LINES.toString(answer["lines"]),
+                }
+            else:
+                reply = {
+                    ampbox.ERROR: tag,
+                    ampbox.ERROR_CODE: b"COMMAND_FAILED",
+                    ampbox.ERROR_DESCRIPTION: answer["error"].encode(),
+                }
+            conn.sendall(ampbox.encode(reply))
 
     def prove(self, conn, reader):
         nonce = wire.new_nonce()
@@ -186,6 +247,20 @@ class TestCommands(ClientTestCase):
             self, self.path, wire.refusal("vm2: no image", ["vm1 runs"])
         )
         status = self.main("brick", "start", "vm1", "vm2")
+        # what it did first doesn't come over AMP
+        self.assertOutput(status, "", "Error: vm2: no image\n")
+        self.assertEqual(status, client.FAILED)
+
+    def test_a_command_that_fails_over_text(self):
+        server = FakeVirtualbricks(
+            self,
+            self.path,
+            wire.refusal("vm2: no image", ["vm1 runs"]),
+            protocol=wire.TEXT,
+        )
+        status = self.main(
+            "brick", "start", "vm1", "vm2", target=server.target
+        )
         self.assertOutput(status, "vm1 runs\n", "Error: vm2: no image\n")
         self.assertEqual(status, client.FAILED)
 
@@ -266,7 +341,7 @@ class TestCommands(ClientTestCase):
         def interrupt(*args):
             raise KeyboardInterrupt()
 
-        self.patch(client.Connection, "ask", interrupt)
+        self.patch(client.AMPConnection, "ask", interrupt)
         status = self.main("brick", "start", "vm1")
         self.assertOutput(status, "")
         self.assertEqual(status, client.INTERRUPTED)
@@ -286,7 +361,7 @@ class TestUnanswered(ClientTestCase):
         self.assertEqual(
             self.unanswered(),
             "No Virtualbricks of yours runs. Start one with a socket, as"
-            " virtualbricks --no-gui --socket\n",
+            " virtualbricks --no-gui --listen\n",
         )
 
     def test_another_users(self):
@@ -306,30 +381,30 @@ class TestUnanswered(ClientTestCase):
         )
 
     def test_yours_without_the_socket(self):
-        # yours runs, with another --socket or none
+        # yours runs, with another --listen or none
         hold_lock(self, locks.USER)
         self.assertEqual(
             self.unanswered(),
             f"Your Virtualbricks, process {os.getpid()}, doesn't listen: it"
-            " was started without --socket or with another one, or its log"
+            " was started without --listen or with another one, or its log"
             " says why\n",
         )
-        # at the path of the socket of --socket alone
+        # at the path of the socket of --listen alone
         self.stderr = io.StringIO()
         self.assertEqual(
             self.unanswered(path=self.path),
             f"Your Virtualbricks, process {os.getpid()}, doesn't listen on"
-            f" {self.path}: it was started without --socket or with another"
+            f" {self.path}: it was started without --listen or with another"
             " one, or its log says why\n",
         )
 
     def test_the_default_path_given(self):
-        # --socket alone gives the path in the runtime folder: the messages
-        # are those of no --socket
+        # --listen alone gives the path in the runtime folder: the messages
+        # are those of no --listen
         self.assertEqual(
             self.unanswered(path=self.path),
             "No Virtualbricks of yours runs. Start one with a socket, as"
-            " virtualbricks --no-gui --socket\n",
+            " virtualbricks --no-gui --listen\n",
         )
 
     def test_nothing_at_another_path(self):
@@ -343,7 +418,7 @@ class TestUnanswered(ClientTestCase):
         self.assertEqual(
             self.unanswered(),
             "No Virtualbricks of yours runs. Start one with a socket, as"
-            " virtualbricks --no-gui --socket\n",
+            " virtualbricks --no-gui --listen\n",
         )
 
     def test_not_a_socket(self):
@@ -389,6 +464,27 @@ class TestUnanswered(ClientTestCase):
         FakeVirtualbricks(self, self.path, greeting=b"SSH-2.0-OpenSSH\n")
         self.assertEqual(
             self.unanswered(),
+            f"What answers on {self.path} doesn't speak AMP: if it speaks the"
+            " text protocol, add protocol=text\n",
+        )
+
+    def test_a_text_socket(self):
+        greeting = wire.encode(GREETING)
+        FakeVirtualbricks(self, self.path, greeting=greeting)
+        self.assertEqual(
+            self.unanswered(),
+            f"What answers on {self.path} doesn't speak AMP: if it speaks the"
+            " text protocol, add protocol=text\n",
+        )
+
+    def test_not_the_text_protocol(self):
+        server = FakeVirtualbricks(
+            self, self.path, greeting=b"SSH-2.0-OpenSSH\n", protocol=wire.TEXT
+        )
+        status = self.main("status", target=server.target)
+        self.assertEqual(status, client.UNANSWERED)
+        self.assertEqual(
+            self.stderr.getvalue(),
             "What answers on the socket doesn't speak its protocol\n",
         )
 
@@ -415,7 +511,7 @@ class TestUnanswered(ClientTestCase):
 
 
 class TestWorkspaces(ClientTestCase):
-    """The socket of --socket alone of each workspace, and --workspace."""
+    """The socket of --listen alone of each workspace, and --workspace."""
 
     def setUp(self):
         super().setUp()
@@ -492,7 +588,7 @@ class TestWorkspaces(ClientTestCase):
             status,
             "",
             "No Virtualbricks runs in ~/other. Start one with a socket, as"
-            " virtualbricks --workspace ~/other --no-gui --socket\n",
+            " virtualbricks --workspace ~/other --no-gui --listen\n",
         )
         self.assertEqual(status, client.UNANSWERED)
 
@@ -504,7 +600,7 @@ class TestWorkspaces(ClientTestCase):
             status,
             "",
             f"Your Virtualbricks in ~/other, process {os.getpid()}, doesn't"
-            " listen: it was started without --socket, or its log says"
+            " listen: it was started without --listen, or its log says"
             " why\n",
         )
 
@@ -525,7 +621,10 @@ class TestWorkspaces(ClientTestCase):
 
 
 class TestTcp(ClientTestCase):
-    """--command over tcp, with the token."""
+    """
+    --command over tcp, with the token of the text protocol; test_control
+    proves it over AMP, to a Virtualbricks that listens.
+    """
 
     def setUp(self):
         super().setUp()
@@ -538,6 +637,11 @@ class TestTcp(ClientTestCase):
             file.write(text + "\n")
         os.chmod(path, mode)
 
+    def fake(self, *answers, **kwargs):
+        return FakeVirtualbricks(
+            self, None, *answers, protocol=wire.TEXT, **kwargs
+        )
+
     def unanswered(self, target, *words):
         status = self.main(*(words or ["status"]), target=target)
         self.assertEqual(status, client.UNANSWERED)
@@ -545,9 +649,7 @@ class TestTcp(ClientTestCase):
         return self.stderr.getvalue()
 
     def test_the_proof(self):
-        server = FakeVirtualbricks(
-            self, None, wire.answer(["sw1 runs"]), token=TOKEN
-        )
+        server = self.fake(wire.answer(["sw1 runs"]), token=TOKEN)
         status = self.main("brick", "start", "sw1", target=server.target)
         self.assertOutput(status, "sw1 runs\n")
         proof, request = server.requests
@@ -559,22 +661,18 @@ class TestTcp(ClientTestCase):
     def test_another_token_file(self):
         path = os.path.join(self.mktemp(), "lab1.token")
         self.write_token(path, "fedcba9876543210")
-        server = FakeVirtualbricks(
-            self, None, wire.answer([]), token="fedcba9876543210"
-        )
+        server = self.fake(wire.answer([]), token="fedcba9876543210")
         target = server.target._replace(token_file=path)
         self.assertOutput(self.main("status", target=target), "")
 
     def test_no_token_asked(self):
         # a socket that doesn't ask for it, as ssl with certificates
-        server = FakeVirtualbricks(self, None, wire.answer(["Nothing runs"]))
+        server = self.fake(wire.answer(["Nothing runs"]))
         status = self.main("status", target=server.target)
         self.assertOutput(status, "Nothing runs\n")
 
     def test_another_token(self):
-        server = FakeVirtualbricks(
-            self, None, wire.answer([]), token="fedcba9876543210"
-        )
+        server = self.fake(wire.answer([]), token="fedcba9876543210")
         self.assertEqual(
             self.unanswered(server.target),
             f"The Virtualbricks on 127.0.0.1 port {server.port} has another"
@@ -582,9 +680,7 @@ class TestTcp(ClientTestCase):
         )
 
     def test_an_end_without_the_token(self):
-        server = FakeVirtualbricks(
-            self, None, wire.answer([]), token=TOKEN, lie=True
-        )
+        server = self.fake(wire.answer([]), token=TOKEN, lie=True)
         self.assertEqual(
             self.unanswered(server.target),
             f"What answers on 127.0.0.1 port {server.port} doesn't know your"
@@ -596,7 +692,7 @@ class TestTcp(ClientTestCase):
 
     def test_no_token(self):
         os.remove(self.token_file)
-        server = FakeVirtualbricks(self, None, wire.answer([]), token=TOKEN)
+        server = self.fake(wire.answer([]), token=TOKEN)
         self.assertEqual(
             self.unanswered(server.target),
             f"No token: {self.token_file} doesn't exist. Copy the one of the"
@@ -606,7 +702,7 @@ class TestTcp(ClientTestCase):
 
     def test_a_token_that_others_can_read(self):
         os.chmod(self.token_file, 0o644)
-        server = FakeVirtualbricks(self, None, wire.answer([]), token=TOKEN)
+        server = self.fake(wire.answer([]), token=TOKEN)
         self.assertEqual(
             self.unanswered(server.target),
             f"Others can read or change {self.token_file}: chmod 600"
@@ -622,7 +718,7 @@ class TestTcp(ClientTestCase):
         self.assertEqual(
             self.unanswered(target),
             f"Nothing listens on 127.0.0.1 port {port}. Start Virtualbricks"
-            f" with --socket tcp:{port}\n",
+            f" with --listen tcp:{port}\n",
         )
 
     def refuse(self, error):
@@ -660,18 +756,25 @@ class TestTcp(ClientTestCase):
         server = socket.socket(socket.AF_INET)
         self.addCleanup(server.close)
         server.bind(("127.0.0.1", 0))
-        server.listen(1)
+        server.listen(2)
         port = server.getsockname()[1]
         target = wire.parse_socket(f"tcp:{port}", client=True)
         self.assertEqual(
             self.unanswered(target),
+            f"127.0.0.1 port {port} didn't answer in 0.1 seconds\n",
+        )
+        # an AMP socket waits for the first box
+        self.stderr = io.StringIO()
+        target = target._replace(protocol=wire.TEXT)
+        self.assertEqual(
+            self.unanswered(target),
             f"127.0.0.1 port {port} didn't greet in 0.1 seconds: if it speaks"
-            " AMP, add protocol=amp\n",
+            " AMP, leave out protocol=text\n",
         )
 
     def test_the_folder_stays_here(self):
         # another machine reads the paths from its own folder
-        server = FakeVirtualbricks(self, None, wire.answer([]), token=TOKEN)
+        server = self.fake(wire.answer([]), token=TOKEN)
         self.patch(client.Connection, "local", lambda self: False)
         self.assertOutput(self.main("status", target=server.target), "")
         self.assertEqual(server.requests[1], wire.request("status"))

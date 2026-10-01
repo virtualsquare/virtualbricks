@@ -296,23 +296,23 @@ class TestSocket(unittest.TestCase):
 
     def test_none_without_it(self):
         self.assertEqual(self.sockets(), [])
-        self.assertNotIn("socket", self.parse())
+        self.assertNotIn("listen", self.parse())
 
     def test_alone(self):
-        self.assertEqual(self.sockets("--socket"), [wire.Socket(None)])
+        self.assertEqual(self.sockets("--listen"), [wire.Socket(None)])
 
     def test_a_description(self):
         self.assertEqual(
-            self.sockets("--socket", "unix:/tmp/lab.sock"),
+            self.sockets("--listen", "unix:/tmp/lab.sock"),
             [wire.Socket("/tmp/lab.sock")],
         )
         self.assertEqual(
-            self.sockets("--socket=unix:/tmp/lab.sock:protocol=TEXT"),
-            [wire.Socket("/tmp/lab.sock")],
+            self.sockets("--listen=unix:/tmp/lab.sock:protocol=TEXT"),
+            [wire.Socket("/tmp/lab.sock", wire.TEXT)],
         )
         self.assertEqual(
             self.sockets(
-                "--socket", "--socket", "unix:/tmp/lab.amp:protocol=amp"
+                "--listen", "--listen", "unix:/tmp/lab.amp:protocol=amp"
             ),
             [wire.Socket(self.default), wire.Socket("/tmp/lab.amp", "amp")],
         )
@@ -320,91 +320,91 @@ class TestSocket(unittest.TestCase):
         home = short_folder(self)
         os.environ["HOME"] = home
         self.assertEqual(
-            self.sockets("--socket", "unix:~/lab.sock"),
+            self.sockets("--listen", "unix:~/lab.sock"),
             [wire.Socket(os.path.join(home, "lab.sock"))],
         )
         self.assertEqual(
-            self.sockets("--socket", "unix:address=lab.sock"),
+            self.sockets("--listen", "unix:address=lab.sock"),
             [wire.Socket(os.path.join(os.getcwd(), "lab.sock"))],
         )
 
     def test_the_next_word(self):
         # taken when it starts with a type, as unix:
-        options = self.parse("--socket", "--no-gui")
+        options = self.parse("--listen", "--no-gui")
         self.assertEqual(options["sockets"], [wire.Socket(self.default)])
         self.assertTrue(options["no-gui"])
         options = self.parse("--command", "--connect", "brick", "list")
         self.assertEqual(options["target"], wire.Socket(self.default))
         self.assertEqual(options["words"], ["brick", "list"])
         # the value of another option isn't one
-        options = self.parse("--workspace", "--socket")
+        options = self.parse("--workspace", "--listen")
         self.assertEqual(options["sockets"], [])
         self.assertEqual(
-            options["workspace"], os.path.join(os.getcwd(), "--socket")
+            options["workspace"], os.path.join(os.getcwd(), "--listen")
         )
-        options = self.parse("--workspace=labs", "--socket")
+        options = self.parse("--workspace=labs", "--listen")
         self.assertEqual(options["sockets"], [wire.Socket(self.default)])
         # the options end at the first word, and at --
         self.assertEqual(
-            self.parse("--command", "status", "--socket")["words"],
-            ["status", "--socket"],
+            self.parse("--command", "status", "--listen")["words"],
+            ["status", "--listen"],
         )
-        self.assertEqual(self.sockets("--command", "--", "--socket"), [])
+        self.assertEqual(self.sockets("--command", "--", "--listen"), [])
 
     def test_a_prefix(self):
         # getopt reads a prefix of one option as the option
         self.assertEqual(
-            self.sockets("--sock", "unix:/tmp/lab.sock"),
+            self.sockets("--lis", "unix:/tmp/lab.sock"),
             [wire.Socket("/tmp/lab.sock")],
         )
 
     def test_more_than_one(self):
         self.assertEqual(
-            self.sockets("--socket", "--socket", "unix:/tmp/lab.sock"),
+            self.sockets("--listen", "--listen", "unix:/tmp/lab.sock"),
             [wire.Socket(self.default), wire.Socket("/tmp/lab.sock")],
         )
         self.assertEqual(
-            self.refused("--socket", "--socket"),
-            "--socket alone is given twice",
+            self.refused("--listen", "--listen"),
+            "--listen alone is given twice",
         )
         self.assertEqual(
-            self.refused("--socket", "unix:/tmp/a", "--socket=unix:/tmp/a"),
-            "--socket: /tmp/a is given twice",
+            self.refused("--listen", "unix:/tmp/a", "--listen=unix:/tmp/a"),
+            "--listen: /tmp/a is given twice",
         )
 
     def test_a_path(self):
         self.assertEqual(
-            self.refused("--socket", "~/lab.sock"),
-            "--socket: ~/lab.sock needs its type: unix:~/lab.sock",
+            self.refused("--listen", "~/lab.sock"),
+            "--listen: ~/lab.sock needs its type: unix:~/lab.sock",
         )
         self.assertEqual(
-            self.refused("--socket=/tmp/lab.sock"),
-            "--socket: /tmp/lab.sock needs its type: unix:/tmp/lab.sock",
+            self.refused("--listen=/tmp/lab.sock"),
+            "--listen: /tmp/lab.sock needs its type: unix:/tmp/lab.sock",
         )
 
     def test_what_is_refused(self):
         self.assertEqual(
-            self.refused("--socket", "tls:443"),
-            "--socket: tls:443: the types are unix, tcp and ssl, as unix:PATH"
+            self.refused("--listen", "tls:443"),
+            "--listen: tls:443: the types are unix, tcp and ssl, as unix:PATH"
             " or tcp:PORT",
         )
         self.assertEqual(
-            self.refused("--socket=unix:"),
-            "--socket: unix: needs a path, as unix:~/labs/lab1.sock",
+            self.refused("--listen=unix:"),
+            "--listen: unix: needs a path, as unix:~/labs/lab1.sock",
         )
         folder = os.path.join(self.root, "nope")
         self.assertEqual(
-            self.refused("--socket", f"unix:{folder}/lab.sock"),
-            f"--socket: {folder} doesn't exist",
+            self.refused("--listen", f"unix:{folder}/lab.sock"),
+            f"--listen: {folder} doesn't exist",
         )
         self.assertEqual(
-            self.refused("--socket", f"unix:{self.root}"),
-            f"--socket: {self.root} is a folder",
+            self.refused("--listen", f"unix:{self.root}"),
+            f"--listen: {self.root} is a folder",
         )
         path = "/tmp/" + "a" * 103
         self.assertEqual(
-            self.refused("--socket", f"unix:{path}"),
-            f"--socket: {path} is longer than 107 bytes, the most a"
+            self.refused("--listen", f"unix:{path}"),
+            f"--listen: {path} is longer than 107 bytes, the most a"
             " socket's path can have",
         )
 
@@ -426,7 +426,7 @@ class TestTcpSocket(unittest.TestCase):
     def refused(self, *args):
         return str(self.assertRaises(usage.UsageError, self.parse, *args))
 
-    def tcp(self, port, host="127.0.0.1", protocol="text", token_file=None):
+    def tcp(self, port, host="127.0.0.1", protocol="amp", token_file=None):
         return wire.Socket(None, protocol, "tcp", host, port, token_file)
 
     def write_token(self, path, mode=0o600):
@@ -437,7 +437,7 @@ class TestTcpSocket(unittest.TestCase):
 
     def test_a_port(self):
         self.assertEqual(
-            self.sockets("--socket", "tcp:8765"), [self.tcp(8765)]
+            self.sockets("--listen", "tcp:8765"), [self.tcp(8765)]
         )
         # the token file is made when the socket opens
         self.assertFalse(os.path.exists(locations.token_file()))
@@ -445,13 +445,13 @@ class TestTcpSocket(unittest.TestCase):
         os.environ["XDG_RUNTIME_DIR"] = os.path.join(short_folder(self), "run")
         self.assertEqual(
             self.sockets(
-                "--socket",
-                "--socket=tcp:8766:protocol=amp",
-                r"--socket=tcp:8765:interface=\:\:1",
+                "--listen",
+                "--listen=tcp:8766:protocol=text",
+                r"--listen=tcp:8765:interface=\:\:1",
             ),
             [
                 wire.Socket(None),
-                self.tcp(8766, protocol="amp"),
+                self.tcp(8766, protocol="text"),
                 self.tcp(8765, "::1"),
             ],
         )
@@ -459,43 +459,43 @@ class TestTcpSocket(unittest.TestCase):
     def test_the_same_port_twice(self):
         self.assertEqual(
             self.refused(
-                "--socket",
+                "--listen",
                 "tcp:8765",
-                "--socket",
-                "tcp:port=8765:protocol=amp",
+                "--listen",
+                "tcp:port=8765:protocol=text",
             ),
-            "--socket: 127.0.0.1 port 8765 is given twice",
+            "--listen: 127.0.0.1 port 8765 is given twice",
         )
 
     def test_a_token_file(self):
         folder = os.path.join(self.root, "vb")
         self.assertEqual(
-            self.refused("--socket", "tcp:8765:tokenFile=~/vb/lab1.token"),
-            f"--socket: {folder} doesn't exist",
+            self.refused("--listen", "tcp:8765:tokenFile=~/vb/lab1.token"),
+            f"--listen: {folder} doesn't exist",
         )
         os.mkdir(folder)
         path = os.path.join(folder, "lab1.token")
         self.assertEqual(
-            self.sockets("--socket", "tcp:8765:tokenFile=~/vb/lab1.token"),
+            self.sockets("--listen", "tcp:8765:tokenFile=~/vb/lab1.token"),
             [self.tcp(8765, token_file=path)],
         )
         self.write_token(path, 0o644)
         self.assertEqual(
-            self.refused("--socket", "tcp:8765:tokenFile=~/vb/lab1.token"),
-            f"--socket: Others can read or change {path}: chmod 600 {path}",
+            self.refused("--listen", "tcp:8765:tokenFile=~/vb/lab1.token"),
+            f"--listen: Others can read or change {path}: chmod 600 {path}",
         )
 
     def test_the_default_token(self):
         path = locations.token_file()
         self.write_token(path)
         self.assertEqual(
-            self.sockets("--socket", "tcp:8765"), [self.tcp(8765)]
+            self.sockets("--listen", "tcp:8765"), [self.tcp(8765)]
         )
         with open(path, "w") as file:
             file.write("1234\n")
         self.assertEqual(
-            self.refused("--socket", "tcp:8765"),
-            f"--socket: The token of {path} has 4 characters; a token has at"
+            self.refused("--listen", "tcp:8765"),
+            f"--listen: The token of {path} has 4 characters; a token has at"
             " least 16",
         )
 
@@ -528,8 +528,8 @@ class TestTcpSocket(unittest.TestCase):
         )
         # listening, the same description is refused
         self.assertEqual(
-            self.refused("--socket", "tcp:lab.example:8765"),
-            "--socket: tcp:lab.example:8765: the address to listen on is"
+            self.refused("--listen", "tcp:lab.example:8765"),
+            "--listen: tcp:lab.example:8765: the address to listen on is"
             " interface=lab.example",
         )
 
@@ -556,7 +556,7 @@ class TestSslSocket(unittest.TestCase):
     def test_a_port(self):
         os.symlink(self.TLS, os.path.join(self.root, "vb"))
         [socket] = self.parse(
-            "--socket",
+            "--listen",
             "ssl:8765:interface=0.0.0.0:privateKey=~/vb/server.key"
             ":certKey=~/vb/server.pem",
         )["sockets"]
@@ -565,7 +565,7 @@ class TestSslSocket(unittest.TestCase):
             socket,
             wire.Socket(
                 None,
-                "text",
+                "amp",
                 "ssl",
                 "0.0.0.0",
                 8765,
@@ -581,7 +581,7 @@ class TestSslSocket(unittest.TestCase):
         with open(path, "w") as file:
             file.write("1234\n")
         self.parse(
-            "--socket",
+            "--listen",
             f"ssl:8765:privateKey={self.data('server.key')}"
             f":certKey={self.data('server.pem')}:caCertsDir={self.TLS}",
         )
@@ -590,24 +590,24 @@ class TestSslSocket(unittest.TestCase):
         key = self.data("server.key")
         self.assertEqual(
             self.refused(
-                "--socket",
+                "--listen",
                 f"ssl:8765:privateKey={key}:certKey={self.data('bob.pem')}",
             ),
-            f"--socket: The key {key} isn't that of the certificate"
+            f"--listen: The key {key} isn't that of the certificate"
             f" {self.data('bob.pem')}",
         )
         missing = os.path.join(self.root, "lab.pem")
         self.assertEqual(
-            self.refused("--socket", "ssl:8765:privateKey=~/lab.pem"),
-            f"--socket: {missing} doesn't exist",
+            self.refused("--listen", "ssl:8765:privateKey=~/lab.pem"),
+            f"--listen: {missing} doesn't exist",
         )
         self.assertEqual(
             self.refused(
-                "--socket",
+                "--listen",
                 f"ssl:8765:privateKey={key}:certKey={self.data('server.pem')}"
                 f":caCertsDir={self.root}",
             ),
-            f"--socket: {self.root} has no .pem certificate",
+            f"--listen: {self.root} has no .pem certificate",
         )
 
     def test_no_pyopenssl(self):
@@ -622,8 +622,8 @@ class TestSslSocket(unittest.TestCase):
 
         self.addCleanup(restore)
         self.assertEqual(
-            self.refused("--socket", "ssl:8765:privateKey=/vb/lab.pem"),
-            "--socket: ssl needs pyOpenSSL: the package python3-openssl",
+            self.refused("--listen", "ssl:8765:privateKey=/vb/lab.pem"),
+            "--listen: ssl needs pyOpenSSL: the package python3-openssl",
         )
 
     def test_with_connect(self):
@@ -638,7 +638,7 @@ class TestSslSocket(unittest.TestCase):
             socket,
             wire.Socket(
                 None,
-                "text",
+                "amp",
                 "ssl",
                 "lab.example",
                 8765,
@@ -704,23 +704,23 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(
             self.parse(
                 "--connect",
-                "unix:/tmp/a.amp:protocol=amp",
+                "unix:/tmp/a.sock:protocol=text",
                 "--command",
                 "status",
             )["target"],
-            wire.Socket("/tmp/a.amp", wire.AMP),
+            wire.Socket("/tmp/a.sock", wire.TEXT),
         )
 
-    def test_no_socket(self):
-        # --socket listens, which a client doesn't
+    def test_no_listen(self):
+        # --listen listens, which a client doesn't
         for args in (
-            ["--socket", "--command", "status"],
-            ["--socket", "unix:/tmp/a.sock", "--command", "status"],
+            ["--listen", "--command", "status"],
+            ["--listen", "unix:/tmp/a.sock", "--command", "status"],
         ):
             self.assertEqual(
                 self.refused(*args),
-                "--command takes no --socket, which listens: --connect names"
-                " the Virtualbricks to talk to",
+                "--command takes no --listen: --connect names the"
+                " Virtualbricks to talk to",
             )
 
     def test_words_without_it(self):
@@ -801,11 +801,11 @@ class TestConnect(unittest.TestCase):
         self.assertIsNone(options["target"])
 
     def test_alone(self):
-        # the windows want a socket that speaks AMP: .control speaks text
+        # the windows don't look for .control
         self.assertEqual(
             self.refused("--connect"),
-            "--connect opens the windows of the Virtualbricks of an AMP"
-            " socket: give its description, as unix:PATH or tcp:HOST:PORT",
+            "--connect opens the windows of the Virtualbricks of a socket:"
+            " give its description, as unix:PATH or tcp:HOST:PORT",
         )
 
 
@@ -826,14 +826,14 @@ class TestWindows(TestConnect):
         )
 
     def test_not_for_the_clients(self):
-        # the same description speaks text to --command and --run
+        # the same description speaks AMP to --command and --run
         for args in (
             ["--command", "status"],
             ["--run", self.script],
         ):
             options = self.parse("--connect", "tcp:lab:8765", *args)
             self.assertFalse(options["windows"])
-            self.assertEqual(options["target"].protocol, wire.TEXT)
+            self.assertEqual(options["target"].protocol, wire.AMP)
         self.assertFalse(self.parse()["windows"])
 
     def test_text(self):
@@ -848,7 +848,7 @@ class TestWindows(TestConnect):
             (["--no-gui"], "no-gui"),
             (["--lock", "none"], "lock"),
             (["--workspace", self.root], "workspace"),
-            (["--socket", "tcp:8765"], "socket"),
+            (["--listen", "tcp:8765"], "listen"),
         ):
             self.assertEqual(
                 self.refused("--connect", "tcp:lab:8765", *args),
@@ -877,9 +877,9 @@ class TestWindows(TestConnect):
                 " that runs",
             )
         self.assertEqual(
-            self.refused("--socket", "--connect", "--run", self.script),
-            "--connect takes no --socket, which listens: --connect names the"
-            " Virtualbricks to talk to",
+            self.refused("--listen", "--connect", "--run", self.script),
+            "--connect takes no --listen: --connect names the Virtualbricks"
+            " to talk to",
         )
 
     def test_the_workspace(self):

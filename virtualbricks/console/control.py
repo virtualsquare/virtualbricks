@@ -23,7 +23,7 @@ protocol of :mod:`virtualbricks.console.wire`, or the AMP commands of
 :mod:`virtualbricks.console.ampwire`, and, once a connection agrees on
 protocol 2, the typed commands of :mod:`virtualbricks.console.ampcommands`.
 
-:func:`listen` listens on a socket of ``--socket``. A unix socket is
+:func:`listen` listens on a socket of ``--listen``. A unix socket is
 ``.control`` in the runtime folder or the path of its description, while it
 holds the lock beside it: the first Virtualbricks that takes the lock
 listens, the others go without. A tcp socket listens on a port of this
@@ -759,9 +759,9 @@ PROTOCOLS = {wire.TEXT: ControlProtocol, wire.AMP: AMPControl}
 
 def listen(brickfactory, socket=None, reactor=None):
     """
-    Answer the commands of socket, a wire.Socket of --socket: the text
+    Answer the commands of socket, a wire.Socket of --listen: the text
     socket at ``.control`` in the runtime folder of the workspace if None,
-    or if a unix socket without a path, as --socket alone.
+    or if a unix socket without a path, as --listen alone.
 
     Return the Control, None if this Virtualbricks goes without: another
     one answers there, or the socket can't be there; the log says which.

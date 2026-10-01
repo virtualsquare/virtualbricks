@@ -107,14 +107,15 @@ The options are:
   once; see below.
 - `--command WORD...`: send a command of the console to the Virtualbricks
   that runs, and print its answer; see [The console](#the-console).
-- `--socket [DESCRIPTION]`: listen on a control socket, `.control` in the
+- `--listen [DESCRIPTION]`: listen on a control socket, `.control` in the
   runtime directory of the workspace, or the one of a description, as
-  `unix:~/labs/lab1.amp:protocol=amp`, `tcp:8765` or
-  `ssl:8765:privateKey=FILE`; it can be given more than once.
+  `unix:~/labs/lab1.sock`, `tcp:8765` or `ssl:8765:privateKey=FILE`; it
+  speaks AMP, or JSON with `protocol=text`, and can be given more than
+  once.
 - `--connect [DESCRIPTION]`: the Virtualbricks that runs that `--command`
   and `--run` talk to, the one of `.control` of its workspace or of a
   description, as `tcp:lab.example:8765`. Without them, the windows of the
-  Virtualbricks of an AMP socket; see below.
+  Virtualbricks of that socket; see below.
 - `--version`: print the version and exit.
 
 `--lock` sets the single-instance mode, one of:
@@ -171,13 +172,13 @@ The same commands run from a file, with `source FILE` or `--run FILE`, from a
 pipe, and in an event, as its actions. With `--no-gui --noterm --run FILE`,
 Virtualbricks sets a lab up and runs it on a machine without a display.
 
-A Virtualbricks started with `--socket`, with the windows or without,
+A Virtualbricks started with `--listen`, with the windows or without,
 listens on the control socket of its workspace, `.control` in a folder of
 `$XDG_RUNTIME_DIR/virtualbricks/`, and `--command` sends it a command from
 any terminal or script, and `--connect --run` the commands of a file:
 
 ```
-virtualbricks --no-gui --socket
+virtualbricks --no-gui --listen
 virtualbricks --command brick start router
 virtualbricks --connect --run start-lab.vb
 ```
@@ -188,23 +189,23 @@ status`.
 
 The answer goes to the standard output, an error to the standard error, and
 the exit status is 0 when the command was done, 1 when it failed, and 2 when
-no Virtualbricks answered. Only you can connect. The socket speaks JSON, a
-line for each request and answer, so any program can use it.
+no Virtualbricks answered. Only you can connect.
 
-A description after `--socket`, in the syntax of Twisted's endpoints, puts a
-socket elsewhere, and `protocol=amp` makes it speak Twisted's AMP, for a
-program written with Twisted: `--socket unix:~/labs/lab1.amp:protocol=amp`.
-The program calls `Run` with a line of the console and gets a Deferred of
-its answer; `virtualbricks/console/ampwire.py` has the commands. Once
+The socket speaks Twisted's AMP, so a program written with Twisted can drive
+Virtualbricks: it calls `Run` with a line of the console and gets a Deferred
+of its answer; `virtualbricks/console/ampwire.py` has the commands. Once
 `Hello` agrees on protocol 2, each command of the console is an AMP command
 of its own, with typed arguments, as `BrickStart(name=["sw1", "vm1"])`:
-`virtualbricks/console/ampcommands.py` has them. The option
-can be given more than once, for a JSON socket and an AMP one at once.
-`--command` talks to either: `--connect unix:~/labs/lab1.amp:protocol=amp
---command status`.
+`virtualbricks/console/ampcommands.py` has them. A description after
+`--listen`, in the syntax of Twisted's endpoints, puts a socket elsewhere,
+as `--listen unix:~/labs/lab1.sock`, and `protocol=text` makes it speak
+JSON, a line for each request and answer, so any program can use it. The
+option can be given more than once, for an AMP socket and a JSON one at
+once. `--command` talks to either: `--connect
+unix:~/labs/lab1.text:protocol=text --command status`.
 
-`--socket tcp:8765` listens on a port of this machine, and
-`--socket ssl:8765:interface=0.0.0.0:privateKey=lab.pem` on a port open to
+`--listen tcp:8765` listens on a port of this machine, and
+`--listen ssl:8765:interface=0.0.0.0:privateKey=lab.pem` on a port open to
 the network, with TLS. A client proves first that it knows the token of
 `~/.config/virtualbricks/token`, which Virtualbricks makes; neither end
 sends it. With `caCertsDir=FOLDER`, an ssl socket asks each client for a
@@ -215,7 +216,7 @@ certificate instead, and the log names it. `--command` talks to them as
 ### The windows of another Virtualbricks
 
 `virtualbricks --connect DESCRIPTION` alone opens the windows of the
-Virtualbricks of an AMP socket, on this machine or another: the bricks run
+Virtualbricks of a socket, on this machine or another: the bricks run
 there, the windows here. The windows follow its project as it changes,
 whoever changes it, and what they do goes there: a start, a new brick, the
 OK of a panel, the consoles of the bricks in a terminal here. A path is a
@@ -224,8 +225,8 @@ has a page for this computer and one for that machine. Both run the same
 version of Virtualbricks:
 
 ```
-virtualbricks --no-gui --noterm --socket \
-    'ssl:8765:interface=0.0.0.0:privateKey=lab.pem:protocol=amp'
+virtualbricks --no-gui --noterm --listen \
+    'ssl:8765:interface=0.0.0.0:privateKey=lab.pem'
 virtualbricks --connect ssl:lab.example:8765:caCertsDir=FOLDER
 ```
 
@@ -430,7 +431,7 @@ To add a language, see the top of `l10n.sh`.
   on the control sockets, `client.py` is `--command` and `--connect --run`,
   with `ampbox.py`, the boxes of AMP read and written without Twisted, and
   `wire.py` has what both share: the text protocol, the descriptions of
-  `--socket` and `--connect`, the checks of a socket's path, the token and
+  `--listen` and `--connect`, the checks of a socket's path, the token and
   its proof. `tls.py` has the certificates of the ssl sockets, and is the
   only module that needs pyOpenSSL.
   `ampwire.py` has the commands of the AMP socket, for the programs that use
