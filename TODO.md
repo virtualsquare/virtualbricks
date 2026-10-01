@@ -34,7 +34,6 @@
   callbacks
 - [ ] Move the GTK code outside `gui/` into it:
   `migrate/gui.py`, the GTK parts of `scripts/virtualbricks.py`
-- [ ] Move `startstop_brick` out of VBGUI, where it doesn't belong
 - [ ] Stop passing VBGUI around: set the transient window of a dialog
   another way
 - [ ] Take the work of the tabs (on_open, on_save, ...) to the main
@@ -203,12 +202,12 @@
   before, as a brick's name, and Ctrl+_ to undo an edit
 - [ ] Attach an interactive console to the Virtualbricks that runs,
   `virtualbricks --attach`, with the editing, history and completion of
-  its terminal; the completion needs a request of its own (15 §11)
+  its terminal; the completion needs a request of its own, or the copy of
+  the remote windows (15 §11, 19 §13)
 - [ ] Answer `--command` in the language of its own terminal, not in
   that of the Virtualbricks that runs (15 §11)
-- [ ] Follow what changes through the control socket, `watch`, for a
-  status bar or another program (15 §11); over AMP, as commands that
-  Virtualbricks sends to the program (16 §10)
+- [ ] Follow what changes through the text control socket, `watch`, for
+  a status bar or a script (15 §11, 19 §13); over AMP, `Follow` does it
 - [ ] Open the sockets of a setting, for a Virtualbricks started from the
   desktop's menu, which has no options (16 §10)
 - [ ] The workspace in the greeting of the control sockets and in the
@@ -218,8 +217,6 @@
 - [ ] Answers as data for the typed AMP commands: new optional keys of
   their answers, which keep protocol 2, first for `BrickList`, `BrickShow`
   and `Status` (20 §10 T3 B)
-- [ ] Call the typed AMP commands from the remote windows of page 19, in
-  place of the lines of its R4 (20 §11)
 - [ ] A client of the typed AMP commands in Python without Twisted, on
   `console/ampbox.py`, for scripts (20 §11)
 - [ ] Carry the answers longer than 64 KiB over AMP, spread over several
@@ -227,8 +224,8 @@
 - [ ] Read the token and the client certificates again without a
   restart, to let a client go at once (17 §12)
 - [ ] Tokens that allow less: `status` and `brick list` only, or no shell
-  actions from another machine; today a connection can do all that the
-  console does (17 §12)
+  actions from another machine, or remote windows that only look; today a
+  connection can do all that the console does (17 §12, 19 §13)
 - [ ] Make the certificate of Virtualbricks, and a client's, from
   Virtualbricks, and show its fingerprint to check on the client, as ssh
   does on the first connection (17 §12)
@@ -240,12 +237,51 @@
 - [ ] Run the tests of the AMP socket on Twisted 22.1 too: they patch
   `amp._log`, which 22.1 doesn't have (17)
 
+## Remote windows
+
+- [ ] A Connect… item in the File menu, with the lab machines used before,
+  kept in `state.toml`, and back to this machine without a restart
+  (19 §13)
+- [ ] Several lab machines at once, a window each (19 §13)
+- [ ] Send files to the lab machine, as images, ISO files and kernels, and
+  browse its files (19 §13)
+- [ ] Import and export archives over the connection (19 §13)
+- [ ] The long work on images over a connection, as jobs: the copy of Add
+  Image, Save as a New Image and Merge; `JobProgress` and `JobDone` as
+  pushes, `JobCancel` (19 §13, R13 A)
+- [ ] Open the display of a machine there: a VNC viewer here, through the
+  connection, with the VNC of QEMU on the loopback of the lab machine
+  (19 §13)
+- [ ] `--connect` alone for the windows: the socket of `--socket` alone
+  speaking AMP, so that the windows reach the Virtualbricks of a workspace
+  of this machine without a path (19 §13)
+- [ ] The data of `ProjectNames` and `ProjectSummary` as optional keys of
+  `ProjectList` and `ProjectShow`, once answers are data (19 §13)
+- [ ] Windows and a lab machine of different versions (19 §13)
+- [ ] The messages of the lab machine in the language of the desktop
+  (19 §13)
+- [ ] Show who else is connected to the lab machine (19 §13)
+- [ ] Terminate over a connection, with a command of the console that
+  stops a machine with `SIGTERM` (19 §13)
+- [ ] Show the version of the lab machine in About (19 §13)
+- [ ] Read the icon of a machine, and the description beside an image
+  file, from the lab machine (19 §13)
+
 ## Misc
 
 - [ ] Update the copyright notice
 
 # DONE
 
+- [x] Open the windows of another Virtualbricks: `virtualbricks --connect
+  DESCRIPTION`, over AMP (19): the copy of the project there, kept up to
+  date by `Follow`; what the windows do goes through an engine,
+  `LocalEngine` here and `RemoteEngine` over the connection, by the typed
+  commands of protocol 2 and the commands of the windows (20 §11); the
+  facts, files, projects and settings of the lab machine; paths typed with
+  the completion of its folders; its consoles in a terminal here;
+  `startstop_brick` out of VBGUI on the way; plan in
+  `docs/redesign/19 - remote-gui.html`
 - [x] Run two Virtualbricks at once in different workspaces (13 §10, 15
   §11): `--lock workspace`, which `--workspace` implies, one for each
   workspace; `.virtualbricks.lock` in the workspace, held in every mode

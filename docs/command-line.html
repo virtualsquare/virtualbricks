@@ -199,8 +199,9 @@
   table.fields p.ex { font: 12.5px/1.5 var(--font-mono); color: var(--muted); }
   table.fields p.ex::before { content: "e.g. "; font-family: var(--font-body); font-style: italic; }
   dl.terms dt code { white-space: nowrap; }
-  /* four ways in: two by two */
+  /* four ways in: two by two; the windows of another machine under them */
   @media (min-width: 820px) { .files { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .files .file.wide { grid-column: 1 / -1; }
 </style>
 <div class="page">
   <header class="masthead">
@@ -265,6 +266,16 @@
         <dt>AMP</dt><dd><code>protocol=amp</code>, for <code>--command</code>, or a program with Twisted: a typed command for each</dd>
       </dl>
     </li>
+    <li class="file wide">
+      <h2><a href="#windows">From the windows of another machine</a></h2>
+      <p class="how">$ <b>virtualbricks --connect</b> DESCRIPTION</p>
+      <p>Started with <code>--connect</code> and the description of an AMP socket alone, it opens the windows of the Virtualbricks that listens there, on this machine or another: the bricks run there, the windows here. See <a href="#windows">The windows of another Virtualbricks</a>.</p>
+      <dl>
+        <dt>Reaches</dt><dd>an AMP socket, <code>unix</code>, <code>tcp</code> or <code>ssl</code>, of the same version</dd>
+        <dt>Follows</dt><dd>the project there, as it changes</dd>
+        <dt>Waits</dt><dd>import, export, the long work on images, <code>SIGTERM</code></dd>
+      </dl>
+    </li>
   </ul>
 
   <div class="layout">
@@ -275,6 +286,7 @@
 <li><a href="#options">Options</a></li>
 <li><a href="#console">The console</a></li>
 <li><a href="#control-socket">The control socket</a></li>
+<li><a href="#windows">The windows of another Virtualbricks</a></li>
 <li><a href="#commands">Commands</a></li>
 <li class="sub"><a href="#commands-bricks">Bricks</a></li>
 <li class="sub"><a href="#commands-events">Events</a></li>
@@ -294,6 +306,7 @@
 <h2>Synopsis</h2>
 <figure class="code"><pre><code>virtualbricks [options]
 virtualbricks --no-gui [options]
+virtualbricks --connect description [options]
 virtualbricks [--connect [description]] [--workspace directory] --command [word...]
 virtualbricks --connect [description] [--workspace directory] --run file</code></pre></figure>
 </section>
@@ -312,7 +325,7 @@ virtualbricks --connect [description] [--workspace directory] --run file</code><
 <dt><code>--lock</code> <em>mode</em></dt><dd><p>The single-instance mode: <code>system</code>, one Virtualbricks on the machine, the default without <code>--workspace</code>; <code>user</code>, one for each user; <code>workspace</code>, one for each workspace, the default with <code>--workspace</code>; <code>none</code>, no limit. Each mode but <code>none</code> holds the lock of its workspace too, so two never share one. See <a href="#files">Files</a>.</p></dd>
 <dt><code>--command</code> [<em>word</em>...]</dt><dd><p>Send the command of the words that follow to the Virtualbricks that runs, and print its answer; without words, send the lines of the standard input. It takes no lock, and no other option but <code>--connect</code> or <code>--workspace</code>. See <a href="#control-socket">The control socket</a>.</p></dd>
 <dt><code>--socket</code> [<em>description</em>]</dt><dd><p>Listen on a control socket: alone, the text socket <em>.control</em> in the runtime folder of the workspace; with a <em>description</em>, as <code>unix:~/labs/lab1.amp:protocol=amp</code> or <code>tcp:8765</code>, the socket it describes. It can be given more than once. The next word is the description when it starts with a type and a colon, as <code>unix:</code>; after <code>=</code> it is too. See <a href="#control-socket">The control socket</a>.</p></dd>
-<dt><code>--connect</code> [<em>description</em>]</dt><dd><p>The Virtualbricks that runs that <code>--command</code> and <code>--run</code> talk to: alone, the one of the text socket <em>.control</em> of its workspace, that of <code>--workspace</code> or the only one that listens; with a <em>description</em>, the one of the socket it describes, as <code>unix:~/labs/lab1.amp:protocol=amp</code> or <code>tcp:lab.example:8765</code>. The next word is its description as for <code>--socket</code>. It goes with <code>--command</code> or with <code>--run</code>, and takes no <code>--socket</code>, no other option of a start, and no <code>--workspace</code> with a description. See <a href="#control-socket">The control socket</a>.</p></dd>
+<dt><code>--connect</code> [<em>description</em>]</dt><dd><p>The Virtualbricks that runs that <code>--command</code> and <code>--run</code> talk to: alone, the one of the text socket <em>.control</em> of its workspace, that of <code>--workspace</code> or the only one that listens; with a <em>description</em>, the one of the socket it describes, as <code>unix:~/labs/lab1.amp:protocol=amp</code> or <code>tcp:lab.example:8765</code>. The next word is its description as for <code>--socket</code>. With <code>--command</code> or <code>--run</code>, it takes no <code>--socket</code>, no other option of a start, and no <code>--workspace</code> with a description. See <a href="#control-socket">The control socket</a>.</p><p>Without them, it opens the windows of the Virtualbricks of the AMP socket of <em>description</em>, which speaks <code>protocol=amp</code> when it names no protocol. It takes no <code>protocol=text</code>, no <code>--no-gui</code>, <code>--lock</code>, <code>--workspace</code> or <code>--socket</code>: they are for the Virtualbricks that runs the bricks. See <a href="#windows">The windows of another Virtualbricks</a>.</p></dd>
 <dt><code>--version</code></dt><dd><p>Print the version and exit.</p></dd>
 <dt><code>--help</code></dt><dd><p>Print the options and exit.</p></dd>
 </dl>
@@ -502,6 +515,23 @@ task.react(lambda reactor: ensureDeferred(main(reactor)))</code></pre></figure>
     except NotFound as exc:
         print(exc)</code></pre></figure>
 <p>Protocol 2 keeps its commands. A later Virtualbricks may add commands to it, or optional arguments, which an older one refuses with <code>UnhandledCommand</code> or <code>BadArgument</code>; a change of any other kind is protocol 3, and a program that asks for 2 then gets 1, with <code>Run</code>.</p>
+<h3 id="control-socket-the-commands-of-the-windows">The commands of the windows</h3>
+<p>Protocol 2 has the commands of the windows of another Virtualbricks too, in the module <code>virtualbricks.remote.commands</code>, which a program may import as <code>ampcommands</code>. They pass the checks of the typed commands. <code>Follow</code> asks for the project and its changes: Virtualbricks then calls on the program, without waiting for an answer, <code>Opened</code> when a project opens, <code>Changed</code> for each image, brick and event, then <code>Synced</code>; after that, <code>Changed</code>, <code>Renamed</code> and <code>Removed</code> for each change, gathered once a turn, <code>SettingsChanged</code>, <code>Logged</code> for each message of its log, the last 500 first, and <code>Quitting</code>. A table, a state, the settings and a message are JSON in a text. What waits for the program goes before the answer of each of its commands, so that once a command is answered the program has what it changed.</p>
+<p>The others are what the windows do that the console has no command for: <code>Apply</code>, the OK of a panel, the keys it changed only; <code>Connect</code>, a drop; <code>MakeImage</code>, <code>StartOver</code>, <code>TrashFile</code> and <code>Relink</code>, the files of the images; <code>ProjectNames</code>, <code>ProjectSummary</code>, <code>Readme</code>, <code>SetReadme</code> and <code>SetKsm</code>. The facts of the machine answer beside the requests that wait: <code>QemuFacts</code>, the texts that a QEMU program prints; <code>MachineProperties</code>, <code>UsbDevices</code>, <code>ImageFacts</code>, <code>DiskUsage</code> and <code>Folder</code>, the entries of a folder, for a path being typed. <code>Attach</code> switches the connection to the bytes of the console of a brick, AMP&#x27;s <code>ProtocolSwitchCommand</code>.</p>
+</section>
+<section id="windows">
+<h2>The windows of another Virtualbricks</h2>
+<p><code>virtualbricks --connect</code> <em>description</em> opens the windows of the Virtualbricks of the AMP socket of <em>description</em>: the lab machine, which runs the bricks, this machine or another, and the desktop, which shows them. The Virtualbricks there listens with <code>--socket</code> and <code>protocol=amp</code>, with its own windows or with <code>--no-gui</code>, and both run the same version:</p>
+<figure class="code"><pre><code>key=~/vb/lab.pem
+virtualbricks --no-gui --noterm --socket \
+    "ssl:8765:interface=0.0.0.0:privateKey=$key:protocol=amp"
+virtualbricks --connect \
+    'ssl:lab.example:8765:caCertsDir=~/vb/lab'</code></pre></figure>
+<p>The windows follow the project open there: its bricks, events and images, their processes, the settings and the messages of its log; what the console or other windows change there shows at once. What the windows do goes there: a start, a new brick, the OK of a panel, which sends only the keys that the panel changed, so that two windows that change different keys of a brick keep both. The title names the project and where it runs.</p>
+<p>What they show of the lab machine is its own: its QEMU programs and what they can do, its USB devices, the files of its images and of the private copies, its projects and the README of the open one. A path is a path there: the windows have no file chooser for it, but an entry that completes from the folders there. Settings has three pages: <em>This computer</em>, the settings of the windows, as the terminal; the lab machine, its KSM and the audio driver of QEMU, with its workspace shown; and the project&#x27;s. <code>Open Control Monitor</code> starts the terminal of this computer, with <code>vdeterm</code> or <code>unixterm</code> of VDE, on a socket of its own, and the windows join it to the console there over another connection.</p>
+<p>The windows start no program of a brick here, and the files they work on are those of the lab machine. Some items wait for a later version, greyed: <code>Import</code> and <code>Export</code>, saving or merging the private copy of a disk, copying an image to the image folder, <code>Show in Files</code>, and <code>Terminate</code>, which stops a machine with <code>SIGTERM</code>.</p>
+<p>When the connection is lost, a bar says why, and the windows wait: <code>Reconnect</code> connects again, and the copy starts over. When the Virtualbricks there quits, the bar says so. <code>Quit</code> closes the windows; the Virtualbricks there goes on.</p>
+<p>A <code>tcp</code> or <code>ssl</code> socket asks for the token, as for <code>--command</code>: that of <code>tokenFile=</code>, or the default one. Over <code>ssl</code>, <code>caCertsDir=</code> holds the certificate of the lab machine, or that of its authority, and <code>privateKey=</code> and <code>certKey=</code> are the windows&#x27; own, for a Virtualbricks that asks for one. See <code>Sockets on the network</code>.</p>
 </section>
 <section id="commands">
 <h2>Commands</h2>
@@ -596,6 +626,7 @@ task.react(lambda reactor: ensureDeferred(main(reactor)))</code></pre></figure>
 <dt><code>2</code></dt><dd><p>No Virtualbricks answered: none listens there, several listen and none is named, it ended before it answered, it speaks another protocol, or it refused the token or the certificate. The error says which.</p></dd>
 <dt><code>130</code></dt><dd><p>Ctrl+C stopped the wait.</p></dd>
 </dl>
+<p>With the windows of <code>--connect</code>, <code>1</code>: they couldn&#x27;t reach the Virtualbricks there, it refused them, or it runs another version.</p>
 </section>
 <section id="files">
 <h2>Files</h2>
@@ -605,6 +636,7 @@ task.react(lambda reactor: ensureDeferred(main(reactor)))</code></pre></figure>
 <dt><em>workspace</em>/.virtualbricks.lock</dt><dd><p>The lock of a workspace, held by the Virtualbricks that runs there in each mode but <code>none</code>, see <code>--lock</code>.</p></dd>
 <dt><em>$XDG_RUNTIME_DIR</em>/virtualbricks/<em>key</em>/.control, .control.lock</dt><dd><p>The text socket of <code>--socket</code> alone of the workspace of <em>key</em> and its lock, see <a href="#control-socket">The control socket</a>.</p></dd>
 <dt><em>$XDG_CONFIG_HOME</em>/virtualbricks/token</dt><dd><p>The token of the <code>tcp</code> and <code>ssl</code> sockets, see <a href="#control-socket">The control socket</a>.</p></dd>
+<dt><em>$XDG_RUNTIME_DIR</em>/virtualbricks/.connect-<em>pid</em></dt><dd><p>The sockets of the terminals of the consoles that the windows of <code>--connect</code> open, see <a href="#windows">The windows of another Virtualbricks</a>.</p></dd>
 </dl>
 <p>The settings, the state and the projects are described in <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>.</p>
 </section>
@@ -635,6 +667,12 @@ virtualbricks --connect --run ~/labs/traffic.vb</code></pre></figure>
 virtualbricks \
     --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
     --command brick start router</code></pre></figure>
+<p>The windows of a lab of another machine, which listens on an AMP socket, from a desktop with the token:</p>
+<figure class="code"><pre><code>key=~/vb/lab.pem
+virtualbricks --no-gui --noterm --run ~/labs/ospf.vb --socket \
+    "ssl:8766:interface=0.0.0.0:privateKey=$key:protocol=amp"
+virtualbricks --connect \
+    'ssl:lab.example:8766:caCertsDir=~/vb/lab'</code></pre></figure>
 <p>Two labs side by side, each in its workspace, both listening, and a command to one of them:</p>
 <figure class="code"><pre><code>virtualbricks --no-gui --noterm --socket --workspace ~/labs/a &amp;
 virtualbricks --no-gui --noterm --socket --workspace ~/labs/b &amp;

@@ -846,6 +846,12 @@ an old project is converted when it's imported.
     **--socket** puts a socket elsewhere, and with **protocol=amp** it
     speaks Twisted's AMP; see **virtualbricks**(1).
 
+*\$XDG_RUNTIME_DIR*/virtualbricks/.connect-*pid*/
+:   The sockets of the terminals of the consoles that the windows of
+    another Virtualbricks, **virtualbricks --connect**, process *pid*,
+    open; removed when they close. The folders without a dot are those of
+    the workspaces.
+
 *\$XDG_CONFIG_HOME*/virtualbricks/token
 :   The token of the **tcp** and **ssl** control sockets: a client proves
     that it knows it before its first command. The first Virtualbricks

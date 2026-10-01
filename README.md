@@ -113,7 +113,8 @@ The options are:
   `ssl:8765:privateKey=FILE`; it can be given more than once.
 - `--connect [DESCRIPTION]`: the Virtualbricks that runs that `--command`
   and `--run` talk to, the one of `.control` of its workspace or of a
-  description, as `tcp:lab.example:8765`.
+  description, as `tcp:lab.example:8765`. Without them, the windows of the
+  Virtualbricks of an AMP socket; see below.
 - `--version`: print the version and exit.
 
 `--lock` sets the single-instance mode, one of:
@@ -210,6 +211,28 @@ sends it. With `caCertsDir=FOLDER`, an ssl socket asks each client for a
 certificate instead, and the log names it. `--command` talks to them as
 `--connect tcp:8765` on this machine, or as
 `--connect ssl:lab.example:8765:caCertsDir=FOLDER` from another.
+
+### The windows of another Virtualbricks
+
+`virtualbricks --connect DESCRIPTION` alone opens the windows of the
+Virtualbricks of an AMP socket, on this machine or another: the bricks run
+there, the windows here. The windows follow its project as it changes,
+whoever changes it, and what they do goes there: a start, a new brick, the
+OK of a panel, the consoles of the bricks in a terminal here. A path is a
+path of that machine, typed with the completion of its folders, and Settings
+has a page for this computer and one for that machine. Both run the same
+version of Virtualbricks:
+
+```
+virtualbricks --no-gui --noterm --socket \
+    'ssl:8765:interface=0.0.0.0:privateKey=lab.pem:protocol=amp'
+virtualbricks --connect ssl:lab.example:8765:caCertsDir=FOLDER
+```
+
+Importing and exporting an archive, the long work on images, as saving the
+private copy of a disk, and showing a file in the file manager wait for a
+later version. When the connection is lost, a bar says why, and Reconnect
+connects again. Quit closes the windows; the Virtualbricks there goes on.
 
 Every option and command is in the manual page, which you can read from the
 sources with `man ./docs/man/virtualbricks.1`, and in
@@ -413,6 +436,15 @@ To add a language, see the top of `l10n.sh`.
   `ampwire.py` has the commands of the AMP socket, for the programs that use
   it. It imports no GTK, so that `--no-gui`
   doesn't load it, and `client.py` doesn't load Twisted's reactor either.
+- `virtualbricks/remote/`: the windows of another Virtualbricks. On the
+  machine of the bricks, `follower.py` sends the project and its changes,
+  and `answers.py` and `facts.py` answer the commands of the windows,
+  `commands.py`; on the desktop, `mirror.py` is the copy of the project that
+  the windows show, and `client.py` the connection and `RemoteEngine`.
+  `drafts.py` is the OK of a panel as data, and `tunnel.py` carries the
+  consoles. What the windows do goes through an engine,
+  `virtualbricks/engine.py`: `LocalEngine` on the machine of the bricks,
+  `RemoteEngine` over a connection.
 - `virtualbricks/config/`: the settings and the state, the schemas of their
   fields, the project file, and the projects: `workspace.py` lists, creates and
   opens them, `archive.py` and `importing.py` read, write and import their

@@ -16,6 +16,8 @@ virtualbricks - labs of QEMU machines and VDE networks, and their console
 
 **virtualbricks --no-gui** [*options*]
 
+**virtualbricks --connect** *description* [*options*]
+
 **virtualbricks** [**--connect** [*description*]] [**--workspace**
 *directory*] **--command** [*word*...]
 
@@ -40,6 +42,11 @@ the console from any terminal or script, and prints its answer,
 **virtualbricks --connect --run** sends it the commands of a file, and a
 program written with Twisted can drive it through AMP. See **THE CONTROL
 SOCKET**.
+
+Started with **--connect** and the description of an AMP socket alone,
+it opens the windows of the Virtualbricks that listens there, on this
+machine or another: the bricks run there, the windows here. See **THE
+WINDOWS OF ANOTHER VIRTUALBRICKS**.
 
 # OPTIONS
 
@@ -107,10 +114,17 @@ SOCKET**.
     that of **--workspace** or the only one that listens; with a
     *description*, the one of the socket it describes, as
     **unix:~/labs/lab1.amp:protocol=amp** or **tcp:lab.example:8765**. The
-    next word is its description as for **--socket**. It goes with
-    **--command** or with **--run**, and takes no **--socket**, no other
-    option of a start, and no **--workspace** with a description. See
-    **THE CONTROL SOCKET**.
+    next word is its description as for **--socket**. With **--command**
+    or **--run**, it takes no **--socket**, no other option of a start,
+    and no **--workspace** with a description. See **THE CONTROL
+    SOCKET**.
+
+    Without them, it opens the windows of the Virtualbricks of the AMP
+    socket of *description*, which speaks **protocol=amp** when it names
+    no protocol. It takes no **protocol=text**, no **--no-gui**,
+    **--lock**, **--workspace** or **--socket**: they are for the
+    Virtualbricks that runs the bricks. See **THE WINDOWS OF ANOTHER
+    VIRTUALBRICKS**.
 
 **--version**
 :   Print the version and exit.
@@ -549,6 +563,85 @@ it, or optional arguments, which an older one refuses with
 **UnhandledCommand** or **BadArgument**; a change of any other kind is
 protocol 3, and a program that asks for 2 then gets 1, with **Run**.
 
+## The commands of the windows
+
+Protocol 2 has the commands of the windows of another Virtualbricks too,
+in the module **virtualbricks.remote.commands**, which a program may
+import as **ampcommands**. They pass the checks of the typed commands.
+**Follow** asks for the project and its changes: Virtualbricks then
+calls on the program, without waiting for an answer, **Opened** when a
+project opens, **Changed** for each image, brick and event, then
+**Synced**; after that, **Changed**, **Renamed** and **Removed** for each
+change, gathered once a turn, **SettingsChanged**, **Logged** for each
+message of its log, the last 500 first, and **Quitting**. A table, a
+state, the settings and a message are JSON in a text. What waits for the
+program goes before the answer of each of its commands, so that once a
+command is answered the program has what it changed.
+
+The others are what the windows do that the console has no command for:
+**Apply**, the OK of a panel, the keys it changed only; **Connect**, a
+drop; **MakeImage**, **StartOver**, **TrashFile** and **Relink**, the
+files of the images; **ProjectNames**, **ProjectSummary**, **Readme**,
+**SetReadme** and **SetKsm**. The facts of the machine answer beside the
+requests that wait: **QemuFacts**, the texts that a QEMU program prints;
+**MachineProperties**, **UsbDevices**, **ImageFacts**, **DiskUsage** and
+**Folder**, the entries of a folder, for a path being typed. **Attach**
+switches the connection to the bytes of the console of a brick, AMP's
+**ProtocolSwitchCommand**.
+
+# THE WINDOWS OF ANOTHER VIRTUALBRICKS
+
+**virtualbricks --connect** *description* opens the windows of the
+Virtualbricks of the AMP socket of *description*: the lab machine, which
+runs the bricks, this machine or another, and the desktop, which shows
+them. The Virtualbricks there listens with **--socket** and
+**protocol=amp**, with its own windows or with **--no-gui**, and both run
+the same version:
+
+```
+key=~/vb/lab.pem
+virtualbricks --no-gui --noterm --socket \
+    "ssl:8765:interface=0.0.0.0:privateKey=$key:protocol=amp"
+virtualbricks --connect \
+    'ssl:lab.example:8765:caCertsDir=~/vb/lab'
+```
+
+The windows follow the project open there: its bricks, events and
+images, their processes, the settings and the messages of its log; what
+the console or other windows change there shows at once. What the windows
+do goes there: a start, a new brick, the OK of a panel, which sends only
+the keys that the panel changed, so that two windows that change
+different keys of a brick keep both. The title names the project and
+where it runs.
+
+What they show of the lab machine is its own: its QEMU programs and what
+they can do, its USB devices, the files of its images and of the private
+copies, its projects and the README of the open one. A path is a path
+there: the windows have no file chooser for it, but an entry that
+completes from the folders there. Settings has three pages: *This
+computer*, the settings of the windows, as the terminal; the lab machine,
+its KSM and the audio driver of QEMU, with its workspace shown; and the
+project's. **Open Control Monitor** starts the terminal of this computer,
+with **vdeterm** or **unixterm** of VDE, on a socket of its own, and the
+windows join it to the console there over another connection.
+
+The windows start no program of a brick here, and the files they work
+on are those of the lab machine. Some items wait for a later version,
+greyed: **Import** and **Export**, saving or merging the private copy of
+a disk, copying an image to the image folder, **Show in Files**, and
+**Terminate**, which stops a machine with **SIGTERM**.
+
+When the connection is lost, a bar says why, and the windows wait:
+**Reconnect** connects again, and the copy starts over. When the
+Virtualbricks there quits, the bar says so. **Quit** closes the windows;
+the Virtualbricks there goes on.
+
+A **tcp** or **ssl** socket asks for the token, as for **--command**:
+that of **tokenFile=**, or the default one. Over **ssl**,
+**caCertsDir=** holds the certificate of the lab machine, or that of its
+authority, and **privateKey=** and **certKey=** are the windows' own,
+for a Virtualbricks that asks for one. See **Sockets on the network**.
+
 # COMMANDS
 
 ## Bricks
@@ -784,6 +877,9 @@ With **--command**, and with **--connect --run**:
 **130**
 :   Ctrl+C stopped the wait.
 
+With the windows of **--connect**, **1**: they couldn't reach the
+Virtualbricks there, it refused them, or it runs another version.
+
 # FILES
 
 *\$XDG_STATE_HOME*/virtualbricks/history
@@ -803,6 +899,10 @@ With **--command**, and with **--connect --run**:
 *\$XDG_CONFIG_HOME*/virtualbricks/token
 :   The token of the **tcp** and **ssl** sockets, see **THE CONTROL
     SOCKET**.
+
+*\$XDG_RUNTIME_DIR*/virtualbricks/.connect-*pid*
+:   The sockets of the terminals of the consoles that the windows of
+    **--connect** open, see **THE WINDOWS OF ANOTHER VIRTUALBRICKS**.
 
 The settings, the state and the projects are described in
 **virtualbricks-config**(5).
@@ -857,6 +957,17 @@ virtualbricks --no-gui --noterm --run ~/labs/ospf.vb --socket \
 virtualbricks \
     --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
     --command brick start router
+```
+
+The windows of a lab of another machine, which listens on an AMP
+socket, from a desktop with the token:
+
+```
+key=~/vb/lab.pem
+virtualbricks --no-gui --noterm --run ~/labs/ospf.vb --socket \
+    "ssl:8766:interface=0.0.0.0:privateKey=$key:protocol=amp"
+virtualbricks --connect \
+    'ssl:lab.example:8766:caCertsDir=~/vb/lab'
 ```
 
 Two labs side by side, each in its workspace, both listening, and a
