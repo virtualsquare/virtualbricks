@@ -31,7 +31,10 @@ a line at a time, and quits at its end.
 
 The terminal keeps its output processing: the lines it writes end as the
 terminal ends them. Only the line mode, the echo and the signals are turned
-off while the console reads.
+off while the console reads. Both lines put the terminal in insert mode; when
+Virtualbricks quits, the terminal shows what they wrote last, then the prompt
+goes and so does that mode: the shell's line, as readline draws it, would be
+garbled.
 """
 
 from __future__ import annotations
@@ -42,7 +45,7 @@ import termios
 
 from twisted.conch import manhole, recvline
 from twisted.conch.insults import insults
-from twisted.internet import stdio
+from twisted.internet import defer, stdio
 from twisted.logger import Logger
 from twisted.protocols import basic
 
@@ -294,6 +297,8 @@ class Switcher(insults.TerminalProtocol):
         self.reactor = reactor
         self.current = None
         self.console = None
+        # fires once the terminal is gone
+        self.lost = defer.Deferred()
 
     def connectionMade(self):
         self.console = ConsoleLine(self.brickfactory, self, self.reactor)
@@ -321,6 +326,22 @@ class Switcher(insults.TerminalProtocol):
     def connectionLost(self, reason):
         if self.console is not None:
             self.console.connectionLost(reason)
+        self.lost.callback(None)
+
+    def close(self):
+        """
+        Give the terminal back to the shell: without the line of the prompt
+        and out of insert mode, once it shows all that was written to it.
+        The Deferred fires then.
+        """
+
+        if not self.lost.called:
+            self.terminal.write(b"\r")
+            self.terminal.eraseToLineEnd()
+            self.terminal.resetModes([insults.modes.IRM])
+            # not the terminal's loseConnection: it clears the screen
+            self.terminal.transport.loseConnection()
+        return self.lost
 
 
 class PlainConsole(basic.LineOnlyReceiver):
@@ -419,4 +440,9 @@ def start(factory, namespace, reactor=None):
         pass
     else:
         protocol.termSize.x, protocol.termSize.y = size.columns, size.lines
-    return stdio.StandardIO(protocol)
+    io = stdio.StandardIO(protocol)
+    # before the reactor drops what the terminal has yet to show
+    reactor.addSystemEventTrigger(
+        "before", "shutdown", protocol.terminalProtocol.close
+    )
+    return io

@@ -291,6 +291,35 @@ class TestSwitcher(TerminalTestCase):
         server.dataReceived(b"brick new switch\r")
         self.assertIn(b"sw1", transport.value())
 
+    def test_close(self):
+        server = insults.ServerProtocol(
+            Switcher, self.factory, {}, self.clock()
+        )
+        transport = StringTransport()
+        server.makeConnection(transport)
+        switcher = server.terminalProtocol
+        transport.clear()
+        closed = switcher.close()
+        # the prompt goes, then insert mode: the screen stays
+        self.assertEqual(transport.value(), b"\r\x1b[K\x1b[4l")
+        self.assertTrue(transport.disconnecting)
+        # once the terminal has shown it all
+        self.assertNoResult(closed)
+        server.connectionLost(None)
+        self.successResultOf(closed)
+
+    def test_close_without_the_terminal(self):
+        server = insults.ServerProtocol(
+            Switcher, self.factory, {}, self.clock()
+        )
+        transport = StringTransport()
+        server.makeConnection(transport)
+        switcher = server.terminalProtocol
+        server.connectionLost(None)
+        transport.clear()
+        self.successResultOf(switcher.close())
+        self.assertEqual(transport.value(), b"")
+
 
 class TestPlain(ConsoleTestCase):
 
