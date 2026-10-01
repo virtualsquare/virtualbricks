@@ -319,10 +319,11 @@ class Virtualbricks:
                 pids.add(pid)
         return pids
 
-    def bricks(self):
+    def bricks(self, name=None):
         """
         The processes whose sockets are in the run folder of the tests:
-        bricks of this Virtualbricks, or left by another.
+        bricks of this Virtualbricks, or left by another. With name, those
+        of that brick only: its sockets are name.ctl, name.mgmt.
         """
 
         folder = os.path.join(
@@ -335,7 +336,15 @@ class Virtualbricks:
                     words = file.read().split(b"\0")
             except OSError:
                 continue
-            if any(word.startswith(folder) for word in words):
+            sockets = [word for word in words if word.startswith(folder)]
+            if name is not None:
+                sockets = [
+                    word
+                    for word in sockets
+                    if os.path.basename(word).rpartition(b".")[0]
+                    == name.encode()
+                ]
+            if sockets:
                 pids.append(pid)
         return pids
 

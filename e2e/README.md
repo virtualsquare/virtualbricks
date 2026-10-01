@@ -126,7 +126,8 @@ The steps of a user:
 | `When I quit Virtualbricks` | File, then Quit |
 | `Then sw1 is running` | Its row says Running, and the processes of its start run |
 | `Then sw1 is still running` | The same |
-| `Then sw1 is stopped` | Its row says Stopped, and the processes of its start have quit |
+| `Then sw1 is stopped` | Its row says Stopped, and no process of it runs: those of its start have quit, and none has its sockets |
+| `Then sw1 is not running` | The same |
 | `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |
 
 The steps of the screen, for any widget, by its role and its name:
@@ -169,7 +170,7 @@ def stop_brick(virtualbricks, name):
   | `row(name)` | The row of a list with that name, for `within=` |
   | `wait_for(get, what)` | What `get()` returns, once it is true |
   | `children()` | The processes that Virtualbricks started and run |
-  | `bricks()` | The processes with sockets in the run folder of the tests |
+  | `bricks(name=None)` | The processes with sockets in the run folder of the tests; with a name, those of that brick |
   | `describe()` | The widgets that show, one a line |
 
 - Another fixture can keep what the steps of a scenario share, as

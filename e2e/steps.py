@@ -138,15 +138,20 @@ def brick_running(virtualbricks, brick_processes, name):
 
 
 @then(words("{name:Brick} is stopped"))
+@then(words("{name:Brick} is not running"))
 def brick_stopped(virtualbricks, brick_processes, name):
-    """Its row says so, and the processes of its start have quit."""
+    """
+    Its row says so, and no process of it runs: neither those of its start
+    nor any with its sockets, also if no step started it.
+    """
 
     row = virtualbricks.row(name)
     virtualbricks.find("label", "Stopped", within=row)
     virtualbricks.find("button", f"Start {name}", within=row)
     pids = brick_processes.get(name, set())
     virtualbricks.wait_for(
-        lambda: not pids & virtualbricks.children(),
+        lambda: not pids & virtualbricks.children()
+        and not virtualbricks.bricks(name),
         f"the processes of {name} quit",
     )
 
