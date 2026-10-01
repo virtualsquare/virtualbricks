@@ -283,6 +283,10 @@
 
 # DONE
 
+- [x] Screenshots and videos of the end-to-end scenarios that fail, drawn
+  from what `broadwayd` sends to the browser of the tests, with the pointer
+  and the step; `pytest --record-all` records every scenario
+
 - [x] End-to-end tests: scenarios in words in `e2e/features/`, which
   `pytest` runs with pytest-bdd; Virtualbricks on `broadwayd` with a
   session bus of its own, the widgets found through AT-SPI and clicked by

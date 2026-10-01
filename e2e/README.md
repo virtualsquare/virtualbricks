@@ -34,9 +34,11 @@ They need, besides the Python packages of the project:
   (`gir1.2-atspi-2.0`)
 - the programs of the bricks of each scenario, as `vde_switch` (`vde-switch`,
   or `vde2` on older releases)
+- `ffmpeg`, for the videos of the scenarios that fail; without it, they have
+  only a screenshot
 
 ```sh
-sudo apt install libgtk-3-bin at-spi2-core gir1.2-atspi-2.0
+sudo apt install libgtk-3-bin at-spi2-core gir1.2-atspi-2.0 ffmpeg
 pip install --group e2e
 ```
 
@@ -48,10 +50,12 @@ pytest -k switch_runs                    # the scenarios with these words
 pytest --gherkin-terminal-reporter -vv   # each scenario, step by step
 pytest -s                                # with what the steps print
 pytest --count 20 -k switch_runs         # 20 times: is it flaky?
+pytest --record-all -k switch_runs       # a video, also if it passes
 ```
 
-`pytest` runs the end-to-end tests only (`testpaths` in `pyproject.toml`);
-`trial` runs the others. A scenario takes a few seconds.
+`pytest` runs the end-to-end tests, and those of `recording.py`
+(`testpaths` in `pyproject.toml`); `trial` runs the others. A scenario takes
+a few seconds.
 
 - Nothing shows on your screen, and nothing reaches your desktop: the
   windows are on `broadwayd`, with a session bus of their own.
@@ -68,10 +72,12 @@ pytest --count 20 -k switch_runs         # 20 times: is it flaky?
 | `features/*.feature` | The scenarios, a file for each area: `bricks.feature`, …; in folders too: see [Group the scenarios](#group-the-scenarios) |
 | `steps.py` | The steps: what each line of a scenario does |
 | `test_features.py` | Makes a test of each scenario of `features/` |
-| `conftest.py` | The fixtures: `desktop`, shared, and `virtualbricks`, for each scenario; the report of a step that fails |
+| `conftest.py` | The fixtures: `desktop`, shared, and `virtualbricks`, for each scenario; the report of a step that fails, `--record-all` |
 | `harness.py` | What the steps drive: `Virtualbricks`, with `find`, `click`, `choose`, `row`, `children`, …; the `Desktop` and its `Screen`s |
 | `a11y.py` | The widgets, as a screen reader sees them, through AT-SPI |
-| `broadway.py` | The mouse: a browser of `broadwayd`, whose clicks reach GTK as a user's do |
+| `broadway.py` | The mouse: a browser of `broadwayd`, whose clicks reach GTK as a user's do; it keeps what the screen shows |
+| `recording.py` | The screenshot and the video of a scenario, from what the browser kept |
+| `test_recording.py` | The tests of `recording.py` |
 
 ## Write a scenario
 
@@ -313,6 +319,7 @@ showed then, and the output of Virtualbricks:
 
 ```text
 The step that failed: And I start sw1
+Its screen: screenshot.png and recording.webm in /tmp/pytest-of-…
 The widgets that show:
 [application] '__main__.py'
   [frame] 'Virtualbricks (project: new_project, workspace: ~/workspace)'
@@ -324,6 +331,31 @@ The files of each scenario stay in `/tmp/pytest-of-$USER/`, for the last
 three runs: its home, its settings, its workspace with the project,
 `output.log`, the output of Virtualbricks, and `broadway.log`, that of its
 `broadwayd`; `desktop0/` has the log of `dbus-daemon`.
+
+### The screenshot and the video
+
+A scenario that fails has two more files in its folder, which the end of
+the run lists under "screenshots and videos":
+
+- `screenshot.png`: the screen when the step failed, as a user would have
+  seen it, with the dialogs and the menus that showed.
+- `recording.webm`: the screen from the start of Virtualbricks to the step
+  that failed. A browser plays it.
+
+Both show the pointer, a red dot, and the step at the bottom; the step that
+failed is in red. In the video each change of the screen shows half a
+second at least, so the clicks can be followed: Virtualbricks makes them
+faster than the eye; the waits last as long as they did.
+
+`--record-all` records every scenario, also those that pass: for one at a
+time, as `pytest --record-all -k switch_runs`. Each takes a second or two
+more.
+
+The browser keeps what `broadwayd` sends, the images of the windows,
+compressed, and where they are; nothing is decoded while the scenario runs.
+When it ends, `recording.py` decodes them as `broadway.js` does, draws the
+screen with cairo and gives the frames to `ffmpeg`. Without `ffmpeg` there
+is only the screenshot.
 
 ## With Claude Code
 
@@ -357,7 +389,9 @@ chose. Read the scenario as you would one of a contributor: it is the test.
 - `broadway.py` is a browser of `broadwayd`: it speaks the protocol of
   `broadway.js`, keeps the windows as `broadwayd` shows them, and sends the
   pointer at the middle of a widget. A click goes through GTK as a user's
-  does: hidden, covered or disabled widgets don't get it.
+  does: hidden, covered or disabled widgets don't get it. It keeps the
+  images of the windows too, for `recording.py`: see [The screenshot and
+  the video](#the-screenshot-and-the-video).
 
 ## What it can't do yet
 

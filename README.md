@@ -402,9 +402,11 @@ pytest --count 20            # each 20 times: is one flaky?
 
 They need `broadwayd` (`libgtk-3-bin`), `at-spi2-core` and
 `gir1.2-atspi-2.0`, and are skipped without them. Nothing shows on your
-screen, and they run beside your own Virtualbricks. `e2e/README.md` tells how
-to run them, write a scenario and add a step; with Claude Code, `/e2e` writes
-a scenario from a use case in words.
+screen, and they run beside your own Virtualbricks. A scenario that fails
+leaves a screenshot and, with `ffmpeg`, a video of its screen;
+`--record-all` records them all. `e2e/README.md` tells how to run them,
+write a scenario and add a step; with Claude Code, `/e2e` writes a scenario
+from a use case in words.
 
 ### Code style
 

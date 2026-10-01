@@ -27,6 +27,11 @@ GTK through broadwayd as a user's would, onto whatever is shown there.
 
 It speaks the protocol of the browser client of GTK 3.24, broadway.js, in
 broadwayd: what it sends, and when, is what broadway.js does.
+
+It doesn't draw: it keeps the timeline of the screen, the images of the
+surfaces as broadwayd sends them and, after each change, the surfaces that
+show and the pointer. :mod:`recording` makes a screenshot and a video of
+it.
 """
 
 import base64
@@ -78,6 +83,8 @@ class Browser:
         self.serial = 0
         self.state = 0
         self.x = self.y = 0
+        # moved once: a video shows the pointer from then on
+        self.pointed = False
         # realWindowWithMouse and windowWithMouse of broadway.js
         self.real_under = 0
         self.under = 0
@@ -85,6 +92,9 @@ class Browser:
         self.grab = None
         self.closed = False
         self.changed = threading.Condition()
+        # (time, kind, ...): "surface", id; "image", id, width, height,
+        # deflated data; "layout", [(id, x, y)] bottom first, pointer
+        self.timeline = []
         self._sending = threading.Lock()
         self._start = time.monotonic()
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -130,6 +140,7 @@ class Browser:
 
         with self.changed:
             self.x, self.y = x, y
+            self.pointed = True
             surface = self.surface_at(x, y)
             if surface != self.real_under:
                 # mouseout, then mouseover
@@ -141,6 +152,7 @@ class Browser:
                 if self.under != 0:
                     self._pointer("e", self.under, GDK_CROSSING_NORMAL)
             self._pointer("m", self._target(surface))
+            self._snapshot()
 
     def surface_at(self, x, y) -> int:
         """The surface on top at x, y, or 0."""
@@ -273,6 +285,7 @@ class Browser:
                 if first & 0x80 and opcode in (0, 1, 2):
                     with self.changed:
                         self._commands(message)
+                        self._snapshot()
                         self.changed.notify_all()
                     message = b""
         except (EOFError, OSError):
@@ -293,6 +306,7 @@ class Browser:
                 id, x, y, w, h, temp = struct.unpack_from("<HhhHHB", data, pos)
                 pos += 11
                 surface = Surface(id, x, y, w, h, bool(temp))
+                self.timeline.append((time.monotonic(), "surface", id))
                 self.surfaces[id] = surface
                 self.stacking.append(surface)
                 self._configured(surface)
@@ -322,8 +336,13 @@ class Browser:
                     pos += 4
                 self._configured(surface)
             elif op == "b":
-                (size,) = struct.unpack_from("<I", data, pos + 6)
-                pos += 10 + size
+                id, w, h, size = struct.unpack_from("<HHHI", data, pos)
+                pos += 10
+                image = data[pos : pos + size]
+                self.timeline.append(
+                    (time.monotonic(), "image", id, w, h, image)
+                )
+                pos += size
             elif op == "g":
                 id, owner_events = struct.unpack_from("<HB", data, pos)
                 pos += 3
@@ -339,6 +358,11 @@ class Browser:
                 self.closed = True
             else:
                 raise ValueError(f"broadwayd sent the unknown op {op!r}")
+
+    def _snapshot(self):
+        layout = [(s.id, s.x, s.y) for s in self.stacking if s.visible]
+        pointer = (self.x, self.y) if self.pointed else None
+        self.timeline.append((time.monotonic(), "layout", layout, pointer))
 
     def _surface_op(self, op, surface):
         if surface is None:

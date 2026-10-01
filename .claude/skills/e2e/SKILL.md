@@ -35,7 +35,9 @@ features in `e2e/features/`.
    user.
 5. **Find the roles and names** of the widgets: put `And I print the
    widgets` where you are and run with `pytest -s`, or read the report of a
-   step that fails. Take the print step out after.
+   step that fails. Take the print step out after. When a step fails, look
+   at the `screenshot.png` its report names: a dialog or a menu in the way
+   shows there.
 6. **Run it** with `pytest -k <words of the scenario's name>` until it
    passes, then twenty times: `pytest --count 20 -k <the same words>`; all
    twenty must pass. Don't lengthen a timeout to make it pass: find what it
