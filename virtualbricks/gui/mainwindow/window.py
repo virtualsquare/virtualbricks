@@ -625,7 +625,7 @@ class VBGUI:
         # don't delete; hide instead
         if get_setting("tray_icon"):
             window.hide()
-            self.status_icon.set_tooltip("Virtualbricks Hidden")
+            self.status_icon.set_tooltip_text(_("Virtualbricks hidden"))
             return True
 
     def ask_remove_brick(self, brick):
@@ -657,10 +657,10 @@ class VBGUI:
     def window_toggle(self):
         if self.window.get_visible():
             self.window.hide()
-            self.status_icon.set_tooltip(_("Virtualbricks hidden"))
+            self.status_icon.set_tooltip_text(_("Virtualbricks hidden"))
         else:
             self.window.show()
-            self.status_icon.set_tooltip(_("Virtualbricks visible"))
+            self.status_icon.set_tooltip_text(_("Virtualbricks visible"))
 
     def on_status_icon_activate(self, statusicon):
         self.window_toggle()
