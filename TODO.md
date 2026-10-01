@@ -252,9 +252,6 @@
 - [ ] Open the display of a machine there: a VNC viewer here, through the
   connection, with the VNC of QEMU on the loopback of the lab machine
   (19 §13)
-- [ ] `--connect` alone for the windows: the socket of `--listen` alone,
-  which speaks AMP since 1 October, so that the windows reach the
-  Virtualbricks of a workspace of this machine without a path (19 §13)
 - [ ] The data of `ProjectNames` and `ProjectSummary` as optional keys of
   `ProjectList` and `ProjectShow`, once answers are data (19 §13)
 - [ ] Windows and a lab machine of different versions (19 §13)
@@ -282,6 +279,11 @@
 - [ ] Update the copyright notice
 
 # DONE
+
+- [x] `virtualbricks --connect` alone opens the windows of a Virtualbricks
+  of yours on this machine, the one that listens on the socket of
+  `--listen` alone of its workspace: that of `--workspace`, or the only
+  one that listens; the windows call it "this computer" (19 §13)
 
 - [x] Screenshots and videos of the end-to-end scenarios that fail, drawn
   from what `broadwayd` sends to the browser of the tests, with the pointer

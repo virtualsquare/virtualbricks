@@ -538,6 +538,34 @@ def _default_socket(workspace: str | None) -> str:
     return found[0][0]
 
 
+def listening_socket(workspace: str | None = None) -> str:
+    """
+    The socket of --listen alone of workspace, or else of the only
+    Virtualbricks of yours that listens on one: for the windows of
+    --connect alone. Raise Unanswered if none listens there, if several do,
+    or if the socket can't be used.
+    """
+
+    path = _default_socket(workspace)
+    try:
+        _check_there(path, workspace)
+    except wire.Unusable as exc:
+        raise Unanswered(str(exc)) from None
+    return path
+
+
+def _check_there(path: str, workspace: str | None) -> None:
+    """
+    Raise Unanswered if no socket is at path, the one of workspace if
+    given, and wire.Unusable if a socket can't be used there.
+    """
+
+    wire.check_length(path)
+    if not wire.check_socket(path):
+        raise Unanswered(_nobody(path, workspace))
+    wire.check_path(path, wire.in_runtime_dir(path))
+
+
 def connect(
     target: wire.Socket | None = None, workspace: str | None = None
 ) -> Connection:
@@ -556,16 +584,11 @@ def connect(
         return _connect_network(target)
     path = target.path
     try:
-        wire.check_length(path)
-        there = wire.check_socket(path)
-        if there:
-            wire.check_path(path, wire.in_runtime_dir(path))
+        _check_there(path, workspace)
     except wire.Unusable as exc:
         raise Unanswered(
             _("{reason}: no command sent").format(reason=exc)
         ) from None
-    if not there:
-        raise Unanswered(_nobody(path, workspace))
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
         sock.connect(path)

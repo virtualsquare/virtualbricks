@@ -9,8 +9,8 @@ console
 .PP
 \f[B]virtualbricks \-\-no\-gui\f[R] [\f[I]options\f[R]]
 .PP
-\f[B]virtualbricks \-\-connect\f[R] \f[I]description\f[R]
-[\f[I]options\f[R]]
+\f[B]virtualbricks \-\-connect\f[R] [\f[I]description\f[R]]
+[\f[B]\-\-workspace\f[R] \f[I]directory\f[R]] [\f[I]options\f[R]]
 .PP
 \f[B]virtualbricks\f[R] [\f[B]\-\-connect\f[R] [\f[I]description\f[R]]]
 [\f[B]\-\-workspace\f[R] \f[I]directory\f[R]] \f[B]\-\-command\f[R]
@@ -40,9 +40,11 @@ the commands of a file, and a program written with Twisted can drive it
 through AMP.
 See \f[B]THE CONTROL SOCKET\f[R].
 .PP
-Started with \f[B]\-\-connect\f[R] and the description of a socket
-alone, it opens the windows of the Virtualbricks that listens there, on
-this machine or another: the bricks run there, the windows here.
+Started with \f[B]\-\-connect\f[R] and neither \f[B]\-\-command\f[R] nor
+\f[B]\-\-run\f[R], it opens the windows of a Virtualbricks that listens:
+the one of the socket of its description, on this machine or another, or
+without one, a Virtualbricks of yours here.
+The bricks run there, the windows here.
 See \f[B]THE WINDOWS OF ANOTHER VIRTUALBRICKS\f[R].
 .SH OPTIONS
 .TP
@@ -87,8 +89,8 @@ Use the projects of \f[I]directory\f[R] for this run, instead of the
 \f[B]workspace\f[R] setting; it\(aqs made if it isn\(aqt there.
 Without \f[B]\-\-lock\f[R], the single\-instance mode is then
 \f[B]workspace\f[R].
-With \f[B]\-\-command\f[R] or \f[B]\-\-connect \-\-run\f[R], the
-Virtualbricks that runs in \f[I]directory\f[R].
+With \f[B]\-\-command\f[R] or \f[B]\-\-connect\f[R], the Virtualbricks
+that runs in \f[I]directory\f[R].
 .TP
 \f[B]\-\-lock\f[R] \f[I]mode\f[R]
 The single\-instance mode: \f[B]system\f[R], one Virtualbricks on the
@@ -132,11 +134,11 @@ With \f[B]\-\-command\f[R] or \f[B]\-\-run\f[R], it takes no
 \f[B]\-\-workspace\f[R] with a description.
 See \f[B]THE CONTROL SOCKET\f[R].
 .RS
-Without them, it opens the windows of the Virtualbricks of the socket of
-\f[I]description\f[R], which speak AMP, so it takes no
-\f[B]protocol=text\f[R]; nor \f[B]\-\-no\-gui\f[R], \f[B]\-\-lock\f[R],
-\f[B]\-\-workspace\f[R] or \f[B]\-\-listen\f[R], which are for the
-Virtualbricks that runs the bricks.
+Without them, it opens the windows of that Virtualbricks, which speak
+AMP, so it takes no \f[B]protocol=text\f[R]; nor \f[B]\-\-no\-gui\f[R],
+\f[B]\-\-lock\f[R] or \f[B]\-\-listen\f[R], which are for the
+Virtualbricks that runs the bricks, nor \f[B]\-\-workspace\f[R] with a
+description.
 See \f[B]THE WINDOWS OF ANOTHER VIRTUALBRICKS\f[R].
 .RE
 .TP
@@ -660,6 +662,19 @@ virtualbricks \-\-connect \(rs
     \(aqssl:lab.example:8765:caCertsDir=\(ti/vb/lab\(aq
 .EE
 .PP
+\f[B]virtualbricks \-\-connect\f[R] alone opens the windows of a
+Virtualbricks of yours on this machine, the one that listens on the
+socket of \f[B]\-\-listen\f[R] alone of its workspace: that of
+\f[B]\-\-workspace\f[R], or else the only one that listens; when several
+do, it names them and opens nothing.
+The windows call it \f[I]this computer\f[R]:
+.IP
+.EX
+virtualbricks \-\-no\-gui \-\-noterm \-\-listen \-\-workspace \(ti/labs/a &
+virtualbricks \-\-connect
+virtualbricks \-\-connect \-\-workspace \(ti/labs/a
+.EE
+.PP
 The windows follow the project open there: its bricks, events and
 images, their processes, the settings and the messages of its log; what
 the console or other windows change there shows at once.
@@ -936,9 +951,9 @@ The error says which.
 \f[B]130\f[R]
 Ctrl+C stopped the wait.
 .PP
-With the windows of \f[B]\-\-connect\f[R], \f[B]1\f[R]: they couldn\(aqt
-reach the Virtualbricks there, it refused them, or it runs another
-version.
+With the windows of \f[B]\-\-connect\f[R], \f[B]1\f[R]: none listens
+there, several listen and none is named, they couldn\(aqt reach it, it
+refused them, or it runs another version.
 .SH FILES
 .TP
 \f[I]$XDG_STATE_HOME\f[R]/virtualbricks/history
@@ -1003,6 +1018,12 @@ file, sent to it one after the other:
 .EX
 virtualbricks \-\-command brick start router
 virtualbricks \-\-connect \-\-run \(ti/labs/traffic.vb
+.EE
+.PP
+Its windows, on the same machine:
+.IP
+.EX
+virtualbricks \-\-connect
 .EE
 .PP
 The same lab, open to the network over \f[B]ssl\f[R], and its machine,

@@ -102,7 +102,7 @@ The options are:
 - `--workspace FOLDER`: use the projects of another folder, made if it isn't
   there, for this run only; see [Configuration](#configuration). Without
   `--lock`, one Virtualbricks runs in each workspace, side by side. With
-  `--command`, the Virtualbricks that runs there.
+  `--command` or `--connect`, the Virtualbricks that runs there.
 - `--lock MODE`: the single-instance mode, how many Virtualbricks can run at
   once; see below.
 - `--command WORD...`: send a command of the console to the Virtualbricks
@@ -222,11 +222,14 @@ AMP, and the proof of the token are described for whoever writes a client in
 
 `virtualbricks --connect DESCRIPTION` alone opens the windows of the
 Virtualbricks of a socket, on this machine or another: the bricks run
-there, the windows here. The windows follow its project as it changes,
-whoever changes it, and what they do goes there: a start, a new brick, the
-OK of a panel, the consoles of the bricks in a terminal here. A path is a
-path of that machine, typed with the completion of its folders, and Settings
-has a page for this computer and one for that machine. Both run the same
+there, the windows here. Without a description, `virtualbricks --connect`
+opens those of a Virtualbricks of yours here, the one that listens with
+`--listen` alone in the workspace of `--workspace`, or the only one that
+listens. The windows follow its project as it changes, whoever changes
+it, and what they do goes there: a start, a new brick, the OK of a panel,
+the consoles of the bricks in a terminal here. A path is a path of that
+machine, typed with the completion of its folders, and Settings has a
+page for this computer and one for that machine. Both run the same
 version of Virtualbricks:
 
 ```

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 09:10+0200\n"
+"POT-Creation-Date: 2026-10-01 22:08+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -4711,6 +4711,10 @@ msgstr ""
 #: virtualbricks/remote/answers.py
 #, python-brace-format
 msgid "The project {name} uses the file"
+msgstr ""
+
+#: virtualbricks/remote/client.py
+msgid "this computer"
 msgstr ""
 
 #: virtualbricks/remote/client.py

@@ -16,7 +16,8 @@ virtualbricks - labs of QEMU machines and VDE networks, and their console
 
 **virtualbricks --no-gui** [*options*]
 
-**virtualbricks --connect** *description* [*options*]
+**virtualbricks --connect** [*description*] [**--workspace**
+*directory*] [*options*]
 
 **virtualbricks** [**--connect** [*description*]] [**--workspace**
 *directory*] **--command** [*word*...]
@@ -43,10 +44,11 @@ the console from any terminal or script, and prints its answer,
 program written with Twisted can drive it through AMP. See **THE CONTROL
 SOCKET**.
 
-Started with **--connect** and the description of a socket alone,
-it opens the windows of the Virtualbricks that listens there, on this
-machine or another: the bricks run there, the windows here. See **THE
-WINDOWS OF ANOTHER VIRTUALBRICKS**.
+Started with **--connect** and neither **--command** nor **--run**, it
+opens the windows of a Virtualbricks that listens: the one of the socket
+of its description, on this machine or another, or without one, a
+Virtualbricks of yours here. The bricks run there, the windows here. See
+**THE WINDOWS OF ANOTHER VIRTUALBRICKS**.
 
 # OPTIONS
 
@@ -85,7 +87,7 @@ WINDOWS OF ANOTHER VIRTUALBRICKS**.
 :   Use the projects of *directory* for this run, instead of the
     **workspace** setting; it's made if it isn't there. Without **--lock**,
     the single-instance mode is then **workspace**. With **--command** or
-    **--connect --run**, the Virtualbricks that runs in *directory*.
+    **--connect**, the Virtualbricks that runs in *directory*.
 
 **--lock** *mode*
 :   The single-instance mode: **system**, one Virtualbricks on the
@@ -120,11 +122,11 @@ WINDOWS OF ANOTHER VIRTUALBRICKS**.
     **--listen**, no other option of a start, and no **--workspace** with
     a description. See **THE CONTROL SOCKET**.
 
-    Without them, it opens the windows of the Virtualbricks of the socket
-    of *description*, which speak AMP, so it takes no **protocol=text**;
-    nor **--no-gui**, **--lock**, **--workspace** or **--listen**, which
-    are for the Virtualbricks that runs the bricks. See **THE WINDOWS OF
-    ANOTHER VIRTUALBRICKS**.
+    Without them, it opens the windows of that Virtualbricks, which
+    speak AMP, so it takes no **protocol=text**; nor **--no-gui**,
+    **--lock** or **--listen**, which are for the Virtualbricks that runs
+    the bricks, nor **--workspace** with a description. See **THE WINDOWS
+    OF ANOTHER VIRTUALBRICKS**.
 
 **--version**
 :   Print the version and exit.
@@ -610,6 +612,18 @@ virtualbricks --connect \
     'ssl:lab.example:8765:caCertsDir=~/vb/lab'
 ```
 
+**virtualbricks --connect** alone opens the windows of a Virtualbricks
+of yours on this machine, the one that listens on the socket of
+**--listen** alone of its workspace: that of **--workspace**, or else the
+only one that listens; when several do, it names them and opens nothing.
+The windows call it *this computer*:
+
+```
+virtualbricks --no-gui --noterm --listen --workspace ~/labs/a &
+virtualbricks --connect
+virtualbricks --connect --workspace ~/labs/a
+```
+
 The windows follow the project open there: its bricks, events and
 images, their processes, the settings and the messages of its log; what
 the console or other windows change there shows at once. What the windows
@@ -881,8 +895,9 @@ With **--command**, and with **--connect --run**:
 **130**
 :   Ctrl+C stopped the wait.
 
-With the windows of **--connect**, **1**: they couldn't reach the
-Virtualbricks there, it refused them, or it runs another version.
+With the windows of **--connect**, **1**: none listens there, several
+listen and none is named, they couldn't reach it, it refused them, or it
+runs another version.
 
 # FILES
 
@@ -949,6 +964,12 @@ file, sent to it one after the other:
 ```
 virtualbricks --command brick start router
 virtualbricks --connect --run ~/labs/traffic.vb
+```
+
+Its windows, on the same machine:
+
+```
+virtualbricks --connect
 ```
 
 The same lab, open to the network over **ssl**, and its machine, started

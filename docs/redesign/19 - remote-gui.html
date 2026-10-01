@@ -277,12 +277,12 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 19 &middot; Design &middot; revision 7, implemented</div>
+    <div class="eyebrow">Step 19 &middot; Design &middot; revision 8, implemented</div>
     <h1>Virtualbricks Remote GUI</h1>
     <p class="lede"><code>virtualbricks --connect ssl:lab.example:8765</code> opens the windows of the Virtualbricks that runs on another machine. The project you see is the one open there, and whatever you do in the windows, from starting a brick to the OK of its settings, happens there, through protocol 2 of AMP. The windows keep a copy of that project, which the other end keeps up to date, so they read it as fast as today and only the actions cross the network.</p>
     <ul class="meta">
       <li>branch <b>mg/remote-gui</b> at cc91676</li>
-      <li>revision 7 &middot; 1 October 2026</li>
+      <li>revision 8 &middot; 1 October 2026</li>
       <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> your request of today: &ldquo;With <code>virtualbricks --command</code> it is possible to control an instance of Virtualbricks via CLI. I want to be able to control a remote instance of Virtualbricks through the GUI via the control sockets. The open project is the remote one and the actions affect the remote bricks. Create a plan.&rdquo; It builds on the sockets of pages <a href="15%20-%20control-socket.html">15</a>, <a href="16%20-%20amp-socket.html">16</a> and <a href="17%20-%20network-sockets.html">17</a>: AMP, <code>tcp</code> and <code>ssl</code>, the token and the client certificates stay as they are. Of the thirteen questions, R1 to R13 in <a href="#decisions">&sect;12</a>, your answers of today decide all of them. At your request, revision 3 is committed on <code>develop</code>; nothing of it is implemented yet.</p>
@@ -296,7 +296,7 @@
       <li><em>The windows</em>: on the lab machine itself, Settings keeps its two pages. Without vdeterm or unixterm here, Open Control Monitor is greyed and its label names the package, since the items of a menu model have no tooltip. Terminate waits for a command of the console that stops a machine with <code>SIGTERM</code>, and About doesn&rsquo;t show the version of the lab machine yet. Add Image doesn&rsquo;t read the description beside a file there, and the icon of a machine is still read here. <code>--connect</code> alone, and with two descriptions, is refused with a message.</li>
       <li><em>On the way</em>, <code>brick duplicate</code> and <code>event duplicate</code> of the console took a new name equal to the default one of the copy as a name in use: they don&rsquo;t any more (2b8e351).</li>
     </ul>
-    <p class="revision"><strong>Since then:</strong> on 1 October <code>--socket</code> was renamed <code>--listen</code>, and a socket whose description names no protocol speaks AMP, for <code>--listen</code> and <code>--connect</code> alike: the lab machine listens with <code>--listen ssl:8765:interface=0.0.0.0:privateKey=&hellip;</code>, without <code>protocol=amp</code>, and the same socket answers the windows and <code>--command</code>. <code>--connect</code> alone is still refused for the windows, although <code>.control</code> now speaks AMP: the item of <a href="#later">&sect;13</a> that would open the windows of a workspace of this machine without a path is still for later.</p>
+    <p class="revision"><strong>Since then:</strong> on 1 October <code>--socket</code> was renamed <code>--listen</code>, and a socket whose description names no protocol speaks AMP, for <code>--listen</code> and <code>--connect</code> alike: the lab machine listens with <code>--listen ssl:8765:interface=0.0.0.0:privateKey=&hellip;</code>, without <code>protocol=amp</code>, and the same socket answers the windows and <code>--command</code>. Later the same day, the item of <a href="#later">&sect;13</a> that opens the windows of a workspace of this machine without a path: <code>virtualbricks --connect</code> alone opens those of the Virtualbricks of yours that listens on the socket of <code>--listen</code> alone of its workspace, that of <code>--workspace</code> or else the only one that listens, as <code>--command</code> finds it, with its messages when none or several do. The windows call it <em>this computer</em>, and Reconnect goes back to the same socket. A description with <code>--workspace</code> is refused as with <code>--command</code>: &ldquo;--connect and --workspace each name a Virtualbricks: give one of them&rdquo;.</p>
   </header>
 
   <div class="layout">
@@ -830,7 +830,7 @@ interface=0.0.0.0
           <li>The console of the terminal sends its lines to the lab machine, completed from the copy: the <code>--attach</code> of the IDEAS.</li>
           <li>Open the display of a machine: a VNC viewer on the desktop, through the connection, with QEMU&rsquo;s VNC on the lab machine&rsquo;s loopback only.</li>
           <li>The pushes as lines of the text socket too, for a status bar or a script: the <code>watch</code> of 15 &sect;11. Any program of protocol 2 can already call <code>Follow</code>.</li>
-          <li><code>--connect</code> alone, or with <code>--workspace</code>, for the windows: the socket of <code>--socket</code> alone speaking AMP, by a keyword or a setting, so that the windows reach the Virtualbricks of a workspace of this machine without a path.</li>
+          <li><code>--connect</code> alone, or with <code>--workspace</code>, for the windows: the socket of <code>--socket</code> alone speaking AMP, by a keyword or a setting, so that the windows reach the Virtualbricks of a workspace of this machine without a path. <em>Done on 1 October</em>, with no keyword or setting: <code>--listen</code> alone speaks AMP since then.</li>
           <li>The data of <code>ProjectNames</code> and <code>ProjectSummary</code> as optional keys of <code>ProjectList</code> and <code>ProjectShow</code>, once answers are data (20 T3 B).</li>
           <li>Windows that only look: a token that allows reading and nothing else (17 &sect;12).</li>
           <li>Windows and a lab machine of different versions.</li>

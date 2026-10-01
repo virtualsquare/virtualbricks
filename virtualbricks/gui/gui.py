@@ -327,11 +327,22 @@ class RemoteApplication:
         self.where = client.where(self.target)
         self.copy = MirrorFactory(reactor)
         self.done = defer.Deferred()
-        connecting = defer.ensureDeferred(
-            client.connect(self.target, self.copy, reactor, self.made)
-        )
+        connecting = defer.ensureDeferred(self.reach())
         connecting.addCallbacks(self.show, self.not_connected)
         return self.done
+
+    async def reach(self):
+        """
+        The connection; with --connect alone, to the socket that a
+        Virtualbricks of yours listens on, found once: Reconnect goes there.
+        """
+
+        from virtualbricks.remote import client
+
+        self.target = client.resolve(self.target, self.config["workspace"])
+        return await client.connect(
+            self.target, self.copy, self.reactor, self.made
+        )
 
     def not_connected(self, failure):
         from virtualbricks.remote.client import Refused

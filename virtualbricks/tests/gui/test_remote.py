@@ -31,7 +31,7 @@ from virtualbricks import app
 from virtualbricks.bricks import FakeProcess
 from virtualbricks.config import images, settings
 from virtualbricks.config.workspace import OpenProject, projects
-from virtualbricks.console import control
+from virtualbricks.console import control, wire
 from virtualbricks.engine import LocalMachine
 from virtualbricks.remote import client, follower, mirror
 from virtualbricks.remote.client import Refused, RemoteEngine, Windows, start
@@ -145,6 +145,7 @@ class RemoteTestCase(GuiTestCase):
         )
         self.refusal = None
         self.connections = []
+        self.targets = []
         self.patch(client, "connect", self.connect)
         self.shown = []
         self.patch(
@@ -160,6 +161,7 @@ class RemoteTestCase(GuiTestCase):
     def connect(self, target, copy, reactor, made=None):
         """The connection to the Virtualbricks of the test, followed."""
 
+        self.targets.append(target)
         if self.refusal is not None:
             return defer.fail(Refused(self.refusal))
         windows, connection, pump = iosim.connectedServerAndClient(
@@ -179,11 +181,11 @@ class RemoteTestCase(GuiTestCase):
         for _windows, _connection, pump in self.connections:
             pump.flush()
 
-    def launch(self, install_settings=None):
+    def launch(self, install_settings=None, args=None):
         """The windows of the Virtualbricks at /run/lab.amp, started."""
 
         config = app.Options()
-        config.parseOptions(["--connect", "unix:/run/lab.amp"])
+        config.parseOptions(args or ["--connect", "unix:/run/lab.amp"])
         application = gui.RemoteApplication(config)
         application.install_locale = lambda: None
         # the settings of the test, which both sides share
@@ -218,6 +220,42 @@ class TestRemoteApplication(RemoteTestCase):
             ],
         )
         self.assertEqual(self.logger.events, [])
+
+    def test_this_computer(self):
+        # --connect alone: the socket that a Virtualbricks of yours listens
+        # on, found once
+        found = []
+
+        def resolve(target, workspace=None):
+            found.append((target, workspace))
+            return target._replace(path="/run/vb/labs/.control")
+
+        self.patch(client, "resolve", resolve)
+        self.launch(args=["--connect", "--workspace", "/labs"])
+        [windows] = self.shown
+        self.assertEqual(found, [(wire.Socket(None), "/labs")])
+        self.assertEqual(
+            windows.calls,
+            [("title", "Virtualbricks (project: lab1 on this computer)")],
+        )
+        self.connections[0][1].transport.loseConnection()
+        self.turn()
+        windows.reconnect()
+        self.assertEqual(len(found), 1)
+        self.assertEqual(
+            self.targets, [wire.Socket("/run/vb/labs/.control")] * 2
+        )
+
+    def test_nobody_listens(self):
+        def resolve(target, workspace=None):
+            raise Refused("No Virtualbricks of yours runs")
+
+        self.patch(client, "resolve", resolve)
+        self.launch(args=["--connect"])
+        self.assertEqual(self.shown, [])
+        self.assertEqual(self.targets, [])
+        failure = self.failureResultOf(self.done, SystemExit)
+        self.assertEqual(str(failure.value), "No Virtualbricks of yours runs")
 
     def test_it_cant_connect(self):
         self.refusal = "Can't reach /run/lab.amp: Connection refused"

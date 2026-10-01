@@ -25,8 +25,9 @@ import os
 from twisted.internet import address, defer, endpoints, reactor
 from twisted.protocols import amp
 from twisted.test import iosim
+from twisted.trial import unittest
 
-from virtualbricks import __version__, locations
+from virtualbricks import __version__, locations, locks
 from virtualbricks.bricks import FakeProcess
 from virtualbricks.bricks.brickinfo import NEW_KINDS
 from virtualbricks.bricks.eventaction import ShellAction
@@ -34,6 +35,7 @@ from virtualbricks.config import settings
 from virtualbricks.console import ampcommands, ampwire, control, wire
 from virtualbricks.bricks.virtualmachine import UsbDevice
 from virtualbricks.config import images
+from virtualbricks.config.workspace import Workspace
 from virtualbricks.errors import CommandError
 from virtualbricks.qemu import run
 from virtualbricks.programs import (
@@ -62,7 +64,15 @@ from virtualbricks.remote.client import (
 from virtualbricks.remote.drafts import draft_of
 from virtualbricks.remote.follower import LogKeeper
 from virtualbricks.remote.mirror import MirrorFactory
-from virtualbricks.tests import FakeLogger, FakeTrash, use_workspace
+from virtualbricks.tests import (
+    FakeLogger,
+    FakeTrash,
+    isolate,
+    make_socket,
+    release,
+    short_folder,
+    use_workspace,
+)
 from virtualbricks.tests.console import ConsoleTestCase
 from virtualbricks.tests.console.test_control import TOKEN, tls_file
 from virtualbricks.tests.config.test_images import (
@@ -204,6 +214,8 @@ class TestStart(ClientTestCase):
         )
         target = wire.parse_socket("tcp:lab.example:8765", client=True)
         self.assertEqual(client.where(target), "lab.example")
+        # --connect alone
+        self.assertEqual(client.where(wire.Socket(None)), "this computer")
 
 
 class TestToken(ClientTestCase):
@@ -1087,6 +1099,48 @@ class TestEndpoints(ConsoleTestCase):
         with self.assertRaises(Refused) as cm:
             endpoint_of(target, reactor)
         self.assertEqual(str(cm.exception), "/nowhere doesn't exist")
+
+
+class TestResolve(unittest.TestCase):
+    """The socket of --connect alone: a Virtualbricks of yours listens."""
+
+    def setUp(self):
+        self.root = isolate(self)
+        # the runtime folder, where a path fits
+        os.environ["XDG_RUNTIME_DIR"] = short_folder(self)
+        self.workspace = os.path.join(self.root, "labs")
+        Workspace(self.workspace).make_runtime_dir()
+        self.path = locations.control_socket(self.workspace)
+
+    def listen(self):
+        """A Virtualbricks that listens on the socket of the workspace."""
+
+        make_socket(self.path)
+        self.addCleanup(
+            release, locks.hold(locations.control_lock_file(self.path))
+        )
+
+    def test_a_description(self):
+        target = wire.parse_socket("tcp:lab.example:8765", client=True)
+        self.assertIs(client.resolve(target), target)
+        self.assertIs(client.resolve(TARGET, self.workspace), TARGET)
+
+    def test_alone(self):
+        self.listen()
+        target = wire.Socket(None)
+        self.assertEqual(client.resolve(target), wire.Socket(self.path))
+        self.assertEqual(
+            client.resolve(target, self.workspace), wire.Socket(self.path)
+        )
+
+    def test_nobody(self):
+        with self.assertRaises(Refused) as cm:
+            client.resolve(wire.Socket(None), self.workspace)
+        self.assertEqual(
+            str(cm.exception),
+            "No Virtualbricks runs in ~/labs. Start one with a socket, as"
+            " virtualbricks --workspace ~/labs --no-gui --listen",
+        )
 
 
 class TestConnect(ConsoleTestCase):

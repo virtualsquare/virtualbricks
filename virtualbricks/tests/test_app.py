@@ -801,12 +801,14 @@ class TestConnect(unittest.TestCase):
         self.assertIsNone(options["target"])
 
     def test_alone(self):
-        # the windows don't look for .control
-        self.assertEqual(
-            self.refused("--connect"),
-            "--connect opens the windows of the Virtualbricks of a socket:"
-            " give its description, as unix:PATH or tcp:HOST:PORT",
-        )
+        # the windows of the Virtualbricks of yours that listens here, or
+        # of the one of --workspace
+        options = self.parse("--connect")
+        self.assertTrue(options["windows"])
+        self.assertEqual(options["target"], wire.Socket(None))
+        options = self.parse("--connect", "--workspace", self.root)
+        self.assertTrue(options["windows"])
+        self.assertEqual(options["workspace"], self.root)
 
 
 class TestWindows(TestConnect):
@@ -847,7 +849,6 @@ class TestWindows(TestConnect):
         for args, name in (
             (["--no-gui"], "no-gui"),
             (["--lock", "none"], "lock"),
-            (["--workspace", self.root], "workspace"),
             (["--listen", "tcp:8765"], "listen"),
         ):
             self.assertEqual(
@@ -855,6 +856,13 @@ class TestWindows(TestConnect):
                 "--connect opens the windows of another Virtualbricks:"
                 f" --{name} is for the one that runs the bricks",
             )
+        self.assertEqual(
+            self.refused(
+                "--connect", "tcp:lab:8765", "--workspace", self.root
+            ),
+            "--connect and --workspace each name a Virtualbricks: give one of"
+            " them",
+        )
 
     def test_one(self):
         self.assertEqual(

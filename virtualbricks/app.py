@@ -83,8 +83,7 @@ class Options(usage.Options):
             "The Virtualbricks that runs that --command and --run talk to: "
             "the one of .control in the runtime folder of its workspace, or "
             "the one of the socket of the description after it, as "
-            "tcp:HOST:PORT. Without them, the windows of the Virtualbricks "
-            "of the description open.",
+            "tcp:HOST:PORT. Without them, its windows open.",
         ],
     ]
     optParameters = [
@@ -101,7 +100,8 @@ class Options(usage.Options):
             None,
             None,
             "The folder of the projects for this run, instead of the "
-            "setting; with --command, the Virtualbricks that runs there.",
+            "setting; with --command or --connect, the Virtualbricks that "
+            "runs there.",
         ],
         [
             "lock",
@@ -335,7 +335,7 @@ class Options(usage.Options):
     def opt_workspace(self, arg):
         """
         The folder of the projects for this run, instead of the setting;
-        with --command, the Virtualbricks that runs there.
+        with --command or --connect, the Virtualbricks that runs there.
         """
 
         # a folder that isn't there is made, as the workspace of the setting
@@ -416,13 +416,7 @@ class Options(usage.Options):
                 f"{client} takes no --listen: --connect names the"
                 " Virtualbricks to talk to"
             )
-        if len(self.targets) > 1:
-            raise usage.UsageError("--connect names one Virtualbricks")
-        if self["workspace"] and any(self.targets):
-            raise usage.UsageError(
-                "--connect and --workspace each name a Virtualbricks: give"
-                " one of them"
-            )
+        self.check_target()
         if (
             self["command"]
             and not words
@@ -434,23 +428,28 @@ class Options(usage.Options):
                 " list, or lines on its standard input"
             )
 
-    def check_windows(self):
-        """
-        Refuse, with the windows of another Virtualbricks, --connect alone
-        and what is for the Virtualbricks that runs the bricks.
-        """
+    def check_target(self):
+        """Refuse two --connect, or one with a description and --workspace."""
 
         if len(self.targets) > 1:
             raise usage.UsageError("--connect names one Virtualbricks")
-        if not any(self.targets):
+        if self["workspace"] and any(self.targets):
             raise usage.UsageError(
-                "--connect opens the windows of the Virtualbricks of a"
-                " socket: give its description, as unix:PATH or"
-                " tcp:HOST:PORT"
+                "--connect and --workspace each name a Virtualbricks: give"
+                " one of them"
             )
+
+    def check_windows(self):
+        """
+        Refuse, with the windows of another Virtualbricks, what is for the
+        Virtualbricks that runs the bricks; --workspace names the one whose
+        windows --connect alone opens.
+        """
+
+        self.check_target()
         given = [
             name
-            for name in ("no-gui", "lock", "workspace")
+            for name in ("no-gui", "lock")
             if name in self.given or (name != "lock" and self[name])
         ]
         if self.descriptions:

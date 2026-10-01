@@ -553,6 +553,40 @@ class TestWorkspaces(ClientTestCase):
             f" --workspace {places[0][1]} --command status\n",
         )
 
+    def test_the_socket_of_the_windows(self):
+        # the only one that listens, or that of workspace
+        FakeVirtualbricks(self, self.path)
+        self.assertEqual(client.listening_socket(), self.path)
+        FakeVirtualbricks(self, self.other_path)
+        self.assertEqual(client.listening_socket(self.other), self.other_path)
+
+    def test_no_socket_for_the_windows(self):
+        error = self.assertRaises(
+            client.Unanswered, client.listening_socket, self.other
+        )
+        self.assertEqual(
+            str(error),
+            "No Virtualbricks runs in ~/other. Start one with a socket, as"
+            " virtualbricks --workspace ~/other --no-gui --listen",
+        )
+        # no command to speak of
+        open(self.other_path, "w").close()
+        error = self.assertRaises(
+            client.Unanswered, client.listening_socket, self.other
+        )
+        self.assertEqual(str(error), f"{self.other_path} isn't a socket")
+
+    def test_several_for_the_windows(self):
+        FakeVirtualbricks(self, self.path)
+        FakeVirtualbricks(self, self.other_path)
+        self.patch(sys, "argv", ["virtualbricks", "--connect"])
+        error = self.assertRaises(client.Unanswered, client.listening_socket)
+        self.assertIn(
+            "Name one with --workspace, as virtualbricks --workspace ~/",
+            str(error),
+        )
+        self.assertTrue(str(error).endswith(" --connect"))
+
     def test_listening(self):
         server = FakeVirtualbricks(self, self.path)
         # a workspace whose link is gone, and files of the runtime folder

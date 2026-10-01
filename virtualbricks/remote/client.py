@@ -24,7 +24,8 @@ another machine or on this one (page 19 §6, §7).
 token when asked, agrees on protocol 2 with ``Hello``, checks that both run
 the same version (19 R11), and follows: the copy, a ``MirrorFactory``, is
 whole once it returns. ``Windows`` is the connection: it gives the pushes to
-the copy and the messages of the log to ``logged``.
+the copy and the messages of the log to ``logged``. ``resolve()`` finds the
+socket of ``--connect`` alone, where a Virtualbricks of yours listens.
 
 ``RemoteEngine`` is the engine of the windows over it: what the console
 does goes as the typed commands of protocol 2, ``BrickStart(name=["vm1"])``;
@@ -59,6 +60,7 @@ from virtualbricks.config.workspace import (
 from virtualbricks.config.settings import setting_kind
 from virtualbricks.config.schema import kind_of
 from virtualbricks.console import ampcommands, ampwire, wire
+from virtualbricks.console import client as console_client
 from virtualbricks.i18n import _
 from virtualbricks.programs import Answer, parse_machine_properties, qemu_info
 from virtualbricks.remote import commands
@@ -84,11 +86,32 @@ class NotYet(Exception):
 
 
 def where(target) -> str:
-    """The Virtualbricks of target, as the windows name it: host or path."""
+    """
+    The Virtualbricks of target, as the windows name it: host or path, or
+    this computer for --connect alone, before resolve() finds its path.
+    """
 
+    if target.kind == "unix" and target.path is None:
+        return _("this computer")
     if target.kind == "unix":
         return locations.short_path(target.path)
     return target.host
+
+
+def resolve(target, workspace=None):
+    """
+    target, with a path if it is --connect alone: the socket of --listen
+    alone of workspace, or else of the only Virtualbricks of yours that
+    listens on one. Refused says why none can be reached.
+    """
+
+    if target.kind != "unix" or target.path is not None:
+        return target
+    try:
+        path = console_client.listening_socket(workspace)
+    except console_client.Unanswered as exc:
+        raise Refused(str(exc)) from None
+    return target._replace(path=path)
 
 
 class Windows(Mirroring, amp.AMP):
