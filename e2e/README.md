@@ -65,7 +65,7 @@ pytest --count 20 -k switch_runs         # 20 times: is it flaky?
 
 | File | What it has |
 | :- | :- |
-| `features/*.feature` | The scenarios, a file for each area: `bricks.feature`, … |
+| `features/*.feature` | The scenarios, a file for each area: `bricks.feature`, …; in folders too: see [Group the scenarios](#group-the-scenarios) |
 | `steps.py` | The steps: what each line of a scenario does |
 | `test_features.py` | Makes a test of each scenario of `features/` |
 | `conftest.py` | The fixtures: `desktop`, shared, and `virtualbricks`, for each scenario; the report of a step that fails |
@@ -204,6 +204,61 @@ A button with only an icon needs a name: `icon_button()` of
 `virtualbricks/gui/mainwindow/tab.py` gives it one, for its tooltip and for
 the screen readers. Without a name, a widget can't be found, by the tests nor
 by a screen reader.
+
+## Group the scenarios
+
+The scenarios of an area are a `.feature` file of their own:
+`bricks.feature`, `projects.feature`, …; when there are many, a folder of
+them, as `features/network/wires.feature`. `test_features.py` makes a test
+of each scenario of `features/` and its folders: a new file needs nothing
+else.
+
+To run a group, tag it. A tag on `Feature:` is on each of its scenarios, a
+tag on a `Scenario:` on that one; `-m` runs the scenarios of a tag:
+
+```gherkin
+@network
+Feature: Wires
+  A wire joins two bricks.
+
+  @smoke
+  Scenario: A wire between two switches
+    …
+```
+
+```sh
+pytest -m network      # the scenarios of the feature
+pytest -m smoke        # those tagged @smoke
+pytest -m "not slow"   # all but those tagged @slow
+```
+
+pytest warns of a tag it doesn't know (`PytestUnknownMarkWarning`): name
+each in `markers`, in `[tool.pytest.ini_options]` of `pyproject.toml`.
+`@needs-PROGRAM` is not one: `conftest.py` makes it a skip.
+
+```toml
+markers = [
+    "network: the scenarios of wires",
+    "smoke: a few scenarios, to run first",
+]
+```
+
+The ways to group, and what each does:
+
+| How | What it does |
+| :- | :- |
+| A `.feature` file, in `features/` or a folder of it | A test of each scenario, with nothing else to change |
+| A tag on `Feature:`, as `@network` | On each of its scenarios: `pytest -m network` |
+| A tag on a `Scenario:`, as `@smoke` | On that one: `pytest -m smoke`; `-m "not slow"` leaves some out |
+| `Rule:`, in a feature | Groups some of its scenarios, each `Rule:` with a `Background:` of its own |
+| The name of a feature, as `-k Wires` | Selects nothing: a test is `test_features.py::test_` and the name of its scenario, so `-k` knows only the words of the scenario |
+| Another test file, as `test_network.py` with `scenarios("features/network")` | Each of its scenarios runs twice: `test_features.py` makes a test of it too |
+
+A test file for each feature, in place of `test_features.py`, would run with
+`pytest e2e/test_network.py`, and in a JUnit XML report (`--junitxml`) each
+file would be a class of its own, where today all are
+`e2e.test_features`; but a feature without its test file would never run,
+and nothing would say so. Allure groups the scenarios by `Feature:` anyway.
 
 ## Is a scenario flaky?
 
