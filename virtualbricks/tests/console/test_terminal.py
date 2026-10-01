@@ -27,6 +27,7 @@ from twisted.internet import defer
 from twisted.internet.testing import StringTransport
 from twisted.trial import unittest
 
+from virtualbricks import __version__
 from virtualbricks.console import command as command_module
 from virtualbricks.console import terminal
 from virtualbricks.console.command import CommandError, command
@@ -84,7 +85,8 @@ class TestTheLine(TerminalTestCase):
         self.assertEqual(
             self.shown(),
             [
-                "Virtualbricks 2.1.0. Type help, or press Tab to complete.",
+                f"Virtualbricks {__version__}. Type help, or press Tab to"
+                " complete.",
                 "virtualbricks>",
             ],
         )
