@@ -18,9 +18,9 @@
 """
 The fixtures of the end-to-end tests, and their steps: see README.md.
 
-desktop is the screen and the buses that every scenario shares;
-virtualbricks is the Virtualbricks of one scenario, which a Given step
-starts. The steps are in :mod:`steps`. When a step fails, the report has the
+desktop is the buses that every scenario shares; virtualbricks is the
+Virtualbricks of one scenario, which a Given step starts on a screen of its
+own. The steps are in :mod:`steps`. When a step fails, the report has the
 step, the widgets that show and the output of Virtualbricks.
 """
 
@@ -59,7 +59,7 @@ def desktop(tmp_path_factory):
 
 @pytest.fixture
 def virtualbricks(desktop, tmp_path):
-    """A Virtualbricks, not started; stopped at the end if still on."""
+    """A Virtualbricks, not started; stopped at the end, with its screen."""
 
     vb = harness.Virtualbricks(
         desktop, str(tmp_path), str(tmp_path / "output.log")
@@ -67,8 +67,7 @@ def virtualbricks(desktop, tmp_path):
     try:
         yield vb
     finally:
-        if vb.process is not None:
-            vb.stop()
+        vb.stop()
 
 
 def pytest_bdd_apply_tag(tag, function):

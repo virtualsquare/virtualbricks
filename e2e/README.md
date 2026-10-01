@@ -47,6 +47,7 @@ pytest                                   # every scenario
 pytest -k switch_runs                    # the scenarios with these words
 pytest --gherkin-terminal-reporter -vv   # each scenario, step by step
 pytest -s                                # with what the steps print
+pytest --count 20 -k switch_runs         # 20 times: is it flaky?
 ```
 
 `pytest` runs the end-to-end tests only (`testpaths` in `pyproject.toml`);
@@ -68,7 +69,7 @@ pytest -s                                # with what the steps print
 | `steps.py` | The steps: what each line of a scenario does |
 | `test_features.py` | Makes a test of each scenario of `features/` |
 | `conftest.py` | The fixtures: `desktop`, shared, and `virtualbricks`, for each scenario; the report of a step that fails |
-| `harness.py` | What the steps drive: `Virtualbricks`, with `find`, `click`, `choose`, `row`, `children`, …; the `Desktop` |
+| `harness.py` | What the steps drive: `Virtualbricks`, with `find`, `click`, `choose`, `row`, `children`, …; the `Desktop` and its `Screen`s |
 | `a11y.py` | The widgets, as a screen reader sees them, through AT-SPI |
 | `broadway.py` | The mouse: a browser of `broadwayd`, whose clicks reach GTK as a user's do |
 
@@ -90,10 +91,11 @@ pytest -s                                # with what the steps print
 
 4. **Add the steps that are missing**, in `steps.py`: see
    [Add a step](#add-a-step).
-5. **Run it until it passes**, then **check that it fails** when
-   Virtualbricks is broken: see [Check that a scenario
-   fails](#check-that-a-scenario-fails).
-6. **Read it again as a user**: each line says something a user would say;
+5. **Run it until it passes**, then **twenty times in a row**: see [Is a
+   scenario flaky?](#is-a-scenario-flaky).
+6. **Check that it fails** when Virtualbricks is broken: see [Check that a
+   scenario fails](#check-that-a-scenario-fails).
+7. **Read it again as a user**: each line says something a user would say;
    the details of the windows are in the steps.
 
 Some rules:
@@ -202,6 +204,22 @@ A button with only an icon needs a name: `icon_button()` of
 the screen readers. Without a name, a widget can't be found, by the tests nor
 by a screen reader.
 
+## Is a scenario flaky?
+
+A scenario that passes once may fail the next time: a step that clicks
+before the widget is there, a wait too short for a slower machine. Run it
+many times, with [pytest-repeat](https://github.com/pytest-dev/pytest-repeat):
+
+```sh
+pytest --count 20 -k switch_runs
+```
+
+Each run is a test of its own, with a Virtualbricks, a home and a screen of
+its own; the third of twenty is
+`test_a_switch_runs_for_a_while_then_stops[3-20]`. The summary says how many
+failed, as `2 failed, 18 passed`, and each failure has its report. Add `-x`
+to stop at the first one. A scenario is done when the twenty pass.
+
 ## Check that a scenario fails
 
 A test that never fails tests nothing. Once a scenario passes, break what it
@@ -247,9 +265,9 @@ AssertionError: Not in 10 s: the button 'Stop sw1' shows
 ```
 
 The files of each scenario stay in `/tmp/pytest-of-$USER/`, for the last
-three runs: its home, its settings, its workspace with the project, and
-`output.log`, the output of Virtualbricks; `desktop0/` has the logs of
-`broadwayd` and `dbus-daemon`.
+three runs: its home, its settings, its workspace with the project,
+`output.log`, the output of Virtualbricks, and `broadway.log`, that of its
+`broadwayd`; `desktop0/` has the log of `dbus-daemon`.
 
 ## With Claude Code
 
@@ -266,16 +284,18 @@ chose. Read the scenario as you would one of a contributor: it is the test.
 
 ## How it works
 
-- `desktop`, once for all the tests, starts a `dbus-daemon` and `broadwayd`
-  in a folder of its own in `/tmp`; AT-SPI starts on that bus when it is
-  first asked. The variables of your desktop (`DISPLAY`, the buses) are out
-  of the environment of the tests and of Virtualbricks.
+- `desktop`, once for all the tests, starts a `dbus-daemon` in a folder of
+  its own in `/tmp`; AT-SPI starts on that bus when it is first asked. The
+  variables of your desktop (`DISPLAY`, the buses) are out of the
+  environment of the tests and of Virtualbricks.
 - `virtualbricks`, for each scenario, makes a home with `settings.toml` and
-  a workspace; `Given Virtualbricks is running` starts `python -m
-  virtualbricks --noterm --lock none --workspace …` on this checkout, in
-  English, and waits for its main window. The settings turn off the alert of
-  missing programs, which depends on the machine and would take the clicks;
-  GTK's animations are off, so a popover is where it ends up at once.
+  a workspace; `Given Virtualbricks is running` starts a `broadwayd`, then
+  `python -m virtualbricks --noterm --lock none --workspace …` on this
+  checkout, in English, on it, and waits for its main window. Each
+  Virtualbricks has its own `broadwayd`: `broadwayd` aborts when a program
+  it shows quits. The settings turn off the alert of missing programs,
+  which depends on the machine and would take the clicks; GTK's animations
+  are off, so a popover is where it ends up at once.
 - `a11y.py` finds the widgets through AT-SPI, as a screen reader does, and
   knows only the process the test started.
 - `broadway.py` is a browser of `broadwayd`: it speaks the protocol of

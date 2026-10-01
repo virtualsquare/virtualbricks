@@ -19,10 +19,10 @@
 What the steps of the scenarios drive: a Virtualbricks of this checkout, on
 a screen nobody sees.
 
-Desktop is what the tests share: a session bus, with its accessibility bus,
-and broadwayd, GTK's HTML5 display server, with the browser of
-:mod:`broadway`. Virtualbricks is the program of one scenario, with a HOME,
-a workspace and settings of its own: its widgets are found as a screen
+Desktop is what the tests share: a session bus, with its accessibility bus.
+Virtualbricks is the program of one scenario, with a HOME, a workspace and
+settings of its own, and a Screen: broadwayd, GTK's HTML5 display server,
+with the browser of :mod:`broadway`. Its widgets are found as a screen
 reader finds them (:mod:`a11y`) and clicked through broadwayd. Nothing
 reaches the desktop, nor a Virtualbricks that runs there.
 """
@@ -77,14 +77,14 @@ def missing():
 
 
 class Desktop:
-    """The session bus and the screen that the tests share."""
+    """The session bus that the tests share, and their screens."""
 
     def __init__(self, logs):
         # short: the sockets of the bricks are in there too
         self.runtime = tempfile.mkdtemp(prefix="vb-e2e-")
         self.logs = logs
-        self.processes = []
-        self.browser = None
+        self.bus = None
+        self.screens = 0
         self.env = {
             name: value
             for name, value in os.environ.items()
@@ -93,8 +93,10 @@ class Desktop:
         self.env["XDG_RUNTIME_DIR"] = self.runtime
 
     def start(self):
-        bus = self._spawn(
-            "dbus",
+        log = os.path.join(self.logs, "dbus.log")
+        self.bus = _spawn(
+            log,
+            self.env,
             "dbus-daemon",
             "--session",
             "--nofork",
@@ -103,38 +105,47 @@ class Desktop:
             stdout=subprocess.PIPE,
         )
         # printed once the bus listens
-        address = bus.stdout.readline().decode().strip()
+        address = self.bus.stdout.readline().decode().strip()
         if not address:
-            raise RuntimeError(f"dbus-daemon didn't start: see {self.logs}")
+            raise RuntimeError(f"dbus-daemon didn't start: see {log}")
         self.env["DBUS_SESSION_BUS_ADDRESS"] = address
-        http = os.path.join(self.runtime, "http")
-        self._spawn("broadway", "broadwayd", "--unixsocket", http, ":1")
-        a11y.wait_for(lambda: os.path.exists(http), "broadwayd listens")
-        self.browser = broadway.Browser(http)
-        self.env.update(GDK_BACKEND="broadway", BROADWAY_DISPLAY=":1")
 
     def stop(self):
-        if self.browser is not None:
-            self.browser.close()
-        for process in reversed(self.processes):
-            process.terminate()
-            try:
-                process.wait(10)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
+        if self.bus is not None:
+            _stop(self.bus)
         shutil.rmtree(self.runtime, ignore_errors=True)
 
-    def _spawn(self, log, *args, stdout=None):
-        with open(os.path.join(self.logs, log + ".log"), "wb") as out:
-            process = subprocess.Popen(
-                args,
-                env=self.env,
-                stdout=out if stdout is None else stdout,
-                stderr=out,
-            )
-        self.processes.append(process)
-        return process
+    def screen(self, log):
+        """
+        A screen of its own for a Virtualbricks: broadwayd aborts when a
+        program it shows quits ("can't write to client").
+        """
+
+        self.screens += 1
+        display = f":{self.screens}"
+        http = os.path.join(self.runtime, f"http{self.screens}")
+        process = _spawn(
+            log, self.env, "broadwayd", "--unixsocket", http, display
+        )
+        try:
+            a11y.wait_for(lambda: os.path.exists(http), "broadwayd listens")
+            return Screen(display, process, broadway.Browser(http))
+        except BaseException:
+            _stop(process)
+            raise
+
+
+class Screen:
+    """A broadwayd, on display, and its browser."""
+
+    def __init__(self, display, process, browser):
+        self.display = display
+        self.process = process
+        self.browser = browser
+
+    def close(self):
+        self.browser.close()
+        _stop(self.process)
 
 
 class Virtualbricks:
@@ -142,7 +153,8 @@ class Virtualbricks:
 
     def __init__(self, desktop, home, log):
         self.desktop = desktop
-        self.browser = desktop.browser
+        self.screen = None
+        self.browser = None
         self.home = home
         self.config = os.path.join(home, ".config")
         self.workspace = os.path.join(home, "workspace")
@@ -159,10 +171,16 @@ class Virtualbricks:
         os.makedirs(self.workspace)
 
     def start(self):
-        """Start Virtualbricks, and wait for its main window."""
+        """Start Virtualbricks on a screen, and wait for its main window."""
 
+        self.screen = self.desktop.screen(
+            os.path.join(self.home, "broadway.log")
+        )
+        self.browser = self.screen.browser
         env = dict(
             self.desktop.env,
+            GDK_BACKEND="broadway",
+            BROADWAY_DISPLAY=self.screen.display,
             HOME=self.home,
             XDG_CONFIG_HOME=self.config,
             XDG_STATE_HOME=os.path.join(self.home, ".local", "state"),
@@ -206,17 +224,14 @@ class Virtualbricks:
         self.find("frame", timeout=START_TIMEOUT)
 
     def stop(self):
-        """Stop Virtualbricks, if it still runs, and its bricks."""
+        """Stop Virtualbricks, if it still runs, its bricks and its screen."""
 
-        if self.process.poll() is None:
-            self.process.terminate()
-            try:
-                self.process.wait(QUIT_TIMEOUT)
-            except subprocess.TimeoutExpired:
-                self.process.kill()
-                self.process.wait()
-        for pid in self.bricks():
-            os.kill(pid, signal.SIGKILL)
+        if self.process is not None:
+            _stop(self.process, QUIT_TIMEOUT)
+            for pid in self.bricks():
+                os.kill(pid, signal.SIGKILL)
+        if self.screen is not None:
+            self.screen.close()
 
     # What the user sees and does
 
@@ -327,3 +342,25 @@ class Virtualbricks:
 
 def _pids():
     return [int(name) for name in os.listdir("/proc") if name.isdigit()]
+
+
+def _spawn(log, env, *args, stdout=None):
+    with open(log, "wb") as out:
+        return subprocess.Popen(
+            args,
+            env=env,
+            stdout=out if stdout is None else stdout,
+            stderr=out,
+        )
+
+
+def _stop(process, timeout=10):
+    """Terminate process, if it still runs; kill it after timeout."""
+
+    if process.poll() is None:
+        process.terminate()
+        try:
+            process.wait(timeout)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()

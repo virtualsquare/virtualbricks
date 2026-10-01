@@ -31,7 +31,7 @@ classifiers = [
 [dependency-groups]
 test = ["coverage>=6.2"]
 # the end-to-end tests, in e2e/
-e2e = ["pytest>=7.0", "pytest-bdd>=8.0"]
+e2e = ["pytest>=7.0", "pytest-bdd>=8.0", "pytest-repeat>=0.9"]
 dev = [
     { include-group = "test" },
     { include-group = "e2e" },

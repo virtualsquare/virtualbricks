@@ -37,15 +37,17 @@ features in `e2e/features/`.
    widgets` where you are and run with `pytest -s`, or read the report of a
    step that fails. Take the print step out after.
 6. **Run it** with `pytest -k <words of the scenario's name>` until it
-   passes. Don't lengthen a timeout to make it pass: find what it waits for.
+   passes, then twenty times: `pytest --count 20 -k <the same words>`; all
+   twenty must pass. Don't lengthen a timeout to make it pass: find what it
+   waits for.
 7. **Check that it fails**: break what it guards, run it, see the step that
    should fail fail, then undo the break. The guide's "Check that a scenario
    fails" has how.
 8. **Run every scenario** (`pytest`), and `black e2e/`, `ruff check e2e/`,
    `pyflakes e2e/`.
-9. **Report**: the scenario as written, the steps added, which step failed
-   when it was broken and how it was broken, and what you chose that the
-   words didn't say.
+9. **Report**: the scenario as written, the steps added, the twenty runs,
+   which step failed when it was broken and how it was broken, and what you
+   chose that the words didn't say.
 
 ## Rules
 

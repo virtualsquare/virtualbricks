@@ -305,12 +305,13 @@ pip install -e . --group dev
 pre-commit install
 ```
 
-The `dev` dependency group has the tools of the project: `coverage`, `pytest`
-and `pytest-bdd` for the end-to-end tests, `black`, `ruff`, `pyflakes`,
-`pre-commit`, `pypandoc-binary`, which brings pandoc for the manual page, and
-`PyGObject-stubs`, the types of GTK. `--group` needs pip 25.1 or newer, and
-the pip of a new environment is often older, hence the upgrade. The editable
-install (`-e`) makes the `virtualbricks` command run your working copy.
+The `dev` dependency group has the tools of the project: `coverage`, `pytest`,
+`pytest-bdd` and `pytest-repeat` for the end-to-end tests, `black`, `ruff`,
+`pyflakes`, `pre-commit`, `pypandoc-binary`, which brings pandoc for the
+manual page, and `PyGObject-stubs`, the types of GTK. `--group` needs pip
+25.1 or newer, and the pip of a new environment is often older, hence the
+upgrade. The editable install (`-e`) makes the `virtualbricks` command run
+your working copy.
 
 The code has to run on Python 3.10, the oldest that is supported, so it is
 best to work with that one.
@@ -394,8 +395,9 @@ Then sw1 is running
 ```
 
 ```sh
-pip install --group e2e      # pytest and pytest-bdd; dev has them too
+pip install --group e2e      # pytest, pytest-bdd, pytest-repeat; dev too
 pytest                       # every scenario
+pytest --count 20            # each 20 times: is one flaky?
 ```
 
 They need `broadwayd` (`libgtk-3-bin`), `at-spi2-core` and
