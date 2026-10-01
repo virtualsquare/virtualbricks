@@ -348,6 +348,21 @@ class TestTheRows(BrickListTestCase):
         self.assertIs(self.list.selected(), self.tap)
 
 
+class TestTheConsole(BrickListTestCase):
+
+    def test_what_it_lacks(self):
+        # over a connection, a terminal program of this computer
+        self.gui.engine.console_lacks = lambda brick: "needs vdeterm of vde2"
+        self.running(self.sw)
+        model = self.row(self.sw).menu_model()
+        process = model.get_item_link(2, "section").get_item_link(0, "submenu")
+        console = process.get_item_link(0, "section")
+        self.assertEqual(
+            console.get_item_attribute_value(0, "label").unpack(),
+            "Open Control Monitor (needs vdeterm of vde2)",
+        )
+
+
 class TestWhatTheListShows(BrickListTestCase):
 
     def setUp(self):

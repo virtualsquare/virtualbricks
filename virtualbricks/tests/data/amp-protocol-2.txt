@@ -75,6 +75,7 @@ Readme -> text:str ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWE
 SetReadme text:str -> ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 SetKsm enable:bool -> enabled:bool ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 Folder path:str -> entries:[str] more:bool ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
+Attach brick:str console:str -> ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 Opened project:str? settings:str machine:str -> !
 Changed kind:str name:str table:str state:str -> !
 Renamed kind:str old:str new:str -> !

@@ -60,6 +60,7 @@ from virtualbricks.remote import (
     commands as remote_commands,
     facts,
     follower,
+    tunnel,
 )
 
 logger = Logger()
@@ -372,6 +373,7 @@ class AMPControl(
     follower.Following,
     answers.Answers,
     facts.Facts,
+    tunnel.Attaching,
     amp.AMP,
 ):
     """

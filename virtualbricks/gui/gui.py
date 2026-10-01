@@ -342,13 +342,24 @@ class RemoteApplication:
     def show(self, windows):
         """The windows, on the copy that the connection keeps."""
 
+        from virtualbricks.remote import client, tunnel
         from virtualbricks.remote.client import RemoteEngine
 
         message_dialog = MessageDialogObserver()
         globalLogPublisher.addObserver(
             FilteringLogObserver(message_dialog, [should_show_to_user])
         )
-        self.engine = RemoteEngine(self.copy, windows, self.where, self.quit)
+        # the consoles of the bricks there, each over a connection of its own
+        self.consoles = tunnel.Consoles(
+            lambda: defer.ensureDeferred(
+                client.connect_again(self.target, self.reactor)
+            ),
+            self.where,
+            self.reactor,
+        )
+        self.engine = RemoteEngine(
+            self.copy, windows, self.where, self.quit, self.consoles
+        )
         self.watch(windows)
         self.gui = VBGUI(self.engine, self.messages)
         message_dialog.set_parent(self.gui.window)
@@ -435,5 +446,8 @@ class RemoteApplication:
         windows = self.engine.windows if self.engine is not None else None
         if windows is not None and windows.transport is not None:
             windows.transport.loseConnection()
+        if self.engine is not None:
+            # the sockets of the consoles
+            self.consoles.close()
         if not self.done.called:
             self.done.callback(None)

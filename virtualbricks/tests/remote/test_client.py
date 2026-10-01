@@ -1176,6 +1176,26 @@ class TestConnect(ConsoleTestCase):
         self.assertIsNotNone(copy.get_brick("sw1"))
 
     @defer.inlineCallbacks
+    def test_another_connection(self):
+        # for a console: the token proven, protocol 2, and nothing followed
+        token_file = locations.token_file()
+        os.makedirs(os.path.dirname(token_file), exist_ok=True)
+        with open(token_file, "w") as file:
+            file.write(TOKEN + "\n")
+        os.chmod(token_file, 0o600)
+        found = self.listen(wire.Socket(None, wire.AMP, "tcp", "127.0.0.1", 0))
+        target = wire.parse_socket(
+            f"tcp:127.0.0.1:{found.socket.port}:protocol=amp", client=True
+        )
+        connection = yield defer.ensureDeferred(
+            client.connect_again(target, reactor)
+        )
+        self.addCleanup(connection.transport.loseConnection)
+        # a command of protocol 2, past the token
+        answer = yield connection.callRemote(commands.ProjectNames)
+        self.assertEqual(answer["names"], [])
+
+    @defer.inlineCallbacks
     def test_nothing_there(self):
         target = wire.parse_socket("tcp:127.0.0.1:1:protocol=amp", client=True)
         with self.assertRaises(Refused) as cm:

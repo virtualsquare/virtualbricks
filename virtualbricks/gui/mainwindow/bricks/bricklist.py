@@ -73,7 +73,12 @@ class BrickRow(Row):
 
     def menu_model(self):
         factory = self.gui.brickfactory
-        return brickmenu.menu(self.item, factory.bricks, list(factory.events))
+        return brickmenu.menu(
+            self.item,
+            factory.bricks,
+            list(factory.events),
+            console_lacks=self.gui.engine.console_lacks(self.item),
+        )
 
     def update(self, processes=False) -> None:
         brick = self.item

@@ -268,6 +268,18 @@ class Folder(amp.Command):
     errors = ERRORS
 
 
+class Attach(amp.ProtocolSwitchCommand):
+    """
+    Carry the bytes of a console of a running brick both ways, from the
+    answer on: console is monitor, its control monitor, or serial, the
+    serial socket of a machine. The connection carries nothing else then.
+    """
+
+    arguments = [(b"brick", amp.Unicode()), (b"console", amp.Unicode())]
+    response = []
+    errors = ERRORS
+
+
 class _Push(amp.Command):
     """A command that Virtualbricks calls on a program that follows it."""
 
@@ -357,6 +369,7 @@ FROM_PROGRAM = (
     SetReadme,
     SetKsm,
     Folder,
+    Attach,
 )
 PUSHES = (
     Opened,

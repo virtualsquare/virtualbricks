@@ -163,6 +163,24 @@ async def start(windows, target) -> dict:
     follow: the answer of Follow, once the copy is whole.
     """
 
+    await agree(windows, target)
+    try:
+        return await windows.callRemote(commands.Follow)
+    except amp.UnhandledCommand:
+        raise Refused(
+            _(
+                "{where} has no commands for the windows: run the same"
+                " Virtualbricks on both"
+            ).format(where=where(target))
+        ) from None
+
+
+async def agree(windows, target) -> None:
+    """
+    Prove the token if asked, agree on protocol 2 and check the version:
+    Refused says why it can't.
+    """
+
     name = where(target)
     try:
         hello = await windows.callRemote(
@@ -192,23 +210,12 @@ async def start(windows, target) -> dict:
                 " {ours}: run the same version on both"
             ).format(where=name, theirs=hello["version"], ours=__version__)
         )
+
+
+async def _reach(target, reactor, connection):
     try:
-        return await windows.callRemote(commands.Follow)
-    except amp.UnhandledCommand:
-        raise Refused(
-            _(
-                "{where} has no commands for the windows: run the same"
-                " Virtualbricks on both"
-            ).format(where=name)
-        ) from None
-
-
-async def connect(target, mirror, reactor) -> Windows:
-    """The connection to target, following it with the copy mirror."""
-
-    try:
-        windows = await endpoints.connectProtocol(
-            endpoint_of(target, reactor), Windows(mirror)
+        return await endpoints.connectProtocol(
+            endpoint_of(target, reactor), connection
         )
     except error.ConnectError as exc:
         reason = exc.osError or exc
@@ -218,12 +225,33 @@ async def connect(target, mirror, reactor) -> Windows:
                 reason=getattr(reason, "strerror", None) or str(reason),
             )
         ) from None
+
+
+async def connect(target, mirror, reactor) -> Windows:
+    """The connection to target, following it with the copy mirror."""
+
+    windows = await _reach(target, reactor, Windows(mirror))
     try:
         await start(windows, target)
     except BaseException:
         windows.transport.loseConnection()
         raise
     return windows
+
+
+async def connect_again(target, reactor) -> amp.AMP:
+    """
+    Another connection to target, which agreed on protocol 2 and follows
+    nothing: for a console.
+    """
+
+    connection = await _reach(target, reactor, amp.AMP())
+    try:
+        await agree(connection, target)
+    except BaseException:
+        connection.transport.loseConnection()
+        raise
+    return connection
 
 
 def _pairs(values: dict) -> list:
@@ -416,8 +444,10 @@ class RemoteEngine:
 
     local = False
 
-    def __init__(self, mirror, windows, where, quit=None):
+    def __init__(self, mirror, windows, where, quit=None, consoles=None):
         self.factory = mirror
+        # the consoles of the bricks there, carried over connections
+        self.consoles = consoles
         self.machine = RemoteMachine(mirror, self)
         self.workspace = RemoteWorkspace(mirror)
         # the connection; Reconnect gives another
@@ -478,8 +508,18 @@ class RemoteEngine:
         return self.call(ampcommands.BrickReset, vm=vm.name)
 
     def open_console(self, brick):
-        # through the connection, in step 6 of page 19
-        return defer.fail(NotYet("open_console"))
+        """Open the control monitor of brick there, in a terminal here."""
+
+        if self.consoles is None:
+            return defer.fail(NotYet("open_console"))
+        return defer.ensureDeferred(self.consoles.open(brick))
+
+    def console_lacks(self, brick):
+        """Why this computer can't open a console of brick; None if it can."""
+
+        if self.consoles is None:
+            return NotYet().args[0]
+        return self.consoles.lacks(brick)
 
     def new_brick(self, type, name):
         making = self.call(ampcommands.BrickNew, kind=WORDS[type], name=name)

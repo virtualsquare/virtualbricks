@@ -233,6 +233,14 @@ class LocalEngine:
 
         return defer.maybeDeferred(brick.open_console)
 
+    def console_lacks(self, brick) -> str | None:
+        """
+        Why the windows can't open a console of brick; None if they can. On
+        this machine, the brick says it when it opens one.
+        """
+
+        return None
+
     def new_brick(self, type, name) -> defer.Deferred:
         """A new brick of type: its Deferred fires with the brick."""
 

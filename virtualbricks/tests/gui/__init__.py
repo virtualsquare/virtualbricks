@@ -59,6 +59,10 @@ class RecordingEngine:
         self.factory = factory
         self.calls = []
 
+    def console_lacks(self, brick):
+        # a read, as local: not a call
+        return None
+
     def __getattr__(self, name):
         if name.startswith("_") or not hasattr(LocalEngine, name):
             raise AttributeError(name)

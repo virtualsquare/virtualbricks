@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 00:24+0200\n"
+"POT-Creation-Date: 2026-10-01 06:28+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -1147,7 +1147,7 @@ msgid ""
 "{longest}"
 msgstr ""
 
-#: virtualbricks/console/bricks.py
+#: virtualbricks/console/bricks.py virtualbricks/remote/tunnel.py
 #, python-brace-format
 msgid "No brick named {name}"
 msgstr ""
@@ -1360,7 +1360,7 @@ msgstr ""
 msgid "Open the control monitor of a running brick in a terminal"
 msgstr ""
 
-#: virtualbricks/console/bricks.py
+#: virtualbricks/console/bricks.py virtualbricks/remote/tunnel.py
 #, python-brace-format
 msgid "{name} has no control monitor"
 msgstr ""
@@ -3570,6 +3570,11 @@ msgid "Open Control Monitor"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#, python-brace-format
+msgid "Open Control Monitor ({lacks})"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "Pause"
 msgstr ""
 
@@ -4876,6 +4881,12 @@ msgid ""
 msgstr ""
 
 #: virtualbricks/remote/client.py
+#, python-brace-format
+msgid ""
+"{where} has no commands for the windows: run the same Virtualbricks on both"
+msgstr ""
+
+#: virtualbricks/remote/client.py
 #, fuzzy, python-brace-format
 msgid "{where} doesn't take your token"
 msgstr "_Abrir proyecto"
@@ -4892,12 +4903,6 @@ msgstr ""
 msgid ""
 "{where} runs Virtualbricks {theirs}, these windows are {ours}: run the same "
 "version on both"
-msgstr ""
-
-#: virtualbricks/remote/client.py
-#, python-brace-format
-msgid ""
-"{where} has no commands for the windows: run the same Virtualbricks on both"
 msgstr ""
 
 #: virtualbricks/remote/client.py
@@ -4934,6 +4939,31 @@ msgstr "Guardar proyecto como"
 #, python-brace-format
 msgid ""
 "{call} of {name} is for the Virtualbricks of the bricks: here is its copy"
+msgstr ""
+
+#: virtualbricks/remote/tunnel.py
+#, python-brace-format
+msgid "{name} doesn't run: start it first"
+msgstr ""
+
+#: virtualbricks/remote/tunnel.py
+#, fuzzy, python-brace-format
+msgid "{name} has no serial socket"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/remote/tunnel.py
+#, python-brace-format
+msgid "The console is {monitor} or {serial}"
+msgstr ""
+
+#: virtualbricks/remote/tunnel.py
+#, python-brace-format
+msgid "Can't reach the console of {name}: {error}"
+msgstr ""
+
+#: virtualbricks/remote/tunnel.py
+#, python-brace-format
+msgid "needs {program} of {package}"
 msgstr ""
 
 #~ msgid "Connect to:"

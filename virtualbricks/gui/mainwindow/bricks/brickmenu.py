@@ -64,6 +64,7 @@ sending_signal = "Sending to process signal {signame}!"
 sending_acpi = "send ACPI {acpievent}"
 stop_error = "Error on stopping brick."
 start_error = "Error on starting brick."
+console_error = "Cannot open the console of {name}: {error}"
 
 GROUP = "brick"
 # The kinds of bricks without a settings panel.
@@ -91,10 +92,11 @@ def startstop(engine, brick) -> defer.Deferred:
     )
 
 
-def menu(brick, bricks, events, keys=False) -> Gio.Menu:
+def menu(brick, bricks, events, keys=False, console_lacks=None) -> Gio.Menu:
     """
     The menu of brick, among bricks and events. keys shows the keys of the
-    Bricks tab next to the items: Enter, F2 and Delete.
+    Bricks tab next to the items: Enter, F2 and Delete. console_lacks says
+    what this computer lacks to open the console of brick, if anything.
     """
 
     def key(name):
@@ -120,7 +122,7 @@ def menu(brick, bricks, events, keys=False) -> Gio.Menu:
     if running:
         process = Gio.MenuItem.new_submenu(
             _("Process {pid}").format(pid=brickinfo.process(brick)),
-            _process_menu(brick),
+            _process_menu(brick, console_lacks),
         )
     return menu_of(
         menu_section(
@@ -151,13 +153,17 @@ def _events_menu(action, current, names) -> Gio.Menu:
     )
 
 
-def _process_menu(brick) -> Gio.Menu:
+def _process_menu(brick, console_lacks=None) -> Gio.Menu:
     vm = isinstance(brick, VirtualMachine)
     result = Gio.Menu()
     if brick.get_type() not in NO_CONSOLE:
-        result.append_section(
-            None, menu_section(_item(_("Open Control Monitor"), "console"))
-        )
+        # a menu item has no tooltip: the label says what it lacks
+        label = _("Open Control Monitor")
+        if console_lacks is not None:
+            label = _("Open Control Monitor ({lacks})").format(
+                lacks=console_lacks
+            )
+        result.append_section(None, menu_section(_item(label, "console")))
     result.append_section(
         None,
         menu_section(
@@ -227,7 +233,8 @@ class BrickActions(Gio.SimpleActionGroup):
         state = brickinfo.state(self.brick)
         running = state is State.RUNNING
         vm = isinstance(self.brick, VirtualMachine)
-        # over a connection, the console and SIGTERM wait
+        # over a connection, SIGTERM waits; the console needs a terminal
+        # program here
         local = self.engine.local
         enabled = {
             "startstop": state in (State.RUNNING, State.STOPPED),
@@ -235,8 +242,8 @@ class BrickActions(Gio.SimpleActionGroup):
             "rename": not running,
             "resume": vm,
             "console": running
-            and local
-            and self.brick.get_type() not in NO_CONSOLE,
+            and self.brick.get_type() not in NO_CONSOLE
+            and self.engine.console_lacks(self.brick) is None,
             "pause": running,
             "continue": running,
             "suspend": running and vm,
@@ -286,7 +293,14 @@ class BrickActions(Gio.SimpleActionGroup):
     # The items of the process
 
     def console(self) -> None:
-        self.engine.open_console(self.brick)
+        opening = self.engine.open_console(self.brick)
+        opening.addErrback(
+            lambda failure: logger.error(
+                console_error,
+                name=self.brick.name,
+                error=failure.getErrorMessage(),
+            )
+        )
 
     def pause(self) -> None:
         logger.debug(sending_signal, signame=signal.SIGSTOP.name)
@@ -324,10 +338,11 @@ def popup(widget, event, gui, brick, keys=False) -> Gtk.Menu:
     """
 
     factory = gui.brickfactory
+    lacks = gui.engine.console_lacks(brick)
     return tab.popup(
         widget,
         event,
-        menu(brick, factory.bricks, list(factory.events), keys),
+        menu(brick, factory.bricks, list(factory.events), keys, lacks),
         GROUP,
         BrickActions(gui, brick),
     )

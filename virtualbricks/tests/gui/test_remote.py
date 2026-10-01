@@ -53,6 +53,7 @@ if has_display:
     from virtualbricks.gui import gui
     from virtualbricks.gui.dialogs.addimage import ExistingImageDialog
     from virtualbricks.gui.mainwindow import VBGUI, window
+    from virtualbricks.gui.mainwindow.bricks import brickmenu
     from virtualbricks.gui.mainwindow.bricks.brickmenu import BrickActions
     from virtualbricks.gui.mainwindow.bricks.config.vm.disks import (
         DisksSection,
@@ -320,6 +321,16 @@ class TestRemoteApplication(RemoteTestCase):
         self.turn()
         self.assertIn("is lost", windows.calls[-1][1])
 
+    def test_the_consoles(self):
+        application = self.launch()
+        consoles = application.engine.consoles
+        self.assertIs(consoles, application.consoles)
+        self.assertEqual(consoles.where, "/run/lab.amp")
+        closed = []
+        consoles.close = lambda: closed.append(True)
+        application.quit()
+        self.assertEqual(closed, [True])
+
     def test_quit(self):
         application = self.launch()
         [windows] = self.shown
@@ -412,6 +423,21 @@ class TestTheMainWindow(GuiTestCase):
         self.assertEqual(self.quits, [True])
 
 
+def labels(model):
+    """The labels of a menu and of its submenus and sections."""
+
+    found = []
+    for i in range(model.get_n_items()):
+        label = model.get_item_attribute_value(i, "label")
+        if label is not None:
+            found.append(label.unpack())
+        for link in ("section", "submenu"):
+            inner = model.get_item_link(i, link)
+            if inner is not None:
+                found.extend(labels(inner))
+    return found
+
+
 class NotHere:
     """
     The engine of windows over a connection, as the items see it; its
@@ -424,6 +450,11 @@ class NotHere:
         self.factory = factory
         self.machine = LocalMachine(projects)
         self.workspace = projects
+        # what this computer lacks to open a console there
+        self.lacks = "needs unixterm of vde2"
+
+    def console_lacks(self, brick):
+        return self.lacks
 
 
 class FakeGui:
@@ -454,9 +485,36 @@ class TestWhatWaits(GuiTestCase):
         vm = self.factory.new_brick("qemu", "vm1")
         vm.proc = FakeProcess(vm)
         enabled = self.enabled(BrickActions(self.gui, vm))
+        # without unixterm here
         self.assertNotIn("console", enabled)
         self.assertNotIn("terminate", enabled)
         self.assertIn("kill", enabled)
+        model = brickmenu.menu(
+            vm, [vm], [], console_lacks=self.gui.engine.lacks
+        )
+        self.assertIn(
+            "Open Control Monitor (needs unixterm of vde2)", labels(model)
+        )
+        # with it, through the connection (step 6)
+        self.gui.engine.lacks = None
+        enabled = self.enabled(BrickActions(self.gui, vm))
+        self.assertIn("console", enabled)
+        self.assertNotIn("terminate", enabled)
+
+    def test_a_console_that_cant_open(self):
+        logger = FakeLogger()
+        self.patch(brickmenu, "logger", logger)
+        vm = self.factory.new_brick("qemu", "vm1")
+        vm.proc = FakeProcess(vm)
+        self.gui.engine.lacks = None
+        self.gui.engine.open_console = lambda brick: defer.fail(
+            Refused("The connection to lab is lost")
+        )
+        BrickActions(self.gui, vm).activate_action("console", None)
+        self.assertEqual(
+            logger.formatted(),
+            ["Cannot open the console of vm1: The connection to lab is lost"],
+        )
 
     def test_show_in_files(self):
         image = self.image("frr")
