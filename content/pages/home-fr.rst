@@ -3,7 +3,6 @@ Virtualbricks
 
 :date: 2021-11-18 07:27
 :modified: 2026-10-02 18:04
-Try 'date --help' for more information.
 :page-order: 1
 :status: hidden
 :save_as: index_fr.html

@@ -21,9 +21,13 @@
 {% endblock meta_tags_in_head %}
 
 {% block content %}
+{# Virtualbricks: the home page, slug "home", is laid out as Elegant's
+   landing page with PROJECTS: the title across, the text and the projects
+   side by side, then the recent news. #}
+{% set home = page.slug == 'home' %}
 <article>
 <div class="row-fluid">
-    <header class="page-header span10 offset2">
+    <header class="page-header {{ 'span12' if home else 'span10 offset2' }}">
     <h1><a href="{{ SITEURL }}/{{ page.url }}"> {{ page.title }} {% if page.subtitle %} <small> {{ page.subtitle }} </small> {% endif %} </a></h1>
     </header>
 </div>
@@ -37,36 +41,44 @@
         </nav>
     </div>
     <div class="span8 article-content">
-        {% else %}
-        <div class="span8 offset2 article-content">
-            {% endif %}
-
-            {{ page.content }}
-            {# Virtualbricks: link the translations, as the home page in French #}
-            {% import '_includes/translations.html' as translations with context %}
-            {{ translations.translations_for(page) }}
-            {% from '_includes/comments.html' import comments_section with context %}
-            {{ comments_section(page) }}
-        </div>
-        {# Virtualbricks: the social links beside the home page, as beside an
-           article #}
-        {% if page.slug == 'home' %}
-        <section id="article-sidebar" class="span2">
-            {% include '_includes/social_links.html' %}
-        </section>
-        {% endif %}
+    {% elif home %}
+    <div class="span8 article-content">
+    {% else %}
+    <div class="span8 offset2 article-content">
+    {% endif %}
+        {{ page.content }}
+        {# Virtualbricks: link the translations, as the home page in French #}
+        {% import '_includes/translations.html' as translations with context %}
+        {{ translations.translations_for(page) }}
+        {% from '_includes/comments.html' import comments_section with context %}
+        {{ comments_section(page) }}
     </div>
-
+    {% if home %}
+    {% from '_includes/_defaults.html' import PROJECTS, PROJECTS_TITLE with context %}
+    {% if PROJECTS %}
+    <div class="span4">
+        <header>
+        <h1 id="my-projects">{{ PROJECTS_TITLE }}</h1>
+        </header>
+        <ul class="list-projects">
+            {% for project in PROJECTS %}
+            <li>
+            <a href="{{ project.url }}" title="{{ project.name }}">{{ project.name }}</a> <span class="proj-desc">{{ project.description }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
 </article>
 
-{% if page.slug == 'home' %}
+{% if home %}
 {% set posts = articles|selectattr('category.slug', 'equalto', 'news')|list %}
 {% if posts %}
 {% from '_includes/_defaults.html' import RECENT_ARTICLES_COUNT with context %}
 <div class="row-fluid">
-    {# as wide as the text above: .article-content is at most 50em of its
-       1.125rem font #}
-    <div class="span8 offset2" style="max-width: 56.25rem">
+    <div class="span12">
         <header>
         <h1 id="recent-posts">Recent Posts <a id="allposts" href="{{ SITEURL }}/{{ posts[0].category.url }}">all posts</a></h1>
         </header>
@@ -94,12 +106,11 @@
         </div>
     </div>
 </div>
-
 {% endif %}
 {% endif %}
 
-    {% include '_includes/photoswipe.html' %}
-    {% endblock content %}
+{% include '_includes/photoswipe.html' %}
+{% endblock content %}
 
     {% block script %}
     {{ super() }}

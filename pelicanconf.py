@@ -28,14 +28,22 @@ AUTHOR_FEED_RSS = None
 # (themes/overrides/_includes/footer.html); beside the articles, Elegant
 # draws an icon for the networks it knows, as GitHub, and skips the others
 SOCIAL = (
-    # ('Carlo Caini', '/pages/authors.html#carlo-caini'),
-    # ('Daniele Lacamera', '/pages/authors.html#daniele-lacamera'),
-    # ('Pietrofrancesco Apollonio', '/pages/authors.html#pietrofrancesco-apollonio'),
-    # ('Marco Giusti', '/pages/authors.html#marco-giusti'),
-    ('GitHub', 'https://github.com/virtualsquare/virtualbricks',
-     'Virtualbricks on GitHub'),
 )
 SOCIAL_PROFILE_LABEL = 'Virtualbricks on GitHub'
+
+# Beside the text of the home page, as in Elegant's landing page
+PROJECTS_TITLE = 'Related Projects'
+PROJECTS = [
+    {'name': 'Source code',
+     'url': 'https://github.com/virtualsquare/virtualbricks',
+     'description': 'Virtualbricks on GitHub'},
+    {'name': 'Issues',
+     'url': 'https://github.com/virtualsquare/virtualbricks/issues',
+     'description': 'Report a bug or ask a question'},
+    {'name': 'NetEmu',
+     'url': 'https://github.com/virtualsquare/vde-netemu',
+     'description': 'The channel emulator of the Netemu bricks'},
+]
 
 # Elegant has no pagination
 DEFAULT_PAGINATION = False
