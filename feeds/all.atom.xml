@@ -11,10 +11,6 @@ topic will get a post of its own in the coming weeks. We start with what you
 see, the windows; then the workspaces; and last, how to drive Virtualbricks
 from a terminal, a script or another machine.&lt;/p&gt;
 &lt;div class="figure"&gt;
-&lt;img alt="The main window and the messages window of Virtualbricks 2.1" src="https://www.virtualbricks.it/images/virtualbricks-2.1.0.png" /&gt;
-&lt;p class="caption"&gt;Virtualbricks 2.1: the Bricks tab and the messages window.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class="figure"&gt;
 &lt;img alt="The main window, the About dialog and the Logs window of Virtualbricks 3.0.0.dev1" src="https://www.virtualbricks.it/images/virtualbricks-3.0.0.dev1.png" /&gt;
 &lt;p class="caption"&gt;Virtualbricks 3.0.0.dev1: the new Bricks tab, with the Logs window
 showing the migration of a 2.1 project.&lt;/p&gt;
