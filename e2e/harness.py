@@ -157,6 +157,10 @@ class Virtualbricks:
         self.browser = None
         self.home = home
         self.config = os.path.join(home, ".config")
+        # without it, the start is the first, as after Virtualbricks 2.1
+        self.settings = os.path.join(
+            self.config, "virtualbricks", "settings.toml"
+        )
         self.workspace = os.path.join(home, "workspace")
         self.log = log
         self.process = None
@@ -263,14 +267,28 @@ class Virtualbricks:
 
         return a11y.find(within or self.app, role, name)
 
-    def click(self, role, name=None, within=None):
-        """Click in the middle of the widget, once it shows and is enabled."""
+    def names(self, role, within=None):
+        """The names of the widgets of role that show now, in within."""
+
+        return [
+            widget.get_name()
+            for widget in a11y.find_all(within or self.app, role)
+        ]
+
+    def enabled(self, role, name=None, within=None):
+        """The widget, once it shows and is enabled."""
 
         widget = self.find(role, name, within)
         self.wait_for(
             lambda: a11y.sensitive(widget),
             f"the {role} {name!r} is enabled",
         )
+        return widget
+
+    def click(self, role, name=None, within=None):
+        """Click in the middle of the widget, once it shows and is enabled."""
+
+        widget = self.enabled(role, name, within)
         self.browser.click(*a11y.center(widget))
         return widget
 
@@ -290,6 +308,47 @@ class Virtualbricks:
             return None
 
         return self.wait_for(holding, f"the row of {name} shows")
+
+    def rows(self, within):
+        """
+        The rows of the list in within, a scroll pane, from the first to the
+        last, each the names of its labels. A row scrolled out of the pane
+        doesn't show: the wheel scrolls the pane to its top, then down to
+        its bottom, as a user does.
+        """
+
+        rows = {}
+
+        def read():
+            for row in a11y.find_all(within, "list item"):
+                rows[a11y.index(row)] = self.names("label", within=row)
+
+        bars = [
+            bar
+            for bar in a11y.find_all(within, "scroll bar")
+            if a11y.vertical(bar)
+        ]
+        if bars:
+            bar = bars[0]
+            while a11y.position(bar)[0] > a11y.position(bar)[1]:
+                self._turn(within, bar, down=False)
+            read()
+            while a11y.position(bar)[0] < a11y.position(bar)[2]:
+                self._turn(within, bar, down=True)
+                read()
+        else:
+            # all of it shows
+            read()
+        return [rows[index] for index in sorted(rows)]
+
+    def _turn(self, pane, bar, down):
+        """A turn of the wheel over pane; then its scroll bar moves."""
+
+        before = a11y.position(bar)[0]
+        self.browser.scroll(*a11y.center(pane), down)
+        self.wait_for(
+            lambda: a11y.position(bar)[0] != before, "the list scrolls"
+        )
 
     def wait_for(self, get, what, timeout=TIMEOUT):
         """What get returns once it is true; AssertionError after timeout."""

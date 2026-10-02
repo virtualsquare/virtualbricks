@@ -135,6 +135,14 @@ class Browser:
             if self.grab is not None and self.grab[2]:
                 self._ungrab()
 
+    def scroll(self, x, y, down=True):
+        """A turn of the wheel at x, y of the screen, down or up."""
+
+        self.move(x, y)
+        with self.changed:
+            # onMouseWheel: to the surface under the pointer, grab or not
+            self._pointer("s", self.real_under, 1 if down else 0)
+
     def move(self, x, y):
         """The pointer goes to x, y: it leaves a surface for another."""
 

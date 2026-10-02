@@ -32,6 +32,8 @@ A line runs the step whose words match it: ``When I start sw1`` runs
 See README.md for how to add a step.
 """
 
+import os
+import shutil
 import subprocess
 import time
 
@@ -52,9 +54,12 @@ brick.pattern = r"[\w.-]+"
 
 
 def words(text):
-    """The words of a step, where {name:Brick} is the name of a brick."""
+    """
+    The words of a step, where {name:Brick} is the name of a brick, and
+    {name:Project} that of a project.
+    """
 
-    return parsers.parse(text, extra_types={"Brick": brick})
+    return parsers.parse(text, extra_types={"Brick": brick, "Project": brick})
 
 
 @pytest.fixture
@@ -69,6 +74,14 @@ def brick_processes():
 
 @given("Virtualbricks is running")
 def virtualbricks_running(virtualbricks):
+    virtualbricks.start()
+
+
+@when("I start Virtualbricks for the first time")
+def first_start(virtualbricks):
+    """Without its settings, as after 2.1; it shows a window."""
+
+    assert not os.path.exists(virtualbricks.settings), "it has its settings"
     virtualbricks.start()
 
 
@@ -89,6 +102,26 @@ def virtualbricks_quit(virtualbricks):
         )
     assert status == 0, f"Virtualbricks exited with {status}"
     assert virtualbricks.bricks() == [], "bricks still run"
+
+
+@then(words("the main window shows the project {name:Project}"))
+def main_window(virtualbricks, name):
+    """
+    Its title names the project, and the workspace too when it isn't that of
+    the settings.
+    """
+
+    workspace = os.path.join(
+        "~", os.path.relpath(virtualbricks.workspace, virtualbricks.home)
+    )
+    titles = (
+        f"Virtualbricks (project: {name})",
+        f"Virtualbricks (project: {name}, workspace: {workspace})",
+    )
+    virtualbricks.wait_for(
+        lambda: any(virtualbricks.shows("frame", title) for title in titles),
+        f"the main window shows the project {name}",
+    )
 
 
 # Bricks
@@ -137,6 +170,31 @@ def brick_running(virtualbricks, brick_processes, name):
     assert pids <= virtualbricks.children(), f"the processes of {name} quit"
 
 
+@then("the list of bricks has")
+def bricks_listed(virtualbricks, datatable):
+    """
+    Its rows, all of them and in order, once they are those of the table
+    under the step, whose first line has the titles of the columns: each
+    row has the name of the brick, its detail and its state.
+    """
+
+    tab = virtualbricks.find("page tab", "Bricks")
+    pane = virtualbricks.find("scroll pane", within=tab)
+
+    def rows():
+        return datatable[:1] + virtualbricks.rows(pane)
+
+    try:
+        virtualbricks.wait_for(
+            lambda: rows() == datatable,
+            "the list of bricks has the rows of the table",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the list of bricks has {rows()}, not {datatable}"
+        ) from None
+
+
 @then(words("{name:Brick} is stopped"))
 @then(words("{name:Brick} is not running"))
 def brick_stopped(virtualbricks, brick_processes, name):
@@ -154,6 +212,114 @@ def brick_stopped(virtualbricks, brick_processes, name):
         and not virtualbricks.bricks(name),
         f"the processes of {name} quit",
     )
+
+
+# Migration: the files of Virtualbricks 2.1
+
+# The projects of 2.1 of the scenarios, each a folder with its .project
+PROJECTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "projects")
+# ~/.virtualbricks.conf, as 2.1 wrote it; without the alert of missing
+# programs, as the settings of the tests
+SETTINGS_2_1 = """\
+[Main]
+show_missing = False
+workspace = {workspace}
+current_project = {project}
+"""
+MIGRATION = "Virtualbricks migration"
+
+
+@given(words("the project {name:Project} of Virtualbricks 2.1"))
+def old_project(virtualbricks, name):
+    """A copy of projects/NAME, in the workspace."""
+
+    shutil.copytree(
+        os.path.join(PROJECTS, name),
+        os.path.join(virtualbricks.workspace, name),
+    )
+
+
+@given(
+    words("the settings of Virtualbricks 2.1, with {name:Project} open last")
+)
+def old_settings(virtualbricks, name):
+    """
+    Those of the workspace of the tests, in place of the settings of this
+    version: the next start is the first.
+    """
+
+    os.remove(virtualbricks.settings)
+    path = os.path.join(virtualbricks.home, ".virtualbricks.conf")
+    with open(path, "w") as file:
+        file.write(
+            SETTINGS_2_1.format(
+                workspace=virtualbricks.workspace, project=name
+            )
+        )
+
+
+@then("the migration window shows")
+def migration_window(virtualbricks):
+    virtualbricks.find("frame", MIGRATION)
+
+
+@then("the migration window lists")
+def migration_lists(virtualbricks, datatable):
+    """
+    The rows of its list, all of them and in order, once they are those of
+    the table under the step, whose first line has the titles of the
+    columns.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    table = virtualbricks.find("table", within=window)
+
+    def rows():
+        titles = virtualbricks.names("table column header", within=table)
+        cells = virtualbricks.names("table cell", within=table)
+        width = len(titles)
+        return [titles] + [
+            cells[start : start + width]
+            for start in range(0, len(cells), width)
+        ]
+
+    try:
+        virtualbricks.wait_for(
+            lambda: rows() == datatable,
+            "the migration window lists the rows of the table",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the migration window lists {rows()}, not {datatable}"
+        ) from None
+
+
+@then(words("{name:Project} is migrated"))
+def migrated(virtualbricks, name):
+    """
+    The migration ends, as Save report… says, no row of the window failed,
+    and the project has the file of this version.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    virtualbricks.enabled("button", "Save report…", within=window)
+    failed = virtualbricks.shows("table cell", "✗ Failed", within=window)
+    assert failed is None, "the migration window says it failed"
+    path = os.path.join(virtualbricks.workspace, name, "project.toml")
+    assert os.path.isfile(path), f"{path} is missing"
+
+
+@when("I close the migration window")
+def close_migration(virtualbricks):
+    """
+    Its button Close, beside Save report…: that of the title bar comes
+    first.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    save = virtualbricks.find("button", "Save report…", within=window)
+    virtualbricks.click("button", "Close", within=save.get_parent())
+    virtualbricks.gone("frame", MIGRATION)
 
 
 # Time

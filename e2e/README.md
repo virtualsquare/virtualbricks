@@ -71,11 +71,12 @@ a few seconds.
 | :- | :- |
 | `features/*.feature` | The scenarios, a file for each area: `bricks.feature`, …; in folders too: see [Group the scenarios](#group-the-scenarios) |
 | `steps.py` | The steps: what each line of a scenario does |
+| `projects/` | The projects of Virtualbricks 2.1 of the scenarios, a folder each, with its `.project` |
 | `test_features.py` | Makes a test of each scenario of `features/` |
 | `conftest.py` | The fixtures: `desktop`, shared, and `virtualbricks`, for each scenario; the report of a step that fails, `--record-all` |
 | `harness.py` | What the steps drive: `Virtualbricks`, with `find`, `click`, `choose`, `row`, `children`, …; the `Desktop` and its `Screen`s |
 | `a11y.py` | The widgets, as a screen reader sees them, through AT-SPI |
-| `broadway.py` | The mouse: a browser of `broadwayd`, whose clicks reach GTK as a user's do; it keeps what the screen shows |
+| `broadway.py` | The mouse: a browser of `broadwayd`, whose clicks and wheel reach GTK as a user's do; it keeps what the screen shows |
 | `recording.py` | The screenshot and the video of a scenario, from what the browser kept |
 | `test_recording.py` | The tests of `recording.py` |
 
@@ -135,6 +136,39 @@ The steps of a user:
 | `Then sw1 is stopped` | Its row says Stopped, and no process of it runs: those of its start have quit, and none has its sockets |
 | `Then sw1 is not running` | The same |
 | `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |
+| `Then the main window shows the project lab` | Its title names the project |
+| `Then the list of bricks has`, with a table under it | The rows of the list, all of them and in order, scrolled through, once they are those of the table: the name of each brick, its detail and its state |
+
+The steps of the migration of Virtualbricks 2.1:
+
+| Step | What it does |
+| :- | :- |
+| `Given the project DTN2hops_26_Feb_2026 of Virtualbricks 2.1` | A copy of `projects/DTN2hops_26_Feb_2026` in the workspace |
+| `Given the settings of Virtualbricks 2.1, with DTN2hops_26_Feb_2026 open last` | `~/.virtualbricks.conf`, of the workspace of the tests, in place of the settings: the next start is the first |
+| `When I start Virtualbricks for the first time` | Starts it without its settings, as after 2.1, and waits for a window |
+| `When I close the migration window` | Its button Close |
+| `Then the migration window shows` | Waits until it shows |
+| `Then the migration window lists`, with a table under it | The rows of its list, all of them and in order, once they are those of the table, whose first line has the titles of the columns |
+| `Then DTN2hops_26_Feb_2026 is migrated` | The migration ends, no row of the window failed, and the project has its `project.toml` |
+
+A step with a table under it takes all the rows of a list, in order: the
+first line of the table has the titles of the columns, each other line a
+row. The rows of the migration window, and those of the bricks:
+
+```gherkin
+Then the migration window lists
+  | Project              | Bricks | Status      |
+  | .virtualbricks.conf  | —      | ✓ Migrated  |
+  | DTN2hops_26_Feb_2026 | 13     | ⚠ 1 warning |
+```
+
+```gherkin
+Given Virtualbricks is running
+When I add the switch sw1
+Then the list of bricks has
+  | Brick | Detail            | State   |
+  | sw1   | Switch · 32 ports | Stopped |
+```
 
 The steps of the screen, for any widget, by its role and its name:
 
@@ -162,6 +196,8 @@ def stop_brick(virtualbricks, name):
 - `words()` reads the words as [parse](https://github.com/r1chardj0n3s/parse)
   does: `{name:Brick}` takes the name of a brick, `{seconds:d}` a number,
   `"{name}"` a text in quotes. The function gets them by name.
+- A table under a line, as in Gherkin, comes to its step as `datatable`, a
+  list of rows, each a list of texts.
 - `virtualbricks` is the Virtualbricks of the scenario
   (`harness.Virtualbricks`). Its methods that wait, wait ten seconds at
   most, then fail saying what they waited for:
@@ -171,13 +207,17 @@ def stop_brick(virtualbricks, name):
   | `find(role, name, within=None)` | The widget, once it shows |
   | `shows(role, name, within=None)` | The widget if it shows now, else None |
   | `gone(role, name, within=None)` | Waits until it doesn't show |
+  | `enabled(role, name, within=None)` | The widget, once it shows and is enabled |
   | `click(role, name, within=None)` | Clicks it, once it shows and is enabled |
   | `choose(item, menu)` | A menu of the menu bar, then its item |
   | `row(name)` | The row of a list with that name, for `within=` |
+  | `rows(within)` | The rows of the list in a scroll pane, from the first to the last, each the names of its labels: the wheel scrolls through it |
+  | `names(role, within=None)` | The names of the widgets of that role that show now |
   | `wait_for(get, what)` | What `get()` returns, once it is true |
   | `children()` | The processes that Virtualbricks started and run |
   | `bricks(name=None)` | The processes with sockets in the run folder of the tests; with a name, those of that brick |
   | `describe()` | The widgets that show, one a line |
+  | `home`, `workspace`, `settings` | Its home, its workspace, and its settings file, which a step can remove |
 
 - Another fixture can keep what the steps of a scenario share, as
   `brick_processes` keeps the processes of each brick started.
@@ -389,9 +429,11 @@ chose. Read the scenario as you would one of a contributor: it is the test.
 - `broadway.py` is a browser of `broadwayd`: it speaks the protocol of
   `broadway.js`, keeps the windows as `broadwayd` shows them, and sends the
   pointer at the middle of a widget. A click goes through GTK as a user's
-  does: hidden, covered or disabled widgets don't get it. It keeps the
-  images of the windows too, for `recording.py`: see [The screenshot and
-  the video](#the-screenshot-and-the-video).
+  does: hidden, covered or disabled widgets don't get it. So does a turn of
+  the wheel: a row scrolled out of its list doesn't show, so `rows()`
+  turns it, as a user does, and waits for the scroll bar to move. It keeps
+  the images of the windows too, for `recording.py`: see [The screenshot
+  and the video](#the-screenshot-and-the-video).
 
 ## What it can't do yet
 

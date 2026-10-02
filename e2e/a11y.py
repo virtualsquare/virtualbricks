@@ -65,6 +65,10 @@ def sensitive(accessible) -> bool:
     return accessible.get_state_set().contains(Atspi.StateType.SENSITIVE)
 
 
+def vertical(accessible) -> bool:
+    return accessible.get_state_set().contains(Atspi.StateType.VERTICAL)
+
+
 def find(root, role, name=None):
     """
     The first widget of role (as "button", "label") under root that
@@ -91,6 +95,23 @@ def find_all(root, role, name=None):
     except GLib.Error:
         # gone while looked at
         return
+
+
+def position(accessible):
+    """Where a scroll bar is: its value, its least and its most."""
+
+    value = accessible.get_value_iface()
+    return (
+        value.get_current_value(),
+        value.get_minimum_value(),
+        value.get_maximum_value(),
+    )
+
+
+def index(accessible) -> int:
+    """Its place among the children of its parent."""
+
+    return accessible.get_index_in_parent()
 
 
 def center(accessible):
