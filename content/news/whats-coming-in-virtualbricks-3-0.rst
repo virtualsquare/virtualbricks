@@ -21,11 +21,6 @@ topic will get a post of its own in the coming weeks. We start with what you
 see, the windows; then the workspaces; and last, how to drive Virtualbricks
 from a terminal, a script or another machine.
 
-.. figure:: {static}/images/virtualbricks-2.1.0.png
-   :alt: The main window and the messages window of Virtualbricks 2.1
-
-   Virtualbricks 2.1: the Bricks tab and the messages window.
-
 .. figure:: {static}/images/virtualbricks-3.0.0.dev1.png
    :alt: The main window, the About dialog and the Logs window of
          Virtualbricks 3.0.0.dev1
