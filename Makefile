@@ -30,6 +30,7 @@ ifneq ($(PORT), 0)
 	PELICANOPTS += -p $(PORT)
 endif
 
+default: html
 
 help:
 	@echo 'Makefile for a pelican Web site                                           '

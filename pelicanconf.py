@@ -43,8 +43,6 @@ DEFAULT_PAGINATION = False
 # Uncomment following line if you want document-relative URLs when developing
 #RELATIVE_URLS = True
 
-INDEX_SAVE_AS = "news.html"
-
 # Ordering content
 PAGE_ORDER_BY = 'page-order'
 # Categories sort by name: reversed, News comes before Documentation
@@ -60,7 +58,8 @@ SITE_DESCRIPTION = (
     'for QEMU/KVM virtual machines and VDE virtual networks.'
 )
 # Elegant has no page for a tag or an author, and no search without a
-# plugin. Category pages come from themes/overrides/category.html.
-DIRECT_TEMPLATES = ['index', 'categories', 'tags', 'archives', '404']
+# plugin. Category pages come from themes/overrides/category.html. No index:
+# the home page is content/pages/home.rst, saved as index.html.
+DIRECT_TEMPLATES = ['categories', 'tags', 'archives', '404']
 TAG_SAVE_AS = ''
 AUTHOR_SAVE_AS = ''

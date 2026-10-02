@@ -2,7 +2,6 @@ What's coming in Virtualbricks 3.0
 ##################################
 
 :date: 2026-10-01 12:00
-:status: draft
 :category: News
 :tags: release, develop
 :slug: whats-coming-in-virtualbricks-3-0

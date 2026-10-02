@@ -48,8 +48,14 @@ release V5.4.0. After a clone, fetch it with:
    $ git submodule update --init
 
 The templates in *themes/overrides* replace or add to those of Elegant:
-the menu (*base.html*), the translations of a page (*page.html*), the
-page of a category (*category.html*) and the pages of the Documentation
-category, which keep their own design (*doc.html*).
+the menu (*base.html*), the pages with their translations and, on the
+home page, the social links and the recent news (*page.html*), the page
+of a category (*category.html*), the social links in the footer
+(*_includes/footer.html*) and the pages of the Documentation category,
+which keep their own design (*doc.html*).
+
+The home page is *content/pages/home.rst*, a hidden page with the slug
+*home*, saved as *index.html*: Elegant's own home page, the *index*
+template, is not built.
 
 .. _Elegant: https://github.com/Pelican-Elegant/elegant

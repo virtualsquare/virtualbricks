@@ -48,8 +48,56 @@
             {% from '_includes/comments.html' import comments_section with context %}
             {{ comments_section(page) }}
         </div>
+        {# Virtualbricks: the social links beside the home page, as beside an
+           article #}
+        {% if page.slug == 'home' %}
+        <section id="article-sidebar" class="span2">
+            {% include '_includes/social_links.html' %}
+        </section>
+        {% endif %}
     </div>
-    </article>
+
+</article>
+
+{% if page.slug == 'home' %}
+{% set posts = articles|selectattr('category.slug', 'equalto', 'news')|list %}
+{% if posts %}
+{% from '_includes/_defaults.html' import RECENT_ARTICLES_COUNT with context %}
+<div class="row-fluid">
+    {# as wide as the text above: .article-content is at most 50em of its
+       1.125rem font #}
+    <div class="span8 offset2" style="max-width: 56.25rem">
+        <header>
+        <h1 id="recent-posts">Recent Posts <a id="allposts" href="{{ SITEURL }}/{{ posts[0].category.url }}">all posts</a></h1>
+        </header>
+        <div class="recent-posts">
+            {% for article in posts[:RECENT_ARTICLES_COUNT] %}
+            <div itemscope class="recent-posts-article">
+                <a href="{{ SITEURL }}/{{ article.url }}">
+                    {{ article.title }}
+                    {% if article.subtitle %}
+                    <small class="subtitle">
+                        {{ article.subtitle }}
+                    </small>
+                    {% endif %}
+                </a>
+                <div class="recent-posts-posted">
+                    posted in
+                    <a href="{{ SITEURL }}/{{ article.category.url }}">{{ article.category }}</a>
+                    <time itemprop="dateCreated" datetime="{{ article.date.isoformat() }}">{{ article.locale_date }}</time>
+                </div>
+                {% if RECENT_ARTICLE_SUMMARY %}
+                    <p>{{ article.summary }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endif %}
+
     {% include '_includes/photoswipe.html' %}
     {% endblock content %}
 
@@ -58,3 +106,4 @@
     {% from '_includes/comments.html' import comments_script with context %}
     {{ comments_script() }}
     {% endblock script %}
+
