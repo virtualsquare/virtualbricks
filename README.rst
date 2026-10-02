@@ -7,7 +7,7 @@ This branch is the source code for the `Virtualbricks website`_.
 The website is built using Pelican_. Check the documentation for the
 general use. Following is the project specific configuration.
 
-.. _Virtualbricks website: https://virtualsquare.github.io/virtualbricks
+.. _Virtualbricks website: https://www.virtualbricks.it
 .. _Pelican: https://blog.getpelican.com/
 
 Github pages

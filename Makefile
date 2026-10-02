@@ -10,6 +10,7 @@ PUBLISHCONF=$(BASEDIR)/publishconf.py
 
 GITHUB_PAGES_BRANCH=gh-pages
 GITHUB_PAGES_REMOTE=virtualsquare
+GITHUB_PAGES_CNAME=www.virtualbricks.it
 
 
 DEBUG ?= 0
@@ -73,7 +74,7 @@ publish: clean
 	"$(PELICAN)" "$(INPUTDIR)" -o "$(OUTPUTDIR)" -s "$(PUBLISHCONF)" $(PELICANOPTS)
 
 github: publish
-	ghp-import -m "Generate Pelican site" -b $(GITHUB_PAGES_BRANCH) --remote=$(GITHUB_PAGES_REMOTE) "$(OUTPUTDIR)"
+	ghp-import -m "Generate Pelican site" -c $(GITHUB_PAGES_CNAME) -b $(GITHUB_PAGES_BRANCH) --remote=$(GITHUB_PAGES_REMOTE) "$(OUTPUTDIR)"
 	git push $(GITHUB_PAGES_REMOTE) $(GITHUB_PAGES_BRANCH)
 
 
