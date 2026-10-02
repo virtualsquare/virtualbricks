@@ -2,6 +2,8 @@ Virtualbricks
 #############
 
 :date: 2021-11-18 07:27
+:modified: 2026-10-02 18:04
+Try 'date --help' for more information.
 :page-order: 1
 :status: hidden
 :save_as: index_fr.html
@@ -33,4 +35,3 @@ Bologne. L’approche virtuelle des activités de laboratoire, promue par
 Virtualbricks, ainsi que son utilité en soi, se sont révélées
 essentielles pour faire face aux confinements de l’Université, imposés
 par la pandémie de COVID-19 au cours des deux dernières années.
-Virtualbricks a récemment été porté sur Python3 et GTK3.

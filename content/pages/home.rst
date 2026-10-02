@@ -2,6 +2,7 @@ Virtualbricks
 #############
 
 :date: 2021-11-18 07:27
+:modified: 2026-10-02 18:04
 :page-order: 1
 :status: hidden
 :save_as: index.html
@@ -28,5 +29,4 @@ in the course on “Protocol and Architectures for Space Networks” in the
 Master courses of TLC and Computer Science Engineering of the University
 of Bologna. The virtual approach to lab activities, promoted by
 Virtualbricks, as well as being useful per se, proved vital to cope with
-University lockdowns in the last two Covid years. Virtualbricks has
-recently been ported to Python3 and GTK3.
+University lockdowns in the last two Covid years.
