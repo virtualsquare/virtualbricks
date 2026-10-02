@@ -2,6 +2,7 @@ Virtualbricks 3.0: projects, workspaces and the new files
 ##########################################################
 
 :date: 2026-10-02 12:00
+:status: draft
 :category: News
 :tags: release, develop, projects, workspaces, configuration
 :slug: projects-workspaces-and-files-in-virtualbricks-3-0
