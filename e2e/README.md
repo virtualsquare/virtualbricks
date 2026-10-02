@@ -131,6 +131,7 @@ The steps of a user:
 | `When I stop sw1` | Its Stop button; it must stop |
 | `When I wait 5 seconds` | Waits |
 | `When I quit Virtualbricks` | File, then Quit |
+| `When I start Virtualbricks again` | Starts it with its settings, as after it ran before, on a new screen, and waits for a window |
 | `Then sw1 is running` | Its row says Running, and the processes of its start run |
 | `Then sw1 is still running` | The same |
 | `Then sw1 is stopped` | Its row says Stopped, and no process of it runs: those of its start have quit, and none has its sockets |
@@ -147,7 +148,9 @@ The steps of the migration of Virtualbricks 2.1:
 | `Given the settings of Virtualbricks 2.1, with DTN2hops_26_Feb_2026 open last` | `~/.virtualbricks.conf`, of the workspace of the tests, in place of the settings: the next start is the first |
 | `When I start Virtualbricks for the first time` | Starts it without its settings, as after 2.1, and waits for a window |
 | `When I close the migration window` | Its button Close |
+| `Given Virtualbricks migrated DTN2hops_26_Feb_2026 at its first start` | The first start, the migration of the project, and its window closed |
 | `Then the migration window shows` | Waits until it shows |
+| `Then the migration window doesn't show` | Waits until it doesn't |
 | `Then the migration window lists`, with a table under it | The rows of its list, all of them and in order, once they are those of the table, whose first line has the titles of the columns |
 | `Then DTN2hops_26_Feb_2026 is migrated` | The migration ends, no row of the window failed, and the project has its `project.toml` |
 
@@ -380,7 +383,8 @@ the run lists under "screenshots and videos":
 - `screenshot.png`: the screen when the step failed, as a user would have
   seen it, with the dialogs and the menus that showed.
 - `recording.webm`: the screen from the start of Virtualbricks to the step
-  that failed. A browser plays it.
+  that failed; when it started again, its screens one after the other. A
+  browser plays it.
 
 Both show the pointer, a red dot, and the step at the bottom; the step that
 failed is in red. In the video each change of the screen shows half a
@@ -421,7 +425,8 @@ chose. Read the scenario as you would one of a contributor: it is the test.
   `python -m virtualbricks --noterm --lock none --workspace …` on this
   checkout, in English, on it, and waits for its main window. Each
   Virtualbricks has its own `broadwayd`: `broadwayd` aborts when a program
-  it shows quits. The settings turn off the alert of missing programs,
+  it shows quits. One that quit starts again on a new `broadwayd`, and its
+  output goes on in `output.log`. The settings turn off the alert of missing programs,
   which depends on the machine and would take the clicks; GTK's animations
   are off, so a popover is where it ends up at once.
 - `a11y.py` finds the widgets through AT-SPI, as a screen reader does, and

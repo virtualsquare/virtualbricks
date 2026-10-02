@@ -116,6 +116,8 @@ class Browser:
             pass
         self.sock.close()
         self._reader.join(5)
+        # nothing shows any more
+        self.timeline.append((time.monotonic(), "layout", [], None))
 
     # The pointer
 

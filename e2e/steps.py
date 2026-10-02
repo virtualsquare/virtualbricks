@@ -85,6 +85,14 @@ def first_start(virtualbricks):
     virtualbricks.start()
 
 
+@when("I start Virtualbricks again")
+def start_again(virtualbricks):
+    """With its settings, as after it ran before; it shows a window."""
+
+    assert os.path.exists(virtualbricks.settings), "it has no settings"
+    virtualbricks.start()
+
+
 @when("I quit Virtualbricks")
 def quit_virtualbricks(virtualbricks):
     virtualbricks.choose("Quit", "File")
@@ -263,6 +271,11 @@ def migration_window(virtualbricks):
     virtualbricks.find("frame", MIGRATION)
 
 
+@then("the migration window doesn't show")
+def no_migration_window(virtualbricks):
+    virtualbricks.gone("frame", MIGRATION)
+
+
 @then("the migration window lists")
 def migration_lists(virtualbricks, datatable):
     """
@@ -320,6 +333,15 @@ def close_migration(virtualbricks):
     save = virtualbricks.find("button", "Save report…", within=window)
     virtualbricks.click("button", "Close", within=save.get_parent())
     virtualbricks.gone("frame", MIGRATION)
+
+
+@given(words("Virtualbricks migrated {name:Project} at its first start"))
+def migrated_at_first_start(virtualbricks, name):
+    """It starts, the migration of name ends, and its window is closed."""
+
+    first_start(virtualbricks)
+    migrated(virtualbricks, name)
+    close_migration(virtualbricks)
 
 
 # Time

@@ -105,7 +105,7 @@ def _record(request, vb):
     until = request.node.stash.get(ENDED, time.monotonic())
     try:
         lines = recording.record(
-            vb.browser.timeline, steps, until, broadway.SCREEN, vb.home
+            vb.timeline(), steps, until, broadway.SCREEN, vb.home
         )
     except Exception as error:
         # a scenario doesn't fail for its recording

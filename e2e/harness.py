@@ -155,6 +155,8 @@ class Virtualbricks:
         self.desktop = desktop
         self.screen = None
         self.browser = None
+        # those of all its screens, the last the browser
+        self.browsers = []
         self.home = home
         self.config = os.path.join(home, ".config")
         # without it, the start is the first, as after Virtualbricks 2.1
@@ -175,12 +177,19 @@ class Virtualbricks:
         os.makedirs(self.workspace)
 
     def start(self):
-        """Start Virtualbricks on a screen, and wait for its main window."""
+        """
+        Start Virtualbricks on a screen, and wait for its main window. Once
+        it has quit, it starts again on a screen of its own, and its output
+        goes on in the same log.
+        """
 
+        if self.screen is not None:
+            self.screen.close()
         self.screen = self.desktop.screen(
             os.path.join(self.home, "broadway.log")
         )
         self.browser = self.screen.browser
+        self.browsers.append(self.browser)
         env = dict(
             self.desktop.env,
             GDK_BACKEND="broadway",
@@ -202,7 +211,7 @@ class Virtualbricks:
                 filter(None, [os.environ.get("E2E_PYTHONPATH"), ROOT])
             ),
         )
-        with open(self.log, "wb") as out:
+        with open(self.log, "ab") as out:
             self.process = subprocess.Popen(
                 [
                     sys.executable,
@@ -354,6 +363,13 @@ class Virtualbricks:
         """What get returns once it is true; AssertionError after timeout."""
 
         return a11y.wait_for(get, what, timeout)
+
+    def timeline(self):
+        """That of its screens, one after the other: see :mod:`broadway`."""
+
+        return [
+            event for browser in self.browsers for event in browser.timeline
+        ]
 
     def describe(self) -> str:
         """The widgets that show, one a line."""
