@@ -3,6 +3,7 @@ Virtualbricks
 
 :date: 2021-11-18 07:27
 :page-order: 1
+:status: hidden
 :save_as: index_fr.html
 :slug: home
 :summary: Virtualbricks home page

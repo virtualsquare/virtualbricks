@@ -36,3 +36,20 @@ Ex.
 
 .. _Github pages: https://pages.github.com/
 .. _gh-pages: https://github.com/virtualsquare/virtualbricks/tree/gh-pages
+
+Theme
+=====
+
+The theme is Elegant_, a git submodule in *themes/elegant*, at its
+release V5.4.0. After a clone, fetch it with:
+
+.. code::
+
+   $ git submodule update --init
+
+The templates in *themes/overrides* replace or add to those of Elegant:
+the menu (*base.html*), the translations of a page (*page.html*), the
+page of a category (*category.html*) and the pages of the Documentation
+category, which keep their own design (*doc.html*).
+
+.. _Elegant: https://github.com/Pelican-Elegant/elegant

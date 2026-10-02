@@ -13,7 +13,7 @@ Carlo Caini
 
 .. image:: {static}/images/carlo_caini.jpg
    :alt: Picture of Prof. Carlo Caini.
-   :class: left
+   :align: left
    :width: 831
    :height: 973
    :scale: 20%
@@ -43,7 +43,7 @@ Daniele Lacamera
 
 .. image:: {static}/images/daniele_lacamera.jpg
    :alt: Picture of Daniele Lacamera.
-   :class: right
+   :align: right
    :width: 600
    :height: 600
    :scale: 25%
@@ -75,7 +75,7 @@ Pietrofrancesco Apollonio
 
 .. image:: {static}/images/pietrofrancesco_apollonio.jpeg
    :alt: Picture of Pietrofrancesco Apollonio.
-   :class: left
+   :align: left
    :width: 800
    :height: 800
    :scale: 25%
@@ -151,7 +151,7 @@ Marco Giusti
 
 .. image:: {static}/images/marco_giusti.png
    :alt: Picture of Marco Giusti.
-   :class: right
+   :align: right
    :width: 860
    :height: 931
    :scale: 25%
