@@ -11,23 +11,13 @@
 
         <meta name="author" content="Virtualbricks Team" />
 
-        <meta name="description" content="All categories of the Virtualbricks blog.
+        <meta name="description" content="Page does not exist at Virtualbricks blog.
 " />
         <meta property="og:type" content="article" />
         <meta name="twitter:card" content="summary">
-
-<meta property="og:title" content="All Categories · Virtualbricks"/>
-<meta name="twitter:title" content="All Categories · Virtualbricks">
-<meta property="og:url" content="https://www.virtualbricks.it/categories.html" />
-<meta property="og:description" content="All categories of the Virtualbricks blog" />
-<meta name="twitter:description" content="All categories of the Virtualbricks blog">
-<meta property="og:site_name" content="Virtualbricks" />
-<meta property="og:article:author" content="Virtualbricks Team" />
-        <title>All Categories · Virtualbricks
+        <title>Page not found · Virtualbricks
 </title>
         <link href="https://www.virtualbricks.it/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Virtualbricks - Full Atom Feed" />
-
-        <link href="https://www.virtualbricks.it/feeds/news.atom.xml" type="application/atom+xml" rel="alternate" title="Virtualbricks - News Category Atom Feed" />
 
 
 
@@ -63,38 +53,40 @@
                     <div class="span10">
 <div class="row-fluid">
     <header class="page-header span10 offset2">
-    <h1><a href="https://www.virtualbricks.it/categories.html">All Categories</a></h1>
+    <h1>That page doesn't exist!</h1>
     </header>
 </div>
 
-
 <div class="row-fluid">
     <div class="span8 offset2">
-        <div class="accordion" id="accordion2">
-            <div class="accordion-group">
-                <div class="accordion-heading">
-                    <a class="accordion-toggle category-title-inside-accordion collapsed" data-toggle="collapse" data-parent="#accordion2" href="#news-ref">
-                        News<span class="superscript">1</span>
-                    </a>
-                </div>
-                <div id="news-ref" class="accordion-body collapse">
-                    <div class="accordion-inner">
-                        <ul class="list-articles-under-tag-category">
-                            <li itemscope>
-                                    <a href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html">
-                                        What's coming in Virtualbricks 3.0
-                                    </a>
-                                <time itemprop="dateCreated" datetime="2026-10-01T12:00:00+02:00">
-                                    Thu 01 October 2026
-                                </time>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+        <p>Sorry, but the page you are looking for cannot be found. It seems that the page you were trying to reach doesn't exist, or may be it has just moved, or it no longer exists.</p>
+        <p>The best thing to do is to use the search form or start again from the <a href="https://www.virtualbricks.it">home page</a>.</p>
+        <div class="input-append">
+            <form action="https://www.virtualbricks.it/search.html" onsubmit="return validateForm(this.elements['q'].value)">
+                <input type="text" class="span12" placeholder="Search" name="q" id="tipue_search_input_404">
+                <button class="btn" type="submit">Search</button>
+            </form>
         </div>
     </div>
 </div>
+
+<script type="text/javascript">
+    // Get Current location as the initial search item
+    var newurl = (' ' + window.location.pathname).slice(1);
+
+    // Replace "/" in path into spaces
+    var newurl = newurl.replace(/\//g, ' ');
+
+    // Remove html extension
+    var newurl = newurl.replace(/.html/g, ' ');
+
+    // Replace - by ' '
+    var newurl = newurl.replace(/\-/g, ' ');
+
+    // Fill search field with resulting string
+    document.getElementById('tipue_search_input_404').value = newurl;
+</script>
+
                     </div>
                     <div class="span1"></div>
                 </div>
@@ -120,18 +112,6 @@
                 return (query.length > 0);
             }
         </script>
-
-<script>
-    function uncollapse() {
-            $(window.location.hash).collapse({
-                toggle: true
-            })
-    }
-</script>
-
-<script>
-    uncollapse();
-</script>
     </body>
     <!-- Theme: Elegant built for Pelican
         License : MIT -->
