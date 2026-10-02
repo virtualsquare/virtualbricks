@@ -72,7 +72,7 @@ a few seconds.
 | `features/*.feature` | The scenarios, a file for each area: `bricks.feature`, …; in folders too: see [Group the scenarios](#group-the-scenarios) |
 | `steps.py` | The steps: what each line of a scenario does |
 | `projects/` | The projects of Virtualbricks 2.1 of the scenarios, a folder each, with its `.project` |
-| `TODO.md` | The scenarios still to write, by area, and what they need that the tests can't do yet |
+| `TODO.md` | The scenarios, written and to write, by area, and what they need that the tests can't do yet |
 | `test_features.py` | Makes a test of each scenario of `features/` |
 | `conftest.py` | The fixtures: `desktop`, shared, and `virtualbricks`, for each scenario; the report of a step that fails, `--record-all` |
 | `harness.py` | What the steps drive: `Virtualbricks`, with `find`, `click`, `choose`, `row`, `children`, …; the `Desktop` and its `Screen`s |

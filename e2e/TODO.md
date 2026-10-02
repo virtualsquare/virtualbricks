@@ -1,13 +1,9 @@
-# TODO
-
-# IDEAS
-
 The scenarios that would cover Virtualbricks fairly, by area, the most
-used first. Each says what it checks besides the windows (a process, a
-file), and what it needs that the tests can't do yet: those needs come
-first.
+used first: those written are ticked, with their feature file. Each says
+what it checks besides the windows (a process, a file), and what it needs
+that the tests can't do yet: those needs come first.
 
-## What the scenarios need first
+# What the scenarios need first
 
 - [ ] Never click the same point twice in a row: GTK takes two presses
   within 400 ms and 5 px for a double click, and a list activates a row
@@ -24,14 +20,10 @@ first.
 - [ ] Make a small archive of 2.1 in a fixture, a `.vbp` of the
   `.project` of `e2e/projects/DTN2hops_26_Feb_2026`
 
-## Bricks and links
+# Bricks and links
 
-- [ ] Start a virtual machine with an empty disk, headless, and stop it
-  QEMU runs with the disk of the project, and quits;
-  `@needs-qemu-system-x86_64`, a disk image of a fixture
-- [ ] Connect a virtual machine to a switch, with Connect To in its menu
-  its row says "eth0 on sw1"; started, QEMU's command line has the
-  socket of sw1
+- [x] Run a switch for a while, then stop it
+  "A switch runs for a while, then stops", `bricks.feature`
 - [ ] Join two switches with a wire
   the wire runs with the sockets of both; needs the double click fix
 - [ ] Start all the bricks with Start All, then stop them with Stop All
@@ -58,16 +50,42 @@ first.
 - [ ] Delete a brick from its menu, after the confirmation
   its row goes, and `project.toml` loses it after a quit
 - [ ] Show only the running bricks with the switch over the list
-- [ ] Pause and continue a running virtual machine from Process in its
-  menu
-  its row says so, and QEMU's monitor too
 - [ ] Quit while a switch runs
   refused, "Cannot close virtualbricks: there are running bricks"; the
   switch still runs
 - [ ] Add a switch, quit and start again
   `project.toml` has sw1, and the main window shows it
 
-## Projects
+## Virtual machines
+
+- [ ] Start a virtual machine with an empty disk, headless, and stop it
+  QEMU runs with the disk of the project, and quits;
+  `@needs-qemu-system-x86_64`, a disk image of a fixture
+- [ ] Connect a virtual machine to a switch, with Connect To in its menu
+  its row says "eth0 on sw1"; started, QEMU's command line has the
+  socket of sw1
+- [ ] Pause and continue a running virtual machine from Process in its
+  menu
+  its row says so, and QEMU's monitor too
+
+### Disk images
+
+- [ ] Add a new empty disk from the Images tab
+  the file is in the image folder, of the size and format chosen;
+  `@needs-qemu-img`
+- [ ] Add an existing disk image from a file
+  copied into the image folder, or used where it is; needs typing
+- [ ] Give a virtual machine a disk image
+  the row of the image names the machine; in use while it runs
+- [ ] Remove a disk image, after the dialog that lists the disks that
+  lose it
+  the file stays, or goes to the trash when no project uses it
+- [ ] Find the file of an image whose file is missing, as debian13 of
+  DTN2hops_26_Feb_2026
+  the row says the file is missing, then the file found
+- [ ] See the details of an image: what `qemu-img info` says
+
+# Projects
 
 - [ ] Make a new project from the Projects window, with the name it
   suggests
@@ -90,6 +108,18 @@ first.
 
 ## Migration
 
+- [x] Migrate a project of 2.1 and the settings at the first start, and
+  open the project that was open last
+  "An old project is migrated at the first start", `migration.feature`
+- [x] Start again without migrating again
+  "The next start doesn't migrate again", `migration.feature`
+- [x] Run two switches of a migrated project and the link between them
+  "Two switches of a migrated project and the link between them run",
+  `migration.feature`
+- [x] Migrate a project of 2.1 copied into the workspace at the next
+  start, and keep the project open last
+  "An old project copied into the workspace is migrated",
+  `migration.feature`
 - [ ] See a project of 2.1 that can't be converted
   its row says ✗ Failed, its message shows under the list, its old file
   stays as it was
@@ -101,7 +131,7 @@ first.
 - [ ] Save the report of the migration
   the file has the rows and the messages; needs typing for the path
 
-## Events
+# Events
 
 - [ ] Make an event that starts sw1 after 2 seconds, with the name it
   suggests, and start it
@@ -113,50 +143,33 @@ first.
   sw1
 - [ ] See an event without actions: it can't start, and its row says why
 
-## Disk images
-
-- [ ] Add a new empty disk from the Images tab
-  the file is in the image folder, of the size and format chosen;
-  `@needs-qemu-img`
-- [ ] Add an existing disk image from a file
-  copied into the image folder, or used where it is; needs typing
-- [ ] Give a virtual machine a disk image
-  the row of the image names the machine; in use while it runs
-- [ ] Remove a disk image, after the dialog that lists the disks that
-  lose it
-  the file stays, or goes to the trash when no project uses it
-- [ ] Find the file of an image whose file is missing, as debian13 of
-  DTN2hops_26_Feb_2026
-  the row says the file is missing, then the file found
-- [ ] See the details of an image: what `qemu-img info` says
-
-## Settings
+# Settings
 
 - [ ] Change a setting of the application in Preferences, a switch
   `settings.toml` has it, and the next start too
 - [ ] Change a setting of the project in Preferences, This project
   `project.toml` has it
 
-## Messages window
+# Messages window
 
 - [ ] Read the messages of the run, among them a brick that failed,
   with the output of its program folded behind a toggle
 
-## Topology
+# Topology
 
 - [ ] See the picture of the lab, and zoom it with the buttons
   the zoom level changes; AT-SPI can't see the drawing itself
 - [ ] Export the picture of the lab to a PNG file
   the file is a PNG; needs typing for the path
 
-## Readme
+# Readme
 
 - [ ] See the README of a project in the Readme tab, rendered
   a project of a fixture with a README
 - [ ] Edit the README, then see it in the preview
   the file README has the text; needs typing
 
-## Command line and sockets
+# Command line and sockets
 
 - [ ] Start a brick with `--command` while the windows show it
   its row says Running; needs `--listen`
@@ -167,22 +180,18 @@ first.
   `--lock workspace`
   it exits with the reason; the first one goes on
 
-## Out of reach on Broadway
+# Out of reach on Broadway
 
 - The tray icon: Broadway has no system tray
 - A tap and a capture interface that run: they need `CAP_NET_ADMIN`
 - A file dropped from the desktop on the Projects window
 
-# DONE
-
-- [x] A switch runs for a while, then stops (`bricks.feature`)
-- [x] An old project is migrated at the first start
-- [x] The next start doesn't migrate again
-- [x] Two switches of a migrated project and the link between them run
-- [x] An old project copied into the workspace is migrated
-
 # Conventions
 
-Those of `TODO.md`: one item per line, starting with a verb, detail
-indented below; new ideas go under IDEAS, the maintainer moves them into
-TODO; a scenario written is ticked and moved to the top of DONE.
+- One item per line, starting with a verb, the use case in words; detail
+  indented below it: what it checks besides the windows, and what it
+  needs.
+- Sections by area, the most used first; what the scenarios need comes
+  before them all.
+- A scenario written is ticked where it is, with its name and its
+  feature file.
