@@ -270,7 +270,8 @@
   `e2e/broadway.py` sends keys as `broadway.js` does, `k` and `K` with a
   keysym
 - [ ] Write the scenarios of the main use cases: projects, events, disk
-  images, virtual machines, the topology
+  images, virtual machines, the topology; they are listed in
+  `e2e/TODO.md`
 - [ ] Stop `dbus-daemon` and `broadwayd` of the tests when `pytest` is
   killed, with the parent-death signal
 
