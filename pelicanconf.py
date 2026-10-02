@@ -10,6 +10,9 @@ SITEURL = ''
 
 PATH = 'content'
 
+# The documents of the Documentation category bring their stylesheets
+STATIC_PATHS = ['images', 'documentation']
+
 TIMEZONE = 'Europe/Rome'
 
 DEFAULT_LANG = 'en'
@@ -44,6 +47,8 @@ INDEX_SAVE_AS = "news.html"
 
 # Ordering content
 PAGE_ORDER_BY = 'page-order'
+# Categories sort by name: reversed, News comes before Documentation
+REVERSE_CATEGORY_ORDER = True
 
 # Theme
 THEME = "notmyidea"
