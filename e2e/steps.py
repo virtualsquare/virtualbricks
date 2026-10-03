@@ -51,6 +51,7 @@ except ImportError:
     # before Python 3.11
     import tomli as tomllib
 
+import cairo
 import pytest
 from pytest_bdd import given, parsers, step, then, when
 
@@ -977,6 +978,13 @@ def open_projects(virtualbricks):
     virtualbricks.find("frame", PROJECTS_WINDOW)
 
 
+@when("I save the project")
+def save_project(virtualbricks):
+    """Save, in the menu Projects."""
+
+    virtualbricks.choose("Save", "Projects")
+
+
 @when(words("I make a new project with the name it suggests, {name:Project}"))
 def new_project(virtualbricks, name):
     """
@@ -1555,13 +1563,108 @@ TOPOLOGY = "Topology"
 UNDER_THE_BRICKS = 30
 
 
-@when(words("I zoom in on the picture of the lab {times:d} times"))
-def zoom_in(virtualbricks, times):
-    """The tab Topology, then its Zoom In, times."""
+# The tooltip of the zoom level of the tab Topology, which the screen
+# readers say after the level
+ZOOM_TO_100 = "Zoom to 100%"
+# The title of the file chooser of Export as Image…
+EXPORT_IMAGE = "Export as Image"
+# The first bytes of a PNG file
+PNG = b"\x89PNG\r\n\x1a\n"
 
+
+@when(words("I zoom {way} on the picture of the lab {times:d} times"))
+def zoom(virtualbricks, way, times):
+    """The tab Topology, then its Zoom In, or Zoom Out, times."""
+
+    assert way in ("in", "out"), f"zoom in or out, not {way}"
     tab = virtualbricks.click("page tab", TOPOLOGY)
     for _ in range(times):
-        virtualbricks.click("button", "Zoom In", within=tab)
+        virtualbricks.click("button", f"Zoom {way.title()}", within=tab)
+
+
+@when("I zoom the picture of the lab back to 100%")
+def zoom_back(virtualbricks):
+    """The tab Topology, then its zoom level, which zooms to 100%."""
+
+    tab = virtualbricks.click("page tab", TOPOLOGY)
+    level = zoom_level(virtualbricks, tab)
+    virtualbricks.click("button", level.get_name(), within=tab)
+
+
+@then(words("the zoom level of the picture of the lab is {level}"))
+def zoom_level_is(virtualbricks, level):
+    """The zoom level of the tab Topology says level, as 150%."""
+
+    tab = virtualbricks.find("page tab", TOPOLOGY)
+    button = zoom_level(virtualbricks, tab)
+    try:
+        virtualbricks.wait_for(
+            lambda: button.get_name() == level, f"the zoom level is {level}"
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the zoom level is {button.get_name()}, not {level}"
+        ) from None
+
+
+def zoom_level(virtualbricks, tab):
+    """
+    The zoom level of the tab Topology, once it shows: a button named by
+    the level, whose tooltip says it zooms to 100%.
+    """
+
+    return virtualbricks.wait_for(
+        lambda: next(
+            (
+                button
+                for button in harness.a11y.find_all(tab, "button")
+                if button.get_description() == ZOOM_TO_100
+            ),
+            None,
+        ),
+        "the zoom level shows",
+    )
+
+
+@when(
+    words(
+        "I export the picture of the lab to {file} of my home folder, typing"
+        " its path"
+    )
+)
+def export_picture(virtualbricks, file):
+    """
+    The tab Topology, Export as Image… in its More; in the file chooser,
+    the path typed in place of the name it suggests, then Save, and the file
+    chooser closes.
+    """
+
+    tab = virtualbricks.click("page tab", TOPOLOGY)
+    virtualbricks.click("toggle button", "More", within=tab)
+    virtualbricks.click("button", "Export as Image…")
+    chooser = virtualbricks.find("file chooser", EXPORT_IMAGE)
+    path = os.path.join(virtualbricks.home, file)
+    virtualbricks.type(path, "text", "Name:", within=chooser, over=True)
+    virtualbricks.click("button", "Save", within=chooser)
+    virtualbricks.gone("file chooser", EXPORT_IMAGE)
+
+
+@then(words("the file {file} of my home folder is a PNG image, not blank"))
+def png_image(virtualbricks, file):
+    """
+    The file is a PNG image, which cairo reads: a drawing, whose pixels
+    aren't all alike.
+    """
+
+    path = os.path.join(virtualbricks.home, file)
+    virtualbricks.wait_for(lambda: os.path.isfile(path), f"{path} is there")
+    with open(path, "rb") as image:
+        assert image.read(len(PNG)) == PNG, f"{file} isn't a PNG image"
+    surface = cairo.ImageSurface.create_from_png(path)
+    data = bytes(surface.get_data())
+    pixels = {data[i : i + 4] for i in range(0, len(data), 4)}
+    width, height = surface.get_width(), surface.get_height()
+    assert len(pixels) > 1, f"{file} is blank, {width} × {height}"
 
 
 @when(words("I drag the picture of the lab {pixels:d} pixels to the {side}"))
@@ -1627,6 +1730,151 @@ def picture_pane(virtualbricks):
         "the picture of the lab is wider than its tab",
     )
     return pane, bar
+
+
+# Readme
+
+README_TAB = "Readme"
+# The style of a run of text, as a user sees it, by its attributes as AT-SPI
+# tells them, which the screen readers tell too
+STYLES = (
+    ("large", lambda attributes: float(attributes.get("scale", 1)) > 1),
+    ("bold", lambda attributes: int(attributes.get("weight", 400)) >= 700),
+    ("italic", lambda attributes: attributes.get("style") == "italic"),
+    ("monospace", lambda attributes: attributes.get("family") == "monospace"),
+)
+
+
+@given(words("the project {name:Project} has the README"))
+def project_readme(virtualbricks, name, docstring):
+    """
+    The folder of the project, in the workspace, has the file of the
+    project, and a README with the text under the step; before
+    Virtualbricks starts. The project that it opens at its first start is
+    new_project.
+    """
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    project = os.path.join(virtualbricks.workspace, name)
+    os.makedirs(project, exist_ok=True)
+    path = os.path.join(project, "project.toml")
+    if not os.path.exists(path):
+        with open(path, "w") as file:
+            file.write("format = 2\n")
+    with open(os.path.join(project, "README"), "w") as file:
+        file.write(docstring + "\n")
+
+
+@when(words("I open the tab {title}"))
+def open_tab(virtualbricks, title):
+    """Its page tab, in the main window; then it is the one that shows."""
+
+    tab = virtualbricks.click("page tab", title)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.selected(tab), f"the tab {title} shows"
+    )
+
+
+@when("I write the README in the Readme tab")
+def write_readme(virtualbricks, docstring):
+    """
+    The tab Readme, its Edit, then the text under the step typed in its
+    editor.
+    """
+
+    tab = virtualbricks.click("page tab", README_TAB)
+    virtualbricks.click("radio button", "Edit", within=tab)
+    editor = virtualbricks.wait_for(
+        lambda: next(
+            (
+                text
+                for text in harness.a11y.find_all(tab, "text")
+                if harness.a11y.editable(text)
+            ),
+            None,
+        ),
+        "the editor of the README shows",
+    )
+    virtualbricks.type(docstring, "text", within=editor)
+
+
+@when("I show the preview of the README")
+def preview_readme(virtualbricks):
+    """The Preview of the tab Readme."""
+
+    tab = virtualbricks.find("page tab", README_TAB)
+    virtualbricks.click("radio button", "Preview", within=tab)
+
+
+@then("the Readme tab shows the README rendered")
+def readme_rendered(virtualbricks, datatable):
+    """
+    The preview of the tab Readme has the runs of text of the table under
+    the step, all of them and in order: the text of each, without the
+    spaces at its ends, and its style, as large, bold, italic or monospace.
+    """
+
+    tab = virtualbricks.find("page tab", README_TAB)
+    found = []
+
+    def rendered():
+        preview = next(
+            (
+                text
+                for text in harness.a11y.find_all(tab, "text")
+                if not harness.a11y.editable(text)
+            ),
+            None,
+        )
+        found[:] = [] if preview is None else preview_runs(preview)
+        return datatable[:1] + found == datatable
+
+    try:
+        virtualbricks.wait_for(rendered, "the README shows rendered")
+    except AssertionError:
+        raise AssertionError(
+            f"the preview has {found}, not {datatable[1:]}"
+        ) from None
+
+
+def preview_runs(preview):
+    """
+    The runs of text of a preview, a line at a time: the text of each,
+    without the spaces at its ends, and its style.
+    """
+
+    found = []
+    for text, attributes in harness.a11y.runs(preview):
+        style = ", ".join(name for name, has in STYLES if has(attributes))
+        for line in text.split("\n"):
+            if line.strip():
+                found.append([line.strip(), style])
+    return found
+
+
+@then(words("the README file of {name:Project} has"))
+def readme_file(virtualbricks, name, docstring):
+    """
+    The README of the folder of the project, in the workspace, has the text
+    under the step, once Virtualbricks has written it; the spaces at the
+    end aside.
+    """
+
+    path = os.path.join(virtualbricks.workspace, name, "README")
+
+    def text():
+        try:
+            with open(path, encoding="utf-8") as file:
+                return file.read().rstrip()
+        except FileNotFoundError:
+            return None
+
+    try:
+        virtualbricks.wait_for(
+            lambda: text() == docstring.rstrip(), f"{path} has the text"
+        )
+    except AssertionError:
+        raise AssertionError(f"README has {text()!r}") from None
 
 
 # Settings
@@ -1753,21 +2001,35 @@ def toml_has(path, table, datatable):
 
 @given(words('a vde_switch that writes "{text}" and exits with {status:d}'))
 def failing_switch(virtualbricks, text, status):
+    """A vde_switch of its own, which writes text, and exits."""
+
+    fake_switch(virtualbricks, [text], status)
+
+
+@given(
+    words("a vde_switch that writes these lines, and exits with {status:d}")
+)
+def failing_switch_lines(virtualbricks, docstring, status):
+    """The same, with the lines of the text under the step."""
+
+    fake_switch(virtualbricks, docstring.splitlines(), status)
+
+
+def fake_switch(virtualbricks, lines, status):
     """
     A script of its own in place of vde_switch, in the folder of the VDE
     programs of the project that Virtualbricks opens at its first start,
-    new_project: it writes text on its standard error, and exits.
+    new_project: it writes the lines on its standard error, at once, and
+    exits.
     """
 
     assert virtualbricks.process is None, "Virtualbricks runs already"
     folder = os.path.join(virtualbricks.home, "vde")
     os.makedirs(folder)
     program = os.path.join(folder, "vde_switch")
+    words = " ".join(shlex.quote(line) for line in lines)
     with open(program, "w") as file:
-        file.write(
-            f"#!/bin/sh\nprintf '%s\\n' {shlex.quote(text)} >&2\n"
-            f"exit {status}\n"
-        )
+        file.write(f"#!/bin/sh\nprintf '%s\\n' {words} >&2\nexit {status}\n")
     os.chmod(program, 0o755)
     project = os.path.join(virtualbricks.workspace, "new_project")
     os.makedirs(project)
@@ -1804,9 +2066,7 @@ def messages_output(virtualbricks, name, text):
     2>.
     """
 
-    window = virtualbricks.find("frame", "Logs")
-    pane = virtualbricks.find("scroll pane", within=window)
-    view = virtualbricks.find("text", within=pane)
+    view = console(virtualbricks)
 
     def output():
         for line in harness.a11y.text(view).splitlines():
@@ -1816,6 +2076,153 @@ def messages_output(virtualbricks, name, text):
         return None
 
     virtualbricks.wait_for(output, f"the output of {name} is in the window")
+
+
+# The arrow of a toggle of the messages window: folded, unfolded
+FOLDED = "▸"
+UNFOLDED = "▾"
+
+
+@then(words('the messages window has the message of {name:Brick}: "{text}"'))
+def messages_message(virtualbricks, name, text):
+    """A line of its messages comes from the brick, and says text."""
+
+    virtualbricks.wait_for(
+        lambda: message_line(console(virtualbricks), name, text) is not None,
+        f"the message of {name} is in the window",
+    )
+
+
+@then(
+    words(
+        'the messages window has the output of {name:Brick}: "{text}", and'
+        " {count:d} more lines folded"
+    )
+)
+def output_folded(virtualbricks, name, text, count):
+    """
+    A line of its messages is the first line of the output of the brick,
+    text, and a toggle that says how many more lines it folds; no line of
+    them shows under it.
+    """
+
+    view = console(virtualbricks)
+    first = f"{output_of(text)}  {toggle(count, unfolded=False)}"
+
+    def folded():
+        index = message_line(view, name, first)
+        if index is None:
+            return False
+        lines = harness.a11y.text(view).split("\n")
+        # the next line, if any, is a message of its own
+        return index + 1 == len(lines) or "\t" in lines[index + 1]
+
+    virtualbricks.wait_for(folded, f"the output of {name} is folded")
+
+
+@when(words("I unfold the output of {name:Brick} in the messages window"))
+def unfold(virtualbricks, name):
+    """
+    The toggle of the output of the brick, after its first line; then it
+    says the lines are unfolded.
+    """
+
+    view = console(virtualbricks)
+    lines = harness.a11y.text(view).split("\n")
+    index = next(
+        (
+            index
+            for index, line in enumerate(lines)
+            if source_of(line) == name
+            and message_of(line).startswith(output_of(""))
+            and FOLDED in line
+        ),
+        None,
+    )
+    assert index is not None, f"no output of {name} folded"
+    line = lines[index]
+    start = sum(len(before) + 1 for before in lines[:index])
+    # the toggle: the arrow, up to the end of the line
+    arrow = line.index(FOLDED)
+    virtualbricks.click_text(view, start + arrow, len(line) - arrow)
+    virtualbricks.wait_for(
+        lambda: UNFOLDED in harness.a11y.text(view).split("\n")[index],
+        f"the output of {name} is unfolded",
+    )
+
+
+@then(words("the messages window has the output of {name:Brick}, unfolded"))
+def output_unfolded(virtualbricks, name, docstring):
+    """
+    A line of its messages is the first line of the output of the brick,
+    and a toggle that says how many more lines it unfolded, which show under
+    it: the lines of the text under the step.
+    """
+
+    view = console(virtualbricks)
+    first, *more = docstring.splitlines()
+    line = f"{output_of(first)}  {toggle(len(more), unfolded=True)}"
+
+    def unfolded():
+        index = message_line(view, name, line)
+        if index is None:
+            return False
+        lines = harness.a11y.text(view).split("\n")
+        return lines[index + 1 : index + 1 + len(more)] == more
+
+    virtualbricks.wait_for(unfolded, f"the output of {name} is unfolded")
+
+
+def console(virtualbricks):
+    """The text of the messages window, once it shows."""
+
+    window = virtualbricks.find("frame", "Logs")
+    pane = virtualbricks.find("scroll pane", within=window)
+    return virtualbricks.find("text", within=pane)
+
+
+def message_line(view, name, text):
+    """
+    The index of the line of the messages window that comes from name and
+    says text, or None. A message is a line of fields, after tabs: its time,
+    where it comes from, its text; the lines a toggle unfolds have none.
+    """
+
+    for index, line in enumerate(harness.a11y.text(view).split("\n")):
+        if source_of(line) == name and message_of(line) == text:
+            return index
+    return None
+
+
+def source_of(line):
+    """Where a message comes from, or None for a line that isn't one."""
+
+    fields = [field for field in line.split("\t") if field]
+    return fields[1] if len(fields) == 3 else None
+
+
+def message_of(line):
+    """The text of a message, after where it comes from."""
+
+    return [field for field in line.split("\t") if field][-1]
+
+
+def output_of(text):
+    """A line that a program wrote on its standard error, as it shows."""
+
+    return f"2> {text}"
+
+
+def toggle(count, unfolded):
+    """
+    The toggle of count lines of a message, as the messages window says it:
+    an arrow, to the right when folded, down when unfolded.
+    """
+
+    arrow = UNFOLDED if unfolded else FOLDED
+    lines = "line" if count == 1 else "lines"
+    # never broken over two lines
+    return f"{arrow} {count} more {lines}".replace(" ", "\u00a0")
 
 
 # A switch that another program runs: the fixture other_switch

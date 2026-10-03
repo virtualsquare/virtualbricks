@@ -227,26 +227,36 @@ that the tests can't do yet: those needs come first.
 
 # Messages window
 
-- [ ] Read the messages of the run, among them a brick that failed,
+- [x] Read the messages of the run, among them a brick that failed,
   with the output of its program folded behind a toggle
+  "The output of a program that failed shows its first line, and the
+  others behind a toggle that unfolds them", `messages.feature`
 
 # Topology
 
-- [ ] See the picture of the lab, and zoom it with the buttons
+- [x] See the picture of the lab, and zoom it with the buttons
   the zoom level changes; AT-SPI can't see the drawing itself
+  "The buttons over the picture of the lab zoom it in, out and back to
+  100%, and its zoom level says so", `topology.feature`
 - [x] Drag the picture of the lab, zoomed in
   its scroll bar moves as the pointer
   "The picture of the lab, zoomed in, moves with the pointer that drags
   it", `topology.feature`
-- [ ] Export the picture of the lab to a PNG file
+- [x] Export the picture of the lab to a PNG file
   the file is a PNG; needs typing for the path
+  "The picture of the lab exported as an image is a PNG file",
+  `topology.feature`
 
 # Readme
 
-- [ ] See the README of a project in the Readme tab, rendered
+- [x] See the README of a project in the Readme tab, rendered
   a project of a fixture with a README
-- [ ] Edit the README, then see it in the preview
+  "The README of a project shows rendered in the Readme tab",
+  `readme.feature`
+- [x] Edit the README, then see it in the preview
   the file README has the text; needs typing
+  "A README written in the editor of the Readme tab shows in its
+  preview, and the project saves it", `readme.feature`
 
 # Command line and sockets
 

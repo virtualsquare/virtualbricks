@@ -441,6 +441,22 @@ class Virtualbricks:
         self.browser.click(*a11y.center(widget))
         return widget
 
+    def click_text(self, widget, index, length):
+        """
+        Click the middle of length characters of the text of the widget,
+        from the character index of a11y.text(): a link or a toggle of a text
+        view, as a user clicks it. They must show in the widget.
+        """
+
+        start = a11y.offset(widget, index)
+        x, y, width, height = a11y.text_extents(widget, start, start + length)
+        point = (x + width // 2, y + height // 2)
+        left, top, room, tall = a11y.extents(widget)
+        assert (
+            left <= point[0] < left + room and top <= point[1] < top + tall
+        ), f"{a11y.text(widget)[index:index + length]!r} doesn't show"
+        self.browser.click(*point)
+
     def spin(self, name, by, within=None):
         """
         Click the + of the spin button name by times, or its - -by times,

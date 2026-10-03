@@ -69,6 +69,14 @@ def checked(accessible) -> bool:
     return accessible.get_state_set().contains(Atspi.StateType.CHECKED)
 
 
+def selected(accessible) -> bool:
+    return accessible.get_state_set().contains(Atspi.StateType.SELECTED)
+
+
+def editable(accessible) -> bool:
+    return accessible.get_state_set().contains(Atspi.StateType.EDITABLE)
+
+
 def active(accessible) -> bool:
     """Whether the window has the focus: the keys go to it."""
 
@@ -112,6 +120,59 @@ def text(accessible) -> str:
     """The text of the widget, as that typed in an entry."""
 
     return Atspi.Text.get_text(accessible, 0, -1)
+
+
+def offset(accessible, index) -> int:
+    """
+    The offset of the character index of the text of the widget, as AT-SPI
+    counts them: a text view of GTK 3 leaves its images out of its text, but
+    counts them in the offsets of its characters.
+    """
+
+    count = Atspi.Text.get_character_count(accessible)
+    low, high = index, count
+    # the first offset with index characters of text before it
+    while low < high:
+        middle = (low + high) // 2
+        if len(Atspi.Text.get_text(accessible, 0, middle)) < index:
+            low = middle + 1
+        else:
+            high = middle
+    # then the images before the character
+    while low < count and not Atspi.Text.get_text(accessible, low, low + 1):
+        low += 1
+    return low
+
+
+def text_extents(accessible, start, end):
+    """
+    Where the characters start to end of the widget, offsets of AT-SPI, are
+    on the screen: x, y, width, height.
+    """
+
+    rect = Atspi.Text.get_range_extents(
+        accessible, start, end, Atspi.CoordType.SCREEN
+    )
+    return rect.x, rect.y, rect.width, rect.height
+
+
+def runs(accessible):
+    """
+    The text of the widget, in runs of characters of the same attributes:
+    the text of each, and those of its attributes that aren't the default,
+    as {"weight": "700"}.
+    """
+
+    count = Atspi.Text.get_character_count(accessible)
+    found = []
+    start = 0
+    while start < count:
+        attributes, start, end = Atspi.Text.get_attribute_run(
+            accessible, start, False
+        )
+        found.append((Atspi.Text.get_text(accessible, start, end), attributes))
+        start = max(end, start + 1)
+    return found
 
 
 def write(accessible, text):

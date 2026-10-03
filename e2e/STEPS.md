@@ -33,6 +33,7 @@ The steps of a user:
 | `Given the workspace is on a drive without a trash` | A folder in `/dev/shm` for the workspace, before Virtualbricks starts: a file system in memory that the system mounts, where the desktop makes no trash; removed once Virtualbricks has stopped |
 | `When I open the Projects window` | Projects…, in the menu Projects |
 | `When I make a new project with the name it suggests, new_project-2` | New…, in the Projects window: its name must be the one the dialog suggests; then Create, and the dialog closes |
+| `When I save the project` | Save, in the menu Projects: the open project, with its README |
 | `When I open the project new_project` | In the Projects window, its row, then Open in its details; the window closes |
 | `When I try to open the project new_project` | The same, without waiting for the window to close |
 | `When I duplicate the project new_project with the name it suggests, new_project-copy` | In the Projects window, its row, then Duplicate… in its details: the name of the copy must be the one the dialog suggests; then Duplicate, with Open the copy as it is, and the dialog closes |
@@ -78,6 +79,11 @@ The steps of a program that fails:
 | `When I close the error` | Its button Close |
 | `When I open the messages window` | Logs, in the menu File |
 | `Then the messages window has the output of sw1: "no switch today"` | A line of the messages comes from sw1 and has the text, as its program wrote it, after `2>` when on its standard error |
+| `Given a vde_switch that writes these lines, and exits with 3`, with a text under it | The same as `writes "no switch today"`, with the lines of the text, written at once |
+| `Then the messages window has the message of sw1: "Process terminated. process ended with exit code 3"` | A line of the messages comes from sw1 and says the text |
+| `Then the messages window has the output of sw1: "no switch today", and 2 more lines folded` | A line of the messages comes from sw1: the first line of the output of its program, after `2>`, and its toggle, `▸ 2 more lines`; no line of them shows under it |
+| `When I unfold the output of sw1 in the messages window` | A click on the toggle of the output of sw1, a run of the text of the window; then it says `▾` |
+| `Then the messages window has the output of sw1, unfolded`, with a text under it | The first line of the text is that of the output of sw1, with its toggle unfolded, `▾ 2 more lines`; the others show under it |
 
 The steps of a switch that another program runs, for a switch wrapper:
 
@@ -103,9 +109,24 @@ The steps of the picture of the lab, in the tab Topology:
 
 | Step | What it does |
 | :- | :- |
-| `When I zoom in on the picture of the lab 5 times` | The tab Topology, then its Zoom In, so many times |
+| `When I zoom in on the picture of the lab 5 times` | The tab Topology, then its Zoom In, so many times; or its Zoom Out, with `zoom out` |
+| `When I zoom the picture of the lab back to 100%` | The tab Topology, then its zoom level, whose tooltip says Zoom to 100% |
+| `Then the zoom level of the picture of the lab is 150%` | The zoom level of the tab says it, as the screen readers read it: AT-SPI can't see the drawing itself |
+| `When I export the picture of the lab to lab.png of my home folder, typing its path` | The tab Topology, More, then Export as Image…; in the file chooser, the path typed in Name in place of the name it suggests, then Save, and it closes |
+| `Then the file lab.png of my home folder is a PNG image, not blank` | The file has the bytes of a PNG at its start, cairo reads it, and its pixels aren't all alike |
 | `When I drag the picture of the lab 100 pixels to the left` | A press on the background, under the bricks, which are a row in the middle of its height, a move to the left or to the right, and a release; the picture must be wider than the tab |
 | `Then the picture of the lab moved 100 pixels to the left` | Its horizontal scroll bar moved as much the other way |
+
+The steps of the tab Readme:
+
+| Step | What it does |
+| :- | :- |
+| `Given the project new_project has the README`, with a text under it | The folder of the project in the workspace, with a `project.toml` if it has none, and the text in its `README`; before Virtualbricks starts, which opens `new_project` at its first start |
+| `When I open the tab Readme` | Its page tab, in the main window, until it is the one that shows; any tab, as `the tab Bricks` |
+| `When I write the README in the Readme tab`, with a text under it | The tab Readme, its Edit, then the text typed in its editor |
+| `When I show the preview of the README` | The Preview of the tab Readme |
+| `Then the Readme tab shows the README rendered`, with a table under it | The runs of text of the preview, all of them and in order, a line at a time: the text of each, without the spaces at its ends, and its style, as AT-SPI tells it: `large`, `bold`, `italic`, `monospace`, or none |
+| `Then the README file of new_project has`, with a text under it | The file `README` of the folder of the project has the text, once Virtualbricks has written it, as it does when it saves the project |
 
 The steps of the Settings window:
 
@@ -215,6 +236,7 @@ def stop_brick(virtualbricks, name):
   | `enabled(role, name, within=None)` | The widget, once it shows and is enabled |
   | `disabled(role, name, within=None)` | The widget, once it shows and is disabled |
   | `click(role, name, within=None, enabled=True)` | Clicks it, once it shows and is enabled; with `enabled=False`, also if it is disabled |
+  | `click_text(widget, index, length)` | Clicks the middle of length characters of the text of the widget, from the index of the character in `a11y.text()`: a link or a toggle of a text view, which must show. GTK 3 counts the images of a text view in the offsets of AT-SPI, not in its text: `a11y.offset()` turns one into the other |
   | `spin(name, by, within=None)` | Clicks the + of the spin button `by` times, or its - `-by` times; after each click, its value changes |
   | `type(text, role, name=None, within=None, over=False)` | Clicks it, once it shows and is enabled, and types text at its cursor; then it has the text: see [What it can't do yet](README.md#what-it-cant-do-yet). With `over`, in place of the text it has, as a user who selects it all first |
   | `key(keys, window)` | Presses keys, as `Escape`, `Return` or `Control+l`, in window, a frame or a dialog, once it is active: click in it first, as the keys go to the window clicked last. Text goes with `type()` |
