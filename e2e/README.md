@@ -51,6 +51,7 @@ pytest --gherkin-terminal-reporter -vv   # each scenario, step by step
 pytest -s                                # with what the steps print
 pytest --count 20 -k switch_runs         # 20 times: is it flaky?
 pytest --record-all -k switch_runs       # a video, also if it passes
+pytest -n 4                              # four scenarios at a time
 ```
 
 `pytest` runs the end-to-end tests, and those of `recording.py`
@@ -394,7 +395,8 @@ faster than the eye; the waits last as long as they did.
 
 `--record-all` records every scenario, also those that pass: for one at a
 time, as `pytest --record-all -k switch_runs`. Each takes a second or two
-more.
+more. With `-n`, the list at the end is missing: the step that failed says
+the folder.
 
 The browser keeps what `broadwayd` sends, the images of the windows,
 compressed, and where they are; nothing is decoded while the scenario runs.
