@@ -58,8 +58,6 @@
   its More menu (12 §9)
 - [ ] Make a brick already plugged into a switch, from the switch's
   menu: a tap, a machine or a wire (12 §9)
-- [ ] Name a duplicate as New Brick names a brick: `sw3`, not
-  `copy_of_sw1` (12 §9)
 - [ ] Set a tap's address after its process starts, through sudo:
   `address_mode`, `ip_address`, `netmask` and `gateway`; today nothing
   does (10 §13, 11 §11)
@@ -280,6 +278,10 @@
 - [ ] Update the copyright notice
 
 # DONE
+
+- [x] Duplicate names a copy after its brick or event, with the number at
+  the end increased to the first free one: `sw2` for `sw1`, `node2` for
+  `node`; not `copy_of_sw1` (12 §9)
 
 - [x] `virtualbricks --connect` alone opens the windows of a Virtualbricks
   of yours on this machine, the one that listens on the socket of
