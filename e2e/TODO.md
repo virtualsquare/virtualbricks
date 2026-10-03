@@ -204,15 +204,26 @@ that the tests can't do yet: those needs come first.
 
 # Events
 
-- [ ] Make an event that starts sw1 after 2 seconds, with the name it
+- [x] Make an event that starts sw1 after 2 seconds, with the name it
   suggests, and start it
   its row counts down, then sw1 runs; `@needs-vde_switch`
-- [ ] Run an event now, from its menu
-- [ ] Stop an event while it waits
+  "An event made with the name it suggests counts down its wait, then
+  starts sw1", `events.feature`
+- [x] Run an event now, from its menu
+  sw1 runs, and the event doesn't wait
+  "Run Now runs the actions of an event at once, without its wait",
+  `events.feature`
+- [x] Stop an event while it waits
   sw1 never starts
-- [ ] Start an event when a brick starts: When It Starts in the menu of
+  "An event stopped while it waits never starts sw1", `events.feature`
+- [x] Start an event when a brick starts: When It Starts in the menu of
   sw1
-- [ ] See an event without actions: it can't start, and its row says why
+  sw2, which the event starts, runs once sw1 starts
+  "An event chosen in When It Starts of sw1 runs when sw1 starts",
+  `events.feature`
+- [x] See an event without actions: it can't start, and its row says why
+  "An event without actions can't start, and its row says why",
+  `events.feature`
 
 # Settings
 

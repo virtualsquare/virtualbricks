@@ -489,9 +489,18 @@ class Virtualbricks:
         anyway (_gtk_key_hash_lookup), so a key sometimes matches an
         accelerator or a mnemonic, as a "p" Ctrl+P and a "b" the Alt+B of
         the tab Bricks.
+
+        A spin button is clicked in its text, left of its - and +: the
+        middle of it is its -.
         """
 
-        widget = self.click(role, name, within)
+        if role == "spin button":
+            widget = self.enabled(role, name, within)
+            x, y, width, height = a11y.extents(widget)
+            # as spin() reckons - and +
+            self.browser.click(x + (width - 2 * height) // 2, y + height // 2)
+        else:
+            widget = self.click(role, name, within)
         if over:
             a11y.erase(widget)
         a11y.write(widget, text)

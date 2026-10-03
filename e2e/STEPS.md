@@ -105,6 +105,26 @@ workspace:
 | `Then the other Virtualbricks names the process of Virtualbricks` | Its output says `Held by process PID`, that of the first |
 | `Then sw1 runs in the other Virtualbricks` | The processes of its start are the other's, and the windows of it run none |
 
+The steps of the events, in the tab Events:
+
+| Step | What it does |
+| :- | :- |
+| `When I make an event that starts sw1 after 2 seconds, with the name it suggests, new_event` | New Event, in the tab Events: the name must be the one the dialog suggests; the seconds typed in Wait, then Create; in the settings of the event, Add Action, Start a brick and the brick, then OK |
+| `When I make an event that starts sw2 at once, with the name it suggests, new_event` | The same, with 0 seconds in Wait |
+| `When I make an event without actions, with the name it suggests, new_event` | New Event, in the tab Events, with the name it suggests: Create, then OK in the settings of the event |
+| `When I start the event new_event` | Its Start, in the tab Events; then it waits: its Stop shows |
+| `When I stop the event new_event while it waits` | Its Stop, in the tab Events, while its row says Waiting; then its Start shows, and its row says Ready |
+| `When I run the event new_event now, from its menu` | Run Now, in its menu, in the tab Events; then the menu closes |
+| `When I choose new_event in When It Starts, in the menu of sw1` | In the menu of the brick, When It Starts or When It Stops, then the event, and Escape, as a choice leaves the menu open. The choices of a menu of GTK 3 don't tell AT-SPI which is on: the row of the event says it, `· when sw1 starts` |
+| `Then new_event counts down from 2 seconds, then starts sw1` | Its row says `Waiting · 2 s`, then `Waiting · 1 s`, each in turn, while no process of sw1 runs; then Ready, and a process of sw1 runs |
+| `Then the list of events has`, with a table under it | The rows of the tab Events, all of them and in order, once they are those of the table: the name of each event, its detail and its state; with only the titles of the columns, no event, as the tab says No Events Yet |
+
+The steps of a row of the tab Bricks that find it by its name take an event
+too, in the tab Events: `Then new_event can't start: "Add an action to
+new_event first"`, `When I try to start new_event`, `Then new_event is not
+configured`. A step of a brick needs the tab Bricks: `When I open the tab
+Bricks` first, after a step of the events.
+
 The steps of the picture of the lab, in the tab Topology:
 
 | Step | What it does |
@@ -238,7 +258,7 @@ def stop_brick(virtualbricks, name):
   | `click(role, name, within=None, enabled=True)` | Clicks it, once it shows and is enabled; with `enabled=False`, also if it is disabled |
   | `click_text(widget, index, length)` | Clicks the middle of length characters of the text of the widget, from the index of the character in `a11y.text()`: a link or a toggle of a text view, which must show. GTK 3 counts the images of a text view in the offsets of AT-SPI, not in its text: `a11y.offset()` turns one into the other |
   | `spin(name, by, within=None)` | Clicks the + of the spin button `by` times, or its - `-by` times; after each click, its value changes |
-  | `type(text, role, name=None, within=None, over=False)` | Clicks it, once it shows and is enabled, and types text at its cursor; then it has the text: see [What it can't do yet](README.md#what-it-cant-do-yet). With `over`, in place of the text it has, as a user who selects it all first |
+  | `type(text, role, name=None, within=None, over=False)` | Clicks it, once it shows and is enabled, a spin button in its text, left of its - and +, and types text at its cursor; then it has the text: see [What it can't do yet](README.md#what-it-cant-do-yet). With `over`, in place of the text it has, as a user who selects it all first |
   | `key(keys, window)` | Presses keys, as `Escape`, `Return` or `Control+l`, in window, a frame or a dialog, once it is active: click in it first, as the keys go to the window clicked last. Text goes with `type()` |
   | `drag(start, end, ready=None)` | Presses at start, a point of the screen, moves to end and releases there; `ready()`, if given, right before the press, half a second after the click before |
   | `choose(item, menu)` | A menu of the menu bar, then its item |

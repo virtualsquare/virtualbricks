@@ -786,17 +786,30 @@ def bricks_listed(virtualbricks, datatable):
     row has the name of the brick, its detail and its state.
     """
 
-    def rows():
-        return datatable[:1] + brick_rows(virtualbricks)
+    has_rows(
+        virtualbricks,
+        "the list of bricks",
+        lambda: brick_rows(virtualbricks),
+        datatable,
+    )
+
+
+def has_rows(virtualbricks, what, rows, datatable):
+    """
+    rows(), the rows of a list, once they are those of the table, whose
+    first line has the titles of the columns; what says the list.
+    """
+
+    def found():
+        return datatable[:1] + rows()
 
     try:
         virtualbricks.wait_for(
-            lambda: rows() == datatable,
-            "the list of bricks has the rows of the table",
+            lambda: found() == datatable, f"{what} has the rows of the table"
         )
     except AssertionError:
         raise AssertionError(
-            f"the list of bricks has {rows()}, not {datatable}"
+            f"{what} has {found()}, not {datatable}"
         ) from None
 
 
@@ -1552,6 +1565,229 @@ def project_image(virtualbricks, name, file):
     found = os.path.join(os.path.dirname(path), images[name]["path"])
     wanted = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
     assert os.path.normpath(found) == wanted, f"{name} is of {found}"
+
+
+# Events
+
+EVENTS = "Events"
+# What the tab Events says in place of its list, when there are no events
+NO_EVENTS = "No Events Yet"
+# The kind of an action that starts a brick, in the settings of an event
+START_A_BRICK = "Start a brick"
+# The state of an event in its row: waiting, before the seconds left, or
+# ready
+WAITING = "Waiting · "
+READY = "Ready"
+# The submenus of the menu of a brick that choose an event
+WHEN_IT = ("When It Starts", "When It Stops")
+
+
+@when(
+    words(
+        "I make an event that starts {brick:Brick} after {seconds:d}"
+        " seconds, with the name it suggests, {name:Brick}"
+    )
+)
+def make_event(virtualbricks, brick, seconds, name):
+    """
+    New Event, in the tab Events: the name must be the one the dialog
+    suggests; the seconds typed in Wait, then Create; in the settings of the
+    event, Add Action, Start a brick and the brick, then OK.
+    """
+
+    new_event(virtualbricks, name, seconds)
+    virtualbricks.click("button", "Add Action")
+    action = virtualbricks.find("combo box", START_A_BRICK).get_parent()
+    if virtualbricks.shows("combo box", brick, within=action) is None:
+        # the first brick, which it has at first
+        combo = next(
+            combo
+            for combo in harness.a11y.find_all(action, "combo box")
+            if combo.get_name() != START_A_BRICK
+        )
+        virtualbricks.click("combo box", combo.get_name(), within=action)
+        virtualbricks.click("menu item", brick, within=combo)
+    virtualbricks.find("combo box", brick, within=action)
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
+@when(
+    words(
+        "I make an event that starts {brick:Brick} at once, with the name it"
+        " suggests, {name:Brick}"
+    )
+)
+def make_event_at_once(virtualbricks, brick, name):
+    """The same, with 0 seconds in Wait."""
+
+    make_event(virtualbricks, brick, 0, name)
+
+
+@when(
+    words(
+        "I make an event without actions, with the name it suggests,"
+        " {name:Brick}"
+    )
+)
+def make_empty_event(virtualbricks, name):
+    """
+    New Event, in the tab Events: the name must be the one the dialog
+    suggests; then Create, and OK in the settings of the event.
+    """
+
+    new_event(virtualbricks, name)
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
+def new_event(virtualbricks, name, seconds=None):
+    """
+    New Event, in the tab Events: the name must be the one the dialog
+    suggests; the seconds, if given, typed in Wait; then Create, and the
+    settings of the event show.
+    """
+
+    open_events(virtualbricks)
+    virtualbricks.click("button", "New Event")
+    dialog = virtualbricks.find("dialog", "New Event")
+    suggests(virtualbricks, dialog, "Name", name)
+    if seconds is not None:
+        virtualbricks.type(
+            str(seconds), "spin button", "Wait", within=dialog, over=True
+        )
+    virtualbricks.click("button", "Create", within=dialog)
+    virtualbricks.gone("dialog", "New Event")
+    virtualbricks.find("label", "Event settings")
+
+
+def open_events(virtualbricks):
+    """The tab Events, unless it is the one that shows."""
+
+    tab = virtualbricks.find("page tab", EVENTS)
+    if not harness.a11y.selected(tab):
+        open_tab(virtualbricks, EVENTS)
+
+
+@when(words("I start the event {name:Brick}"))
+def start_event(virtualbricks, name):
+    """Its Start, in the tab Events; then it waits: its Stop shows."""
+
+    open_events(virtualbricks)
+    row = virtualbricks.row(name)
+    virtualbricks.click("button", f"Start {name}", within=row)
+    virtualbricks.find("button", f"Stop {name}", within=row)
+
+
+@when(words("I stop the event {name:Brick} while it waits"))
+def stop_event(virtualbricks, name):
+    """
+    Its Stop, in the tab Events, while its row says it waits; then its
+    Start shows, and its row says Ready.
+    """
+
+    open_events(virtualbricks)
+    row = virtualbricks.row(name)
+    state = event_state(row)
+    assert state.startswith(WAITING), f"{name} doesn't wait: {state!r}"
+    virtualbricks.click("button", f"Stop {name}", within=row)
+    virtualbricks.find("button", f"Start {name}", within=row)
+    virtualbricks.find("label", READY, within=row)
+
+
+@when(words("I run the event {name:Brick} now, from its menu"))
+def run_event_now(virtualbricks, name):
+    """Run Now, in its menu, in the tab Events; then the menu closes."""
+
+    open_events(virtualbricks)
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Run Now")
+    virtualbricks.gone("button", "Run Now")
+
+
+@when(
+    words("I choose {event:Brick} in {submenu}, in the menu of {name:Brick}")
+)
+def choose_event(virtualbricks, event, submenu, name):
+    """
+    In the menu of the brick, When It Starts or When It Stops, then the
+    event; then Escape closes the menu, which a choice leaves open. The
+    choices of a menu of GTK 3 don't tell AT-SPI which is on: the row of
+    the event says it.
+    """
+
+    assert submenu in WHEN_IT, f"{submenu} is none of {WHEN_IT}"
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", submenu)
+    virtualbricks.click("radio button", event)
+    virtualbricks.key("Escape", virtualbricks.find("frame"))
+    virtualbricks.gone("radio button", event)
+
+
+def event_state(row):
+    """What the row of an event says of it: Ready, Waiting · 2 s, …"""
+
+    labels = list(harness.a11y.find_all(row, "label"))
+    # after the name and the detail
+    return labels[-1].get_name()
+
+
+@then(
+    words(
+        "{name:Brick} counts down from {seconds:d} seconds, then starts"
+        " {brick:Brick}"
+    )
+)
+def counts_down(virtualbricks, name, seconds, brick):
+    """
+    The row of the event says that it waits, with the seconds left, from
+    seconds down to 1, while no process of the brick runs; then it says
+    Ready, and a process of the brick runs.
+    """
+
+    row = virtualbricks.row(name)
+    said = []
+
+    def ready():
+        state = event_state(row)
+        if state.startswith(WAITING) and virtualbricks.bricks(brick):
+            # the brick starts as the row says Ready, not before
+            state = event_state(row)
+            assert not state.startswith(
+                WAITING
+            ), f"{brick} runs while the row of {name} says {state!r}"
+        if not said or said[-1] != state:
+            said.append(state)
+        return state == READY
+
+    virtualbricks.wait_for(
+        ready,
+        f"the row of {name} says {READY}",
+        timeout=seconds + harness.TIMEOUT,
+    )
+    wanted = [f"{WAITING}{left} s" for left in range(seconds, 0, -1)]
+    wanted.append(READY)
+    assert said == wanted, f"the row of {name} said {said}, not {wanted}"
+    virtualbricks.wait_for(
+        lambda: virtualbricks.bricks(brick), f"a process of {brick} runs"
+    )
+
+
+@then("the list of events has")
+def events_listed(virtualbricks, datatable):
+    """
+    The rows of the tab Events, all of them and in order, once they are
+    those of the table under the step, whose first line has the titles of
+    the columns: each row has the name of the event, its detail and its
+    state.
+    """
+
+    has_rows(
+        virtualbricks,
+        "the list of events",
+        lambda: tab_rows(virtualbricks, EVENTS, NO_EVENTS),
+        datatable,
+    )
 
 
 # Topology
