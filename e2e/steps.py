@@ -39,6 +39,7 @@ import os
 import re
 import shlex
 import shutil
+import socket
 import subprocess
 import tarfile
 import tempfile
@@ -599,6 +600,29 @@ def turn_brick_setting(virtualbricks, state, setting, name, page):
     virtualbricks.find("button", f"Start {name}")
 
 
+@when(
+    words(
+        'I choose "{choice}" for "{setting}" in the settings of {name:Brick},'
+        " on its page {page}"
+    )
+)
+def choose_brick_setting(virtualbricks, choice, setting, name, page):
+    """
+    Configure… in its menu; on the page of its settings, the list of the
+    setting, which shows another choice, then the choice; then OK.
+    """
+
+    configure(virtualbricks, name)
+    settings_page(virtualbricks, page)
+    row = virtualbricks.row(setting)
+    # named after what it shows
+    shown = virtualbricks.enabled("combo box", within=row).get_name()
+    assert shown != choice, f"{setting} is already {choice}"
+    choose_in_combo(virtualbricks, row, shown, choice)
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
 @when(words("I terminate {name:Brick}, from its menu"))
 def terminate(virtualbricks, brick_processes, name):
     """
@@ -606,26 +630,50 @@ def terminate(virtualbricks, brick_processes, name):
     again, and the processes of its start have quit.
     """
 
-    virtualbricks.click("button", f"Menu of {name}")
-    process = virtualbricks.wait_for(
-        lambda: next(
-            (
-                item
-                for item in virtualbricks.names("button")
-                if item.startswith("Process ")
-            ),
-            None,
-        ),
-        f"the menu of {name} has its process",
-    )
-    virtualbricks.click("button", process)
-    virtualbricks.click("button", "Terminate")
+    process_item(virtualbricks, name, "Terminate")
     virtualbricks.find("button", f"Start {name}")
     pids = brick_processes.get(name, set())
     virtualbricks.wait_for(
         lambda: not pids & virtualbricks.children(),
         f"the processes of {name} quit",
     )
+
+
+@when(words("I pause {name:Brick}, from its menu"))
+def pause(virtualbricks, name):
+    """In its menu, Process and its number, then Pause: SIGSTOP."""
+
+    process_item(virtualbricks, name, "Pause")
+
+
+@when(words("I continue {name:Brick}, from its menu"))
+def continue_(virtualbricks, name):
+    """In its menu, Process and its number, then Continue: SIGCONT."""
+
+    process_item(virtualbricks, name, "Continue")
+
+
+def process_item(virtualbricks, name, item):
+    """
+    In the menu of the running brick, Process and its number, then item;
+    then the menu closes.
+    """
+
+    virtualbricks.click("button", f"Menu of {name}")
+    process = virtualbricks.wait_for(
+        lambda: next(
+            (
+                button
+                for button in virtualbricks.names("button")
+                if button.startswith("Process ")
+            ),
+            None,
+        ),
+        f"the menu of {name} has its process",
+    )
+    virtualbricks.click("button", process)
+    virtualbricks.click("button", item)
+    virtualbricks.gone("button", item)
 
 
 @when(words("I duplicate {name:Brick} from its menu"))
@@ -1017,6 +1065,50 @@ def cant_start(virtualbricks, name, why):
         ) from None
 
 
+@then(words("the process of {name:Brick} is paused"))
+def process_paused(virtualbricks, brick_processes, name):
+    """
+    The processes of its start are stopped, as SIGSTOP leaves them: T in
+    /proc; its row still says Running, as nothing tells it.
+    """
+
+    pids = brick_processes[name]
+    assert pids, f"{name} runs no process"
+    virtualbricks.wait_for(
+        lambda: all(process_state(pid) == "T" for pid in pids),
+        f"the processes of {name} are stopped",
+    )
+
+
+@then(words("the process of {name:Brick} runs again"))
+def process_runs_again(virtualbricks, brick_processes, name):
+    """The processes of its start run: none is stopped, none has quit."""
+
+    pids = brick_processes[name]
+    assert pids, f"{name} runs no process"
+    virtualbricks.wait_for(
+        lambda: all(
+            process_state(pid) not in ("T", "Z", None) for pid in pids
+        ),
+        f"the processes of {name} run",
+    )
+
+
+def process_state(pid):
+    """
+    The state of the process pid, as /proc says it: R, S, T when stopped,
+    Z once it has quit; None once it is gone.
+    """
+
+    try:
+        with open(f"/proc/{pid}/stat") as file:
+            stat = file.read()
+    except OSError:
+        return None
+    # after the name, which is in brackets and may have spaces
+    return stat[stat.rindex(")") + 2 :].split()[0]
+
+
 @then(words("{name:Brick} is stopped"))
 @then(words("{name:Brick} is not running"))
 def brick_stopped(virtualbricks, brick_processes, name):
@@ -1034,6 +1126,135 @@ def brick_stopped(virtualbricks, brick_processes, name):
         and not virtualbricks.bricks(name),
         f"the processes of {name} quit",
     )
+
+
+# Virtual machines
+
+
+@when(
+    words("I connect {vm:Brick} to {other:Brick}, with Connect To in its menu")
+)
+def connect_to(virtualbricks, vm, other):
+    """Connect To, in its menu, then the other brick; then the menu closes."""
+
+    virtualbricks.click("button", f"Menu of {vm}")
+    virtualbricks.click("button", "Connect To")
+    virtualbricks.click("button", other)
+    virtualbricks.gone("button", "Connect To")
+
+
+@then(words("{vm:Brick} runs {program}, with no display"))
+def runs_program(virtualbricks, brick_processes, vm, program):
+    """It runs, and a process of its start is program, with -display none."""
+
+    brick_running(virtualbricks, brick_processes, vm)
+    programs = []
+    for pid in brick_processes[vm]:
+        words = virtualbricks.command_line(pid)
+        programs.append(os.path.basename(words[0]) if words else None)
+        if programs[-1] == program:
+            options = list(zip(words, words[1:]))
+            assert ("-display", "none") in options, f"a display: {words}"
+            return
+    raise AssertionError(f"{vm} runs {programs}, not {program}")
+
+
+@then(words("{vm:Brick} runs with a card in the socket of {switch:Brick}"))
+def card_on_switch(virtualbricks, brick_processes, vm, switch):
+    """
+    It runs, and its QEMU has a VDE network card whose socket is the one
+    the vde_switch of switch listens on, after -s.
+    """
+
+    brick_running(virtualbricks, brick_processes, vm)
+    wanted = switch_socket(virtualbricks, brick_processes, switch)
+    found = []
+    for pid in brick_processes[vm]:
+        words = virtualbricks.command_line(pid)
+        for option, value in zip(words, words[1:]):
+            # vde,id=vx0,sock=PATH
+            kind, _, settings = value.partition(",")
+            if option == "-netdev" and kind == "vde":
+                found += [
+                    setting.removeprefix("sock=")
+                    for setting in settings.split(",")
+                    if setting.startswith("sock=")
+                ]
+    assert wanted in found, f"the cards of {vm} are in {found}, not {wanted}"
+
+
+@then(words('the monitor of {vm:Brick} answers "{command}" with "{answer}"'))
+def monitor_answers(virtualbricks, brick_processes, vm, command, answer):
+    """
+    The monitor of its QEMU, on the socket of its command line, answers the
+    command with a line of the answer.
+    """
+
+    said = monitor(virtualbricks, brick_processes, vm, command)
+    assert (
+        answer in said
+    ), f"the monitor of {vm} answers {said}, not {answer!r}"
+
+
+# What the monitor of QEMU writes when it waits for a command
+MONITOR_PROMPT = b"(qemu) "
+
+
+def monitor(virtualbricks, brick_processes, vm, command):
+    """
+    The lines that the monitor of the QEMU of vm answers to command, on the
+    socket of a -chardev that a -mon of its command line names.
+    """
+
+    path = monitor_socket(virtualbricks, brick_processes, vm)
+    with socket.socket(socket.AF_UNIX) as monitor:
+        # it waits for a reading, not for a time
+        monitor.settimeout(harness.TIMEOUT)
+        monitor.connect(path)
+        read_to_prompt(monitor)
+        monitor.sendall(command.encode() + b"\n")
+        said = read_to_prompt(monitor)
+    # the echo of the command, with the codes of a terminal, then the
+    # answer, then the prompt
+    return [line.strip() for line in said.split("\r\n")[1:-1]]
+
+
+def monitor_socket(virtualbricks, brick_processes, vm):
+    """The path of the socket of the monitor of the QEMU of vm."""
+
+    for pid in brick_processes[vm]:
+        words = virtualbricks.command_line(pid)
+        options = list(zip(words, words[1:]))
+        # -mon chardev=ID, and -chardev socket,id=ID,path=PATH,…
+        monitors = {
+            value.removeprefix("chardev=")
+            for option, value in options
+            if option == "-mon"
+        }
+        for option, value in options:
+            kind, _, settings = value.partition(",")
+            settings = dict(
+                setting.partition("=")[::2] for setting in settings.split(",")
+            )
+            if (
+                option == "-chardev"
+                and kind == "socket"
+                and settings.get("id") in monitors
+                and "path" in settings
+            ):
+                return settings["path"]
+    raise AssertionError(f"no QEMU of {vm} has a monitor on a socket")
+
+
+def read_to_prompt(monitor):
+    """What the monitor writes until its prompt."""
+
+    said = b""
+    while not said.endswith(MONITOR_PROMPT):
+        data = monitor.recv(4096)
+        assert data, f"the monitor closed, after {said!r}"
+        said += data
+    return said.decode(errors="replace")
 
 
 # Projects

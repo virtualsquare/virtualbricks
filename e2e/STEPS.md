@@ -22,7 +22,10 @@ The steps of a user:
 | `When I give sw1 34 ports and hub mode in its settings, then cancel` | The same, then Cancel |
 | `When I give sw1 34 ports and hub mode in its settings, then press Escape` | The same, then Escape |
 | `When I turn on "No display" in the settings of vm1, on its page Display` | Configure… in its menu; the page, in the list at the left of its settings, then the switch of the setting, which must be the other way, turned on, or off with `turn off`; then OK |
+| `When I choose "x86_64" for "Program" in the settings of vm1, on its page Machine` | Configure… in its menu; the page, in the list at the left of its settings, then the list of the setting, which must show another choice, and the choice; then OK |
 | `When I terminate vm1, from its menu` | Process and its number, in its menu, then Terminate: SIGTERM, which a machine stops at, where its Stop asks the system of the machine to stop; then it can start again, and the processes of its start have quit |
+| `When I pause vm1, from its menu` | Process and its number, in its menu, then Pause: SIGSTOP, which stops the processes of the brick; its row still says Running |
+| `When I continue vm1, from its menu` | The same, then Continue: SIGCONT |
 | `When I duplicate sw1 from its menu` | Duplicate, in its menu; then the list has one more brick |
 | `When I delete sw2 from its menu, and confirm` | Delete…, in its menu, then Yes to the question that names it |
 | `When I start all the bricks` | Start All; each brick whose row said Stopped must run, with the process its row tells, and Start All must start no other |
@@ -48,6 +51,8 @@ The steps of a user:
 | `Then sw1 is running` | Its row says Running, and the processes of its start run; when no step started it, as with `--command`, the process its row tells, which has its sockets |
 | `Then sw1 is still running` | The same |
 | `Then w1 runs with the sockets of sw1 and sw2` | It runs, and a `vde_plug` of its start is in the socket of each switch: the one its `vde_switch` listens on |
+| `Then the process of vm1 is paused` | The processes of its start are stopped, as SIGSTOP leaves them: `T` in `/proc` |
+| `Then the process of vm1 runs again` | None of them is stopped, and none has quit |
 | `Then sw1 is stopped` | Its row says Stopped, and no process of it runs: those of its start have quit, and none has its sockets |
 | `Then sw1 is not running` | The same |
 | `Then sw1 runs with 34 ports, as a hub` | It runs, and its `vde_switch` has `-n 34` and `-x` |
@@ -71,6 +76,15 @@ The steps of a user:
 | `Then project.toml has the bricks`, with a table under it | The bricks of the file of the project, all of them and in order: the name of each and its type |
 | `Then project.toml has sw1 with`, with a table under it | Its settings in the file of the project, a name and a value each, the value as TOML writes it |
 | `Then project.toml has sw2 with the settings of sw1` | The two bricks have the same settings in the file of the project |
+
+The steps of the virtual machines:
+
+| Step | What it does |
+| :- | :- |
+| `When I connect vm1 to sw1, with Connect To in its menu` | Connect To, in its menu, then the brick; then the menu closes |
+| `Then vm1 runs qemu-system-x86_64, with no display` | It runs, and a process of its start is the program, with `-display none` |
+| `Then vm1 runs with a card in the socket of sw1` | It runs, and its QEMU has a card of VDE, `-netdev vde`, whose `sock=` is the socket that the `vde_switch` of sw1 listens on |
+| `Then the monitor of vm1 answers "info status" with "VM status: running"` | The monitor of its QEMU, on the socket of a `-chardev` that a `-mon` of its command line names: a line of its answer to the command is the text |
 
 The steps of a program that fails:
 

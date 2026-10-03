@@ -101,15 +101,23 @@ that the tests can't do yet: those needs come first.
 
 ## Virtual machines
 
-- [ ] Start a virtual machine with an empty disk, headless, and stop it
+- [x] Start a virtual machine with an empty disk, headless, and stop it
   QEMU runs with the disk of the project, and quits;
-  `@needs-qemu-system-x86_64`, a disk image of a fixture
-- [ ] Connect a virtual machine to a switch, with Connect To in its menu
+  `@needs-qemu-system-x86_64`, a disk image of a fixture; Terminate stops
+  it, as Stop asks the system of the machine, which an empty disk lacks
+  "A virtual machine with no display runs QEMU on its disk, until it is
+  terminated", `machines.feature`
+- [x] Connect a virtual machine to a switch, with Connect To in its menu
   its row says "eth0 on sw1"; started, QEMU's command line has the
   socket of sw1
-- [ ] Pause and continue a running virtual machine from Process in its
+  "A virtual machine connected to a switch with Connect To runs with a
+  card in the socket of the switch", `machines.feature`
+- [x] Pause and continue a running virtual machine from Process in its
   menu
-  its row says so, and QEMU's monitor too
+  SIGSTOP stops QEMU, as `/proc` says; its row still says Running, and
+  its monitor doesn't answer until Continue, then it says it runs
+  "A virtual machine paused from the menu of its process is stopped by
+  the system, until it continues", `machines.feature`
 
 ### Disk images
 

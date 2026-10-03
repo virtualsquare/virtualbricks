@@ -54,6 +54,10 @@
   (07 §10)
 - [ ] Disconnect a brick from its menu: today only its panel does it
   (07 §10)
+- [ ] Say Paused in the row of a brick that Pause stopped, until
+  Continue: today the row says Running, and only `/proc` knows; for a
+  machine, maybe QEMU's own `stop` and `cont`, whose monitor answers while
+  it is paused, and says so
 - [ ] Offer New Brick in the Topology tab too: on its empty page and in
   its More menu (12 §9)
 - [ ] Make a brick already plugged into a switch, from the switch's
