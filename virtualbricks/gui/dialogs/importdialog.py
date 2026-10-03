@@ -336,8 +336,11 @@ class ImportDialog(Window):
         )
         box.pack_start(self.archive_label, False, False, 0)
 
-        box.pack_start(_label(_("Name"), bold=True), False, False, 0)
         self.name_entry = Gtk.Entry(visible=True, activates_default=True)
+        # the screen readers say the label with the field
+        name_label = _label(_("Name"), bold=True)
+        name_label.set_mnemonic_widget(self.name_entry)
+        box.pack_start(name_label, False, False, 0)
         box.pack_start(self.name_entry, False, False, 0)
         self.name_message = _label(dim=True, wrap=True)
         box.pack_start(self.name_message, False, False, 0)
