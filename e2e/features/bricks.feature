@@ -147,3 +147,42 @@ Feature: Bricks
     And project.toml has the bricks
       | Brick | Type   |
       | sw1   | switch |
+
+  @needs-vde_switch
+  Scenario: The switch over the list shows only the running bricks, with their process
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I add the switch sw2
+    And I start sw1
+    And I show only the running bricks
+    Then the list of bricks shows only sw1, with its process
+    When I show all the bricks
+    Then the list of bricks has
+      | Brick | Detail            | State   |
+      | sw1   | Switch · 32 ports | Running |
+      | sw2   | Switch · 32 ports | Stopped |
+
+  @needs-vde_switch
+  Scenario: Quit is refused while a switch runs, and the switch still runs
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I start sw1
+    And I quit Virtualbricks
+    Then an error says "Cannot close virtualbricks: there are running bricks"
+    When I close the error
+    Then Virtualbricks hasn't quit
+    And sw1 is still running
+
+  Scenario: A switch added is in the project after a quit, and shows at the next start
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I quit Virtualbricks
+    Then Virtualbricks has quit
+    And project.toml has the bricks
+      | Brick | Type   |
+      | sw1   | switch |
+    When I start Virtualbricks again
+    Then the main window shows the project new_project
+    And the list of bricks has
+      | Brick | Detail            | State   |
+      | sw1   | Switch · 32 ports | Stopped |

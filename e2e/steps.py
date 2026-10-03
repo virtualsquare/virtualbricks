@@ -157,6 +157,15 @@ def virtualbricks_quit(virtualbricks):
     assert virtualbricks.bricks() == [], "bricks still run"
 
 
+@then("Virtualbricks hasn't quit")
+def virtualbricks_not_quit(virtualbricks):
+    """It still runs, and its main window shows."""
+
+    status = virtualbricks.process.poll()
+    assert status is None, f"Virtualbricks exited with {status}"
+    virtualbricks.find("frame")
+
+
 def project_file(virtualbricks):
     """The file of the project, the one of the workspace."""
 
@@ -453,6 +462,30 @@ def stop_all(virtualbricks):
         virtualbricks.find("button", f"Start {name}")
 
 
+@when("I show only the running bricks")
+def only_running(virtualbricks):
+    """Running, of the switch over the list; then it is on."""
+
+    show_bricks(virtualbricks, "Running")
+
+
+@when("I show all the bricks")
+def all_bricks(virtualbricks):
+    """All, of the switch over the list; then it is on."""
+
+    show_bricks(virtualbricks, "All")
+
+
+def show_bricks(virtualbricks, which):
+    """A button of the switch over the list of bricks; then it is on."""
+
+    tab = virtualbricks.find("page tab", "Bricks")
+    button = virtualbricks.click("radio button", which, within=tab)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(button), f"{which} is on"
+    )
+
+
 def process(virtualbricks, name):
     """
     The process of the running brick name, as its row tells: the tooltip
@@ -535,6 +568,38 @@ def bricks_listed(virtualbricks, datatable):
         raise AssertionError(
             f"the list of bricks has {rows()}, not {datatable}"
         ) from None
+
+
+@then(words("the list of bricks shows only {name:Brick}, with its process"))
+def only_listed(virtualbricks, brick_processes, name):
+    """
+    The list has its row alone, once it says Running and, in place of its
+    summary, a process of its start, which still runs.
+    """
+
+    pids = brick_processes[name]
+
+    def listed():
+        rows = brick_rows(virtualbricks)
+        if len(rows) != 1 or rows[0][0] != name or rows[0][2] != "Running":
+            return None
+        # the last part of its detail
+        process = rows[0][1].rpartition(" · ")[2]
+        for pid in pids:
+            if process == f"process {pid}":
+                return pid
+        return None
+
+    try:
+        pid = virtualbricks.wait_for(
+            listed, f"the list of bricks shows only {name}, with its process"
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the list of bricks has {brick_rows(virtualbricks)}, not only"
+            f" {name} with one of {pids}"
+        ) from None
+    assert pid in virtualbricks.children(), f"the process {pid} quit"
 
 
 @then(

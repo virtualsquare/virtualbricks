@@ -60,12 +60,15 @@ that the tests can't do yet: those needs come first.
   `bricks.feature`
 - [x] Delete a brick from its menu, after the confirmation
   "Delete removes a brick, once confirmed", `bricks.feature`
-- [ ] Show only the running bricks with the switch over the list
-- [ ] Quit while a switch runs
-  refused, "Cannot close virtualbricks: there are running bricks"; the
-  switch still runs
-- [ ] Add a switch, quit and start again
-  `project.toml` has sw1, and the main window shows it
+- [x] Show only the running bricks with the switch over the list
+  "The switch over the list shows only the running bricks, with their
+  process", `bricks.feature`
+- [x] Quit while a switch runs
+  "Quit is refused while a switch runs, and the switch still runs",
+  `bricks.feature`
+- [x] Add a switch, quit and start again
+  "A switch added is in the project after a quit, and shows at the next
+  start", `bricks.feature`
 
 ## Virtual machines
 

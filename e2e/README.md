@@ -145,6 +145,8 @@ The steps of a user:
 | `When I delete sw2 from its menu, and confirm` | Delete…, in its menu, then Yes to the question that names it |
 | `When I start all the bricks` | Start All; each brick whose row said Stopped must run, with the process its row tells, and Start All must start no other |
 | `When I stop all the bricks` | Stop All; each brick that ran must be able to start again |
+| `When I show only the running bricks` | Running, of the switch over the list; then it is on |
+| `When I show all the bricks` | All, of the switch over the list; then it is on |
 | `When I wait 5 seconds` | Waits |
 | `When I quit Virtualbricks` | File, then Quit |
 | `When I start Virtualbricks again` | Starts it with its settings, as after it ran before, on a new screen, and waits for a window |
@@ -158,8 +160,10 @@ The steps of a user:
 | `Then wr1 is not configured` | Its row says Not configured, its Start is disabled, and no process has its sockets |
 | `Then wr1 can't start: "Configure wr1 first"` | Its Start is disabled, and the state in its row says why, in its tooltip, which the screen readers read |
 | `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |
+| `Then Virtualbricks hasn't quit` | It still runs, and its main window shows |
 | `Then the main window shows the project lab` | Its title names the project |
 | `Then the list of bricks has`, with a table under it | The rows of the list, all of them and in order, scrolled through, once they are those of the table: the name of each brick, its detail and its state |
+| `Then the list of bricks shows only sw1, with its process` | Its row alone, once it says Running and, in place of its summary, a process of its start, which still runs |
 | `Then project.toml has the bricks`, with a table under it | The bricks of the file of the project, all of them and in order: the name of each and its type |
 | `Then project.toml has sw1 with`, with a table under it | Its settings in the file of the project, a name and a value each, the value as TOML writes it |
 | `Then project.toml has sw2 with the settings of sw1` | The two bricks have the same settings in the file of the project |
@@ -401,6 +405,49 @@ E2E_PYTHONPATH=/tmp/break pytest -k switch_runs
 widgets show the error of Virtualbricks: `Process terminated. process ended
 with exit code 1`. A break can be an edit of the code too; then undo it, and
 `git diff` must show only the scenario and its steps.
+
+A module that imports Twisted's reactor, as `brickfactory` and those of
+`gui/`, can't be imported by `sitecustomize.py`: the default reactor would
+be installed before Virtualbricks installs that of GTK, and Virtualbricks
+wouldn't start (`ReactorAlreadyInstalledError` in `output.log`). Patch it
+once Virtualbricks imports it, with a finder of imports first in
+`sys.meta_path`:
+
+```python
+import importlib.abc
+import importlib.util
+import sys
+
+
+class After(importlib.abc.MetaPathFinder):
+    """Runs patch on the module name, once it is imported."""
+
+    def __init__(self, name, patch):
+        self.name = name
+        self.patch = patch
+
+    def find_spec(self, fullname, path, target=None):
+        if fullname != self.name:
+            return None
+        sys.meta_path.remove(self)
+        spec = importlib.util.find_spec(fullname)
+        run = spec.loader.exec_module
+
+        def exec_module(module):
+            run(module)
+            self.patch(module)
+
+        spec.loader.exec_module = exec_module
+        return spec
+
+
+def patch(brickfactory):
+    # the quit sees no running brick
+    brickfactory.is_running = lambda brick: False
+
+
+sys.meta_path.insert(0, After("virtualbricks.brickfactory", patch))
+```
 
 ## When a step fails
 
