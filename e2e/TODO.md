@@ -216,10 +216,14 @@ that the tests can't do yet: those needs come first.
 
 # Settings
 
-- [ ] Change a setting of the application in Preferences, a switch
+- [x] Change a setting of the application in Preferences, a switch
   `settings.toml` has it, and the next start too
-- [ ] Change a setting of the project in Preferences, This project
+  "A switch of the application turned off in the Settings window is off
+  in settings.toml, and at the next start", `settings.feature`
+- [x] Change a setting of the project in Preferences, This project
   `project.toml` has it
+  "A switch of the project turned on in the Settings window is on in its
+  project.toml", `settings.feature`
 
 # Messages window
 

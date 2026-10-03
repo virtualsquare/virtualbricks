@@ -1629,6 +1629,125 @@ def picture_pane(virtualbricks):
     return pane, bar
 
 
+# Settings
+
+# The title of the Settings window
+SETTINGS_WINDOW = "Virtualbricks Settings"
+
+
+@when(
+    words(
+        'I turn {state} "{setting}" in the Settings window, on its page'
+        " {page}"
+    )
+)
+def turn_setting(virtualbricks, state, setting, page):
+    """
+    Settings, in the menu File; on the page, the switch of the setting,
+    which is the other way, turned on or off; then OK, and the window
+    closes.
+    """
+
+    on = turned(state)
+    dialog = open_settings(virtualbricks)
+    switch = settings_switch(virtualbricks, dialog, page, setting)
+    assert harness.a11y.checked(switch) != on, f"{setting} is already {state}"
+    virtualbricks.click("toggle button", setting, within=dialog)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(switch) == on, f"{setting} is {state}"
+    )
+    virtualbricks.click("button", "OK", within=dialog)
+    virtualbricks.gone("dialog", SETTINGS_WINDOW)
+
+
+@when("I open the Settings window")
+def open_settings_window(virtualbricks):
+    """Settings, in the menu File."""
+
+    open_settings(virtualbricks)
+
+
+def open_settings(virtualbricks):
+    """Settings, in the menu File: the window, once it shows."""
+
+    virtualbricks.choose("Settings", "File")
+    return virtualbricks.find("dialog", SETTINGS_WINDOW)
+
+
+def settings_switch(virtualbricks, dialog, page, setting):
+    """The switch of the setting, on the page of the Settings window."""
+
+    virtualbricks.click("page tab", page, within=dialog)
+    return virtualbricks.enabled("toggle button", setting, within=dialog)
+
+
+def turned(state):
+    """Whether a switch said on or off is on."""
+
+    assert state in ("on", "off"), f"a switch is on or off, not {state}"
+    return state == "on"
+
+
+@then(words('the page {page} of the Settings window has "{setting}" {state}'))
+def settings_shows(virtualbricks, page, setting, state):
+    """The switch of the setting, on the page, is on or off."""
+
+    dialog = virtualbricks.find("dialog", SETTINGS_WINDOW)
+    switch = settings_switch(virtualbricks, dialog, page, setting)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(switch) == turned(state),
+        f"{setting} is {state}",
+    )
+
+
+@then("settings.toml has")
+def settings_toml(virtualbricks, datatable):
+    """
+    The settings file has the settings of the table under the step, a name
+    and a value each, the value as TOML writes it.
+    """
+
+    toml_has(virtualbricks.settings, None, datatable)
+
+
+@then("project.toml has the settings")
+def project_settings(virtualbricks, datatable):
+    """
+    The file of the project has the settings of the table under the step, in
+    its table settings, a name and a value each, the value as TOML writes
+    it.
+    """
+
+    toml_has(project_path(virtualbricks), "settings", datatable)
+
+
+def toml_has(path, table, datatable):
+    """
+    The file of path has the settings of datatable, at its top or in table,
+    once Virtualbricks has written them.
+    """
+
+    wanted = {
+        setting: tomllib.loads(f"value = {value}")["value"]
+        for setting, value in datatable[1:]
+    }
+
+    def found():
+        with open(path, "rb") as file:
+            data = tomllib.load(file)
+        if table is not None:
+            data = data.get(table, {})
+        return {setting: data.get(setting) for setting in wanted}
+
+    name = os.path.basename(path)
+    try:
+        harness.a11y.wait_for(
+            lambda: found() == wanted, f"{name} has {wanted}"
+        )
+    except AssertionError:
+        raise AssertionError(f"{name} has {found()}, not {wanted}") from None
+
+
 # A program that fails, and what Virtualbricks says of it
 
 

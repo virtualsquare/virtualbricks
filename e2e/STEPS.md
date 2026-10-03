@@ -107,6 +107,16 @@ The steps of the picture of the lab, in the tab Topology:
 | `When I drag the picture of the lab 100 pixels to the left` | A press on the background, under the bricks, which are a row in the middle of its height, a move to the left or to the right, and a release; the picture must be wider than the tab |
 | `Then the picture of the lab moved 100 pixels to the left` | Its horizontal scroll bar moved as much the other way |
 
+The steps of the Settings window:
+
+| Step | What it does |
+| :- | :- |
+| `When I turn off "Enable systray" in the Settings window, on its page Application` | Settings, in the menu File; on the page, the switch of the label, which must be the other way, turned off, or on with `turn on`; then OK, and the window closes |
+| `When I open the Settings window` | Settings, in the menu File |
+| `Then the page Application of the Settings window has "Enable systray" off` | The page, then the switch of the label: it is off, or on |
+| `Then settings.toml has`, with a table under it | The settings of the table in the settings file, a name and a value each, the value as TOML writes it, once Virtualbricks has written them |
+| `Then project.toml has the settings`, with a table under it | The same, in the table `settings` of the file of the project |
+
 The steps of the disk images:
 
 | Step | What it does |
