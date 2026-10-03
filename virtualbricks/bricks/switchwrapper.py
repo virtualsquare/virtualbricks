@@ -56,6 +56,7 @@ class SwitchWrapper(bricks.Brick):
             return defer.succeed(self)
         elif os.path.exists(self.config.socket_path):
             self.proc = bricks.FakeProcess(self)
+            self.changed.notify(self)
             return defer.succeed(self)
         else:
             self.logger.debug(sock_not_exists, path=self.config.socket_path)
@@ -63,7 +64,9 @@ class SwitchWrapper(bricks.Brick):
             return defer.fail(errors.BadConfigError(msg))
 
     def poweroff(self, kill=False):
-        self.proc = None
+        if self.proc is not None:
+            self.proc = None
+            self.changed.notify(self)
         return defer.succeed((self, None))
 
     def configured(self):
