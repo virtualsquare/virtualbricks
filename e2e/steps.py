@@ -66,11 +66,13 @@ brick.pattern = r"[\w.-]+"
 
 def words(text):
     """
-    The words of a step, where {name:Brick} is the name of a brick, and
-    {name:Project} that of a project.
+    The words of a step, where {name:Brick} is the name of a brick,
+    {name:Project} that of a project, and {name:Image} that of a disk image.
     """
 
-    return parsers.parse(text, extra_types={"Brick": brick, "Project": brick})
+    return parsers.parse(
+        text, extra_types={"Brick": brick, "Project": brick, "Image": brick}
+    )
 
 
 @pytest.fixture
@@ -167,14 +169,20 @@ def virtualbricks_not_quit(virtualbricks):
     virtualbricks.find("frame")
 
 
-def project_file(virtualbricks):
-    """The file of the project, the one of the workspace."""
+def project_path(virtualbricks):
+    """The path of the file of the project, the one of the workspace."""
 
     files = glob.glob(
         os.path.join(virtualbricks.workspace, "*", "project.toml")
     )
     assert len(files) == 1, f"not one project: {files}"
-    with open(files[0], "rb") as file:
+    return files[0]
+
+
+def project_file(virtualbricks):
+    """The file of the project, the one of the workspace."""
+
+    with open(project_path(virtualbricks), "rb") as file:
         return tomllib.load(file)
 
 
@@ -534,11 +542,21 @@ def brick_rows(virtualbricks):
     that there are no bricks, in place of the list.
     """
 
-    tab = virtualbricks.find("page tab", "Bricks")
+    return tab_rows(virtualbricks, "Bricks", NO_BRICKS)
+
+
+def tab_rows(virtualbricks, title, empty):
+    """
+    The rows of the list of the tab title, all of them and in order, each
+    the names of its labels; no rows when the tab says empty in place of
+    the list.
+    """
+
+    tab = virtualbricks.find("page tab", title)
     shown = virtualbricks.wait_for(
         lambda: virtualbricks.shows("scroll pane", within=tab)
-        or virtualbricks.shows("label", NO_BRICKS, within=tab),
-        f"the list of bricks shows, or {NO_BRICKS!r}",
+        or virtualbricks.shows("label", empty, within=tab),
+        f"the list of the tab {title} shows, or {empty!r}",
     )
     if shown.get_role_name() == "label":
         return []
@@ -948,6 +966,150 @@ def project_copy(virtualbricks, copy, name):
         raise AssertionError(
             f"the folders of {copy} and {name} differ in {differ}"
         ) from None
+
+
+# Disk images
+
+# The units of the sizes of the disks, as Virtualbricks counts them
+UNITS = {"MB": 1000**2, "GB": 1000**3}
+# The folder of the images, in the workspace
+IMAGE_FOLDER = "vimages"
+ADD_IMAGE = "Add an Existing Image"
+CHOOSE_IMAGE = "Choose a Disk Image"
+# What the tab Images says in place of its list, when there are no images
+NO_IMAGES = "No Images Yet"
+# Between the parts of the detail of a row
+SEPARATOR = " · "
+
+
+@given(
+    words("the empty disk image {file} of {size:d} {unit}, in my home folder")
+)
+def disk_image(virtualbricks, file, size, unit):
+    """
+    In the home, an empty disk of size MB or GB, made with qemu-img create,
+    in the format of the extension of file: qcow2, or raw.
+    """
+
+    path = os.path.join(virtualbricks.home, file)
+    fmt = os.path.splitext(file)[1].removeprefix(".")
+    subprocess.run(
+        ["qemu-img", "create", "-q", "-f", fmt, path, str(size * UNITS[unit])],
+        check=True,
+    )
+
+
+@when(
+    words(
+        "I add an existing image, {file} of my home folder, with the name it"
+        " suggests, {name:Image}"
+    )
+)
+def add_image(virtualbricks, file, name):
+    """
+    The tab Images, Add Image, then Existing Image…; in the dialog, the
+    button of the file, then Home and the file in the file chooser, and
+    Open; the name it suggests is name; then Add, with Copy it to the image
+    folder as it is, and the dialog closes.
+    """
+
+    tab = virtualbricks.click("page tab", "Images")
+    virtualbricks.click("button", "Add Image", within=tab)
+    virtualbricks.click("button", "Existing Image…")
+    dialog = virtualbricks.find("dialog", ADD_IMAGE)
+    # the button of the file names it: none yet
+    virtualbricks.click("button", "(None)", within=dialog)
+    chooser = virtualbricks.find("file chooser", CHOOSE_IMAGE)
+    virtualbricks.click("label", "Home", within=chooser)
+    virtualbricks.click("table cell", file, within=chooser)
+    virtualbricks.click("button", "Open", within=chooser)
+    virtualbricks.gone("file chooser", CHOOSE_IMAGE)
+    suggests(virtualbricks, dialog, "Name", name)
+    # it shows once the file is read, a disk image out of the workspace
+    copy = virtualbricks.find(
+        "radio button", "Copy it to the image folder", within=dialog
+    )
+    assert harness.a11y.checked(copy), "the file is used where it is"
+    virtualbricks.click("button", "Add", within=dialog)
+    virtualbricks.gone("dialog", ADD_IMAGE)
+
+
+def image_rows(virtualbricks):
+    """
+    The rows of the list of images, all of them and in order: each the
+    name of an image, its detail and its state. The detail is without the
+    space its file takes, "… on disk", which depends on the file system.
+    """
+
+    def detail(words):
+        parts = words.split(SEPARATOR)
+        return SEPARATOR.join(
+            part for part in parts if not part.endswith(" on disk")
+        )
+
+    return [
+        [row[0], detail(row[1]), *row[2:]]
+        for row in tab_rows(virtualbricks, "Images", NO_IMAGES)
+    ]
+
+
+@then("the list of images has")
+def images_listed(virtualbricks, datatable):
+    """
+    Its rows, all of them and in order, once they are those of the table
+    under the step, whose first line has the titles of the columns: each
+    row has the name of the image, its detail, without the space its file
+    takes, and its state.
+    """
+
+    def rows():
+        return datatable[:1] + image_rows(virtualbricks)
+
+    try:
+        virtualbricks.wait_for(
+            lambda: rows() == datatable,
+            "the list of images has the rows of the table",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the list of images has {rows()}, not {datatable}"
+        ) from None
+
+
+@then(words("the image folder has {file}, a copy of that of my home folder"))
+def image_copied(virtualbricks, file):
+    """
+    The image folder of the workspace has the file, with the bytes of that
+    of the home, which stays.
+    """
+
+    original = os.path.join(virtualbricks.home, file)
+    copy = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    assert os.path.isfile(original), f"{original} is gone"
+    assert os.path.isfile(copy), f"{copy} is missing"
+    with open(original, "rb") as theirs, open(copy, "rb") as ours:
+        assert ours.read() == theirs.read(), f"{copy} differs from {original}"
+
+
+@then(
+    words(
+        "project.toml has the image {name:Image}, of {file} in the image"
+        " folder"
+    )
+)
+def project_image(virtualbricks, name, file):
+    """
+    The image in the file of the project has the file of the image folder
+    of the workspace: its path, or one relative to the folder of the
+    project.
+    """
+
+    path = project_path(virtualbricks)
+    images = project_file(virtualbricks).get("images", {})
+    assert name in images, f"project.toml has no image {name}: {images}"
+    found = os.path.join(os.path.dirname(path), images[name]["path"])
+    wanted = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    assert os.path.normpath(found) == wanted, f"{name} is of {found}"
 
 
 # A program that fails, and what Virtualbricks says of it

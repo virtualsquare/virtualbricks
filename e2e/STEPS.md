@@ -75,6 +75,16 @@ The steps of a switch that another program runs, for a switch wrapper:
 | `When I give wr1 the control folder of that switch` | Configure… in its menu, the folder typed in Control folder, then OK; its row says the folder |
 | `Then the switch that another program runs still runs` | Its process runs, and its socket is there |
 
+The steps of the disk images:
+
+| Step | What it does |
+| :- | :- |
+| `Given the empty disk image disk.qcow2 of 1 GB, in my home folder` | Made with `qemu-img create`, of MB or GB of 1000, as Virtualbricks counts them, in the format of its extension: `qcow2` or `raw` |
+| `When I add an existing image, disk.qcow2 of my home folder, with the name it suggests, disk` | The tab Images, Add Image, then Existing Image…; in the dialog, the button of the file, then Home and the file in the file chooser, and Open; the name must be the one the dialog suggests; then Add, with Copy it to the image folder as it is, and the dialog closes |
+| `Then the list of images has`, with a table under it | The rows of the tab Images, all of them and in order, once they are those of the table: the name of each image, its detail without the space its file takes (`… on disk`), which depends on the file system, and its state |
+| `Then the image folder has disk.qcow2, a copy of that of my home folder` | `vimages` of the workspace has the file, with the same bytes, and the home still has it |
+| `Then project.toml has the image disk, of disk.qcow2 in the image folder` | The image in the file of the project has the file of the image folder |
+
 The steps of the migration of Virtualbricks 2.1:
 
 | Step | What it does |

@@ -20,8 +20,9 @@ that the tests can't do yet: those needs come first.
   which connects the two bricks, and for the picture of the Topology tab
 - [ ] Start Virtualbricks with the options of a scenario: `--listen`,
   `--lock workspace`, `--connect`; and a second Virtualbricks beside it
-- [ ] Make a disk image in a fixture, with `qemu-img create`, for the
-  virtual machines and the Images tab
+- [x] Make a disk image in a fixture, with `qemu-img create`, for the
+  virtual machines and the Images tab: the step `Given the empty disk
+  image disk.qcow2 of 1 GB, in my home folder`
 - [x] Make a small archive of 2.1 in a fixture, a `.vbp` of the
   `.project` of `e2e/projects/DTN2hops_26_Feb_2026`: the step `Given the
   archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my home
@@ -89,8 +90,12 @@ that the tests can't do yet: those needs come first.
 - [ ] Add a new empty disk from the Images tab
   the file is in the image folder, of the size and format chosen;
   `@needs-qemu-img`
-- [ ] Add an existing disk image from a file
-  copied into the image folder, or used where it is; needs typing
+- [x] Add an existing disk image from a file, copied into the image
+  folder
+  "A disk image of my home folder, added from the Images tab, is copied
+  into the image folder", `images.feature`
+- [ ] Add an existing disk image from a file, used where it is
+  its row has the path of the file, and no copy is made
 - [ ] Give a virtual machine a disk image
   the row of the image names the machine; in use while it runs
 - [ ] Remove a disk image, after the dialog that lists the disks that
