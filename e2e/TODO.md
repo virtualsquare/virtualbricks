@@ -5,10 +5,11 @@ that the tests can't do yet: those needs come first.
 
 # What the scenarios need first
 
-- [ ] Never click the same point twice in a row: GTK takes two presses
+- [x] Never a double click by chance: GTK takes two presses on a widget
   within 400 ms and 5 px for a double click, and a list activates a row
-  on a single press only, so adding sw2 right after sw1 does nothing. A
-  click within 5 px of the last one moves 6 px aside
+  on a single press only, so adding sw2 right after sw1 did nothing. A
+  click comes 0.5 s after the one before at least (`Browser.click` in
+  `broadway.py`)
 - [ ] Type, as names and paths (TODO.md, End-to-end tests): Rename, the
   search, the README, the paths of the file choosers (Ctrl+L)
 - [ ] Drag: a press, moves and a release, for a row dropped on another,
@@ -25,7 +26,7 @@ that the tests can't do yet: those needs come first.
 - [x] Run a switch for a while, then stop it
   "A switch runs for a while, then stops", `bricks.feature`
 - [ ] Join two switches with a wire
-  the wire runs with the sockets of both; needs the double click fix
+  the wire runs with the sockets of both
 - [ ] Start all the bricks with Start All, then stop them with Stop All
   each brick that can start runs; then none runs
 - [ ] Open a tunnel: a tunnel server and a tunnel client of this

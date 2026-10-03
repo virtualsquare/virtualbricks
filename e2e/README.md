@@ -437,9 +437,11 @@ chose. Read the scenario as you would one of a contributor: it is the test.
   pointer at the middle of a widget. A click goes through GTK as a user's
   does: hidden, covered or disabled widgets don't get it. So does a turn of
   the wheel: a row scrolled out of its list doesn't show, so `rows()`
-  turns it, as a user does, and waits for the scroll bar to move. It keeps
-  the images of the windows too, for `recording.py`: see [The screenshot
-  and the video](#the-screenshot-and-the-video).
+  turns it, as a user does, and waits for the scroll bar to move. A click
+  comes half a second after the one before at least: GTK takes two clicks
+  on a widget within 400 ms for a double click (`Browser.click` says when
+  it happened). It keeps the images of the windows too, for `recording.py`:
+  see [The screenshot and the video](#the-screenshot-and-the-video).
 
 ## What it can't do yet
 

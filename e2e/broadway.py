@@ -47,6 +47,10 @@ GDK_CROSSING_NORMAL = 0
 GDK_CROSSING_GRAB = 1
 GDK_CROSSING_UNGRAB = 2
 GDK_BUTTON1_MASK = 1 << 8
+# A click comes this long after the one before at least: more than
+# gtk-double-click-time (400 ms), so that GTK never takes two clicks for a
+# double click.
+CLICK_WAIT = 0.5
 
 
 class Surface:
@@ -85,6 +89,8 @@ class Browser:
         self.x = self.y = 0
         # moved once: a video shows the pointer from then on
         self.pointed = False
+        # when the last press was, or None
+        self.pressed = None
         # realWindowWithMouse and windowWithMouse of broadway.js
         self.real_under = 0
         self.under = 0
@@ -122,8 +128,20 @@ class Browser:
     # The pointer
 
     def click(self, x, y, button=1):
-        """A press and a release of button at x, y of the screen."""
+        """
+        A press and a release of button at x, y of the screen, CLICK_WAIT
+        after the last press at least.
+        """
 
+        # GTK counts a press on a widget within 400 ms and 5 px of the one
+        # before on it as the second of a double click, and the list of New
+        # Brick activates a row on the first press only. "When I add the
+        # switch sw1" then "When I add the switch sw2" clicked the row
+        # Switch twice at the same pixel, 320 ms apart, as the popover opens
+        # again on the kind made last: the list only selected the row, and
+        # sw2 was never made.
+        if self.pressed is not None:
+            time.sleep(max(self.pressed + CLICK_WAIT - time.monotonic(), 0))
         self.move(x, y)
         mask = GDK_BUTTON1_MASK << (button - 1)
         with self.changed:
@@ -131,6 +149,7 @@ class Browser:
             target = self._target(self.real_under)
             if self.grab is None:
                 self._grab(target, False, True)
+            self.pressed = time.monotonic()
             self._pointer("b", target, button)
             self.state &= ~mask
             self._pointer("B", target, button)
