@@ -152,7 +152,11 @@ class TopologyView(Gtk.ScrolledWindow):
             | Gdk.EventMask.LEAVE_NOTIFY_MASK
             | Gdk.EventMask.KEY_PRESS_MASK
         )
-        self.add(self.area)
+        # a viewport of its own: the one that GTK adds scrolls to the corner
+        # of the picture once the area has the focus, as after a press
+        viewport = Gtk.Viewport(visible=True)
+        viewport.add(self.area)
+        self.add(viewport)
         self.pinch = Gtk.GestureZoom.new(self.area)
 
         self.area.connect("draw", self.on_draw)
