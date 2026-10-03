@@ -378,9 +378,14 @@ class Virtualbricks:
 
     # The processes
 
-    def children(self):
-        """The pids of the processes that Virtualbricks started and run."""
+    def children(self, parent=None):
+        """
+        The pids of the processes that Virtualbricks, or the process parent,
+        started and run.
+        """
 
+        if parent is None:
+            parent = self.process.pid
         pids = set()
         for pid in _pids():
             try:
@@ -390,7 +395,7 @@ class Virtualbricks:
                 continue
             # after the name, which is in brackets and may have spaces
             state, ppid = stat[stat.rindex(")") + 2 :].split()[:2]
-            if int(ppid) == self.process.pid and state != "Z":
+            if int(ppid) == parent and state != "Z":
                 pids.add(pid)
         return pids
 
@@ -401,27 +406,31 @@ class Virtualbricks:
         of that brick only: its sockets are name.ctl, name.mgmt.
         """
 
-        folder = os.path.join(
-            self.desktop.runtime, "virtualbricks", ""
-        ).encode()
+        folder = os.path.join(self.desktop.runtime, "virtualbricks", "")
         pids = []
         for pid in _pids():
-            try:
-                with open(f"/proc/{pid}/cmdline", "rb") as file:
-                    words = file.read().split(b"\0")
-            except OSError:
-                continue
+            words = self.command_line(pid)
             sockets = [word for word in words if word.startswith(folder)]
             if name is not None:
                 sockets = [
                     word
                     for word in sockets
-                    if os.path.basename(word).rpartition(b".")[0]
-                    == name.encode()
+                    if os.path.basename(word).rpartition(".")[0] == name
                 ]
             if sockets:
                 pids.append(pid)
         return pids
+
+    def command_line(self, pid):
+        """The words of the command line of the process pid; none once gone."""
+
+        try:
+            with open(f"/proc/{pid}/cmdline", "rb") as file:
+                words = file.read().split(b"\0")
+        except OSError:
+            return []
+        # after the last word, a \0 too
+        return [os.fsdecode(word) for word in words[:-1]]
 
 
 def _pids():

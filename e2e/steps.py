@@ -135,16 +135,39 @@ def main_window(virtualbricks, name):
 # Bricks
 
 
-@when(words("I add the {kind} {name:Brick}"))
-def add_brick(virtualbricks, kind, name):
-    """New Brick, then the kind; its settings, if any, as they are."""
+def new_brick(virtualbricks, kind, name):
+    """New Brick, then the kind: the brick made is name, its settings show."""
 
     virtualbricks.click("button", "New Brick")
     # "virtual machine" is the row "Virtual machine"
     virtualbricks.click("label", kind[:1].upper() + kind[1:])
     virtualbricks.find("label", name)
+
+
+@when(words("I add the {kind} {name:Brick}"))
+def add_brick(virtualbricks, kind, name):
+    """New Brick, then the kind; its settings, if any, as they are."""
+
+    new_brick(virtualbricks, kind, name)
     if virtualbricks.shows("button", "OK"):
         virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
+@when(
+    words("I join {left:Brick} and {right:Brick} with the wire {name:Brick}")
+)
+def join(virtualbricks, left, right, name):
+    """New Brick, Wire, then its ends in its settings: left, right; OK."""
+
+    new_brick(virtualbricks, "wire", name)
+    for end, switch in (("Left end", left), ("Right end", right)):
+        row = virtualbricks.row(end)
+        # named after the end it shows
+        combo = virtualbricks.click("combo box", within=row)
+        virtualbricks.click("menu item", switch, within=combo)
+        virtualbricks.find("combo box", switch, within=row)
+    virtualbricks.click("button", "OK")
     virtualbricks.find("button", f"Start {name}")
 
 
@@ -201,6 +224,54 @@ def bricks_listed(virtualbricks, datatable):
         raise AssertionError(
             f"the list of bricks has {rows()}, not {datatable}"
         ) from None
+
+
+@then(
+    words(
+        "{name:Brick} runs with the sockets of {left:Brick} and {right:Brick}"
+    )
+)
+def runs_with_sockets(virtualbricks, brick_processes, name, left, right):
+    """
+    It runs, and the processes of its start have a vde_plug in the socket of
+    each switch: the one its vde_switch listens on, after -s.
+    """
+
+    brick_running(virtualbricks, brick_processes, name)
+    wanted = sorted(
+        switch_socket(virtualbricks, brick_processes, switch)
+        for switch in (left, right)
+    )
+
+    def plugs():
+        found = []
+        for pid in brick_processes[name]:
+            for child in virtualbricks.children(pid):
+                words = virtualbricks.command_line(child)
+                if words and os.path.basename(words[0]) == "vde_plug":
+                    found.append(words[-1])
+        return sorted(found)
+
+    try:
+        virtualbricks.wait_for(
+            lambda: plugs() == wanted,
+            f"a vde_plug of {name} runs in the socket of {left}, another"
+            f" in that of {right}",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the vde_plug of {name} run in {plugs()}, not {wanted}"
+        ) from None
+
+
+def switch_socket(virtualbricks, brick_processes, switch):
+    """The socket that the vde_switch of switch listens on, after -s."""
+
+    for pid in brick_processes.get(switch, ()):
+        words = virtualbricks.command_line(pid)
+        if "-s" in words:
+            return words[words.index("-s") + 1]
+    raise AssertionError(f"no vde_switch of {switch} runs")
 
 
 @then(words("{name:Brick} is stopped"))

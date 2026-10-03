@@ -25,8 +25,8 @@ that the tests can't do yet: those needs come first.
 
 - [x] Run a switch for a while, then stop it
   "A switch runs for a while, then stops", `bricks.feature`
-- [ ] Join two switches with a wire
-  the wire runs with the sockets of both
+- [x] Join two switches with a wire
+  "A wire joins two switches", `bricks.feature`
 - [ ] Start all the bricks with Start All, then stop them with Stop All
   each brick that can start runs; then none runs
 - [ ] Open a tunnel: a tunnel server and a tunnel client of this

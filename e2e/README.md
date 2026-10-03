@@ -129,6 +129,7 @@ The steps of a user:
 | :- | :- |
 | `Given Virtualbricks is running` | Starts Virtualbricks, and waits for its main window |
 | `When I add the switch sw1` | New Brick, the kind, then OK on its settings; the new brick must be named `sw1`. Any kind of New Brick: `the virtual machine vm1`, `the router r1`, … |
+| `When I join sw1 and sw2 with the wire w1` | New Brick, Wire, then sw1 for its left end and sw2 for its right end, and OK; the new wire must be named `w1` |
 | `When I start sw1` | Its Start button; it must run, with new processes |
 | `When I stop sw1` | Its Stop button; it must stop |
 | `When I wait 5 seconds` | Waits |
@@ -136,6 +137,7 @@ The steps of a user:
 | `When I start Virtualbricks again` | Starts it with its settings, as after it ran before, on a new screen, and waits for a window |
 | `Then sw1 is running` | Its row says Running, and the processes of its start run |
 | `Then sw1 is still running` | The same |
+| `Then w1 runs with the sockets of sw1 and sw2` | It runs, and a `vde_plug` of its start is in the socket of each switch: the one its `vde_switch` listens on |
 | `Then sw1 is stopped` | Its row says Stopped, and no process of it runs: those of its start have quit, and none has its sockets |
 | `Then sw1 is not running` | The same |
 | `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |
@@ -219,7 +221,8 @@ def stop_brick(virtualbricks, name):
   | `rows(within)` | The rows of the list in a scroll pane, from the first to the last, each the names of its labels: the wheel scrolls through it |
   | `names(role, within=None)` | The names of the widgets of that role that show now |
   | `wait_for(get, what)` | What `get()` returns, once it is true |
-  | `children()` | The processes that Virtualbricks started and run |
+  | `children(parent=None)` | The processes that Virtualbricks, or the process `parent`, started and run |
+  | `command_line(pid)` | The words of the command line of a process; none once it has quit |
   | `bricks(name=None)` | The processes with sockets in the run folder of the tests; with a name, those of that brick |
   | `describe()` | The widgets that show, one a line |
   | `home`, `workspace`, `settings` | Its home, its workspace, and its settings file, which a step can remove |
