@@ -96,6 +96,26 @@ def picture_scroll():
 
 
 @pytest.fixture
+def old_files():
+    """
+    The files of Virtualbricks 2.1 that a step wrote in the workspace, as
+    they were: {path in the workspace: bytes}.
+    """
+
+    return {}
+
+
+@pytest.fixture
+def migrated_before():
+    """
+    The projects that a migration closed while it ran had migrated:
+    {name: the time and the bytes of its project.toml}.
+    """
+
+    return {}
+
+
+@pytest.fixture
 def other_switch(desktop, tmp_path):
     """
     A vde_switch that the tests run, as another program would, for a switch
@@ -1830,6 +1850,270 @@ def migrated_at_first_start(virtualbricks, name):
     first_start(virtualbricks)
     migrated(virtualbricks, name)
     close_migration(virtualbricks)
+
+
+@given(
+    words("the project {name:Project} of Virtualbricks 2.1, whose .project is")
+)
+def old_project_text(virtualbricks, old_files, name, docstring):
+    """A folder name in the workspace, with the text under the step."""
+
+    write_old(virtualbricks, old_files, f"{name}/.project", docstring + "\n")
+
+
+@given(
+    words(
+        "the project {name:Project} of Virtualbricks 2.1, as the single file"
+        " {file} in the workspace"
+    )
+)
+def old_single_file(virtualbricks, old_files, name, file):
+    """
+    The .project of projects/NAME, as a file of the workspace: so the
+    versions before 2.1 kept a project, and 2.1 still opened it.
+    """
+
+    with open(os.path.join(PROJECTS, name, ".project")) as project:
+        write_old(virtualbricks, old_files, file, project.read())
+
+
+def write_old(virtualbricks, old_files, path, text):
+    """The file path of the workspace has text; old_files keeps it."""
+
+    full = os.path.join(virtualbricks.workspace, path)
+    os.makedirs(os.path.dirname(full), exist_ok=True)
+    with open(full, "w") as file:
+        file.write(text)
+    with open(full, "rb") as file:
+        old_files[path] = file.read()
+
+
+@given(
+    words(
+        "the projects {first:Project} to {last:Project} of Virtualbricks 2.1,"
+        " copies of {name:Project}"
+    )
+)
+def old_copies(virtualbricks, first, last, name):
+    """
+    Copies of projects/NAME in the workspace, from first to last: a word
+    and a number, of as many digits in both.
+    """
+
+    word, start = re.fullmatch(r"(.*?)(\d+)", first).groups()
+    same, end = re.fullmatch(r"(.*?)(\d+)", last).groups()
+    assert (same, len(end)) == (word, len(start)), f"not {first} to {last}"
+    for number in range(int(start), int(end) + 1):
+        shutil.copytree(
+            os.path.join(PROJECTS, name),
+            os.path.join(
+                virtualbricks.workspace, f"{word}{number:0{len(start)}d}"
+            ),
+        )
+
+
+def old_projects(virtualbricks):
+    """The folders of the workspace with a project of 2.1, by name."""
+
+    return sorted(
+        name
+        for name in os.listdir(virtualbricks.workspace)
+        if os.path.isfile(
+            os.path.join(virtualbricks.workspace, name, ".project")
+        )
+    )
+
+
+def project_toml_of(virtualbricks, name):
+    """The time and the bytes of the project.toml of name, or None."""
+
+    path = os.path.join(virtualbricks.workspace, name, "project.toml")
+    try:
+        with open(path, "rb") as file:
+            return os.stat(file.fileno()).st_mtime_ns, file.read()
+    except FileNotFoundError:
+        return None
+
+
+@when(words("I select {name:Project} in the migration window"))
+def select_migrated(virtualbricks, name):
+    """Its row in the list; then the messages under it are those of name."""
+
+    window = virtualbricks.find("frame", MIGRATION)
+    virtualbricks.click("table cell", name, within=window)
+    virtualbricks.wait_for(
+        lambda: migration_messages(virtualbricks)[:1] == [name],
+        f"the messages of {name} show",
+    )
+
+
+def migration_messages(virtualbricks):
+    """
+    The lines under the list of the migration window: the name of the row
+    selected, then its messages.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    # after the entries of the form, over the list
+    view = list(harness.a11y.find_all(window, "text"))[-1]
+    return harness.a11y.text(view).splitlines()
+
+
+@then(
+    words('the migration window shows the {level} of {name:Project}: "{text}"')
+)
+def migration_shows(virtualbricks, level, name, text):
+    """
+    Under the list, the messages are those of name, and one is the text, of
+    level: error, warning or info.
+    """
+
+    assert level in ("error", "warning", "info"), f"no level {level}"
+    line = f"{level}  {text}"
+    try:
+        virtualbricks.wait_for(
+            lambda: migration_messages(virtualbricks)[:1] == [name]
+            and line in migration_messages(virtualbricks)[1:],
+            f"the migration window shows the {level} of {name}",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the migration window shows {migration_messages(virtualbricks)},"
+            f" not {name} and {line!r}"
+        ) from None
+
+
+@then(words("{name:Project} isn't migrated"))
+def not_migrated(virtualbricks, name):
+    """Its folder in the workspace has no project.toml."""
+
+    path = os.path.join(virtualbricks.workspace, name, "project.toml")
+    assert not os.path.exists(path), f"{path} is there"
+
+
+@then(words("the old file {path} of the workspace stays as it was"))
+def old_file_kept(virtualbricks, old_files, path):
+    """It has the bytes that a step wrote there before Virtualbricks ran."""
+
+    with open(os.path.join(virtualbricks.workspace, path), "rb") as file:
+        data = file.read()
+    assert data == old_files[path], f"{path} has {data!r}"
+
+
+@when("I close the migration window while it migrates")
+def close_while_migrating(virtualbricks, migrated_before):
+    """
+    Its button Close, once a project has its project.toml, as its files
+    say: the window answers AT-SPI only between two projects. Then
+    migrated_before has those that it migrated.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    # the last row of the window, after its title bar: a search through
+    # the list over it would ask the window for each of its cells
+    box = last_child(window)
+    buttons = last_child(box)
+    virtualbricks.wait_for(
+        lambda: any(
+            project_toml_of(virtualbricks, name)
+            for name in old_projects(virtualbricks)
+        ),
+        "a project is migrated",
+    )
+    virtualbricks.click("button", "Close", within=buttons)
+    virtualbricks.gone("frame", MIGRATION)
+    for name in old_projects(virtualbricks):
+        done = project_toml_of(virtualbricks, name)
+        if done is not None:
+            migrated_before[name] = done
+
+
+def last_child(accessible):
+    """The last of its children, as the widgets show them."""
+
+    return accessible.get_child_at_index(accessible.get_child_count() - 1)
+
+
+@then("some of the projects are migrated, and the others not")
+def some_migrated(virtualbricks, migrated_before):
+    """
+    The old projects that have their project.toml are those migrated before
+    the window closed, as they were then: the migration stopped there; the
+    others have none.
+    """
+
+    names = old_projects(virtualbricks)
+    assert migrated_before, "no project is migrated"
+    assert len(migrated_before) < len(
+        names
+    ), f"all the {len(names)} projects are migrated: it was closed too late"
+    now = {
+        name: project_toml_of(virtualbricks, name)
+        for name in names
+        if project_toml_of(virtualbricks, name) is not None
+    }
+    after = sorted(name for name in now if name not in migrated_before)
+    assert not after, f"migrated once the window closed: {after}"
+    assert now == migrated_before, "a project.toml changed once it closed"
+
+
+@then(
+    "the projects not migrated before are migrated, and the others stay as"
+    " they were"
+)
+def rest_migrated(virtualbricks, migrated_before):
+    """
+    The migration ends, as Save report… says; each old project has its
+    project.toml, and those migrated before the same, not written again.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    virtualbricks.enabled("button", "Save report…", within=window)
+    for name in old_projects(virtualbricks):
+        done = project_toml_of(virtualbricks, name)
+        assert done is not None, f"{name} has no project.toml"
+        if name in migrated_before:
+            assert done == migrated_before[name], f"{name} migrated again"
+
+
+# The title of the file chooser of Save report…
+SAVE_REPORT = "Save report"
+
+
+@when(
+    words(
+        "I save the report of the migration to {file} of my home folder,"
+        " typing its path"
+    )
+)
+def save_report(virtualbricks, file):
+    """
+    Save report…; in the file chooser, the path typed in place of the name
+    that it suggests, then Save, and the file chooser closes.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    virtualbricks.click("button", "Save report…", within=window)
+    chooser = virtualbricks.find("file chooser", SAVE_REPORT)
+    path = os.path.join(virtualbricks.home, file)
+    virtualbricks.type(path, "text", "Name:", within=chooser, over=True)
+    virtualbricks.click("button", "Save", within=chooser)
+    virtualbricks.gone("file chooser", SAVE_REPORT)
+
+
+@then(words("the file {file} of my home folder has"))
+def home_file_has(virtualbricks, file, docstring):
+    """
+    It has the text under the step, line by line; the spaces at the end of
+    a line aside.
+    """
+
+    path = os.path.join(virtualbricks.home, file)
+    virtualbricks.wait_for(lambda: os.path.isfile(path), f"{path} is there")
+    with open(path, encoding="utf-8") as text:
+        found = [line.rstrip() for line in text.read().splitlines()]
+    wanted = [line.rstrip() for line in docstring.splitlines()]
+    assert found == wanted, f"{file} has\n" + "\n".join(found)
 
 
 # Time

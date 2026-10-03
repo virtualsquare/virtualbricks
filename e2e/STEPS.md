@@ -124,13 +124,25 @@ The steps of the migration of Virtualbricks 2.1:
 | `Given the project DTN2hops_26_Feb_2026 of Virtualbricks 2.1` | A copy of `projects/DTN2hops_26_Feb_2026` in the workspace |
 | `Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my home folder` | The archive that 2.1 exported of `projects/DTN2hops_26_Feb_2026`, in the home: its `.project`, without images, in a tar compressed with gzip |
 | `Given the settings of Virtualbricks 2.1, with DTN2hops_26_Feb_2026 open last` | `~/.virtualbricks.conf`, of the workspace of the tests, in place of the settings: the next start is the first |
+| `Given the project lab of Virtualbricks 2.1, whose .project is`, with a text under it | A folder lab in the workspace, whose `.project` has the text; the steps keep it, to check it later |
+| `Given the project DTN2hops_26_Feb_2026 of Virtualbricks 2.1, as the single file lab.vbl in the workspace` | Its `.project`, as a file of the workspace, as the versions before 2.1 kept a project |
+| `Given the projects lab01 to lab40 of Virtualbricks 2.1, copies of DTN2hops_26_Feb_2026` | So many copies of `projects/DTN2hops_26_Feb_2026` in the workspace: a word and a number, of as many digits in both |
 | `When I start Virtualbricks for the first time` | Starts it without its settings, as after 2.1, and waits for a window |
 | `When I close the migration window` | Its button Close |
+| `When I close the migration window while it migrates` | Its button Close, once a project of the workspace has its `project.toml`; the window shows until it closes. The buttons are found without a search through the list, as the window answers AT-SPI only between two projects |
+| `When I select lab in the migration window` | Its row; then the messages under the list are those of lab |
+| `When I save the report of the migration to report.txt of my home folder, typing its path` | Save report…; in the file chooser, the path typed in Name in place of the name it suggests, then Save, and it closes |
 | `Given Virtualbricks migrated DTN2hops_26_Feb_2026 at its first start` | The first start, the migration of the project, and its window closed |
 | `Then the migration window shows` | Waits until it shows |
 | `Then the migration window doesn't show` | Waits until it doesn't |
 | `Then the migration window lists`, with a table under it | The rows of its list, all of them and in order, once they are those of the table, whose first line has the titles of the columns |
 | `Then DTN2hops_26_Feb_2026 is migrated` | The migration ends, no row of the window failed, and the project has its `project.toml` |
+| `Then lab isn't migrated` | Its folder in the workspace has no `project.toml` |
+| `Then the migration window shows the error of lab: ".project:4 …"` | Under the list, the messages are those of lab, and one is the text, of that level: `error`, `warning` or `info` |
+| `Then the old file lab/.project of the workspace stays as it was` | The file, which a step gave, has the same bytes |
+| `Then some of the projects are migrated, and the others not` | The old projects that have their `project.toml` are those of the close of the window, as they were then, no other: the migration stopped there; some have none |
+| `Then the projects not migrated before are migrated, and the others stay as they were` | The migration ends; each old project has its `project.toml`, and those of before the close the same, not written again |
+| `Then the file report.txt of my home folder has`, with a text under it | The file has the text, line by line, the spaces at the end of a line aside |
 
 A step with a table under it takes all the rows of a list, in order: the
 first line of the table has the titles of the columns, each other line a
@@ -179,6 +191,8 @@ def stop_brick(virtualbricks, name):
   `"{name}"` a text in quotes. The function gets them by name.
 - A table under a line, as in Gherkin, comes to its step as `datatable`, a
   list of rows, each a list of texts.
+- A text under a line, between two lines of `"""`, comes to its step as
+  `docstring`, without the indentation of the `"""`.
 - `virtualbricks` is the Virtualbricks of the scenario
   (`harness.Virtualbricks`). Its methods that wait, wait ten seconds at
   most, then fail saying what they waited for:
@@ -192,7 +206,7 @@ def stop_brick(virtualbricks, name):
   | `disabled(role, name, within=None)` | The widget, once it shows and is disabled |
   | `click(role, name, within=None, enabled=True)` | Clicks it, once it shows and is enabled; with `enabled=False`, also if it is disabled |
   | `spin(name, by, within=None)` | Clicks the + of the spin button `by` times, or its - `-by` times; after each click, its value changes |
-  | `type(text, role, name=None, within=None)` | Clicks it, once it shows and is enabled, and types text at its cursor; then it has the text: see [What it can't do yet](README.md#what-it-cant-do-yet) |
+  | `type(text, role, name=None, within=None, over=False)` | Clicks it, once it shows and is enabled, and types text at its cursor; then it has the text: see [What it can't do yet](README.md#what-it-cant-do-yet). With `over`, in place of the text it has, as a user who selects it all first |
   | `key(keys, window)` | Presses keys, as `Escape`, `Return` or `Control+l`, in window, a frame or a dialog, once it is active: click in it first, as the keys go to the window clicked last. Text goes with `type()` |
   | `drag(start, end, ready=None)` | Presses at start, a point of the screen, moves to end and releases there; `ready()`, if given, right before the press, half a second after the click before |
   | `choose(item, menu)` | A menu of the menu bar, then its item |

@@ -462,10 +462,11 @@ class Virtualbricks:
             )
         return widget
 
-    def type(self, text, role, name=None, within=None):
+    def type(self, text, role, name=None, within=None, over=False):
         """
         Click the widget, once it shows and is enabled, and type text at its
-        cursor; then the widget has it.
+        cursor; then the widget has it. With over, in place of the text it
+        has, as a user who selects it all first: then it has text alone.
 
         The text goes in through AT-SPI, not as keys: GTK's Broadway backend
         leaves unset the modifiers that a key consumes, which GTK reads
@@ -475,10 +476,17 @@ class Virtualbricks:
         """
 
         widget = self.click(role, name, within)
+        if over:
+            a11y.erase(widget)
         a11y.write(widget, text)
         what = f"the {role}" if name is None else f"the {role} {name!r}"
         self.wait_for(
-            lambda: text in a11y.text(widget), f"{what} has {text!r}"
+            lambda: (
+                a11y.text(widget) == text
+                if over
+                else text in a11y.text(widget)
+            ),
+            f"{what} has {text!r}",
         )
         return widget
 

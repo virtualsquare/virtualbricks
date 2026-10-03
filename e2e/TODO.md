@@ -182,16 +182,25 @@ that the tests can't do yet: those needs come first.
   start, and keep the project open last
   "An old project copied into the workspace is migrated",
   `migration.feature`
-- [ ] See a project of 2.1 that can't be converted
+- [x] See a project of 2.1 that can't be converted
   its row says ✗ Failed, its message shows under the list, its old file
   stays as it was
-- [ ] Migrate a project of 2.1 that is a single file in the workspace
+  "An old project that can't be converted fails, says why, and stays as
+  it was", `migration.feature`
+- [x] Migrate a project of 2.1 that is a single file in the workspace
   it becomes a folder with `project.toml`
-- [ ] Close the migration window while it migrates
+  "An old project that is a single file in the workspace becomes a folder
+  with its project.toml", `migration.feature`
+- [x] Close the migration window while it migrates
   what is migrated stays, the rest is migrated at the next start; the
-  project open last may not be saved yet
-- [ ] Save the report of the migration
-  the file has the rows and the messages; needs typing for the path
+  project open last isn't saved
+  "A migration closed while it runs keeps what it migrated, and migrates
+  the rest at the next start; the project open last isn't saved",
+  `migration.feature`
+- [x] Save the report of the migration
+  the file has the rows and the messages; its path typed
+  "The report of the migration, saved to a file, has its rows and their
+  messages", `migration.feature`
 
 # Events
 

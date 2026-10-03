@@ -60,6 +60,33 @@ Feature: Migration
       And I quit Virtualbricks
       Then Virtualbricks has quit
 
+    Scenario: The report of the migration, saved to a file, has its rows and their messages
+      When I start Virtualbricks for the first time
+      Then DTN2hops_26_Feb_2026 is migrated
+      When I save the report of the migration to report.txt of my home folder, typing its path
+      Then the file report.txt of my home folder has
+        """
+        .virtualbricks.conf   migrated
+        DTN2hops_26_Feb_2026  migrated   1 warning
+
+        DTN2hops_26_Feb_2026
+          warning   .project:1  [Image:debian13] /home/carlo/VB_images/debian13.qcow2 not found, kept in the library
+
+        1 of 1 projects migrated.
+        """
+
+    Scenario: A migration closed while it runs keeps what it migrated, and migrates the rest at the next start; the project open last isn't saved
+      Given the projects lab01 to lab40 of Virtualbricks 2.1, copies of DTN2hops_26_Feb_2026
+      When I start Virtualbricks for the first time
+      And I close the migration window while it migrates
+      Then the main window shows the project new_project
+      When I quit Virtualbricks
+      Then Virtualbricks has quit
+      And some of the projects are migrated, and the others not
+      When I start Virtualbricks again
+      Then the migration window shows
+      And the projects not migrated before are migrated, and the others stay as they were
+
   Rule: A project of 2.1 copied into the workspace is migrated at the next
     start, and the project open last stays open
 
@@ -72,3 +99,33 @@ Feature: Migration
       And DTN2hops_26_Feb_2026 is migrated
       When I close the migration window
       Then the main window shows the project new_project
+
+    Scenario: An old project that can't be converted fails, says why, and stays as it was
+      Given the project lab of Virtualbricks 2.1, whose .project is
+        """
+        [Switch:sw1]
+        numports=32
+
+        [Switch:sw1]
+        numports=16
+        """
+      When I start Virtualbricks again
+      Then the migration window lists
+        | Project              | Bricks | Status      |
+        | DTN2hops_26_Feb_2026 | 13     | ⚠ 1 warning |
+        | lab                  | —      | ✗ Failed    |
+      When I select lab in the migration window
+      Then the migration window shows the error of lab: ".project:4 [Switch:sw1] defined twice (first at line 1); project not migrated"
+      And lab isn't migrated
+      And the old file lab/.project of the workspace stays as it was
+
+    Scenario: An old project that is a single file in the workspace becomes a folder with its project.toml
+      Given the project DTN2hops_26_Feb_2026 of Virtualbricks 2.1, as the single file lab.vbl in the workspace
+      When I start Virtualbricks again
+      Then the migration window lists
+        | Project              | Bricks | Status      |
+        | DTN2hops_26_Feb_2026 | 13     | ⚠ 1 warning |
+        | lab                  | 13     | ⚠ 1 warning |
+      And lab is migrated
+      And the folder of lab has project.toml
+      And the old file lab.vbl of the workspace stays as it was

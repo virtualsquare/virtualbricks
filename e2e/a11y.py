@@ -127,6 +127,17 @@ def write(accessible, text):
     )
 
 
+def erase(accessible):
+    """
+    Erase the text of the widget, as a user who selects it all and deletes
+    it.
+    """
+
+    Atspi.EditableText.delete_text(
+        accessible, 0, Atspi.Text.get_character_count(accessible)
+    )
+
+
 def find_all(root, role, name=None):
     """
     The widgets of role under root that show, with name if given: theirs,
