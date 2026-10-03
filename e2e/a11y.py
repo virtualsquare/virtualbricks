@@ -80,13 +80,55 @@ def find(root, role, name=None):
     return None
 
 
+def label(accessible) -> str:
+    """
+    The name of the widget, or else that of the label of it, as an entry
+    after a label whose mnemonic it is: a screen reader says that.
+    """
+
+    name = accessible.get_name()
+    if name:
+        return name
+    for relation in accessible.get_relation_set():
+        if relation.get_relation_type() == Atspi.RelationType.LABELLED_BY:
+            return " ".join(
+                relation.get_target(i).get_name()
+                for i in range(relation.get_n_targets())
+            )
+    return ""
+
+
+def text(accessible) -> str:
+    """The text of the widget, as that typed in an entry."""
+
+    return Atspi.Text.get_text(accessible, 0, -1)
+
+
+def write(accessible, text):
+    """
+    Write text in the widget at its cursor, as an assistive tool does: GTK
+    inserts it as if typed there.
+    """
+
+    offset = Atspi.Text.get_caret_offset(accessible)
+    # its length in bytes
+    Atspi.EditableText.insert_text(
+        accessible, offset, text, len(text.encode())
+    )
+
+
 def find_all(root, role, name=None):
-    """The widgets of role under root that show, with name if given."""
+    """
+    The widgets of role under root that show, with name if given: theirs,
+    or that of their label.
+    """
 
     try:
         if not showing(root) and root.get_role() != Atspi.Role.APPLICATION:
             return
-        if root.get_role_name() == role and name in (None, root.get_name()):
+        if root.get_role_name() == role and (
+            name is None or label(root) == name
+        ):
             yield root
         for i in range(root.get_child_count()):
             child = root.get_child_at_index(i)
@@ -127,9 +169,7 @@ def describe(root, depth=0):
     try:
         if not showing(root) and root.get_role() != Atspi.Role.APPLICATION:
             return []
-        lines = [
-            "  " * depth + f"[{root.get_role_name()}] {root.get_name()!r}"
-        ]
+        lines = ["  " * depth + f"[{root.get_role_name()}] {label(root)!r}"]
         for i in range(root.get_child_count()):
             child = root.get_child_at_index(i)
             if child is not None:

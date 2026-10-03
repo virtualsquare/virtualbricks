@@ -55,3 +55,28 @@ Feature: Bricks
     And w1 runs with the sockets of sw1 and sw2
     When I stop all the bricks
     Then no brick runs
+
+  @needs-vde_switch
+  Scenario: A switch wrapper runs on a switch that another program runs
+    Given a switch that another program runs
+    And Virtualbricks is running
+    When I add the switch wrapper wr1
+    Then wr1 is not configured
+    When I give wr1 the control folder of that switch
+    Then wr1 is stopped
+    When I start wr1
+    Then wr1 is running
+    When I stop wr1
+    Then wr1 is stopped
+    And the switch that another program runs still runs
+
+  Scenario: A switch wrapper without a control folder can't start, and its row says why
+    Given Virtualbricks is running
+    When I add the switch wrapper wr1
+    Then the list of bricks has
+      | Brick | Detail                     | State          |
+      | wr1   | Switch wrapper · no socket | Not configured |
+    And wr1 can't start: "Configure wr1 first"
+    When I try to start wr1
+    Then wr1 is not configured
+    And no brick runs

@@ -10,8 +10,12 @@ that the tests can't do yet: those needs come first.
   on a single press only, so adding sw2 right after sw1 did nothing. A
   click comes 0.5 s after the one before at least (`Browser.click` in
   `broadway.py`)
-- [ ] Type, as names and paths (TODO.md, End-to-end tests): Rename, the
-  search, the README, the paths of the file choosers (Ctrl+L)
+- [x] Type, as names and paths: `type()` in `harness.py` writes the text
+  through AT-SPI, at the cursor of a widget, as an assistive tool does:
+  the Broadway backend of GTK 3 takes some keys for accelerators and
+  mnemonics (README.md, What it can't do yet)
+- [ ] Keys alone: Escape, Return, the Ctrl+L of the file choosers; the
+  keys of Broadway can't, see the item before
 - [ ] Drag: a press, moves and a release, for a row dropped on another,
   which connects the two bricks, and for the picture of the Topology tab
 - [ ] Start Virtualbricks with the options of a scenario: `--listen`,
@@ -35,10 +39,12 @@ that the tests can't do yet: those needs come first.
   both run, the client connected; `@needs-vde_cryptcab`
 - [ ] Start a router between two switches
   `@needs-vde_router`, which this machine lacks
-- [ ] Run a switch wrapper on a switch that a fixture starts
-  its row stops saying Not configured once it has the path; needs typing
-- [ ] See why a brick can't start: a switch wrapper without a path
-  its row says Not configured, Start does nothing, no process
+- [x] Run a switch wrapper on a switch that a fixture starts
+  "A switch wrapper runs on a switch that another program runs",
+  `bricks.feature`
+- [x] See why a brick can't start: a switch wrapper without a path
+  "A switch wrapper without a control folder can't start, and its row
+  says why", `bricks.feature`
 - [ ] See a brick whose program fails: a `vde_switch` that exits at once
   its row says Stopped, the error shows, and the messages window has the
   output of the program

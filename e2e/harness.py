@@ -294,11 +294,47 @@ class Virtualbricks:
         )
         return widget
 
-    def click(self, role, name=None, within=None):
-        """Click in the middle of the widget, once it shows and is enabled."""
+    def disabled(self, role, name=None, within=None):
+        """The widget, once it shows and is disabled."""
 
-        widget = self.enabled(role, name, within)
+        widget = self.find(role, name, within)
+        self.wait_for(
+            lambda: not a11y.sensitive(widget),
+            f"the {role} {name!r} is disabled",
+        )
+        return widget
+
+    def click(self, role, name=None, within=None, enabled=True):
+        """
+        Click in the middle of the widget, once it shows, and is enabled if
+        enabled: a user may click a disabled one too.
+        """
+
+        if enabled:
+            widget = self.enabled(role, name, within)
+        else:
+            widget = self.find(role, name, within)
         self.browser.click(*a11y.center(widget))
+        return widget
+
+    def type(self, text, role, name=None, within=None):
+        """
+        Click the widget, once it shows and is enabled, and type text at its
+        cursor; then the widget has it.
+
+        The text goes in through AT-SPI, not as keys: GTK's Broadway backend
+        leaves unset the modifiers that a key consumes, which GTK reads
+        anyway (_gtk_key_hash_lookup), so a key sometimes matches an
+        accelerator or a mnemonic, as a "p" Ctrl+P and a "b" the Alt+B of
+        the tab Bricks.
+        """
+
+        widget = self.click(role, name, within)
+        a11y.write(widget, text)
+        what = f"the {role}" if name is None else f"the {role} {name!r}"
+        self.wait_for(
+            lambda: text in a11y.text(widget), f"{what} has {text!r}"
+        )
         return widget
 
     def choose(self, item, menu):

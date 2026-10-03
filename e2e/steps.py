@@ -35,7 +35,9 @@ See README.md for how to add a step.
 import os
 import shutil
 import subprocess
+import tempfile
 import time
+import types
 
 import pytest
 from pytest_bdd import given, parsers, step, then, when
@@ -67,6 +69,41 @@ def brick_processes():
     """The processes of each brick that a step started: {name: pids}."""
 
     return {}
+
+
+@pytest.fixture
+def other_switch(desktop, tmp_path):
+    """
+    A vde_switch that the tests run, as another program would, for a switch
+    wrapper: its control folder, path, and its process. It is in the
+    runtime folder of the tests, out of that of Virtualbricks, and quits at
+    the end of the scenario.
+    """
+
+    folder = tempfile.mkdtemp(dir=desktop.runtime)
+    path = os.path.join(folder, "switch.ctl")
+    with open(tmp_path / "other-switch.log", "wb") as log:
+        # it quits at the end of its input
+        process = subprocess.Popen(
+            ["vde_switch", "-s", path],
+            stdin=subprocess.PIPE,
+            stdout=log,
+            stderr=log,
+        )
+    try:
+        harness.a11y.wait_for(
+            lambda: os.path.exists(os.path.join(path, "ctl")),
+            "the switch of another program listens",
+        )
+        yield types.SimpleNamespace(path=path, process=process)
+    finally:
+        process.stdin.close()
+        try:
+            process.wait(harness.TIMEOUT)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
+        shutil.rmtree(folder, ignore_errors=True)
 
 
 # Virtualbricks
@@ -171,13 +208,25 @@ def join(virtualbricks, left, right, name):
     virtualbricks.find("button", f"Start {name}")
 
 
+# The kinds of bricks that run no program, as their rows say them: a switch
+# wrapper is a switch that another program runs.
+NO_PROGRAM = ("Switch wrapper",)
+
+
 @when(words("I start {name:Brick}"))
 def start_brick(virtualbricks, brick_processes, name):
-    """Its button Start; then it runs, with new processes."""
+    """
+    Its button Start; then it runs, with new processes, unless it is of a
+    kind that runs no program.
+    """
 
+    detail = virtualbricks.names("label", within=virtualbricks.row(name))[1]
     before = virtualbricks.children()
     virtualbricks.click("button", f"Start {name}")
     virtualbricks.find("button", f"Stop {name}")
+    if detail.startswith(NO_PROGRAM):
+        brick_processes[name] = set()
+        return
     brick_processes[name] = virtualbricks.wait_for(
         lambda: virtualbricks.children() - before, f"a process of {name} runs"
     )
@@ -187,6 +236,30 @@ def start_brick(virtualbricks, brick_processes, name):
 def stop_brick(virtualbricks, name):
     virtualbricks.click("button", f"Stop {name}")
     virtualbricks.find("button", f"Start {name}")
+
+
+@when(words("I try to start {name:Brick}"))
+def try_start(virtualbricks, name):
+    """A click on its Start, as a user may click it also when disabled."""
+
+    row = virtualbricks.row(name)
+    virtualbricks.click("button", f"Start {name}", within=row, enabled=False)
+
+
+@when(words("I give {name:Brick} the control folder of that switch"))
+def give_folder(virtualbricks, other_switch, name):
+    """
+    Configure… in its menu, the folder of the switch of another program
+    typed in Control folder, then OK; its row says the folder.
+    """
+
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Configure…")
+    virtualbricks.type(other_switch.path, "text", "Control folder")
+    virtualbricks.click("button", "OK")
+    row = virtualbricks.row(name)
+    detail = f"Switch wrapper · {other_switch.path}"
+    virtualbricks.find("label", detail, within=row)
 
 
 @when("I start all the bricks")
@@ -237,11 +310,23 @@ def process(virtualbricks, name):
     """
 
     row = virtualbricks.row(name)
-    state = virtualbricks.find("label", "Running", within=row).get_parent()
+    virtualbricks.find("label", "Running", within=row)
+    state = state_of(virtualbricks, name)
     words = virtualbricks.wait_for(
         lambda: state.get_description(), f"the row of {name} tells its process"
     )
     return int(words.removeprefix("Process "))
+
+
+def state_of(virtualbricks, name):
+    """
+    The state of the brick in its row: its words, after a dot or a warning
+    sign, whose tooltip says more, as the screen readers read it.
+    """
+
+    row = virtualbricks.row(name)
+    words = virtualbricks.names("label", within=row)[-1]
+    return virtualbricks.find("label", words, within=row).get_parent()
 
 
 @then(words("{name:Brick} is running"))
@@ -341,7 +426,7 @@ def no_brick_runs(virtualbricks, brick_processes):
     """
     No row of the list says Running, and no process of a brick runs:
     neither those that the steps started nor any with a socket of the
-    tests.
+    tests; Virtualbricks runs no program.
     """
 
     virtualbricks.wait_for(
@@ -351,9 +436,46 @@ def no_brick_runs(virtualbricks, brick_processes):
     pids = set().union(*brick_processes.values())
     virtualbricks.wait_for(
         lambda: not pids & virtualbricks.children()
-        and not virtualbricks.bricks(),
+        and not virtualbricks.bricks()
+        and not virtualbricks.children(),
         "the processes of the bricks quit",
     )
+
+
+@then(words("{name:Brick} is not configured"))
+def not_configured(virtualbricks, name):
+    """
+    Its row says so, its Start is disabled, and no process has its
+    sockets.
+    """
+
+    row = virtualbricks.row(name)
+    virtualbricks.find("label", "Not configured", within=row)
+    virtualbricks.disabled("button", f"Start {name}", within=row)
+    assert not virtualbricks.bricks(
+        name
+    ), f"a process has the sockets of {name}"
+
+
+@then(words('{name:Brick} can\'t start: "{why}"'))
+def cant_start(virtualbricks, name, why):
+    """
+    Its Start is disabled, and the state in its row says why, in its
+    tooltip, which the screen readers read.
+    """
+
+    row = virtualbricks.row(name)
+    virtualbricks.disabled("button", f"Start {name}", within=row)
+    state = state_of(virtualbricks, name)
+    try:
+        virtualbricks.wait_for(
+            lambda: state.get_description() == why,
+            f"the row of {name} says why it can't start",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the row of {name} says {state.get_description()!r}, not {why!r}"
+        ) from None
 
 
 @then(words("{name:Brick} is stopped"))
@@ -373,6 +495,21 @@ def brick_stopped(virtualbricks, brick_processes, name):
         and not virtualbricks.bricks(name),
         f"the processes of {name} quit",
     )
+
+
+# A switch that another program runs: the fixture other_switch
+
+
+@given("a switch that another program runs")
+def other_switch_runs(other_switch):
+    """The tests run it, in other_switch."""
+
+
+@then("the switch that another program runs still runs")
+def other_switch_still_runs(other_switch):
+    assert other_switch.process.poll() is None, "it quit"
+    control = os.path.join(other_switch.path, "ctl")
+    assert os.path.exists(control), f"{control} is gone"
 
 
 # Migration: the files of Virtualbricks 2.1
