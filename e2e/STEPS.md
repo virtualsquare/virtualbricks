@@ -287,7 +287,7 @@ def stop_brick(virtualbricks, name):
   | `wait_for(get, what)` | What `get()` returns, once it is true |
   | `children(parent=None)` | The processes that Virtualbricks, or the process `parent`, started and run; for the windows of another, those of the other |
   | `command_line(pid)` | The words of the command line of a process; none once it has quit |
-  | `bricks(name=None)` | The processes with sockets in the run folder of the tests; with a name, those of that brick |
+  | `bricks(name=None)` | The processes with sockets in the run folder of the tests, as words of their command line or in one, as the `path=` of QEMU; with a name, those of that brick |
   | `describe()` | The widgets that show, one a line |
   | `start(*options)` | Starts it with the options of a scenario, and waits for its main window; with `--listen` alone, until it listens; with `--no-gui`, only that |
   | `launch(*options)` | Starts it with the options, without waiting |

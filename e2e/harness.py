@@ -30,6 +30,7 @@ lock, which the Virtualbricks of the tests take in their own folder.
 
 import glob
 import os
+import re
 import shutil
 import signal
 import socket
@@ -648,14 +649,18 @@ class Virtualbricks:
         """
         The processes whose sockets are in the run folder of the tests:
         bricks of this Virtualbricks, or left by another. With name, those
-        of that brick only: its sockets are name.ctl, name.mgmt.
+        of that brick only: its sockets are name.ctl, name.mgmt. A socket is
+        a word of the command line, or in one, as QEMU has them:
+        ``socket,id=mon,path=PATH,server=on``, ``vde,sock=PATH``.
         """
 
         folder = os.path.join(self.desktop.runtime, "virtualbricks", "")
+        # a path, up to the comma of the next option
+        path = re.compile(re.escape(folder) + "[^,]*")
         pids = []
         for pid in _pids():
             words = self.command_line(pid)
-            sockets = [word for word in words if word.startswith(folder)]
+            sockets = [found for word in words for found in path.findall(word)]
             if name is not None:
                 sockets = [
                     word
