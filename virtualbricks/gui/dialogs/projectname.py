@@ -109,27 +109,29 @@ class ProjectNameDialog:
             RENAME: _("New name"),
             DUPLICATE: _("Name of the copy"),
         }
-        box.pack_start(_label(labels[self.kind], bold=True), False, False, 0)
         self.name_entry = Gtk.Entry(visible=True, activates_default=True)
+        # the screen readers say the label with the field
+        name_label = _label(labels[self.kind], bold=True)
+        name_label.set_mnemonic_widget(self.name_entry)
+        box.pack_start(name_label, False, False, 0)
         box.pack_start(self.name_entry, False, False, 0)
         self.name_message = _label(dim=True, wrap=True)
         box.pack_start(self.name_message, False, False, 0)
 
         self.description_view = None
         if self.kind == NEW:
-            box.pack_start(
-                _label(_("Description"), bold=True, margin_top=6),
-                False,
-                False,
-                0,
+            self.description_view = Gtk.TextView(
+                visible=True, wrap_mode=Gtk.WrapMode.WORD_CHAR
             )
+            description_label = _label(
+                _("Description"), bold=True, margin_top=6
+            )
+            description_label.set_mnemonic_widget(self.description_view)
+            box.pack_start(description_label, False, False, 0)
             scrolled = Gtk.ScrolledWindow(
                 visible=True,
                 shadow_type=Gtk.ShadowType.IN,
                 min_content_height=80,
-            )
-            self.description_view = Gtk.TextView(
-                visible=True, wrap_mode=Gtk.WrapMode.WORD_CHAR
             )
             scrolled.add(self.description_view)
             box.pack_start(scrolled, True, True, 0)
