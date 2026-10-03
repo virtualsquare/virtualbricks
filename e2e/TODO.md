@@ -101,9 +101,10 @@ that the tests can't do yet: those needs come first.
 
 # Projects
 
-- [ ] Make a new project from the Projects window, with the name it
+- [x] Make a new project from the Projects window, with the name it
   suggests
-  the main window shows it; its folder has `project.toml`
+  "A new project made in the Projects window, with the name it suggests,
+  opens", `projects.feature`
 - [ ] Open another project from the Projects window
   the main window shows its bricks; refused while a brick runs
 - [ ] Open the project open last at the next start, after opening

@@ -28,6 +28,8 @@ The steps of a user:
 | `When I wait 5 seconds` | Waits |
 | `When I quit Virtualbricks` | File, then Quit |
 | `When I start Virtualbricks again` | Starts it with its settings, as after it ran before, on a new screen, and waits for a window |
+| `When I open the Projects window` | Projects…, in the menu Projects |
+| `When I make a new project with the name it suggests, new_project-2` | New…, in the Projects window: its name must be the one the dialog suggests; then Create, and the dialog closes |
 | `Then sw1 is running` | Its row says Running, and the processes of its start run |
 | `Then sw1 is still running` | The same |
 | `Then w1 runs with the sockets of sw1 and sw2` | It runs, and a `vde_plug` of its start is in the socket of each switch: the one its `vde_switch` listens on |
@@ -40,6 +42,7 @@ The steps of a user:
 | `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |
 | `Then Virtualbricks hasn't quit` | It still runs, and its main window shows |
 | `Then the main window shows the project lab` | Its title names the project |
+| `Then the folder of new_project-2 has project.toml` | The folder of the project in the workspace has the file of a project, which TOML reads, with its format |
 | `Then the list of bricks has`, with a table under it | The rows of the list, all of them and in order, scrolled through, once they are those of the table: the name of each brick, its detail and its state; with only the titles of the columns, no brick, as the tab says No Bricks Yet |
 | `Then the list of bricks shows only sw1, with its process` | Its row alone, once it says Running and, in place of its summary, a process of its start, which still runs |
 | `Then project.toml has the bricks`, with a table under it | The bricks of the file of the project, all of them and in order: the name of each and its type |

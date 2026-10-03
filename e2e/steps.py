@@ -736,6 +736,57 @@ def brick_stopped(virtualbricks, brick_processes, name):
     )
 
 
+# Projects
+
+PROJECTS_WINDOW = "Projects"
+
+
+@when("I open the Projects window")
+def open_projects(virtualbricks):
+    """Projects…, in the menu Projects."""
+
+    virtualbricks.choose("Projects…", "Projects")
+    virtualbricks.find("frame", PROJECTS_WINDOW)
+
+
+@when(words("I make a new project with the name it suggests, {name:Project}"))
+def new_project(virtualbricks, name):
+    """
+    New…, in the Projects window: the name it suggests is name; then Create,
+    and the dialog closes.
+    """
+
+    window = virtualbricks.find("frame", PROJECTS_WINDOW)
+    virtualbricks.click("button", "New…", within=window)
+    dialog = virtualbricks.find("dialog", "New Project")
+    entry = virtualbricks.find("text", "Name", within=dialog)
+    try:
+        virtualbricks.wait_for(
+            lambda: harness.a11y.text(entry) == name,
+            f"the dialog suggests {name}",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the dialog suggests {harness.a11y.text(entry)!r}, not {name!r}"
+        ) from None
+    virtualbricks.click("button", "Create", within=dialog)
+    virtualbricks.gone("dialog", "New Project")
+
+
+@then(words("the folder of {name:Project} has project.toml"))
+def project_toml(virtualbricks, name):
+    """
+    The folder of the project in the workspace has the file of a project of
+    this version, which TOML reads.
+    """
+
+    path = os.path.join(virtualbricks.workspace, name, "project.toml")
+    assert os.path.isfile(path), f"{path} is missing"
+    with open(path, "rb") as file:
+        data = tomllib.load(file)
+    assert "format" in data, f"{path} has no format: {data}"
+
+
 # A program that fails, and what Virtualbricks says of it
 
 
