@@ -34,6 +34,7 @@ See STEPS.md for the steps there are, and how to add one.
 
 import configparser
 import glob
+import json
 import os
 import re
 import shlex
@@ -548,8 +549,7 @@ def change_ports(virtualbricks, name, ports):
     mode turned on.
     """
 
-    virtualbricks.click("button", f"Menu of {name}")
-    virtualbricks.click("button", "Configure…")
+    configure(virtualbricks, name)
     spin = virtualbricks.enabled("spin button", "Ports")
     now = int(harness.a11y.position(spin)[0])
     virtualbricks.spin("Ports", ports - now)
@@ -558,6 +558,73 @@ def change_ports(virtualbricks, name, ports):
         virtualbricks.click("toggle button", "Hub mode")
     virtualbricks.wait_for(
         lambda: harness.a11y.checked(hub), "Hub mode is turned on"
+    )
+
+
+def configure(virtualbricks, name):
+    """Configure…, in the menu of the brick: its settings show."""
+
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Configure…")
+
+
+def settings_page(virtualbricks, page):
+    """The page of the settings of a brick, in the list at their left."""
+
+    virtualbricks.click("label", page, within=virtualbricks.row(page))
+
+
+@when(
+    words(
+        'I turn {state} "{setting}" in the settings of {name:Brick}, on its'
+        " page {page}"
+    )
+)
+def turn_brick_setting(virtualbricks, state, setting, name, page):
+    """
+    Configure… in its menu; on the page of its settings, the switch of the
+    setting, which is the other way, turned on or off; then OK.
+    """
+
+    on = turned(state)
+    configure(virtualbricks, name)
+    settings_page(virtualbricks, page)
+    switch = virtualbricks.enabled("toggle button", setting)
+    assert harness.a11y.checked(switch) != on, f"{setting} is already {state}"
+    virtualbricks.click("toggle button", setting)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(switch) == on, f"{setting} is {state}"
+    )
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
+@when(words("I terminate {name:Brick}, from its menu"))
+def terminate(virtualbricks, brick_processes, name):
+    """
+    In its menu, Process and its number, then Terminate; then it can start
+    again, and the processes of its start have quit.
+    """
+
+    virtualbricks.click("button", f"Menu of {name}")
+    process = virtualbricks.wait_for(
+        lambda: next(
+            (
+                item
+                for item in virtualbricks.names("button")
+                if item.startswith("Process ")
+            ),
+            None,
+        ),
+        f"the menu of {name} has its process",
+    )
+    virtualbricks.click("button", process)
+    virtualbricks.click("button", "Terminate")
+    virtualbricks.find("button", f"Start {name}")
+    pids = brick_processes.get(name, set())
+    virtualbricks.wait_for(
+        lambda: not pids & virtualbricks.children(),
+        f"the processes of {name} quit",
     )
 
 
@@ -1425,16 +1492,29 @@ def project_copy(virtualbricks, copy, name):
 
 # Disk images
 
+IMAGES = "Images"
 # The units of the sizes of the disks, as Virtualbricks counts them
 UNITS = {"MB": 1000**2, "GB": 1000**3}
 # The folder of the images, in the workspace
 IMAGE_FOLDER = "vimages"
 ADD_IMAGE = "Add an Existing Image"
 CHOOSE_IMAGE = "Choose a Disk Image"
+NEW_DISK = "New Empty Disk"
+# What New Empty Disk has at first: the unit of the size, and the format
+NEW_DISK_UNIT = "GB"
+NEW_DISK_FORMAT = "qcow2"
+REMOVE_IMAGE = "Remove Image"
+FIND_FILE = "Find the File"
+CHOOSE_FILE = "Choose the File"
 # What the tab Images says in place of its list, when there are no images
 NO_IMAGES = "No Images Yet"
 # Between the parts of the detail of a row
 SEPARATOR = " · "
+# The fact of the details of an image that isn't of qemu-img info: when
+# the file changed
+CHANGED = "Changed"
+# The options of QEMU that give a machine a disk, before its file
+DISK_OPTIONS = ("-hda", "-hdb", "-hdc", "-hdd", "-fda", "-fdb", "-mtdblock")
 
 
 @given(
@@ -1454,6 +1534,20 @@ def disk_image(virtualbricks, file, size, unit):
     )
 
 
+@given(
+    words(
+        "the empty disk image {file} of {size:d} {unit}, in my home folder,"
+        " with the snapshot {snapshot}"
+    )
+)
+def disk_image_snapshot(virtualbricks, file, size, unit, snapshot):
+    """The same, with a snapshot, made with qemu-img snapshot."""
+
+    disk_image(virtualbricks, file, size, unit)
+    path = os.path.join(virtualbricks.home, file)
+    subprocess.run(["qemu-img", "snapshot", "-c", snapshot, path], check=True)
+
+
 @when(
     words(
         "I add an existing image, {file} of my home folder, with the name it"
@@ -1468,25 +1562,231 @@ def add_image(virtualbricks, file, name):
     folder as it is, and the dialog closes.
     """
 
-    tab = virtualbricks.click("page tab", "Images")
+    add_existing(virtualbricks, file, name, copy=True)
+
+
+@when(
+    words(
+        "I add an existing image, {file} of my home folder, used where it is,"
+        " with the name it suggests, {name:Image}"
+    )
+)
+def add_image_in_place(virtualbricks, file, name):
+    """The same, with Use it where it is in place of the copy."""
+
+    add_existing(virtualbricks, file, name, copy=False)
+
+
+def add_existing(virtualbricks, file, name, copy):
+    """
+    Add Image, then Existing Image…, with the file of the home and the name
+    it suggests; the file copied to the image folder, as the dialog has it
+    at first, or used where it is.
+    """
+
+    tab = virtualbricks.click("page tab", IMAGES)
     virtualbricks.click("button", "Add Image", within=tab)
     virtualbricks.click("button", "Existing Image…")
     dialog = virtualbricks.find("dialog", ADD_IMAGE)
-    # the button of the file names it: none yet
+    choose_home_file(virtualbricks, dialog, CHOOSE_IMAGE, file)
+    suggests(virtualbricks, dialog, "Name", name)
+    # it shows once the file is read, a disk image out of the workspace
+    copies = virtualbricks.find(
+        "radio button", "Copy it to the image folder", within=dialog
+    )
+    assert harness.a11y.checked(copies), "the file is used where it is"
+    if not copy:
+        in_place = virtualbricks.click(
+            "radio button", "Use it where it is", within=dialog
+        )
+        virtualbricks.wait_for(
+            lambda: harness.a11y.checked(in_place), "Use it where it is is on"
+        )
+    virtualbricks.click("button", "Add", within=dialog)
+    virtualbricks.gone("dialog", ADD_IMAGE)
+
+
+def choose_home_file(virtualbricks, dialog, title, file):
+    """
+    In the dialog, the button of the file, which names none yet; then, in
+    the file chooser of the title, Home, the file, and Open.
+    """
+
     virtualbricks.click("button", "(None)", within=dialog)
-    chooser = virtualbricks.find("file chooser", CHOOSE_IMAGE)
+    chooser = virtualbricks.find("file chooser", title)
     virtualbricks.click("label", "Home", within=chooser)
     virtualbricks.click("table cell", file, within=chooser)
     virtualbricks.click("button", "Open", within=chooser)
-    virtualbricks.gone("file chooser", CHOOSE_IMAGE)
-    suggests(virtualbricks, dialog, "Name", name)
-    # it shows once the file is read, a disk image out of the workspace
-    copy = virtualbricks.find(
-        "radio button", "Copy it to the image folder", within=dialog
+    virtualbricks.gone("file chooser", title)
+
+
+@when(
+    words(
+        "I add a new empty disk, {name:Image}, of {size:d} {unit} in the"
+        " format {fmt}"
     )
-    assert harness.a11y.checked(copy), "the file is used where it is"
-    virtualbricks.click("button", "Add", within=dialog)
-    virtualbricks.gone("dialog", ADD_IMAGE)
+)
+def add_new_disk(virtualbricks, name, size, unit, fmt):
+    """
+    The tab Images, Add Image, then New Empty Disk…; in the dialog, the
+    name typed, the size typed and its unit chosen, the format chosen, in
+    the image folder as it is; then Create, and the dialog closes.
+    """
+
+    tab = virtualbricks.click("page tab", IMAGES)
+    virtualbricks.click("button", "Add Image", within=tab)
+    virtualbricks.click("button", "New Empty Disk…")
+    dialog = virtualbricks.find("dialog", NEW_DISK)
+    virtualbricks.type(name, "text", "Name", within=dialog)
+    virtualbricks.type(
+        str(size), "spin button", "Size", within=dialog, over=True
+    )
+    choose_in_combo(virtualbricks, dialog, NEW_DISK_UNIT, unit)
+    choose_in_combo(virtualbricks, dialog, NEW_DISK_FORMAT, fmt)
+    virtualbricks.click("button", "Create", within=dialog)
+    virtualbricks.gone("dialog", NEW_DISK)
+
+
+def choose_in_combo(virtualbricks, within, shown, choice):
+    """The combo box that shows shown, then choice in its list."""
+
+    if shown == choice:
+        return
+    # named after what it shows
+    combo = virtualbricks.click("combo box", shown, within=within)
+    virtualbricks.click("menu item", choice, within=combo)
+    virtualbricks.find("combo box", choice, within=within)
+
+
+@when(words("I give {vm:Brick} the image {name:Image}, on its disk {device}"))
+def give_image(virtualbricks, vm, name, device):
+    """
+    Configure… in its menu; on the page Disks of its settings, Add Disk and
+    the device, then the image in the picker of the new disk; then OK.
+    """
+
+    configure(virtualbricks, vm)
+    settings_page(virtualbricks, "Disks")
+    virtualbricks.click("toggle button", "Add Disk")
+    virtualbricks.click("button", device)
+    disk = virtualbricks.row(device)
+    # the picker, named after what it shows
+    virtualbricks.click("toggle button", "No image", within=disk)
+    virtualbricks.click("label", name, within=virtualbricks.row(name))
+    virtualbricks.find("toggle button", name, within=disk)
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {vm}")
+
+
+@when(words("I open the details of {name:Image}"))
+def open_details(virtualbricks, name):
+    """Details…, in its menu, in the tab Images; then they show."""
+
+    tab = on_tab(virtualbricks, IMAGES)
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Details…")
+    entry = virtualbricks.find("text", "Name", within=tab)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.text(entry) == name, f"the details of {name}"
+    )
+
+
+@when(
+    words(
+        "I remove the image {name:Image}, which {disks} loses, and move its"
+        " file to the trash"
+    )
+)
+def remove_to_trash(virtualbricks, name, disks):
+    """
+    Remove…, in its menu, in the tab Images: the dialog asks, and says
+    that the disks lose it; Also move the file to the trash turned on, then
+    Remove, and the dialog closes.
+    """
+
+    dialog = remove_image(virtualbricks, name, disks)
+    trash = virtualbricks.wait_for(
+        lambda: next(
+            (
+                check
+                for check in harness.a11y.find_all(dialog, "check box")
+                if check.get_name().startswith("Also move the file to the")
+            ),
+            None,
+        ),
+        "the dialog offers to move the file to the trash",
+    )
+    virtualbricks.click("check box", trash.get_name(), within=dialog)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(trash), "the file goes to the trash"
+    )
+    virtualbricks.click("button", "Remove", within=dialog)
+    virtualbricks.gone("dialog", REMOVE_IMAGE)
+
+
+@when(
+    words(
+        "I remove the image {name:Image}, which {disks} loses, and whose file"
+        " {project:Project} uses too"
+    )
+)
+def remove_shared(virtualbricks, name, disks, project):
+    """
+    The same, where the dialog says that the project uses the file too, and
+    that it stays, and offers nothing for it; then Remove.
+    """
+
+    dialog = remove_image(virtualbricks, name, disks)
+    stays = f"The project {project} uses the file too: it stays."
+    virtualbricks.find("label", stays, within=dialog)
+    checks = virtualbricks.names("check box", within=dialog)
+    assert not checks, f"the dialog offers {checks}"
+    virtualbricks.click("button", "Remove", within=dialog)
+    virtualbricks.gone("dialog", REMOVE_IMAGE)
+
+
+def remove_image(virtualbricks, name, disks):
+    """
+    Remove…, in the menu of the image, in the tab Images: the dialog, once
+    it asks to remove it and says that the disks, as "the disk vm1 (hda)",
+    lose it.
+    """
+
+    on_tab(virtualbricks, IMAGES)
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Remove…")
+    dialog = virtualbricks.find("dialog", REMOVE_IMAGE)
+    virtualbricks.find("label", f"Remove the image {name}?", within=dialog)
+    # then what becomes of their private copies
+    loses = f"{disks[:1].upper()}{disks[1:]} will have no image."
+    virtualbricks.wait_for(
+        lambda: any(
+            label.startswith(loses)
+            for label in virtualbricks.names("label", within=dialog)
+        ),
+        f"the dialog says: {loses}",
+    )
+    return dialog
+
+
+@when(words("I find the file of {name:Image}, {file} of my home folder"))
+def find_file(virtualbricks, name, file):
+    """
+    Find the File…, in its menu, in the tab Images; in the dialog, which
+    asks where the file is, the button of the file, then Home and the file
+    in the file chooser, and Open; then Use This File, and the dialog
+    closes.
+    """
+
+    on_tab(virtualbricks, IMAGES)
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Find the File…")
+    dialog = virtualbricks.find("dialog", FIND_FILE)
+    where = f"Where is the file of {name}?"
+    virtualbricks.find("label", where, within=dialog)
+    choose_home_file(virtualbricks, dialog, CHOOSE_FILE, file)
+    virtualbricks.click("button", "Use This File", within=dialog)
+    virtualbricks.gone("dialog", FIND_FILE)
 
 
 def image_rows(virtualbricks):
@@ -1504,7 +1804,7 @@ def image_rows(virtualbricks):
 
     return [
         [row[0], detail(row[1]), *row[2:]]
-        for row in tab_rows(virtualbricks, "Images", NO_IMAGES)
+        for row in tab_rows(virtualbricks, IMAGES, NO_IMAGES)
     ]
 
 
@@ -1517,18 +1817,128 @@ def images_listed(virtualbricks, datatable):
     takes, and its state.
     """
 
-    def rows():
-        return datatable[:1] + image_rows(virtualbricks)
+    has_rows(
+        virtualbricks,
+        "the list of images",
+        lambda: image_rows(virtualbricks),
+        datatable,
+    )
 
+
+def image_facts(virtualbricks):
+    """
+    The facts of the details of an image, {name: value}: each name a label,
+    its value the label beside it, in the same row of their grid.
+    """
+
+    tab = virtualbricks.find("page tab", IMAGES)
+    grid = virtualbricks.find("label", "File", within=tab).get_parent()
+    rows = {}
+    for label in harness.a11y.find_all(grid, "label"):
+        x, y, _width, _height = harness.a11y.extents(label)
+        rows.setdefault(y, []).append((x, label.get_name()))
+    # the name, then the value
+    return dict(
+        tuple(name for _x, name in sorted(row)) for row in rows.values()
+    )
+
+
+def details_say(virtualbricks, name, wanted, facts):
+    """The details of the image, once facts() of them are wanted."""
+
+    tab = virtualbricks.find("page tab", IMAGES)
+    entry = virtualbricks.find("text", "Name", within=tab)
+    assert harness.a11y.text(entry) == name, f"not the details of {name}"
     try:
         virtualbricks.wait_for(
-            lambda: rows() == datatable,
-            "the list of images has the rows of the table",
+            lambda: facts() == wanted, f"the details of {name} say {wanted}"
         )
     except AssertionError:
         raise AssertionError(
-            f"the list of images has {rows()}, not {datatable}"
+            f"the details of {name} say {facts()}, not {wanted}"
         ) from None
+
+
+@then(words("the details of {name:Image} have"))
+def details_have(virtualbricks, name, datatable):
+    """
+    The facts of the table under the step, a name and a value each, are
+    those of the details of the image, once it has read its file.
+    """
+
+    wanted = dict(datatable[1:])
+
+    def facts():
+        shown = image_facts(virtualbricks)
+        return {fact: shown.get(fact) for fact in wanted}
+
+    details_say(virtualbricks, name, wanted, facts)
+
+
+@then(
+    words(
+        "the details of {name:Image} say what qemu-img info says of {file} of"
+        " the image folder"
+    )
+)
+def details_info(virtualbricks, name, file):
+    """
+    The facts of the details of the image are those of qemu-img info of the
+    file: its path, its format, the size of its disk and the space it takes,
+    its snapshots, if any; and when the file changed, which isn't of
+    qemu-img.
+    """
+
+    path = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    info = image_info(path)
+    wanted = {
+        "File": short_path(virtualbricks, path),
+        "Format": info["format"],
+        "Size": f"{human_size(info['virtual-size'])} disk,"
+        f" {human_size(info['actual-size'])} on disk",
+    }
+    snapshots = [snapshot["name"] for snapshot in info.get("snapshots", ())]
+    if snapshots:
+        wanted["Snapshots"] = ", ".join(snapshots)
+
+    def facts():
+        # once the file is read, they say when it changed
+        shown = image_facts(virtualbricks)
+        return shown if shown.pop(CHANGED, None) else None
+
+    details_say(virtualbricks, name, wanted, facts)
+
+
+def image_info(path, shared=False):
+    """
+    What qemu-img info says of the file at path; shared, also while a
+    machine has it, which locks it.
+    """
+
+    words = ["qemu-img", "info", "--output=json", path]
+    if shared:
+        words.insert(2, "-U")
+    done = subprocess.run(words, capture_output=True, text=True, check=True)
+    return json.loads(done.stdout)
+
+
+def human_size(size):
+    """A size in bytes as Virtualbricks says it: B, KB, MB or GB of 1000."""
+
+    if size < 1000:
+        return f"{size} B"
+    for unit in ("KB", "MB", "GB"):
+        size /= 1000
+        if size < 1000 or unit == "GB":
+            return f"{size:.1f} {unit}"
+
+
+def short_path(virtualbricks, path):
+    """A path as Virtualbricks says it: with ~ for the home."""
+
+    if path.startswith(virtualbricks.home + os.sep):
+        return "~" + path[len(virtualbricks.home) :]
+    return path
 
 
 @then(words("the image folder has {file}, a copy of that of my home folder"))
@@ -1546,6 +1956,94 @@ def image_copied(virtualbricks, file):
         assert ours.read() == theirs.read(), f"{copy} differs from {original}"
 
 
+@then(words("the image folder has no copy of {file}"))
+def image_not_copied(virtualbricks, file):
+    """
+    The file of the home stays, and no file of the image folder of the
+    workspace, if there is one, has its bytes.
+    """
+
+    original = os.path.join(virtualbricks.home, file)
+    assert os.path.isfile(original), f"{original} is gone"
+    folder = os.path.join(virtualbricks.workspace, IMAGE_FOLDER)
+    with open(original, "rb") as theirs:
+        data = theirs.read()
+    for copy in glob.glob(os.path.join(folder, "*")):
+        with open(copy, "rb") as ours:
+            assert ours.read() != data, f"{copy} is a copy of {original}"
+
+
+@then(words("the image folder has {file}, a {fmt} disk of {size:d} {unit}"))
+def image_made(virtualbricks, file, fmt, size, unit):
+    """
+    The image folder of the workspace has the file, which qemu-img info
+    says is of the format, with a disk of the size, up to a sector more.
+    """
+
+    path = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    assert os.path.isfile(path), f"{path} is missing"
+    info = image_info(path)
+    assert info["format"] == fmt, f"{file} is {info['format']}, not {fmt}"
+    least = size * UNITS[unit]
+    virtual = info["virtual-size"]
+    assert least <= virtual < least + 512, f"{file} has {virtual} bytes"
+
+
+@then(words("{vm:Brick} runs on a private copy of {file} of the image folder"))
+def runs_on_copy(virtualbricks, brick_processes, vm, file):
+    """
+    It runs, and a disk of its QEMU is a file of its own above the file of
+    the image folder, as qemu-img info says: its private copy.
+    """
+
+    brick_running(virtualbricks, brick_processes, vm)
+    image = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    disks = []
+    for pid in brick_processes[vm]:
+        words = virtualbricks.command_line(pid)
+        disks += [
+            disk
+            for option, disk in zip(words, words[1:])
+            if option in DISK_OPTIONS
+        ]
+    assert disks, f"{vm} runs with no disk"
+    above = []
+    for disk in disks:
+        info = image_info(disk, shared=True)
+        backing = info.get("full-backing-filename")
+        above.append(backing)
+        if disk != image and backing == image:
+            return
+    raise AssertionError(f"the disks {disks} of {vm} are above {above}")
+
+
+@then(words("the file {file} of the image folder is in the trash"))
+def image_in_trash(virtualbricks, file):
+    """
+    The image folder of the workspace has the file no more, and the trash
+    of the home has it: a .trashinfo that says where it was, and the file.
+    """
+
+    path = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    virtualbricks.wait_for(
+        lambda: not os.path.exists(path), f"the image folder has no {file}"
+    )
+    trash = os.path.join(virtualbricks.home, TRASH)
+    trashed = trashed_as(trash, path)
+    assert trashed is not None, f"the trash has no {path}"
+    assert os.path.isfile(os.path.join(trash, "files", trashed))
+
+
+@then(words("the image folder still has {file}, in no trash"))
+def image_kept(virtualbricks, file):
+    """The image folder of the workspace has the file, and the trash not."""
+
+    path = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    assert os.path.isfile(path), f"{path} is gone"
+    trash = os.path.join(virtualbricks.home, TRASH)
+    assert trashed_as(trash, path) is None, f"the trash has {path}"
+
+
 @then(
     words(
         "project.toml has the image {name:Image}, of {file} in the image"
@@ -1559,11 +2057,46 @@ def project_image(virtualbricks, name, file):
     project.
     """
 
+    path = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    has_image_file(virtualbricks, name, path)
+
+
+@then(
+    words(
+        "project.toml has the image {name:Image}, of {file} of my home folder"
+    )
+)
+def project_image_home(virtualbricks, name, file):
+    """The same, with the file of the home."""
+
+    has_image_file(virtualbricks, name, os.path.join(virtualbricks.home, file))
+
+
+@then(
+    words("project.toml has the disk {device} of {vm:Brick}, without an image")
+)
+def disk_without_image(virtualbricks, device, vm):
+    """
+    The disk of the machine, in the file of the project, is there, with no
+    image.
+    """
+
+    disks = project_brick_of(virtualbricks, vm).get("disks", {})
+    assert device in disks, f"{vm} has no disk {device}: {disks}"
+    image = disks[device]["image"]
+    assert image == "", f"the disk {device} of {vm} has the image {image}"
+
+
+def has_image_file(virtualbricks, name, wanted):
+    """
+    The image in the file of the project has the file at wanted: its path,
+    or one relative to the folder of the project.
+    """
+
     path = project_path(virtualbricks)
     images = project_file(virtualbricks).get("images", {})
     assert name in images, f"project.toml has no image {name}: {images}"
     found = os.path.join(os.path.dirname(path), images[name]["path"])
-    wanted = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
     assert os.path.normpath(found) == wanted, f"{name} is of {found}"
 
 
@@ -1648,7 +2181,7 @@ def new_event(virtualbricks, name, seconds=None):
     settings of the event show.
     """
 
-    open_events(virtualbricks)
+    on_tab(virtualbricks, EVENTS)
     virtualbricks.click("button", "New Event")
     dialog = virtualbricks.find("dialog", "New Event")
     suggests(virtualbricks, dialog, "Name", name)
@@ -1661,19 +2194,11 @@ def new_event(virtualbricks, name, seconds=None):
     virtualbricks.find("label", "Event settings")
 
 
-def open_events(virtualbricks):
-    """The tab Events, unless it is the one that shows."""
-
-    tab = virtualbricks.find("page tab", EVENTS)
-    if not harness.a11y.selected(tab):
-        open_tab(virtualbricks, EVENTS)
-
-
 @when(words("I start the event {name:Brick}"))
 def start_event(virtualbricks, name):
     """Its Start, in the tab Events; then it waits: its Stop shows."""
 
-    open_events(virtualbricks)
+    on_tab(virtualbricks, EVENTS)
     row = virtualbricks.row(name)
     virtualbricks.click("button", f"Start {name}", within=row)
     virtualbricks.find("button", f"Stop {name}", within=row)
@@ -1686,7 +2211,7 @@ def stop_event(virtualbricks, name):
     Start shows, and its row says Ready.
     """
 
-    open_events(virtualbricks)
+    on_tab(virtualbricks, EVENTS)
     row = virtualbricks.row(name)
     state = event_state(row)
     assert state.startswith(WAITING), f"{name} doesn't wait: {state!r}"
@@ -1699,7 +2224,7 @@ def stop_event(virtualbricks, name):
 def run_event_now(virtualbricks, name):
     """Run Now, in its menu, in the tab Events; then the menu closes."""
 
-    open_events(virtualbricks)
+    on_tab(virtualbricks, EVENTS)
     virtualbricks.click("button", f"Menu of {name}")
     virtualbricks.click("button", "Run Now")
     virtualbricks.gone("button", "Run Now")
@@ -2009,6 +2534,15 @@ def open_tab(virtualbricks, title):
     virtualbricks.wait_for(
         lambda: harness.a11y.selected(tab), f"the tab {title} shows"
     )
+
+
+def on_tab(virtualbricks, title):
+    """The tab title, clicked unless it is the one that shows."""
+
+    tab = virtualbricks.find("page tab", title)
+    if not harness.a11y.selected(tab):
+        open_tab(virtualbricks, title)
+    return tab
 
 
 @when("I write the README in the Readme tab")

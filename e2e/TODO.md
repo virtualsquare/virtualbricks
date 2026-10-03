@@ -113,24 +113,41 @@ that the tests can't do yet: those needs come first.
 
 ### Disk images
 
-- [ ] Add a new empty disk from the Images tab
+- [x] Add a new empty disk from the Images tab
   the file is in the image folder, of the size and format chosen;
   `@needs-qemu-img`
+  "A new empty disk added from the Images tab is a file of the image
+  folder, of the size and the format chosen", `images.feature`
 - [x] Add an existing disk image from a file, copied into the image
   folder
   "A disk image of my home folder, added from the Images tab, is copied
   into the image folder", `images.feature`
-- [ ] Add an existing disk image from a file, used where it is
-  its row has the path of the file, and no copy is made
-- [ ] Give a virtual machine a disk image
-  the row of the image names the machine; in use while it runs
-- [ ] Remove a disk image, after the dialog that lists the disks that
+- [x] Add an existing disk image from a file, used where it is
+  its details have the path of the file, and no copy is made; the row
+  doesn't say the path
+  "A disk image of my home folder, added to be used where it is, keeps
+  its path and isn't copied", `images.feature`
+- [x] Give a virtual machine a disk image
+  the row of the image names the machine; in use while it runs, on a
+  private copy; `@needs-qemu-system-i386`, with no display
+  "A disk image given to a virtual machine names it in its row, and is
+  in use while the machine runs", `images.feature`
+- [x] Remove a disk image, after the dialog that lists the disks that
   lose it
   the file stays, or goes to the trash when no project uses it
-- [ ] Find the file of an image whose file is missing, as debian13 of
+  "A disk image removed, whose file no other project uses, moves its
+  file to the trash, once confirmed" and "A disk image removed, whose
+  file another project uses, leaves its file where it is",
+  `images.feature`
+- [x] Find the file of an image whose file is missing, as debian13 of
   DTN2hops_26_Feb_2026
   the row says the file is missing, then the file found
-- [ ] See the details of an image: what `qemu-img info` says
+  "The file of an image that is missing, found in my home folder, is
+  the file of the image again", `images.feature`
+- [x] See the details of an image: what `qemu-img info` says
+  with a snapshot
+  "The details of a disk image say what qemu-img info says of its
+  file", `images.feature`
 
 # Projects
 
