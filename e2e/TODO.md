@@ -27,8 +27,9 @@ that the tests can't do yet: those needs come first.
   "A switch runs for a while, then stops", `bricks.feature`
 - [x] Join two switches with a wire
   "A wire joins two switches", `bricks.feature`
-- [ ] Start all the bricks with Start All, then stop them with Stop All
-  each brick that can start runs; then none runs
+- [x] Start all the bricks with Start All, then stop them with Stop All
+  "Start All starts the bricks that can start, Stop All stops them",
+  `bricks.feature`
 - [ ] Open a tunnel: a tunnel server and a tunnel client of this
   computer, each on a switch
   both run, the client connected; `@needs-vde_cryptcab`

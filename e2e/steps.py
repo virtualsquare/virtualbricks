@@ -189,6 +189,61 @@ def stop_brick(virtualbricks, name):
     virtualbricks.find("button", f"Start {name}")
 
 
+@when("I start all the bricks")
+def start_all(virtualbricks, brick_processes):
+    """
+    Start All, over the list; then each brick whose row said Stopped, as
+    those that can start, runs with the process its row tells, and Start
+    All started no other.
+    """
+
+    names = [
+        row[0] for row in brick_rows(virtualbricks) if row[-1] == "Stopped"
+    ]
+    before = virtualbricks.children()
+    virtualbricks.click("button", "Start All")
+    for name in names:
+        virtualbricks.find("button", f"Stop {name}")
+        brick_processes[name] = {process(virtualbricks, name)}
+    pids = set().union(*(brick_processes[name] for name in names))
+    try:
+        virtualbricks.wait_for(
+            lambda: virtualbricks.children() - before == pids,
+            "Start All started the processes of the bricks, and no other",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"Start All started {virtualbricks.children() - before}, not"
+            f" {pids}, the processes of {names}"
+        ) from None
+
+
+@when("I stop all the bricks")
+def stop_all(virtualbricks):
+    """Stop All, over the list; then each brick that ran can start."""
+
+    names = [
+        row[0] for row in brick_rows(virtualbricks) if row[-1] == "Running"
+    ]
+    virtualbricks.click("button", "Stop All")
+    for name in names:
+        virtualbricks.find("button", f"Start {name}")
+
+
+def process(virtualbricks, name):
+    """
+    The process of the running brick name, as its row tells: the tooltip
+    of its state, Process PID, which the screen readers read too.
+    """
+
+    row = virtualbricks.row(name)
+    state = virtualbricks.find("label", "Running", within=row).get_parent()
+    words = virtualbricks.wait_for(
+        lambda: state.get_description(), f"the row of {name} tells its process"
+    )
+    return int(words.removeprefix("Process "))
+
+
 @then(words("{name:Brick} is running"))
 @then(words("{name:Brick} is still running"))
 def brick_running(virtualbricks, brick_processes, name):
@@ -201,6 +256,16 @@ def brick_running(virtualbricks, brick_processes, name):
     assert pids <= virtualbricks.children(), f"the processes of {name} quit"
 
 
+def brick_rows(virtualbricks):
+    """
+    The rows of the list of bricks, all of them and in order: each the
+    name of a brick, its detail and its state.
+    """
+
+    tab = virtualbricks.find("page tab", "Bricks")
+    return virtualbricks.rows(virtualbricks.find("scroll pane", within=tab))
+
+
 @then("the list of bricks has")
 def bricks_listed(virtualbricks, datatable):
     """
@@ -209,11 +274,8 @@ def bricks_listed(virtualbricks, datatable):
     row has the name of the brick, its detail and its state.
     """
 
-    tab = virtualbricks.find("page tab", "Bricks")
-    pane = virtualbricks.find("scroll pane", within=tab)
-
     def rows():
-        return datatable[:1] + virtualbricks.rows(pane)
+        return datatable[:1] + brick_rows(virtualbricks)
 
     try:
         virtualbricks.wait_for(
@@ -272,6 +334,26 @@ def switch_socket(virtualbricks, brick_processes, switch):
         if "-s" in words:
             return words[words.index("-s") + 1]
     raise AssertionError(f"no vde_switch of {switch} runs")
+
+
+@then("no brick runs")
+def no_brick_runs(virtualbricks, brick_processes):
+    """
+    No row of the list says Running, and no process of a brick runs:
+    neither those that the steps started nor any with a socket of the
+    tests.
+    """
+
+    virtualbricks.wait_for(
+        lambda: all(row[-1] != "Running" for row in brick_rows(virtualbricks)),
+        "no row of the list says Running",
+    )
+    pids = set().union(*brick_processes.values())
+    virtualbricks.wait_for(
+        lambda: not pids & virtualbricks.children()
+        and not virtualbricks.bricks(),
+        "the processes of the bricks quit",
+    )
 
 
 @then(words("{name:Brick} is stopped"))

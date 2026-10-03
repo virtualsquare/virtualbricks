@@ -35,3 +35,23 @@ Feature: Bricks
     And I stop sw1
     And I quit Virtualbricks
     Then Virtualbricks has quit
+
+  @needs-vde_switch @needs-dpipe @needs-vde_plug
+  Scenario: Start All starts the bricks that can start, Stop All stops them
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I add the switch sw2
+    And I join sw1 and sw2 with the wire w1
+    And I add the wire w2
+    And I start all the bricks
+    Then the list of bricks has
+      | Brick | Detail                   | State         |
+      | sw1   | Switch · 32 ports        | Running       |
+      | sw2   | Switch · 32 ports        | Running       |
+      | w1    | Wire · sw1 ↔ sw2         | Running       |
+      | w2    | Wire · nothing ↔ nothing | Not connected |
+    And sw1 is running
+    And sw2 is running
+    And w1 runs with the sockets of sw1 and sw2
+    When I stop all the bricks
+    Then no brick runs

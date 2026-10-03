@@ -132,6 +132,8 @@ The steps of a user:
 | `When I join sw1 and sw2 with the wire w1` | New Brick, Wire, then sw1 for its left end and sw2 for its right end, and OK; the new wire must be named `w1` |
 | `When I start sw1` | Its Start button; it must run, with new processes |
 | `When I stop sw1` | Its Stop button; it must stop |
+| `When I start all the bricks` | Start All; each brick whose row said Stopped must run, with the process its row tells, and Start All must start no other |
+| `When I stop all the bricks` | Stop All; each brick that ran must be able to start again |
 | `When I wait 5 seconds` | Waits |
 | `When I quit Virtualbricks` | File, then Quit |
 | `When I start Virtualbricks again` | Starts it with its settings, as after it ran before, on a new screen, and waits for a window |
@@ -140,6 +142,7 @@ The steps of a user:
 | `Then w1 runs with the sockets of sw1 and sw2` | It runs, and a `vde_plug` of its start is in the socket of each switch: the one its `vde_switch` listens on |
 | `Then sw1 is stopped` | Its row says Stopped, and no process of it runs: those of its start have quit, and none has its sockets |
 | `Then sw1 is not running` | The same |
+| `Then no brick runs` | No row of the list says Running, and no process of a brick runs: neither those that the steps started nor any with a socket of the tests |
 | `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |
 | `Then the main window shows the project lab` | Its title names the project |
 | `Then the list of bricks has`, with a table under it | The rows of the list, all of them and in order, scrolled through, once they are those of the table: the name of each brick, its detail and its state |
