@@ -22,8 +22,10 @@ that the tests can't do yet: those needs come first.
   `--lock workspace`, `--connect`; and a second Virtualbricks beside it
 - [ ] Make a disk image in a fixture, with `qemu-img create`, for the
   virtual machines and the Images tab
-- [ ] Make a small archive of 2.1 in a fixture, a `.vbp` of the
-  `.project` of `e2e/projects/DTN2hops_26_Feb_2026`
+- [x] Make a small archive of 2.1 in a fixture, a `.vbp` of the
+  `.project` of `e2e/projects/DTN2hops_26_Feb_2026`: the step `Given the
+  archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my home
+  folder`
 
 # Bricks and links
 
@@ -120,9 +122,10 @@ that the tests can't do yet: those needs come first.
   and opens", `projects.feature`
 - [ ] Remove a project from the Projects window, after the confirmation
   its folder goes to the trash, or is deleted without one
-- [ ] Import the archive of 2.1, DTN2hops_26_Feb_2026.vbp
-  converted at the import: the main window lists its 13 bricks; needs
-  typing for the path, and the archive of a fixture
+- [x] Import the archive of 2.1, DTN2hops_26_Feb_2026.vbp
+  converted at the import: the main window lists its 13 bricks
+  "An archive of Virtualbricks 2.1 is converted at its import, and
+  opens", `projects.feature`
 - [ ] Export a project to an archive, then import it under another name
   the archive has the project and its private disks; needs typing
 - [ ] Rename a project

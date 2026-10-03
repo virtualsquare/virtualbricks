@@ -37,6 +37,7 @@ import os
 import shlex
 import shutil
 import subprocess
+import tarfile
 import tempfile
 import time
 import types
@@ -848,6 +849,50 @@ def select_project(virtualbricks, name):
     return virtualbricks.find("label", path, within=window).get_parent()
 
 
+IMPORT_WINDOW = "Import Project"
+
+
+@when(
+    words(
+        "I import the archive {archive} of my home folder with the name it"
+        " suggests, {name:Project}"
+    )
+)
+def import_archive(virtualbricks, archive, name):
+    """
+    Import…, in the menu Projects; in the window, the button of the file,
+    then Home and the archive in the file chooser, and Open; the name it
+    suggests is name; then Import, and the window says how it ended.
+    """
+
+    virtualbricks.choose("Import…", "Projects")
+    window = virtualbricks.find("frame", IMPORT_WINDOW)
+    # the button of the file names it: none yet
+    virtualbricks.click("button", "(None)", within=window)
+    chooser = virtualbricks.find("file chooser", "Choose an archive")
+    virtualbricks.click("label", "Home", within=chooser)
+    virtualbricks.click("table cell", archive, within=chooser)
+    virtualbricks.click("button", "Open", within=chooser)
+    virtualbricks.gone("file chooser", "Choose an archive")
+    suggests(virtualbricks, window, "Name", name)
+    virtualbricks.click("button", "Import", within=window)
+    # in place of Import and Cancel, once it is imported, or failed
+    virtualbricks.find("button", "Close", within=window)
+
+
+@then(words('the Import Project window says "{text}"'))
+def import_window_says(virtualbricks, text):
+    window = virtualbricks.find("frame", IMPORT_WINDOW)
+    virtualbricks.find("label", text, within=window)
+
+
+@when("I close the Import Project window")
+def close_import(virtualbricks):
+    window = virtualbricks.find("frame", IMPORT_WINDOW)
+    virtualbricks.click("button", "Close", within=window)
+    virtualbricks.gone("frame", IMPORT_WINDOW)
+
+
 @then(words('the Projects window says "{text}"'))
 def projects_window_says(virtualbricks, text):
     window = virtualbricks.find("frame", PROJECTS_WINDOW)
@@ -1013,6 +1058,22 @@ def old_project(virtualbricks, name):
         os.path.join(PROJECTS, name),
         os.path.join(virtualbricks.workspace, name),
     )
+
+
+@given(
+    words(
+        "the archive {name:Project}.vbp of Virtualbricks 2.1, in my home folder"
+    )
+)
+def old_archive(virtualbricks, name):
+    """
+    In the home, the archive of projects/NAME as 2.1 exported it: its
+    .project, without images, in a tar compressed with gzip, as tar cfz did.
+    """
+
+    path = os.path.join(virtualbricks.home, f"{name}.vbp")
+    with tarfile.open(path, "w:gz") as archive:
+        archive.add(os.path.join(PROJECTS, name, ".project"), ".project")
 
 
 @given(
