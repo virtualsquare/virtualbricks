@@ -759,7 +759,36 @@ def new_project(virtualbricks, name):
     window = virtualbricks.find("frame", PROJECTS_WINDOW)
     virtualbricks.click("button", "New…", within=window)
     dialog = virtualbricks.find("dialog", "New Project")
-    entry = virtualbricks.find("text", "Name", within=dialog)
+    suggests(virtualbricks, dialog, "Name", name)
+    virtualbricks.click("button", "Create", within=dialog)
+    virtualbricks.gone("dialog", "New Project")
+
+
+@when(
+    words(
+        "I duplicate the project {name:Project} with the name it suggests,"
+        " {copy:Project}"
+    )
+)
+def duplicate_project(virtualbricks, name, copy):
+    """
+    In the Projects window, its row, then Duplicate… in its details: the
+    name it suggests is copy; then Duplicate, with Open the copy as it is,
+    and the dialog closes.
+    """
+
+    details = select_project(virtualbricks, name)
+    virtualbricks.click("button", "Duplicate…", within=details)
+    dialog = virtualbricks.find("dialog", "Duplicate Project")
+    suggests(virtualbricks, dialog, "Name of the copy", copy)
+    virtualbricks.click("button", "Duplicate", within=dialog)
+    virtualbricks.gone("dialog", "Duplicate Project")
+
+
+def suggests(virtualbricks, dialog, field, name):
+    """The field of the name, in the dialog of a project, says name."""
+
+    entry = virtualbricks.find("text", field, within=dialog)
     try:
         virtualbricks.wait_for(
             lambda: harness.a11y.text(entry) == name,
@@ -769,8 +798,6 @@ def new_project(virtualbricks, name):
         raise AssertionError(
             f"the dialog suggests {harness.a11y.text(entry)!r}, not {name!r}"
         ) from None
-    virtualbricks.click("button", "Create", within=dialog)
-    virtualbricks.gone("dialog", "New Project")
 
 
 @when(words("I open the project {name:Project}"))
@@ -794,7 +821,17 @@ def try_open_project(virtualbricks, name):
 def click_open(virtualbricks, name):
     """
     In the Projects window, the row of the project name, then Open in its
-    details, once they show its folder.
+    details.
+    """
+
+    details = select_project(virtualbricks, name)
+    virtualbricks.click("button", "Open", within=details)
+
+
+def select_project(virtualbricks, name):
+    """
+    In the Projects window, the row of the project name: its details, once
+    they show its folder.
     """
 
     window = virtualbricks.find("frame", PROJECTS_WINDOW)
@@ -808,8 +845,7 @@ def click_open(virtualbricks, name):
     item = virtualbricks.wait_for(row, f"the row of {name} shows")
     virtualbricks.click("label", name, within=item)
     path = os.path.join(virtualbricks.workspace, name)
-    details = virtualbricks.find("label", path, within=window).get_parent()
-    virtualbricks.click("button", "Open", within=details)
+    return virtualbricks.find("label", path, within=window).get_parent()
 
 
 @then(words('the Projects window says "{text}"'))
@@ -830,6 +866,43 @@ def project_toml(virtualbricks, name):
     with open(path, "rb") as file:
         data = tomllib.load(file)
     assert "format" in data, f"{path} has no format: {data}"
+
+
+@then(
+    words("the folder of {copy:Project} is a copy of that of {name:Project}")
+)
+def project_copy(virtualbricks, copy, name):
+    """
+    The two folders of the workspace have the same files, with the same
+    bytes, and the copy has its project.toml.
+    """
+
+    def files(project):
+        folder = os.path.join(virtualbricks.workspace, project)
+        found = {}
+        for root, _, names in os.walk(folder):
+            for file in names:
+                path = os.path.join(root, file)
+                with open(path, "rb") as data:
+                    found[os.path.relpath(path, folder)] = data.read()
+        return found
+
+    project_toml(virtualbricks, copy)
+    try:
+        virtualbricks.wait_for(
+            lambda: files(copy) == files(name),
+            f"the folder of {copy} is a copy of that of {name}",
+        )
+    except AssertionError:
+        ours, theirs = files(copy), files(name)
+        differ = sorted(
+            path
+            for path in ours.keys() | theirs.keys()
+            if ours.get(path) != theirs.get(path)
+        )
+        raise AssertionError(
+            f"the folders of {copy} and {name} differ in {differ}"
+        ) from None
 
 
 # A program that fails, and what Virtualbricks says of it

@@ -111,10 +111,13 @@ that the tests can't do yet: those needs come first.
 - [x] Open another project while a brick runs: refused
   "Another project doesn't open while a brick runs, and the brick still
   runs", `projects.feature`
-- [ ] Open the project open last at the next start, after opening
+- [x] Open the project open last at the next start, after opening
   another one
-- [ ] Duplicate a project, with the name it suggests
+  "The project opened last opens at the next start", `projects.feature`
+- [x] Duplicate a project, with the name it suggests
   its folder is a copy of the other
+  "A project duplicated with the name it suggests is a copy of the other,
+  and opens", `projects.feature`
 - [ ] Remove a project from the Projects window, after the confirmation
   its folder goes to the trash, or is deleted without one
 - [ ] Import the archive of 2.1, DTN2hops_26_Feb_2026.vbp
