@@ -1476,7 +1476,10 @@ class VirtualMachine(bricks.Brick):
         return plug
 
     def connect(self, sock, *args):
+        """A new network card, plugged into sock: the brick says it changed."""
+
         self.add_plug(sock, *args)
+        self.changed.notify(self)
 
     def remove_plug(self, plug):
         try:
