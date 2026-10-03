@@ -773,6 +773,51 @@ def new_project(virtualbricks, name):
     virtualbricks.gone("dialog", "New Project")
 
 
+@when(words("I open the project {name:Project}"))
+def open_project(virtualbricks, name):
+    """
+    In the Projects window, its row, then Open in its details; the window
+    closes.
+    """
+
+    click_open(virtualbricks, name)
+    virtualbricks.gone("frame", PROJECTS_WINDOW)
+
+
+@when(words("I try to open the project {name:Project}"))
+def try_open_project(virtualbricks, name):
+    """The same, without waiting for the window to close."""
+
+    click_open(virtualbricks, name)
+
+
+def click_open(virtualbricks, name):
+    """
+    In the Projects window, the row of the project name, then Open in its
+    details, once they show its folder.
+    """
+
+    window = virtualbricks.find("frame", PROJECTS_WINDOW)
+
+    def row():
+        for item in harness.a11y.find_all(window, "list item"):
+            if harness.a11y.find(item, "label", name) is not None:
+                return item
+        return None
+
+    item = virtualbricks.wait_for(row, f"the row of {name} shows")
+    virtualbricks.click("label", name, within=item)
+    path = os.path.join(virtualbricks.workspace, name)
+    details = virtualbricks.find("label", path, within=window).get_parent()
+    virtualbricks.click("button", "Open", within=details)
+
+
+@then(words('the Projects window says "{text}"'))
+def projects_window_says(virtualbricks, text):
+    window = virtualbricks.find("frame", PROJECTS_WINDOW)
+    virtualbricks.find("label", text, within=window)
+
+
 @then(words("the folder of {name:Project} has project.toml"))
 def project_toml(virtualbricks, name):
     """

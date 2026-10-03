@@ -105,8 +105,12 @@ that the tests can't do yet: those needs come first.
   suggests
   "A new project made in the Projects window, with the name it suggests,
   opens", `projects.feature`
-- [ ] Open another project from the Projects window
-  the main window shows its bricks; refused while a brick runs
+- [x] Open another project from the Projects window
+  "Another project opened from the Projects window shows its bricks",
+  `projects.feature`
+- [x] Open another project while a brick runs: refused
+  "Another project doesn't open while a brick runs, and the brick still
+  runs", `projects.feature`
 - [ ] Open the project open last at the next start, after opening
   another one
 - [ ] Duplicate a project, with the name it suggests
