@@ -65,10 +65,36 @@ class TestFactory(BrickTestCase):
         self.assertIs(self.factory.get_event("boot"), event)
         self.assertIsNone(self.factory.get_event("boot2"))
 
-    def test_next_name(self):
+    def test_unused_name(self):
         self.factory.new_brick("switch", "sw")
         self.factory.new_brick("switch", "sw.1")
         self.assertEqual(self.factory.unused_name("sw"), "sw.2")
+
+    def test_next_name_increases_the_number(self):
+        self.factory.new_brick("switch", "SW1")
+        self.assertEqual(self.factory.next_name("SW1"), "SW2")
+        self.assertEqual(self.factory.next_name("sw9"), "sw10")
+        self.assertEqual(self.factory.next_name("sw1.1"), "sw1.2")
+
+    def test_next_name_without_a_number(self):
+        self.factory.new_brick("switch", "node")
+        self.assertEqual(self.factory.next_name("node"), "node2")
+
+    def test_next_name_keeps_the_zeros(self):
+        self.assertEqual(self.factory.next_name("vm01"), "vm02")
+        self.assertEqual(self.factory.next_name("vm09"), "vm10")
+        self.assertEqual(self.factory.next_name("vm99"), "vm100")
+
+    def test_next_name_is_free_in_the_project(self):
+        # bricks, events and images share the names
+        self.factory.new_brick("switch", "sw1")
+        self.factory.new_brick("switch", "sw2")
+        self.factory.new_event("sw3")
+        self.factory.new_image("sw4", "/x")
+        self.factory.new_brick("switch", "sw6")
+        self.assertEqual(self.factory.next_name("sw1"), "sw5")
+        # from the number of the name, not from 1
+        self.assertEqual(self.factory.next_name("sw6"), "sw7")
 
     def test_dup_brick(self):
         vm = self.factory.new_brick("qemu", "vm")

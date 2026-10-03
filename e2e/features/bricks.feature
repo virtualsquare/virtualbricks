@@ -119,18 +119,20 @@ Feature: Bricks
       | ports    | 32    |
       | hub_mode | false |
 
-  Scenario: Duplicate copies a brick with its settings, under a name of its own
+  Scenario: Duplicate copies a brick with its settings, under its name with the next free number
     Given Virtualbricks is running
     When I add the switch sw1
     And I give sw1 34 ports and hub mode, with the buttons of its settings
     And I duplicate sw1 from its menu
+    And I duplicate sw1 from its menu
     Then the list of bricks has
-      | Brick       | Detail                  | State   |
-      | sw1         | Switch · 34 ports · hub | Stopped |
-      | copy_of_sw1 | Switch · 34 ports · hub | Stopped |
+      | Brick | Detail                  | State   |
+      | sw1   | Switch · 34 ports · hub | Stopped |
+      | sw2   | Switch · 34 ports · hub | Stopped |
+      | sw3   | Switch · 34 ports · hub | Stopped |
     When I quit Virtualbricks
     Then Virtualbricks has quit
-    And project.toml has copy_of_sw1 with the settings of sw1
+    And project.toml has sw2 with the settings of sw1
 
   Scenario: Delete removes a brick, once confirmed
     Given Virtualbricks is running

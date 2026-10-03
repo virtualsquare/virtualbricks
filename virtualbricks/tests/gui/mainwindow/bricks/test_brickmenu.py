@@ -366,7 +366,7 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
 
     def test_duplicate(self):
         self.activate("duplicate")
-        self.assertIsNotNone(self.factory.get_brick("copy_of_sw"))
+        self.assertIsNotNone(self.factory.get_brick("sw2"))
 
     def test_connect(self):
         tap = self.brick("tap", "tap")

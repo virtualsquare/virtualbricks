@@ -310,9 +310,9 @@ class TestEngine(ClientTestCase):
 
     def test_duplicate(self):
         copy = self.done(self.engine.duplicate(self.copy.get_brick("sw1")))
-        self.assertIs(copy, self.copy.get_brick("copy_of_sw1"))
+        self.assertIs(copy, self.copy.get_brick("sw2"))
         event = self.done(self.engine.duplicate(self.copy.get_event("boot")))
-        self.assertIs(event, self.copy.get_event("copy_of_boot"))
+        self.assertIs(event, self.copy.get_event("boot2"))
 
     def test_remove(self):
         self.factory.new_image("frr", "/lab/frr.qcow2")

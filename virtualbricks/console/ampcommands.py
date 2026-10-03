@@ -361,7 +361,10 @@ class BrickRename(amp.Command):
 
 
 class BrickDuplicate(amp.Command):
-    """brick duplicate NAME [NEW]: Copy a brick, with its links."""
+    """
+    brick duplicate NAME [NEW]: Copy a brick, with its links; without a new
+    name, its name with the next free number.
+    """
 
     arguments = [
         (b"name", amp.Unicode()),
@@ -530,7 +533,10 @@ class EventRename(amp.Command):
 
 
 class EventDuplicate(amp.Command):
-    """event duplicate NAME [NEW]: Copy an event."""
+    """
+    event duplicate NAME [NEW]: Copy an event; without a new name, its name
+    with the next free number.
+    """
 
     arguments = [
         (b"name", amp.Unicode()),

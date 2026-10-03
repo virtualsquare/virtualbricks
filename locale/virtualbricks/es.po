@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 22:08+0200\n"
+"POT-Creation-Date: 2026-10-03 13:18+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -1435,7 +1435,9 @@ msgid "Rename a brick"
 msgstr "Nuevo Brick"
 
 #: virtualbricks/console/bricks.py
-msgid "Copy a brick, with its links"
+msgid ""
+"Copy a brick, with its links; without a new name, its name with the next "
+"free number"
 msgstr ""
 
 #: virtualbricks/console/bricks.py
@@ -1870,9 +1872,8 @@ msgid "Rename an event, and every brick and action that names it"
 msgstr ""
 
 #: virtualbricks/console/events.py
-#, fuzzy
-msgid "Copy an event"
-msgstr "Parar todos los eventos"
+msgid "Copy an event; without a new name, its name with the next free number"
+msgstr ""
 
 #: virtualbricks/console/events.py
 #, fuzzy
@@ -4977,6 +4978,10 @@ msgstr ""
 #, python-brace-format
 msgid "needs {program} of {package}"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Copy an event"
+#~ msgstr "Parar todos los eventos"
 
 #~ msgid "Connect to:"
 #~ msgstr "Conectar con:"

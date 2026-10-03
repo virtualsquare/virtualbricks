@@ -742,7 +742,7 @@ for a Virtualbricks that asks for one. See **Sockets on the network**.
 :   Rename a brick.
 
 **brick duplicate** *NAME* [*NEW*]
-:   Copy a brick, with its links.
+:   Copy a brick, with its links; without a new name, its name with the next free number.
 
 **brick delete** *NAME*...
 :   Delete bricks that don't run.
@@ -785,7 +785,7 @@ for a Virtualbricks that asks for one. See **Sockets on the network**.
 :   Rename an event, and every brick and action that names it.
 
 **event duplicate** *NAME* [*NEW*]
-:   Copy an event.
+:   Copy an event; without a new name, its name with the next free number.
 
 **event delete** *NAME*...
 :   Delete events.

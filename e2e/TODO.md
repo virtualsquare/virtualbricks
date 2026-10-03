@@ -55,7 +55,8 @@ that the tests can't do yet: those needs come first.
 - [x] Cancel the settings of a switch: nothing changes
   "Cancel leaves the settings of a switch as they were", `bricks.feature`
 - [x] Duplicate a brick from its menu
-  "Duplicate copies a brick with its settings, under a name of its own",
+  "Duplicate copies a brick with its settings, under its name with the
+  next free number",
   `bricks.feature`
 - [x] Delete a brick from its menu, after the confirmation
   "Delete removes a brick, once confirmed", `bricks.feature`

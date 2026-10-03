@@ -162,7 +162,7 @@ The steps of a user:
 | `Then the list of bricks has`, with a table under it | The rows of the list, all of them and in order, scrolled through, once they are those of the table: the name of each brick, its detail and its state |
 | `Then project.toml has the bricks`, with a table under it | The bricks of the file of the project, all of them and in order: the name of each and its type |
 | `Then project.toml has sw1 with`, with a table under it | Its settings in the file of the project, a name and a value each, the value as TOML writes it |
-| `Then project.toml has copy_of_sw1 with the settings of sw1` | The two bricks have the same settings in the file of the project |
+| `Then project.toml has sw2 with the settings of sw1` | The two bricks have the same settings in the file of the project |
 
 The steps of a program that fails:
 

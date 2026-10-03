@@ -224,10 +224,10 @@ class TestItems(EngineTestCase):
         switch = self.factory.new_brick("switch", "sw1")
         event = self.factory.new_event("boot")
         copy = self.successResultOf(self.engine.duplicate(switch))
-        self.assertEqual(copy.name, "copy_of_sw1")
+        self.assertEqual(copy.name, "sw2")
         self.assertEqual(copy.get_type(), "Switch")
         copy = self.successResultOf(self.engine.duplicate(event))
-        self.assertIs(self.factory.get_event("copy_of_boot"), copy)
+        self.assertIs(self.factory.get_event("boot2"), copy)
 
     def test_remove(self):
         switch = self.factory.new_brick("switch", "sw1")

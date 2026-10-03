@@ -383,7 +383,10 @@ def rename(context, name, new):
     "duplicate",
     Arg("NAME", EVENT),
     Arg("NEW", optional=True),
-    help=N_("Copy an event"),
+    help=N_(
+        "Copy an event; without a new name, its name with the next free"
+        " number"
+    ),
 )
 def duplicate(context, name, new):
     factory = context.factory

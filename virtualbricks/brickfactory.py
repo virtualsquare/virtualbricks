@@ -282,7 +282,7 @@ class BrickFactory:
             raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
 
     def duplicate_brick(self, brick):
-        name = self.unused_name("copy_of_" + brick.name)
+        name = self.next_name(brick.name)
         new_brick = self.new_brick(brick.get_type(), name)
         new_brick.update_config(copy.deepcopy(field_values(brick.config)))
 
@@ -351,7 +351,7 @@ class BrickFactory:
         return event
 
     def duplicate_event(self, event):
-        name = self.unused_name("copy_of_" + event.name)
+        name = self.next_name(event.name)
         new = self.new_event(name)
         new.config = copy.deepcopy(event.config)
         return new
@@ -379,6 +379,21 @@ class BrickFactory:
             name = f"{orig_name}.{c}"
             c += 1
         return name
+
+    def next_name(self, name):
+        """The name of a copy: the number at the end of name, increased.
+
+        The first free one from there: the copy of sw1 is sw2, or sw3 if sw2
+        is in use; a name without a number takes 2, node2 for node. The zeros
+        in front stay: vm02 for vm01.
+        """
+
+        prefix, digits = re.fullmatch(r"(.*?)(\d*)", name).groups()
+        start = int(digits) + 1 if digits else 2
+        for number in itertools.count(start):
+            candidate = f"{prefix}{number:0{len(digits)}d}"
+            if not self.name_in_use(candidate):
+                return candidate
 
     def name_in_use(self, name):
         """Whether a brick, an event or a disk image already has the name."""

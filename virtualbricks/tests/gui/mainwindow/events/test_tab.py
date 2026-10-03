@@ -220,13 +220,12 @@ class TestTheRows(EventsTestCase):
         self.factory.duplicate_brick(sw)
         self.assertEqual(
             row.detail.get_text(),
-            "After 5 s, starts vm1 · when sw9 starts · when copy_of_sw9 "
-            "starts",
+            "After 5 s, starts vm1 · when sw9 starts · when sw10 starts",
         )
         self.factory.remove_brick(sw)
         self.assertEqual(
             row.detail.get_text(),
-            "After 5 s, starts vm1 · when copy_of_sw9 starts",
+            "After 5 s, starts vm1 · when sw10 starts",
         )
 
     def test_the_rows_follow_the_events(self):

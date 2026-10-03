@@ -217,13 +217,9 @@ class TestNames(EventsTestCase):
 
     def test_duplicate_and_delete(self):
         self.event("boot", Action(Kind.START_BRICK, "vm1"), delay=3)
-        self.assertEqual(
-            self.run_line("event duplicate boot"), ["copy_of_boot"]
-        )
-        self.assertEqual(
-            self.run_line("event duplicate boot boot2"), ["boot2"]
-        )
-        copy = self.factory.get_event("boot2")
+        self.assertEqual(self.run_line("event duplicate boot"), ["boot2"])
+        self.assertEqual(self.run_line("event duplicate boot up"), ["up"])
+        copy = self.factory.get_event("up")
         self.assertEqual(copy.config.delay, 3)
-        self.assertEqual(self.run_line("event delete boot copy_of_boot"), [])
-        self.assertEqual([e.name for e in self.factory.events], ["boot2"])
+        self.assertEqual(self.run_line("event delete boot boot2"), [])
+        self.assertEqual([e.name for e in self.factory.events], ["up"])

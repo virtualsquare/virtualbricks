@@ -615,12 +615,12 @@ class TestNames(BricksTestCase):
     def test_duplicate(self):
         sw = self.brick("switch", "sw1")
         sw.update_config({"ports": 4})
-        self.assertEqual(self.run_line("brick duplicate sw1"), ["copy_of_sw1"])
-        self.assertEqual(self.run_line("brick duplicate sw1 sw2"), ["sw2"])
-        self.assertEqual(self.factory.get_brick("sw2").config.ports, 4)
+        self.assertEqual(self.run_line("brick duplicate sw1"), ["sw2"])
+        self.assertEqual(self.run_line("brick duplicate sw1 core"), ["core"])
+        self.assertEqual(self.factory.get_brick("core").config.ports, 4)
         self.assertEqual(
-            self.fails("brick duplicate sw1 sw2"),
-            "Normalized name sw2 already in use",
+            self.fails("brick duplicate sw1 core"),
+            "Normalized name core already in use",
         )
         self.assertEqual(len(list(self.factory.bricks)), 3)
 

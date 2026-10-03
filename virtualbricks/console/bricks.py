@@ -915,7 +915,10 @@ def rename(context, name, new):
     "duplicate",
     Arg("NAME", BRICK),
     Arg("NEW", optional=True),
-    help=N_("Copy a brick, with its links"),
+    help=N_(
+        "Copy a brick, with its links; without a new name, its name with"
+        " the next free number"
+    ),
 )
 def duplicate(context, name, new):
     factory = context.factory
