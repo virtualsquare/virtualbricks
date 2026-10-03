@@ -65,6 +65,15 @@ def _label(text):
     )
 
 
+def _attach(grid, row, text, widget):
+    """A row of grid: the label, which the screen readers say with widget."""
+
+    label = _label(text)
+    label.set_mnemonic_widget(widget)
+    grid.attach(label, 0, row, 1, 1)
+    grid.attach(widget, 1, row, 1, 1)
+
+
 def _switch():
     return Gtk.Switch(visible=True, can_focus=True, halign=Gtk.Align.START)
 
@@ -129,8 +138,7 @@ class ProjectSettingsWidgets:
             (_("Private COW format"), self.cow_format_combo),
         )
         for row, (text, widget) in enumerate(rows, 1):
-            grid.attach(_label(text), 0, row, 1, 1)
-            grid.attach(widget, 1, row, 1, 1)
+            _attach(grid, row, text, widget)
 
     def load(self, get):
         self.vde_path_chooser.set_current_folder(get("vde_path"))
@@ -334,8 +342,7 @@ class SettingsDialog(Window):
             ),
         )
         for row, (text, widget) in enumerate(rows):
-            grid.attach(_label(text), 0, row, 1, 1)
-            grid.attach(widget, 1, row, 1, 1)
+            _attach(grid, row, text, widget)
         return grid
 
     def _build_machine_page(self, grid):
@@ -360,8 +367,7 @@ class SettingsDialog(Window):
             self.workspace_label.set_selectable(True)
             rows.append((_("Workspace"), self.workspace_label))
         for row, (text, widget) in enumerate(rows, first):
-            grid.attach(_label(text), 0, row, 1, 1)
-            grid.attach(widget, 1, row, 1, 1)
+            _attach(grid, row, text, widget)
         return grid
 
     def get_root_widget(self) -> Gtk.Dialog:
