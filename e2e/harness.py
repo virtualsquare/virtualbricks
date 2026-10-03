@@ -317,6 +317,27 @@ class Virtualbricks:
         self.browser.click(*a11y.center(widget))
         return widget
 
+    def spin(self, name, by, within=None):
+        """
+        Click the + of the spin button name by times, or its - -by times,
+        once it shows and is enabled; after each click, its value changes.
+        GTK 3 draws - and + at its right end, + last, each about as wide as
+        the spin button is high.
+        """
+
+        widget = self.enabled("spin button", name, within)
+        x, y, width, height = a11y.extents(widget)
+        # the middle of +, or of - before it
+        button = x + width - height // 2 - (0 if by > 0 else height)
+        for _ in range(abs(by)):
+            before = a11y.position(widget)[0]
+            self.browser.click(button, y + height // 2)
+            self.wait_for(
+                lambda: a11y.position(widget)[0] != before,
+                f"the spin button {name!r} changes",
+            )
+        return widget
+
     def type(self, text, role, name=None, within=None):
         """
         Click the widget, once it shows and is enabled, and type text at its

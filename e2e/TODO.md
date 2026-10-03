@@ -45,12 +45,13 @@ that the tests can't do yet: those needs come first.
 - [x] See why a brick can't start: a switch wrapper without a path
   "A switch wrapper without a control folder can't start, and its row
   says why", `bricks.feature`
-- [ ] See a brick whose program fails: a `vde_switch` that exits at once
-  its row says Stopped, the error shows, and the messages window has the
-  output of the program
-- [ ] Change the settings of a switch with the buttons of its panel:
+- [x] See a brick whose program fails: a `vde_switch` that exits at once
+  "A switch whose program fails at once shows the error and the output of
+  the program", `bricks.feature`
+- [x] Change the settings of a switch with the buttons of its panel:
   ports and hub mode, then OK
-  its row says the ports; the next `vde_switch` runs with them
+  "The buttons of the settings of a switch change its ports and its hub
+  mode", `bricks.feature`
 - [ ] Cancel the settings of a switch: nothing changes
   the row, and `project.toml` after a quit
 - [ ] Duplicate a brick from its menu

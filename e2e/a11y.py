@@ -65,6 +65,10 @@ def sensitive(accessible) -> bool:
     return accessible.get_state_set().contains(Atspi.StateType.SENSITIVE)
 
 
+def checked(accessible) -> bool:
+    return accessible.get_state_set().contains(Atspi.StateType.CHECKED)
+
+
 def vertical(accessible) -> bool:
     return accessible.get_state_set().contains(Atspi.StateType.VERTICAL)
 
@@ -156,11 +160,18 @@ def index(accessible) -> int:
     return accessible.get_index_in_parent()
 
 
+def extents(accessible):
+    """Where the widget is on the screen: x, y, width, height."""
+
+    rect = accessible.get_component_iface().get_extents(Atspi.CoordType.SCREEN)
+    return rect.x, rect.y, rect.width, rect.height
+
+
 def center(accessible):
     """The middle of the widget on the screen."""
 
-    rect = accessible.get_component_iface().get_extents(Atspi.CoordType.SCREEN)
-    return rect.x + rect.width // 2, rect.y + rect.height // 2
+    x, y, width, height = extents(accessible)
+    return x + width // 2, y + height // 2
 
 
 def describe(root, depth=0):

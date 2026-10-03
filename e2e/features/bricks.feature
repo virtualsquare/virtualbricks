@@ -80,3 +80,27 @@ Feature: Bricks
     When I try to start wr1
     Then wr1 is not configured
     And no brick runs
+
+  Scenario: A switch whose program fails at once shows the error and the output of the program
+    Given a vde_switch that writes "no switch today" and exits with 3
+    And Virtualbricks is running
+    When I add the switch sw1
+    And I try to start sw1
+    Then an error says "Process terminated. process ended with exit code 3"
+    And sw1 is stopped
+    When I close the error
+    And I open the messages window
+    Then the messages window has the output of sw1: "no switch today"
+
+  @needs-vde_switch
+  Scenario: The buttons of the settings of a switch change its ports and its hub mode
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I give sw1 34 ports and hub mode, with the buttons of its settings
+    Then the list of bricks has
+      | Brick | Detail                  | State   |
+      | sw1   | Switch · 34 ports · hub | Stopped |
+    When I start sw1
+    Then sw1 runs with 34 ports, as a hub
+    When I stop sw1
+    Then sw1 is stopped

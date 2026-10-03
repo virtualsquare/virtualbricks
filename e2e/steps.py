@@ -33,6 +33,7 @@ See README.md for how to add a step.
 """
 
 import os
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -246,6 +247,33 @@ def try_start(virtualbricks, name):
     virtualbricks.click("button", f"Start {name}", within=row, enabled=False)
 
 
+@when(
+    words(
+        "I give {name:Brick} {ports:d} ports and hub mode, with the buttons"
+        " of its settings"
+    )
+)
+def give_ports(virtualbricks, name, ports):
+    """
+    Configure… in its menu, + or - of Ports until it says ports, Hub mode
+    turned on, then OK.
+    """
+
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Configure…")
+    spin = virtualbricks.enabled("spin button", "Ports")
+    now = int(harness.a11y.position(spin)[0])
+    virtualbricks.spin("Ports", ports - now)
+    hub = virtualbricks.enabled("toggle button", "Hub mode")
+    if not harness.a11y.checked(hub):
+        virtualbricks.click("toggle button", "Hub mode")
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(hub), "Hub mode is turned on"
+    )
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
 @when(words("I give {name:Brick} the control folder of that switch"))
 def give_folder(virtualbricks, other_switch, name):
     """
@@ -349,6 +377,20 @@ def brick_rows(virtualbricks):
 
     tab = virtualbricks.find("page tab", "Bricks")
     return virtualbricks.rows(virtualbricks.find("scroll pane", within=tab))
+
+
+@then(words("{name:Brick} runs with {ports:d} ports, as a hub"))
+def runs_as_hub(virtualbricks, brick_processes, name, ports):
+    """It runs, and its vde_switch has -n ports and -x, a hub."""
+
+    brick_running(virtualbricks, brick_processes, name)
+    for pid in brick_processes[name]:
+        words = virtualbricks.command_line(pid)
+        if "-n" in words:
+            assert words[words.index("-n") + 1] == str(ports), words
+            assert "-x" in words, f"not a hub: {words}"
+            return
+    raise AssertionError(f"no vde_switch of {name} runs")
 
 
 @then("the list of bricks has")
@@ -495,6 +537,76 @@ def brick_stopped(virtualbricks, brick_processes, name):
         and not virtualbricks.bricks(name),
         f"the processes of {name} quit",
     )
+
+
+# A program that fails, and what Virtualbricks says of it
+
+
+@given(words('a vde_switch that writes "{text}" and exits with {status:d}'))
+def failing_switch(virtualbricks, text, status):
+    """
+    A script of its own in place of vde_switch, in the folder of the VDE
+    programs of the project that Virtualbricks opens at its first start,
+    new_project: it writes text on its standard error, and exits.
+    """
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    folder = os.path.join(virtualbricks.home, "vde")
+    os.makedirs(folder)
+    program = os.path.join(folder, "vde_switch")
+    with open(program, "w") as file:
+        file.write(
+            f"#!/bin/sh\nprintf '%s\\n' {shlex.quote(text)} >&2\n"
+            f"exit {status}\n"
+        )
+    os.chmod(program, 0o755)
+    project = os.path.join(virtualbricks.workspace, "new_project")
+    os.makedirs(project)
+    with open(os.path.join(project, "project.toml"), "w") as file:
+        file.write(f"format = 2\n\n[settings]\nvde_path = {folder!r}\n")
+
+
+@then(words('an error says "{text}"'))
+def error_says(virtualbricks, text):
+    alert = virtualbricks.find("alert", "Error")
+    virtualbricks.find("label", text, within=alert)
+
+
+@when("I close the error")
+def close_error(virtualbricks):
+    alert = virtualbricks.find("alert", "Error")
+    virtualbricks.click("button", "Close", within=alert)
+    virtualbricks.gone("alert", "Error")
+
+
+@when("I open the messages window")
+def open_messages(virtualbricks):
+    """Logs, in the menu File."""
+
+    virtualbricks.choose("Logs", "File")
+    virtualbricks.find("frame", "Logs")
+
+
+@then(words('the messages window has the output of {name:Brick}: "{text}"'))
+def messages_output(virtualbricks, name, text):
+    """
+    A line of its messages comes from the brick, and has text, as its
+    program wrote it on its standard output, or on its standard error, after
+    2>.
+    """
+
+    window = virtualbricks.find("frame", "Logs")
+    pane = virtualbricks.find("scroll pane", within=window)
+    view = virtualbricks.find("text", within=pane)
+
+    def output():
+        for line in harness.a11y.text(view).splitlines():
+            fields = [field for field in line.split("\t") if field]
+            if name in fields and (text in fields or f"2> {text}" in fields):
+                return line
+        return None
+
+    virtualbricks.wait_for(output, f"the output of {name} is in the window")
 
 
 # A switch that another program runs: the fixture other_switch

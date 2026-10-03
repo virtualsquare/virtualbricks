@@ -139,6 +139,7 @@ The steps of a user:
 | `When I start sw1` | Its Start button; it must run, with new processes, but a switch wrapper, which runs no program |
 | `When I try to start wr1` | A click on its Start, also when it is disabled, as a user may click it |
 | `When I stop sw1` | Its Stop button; it must stop |
+| `When I give sw1 34 ports and hub mode, with the buttons of its settings` | Configure… in its menu, the + or the - of Ports until it says 34, Hub mode turned on, then OK |
 | `When I start all the bricks` | Start All; each brick whose row said Stopped must run, with the process its row tells, and Start All must start no other |
 | `When I stop all the bricks` | Stop All; each brick that ran must be able to start again |
 | `When I wait 5 seconds` | Waits |
@@ -149,12 +150,23 @@ The steps of a user:
 | `Then w1 runs with the sockets of sw1 and sw2` | It runs, and a `vde_plug` of its start is in the socket of each switch: the one its `vde_switch` listens on |
 | `Then sw1 is stopped` | Its row says Stopped, and no process of it runs: those of its start have quit, and none has its sockets |
 | `Then sw1 is not running` | The same |
+| `Then sw1 runs with 34 ports, as a hub` | It runs, and its `vde_switch` has `-n 34` and `-x` |
 | `Then no brick runs` | No row of the list says Running, and no process of a brick runs: neither those that the steps started nor any with a socket of the tests; Virtualbricks runs no program |
 | `Then wr1 is not configured` | Its row says Not configured, its Start is disabled, and no process has its sockets |
 | `Then wr1 can't start: "Configure wr1 first"` | Its Start is disabled, and the state in its row says why, in its tooltip, which the screen readers read |
 | `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |
 | `Then the main window shows the project lab` | Its title names the project |
 | `Then the list of bricks has`, with a table under it | The rows of the list, all of them and in order, scrolled through, once they are those of the table: the name of each brick, its detail and its state |
+
+The steps of a program that fails:
+
+| Step | What it does |
+| :- | :- |
+| `Given a vde_switch that writes "no switch today" and exits with 3` | A script in place of `vde_switch`, in the folder of the VDE programs of the project that Virtualbricks opens at its first start, `new_project`; before Virtualbricks starts |
+| `Then an error says "Process terminated. process ended with exit code 3"` | The alert Error shows, with the text |
+| `When I close the error` | Its button Close |
+| `When I open the messages window` | Logs, in the menu File |
+| `Then the messages window has the output of sw1: "no switch today"` | A line of the messages comes from sw1 and has the text, as its program wrote it, after `2>` when on its standard error |
 
 The steps of a switch that another program runs, for a switch wrapper:
 
@@ -237,6 +249,7 @@ def stop_brick(virtualbricks, name):
   | `enabled(role, name, within=None)` | The widget, once it shows and is enabled |
   | `disabled(role, name, within=None)` | The widget, once it shows and is disabled |
   | `click(role, name, within=None, enabled=True)` | Clicks it, once it shows and is enabled; with `enabled=False`, also if it is disabled |
+  | `spin(name, by, within=None)` | Clicks the + of the spin button `by` times, or its - `-by` times; after each click, its value changes |
   | `type(text, role, name=None, within=None)` | Clicks it, once it shows and is enabled, and types text at its cursor; then it has the text: see [What it can't do yet](#what-it-cant-do-yet) |
   | `choose(item, menu)` | A menu of the menu bar, then its item |
   | `row(name)` | The row of a list with that name, for `within=` |
