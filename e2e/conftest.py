@@ -45,6 +45,15 @@ STEPS = pytest.StashKey[list]()
 ENDED = pytest.StashKey[float]()
 # Of the run: what was recorded, (scenario, lines).
 RECORDED = pytest.StashKey[list]()
+# In pytest's cache: how long each test took in the runs before, in
+# seconds, by its node id without parameters.
+DURATIONS = "e2e/durations"
+# Set in the processes of pytest-xdist that run the tests: its name, and
+# how many there are.
+WORKER = "PYTEST_XDIST_WORKER"
+WORKERS = "PYTEST_XDIST_WORKER_COUNT"
+# What each test of this run took: its setup, its call and its teardown.
+took = {}
 
 
 def pytest_addoption(parser):
@@ -113,6 +122,76 @@ def _record(request, vb):
     request.config.stash.setdefault(RECORDED, []).append(
         (request.node.nodeid, lines)
     )
+
+
+def pytest_collection_modifyitems(config, items):
+    """
+    Under pytest-xdist, the tests in an order that keeps the workers busy
+    alike, by what they took in the runs before.
+
+    When the tests are fewer than two a worker, pytest-xdist deals them
+    round the workers, one at a time: the workers get the longest tests
+    first, the longest of all last of that round, and the first workers a
+    second test, among the shortest. Else it sends each worker a few tests
+    side by side first, two at least, then one at a time as they end: the
+    longest, the shortest, the second longest, the second shortest, and so
+    on. Two long scenarios side by side ran one after the other on a worker
+    while the others had ended, and -n 8 took as long as -n 4.
+
+    A test without a duration takes as long as the others on average; with
+    none at all, the tests are alike, and the scenarios, collected first,
+    end up between the tests of recording.py.
+    """
+
+    if WORKER not in os.environ:
+        return
+    cache = getattr(config, "cache", None)
+    durations = {} if cache is None else cache.get(DURATIONS, {})
+    known = [
+        durations[bare(item.nodeid)]
+        for item in items
+        if bare(item.nodeid) in durations
+    ]
+    guess = sum(known) / len(known) if known else 0.0
+    ranked = sorted(
+        items,
+        key=lambda item: durations.get(bare(item.nodeid), guess),
+        reverse=True,
+    )
+    workers = int(os.environ[WORKERS])
+    if len(ranked) < 2 * workers:
+        items[:] = ranked[:workers][::-1] + ranked[workers:]
+        return
+    items[:] = []
+    while ranked:
+        items.append(ranked.pop(0))
+        if ranked:
+            items.append(ranked.pop())
+
+
+def pytest_runtest_logreport(report):
+    took[report.nodeid] = took.get(report.nodeid, 0.0) + report.duration
+
+
+def pytest_sessionfinish(session):
+    """What the tests took joins what they took before, in pytest's cache."""
+
+    cache = getattr(session.config, "cache", None)
+    if cache is None or WORKER in os.environ or not took:
+        return
+    durations = cache.get(DURATIONS, {})
+    for nodeid, seconds in took.items():
+        durations[bare(nodeid)] = seconds
+    cache.set(DURATIONS, durations)
+
+
+def bare(nodeid):
+    """
+    The node id of a test without its parameters: the same for each run of
+    --count and each example of an outline.
+    """
+
+    return nodeid.partition("[")[0]
 
 
 def pytest_bdd_apply_tag(tag, function):

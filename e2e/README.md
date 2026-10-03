@@ -51,12 +51,18 @@ pytest --gherkin-terminal-reporter -vv   # each scenario, step by step
 pytest -s                                # with what the steps print
 pytest --count 20 -k switch_runs         # 20 times: is it flaky?
 pytest --record-all -k switch_runs       # a video, also if it passes
-pytest -n 4                              # four scenarios at a time
+pytest -n 8                              # eight scenarios at a time
 ```
 
 `pytest` runs the end-to-end tests, and those of `recording.py`
 (`testpaths` in `pyproject.toml`); `trial` runs the others. A scenario takes
-a few seconds.
+a few seconds; with `-n 8`, all of them take about as long as the longest:
+13 s on a computer of eight cores.
+
+With `-n`, the workers of pytest-xdist get the tests in an order that keeps
+them busy alike: a long test beside a short one, by what each took in the
+runs before, which pytest keeps in its cache, `.pytest_cache`. A new test is
+taken for as long as the others; `conftest.py` says how.
 
 - Nothing shows on your screen, and nothing reaches your desktop: the
   windows are on `broadwayd`, with a session bus of their own.
