@@ -39,6 +39,7 @@ from twisted.logger import Logger
 from virtualbricks import errors, observable
 from virtualbricks.bricks.command import Prepared
 from virtualbricks.bricks.draft import Draft
+from virtualbricks.bricks.plug import link_loop
 from virtualbricks.config.schema import (
     Path,
     Ref,
@@ -362,7 +363,11 @@ class Brick(Base):
 
     proc = None
     term_command = "vdeterm"
-    _started_d = None
+    # While a start is under way, the Deferreds of those who wait for it:
+    # the first is that of the call that began it.
+    _waiting = None
+    # While poweron() follows the links to the bricks it plugs into.
+    _linking = False
     _exited_d = None
     _last_status = None
     process_protocol = VDEProcessProtocol
@@ -397,9 +402,12 @@ class Brick(Base):
         Start the brick, in stages.
 
         A brick that isn't configured or connected is refused. The bricks it
-        plugs into start first, and a loop is refused. Then prepare() gathers
-        what the command line needs, command() writes it, and spawn() starts
-        the program; once it runs, the event of the brick's start runs.
+        plugs into start first, and a loop is refused: a brick that its links
+        lead back to. Then prepare() gathers what the command line needs,
+        command() writes it, and spawn() starts the program; once it runs,
+        the event of the brick's start runs. A call while a start is under
+        way waits for it, as when Start All starts a switch and the wire that
+        plugs into it.
 
         resume is the saved state that a virtual machine starts from; the
         other bricks have none. Return a Deferred that fires with the brick
@@ -408,6 +416,14 @@ class Brick(Base):
 
         if self.proc is not None:
             return defer.succeed(self)
+        if self._linking:
+            if get_setting("log_link_loops"):
+                self.logger.error(link_loop)
+            return defer.fail(errors.LinkLoopError())
+        if self._waiting is not None:
+            waiter = defer.Deferred()
+            self._waiting.append(waiter)
+            return waiter
 
         if not self.configured():
             return defer.fail(
@@ -422,9 +438,14 @@ class Brick(Base):
                 )
             )
 
-        self._started_d = started = defer.Deferred()
+        started = defer.Deferred()
+        self._waiting = [started]
         self._exited_d = defer.Deferred()
-        d = self._check_links()
+        self._linking = True
+        try:
+            d = self._check_links()
+        finally:
+            self._linking = False
         d.addCallback(lambda _: self.prepare(resume))
         d.addCallback(self.command)
         d.addCallback(self.spawn)
@@ -438,13 +459,20 @@ class Brick(Base):
         def eb(failure):
             if failure.check(defer.FirstError):
                 failure = failure.value.subFailure
-            started.errback(failure)
+            waiting, self._waiting = self._waiting, None
+            if waiting is None:
+                # the program runs, and the event of its start failed
+                return failure
+            for waiter in waiting:
+                waiter.errback(failure)
 
-        # here self._started_d could be None because if child process is
-        # created before reaching this point, process_stated is already called
-        # and then self._started_d is unset
         d.addErrback(eb)
         return started
+
+    def starting(self):
+        """Whether a start of the brick is under way."""
+
+        return self._waiting is not None
 
     def poweroff(self, kill=False):
         if self.proc is None:
@@ -483,8 +511,9 @@ class Brick(Base):
     # brick <--> process interface
 
     def process_started(self, proc):
-        started, self._started_d = self._started_d, None
-        started.callback(self)
+        waiting, self._waiting = self._waiting, None
+        for waiter in waiting:
+            waiter.callback(self)
         self.changed.notify(self)
 
     def process_ended(self, proc, status):

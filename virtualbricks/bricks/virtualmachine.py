@@ -1208,8 +1208,9 @@ class VirtualMachine(bricks.Brick):
         The images of its disks are locked while it runs.
         """
 
-        if self.proc is not None:
-            return defer.succeed(self)
+        if self.proc is not None or self.starting():
+            # its images are locked already, or will be
+            return bricks.Brick.poweron(self, resume)
 
         def acquire(passthru):
             self.acquire()
