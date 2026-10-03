@@ -119,6 +119,20 @@ Feature: Bricks
       | ports    | 32    |
       | hub_mode | false |
 
+  Scenario: Escape leaves the settings of a switch as they were
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I give sw1 34 ports and hub mode in its settings, then press Escape
+    Then the list of bricks has
+      | Brick | Detail            | State   |
+      | sw1   | Switch · 32 ports | Stopped |
+    When I quit Virtualbricks
+    Then Virtualbricks has quit
+    And project.toml has sw1 with
+      | Setting  | Value |
+      | ports    | 32    |
+      | hub_mode | false |
+
   Scenario: Duplicate copies a brick with its settings, under its name with the next free number
     Given Virtualbricks is running
     When I add the switch sw1

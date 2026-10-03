@@ -12,6 +12,7 @@ The steps of a user:
 | Step | What it does |
 | :- | :- |
 | `Given Virtualbricks is running` | Starts Virtualbricks, and waits for its main window |
+| `Given Virtualbricks is running with --listen` | Starts it with the options, as the shell splits them, in place of `--lock none`, and waits for its main window; with `--listen` alone, until it listens on the socket of its workspace too. With `--connect`, these are the windows of the other Virtualbricks, which runs the bricks: see the steps of another Virtualbricks |
 | `When I add the switch sw1` | New Brick, the kind, then OK on its settings; the new brick must be named `sw1`. Any kind of New Brick: `the virtual machine vm1`, `the router r1`, … |
 | `When I join sw1 and sw2 with the wire w1` | New Brick, Wire, then sw1 for its left end and sw2 for its right end, and OK; the new wire must be named `w1` |
 | `When I start sw1` | Its Start button; it must run, with new processes, but a switch wrapper, which runs no program |
@@ -19,6 +20,7 @@ The steps of a user:
 | `When I stop sw1` | Its Stop button; it must stop |
 | `When I give sw1 34 ports and hub mode, with the buttons of its settings` | Configure… in its menu, the + or the - of Ports until it says 34, Hub mode turned on, then OK |
 | `When I give sw1 34 ports and hub mode in its settings, then cancel` | The same, then Cancel |
+| `When I give sw1 34 ports and hub mode in its settings, then press Escape` | The same, then Escape |
 | `When I duplicate sw1 from its menu` | Duplicate, in its menu; then the list has one more brick |
 | `When I delete sw2 from its menu, and confirm` | Delete…, in its menu, then Yes to the question that names it |
 | `When I start all the bricks` | Start All; each brick whose row said Stopped must run, with the process its row tells, and Start All must start no other |
@@ -37,8 +39,10 @@ The steps of a user:
 | `When I remove the project new_project, and move it to the trash` | In the Projects window, its row, then Remove… in the menu of its details; the question that names it says its folder goes to the trash: Move to Trash, and the question closes |
 | `When I remove the project new_project, which can't go to the trash, and delete it permanently` | The same, where the question has no Move to Trash and says the drive of the workspace has no trash: Delete Permanently |
 | `When I import the archive lab.vbp of my home folder with the name it suggests, lab` | Import…, in the menu Projects; in the window, the button of the file, then Home and the archive in the file chooser, and Open; the name must be the one the window suggests; then Import, with Open the project as it is, until the window says how it ended |
+| `When I import the archive new_project.vbp of my home folder, typing its path, with the name it suggests, new_project-2` | The same, where in the file chooser, once clicked, Ctrl+L shows the entry of its location: the path of the archive typed there, then Return once Open is enabled |
 | `When I close the Import Project window` | Its button Close |
-| `Then sw1 is running` | Its row says Running, and the processes of its start run |
+| `When I export the project to new_project.vbp of my home folder` | Export…, in the menu Projects, for the open project; the window suggests the archive in the home; then Export, and Close once it says where it exported it |
+| `Then sw1 is running` | Its row says Running, and the processes of its start run; when no step started it, as with `--command`, the process its row tells, which has its sockets |
 | `Then sw1 is still running` | The same |
 | `Then w1 runs with the sockets of sw1 and sw2` | It runs, and a `vde_plug` of its start is in the socket of each switch: the one its `vde_switch` listens on |
 | `Then sw1 is stopped` | Its row says Stopped, and no process of it runs: those of its start have quit, and none has its sockets |
@@ -50,11 +54,13 @@ The steps of a user:
 | `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |
 | `Then Virtualbricks hasn't quit` | It still runs, and its main window shows |
 | `Then the main window shows the project lab` | Its title names the project |
+| `Then the main window shows the project lab on this computer` | The windows of another Virtualbricks: their title names the project and where it runs |
 | `Then the Projects window says "Cannot open new_project: …"` | A label of the window has the text, as the bar over its list |
 | `Then the Projects window doesn't list new_project` | No row of its list has the project |
 | `Then the Import Project window says "Imported as "lab"."` | A label of the window has the text |
 | `Then the folder of new_project-2 has project.toml` | The folder of the project in the workspace has the file of a project, which TOML reads, with its format |
 | `Then the folder of new_project-copy is a copy of that of new_project` | It has project.toml, and the two folders of the workspace have the same files, with the same bytes |
+| `Then the archive new_project.vbp of my home folder has the bricks`, with a table under it | The bricks of the project.toml of the archive, all of them and in order: the name of each and its type |
 | `Then the folder of new_project is in the trash` | The workspace has no folder new_project, and the trash of the home has it: a `.trashinfo` with its path, and the folder, with its project.toml |
 | `Then the folder of new_project is deleted, and in no trash` | The workspace has no folder new_project, and no trash has its path: neither that of the home, nor `.Trash/UID` and `.Trash-UID` at the top of the drive of the workspace |
 | `Then the list of bricks has`, with a table under it | The rows of the list, all of them and in order, scrolled through, once they are those of the table: the name of each brick, its detail and its state; with only the titles of the columns, no brick, as the tab says No Bricks Yet |
@@ -80,6 +86,26 @@ The steps of a switch that another program runs, for a switch wrapper:
 | `Given a switch that another program runs` | A `vde_switch` that the tests run, not Virtualbricks, in the runtime folder of the tests; it quits at the end of the scenario |
 | `When I give wr1 the control folder of that switch` | Configure… in its menu, the folder typed in Control folder, then OK; its row says the folder |
 | `Then the switch that another program runs still runs` | Its process runs, and its socket is there |
+
+The steps of another Virtualbricks, of the same user, with the same home and
+workspace:
+
+| Step | What it does |
+| :- | :- |
+| `Given another Virtualbricks runs with --no-gui --listen` | Starts it with the options: its main window shows, or, with `--no-gui`, it listens on the socket of `--listen` alone |
+| `When I start another Virtualbricks with --lock workspace` | The same, without waiting for it: it may exit |
+| `When I run virtualbricks --command brick start sw1` | `virtualbricks --command` and the words, as the shell splits them, in the workspace of the scenario; it must exit with 0 |
+| `Then the other Virtualbricks exits with 1, saying "Another Virtualbricks is running …"` | It exits with the status, and its output has the text |
+| `Then the other Virtualbricks names the process of Virtualbricks` | Its output says `Held by process PID`, that of the first |
+| `Then sw1 runs in the other Virtualbricks` | The processes of its start are the other's, and the windows of it run none |
+
+The steps of the picture of the lab, in the tab Topology:
+
+| Step | What it does |
+| :- | :- |
+| `When I zoom in on the picture of the lab 5 times` | The tab Topology, then its Zoom In, so many times |
+| `When I drag the picture of the lab 100 pixels to the left` | A press on the background, under the bricks, which are a row in the middle of its height, a move to the left or to the right, and a release; the picture must be wider than the tab |
+| `Then the picture of the lab moved 100 pixels to the left` | Its horizontal scroll bar moved as much the other way |
 
 The steps of the disk images:
 
@@ -167,17 +193,27 @@ def stop_brick(virtualbricks, name):
   | `click(role, name, within=None, enabled=True)` | Clicks it, once it shows and is enabled; with `enabled=False`, also if it is disabled |
   | `spin(name, by, within=None)` | Clicks the + of the spin button `by` times, or its - `-by` times; after each click, its value changes |
   | `type(text, role, name=None, within=None)` | Clicks it, once it shows and is enabled, and types text at its cursor; then it has the text: see [What it can't do yet](README.md#what-it-cant-do-yet) |
+  | `key(keys, window)` | Presses keys, as `Escape`, `Return` or `Control+l`, in window, a frame or a dialog, once it is active: click in it first, as the keys go to the window clicked last. Text goes with `type()` |
+  | `drag(start, end, ready=None)` | Presses at start, a point of the screen, moves to end and releases there; `ready()`, if given, right before the press, half a second after the click before |
   | `choose(item, menu)` | A menu of the menu bar, then its item |
   | `row(name)` | The row of a list with that name, for `within=` |
   | `rows(within)` | The rows of the list in a scroll pane, from the first to the last, each the names of its labels: the wheel scrolls through it |
   | `names(role, within=None)` | The names of the widgets of that role that show now |
   | `wait_for(get, what)` | What `get()` returns, once it is true |
-  | `children(parent=None)` | The processes that Virtualbricks, or the process `parent`, started and run |
+  | `children(parent=None)` | The processes that Virtualbricks, or the process `parent`, started and run; for the windows of another, those of the other |
   | `command_line(pid)` | The words of the command line of a process; none once it has quit |
   | `bricks(name=None)` | The processes with sockets in the run folder of the tests; with a name, those of that brick |
   | `describe()` | The widgets that show, one a line |
+  | `start(*options)` | Starts it with the options of a scenario, and waits for its main window; with `--listen` alone, until it listens; with `--no-gui`, only that |
+  | `launch(*options)` | Starts it with the options, without waiting |
+  | `run(*options)` | Runs it, as with `--command`, until it exits: its exit status, its output and its errors |
+  | `listens()` | Whether a Virtualbricks listens on the socket of `--listen` alone of its workspace |
+  | `lab` | The Virtualbricks that runs the bricks it shows: itself, or the other one, for the windows of `--connect` |
   | `home`, `workspace`, `settings` | Its home, its workspace, and its settings file, which a step can remove; a step can move the workspace before Virtualbricks starts |
 
+- `other_virtualbricks` is another Virtualbricks of the same user, not
+  started, with the same home and workspace; its files are in the folder
+  `other` of the scenario.
 - Another fixture can keep what the steps of a scenario share, as
   `brick_processes` keeps the processes of each brick started.
 - A `Then` checks what really happened, not only what the windows say: a

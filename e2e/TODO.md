@@ -14,12 +14,18 @@ that the tests can't do yet: those needs come first.
   through AT-SPI, at the cursor of a widget, as an assistive tool does:
   the Broadway backend of GTK 3 takes some keys for accelerators and
   mnemonics (README.md, What it can't do yet)
-- [ ] Keys alone: Escape, Return, the Ctrl+L of the file choosers; the
-  keys of Broadway can't, see the item before
-- [ ] Drag: a press, moves and a release, for a row dropped on another,
-  which connects the two bricks, and for the picture of the Topology tab
-- [ ] Start Virtualbricks with the options of a scenario: `--listen`,
-  `--lock workspace`, `--connect`; and a second Virtualbricks beside it
+- [x] Keys alone: Escape, Return, the Ctrl+L of the file choosers:
+  `key()` in `harness.py`, in the window clicked last, once GTK says it is
+  active: `broadwayd` gives a key to the window it focused, and focuses the
+  window pressed only once it has handled the press
+- [x] Drag: a press, moves and a release, for the picture of the Topology
+  tab: `drag()` in `harness.py`; a row dropped on another is out of reach,
+  see below
+- [x] Start Virtualbricks with the options of a scenario: `--listen`,
+  `--lock workspace`, `--connect`; and a second Virtualbricks beside it:
+  the steps `Given Virtualbricks is running with OPTIONS`, `Given another
+  Virtualbricks runs with OPTIONS`, `When I run virtualbricks --command
+  WORDS`; their system lock is in the folder of the tests
 - [x] Make a disk image in a fixture, with `qemu-img create`, for the
   virtual machines and the Images tab: the step `Given the empty disk
   image disk.qcow2 of 1 GB, in my home folder`
@@ -57,6 +63,8 @@ that the tests can't do yet: those needs come first.
   mode", `bricks.feature`
 - [x] Cancel the settings of a switch: nothing changes
   "Cancel leaves the settings of a switch as they were", `bricks.feature`
+- [x] Leave the settings of a switch with Escape: nothing changes
+  "Escape leaves the settings of a switch as they were", `bricks.feature`
 - [x] Duplicate a brick from its menu
   "Duplicate copies a brick with its settings, under its name with the
   next free number",
@@ -134,8 +142,11 @@ that the tests can't do yet: those needs come first.
   converted at the import: the main window lists its 13 bricks
   "An archive of Virtualbricks 2.1 is converted at its import, and
   opens", `projects.feature`
-- [ ] Export a project to an archive, then import it under another name
-  the archive has the project and its private disks; needs typing
+- [x] Export a project to an archive, then import it under another name
+  the archive has the project, its path typed in the file chooser; not its
+  private disks yet, which need a virtual machine
+  "A project exported to an archive, then imported with the name it
+  suggests, has its bricks", `projects.feature`
 - [ ] Rename a project
   its folder has the new name; needs typing
 
@@ -192,6 +203,10 @@ that the tests can't do yet: those needs come first.
 
 - [ ] See the picture of the lab, and zoom it with the buttons
   the zoom level changes; AT-SPI can't see the drawing itself
+- [x] Drag the picture of the lab, zoomed in
+  its scroll bar moves as the pointer
+  "The picture of the lab, zoomed in, moves with the pointer that drags
+  it", `topology.feature`
 - [ ] Export the picture of the lab to a PNG file
   the file is a PNG; needs typing for the path
 
@@ -204,20 +219,31 @@ that the tests can't do yet: those needs come first.
 
 # Command line and sockets
 
-- [ ] Start a brick with `--command` while the windows show it
-  its row says Running; needs `--listen`
-- [ ] Open the windows of another Virtualbricks with `--connect`, and
+- [x] Start a brick with `--command` while the windows show it
+  its row says Running
+  "A switch started with --command runs, and the windows show it",
+  `command-line.feature`
+- [x] Open the windows of another Virtualbricks with `--connect`, and
   start a brick there
-  the brick runs on the other one; needs a second Virtualbricks
-- [ ] Start a second Virtualbricks on the same workspace with
+  the brick runs on the other one, and still runs once the windows quit
+  "The windows of another Virtualbricks start a switch there, and close
+  without stopping it", `command-line.feature`
+- [x] Start a second Virtualbricks on the same workspace with
   `--lock workspace`
   it exits with the reason; the first one goes on
+  "A second Virtualbricks in the same workspace exits, saying why, and the
+  first goes on", `command-line.feature`
 
 # Out of reach on Broadway
 
 - The tray icon: Broadway has no system tray
 - A tap and a capture interface that run: they need `CAP_NET_ADMIN`
 - A file dropped from the desktop on the Projects window
+- A row of bricks dropped on another, which connects the two: GTK 3 on
+  Broadway has no drag and drop (`gdkdnd-broadway.c` finds no window under
+  the pointer). Besides, the rows never start a drag: a `GtkListBoxRow` has
+  no window of its own, so its `drag_source_set` never gets the press, on
+  X11 too
 
 # Conventions
 

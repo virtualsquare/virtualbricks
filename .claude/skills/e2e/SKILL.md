@@ -65,9 +65,9 @@ there are and how to add one; then `e2e/steps.py` and the features in
   The user may run their own Virtualbricks from this checkout. A break that
   edits the code is undone before anything else; `git diff` must show only
   the scenario and its steps.
-- A use case that needs typing (a name, a path) can't be written yet: say so,
-  and offer to teach the browser the keys first (`k` and `K` of
-  `broadway.js`).
+- Text, as a name or a path, is typed with `type()`; a key alone, as Escape,
+  Return or Ctrl+L, with `key()`, in the window clicked last. A row dropped on
+  another can't be done: GTK 3 on Broadway has no drag and drop; say so.
 - A widget without a name can't be found: give it one in the code of
   Virtualbricks (`icon_button()` of `gui/mainwindow/tab.py`), which helps the
   screen readers too, and say so.

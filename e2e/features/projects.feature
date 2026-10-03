@@ -89,6 +89,21 @@ Feature: Projects
       | node3                | Virtual machine · x86_64 · KVM · 500 MiB · eth0 on switchwrapper · eth1 on sw1     | Stopped        |
       | node4                | Virtual machine · x86_64 · KVM · 500 MiB · eth0 on switchwrapper · eth1 on sw4     | Stopped        |
 
+  Scenario: A project exported to an archive, then imported with the name it suggests, has its bricks
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I export the project to new_project.vbp of my home folder
+    Then the archive new_project.vbp of my home folder has the bricks
+      | Brick | Type   |
+      | sw1   | switch |
+    When I import the archive new_project.vbp of my home folder, typing its path, with the name it suggests, new_project-2
+    Then the Import Project window says "Imported as "new_project-2"."
+    When I close the Import Project window
+    Then the main window shows the project new_project-2
+    And the list of bricks has
+      | Brick | Detail            | State   |
+      | sw1   | Switch · 32 ports | Stopped |
+
   Scenario: A project removed from the Projects window goes to the trash, once confirmed
     Given Virtualbricks is running
     When I open the Projects window

@@ -69,6 +69,12 @@ def checked(accessible) -> bool:
     return accessible.get_state_set().contains(Atspi.StateType.CHECKED)
 
 
+def active(accessible) -> bool:
+    """Whether the window has the focus: the keys go to it."""
+
+    return accessible.get_state_set().contains(Atspi.StateType.ACTIVE)
+
+
 def vertical(accessible) -> bool:
     return accessible.get_state_set().contains(Atspi.StateType.VERTICAL)
 

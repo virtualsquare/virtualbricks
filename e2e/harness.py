@@ -24,12 +24,15 @@ Virtualbricks is the program of one scenario, with a HOME, a workspace and
 settings of its own, and a Screen: broadwayd, GTK's HTML5 display server,
 with the browser of :mod:`broadway`. Its widgets are found as a screen
 reader finds them (:mod:`a11y`) and clicked through broadwayd. Nothing
-reaches the desktop, nor a Virtualbricks that runs there.
+reaches the desktop, nor a Virtualbricks that runs there: not even its
+lock, which the Virtualbricks of the tests take in their own folder.
 """
 
+import glob
 import os
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -54,6 +57,18 @@ TIMEOUT = 10
 SETTINGS = "format = 1\nwarn_missing_programs = false\n"
 # GTK without animations: a popover shows at once where it ends up.
 GTK_SETTINGS = "[Settings]\ngtk-enable-animations = 0\n"
+# Virtualbricks, as python -m virtualbricks, with the system lock of
+# --lock system, user and workspace in the folder of the tests: /tmp has the
+# one of the Virtualbricks of the user, which it shares with no other.
+LAUNCH = (
+    "import os, runpy\n"
+    "from virtualbricks import locations\n"
+    "locations.SYSTEM_LOCK_FILE = os.environ['E2E_SYSTEM_LOCK']\n"
+    "runpy.run_module('virtualbricks', run_name='__main__', alter_sys=True)\n"
+)
+# The options of Virtualbricks that talk to another one, which runs: they
+# take none of those of a run, as --lock and --noterm.
+CLIENT = ("--command", "--connect")
 # Out of the environment of the tests and of Virtualbricks: the screen and
 # the buses of the desktop.
 DESKTOP = (
@@ -91,6 +106,8 @@ class Desktop:
             if name not in DESKTOP
         }
         self.env["XDG_RUNTIME_DIR"] = self.runtime
+        # the system lock of their Virtualbricks
+        self.lock = os.path.join(self.runtime, "virtualbricks.lock")
 
     def start(self):
         log = os.path.join(self.logs, "dbus.log")
@@ -149,24 +166,35 @@ class Screen:
 
 
 class Virtualbricks:
-    """A Virtualbricks of this checkout, on the screen of the tests."""
+    """
+    A Virtualbricks of this checkout, on the screen of the tests: in home,
+    its files, as output.log, in folder.
+    """
 
-    def __init__(self, desktop, home, log):
+    def __init__(self, desktop, home, folder=None):
         self.desktop = desktop
         self.screen = None
         self.browser = None
         # those of all its screens, the last the browser
         self.browsers = []
         self.home = home
+        self.folder = folder or home
         self.config = os.path.join(home, ".config")
         # without it, the start is the first, as after Virtualbricks 2.1
         self.settings = os.path.join(
             self.config, "virtualbricks", "settings.toml"
         )
         self.workspace = os.path.join(home, "workspace")
-        self.log = log
+        self.log = os.path.join(self.folder, "output.log")
         self.process = None
         self.app = None
+        # the Virtualbricks that runs the bricks it shows: another one, for
+        # the windows of --connect
+        self.lab = self
+
+    def make_home(self):
+        """Its first settings, those of GTK, and its workspace."""
+
         for folder, name, text in (
             ("virtualbricks", "settings.toml", SETTINGS),
             ("gtk-3.0", "settings.ini", GTK_SETTINGS),
@@ -176,29 +204,114 @@ class Virtualbricks:
                 file.write(text)
         os.makedirs(self.workspace)
 
-    def start(self):
+    def beside(self, folder):
         """
-        Start Virtualbricks on a screen, and wait for its main window. Once
-        it has quit, it starts again on a screen of its own, and its output
-        goes on in the same log.
+        Another Virtualbricks of the same user: the same home, settings and
+        workspace; its files in folder.
+        """
+
+        os.makedirs(folder, exist_ok=True)
+        other = Virtualbricks(self.desktop, self.home, folder)
+        other.workspace = self.workspace
+        return other
+
+    def start(self, *options):
+        """
+        Start Virtualbricks with the options of a scenario, and wait for its
+        main window; with --no-gui, until it listens on the socket of
+        --listen of its workspace. Once it has quit, it starts again on a
+        screen of its own, and its output goes on in the same log.
+        """
+
+        if "--no-gui" in options and not _listens_alone(options):
+            raise ValueError(
+                "without the windows, --listen alone says it runs"
+            )
+        self.launch(*options)
+        if "--no-gui" not in options:
+            # only this process: AT-SPI shows the other applications of the
+            # bus
+            self.app = self.wait_for(
+                lambda: a11y.application(self.process.pid),
+                "Virtualbricks is on the accessibility bus",
+                START_TIMEOUT,
+            )
+            self.find("frame", timeout=START_TIMEOUT)
+        if _listens_alone(options):
+            # once its project is open
+            self.wait_for(
+                self.listens,
+                "Virtualbricks listens on the socket of its workspace",
+                START_TIMEOUT,
+            )
+
+    def launch(self, *options):
+        """
+        Start Virtualbricks with options, without waiting for it: with the
+        windows, on a screen of its own.
         """
 
         if self.screen is not None:
             self.screen.close()
-        self.screen = self.desktop.screen(
-            os.path.join(self.home, "broadway.log")
+            self.screen = self.browser = None
+        if "--no-gui" not in options:
+            self.screen = self.desktop.screen(
+                os.path.join(self.folder, "broadway.log")
+            )
+            self.browser = self.screen.browser
+            self.browsers.append(self.browser)
+        self.app = None
+        with open(self.log, "ab") as out:
+            self.process = subprocess.Popen(
+                self.arguments(options),
+                env=self.environment(),
+                cwd=ROOT,
+                stdout=out,
+                stderr=subprocess.STDOUT,
+            )
+
+    def run(self, *options):
+        """
+        Run Virtualbricks with options, as --command, until it exits: its
+        exit status, and its output and its errors, as text.
+        """
+
+        return subprocess.run(
+            self.arguments(options),
+            env=self.environment(),
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=QUIT_TIMEOUT,
         )
-        self.browser = self.screen.browser
-        self.browsers.append(self.browser)
+
+    def arguments(self, options):
+        """
+        Its command line, with options: those of the tests first, its
+        workspace and no terminal, and no lock unless options name one; a
+        Virtualbricks that talks to another, with --command or --connect,
+        has only the workspace.
+        """
+
+        words = [sys.executable, "-c", LAUNCH]
+        if not any(option in CLIENT for option in options):
+            words.append("--noterm")
+            if not any(option.startswith("--lock") for option in options):
+                words += ["--lock", "none"]
+        # the words of --command come last
+        return words + ["--workspace", self.workspace, *options]
+
+    def environment(self):
+        """That of the desktop of the tests, its home and its screen."""
+
         env = dict(
             self.desktop.env,
-            GDK_BACKEND="broadway",
-            BROADWAY_DISPLAY=self.screen.display,
             HOME=self.home,
             XDG_CONFIG_HOME=self.config,
             XDG_STATE_HOME=os.path.join(self.home, ".local", "state"),
             XDG_DATA_HOME=os.path.join(self.home, ".local", "share"),
             XDG_CACHE_HOME=os.path.join(self.home, ".cache"),
+            E2E_SYSTEM_LOCK=self.desktop.lock,
             # the words of the steps: no translation
             LANGUAGE="C",
             LC_ALL="C.UTF-8",
@@ -211,37 +324,48 @@ class Virtualbricks:
                 filter(None, [os.environ.get("E2E_PYTHONPATH"), ROOT])
             ),
         )
-        with open(self.log, "ab") as out:
-            self.process = subprocess.Popen(
-                [
-                    sys.executable,
-                    "-m",
-                    "virtualbricks",
-                    "--noterm",
-                    "--lock",
-                    "none",
-                    "--workspace",
-                    self.workspace,
-                ],
-                env=env,
-                cwd=ROOT,
-                stdout=out,
-                stderr=subprocess.STDOUT,
+        if self.screen is not None:
+            env.update(
+                GDK_BACKEND="broadway", BROADWAY_DISPLAY=self.screen.display
             )
-        # only this process: AT-SPI shows the other applications of the bus
-        self.app = self.wait_for(
-            lambda: a11y.application(self.process.pid),
-            "Virtualbricks is on the accessibility bus",
-            START_TIMEOUT,
-        )
-        self.find("frame", timeout=START_TIMEOUT)
+        return env
 
-    def stop(self):
-        """Stop Virtualbricks, if it still runs, its bricks and its screen."""
+    def control_socket(self):
+        """
+        The socket of --listen alone of its workspace, in the runtime folder
+        of the workspace, which .workspace links to it; None if there is no
+        such folder yet.
+        """
+
+        runtime = os.path.join(self.desktop.runtime, "virtualbricks")
+        workspace = os.path.realpath(self.workspace)
+        for link in glob.glob(os.path.join(runtime, "*", ".workspace")):
+            if os.path.realpath(link) == workspace:
+                return os.path.join(os.path.dirname(link), ".control")
+        return None
+
+    def listens(self) -> bool:
+        """Whether a Virtualbricks takes a connection on that socket."""
+
+        path = self.control_socket()
+        if path is None:
+            return False
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+            try:
+                client.connect(path)
+            except OSError:
+                return False
+        return True
+
+    def stop(self, bricks=True):
+        """
+        Stop Virtualbricks, if it still runs, and its screen; with bricks,
+        all the bricks that are left, also another one's.
+        """
 
         if self.process is not None:
             _stop(self.process, QUIT_TIMEOUT)
-            for pid in self.bricks():
+            for pid in self.bricks() if bricks else ():
                 os.kill(pid, signal.SIGKILL)
         if self.screen is not None:
             self.screen.close()
@@ -358,6 +482,37 @@ class Virtualbricks:
         )
         return widget
 
+    def drag(self, start, end, ready=None):
+        """
+        Press at start, a point of the screen, move to end and release
+        there, as a user drags. ready(), if given, comes right before the
+        press, half a second after the click before: what it did shows.
+        """
+
+        self.browser.drag(start, end, ready=ready)
+
+    def key(self, keys, window):
+        """
+        Press keys, as "Escape", "Return" or "Control+l", in window, a frame
+        or a dialog, once it is active: the window clicked last.
+
+        broadwayd gives a key to the window that has the focus when the key
+        comes, and gives it to the window pressed only once it has handled
+        the press, later: a key right after a click went to the window
+        before. GTK makes the window active once broadwayd tells it.
+
+        A key alone, not text: GTK's Broadway backend leaves unset the
+        modifiers that a key consumes, which GTK reads anyway, so a key may
+        match an accelerator of its character with another modifier, as a
+        "p" Ctrl+P; type() writes text.
+        """
+
+        self.wait_for(
+            lambda: a11y.active(window),
+            f"the {window.get_role_name()} {window.get_name()!r} is active",
+        )
+        self.browser.key(keys)
+
     def choose(self, item, menu):
         """Click the menu of the menu bar, then its item."""
 
@@ -438,11 +593,11 @@ class Virtualbricks:
     def children(self, parent=None):
         """
         The pids of the processes that Virtualbricks, or the process parent,
-        started and run.
+        started and run: for the windows of another, those of the other.
         """
 
         if parent is None:
-            parent = self.process.pid
+            parent = self.lab.process.pid
         pids = set()
         for pid in _pids():
             try:
@@ -488,6 +643,17 @@ class Virtualbricks:
             return []
         # after the last word, a \0 too
         return [os.fsdecode(word) for word in words[:-1]]
+
+
+def _listens_alone(options):
+    """Whether options have --listen alone: the socket of the workspace."""
+
+    for i, option in enumerate(options):
+        if option == "--listen":
+            following = options[i + 1 : i + 2]
+            if not following or following[0].startswith("-"):
+                return True
+    return False
 
 
 def _pids():

@@ -46,11 +46,33 @@ SCREEN = (1280, 1024)
 GDK_CROSSING_NORMAL = 0
 GDK_CROSSING_GRAB = 1
 GDK_CROSSING_UNGRAB = 2
+GDK_SHIFT_MASK = 1 << 0
+GDK_CONTROL_MASK = 1 << 2
+GDK_MOD1_MASK = 1 << 3
 GDK_BUTTON1_MASK = 1 << 8
 # A click comes this long after the one before at least: more than
 # gtk-double-click-time (400 ms), so that GTK never takes two clicks for a
 # double click.
 CLICK_WAIT = 0.5
+# The moves of a drag, between its press and its release.
+DRAG_STEPS = 10
+# The keysyms of the keys by name, those that aren't a character; a
+# modifier is its left key, with the mask it adds to the state.
+KEYSYMS = {
+    "BackSpace": 0xFF08,
+    "Tab": 0xFF09,
+    "Return": 0xFF0D,
+    "Escape": 0xFF1B,
+    "Delete": 0xFFFF,
+    "Shift": 0xFFE1,
+    "Control": 0xFFE3,
+    "Alt": 0xFFE9,
+}
+MODIFIERS = {
+    "Shift": GDK_SHIFT_MASK,
+    "Control": GDK_CONTROL_MASK,
+    "Alt": GDK_MOD1_MASK,
+}
 
 
 class Surface:
@@ -133,6 +155,35 @@ class Browser:
         after the last press at least.
         """
 
+        self.press(x, y, button)
+        self.release(button)
+
+    def drag(self, start, end, button=1, ready=None):
+        """
+        A press of button at start, x and y of the screen, moves to end in
+        DRAG_STEPS, and a release there: the surface pressed has the
+        pointer until the release. ready(), if given, comes right before
+        the press, CLICK_WAIT after the press before.
+        """
+
+        (x0, y0), (x1, y1) = start, end
+        self.pace()
+        if ready is not None:
+            ready()
+        self.press(x0, y0, button)
+        for step in range(1, DRAG_STEPS + 1):
+            self.move(
+                x0 + (x1 - x0) * step // DRAG_STEPS,
+                y0 + (y1 - y0) * step // DRAG_STEPS,
+            )
+        self.release(button)
+
+    def press(self, x, y, button=1):
+        """
+        A press of button at x, y of the screen, CLICK_WAIT after the last
+        press at least: the surface there has the pointer until the release.
+        """
+
         # GTK counts a press on a widget within 400 ms and 5 px of the one
         # before on it as the second of a double click, and the list of New
         # Brick activates a row on the first press only. "When I add the
@@ -140,21 +191,51 @@ class Browser:
         # Switch twice at the same pixel, 320 ms apart, as the popover opens
         # again on the kind made last: the list only selected the row, and
         # sw2 was never made.
-        if self.pressed is not None:
-            time.sleep(max(self.pressed + CLICK_WAIT - time.monotonic(), 0))
+        self.pace()
         self.move(x, y)
-        mask = GDK_BUTTON1_MASK << (button - 1)
         with self.changed:
-            self.state |= mask
+            self.state |= GDK_BUTTON1_MASK << (button - 1)
             target = self._target(self.real_under)
             if self.grab is None:
                 self._grab(target, False, True)
             self.pressed = time.monotonic()
             self._pointer("b", target, button)
-            self.state &= ~mask
-            self._pointer("B", target, button)
+
+    def pace(self):
+        """Wait until CLICK_WAIT after the last press."""
+
+        if self.pressed is not None:
+            time.sleep(max(self.pressed + CLICK_WAIT - time.monotonic(), 0))
+
+    def release(self, button=1):
+        """A release of button where the pointer is."""
+
+        with self.changed:
+            self.state &= ~(GDK_BUTTON1_MASK << (button - 1))
+            self._pointer("B", self._target(self.real_under), button)
             if self.grab is not None and self.grab[2]:
                 self._ungrab()
+
+    def key(self, keys):
+        """
+        A press and a release of keys, as "Escape", "Return" or
+        "Control+l": the modifiers before the last key, held while it is
+        pressed. broadwayd gives them to the surface it focused: the one
+        pressed last, or the one that GTK asked to focus.
+        """
+
+        *modifiers, last = keys.split("+")
+        keysym = KEYSYMS[last] if last in KEYSYMS else ord(last)
+        with self.changed:
+            # as broadway.js: the state of a modifier has it already
+            for name in modifiers:
+                self.state |= MODIFIERS[name]
+                self.send("k", KEYSYMS[name], self.state)
+            self.send("k", keysym, self.state)
+            self.send("K", keysym, self.state)
+            for name in reversed(modifiers):
+                self.state &= ~MODIFIERS[name]
+                self.send("K", KEYSYMS[name], self.state)
 
     def scroll(self, x, y, down=True):
         """A turn of the wheel at x, y of the screen, down or up."""

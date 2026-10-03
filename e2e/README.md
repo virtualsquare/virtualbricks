@@ -68,8 +68,10 @@ taken for as long as the others; `conftest.py` says how.
 - Nothing shows on your screen, and nothing reaches your desktop: the
   windows are on `broadwayd`, with a session bus of their own.
 - Each scenario has a Virtualbricks of its own, with a temporary home,
-  settings and workspace, and `--lock none`: the tests run beside your own
-  Virtualbricks, and never touch it.
+  settings and workspace, and `--lock none` unless the scenario gives
+  another: the tests run beside your own Virtualbricks, and never touch it.
+  Their lock of `--lock system`, `user` and `workspace` is in their own
+  folder, not `/tmp/virtualbricks.lock`, which yours may hold.
 - Without the programs above, the tests are skipped, saying what is missing;
   a scenario tagged `@needs-vde_switch` is skipped without `vde_switch`.
 
@@ -83,10 +85,10 @@ taken for as long as the others; `conftest.py` says how.
 | `projects/` | The projects of Virtualbricks 2.1 of the scenarios, a folder each, with its `.project` |
 | `TODO.md` | The scenarios, written and to write, by area, and what they need that the tests can't do yet |
 | `test_features.py` | Makes a test of each scenario of `features/` |
-| `conftest.py` | The fixtures: `desktop`, shared, and `virtualbricks`, for each scenario; the report of a step that fails, `--record-all` |
-| `harness.py` | What the steps drive: `Virtualbricks`, with `find`, `click`, `choose`, `row`, `children`, …; the `Desktop` and its `Screen`s |
+| `conftest.py` | The fixtures: `desktop`, shared, and `virtualbricks` and `other_virtualbricks`, for each scenario; the report of a step that fails, `--record-all` |
+| `harness.py` | What the steps drive: `Virtualbricks`, with `find`, `click`, `key`, `drag`, `choose`, `row`, `children`, …; the `Desktop` and its `Screen`s |
 | `a11y.py` | The widgets, as a screen reader sees them, through AT-SPI |
-| `broadway.py` | The mouse: a browser of `broadwayd`, whose clicks and wheel reach GTK as a user's do; it keeps what the screen shows |
+| `broadway.py` | The mouse and the keys: a browser of `broadwayd`, whose clicks, drags, wheel and keys reach GTK as a user's do; it keeps what the screen shows |
 | `recording.py` | The screenshot and the video of a scenario, from what the browser kept |
 | `test_recording.py` | The tests of `recording.py` |
 
@@ -291,7 +293,9 @@ AssertionError: Not in 10 s: the button 'Stop sw1' shows
 The files of each scenario stay in `/tmp/pytest-of-$USER/`, for the last
 three runs: its home, its settings, its workspace with the project,
 `output.log`, the output of Virtualbricks, and `broadway.log`, that of its
-`broadwayd`; `desktop0/` has the log of `dbus-daemon`.
+`broadwayd`; `other/` has those of the other Virtualbricks, if the scenario
+has one, whose widgets and output the report has too; `desktop0/` has the
+log of `dbus-daemon`.
 
 ### The screenshot and the video
 
@@ -342,9 +346,13 @@ chose. Read the scenario as you would one of a contributor: it is the test.
 - `virtualbricks`, for each scenario, makes a home with `settings.toml` and
   a workspace; `Given Virtualbricks is running` starts a `broadwayd`, then
   `python -m virtualbricks --noterm --lock none --workspace …` on this
-  checkout, in English, on it, and waits for its main window. Each
-  Virtualbricks has its own `broadwayd`: `broadwayd` aborts when a program
-  it shows quits. One that quit starts again on a new `broadwayd`, and its
+  checkout, in English, on it, and waits for its main window; the step
+  `… with OPTIONS` gives it those of the scenario. It starts through a few
+  lines of Python, `LAUNCH` in `harness.py`, which put its system lock in
+  the folder of the tests. `other_virtualbricks` is a second one, of the
+  same user, for `--connect`, `--command` and the locks. Each Virtualbricks
+  has its own `broadwayd`: `broadwayd` aborts when a program it shows
+  quits. One that quit starts again on a new `broadwayd`, and its
   output goes on in `output.log`. The settings turn off the alert of missing programs,
   which depends on the machine and would take the clicks; GTK's animations
   are off, so a popover is where it ends up at once.
@@ -359,19 +367,28 @@ chose. Read the scenario as you would one of a contributor: it is the test.
   turns it, as a user does, and waits for the scroll bar to move. A click
   comes half a second after the one before at least: GTK takes two clicks
   on a widget within 400 ms for a double click (`Browser.click` says when
-  it happened). It keeps the images of the windows too, for `recording.py`:
-  see [The screenshot and the video](#the-screenshot-and-the-video).
+  it happened). A drag is a press, moves and a release. A key goes as
+  `broadway.js` sends it, and `broadwayd` gives it to the window that has
+  the focus then: the one pressed last, once it has handled the press, so
+  `key()` waits until GTK says the window is active. It keeps the images of
+  the windows too, for `recording.py`: see [The screenshot and the
+  video](#the-screenshot-and-the-video).
 
 ## What it can't do yet
 
-- Keys: `broadway.js` sends a key as `k` and `K` with its keysym, but the
-  Broadway backend of GTK 3 leaves unset the modifiers that a key
+- Text as keys: `broadway.js` sends a key as `k` and `K` with its keysym,
+  but the Broadway backend of GTK 3 leaves unset the modifiers that a key
   consumes, which GTK reads anyway (`_gtk_key_hash_lookup`): a key then
   sometimes matches an accelerator or a mnemonic, as a "p" Ctrl+P, which
   opens Settings, and a "b" the Alt+B of the tab Bricks. So `type()`
   writes the text through AT-SPI, as an assistive tool does, and GTK
-  inserts it as if typed; a key alone, as Escape, Return or the Ctrl+L of
-  a file chooser, can't be sent.
+  inserts it as if typed. `key()` sends a key alone, as Escape, Return or
+  the Ctrl+L of a file chooser: one that the window has with no other
+  modifier.
+- Drag and drop: the Broadway backend of GTK 3 has none
+  (`gdkdnd-broadway.c` finds no window under the pointer), so a row of
+  bricks dropped on another can't be tested. A widget that follows the
+  pointer itself, as the picture of the tab Topology, can.
 - GTK 4: the browser speaks the Broadway of GTK 3.
 - Clean up after a `pytest` that is killed, by `kill` or `timeout`:
   `dbus-daemon`, `broadwayd` and AT-SPI stay, with their folder in

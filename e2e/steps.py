@@ -35,6 +35,7 @@ See STEPS.md for the steps there are, and how to add one.
 import configparser
 import glob
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -80,6 +81,16 @@ def words(text):
 @pytest.fixture
 def brick_processes():
     """The processes of each brick that a step started: {name: pids}."""
+
+    return {}
+
+
+@pytest.fixture
+def picture_scroll():
+    """
+    Where the picture of the lab was scrolled to before a drag, {"before":
+    the value of its horizontal scroll bar}.
+    """
 
     return {}
 
@@ -150,6 +161,80 @@ def virtualbricks_running(virtualbricks):
     virtualbricks.start()
 
 
+@given(words("Virtualbricks is running with {options}"))
+def running_with(virtualbricks, request, options):
+    """
+    Started with the options, as the shell splits them, and its main window
+    shows; with --listen alone, it listens too. With --connect, the windows
+    of the other Virtualbricks, which runs the bricks.
+    """
+
+    options = shlex.split(options)
+    if "--connect" in options:
+        virtualbricks.lab = request.getfixturevalue("other_virtualbricks")
+        assert virtualbricks.lab.process is not None, "no other one runs"
+    virtualbricks.start(*options)
+
+
+@given(words("another Virtualbricks runs with {options}"))
+def other_runs(other_virtualbricks, options):
+    """
+    Another Virtualbricks of mine, in the same workspace, started with the
+    options: its main window shows, or, with --no-gui, it listens on the
+    socket of --listen alone.
+    """
+
+    other_virtualbricks.start(*shlex.split(options))
+
+
+@when(words("I start another Virtualbricks with {options}"))
+def start_other(other_virtualbricks, options):
+    """The same, without waiting for it: it may exit."""
+
+    other_virtualbricks.launch(*shlex.split(options))
+
+
+@then(words('the other Virtualbricks exits with {status:d}, saying "{text}"'))
+def other_exits(other_virtualbricks, status, text):
+    """It exits with status, and its output has text."""
+
+    try:
+        code = other_virtualbricks.process.wait(harness.QUIT_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        raise AssertionError(
+            f"the other Virtualbricks still runs after {harness.QUIT_TIMEOUT} s"
+        ) from None
+    with open(other_virtualbricks.log, errors="replace") as file:
+        output = file.read()
+    assert code == status, f"it exited with {code}: {output}"
+    assert text in output, f"it said {output!r}"
+
+
+@then("the other Virtualbricks names the process of Virtualbricks")
+def other_names(virtualbricks, other_virtualbricks):
+    """Its output says the process that holds what it needs, by its pid."""
+
+    with open(other_virtualbricks.log, errors="replace") as file:
+        output = file.read()
+    # then the user, if known
+    held = rf"\bHeld by process {virtualbricks.process.pid}\b"
+    assert re.search(held, output), f"it said {output!r}"
+
+
+@when(words("I run virtualbricks --command {command}"))
+def run_command(virtualbricks, command):
+    """
+    virtualbricks --command and the words of the command, as the shell
+    splits them, in the workspace of Virtualbricks; it exits with 0.
+    """
+
+    done = virtualbricks.run("--command", *shlex.split(command))
+    assert done.returncode == 0, (
+        f"virtualbricks --command {command} exited with {done.returncode}:"
+        f" {done.stdout}{done.stderr}"
+    )
+
+
 @when("I start Virtualbricks for the first time")
 def first_start(virtualbricks):
     """Without its settings, as after 2.1; it shows a window."""
@@ -173,7 +258,10 @@ def quit_virtualbricks(virtualbricks):
 
 @then("Virtualbricks has quit")
 def virtualbricks_quit(virtualbricks):
-    """It exits with 0, and no brick runs any more."""
+    """
+    It exits with 0, and no brick runs any more; the windows of another
+    leave the bricks there.
+    """
 
     try:
         status = virtualbricks.process.wait(harness.QUIT_TIMEOUT)
@@ -182,7 +270,8 @@ def virtualbricks_quit(virtualbricks):
             f"Virtualbricks still runs after {harness.QUIT_TIMEOUT} s"
         )
     assert status == 0, f"Virtualbricks exited with {status}"
-    assert virtualbricks.bricks() == [], "bricks still run"
+    if virtualbricks.lab is virtualbricks:
+        assert virtualbricks.bricks() == [], "bricks still run"
 
 
 @then("Virtualbricks hasn't quit")
@@ -218,11 +307,20 @@ def project_bricks(virtualbricks, datatable):
     those of the table under the step: the name of each and its type.
     """
 
-    bricks = project_file(virtualbricks).get("bricks", {})
+    has_bricks(project_file(virtualbricks), datatable, "project.toml")
+
+
+def has_bricks(project, datatable, where):
+    """
+    The bricks of project, the data of a project.toml, are those of the
+    table: the name of each and its type.
+    """
+
+    bricks = project.get("bricks", {})
     found = datatable[:1] + [
         [name, table["type"]] for name, table in bricks.items()
     ]
-    assert found == datatable, f"project.toml has {found}, not {datatable}"
+    assert found == datatable, f"{where} has {found}, not {datatable}"
 
 
 @then(words("project.toml has {name:Brick} with"))
@@ -257,6 +355,25 @@ def project_brick_of(virtualbricks, name):
     bricks = project_file(virtualbricks).get("bricks", {})
     assert name in bricks, f"project.toml has no {name}"
     return bricks[name]
+
+
+@then(words("the main window shows the project {name:Project} on {where}"))
+def main_window_on(virtualbricks, name, where):
+    """
+    The windows of another Virtualbricks: their title names the project and
+    where it runs, and the workspace too, with its path there, when it isn't
+    that of the settings.
+    """
+
+    workspace = virtualbricks.workspace
+    titles = (
+        f"Virtualbricks (project: {name} on {where})",
+        f"Virtualbricks (project: {name}, workspace: {workspace} on {where})",
+    )
+    virtualbricks.wait_for(
+        lambda: any(virtualbricks.shows("frame", title) for title in titles),
+        f"the main window shows the project {name} on {where}",
+    )
 
 
 @then(words("the main window shows the project {name:Project}"))
@@ -387,6 +504,20 @@ def cancel_ports(virtualbricks, name, ports):
 
     change_ports(virtualbricks, name, ports)
     virtualbricks.click("button", "Cancel")
+    virtualbricks.find("button", f"Start {name}")
+
+
+@when(
+    words(
+        "I give {name:Brick} {ports:d} ports and hub mode in its settings,"
+        " then press Escape"
+    )
+)
+def escape_ports(virtualbricks, name, ports):
+    """The same, then Escape: the list shows again."""
+
+    change_ports(virtualbricks, name, ports)
+    virtualbricks.key("Escape", virtualbricks.find("frame"))
     virtualbricks.find("button", f"Start {name}")
 
 
@@ -552,13 +683,36 @@ def state_of(virtualbricks, name):
 @then(words("{name:Brick} is running"))
 @then(words("{name:Brick} is still running"))
 def brick_running(virtualbricks, brick_processes, name):
-    """Its row says so, and the processes of its start still run."""
+    """
+    Its row says so, and the processes of its start still run: those that
+    the step that started it saw, else the process its row tells, which has
+    its sockets.
+    """
 
     row = virtualbricks.row(name)
     virtualbricks.find("label", "Running", within=row)
     virtualbricks.find("button", f"Stop {name}", within=row)
-    pids = brick_processes.get(name, set())
+    if name not in brick_processes:
+        # started by none of the steps, as by --command
+        pid = process(virtualbricks, name)
+        assert pid in virtualbricks.bricks(name), f"{pid} isn't of {name}"
+        brick_processes[name] = {pid}
+    pids = brick_processes[name]
     assert pids <= virtualbricks.children(), f"the processes of {name} quit"
+
+
+@then(words("{name:Brick} runs in the other Virtualbricks"))
+def runs_in_other(virtualbricks, other_virtualbricks, brick_processes, name):
+    """
+    The processes of its start run, started by the other Virtualbricks, and
+    the windows of it run none.
+    """
+
+    pids = brick_processes[name]
+    lab = virtualbricks.children(other_virtualbricks.process.pid)
+    assert pids and pids <= lab, f"the other runs {lab}, not {pids}"
+    windows = virtualbricks.children(virtualbricks.process.pid)
+    assert not windows, f"the windows run {windows}"
 
 
 def brick_rows(virtualbricks):
@@ -1065,19 +1219,97 @@ def import_archive(virtualbricks, archive, name):
     suggests is name; then Import, and the window says how it ended.
     """
 
+    def choose(chooser):
+        virtualbricks.click("label", "Home", within=chooser)
+        virtualbricks.click("table cell", archive, within=chooser)
+        virtualbricks.click("button", "Open", within=chooser)
+
+    import_with(virtualbricks, choose, name)
+
+
+@when(
+    words(
+        "I import the archive {archive} of my home folder, typing its path,"
+        " with the name it suggests, {name:Project}"
+    )
+)
+def import_typed(virtualbricks, archive, name):
+    """
+    The same, where in the file chooser, once clicked, Ctrl+L shows the
+    entry of its location: the path of the archive typed there, then Return
+    once Open is enabled.
+    """
+
+    def choose(chooser):
+        # the keys go to the window clicked last
+        virtualbricks.click("table", "Files", within=chooser)
+        virtualbricks.key("Control+l", chooser)
+        path = os.path.join(virtualbricks.home, archive)
+        virtualbricks.type(path, "text", within=chooser)
+        virtualbricks.enabled("button", "Open", within=chooser)
+        virtualbricks.key("Return", chooser)
+
+    import_with(virtualbricks, choose, name)
+
+
+CHOOSE_ARCHIVE = "Choose an archive"
+
+
+def import_with(virtualbricks, choose, name):
+    """
+    Import…, in the menu Projects; in the window, the button of the file,
+    then choose(chooser) in the file chooser, which closes; the name it
+    suggests is name; then Import, and the window says how it ended.
+    """
+
     virtualbricks.choose("Import…", "Projects")
     window = virtualbricks.find("frame", IMPORT_WINDOW)
     # the button of the file names it: none yet
     virtualbricks.click("button", "(None)", within=window)
-    chooser = virtualbricks.find("file chooser", "Choose an archive")
-    virtualbricks.click("label", "Home", within=chooser)
-    virtualbricks.click("table cell", archive, within=chooser)
-    virtualbricks.click("button", "Open", within=chooser)
-    virtualbricks.gone("file chooser", "Choose an archive")
+    choose(virtualbricks.find("file chooser", CHOOSE_ARCHIVE))
+    virtualbricks.gone("file chooser", CHOOSE_ARCHIVE)
     suggests(virtualbricks, window, "Name", name)
     virtualbricks.click("button", "Import", within=window)
     # in place of Import and Cancel, once it is imported, or failed
     virtualbricks.find("button", "Close", within=window)
+
+
+EXPORT_WINDOW = "Export Project"
+
+
+@when(words("I export the project to {archive} of my home folder"))
+def export_project(virtualbricks, archive):
+    """
+    Export…, in the menu Projects, for the open project; in the window, the
+    archive in the home, as it suggests; then Export, and Close once it says
+    where it exported it.
+    """
+
+    virtualbricks.choose("Export…", "Projects")
+    window = virtualbricks.find("frame", EXPORT_WINDOW)
+    path = os.path.join(virtualbricks.home, archive)
+    entry = virtualbricks.find("text", within=window)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.text(entry) == path,
+        f"the window suggests {path}",
+    )
+    virtualbricks.click("button", "Export", within=window)
+    says(virtualbricks, window, f"Exported to {path}, ")
+    virtualbricks.click("button", "Close", within=window)
+    virtualbricks.gone("frame", EXPORT_WINDOW)
+
+
+@then(words("the archive {archive} of my home folder has the bricks"))
+def archive_bricks(virtualbricks, archive, datatable):
+    """
+    The project.toml of the archive, a tar, has the bricks of the table
+    under the step, all of them and in order: the name of each and its type.
+    """
+
+    path = os.path.join(virtualbricks.home, archive)
+    with tarfile.open(path) as tar:
+        project = tomllib.load(tar.extractfile("project.toml"))
+    has_bricks(project, datatable, f"the project.toml of {archive}")
 
 
 @then(words('the Import Project window says "{text}"'))
@@ -1292,6 +1524,89 @@ def project_image(virtualbricks, name, file):
     found = os.path.join(os.path.dirname(path), images[name]["path"])
     wanted = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
     assert os.path.normpath(found) == wanted, f"{name} is of {found}"
+
+
+# Topology
+
+TOPOLOGY = "Topology"
+# How far over the bottom of the tab a drag of the picture starts: under
+# the bricks, which are a row in the middle of its height, where the
+# background is
+UNDER_THE_BRICKS = 30
+
+
+@when(words("I zoom in on the picture of the lab {times:d} times"))
+def zoom_in(virtualbricks, times):
+    """The tab Topology, then its Zoom In, times."""
+
+    tab = virtualbricks.click("page tab", TOPOLOGY)
+    for _ in range(times):
+        virtualbricks.click("button", "Zoom In", within=tab)
+
+
+@when(words("I drag the picture of the lab {pixels:d} pixels to the {side}"))
+def drag_picture(virtualbricks, picture_scroll, pixels, side):
+    """
+    A press on the background of the picture, under its bricks, a move of
+    pixels to the left or to the right, and a release; the picture is wider
+    than the tab, which has a horizontal scroll bar.
+    """
+
+    pane, bar = picture_pane(virtualbricks)
+
+    def ready():
+        # where the picture is before the press, once a zoom just before
+        # has scrolled it
+        picture_scroll["before"] = harness.a11y.position(bar)[0]
+
+    x, y, width, height = harness.a11y.extents(pane)
+    start = (x + width // 2, y + height - UNDER_THE_BRICKS)
+    shift = -pixels if side == "left" else pixels
+    virtualbricks.drag(start, (start[0] + shift, start[1]), ready)
+
+
+@then(words("the picture of the lab moved {pixels:d} pixels to the {side}"))
+def picture_moved(virtualbricks, picture_scroll, pixels, side):
+    """
+    Its horizontal scroll bar moved as much the other way: the tab shows
+    what was pixels further right of the picture, or further left.
+    """
+
+    _, bar = picture_pane(virtualbricks)
+    before = picture_scroll["before"]
+    wanted = before + pixels if side == "left" else before - pixels
+    try:
+        virtualbricks.wait_for(
+            lambda: harness.a11y.position(bar)[0] == wanted,
+            f"the picture of the lab moved {pixels} pixels to the {side}",
+        )
+    except AssertionError:
+        now = harness.a11y.position(bar)[0]
+        raise AssertionError(
+            f"the picture is scrolled to {now}, from {before}, not {wanted}"
+        ) from None
+
+
+def picture_pane(virtualbricks):
+    """
+    The scroll pane of the picture of the lab, in the tab Topology, and its
+    horizontal scroll bar, once it shows.
+    """
+
+    tab = virtualbricks.find("page tab", TOPOLOGY)
+    pane = virtualbricks.find("scroll pane", within=tab)
+    bar = virtualbricks.wait_for(
+        lambda: next(
+            (
+                bar
+                for bar in harness.a11y.find_all(pane, "scroll bar")
+                if not harness.a11y.vertical(bar)
+            ),
+            None,
+        ),
+        "the picture of the lab is wider than its tab",
+    )
+    return pane, bar
 
 
 # A program that fails, and what Virtualbricks says of it

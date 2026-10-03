@@ -21,10 +21,11 @@ and STEPS.md.
 
 desktop is the buses that every scenario shares; virtualbricks is the
 Virtualbricks of one scenario, which a Given step starts on a screen of its
-own. The steps are in :mod:`steps`. When a step fails, the report has the
-step, the widgets that show and the output of Virtualbricks, and the folder
-of the scenario a screenshot and a video of its screen (:mod:`recording`);
-with --record-all, every scenario has them.
+own, and other_virtualbricks another one of the same user, beside it. The
+steps are in :mod:`steps`. When a step fails, the report has the step, the
+widgets that show and the output of each Virtualbricks, and the folder of
+each a screenshot and a video of its screen (:mod:`recording`); with
+--record-all, every scenario has them.
 """
 
 import os
@@ -44,6 +45,8 @@ pytest_plugins = ["steps"]
 # and when the last one ended.
 STEPS = pytest.StashKey[list]()
 ENDED = pytest.StashKey[float]()
+# Of a scenario: the other Virtualbricks, if it has one.
+OTHER = pytest.StashKey[harness.Virtualbricks]()
 # Of the run: what was recorded, (scenario, lines).
 RECORDED = pytest.StashKey[list]()
 # In pytest's cache: how long each test took in the runs before, in
@@ -95,13 +98,30 @@ def virtualbricks(desktop, tmp_path, request):
     is recorded if a step failed, or with --record-all.
     """
 
-    vb = harness.Virtualbricks(
-        desktop, str(tmp_path), str(tmp_path / "output.log")
-    )
+    vb = harness.Virtualbricks(desktop, str(tmp_path))
+    vb.make_home()
     try:
         yield vb
     finally:
         vb.stop()
+        _record(request, vb)
+
+
+@pytest.fixture
+def other_virtualbricks(virtualbricks, tmp_path, request):
+    """
+    Another Virtualbricks of the same user, not started: the same home,
+    settings and workspace, its files in the folder other of the scenario.
+    Stopped first at the end, with its screen; the bricks that are left, the
+    first one stops them.
+    """
+
+    vb = virtualbricks.beside(str(tmp_path / "other"))
+    request.node.stash[OTHER] = vb
+    try:
+        yield vb
+    finally:
+        vb.stop(bricks=False)
         _record(request, vb)
 
 
@@ -115,7 +135,7 @@ def _record(request, vb):
     until = request.node.stash.get(ENDED, time.monotonic())
     try:
         lines = recording.record(
-            vb.timeline(), steps, until, broadway.SCREEN, vb.home
+            vb.timeline(), steps, until, broadway.SCREEN, vb.folder
         )
     except Exception as error:
         # a scenario doesn't fail for its recording
@@ -228,11 +248,27 @@ def pytest_bdd_step_error(request, feature, scenario, step, exception):
     )
     vb = request.getfixturevalue("virtualbricks")
     print(f"The step that failed: {step.keyword} {step.name}")
-    print(f"Its screen: screenshot.png and recording.webm in {vb.home}")
-    print("The widgets that show:", vb.describe(), sep="\n")
+    _report(vb)
+    other = request.node.stash.get(OTHER, None)
+    if other is not None:
+        _report(other, " of the other Virtualbricks")
+
+
+def _report(vb, of=""):
+    """
+    Its screen, the widgets that show and its output, for a step that
+    failed; of says which Virtualbricks, but for the first.
+    """
+
+    if vb.browser is not None:
+        print(
+            f"Its screen{of}: screenshot.png and recording.webm in", vb.folder
+        )
+        print(f"The widgets that show{of}:", vb.describe(), sep="\n")
     if os.path.exists(vb.log):
         with open(vb.log, errors="replace") as file:
-            print("The output of Virtualbricks:", file.read(), sep="\n")
+            output = file.read()
+        print(f"The output{of or ' of Virtualbricks'}:", output, sep="\n")
 
 
 def pytest_terminal_summary(terminalreporter, config):
