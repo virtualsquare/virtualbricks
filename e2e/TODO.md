@@ -26,6 +26,24 @@ that the tests can't do yet: those needs come first.
   the steps `Given Virtualbricks is running with OPTIONS`, `Given another
   Virtualbricks runs with OPTIONS`, `When I run virtualbricks --command
   WORDS`; their system lock is in the folder of the tests
+- [ ] Run the scenarios on X11 too, on Xvfb, beside Broadway: a second
+  kind of screen in `harness.py`, chosen with an option as `pytest --screen
+  x11`, Broadway the default; the steps don't change. It needs `xvfb`, and
+  `python-xlib` or `xdotool` for XTest, the input of X11; not tried yet,
+  without Xvfb on the machine. It would test what most users run, and what
+  Broadway can't: real keys and drag and drop. The work: the screen, its
+  input with XTest, and its recording with `ffmpeg`. What differs:
+
+  | | Broadway, now | Xvfb |
+  | :- | :- | :- |
+  | Find the widgets | AT-SPI | AT-SPI, the same |
+  | Clicks, wheel, drags | the browser of `broadway.py` | XTest |
+  | Text | through AT-SPI: GTK's Broadway backend takes some keys for accelerators | keys, as typed |
+  | A row dropped on another | out of reach: no drag and drop | can be tested, once a row starts a drag |
+  | Screenshot and video | `recording.py` decodes what `broadwayd` sends | `ffmpeg -f x11grab` records the display |
+  | Window manager | none needed | none: GTK focuses its windows itself, but places them otherwise |
+  | Tray icon | none | none either: Xvfb has no tray |
+
 - [x] Make a disk image in a fixture, with `qemu-img create`, for the
   virtual machines and the Images tab: the step `Given the empty disk
   image disk.qcow2 of 1 GB, in my home folder`
@@ -243,7 +261,7 @@ that the tests can't do yet: those needs come first.
   Broadway has no drag and drop (`gdkdnd-broadway.c` finds no window under
   the pointer). Besides, the rows never start a drag: a `GtkListBoxRow` has
   no window of its own, so its `drag_source_set` never gets the press, on
-  X11 too
+  X11 too; on Xvfb, a scenario could check it, see the needs
 
 # Conventions
 

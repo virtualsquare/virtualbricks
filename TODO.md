@@ -272,6 +272,8 @@
   `e2e/TODO.md`
 - [ ] Stop `dbus-daemon` and `broadwayd` of the tests when `pytest` is
   killed, with the parent-death signal
+- [ ] Run the end-to-end scenarios on X11 too, on Xvfb, beside Broadway:
+  real keys, and drag and drop; `e2e/TODO.md` compares the two
 
 ## Misc
 
