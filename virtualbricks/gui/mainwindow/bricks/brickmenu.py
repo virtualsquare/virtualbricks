@@ -80,6 +80,12 @@ WHEN = (
 _item = functools.partial(menu_item, GROUP)
 
 
+def _label(name) -> str:
+    """A name as an item of a menu shows it: an underscore isn't a mnemonic."""
+
+    return name.replace("_", "__")
+
+
 def startstop(engine, brick) -> defer.Deferred:
     """Stop brick if it runs, or else start it; a failure is logged."""
 
@@ -108,7 +114,7 @@ def menu(brick, bricks, events, keys=False, console_lacks=None) -> Gio.Menu:
     connect_to = None
     if targets:
         submenu = menu_section(
-            *(_item(t.name, "connect", t.name) for t in targets)
+            *(_item(_label(t.name), "connect", t.name) for t in targets)
         )
         connect_to = Gio.MenuItem.new_submenu(_("Connect To"), submenu)
     names = [event.name for event in events]
@@ -143,9 +149,9 @@ def menu(brick, bricks, events, keys=False, console_lacks=None) -> Gio.Menu:
 def _events_menu(action, current, names) -> Gio.Menu:
     """No Event, then the events: a choice of one, current, for action."""
 
-    choices = [_item(name, action, name) for name in names]
+    choices = [_item(_label(name), action, name) for name in names]
     if current and current not in names:
-        label = _("{name} (missing)").format(name=current)
+        label = _("{name} (missing)").format(name=_label(current))
         choices.append(_item(label, action, current))
     return menu_of(
         menu_section(_item(_("No Event"), action, "")),
