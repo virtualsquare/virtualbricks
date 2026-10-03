@@ -12,8 +12,9 @@ The use case: $ARGUMENTS
 (If nothing follows "The use case:", it is the one the user just told.)
 
 `e2e/README.md` is the guide for contributors; this is its "Write a
-scenario", done for them. Read it first, then `e2e/steps.py` and the
-features in `e2e/features/`.
+scenario", done for them. Read it first, and `e2e/STEPS.md`, the steps
+there are and how to add one; then `e2e/steps.py` and the features in
+`e2e/features/`.
 
 ## Steps
 
@@ -30,9 +31,10 @@ features in `e2e/features/`.
 4. **List the missing steps**:
    `pytest --generate-missing --feature e2e/features`. Add each to
    `e2e/steps.py`, in its section, with `words()`, by the rules of "Add a
-   step" in the guide: a `Then` checks what really happened (a process, a
-   file, an exit status); no sleeping to wait; the clicks inside a step of a
-   user.
+   step" in `e2e/STEPS.md`: a `Then` checks what really happened (a
+   process, a file, an exit status); no sleeping to wait; the clicks
+   inside a step of a user. Add each to the table of its kind in
+   `e2e/STEPS.md` too.
 5. **Find the roles and names** of the widgets: put `And I print the
    widgets` where you are and run with `pytest -s`, or read the report of a
    step that fails. Take the print step out after. When a step fails, look

@@ -16,7 +16,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The fixtures of the end-to-end tests, and their steps: see README.md.
+The fixtures of the end-to-end tests, and their steps: see README.md
+and STEPS.md.
 
 desktop is the buses that every scenario shares; virtualbricks is the
 Virtualbricks of one scenario, which a Given step starts on a screen of its

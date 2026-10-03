@@ -407,9 +407,9 @@ They need `broadwayd` (`libgtk-3-bin`), `at-spi2-core` and
 `gir1.2-atspi-2.0`, and are skipped without them. Nothing shows on your
 screen, and they run beside your own Virtualbricks. A scenario that fails
 leaves a screenshot and, with `ffmpeg`, a video of its screen;
-`--record-all` records them all. `e2e/README.md` tells how to run them,
-write a scenario and add a step; with Claude Code, `/e2e` writes a scenario
-from a use case in words.
+`--record-all` records them all. `e2e/README.md` tells how to run them
+and write a scenario, `e2e/STEPS.md` the steps there are and how to add
+one; with Claude Code, `/e2e` writes a scenario from a use case in words.
 
 ### Code style
 

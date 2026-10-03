@@ -29,7 +29,7 @@ A line runs the step whose words match it: ``When I start sw1`` runs
   what the steps of a user don't say yet. A scenario that needs them often
   says that a step of a user is missing.
 
-See README.md for how to add a step.
+See STEPS.md for the steps there are, and how to add one.
 """
 
 import glob
