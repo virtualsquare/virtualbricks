@@ -137,8 +137,8 @@ class TopologyTab(Tab, Gtk.Overlay):
         self.level_button = Gtk.Button(visible=True, label=level(1.0))
         # as wide at 100% as at 10%
         self.level_button.get_child().set_width_chars(5)
+        # the screen readers say the level, then the tooltip
         self.level_button.set_tooltip_text(_("Zoom to 100%"))
-        self.level_button.get_accessible().set_name(_("Zoom to 100%"))
         self.in_button = icon_button(
             Gtk.Button(visible=True), "zoom-in-symbolic", _("Zoom In")
         )

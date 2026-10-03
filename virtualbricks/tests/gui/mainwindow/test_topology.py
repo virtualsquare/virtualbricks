@@ -273,10 +273,13 @@ class TestTheBar(TopologyTestCase):
             self.assertEqual(button.get_image().get_icon_name()[0], icon)
             self.assertEqual(button.get_tooltip_text(), name)
             self.assertEqual(button.get_accessible().get_name(), name)
+        # the level button says the level, and what it does after it
+        level = tab.level_button.get_accessible()
         self.assertEqual(tab.level_button.get_tooltip_text(), "Zoom to 100%")
-        self.assertEqual(
-            tab.level_button.get_accessible().get_name(), "Zoom to 100%"
-        )
+        self.assertEqual(level.get_name(), "100%")
+        self.assertEqual(level.get_description(), "Zoom to 100%")
+        tab.view.set_zoom(1.5)
+        self.assertEqual(level.get_name(), "150%")
 
     def test_in_the_corner(self):
         window = Gtk.OffscreenWindow()
