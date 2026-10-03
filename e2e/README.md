@@ -375,4 +375,5 @@ chose. Read the scenario as you would one of a contributor: it is the test.
 - GTK 4: the browser speaks the Broadway of GTK 3.
 - Clean up after a `pytest` that is killed, by `kill` or `timeout`:
   `dbus-daemon`, `broadwayd` and AT-SPI stay, with their folder in
-  `/tmp/vb-e2e-*`. Ctrl-C cleans up.
+  `/tmp/vb-e2e-*`, and the workspaces on a drive without a trash, in
+  `/dev/shm/vb-e2e-*`. Ctrl-C cleans up.

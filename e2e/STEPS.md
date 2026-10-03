@@ -28,11 +28,14 @@ The steps of a user:
 | `When I wait 5 seconds` | Waits |
 | `When I quit Virtualbricks` | File, then Quit |
 | `When I start Virtualbricks again` | Starts it with its settings, as after it ran before, on a new screen, and waits for a window |
+| `Given the workspace is on a drive without a trash` | A folder in `/dev/shm` for the workspace, before Virtualbricks starts: a file system in memory that the system mounts, where the desktop makes no trash; removed once Virtualbricks has stopped |
 | `When I open the Projects window` | Projects…, in the menu Projects |
 | `When I make a new project with the name it suggests, new_project-2` | New…, in the Projects window: its name must be the one the dialog suggests; then Create, and the dialog closes |
 | `When I open the project new_project` | In the Projects window, its row, then Open in its details; the window closes |
 | `When I try to open the project new_project` | The same, without waiting for the window to close |
 | `When I duplicate the project new_project with the name it suggests, new_project-copy` | In the Projects window, its row, then Duplicate… in its details: the name of the copy must be the one the dialog suggests; then Duplicate, with Open the copy as it is, and the dialog closes |
+| `When I remove the project new_project, and move it to the trash` | In the Projects window, its row, then Remove… in the menu of its details; the question that names it says its folder goes to the trash: Move to Trash, and the question closes |
+| `When I remove the project new_project, which can't go to the trash, and delete it permanently` | The same, where the question has no Move to Trash and says the drive of the workspace has no trash: Delete Permanently |
 | `When I import the archive lab.vbp of my home folder with the name it suggests, lab` | Import…, in the menu Projects; in the window, the button of the file, then Home and the archive in the file chooser, and Open; the name must be the one the window suggests; then Import, with Open the project as it is, until the window says how it ended |
 | `When I close the Import Project window` | Its button Close |
 | `Then sw1 is running` | Its row says Running, and the processes of its start run |
@@ -48,9 +51,12 @@ The steps of a user:
 | `Then Virtualbricks hasn't quit` | It still runs, and its main window shows |
 | `Then the main window shows the project lab` | Its title names the project |
 | `Then the Projects window says "Cannot open new_project: …"` | A label of the window has the text, as the bar over its list |
+| `Then the Projects window doesn't list new_project` | No row of its list has the project |
 | `Then the Import Project window says "Imported as "lab"."` | A label of the window has the text |
 | `Then the folder of new_project-2 has project.toml` | The folder of the project in the workspace has the file of a project, which TOML reads, with its format |
 | `Then the folder of new_project-copy is a copy of that of new_project` | It has project.toml, and the two folders of the workspace have the same files, with the same bytes |
+| `Then the folder of new_project is in the trash` | The workspace has no folder new_project, and the trash of the home has it: a `.trashinfo` with its path, and the folder, with its project.toml |
+| `Then the folder of new_project is deleted, and in no trash` | The workspace has no folder new_project, and no trash has its path: neither that of the home, nor `.Trash/UID` and `.Trash-UID` at the top of the drive of the workspace |
 | `Then the list of bricks has`, with a table under it | The rows of the list, all of them and in order, scrolled through, once they are those of the table: the name of each brick, its detail and its state; with only the titles of the columns, no brick, as the tab says No Bricks Yet |
 | `Then the list of bricks shows only sw1, with its process` | Its row alone, once it says Running and, in place of its summary, a process of its start, which still runs |
 | `Then project.toml has the bricks`, with a table under it | The bricks of the file of the project, all of them and in order: the name of each and its type |
@@ -170,7 +176,7 @@ def stop_brick(virtualbricks, name):
   | `command_line(pid)` | The words of the command line of a process; none once it has quit |
   | `bricks(name=None)` | The processes with sockets in the run folder of the tests; with a name, those of that brick |
   | `describe()` | The widgets that show, one a line |
-  | `home`, `workspace`, `settings` | Its home, its workspace, and its settings file, which a step can remove |
+  | `home`, `workspace`, `settings` | Its home, its workspace, and its settings file, which a step can remove; a step can move the workspace before Virtualbricks starts |
 
 - Another fixture can keep what the steps of a scenario share, as
   `brick_processes` keeps the processes of each brick started.

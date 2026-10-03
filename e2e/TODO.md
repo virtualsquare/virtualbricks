@@ -125,8 +125,11 @@ that the tests can't do yet: those needs come first.
   its folder is a copy of the other
   "A project duplicated with the name it suggests is a copy of the other,
   and opens", `projects.feature`
-- [ ] Remove a project from the Projects window, after the confirmation
+- [x] Remove a project from the Projects window, after the confirmation
   its folder goes to the trash, or is deleted without one
+  "A project removed from the Projects window goes to the trash, once
+  confirmed" and "A project removed from a workspace on a drive without a
+  trash is deleted for good, once confirmed", `projects.feature`
 - [x] Import the archive of 2.1, DTN2hops_26_Feb_2026.vbp
   converted at the import: the main window lists its 13 bricks
   "An archive of Virtualbricks 2.1 is converted at its import, and

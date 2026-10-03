@@ -32,6 +32,7 @@ A line runs the step whose words match it: ``When I start sw1`` runs
 See STEPS.md for the steps there are, and how to add one.
 """
 
+import configparser
 import glob
 import os
 import shlex
@@ -41,6 +42,7 @@ import tarfile
 import tempfile
 import time
 import types
+import urllib.parse
 
 try:
     import tomllib
@@ -114,6 +116,29 @@ def other_switch(desktop, tmp_path):
         except subprocess.TimeoutExpired:
             process.kill()
             process.wait()
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+# A drive without a trash: a file system in memory that the system mounts,
+# where the desktop makes none
+NO_TRASH = "/dev/shm"
+
+
+@pytest.fixture
+def drive_without_trash(virtualbricks):
+    """
+    A folder on a drive without a trash, out of the home of Virtualbricks,
+    which has its trash. It is removed once Virtualbricks has stopped:
+    Virtualbricks writes in its workspace until it quits.
+    """
+
+    if not os.path.isdir(NO_TRASH):
+        pytest.skip(f"no {NO_TRASH}")
+    folder = tempfile.mkdtemp(prefix="vb-e2e-", dir=NO_TRASH)
+    try:
+        yield folder
+    finally:
+        virtualbricks.stop()
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -241,9 +266,10 @@ def main_window(virtualbricks, name):
     the settings.
     """
 
-    workspace = os.path.join(
-        "~", os.path.relpath(virtualbricks.workspace, virtualbricks.home)
-    )
+    workspace = virtualbricks.workspace
+    # with ~ for the home, as Virtualbricks says it
+    if workspace.startswith(virtualbricks.home + os.sep):
+        workspace = "~" + workspace[len(virtualbricks.home) :]
     titles = (
         f"Virtualbricks (project: {name})",
         f"Virtualbricks (project: {name}, workspace: {workspace})",
@@ -760,6 +786,15 @@ def brick_stopped(virtualbricks, brick_processes, name):
 PROJECTS_WINDOW = "Projects"
 
 
+@given("the workspace is on a drive without a trash")
+def workspace_without_trash(virtualbricks, drive_without_trash):
+    """The workspace of Virtualbricks in a folder of that drive."""
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    virtualbricks.workspace = os.path.join(drive_without_trash, "workspace")
+    os.makedirs(virtualbricks.workspace)
+
+
 @when("I open the Projects window")
 def open_projects(virtualbricks):
     """Projects…, in the menu Projects."""
@@ -854,17 +889,164 @@ def select_project(virtualbricks, name):
     """
 
     window = virtualbricks.find("frame", PROJECTS_WINDOW)
-
-    def row():
-        for item in harness.a11y.find_all(window, "list item"):
-            if harness.a11y.find(item, "label", name) is not None:
-                return item
-        return None
-
-    item = virtualbricks.wait_for(row, f"the row of {name} shows")
+    item = virtualbricks.wait_for(
+        lambda: project_row(window, name), f"the row of {name} shows"
+    )
     virtualbricks.click("label", name, within=item)
     path = os.path.join(virtualbricks.workspace, name)
     return virtualbricks.find("label", path, within=window).get_parent()
+
+
+def project_row(window, name):
+    """The row of the project name in the Projects window, if it shows."""
+
+    for item in harness.a11y.find_all(window, "list item"):
+        if harness.a11y.find(item, "label", name) is not None:
+            return item
+    return None
+
+
+@when(words("I remove the project {name:Project}, and move it to the trash"))
+def trash_project(virtualbricks, name):
+    """
+    In the Projects window, its row, then Remove… in the menu of its
+    details; the question, which names it, says its folder goes to the
+    trash: Move to Trash, and the question closes.
+    """
+
+    question = ask_remove(virtualbricks, name)
+    says(virtualbricks, question, " to the trash, where you can restore it.")
+    virtualbricks.click("button", "Move to Trash", within=question)
+    virtualbricks.gone("alert", QUESTION)
+
+
+@when(
+    words(
+        "I remove the project {name:Project}, which can't go to the trash,"
+        " and delete it permanently"
+    )
+)
+def delete_project(virtualbricks, name):
+    """
+    The same, where the question has no Move to Trash, and says the drive
+    of the workspace has none: Delete Permanently.
+    """
+
+    question = ask_remove(virtualbricks, name)
+    says(virtualbricks, question, " the drive of the workspace has no trash.")
+    assert (
+        virtualbricks.shows("button", "Move to Trash", within=question) is None
+    ), "the question offers the trash"
+    virtualbricks.click("button", "Delete Permanently", within=question)
+    virtualbricks.gone("alert", QUESTION)
+
+
+# A dialog that asks, as the screen readers name it
+QUESTION = "Question"
+
+
+def ask_remove(virtualbricks, name):
+    """
+    In the Projects window, the row of the project name, then Remove… in the
+    menu of its details: the question, once it names the project.
+    """
+
+    details = select_project(virtualbricks, name)
+    virtualbricks.click("toggle button", "Menu", within=details)
+    virtualbricks.click("button", "Remove…")
+    question = virtualbricks.find("alert", QUESTION)
+    virtualbricks.find("label", f"Remove {name}?", within=question)
+    return question
+
+
+def says(virtualbricks, dialog, text):
+    """A label of the dialog has text, once it shows."""
+
+    virtualbricks.wait_for(
+        lambda: any(
+            text in label
+            for label in virtualbricks.names("label", within=dialog)
+        ),
+        f"the dialog says {text!r}",
+    )
+
+
+@then(words("the Projects window doesn't list {name:Project}"))
+def projects_not_listed(virtualbricks, name):
+    window = virtualbricks.find("frame", PROJECTS_WINDOW)
+    virtualbricks.wait_for(
+        lambda: project_row(window, name) is None,
+        f"the Projects window doesn't list {name}",
+    )
+
+
+@then(words("the folder of {name:Project} is in the trash"))
+def project_in_trash(virtualbricks, name):
+    """
+    The workspace has no folder name any more, and the trash of the home
+    has it: in its folder info, a .trashinfo that says where it was, and in
+    files, the folder, with its project.toml.
+    """
+
+    path = os.path.join(virtualbricks.workspace, name)
+    virtualbricks.wait_for(
+        lambda: not os.path.exists(path), f"the workspace has no {name}"
+    )
+    trash = os.path.join(virtualbricks.home, TRASH)
+    trashed = trashed_as(trash, path)
+    assert trashed is not None, f"the trash has no {path}"
+    toml = os.path.join(trash, "files", trashed, "project.toml")
+    assert os.path.isfile(toml), f"the trash has {path} without project.toml"
+
+
+@then(words("the folder of {name:Project} is deleted, and in no trash"))
+def project_deleted(virtualbricks, name):
+    """
+    The workspace has no folder name any more, and no trash has it: neither
+    that of the home, nor those of the drive of the workspace, .Trash/UID
+    and .Trash-UID at its top.
+    """
+
+    path = os.path.join(virtualbricks.workspace, name)
+    virtualbricks.wait_for(
+        lambda: not os.path.exists(path), f"the workspace has no {name}"
+    )
+    top = virtualbricks.workspace
+    while not os.path.ismount(top):
+        top = os.path.dirname(top)
+    uid = str(os.getuid())
+    for trash, drive in (
+        (os.path.join(virtualbricks.home, TRASH), None),
+        (os.path.join(top, ".Trash", uid), top),
+        (os.path.join(top, f".Trash-{uid}"), top),
+    ):
+        assert trashed_as(trash, path, drive) is None, f"{trash} has {path}"
+
+
+# The trash of the home, in the data folder of Virtualbricks
+TRASH = os.path.join(".local", "share", "Trash")
+
+
+def trashed_as(trash, path, drive=None):
+    """
+    The name in the trash of what was at path, by the .trashinfo files of
+    its folder info; None if it isn't there. In the trash of a drive, the
+    path is relative to the top of the drive.
+    """
+
+    info = os.path.join(trash, "info")
+    if not os.path.isdir(info):
+        return None
+    for file in os.listdir(info):
+        name, extension = os.path.splitext(file)
+        if extension != ".trashinfo":
+            continue
+        parser = configparser.ConfigParser(interpolation=None)
+        parser.read(os.path.join(info, file))
+        was = urllib.parse.unquote(parser["Trash Info"]["Path"])
+        if os.path.join(drive or "/", was) == path:
+            return name
+    return None
 
 
 IMPORT_WINDOW = "Import Project"

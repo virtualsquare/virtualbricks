@@ -88,3 +88,22 @@ Feature: Projects
       | node2                | Virtual machine · x86_64 · KVM · 500 MiB · eth0 on sw5 · eth1 on sw2 · eth2 on sw3 | Stopped        |
       | node3                | Virtual machine · x86_64 · KVM · 500 MiB · eth0 on switchwrapper · eth1 on sw1     | Stopped        |
       | node4                | Virtual machine · x86_64 · KVM · 500 MiB · eth0 on switchwrapper · eth1 on sw4     | Stopped        |
+
+  Scenario: A project removed from the Projects window goes to the trash, once confirmed
+    Given Virtualbricks is running
+    When I open the Projects window
+    And I make a new project with the name it suggests, new_project-2
+    And I open the Projects window
+    And I remove the project new_project, and move it to the trash
+    Then the Projects window doesn't list new_project
+    And the folder of new_project is in the trash
+
+  Scenario: A project removed from a workspace on a drive without a trash is deleted for good, once confirmed
+    Given the workspace is on a drive without a trash
+    And Virtualbricks is running
+    When I open the Projects window
+    And I make a new project with the name it suggests, new_project-2
+    And I open the Projects window
+    And I remove the project new_project, which can't go to the trash, and delete it permanently
+    Then the Projects window doesn't list new_project
+    And the folder of new_project is deleted, and in no trash
