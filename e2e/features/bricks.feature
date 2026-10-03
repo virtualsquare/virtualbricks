@@ -104,3 +104,44 @@ Feature: Bricks
     Then sw1 runs with 34 ports, as a hub
     When I stop sw1
     Then sw1 is stopped
+
+  Scenario: Cancel leaves the settings of a switch as they were
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I give sw1 34 ports and hub mode in its settings, then cancel
+    Then the list of bricks has
+      | Brick | Detail            | State   |
+      | sw1   | Switch · 32 ports | Stopped |
+    When I quit Virtualbricks
+    Then Virtualbricks has quit
+    And project.toml has sw1 with
+      | Setting  | Value |
+      | ports    | 32    |
+      | hub_mode | false |
+
+  Scenario: Duplicate copies a brick with its settings, under a name of its own
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I give sw1 34 ports and hub mode, with the buttons of its settings
+    And I duplicate sw1 from its menu
+    Then the list of bricks has
+      | Brick       | Detail                  | State   |
+      | sw1         | Switch · 34 ports · hub | Stopped |
+      | copy_of_sw1 | Switch · 34 ports · hub | Stopped |
+    When I quit Virtualbricks
+    Then Virtualbricks has quit
+    And project.toml has copy_of_sw1 with the settings of sw1
+
+  Scenario: Delete removes a brick, once confirmed
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I add the switch sw2
+    And I delete sw2 from its menu, and confirm
+    Then the list of bricks has
+      | Brick | Detail            | State   |
+      | sw1   | Switch · 32 ports | Stopped |
+    When I quit Virtualbricks
+    Then Virtualbricks has quit
+    And project.toml has the bricks
+      | Brick | Type   |
+      | sw1   | switch |

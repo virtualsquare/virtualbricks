@@ -52,12 +52,13 @@ that the tests can't do yet: those needs come first.
   ports and hub mode, then OK
   "The buttons of the settings of a switch change its ports and its hub
   mode", `bricks.feature`
-- [ ] Cancel the settings of a switch: nothing changes
-  the row, and `project.toml` after a quit
-- [ ] Duplicate a brick from its menu
-  the copy has the name Virtualbricks gives it and the same settings
-- [ ] Delete a brick from its menu, after the confirmation
-  its row goes, and `project.toml` loses it after a quit
+- [x] Cancel the settings of a switch: nothing changes
+  "Cancel leaves the settings of a switch as they were", `bricks.feature`
+- [x] Duplicate a brick from its menu
+  "Duplicate copies a brick with its settings, under a name of its own",
+  `bricks.feature`
+- [x] Delete a brick from its menu, after the confirmation
+  "Delete removes a brick, once confirmed", `bricks.feature`
 - [ ] Show only the running bricks with the switch over the list
 - [ ] Quit while a switch runs
   refused, "Cannot close virtualbricks: there are running bricks"; the

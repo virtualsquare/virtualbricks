@@ -140,6 +140,9 @@ The steps of a user:
 | `When I try to start wr1` | A click on its Start, also when it is disabled, as a user may click it |
 | `When I stop sw1` | Its Stop button; it must stop |
 | `When I give sw1 34 ports and hub mode, with the buttons of its settings` | Configure… in its menu, the + or the - of Ports until it says 34, Hub mode turned on, then OK |
+| `When I give sw1 34 ports and hub mode in its settings, then cancel` | The same, then Cancel |
+| `When I duplicate sw1 from its menu` | Duplicate, in its menu; then the list has one more brick |
+| `When I delete sw2 from its menu, and confirm` | Delete…, in its menu, then Yes to the question that names it |
 | `When I start all the bricks` | Start All; each brick whose row said Stopped must run, with the process its row tells, and Start All must start no other |
 | `When I stop all the bricks` | Stop All; each brick that ran must be able to start again |
 | `When I wait 5 seconds` | Waits |
@@ -157,6 +160,9 @@ The steps of a user:
 | `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |
 | `Then the main window shows the project lab` | Its title names the project |
 | `Then the list of bricks has`, with a table under it | The rows of the list, all of them and in order, scrolled through, once they are those of the table: the name of each brick, its detail and its state |
+| `Then project.toml has the bricks`, with a table under it | The bricks of the file of the project, all of them and in order: the name of each and its type |
+| `Then project.toml has sw1 with`, with a table under it | Its settings in the file of the project, a name and a value each, the value as TOML writes it |
+| `Then project.toml has copy_of_sw1 with the settings of sw1` | The two bricks have the same settings in the file of the project |
 
 The steps of a program that fails:
 

@@ -32,6 +32,7 @@ A line runs the step whose words match it: ``When I start sw1`` runs
 See README.md for how to add a step.
 """
 
+import glob
 import os
 import shlex
 import shutil
@@ -39,6 +40,12 @@ import subprocess
 import tempfile
 import time
 import types
+
+try:
+    import tomllib
+except ImportError:
+    # before Python 3.11
+    import tomli as tomllib
 
 import pytest
 from pytest_bdd import given, parsers, step, then, when
@@ -150,6 +157,65 @@ def virtualbricks_quit(virtualbricks):
     assert virtualbricks.bricks() == [], "bricks still run"
 
 
+def project_file(virtualbricks):
+    """The file of the project, the one of the workspace."""
+
+    files = glob.glob(
+        os.path.join(virtualbricks.workspace, "*", "project.toml")
+    )
+    assert len(files) == 1, f"not one project: {files}"
+    with open(files[0], "rb") as file:
+        return tomllib.load(file)
+
+
+@then("project.toml has the bricks")
+def project_bricks(virtualbricks, datatable):
+    """
+    The bricks of the file of the project, all of them and in order, are
+    those of the table under the step: the name of each and its type.
+    """
+
+    bricks = project_file(virtualbricks).get("bricks", {})
+    found = datatable[:1] + [
+        [name, table["type"]] for name, table in bricks.items()
+    ]
+    assert found == datatable, f"project.toml has {found}, not {datatable}"
+
+
+@then(words("project.toml has {name:Brick} with"))
+def project_brick(virtualbricks, name, datatable):
+    """
+    The brick in the file of the project has the settings of the table
+    under the step, a name and a value each, as TOML writes it.
+    """
+
+    brick = project_brick_of(virtualbricks, name)
+    for setting, value in datatable[1:]:
+        wanted = tomllib.loads(f"value = {value}")["value"]
+        assert (
+            brick[setting] == wanted
+        ), f"{name}: {setting} is {brick[setting]!r}, not {wanted!r}"
+
+
+@then(
+    words("project.toml has {name:Brick} with the settings of {other:Brick}")
+)
+def project_same(virtualbricks, name, other):
+    """The two bricks of the file of the project have the same settings."""
+
+    brick = project_brick_of(virtualbricks, name)
+    model = project_brick_of(virtualbricks, other)
+    assert brick == model, f"{name} has {brick}, {other} {model}"
+
+
+def project_brick_of(virtualbricks, name):
+    """The table of the brick name in the file of the project."""
+
+    bricks = project_file(virtualbricks).get("bricks", {})
+    assert name in bricks, f"project.toml has no {name}"
+    return bricks[name]
+
+
 @then(words("the main window shows the project {name:Project}"))
 def main_window(virtualbricks, name):
     """
@@ -259,6 +325,31 @@ def give_ports(virtualbricks, name, ports):
     turned on, then OK.
     """
 
+    change_ports(virtualbricks, name, ports)
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
+@when(
+    words(
+        "I give {name:Brick} {ports:d} ports and hub mode in its settings,"
+        " then cancel"
+    )
+)
+def cancel_ports(virtualbricks, name, ports):
+    """The same, then Cancel: the list shows again."""
+
+    change_ports(virtualbricks, name, ports)
+    virtualbricks.click("button", "Cancel")
+    virtualbricks.find("button", f"Start {name}")
+
+
+def change_ports(virtualbricks, name, ports):
+    """
+    Configure… in its menu, + or - of Ports until it says ports, and Hub
+    mode turned on.
+    """
+
     virtualbricks.click("button", f"Menu of {name}")
     virtualbricks.click("button", "Configure…")
     spin = virtualbricks.enabled("spin button", "Ports")
@@ -270,8 +361,39 @@ def give_ports(virtualbricks, name, ports):
     virtualbricks.wait_for(
         lambda: harness.a11y.checked(hub), "Hub mode is turned on"
     )
-    virtualbricks.click("button", "OK")
-    virtualbricks.find("button", f"Start {name}")
+
+
+@when(words("I duplicate {name:Brick} from its menu"))
+def duplicate(virtualbricks, name):
+    """Duplicate, in its menu; then the list has one more brick."""
+
+    before = len(brick_rows(virtualbricks))
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Duplicate")
+    virtualbricks.wait_for(
+        lambda: len(brick_rows(virtualbricks)) == before + 1,
+        "the list has one more brick",
+    )
+
+
+@when(words("I delete {name:Brick} from its menu, and confirm"))
+def delete(virtualbricks, name):
+    """Delete…, in its menu, then Yes to the question, which names it."""
+
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Delete…")
+    dialog = virtualbricks.find("dialog")
+    # then its type, as Virtualbricks names it inside
+    question = f"Do you really want to delete {name} ("
+    virtualbricks.wait_for(
+        lambda: any(
+            label.startswith(question)
+            for label in virtualbricks.names("label", within=dialog)
+        ),
+        f"the dialog asks to delete {name}",
+    )
+    virtualbricks.click("button", "Yes", within=dialog)
+    virtualbricks.gone("dialog")
 
 
 @when(words("I give {name:Brick} the control folder of that switch"))
