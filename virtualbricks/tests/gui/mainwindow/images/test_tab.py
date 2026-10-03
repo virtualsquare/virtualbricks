@@ -287,24 +287,23 @@ class TestTheRowAboveTheList(ImagesTestCase):
     def test_add_image(self):
         popped = []
         self.patch(
-            Gtk.Menu,
-            "popup_at_widget",
-            lambda menu, widget, *args: popped.append(widget),
+            Gtk.Popover, "popup", lambda popover: popped.append(popover)
         )
         shown = []
         for name in ("ExistingImageDialog", "NewDiskDialog"):
             self.patch(tab, name, lambda *a, n=name: FakeDialog(shown, n, *a))
         self.tab.new_button.clicked()
-        self.assertEqual(popped, [self.tab.new_button])
         menu = self.tab._add_menu
         self.addCleanup(menu.destroy)
-        items = menu.get_children()
+        self.assertEqual(popped, [menu])
+        self.assertIs(menu.get_relative_to(), self.tab.new_button)
+        buttons = menu.get_child().get_children()
         self.assertEqual(
-            [item.get_label() for item in items],
+            [button.props.text for button in buttons],
             ["Existing Image…", "New Empty Disk…"],
         )
-        for item in items:
-            item.activate()
+        for button in buttons:
+            button.clicked()
         self.assertEqual(
             shown,
             [
@@ -354,13 +353,15 @@ class TestAProjectWithoutImages(ImagesTestCase):
     def test_add_under_its_button(self):
         popped = []
         self.patch(
-            Gtk.Menu,
-            "popup_at_widget",
-            lambda menu, widget, *args: popped.append(widget),
+            Gtk.Popover, "popup", lambda popover: popped.append(popover)
         )
         self.tab.new_button.clicked()
-        self.addCleanup(self.tab._add_menu.destroy)
-        self.assertEqual(popped, [self.tab.new_button])
+        menu = self.tab._add_menu
+        self.addCleanup(menu.destroy)
+        self.assertIs(menu.get_relative_to(), self.tab.new_button)
+        # the menu stays, from one click to the next
+        self.tab.new_button.clicked()
+        self.assertEqual(popped, [menu, menu])
 
 
 class TestTheKeysAndTheMouse(ImagesTestCase):

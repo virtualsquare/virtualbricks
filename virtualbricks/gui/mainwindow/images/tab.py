@@ -37,8 +37,7 @@ from __future__ import annotations
 import gi
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gtk  # noqa: E402
+from gi.repository import Gtk  # noqa: E402
 
 from virtualbricks.bricks.virtualmachine import ImageDraft  # noqa: E402
 from virtualbricks.config import images  # noqa: E402
@@ -210,8 +209,8 @@ class ImagesTab(RowsTab):
 
     def __init__(self, gui, factory) -> None:
         super().__init__(gui, factory)
-        # the menu of Add Image, while it shows
-        self._add_menu: Gtk.Menu | None = None
+        # the menu of Add Image, made at its first click
+        self._add_menu: Gtk.Popover | None = None
         for signal in brick_signals(factory):
             signal.connect(self.on_changed)
 
@@ -238,22 +237,29 @@ class ImagesTab(RowsTab):
     def new(self) -> None:
         """Offer an existing image or a new empty disk, under the button."""
 
-        menu = Gtk.Menu()
+        if self._add_menu is None:
+            self._add_menu = self._make_add_menu()
+        self._add_menu.popup()
+
+    def _make_add_menu(self) -> Gtk.Popover:
+        # a popover, as the menus of the rows: the screen readers find it
+        # among the widgets of the window, where a Gtk.Menu isn't
+        box = Gtk.Box(
+            visible=True, orientation=Gtk.Orientation.VERTICAL, margin=6
+        )
         for label, callback in (
             (_("Existing Image…"), self.add_existing),
             (_("New Empty Disk…"), self.add_new),
         ):
-            item = Gtk.MenuItem(label=label, visible=True)
-            item.connect("activate", lambda item, call=callback: call())
-            menu.append(item)
-        menu.attach_to_widget(self.new_button, None)
-        menu.popup_at_widget(
-            self.new_button,
-            Gdk.Gravity.SOUTH_WEST,
-            Gdk.Gravity.NORTH_WEST,
-            None,
+            # a model button closes the popover when clicked
+            button = Gtk.ModelButton(visible=True, text=label)
+            button.connect("clicked", lambda button, call=callback: call())
+            box.pack_start(button, False, False, 0)
+        popover = Gtk.Popover(
+            relative_to=self.new_button, position=Gtk.PositionType.BOTTOM
         )
-        self._add_menu = menu
+        popover.add(box)
+        return popover
 
     def add_existing(self) -> ExistingImageDialog:
         dialog = ExistingImageDialog(self.gui.engine)
