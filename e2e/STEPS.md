@@ -40,7 +40,7 @@ The steps of a user:
 | `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |
 | `Then Virtualbricks hasn't quit` | It still runs, and its main window shows |
 | `Then the main window shows the project lab` | Its title names the project |
-| `Then the list of bricks has`, with a table under it | The rows of the list, all of them and in order, scrolled through, once they are those of the table: the name of each brick, its detail and its state |
+| `Then the list of bricks has`, with a table under it | The rows of the list, all of them and in order, scrolled through, once they are those of the table: the name of each brick, its detail and its state; with only the titles of the columns, no brick, as the tab says No Bricks Yet |
 | `Then the list of bricks shows only sw1, with its process` | Its row alone, once it says Running and, in place of its summary, a process of its start, which still runs |
 | `Then project.toml has the bricks`, with a table under it | The bricks of the file of the project, all of them and in order: the name of each and its type |
 | `Then project.toml has sw1 with`, with a table under it | Its settings in the file of the project, a name and a value each, the value as TOML writes it |

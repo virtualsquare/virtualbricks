@@ -287,6 +287,8 @@ def join(virtualbricks, left, right, name):
 # The kinds of bricks that run no program, as their rows say them: a switch
 # wrapper is a switch that another program runs.
 NO_PROGRAM = ("Switch wrapper",)
+# What the tab Bricks says in place of its list, when there are no bricks
+NO_BRICKS = "No Bricks Yet"
 
 
 @when(words("I start {name:Brick}"))
@@ -527,11 +529,19 @@ def brick_running(virtualbricks, brick_processes, name):
 def brick_rows(virtualbricks):
     """
     The rows of the list of bricks, all of them and in order: each the
-    name of a brick, its detail and its state.
+    name of a brick, its detail and its state. No rows when the tab says
+    that there are no bricks, in place of the list.
     """
 
     tab = virtualbricks.find("page tab", "Bricks")
-    return virtualbricks.rows(virtualbricks.find("scroll pane", within=tab))
+    shown = virtualbricks.wait_for(
+        lambda: virtualbricks.shows("scroll pane", within=tab)
+        or virtualbricks.shows("label", NO_BRICKS, within=tab),
+        f"the list of bricks shows, or {NO_BRICKS!r}",
+    )
+    if shown.get_role_name() == "label":
+        return []
+    return virtualbricks.rows(shown)
 
 
 @then(words("{name:Brick} runs with {ports:d} ports, as a hub"))
