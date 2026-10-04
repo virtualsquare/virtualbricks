@@ -36,7 +36,7 @@ import re
 from twisted.internet import protocol, reactor, error, defer
 from twisted.logger import Logger
 
-from virtualbricks import errors, observable
+from virtualbricks import errors, observable, terminal
 from virtualbricks.bricks.command import Prepared
 from virtualbricks.bricks.draft import Draft
 from virtualbricks.bricks.plug import link_loop
@@ -122,12 +122,18 @@ class Process(protocol.ProcessProtocol):
 
     def __init__(self, brick):
         self.brick = brick
+        self.output = {
+            "stdout": terminal.Lines(system_encoding),
+            "stderr": terminal.Lines(system_encoding),
+        }
 
     def connectionMade(self):
         self.logger.info(process_started)
         self.brick.process_started(self)
 
     def processEnded(self, status):
+        for stream, lines in self.output.items():
+            self._log_output(stream, lines.flush())
         if status.check(error.ProcessTerminated):
             status = " ".join(status.value.args)
             self.logger.error(process_terminated, status=status)
@@ -137,18 +143,24 @@ class Process(protocol.ProcessProtocol):
         self.brick.process_ended(self, status)
 
     # The output of the program, marked with its stream for the messages
-    # window.
+    # window: the lines that it ends, as a terminal shows them.
 
     def outReceived(self, data):
-        self.logger.info("{output}", output=_decode(data), stream="stdout")
+        self._log_output("stdout", self.output["stdout"].feed(data))
 
     def errReceived(self, data):
-        self.logger.error(
-            "{output}",
-            output=_decode(data),
-            stream="stderr",
-            hide_to_user=True,
-        )
+        self._log_output("stderr", self.output["stderr"].feed(data))
+
+    def _log_output(self, stream, lines):
+        if not lines:
+            return
+        output = "\n".join(lines)
+        if stream == "stdout":
+            self.logger.info("{output}", output=output, stream=stream)
+        else:
+            self.logger.error(
+                "{output}", output=output, stream=stream, hide_to_user=True
+            )
 
     # new interface
 

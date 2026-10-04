@@ -169,8 +169,11 @@
 
 ## Logs window
 
-- [ ] Fold the consecutive chunks of output of a program as one: group
-  them, or buffer each process's output by lines (03 §10)
+- [ ] Fold the consecutive chunks of output of a program as one: the
+  output is buffered by lines now, but the lines of each read are still
+  a message of their own (03 §10)
+- [ ] Show the colours of the ANSI sequences of a program's output:
+  `terminal.Lines` drops them (03 Since then)
 - [ ] Follow the desktop's dark theme, with the palette of the dark
   console mock-up (03 §10)
 - [ ] Show a circled "i" for information: Adwaita's symbol is a
