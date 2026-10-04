@@ -156,27 +156,17 @@ Marco Giusti
    :height: 931
    :scale: 25%
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque id
-lacinia lectus. Phasellus bibendum vel lacus et pharetra. Pellentesque
-habitant morbi tristique senectus et netus et malesuada fames ac turpis
-egestas. Nam in urna ex. Ut erat nisl, commodo eget venenatis nec,
-cursus nec odio. Vestibulum pellentesque massa quis ipsum dictum
-vulputate vel id risus. Ut aliquet bibendum diam ut efficitur. Aenean et
-velit commodo, laoreet elit facilisis, pellentesque libero. Ut pulvinar
-neque non odio congue elementum. Donec a mauris finibus, tincidunt eros
-sed, ultrices urna. Fusce ut est luctus, ultricies ligula in, interdum
-quam. Sed sit amet ligula nec sem sagittis faucibus. Morbi a sodales
-dui. Nunc vel urna a neque blandit tristique non eu felis. Nulla
-sagittis, nisl id viverra vehicula, est neque lobortis sem, et sodales
-odio orci at neque.
+I am a software developer based in Italy.
 
-Donec vehicula lacinia feugiat. In quis elit tempor, fermentum odio non,
-vulputate dolor. Nunc facilisis suscipit purus eu varius. Nunc blandit
-justo sed velit mattis, non tincidunt nisl lacinia. Aenean at justo
-interdum, consectetur sapien in, imperdiet ipsum. Fusce ornare efficitur
-turpis, vitae ullamcorper tellus malesuada eu. Maecenas sit amet arcu
-convallis, rhoncus est non, accumsan est. Donec consequat hendrerit
-lectus, id dictum nunc ullamcorper vel. Donec fringilla commodo leo, sed
-aliquet lorem aliquam a. Cras auctor sit amet velit ac sodales.
-Phasellus et neque pharetra, ullamcorper massa et, laoreet tellus. Proin
-scelerisque vel dui non sodales. Integer vel auctor tortor. 
+I started working on Virtualbricks in 2013, as a student of Prof. Carlo
+Caini at the University of Bologna (DEI-ARCES). With Pietrofrancesco
+Apollonio I got the code ready for the 1.0 release, publishing weekly
+debug versions and Ubuntu packages in a Launchpad PPA.
+
+Since then I have kept developing Virtualbricks, and I am now working
+on the rewrite that will become Virtualbricks 3.0.
+
+
+`GitHub`__
+
+.. __: https://github.com/marcogiusti

@@ -42,7 +42,13 @@ PROJECTS = [
      'description': 'Report a bug or ask a question'},
     {'name': 'NetEmu',
      'url': 'https://github.com/virtualsquare/vde-netemu',
-     'description': 'The channel emulator of the Netemu bricks'},
+     'description': 'The channel emulator'},
+    {'name': 'VDE',
+     'url': 'https://wiki.virtualsquare.org/#/?id=virtual-distributed-ethernet-vde',
+     'description': 'VDE provides an effective communication platform for virtual entities interoperability'},
+    {'name': 'Qemu',
+     'url': 'https://www.qemu.org/',
+     'description': 'QEMU is a free and open-source machine emulator and virtualizer'},
 ]
 
 # Elegant has no pagination
