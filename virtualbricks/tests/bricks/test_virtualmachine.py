@@ -20,7 +20,8 @@
 
 import os
 
-from twisted.internet import defer
+from twisted.internet import defer, error
+from twisted.python.failure import Failure
 from twisted.trial import unittest
 
 from virtualbricks import bricks
@@ -242,6 +243,51 @@ class TestRunning(CommandTestCase):
         self.successResultOf(d)
         vm._exited_d.callback(None)
         self.assertEqual(locks, ["acquire", "release"])
+
+
+class FakeBrick:
+
+    def process_ended(self, process, status):
+        pass
+
+
+class TestTheOutputOfQemu(unittest.TestCase):
+    """A line that is only the prompt of the monitor is not logged."""
+
+    def setUp(self):
+        self.process = virtualmachine.QemuProcess(FakeBrick())
+        self.process.logger = self.logger = FakeLogger()
+
+    def logged(self):
+        return [
+            (kwargs["stream"], kwargs["output"])
+            for _, _, kwargs in self.logger.events
+            if "stream" in kwargs
+        ]
+
+    def test_a_command_and_its_answer(self):
+        self.process.outReceived(
+            b"(qemu) info status\r\nVM status: running\r\n(qemu) \r\n"
+        )
+        self.assertEqual(
+            self.logged(),
+            [("stdout", "(qemu) info status\nVM status: running")],
+        )
+
+    def test_empty_commands(self):
+        self.process.outReceived(b"(qemu) \r\n(qemu) \r\n")
+        self.assertEqual(self.logged(), [])
+
+    def test_the_prompt_when_qemu_stops(self):
+        self.process.outReceived(b"(qemu) system_powerdown\r\n(qemu) ")
+        self.process.processEnded(Failure(error.ProcessDone(0)))
+        self.assertEqual(
+            self.logged(), [("stdout", "(qemu) system_powerdown")]
+        )
+
+    def test_errors_are_untouched(self):
+        self.process.errReceived(b"(qemu) \n")
+        self.assertEqual(self.logged(), [("stderr", "(qemu) ")])
 
 
 class TestALack(BrickTestCase):

@@ -93,6 +93,8 @@ not_supported = "Suspend/Resume not supported on this disk."
 snapshot_error = "Error on snapshot"
 # The snapshot that suspend() saves in the first disk, and resume() loads.
 SNAPSHOT = "virtualbricks"
+# The prompt of the monitor of QEMU, without the space that follows it.
+MONITOR_PROMPT = "(qemu)"
 
 
 @dataclass(frozen=True)
@@ -1166,6 +1168,21 @@ def _kind(brick, link) -> str:
     return "socket" if link in brick.socks else "plug"
 
 
+class QemuProcess(bricks.Process):
+    """
+    The process of QEMU, with a monitor on its standard output.
+
+    The monitor writes its prompt when it waits for a command; a line that
+    is only the prompt, as after an empty command or when QEMU stops, says
+    nothing and is not logged.
+    """
+
+    def _log_output(self, stream, lines):
+        if stream == "stdout":
+            lines = [line for line in lines if line.rstrip() != MONITOR_PROMPT]
+        bricks.Process._log_output(self, stream, lines)
+
+
 class VirtualMachine(bricks.Brick):
 
     type = "Qemu"
@@ -1175,7 +1192,7 @@ class VirtualMachine(bricks.Brick):
     term_command = "unixterm"
     config_factory = VirtualMachineConfig
     draft_factory = VirtualMachineDraft
-    process_protocol = bricks.Process
+    process_protocol = QemuProcess
     connections = "nics"
 
     def __init__(self, factory, name):
