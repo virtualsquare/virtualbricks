@@ -36,6 +36,8 @@ e2e = [
     "pytest-bdd>=8.0",
     "pytest-repeat>=0.9",
     "pytest-xdist>=3.0",
+    # the results of --alluredir=, for the report of Allure
+    "allure-pytest-bdd>=2.16",
 ]
 dev = [
     { include-group = "test" },

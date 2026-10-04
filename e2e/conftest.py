@@ -25,13 +25,15 @@ own, and other_virtualbricks another one of the same user, beside it. The
 steps are in :mod:`steps`. When a step fails, the report has the step, the
 widgets that show and the output of each Virtualbricks, and the folder of
 each a screenshot and a video of its screen (:mod:`recording`); with
---record-all, every scenario has them.
+--record-all, every scenario has them. With --alluredir=, the results of
+Allure have them too.
 """
 
 import os
 import shutil
 import time
 
+import allure
 import pytest
 
 import broadway
@@ -122,10 +124,15 @@ def other_virtualbricks(virtualbricks, tmp_path, request):
         yield vb
     finally:
         vb.stop(bricks=False)
-        _record(request, vb)
+        _record(request, vb, " of the other Virtualbricks")
 
 
-def _record(request, vb):
+def _record(request, vb, of=""):
+    """
+    The screenshot and the video of its screen, in its folder, and attached
+    to the result of Allure; of says which Virtualbricks, but for the first.
+    """
+
     steps = request.node.stash.get(STEPS, [])
     failed = any(failed for _, _, failed in steps)
     if vb.browser is None:
@@ -143,6 +150,13 @@ def _record(request, vb):
     request.config.stash.setdefault(RECORDED, []).append(
         (request.node.nodeid, lines)
     )
+    for name, kind in (
+        ("screenshot.png", allure.attachment_type.PNG),
+        ("recording.webm", allure.attachment_type.WEBM),
+    ):
+        path = os.path.join(vb.folder, name)
+        if os.path.exists(path):
+            allure.attach.file(path, name=name + of, attachment_type=kind)
 
 
 def pytest_collection_modifyitems(config, items):

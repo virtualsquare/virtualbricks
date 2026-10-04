@@ -53,6 +53,7 @@ pytest -s                                # with what the steps print
 pytest --count 20 -k switch_runs         # 20 times: is it flaky?
 pytest --record-all -k switch_runs       # a video, also if it passes
 pytest -n 8                              # eight scenarios at a time
+pytest --alluredir=allure-results        # the results, for Allure
 ```
 
 `pytest` runs the end-to-end tests, and those of `recording.py`
@@ -91,6 +92,7 @@ taken for as long as the others; `conftest.py` says how.
 | `broadway.py` | The mouse and the keys: a browser of `broadwayd`, whose clicks, drags, wheel and keys reach GTK as a user's do; it keeps what the screen shows |
 | `recording.py` | The screenshot and the video of a scenario, from what the browser kept |
 | `test_recording.py` | The tests of `recording.py` |
+| `../allurerc.mjs` | The configuration of the report of Allure |
 
 ## Write a scenario
 
@@ -323,6 +325,42 @@ compressed, and where they are; nothing is decoded while the scenario runs.
 When it ends, `recording.py` decodes them as `broadway.js` does, draws the
 screen with cairo and gives the frames to `ffmpeg`. Without `ffmpeg` there
 is only the screenshot.
+
+## The report of Allure
+
+[Allure](https://allurereport.org/) makes a report of the scenarios, as web
+pages: each with its steps, how long each took and the one that failed,
+grouped by `Feature:`, with their tags. `allure-pytest-bdd`, of the group
+`e2e`, writes the results of a run in the folder of `--alluredir=`, a file
+for each scenario; Allure 3, of Node.js, makes the report of them, with
+`allurerc.mjs`, at the root of the sources:
+
+```sh
+pytest -n 8 --alluredir=allure-results --clean-alluredir
+npx allure@3 generate      # the report, in allure-report/
+npx allure@3 open          # the report, in the browser
+```
+
+Write `--alluredir=` with its `=`: given as `--alluredir allure-results`,
+pytest takes the folder for one of the tests to run before it knows the
+option, and stops: "Defining 'pytest_plugins' in a non-top-level
+conftest". `--clean-alluredir` leaves only the results of this run; without
+it, a scenario run again shows as a retry.
+
+The results are in git, to publish the report: `allure-results/`, those of
+the last run, and `allure-history.jsonl`, the history of the runs, to
+which `generate` adds the run of `allure-results/`, and whose trends the
+report shows. Commit them together after a run whose report you publish;
+`allure-report/` is left out of git. `npx` downloads Allure the first
+time.
+
+A scenario that fails has the screenshot and the video of its screen, of
+the other Virtualbricks too if it has one, and `stdout`: what pytest
+printed of the step that failed, the widgets that showed and the output
+of Virtualbricks. With `--record-all`, each scenario has its screenshot and
+video. The tests of `recording.py` aren't scenarios, and aren't in the
+report; nor is a scenario skipped before its first step, as one tagged
+`@needs-PROGRAM` without that program.
 
 ## With Claude Code
 

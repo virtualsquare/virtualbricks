@@ -285,6 +285,10 @@
 
 # DONE
 
+- [x] The report of Allure of the end-to-end tests, with the screenshot
+  and the video of a scenario that fails; the results and the history in
+  git, to publish it
+
 - [x] Duplicate names a copy after its brick or event, with the number at
   the end increased to the first free one: `sw2` for `sw1`, `node2` for
   `node`; not `copy_of_sw1` (12 §9)
