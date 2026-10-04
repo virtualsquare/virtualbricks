@@ -271,8 +271,8 @@ class TestDetails(ProjectsTestCase):
         self.assertEqual(values["disks"], "…")
         self.assertFalse(window.readme_view.get_visible())
 
-    def test_the_pictures_of_the_readme(self):
-        self.lab("lab", description="![the map](map.png) ![](../ospf.png)")
+    def test_the_pictures_of_the_readme_are_their_text(self):
+        self.lab("lab", description="![the map](map.png)")
         pixbuf = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, False, 8, 4, 3)
         pixbuf.savev(
             os.path.join(self.manager.project_path("lab"), "map.png"),
@@ -283,12 +283,11 @@ class TestDetails(ProjectsTestCase):
         window = self.window()
         window.select("lab")
         readme = window.readme_view.get_buffer()
-        # the one of its folder
+        # even of its folder: only the Readme tab shows them
         self.assertEqual(
-            readme.get_slice(*readme.get_bounds(), True), "\ufffc ../ospf.png"
+            readme.get_slice(*readme.get_bounds(), True), "the map"
         )
-        [image] = window.readme_view.get_children()
-        self.assertEqual(image.get_accessible().get_name(), "the map")
+        self.assertEqual(window.readme_view.get_children(), [])
 
     def test_the_readme_is_drawn_on_the_pane(self):
         window = self.window()

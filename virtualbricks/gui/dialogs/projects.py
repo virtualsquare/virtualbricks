@@ -28,7 +28,6 @@ project only.
 """
 
 import datetime
-import functools
 
 import gi
 
@@ -488,9 +487,7 @@ class ProjectsWindow:
         )
         self.problem_label.set_visible(not readable)
         readme = summary.description.strip()
-        self.readme_view.set_markdown(
-            readme, functools.partial(self.gui.engine.picture, summary.name)
-        )
+        self.readme_view.set_markdown(readme)
         self.readme_view.set_visible(bool(readme))
         values = self.fact_values
         values["bricks"].set_text(

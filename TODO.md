@@ -285,9 +285,9 @@
 
 # DONE
 
-- [x] Show the pictures of the project's folder in the README: the
-  Readme tab and the Projects window, over a connection too
-  (`ReadmePicture`); any other picture stays its text (05 §10, M7 B)
+- [x] Show the pictures of the project's folder in the preview of the
+  Readme tab, over a connection too (`ReadmePicture`); any other picture
+  stays its text, and so do those of the Projects window (05 §10, M7 B)
 
 - [x] Duplicate names a copy after its brick or event, with the number at
   the end increased to the first free one: `sw2` for `sw1`, `node2` for
