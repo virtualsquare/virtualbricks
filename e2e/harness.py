@@ -492,7 +492,8 @@ class Virtualbricks:
         the tab Bricks.
 
         A spin button is clicked in its text, left of its - and +: the
-        middle of it is its -.
+        middle of it is its -. A password text tells a dot for each of its
+        characters, as it shows them: then it has as many more.
         """
 
         if role == "spin button":
@@ -504,16 +505,17 @@ class Virtualbricks:
             widget = self.click(role, name, within)
         if over:
             a11y.erase(widget)
+        before = len(a11y.text(widget))
         a11y.write(widget, text)
         what = f"the {role}" if name is None else f"the {role} {name!r}"
-        self.wait_for(
-            lambda: (
-                a11y.text(widget) == text
-                if over
-                else text in a11y.text(widget)
-            ),
-            f"{what} has {text!r}",
-        )
+
+        def has():
+            shown = a11y.text(widget)
+            if role == "password text":
+                return len(shown) == before + len(text)
+            return shown == text if over else text in shown
+
+        self.wait_for(has, f"{what} has {text!r}")
         return widget
 
     def drag(self, start, end, ready=None):

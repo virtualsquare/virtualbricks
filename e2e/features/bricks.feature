@@ -56,6 +56,23 @@ Feature: Bricks
     When I stop all the bricks
     Then no brick runs
 
+  @needs-vde_switch @needs-vde_cryptcab
+  Scenario: A tunnel client connects to a tunnel server of this computer, each on a switch
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I add the switch sw2
+    And I add the tunnel server tl1 on sw1, on a free UDP port, with the password "secret"
+    And I add the tunnel client tc1 on sw2, to tl1 on this computer, with the password "secret"
+    And I start sw1
+    And I start sw2
+    And I start tl1
+    And I start tc1
+    Then tl1 is running
+    And tc1 is running
+    And tc1 on sw2 is connected to tl1 on sw1
+    When I stop all the bricks
+    Then no brick runs
+
   @needs-vde_switch
   Scenario: A switch wrapper runs on a switch that another program runs
     Given a switch that another program runs

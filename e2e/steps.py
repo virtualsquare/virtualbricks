@@ -89,6 +89,13 @@ def brick_processes():
 
 
 @pytest.fixture
+def tunnel_ports():
+    """The UDP port of each end of a tunnel that a step added: {name: port}."""
+
+    return {}
+
+
+@pytest.fixture
 def picture_scroll():
     """
     Where the picture of the lab was scrolled to before a drag, {"before":
@@ -998,13 +1005,16 @@ def runs_with_sockets(virtualbricks, brick_processes, name, left, right):
         ) from None
 
 
-def switch_socket(virtualbricks, brick_processes, switch):
-    """The socket that the vde_switch of switch listens on, after -s."""
+def switch_socket(virtualbricks, brick_processes, switch, option="-s"):
+    """
+    The socket that the vde_switch of switch listens on, after -s; or, with
+    -M, that of its console.
+    """
 
     for pid in brick_processes.get(switch, ()):
         words = virtualbricks.command_line(pid)
         if "-s" in words:
-            return words[words.index("-s") + 1]
+            return words[words.index(option) + 1]
     raise AssertionError(f"no vde_switch of {switch} runs")
 
 
@@ -1246,15 +1256,186 @@ def monitor_socket(virtualbricks, brick_processes, vm):
     raise AssertionError(f"no QEMU of {vm} has a monitor on a socket")
 
 
-def read_to_prompt(monitor):
-    """What the monitor writes until its prompt."""
+def read_to_prompt(monitor, prompt=MONITOR_PROMPT):
+    """
+    What a monitor writes until its prompt: by default the monitor of
+    QEMU.
+    """
 
     said = b""
-    while not said.endswith(MONITOR_PROMPT):
+    while not said.endswith(prompt):
         data = monitor.recv(4096)
         assert data, f"the monitor closed, after {said!r}"
         said += data
     return said.decode(errors="replace")
+
+
+# Tunnels
+
+
+# The server of a tunnel of this computer, for its client
+THIS_COMPUTER = "localhost"
+# What the console of a vde_switch writes when it waits for a command
+CONSOLE_PROMPT = b"vde$ "
+
+
+@when(
+    words(
+        "I add the tunnel server {name:Brick} on {switch:Brick}, on a free"
+        ' UDP port, with the password "{password}"'
+    )
+)
+def add_tunnel_server(virtualbricks, tunnel_ports, name, switch, password):
+    """
+    New Brick, Tunnel server, then in its settings the switch in Plugged
+    into, a free UDP port typed in Port, and the password; then OK, and its
+    row says the switch and the port.
+    """
+
+    port = free_udp_port()
+    new_brick(virtualbricks, "tunnel server", name)
+    plug_into(virtualbricks, switch)
+    virtualbricks.type(str(port), "spin button", "Port", over=True)
+    virtualbricks.type(password, "password text", "Password")
+    virtualbricks.click("button", "OK")
+    detail = f"Tunnel server · on {switch} · UDP port {port}"
+    virtualbricks.find("label", detail, within=virtualbricks.row(name))
+    tunnel_ports[name] = port
+
+
+@when(
+    words(
+        "I add the tunnel client {name:Brick} on {switch:Brick}, to"
+        ' {server:Brick} on this computer, with the password "{password}"'
+    )
+)
+def add_tunnel_client(
+    virtualbricks, tunnel_ports, name, switch, server, password
+):
+    """
+    New Brick, Tunnel client, then in its settings the switch in Plugged
+    into, this computer in Server, the port of the server in Server port, a
+    free UDP port in Local port, and the password; then OK, and its row
+    says the switch and the server.
+    """
+
+    port = free_udp_port(taken=tunnel_ports.values())
+    new_brick(virtualbricks, "tunnel client", name)
+    plug_into(virtualbricks, switch)
+    virtualbricks.type(THIS_COMPUTER, "text", "Server")
+    virtualbricks.type(
+        str(tunnel_ports[server]), "spin button", "Server port", over=True
+    )
+    virtualbricks.type(str(port), "spin button", "Local port", over=True)
+    virtualbricks.type(password, "password text", "Password")
+    virtualbricks.click("button", "OK")
+    detail = f"Tunnel client · on {switch} · to {THIS_COMPUTER}"
+    virtualbricks.find("label", detail, within=virtualbricks.row(name))
+    tunnel_ports[name] = port
+
+
+def free_udp_port(taken=()):
+    """A UDP port that no program has now, nor in taken."""
+
+    while True:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+            probe.bind(("", 0))
+            port = probe.getsockname()[1]
+        if port not in taken:
+            return port
+
+
+def plug_into(virtualbricks, switch):
+    """In the settings of a brick, the switch in the list Plugged into."""
+
+    row = virtualbricks.row("Plugged into")
+    # named after what it shows
+    shown = virtualbricks.enabled("combo box", within=row).get_name()
+    choose_in_combo(virtualbricks, row, shown, switch)
+
+
+@then(
+    words(
+        "{client:Brick} on {left:Brick} is connected to {server:Brick} on"
+        " {right:Brick}"
+    )
+)
+def tunnel_connected(
+    virtualbricks, brick_processes, client, left, server, right
+):
+    """
+    Both ends run, each a vde_cryptcab with the socket of its switch, the
+    client's to the UDP port of the server's; and a port of each switch has
+    the vde_cryptcab of its end, as the console of its vde_switch lists
+    them. The server plugs its client into its switch only once the client
+    has logged in, with the key of the same password.
+    """
+
+    ends = ((client, left), (server, right))
+    processes = {}
+    for name, switch in ends:
+        brick_running(virtualbricks, brick_processes, name)
+        pid, words = cryptcab(virtualbricks, brick_processes, name)
+        path = switch_socket(virtualbricks, brick_processes, switch)
+        assert after(words, "-s") == path, f"{name} isn't on {switch}: {words}"
+        processes[name] = pid, words
+    to = f"{THIS_COMPUTER}:{after(processes[server][1], '-p')}"
+    goes = after(processes[client][1], "-c")
+    assert goes == to, f"{client} goes to {goes}, not {to}"
+    for name, switch in ends:
+        pid = processes[name][0]
+        plugged_into(virtualbricks, brick_processes, name, pid, switch)
+
+
+def cryptcab(virtualbricks, brick_processes, name):
+    """The vde_cryptcab of the brick: its process, and its command line."""
+
+    for pid in brick_processes[name]:
+        words = virtualbricks.command_line(pid)
+        if words and os.path.basename(words[0]) == "vde_cryptcab":
+            return pid, words
+    raise AssertionError(f"no vde_cryptcab of {name} runs")
+
+
+def after(words, option):
+    """The word after option, in a command line."""
+
+    assert option in words, f"no {option} in {words}"
+    return words[words.index(option) + 1]
+
+
+def plugged_into(virtualbricks, brick_processes, name, pid, switch):
+    """Waits until a port of switch has pid, the process of the brick."""
+
+    try:
+        virtualbricks.wait_for(
+            lambda: pid in plugged(virtualbricks, brick_processes, switch),
+            f"a port of {switch} has the vde_cryptcab of {name}",
+        )
+    except AssertionError:
+        found = plugged(virtualbricks, brick_processes, switch)
+        raise AssertionError(
+            f"the ports of {switch} have the processes {found}, not {pid},"
+            f" the vde_cryptcab of {name}"
+        ) from None
+
+
+def plugged(virtualbricks, brick_processes, switch):
+    """
+    The processes plugged into the ports of switch, as the console of its
+    vde_switch lists them, on the socket after -M: port/allprint, with the
+    pid of the program of each end.
+    """
+
+    path = switch_socket(virtualbricks, brick_processes, switch, "-M")
+    with socket.socket(socket.AF_UNIX) as console:
+        # it waits for a reading, not for a time
+        console.settimeout(harness.TIMEOUT)
+        console.connect(path)
+        read_to_prompt(console, CONSOLE_PROMPT)
+        console.sendall(b"port/allprint\n")
+        said = read_to_prompt(console, CONSOLE_PROMPT)
+    return {int(pid) for pid in re.findall(r"\bpid=(\d+)", said)}
 
 
 # Projects

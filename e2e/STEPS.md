@@ -86,6 +86,14 @@ The steps of the virtual machines:
 | `Then vm1 runs with a card in the socket of sw1` | It runs, and its QEMU has a card of VDE, `-netdev vde`, whose `sock=` is the socket that the `vde_switch` of sw1 listens on |
 | `Then the monitor of vm1 answers "info status" with "VM status: running"` | The monitor of its QEMU, on the socket of a `-chardev` that a `-mon` of its command line names: a line of its answer to the command is the text |
 
+The steps of the tunnels:
+
+| Step | What it does |
+| :- | :- |
+| `When I add the tunnel server tl1 on sw1, on a free UDP port, with the password "secret"` | New Brick, Tunnel server; in its settings, the switch in Plugged into, a UDP port that no program has typed in Port, and the password; then OK, and its row says the switch and the port |
+| `When I add the tunnel client tc1 on sw2, to tl1 on this computer, with the password "secret"` | New Brick, Tunnel client; in its settings, the switch in Plugged into, `localhost` in Server, the port of the server in Server port, a free UDP port in Local port, and the password; then OK, and its row says the switch and the server |
+| `Then tc1 on sw2 is connected to tl1 on sw1` | Both run, each a `vde_cryptcab` with the socket of its switch, the client's to the port of the server's; and a port of each switch has the `vde_cryptcab` of its end, as the console of its `vde_switch` lists them (`port/allprint`, on the socket after `-M`). The server plugs its client into its switch only once the client has logged in, with the key of the same password |
+
 The steps of a program that fails:
 
 | Step | What it does |
@@ -291,7 +299,7 @@ def stop_brick(virtualbricks, name):
   | `click(role, name, within=None, enabled=True)` | Clicks it, once it shows and is enabled; with `enabled=False`, also if it is disabled |
   | `click_text(widget, index, length)` | Clicks the middle of length characters of the text of the widget, from the index of the character in `a11y.text()`: a link or a toggle of a text view, which must show. GTK 3 counts the images of a text view in the offsets of AT-SPI, not in its text: `a11y.offset()` turns one into the other |
   | `spin(name, by, within=None)` | Clicks the + of the spin button `by` times, or its - `-by` times; after each click, its value changes |
-  | `type(text, role, name=None, within=None, over=False)` | Clicks it, once it shows and is enabled, a spin button in its text, left of its - and +, and types text at its cursor; then it has the text: see [What it can't do yet](README.md#what-it-cant-do-yet). With `over`, in place of the text it has, as a user who selects it all first |
+  | `type(text, role, name=None, within=None, over=False)` | Clicks it, once it shows and is enabled, a spin button in its text, left of its - and +, and types text at its cursor; then it has the text: see [What it can't do yet](README.md#what-it-cant-do-yet). With `over`, in place of the text it has, as a user who selects it all first. A `password text` tells AT-SPI a dot for each character, as it shows them: then it has as many more |
   | `key(keys, window)` | Presses keys, as `Escape`, `Return` or `Control+l`, in window, a frame or a dialog, once it is active: click in it first, as the keys go to the window clicked last. Text goes with `type()` |
   | `drag(start, end, ready=None)` | Presses at start, a point of the screen, moves to end and releases there; `ready()`, if given, right before the press, half a second after the click before |
   | `choose(item, menu)` | A menu of the menu bar, then its item |

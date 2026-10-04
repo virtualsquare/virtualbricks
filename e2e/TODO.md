@@ -61,9 +61,10 @@ that the tests can't do yet: those needs come first.
 - [x] Start all the bricks with Start All, then stop them with Stop All
   "Start All starts the bricks that can start, Stop All stops them",
   `bricks.feature`
-- [ ] Open a tunnel: a tunnel server and a tunnel client of this
+- [x] Open a tunnel: a tunnel server and a tunnel client of this
   computer, each on a switch
-  both run, the client connected; `@needs-vde_cryptcab`
+  "A tunnel client connects to a tunnel server of this computer, each on
+  a switch", `bricks.feature`
 - [ ] Start a router between two switches
   `@needs-vde_router`, which this machine lacks
 - [x] Run a switch wrapper on a switch that a fixture starts
