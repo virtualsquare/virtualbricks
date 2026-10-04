@@ -29,7 +29,8 @@ theme can change them.
 The editor holds the README of the open project, which the engine reads and
 writes: the tab loads it when a project opens and when it shows, and saves
 it when another tab shows, when the project is saved, and 30 seconds after
-an edit.
+an edit. The pictures of the preview come from the engine too, files of the
+folder of the open project.
 """
 
 from __future__ import annotations
@@ -62,6 +63,7 @@ SYNTAX = (
     ("- item", _("a list; 1. for a numbered one")),
     ("> quote", _("a quote")),
     ("[text](https://…)", _("a link; a bare URL is one too")),
+    ("![text](picture.png)", _("a picture in the folder of the project")),
     ("---", _("a line across")),
 )
 
@@ -228,9 +230,15 @@ class ReadmeTab(Tab, Gtk.Overlay):
         self.syntax_button.set_visible(not self.showing_preview())
         self._set_margin()
 
+    def _picture(self, path):
+        current = self.engine.workspace.current
+        if current is None:
+            raise LookupError(_("No project is open"))
+        return self.engine.picture(current.name, path)
+
     def _render(self) -> None:
         text = self.editor.get_buffer().get_property("text")
-        self.preview.set_markdown(text)
+        self.preview.set_markdown(text, self._picture)
         self.stack.set_visible_child_name(
             "preview" if text.strip() else "empty"
         )

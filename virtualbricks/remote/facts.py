@@ -23,9 +23,10 @@ machine type, its USB devices, what a file is. The texts of QEMU go as QEMU
 printed them; the windows read them with programs.py and config/images.py,
 as they read those of their own.
 
-They change nothing, so they don't wait in the queue of the commands of the
-connection: each answers when the programs have, the pushes that wait
-first. Nothing goes to the log but the failures.
+The pictures of a README come too, in pieces. They change nothing, so they
+don't wait in the queue of the commands of the connection: each answers
+when the programs have, the pushes that wait first. Nothing goes to the log
+but the failures.
 """
 
 import json
@@ -39,7 +40,7 @@ from virtualbricks.config import images
 from virtualbricks.config.workspace import projects
 from virtualbricks.console import ampcommands, ampwire
 from virtualbricks.engine import folder_entries
-from virtualbricks.errors import CommandError
+from virtualbricks.errors import CommandError, InvalidNameError
 from virtualbricks.i18n import _
 from virtualbricks.programs import ProgramError, programs
 from virtualbricks.qemu import run
@@ -84,6 +85,7 @@ class Facts(amp.CommandLocator):
                 ampcommands.NotFound,
                 ampcommands.BadArgument,
                 ampwire.AnswerTooLong,
+                ampwire.CommandFailed,
             ):
                 return failure
             if failure.check(ProgramError, CommandError):
@@ -196,6 +198,27 @@ class Facts(amp.CommandLocator):
             )
 
         return self._answer_fact("DiskUsage", ask)
+
+    @commands.ReadmePicture.responder
+    def readme_picture(self, name, path, offset):
+        def ask():
+            try:
+                data, size = projects.picture(
+                    name, path, offset, amp.MAX_VALUE_LENGTH
+                )
+            except InvalidNameError as exc:
+                raise ampcommands.NotFound(str(exc)) from None
+            except FileNotFoundError:
+                raise ampcommands.NotFound(
+                    _("No picture {path}").format(path=path)
+                ) from None
+            except ValueError as exc:
+                raise ampcommands.BadArgument(str(exc)) from None
+            except OSError as exc:
+                raise ampwire.CommandFailed(exc.strerror or str(exc)) from None
+            return {"data": data, "size": size}
+
+        return self._answer_fact("ReadmePicture", ask)
 
     @commands.Folder.responder
     def folder(self, path):

@@ -415,6 +415,13 @@ class LocalEngine:
             self.workspace.current.set_description, text
         )
 
+    def picture(self, name, path) -> defer.Deferred:
+        """The bytes of picture path of the README of project name."""
+
+        return defer.maybeDeferred(
+            lambda: self.workspace.picture(name, path)[0]
+        )
+
     # The settings
 
     def set_settings(self, values) -> defer.Deferred:

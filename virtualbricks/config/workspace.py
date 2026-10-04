@@ -29,7 +29,9 @@ workspace, so that two projects of the same name in two workspaces are apart.
 A project's name is at most 40 bytes, so that its bricks' names have room in
 their socket paths.
 
-Hidden folders are never projects: they are for imports in progress.
+Hidden folders are never projects: they are for imports in progress. The
+README of a project shows pictures of its folder only, those that a link
+doesn't take out of it.
 ``opened`` tells when a project opens, or the open one is renamed.
 """
 
@@ -42,6 +44,7 @@ import itertools
 import os
 import re
 import shutil
+import stat
 import time
 from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Protocol
@@ -76,6 +79,8 @@ if TYPE_CHECKING:  # pragma: no cover
 # The longest name of a project, in bytes of UTF-8.
 NAME_MAX = 40
 README = "README"
+# The largest picture of a README that the windows show, in bytes.
+PICTURE_MAX = 10_000_000
 # Private disks, "<vm>_<device>.cow", and their backups.
 PRIVATE_DISK = re.compile(r".+_[a-z0-9]+\.cow(?:\.(?:bak|back)-[0-9_-]+)?\Z")
 DEFAULT_PROJECT_RE = re.compile(rf"\A{locations.DEFAULT_PROJECT}(?:_\d+)?\Z")
@@ -178,6 +183,57 @@ def read_description(path: str) -> str:
 def write_description(path: str, text: str) -> None:
     with open(os.path.join(path, README), "w") as fp:
         fp.write(text)
+
+
+def picture_file(folder: str, path: str) -> str:
+    """
+    The file of picture path of the README of the project in folder: path is
+    relative to the folder, and the file stays in it once the links are
+    followed. ValueError for any other.
+    """
+
+    inside = os.path.realpath(folder)
+    file = os.path.realpath(os.path.join(inside, path))
+    if (
+        os.path.isabs(path)
+        or file == inside
+        or os.path.commonpath((inside, file)) != inside
+    ):
+        raise ValueError(
+            _("The picture {path} isn't in the folder of the project").format(
+                path=path
+            )
+        )
+    return file
+
+
+def read_picture(
+    folder: str, path: str, offset: int = 0, length: int = PICTURE_MAX
+) -> tuple[bytes, int]:
+    """
+    At most length bytes of picture path of the README of the project in
+    folder, from offset, and the size of its file. ValueError if the file
+    isn't in the folder, isn't a file or is larger than PICTURE_MAX.
+    """
+
+    file = picture_file(folder, path)
+    # a FIFO would wait for a writer
+    fd = os.open(file, os.O_RDONLY | os.O_NONBLOCK)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode):
+            raise ValueError(
+                _("The picture {path} isn't a file").format(path=path)
+            )
+        if info.st_size > PICTURE_MAX:
+            raise ValueError(
+                _("The picture {path} is larger than {most} bytes").format(
+                    path=path, most=PICTURE_MAX
+                )
+            )
+        return os.pread(fd, length, offset), info.st_size
+    finally:
+        os.close(fd)
 
 
 def brick_names(data: Table) -> list[str]:
@@ -506,6 +562,15 @@ class Workspace:
                 else:
                     other += size
         return DiskUsage(private, other)
+
+    def picture(
+        self, name: str, path: str, offset: int = 0, length: int = PICTURE_MAX
+    ) -> tuple[bytes, int]:
+        """A picture of the README of project name, see read_picture()."""
+
+        if not self.exists(name):
+            raise _no_such_project(name)
+        return read_picture(self.project_path(name), path, offset, length)
 
     # Changing the projects
 

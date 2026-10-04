@@ -1032,6 +1032,52 @@ class TestProjects(ClientTestCase):
         self.workspace.current.set_description("x" * 70000)
         self.refused(self.engine.readme(), ampwire.AnswerTooLong)
 
+    def test_a_picture_of_the_readme(self):
+        # more than a value carries: in pieces
+        data = os.urandom(2 * amp.MAX_VALUE_LENGTH + 10)
+        folder = self.workspace.project_path("ospf")
+        with open(os.path.join(folder, "map.png"), "wb") as fp:
+            fp.write(data)
+        self.assertEqual(
+            self.done(self.engine.picture("ospf", "map.png")), data
+        )
+        with open(os.path.join(folder, "empty.png"), "wb"):
+            pass
+        self.assertEqual(
+            self.done(self.engine.picture("ospf", "empty.png")), b""
+        )
+        # the reads aren't in the log
+        self.assertEqual(self.logger.formatted(), [])
+
+    def test_a_picture_refused(self):
+        failure = self.refused(
+            self.engine.picture("lab1", "../ospf/README"),
+            ampcommands.BadArgument,
+        )
+        self.assertEqual(
+            failure.getErrorMessage(),
+            "The picture ../ospf/README isn't in the folder of the project",
+        )
+        failure = self.refused(
+            self.engine.picture("lab1", "gone.png"), ampcommands.NotFound
+        )
+        self.assertEqual(failure.getErrorMessage(), "No picture gone.png")
+        failure = self.refused(
+            self.engine.picture("gone", "map.png"), ampcommands.NotFound
+        )
+        self.assertEqual(
+            failure.getErrorMessage(), 'There is no project "gone"'
+        )
+        folder = self.workspace.project_path("lab1")
+        os.symlink("loop.png", os.path.join(folder, "loop.png"))
+        failure = self.refused(
+            self.engine.picture("lab1", "loop.png"), ampwire.CommandFailed
+        )
+        self.assertEqual(
+            failure.getErrorMessage(), "Too many levels of symbolic links"
+        )
+        self.assertEqual(self.logger.formatted(), [])
+
     def test_the_names_follow(self):
         workspace = self.engine.workspace
         self.done(self.engine.new_project("bgp", "## BGP"))

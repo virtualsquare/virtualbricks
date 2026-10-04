@@ -17,6 +17,7 @@
 
 """A README rendered: its lines, its Pango markup, the label and the view."""
 
+from twisted.internet import defer
 from twisted.trial import unittest
 
 from virtualbricks.markdown import parse
@@ -24,7 +25,7 @@ from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import has_display
 
 if has_display:
-    from gi.repository import Gdk, GLib, Gtk, Pango
+    from gi.repository import Gdk, GdkPixbuf, GLib, Gtk, Pango
 
     from virtualbricks.gui import markdownview
     from virtualbricks.gui.markdownview import (
@@ -35,6 +36,7 @@ if has_display:
         layout,
         open_link,
         pango_markup,
+        read_picture,
     )
 
 README = """\
@@ -63,6 +65,14 @@ Notes: https://bird.network.cz
 
 def lines_of(text):
     return layout(parse(text))
+
+
+def png(width, height):
+    pixbuf = GdkPixbuf.Pixbuf.new(
+        GdkPixbuf.Colorspace.RGB, False, 8, width, height
+    )
+    pixbuf.fill(0x3366CCFF)
+    return pixbuf.save_to_bufferv("png", [], [])[1]
 
 
 class GtkTestCase(unittest.TestCase):
@@ -122,12 +132,30 @@ class TestLayout(GtkTestCase):
     def test_links_and_pictures(self):
         [line] = lines_of("see https://a.org, and ![a *map*](m.png)")
         self.assertEqual(
-            [(r.text, r.styles, r.href) for r in line.runs],
+            [(r.text, r.styles, r.href, r.picture) for r in line.runs],
             [
-                ("see ", (), None),
-                ("https://a.org", (), "https://a.org"),
-                (", and ", (), None),
-                ("a map", ("em",), None),
+                ("see ", (), None, None),
+                ("https://a.org", (), "https://a.org", None),
+                (", and ", (), None, None),
+                ("a map", ("em",), None, "m.png"),
+            ],
+        )
+
+    def test_pictures(self):
+        [line] = lines_of(
+            "![](the%20map.png) ![web](https://a.org/m.png)"
+            " [![logo](logo.png)](https://a.org)"
+        )
+        self.assertEqual(
+            [(r.text, r.href, r.picture) for r in line.runs],
+            [
+                # without a text, its path
+                ("the map.png", None, "the map.png"),
+                (" ", None, None),
+                # not in the folder
+                ("web", None, None),
+                (" ", None, None),
+                ("logo", "https://a.org", "logo.png"),
             ],
         )
 
@@ -217,11 +245,33 @@ class TestPangoMarkup(GtkTestCase):
         self.assertIn("Notes: https://bird.network.cz", text)
         self.assertNotIn("<", text)
 
+    def test_pictures_are_their_text(self):
+        self.assertEqual(pango_markup("![the map](m.png)"), "<i>the map</i>")
+        self.assertEqual(pango_markup("![](m.png)"), "<i>m.png</i>")
+
     def test_without_links(self):
         self.assertEqual(
             pango_markup("[**BIRD**](https://a.org) and https://b.org", False),
             "<b>BIRD</b> and https://b.org",
         )
+
+
+class TestReadPicture(GtkTestCase):
+
+    def test_a_picture(self):
+        pixbuf = read_picture(png(30, 20))
+        self.assertEqual((pixbuf.get_width(), pixbuf.get_height()), (30, 20))
+
+    def test_not_a_picture(self):
+        self.assertIsNone(read_picture(b"not a picture"))
+        self.assertIsNone(read_picture(b""))
+        self.assertIsNone(read_picture(png(30, 20)[:40]))
+
+    def test_too_many_pixels(self):
+        self.patch(markdownview, "PICTURE_PIXELS", 599)
+        self.assertIsNone(read_picture(png(30, 20)))
+        self.patch(markdownview, "PICTURE_PIXELS", 600)
+        self.assertIsNotNone(read_picture(png(30, 20)))
 
 
 class TestMarkdownLabel(GtkTestCase):
@@ -352,8 +402,11 @@ class ViewTestCase(GtkTestCase):
         self.window.show_all()
         self.buffer = self.view.get_buffer()
 
-    def show(self, text):
-        self.view.set_markdown(text)
+    def show(self, text, pictures=None):
+        self.view.set_markdown(text, pictures)
+        self.pump()
+
+    def pump(self):
         for _ in range(20):
             while Gtk.events_pending():
                 Gtk.main_iteration()
@@ -562,6 +615,167 @@ class TestMarkdownView(ViewTestCase):
         )
         self.view.emit("style-updated")
         self.assertEqual(updates, [1])
+
+
+class TestPictures(ViewTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.asked = []
+        self.files = {"map.png": png(40, 30), "wide.png": png(1000, 100)}
+
+    def pictures(self, path):
+        self.asked.append(path)
+        if path not in self.files:
+            return defer.fail(FileNotFoundError(path))
+        return defer.succeed(self.files[path])
+
+    def images(self):
+        return [
+            child
+            for child in self.view.get_children()
+            if isinstance(child, Gtk.Image)
+        ]
+
+    def test_a_picture_takes_the_place_of_its_text(self):
+        self.show("Map: ![the map](map.png) here", self.pictures)
+        self.assertEqual(self.asked, ["map.png"])
+        self.assertEqual(self.text(), "Map: \ufffc here")
+        [image] = self.images()
+        self.assertTrue(image.get_visible())
+        pixbuf = image.get_pixbuf()
+        self.assertEqual((pixbuf.get_width(), pixbuf.get_height()), (40, 30))
+        # what a screen reader says
+        self.assertEqual(image.get_accessible().get_name(), "the map")
+
+    def test_the_tags_of_its_text(self):
+        self.show("- [![logo](map.png)](https://a.org) **b**", self.pictures)
+        self.assertEqual(self.text(), "• \ufffc b")
+        at = self.iter_at("\ufffc")
+        self.assertEqual(self.view.link_at(at), "https://a.org")
+        names = {tag.props.name for tag in at.get_tags()}
+        self.assertIn("em", names)
+        self.assertEqual(names & {"strong"}, set())
+        self.assertTrue(any(name.startswith("margin:") for name in names))
+
+    def test_only_the_pictures_of_the_folder_are_asked_for(self):
+        self.show(
+            "![a](https://a.org/a.png) ![b](/etc/b.png) ![c](map.png)",
+            self.pictures,
+        )
+        self.assertEqual(self.asked, ["map.png"])
+        self.assertEqual(self.text(), "a b \ufffc")
+
+    def test_without_pictures(self):
+        self.show("![the map](map.png)")
+        self.assertEqual(self.text(), "the map")
+        self.assertEqual(self.images(), [])
+
+    def test_a_picture_that_doesnt_come(self):
+        self.show("![the map](gone.png) and ![](gone.png)", self.pictures)
+        self.assertEqual(self.text(), "the map and gone.png")
+        self.assertEqual(self.images(), [])
+
+    def test_not_a_picture(self):
+        self.files["map.png"] = b"not a picture"
+        self.show("![the map](map.png)", self.pictures)
+        self.assertEqual(self.text(), "the map")
+        self.assertEqual(self.images(), [])
+
+    def test_pictures_that_come_later(self):
+        coming = []
+
+        def later(path):
+            coming.append(defer.Deferred())
+            return coming[-1]
+
+        self.show("![one](map.png) ![two](map.png)", later)
+        self.assertEqual(self.text(), "one two")
+        coming[1].callback(png(40, 30))
+        self.pump()
+        self.assertEqual(self.text(), "one \ufffc")
+        # the other picture didn't move it
+        coming[0].callback(png(40, 30))
+        self.pump()
+        self.assertEqual(self.text(), "\ufffc \ufffc")
+        self.assertEqual(len(self.images()), 2)
+
+    def test_a_picture_of_another_readme(self):
+        coming = defer.Deferred()
+        self.show("![one](map.png)", lambda path: coming)
+        self.show("Another ![two](map.png)")
+        coming.callback(png(40, 30))
+        self.pump()
+        self.assertEqual(self.text(), "Another two")
+        self.assertEqual(self.images(), [])
+
+    def test_a_new_readme_drops_the_pictures(self):
+        self.show("![one](map.png)", self.pictures)
+        [image] = self.images()
+        self.show("none")
+        self.assertEqual(self.images(), [])
+        self.assertIsNone(image.get_parent())
+
+    def shown_width(self):
+        [image] = self.images()
+        return image.get_pixbuf().get_width()
+
+    def test_as_wide_as_the_view(self):
+        self.show("![wide](wide.png)", self.pictures)
+        width = self.view.get_allocated_width()
+        self.assertGreater(width, 1)
+        # the margins of the view
+        self.assertEqual(self.shown_width(), width - 10 - 10)
+        [image] = self.images()
+        self.assertEqual(
+            image.get_pixbuf().get_height(), round(100 * (width - 20) / 1000)
+        )
+        # in a list, the room is less
+        self.show("- ![wide](wide.png)", self.pictures)
+        self.assertEqual(self.shown_width(), width - 10 - INDENT - 10)
+
+    def test_never_wider_than_it_is(self):
+        self.show("![the map](map.png)", self.pictures)
+        self.assertEqual(self.shown_width(), 40)
+
+    def test_another_width(self):
+        self.show("![wide](wide.png)", self.pictures)
+        allocation = Gdk.Rectangle()
+        allocation.width, allocation.height = 500, 300
+        self.view.size_allocate(allocation)
+        # once GTK is done with the sizes
+        self.assertIsNotNone(self.view._fitting)
+        self.view._fit_later()
+        self.assertIsNone(self.view._fitting)
+        self.assertEqual(self.shown_width(), 500 - 20)
+
+    def test_a_picture_before_the_view_has_its_width(self):
+        view = MarkdownView(visible=True)
+        self.addCleanup(view.destroy)
+        view.set_markdown("![wide](wide.png)", self.pictures)
+        [image] = [c for c in view.get_children() if isinstance(c, Gtk.Image)]
+        self.assertIsNone(image.get_pixbuf())
+        # GTK asks the size first
+        view.get_preferred_width()
+        view.get_preferred_height_for_width(300)
+        allocation = Gdk.Rectangle()
+        allocation.width, allocation.height = 300, 200
+        view.size_allocate(allocation)
+        view._fit_later()
+        self.assertEqual(image.get_pixbuf().get_width(), 300)
+
+    def test_no_fit_after_the_end(self):
+        self.show("![wide](wide.png)", self.pictures)
+        allocation = Gdk.Rectangle()
+        allocation.width, allocation.height = 500, 300
+        self.view.size_allocate(allocation)
+        fitting = self.view._fitting
+        self.assertIsNotNone(fitting)
+        self.view.destroy()
+        self.assertIsNone(self.view._fitting)
+        self.assertIsNone(
+            GLib.main_context_default().find_source_by_id(fitting)
+        )
 
 
 class FakeEvent:

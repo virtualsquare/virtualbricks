@@ -427,6 +427,18 @@ class TestProjects(BrickTestCase):
             self.successResultOf(self.engine.readme()), "# OSPF\n"
         )
 
+    def test_a_picture_of_the_readme(self):
+        self.open("lab1")
+        path = os.path.join(self.workspace.project_path("lab1"), "map.png")
+        with open(path, "wb") as fp:
+            fp.write(b"\x89PNG")
+        self.assertEqual(
+            self.successResultOf(self.engine.picture("lab1", "map.png")),
+            b"\x89PNG",
+        )
+        failure = self.failureResultOf(self.engine.picture("lab1", "../x"))
+        self.assertTrue(failure.check(ValueError))
+
 
 class TestSettings(BrickTestCase):
 

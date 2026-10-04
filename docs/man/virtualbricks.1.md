@@ -591,8 +591,9 @@ drop; **MakeImage**, **StartOver**, **TrashFile** and **Relink**, the
 files of the images; **ProjectNames**, **ProjectSummary**, **Readme**,
 **SetReadme** and **SetKsm**. The facts of the machine answer beside the
 requests that wait: **QemuFacts**, the texts that a QEMU program prints;
-**MachineProperties**, **UsbDevices**, **ImageFacts**, **DiskUsage** and
-**Folder**, the entries of a folder, for a path being typed. **Attach**
+**MachineProperties**, **UsbDevices**, **ImageFacts**, **DiskUsage**,
+**ReadmePicture**, a picture of a README in pieces, and **Folder**, the
+entries of a folder, for a path being typed. **Attach**
 switches the connection to the bytes of the console of a brick, AMP's
 **ProtocolSwitchCommand**.
 

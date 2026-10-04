@@ -823,6 +823,25 @@ class RemoteEngine:
             )
         return self.call(commands.SetReadme, text=text)
 
+    def picture(self, name, path):
+        # in pieces, each as much as a value carries
+        pieces = []
+
+        def ask(offset):
+            asking = self.call(
+                commands.ReadmePicture, name=name, path=path, offset=offset
+            )
+            return asking.addCallback(more)
+
+        def more(answer):
+            pieces.append(answer["data"])
+            got = sum(len(piece) for piece in pieces)
+            if answer["data"] and got < answer["size"]:
+                return ask(got)
+            return b"".join(pieces)
+
+        return ask(0)
+
     # The settings
 
     def set_settings(self, values):

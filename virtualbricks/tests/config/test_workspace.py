@@ -635,6 +635,84 @@ class TestSummaries(WorkspaceTestCase):
         self.assertEqual(usage.total, usage.private_disks + usage.other_files)
 
 
+class TestPictures(WorkspaceTestCase):
+    """The pictures of a README: files of the folder of its project only."""
+
+    def setUp(self):
+        super().setUp()
+        self.projects.create("lab")
+        self.folder = os.path.join(self.path, "lab")
+        self.file("lab", "map.png", text="the map")
+
+    def refused(self, path, message="isn't in the folder of the project"):
+        with self.assertRaises(ValueError) as caught:
+            self.projects.picture("lab", path)
+        self.assertIn(message, str(caught.exception))
+
+    def test_a_file_of_the_folder(self):
+        self.assertEqual(
+            self.projects.picture("lab", "map.png"), (b"the map", 7)
+        )
+        self.file("lab", "pictures", "r1.png", text="r1")
+        self.assertEqual(
+            self.projects.picture("lab", "pictures/r1.png"), (b"r1", 2)
+        )
+        # a way round that stays in it
+        self.assertEqual(
+            self.projects.picture("lab", "pictures/../map.png"),
+            (b"the map", 7),
+        )
+
+    def test_a_piece(self):
+        self.assertEqual(
+            self.projects.picture("lab", "map.png", 4, 2), (b"ma", 7)
+        )
+        self.assertEqual(
+            self.projects.picture("lab", "map.png", 7, 2), (b"", 7)
+        )
+
+    def test_outside_the_folder(self):
+        self.projects.create("other")
+        self.file("other", "map.png", text="another map")
+        self.refused("../other/map.png")
+        self.refused(os.path.join(self.path, "other", "map.png"))
+        # an absolute path, even of the folder
+        self.refused(os.path.join(self.folder, "map.png"))
+        self.refused("/etc/hostname")
+        # the folder itself
+        self.refused(".")
+        self.refused("")
+
+    def test_a_link_out_of_the_folder(self):
+        outside = self.file("secret.png", text="secret")
+        os.symlink(outside, os.path.join(self.folder, "secret.png"))
+        self.refused("secret.png")
+        os.symlink(self.path, os.path.join(self.folder, "up"))
+        self.refused("up/secret.png")
+        # a link inside it is followed
+        os.symlink("map.png", os.path.join(self.folder, "same.png"))
+        self.assertEqual(
+            self.projects.picture("lab", "same.png")[0], b"the map"
+        )
+
+    def test_not_a_file(self):
+        os.mkdir(os.path.join(self.folder, "pictures"))
+        self.refused("pictures", "isn't a file")
+        os.mkfifo(os.path.join(self.folder, "fifo.png"))
+        # without waiting for a writer
+        self.refused("fifo.png", "isn't a file")
+
+    def test_too_large(self):
+        self.patch(workspace, "PICTURE_MAX", 6)
+        self.refused("map.png", "is larger than 6 bytes")
+
+    def test_missing(self):
+        with self.assertRaises(FileNotFoundError):
+            self.projects.picture("lab", "gone.png")
+        with self.assertRaises(errors.InvalidNameError):
+            self.projects.picture("gone", "map.png")
+
+
 class TestOpen(WorkspaceTestCase):
 
     def test_open_tells(self):

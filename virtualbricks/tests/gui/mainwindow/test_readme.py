@@ -29,7 +29,7 @@ from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import has_display
 
 if has_display:
-    from gi.repository import Gtk
+    from gi.repository import GdkPixbuf, Gtk
 
     from virtualbricks.gui.mainwindow import readme
     from virtualbricks.gui.mainwindow.readme import (
@@ -186,6 +186,9 @@ class TestReadmeTab(unittest.TestCase):
 
 
 class FakeProject:
+
+    name = "lab"
+
     def __init__(self, description):
         self.description = description
         self.saved = []
@@ -281,6 +284,31 @@ class TestLoadAndSave(unittest.TestCase):
         self.assertEqual(
             logger.formatted(),
             ["Cannot save the README: The connection to lab is lost"],
+        )
+
+    def test_the_pictures_of_the_open_project(self):
+        asked = []
+
+        def picture(name, path):
+            asked.append((name, path))
+            pixbuf = GdkPixbuf.Pixbuf.new(
+                GdkPixbuf.Colorspace.RGB, False, 8, 4, 3
+            )
+            return defer.succeed(pixbuf.save_to_bufferv("png", [], [])[1])
+
+        self.tab.engine.picture = picture
+        self.project.description = "![the map](map.png)"
+        self.tab.on_open()
+        self.assertEqual(asked, [("lab", "map.png")])
+        [image] = self.tab.preview.get_children()
+        self.assertEqual(image.get_accessible().get_name(), "the map")
+
+    def test_no_project_open(self):
+        self.tab.engine.workspace.current = None
+        self.buffer.set_text("![the map](map.png)")
+        textbuffer = self.tab.preview.get_buffer()
+        self.assertEqual(
+            textbuffer.get_text(*textbuffer.get_bounds(), False), "the map"
         )
 
     def test_nothing_to_save(self):
