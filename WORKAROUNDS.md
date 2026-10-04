@@ -147,7 +147,7 @@ in the move to GTK 4 (`docs/redesign/18 - gtk4-migration.html`).
   - `virtualbricks/gui/mainwindow/readme.py`, `ReadmeTab.on_size_allocate()`
     → `_set_margin_later()`;
   - `virtualbricks/gui/markdownview.py`, `MarkdownLabel.on_size_allocate()`
-    → `_fit_later()`.
+    and `MarkdownView.on_size_allocate()` → `_fit_later()`.
 
 ### W8. A popover is destroyed once idle, after "closed"
 
