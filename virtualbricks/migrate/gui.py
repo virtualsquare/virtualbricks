@@ -519,9 +519,9 @@ def main(
 ) -> None:  # pragma: no cover (it installs the GTK reactor)
     """Open the window; the options are the ones of :func:`default_window`."""
 
-    from twisted.internet import gtk3reactor
+    from twisted.internet import gireactor
 
-    gtk3reactor.install()
+    gireactor.install()
     from twisted.internet import reactor
 
     i18n.install()

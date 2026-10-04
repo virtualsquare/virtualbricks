@@ -46,9 +46,9 @@ def install_gtk_reactor():
 
     gi.require_version("Gtk", "3.0")
     gi.require_version("Gdk", "3.0")
-    from twisted.internet import gtk3reactor
+    from twisted.internet import gireactor
 
-    gtk3reactor.install()
+    gireactor.install()
 
 
 def run():

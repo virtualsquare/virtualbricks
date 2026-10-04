@@ -275,19 +275,6 @@ no workaround, such as drag and drop.
 
 ## Can go now
 
-### D1. gtk3reactor
-
-- **Why kept:** none that a target needs. `twisted.internet.gtk3reactor` is
-  deprecated since Twisted 23.8.0, and warns on Ubuntu 24.04 (24.3.0) and
-  later; since 23.8 it's another name for `gireactor`. `gireactor.install()`
-  is there on every target: on Twisted 22.1 and 22.4 (Ubuntu 22.04, Debian
-  12) it runs a GLib main loop where `gtk3reactor` runs `Gtk.main()`, as
-  every Twisted from 23.8 does (read in the sources of 22.1.0 and 24.11.0,
-  not run on 22.04).
-- **Where:** `virtualbricks/scripts/virtualbricks.py`, `install_gtk_reactor()`,
-  and `virtualbricks/migrate/gui.py`, "gtk3reactor". Step A1 of the GTK 4
-  plan moves to `gireactor`.
-
 ### D2. The comments about a bug of GTK 2
 
 - **Why kept:** none: two lines of PyGTK commented out, `gtk.set_interactive`
