@@ -337,6 +337,7 @@ for each scenario; Allure 3, of Node.js, makes the report of them, with
 
 ```sh
 pytest -n 8 --alluredir=allure-results --clean-alluredir
+rm -rf allure-report       # the report before, see below
 npx allure@3 generate      # the report, in allure-report/
 npx allure@3 open          # the report, in the browser
 ```
@@ -353,6 +354,12 @@ which `generate` adds the run of `allure-results/`, and whose trends the
 report shows. Commit them together after a run whose report you publish;
 `allure-report/` is left out of git. `npx` downloads Allure the first
 time.
+
+Remove `allure-report/` before `generate`. Allure 3 can't clean it:
+`generate` writes the report in `allure-report/awesome/`, and moves it up
+to `allure-report/` only if that is the one folder there. With the report
+before still in place, the new one stays in `awesome/`, and `open` shows
+the old one: a single run, with no history.
 
 A scenario that fails has the screenshot and the video of its screen, of
 the other Virtualbricks too if it has one, and `stdout`: what pytest

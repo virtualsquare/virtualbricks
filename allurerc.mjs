@@ -2,6 +2,7 @@
 // report of Allure".
 //
 //     pytest --alluredir=allure-results --clean-alluredir
+//     rm -rf allure-report    # else the new report stays in its awesome/
 //     npx allure@3 generate   # the report, in allure-report/
 //     npx allure@3 open       # the report, in the browser
 //
