@@ -92,6 +92,7 @@ include = ["virtualbricks*"]
 [tool.pytest.ini_options]
 # pytest runs the end-to-end tests; trial runs the others
 testpaths = ["e2e"]
+addopts = "--alluredir=allure-results --numprocesses=8"
 
 [tool.coverage.run]
 branch = true
