@@ -245,6 +245,21 @@ class SetReadme(amp.Command):
     errors = ERRORS
 
 
+class ReadmePicture(amp.Command):
+    """
+    A picture of the README of project name, a file of its folder: its bytes
+    from offset, as many as a value carries, and the size of the file.
+    """
+
+    arguments = [
+        (b"name", amp.Unicode()),
+        (b"path", amp.Unicode()),
+        (b"offset", amp.Integer()),
+    ]
+    response = [(b"data", amp.String()), (b"size", amp.Integer())]
+    errors = ERRORS
+
+
 class SetKsm(amp.Command):
     """Turn KSM on or off: whether it runs afterwards."""
 
@@ -367,6 +382,7 @@ FROM_PROGRAM = (
     DiskUsage,
     Readme,
     SetReadme,
+    ReadmePicture,
     SetKsm,
     Folder,
     Attach,

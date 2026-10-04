@@ -33,7 +33,9 @@ the core that GitHub, GitLab and most editors share:
 - quotes, ``> text``;
 - links: ``[text](url)``, ``<url>``, and an ``http`` or ``https`` URL
   written as it is;
-- pictures, ``![text](path)``, which are shown as their text;
+- pictures, ``![text](path)``, where the path is relative to the folder
+  of the project: the view shows a picture that is in the folder, and the
+  text of any other;
 - rules, ``---``.
 
 Anything else stays text: a table, raw HTML, a line indented by four spaces.
@@ -45,6 +47,7 @@ with only the rules of this syntax on. The renderers walk its tokens; a
 from __future__ import annotations
 
 import re
+from urllib.parse import unquote, urlsplit
 
 from markdown_it import MarkdownIt
 from markdown_it.token import Token
@@ -156,6 +159,19 @@ def first_line(text: str) -> str:
         if line:
             return line
     return ""
+
+
+def picture_path(src: str) -> str | None:
+    """
+    The path of a picture in the folder of the project, as the parser wrote
+    it, a URL with %XX for some characters: None for a URL with a scheme or
+    a host, an absolute path or nothing. A ? or a # ends it.
+    """
+
+    parts = urlsplit(src)
+    if parts.scheme or parts.netloc or parts.path.startswith("/"):
+        return None
+    return unquote(parts.path) or None
 
 
 def first_paragraph(text: str) -> str:

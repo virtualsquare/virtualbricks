@@ -211,9 +211,12 @@ def _recorded_type(argument) -> str:
         return f"[{_recorded_type(argument.elementType)}]"
     if isinstance(argument, amp.AmpList):
         return "pairs"
-    return {amp.Unicode: "str", amp.Integer: "int", amp.Boolean: "bool"}[
-        type(argument)
-    ]
+    return {
+        amp.Unicode: "str",
+        amp.String: "bytes",
+        amp.Integer: "int",
+        amp.Boolean: "bool",
+    }[type(argument)]
 
 
 def _recorded(pairs) -> list[str]:

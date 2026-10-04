@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 13:18+0200\n"
+"POT-Creation-Date: 2026-10-04 08:42+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -1115,6 +1115,21 @@ msgid "{name}: {path} doesn't exist"
 msgstr ""
 
 #: virtualbricks/config/workspace.py
+#, python-brace-format
+msgid "The picture {path} isn't in the folder of the project"
+msgstr ""
+
+#: virtualbricks/config/workspace.py
+#, fuzzy, python-brace-format
+msgid "The picture {path} isn't a file"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/config/workspace.py
+#, python-brace-format
+msgid "The picture {path} is larger than {most} bytes"
+msgstr ""
+
+#: virtualbricks/config/workspace.py
 #, fuzzy, python-brace-format
 msgid "There is no project \"{name}\""
 msgstr "Guardar proyecto como"
@@ -2071,7 +2086,8 @@ msgstr "Guardar proyecto como"
 msgid "The open project"
 msgstr "_Abrir proyecto"
 
-#: virtualbricks/console/projects.py virtualbricks/remote/answers.py
+#: virtualbricks/console/projects.py virtualbricks/gui/mainwindow/readme.py
+#: virtualbricks/remote/answers.py
 #, fuzzy
 msgid "No project is open"
 msgstr "_Abrir proyecto"
@@ -4416,6 +4432,10 @@ msgid "a link; a bare URL is one too"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/readme.py
+msgid "a picture in the folder of the project"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
 msgid "a line across"
 msgstr ""
 
@@ -4947,6 +4967,11 @@ msgstr ""
 #, fuzzy, python-brace-format
 msgid "No program {name}"
 msgstr "Guardar proyecto como"
+
+#: virtualbricks/remote/facts.py
+#, fuzzy, python-brace-format
+msgid "No picture {path}"
+msgstr "Creación de imagen"
 
 #: virtualbricks/remote/mirror.py
 #, python-brace-format

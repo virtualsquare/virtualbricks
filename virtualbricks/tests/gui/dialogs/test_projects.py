@@ -32,7 +32,7 @@ from virtualbricks.tests import FakeLogger, FakeTrash
 from virtualbricks.tests.gui import GuiTestCase, ProjectsGui, has_display
 
 if has_display:
-    from gi.repository import Gdk, Gtk
+    from gi.repository import Gdk, GdkPixbuf, Gtk
 
     from virtualbricks.gui.dialogs import projectname, projects
 
@@ -270,6 +270,25 @@ class TestDetails(ProjectsTestCase):
         # the size is on its way
         self.assertEqual(values["disks"], "…")
         self.assertFalse(window.readme_view.get_visible())
+
+    def test_the_pictures_of_the_readme(self):
+        self.lab("lab", description="![the map](map.png) ![](../ospf.png)")
+        pixbuf = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, False, 8, 4, 3)
+        pixbuf.savev(
+            os.path.join(self.manager.project_path("lab"), "map.png"),
+            "png",
+            [],
+            [],
+        )
+        window = self.window()
+        window.select("lab")
+        readme = window.readme_view.get_buffer()
+        # the one of its folder
+        self.assertEqual(
+            readme.get_slice(*readme.get_bounds(), True), "\ufffc ../ospf.png"
+        )
+        [image] = window.readme_view.get_children()
+        self.assertEqual(image.get_accessible().get_name(), "the map")
 
     def test_the_readme_is_drawn_on_the_pane(self):
         window = self.window()

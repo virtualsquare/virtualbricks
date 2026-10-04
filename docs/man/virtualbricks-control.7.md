@@ -288,6 +288,9 @@ A value is bytes, read as the command says:
 **bool**
 :   **True** or **False**.
 
+**bytes**
+:   Bytes, as they are.
+
 **[str]**, **[int]**
 :   A list: each item with its length in two bytes, one after the other.
 
@@ -524,6 +527,8 @@ ProjectSummary     name:str -> summary:str
 DiskUsage          name:str -> private_disks:int other_files:int
 Readme             -> text:str
 SetReadme          text:str ->
+ReadmePicture      name:str path:str offset:int
+                   -> data:bytes size:int
 SetKsm             enable:bool -> enabled:bool
 Folder             path:str -> entries:[str] more:bool
 Attach             brick:str console:str ->
@@ -606,6 +611,14 @@ Attach             brick:str console:str ->
 :   The README of the open project; the new one is written when the
     project is saved.
 
+**ReadmePicture**
+:   A picture of the README of project *name*, *path* relative to its
+    folder, see **virtualbricks-config**(5): its **data** from byte
+    *offset*, as much as a value carries, and the **size** of the file.
+    A program asks again from the end of what came, until it has
+    **size** bytes. **BAD_ARGUMENT** for a path that leads out of the
+    folder, a file that isn't one or that is larger than 10 MB.
+
 **SetKsm**
 :   Turn KSM on or off; whether it runs afterwards.
 
@@ -618,7 +631,7 @@ Attach             brick:str console:str ->
 :   Join the program to a console of a running brick, see **Attach**.
 
 **QemuFacts**, **MachineProperties**, **UsbDevices**, **ImageFacts**,
-**DiskUsage** and **Folder** change nothing: they answer as soon as they
+**DiskUsage**, **ReadmePicture** and **Folder** change nothing: they answer as soon as they
 can, beside the requests that wait. The others wait for their turn, as the
 typed commands do, and Virtualbricks logs them.
 

@@ -376,7 +376,14 @@ part that most editors and forges share:
     links open, in the browser or the mail client.
 
 **!\[text\](path)**
-:   A picture, which shows as its text.
+:   A picture: a file of the folder of the project, *path* relative to
+    the folder, as **pictures/map.png**. The Readme tab and the Projects
+    window show it, narrower if it's wider than they are. Any other
+    picture shows as its text: a URL, an absolute path, a path or a link
+    that leads out of the folder, a file larger than 10 MB or than 32
+    million pixels, one that isn't a picture; and so do the pictures in
+    the list of projects and in the import window. A picture is a PNG, a
+    JPEG, a GIF, an SVG or another format that GdkPixbuf reads.
 
 **\-\-\-**
 :   A rule, between empty lines.

@@ -26,6 +26,8 @@
 - [ ] Open a project by dropping its file on the main window
 - [ ] Switch projects from a popover on the main window's title, once
   the main window has a header bar (04 §3, direction B)
+- [ ] Let the Projects window get narrower once a project with a README
+  is selected: asked for 600 pixels, it stays at 911 (on develop too)
 
 ## GUI code
 
@@ -160,8 +162,6 @@
 - [ ] Give every button of the Readme tab a tooltip
 - [ ] Make the buttons semi-transparent, and opaque under the pointer
 - [ ] Round the corners of the buttons
-- [ ] Show the pictures of the project's folder in the preview
-  (05 §10, M7 B)
 - [ ] Render GFM's tables and task lists, if READMEs need them (05 §10)
 - [ ] Add buttons for bold, italic and lists to the editor (05 §10)
 - [ ] Show the preview in the New Project dialog too, if wanted
@@ -284,6 +284,10 @@
 - [ ] Update the copyright notice
 
 # DONE
+
+- [x] Show the pictures of the project's folder in the README: the
+  Readme tab and the Projects window, over a connection too
+  (`ReadmePicture`); any other picture stays its text (05 §10, M7 B)
 
 - [x] Duplicate names a copy after its brick or event, with the number at
   the end increased to the first free one: `sw2` for `sw1`, `node2` for

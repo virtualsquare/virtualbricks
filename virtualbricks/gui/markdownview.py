@@ -27,21 +27,34 @@ GtkTextView, and :func:`pango_markup` writes them for a GtkLabel, as
 a new line in all of them.
 
 Only ``http``, ``https`` and ``mailto`` links open, with :func:`open_link`.
+
+A picture is its text, until the view gets its bytes from the ``pictures``
+of :meth:`MarkdownView.set_markdown`: then the picture takes the place of
+its text, as wide as it is, or narrower to fit in the view. A picture that
+doesn't come, or can't be read, stays its text, and so does any picture in
+a label.
 """
 
 from __future__ import annotations
 
 import dataclasses
+from collections.abc import Callable
 from urllib.parse import urlsplit
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, GLib, Gtk, Pango  # noqa: E402
-from twisted.logger import Logger
+gi.require_version("GdkPixbuf", "2.0")
+from gi.repository import Gdk, GdkPixbuf, GLib, Gtk, Pango  # noqa: E402
+from twisted.internet import defer  # noqa: E402
+from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks.markdown import parse, plain_text
+from virtualbricks.markdown import (
+    parse,
+    picture_path,
+    plain_text,
+)  # noqa: E402
 
 logger = Logger()
 cannot_open_link = "Cannot open {uri}: {error}"
@@ -69,6 +82,8 @@ STYLES = {
     "quote": {},
     "space": {"pixels_below_lines": BLOCK_SPACE},
     "link": {"underline": Pango.Underline.SINGLE},
+    # on a picture: a property of the size, that changes nothing
+    "picture": {"rise": 0},
 }
 HEADINGS = {"h1": "h1", "h2": "h2"}
 # A rule in the colour of the text: a separator of the theme is too faint on
@@ -76,15 +91,21 @@ HEADINGS = {"h1": "h1", "h2": "h2"}
 RULE_CSS = b"separator { background-color: alpha(@theme_fg_color, 0.35); }"
 # A line break that doesn't end the paragraph, for Pango.
 LINE_SEPARATOR = "\u2028"
+# The most pixels of a picture: a larger one stays its text.
+PICTURE_PIXELS = 32_000_000
 
 
 @dataclasses.dataclass
 class Run:
-    """A piece of a line, in its styles; href if it's a link."""
+    """
+    A piece of a line, in its styles; href if it's a link, picture if it's
+    the text of a picture of the folder of the project, with its path.
+    """
 
     text: str
     styles: tuple[str, ...] = ()
     href: str | None = None
+    picture: str | None = None
 
 
 @dataclasses.dataclass
@@ -212,10 +233,10 @@ class _Layout:
         links: list[str] = []
         runs: list[Run] = []
 
-        def add(text, *more):
+        def add(text, *more, picture=None):
             if text:
                 href = links[-1] if links else None
-                runs.append(Run(text, (*styles, *more), href))
+                runs.append(Run(text, (*styles, *more), href, picture))
 
         for child in token.children or []:
             kind = child.type
@@ -235,8 +256,44 @@ class _Layout:
             elif kind == "code_inline":
                 add(child.content, "code")
             elif kind == "image":
-                add(plain_text(child.children or []) or child.content, "em")
+                path = picture_path(child.attrGet("src") or "")
+                text = plain_text(child.children or []) or child.content
+                # a picture without a text: its path, until it shows
+                add(text or path, "em", picture=path)
         self.add_line(runs)
+
+
+def read_picture(data: bytes) -> GdkPixbuf.Pixbuf | None:
+    """The picture of data, if it's one and isn't too large; else None."""
+
+    loader = GdkPixbuf.PixbufLoader()
+
+    def size_prepared(loader, width, height):
+        if width * height > PICTURE_PIXELS:
+            # the loader gives up, before it takes the memory
+            loader.set_size(0, 0)
+
+    loader.connect("size-prepared", size_prepared)
+    try:
+        loader.write(data)
+        loader.close()
+    except GLib.Error:
+        return None
+    return loader.get_pixbuf()
+
+
+@dataclasses.dataclass
+class _Picture:
+    """A picture of the view: before it comes, where its text starts."""
+
+    path: str
+    text: str
+    # the left margin of its line
+    left: int
+    mark: Gtk.TextMark | None = None
+    anchor: Gtk.TextChildAnchor | None = None
+    image: Gtk.Image | None = None
+    pixbuf: GdkPixbuf.Pixbuf | None = None
 
 
 def can_open(uri: str) -> bool:
@@ -395,7 +452,17 @@ class MarkdownLabel(Gtk.Label):
 
 
 class MarkdownView(Gtk.TextView):
-    """A README in Markdown, rendered: it can be selected, not edited."""
+    """
+    A README in Markdown, rendered: it can be selected, not edited. The
+    pictures fit in its width once it has its size: in an idle call, as GTK
+    forgets a resize asked while it gives a widget its size.
+
+    GTK 3 measures the line of a widget again only when its text changes,
+    or a tag of the size: such a tag, "picture", comes off a picture and
+    goes back on each time it gets another size. GTK measures it when it
+    gives the sizes, and so forgets that the view wants another: the view
+    asks again in an idle call, after GTK's own.
+    """
 
     def __init__(self, **properties) -> None:
         properties.setdefault("wrap_mode", Gtk.WrapMode.WORD_CHAR)
@@ -407,6 +474,11 @@ class MarkdownView(Gtk.TextView):
         self._links: dict[str, str] = {}
         # the rules, and the left margin of each
         self._rules: list[tuple[Gtk.Separator, int]] = []
+        self._pictures: list[_Picture] = []
+        # what each set_markdown() renders, for the pictures that come late
+        self._rendering = 0
+        self._fitting: int | None = None
+        self._resizing: int | None = None
         self._hovering = False
         self._rule_style = Gtk.CssProvider()
         self._rule_style.load_from_data(RULE_CSS)
@@ -415,6 +487,7 @@ class MarkdownView(Gtk.TextView):
         self.connect("button-release-event", self.on_button_release_event)
         self.connect("motion-notify-event", self.on_motion_notify_event)
         self.connect("size-allocate", self.on_size_allocate)
+        self.connect("destroy", self.on_destroy)
 
     def _tag(self, name: str) -> Gtk.TextTag:
         return self.buffer.get_tag_table().lookup(name)
@@ -435,7 +508,16 @@ class MarkdownView(Gtk.TextView):
 
     # Rendering
 
-    def set_markdown(self, text: str) -> None:
+    def set_markdown(
+        self,
+        text: str,
+        pictures: Callable[[str], defer.Deferred] | None = None,
+    ) -> None:
+        """
+        Render text; pictures(path), if given, fires with the bytes of a
+        picture of the folder of the project.
+        """
+
         self._clear()
         lines = layout(parse(text))
         for number, line in enumerate(lines):
@@ -444,7 +526,7 @@ class MarkdownView(Gtk.TextView):
             if line.rule:
                 self._add_rule(left)
             else:
-                self._add_runs(line)
+                self._add_runs(line, left, pictures is not None)
             if number < len(lines) - 1:
                 self.buffer.insert(self.buffer.get_end_iter(), "\n")
             names = (self._margin_tag(left, line.marker), *line.styles)
@@ -454,8 +536,18 @@ class MarkdownView(Gtk.TextView):
                     self.buffer.get_iter_at_offset(start),
                     self.buffer.get_end_iter(),
                 )
+        # once the lines are there: a picture may come at once
+        rendering = self._rendering
+        for picture in self._pictures:
+            asking = defer.maybeDeferred(pictures, picture.path)
+            asking.addCallbacks(
+                self._picture_came,
+                lambda failure: None,
+                (picture, rendering),
+            )
 
     def _clear(self) -> None:
+        self._rendering += 1
         self.buffer.set_text("")
         table = self.buffer.get_tag_table()
         for name in self._links:
@@ -464,8 +556,12 @@ class MarkdownView(Gtk.TextView):
         for separator, _left in self._rules:
             separator.destroy()
         self._rules.clear()
+        for picture in self._pictures:
+            if picture.image is not None:
+                picture.image.destroy()
+        self._pictures.clear()
 
-    def _add_runs(self, line: Line) -> None:
+    def _add_runs(self, line: Line, left: int, pictures: bool) -> None:
         end = self.buffer.get_end_iter()
         if line.marker is not None:
             self.buffer.insert(end, line.marker + " ")
@@ -476,6 +572,11 @@ class MarkdownView(Gtk.TextView):
                 self.buffer.create_tag(name)
                 self._links[name] = run.href
                 names += ["link", name]
+            if run.picture is not None and pictures:
+                mark = self.buffer.create_mark(None, end, True)
+                self._pictures.append(
+                    _Picture(run.picture, run.text, left, mark)
+                )
             self.buffer.insert_with_tags_by_name(end, run.text, *names)
 
     def _add_rule(self, left: int) -> None:
@@ -504,6 +605,83 @@ class MarkdownView(Gtk.TextView):
     def _size_rule(self, separator, left, width) -> None:
         room = width - left - self.get_right_margin()
         separator.set_size_request(max(room, 1), -1)
+
+    # Pictures
+
+    def _picture_came(self, data, picture, rendering) -> None:
+        if rendering != self._rendering:
+            # another README now
+            return
+        pixbuf = read_picture(data)
+        if pixbuf is None:
+            return
+        # the picture takes the place of its text, and its tags
+        start = self.buffer.get_iter_at_mark(picture.mark)
+        end = start.copy()
+        end.forward_chars(len(picture.text))
+        tags = start.get_tags()
+        self.buffer.delete(start, end)
+        picture.anchor = self.buffer.create_child_anchor(
+            self.buffer.get_iter_at_mark(picture.mark)
+        )
+        self.buffer.delete_mark(picture.mark)
+        picture.mark = None
+        start, end = self._picture_bounds(picture)
+        for tag in tags:
+            self.buffer.apply_tag(tag, start, end)
+        self.buffer.apply_tag_by_name("picture", start, end)
+        picture.image = Gtk.Image(visible=True)
+        picture.image.get_accessible().set_name(picture.text)
+        picture.pixbuf = pixbuf
+        self.add_child_at_anchor(picture.image, picture.anchor)
+        self._size_picture(picture, self.get_allocated_width())
+
+    def _picture_bounds(self, picture):
+        start = self.buffer.get_iter_at_child_anchor(picture.anchor)
+        end = start.copy()
+        end.forward_char()
+        return start, end
+
+    def _size_picture(self, picture, width) -> None:
+        """The picture as wide as it is, or as the room in its line."""
+
+        if picture.pixbuf is None or width <= 1:
+            # not yet
+            return
+        room = width - picture.left - self.get_right_margin()
+        natural = picture.pixbuf.get_width()
+        wide = max(min(natural, room), 1)
+        shown = picture.image.get_pixbuf()
+        if shown is not None and shown.get_width() == wide:
+            return
+        if wide == natural:
+            picture.image.set_from_pixbuf(picture.pixbuf)
+        else:
+            high = max(round(picture.pixbuf.get_height() * wide / natural), 1)
+            picture.image.set_from_pixbuf(
+                picture.pixbuf.scale_simple(
+                    wide, high, GdkPixbuf.InterpType.BILINEAR
+                )
+            )
+        # its line, measured again
+        start, end = self._picture_bounds(picture)
+        self.buffer.remove_tag_by_name("picture", start, end)
+        start, end = self._picture_bounds(picture)
+        self.buffer.apply_tag_by_name("picture", start, end)
+        if self._resizing is None:
+            self._resizing = GLib.idle_add(self._resize_later)
+
+    def _resize_later(self) -> bool:
+        self._resizing = None
+        self.queue_resize()
+        return GLib.SOURCE_REMOVE
+
+    def _fit_later(self) -> bool:
+        self._fitting = None
+        width = self.get_allocated_width()
+        for picture in self._pictures:
+            self._size_picture(picture, width)
+        return GLib.SOURCE_REMOVE
 
     # Links
 
@@ -555,3 +733,11 @@ class MarkdownView(Gtk.TextView):
     def on_size_allocate(self, view, allocation) -> None:
         for separator, left in self._rules:
             self._size_rule(separator, left, allocation.width)
+        if self._pictures and self._fitting is None:
+            self._fitting = GLib.idle_add(self._fit_later)
+
+    def on_destroy(self, view) -> None:
+        for source in (self._fitting, self._resizing):
+            if source is not None:
+                GLib.source_remove(source)
+        self._fitting = self._resizing = None

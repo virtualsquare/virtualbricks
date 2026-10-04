@@ -15,7 +15,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The README as Markdown: the syntax, and its first line and paragraph."""
+"""
+The README as Markdown: the syntax, its first line and paragraph, and the
+paths of its pictures.
+"""
 
 from twisted.trial import unittest
 
@@ -23,6 +26,7 @@ from virtualbricks.markdown import (
     first_line,
     first_paragraph,
     parse,
+    picture_path,
     plain_text,
 )
 
@@ -255,3 +259,44 @@ class TestFirstParagraph(unittest.TestCase):
     def test_none(self):
         self.assertEqual(first_paragraph("# Only a heading\n\n- a list"), "")
         self.assertEqual(first_paragraph(""), "")
+
+
+def src(text):
+    [children] = inlines(text)
+    [image] = children
+    return image.attrGet("src")
+
+
+class TestPicturePath(unittest.TestCase):
+
+    def test_a_path_in_the_folder(self):
+        self.assertEqual(picture_path(src("![a](map.png)")), "map.png")
+        self.assertEqual(
+            picture_path(src("![a](pictures/map.png)")), "pictures/map.png"
+        )
+        # the folder is checked when it's read
+        self.assertEqual(picture_path(src("![a](../map.png)")), "../map.png")
+
+    def test_the_characters_the_parser_writes_as_a_url(self):
+        self.assertEqual(
+            picture_path(src("![a](<the map.png>)")), "the map.png"
+        )
+        self.assertEqual(picture_path(src("![a](café.png)")), "café.png")
+        self.assertEqual(
+            picture_path(src("![a](the%20map.png)")), "the map.png"
+        )
+
+    def test_a_query_or_a_fragment_ends_it(self):
+        self.assertEqual(picture_path(src("![a](map.png?raw=1)")), "map.png")
+        self.assertEqual(picture_path(src("![a](map.png#top)")), "map.png")
+
+    def test_not_a_path_in_the_folder(self):
+        for text in (
+            "![a](https://a.org/map.png)",
+            "![a](//a.org/map.png)",
+            "![a](/home/me/map.png)",
+            "![a](data:image/png;base64,AAAA)",
+            "![a]()",
+            "![a](?raw=1)",
+        ):
+            self.assertIsNone(picture_path(src(text)), text)
