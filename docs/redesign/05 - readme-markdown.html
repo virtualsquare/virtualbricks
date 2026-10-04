@@ -409,17 +409,17 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 5 &middot; Design &middot; revision 4, implemented</div>
+    <div class="eyebrow">Step 5 &middot; Design &middot; revision 5, implemented</div>
     <h1>Markdown in the Project README</h1>
     <p class="lede">A project&rsquo;s README keeps being a plain text file, but what you write in it can have headings, lists, code and links: shown rendered where the README is only read, written as plain text with a preview where it&rsquo;s edited, and left alone in the New Project dialog.</p>
     <ul class="meta">
       <li>branch <b>mg/abandon-glade</b> at e203b56</li>
-      <li>revision 4 &middot; 28 September 2026</li>
+      <li>revision 5 &middot; 4 October 2026</li>
       <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What changed:</strong> revision 2 applies your answers. The syntax, the parser, line breaks, links, bare URLs, pictures and the Import dialog are decided as recommended (<span class="ref done">M1</span>, <span class="ref done">M2</span>, <span class="ref done">M3</span>, <span class="ref done">M5</span>, <span class="ref done">M6</span>, <span class="ref done">M7</span>, <span class="ref done">M10</span>). The Readme tab opens on the preview, and two small icon buttons float at its top right to switch to the editor and back; the side-by-side board is gone (<span class="ref done">M4</span>, boards R1 and R2, <a href="#readme-tab">&sect;6</a>). The Projects list keeps the first line on one line, trimmed with &hellip;; the Import dialog shows at most four lines, trimmed the same way (boards P and I). With icon-only buttons, the syntax help becomes a third icon while you write (<span class="ref done">M8</span>, board H). Revision 3 settles the last two: the syntax icon, and the name <code>README</code> (<span class="ref done">M8</span>, <span class="ref done">M9</span>).</p>
     <p class="revision"><strong>Implemented</strong> in five commits on 26 September 2026, 1ca87d4 to bff0d18, one per step of &sect;7, with these differences. The lowest markdown-it-py is 1.1, Ubuntu 22.04&rsquo;s; the tests pass with 1.1, 3.0 and 4.2. A bare URL is a link when it starts with <code>http</code> or <code>https</code>, up to the punctuation that ends a sentence. The Import dialog shows its four lines with <code>MarkdownLabel</code>, since a GtkLabel limits the lines of each paragraph, not of the whole text; the label can no longer be selected. The Readme tab is a module of its own, <code>ReadmeTab</code>; the editor now wraps its lines, and the syntax icon is <code>dialog-question-symbolic</code>, as Adwaita has no question mark in a circle.</p>
-    <p class="revision"><strong>Since then:</strong> the Readme tab moved with the main window into <code>gui/mainwindow/readme.py</code> (6cd66cf), and the windows of the table in &sect;7 are in <code>gui/dialogs/</code> (678ef50). The disk images redesign reads the description of an image from a <code>&lt;file&gt;.md</code> beside it, as plain text for now (<a href="09%20-%20disk-images-redesign.html">step 9</a>).</p>
+    <p class="revision"><strong>Since then:</strong> the Readme tab moved with the main window into <code>gui/mainwindow/readme.py</code> (6cd66cf), and the windows of the table in &sect;7 are in <code>gui/dialogs/</code> (678ef50). The disk images redesign reads the description of an image from a <code>&lt;file&gt;.md</code> beside it, as plain text for now (<a href="09%20-%20disk-images-redesign.html">step 9</a>). On 4 October the first item of <a href="#later">&sect;10</a> came, <span class="ref done">M7</span> B: the Readme tab and the Projects window show a picture that is a file of the folder of the project, <code>![map](pictures/map.png)</code>, as wide as it is or as the room it has. A URL, an absolute path, a path or a link that leads out of the folder, a file of more than 10 MB or 32 million pixels, or one that isn&rsquo;t a picture stays its text, as before; so do the pictures in the labels of the Projects list and of the Import dialog. A picture without a text shows its path until it comes. The pictures come through the engine, so the windows of another Virtualbricks show those of its project too (<a href="19%20-%20remote-gui.html">step 19</a>, <code>ReadmePicture</code>); the syntax popover has a line for them.</p>
   </header>
 
   <div class="layout">
@@ -760,7 +760,7 @@ Start the switches before the routers.<span class="caret"></span></div>
               <tr><td class="nowrap"><span class="ref done">M4</span></td><td>The Readme tab</td><td colspan="2"><strong>Decided:</strong> never side by side; the preview by default, two icon buttons floating at the top right to switch (R1, R2)</td></tr>
               <tr><td class="nowrap"><span class="ref done">M5</span></td><td>Links</td><td colspan="2"><strong>Decided:</strong> <code>http</code>, <code>https</code> and <code>mailto</code> open in the browser, others are text</td></tr>
               <tr><td class="nowrap"><span class="ref done">M6</span></td><td>A bare URL</td><td colspan="2"><strong>Decided:</strong> a link</td></tr>
-              <tr><td class="nowrap"><span class="ref done">M7</span></td><td>A picture</td><td colspan="2"><strong>Decided:</strong> its text for now</td></tr>
+              <tr><td class="nowrap"><span class="ref done">M7</span></td><td>A picture</td><td colspan="2"><strong>Decided:</strong> its text for now; since revision 5, a picture of the project&rsquo;s folder shows (B)</td></tr>
               <tr><td class="nowrap"><span class="ref done">M8</span></td><td>Help with the syntax</td><td colspan="2"><strong>Decided:</strong> a third icon, in the editor only, with the popover (H)</td></tr>
               <tr><td class="nowrap"><span class="ref done">M9</span></td><td>The name of the file</td><td colspan="2"><strong>Decided:</strong> <code>README</code>, as today</td></tr>
               <tr><td class="nowrap"><span class="ref done">M10</span></td><td>What the Import dialog shows</td><td colspan="2"><strong>Decided:</strong> the first paragraph that isn&rsquo;t a heading, in at most four lines, trimmed with &hellip; (I)</td></tr>
@@ -772,7 +772,7 @@ Start the switches before the routers.<span class="caret"></span></div>
       <section id="later">
         <h2><span class="num">&sect;10</span>Later</h2>
         <ul>
-          <li>Pictures from the project&rsquo;s folder, shown in the preview (<span class="ref done">M7</span> B).</li>
+          <li>Pictures from the project&rsquo;s folder, shown in the preview (<span class="ref done">M7</span> B): done since, see revision 5.</li>
           <li>GFM&rsquo;s tables and task lists, if READMEs need them.</li>
           <li>Buttons for bold, italic and lists in the editor.</li>
           <li>The New Project dialog with the preview too, if you change your mind about it.</li>
