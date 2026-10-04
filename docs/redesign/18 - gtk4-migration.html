@@ -264,15 +264,16 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 18 &middot; Design &middot; revision 1, proposal</div>
+    <div class="eyebrow">Step 18 &middot; Design &middot; revision 2, proposal</div>
     <h1>Virtualbricks on GTK 4</h1>
     <p class="lede">The windows move from GTK 3 to GTK 4 on every Debian and Ubuntu that Virtualbricks supports, from GTK 4.6 in Ubuntu 22.04 to GTK 4.22 in Ubuntu 26.04 and Debian testing. First, the parts that GTK 3 can already write the GTK 4 way, merged one at a time with the program working. Then the switch itself, on one branch.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at d7d452d</li>
-      <li>revision 1 &middot; 29 September 2026</li>
+      <li>revision 2 &middot; 4 October 2026</li>
       <li><span class="status">proposal</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> your request of today: migrate the project to GTK 4, prepare a plan, and highlight the compatibility with the Debian and Ubuntu releases. The versions and the behaviour in <a href="#targets">&sect;3</a> to <a href="#checked">&sect;5</a> were checked today in podman containers of the six targets, with GTK 4, PyGObject and Twisted installed from each distribution. At your request, the page is committed on <code>develop</code> as a plan for later: nothing of it is implemented, and the eight questions, G1 to G8 in <a href="#decisions">&sect;11</a>, stay open until the work starts. The versions will need checking again then.</p>
+    <p class="revision"><strong>Since then:</strong> on 4 October the reactor of step A1 came ahead of the rest: <code>scripts/virtualbricks.py</code> and <code>migrate/gui.py</code> install <code>gireactor</code> in place of <code>gtk3reactor</code>, so Virtualbricks no longer starts with Twisted&rsquo;s warning. There is no <code>Gtk.Application</code> yet: on Twisted 22.1 and 22.4, those of Ubuntu 22.04 and Debian 12, <code>gireactor</code> runs a GLib main loop where <code>gtk3reactor</code> ran <code>Gtk.main()</code>, as every Twisted from 23.8 does. Tried on both in containers, on Broadway: the program starts, answers on its socket and quits. A1 keeps the rest: the <code>Gtk.Application</code> of <a class="ref open" href="#decisions">G7</a>, registered with the reactor, the application window, the icon and <code>has_display</code>.</p>
   </header>
 
   <div class="layout">
