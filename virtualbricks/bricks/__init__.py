@@ -565,7 +565,8 @@ class Brick(Base):
         Start the program of a Command.
 
         Its warnings and the command are logged, and a brick that needs root
-        runs its program through sudo.
+        runs its program through sudo. The program gets the environment of
+        Virtualbricks, with the variables of the Command.
         """
 
         for warning in command.warnings:
@@ -575,7 +576,8 @@ class Brick(Base):
         if self.needsudo():
             args = sudo_command(args)
         self.proc = self.process_protocol(self)
-        reactor.spawnProcess(self.proc, args[0], args, os.environ)
+        env = dict(os.environ, **command.env)
+        reactor.spawnProcess(self.proc, args[0], args, env)
 
     def _start_related_events(self, on=True, off=False):
         if on and self.config.on_start:

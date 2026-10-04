@@ -18,7 +18,6 @@
 
 """A tunnel client: vde_cryptcab, connecting to a tunnel server."""
 
-from virtualbricks.bricks.command import Command, socket_path, vde_program
 from virtualbricks import bricks
 from virtualbricks.bricks.draft import Draft, Problem
 from virtualbricks.bricks.tunnellisten import TunnelListen
@@ -82,9 +81,7 @@ class TunnelConnect(TunnelListen):
 
     def command(self, prepared):
         config = self.config
-        cmd = Command(vde_program(prepared.vde, "vde_cryptcab"))
-        cmd.option("-P", self.key_path())
-        cmd.option("-s", socket_path(self.plugs[0]))
+        cmd = self.cryptcab(prepared)
         cmd.option("-p", config.local_port)
         cmd.option("-c", f"{config.server_host}:{config.server_port}")
         return cmd

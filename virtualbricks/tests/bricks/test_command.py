@@ -37,6 +37,7 @@ from virtualbricks.bricks.command import (
     socket_path,
     vde_program,
 )
+from virtualbricks.bricks.tunnellisten import OPENSSL_CONFIG
 from virtualbricks.bricks.virtualmachine import UsbDevice, hostonly_sock
 from virtualbricks.config.settings import set_setting
 from virtualbricks.programs import (
@@ -241,6 +242,20 @@ class TestVdeBricks(LinesTestCase):
                 "example.org:7667",
             ],
         )
+
+    def test_tunnels_with_the_legacy_provider(self):
+        # Blowfish, the cipher of vde_cryptcab, is in the legacy provider of
+        # OpenSSL 3
+        tl1 = self.brick("tunnellisten", "tl1", self.sw1)
+        tc1 = self.brick(
+            "tunnelconnect", "tc1", self.sw2, server_host="example.org"
+        )
+        for tunnel in (tl1, tc1):
+            self.assertEqual(
+                tunnel.command(prepared_vde()).env,
+                {"OPENSSL_CONF": f"{RUN}/{tunnel.name}.openssl.cnf"},
+            )
+        self.assertEqual(self.sw1.command(prepared_vde()).env, {})
 
     def test_router(self):
         router = self.brick("router", "r1")
@@ -739,6 +754,17 @@ class TestPrepare(CommandTestCase):
                 fp.read(), b"fc683cd9ed1990ca2ea10b84e5e6fba048c24929  -\n"
             )
 
+    def test_tunnel_openssl_config(self):
+        for kind, name in (("tunnellisten", "tl"), ("tunnelconnect", "tc")):
+            tunnel = self.factory.new_brick(kind, name)
+            self.successResultOf(tunnel.prepare())
+            path = os.path.join(
+                self.factory.runtime_dir, f"{name}.openssl.cnf"
+            )
+            self.assertEqual(tunnel.openssl_path(), path)
+            with open(path) as fp:
+                self.assertEqual(fp.read(), OPENSSL_CONFIG)
+
     def test_resume(self):
         vm = self.factory.new_brick("qemu", "vm")
         self.assertEqual(self.successResultOf(vm.prepare()).resume, "")
@@ -791,9 +817,11 @@ class FakeReactor:
 
     def __init__(self):
         self.spawned = []
+        self.environments = []
 
     def spawnProcess(self, protocol, executable, args, env):
         self.spawned.append((executable, args))
+        self.environments.append(env)
 
 
 class TestStart(CommandTestCase):
@@ -822,6 +850,7 @@ class TestStart(CommandTestCase):
         [(executable, args)] = self.reactor.spawned
         self.assertEqual(executable, os.path.join(self.bin, "vde-netemu"))
         self.assertEqual(args[:2], [executable, "-v"])
+        self.assertEqual(self.reactor.environments, [os.environ])
         self.assertEqual(netemu.logger.levels(), ["info"])
 
     def test_warnings(self):
@@ -856,6 +885,18 @@ class TestStart(CommandTestCase):
             args,
             ["sudo", "--", os.path.join(self.bin, "vde_plug2tap")]
             + ["-s", sw.path(), "tap0"],
+        )
+
+    def test_environment(self):
+        # that of Virtualbricks, with the variables of the command
+        sw = self.factory.new_brick("switch", "sw")
+        tunnel = self.factory.new_brick("tunnellisten", "tl")
+        tunnel.connect(sw.socks[0])
+        sw.proc = object()
+        tunnel.poweron()
+        self.assertEqual(
+            self.reactor.environments,
+            [dict(os.environ, OPENSSL_CONF=tunnel.openssl_path())],
         )
 
     def test_missing_program(self):

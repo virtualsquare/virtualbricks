@@ -43,10 +43,14 @@ __all__ = ["Command", "Prepared", "joined", "socket_path", "vde_program"]
 
 
 class Command:
-    """A program and its arguments, in the order of the command line."""
+    """
+    A program and its arguments, in the order of the command line, and the
+    variables of the environment that it gets besides those of Virtualbricks.
+    """
 
     def __init__(self, program: str) -> None:
         self.argv: list[str] = [program]
+        self.env: dict[str, str] = {}
         self.warnings: list[str] = []
 
     def arg(self, *values: object) -> None:

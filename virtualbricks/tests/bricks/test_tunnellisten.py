@@ -15,14 +15,21 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The key of a tunnel, made from its password."""
+"""The key of a tunnel, made from its password, and its OpenSSL."""
 
 import os
+import shutil
 import stat
+import subprocess
 
 from twisted.trial import unittest
 
-from virtualbricks.bricks.tunnellisten import tunnel_key, write_key
+from virtualbricks.bricks.tunnellisten import (
+    OPENSSL_CONFIG,
+    tunnel_key,
+    write_key,
+    write_openssl_config,
+)
 
 
 class TestKey(unittest.TestCase):
@@ -56,3 +63,31 @@ class TestKey(unittest.TestCase):
         self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
         with open(path, "rb") as fp:
             self.assertEqual(fp.read(), tunnel_key("secret"))
+
+
+class TestOpenSSL(unittest.TestCase):
+
+    def test_written(self):
+        folder = os.path.join(os.path.abspath(self.mktemp()), "run")
+        path = os.path.join(folder, "tl.openssl.cnf")
+        write_openssl_config(path)
+        self.assertEqual(stat.S_IMODE(os.stat(folder).st_mode), 0o700)
+        with open(path) as fp:
+            self.assertEqual(fp.read(), OPENSSL_CONFIG)
+
+    def test_blowfish(self):
+        # the cipher of vde_cryptcab, which OpenSSL 3 has in its legacy
+        # provider only
+        openssl = shutil.which("openssl")
+        if openssl is None:
+            raise unittest.SkipTest("openssl isn't installed")
+        path = os.path.abspath(self.mktemp())
+        write_openssl_config(path)
+        done = subprocess.run(
+            [openssl, "enc", "-bf-cbc", "-e"]
+            + ["-K", "00" * 16, "-iv", "00" * 8],
+            input=b"a frame of a switch",
+            env=dict(os.environ, OPENSSL_CONF=path),
+            capture_output=True,
+        )
+        self.assertEqual(done.returncode, 0, done.stderr.decode())

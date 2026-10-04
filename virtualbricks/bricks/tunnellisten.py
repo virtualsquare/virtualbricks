@@ -54,6 +54,31 @@ def write_key(path, password):
         fp.write(tunnel_key(password))
 
 
+# The configuration of OpenSSL for vde_cryptcab: since OpenSSL 3, Blowfish,
+# its cipher, is in the legacy provider, which OpenSSL loads only when told
+OPENSSL_CONFIG = """\
+openssl_conf = openssl_init
+
+[openssl_init]
+providers = providers
+
+[providers]
+default = activate
+legacy = activate
+
+[activate]
+activate = 1
+"""
+
+
+def write_openssl_config(path):
+    """Write the configuration of OpenSSL for vde_cryptcab to path."""
+
+    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+    with open(path, "w") as fp:
+        fp.write(OPENSSL_CONFIG)
+
+
 @define
 class TunnelListenConfig(bricks.BrickConfig):
 
@@ -91,20 +116,39 @@ class TunnelListen(bricks.Brick):
 
         return self.runtime_path(f"{self.name}.key")
 
+    def openssl_path(self):
+        """The configuration of OpenSSL of the tunnel, in the runtime folder."""
+
+        return self.runtime_path(f"{self.name}.openssl.cnf")
+
     def prepare(self, resume=""):
-        """The VDE programs, and the key of the tunnel written."""
+        """
+        The VDE programs, and the key of the tunnel and its configuration of
+        OpenSSL written.
+        """
 
         deferred = bricks.Brick.prepare(self, resume)
 
-        def key(prepared):
+        def written(prepared):
             write_key(self.key_path(), self.config.password)
+            write_openssl_config(self.openssl_path())
             return prepared
 
-        return deferred.addCallback(key)
+        return deferred.addCallback(written)
 
-    def command(self, prepared):
+    def cryptcab(self, prepared):
+        """
+        The Command of vde_cryptcab, with the key and the switch of the
+        tunnel, and its configuration of OpenSSL.
+        """
+
         cmd = Command(vde_program(prepared.vde, "vde_cryptcab"))
+        cmd.env["OPENSSL_CONF"] = self.openssl_path()
         cmd.option("-P", self.key_path())
         cmd.option("-s", socket_path(self.plugs[0]))
+        return cmd
+
+    def command(self, prepared):
+        cmd = self.cryptcab(prepared)
         cmd.option("-p", self.config.listen_port)
         return cmd
