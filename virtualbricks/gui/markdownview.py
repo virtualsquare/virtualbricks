@@ -82,7 +82,8 @@ STYLES = {
     "quote": {},
     "space": {"pixels_below_lines": BLOCK_SPACE},
     "link": {"underline": Pango.Underline.SINGLE},
-    # on a picture: a property of the size, that changes nothing
+    # on a picture, so that GTK measures its line again: a property of the
+    # size, that moves nothing (see MarkdownView._remeasure)
     "picture": {"rise": 0},
 }
 HEADINGS = {"h1": "h1", "h2": "h2"}
@@ -453,15 +454,24 @@ class MarkdownLabel(Gtk.Label):
 
 class MarkdownView(Gtk.TextView):
     """
-    A README in Markdown, rendered: it can be selected, not edited. The
-    pictures fit in its width once it has its size: in an idle call, as GTK
-    forgets a resize asked while it gives a widget its size.
+    A README in Markdown, rendered: it can be selected, not edited.
 
-    GTK 3 measures the line of a widget again only when its text changes,
-    or a tag of the size: such a tag, "picture", comes off a picture and
-    goes back on each time it gets another size. GTK measures it when it
-    gives the sizes, and so forgets that the view wants another: the view
-    asks again in an idle call, after GTK's own.
+    A picture is a GtkImage at an anchor of the text. It fits in the width
+    of the view once the view has it: in an idle call after the view gets
+    its size, as GTK forgets a resize asked while it gives a widget its
+    size. A picture that comes before the view has a width waits as an
+    empty image, in its line, and gets its pixels in that idle call.
+
+    That picture meets two flaws of GTK 3 when the view isn't in a
+    scrolled window, so that it's as high as it asks to be: the details of
+    the Projects window, where they were found before it showed its
+    pictures as text. GTK doesn't measure the line of the picture again,
+    and the picture covers the lines after it. And when GTK does measure
+    the line, the view asks to be higher at a moment when GTK forgets it:
+    it keeps its height, and the lines after the picture are cut off.
+    _remeasure() and _resize_later() work around them. In a scrolled
+    window, as in the Readme tab, neither flaw shows: checked on Broadway
+    with GTK 3.24.49, with each workaround taken out.
     """
 
     def __init__(self, **properties) -> None:
@@ -663,15 +673,59 @@ class MarkdownView(Gtk.TextView):
                     wide, high, GdkPixbuf.InterpType.BILINEAR
                 )
             )
-        # its line, measured again
+        self._remeasure(picture)
+        if self._resizing is None:
+            self._resizing = GLib.idle_add(self._resize_later)
+
+    def _remeasure(self, picture) -> None:
+        """
+        Make GTK measure the line of a picture again, with its new size.
+
+        GTK 3 keeps the height of each line from when it laid the line
+        out. It lays out again the line of a widget that asks for another
+        size when it gives the widgets of the view their place, in
+        gtk_text_view_allocate_children(), but outside a scrolled window it
+        missed an empty image that got its pixels: the picture covered the
+        lines after it. Its other check, in
+        gtk_text_view_size_request(), compares two answers to the same
+        question, asked one after the other, and never finds a change. The
+        call that would do it, gtk_text_child_anchor_queue_resize(), is
+        internal: its header, gtktextlayout.h, is for GTK's own use only,
+        and Python can't call it.
+
+        A tag does it: when a tag comes or goes on some text, GTK lays that
+        text out again if the tag can change its size
+        (_gtk_text_tag_affects_size(): a font, a margin, a rise...), and
+        only draws it again otherwise. The tag "picture" has a rise of 0,
+        which moves nothing but counts as a size; it comes off the picture
+        and goes back on.
+        """
+
         start, end = self._picture_bounds(picture)
         self.buffer.remove_tag_by_name("picture", start, end)
         start, end = self._picture_bounds(picture)
         self.buffer.apply_tag_by_name("picture", start, end)
-        if self._resizing is None:
-            self._resizing = GLib.idle_add(self._resize_later)
 
     def _resize_later(self) -> bool:
+        """
+        Ask GTK to size the view again, now that it knows its lines.
+
+        GTK 3 measures the lines of a view while it gives the view its size,
+        gtk_text_view_size_allocate(). A view that is then higher asks for
+        a new size there, gtk_widget_queue_resize_no_redraw(); but
+        gtk_widget_size_allocate() takes a widget whose size it gave as
+        settled, and clears what was asked meanwhile: for the view, and for
+        each container it's in, whose sizes it's giving too ("Size
+        allocation is god", its comment says). Outside a scrolled window,
+        the view kept the height of the lines before the picture, and cut
+        off those after it.
+
+        Asked here, in an idle call of the default priority, 200, it comes
+        after GTK's own: the sizes, 110, and the lines measured, 108 for the
+        first ones and 125 for the others; so the view gets the height of
+        all its lines.
+        """
+
         self._resizing = None
         self.queue_resize()
         return GLib.SOURCE_REMOVE
