@@ -764,46 +764,6 @@ class TestPictures(ViewTestCase):
         view._fit_later()
         self.assertEqual(image.get_pixbuf().get_width(), 300)
 
-    def test_its_line_is_measured_again(self):
-        table = self.buffer.get_tag_table()
-        self.assertTrue(table.lookup("picture").props.rise_set)
-        self.assertEqual(table.lookup("picture").props.rise, 0)
-        self.show("![wide](wide.png)", self.pictures)
-        self.assertIn("picture", self.tags_at("\ufffc"))
-        changes = []
-
-        def changed(change):
-            def record(textbuffer, tag, start, end):
-                changes.append((change, tag.props.name, start.get_offset()))
-
-            return record
-
-        self.buffer.connect("remove-tag", changed("off"))
-        self.buffer.connect("apply-tag", changed("on"))
-        allocation = Gdk.Rectangle()
-        allocation.width, allocation.height = 500, 300
-        self.view.size_allocate(allocation)
-        self.view._fit_later()
-        # a tag of the size comes and goes
-        self.assertEqual(
-            changes, [("off", "picture", 0), ("on", "picture", 0)]
-        )
-        # the same width: nothing to measure
-        self.view._fit_later()
-        self.assertEqual(len(changes), 2)
-
-    def test_the_view_asks_for_its_size_again(self):
-        self.show("![the map](map.png)", self.pictures)
-        resized = []
-        self.patch(self.view, "queue_resize", lambda: resized.append(True))
-        self.assertEqual(resized, [])
-        # GTK's own idle calls first
-        self.view.set_markdown("![wide](wide.png)", self.pictures)
-        self.assertIsNotNone(self.view._resizing)
-        self.view._resize_later()
-        self.assertEqual(resized, [True])
-        self.assertIsNone(self.view._resizing)
-
     def test_no_fit_after_the_end(self):
         self.show("![wide](wide.png)", self.pictures)
         allocation = Gdk.Rectangle()
@@ -811,15 +771,11 @@ class TestPictures(ViewTestCase):
         self.view.size_allocate(allocation)
         fitting = self.view._fitting
         self.assertIsNotNone(fitting)
-        self.view._size_picture(self.view._pictures[0], 300)
-        resizing = self.view._resizing
-        self.assertIsNotNone(resizing)
         self.view.destroy()
         self.assertIsNone(self.view._fitting)
-        self.assertIsNone(self.view._resizing)
-        context = GLib.main_context_default()
-        self.assertIsNone(context.find_source_by_id(fitting))
-        self.assertIsNone(context.find_source_by_id(resizing))
+        self.assertIsNone(
+            GLib.main_context_default().find_source_by_id(fitting)
+        )
 
 
 class FakeEvent:
