@@ -398,7 +398,7 @@ Then sw1 is running
 ```
 
 ```sh
-pip install --group e2e      # pytest, pytest-bdd, pytest-repeat; dev too
+pip install --group e2e      # pytest and its plugins; dev too
 pytest                       # every scenario
 pytest --count 20            # each 20 times: is one flaky?
 ```
@@ -407,9 +407,11 @@ They need `broadwayd` (`libgtk-3-bin`), `at-spi2-core` and
 `gir1.2-atspi-2.0`, and are skipped without them. Nothing shows on your
 screen, and they run beside your own Virtualbricks. A scenario that fails
 leaves a screenshot and, with `ffmpeg`, a video of its screen;
-`--record-all` records them all. `e2e/README.md` tells how to run them
-and write a scenario, `e2e/STEPS.md` the steps there are and how to add
-one; with Claude Code, `/e2e` writes a scenario from a use case in words.
+`--record-all` records them all. With `--alluredir=allure-results`, Allure
+makes a report of them; the results are in git, to publish it.
+`e2e/README.md` tells how to run them and write a scenario, `e2e/STEPS.md`
+the steps there are and how to add one; with Claude Code, `/e2e` writes a
+scenario from a use case in words.
 
 ### Code style
 

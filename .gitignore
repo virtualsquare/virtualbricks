@@ -31,8 +31,8 @@ _trial_temp/
 # Node installation
 /node_modules/
 
-# Allure: the results of pytest --alluredir, and the report
-/allure-results/
+# Allure: the report; the results of pytest --alluredir= and the history
+# are kept, to publish the report
 /allure-report/
 
 # pycharm
