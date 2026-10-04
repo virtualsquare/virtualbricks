@@ -20,11 +20,11 @@
 <meta name="keywords" content="release, develop, projects, workspaces, configuration, News, " />
 
 <meta property="og:title" content="Virtualbricks 3.0: projects, workspaces and the new files "/>
-<meta property="og:url" content="https://www.virtualbricks.it/drafts/projects-workspaces-and-files-in-virtualbricks-3-0.html" />
+<meta property="og:url" content="https://www.virtualbricks.it/projects-workspaces-and-files-in-virtualbricks-3-0.html" />
 <meta property="og:description" content="Where Virtualbricks 3.0 keeps your settings and your labs, why every file is now TOML, how workspaces let two labs run side by side, and how a project travels to another computer in a .vbp archive." />
 <meta property="og:site_name" content="Virtualbricks" />
 <meta property="og:article:author" content="Marco Giusti" />
-<meta property="og:article:published_time" content="2026-10-02T12:00:00+02:00" />
+<meta property="og:article:published_time" content="2026-10-04T12:00:00+02:00" />
 <meta name="twitter:title" content="Virtualbricks 3.0: projects, workspaces and the new files ">
 <meta name="twitter:description" content="Where Virtualbricks 3.0 keeps your settings and your labs, why every file is now TOML, how workspaces let two labs run side by side, and how a project travels to another computer in a .vbp archive.">
 
@@ -68,7 +68,7 @@
 <div class="row-fluid">
     <header class="page-header span10 offset2">
         <h1>
-            <a href="https://www.virtualbricks.it/drafts/projects-workspaces-and-files-in-virtualbricks-3-0.html">
+            <a href="https://www.virtualbricks.it/projects-workspaces-and-files-in-virtualbricks-3-0.html">
                 Virtualbricks 3.0: projects, workspaces and the new files
             </a>
         </h1>
@@ -263,13 +263,17 @@ it is.</p>
 <h2>The Projects window</h2>
 <p><em>Projects › Projects…</em> (Ctrl+O) opens one window for everything you do with
 your projects. The list, sorted by last use, shows the name of each project,
-the first line of its README, and a line of facts: its bricks, the space it
-takes, when it was used last. A project whose images are missing, or whose
-file can't be read, says so there. Typing filters the list by name and by
-description.</p>
+the first line of its README, and a line of facts: its bricks and when it was
+used last. A project whose images are missing, or whose file can't be read,
+says so there. Typing filters the list by name and by description.</p>
 <p>The details of the selected project add its README, rendered, its bricks by
 type, its events, each image and whether it's on this computer, and the
 space taken by the private disks and by the other files.</p>
+<div class="figure">
+<img alt="The Projects window: four projects on the left, the most recently used first; on the right, the details of firewall-2025, with its README, its bricks, its images and the space it takes" src="https://www.virtualbricks.it/images/projects-workspaces-and-files-in-virtualbricks-3-0/projects.png" />
+<p class="caption">The image of firewall-2025 isn't on this computer: the list says so, and
+the details say which one.</p>
+</div>
 <ul class="simple">
 <li><strong>Open</strong>, <strong>New…</strong> and <strong>Rename…</strong>, with the name checked as you type: a
 name that is taken or not valid is refused before you press the button, not
@@ -301,6 +305,11 @@ to save it and what to put in it, each with its size:</p>
 gigabytes and the other computer may already have them;</li>
 <li>the other files of the project's folder, behind an expander.</li>
 </ul>
+<div class="figure">
+<img alt="The Export Project window of wan-lab: the archive to write, then the project, three private disks of 811 MB, checked, the images frr-debian and debian-13 of 2.1 GB, not checked, and four other files" src="https://www.virtualbricks.it/images/projects-workspaces-and-files-in-virtualbricks-3-0/export.png" style="width: 83%;" />
+<p class="caption">The private disks are in, the images out. The other files are behind the
+expander, opened here.</p>
+</div>
 <p>The export runs in a process of its own, at a lower priority, so the windows
 and the running bricks don't wait for it. It shows its progress in bytes, and
 you can stop it at any time, or close the window and let it finish: the Logs
@@ -344,6 +353,13 @@ replaced with yours when they don't exist on this computer.</li>
 <li><strong>Open the project after the import</strong>, on by default.</li>
 </ul>
 <p>Since every choice has a default, the Import button works from the start.</p>
+<div class="figure">
+<img alt="The Import Project window: the archive, the name bgp-two-as, its README and its bricks, its two images, each with Copy, Use a file… and Leave unset, this computer's paths, and Open the project after the import" src="https://www.virtualbricks.it/images/projects-workspaces-and-files-in-virtualbricks-3-0/import.png" />
+<p class="caption">An archive from another computer. tinycore is in it, and is copied to the
+library; frr-debian isn't, and the image of the library with that name is
+used. The folders of QEMU and VDE of the other computer aren't here, and
+this computer's take their place.</p>
+</div>
 <p>Choosing an archive reads only its head, the list of its contents, the
 project file and the README, a few kilobytes, and stops there, however
 large the archive is. Then the import extracts the archive into a hidden
@@ -415,6 +431,11 @@ VDE, go into each project;</li>
 actions: <tt class="docutils literal">sw1 on</tt> becomes a <tt class="docutils literal">start</tt> of <tt class="docutils literal">sw1</tt>, and
 <tt class="docutils literal">sw1 config numports=16</tt> becomes <tt class="docutils literal">brick set sw1 ports=16</tt>.</li>
 </ul>
+<div class="figure">
+<img alt="The list of the migration window: .virtualbricks.conf and three projects migrated, dhcp-lab with a warning; below it, the messages of lab, one for each command of its event" src="https://www.virtualbricks.it/images/projects-workspaces-and-files-in-virtualbricks-3-0/migration.png" />
+<p class="caption">The events of lab became actions. A switch of dhcp-lab had 500 ports,
+more than a switch may have, and has 32 now.</p>
+</div>
 <p>The old files are left as they were. The report of the last migration stays
 in <tt class="docutils literal"><span class="pre">~/.local/state/virtualbricks/migration-report.txt</span></tt>. Started with
 <tt class="docutils literal"><span class="pre">--workspace</span></tt>, Virtualbricks converts the projects of that folder in the
@@ -451,22 +472,25 @@ its <tt class="docutils literal">project.toml</tt>, and tell us what breaks on <
         </div>
         <section id="article-sidebar" class="span2">
             <h4>Published</h4>
-            <time itemprop="dateCreated" datetime="2026-10-02T12:00:00+02:00">Fri 02 October 2026</time>
+            <time itemprop="dateCreated" datetime="2026-10-04T12:00:00+02:00">Sun 04 October 2026</time>
             <h4>Category</h4>
             <a class="category-link" href="https://www.virtualbricks.it/categories.html#news-ref">News</a>
             <h4>Tags</h4>
             <ul class="list-of-tags tags-in-article">
                 <li><a href="https://www.virtualbricks.it/tags.html#configuration-ref">configuration
+                    <span class="superscript">1</span>
 </a></li>
                 <li><a href="https://www.virtualbricks.it/tags.html#develop-ref">develop
-                    <span class="superscript">1</span>
+                    <span class="superscript">2</span>
 </a></li>
                 <li><a href="https://www.virtualbricks.it/tags.html#projects-ref">projects
-</a></li>
-                <li><a href="https://www.virtualbricks.it/tags.html#release-ref">release
                     <span class="superscript">1</span>
 </a></li>
+                <li><a href="https://www.virtualbricks.it/tags.html#release-ref">release
+                    <span class="superscript">2</span>
+</a></li>
                 <li><a href="https://www.virtualbricks.it/tags.html#workspaces-ref">workspaces
+                    <span class="superscript">1</span>
 </a></li>
             </ul>
             

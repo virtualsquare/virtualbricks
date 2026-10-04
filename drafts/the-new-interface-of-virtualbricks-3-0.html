@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="https://www.virtualbricks.it/theme/css/elegant.prod.9e9d5ce754.css" media="screen">
+        <link rel="stylesheet" type="text/css" href="https://www.virtualbricks.it/theme/css/custom.css" media="screen">
+
+        <link rel="dns-prefetch" href="//fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+
+        <meta name="author" content="Marco Giusti" />
+
+        <meta name="description" content="The tabs of the main window, one by one: the Bricks tab that took in the Running tab, the new Images tab, a Topology tab that zooms, a README in Markdown, and a messages window that reads like a console.
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="release, develop, interface, bricks, images, topology, readme, logs, News, " />
+
+<meta property="og:title" content="Virtualbricks 3.0: a tour of the new interface "/>
+<meta property="og:url" content="https://www.virtualbricks.it/drafts/the-new-interface-of-virtualbricks-3-0.html" />
+<meta property="og:description" content="The tabs of the main window, one by one: the Bricks tab that took in the Running tab, the new Images tab, a Topology tab that zooms, a README in Markdown, and a messages window that reads like a console." />
+<meta property="og:site_name" content="Virtualbricks" />
+<meta property="og:article:author" content="Marco Giusti" />
+<meta property="og:article:published_time" content="2026-10-04T12:00:00+02:00" />
+<meta name="twitter:title" content="Virtualbricks 3.0: a tour of the new interface ">
+<meta name="twitter:description" content="The tabs of the main window, one by one: the Bricks tab that took in the Running tab, the new Images tab, a Topology tab that zooms, a README in Markdown, and a messages window that reads like a console.">
+
+        <title>Virtualbricks 3.0: a tour of the new interface  · Virtualbricks
+</title>
+        <link href="https://www.virtualbricks.it/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Virtualbricks - Full Atom Feed" />
+
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://www.virtualbricks.it/"><span class=site-name>Virtualbricks</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://www.virtualbricks.it
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://www.virtualbricks.it/pages/authors.html">Authors</a></li>
+                                <li  class="active"><a href="https://www.virtualbricks.it/category/news.html">News</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://www.virtualbricks.it/drafts/the-new-interface-of-virtualbricks-3-0.html">
+                Virtualbricks 3.0: a tour of the new interface
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+        <div class="span8 offset2 article-content">
+            
+            <p>The <a class="reference external" href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html">first post</a>
+of this series was a map of what changed in the <tt class="docutils literal">develop</tt> branch. This one
+is about what you see: the tabs of the main window, one by one, and the
+messages window.</p>
+<p>The screenshots show a small lab: two sites joined by a slow link, a Netemu
+with 20 ms of delay and 1% of the packets lost, two routers, a client and a
+tap that gives the host a way in.</p>
+<div class="section" id="the-bricks-tab">
+<h2>The Bricks tab</h2>
+<div class="figure">
+<img alt="The Bricks tab: a row for each of the eight bricks of the lab, six of them running" src="https://www.virtualbricks.it/images/new-ui/bricks.png" />
+<p class="caption">The Bricks tab: six bricks of eight run. The tap couldn't start, and its
+icon is grey.</p>
+</div>
+<p>The Bricks tab of 2.1 was a list of five columns: an icon, the state, the
+type, the name, fourth, and the parameters, the text that the console
+prints. A double click started or stopped a brick, also a running virtual
+machine, without asking; everything else was in the menu of the right
+button, which nothing pointed to. Now:</p>
+<ul class="simple">
+<li><strong>A row for each brick.</strong> Its icon, grey when the brick is stopped; its
+name; its kind in words and what matters about it, as
+<tt class="docutils literal">Netemu · sw2 ↔ sw3 · 20 ms · 1% loss</tt>; its state; then Start or Stop,
+and its menu.</li>
+<li><strong>States in words.</strong> Running, with a green dot, or Stopped, with a grey
+one. A brick that can't start says why, with a warning sign: a wire with a
+free end is <em>Not connected</em>, and its Start button tells you to connect it
+first; a tunnel client without a host is <em>Not configured</em>.</li>
+<li><strong>A row above the list.</strong> New Brick; the search, which finds a brick by
+name or by kind, with Ctrl+F or by typing in the list; the switch between
+all the bricks and the running ones; how many run; Start All and Stop All.
+Start All starts the bricks that can start and leaves the others, where it
+used to fail on each of them.</li>
+<li><strong>The settings in the tab.</strong> A double click or Enter shows the settings
+of a brick in place of the list, under a line that names the brick and
+its kind. The menus and the other tabs stay where they are; Cancel, OK or
+Escape go back to the list.</li>
+<li><strong>One menu.</strong> The button at the end of the row, the right button and the
+Topology tab open the same menu: Start or Stop, Configure…, Rename…,
+Duplicate, Connect To, the events to run when the brick starts and when
+it stops, Resume for a virtual machine, and Delete…. It has its keys:
+Enter, F2 and Delete.</li>
+<li><strong>Connecting.</strong> Connect To, in the menu, lists the bricks that this one
+can be plugged into. Dropping a brick on another still connects them.</li>
+</ul>
+<div class="section" id="the-running-tab-is-a-menu-now">
+<h3>The Running tab is a menu now</h3>
+<p>Virtualbricks 2.1 had a tab of its own for the bricks that run, with a menu
+for their processes. Its Stop paused the process, which wasn't the Stop of
+the Bricks tab, and its Restart of a virtual machine sent an ACPI reset.</p>
+<p>The Running tab is gone, and its menu came to the Bricks tab:</p>
+<div class="figure">
+<img alt="The Bricks tab with only the running bricks, each with its process number, and the menu of r1 open on its process" src="https://www.virtualbricks.it/images/new-ui/bricks-process.png" />
+<p class="caption">Running shows the bricks that run, with their process. The menu of a
+running brick has a Process item, which slides to what the Running tab
+did.</p>
+</div>
+<ul class="simple">
+<li><strong>Running</strong>, the switch above the list, shows only the bricks that run,
+with the number of their process in place of the summary. With <strong>All</strong>,
+the number is in the tooltip of the state.</li>
+<li><strong>Process</strong>, in the menu of a running brick, slides to the actions on its
+process: Open Control Monitor; Pause and Continue, which stop and resume
+the process; for a virtual machine, Suspend, which saves its state in its
+disk, and Reset, its reset button; Restart, which stops the brick and
+starts it again, a virtual machine too; Terminate and Kill.</li>
+<li><strong>Send ACPI powerdown</strong> is gone: Stop already does it.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="the-images-tab">
+<h2>The Images tab</h2>
+<p>In 2.1, four places managed the disk images: the image library window, the
+other items of the <em>Disk images</em> menu, and three buttons in the settings of
+every machine. The library couldn't add an image, and removed one at once,
+even an image that disks used. They are all replaced by a tab, beside the
+Bricks and the Events, in the same shape:</p>
+<div class="figure">
+<img alt="The Images tab: three disk images, each with its format, its size, the space it takes and the disks that use it" src="https://www.virtualbricks.it/images/new-ui/images.png" />
+<p class="caption">A row for each image: what it is and who uses it.</p>
+</div>
+<ul class="simple">
+<li><strong>A row for each image.</strong> Its format, the size of the disk the machine
+sees, the space the file takes, and which disks use it and how: on a
+private copy, or the image itself. Its state is <em>In use</em> while a running
+machine reads it, <em>Not in use</em>, <em>No disk</em> when no disk uses it, or <em>File
+missing</em>. The facts come from <tt class="docutils literal"><span class="pre">qemu-img</span> info</tt>, read in the background,
+so the list fills in as each file is read.</li>
+<li><strong>Add Image</strong> adds an <em>Existing Image…</em>, read with <tt class="docutils literal"><span class="pre">qemu-img</span> info</tt> as
+soon as you choose it and copied to the image folder unless you say
+otherwise, or a <em>New Empty Disk…</em>, qcow2 or raw, which is added to the
+project at once. In 2.1, a new image had to be added again, from its file.</li>
+<li><strong>The menu</strong> of an image has Details…, Rename…, Show in Files and
+Remove…. Remove says which disks lose their image, and offers to move the
+file to the trash only when it is in the image folder and no other project
+uses it.</li>
+<li><strong>Find the File…</strong> comes first in the menu of an image whose file is
+missing. It points the private copies at the new file before the path
+changes. In 2.1, changing the path of an image made the next start of each
+machine put its private copy aside and begin from an empty one.</li>
+</ul>
+<div class="figure">
+<img alt="The details of the image frr-debian: its name, description, file, format, size, and the two disks that use it" src="https://www.virtualbricks.it/images/new-ui/images-details.png" />
+<p class="caption">The details of an image, in the tab: what qemu-img says of it, and each
+disk that uses it.</p>
+</div>
+<p>The details show in the tab, as the settings of a brick do: the name and the
+description, which you can change, then the file, its format and backing
+file, the sizes, the snapshots, when it changed, each disk that uses the
+image with the size of its private copy, and the other projects that use the
+same file.</p>
+<div class="section" id="the-disks-of-a-machine">
+<h3>The disks of a machine</h3>
+<p>The Drives tab of a virtual machine had seven rows, from hda to mtdblock,
+each a list of names and a <em>Private COW</em> check. Now the Disks section shows
+the disks that the machine has, and Add Disk adds one on a free device:</p>
+<div class="figure">
+<img alt="The Disks section of the settings of pc1, with the image picker of its disk hda open" src="https://www.virtualbricks.it/images/new-ui/vm-disks-picker.png" />
+<p class="caption">Each disk has an image picker, with the facts of each image, and a mode.</p>
+</div>
+<ul class="simple">
+<li><strong>The picker</strong> lists the images of the project, with what each is and who
+uses it, then Add an Existing Image…, New Empty Disk… and Manage
+Images…, which shows the Images tab.</li>
+<li><strong>The mode</strong> is <em>Private copy</em>, the default, or <em>The image itself</em>. A line
+under the disk says what it does: &quot;pc1's changes will be kept in
+pc1_hda.cow, made at the next start; debian-13 stays as it is.&quot;</li>
+<li><strong>The menu of a disk</strong> has Save as a New Image…, then Merge into and
+Start Over from its image, Show in Files and Remove Disk. Merge lists
+everything else that uses the image, here and in the other projects, and
+offers to save a new image instead. Save and Merge run in the background,
+with their progress, and can be stopped.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="the-topology-tab">
+<h2>The Topology tab</h2>
+<p>In 2.1, the Topology tab was a PNG that Graphviz drew at one size, pinned to
+its top left corner: no zoom, white in the dark theme, every brick in colour,
+running or not. Export as Image copied that PNG, so <tt class="docutils literal">lab.svg</tt> was a PNG
+file.</p>
+<div class="figure">
+<img alt="The Topology tab: the lab drawn from left to right, with the stopped bricks in grey and the zoom bar at the top right" src="https://www.virtualbricks.it/images/new-ui/topology.png" />
+<p class="caption">The picture takes the whole tab, and the zoom floats over it. Stopped
+bricks are grey, as in the Bricks tab.</p>
+</div>
+<p>Now Graphviz only places the bricks, and Virtualbricks draws them with
+cairo:</p>
+<ul class="simple">
+<li><strong>The zoom.</strong> A dark bar floats over the top right corner: zoom out, the
+zoom level, zoom in, fit all, and a menu. The zoom goes through fixed
+levels from 10% to 400%, and a click on the level goes back to 100%. The
+tab opens fitted, and the picture fits again when the tab changes size or
+the lab changes, until you zoom. Fitting never goes above 100%, so a small
+lab keeps its size, in the middle of the tab.</li>
+<li><strong>Mouse and keys.</strong> Ctrl and the wheel, or a pinch on a touchpad, zoom
+around the pointer, as a map does. Dragging the background moves the
+picture. Ctrl++, Ctrl+−, Ctrl+0 for 100%, and F for fit all.</li>
+<li><strong>The bricks.</strong> A stopped brick is grey. The brick under the pointer
+lights up, with its name, its type and its state in a tooltip. The right
+button opens the menu of the Bricks tab, and a double click opens its
+settings.</li>
+<li><strong>The menu</strong> of the bar has the direction of the layout, left to right or
+top to bottom, and Export as Image…: a PNG, an SVG or a PDF, at 100% and
+on white, whatever the zoom and the theme.</li>
+<li><strong>The dark theme.</strong> The picture takes the colours of the theme:</li>
+</ul>
+<div class="figure">
+<img alt="The Topology tab in the dark theme of GTK" src="https://www.virtualbricks.it/images/new-ui/topology-dark.png" />
+<p class="caption">The same lab, with the dark theme of Adwaita.</p>
+</div>
+</div>
+<div class="section" id="the-readme-tab">
+<h2>The Readme tab</h2>
+<p>The README of a project is now Markdown. It is still a plain text file,
+<tt class="docutils literal">README</tt>, so nothing changes on disk, in the archives or in the migration.</p>
+<div class="figure">
+<img alt="The Readme tab: the README of the lab rendered, with a heading, the picture of the topology, a list of addresses and a block of code" src="https://www.virtualbricks.it/images/new-ui/readme-picture.png" />
+<p class="caption">The README rendered, with a picture of the lab: the Topology tab
+exported it to the folder of the project.</p>
+</div>
+<ul class="simple">
+<li><strong>The preview first.</strong> The tab opens on the README rendered. Two buttons
+float over its top right corner: the pencil opens the editor, the eye goes
+back to the preview. The editor saves 30 seconds after your last change,
+and when you leave the tab.</li>
+<li><strong>The syntax</strong> is the core of CommonMark that GitHub, GitLab and most
+editors share: headings, bold, italic and struck text, code, lists,
+quotes, links and rules. A link opens in your browser, and a bare URL is a
+link too. Anything else, as a table, shows as you typed it.</li>
+<li><strong>Old READMEs read the same.</strong> A new line in a paragraph stays a new line,
+as in the comments of GitHub, so a README written as plain text keeps its
+lines. What changes is what already looked like Markdown: a line that
+starts with <tt class="docutils literal">-</tt> is now a list item.</li>
+<li><strong>Pictures.</strong> A picture that is a file of the folder of the project shows
+in the preview, as wide as it is or as the tab:
+<tt class="docutils literal">![The <span class="pre">lab](topology.png)</span></tt>. A URL, a path that leads out of the folder
+or a file of more than 10 MB stays its text.</li>
+<li><strong>Help at hand.</strong> While you write, a third button shows the syntax:</li>
+</ul>
+<div class="figure">
+<img alt="The editor of the Readme tab, with the popover of the Markdown syntax open" src="https://www.virtualbricks.it/images/new-ui/readme-syntax.png" />
+<p class="caption">The editor is plain text. The question mark shows the syntax.</p>
+</div>
+<p>The README is rendered in the Projects window too, and the Import dialog
+shows its first paragraph.</p>
+</div>
+<div class="section" id="the-messages-window">
+<h2>The messages window</h2>
+<p><em>File › Logs</em>, where 2.1 had <em>View › Messages</em>, opens the messages of the
+run: those of Virtualbricks, of its bricks, and what their programs print.</p>
+<p>In 2.1 the window was one text view, and each message a line of
+<tt class="docutils literal"><span class="pre">2026-09-24T17:47:09+0200</span> [virtualbricks.bricks.Process#error] …</tt>,
+coloured by its level. The message started some 60 characters in, the path
+of a module hid which brick it came from, whatever a program wrote on its
+standard error was an error, and there was no filter. Now it reads like a
+console:</p>
+<div class="figure">
+<img alt="The Logs window: the messages of a virtual machine and of a tap that starts, with their sources, a symbol for each level and the output of their programs" src="https://www.virtualbricks.it/images/new-ui/logs.png" />
+<p class="caption">The start of a virtual machine and of a tap that sudo didn't run, then
+a project that couldn't be saved.</p>
+</div>
+<ul class="simple">
+<li><strong>One line, four columns.</strong> The time, dimmed when it repeats within the
+same second, with a line for each day; the source, the name of a brick in
+blue after its icon, or the part of Virtualbricks in grey, as Project or
+Main window; a symbol for the level; and the message. The tooltip of the
+time has the date and the milliseconds, that of the source the type of the
+brick and its process.</li>
+<li><strong>Folds.</strong> The first line of a message shows, and the rest waits behind a
+toggle: &quot;▸ 2 more lines&quot;, or &quot;▸ traceback, 8 calls&quot;. Expand all and
+Collapse all, in the menu, open or close them all.</li>
+<li><strong>Program output, as printed.</strong> What a program prints shows on a grey
+band, with <tt class="docutils literal">2&gt;</tt> before its standard error, line by line as a terminal
+shows it: the monitor of QEMU no longer comes as a dozen messages of
+escape codes. It has a symbol of its own, and the status bar counts its
+lines apart from the errors.</li>
+<li><strong>A filter.</strong> The field in the header bar filters as you type.
+<tt class="docutils literal">level:warning</tt> keeps the warnings and the errors, <tt class="docutils literal">source:tap0,r1</tt>
+the messages of those bricks, <tt class="docutils literal">source:qemu</tt> those of every virtual
+machine, and any other word the messages that have it. The standard error
+of a program counts as a warning, so <tt class="docutils literal">level:warning</tt> keeps the
+complaint of sudo next to the error it explains. Ctrl+F goes to the
+field, Escape empties it.</li>
+<li><strong>Following.</strong> New messages scroll into view while <em>Following</em> is on.
+Scrolling up turns it off, to read; scrolling back to the end turns it on.
+The status bar counts the messages, the errors, the warnings and the lines
+of program output.</li>
+<li><strong>The menu</strong> has Expand all, Collapse all, Save…, Report a bug… and
+Clear. Save and Report a bug write every message, whatever the filter, as
+before.</li>
+</ul>
+<p>The window keeps the latest 2,000 messages, where 2.1 kept them all for as
+long as it ran, and each window has its own filter and its own folds.</p>
+</div>
+<div class="section" id="try-it">
+<h2>Try it</h2>
+<p>All of this is in the <tt class="docutils literal">develop</tt> branch: the <a class="reference external" href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html">first post</a> says how to
+install it. Open one of your labs, look at it in the Topology tab, give it a
+README with a picture, and tell us what breaks on <a class="reference external" href="https://github.com/virtualsquare/virtualbricks/issues">GitHub</a>.</p>
+</div>
+
+
+
+             
+ 
+            
+            
+            
+
+
+
+
+
+
+
+            <hr/>
+        </div>
+        <section id="article-sidebar" class="span2">
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2026-10-04T12:00:00+02:00">Sun 04 October 2026</time>
+            <h4>Category</h4>
+            <a class="category-link" href="https://www.virtualbricks.it/categories.html#news-ref">News</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://www.virtualbricks.it/tags.html#bricks-ref">bricks
+</a></li>
+                <li><a href="https://www.virtualbricks.it/tags.html#develop-ref">develop
+                    <span class="superscript">2</span>
+</a></li>
+                <li><a href="https://www.virtualbricks.it/tags.html#images-ref">images
+</a></li>
+                <li><a href="https://www.virtualbricks.it/tags.html#interface-ref">interface
+</a></li>
+                <li><a href="https://www.virtualbricks.it/tags.html#logs-ref">logs
+</a></li>
+                <li><a href="https://www.virtualbricks.it/tags.html#readme-ref">readme
+</a></li>
+                <li><a href="https://www.virtualbricks.it/tags.html#release-ref">release
+                    <span class="superscript">2</span>
+</a></li>
+                <li><a href="https://www.virtualbricks.it/tags.html#topology-ref">topology
+</a></li>
+            </ul>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe.
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides.
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo https://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script src="https://www.virtualbricks.it/theme/js/elegant.prod.9e9d5ce754.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>

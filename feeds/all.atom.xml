@@ -1,5 +1,384 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Virtualbricks</title><link href="https://www.virtualbricks.it/" rel="alternate"/><link href="https://www.virtualbricks.it/feeds/all.atom.xml" rel="self"/><id>https://www.virtualbricks.it/</id><updated>2026-10-01T12:00:00+02:00</updated><entry><title>What's coming in Virtualbricks 3.0</title><link href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html" rel="alternate"/><published>2026-10-01T12:00:00+02:00</published><updated>2026-10-01T12:00:00+02:00</updated><author><name>Marco Giusti</name></author><id>tag:www.virtualbricks.it,2026-10-01:/whats-coming-in-virtualbricks-3-0.html</id><summary type="html">&lt;p class="first last"&gt;Since 2.1 the develop branch has been rewritten, from the windows
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Virtualbricks</title><link href="https://www.virtualbricks.it/" rel="alternate"/><link href="https://www.virtualbricks.it/feeds/all.atom.xml" rel="self"/><id>https://www.virtualbricks.it/</id><updated>2026-10-04T12:00:00+02:00</updated><entry><title>Virtualbricks 3.0: projects, workspaces and the new files</title><link href="https://www.virtualbricks.it/projects-workspaces-and-files-in-virtualbricks-3-0.html" rel="alternate"/><published>2026-10-04T12:00:00+02:00</published><updated>2026-10-04T12:00:00+02:00</updated><author><name>Marco Giusti</name></author><id>tag:www.virtualbricks.it,2026-10-04:/projects-workspaces-and-files-in-virtualbricks-3-0.html</id><summary type="html">&lt;p class="first last"&gt;Where Virtualbricks 3.0 keeps your settings and your labs, why
+every file is now TOML, how workspaces let two labs run side by
+side, and how a project travels to another computer in a .vbp
+archive.&lt;/p&gt;
+</summary><content type="html">&lt;p&gt;The &lt;a class="reference external" href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html"&gt;first post&lt;/a&gt;
+of this series was a map of what changed in the &lt;tt class="docutils literal"&gt;develop&lt;/tt&gt; branch. This one
+is about where your labs live and how they move: the files that
+Virtualbricks writes and what they look like, the workspaces, and the export
+and import of a project.&lt;/p&gt;
+&lt;div class="section" id="where-things-are"&gt;
+&lt;h2&gt;Where things are&lt;/h2&gt;
+&lt;p&gt;Virtualbricks 2.1 kept its settings in &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;~/.virtualbricks.conf&lt;/span&gt;&lt;/tt&gt; and each
+project in a folder of &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;~/.virtualbricks&lt;/span&gt;&lt;/tt&gt;, with a &lt;tt class="docutils literal"&gt;.project&lt;/tt&gt; file. While
+the bricks ran, their sockets were created in the same folder:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;~/.virtualbricks.conf          the settings, an INI file
+~/.virtualbricks/              the workspace
+├── vimages/
+└── lab/
+    ├── .project               the project, in a format of its own
+    ├── .project~ .project.back
+    ├── README
+    ├── vm1_hda.cow            a private disk
+    └── sw1.ctl sw1.mgmt …     the sockets of the running bricks
+/tmp/vb.lock                   one lock for the whole machine
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Virtualbricks 3.0 splits the files by who owns them and how long they live,
+in the folders of the XDG specification:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;~/.config/virtualbricks/settings.toml     your preferences
+~/.local/state/virtualbricks/state.toml   what it remembers
+~/.virtualbricks/                         the workspace, where it was
+├── .virtualbricks.lock
+├── vimages/                              the image library
+└── lab/
+    ├── project.toml                      the project
+    ├── README                            now read as Markdown
+    └── vm1_hda.cow                       a private disk
+/run/user/1000/virtualbricks/KEY/lab/     the sockets, gone at logout
+&lt;/pre&gt;&lt;/div&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;settings.toml&lt;/strong&gt; has your preferences, the ones that aren't about a
+project: the workspace, the terminal, KSM, the tray icon and the audio
+driver of QEMU. Opening a project no longer rewrites it.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;state.toml&lt;/strong&gt; is what Virtualbricks remembers between runs: the project
+that was open last in each workspace.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;project.toml&lt;/strong&gt; has everything about the project: its bricks, its events,
+its disk images, how they are connected, and its own settings, as the
+folders of QEMU and VDE. A project no longer depends on the settings of
+the computer that opens it, and a new project starts with a copy of the
+settings of the open one.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The sockets&lt;/strong&gt; move to your runtime folder. They no longer end up in
+copies and exports, a deep workspace no longer makes their paths longer
+than the 107 bytes that Linux allows, and they are removed when you log
+out.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class="section" id="one-format-for-every-file"&gt;
+&lt;h2&gt;One format for every file&lt;/h2&gt;
+&lt;p&gt;In 2.1 the settings were an INI file and the projects a format of their
+own: a section for each brick, values written as text, booleans as &lt;tt class="docutils literal"&gt;*&lt;/tt&gt;,
+lists as Python literals, and the connections in &lt;tt class="docutils literal"&gt;link&lt;/tt&gt; lines whose order
+decided which card was the first one of a machine:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;[Image:martin]
+path=/vimages/vtatpa.martin.qcow2
+
+[Qemu:sender]
+hda=martin
+kvm=*
+privatehda=*
+
+[Switch:sw1]
+
+link|sender|sw1_port|rtl8139|00:aa:79:71:be:61
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Now every file is &lt;a class="reference external" href="https://toml.io/en/v1.0.0"&gt;TOML 1.0&lt;/a&gt;. The same lab,
+shortened, as Virtualbricks 3.0 writes it:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# The version of the layout of this file&lt;/span&gt;
+&lt;span class="n"&gt;format&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;
+
+&lt;span class="k"&gt;[images.martin]&lt;/span&gt;
+&lt;span class="c1"&gt;# The image file; a relative path is relative to the project folder&lt;/span&gt;
+&lt;span class="c1"&gt;# (default empty)&lt;/span&gt;
+&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;/home/alice/.virtualbricks/vimages/vtatpa.martin.qcow2&amp;quot;&lt;/span&gt;
+
+&lt;span class="k"&gt;[bricks.sender]&lt;/span&gt;
+&lt;span class="c1"&gt;# A virtual machine, run by QEMU&lt;/span&gt;
+&lt;span class="n"&gt;type&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;qemu&amp;quot;&lt;/span&gt;
+&lt;span class="c1"&gt;# Use KVM when the host has it (default false)&lt;/span&gt;
+&lt;span class="n"&gt;use_kvm&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kc"&gt;true&lt;/span&gt;
+&lt;span class="c1"&gt;# Memory in MiB (1-99999; default 64)&lt;/span&gt;
+&lt;span class="n"&gt;memory&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;64&lt;/span&gt;&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="c1"&gt;# default&lt;/span&gt;
+
+&lt;span class="k"&gt;[bricks.sender.disks.hda]&lt;/span&gt;
+&lt;span class="c1"&gt;# The image of the disk, by name (default empty)&lt;/span&gt;
+&lt;span class="n"&gt;image&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;martin&amp;quot;&lt;/span&gt;
+&lt;span class="c1"&gt;# Write to a private copy in the project folder, not the image (default false)&lt;/span&gt;
+&lt;span class="n"&gt;private&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kc"&gt;true&lt;/span&gt;
+
+&lt;span class="k"&gt;[[bricks.sender.nics]]&lt;/span&gt;
+&lt;span class="c1"&gt;# The kind of card: plug, socket or hostonly&lt;/span&gt;
+&lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;plug&amp;quot;&lt;/span&gt;
+&lt;span class="c1"&gt;# The socket it&amp;#39;s plugged into&lt;/span&gt;
+&lt;span class="n"&gt;connect&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;sw1&amp;quot;&lt;/span&gt;
+&lt;span class="c1"&gt;# The model of the card, as QEMU names it&lt;/span&gt;
+&lt;span class="n"&gt;model&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;rtl8139&amp;quot;&lt;/span&gt;
+&lt;span class="c1"&gt;# The MAC address&lt;/span&gt;
+&lt;span class="n"&gt;mac&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;00:aa:79:71:be:61&amp;quot;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;What changed:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p class="first"&gt;&lt;strong&gt;Every file explains itself.&lt;/strong&gt; Above each key a comment says what it is
+for, its range or its choices, and its default. A value at its default is
+marked &lt;tt class="docutils literal"&gt;# default&lt;/tt&gt;, so you see at a glance what was set.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p class="first"&gt;&lt;strong&gt;Every value is written&lt;/strong&gt;, the defaults too. When a default changes in a
+new version, your projects keep the values they had.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p class="first"&gt;&lt;strong&gt;Keys in words.&lt;/strong&gt; &lt;tt class="docutils literal"&gt;qemupath&lt;/tt&gt; is now &lt;tt class="docutils literal"&gt;qemu_path&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;numports&lt;/tt&gt; is
+&lt;tt class="docutils literal"&gt;ports&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;ram&lt;/tt&gt; is &lt;tt class="docutils literal"&gt;memory&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;pon_vbevent&lt;/tt&gt; is &lt;tt class="docutils literal"&gt;on_start&lt;/tt&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p class="first"&gt;&lt;strong&gt;Real types and real structure.&lt;/strong&gt; Booleans are &lt;tt class="docutils literal"&gt;true&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;false&lt;/tt&gt;.
+Each disk of a machine is a table of its own; the network cards are a list,
+in the order the guest sees them; the two ends of a wire are named, left
+and right; the states of a Netemu link are a list of tables, with the
+transition matrix beside them.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p class="first"&gt;&lt;strong&gt;The actions of an event&lt;/strong&gt; are a list of tables, so a renamed brick is
+renamed in the events that start it:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;actions&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;start&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;target&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;sw1&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;console&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;command&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;brick set vm1 memory=1024&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;shell&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;command&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;logger lab started&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p class="first"&gt;&lt;strong&gt;A version in each file.&lt;/strong&gt; Every file starts with &lt;tt class="docutils literal"&gt;format&lt;/tt&gt;. A file
+written by a newer Virtualbricks is not read, and never overwritten.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p class="first"&gt;&lt;strong&gt;Lenient reading.&lt;/strong&gt; A missing key takes its default; a value of the wrong
+type or out of range takes its default; an unknown key is ignored. Each
+problem is reported in the Logs window, with the key it is about, and
+Virtualbricks carries on. A file that isn't valid TOML is not read at all,
+and not overwritten either.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p class="first"&gt;&lt;strong&gt;Safe writing.&lt;/strong&gt; A new file is written next to the old one and renamed
+over it once it's complete, so a crash never leaves half a project.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;You can edit these files by hand, but not while Virtualbricks runs: it saves
+the open project every three minutes, and your changes would be lost. The
+manual page &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbricks-config(5)&lt;/span&gt;&lt;/tt&gt; describes every key of every file.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="workspaces"&gt;
+&lt;h2&gt;Workspaces&lt;/h2&gt;
+&lt;p&gt;A workspace is a folder of projects. It has its own image library,
+&lt;tt class="docutils literal"&gt;vimages&lt;/tt&gt;, and its own lock. It's &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;~/.virtualbricks&lt;/span&gt;&lt;/tt&gt; unless you choose
+another in the settings, or for a single run:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--workspace&lt;span class="w"&gt; &lt;/span&gt;~/courses/net101
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The folder is made if it isn't there, and the &lt;tt class="docutils literal"&gt;workspace&lt;/tt&gt; setting stays as
+it was. Each workspace reopens the project that was open last in it, so a
+workspace for each course, client or experiment keeps its labs, and its
+images, apart from the others.&lt;/p&gt;
+&lt;p&gt;Two Virtualbricks can run side by side, each in its workspace. Each has its
+lock, its runtime folder and its control socket, so two projects with the
+same name in two workspaces don't get in each other's way:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;--workspace&lt;span class="w"&gt; &lt;/span&gt;~/labs/a&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
+virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;--workspace&lt;span class="w"&gt; &lt;/span&gt;~/labs/b&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
+virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--workspace&lt;span class="w"&gt; &lt;/span&gt;~/labs/b&lt;span class="w"&gt; &lt;/span&gt;--command&lt;span class="w"&gt; &lt;/span&gt;status
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;How many may run at once is chosen with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--lock&lt;/span&gt;&lt;/tt&gt;:&lt;/p&gt;
+&lt;dl class="docutils"&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;system&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;One on the machine, whoever runs it: the default, as in 2.1.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;user&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;One for each user, on a machine you share.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;workspace&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;One for each workspace: the default with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--workspace&lt;/span&gt;&lt;/tt&gt;.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;none&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;No limit.&lt;/dd&gt;
+&lt;/dl&gt;
+&lt;p&gt;In every mode but &lt;tt class="docutils literal"&gt;none&lt;/tt&gt;, a Virtualbricks also holds the lock of its
+workspace, so two never share one, even a folder that two users share. When
+a start is refused, the message says which process holds the lock, and whose
+it is.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-projects-window"&gt;
+&lt;h2&gt;The Projects window&lt;/h2&gt;
+&lt;p&gt;&lt;em&gt;Projects › Projects…&lt;/em&gt; (Ctrl+O) opens one window for everything you do with
+your projects. The list, sorted by last use, shows the name of each project,
+the first line of its README, and a line of facts: its bricks and when it was
+used last. A project whose images are missing, or whose file can't be read,
+says so there. Typing filters the list by name and by description.&lt;/p&gt;
+&lt;p&gt;The details of the selected project add its README, rendered, its bricks by
+type, its events, each image and whether it's on this computer, and the
+space taken by the private disks and by the other files.&lt;/p&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Projects window: four projects on the left, the most recently used first; on the right, the details of firewall-2025, with its README, its bricks, its images and the space it takes" src="https://www.virtualbricks.it/images/projects-workspaces-and-files-in-virtualbricks-3-0/projects.png" /&gt;
+&lt;p class="caption"&gt;The image of firewall-2025 isn't on this computer: the list says so, and
+the details say which one.&lt;/p&gt;
+&lt;/div&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;Open&lt;/strong&gt;, &lt;strong&gt;New…&lt;/strong&gt; and &lt;strong&gt;Rename…&lt;/strong&gt;, with the name checked as you type: a
+name that is taken or not valid is refused before you press the button, not
+after.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Duplicate…&lt;/strong&gt; replaces Save As. It copies the project with its private
+disks, but not the images, and opens the copy unless you say otherwise.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Remove…&lt;/strong&gt; says what goes with the project, the folder and how much its
+private disks take, and offers to move it to the trash of your desktop,
+where you can restore it, or to delete it for good. The images of the
+library stay. The open project can't be removed: open another one first.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Show in Files&lt;/strong&gt; opens the folder of the project.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Export…&lt;/strong&gt; and &lt;strong&gt;Import…&lt;/strong&gt;, below.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;If the project that was open last can't be opened at start-up, the Projects
+window opens and says why, instead of creating a new &lt;tt class="docutils literal"&gt;new_project_N&lt;/tt&gt;.&lt;/p&gt;
+&lt;p&gt;The console has the same verbs, for a script or a lab without a display:
+&lt;tt class="docutils literal"&gt;project list&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;show&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;open&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;new&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;save&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;rename&lt;/tt&gt;,
+&lt;tt class="docutils literal"&gt;duplicate&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;delete&lt;/tt&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="exporting-a-project"&gt;
+&lt;h2&gt;Exporting a project&lt;/h2&gt;
+&lt;p&gt;An export writes the project to a single &lt;tt class="docutils literal"&gt;.vbp&lt;/tt&gt; file that you can copy to
+another computer, send to a student, or keep. The Export window asks where
+to save it and what to put in it, each with its size:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;the project, its file and its README, always;&lt;/li&gt;
+&lt;li&gt;the private disks of its machines, on by default;&lt;/li&gt;
+&lt;li&gt;the images they are based on, off by default, because they are often
+gigabytes and the other computer may already have them;&lt;/li&gt;
+&lt;li&gt;the other files of the project's folder, behind an expander.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Export Project window of wan-lab: the archive to write, then the project, three private disks of 811 MB, checked, the images frr-debian and debian-13 of 2.1 GB, not checked, and four other files" src="https://www.virtualbricks.it/images/projects-workspaces-and-files-in-virtualbricks-3-0/export.png" style="width: 83%;" /&gt;
+&lt;p class="caption"&gt;The private disks are in, the images out. The other files are behind the
+expander, opened here.&lt;/p&gt;
+&lt;/div&gt;
+&lt;p&gt;The export runs in a process of its own, at a lower priority, so the windows
+and the running bricks don't wait for it. It shows its progress in bytes, and
+you can stop it at any time, or close the window and let it finish: the Logs
+window says when it's done. It writes to a hidden file next to the
+destination and renames it at the end, so a stopped export leaves nothing
+behind, and an archive with the same name stays as it was.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Disks are packed.&lt;/strong&gt; When &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;qemu-img&lt;/span&gt;&lt;/tt&gt; is installed, each qcow2 disk is
+compressed on its own, inside the archive, with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;qemu-img&lt;/span&gt; convert &lt;span class="pre"&gt;-c&lt;/span&gt;&lt;/tt&gt;:
+with zstd since QEMU 5.1, with zlib before. A packed disk is still a qcow2
+file that QEMU can run. &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;qemu-img&lt;/span&gt;&lt;/tt&gt; uses several cores, and the archive
+isn't gzipped around the disks. On our test lab, a 4 GiB image with 600 MiB
+of data and a private disk, the archive was about the same size as a
+gzipped one, 259 MiB instead of 244, and was written about twenty times
+faster. Without &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;qemu-img&lt;/span&gt;&lt;/tt&gt;, the whole archive is gzipped, as
+before.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Holes stay holes.&lt;/strong&gt; A disk of 20 GB may hold 2 GB of data. The archive
+keeps the holes of sparse files, so an export doesn't store the zeros, and
+an import doesn't write them back.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;No tool is required.&lt;/strong&gt; 2.1 needed &lt;tt class="docutils literal"&gt;bsdtar&lt;/tt&gt;, which isn't always
+installed. Virtualbricks 3.0 uses &lt;tt class="docutils literal"&gt;bsdtar&lt;/tt&gt; when it's there, otherwise GNU
+&lt;tt class="docutils literal"&gt;tar&lt;/tt&gt;, otherwise Python's own &lt;tt class="docutils literal"&gt;tarfile&lt;/tt&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="importing-a-project"&gt;
+&lt;h2&gt;Importing a project&lt;/h2&gt;
+&lt;p&gt;&lt;em&gt;Import…&lt;/em&gt;, in the Projects menu or in the Projects window, asks for an
+archive and shows everything on one page:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;The name&lt;/strong&gt; of the new project: the one in the archive, or the next free
+one, &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;lab-2&lt;/span&gt;&lt;/tt&gt;, if it's taken. An import never replaces a project.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The README and the bricks&lt;/strong&gt; of the project, so you know what you are
+importing.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Each image&lt;/strong&gt; the project uses, with a choice: &lt;em&gt;Copy&lt;/em&gt; it from the archive
+to your image library, &lt;em&gt;Use a file…&lt;/em&gt; of this computer, or &lt;em&gt;Leave unset&lt;/em&gt;,
+for the disks to get an image later, in their settings. Every image has a
+default: one in the archive is copied, or found in your library when it
+already has a file with the same name and size; one that isn't in the
+archive uses the file at the same path, or the image of the library with
+that name.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;This computer's paths&lt;/strong&gt;: the folders of QEMU and VDE of the project are
+replaced with yours when they don't exist on this computer.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Open the project after the import&lt;/strong&gt;, on by default.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Since every choice has a default, the Import button works from the start.&lt;/p&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Import Project window: the archive, the name bgp-two-as, its README and its bricks, its two images, each with Copy, Use a file… and Leave unset, this computer's paths, and Open the project after the import" src="https://www.virtualbricks.it/images/projects-workspaces-and-files-in-virtualbricks-3-0/import.png" /&gt;
+&lt;p class="caption"&gt;An archive from another computer. tinycore is in it, and is copied to the
+library; frr-debian isn't, and the image of the library with that name is
+used. The folders of QEMU and VDE of the other computer aren't here, and
+this computer's take their place.&lt;/p&gt;
+&lt;/div&gt;
+&lt;p&gt;Choosing an archive reads only its head, the list of its contents, the
+project file and the README, a few kilobytes, and stops there, however
+large the archive is. Then the import extracts the archive into a hidden
+folder of the workspace, copies the images to the library, points each
+private disk at its new image, unpacks the packed disks, and renames the
+folder into place. If you stop it, or if it fails, it removes what it wrote,
+the copied images included. At the end, a &lt;em&gt;To check&lt;/em&gt; list says what needs
+your attention: an image left unset, a disk that couldn't be rebased.&lt;/p&gt;
+&lt;p&gt;The archives of 2.1 import too: their project file is converted on the fly,
+with the same code as the migration. Since they have no list of their
+contents, the page opens as soon as the project file is read, and the rest
+of the archive is scanned while you choose.&lt;/p&gt;
+&lt;p&gt;For now, Import and Export are greyed in the windows of a Virtualbricks that
+runs on another machine, opened with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt;: the archives stay on the
+machine they are on.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="inside-a-vbp"&gt;
+&lt;h2&gt;Inside a .vbp&lt;/h2&gt;
+&lt;p&gt;A &lt;tt class="docutils literal"&gt;.vbp&lt;/tt&gt; is a plain tar archive, in the pax format, so any tar can list it
+or extract it:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;tar&lt;span class="w"&gt; &lt;/span&gt;-tvf&lt;span class="w"&gt; &lt;/span&gt;lab.vbp
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The small files come first, then the larger ones, from the smallest to the
+largest:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;contents.toml        the list of the other members
+project.toml         the project
+README
+...                  the other files you chose
+vm1_hda.cow          the private disks
+.images/debian       the images, by their name in the project
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;contents.toml&lt;/tt&gt; says what the archive holds, the size of each member and
+whether it's packed:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;format&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;
+
+&lt;span class="k"&gt;[[members]]&lt;/span&gt;
+&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;project.toml&amp;quot;&lt;/span&gt;
+&lt;span class="n"&gt;size&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;255&lt;/span&gt;
+
+&lt;span class="k"&gt;[[members]]&lt;/span&gt;
+&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;README&amp;quot;&lt;/span&gt;
+&lt;span class="n"&gt;size&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;16&lt;/span&gt;
+
+&lt;span class="k"&gt;[[members]]&lt;/span&gt;
+&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;vm1_hda.cow&amp;quot;&lt;/span&gt;
+&lt;span class="n"&gt;size&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;197120&lt;/span&gt;
+&lt;span class="n"&gt;packed&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kc"&gt;true&lt;/span&gt;
+&lt;span class="n"&gt;real_size&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;196616&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The process that writes and reads the archives can be run by hand, to look
+into an archive or to script an export: it reads a job in TOML and answers
+with one line of JSON for each step.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nb"&gt;printf&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;job = &amp;quot;inspect&amp;quot;\narchive = &amp;quot;lab.vbp&amp;quot;\n&amp;#39;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;|&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;python&lt;span class="w"&gt; &lt;/span&gt;-m&lt;span class="w"&gt; &lt;/span&gt;virtualbricks.config.archive
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The manual page &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbricks-archive(7)&lt;/span&gt;&lt;/tt&gt; describes the format and the
+jobs.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="coming-from-2-1"&gt;
+&lt;h2&gt;Coming from 2.1&lt;/h2&gt;
+&lt;p&gt;The first time Virtualbricks 3.0 starts, it converts the files of 2.1, once,
+and shows what it converted in a window:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;~/.virtualbricks.conf&lt;/span&gt;&lt;/tt&gt; becomes &lt;tt class="docutils literal"&gt;settings.toml&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;state.toml&lt;/tt&gt;;&lt;/li&gt;
+&lt;li&gt;the &lt;tt class="docutils literal"&gt;.project&lt;/tt&gt; of each project becomes a &lt;tt class="docutils literal"&gt;project.toml&lt;/tt&gt; next to it;&lt;/li&gt;
+&lt;li&gt;the settings that now belong to a project, as the folders of QEMU and
+VDE, go into each project;&lt;/li&gt;
+&lt;li&gt;the keys take their new names, and the commands of the events become
+actions: &lt;tt class="docutils literal"&gt;sw1 on&lt;/tt&gt; becomes a &lt;tt class="docutils literal"&gt;start&lt;/tt&gt; of &lt;tt class="docutils literal"&gt;sw1&lt;/tt&gt;, and
+&lt;tt class="docutils literal"&gt;sw1 config numports=16&lt;/tt&gt; becomes &lt;tt class="docutils literal"&gt;brick set sw1 ports=16&lt;/tt&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The list of the migration window: .virtualbricks.conf and three projects migrated, dhcp-lab with a warning; below it, the messages of lab, one for each command of its event" src="https://www.virtualbricks.it/images/projects-workspaces-and-files-in-virtualbricks-3-0/migration.png" /&gt;
+&lt;p class="caption"&gt;The events of lab became actions. A switch of dhcp-lab had 500 ports,
+more than a switch may have, and has 32 now.&lt;/p&gt;
+&lt;/div&gt;
+&lt;p&gt;The old files are left as they were. The report of the last migration stays
+in &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;~/.local/state/virtualbricks/migration-report.txt&lt;/span&gt;&lt;/tt&gt;. Started with
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--workspace&lt;/span&gt;&lt;/tt&gt;, Virtualbricks converts the projects of that folder in the
+same way.&lt;/p&gt;
+&lt;p&gt;To see what the migration would do before you upgrade, run it on copies, into
+a folder laid out like the XDG folders:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;python&lt;span class="w"&gt; &lt;/span&gt;-m&lt;span class="w"&gt; &lt;/span&gt;virtualbricks.migrate&lt;span class="w"&gt; &lt;/span&gt;--settings&lt;span class="w"&gt; &lt;/span&gt;~/.virtualbricks.conf&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;~/vb-copy&lt;span class="w"&gt; &lt;/span&gt;/tmp/vb-test
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbricks-migrate&lt;/span&gt;&lt;/tt&gt; does the same in a window.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="try-it"&gt;
+&lt;h2&gt;Try it&lt;/h2&gt;
+&lt;p&gt;All of this is in the &lt;tt class="docutils literal"&gt;develop&lt;/tt&gt; branch: the &lt;a class="reference external" href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html"&gt;first post&lt;/a&gt; says how to
+install it. Export one of your labs, import it in another workspace, open
+its &lt;tt class="docutils literal"&gt;project.toml&lt;/tt&gt;, and tell us what breaks on &lt;a class="reference external" href="https://github.com/virtualsquare/virtualbricks/issues"&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+</content><category term="News"/><category term="release"/><category term="develop"/><category term="projects"/><category term="workspaces"/><category term="configuration"/></entry><entry><title>What's coming in Virtualbricks 3.0</title><link href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html" rel="alternate"/><published>2026-10-01T12:00:00+02:00</published><updated>2026-10-01T12:00:00+02:00</updated><author><name>Marco Giusti</name></author><id>tag:www.virtualbricks.it,2026-10-01:/whats-coming-in-virtualbricks-3-0.html</id><summary type="html">&lt;p class="first last"&gt;Since 2.1 the develop branch has been rewritten, from the windows
 to the command line: new tabs, workspaces side by side, and a
 Virtualbricks you can drive, and open, from another machine.&lt;/p&gt;
 </summary><content type="html">&lt;p&gt;Since version 2.1, the &lt;tt class="docutils literal"&gt;develop&lt;/tt&gt; branch of Virtualbricks has gone through
