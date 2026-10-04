@@ -1,8 +1,7 @@
 Virtualbricks 3.0: projects, workspaces and the new files
 ##########################################################
 
-:date: 2026-10-02 12:00
-:status: draft
+:date: 2026-10-04 12:00
 :category: News
 :tags: release, develop, projects, workspaces, configuration
 :slug: projects-workspaces-and-files-in-virtualbricks-3-0
@@ -231,14 +230,21 @@ The Projects window
 
 *Projects › Projects…* (Ctrl+O) opens one window for everything you do with
 your projects. The list, sorted by last use, shows the name of each project,
-the first line of its README, and a line of facts: its bricks, the space it
-takes, when it was used last. A project whose images are missing, or whose
-file can't be read, says so there. Typing filters the list by name and by
-description.
+the first line of its README, and a line of facts: its bricks and when it was
+used last. A project whose images are missing, or whose file can't be read,
+says so there. Typing filters the list by name and by description.
 
 The details of the selected project add its README, rendered, its bricks by
 type, its events, each image and whether it's on this computer, and the
 space taken by the private disks and by the other files.
+
+.. figure:: {static}/images/projects-workspaces-and-files-in-virtualbricks-3-0/projects.png
+   :alt: The Projects window: four projects on the left, the most recently
+         used first; on the right, the details of firewall-2025, with its
+         README, its bricks, its images and the space it takes
+
+   The image of firewall-2025 isn't on this computer: the list says so, and
+   the details say which one.
 
 - **Open**, **New…** and **Rename…**, with the name checked as you type: a
   name that is taken or not valid is refused before you press the button, not
@@ -276,6 +282,16 @@ to save it and what to put in it, each with its size:
 - the images they are based on, off by default, because they are often
   gigabytes and the other computer may already have them;
 - the other files of the project's folder, behind an expander.
+
+.. figure:: {static}/images/projects-workspaces-and-files-in-virtualbricks-3-0/export.png
+   :width: 83%
+   :alt: The Export Project window of wan-lab: the archive to write, then the
+         project, three private disks of 811 MB, checked, the images
+         frr-debian and debian-13 of 2.1 GB, not checked, and four other
+         files
+
+   The private disks are in, the images out. The other files are behind the
+   expander, opened here.
 
 The export runs in a process of its own, at a lower priority, so the windows
 and the running bricks don't wait for it. It shows its progress in bytes, and
@@ -329,6 +345,17 @@ archive and shows everything on one page:
 - **Open the project after the import**, on by default.
 
 Since every choice has a default, the Import button works from the start.
+
+.. figure:: {static}/images/projects-workspaces-and-files-in-virtualbricks-3-0/import.png
+   :alt: The Import Project window: the archive, the name bgp-two-as, its
+         README and its bricks, its two images, each with Copy, Use a file…
+         and Leave unset, this computer's paths, and Open the project after
+         the import
+
+   An archive from another computer. tinycore is in it, and is copied to the
+   library; frr-debian isn't, and the image of the library with that name is
+   used. The folders of QEMU and VDE of the other computer aren't here, and
+   this computer's take their place.
 
 Choosing an archive reads only its head, the list of its contents, the
 project file and the README, a few kilobytes, and stops there, however
@@ -418,6 +445,14 @@ and shows what it converted in a window:
 - the keys take their new names, and the commands of the events become
   actions: ``sw1 on`` becomes a ``start`` of ``sw1``, and
   ``sw1 config numports=16`` becomes ``brick set sw1 ports=16``.
+
+.. figure:: {static}/images/projects-workspaces-and-files-in-virtualbricks-3-0/migration.png
+   :alt: The list of the migration window: .virtualbricks.conf and three
+         projects migrated, dhcp-lab with a warning; below it, the messages
+         of lab, one for each command of its event
+
+   The events of lab became actions. A switch of dhcp-lab had 500 ports,
+   more than a switch may have, and has 32 now.
 
 The old files are left as they were. The report of the last migration stays
 in ``~/.local/state/virtualbricks/migration-report.txt``. Started with
