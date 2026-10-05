@@ -44,6 +44,8 @@ from virtualbricks.programs import (
     ProgramError,
     Programs,
     machine_question,
+    qemu_found,
+    vde_found,
 )
 from virtualbricks.remote import (
     answers,
@@ -555,6 +557,17 @@ class TestFacts(ClientTestCase):
         self.assertEqual(
             self.done(self.engine.folder("/usr/")), (["/usr/a/"], True)
         )
+
+    def test_programs_found_there(self):
+        # the folder of the setting there, with QEMU and nothing of VDE
+        folder = os.path.dirname(self.qemu)
+        vde, qemu = self.done(self.engine.programs_found("/nowhere", folder))
+        self.assertEqual(
+            (vde, qemu), (vde_found("/nowhere"), qemu_found(folder))
+        )
+        self.assertFalse(vde.exists)
+        self.assertEqual(qemu.found, {"qemu-system-x86_64": self.qemu})
+        self.assertEqual([m.program for m in qemu.missing], ["qemu-img"])
 
     def test_what_the_windows_read(self):
         machine = self.engine.machine

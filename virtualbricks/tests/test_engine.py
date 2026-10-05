@@ -34,13 +34,16 @@ from virtualbricks.config.settings import get_setting
 from virtualbricks.config.tomlfile import load_toml
 from virtualbricks.config.workspace import Workspace
 from virtualbricks.engine import LocalEngine, folder_entries
+from virtualbricks.programs import REQUIRED
 from virtualbricks.tests import (
     BrickTestCase,
     FakeTrash,
     isolate,
+    make_factory,
     short_folder,
     use_workspace,
 )
+from virtualbricks.tests.test_programs import executable
 from virtualbricks.tests.config.test_images import (
     INFO,
     FakeQemuImg,
@@ -652,3 +655,21 @@ class TestFolder(unittest.TestCase):
             self.successResultOf(engine.folder(self.folder + "/p")),
             ([self.folder + "/pc.qcow2"], False),
         )
+
+
+class TestProgramsFound(unittest.TestCase):
+    """What the folders of the programs hold, for the Settings window."""
+
+    def test_the_folders(self):
+        root = isolate(self)
+        folder = os.path.join(root, "qemu")
+        img = executable(folder, "qemu-img")
+        self.patch(os, "environ", dict(os.environ, PATH=""))
+        engine = LocalEngine(make_factory(self))
+        vde, qemu = self.successResultOf(
+            engine.programs_found(os.path.join(root, "vde"), folder)
+        )
+        self.assertFalse(vde.exists)
+        self.assertEqual(len(vde.missing), len(REQUIRED))
+        self.assertTrue(qemu.exists)
+        self.assertEqual(qemu.found, {"qemu-img": img})

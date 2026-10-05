@@ -443,20 +443,112 @@ REQUIRED = (
 )
 
 
+# The QEMU program that answers for a folder, if it has one.
+QEMU_OF_A_FOLDER = "qemu-system-x86_64"
+
+
+@attr.define(frozen=True)
+class FolderPrograms:
+    """
+    What a folder of the settings holds of the programs of the bricks: the
+    programs found, by name, with their path, in the folder or else in PATH;
+    and those that are missing. An empty folder is PATH alone.
+    """
+
+    folder: str
+    exists: bool
+    found: Mapping[str, str]
+    missing: tuple[Missing, ...]
+
+    def elsewhere(self) -> list[str]:
+        """The programs found in PATH, not in the folder, by name."""
+
+        folder = os.path.normpath(self.folder) if self.folder else None
+        return [
+            name
+            for name, path in self.found.items()
+            if os.path.dirname(path) != folder
+        ]
+
+    def emulators(self) -> list[str]:
+        """The QEMU system emulators found, by name."""
+
+        return [name for name in self.found if name.startswith("qemu-system-")]
+
+    def qemu(self) -> str | None:
+        """
+        The path of the QEMU that answers for the folder: QEMU_OF_A_FOLDER,
+        else the first of the emulators; None if it has none.
+        """
+
+        emulators = self.emulators()
+        if not emulators:
+            return None
+        name = QEMU_OF_A_FOLDER if QEMU_OF_A_FOLDER in emulators else None
+        return self.found[name or emulators[0]]
+
+    def to_data(self) -> dict:
+        """As JSON has it."""
+
+        return {
+            "folder": self.folder,
+            "exists": self.exists,
+            "found": dict(self.found),
+            "missing": [[m.program, m.package] for m in self.missing],
+        }
+
+    @classmethod
+    def from_data(cls, data: dict) -> FolderPrograms:
+        return cls(
+            str(data["folder"]),
+            bool(data["exists"]),
+            {str(name): str(path) for name, path in data["found"].items()},
+            tuple(Missing(*pair) for pair in data["missing"]),
+        )
+
+
+def _found(folder: str, names: Iterable[str]) -> dict[str, str]:
+    found = {}
+    for name in names:
+        path = find_program(name, folder)
+        if path is not None:
+            found[name] = path
+    return found
+
+
+def _exists(folder: str) -> bool:
+    return not folder or os.path.isdir(folder)
+
+
+def vde_found(folder: str) -> FolderPrograms:
+    """What folder holds of the VDE programs of the bricks."""
+
+    found = _found(folder, REQUIRED)
+    missing = tuple(
+        Missing(name, PACKAGES[name]) for name in REQUIRED if name not in found
+    )
+    return FolderPrograms(folder, _exists(folder), found, missing)
+
+
+def qemu_found(folder: str) -> FolderPrograms:
+    """
+    What folder holds of the QEMU programs: qemu-img and the system
+    emulators, as qemu-system-x86_64, of which the bricks need one.
+    """
+
+    found = _found(folder, ["qemu-img", *qemu_programs(folder)])
+    missing = []
+    if "qemu-img" not in found:
+        missing.append(Missing("qemu-img", PACKAGES["qemu-img"]))
+    if not any(name.startswith("qemu-system-") for name in found):
+        missing.append(Missing(QEMU_OF_A_FOLDER, PACKAGES[QEMU_OF_A_FOLDER]))
+    return FolderPrograms(folder, _exists(folder), found, tuple(missing))
+
+
 def missing_programs(vde_folder: str, qemu_folder: str) -> list[Missing]:
     """The programs of the bricks that aren't installed."""
 
-    missing = [
-        Missing(name, PACKAGES[name])
-        for name in REQUIRED
-        if find_program(name, vde_folder) is None
-    ]
-    if find_program("qemu-img", qemu_folder) is None:
-        missing.append(Missing("qemu-img", PACKAGES["qemu-img"]))
-    if not qemu_programs(qemu_folder):
-        name = "qemu-system-x86_64"
-        missing.append(Missing(name, PACKAGES[name]))
-    return missing
+    return [*vde_found(vde_folder).missing, *qemu_found(qemu_folder).missing]
 
 
 # Asking the programs

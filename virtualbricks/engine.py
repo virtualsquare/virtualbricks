@@ -58,7 +58,12 @@ from virtualbricks.config.settings import (
     store_settings,
 )
 from virtualbricks.config.workspace import projects
-from virtualbricks.programs import programs as known_programs, qemu_programs
+from virtualbricks.programs import (
+    programs as known_programs,
+    qemu_found,
+    qemu_programs,
+    vde_found,
+)
 from virtualbricks.qemu import run
 
 # How many entries of a folder the completion of a path gets at once.
@@ -486,6 +491,17 @@ class LocalEngine:
         """
 
         return defer.succeed(folder_entries(path))
+
+    def programs_found(self, vde_path, qemu_path) -> defer.Deferred:
+        """
+        What the folders of the VDE and the QEMU programs hold, two
+        FolderPrograms, as the Settings window shows them before they are
+        the settings.
+        """
+
+        return defer.maybeDeferred(
+            lambda: (vde_found(vde_path), qemu_found(qemu_path))
+        )
 
     def quit(self) -> defer.Deferred:
         """Quit Virtualbricks, refused while bricks run."""

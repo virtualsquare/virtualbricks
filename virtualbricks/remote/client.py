@@ -62,7 +62,12 @@ from virtualbricks.config.schema import kind_of
 from virtualbricks.console import ampcommands, ampwire, wire
 from virtualbricks.console import client as console_client
 from virtualbricks.i18n import _
-from virtualbricks.programs import Answer, parse_machine_properties, qemu_info
+from virtualbricks.programs import (
+    Answer,
+    FolderPrograms,
+    parse_machine_properties,
+    qemu_info,
+)
 from virtualbricks.remote import commands
 from virtualbricks.remote.commands import BRICK, EVENT, IMAGE
 from virtualbricks.remote.drafts import what_changed
@@ -896,6 +901,17 @@ class RemoteEngine:
         asking = self.call(commands.Folder, path=path)
         return asking.addCallback(
             lambda answer: (list(answer["entries"]), answer["more"])
+        )
+
+    def programs_found(self, vde_path, qemu_path):
+        asking = self.call(
+            commands.ProgramsFound, vde_path=vde_path, qemu_path=qemu_path
+        )
+        return asking.addCallback(
+            lambda answer: tuple(
+                FolderPrograms.from_data(json.loads(answer[name]))
+                for name in ("vde", "qemu")
+            )
         )
 
     def usb(self):

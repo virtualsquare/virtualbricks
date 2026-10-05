@@ -19,7 +19,8 @@
 """
 The facts of the machine of the bricks that the windows of another machine
 ask for (page 19 §7): what its QEMU programs have, the properties of a
-machine type, its USB devices, what a file is. The texts of QEMU go as QEMU
+machine type, its USB devices, what a file is, what the folders of the
+programs hold. The texts of QEMU go as QEMU
 printed them; the windows read them with programs.py and config/images.py,
 as they read those of their own.
 
@@ -42,7 +43,12 @@ from virtualbricks.console import ampcommands, ampwire
 from virtualbricks.engine import folder_entries
 from virtualbricks.errors import CommandError, InvalidNameError
 from virtualbricks.i18n import _
-from virtualbricks.programs import ProgramError, programs
+from virtualbricks.programs import (
+    ProgramError,
+    programs,
+    qemu_found,
+    vde_found,
+)
 from virtualbricks.qemu import run
 from virtualbricks.remote import commands
 from virtualbricks.remote.follower import file_facts
@@ -227,3 +233,18 @@ class Facts(amp.CommandLocator):
             return {"entries": entries, "more": more}
 
         return self._answer_fact("Folder", ask)
+
+    @commands.ProgramsFound.responder
+    def programs_found(self, vde_path, qemu_path):
+        def ask():
+            return {
+                name: one_value(
+                    json.dumps(found.to_data(), ensure_ascii=False)
+                )
+                for name, found in (
+                    ("vde", vde_found(vde_path)),
+                    ("qemu", qemu_found(qemu_path)),
+                )
+            }
+
+        return self._answer_fact("ProgramsFound", ask)

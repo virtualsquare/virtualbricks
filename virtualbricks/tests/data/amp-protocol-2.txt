@@ -76,6 +76,7 @@ SetReadme text:str -> ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED AN
 ReadmePicture name:str path:str offset:int -> data:bytes size:int ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 SetKsm enable:bool -> enabled:bool ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 Folder path:str -> entries:[str] more:bool ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
+ProgramsFound vde_path:str qemu_path:str -> vde:str qemu:str ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 Attach brick:str console:str -> ! NOT_FOUND BAD_ARGUMENT PROTOCOL_NEEDED COMMAND_FAILED ANSWER_TOO_LONG TOKEN_NEEDED
 Opened project:str? settings:str machine:str -> !
 Changed kind:str name:str table:str state:str -> !

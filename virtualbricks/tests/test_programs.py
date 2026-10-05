@@ -35,6 +35,7 @@ from virtualbricks.programs import (
     Answer,
     Device,
     Entry,
+    FolderPrograms,
     Missing,
     ProgramError,
     Programs,
@@ -52,9 +53,11 @@ from virtualbricks.programs import (
     parse_options,
     parse_vde_options,
     parse_version,
+    qemu_found,
     qemu_info,
     qemu_programs,
     run,
+    vde_found,
     vde_info,
 )
 
@@ -429,6 +432,78 @@ class TestFind(ProgramsTestCase):
     def test_packages(self):
         for name in REQUIRED:
             self.assertIsNotNone(PACKAGES[name], name)
+
+
+class TestFolderPrograms(ProgramsTestCase):
+    """What a folder of the settings holds, for the Settings window."""
+
+    def test_vde(self):
+        switch = executable(self.bin, "vde_switch")
+        plug = executable(self.path, "vde_plug")
+        found = vde_found(self.bin)
+        self.assertTrue(found.exists)
+        self.assertEqual(found.found, {"vde_switch": switch, "vde_plug": plug})
+        self.assertEqual(found.elsewhere(), ["vde_plug"])
+        self.assertEqual(
+            [m.program for m in found.missing],
+            [name for name in REQUIRED if name not in found.found],
+        )
+
+    def test_qemu(self):
+        img = executable(self.bin, "qemu-img")
+        arm = executable(self.bin, "qemu-system-arm")
+        x86 = executable(self.path, "qemu-system-x86_64")
+        found = qemu_found(self.bin)
+        self.assertEqual(
+            found.found,
+            {
+                "qemu-img": img,
+                "qemu-system-arm": arm,
+                "qemu-system-x86_64": x86,
+            },
+        )
+        self.assertEqual(found.missing, ())
+        self.assertEqual(
+            found.emulators(), ["qemu-system-arm", "qemu-system-x86_64"]
+        )
+        # qemu-system-x86_64 answers for the folder, wherever it is
+        self.assertEqual(found.qemu(), x86)
+
+    def test_qemu_without_x86_64(self):
+        arm = executable(self.bin, "qemu-system-arm")
+        found = qemu_found(self.bin)
+        self.assertEqual(found.qemu(), arm)
+        self.assertEqual(found.missing, (Missing("qemu-img", "qemu-utils"),))
+
+    def test_no_qemu(self):
+        found = qemu_found(self.bin)
+        # the folder isn't there either
+        self.assertFalse(found.exists)
+        self.assertIsNone(found.qemu())
+        self.assertEqual(
+            found.missing,
+            (
+                Missing("qemu-img", "qemu-utils"),
+                Missing("qemu-system-x86_64", "qemu-system-x86"),
+            ),
+        )
+
+    def test_path_alone(self):
+        executable(self.path, "qemu-img")
+        found = qemu_found("")
+        # no folder: PATH alone, which isn't missing
+        self.assertTrue(found.exists)
+        self.assertEqual(found.elsewhere(), ["qemu-img"])
+
+    def test_a_folder_written_with_a_slash(self):
+        executable(self.bin, "qemu-img")
+        self.assertEqual(qemu_found(self.bin + "/").elsewhere(), [])
+
+    def test_data(self):
+        executable(self.bin, "vde_switch")
+        found = vde_found(self.bin)
+        data = json.loads(json.dumps(found.to_data()))
+        self.assertEqual(FolderPrograms.from_data(data), found)
 
 
 class FakeRun:

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 12:49+0200\n"
+"POT-Creation-Date: 2026-10-05 13:14+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1037,7 +1037,7 @@ msgstr ""
 msgid "Give the machine ACPI"
 msgstr ""
 
-#: virtualbricks/bricks/virtualmachine.py
+#: virtualbricks/bricks/virtualmachine.py virtualbricks/settingsdraft.py
 #, python-brace-format
 msgid "QEMU {version} doesn't list its drivers: this one is taken on trust"
 msgstr ""
@@ -4901,4 +4901,80 @@ msgstr ""
 #: virtualbricks/remote/tunnel.py
 #, python-brace-format
 msgid "needs {program} of {package}"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid "{where} has no KSM"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+msgid "This Linux has no KSM"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid "{count} emulators"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid "QEMU {version}: {programs}"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid "{note}; in PATH, not here: {programs}"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid "In PATH, not here: {programs}"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid "The {count} VDE programs of the bricks are in PATH"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid "The {count} VDE programs of the bricks are here"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+msgid "No terminal: the consoles of the bricks can't open"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid ""
+"No program {terminal} on this computer: the consoles of the bricks can't open"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid ""
+"QEMU {version} has no audio driver {driver}: a machine with a sound card "
+"starts without it"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid "No folder {folder} on {where}"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid "No folder {folder}"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid "Missing here and in PATH: {programs}"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid "Missing in PATH: {programs}"
 msgstr ""
