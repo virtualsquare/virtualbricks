@@ -152,6 +152,16 @@ class TestPages(WindowTestCase):
         )
         self.assertTrue(project.form.widget.get_sensitive())
 
+    def test_its_width(self):
+        # not as wide as the captions on one line, as GTK would open it
+        window = self.window()
+        width, height = window.dialog.get_default_size()
+        self.assertEqual((width, height), (settings_window.WIDTH, -1))
+        # nor narrower
+        self.assertEqual(
+            window.notebook.get_size_request(), (settings_window.WIDTH, -1)
+        )
+
     def test_without_a_project(self):
         window = self.window()
         project = window.pages[-1]

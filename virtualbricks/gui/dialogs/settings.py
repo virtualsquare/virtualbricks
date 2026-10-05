@@ -181,6 +181,10 @@ class SettingsWindow(Window):
         # as wide as this at least: a window is as tall as its content is at
         # its narrowest, where the captions take more lines
         self.notebook.set_size_request(WIDTH, -1)
+        # and as wide as this when it opens: else GTK opens a window as wide
+        # as its content wants, up to the screen, and a caption that wraps
+        # wants all of its text on one line
+        self.dialog.set_default_size(WIDTH, -1)
         self.dialog.get_content_area().pack_start(self.notebook, True, True, 0)
         engine = self.engine
         here = Owner(AppSettings, get_setting, engine.set_settings)
