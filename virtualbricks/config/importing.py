@@ -24,7 +24,8 @@ found (``plan_import``); every choice has a default. The archive process runs
 it (``run_import``):
 
 1. The archive is extracted into a hidden folder of the workspace,
-   ``.importing-<name>-*``, which the list of projects ignores.
+   ``.importing-<name>-*``, which the list of projects ignores; a README of
+   before 3.0 becomes ``README.md``.
 2. The images copied from the archive go to the image library,
    ``<workspace>/vimages``.
 3. The project file gets the paths of the images and, if chosen, this
@@ -73,6 +74,7 @@ from virtualbricks.config.projectfile import (
     read_project_file,
     remap_image,
     upgrade_project,
+    upgrade_readme,
     write_project_file,
 )
 from virtualbricks.config.report import Report
@@ -370,6 +372,7 @@ class _Import:
         os.makedirs(self.staging, exist_ok=True)
         extract(str(self.job["archive"]), self.staging, self.tool, self.emit)
         self.read_contents()
+        upgrade_readme(self.staging)
         project_file = os.path.join(self.staging, locations.PROJECT_FILE)
         if os.path.isfile(project_file):
             data = self.read_project(project_file)

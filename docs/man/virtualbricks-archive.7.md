@@ -85,10 +85,12 @@ in its messages (see **inspect**):
 :   *legacy project*: the project file of Virtualbricks 2.1 and older. It is
     converted as the migration does.
 
-**README**
+**README.md**, **README**
 :   *readme*: the description of the project, plain text in UTF-8 that
     Virtualbricks reads as Markdown (see **README** in
-    **virtualbricks-config**(5)). The archive keeps it as it is.
+    **virtualbricks-config**(5)). The archive keeps it as it is. Before 3.0
+    it was **README**, which the import renames to **README.md**; in an
+    archive with both, **README.md** is the README.
 
 *vm*\_*device*.cow
 :   *disk*: the private disk of the device *device*, as **hda** or **vdb**, of
@@ -115,7 +117,7 @@ the gigabytes that follow it.
 ```
   +----------+---------+--------+-------+-------+-----------+
   | contents | project | README | other | disks | .images/  |
-  |   .toml  |  .toml  |        | files |       |           |
+  |   .toml  |  .toml  |  .md   | files |       |           |
   +----------+---------+--------+-------+-------+-----------+
   |<---------- head ----------->|<--- smallest to largest ->|
          read by inspect               read by import
@@ -134,7 +136,7 @@ name = "project.toml"
 size = 255
 
 [[members]]
-name = "README"
+name = "README.md"
 size = 16
 
 [[members]]
@@ -444,7 +446,7 @@ Write an archive of a project:
 job = "export"
 project = "/home/user/.virtualbricks/lab"
 output = "/home/user/lab.vbp"
-files = ["project.toml", "README", "vm1_hda.cow"]
+files = ["project.toml", "README.md", "vm1_hda.cow"]
 images = [["debian", "/srv/vm/debian-12.qcow2"]]
 compression = "none"
 qemu_img = "/usr/bin/qemu-img"
@@ -459,7 +461,8 @@ qemu_img = "/usr/bin/qemu-img"
 
 **files** = *array of strings*
 :   The files of the project to store, relative to its folder. The Export
-    window always stores **project.toml** and **README**, and lets you choose
+    window always stores **project.toml** and the README, **README.md** or,
+    in a project not opened since 3.0, **README**, and lets you choose
     the private disks, the other files and the images; it never stores what
     older versions left in the folder: the *.images* folder and the
     *.project* files.
@@ -489,9 +492,9 @@ The export takes these steps:
 
 ```
  lab/project.toml  -- link -->  +---------------------------+
- lab/README        -- link -->  | .virtualbricks-export-*/  |
+ lab/README.md     -- link -->  | .virtualbricks-export-*/  |
  lab/vm1_hda.cow   -- pack -->  |   contents.toml           |
- debian-12.qcow2   -- pack -->  |   project.toml  README    |
+ debian-12.qcow2   -- pack -->  |   project.toml  README.md |
                                 |   vm1_hda.cow             |
                                 |   .images/debian          |
                                 +---------------------------+
@@ -596,7 +599,7 @@ The import takes these steps:
  +-- .importing-lab-k2x9q1ab/   1  extract the archive here
  |     contents.toml            2  note what's packed, remove
  |     project.toml             3  read, or convert .project
- |     README
+ |     README.md
  |     .images/debian  ---.     4  copy, use or skip images
  |     vm1_hda.cow        |     5  rewrite project.toml
  |                        |     6  rebase -u the private
@@ -609,7 +612,8 @@ The import takes these steps:
 
 1. Extract the archive into **staging**, in the step **extract**.
 2. Read which members are packed from **contents.toml**, and remove it: it
-   isn't a file of the project.
+   isn't a file of the project. Rename **README**, the README of before
+   3.0, to **README.md**, unless there is one.
 3. Read the project file and upgrade it, or convert **.project**.
 4. Move each copied image to the library, sending it with **created**; then
    remove the *.images* folder with the images that aren't copied.
@@ -792,7 +796,7 @@ The result, laid out:
   "description": "A two-host lab.\n",
   "members": [
     ["project.toml", 255, "project", false, 0],
-    ["README", 16, "readme", false, 0],
+    ["README.md", 16, "readme", false, 0],
     ["vm1_hda.cow", 197120, "disk", true, 196616],
     [".images/debian", 197120, "image", true, 196616]
   ],

@@ -87,7 +87,6 @@ if TYPE_CHECKING:  # pragma: no cover
 # The format of contents.toml.
 FORMAT = 1
 CONTENTS = "contents.toml"
-README = "README"
 IMAGES = ".images"
 # The largest size the octal field of a tar header holds.
 OCTAL_SIZE_MAX = 8**11 - 1
@@ -177,7 +176,7 @@ def member_kind(name: str) -> str:
         locations.LEGACY_PROJECT_FILE + "~",
     ):
         return LEGACY_PROJECT
-    if name == README:
+    if name in (locations.README, locations.LEGACY_README):
         return README_KIND
     if name.startswith(IMAGES + "/") and name.count("/") == 1:
         return IMAGE
@@ -352,7 +351,11 @@ class _Head:
 
     def add(self, member: Member, data: bytes | None) -> None:
         self.members.append(member)
-        if data is not None:
+        # README.md is the README, if the archive has both
+        if data is not None and not (
+            normalize(member.name) == locations.LEGACY_README
+            and README_KIND in self.files
+        ):
             self.files[member.kind] = data
             if member.kind == CONTENTS_KIND:
                 self.listed = read_contents(data)

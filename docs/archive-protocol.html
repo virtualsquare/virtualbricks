@@ -381,7 +381,7 @@
 <tr><th scope="row"><code class="key">contents.toml</code></th><td class="kind">contents</td><td class="meaning"><p>The list of the members; see <a href="#archive-contents">contents.toml</a> below.</p></td></tr>
 <tr><th scope="row"><code class="key">project.toml</code></th><td class="kind">project</td><td class="meaning"><p>The project file, described in <a class="man" href="config-files.html#projects"><code>virtualbricks-config</code>(5)</a>.</p></td></tr>
 <tr><th scope="row"><code class="key">.project</code>, <code class="key">.project~</code></th><td class="kind">legacy project</td><td class="meaning"><p>The project file of Virtualbricks 2.1 and older. It is converted as the migration does.</p></td></tr>
-<tr><th scope="row"><code class="key">README</code></th><td class="kind">readme</td><td class="meaning"><p>The description of the project, plain text in UTF-8 that Virtualbricks reads as Markdown (see <a class="man" href="config-files.html#projects-readme">README in <code>virtualbricks-config</code>(5)</a>). The archive keeps it as it is.</p></td></tr>
+<tr><th scope="row"><code class="key">README.md</code>, <code class="key">README</code></th><td class="kind">readme</td><td class="meaning"><p>The description of the project, plain text in UTF-8 that Virtualbricks reads as Markdown (see <a class="man" href="config-files.html#projects-readme">README in <code>virtualbricks-config</code>(5)</a>). The archive keeps it as it is. Before 3.0 it was <code>README</code>, which the import renames to <code>README.md</code>; in an archive with both, <code>README.md</code> is the README.</p></td></tr>
 <tr><th scope="row"><code class="key"><em>vm</em>_<em>device</em>.cow</code></th><td class="kind">disk</td><td class="meaning"><p>The private disk of the device <em>device</em>, as <code>hda</code> or <code>vdb</code>, of the virtual machine <em>vm</em>. Only at the top of the archive; <em>device</em> has only lowercase letters and digits.</p></td></tr>
 <tr><th scope="row"><code class="key">.images/<em>image</em></code></th><td class="kind">image</td><td class="meaning"><p>The disk image called <em>image</em> in the project file. The member is named after the image, not after its file: an image <code>debian</code> whose file is <em>/srv/vm/debian-12.qcow2</em> is stored as <em>.images/debian</em>.</p></td></tr>
 <tr><th scope="row"><span class="none">any other name</span></th><td class="kind">other</td><td class="meaning"><p>A file of the project&#39;s folder that you chose to export. The import puts it back where it was.</p></td></tr>
@@ -391,7 +391,7 @@
 <p>A new archive starts with <code>contents.toml</code>, then the project file and the README: together, the <em>head</em> of the archive. The other files, the private disks and the images follow, in this order, each group from the smallest file to the largest. An inspection reads the head and stops there, without reading the gigabytes that follow it.</p>
 <figure class="diagram">
   <div class="canvas">
-    <svg class="dg" viewBox="0 0 760 152" role="img" aria-label="The members of a new archive in file order: contents.toml, project.toml and README form the head, which an inspection reads; then the other files, the private disks and the images, each group from smallest to largest, which only an import reads.">
+    <svg class="dg" viewBox="0 0 760 152" role="img" aria-label="The members of a new archive in file order: contents.toml, project.toml and README.md form the head, which an inspection reads; then the other files, the private disks and the images, each group from smallest to largest, which only an import reads.">
       <text x="16" y="22" class="mono small muted">offset 0</text>
       <text x="744" y="22" text-anchor="end" class="mono small muted">end of the archive</text>
       <rect x="16" y="32" width="104" height="50" class="box-accent"/>
@@ -399,7 +399,7 @@
       <rect x="120" y="32" width="100" height="50" class="box-accent"/>
       <text x="170" y="61" text-anchor="middle" class="mono small">project.toml</text>
       <rect x="220" y="32" width="76" height="50" class="box-accent"/>
-      <text x="258" y="61" text-anchor="middle" class="mono small">README</text>
+      <text x="258" y="61" text-anchor="middle" class="mono small">README.md</text>
       <rect x="296" y="32" width="36" height="50" class="box"/>
       <rect x="332" y="32" width="60" height="50" class="box"/>
       <rect x="392" y="32" width="34" height="50" class="box"/>
@@ -428,7 +428,7 @@
 <span class="k">size</span> = 255
 
 <span class="h">[[members]]</span>
-<span class="k">name</span> = "README"
+<span class="k">name</span> = "README.md"
 <span class="k">size</span> = 16
 
 <span class="h">[[members]]</span>
@@ -630,14 +630,14 @@
 <figure class="code"><pre><code><span class="k">job</span> = "export"
 <span class="k">project</span> = "/home/user/.virtualbricks/lab"
 <span class="k">output</span> = "/home/user/lab.vbp"
-<span class="k">files</span> = ["project.toml", "README", "vm1_hda.cow"]
+<span class="k">files</span> = ["project.toml", "README.md", "vm1_hda.cow"]
 <span class="k">images</span> = [["debian", "/srv/vm/debian-12.qcow2"]]
 <span class="k">compression</span> = "none"
 <span class="k">qemu_img</span> = "/usr/bin/qemu-img"</code></pre></figure>
 <div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead><tbody>
 <tr><th scope="row"><code class="key">project</code></th><td class="kind">path</td><td class="meaning"><p>The folder of the project.</p></td></tr>
 <tr><th scope="row"><code class="key">output</code></th><td class="kind">path</td><td class="meaning"><p>The archive to write. A file with that name is replaced when the export ends.</p></td></tr>
-<tr><th scope="row"><code class="key">files</code></th><td class="kind">array of strings</td><td class="meaning"><p>The files of the project to store, relative to its folder. The Export window always stores <code>project.toml</code> and <code>README</code>, and lets you choose the private disks, the other files and the images; it never stores what older versions left in the folder: the <em>.images</em> folder and the <em>.project</em> files.</p></td></tr>
+<tr><th scope="row"><code class="key">files</code></th><td class="kind">array of strings</td><td class="meaning"><p>The files of the project to store, relative to its folder. The Export window always stores <code>project.toml</code> and the README, <code>README.md</code> or, in a project not opened since 3.0, <code>README</code>, and lets you choose the private disks, the other files and the images; it never stores what older versions left in the folder: the <em>.images</em> folder and the <em>.project</em> files.</p></td></tr>
 <tr><th scope="row"><code class="key">images</code></th><td class="kind">array of [<em>name</em>, <em>path</em>]</td><td class="meaning"><p>The images to store, as <em>.images/name</em>.</p></td></tr>
 <tr><th scope="row"><code class="key">compression</code></th><td class="kind">"gzip" | "none"</td><td class="meaning"><p>Whether to compress the archive with gzip, <code>"gzip"</code> by default. The application asks for <code>"none"</code> when it gives <code>qemu_img</code>.</p></td></tr>
 <tr><th scope="row"><code class="key">qemu_img</code></th><td class="kind">path</td><td class="meaning"><p>The <code>qemu-img</code> that packs the disks, or &quot;&quot;, the default, not to pack them.</p></td></tr>
@@ -661,7 +661,7 @@
       <rect x="16" y="83" width="184" height="26" rx="5" class="box"/>
       <text x="26" y="100" class="mono small">lab/project.toml</text>
       <rect x="16" y="113" width="184" height="26" rx="5" class="box"/>
-      <text x="26" y="130" class="mono small">lab/README</text>
+      <text x="26" y="130" class="mono small">lab/README.md</text>
       <rect x="16" y="143" width="184" height="26" rx="5" class="box"/>
       <text x="26" y="160" class="mono small">lab/vm1_hda.cow</text>
       <rect x="16" y="173" width="184" height="26" rx="5" class="box"/>
@@ -681,7 +681,7 @@
       <text x="292" y="70" class="mono small t-accent">contents.toml</text>
       <text x="468" y="70" text-anchor="end" class="small muted">written here</text>
       <text x="292" y="100" class="mono small">project.toml</text>
-      <text x="292" y="130" class="mono small">README</text>
+      <text x="292" y="130" class="mono small">README.md</text>
       <text x="292" y="160" class="mono small">vm1_hda.cow</text>
       <text x="292" y="190" class="mono small">.images/debian</text>
 
@@ -759,7 +759,7 @@
       <text x="36" y="108" class="mono small">project.toml</text>
       <circle cx="290" cy="104" r="9" class="badge"/><text x="290" y="108" text-anchor="middle" class="badge-text">3</text>
       <circle cx="312" cy="104" r="9" class="badge"/><text x="312" y="108" text-anchor="middle" class="badge-text">5</text>
-      <text x="36" y="140" class="mono small">README</text>
+      <text x="36" y="140" class="mono small">README.md</text>
       <text x="36" y="172" class="mono small">vm1_hda.cow</text>
       <circle cx="268" cy="168" r="9" class="badge"/><text x="268" y="172" text-anchor="middle" class="badge-text">6</text>
       <circle cx="290" cy="168" r="9" class="badge"/><text x="290" y="172" text-anchor="middle" class="badge-text">7</text>
@@ -775,7 +775,7 @@
       <rect x="460" y="16" width="284" height="130" rx="8" class="box"/>
       <text x="474" y="40" class="mono small strong">workspace/lab/</text>
       <text x="480" y="76" class="mono small">project.toml</text>
-      <text x="480" y="104" class="mono small">README</text>
+      <text x="480" y="104" class="mono small">README.md</text>
       <text x="480" y="132" class="mono small">vm1_hda.cow</text>
       <rect x="460" y="184" width="284" height="58" rx="8" class="box"/>
       <text x="474" y="206" class="mono small strong">workspace/vimages/</text>
@@ -788,7 +788,7 @@
 </figure>
 <ol class="steps">
 <li>Extract the archive into <code>staging</code>, in the step <code>extract</code>.</li>
-<li>Read which members are packed from <code>contents.toml</code>, and remove it: it isn&#39;t a file of the project.</li>
+<li>Read which members are packed from <code>contents.toml</code>, and remove it: it isn&#39;t a file of the project. Rename <code>README</code>, the README of before 3.0, to <code>README.md</code>, unless there is one.</li>
 <li>Read the project file and upgrade it, or convert <code>.project</code>.</li>
 <li>Move each copied image to the library, sending it with <code>created</code>; then remove the <em>.images</em> folder with the images that aren&#39;t copied.</li>
 <li>Rewrite <code>project.toml</code> with the path of each image, &quot;&quot; for an image left unset, and with <code>settings</code>.</li>
@@ -892,7 +892,7 @@ job.done.addCallback(show)</code></pre></figure>
   <span class="k">"description"</span>: "A two-host lab.\n",
   <span class="k">"members"</span>: [
     ["project.toml", 255, "project", false, 0],
-    ["README", 16, "readme", false, 0],
+    ["README.md", 16, "readme", false, 0],
     ["vm1_hda.cow", 197120, "disk", true, 196616],
     [".images/debian", 197120, "image", true, 196616]
   ],

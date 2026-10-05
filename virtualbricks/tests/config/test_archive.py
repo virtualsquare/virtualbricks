@@ -187,6 +187,7 @@ class TestMembers(unittest.TestCase):
         self.assertEqual(kind("./project.toml"), "project")
         self.assertEqual(kind(".project"), "legacy project")
         self.assertEqual(kind(".project~"), "legacy project")
+        self.assertEqual(kind("README.md"), "readme")
         self.assertEqual(kind("README"), "readme")
         self.assertEqual(kind(".images/deb"), "image")
         self.assertEqual(kind(".images/a/b"), "other")

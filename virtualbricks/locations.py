@@ -32,6 +32,9 @@ TOKEN_FILE = "token"
 PROJECT_FILE = "project.toml"
 LEGACY_SETTINGS_FILE = ".virtualbricks.conf"
 LEGACY_PROJECT_FILE = ".project"
+# The README of a project, and its name before 3.0.
+README = "README.md"
+LEGACY_README = "README"
 # The longest path a Unix socket can have, without the final NUL.
 SOCKET_PATH_MAX = 107
 # The longest a brick's name adds to the runtime directory: a plug's socket

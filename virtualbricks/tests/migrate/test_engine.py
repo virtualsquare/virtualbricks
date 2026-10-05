@@ -248,7 +248,7 @@ class TestMigrateToFolder(EngineTestCase):
         # private copies are always qcow2
         self.assertNotIn("cow_format", project["settings"])
         self.assertIs(project["settings"]["allow_female_plugs"], True)
-        with open(os.path.join(target.workspace, "lab1", "README")) as fp:
+        with open(os.path.join(target.workspace, "lab1", "README.md")) as fp:
             self.assertEqual(fp.read(), "My lab\n")
         self.assertFalse(
             os.path.exists(os.path.join(target.workspace, "lab1", "notes"))
@@ -277,7 +277,7 @@ class TestMigrateToFolder(EngineTestCase):
         migration = self.folder_migration(copy_files=True).run()
         lab1 = migration.target.project_dir("lab1")
         self.assertEqual(
-            sorted(os.listdir(lab1)), ["README", "notes", "project.toml"]
+            sorted(os.listdir(lab1)), ["README.md", "notes", "project.toml"]
         )
         self.assertEqual(os.listdir(os.path.join(lab1, "notes")), ["a.txt"])
 

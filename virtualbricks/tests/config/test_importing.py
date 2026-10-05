@@ -367,7 +367,7 @@ class TestRunImport(ImportingTestCase):
         folder = self.workspace.project_path("lab")
         self.assertEqual(
             sorted(os.listdir(folder)),
-            ["README", "project.toml", "vm_hda.cow"],
+            ["README.md", "project.toml", "vm_hda.cow"],
         )
         # the folder isn't private like a temporary one
         self.assertTrue(os.stat(folder).st_mode & stat.S_IROTH)

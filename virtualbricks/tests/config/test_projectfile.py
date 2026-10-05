@@ -49,6 +49,7 @@ from virtualbricks.config.projectfile import (
     save_project,
     socket_target,
     upgrade_project,
+    upgrade_readme,
 )
 from virtualbricks.config.tomlfile import (
     FORMAT_NOTE,
@@ -425,6 +426,46 @@ class TestUpgrade(ProjectFileTestCase):
             upgrade_project({"format": 1}, self.report),
             {"format": 1, "one": True, "two": True},
         )
+
+
+class TestUpgradeReadme(unittest.TestCase):
+
+    def setUp(self):
+        self.folder = self.mktemp()
+        os.makedirs(self.folder)
+
+    def write(self, name, text):
+        with open(os.path.join(self.folder, name), "w") as fp:
+            fp.write(text)
+
+    def files(self):
+        result = {}
+        for name in sorted(os.listdir(self.folder)):
+            with open(os.path.join(self.folder, name)) as fp:
+                result[name] = fp.read()
+        return result
+
+    def test_renamed(self):
+        self.write("README", "A lab")
+        upgrade_readme(self.folder)
+        self.assertEqual(self.files(), {"README.md": "A lab"})
+
+    def test_a_readme_md_stays(self):
+        self.write("README", "A lab")
+        self.write("README.md", "The lab")
+        upgrade_readme(self.folder)
+        self.assertEqual(
+            self.files(), {"README": "A lab", "README.md": "The lab"}
+        )
+
+    def test_without_a_readme(self):
+        upgrade_readme(self.folder)
+        self.assertEqual(self.files(), {})
+
+    def test_a_folder_named_readme_stays(self):
+        os.mkdir(os.path.join(self.folder, "README"))
+        upgrade_readme(self.folder)
+        self.assertEqual(os.listdir(self.folder), ["README"])
 
 
 class TestLenientReading(ProjectFileTestCase):

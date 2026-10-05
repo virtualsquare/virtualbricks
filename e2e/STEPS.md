@@ -177,12 +177,12 @@ The steps of the tab Readme:
 
 | Step | What it does |
 | :- | :- |
-| `Given the project new_project has the README`, with a text under it | The folder of the project in the workspace, with a `project.toml` if it has none, and the text in its `README`; before Virtualbricks starts, which opens `new_project` at its first start |
+| `Given the project new_project has the README`, with a text under it | The folder of the project in the workspace, with a `project.toml` if it has none, and the text in its `README.md`; before Virtualbricks starts, which opens `new_project` at its first start |
 | `When I open the tab Readme` | Its page tab, in the main window, until it is the one that shows; any tab, as `the tab Bricks` |
 | `When I write the README in the Readme tab`, with a text under it | The tab Readme, its Edit, then the text typed in its editor |
 | `When I show the preview of the README` | The Preview of the tab Readme |
 | `Then the Readme tab shows the README rendered`, with a table under it | The runs of text of the preview, all of them and in order, a line at a time: the text of each, without the spaces at its ends, and its style, as AT-SPI tells it: `large`, `bold`, `italic`, `monospace`, or none |
-| `Then the README file of new_project has`, with a text under it | The file `README` of the folder of the project has the text, once Virtualbricks has written it, as it does when it saves the project |
+| `Then the README file of new_project has`, with a text under it | The file `README.md` of the folder of the project has the text, once Virtualbricks has written it, as it does when it saves the project |
 
 The steps of the Settings window:
 

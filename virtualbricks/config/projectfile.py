@@ -41,7 +41,7 @@ import shlex
 from collections.abc import Callable, Collection, Iterator
 from typing import TYPE_CHECKING, TypeAlias, TypedDict, cast
 
-from virtualbricks import errors
+from virtualbricks import errors, locations
 from virtualbricks.config.schema import (
     Choice,
     Mac,
@@ -461,6 +461,18 @@ def upgrade_project(data: Table, report: Report) -> Table:
         data = UPGRADES[version](data, report)
         version += 1
     return data
+
+
+def upgrade_readme(folder: str) -> None:
+    """
+    Rename the README of the project in folder, named README before 3.0, to
+    README.md, unless the folder has a README.md already.
+    """
+
+    old = os.path.join(folder, locations.LEGACY_README)
+    new = os.path.join(folder, locations.README)
+    if os.path.isfile(old) and not os.path.lexists(new):
+        os.rename(old, new)
 
 
 def _tables(

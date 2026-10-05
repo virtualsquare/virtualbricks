@@ -95,7 +95,7 @@ class TestChoices(ExportTestCase):
 
     def test_the_files_of_the_folder(self):
         required, disks, others = exportproject.project_files(self.project)
-        self.assertEqual(required, ["README", "project.toml"])
+        self.assertEqual(required, ["README.md", "project.toml"])
         self.assertEqual(disks, ["vm_hda.cow"])
         self.assertEqual(others, ["notes.txt", "sub/more.txt"])
 
@@ -113,7 +113,7 @@ class TestChoices(ExportTestCase):
         self.assertEqual(
             dialog.files(),
             [
-                "README",
+                "README.md",
                 "project.toml",
                 "vm_hda.cow",
                 "notes.txt",
@@ -130,7 +130,7 @@ class TestChoices(ExportTestCase):
         dialog.images_check.set_active(True)
         dialog.other_checks["notes.txt"].set_active(False)
         self.assertEqual(
-            dialog.files(), ["README", "project.toml", "sub/more.txt"]
+            dialog.files(), ["README.md", "project.toml", "sub/more.txt"]
         )
         self.assertEqual(dialog.chosen_images(), [("deb", self.deb)])
 

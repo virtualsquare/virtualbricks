@@ -259,7 +259,7 @@ class TestCreate(WorkspaceTestCase):
         self.assertEqual(data["format"], FORMAT)
         self.assertEqual(data["settings"]["qemu_path"], "/usr/bin")
         self.assertFalse(
-            os.path.exists(os.path.join(self.path, "lab", "README"))
+            os.path.exists(os.path.join(self.path, "lab", "README.md"))
         )
 
     def test_a_new_project_copies_the_open_one(self):
@@ -272,7 +272,7 @@ class TestCreate(WorkspaceTestCase):
 
     def test_description(self):
         self.projects.create("lab", "OSPF between three routers")
-        with open(os.path.join(self.path, "lab", "README")) as fp:
+        with open(os.path.join(self.path, "lab", "README.md")) as fp:
             self.assertEqual(fp.read(), "OSPF between three routers")
 
     def test_a_folder_that_appears_meanwhile(self):
@@ -792,7 +792,7 @@ class TestOpen(WorkspaceTestCase):
         data = load_toml(self.project_file("lab"))
         self.assertIn("sw", data["bricks"])
         self.assertTrue(data["settings"]["allow_female_plugs"])
-        with open(os.path.join(self.path, "lab", "README")) as fp:
+        with open(os.path.join(self.path, "lab", "README.md")) as fp:
             self.assertEqual(fp.read(), "A lab")
         self.assertEqual(self.projects.current.name, "other")
         self.assertEqual(list(self.factory.bricks), [])
@@ -890,7 +890,7 @@ class TestOpen(WorkspaceTestCase):
         data = load_toml(self.project_file("lab"))
         self.assertIn("sw", data["bricks"])
         self.assertTrue(data["settings"]["allow_female_plugs"])
-        with open(os.path.join(self.path, "lab", "README")) as fp:
+        with open(os.path.join(self.path, "lab", "README.md")) as fp:
             self.assertEqual(fp.read(), "A lab")
 
     def test_save_without_an_open_project(self):
@@ -931,7 +931,7 @@ class TestOpenProject(WorkspaceTestCase):
         self.assertEqual(prj.name, "lab")
         self.assertEqual(prj.project_file, self.project_file("lab"))
         self.assertEqual(prj.get_description(), "")
-        self.file("lab", "README", text="text")
+        self.file("lab", "README.md", text="text")
         # read once
         self.assertEqual(prj.get_description(), "")
         self.assertEqual(OpenProject(path, None).get_description(), "text")

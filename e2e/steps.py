@@ -3095,7 +3095,7 @@ STYLES = (
 def project_readme(virtualbricks, name, docstring):
     """
     The folder of the project, in the workspace, has the file of the
-    project, and a README with the text under the step; before
+    project, and a README.md with the text under the step; before
     Virtualbricks starts. The project that it opens at its first start is
     new_project.
     """
@@ -3107,7 +3107,7 @@ def project_readme(virtualbricks, name, docstring):
     if not os.path.exists(path):
         with open(path, "w") as file:
             file.write("format = 2\n")
-    with open(os.path.join(project, "README"), "w") as file:
+    with open(os.path.join(project, "README.md"), "w") as file:
         file.write(docstring + "\n")
 
 
@@ -3210,12 +3210,12 @@ def preview_runs(preview):
 @then(words("the README file of {name:Project} has"))
 def readme_file(virtualbricks, name, docstring):
     """
-    The README of the folder of the project, in the workspace, has the text
-    under the step, once Virtualbricks has written it; the spaces at the
-    end aside.
+    The README.md of the folder of the project, in the workspace, has the
+    text under the step, once Virtualbricks has written it; the spaces at
+    the end aside.
     """
 
-    path = os.path.join(virtualbricks.workspace, name, "README")
+    path = os.path.join(virtualbricks.workspace, name, "README.md")
 
     def text():
         try:
@@ -3229,7 +3229,7 @@ def readme_file(virtualbricks, name, docstring):
             lambda: text() == docstring.rstrip(), f"{path} has the text"
         )
     except AssertionError:
-        raise AssertionError(f"README has {text()!r}") from None
+        raise AssertionError(f"README.md has {text()!r}") from None
 
 
 # Settings

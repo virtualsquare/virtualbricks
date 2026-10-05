@@ -54,7 +54,8 @@ INTERNAL = frozenset(
         locations.LEGACY_PROJECT_FILE + "~",
     )
 )
-REQUIRED = (locations.PROJECT_FILE, "README")
+# The README of a project not opened since 3.0 still has its old name.
+REQUIRED = (locations.PROJECT_FILE, locations.README, locations.LEGACY_README)
 STEPS = {
     "pack": _("Compressing the disks…"),
     "write": _("Writing the archive…"),

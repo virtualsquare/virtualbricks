@@ -336,7 +336,7 @@ that the tests can't do yet: those needs come first.
   "The README of a project shows rendered in the Readme tab",
   `readme.feature`
 - [x] Edit the README, then see it in the preview
-  the file README has the text; needs typing
+  the file README.md has the text; needs typing
   "A README written in the editor of the Readme tab shows in its
   preview, and the project saves it", `readme.feature`
 

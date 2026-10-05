@@ -218,9 +218,10 @@ A project is a directory of the workspace that contains a **project.toml**.
 The name of the directory is the name of the project, so renaming a project
 renames its directory. The directory also holds:
 
-*README*
+*README.md*
 :   The description of the project: plain text, read as Markdown, see
-    **README** below.
+    **README** below. Before 3.0 it was *README*: Virtualbricks renames it
+    to *README.md* when it opens the project, imports it or migrates it.
 
 *vm*_*device*.cow
 :   The private copy-on-write disk of a virtual machine, for example
@@ -348,7 +349,7 @@ has one plug in **connect**, two in **endpoints**, or network cards in
 
 ## README
 
-The *README* of a project is plain text in UTF-8, which Virtualbricks
+The *README.md* of a project is plain text in UTF-8, which Virtualbricks
 reads as Markdown. The Readme tab shows it rendered, and its pencil button
 edits the text; the details of the Projects window show it rendered too.
 The list of projects shows its first line, and the import window its first

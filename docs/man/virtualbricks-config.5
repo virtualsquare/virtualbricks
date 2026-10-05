@@ -226,9 +226,12 @@ The name of the directory is the name of the project, so renaming a
 project renames its directory.
 The directory also holds:
 .TP
-\f[I]README\f[R]
+\f[I]README.md\f[R]
 The description of the project: plain text, read as Markdown, see
 \f[B]README\f[R] below.
+Before 3.0 it was \f[I]README\f[R]: Virtualbricks renames it to
+\f[I]README.md\f[R] when it opens the project, imports it or migrates
+it.
 .TP
 \f[I]vm\f[R]_\f[I]device\f[R].cow
 The private copy\-on\-write disk of a virtual machine, for example
@@ -362,7 +365,7 @@ An empty string leaves the plug unconnected.
 Depending on its type, a brick has one plug in \f[B]connect\f[R], two in
 \f[B]endpoints\f[R], or network cards in \f[B]nics\f[R].
 .SS README
-The \f[I]README\f[R] of a project is plain text in UTF\-8, which
+The \f[I]README.md\f[R] of a project is plain text in UTF\-8, which
 Virtualbricks reads as Markdown.
 The Readme tab shows it rendered, and its pencil button edits the text;
 the details of the Projects window show it rendered too.

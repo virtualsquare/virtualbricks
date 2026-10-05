@@ -35,7 +35,10 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 import attr
 
 from virtualbricks.config.report import ERROR, INFO, WARNING, Report
-from virtualbricks.config.projectfile import write_project_file
+from virtualbricks.config.projectfile import (
+    upgrade_readme,
+    write_project_file,
+)
 from virtualbricks.config.settings import (
     AppSettings,
     AppState,
@@ -360,11 +363,13 @@ class Migration:
         if self.target.folder is None or item.kind != "project":
             return
         source = os.path.dirname(item.source)
+        readme = os.path.join(source, locations.LEGACY_README)
         if self.copy_files:
             skip = {filename, locations.LEGACY_PROJECT_FILE}
             _copy_tree(source, directory, skip)
-        elif os.path.isfile(os.path.join(source, "README")):
-            shutil.copy2(os.path.join(source, "README"), directory)
+            upgrade_readme(directory)
+        elif os.path.isfile(readme):
+            shutil.copy2(readme, os.path.join(directory, locations.README))
 
     def _finish(self) -> None:
         if self.dry_run:

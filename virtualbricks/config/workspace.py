@@ -59,6 +59,7 @@ from virtualbricks.config.projectfile import (
     restore_project,
     save_project,
     upgrade_project,
+    upgrade_readme,
 )
 from virtualbricks.config.report import Report
 from virtualbricks.config.settings import (
@@ -78,7 +79,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 # The longest name of a project, in bytes of UTF-8.
 NAME_MAX = 40
-README = "README"
 # The largest picture of a README that the windows show, in bytes.
 PICTURE_MAX = 10_000_000
 # Private disks, "<vm>_<device>.cow", and their backups.
@@ -173,15 +173,18 @@ class OpenProject:
 
 
 def read_description(path: str) -> str:
-    try:
-        with open(os.path.join(path, README)) as fp:
-            return fp.read()
-    except FileNotFoundError:
-        return ""
+    # A project opened since 3.0 has README.md; one of before, README.
+    for name in (locations.README, locations.LEGACY_README):
+        try:
+            with open(os.path.join(path, name)) as fp:
+                return fp.read()
+        except FileNotFoundError:
+            pass
+    return ""
 
 
 def write_description(path: str, text: str) -> None:
-    with open(os.path.join(path, README), "w") as fp:
+    with open(os.path.join(path, locations.README), "w") as fp:
         fp.write(text)
 
 
@@ -690,6 +693,13 @@ class Workspace:
         self.close(factory)
         logger.debug(open_project, name=name)
         path = self.project_path(name)
+        try:
+            upgrade_readme(path)
+        except OSError as exc:
+            report.warning(
+                f"cannot rename it to {locations.README}: {exc.strerror}",
+                locations.LEGACY_README,
+            )
         self.make_runtime_dir()
         runtime_dir = self.runtime_dir(name)
         factory.runtime_dir = locations.ensure_private_dir(runtime_dir)
