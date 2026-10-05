@@ -490,13 +490,7 @@ class Disk:
             return defer.fail()
         try:
             backing_file = imageformat.get_backing_file(image_file)
-        except FileNotFoundError:
-            # TODO
-            # logger.debug(new_private_image_file, image_file=image_file)
-            return self._new_disk_image_differential(image_file)
-        except NotCowFileError:
-            # TODO
-            # logger.debug(invalid_image_file, image_file=image_file)
+        except (FileNotFoundError, NotCowFileError):
             return self._new_disk_image_differential(image_file)
         except Exception:
             # Any IOError
@@ -1210,7 +1204,6 @@ class VirtualMachine(bricks.Brick):
         # of usb_del command.
 
     def configured(self):
-        # return all([p.configured() for p in self.plugs])
         for p in self.plugs:
             if p.sock is None and p.mode == "vde":
                 return False
@@ -1449,10 +1442,6 @@ class VirtualMachine(bricks.Brick):
         links.remove(plug)
         if plug.mode == "sock":
             self.factory.remove_sock(plug)
-
-    def commit_disks(self, args):
-        # XXX: fixme
-        self.send("commit all\n")
 
     def acquire(self):
         """Acquire locks on images if needed."""

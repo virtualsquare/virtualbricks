@@ -476,9 +476,6 @@ class Netemu(Wire):
         cmd.option("-M", self.console())
         return cmd
 
-    def init_markov(self):
-        self.markov_manager = MarkovConfig(self.config)
-
     def update_config(self, changes):
         self._set(
             changes,

@@ -62,14 +62,6 @@ class LinkLoopError(Error):
     pass
 
 
-class UnmanagedTypeError(Error):
-    pass
-
-
-class InvalidActionError(Error):
-    pass
-
-
 class LockedImageError(Error):
 
     def __init__(self, image, master):
@@ -96,10 +88,6 @@ class ProjectOpenError(Error):
 
 class TrashNotSupportedError(Error):
     """The file system of the path has no trash."""
-
-
-class InvalidArchiveError(Error):
-    """The archive format is not recognized."""
 
 
 class BrickRunningError(Error):

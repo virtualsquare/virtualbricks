@@ -18,11 +18,10 @@
 
 # This module is ported to new GTK3 using PyGObject
 
-import os
 import sys
 
 from gi.repository import Gtk
-from twisted.internet import defer, error, protocol, reactor
+from twisted.internet import defer
 from twisted.python.failure import Failure
 from twisted.logger import (
     FilteringLogObserver,
@@ -51,36 +50,6 @@ from virtualbricks.i18n import _
 
 logger = Logger()
 cannot_open_last = "{message}"
-sync_error = "Sync terminated unexpectedly"
-create_image_error = "Create image terminated unexpectedly"
-
-
-class SyncProtocol(protocol.ProcessProtocol):
-
-    def __init__(self, done):
-        self.done = done
-
-    def processEnded(self, status):
-        if isinstance(status.value, error.ProcessTerminated):
-            logger.failure(sync_error, status)
-            self.done.errback(None)
-        else:
-            self.done.callback(None)
-
-
-class QemuImgCreateProtocol(protocol.ProcessProtocol):
-
-    def __init__(self, done):
-        self.done = done
-
-    def processEnded(self, status):
-        if isinstance(status.value, error.ProcessTerminated):
-            logger.failure(create_image_error, status)
-            self.done.errback(None)
-        else:
-            reactor.spawnProcess(
-                SyncProtocol(self.done), "sync", ["sync"], os.environ
-            )
 
 
 # These instructions keep a reference of a popup menu and reinitialize
@@ -223,13 +192,9 @@ class Application(brickfactory.Application):
         return {"gui": self.gui}
 
     def _run(self, factory):
-        # a bug in gtk2 make impossibile to use this and is not required anyway
-        # gtk.set_interactive(False)
         message_dialog = MessageDialogObserver()
         observer = FilteringLogObserver(message_dialog, [should_show_to_user])
         globalLogPublisher.addObserver(observer)
-        # disable default link_button action
-        # gtk.link_button_set_uri_hook(lambda b, s: None)
         self.gui = VBGUI(LocalEngine(factory), self.messages)
         message_dialog.set_parent(self.gui.window)
         # The workspace has no desktop of its own: removing a project moves

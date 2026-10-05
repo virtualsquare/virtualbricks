@@ -117,8 +117,6 @@ class ProcessLogger:
 class Process(protocol.ProcessProtocol):
 
     logger = ProcessLogger(Logger())
-    debug = True
-    debug_child = True
 
     def __init__(self, brick):
         self.brick = brick
@@ -292,7 +290,6 @@ class BaseConfig:
 
 class Base:
 
-    # type = None  # if not set in a subclass will raise an AttributeError
     _name = None
     config_factory = None
     logger = Logger()

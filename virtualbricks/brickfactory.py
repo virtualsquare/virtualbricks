@@ -170,7 +170,6 @@ class BrickFactory:
         # gets a directory of its own.
         self.runtime_dir = locations.runtime_dir()
         observable = Observable()
-        self.changed = Signal(observable, "brick-changed")
         self.quitting = Signal(observable, "quit")
         self.brick_added = Signal(observable, "brick-added")
         self.brick_removed = Signal(observable, "brick-removed")
