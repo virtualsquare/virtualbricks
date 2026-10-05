@@ -513,7 +513,7 @@ def start(context, name):
     ]
     for brick in name:
         try:
-            yield brick.poweron()
+            yield brick.start()
         except Exception:
             failure = Failure()
             if not failure.check(errors.Error):

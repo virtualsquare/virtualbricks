@@ -31,10 +31,10 @@ class FakeBrick:
 
     def __init__(self, result=None):
         self.result = result
-        self.poweron_calls = 0
+        self.start_calls = 0
 
-    def poweron(self):
-        self.poweron_calls += 1
+    def start(self):
+        self.start_calls += 1
         if self.result is None:
             return defer.succeed(self)
         return self.result
@@ -123,8 +123,8 @@ class TestPlug(BrickTestCase):
     def test_connected_powers_on_the_other_brick(self):
         self.plug.connect(self.sock)
         deferred = self.plug.connected()
-        self.assertEqual(self.other.poweron_calls, 1)
-        self.assertEqual(self.brick.poweron_calls, 0)
+        self.assertEqual(self.other.start_calls, 1)
+        self.assertEqual(self.brick.start_calls, 0)
         self.assertFalse(self.plug._antiloop)
         return deferred.addCallback(self.assertIs, self.other)
 
@@ -152,21 +152,21 @@ class TestPlug(BrickTestCase):
         sock = Sock(self.brick, "own_port")
         self.plug.connect(sock)
         deferred = self.plug.connected()
-        self.assertEqual(self.brick.poweron_calls, 0)
+        self.assertEqual(self.brick.start_calls, 0)
         self.assertFalse(self.plug._antiloop)
         return deferred.addCallback(self.assertIs, self.brick)
 
     def test_loop(self):
         # powering on the other brick powers on this one, which needs the
         # other brick again
-        self.other.poweron = self.plug.connected
+        self.other.start = self.plug.connected
         self.plug.connect(self.sock)
         deferred = self.plug.connected()
         self.assertFalse(self.plug._antiloop)
         return self.assertFailure(deferred, errors.LinkLoopError)
 
     def test_loop_is_only_logged_when_the_settings_ask(self):
-        self.other.poweron = self.plug.connected
+        self.other.start = self.plug.connected
         self.plug.connect(self.sock)
         self.assertFalse(get_setting("log_link_loops"))
         d = self.assertFailure(self.plug.connected(), errors.LinkLoopError)
@@ -184,12 +184,12 @@ class TestPlug(BrickTestCase):
         return d.addCallback(check_silent).addCallback(check_logged)
 
     def test_can_be_used_again_after_a_loop(self):
-        self.other.poweron = self.plug.connected
+        self.other.start = self.plug.connected
         self.plug.connect(self.sock)
         d = self.assertFailure(self.plug.connected(), errors.LinkLoopError)
 
         def again(_):
-            self.other.poweron = lambda: defer.succeed("fine")
+            self.other.start = lambda: defer.succeed("fine")
             return self.plug.connected()
 
         return d.addCallback(again).addCallback(self.assertEqual, "fine")

@@ -389,8 +389,8 @@ class Netemu(Wire):
         self.startupState = 0  # the state the emulator will start into
         self.transPeriod = 100  # default value for Netemu
 
-    def poweron(self):
-        d = bricks.Brick.poweron(self)
+    def start(self):
+        d = bricks.Brick.start(self)
         self.currentState = self.startupState
         self.config = self.markov_manager.states[self.currentState]
         self.update()

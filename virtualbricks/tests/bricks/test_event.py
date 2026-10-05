@@ -131,15 +131,15 @@ class TestEvent(BrickTestCase):
         self.assertFalse(self.event.is_running())
         self.assertIsNone(self.event.scheduled)
 
-    def test_poweron_needs_a_configuration(self):
+    def test_start_needs_a_configuration(self):
         for delay, actions in ((0, []), (2, [])):
             self.event.update_config({"delay": delay, "actions": actions})
-            self.assertRaises(errors.BadConfigError, self.event.poweron)
+            self.assertRaises(errors.BadConfigError, self.event.start)
         self.assertEqual(self.clock.getDelayedCalls(), [])
 
-    def test_poweron_schedules_the_actions(self):
+    def test_start_schedules_the_actions(self):
         self.configure(3, Recording("a on"))
-        deferred = self.event.poweron()
+        deferred = self.event.start()
         self.assertTrue(self.event.is_running())
         [call] = self.clock.getDelayedCalls()
         self.assertEqual(call.getTime(), 3)
@@ -147,16 +147,16 @@ class TestEvent(BrickTestCase):
         self.assertEqual(Recording.performed, [])
         self.assertEqual(self.changes, [self.event])
 
-    def test_poweron_twice(self):
+    def test_start_twice(self):
         self.configure(3, Recording("a on"))
-        self.event.poweron()
-        self.assertIsNone(self.event.poweron())
+        self.event.start()
+        self.assertIsNone(self.event.start())
         self.assertEqual(len(self.clock.getDelayedCalls()), 1)
         self.assertEqual(self.changes, [self.event])
 
     def test_the_actions_run_after_the_delay(self):
         self.configure(3, Recording("a on"), Recording("b on"))
-        deferred = self.event.poweron()
+        deferred = self.event.start()
         self.clock.advance(2.9)
         self.assertEqual(Recording.performed, [])
         self.assertFalse(deferred.called)
@@ -174,7 +174,7 @@ class TestEvent(BrickTestCase):
     def test_at_once(self):
         # a delay of 0: when the reactor comes back
         self.configure(0, Recording("a on"))
-        deferred = self.event.poweron()
+        deferred = self.event.start()
         self.assertEqual(Recording.performed, [])
         self.clock.advance(0)
         self.assertEqual(Recording.performed, [("a on", self.factory)])
@@ -182,16 +182,16 @@ class TestEvent(BrickTestCase):
 
     def test_can_run_again(self):
         self.configure(1, Recording("a on"))
-        self.event.poweron()
+        self.event.start()
         self.clock.advance(1)
-        self.event.poweron()
+        self.event.start()
         self.clock.advance(1)
         self.assertEqual(len(Recording.performed), 2)
 
     def test_the_status_is_logged(self):
         # of a command of the shell
         self.configure(1, Exits("true"), Recording("brick list"))
-        self.event.poweron()
+        self.event.start()
         self.clock.advance(1)
         self.assertEqual(self.logger.levels(), ["info"])
         self.assertEqual(
@@ -200,7 +200,7 @@ class TestEvent(BrickTestCase):
 
     def test_a_failing_action_is_logged(self):
         self.configure(1, Failing("a on"), Recording("b on"))
-        deferred = self.event.poweron()
+        deferred = self.event.start()
         self.clock.advance(1)
         # the other actions still run, and the event finishes
         self.assertEqual(Recording.performed, [("b on", self.factory)])
@@ -214,7 +214,7 @@ class TestEvent(BrickTestCase):
     def test_a_refused_action_is_an_error(self):
         # what the console refuses needs no traceback
         self.configure(1, StartAction("nope"), ConsoleAction("nope"))
-        self.event.poweron()
+        self.event.start()
         self.clock.advance(1)
         self.assertEqual(self.logger.levels(), ["error", "error"])
         self.assertEqual(
@@ -229,7 +229,7 @@ class TestEvent(BrickTestCase):
 
     def test_poweroff_cancels_the_actions(self):
         self.configure(3, Recording("a on"))
-        self.event.poweron()
+        self.event.start()
         del self.changes[:]
         self.assertIsNone(self.event.poweroff())
         self.assertFalse(self.event.is_running())
@@ -269,7 +269,7 @@ class TestEvent(BrickTestCase):
 
     def test_del_event_stops_it(self):
         self.configure(3, Recording("a on"))
-        self.event.poweron()
+        self.event.start()
         self.factory.remove_event(self.event)
         self.assertEqual(self.clock.getDelayedCalls(), [])
         self.assertIsNone(self.factory.get_event("boot"))

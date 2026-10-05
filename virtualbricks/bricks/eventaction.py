@@ -52,9 +52,9 @@ class StartAction:
     def perform(self, factory):
         found = _target(factory, self.target)
         if found.get_type() == "Event":
-            found.poweron()
+            found.start()
             return defer.succeed(None)
-        return found.poweron()
+        return found.start()
 
 
 @attr.frozen

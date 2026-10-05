@@ -60,9 +60,9 @@ class BricksTestCase(ConsoleTestCase):
         return brick
 
     def startable(self, brick, result=None):
-        """poweron() starts brick at once, or fails with result."""
+        """start() starts brick at once, or fails with result."""
 
-        def poweron(resume=""):
+        def start(resume=""):
             self.done.append(("on", brick.name))
             if result is not None:
                 return defer.fail(result)
@@ -70,7 +70,7 @@ class BricksTestCase(ConsoleTestCase):
                 self.running(brick)
             return defer.succeed(brick)
 
-        brick.poweron = poweron
+        brick.start = start
         return brick
 
     def stoppable(self, brick):
@@ -286,13 +286,13 @@ class TestStartAndStop(BricksTestCase):
         vm = self.startable(self.brick("qemu", "vm1"))
         self.running(self.startable(self.brick("tap", "tap1")))
 
-        def poweron(resume=""):
+        def start(resume=""):
             # the switch first, as a brick starts what it plugs into
-            sw.poweron()
+            sw.start()
             self.running(vm)
             return defer.succeed(vm)
 
-        vm.poweron = poweron
+        vm.start = start
         self.assertEqual(
             self.run_line("brick start vm1 tap1"),
             [

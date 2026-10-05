@@ -194,9 +194,7 @@ class TestStartAndStop(EventsTestCase):
 
     def test_run_now(self):
         started = []
-        self.vm1.poweron = lambda resume="": defer.succeed(
-            started.append("vm1")
-        )
+        self.vm1.start = lambda resume="": defer.succeed(started.append("vm1"))
         self.event("boot", Action(Kind.START_BRICK, "vm1"), delay=60)
         self.assertEqual(
             self.run_line("event run boot"), ["boot ran its actions"]

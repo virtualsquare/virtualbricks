@@ -186,7 +186,7 @@ class LocalEngine:
     # The bricks
 
     def start(self, brick) -> defer.Deferred:
-        return defer.maybeDeferred(brick.poweron)
+        return defer.maybeDeferred(brick.start)
 
     def stop(self, brick) -> defer.Deferred:
         return defer.maybeDeferred(brick.poweroff)
@@ -304,7 +304,7 @@ class LocalEngine:
     def start_event(self, event) -> defer.Deferred:
         """Let an event wait, then run its actions."""
 
-        return defer.maybeDeferred(event.poweron)
+        return defer.maybeDeferred(event.start)
 
     def stop_event(self, event) -> defer.Deferred:
         return defer.maybeDeferred(event.poweroff)

@@ -266,7 +266,7 @@ class TestEngine(ClientTestCase):
         self.assertFalse(self.engine.local)
 
     def test_start_and_stop(self):
-        self.sw1.poweron = lambda: started(self.sw1)
+        self.sw1.start = lambda: started(self.sw1)
         self.sw1.poweroff = lambda **kwargs: stopped(self.sw1)
         copy = self.copy.get_brick("sw1")
         self.done(self.engine.start(copy))

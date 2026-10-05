@@ -64,7 +64,7 @@ class Plug:
             self._antiloop = False
             return passthru
 
-        d = self.sock.brick.poweron()
+        d = self.sock.brick.start()
         d.addBoth(clear_antiloop)
         return d
 

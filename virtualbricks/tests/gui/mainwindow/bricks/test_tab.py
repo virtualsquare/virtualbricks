@@ -136,7 +136,7 @@ class BricksTestCase(GuiTestCase):
     def brick(self, kind, name):
         brick = self.factory.new_brick(kind, name)
 
-        def poweron():
+        def start():
             self.done.append(("on", name))
             return defer.succeed(brick)
 
@@ -144,7 +144,7 @@ class BricksTestCase(GuiTestCase):
             self.done.append(("off", name))
             return defer.succeed(brick)
 
-        brick.poweron = poweron
+        brick.start = start
         brick.poweroff = poweroff
         return brick
 
@@ -345,7 +345,7 @@ class TestTheRowAboveTheList(BricksTestCase):
         self.assertEqual(self.done, [("off", "sw")])
 
     def test_what_fails_is_logged(self):
-        self.sw.poweron = lambda: defer.fail(RuntimeError("no vde_switch"))
+        self.sw.start = lambda: defer.fail(RuntimeError("no vde_switch"))
         self.successResultOf(self.tab.start_all())
         vm = self.running(self.brick("qemu", "vm"))
 

@@ -378,7 +378,7 @@ class Brick(Base):
     # While a start is under way, the Deferreds of those who wait for it:
     # the first is that of the call that began it.
     _waiting = None
-    # While poweron() follows the links to the bricks it plugs into.
+    # While start() follows the links to the bricks it plugs into.
     _linking = False
     _exited_d = None
     _last_status = None
@@ -409,7 +409,7 @@ class Brick(Base):
         self.socks = []
         self.config_socks = []
 
-    def poweron(self, resume=""):
+    def start(self, resume=""):
         """
         Start the brick, in stages.
 
@@ -606,7 +606,7 @@ class Brick(Base):
             # it would raise, and fail the start of the brick
             self.logger.info(event_without_actions, name=name, brick=self.name)
         else:
-            event.poweron()
+            event.start()
 
     #############################
     # Console related operations.
@@ -686,5 +686,5 @@ def restart(brick, clock) -> defer.Deferred:
         return passthru
 
     stopped.addBoth(cancel)
-    stopped.addCallback(lambda _: brick.poweron())
+    stopped.addCallback(lambda _: brick.start())
     return stopped

@@ -241,7 +241,7 @@ def run(factory: Any) -> Any:
                 "error": "",
             }
             try:
-                yield brick.poweron()
+                yield brick.start()
                 entry["started"] = True
             except Exception as exc:
                 entry["error"] = _reason(exc)

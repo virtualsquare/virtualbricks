@@ -441,7 +441,7 @@ class TestChanges(MirrorTestCase):
         self.assertIsNone(brickinfo.process(copy))
 
     def test_an_event_that_waits(self):
-        self.boot.poweron()
+        self.boot.start()
         self.addCleanup(self.boot.poweroff)
         self.turn()
         self.assertSame()
@@ -457,7 +457,7 @@ class TestChanges(MirrorTestCase):
         self.assertIsNone(copy.scheduled)
         self.assertEqual(self.clock().getDelayedCalls(), [])
         # its time come here first: the copy waits no more
-        self.boot.poweron()
+        self.boot.start()
         self.turn()
         self.clock().advance(5)
         self.assertIsNone(copy.scheduled)
@@ -482,7 +482,7 @@ class TestTheCopy(MirrorTestCase):
 
     def test_it_starts_nothing(self):
         vm1 = self.copy.get_brick("vm1")
-        for call in ("poweron", "poweroff", "send", "send_signal"):
+        for call in ("start", "poweroff", "send", "send_signal"):
             self.assertRaises(NotOnTheCopy, getattr(vm1, call))
         with self.assertRaises(NotOnTheCopy) as cm:
             vm1.open_console()
@@ -492,7 +492,7 @@ class TestTheCopy(MirrorTestCase):
             " here is its copy",
         )
         boot = self.copy.get_event("boot")
-        for call in ("poweron", "poweroff", "run_actions"):
+        for call in ("start", "poweroff", "run_actions"):
             self.assertRaises(NotOnTheCopy, getattr(boot, call))
         stand_in = StandIn(vm1, 42)
         self.assertRaises(NotOnTheCopy, stand_in.signal_process, 15)
@@ -502,8 +502,8 @@ class TestTheCopy(MirrorTestCase):
         self.factory.rename_item(self.sw1, "core")
         self.turn()
         with self.assertRaises(NotOnTheCopy) as cm:
-            self.copy.get_brick("core").poweron()
-        self.assertIn("poweron of core", str(cm.exception))
+            self.copy.get_brick("core").start()
+        self.assertIn("start of core", str(cm.exception))
 
     def test_a_machine_renamed_here_renames_no_file(self):
         folder = os.path.abspath(self.mktemp())

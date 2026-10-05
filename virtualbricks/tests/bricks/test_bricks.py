@@ -163,12 +163,12 @@ class TestSchemas(BrickTestCase):
     def test_switch_wrapper(self):
         wrapper = self.factory.new_brick("switchwrapper", "wr")
         wrapper.update_config({"socket_path": "/nonexistent"})
-        failure = self.failureResultOf(wrapper.poweron())
+        failure = self.failureResultOf(wrapper.start())
         failure.trap(errors.BadConfigError)
         path = self.mktemp()
         os.makedirs(path)
         wrapper.update_config({"socket_path": path})
-        self.assertIs(self.successResultOf(wrapper.poweron()), wrapper)
+        self.assertIs(self.successResultOf(wrapper.start()), wrapper)
 
     def test_router_has_no_name_field(self):
         router = self.factory.new_brick("router", "r")
@@ -182,7 +182,7 @@ class TestRelatedEvents(BrickTestCase):
         event = self.factory.new_event("boot")
         event.update_config({"actions": [StartAction("sw")]})
         started = []
-        event.poweron = lambda: started.append("boot")
+        event.start = lambda: started.append("boot")
         switch._start_related_events(on=True)
         self.assertEqual(started, [])
         switch.update_config({"on_start": "boot", "on_stop": "gone"})
@@ -206,7 +206,7 @@ class TestRestart(BrickTestCase):
             return self.stopped
 
         self.vm.poweroff = poweroff
-        self.vm.poweron = lambda: self.done.append("on") or self.vm
+        self.vm.start = lambda: self.done.append("on") or self.vm
 
     def test_stops_then_starts(self):
         # a virtual machine too: not an ACPI reset

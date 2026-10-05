@@ -51,7 +51,7 @@ class SwitchWrapper(bricks.Brick):
         bricks.Brick.__init__(self, factory, name)
         self.socks.append(factory.new_sock(self, self.name + "_port"))
 
-    def poweron(self):
+    def start(self):
         if self.proc is not None:
             return defer.succeed(self)
         elif os.path.exists(self.config.socket_path):

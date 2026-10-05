@@ -74,7 +74,7 @@ class Event(Base):
     ########### Poweron/Poweroff
     ############################
 
-    def poweron(self):
+    def start(self):
         if self.scheduled:
             return
         if not self.configured():

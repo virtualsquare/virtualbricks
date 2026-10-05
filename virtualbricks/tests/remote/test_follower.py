@@ -435,7 +435,7 @@ class TestChanges(FollowTestCase):
     def test_an_event_that_waits(self):
         event = self.factory.new_event("boot")
         event.update_config({"delay": 30, "actions": [ShellAction("true")]})
-        event.poweron()
+        event.start()
         self.addCleanup(event.poweroff)
         self.turn()
         [(_, _, _, _, state)] = self.got()

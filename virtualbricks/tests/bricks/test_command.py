@@ -846,7 +846,7 @@ class TestStart(CommandTestCase):
 
     def test_spawn(self):
         netemu = self.netemu()
-        netemu.poweron()
+        netemu.start()
         [(executable, args)] = self.reactor.spawned
         self.assertEqual(executable, os.path.join(self.bin, "vde-netemu"))
         self.assertEqual(args[:2], [executable, "-v"])
@@ -861,7 +861,7 @@ class TestStart(CommandTestCase):
         os.chmod(wirefilter, 0o755)
         self.patch(os, "environ", dict(os.environ, PATH=self.bin))
         netemu = self.netemu()
-        netemu.poweron()
+        netemu.start()
         [(executable, _)] = self.reactor.spawned
         self.assertEqual(executable, wirefilter)
         self.assertEqual(netemu.logger.levels(), ["warn", "info"])
@@ -878,7 +878,7 @@ class TestStart(CommandTestCase):
         tap = self.factory.new_brick("tap", "tap0")
         tap.connect(sw.socks[0])
         sw.proc = object()
-        tap.poweron()
+        tap.start()
         [(executable, args)] = self.reactor.spawned
         self.assertEqual(executable, "sudo")
         self.assertEqual(
@@ -893,7 +893,7 @@ class TestStart(CommandTestCase):
         tunnel = self.factory.new_brick("tunnellisten", "tl")
         tunnel.connect(sw.socks[0])
         sw.proc = object()
-        tunnel.poweron()
+        tunnel.start()
         self.assertEqual(
             self.reactor.environments,
             [dict(os.environ, OPENSSL_CONF=tunnel.openssl_path())],
@@ -901,7 +901,7 @@ class TestStart(CommandTestCase):
 
     def test_missing_program(self):
         router = self.factory.new_brick("router", "r")
-        failure = self.failureResultOf(router.poweron())
+        failure = self.failureResultOf(router.start())
         failure.trap(ProgramError)
         self.assertEqual(self.reactor.spawned, [])
 
@@ -910,11 +910,11 @@ class TestStart(CommandTestCase):
         vm = self.factory.new_brick("qemu", "vm")
         locks = []
         vm.acquire = lambda: locks.append("acquire")
-        started = vm.poweron(resume="virtualbricks")
+        started = vm.start(resume="virtualbricks")
         [(_, args)] = self.reactor.spawned
         self.assertEqual(args[args.index("-loadvm") + 1], "virtualbricks")
         # running already: nothing more starts, and nothing is locked again
-        self.assertIs(self.successResultOf(vm.poweron()), vm)
+        self.assertIs(self.successResultOf(vm.start()), vm)
         self.assertNoResult(started)
         self.assertEqual(len(self.reactor.spawned), 1)
         self.assertEqual(locks, [])
@@ -922,7 +922,7 @@ class TestStart(CommandTestCase):
     def test_machine_not_configured(self):
         vm = self.factory.new_brick("qemu", "vm")
         vm.add_plug(None, "52:54:00:00:00:01", "e1000")
-        failure = self.failureResultOf(vm.poweron())
+        failure = self.failureResultOf(vm.start())
         failure.trap(errors.BadConfigError)
         self.assertEqual(self.reactor.spawned, [])
 

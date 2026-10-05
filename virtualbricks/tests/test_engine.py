@@ -61,8 +61,8 @@ class FakeBrick:
         self.calls = []
         self.exited = exited
 
-    def poweron(self):
-        self.calls.append(("poweron",))
+    def start(self):
+        self.calls.append(("start",))
         return defer.succeed(self)
 
     def poweroff(self, kill=False, term=False):
@@ -112,7 +112,7 @@ class TestBricks(EngineTestCase):
     def test_start(self):
         brick = FakeBrick()
         self.assertIs(self.successResultOf(self.engine.start(brick)), brick)
-        self.assertEqual(brick.calls, [("poweron",)])
+        self.assertEqual(brick.calls, [("start",)])
 
     def test_a_refusal_is_a_failure(self):
         # a brick that isn't configured can't start
@@ -137,9 +137,7 @@ class TestBricks(EngineTestCase):
     def test_restart(self):
         brick = FakeBrick()
         self.successResultOf(self.engine.restart(brick))
-        self.assertEqual(
-            brick.calls, [("poweroff", False, False), ("poweron",)]
-        )
+        self.assertEqual(brick.calls, [("poweroff", False, False), ("start",)])
         # stopped in time: nothing kills it later
         self.assertEqual(self.clock.getDelayedCalls(), [])
 

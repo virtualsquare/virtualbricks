@@ -162,7 +162,7 @@ class TestTheRows(EventsTestCase):
         self.assertFalse(row.startstop.get_sensitive())
 
     def test_a_waiting_event(self):
-        self.ev.poweron()
+        self.ev.start()
         row = self.row()
         self.assertEqual(row.state_label.get_text(), "Waiting · 5 s")
         self.assertTrue(row.dot.get_style_context().has_class("waiting"))
@@ -173,7 +173,7 @@ class TestTheRows(EventsTestCase):
 
     def test_the_countdown(self):
         self.clock.advance(0.5)
-        self.ev.poweron()
+        self.ev.start()
         label = self.row().state_label
         seen = [label.get_text()]
         for _ in range(4):
@@ -195,11 +195,11 @@ class TestTheRows(EventsTestCase):
 
     def test_only_while_an_event_waits(self):
         self.assertEqual(self.clock.getDelayedCalls(), [])
-        self.ev.poweron()
+        self.ev.start()
         # the wait, and the countdown
         self.assertEqual(len(self.clock.getDelayedCalls()), 2)
         other = self.event("other", 9, "vm2 on")
-        other.poweron()
+        other.start()
         self.assertEqual(len(self.clock.getDelayedCalls()), 3)
         self.ev.poweroff()
         self.assertEqual(len(self.clock.getDelayedCalls()), 2)
@@ -248,7 +248,7 @@ class TestTheRows(EventsTestCase):
 
     def test_after_quit(self):
         row = self.row()
-        self.ev.poweron()
+        self.ev.start()
         self.tab.on_quit()
         self.assertEqual(len(self.clock.getDelayedCalls()), 1)
         self.factory.new_brick("switch", "sw1").update_config(
@@ -268,12 +268,12 @@ class TestTheRowAboveTheList(EventsTestCase):
         self.assertEqual(tab.search.get_placeholder_text(), "Search events")
         self.assertEqual(tab.running_button.get_label(), "Waiting")
         self.assertEqual(tab.count.get_text(), "0 of 1 waiting")
-        self.event("other", 1, "vm2 on").poweron()
+        self.event("other", 1, "vm2 on").start()
         self.assertEqual(tab.count.get_text(), "1 of 2 waiting")
 
     def test_the_count(self):
         self.assertEqual(count([]), "0 of 0 waiting")
-        self.ev.poweron()
+        self.ev.start()
         self.assertEqual(count([self.ev]), "1 of 1 waiting")
 
     def test_new_event(self):
@@ -298,8 +298,8 @@ class TestTheRowAboveTheList(EventsTestCase):
 
     def test_stop_all_stops_what_waits(self):
         other = self.event("other", 1, "vm2 on")
-        self.ev.poweron()
-        other.poweron()
+        self.ev.start()
+        other.start()
         self.tab.stop_button.clicked()
         self.assertIsNone(self.ev.scheduled)
         self.assertIsNone(other.scheduled)
@@ -310,7 +310,7 @@ class TestTheRowAboveTheList(EventsTestCase):
         tab = self.tab
         self.assertTrue(tab.start_button.get_sensitive())
         self.assertFalse(tab.stop_button.get_sensitive())
-        self.ev.poweron()
+        self.ev.start()
         self.assertFalse(tab.start_button.get_sensitive())
         self.assertTrue(tab.stop_button.get_sensitive())
         # nothing to start in an event without actions
@@ -336,7 +336,7 @@ class TestTheRowAboveTheList(EventsTestCase):
         self.assertEqual(
             self.tab.list.placeholder.get_text(), "No event is waiting"
         )
-        other.poweron()
+        other.start()
         self.assertEqual(self.listed(), [other])
         self.clock.advance(1)
         self.assertEqual(self.listed(), [])
@@ -383,7 +383,7 @@ class TestTheKeysAndTheMouse(EventsTestCase):
             shown, [((self.gui.engine, self.ev), self.gui.window)]
         )
         # not while it waits
-        self.ev.poweron()
+        self.ev.start()
         self.assertTrue(self.press(Gdk.KEY_F2))
         self.assertEqual(len(shown), 1)
 

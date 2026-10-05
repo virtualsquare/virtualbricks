@@ -321,7 +321,7 @@ def start(context, name):
         if is_running(event):
             lines.append(_("{name} waits already").format(name=event.name))
             continue
-        event.poweron()
+        event.start()
         lines.append(
             _("{name} runs its actions in {delay} s").format(
                 name=event.name, delay=event.config.delay

@@ -229,7 +229,7 @@ class _FakeBrick:
 
     name = "hostonly"
 
-    def poweron(self):
+    def start(self):
         return defer.succeed(self)
 
 
@@ -1216,7 +1216,7 @@ class VirtualMachine(bricks.Brick):
                 sock.nickname = f"{name}_{suffix}"
                 sock.path = self.runtime_path(f"{name}_{suffix}[]")
 
-    def poweron(self, resume=""):
+    def start(self, resume=""):
         """
         Start the machine, from the saved state resume if given.
 
@@ -1225,7 +1225,7 @@ class VirtualMachine(bricks.Brick):
 
         if self.proc is not None or self.starting():
             # its images are locked already, or will be
-            return bricks.Brick.poweron(self, resume)
+            return bricks.Brick.start(self, resume)
 
         def acquire(passthru):
             self.acquire()
@@ -1235,7 +1235,7 @@ class VirtualMachine(bricks.Brick):
             self.release()
             return passthru
 
-        d = bricks.Brick.poweron(self, resume)
+        d = bricks.Brick.start(self, resume)
         # a machine refused, as one not configured, has nothing to release
         if self._exited_d is not None:
             d.addCallback(acquire)
@@ -1751,7 +1751,7 @@ def resume(vm) -> defer.Deferred:
         if vm.proc is not None:
             vm.send(f"loadvm {SNAPSHOT}\n".encode())
         else:
-            return vm.poweron(resume=SNAPSHOT)
+            return vm.start(resume=SNAPSHOT)
 
     def failed(failure):
         logger.failure(snapshot_error, failure)

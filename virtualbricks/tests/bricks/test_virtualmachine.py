@@ -227,16 +227,16 @@ class TestRunning(CommandTestCase):
         started = defer.Deferred()
         seen = []
 
-        def poweron(brick, resume=""):
+        def start(brick, resume=""):
             seen.append(resume)
             brick._exited_d = defer.Deferred()
             return started
 
-        self.patch(bricks.Brick, "poweron", poweron)
+        self.patch(bricks.Brick, "start", start)
         locks = []
         vm.acquire = lambda: locks.append("acquire")
         vm.release = lambda: locks.append("release")
-        d = vm.poweron(resume="snap1")
+        d = vm.start(resume="snap1")
         self.assertEqual(seen, ["snap1"])
         self.assertFalse(hasattr(vm.config, "loadvm"))
         started.callback(vm)
@@ -840,7 +840,7 @@ class TestSuspendAndResume(BrickTestCase):
         self.done = []
         self.vm.send = lambda data: self.done.append(data)
         self.vm.poweroff = lambda: defer.succeed(self.done.append("off"))
-        self.vm.poweron = lambda resume="": defer.succeed(
+        self.vm.start = lambda resume="": defer.succeed(
             self.done.append(("on", resume))
         )
         self.disk = FakeDisk(image=FakeImage("/lab/vm.qcow2"))

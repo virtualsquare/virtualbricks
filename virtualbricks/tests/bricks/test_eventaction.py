@@ -115,14 +115,14 @@ class TestPerform(BrickTestCase):
         self.factory.runtime_dir = "/run/vb"
         self.done = []
         self.sw1 = self.factory.new_brick("switch", "sw1")
-        self.sw1.poweron = lambda resume="": defer.succeed(
+        self.sw1.start = lambda resume="": defer.succeed(
             self.done.append("sw1 on")
         )
         self.sw1.poweroff = lambda kill=False: defer.succeed(
             self.done.append("sw1 off")
         )
         self.boot = self.factory.new_event("boot")
-        self.boot.poweron = lambda: self.done.append("boot on")
+        self.boot.start = lambda: self.done.append("boot on")
         self.boot.poweroff = lambda: self.done.append("boot off")
 
     def test_start_and_stop(self):

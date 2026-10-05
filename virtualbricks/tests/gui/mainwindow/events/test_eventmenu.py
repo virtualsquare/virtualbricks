@@ -101,7 +101,7 @@ class EventMenuTestCase(GuiTestCase):
 
     def waiting(self, name="ev"):
         event = self.ready(name)
-        event.poweron()
+        event.start()
         return event
 
 
@@ -198,7 +198,7 @@ class TestWhatIsEnabled(EventMenuTestCase):
     def test_update(self):
         event = self.ready()
         actions = EventActions(self.gui, event)
-        event.poweron()
+        event.start()
         self.assertTrue(actions.get_action_enabled("rename"))
         actions.update()
         self.assertFalse(actions.get_action_enabled("rename"))
