@@ -18,8 +18,6 @@
 
 # This module is ported to new GTK3 using PyGObject
 
-import sys
-
 from gi.repository import Gtk
 from twisted.internet import defer
 from twisted.python.failure import Failure
@@ -50,54 +48,6 @@ from virtualbricks.i18n import _
 
 logger = Logger()
 cannot_open_last = "{message}"
-
-
-# These instructions keep a reference of a popup menu and reinitialize
-# it
-class List(Gtk.ListStore):
-
-    def __init__(self):
-        Gtk.ListStore.__init__(self, object)
-
-    def __iter__(self):
-        i = self.get_iter_first()
-        while i:
-            yield self.get_value(i, 0)
-            i = self.iter_next(i)
-
-    def append(self, element):
-        Gtk.ListStore.append(self, (element,))
-
-    def remove(self, element):
-        itr = self.get_iter_first()
-        while itr:
-            el = self.get_value(itr, 0)
-            if el is element:
-                return Gtk.ListStore.remove(self, itr)
-            itr = self.iter_next(itr)
-        raise ValueError("%r not in list" % (element,))
-
-    def __delitem__(self, key):
-        if isinstance(key, int):
-            Gtk.ListStore.__delitem__(self, key)
-        elif isinstance(key, slice):
-            if (
-                key.start in (None, 0)
-                and key.stop in (None, sys.maxsize)
-                and key.step in (1, -1, None)
-            ):
-                self.clear()
-            else:
-                raise TypeError("Invalid slice %r" % (key,))
-        else:
-            raise TypeError("Invalid key %r" % (key,))
-
-
-class VisualFactory(brickfactory.BrickFactory):
-
-    def __init__(self, quit):
-        brickfactory.BrickFactory.__init__(self, quit)
-        self.socks = List()
 
 
 class MessageDialogObserver:
@@ -179,8 +129,6 @@ class WindowFrontend:
 
 
 class Application(brickfactory.Application):
-
-    factory_factory = VisualFactory
 
     def __init__(self, config):
         # the messages of this run, for the messages window
