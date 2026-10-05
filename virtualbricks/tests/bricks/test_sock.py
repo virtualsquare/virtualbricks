@@ -53,24 +53,6 @@ class TestSock(BrickTestCase):
         self.assertEqual(sock.path, self.switch.path())
         self.assertIn(sock, self.factory.socks)
 
-    def test_free_ports(self):
-        sock = self.switch.socks[0]
-        self.assertEqual(sock.get_free_ports(), 32)
-        self.switch.update_config({"ports": 4})
-        self.assertEqual(sock.get_free_ports(), 4)
-
-    def test_free_ports_of_the_plugs(self):
-        self.switch.update_config({"ports": 4})
-        sock = self.switch.socks[0]
-        taps = []
-        for name in ("t1", "t2", "t3"):
-            tap = self.factory.new_brick("tap", name)
-            tap.plugs[0].connect(sock)
-            taps.append(tap)
-        self.assertEqual(sock.get_free_ports(), 1)
-        taps[0].plugs[0].disconnect()
-        self.assertEqual(sock.get_free_ports(), 2)
-
     def test_valid_path(self):
         directory = os.path.abspath(self.mktemp())
         os.makedirs(directory)

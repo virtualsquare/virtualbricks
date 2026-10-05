@@ -1137,7 +1137,6 @@ class VirtualMachine(bricks.Brick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.image_changed = Signal(self._observable, "image-changed")
         self._disks = {dev: Disk(self, dev) for dev in DISK_DEVICES}
 
     def set_name(self, name):
@@ -1480,7 +1479,6 @@ class VirtualMachine(bricks.Brick):
 
     def set_image(self, dev, image):
         self._disks[dev].set_image(image)
-        self.image_changed.notify((self, image))
 
 
 def _netdev(link, index, vde):

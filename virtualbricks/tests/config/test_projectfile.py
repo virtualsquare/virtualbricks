@@ -40,7 +40,6 @@ from virtualbricks.config.projectfile import (
     create_project_file,
     devices_for_image,
     image_paths,
-    load_project,
     project_notes,
     read_project_file,
     remap_image,
@@ -270,7 +269,8 @@ class TestRoundTrip(ProjectFileTestCase):
         path = os.path.join(directory, "project.toml")
         dump_toml(data, path)
         factory = make_factory(self)
-        load_project(factory, path, self.report)
+        data = upgrade_project(read_project_file(path), self.report)
+        restore_project(factory, data, self.report, directory)
         self.assertEqual(self.messages(), [])
         image = factory.get_image("deb")
         self.assertEqual(image.path, os.path.join(directory, "deb.qcow2"))

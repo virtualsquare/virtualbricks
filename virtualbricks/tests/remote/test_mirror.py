@@ -87,7 +87,7 @@ class MirrorTestCase(ConsoleTestCase):
         )
         self.copy = MirrorFactory(self.clock())
         self.told = []
-        for name in ("opened", "synced", "settings_changed", "ended"):
+        for name in ("synced", "settings_changed", "ended"):
             getattr(self.copy, name).connect(
                 lambda factory, name=name: self.told.append(name)
             )
@@ -171,8 +171,7 @@ class TestTheProject(MirrorTestCase):
         self.lab()
         self.follow()
         self.assertSame()
-        self.assertEqual(self.told, ["opened", "synced"])
-        self.assertTrue(self.copy.whole)
+        self.assertEqual(self.told, ["synced"])
         self.assertEqual(self.copy.project, "lab1")
         self.assertEqual(self.copy.runtime_dir, "/run/vb")
         self.assertEqual(self.copy.machine["runtime_dir"], "/run/vb")
@@ -246,7 +245,7 @@ class TestTheProject(MirrorTestCase):
         self.workspace.opened.notify(self.workspace)
         self.turn()
         self.assertSame()
-        self.assertEqual(self.told, ["opened", "synced"])
+        self.assertEqual(self.told, ["synced"])
 
     def test_the_settings(self):
         self.follow()

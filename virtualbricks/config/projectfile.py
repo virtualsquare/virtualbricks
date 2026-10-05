@@ -758,15 +758,6 @@ def read_project_file(path: str) -> Table:
         raise ProjectFormatError(f"{path}: {exc}") from None
 
 
-def load_project(
-    factory: BrickFactory, path: str, report: Report
-) -> ProjectSettings:
-    """Read a project file into factory; return the project's settings."""
-
-    data = upgrade_project(read_project_file(path), report)
-    return restore_project(factory, data, report, os.path.dirname(path))
-
-
 # Editing, used when a project is imported
 
 

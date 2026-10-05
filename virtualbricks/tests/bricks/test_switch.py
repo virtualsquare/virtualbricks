@@ -21,18 +21,7 @@
 from virtualbricks.bricks.draft import Problem
 from virtualbricks.bricks.switch import SwitchConfig, SwitchDraft
 from virtualbricks.config.schema import info_of
-from virtualbricks.tests import (
-    BrickTestCase,
-    CommandTestCase,
-)
-
-
-class TestSwitch(CommandTestCase):
-
-    def test_switch_ports(self):
-        switch = self.factory.new_brick("switch", "sw")
-        switch.update_config({"ports": 8})
-        self.assertEqual(switch.socks[0].get_free_ports(), 8)
+from virtualbricks.tests import BrickTestCase
 
 
 class TestTheDraft(BrickTestCase):

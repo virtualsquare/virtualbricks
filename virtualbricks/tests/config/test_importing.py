@@ -169,7 +169,6 @@ class TestPlan(ImportingTestCase):
         self.assertEqual(image.used_by, ["vm.hda", "vm.hdb"])
         self.assertEqual(image.in_archive, 100)
         self.assertTrue(image.known)
-        self.assertEqual(plan.bytes_to_copy(), 100)
 
     def test_ours_if_the_library_has_it(self):
         self.file(os.path.join(self.library, "deb.qcow2"), b"x" * 100)
@@ -205,7 +204,6 @@ class TestPlan(ImportingTestCase):
                 "gone": ("skip", ""),
             },
         )
-        self.assertEqual(plan.bytes_to_copy(), 0)
 
     def test_before_the_end_of_the_archive(self):
         here = self.file(self.path("here.qcow2"))

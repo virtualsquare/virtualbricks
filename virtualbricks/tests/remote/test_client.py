@@ -127,6 +127,8 @@ class ClientTestCase(ConsoleTestCase):
             token=self.token,
         )
         self.copy = MirrorFactory(self.clock())
+        self.synced = []
+        self.copy.synced.connect(self.synced.append)
         peer = address.IPv4Address("TCP", "127.0.0.1", 50412)
         self.windows, self.connection, self.pump = (
             iosim.connectedServerAndClient(
@@ -174,7 +176,7 @@ class TestStart(ClientTestCase):
         self.factory.new_brick("switch", "sw1")
         answer = self.done(self.start())
         self.assertEqual(answer, {"project": "lab1", "version": __version__})
-        self.assertTrue(self.copy.whole)
+        self.assertEqual(self.synced, [self.copy])
         self.assertIsNotNone(self.copy.get_brick("sw1"))
 
     def test_protocol_1_only(self):
@@ -234,7 +236,7 @@ class TestToken(ClientTestCase):
 
     def test_the_token(self):
         self.done(self.start(self.target(TOKEN)))
-        self.assertTrue(self.copy.whole)
+        self.assertEqual(self.synced, [self.copy])
 
     def test_a_wrong_token(self):
         failure = self.refused(self.start(self.target("x" * 64)), Refused)
@@ -1320,16 +1322,18 @@ class TestConnect(ConsoleTestCase):
             f"tcp:127.0.0.1:{found.socket.port}:protocol=amp", client=True
         )
         copy = MirrorFactory()
+        synced = []
+        copy.synced.connect(synced.append)
         made = []
         windows = yield defer.ensureDeferred(
             client.connect(
-                target, copy, reactor, lambda w: made.append((w, copy.whole))
+                target, copy, reactor, lambda w: made.append((w, list(synced)))
             )
         )
         self.addCleanup(windows.transport.loseConnection)
         # given, and the project not there yet
-        self.assertEqual(made, [(windows, False)])
-        self.assertTrue(copy.whole)
+        self.assertEqual(made, [(windows, [])])
+        self.assertEqual(synced, [copy])
 
     @defer.inlineCallbacks
     def test_nothing_there(self):

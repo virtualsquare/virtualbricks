@@ -119,16 +119,12 @@ class MirrorFactory(BrickFactory):
         # what its machine has: version, workspace, runtime_dir, missing,
         # lacks, ksm
         self.machine = {}
-        # whether the whole project has come
-        self.whole = False
         # the states of the images and the bricks, by kind and name: the
         # facts of their files, their processes
         self._states = {}
         # the plugs whose sockets haven't come yet, and their targets
         self._waiting = []
         observable = Observable()
-        # a project opened there: the copy is empty, the project comes
-        self.opened = Signal(observable, "opened")
         # the whole project has come
         self.synced = Signal(observable, "synced")
         self.settings_changed = Signal(observable, "settings-changed")
@@ -181,7 +177,6 @@ class MirrorFactory(BrickFactory):
     def take_opened(self, project, settings, machine) -> None:
         """A project opened there: the copy starts again, empty."""
 
-        self.whole = False
         # none of them runs here: the factory removes them all
         for brick in self._bricks:
             brick.proc = None
@@ -192,10 +187,8 @@ class MirrorFactory(BrickFactory):
         self.settings = settings
         self.machine = machine
         self.runtime_dir = machine.get("runtime_dir", self.runtime_dir)
-        self.opened.notify(self)
 
     def take_synced(self) -> None:
-        self.whole = True
         self.synced.notify(self)
 
     def take_changed(self, kind, name, table, state) -> None:

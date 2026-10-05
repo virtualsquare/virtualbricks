@@ -71,27 +71,14 @@ class FakeProcess:
 
 class TestVirtualMachine(BrickTestCase):
 
-    def test_an_image_set_muted(self):
-        vm = self.factory.new_brick("qemu", "vm")
-        image = self.factory.new_image("deb", "/i/deb.qcow2")
-        changes = []
-        vm.image_changed.connect(changes.append)
-        with vm.muted():
-            vm.set_image("hda", image)
-        self.assertIs(vm.disk("hda").image, image)
-        self.assertEqual(changes, [])
-
     def test_disks_refer_to_images_by_name(self):
         vm = self.factory.new_brick("qemu", "vm")
         disk = vm.disk("hda")
         self.assertIsNone(disk.image)
         image = self.factory.new_image("deb", "/i/deb.qcow2")
-        changes = []
-        vm.image_changed.connect(lambda payload: changes.append(payload))
         vm.set_image("hda", image)
         self.assertEqual(vm.config.hda_image, "deb")
         self.assertIs(disk.image, image)
-        self.assertEqual(changes, [(vm, image)])
         vm.update_config({"hda_private": True})
         self.assertTrue(disk.is_cow())
         self.assertFalse(disk.readonly())
@@ -675,8 +662,6 @@ class TestApply(DraftTestCase):
     def test_the_images(self):
         image = self.factory.new_image("deb", "/i/deb.qcow2")
         self.vm.update_config({"hdb_image": "gone"})
-        images = []
-        self.vm.image_changed.connect(images.append)
         draft = VirtualMachineDraft(self.vm)
         draft.set("hda_image", "deb")
         draft.set("hda_private", True)
@@ -690,7 +675,8 @@ class TestApply(DraftTestCase):
         self.assertEqual(self.vm.config.hdb_image, "")
         # a name not in the library stays
         self.assertEqual(self.vm.config.hdc_image, "missing")
-        self.assertEqual(images, [(self.vm, image), (self.vm, None)])
+        self.assertIs(self.vm.disk("hda").image, image)
+        self.assertIsNone(self.vm.disk("hdb").image)
         self.assertEqual(self.changed, [self.vm])
 
     def test_usb_devices(self):

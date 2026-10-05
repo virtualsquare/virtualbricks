@@ -154,13 +154,6 @@ class ImportPlan:
                 )
         return problems
 
-    def bytes_to_copy(self) -> int:
-        return sum(
-            image.in_archive or 0
-            for image in self.images
-            if image.choice == COPY
-        )
-
     def job(self, workspace: Workspace, staging: str, qemu_img: str) -> Table:
         return {
             "job": "import",
