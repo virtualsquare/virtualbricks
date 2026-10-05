@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-"""The images of the GUI, which come with the package."""
+"""The icons of the GUI, which come with the package."""
 
 import os
 
@@ -45,11 +45,11 @@ def type_config(icon):
     return config
 
 
-class TestImages(unittest.TestCase):
+class TestIcons(unittest.TestCase):
     def test_every_brick_has_one(self):
         for kind in [*BRICK_CLASSES.values(), Event]:
             with self.subTest(type=kind.type):
-                path = graphics.image_file(kind.type.lower() + ".png")
+                path = graphics.icon_file(kind.type.lower() + ".png")
                 self.assertTrue(os.path.isfile(path), path)
 
     def test_the_logo(self):
@@ -58,7 +58,7 @@ class TestImages(unittest.TestCase):
 
     def test_in_the_package(self):
         self.assertEqual(
-            graphics.image_file("tap.png"),
+            graphics.icon_file("tap.png"),
             os.path.join(
                 os.path.dirname(graphics.__file__), "data", "tap.png"
             ),
@@ -67,16 +67,16 @@ class TestImages(unittest.TestCase):
     def test_brick_icon(self):
         self.assertEqual(
             graphics.brick_icon(FakeBrick("Switch")),
-            graphics.image_file("switch.png"),
+            graphics.icon_file("switch.png"),
         )
         self.assertEqual(
             graphics.brick_icon(FakeBrick("Qemu")),
-            graphics.image_file("qemu.png"),
+            graphics.icon_file("qemu.png"),
         )
         machine = FakeBrick("Qemu", "/lab/router.png")
         self.assertEqual(graphics.brick_icon(machine), "/lab/router.png")
         # only a machine's own icon shows, for now
         switch = FakeBrick("Switch", "/lab/router.png")
         self.assertEqual(
-            graphics.brick_icon(switch), graphics.image_file("switch.png")
+            graphics.brick_icon(switch), graphics.icon_file("switch.png")
         )

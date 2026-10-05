@@ -429,7 +429,7 @@ class TestAProjectWithoutBricks(BricksTestCase):
         self.assertTrue(self.tab.search.get_sensitive())
 
     def test_an_icon_not_there(self):
-        self.patch(rowtab.graphics, "image_file", lambda name: "/none")
+        self.patch(rowtab.graphics, "icon_file", lambda name: "/none")
         self.assertIsNone(rowtab.empty_icon("switch.png"))
 
 

@@ -16,7 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The images of the GUI, in ``virtualbricks/gui/data``."""
+"""The icons of the GUI, in ``virtualbricks/gui/data``."""
 
 import os
 
@@ -25,21 +25,21 @@ import gi
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf
 
-__all__ = ["brick_icon", "image_file", "load_pixbuf"]
+__all__ = ["brick_icon", "icon_file", "load_pixbuf"]
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 
-def image_file(name: str) -> str:
-    """The path of an image of the GUI."""
+def icon_file(name: str) -> str:
+    """The path of an icon of the GUI."""
 
     return os.path.join(DATA_DIR, name)
 
 
 def load_pixbuf(name: str) -> GdkPixbuf.Pixbuf:
-    """Load an image of the GUI."""
+    """Load an icon of the GUI."""
 
-    return GdkPixbuf.Pixbuf.new_from_file(image_file(name))
+    return GdkPixbuf.Pixbuf.new_from_file(icon_file(name))
 
 
 def has_custom_icon(brick):
@@ -51,4 +51,4 @@ def brick_icon(brick):
     if has_custom_icon(brick):
         return brick.config.icon
     else:
-        return image_file(brick.get_type().lower() + ".png")
+        return icon_file(brick.get_type().lower() + ".png")

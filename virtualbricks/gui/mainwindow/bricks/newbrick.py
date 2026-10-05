@@ -55,7 +55,7 @@ MARGIN = 6
 def picture(kind) -> GdkPixbuf.Pixbuf | None:
     """The picture of the bricks of kind, at the size of a row."""
 
-    filename = graphics.image_file(kind.type.lower() + ".png")
+    filename = graphics.icon_file(kind.type.lower() + ".png")
     try:
         return GdkPixbuf.Pixbuf.new_from_file_at_size(
             filename, ICON_SIZE, ICON_SIZE

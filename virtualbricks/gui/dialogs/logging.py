@@ -168,11 +168,11 @@ def symbol_icon(kind):
 
 
 def type_icon(source_type):
-    """The image of a type of brick, as in the main window, or None."""
+    """The icon of a type of brick, as in the main window, or None."""
 
     if source_type not in _type_icons:
         pixbuf = None
-        filename = graphics.image_file(source_type + ".png")
+        filename = graphics.icon_file(source_type + ".png")
         if os.path.isfile(filename):
             try:
                 pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(

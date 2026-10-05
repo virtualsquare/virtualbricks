@@ -112,7 +112,7 @@ def _icon_button(label, icon):
 def empty_icon(name):
     """The picture of a project without objects: an icon, grey."""
 
-    filename = graphics.image_file(name)
+    filename = graphics.icon_file(name)
     try:
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
             filename, EMPTY_ICON_SIZE, EMPTY_ICON_SIZE
