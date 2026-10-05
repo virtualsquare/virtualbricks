@@ -23,6 +23,9 @@ import os
 
 class Sock:
 
+    model = ""
+    mac = ""
+
     def __init__(self, brick, name=""):
         self.brick = brick
         self.path = name

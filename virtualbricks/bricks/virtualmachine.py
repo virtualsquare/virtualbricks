@@ -173,50 +173,6 @@ def get_usb_devices():
     return deferred
 
 
-class Wrapper:
-
-    def __init__(self, original):
-        self.__dict__["original"] = original
-
-    def __getattr__(self, name):
-        try:
-            return getattr(self.original, name)
-        except AttributeError:
-            raise AttributeError(
-                "{0.__class__.__name__}.{1}".format(self, name)
-            )
-
-    def __setattr__(self, name, value):
-        if name in self.__dict__:
-            self.__dict__[name] = value
-        else:
-            for klass in self.__class__.__mro__:
-                if name in klass.__dict__:
-                    self.__dict__[name] = value
-                    break
-            else:
-                setattr(self.original, name, value)
-
-
-class VMPlug(Wrapper):
-
-    def __init__(self, plug):
-        Wrapper.__init__(self, plug)
-        self.model = "rtl8139"
-        self.mac = random_mac()
-
-
-class VMSock(Wrapper):
-
-    def __init__(self, sock):
-        Wrapper.__init__(self, sock)
-        self.model = "rtl8139"
-        self.mac = random_mac()
-
-    def connect(self, endpoint):
-        return
-
-
 class _FakeBrick:
 
     name = "hostonly"
@@ -227,7 +183,7 @@ class _FakeBrick:
 
 class _HostonlySock:
     """
-    This is dummy implementation of a VMSock used with VirtualMachines that
+    This is dummy implementation of a socket used with VirtualMachines that
     want a plug that is not connected to nothing. The instance is a singleton,
     but not enforced anyhow, maybe a better solution is to have a different
     hostonly socket for each plug and let the brick choose which socket should
@@ -1458,28 +1414,23 @@ class VirtualMachine(bricks.Brick):
         ``name`` is the socket's name within this VM, ``sock_ethN`` by default.
         """
 
-        s = self.factory.new_sock(self)
-        sock = VMSock(s)
+        sock = self.factory.new_sock(self)
+        sock.model = model or DEFAULT_MODEL
+        sock.mac = mac or random_mac()
         if name is None:
             name = f"sock_eth{len(self.plugs) + len(self.socks)}"
         sock.path = self.runtime_path(f"{self.name}_{name}[]")
         sock.nickname = f"{self.name}_{name}"
         self.socks.append(sock)
-        if mac:
-            sock.mac = mac
-        if model:
-            sock.model = model
         return sock
 
     def add_plug(self, sock, mac=None, model=None):
-        plug = VMPlug(Plug(self))
+        plug = Plug(self)
+        plug.model = model or DEFAULT_MODEL
+        plug.mac = mac or random_mac()
         self.plugs.append(plug)
         if sock:
             plug.connect(sock)
-        if mac:
-            plug.mac = mac
-        if model:
-            plug.model = model
         return plug
 
     def connect(self, sock, *args):

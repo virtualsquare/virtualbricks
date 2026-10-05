@@ -72,11 +72,7 @@ from virtualbricks.nic import random_mac
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.virtualmachine import (
-        VirtualMachine,
-        VMPlug,
-        VMSock,
-    )
+    from virtualbricks.bricks.virtualmachine import VirtualMachine
     from virtualbricks.config.report import Report
     from virtualbricks.config.tomlfile import Notes, Table, Value
     from virtualbricks.bricks.plug import Plug
@@ -290,13 +286,13 @@ def socket_target(sock: Sock) -> str:
     return sock.brick.name
 
 
-def _plug_target(plug: Plug | VMPlug) -> str:
+def _plug_target(plug: Plug) -> str:
     if plug.sock is None:
         return ""
     return socket_target(plug.sock)
 
 
-def _nic_table(link: VMPlug | VMSock) -> Table:
+def _nic_table(link: Plug | Sock) -> Table:
     table: Table
     if link.mode == "sock":
         # The socket name is after the name of the virtual machine.
@@ -306,7 +302,7 @@ def _nic_table(link: VMPlug | VMSock) -> Table:
         table = {"kind": "hostonly"}
     else:
         # a card that isn't a socket is a plug
-        table = {"kind": "plug", "connect": _plug_target(cast("VMPlug", link))}
+        table = {"kind": "plug", "connect": _plug_target(cast("Plug", link))}
     table["model"] = link.model
     table["mac"] = link.mac
     return table
