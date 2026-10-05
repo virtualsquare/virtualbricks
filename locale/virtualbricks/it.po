@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 15:44+0200\n"
+"POT-Creation-Date: 2026-10-05 15:55+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2521,27 +2521,93 @@ msgstr "Scegli un nuovo nome:"
 msgid "{file} is there already"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/confirmdialog.py
-#, fuzzy
-msgid "No"
-msgstr "Nessuno"
-
-#: virtualbricks/gui/dialogs/confirmdialog.py
-msgid "Yes"
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, python-brace-format
+msgid "{vm} (eth{n})"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/confirmdialog.py
-#, fuzzy, python-brace-format
-msgid "Do you really want to delete {brick} ({type})?"
-msgstr "Si vuole veramente cancellare "
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, python-brace-format
+msgid "The event {events} will no longer start {name}."
+msgid_plural "The events {events} will no longer start {name}."
+msgstr[0] ""
+msgstr[1] ""
 
-#: virtualbricks/gui/dialogs/confirmdialog.py
-#, fuzzy, python-brace-format
-msgid "Do you really want to delete {event} ({type})?"
-msgstr "Si vuole veramente cancellare "
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, python-brace-format
+msgid "The event {events} will no longer stop {name}."
+msgid_plural "The events {events} will no longer stop {name}."
+msgstr[0] ""
+msgstr[1] ""
 
-#: virtualbricks/gui/dialogs/confirmdialog.py
-msgid "The event is in use, it will be stopped before."
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, python-brace-format
+msgid "The event {events} will no longer start or stop {name}."
+msgid_plural "The events {events} will no longer start or stop {name}."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, python-brace-format
+msgid "{bricks} will be plugged into nothing."
+msgid_plural "{bricks} will be plugged into nothing."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, fuzzy
+msgid "Nothing else uses it."
+msgstr "Assegna niente"
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, python-brace-format
+msgid ""
+"Its private copy goes to the trash, with the changes it keeps: {files}, "
+"{size}."
+msgid_plural ""
+"Its private copies go to the trash, with the changes they keep: {files}, "
+"{size}."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, python-brace-format
+msgid ""
+"Its private copy is deleted for good, with the changes it keeps: {files}, "
+"{size}. There is no trash."
+msgid_plural ""
+"Its private copies are deleted for good, with the changes they keep: "
+"{files}, {size}. There is no trash."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, fuzzy
+msgid "Delete Event"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, fuzzy, python-brace-format
+msgid "Delete the event {name}?"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, fuzzy
+msgid "Delete Brick"
+msgstr "Nuovo Mattone"
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, fuzzy, python-brace-format
+msgid "Delete the brick {name}?"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, fuzzy
+msgid "Delete"
+msgstr "Ca_ncella"
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+msgid "It is waiting: it stops, and its actions don't run."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/exportproject.py
@@ -5257,6 +5323,18 @@ msgid "Missing in PATH: {programs}"
 msgstr ""
 
 #, fuzzy
+#~ msgid "No"
+#~ msgstr "Nessuno"
+
+#, fuzzy, python-brace-format
+#~ msgid "Do you really want to delete {brick} ({type})?"
+#~ msgstr "Si vuole veramente cancellare "
+
+#, fuzzy, python-brace-format
+#~ msgid "Do you really want to delete {event} ({type})?"
+#~ msgstr "Si vuole veramente cancellare "
+
+#, fuzzy
 #~ msgid "Virtualbricks - Rename brick"
 #~ msgstr "Lista Mattoni di Virtualbricks"
 
@@ -5267,10 +5345,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Brick name"
 #~ msgstr "Nome Mattone:"
-
-#, fuzzy
-#~ msgid "Delete events"
-#~ msgstr "Nuovo progetto"
 
 #~ msgid "VDE binaries path"
 #~ msgstr ""
@@ -5795,9 +5869,6 @@ msgstr ""
 
 #~ msgid "Send ACPI hard reset"
 #~ msgstr "Invia hard reset ACPI"
-
-#~ msgid "_Delete"
-#~ msgstr "Ca_ncella"
 
 #~ msgid "Type"
 #~ msgstr "Tipo"

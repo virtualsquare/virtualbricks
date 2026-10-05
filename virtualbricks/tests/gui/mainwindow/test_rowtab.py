@@ -125,7 +125,6 @@ class TestWhatEachKindSays(GuiTestCase):
         for name in (
             "count_text",
             "can_start",
-            "remove",
             "panel_for",
             "settings_words",
         ):

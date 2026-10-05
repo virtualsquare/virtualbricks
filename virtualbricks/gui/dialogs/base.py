@@ -37,7 +37,8 @@ from gi.repository import Gtk, Pango
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
 
-# around the lines of a dialog, and between them
+# the width of a dialog, around its lines, and between them
+WIDTH = 440
 MARGIN = 18
 GAP = 8
 
@@ -99,7 +100,7 @@ def action_dialog(title, action, destructive=False):
         use_header_bar=True,
         modal=True,
         destroy_with_parent=True,
-        default_width=440,
+        default_width=WIDTH,
     )
     dialog.add_button(_("Cancel"), Gtk.ResponseType.CANCEL)
     button = dialog.add_button(action, Gtk.ResponseType.OK)
@@ -107,4 +108,6 @@ def action_dialog(title, action, destructive=False):
     button.get_style_context().add_class(style)
     box = dialog.get_content_area()
     box.set_properties(spacing=GAP, margin=MARGIN)
+    # else GTK makes it as tall as the lines are at their narrowest
+    box.set_size_request(WIDTH - 2 * MARGIN, -1)
     return dialog, button, box

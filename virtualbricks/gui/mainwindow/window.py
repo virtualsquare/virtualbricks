@@ -48,10 +48,7 @@ from virtualbricks.programs import missing_programs
 from virtualbricks.i18n import _
 from virtualbricks.gui.graphics import load_pixbuf
 from virtualbricks.gui.dialogs.about import AboutDialog
-from virtualbricks.gui.dialogs.confirmdialog import (
-    DeleteBrickConfirmDialog,
-    DeleteEventConfirmDialog,
-)
+from virtualbricks.gui.dialogs.deletedialog import DeleteDialog
 from virtualbricks.gui.dialogs.exportproject import ExportProjectDialog
 from virtualbricks.gui.dialogs.imagedialogs import RemoveImageDialog
 from virtualbricks.gui.dialogs.importdialog import ImportDialog
@@ -662,10 +659,10 @@ class VBGUI:
             return True
 
     def ask_remove_brick(self, brick):
-        DeleteBrickConfirmDialog(self.engine, brick).show(self.window)
+        DeleteDialog(self.engine, brick).show(self.window)
 
     def ask_remove_event(self, event):
-        DeleteEventConfirmDialog(self.engine, event).show(self.window)
+        DeleteDialog(self.engine, event).show(self.window)
 
     def ask_remove_image(self, image):
         RemoveImageDialog(self.engine, image).show(self.window)

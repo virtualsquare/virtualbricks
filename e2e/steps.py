@@ -708,21 +708,17 @@ def duplicate(virtualbricks, name):
 
 @when(words("I delete {name:Brick} from its menu, and confirm"))
 def delete(virtualbricks, name):
-    """Delete…, in its menu, then Yes to the question, which names it."""
+    """Delete…, in its menu, then Delete in the dialog that names it."""
 
     virtualbricks.click("button", f"Menu of {name}")
     virtualbricks.click("button", "Delete…")
     dialog = virtualbricks.find("dialog")
-    # then its type, as Virtualbricks names it inside
-    question = f"Do you really want to delete {name} ("
+    question = f"Delete the brick {name}?"
     virtualbricks.wait_for(
-        lambda: any(
-            label.startswith(question)
-            for label in virtualbricks.names("label", within=dialog)
-        ),
+        lambda: question in virtualbricks.names("label", within=dialog),
         f"the dialog asks to delete {name}",
     )
-    virtualbricks.click("button", "Yes", within=dialog)
+    virtualbricks.click("button", "Delete", within=dialog)
     virtualbricks.gone("dialog")
 
 

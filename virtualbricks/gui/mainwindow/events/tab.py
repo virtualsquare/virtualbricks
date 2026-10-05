@@ -244,9 +244,6 @@ class EventsTab(RowsTab):
     def new(self) -> None:
         NewEventDialog(self.gui).show(self.gui.window)
 
-    def remove(self, item) -> None:
-        self.gui.ask_remove_event(item)
-
     def popup(self, widget, event, item) -> Gtk.Menu:
         return eventmenu.popup(widget, event, self.gui, item, True)
 

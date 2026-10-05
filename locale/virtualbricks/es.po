@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 15:44+0200\n"
+"POT-Creation-Date: 2026-10-05 15:55+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -2492,26 +2492,92 @@ msgstr "_Crear nueva imagen"
 msgid "{file} is there already"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/confirmdialog.py
-msgid "No"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/confirmdialog.py
-msgid "Yes"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/confirmdialog.py
+#: virtualbricks/gui/dialogs/deletedialog.py
 #, python-brace-format
-msgid "Do you really want to delete {brick} ({type})?"
+msgid "{vm} (eth{n})"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/confirmdialog.py
+#: virtualbricks/gui/dialogs/deletedialog.py
 #, python-brace-format
-msgid "Do you really want to delete {event} ({type})?"
+msgid "The event {events} will no longer start {name}."
+msgid_plural "The events {events} will no longer start {name}."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, python-brace-format
+msgid "The event {events} will no longer stop {name}."
+msgid_plural "The events {events} will no longer stop {name}."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, python-brace-format
+msgid "The event {events} will no longer start or stop {name}."
+msgid_plural "The events {events} will no longer start or stop {name}."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, python-brace-format
+msgid "{bricks} will be plugged into nothing."
+msgid_plural "{bricks} will be plugged into nothing."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+msgid "Nothing else uses it."
 msgstr ""
 
-#: virtualbricks/gui/dialogs/confirmdialog.py
-msgid "The event is in use, it will be stopped before."
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, python-brace-format
+msgid ""
+"Its private copy goes to the trash, with the changes it keeps: {files}, "
+"{size}."
+msgid_plural ""
+"Its private copies go to the trash, with the changes they keep: {files}, "
+"{size}."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, python-brace-format
+msgid ""
+"Its private copy is deleted for good, with the changes it keeps: {files}, "
+"{size}. There is no trash."
+msgid_plural ""
+"Its private copies are deleted for good, with the changes they keep: "
+"{files}, {size}. There is no trash."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, fuzzy
+msgid "Delete Event"
+msgstr "Proyectos _Recientes"
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, fuzzy, python-brace-format
+msgid "Delete the event {name}?"
+msgstr "Quitar"
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, fuzzy
+msgid "Delete Brick"
+msgstr "Nuevo Brick"
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, fuzzy, python-brace-format
+msgid "Delete the brick {name}?"
+msgstr "Quitar"
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+#, fuzzy
+msgid "Delete"
+msgstr "Proyectos _Recientes"
+
+#: virtualbricks/gui/dialogs/deletedialog.py
+msgid "It is waiting: it stops, and its actions don't run."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/exportproject.py
@@ -5184,10 +5250,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Brick name"
 #~ msgstr "Bricks (Bloques)"
-
-#, fuzzy
-#~ msgid "Delete events"
-#~ msgstr "Proyectos _Recientes"
 
 #, fuzzy
 #~ msgid "VDE binaries path"

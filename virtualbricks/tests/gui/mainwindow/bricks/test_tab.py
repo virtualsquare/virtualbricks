@@ -442,6 +442,13 @@ class TestTheKeys(BricksTestCase):
         self.assertTrue(self.press(Gdk.KEY_KP_Delete))
         self.assertEqual(self.gui.removed, [self.sw, self.sw])
 
+    def test_delete_waits_while_it_runs(self):
+        # as Delete… in its menu
+        self.running(self.sw)
+        self.select(self.sw)
+        self.assertTrue(self.press(Gdk.KEY_Delete))
+        self.assertEqual(self.gui.removed, [])
+
     def test_rename(self):
         shown = []
         self.patch(

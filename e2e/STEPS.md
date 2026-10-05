@@ -28,7 +28,7 @@ The steps of a user:
 | `When I pause vm1, from its menu` | Process and its number, in its menu, then Pause: SIGSTOP, which stops the processes of the brick; its row still says Running |
 | `When I continue vm1, from its menu` | The same, then Continue: SIGCONT |
 | `When I duplicate sw1 from its menu` | Duplicate, in its menu; then the list has one more brick |
-| `When I delete sw2 from its menu, and confirm` | Delete…, in its menu, then Yes to the question that names it |
+| `When I delete sw2 from its menu, and confirm` | Delete…, in its menu, then Delete in the dialog that names it |
 | `When I start all the bricks` | Start All; each brick whose row said Stopped must run, with the process its row tells, and Start All must start no other |
 | `When I stop all the bricks` | Stop All; each brick that ran must be able to start again |
 | `When I show only the running bricks` | Running, of the switch over the list; then it is on |

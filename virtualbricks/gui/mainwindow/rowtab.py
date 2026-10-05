@@ -36,7 +36,8 @@ menu. The list has a row per object, in their order, follows the factory,
 and keeps the objects whose name or kind has the text of the search.
 
 In the list, the right button, the Menu key and Shift+F10 open the menu of
-the selected object, Delete removes it and F2 renames it; Ctrl+F goes to the
+the selected object, Delete and F2 do what the menu's items of those keys
+do, and nothing while the items are greyed; Ctrl+F goes to the
 search, and so does typing in the list; Escape clears the search. A double
 click or Enter configures an object. Cancel, OK and Escape leave the
 settings; so do deleting the object, opening another project and configuring
@@ -182,6 +183,8 @@ class Row(Gtk.ListBoxRow):
 
     # The prefix of the actions of the menu.
     GROUP = ""
+    # The action of the menu that the Delete key does.
+    DELETE = "delete"
     # Whether the object starts and stops, with a button of the row.
     STARTS = True
 
@@ -345,6 +348,13 @@ class Row(Gtk.ListBoxRow):
         # an item runs its action after it; destroyed now, the popover is
         # freed under GTK, and the action lost
         GLib.idle_add(popover.destroy)
+
+
+def _activate(row, name) -> None:
+    """Do the action name of the menu of row, unless it is greyed."""
+
+    if row.actions.get_action_enabled(name):
+        row.actions.activate_action(name, None)
 
 
 class RowList(Gtk.ListBox):
@@ -674,11 +684,6 @@ class RowsTab(Tab, Gtk.Stack):
 
         raise NotImplementedError
 
-    def remove(self, item) -> None:
-        """Ask to remove item."""
-
-        raise NotImplementedError
-
     def popup(self, widget, event, item) -> Gtk.Menu:
         """Open the menu of item, with its keys."""
 
@@ -952,13 +957,12 @@ class RowsTab(Tab, Gtk.Stack):
         if keyval == Gdk.KEY_Menu or (keyval == Gdk.KEY_F10 and shift):
             self.open_menu()
             return True
-        if item is not None and keyval in (Gdk.KEY_Delete, Gdk.KEY_KP_Delete):
-            self.remove(item)
+        row = None if item is None else listbox.row_of(item)
+        if row is not None and keyval in (Gdk.KEY_Delete, Gdk.KEY_KP_Delete):
+            _activate(row, row.DELETE)
             return True
-        if item is not None and keyval == Gdk.KEY_F2:
-            actions = listbox.row_of(item).actions
-            if actions.get_action_enabled("rename"):
-                actions.activate_action("rename", None)
+        if row is not None and keyval == Gdk.KEY_F2:
+            _activate(row, "rename")
             return True
         if keyval == Gdk.KEY_Escape and self.search.get_text():
             self.on_stop_search(self.search)

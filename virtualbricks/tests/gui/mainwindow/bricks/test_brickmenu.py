@@ -300,7 +300,6 @@ class TestWhatIsEnabled(BrickMenuTestCase):
                 "connect",
                 "console",
                 "continue",
-                "delete",
                 "duplicate",
                 "kill",
                 "pause",

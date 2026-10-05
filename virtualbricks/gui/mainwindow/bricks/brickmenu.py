@@ -25,7 +25,8 @@ Start or Stop, Configure, Rename, Duplicate, Connect To the bricks the
 brick can plug into or take, When It Starts and When It Stops, and Delete;
 a virtual machine has Resume. While the brick runs, Process slides to the
 actions on its process: the control monitor, pause and continue, restart
-and kill, and for a virtual machine suspend, reset and terminate.
+and kill, and for a virtual machine suspend, reset and terminate; Rename
+and Delete wait until it stops.
 
 When It Starts and When It Stops choose the event that the brick starts,
 one or none: No Event, then every event of the project. An event that
@@ -246,6 +247,7 @@ class BrickActions(Gio.SimpleActionGroup):
             "startstop": state in (State.RUNNING, State.STOPPED),
             "configure": self.brick.get_type() not in NO_PANEL,
             "rename": not running,
+            "delete": not running,
             "resume": vm,
             "console": running
             and self.brick.get_type() not in NO_CONSOLE
