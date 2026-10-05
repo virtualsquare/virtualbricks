@@ -48,7 +48,7 @@ if has_display:
         RemoveImageDialog,
         StartOverDialog,
     )
-    from virtualbricks.gui.mainwindow.bricks.config.form import Form
+    from virtualbricks.gui.form import Form
     from virtualbricks.gui.mainwindow.bricks.config.vm.disks import (
         DisksSection,
     )

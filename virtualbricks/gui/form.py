@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.config.test_form -*-
+# -*- test-case-name: virtualbricks.tests.gui.test_form -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -17,7 +17,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The rows of a panel, bound to the settings of a draft.
+The rows of a panel, or of a page of the Settings window, bound to the
+settings of a draft.
 
 A form has sections: a title, and the rows under it in a frame. A row is a
 setting: its label and its help from the schema, translated, with what the
@@ -25,8 +26,9 @@ draft adds to the help; its widget, at the end; and under them what is wrong
 with the setting, when something is. The widget comes from the kind of the
 field: a switch for true or false, a spin button for a number, between the
 limits of the draft, an entry for a text or a path, buttons or a menu for a
-choice. A socket row chooses what a plug of the brick joins, of the draft's
-sockets.
+choice. A text can have a menu of what it is often, and a setting can be
+shown without being changed. A socket row chooses what a plug of the brick
+joins, of the draft's sockets.
 
 A pair row has a number both ways, from left to right and back, and a switch
 for the same both ways; ``row()`` takes any widget, and a section can frame
@@ -41,7 +43,7 @@ for what only keeps the brick from starting.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 
 import gi
 
@@ -89,6 +91,21 @@ def _separate(row, before) -> None:
 
     if before is not None and row.get_header() is None:
         row.set_header(Gtk.Separator(visible=True))
+
+
+def set_options(combo: Gtk.ComboBoxText, options: Iterable[str]) -> None:
+    """
+    The menu of a text: options, where "" is a line between those before
+    and those after. The text stays as it is.
+    """
+
+    combo.remove_all()
+    for option in options:
+        combo.append(option, option)
+
+
+def _is_line(model, row) -> bool:
+    return model[row][0] == ""
 
 
 def socket_name(sock) -> str:
@@ -374,6 +391,41 @@ class Form:
         row = self._row(name, entry)
         row.load = lambda: entry.set_text(self.draft.get(name))
         return entry
+
+    def combo_entry(
+        self, name: str, options: Iterable[str] = ()
+    ) -> Gtk.ComboBoxText:
+        """
+        A text, typed or chosen in a menu of options; set_options() changes
+        them.
+        """
+
+        combo = Gtk.ComboBoxText.new_with_entry()
+        combo.show()
+        combo.set_row_separator_func(_is_line)
+        set_options(combo, options)
+        entry = combo.get_child()
+        entry.set_width_chars(20)
+        entry.set_text(self.draft.get(name))
+        entry.connect(
+            "changed", lambda widget: self._set(name, widget.get_text())
+        )
+        row = self._row(name, combo)
+        row.title.set_mnemonic_widget(entry)
+        row.load = lambda: entry.set_text(self.draft.get(name))
+        return combo
+
+    def value(
+        self, name: str, show: Callable[[object], str] = str
+    ) -> Gtk.Label:
+        """A setting shown, as show() writes it, and not changed."""
+
+        label = Gtk.Label(
+            visible=True, selectable=True, label=show(self.draft.get(name))
+        )
+        row = self._row(name, label)
+        row.load = lambda: label.set_text(show(self.draft.get(name)))
+        return label
 
     def path(self, name: str, title: str, folder: bool = False) -> Gtk.Entry:
         """

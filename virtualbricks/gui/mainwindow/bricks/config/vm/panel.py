@@ -29,7 +29,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks.gui.mainwindow.bricks.config.form import Form  # noqa: E402
+from virtualbricks.gui.form import Form  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.panel import (
     Panel,
 )  # noqa: E402

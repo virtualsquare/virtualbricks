@@ -152,13 +152,18 @@ class TestDraft(unittest.TestCase):
         draft = SettingsDraft(owner(AppSettings))
         draft.set("kernel_samepage_merging", True)
         draft.fail("kernel_samepage_merging", "KSM is still off")
+        # a warning: OK tries again
         self.assertEqual(
-            draft.errors(),
-            [Problem("kernel_samepage_merging", "KSM is still off")],
+            draft.problems(),
+            [
+                Problem(
+                    "kernel_samepage_merging", "KSM is still off", error=False
+                )
+            ],
         )
         # until it is set again
         draft.set("kernel_samepage_merging", True)
-        self.assertEqual(draft.errors(), [])
+        self.assertEqual(draft.problems(), [])
 
 
 class TestTerminal(unittest.TestCase):

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 13:14+0200\n"
+"POT-Creation-Date: 2026-10-05 13:28+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -214,7 +214,7 @@ msgstr "Añadir tarjeta de red"
 msgid "Machines and switches"
 msgstr "Tipo de máquina"
 
-#: virtualbricks/bricks/brickinfo.py
+#: virtualbricks/bricks/brickinfo.py virtualbricks/gui/dialogs/settings.py
 msgid "Links"
 msgstr ""
 
@@ -1118,7 +1118,7 @@ msgstr ""
 msgid "Loops of links"
 msgstr ""
 
-#: virtualbricks/config/settings.py virtualbricks/gui/dialogs/settings.py
+#: virtualbricks/config/settings.py
 msgid "Log an error when links make a loop"
 msgstr ""
 
@@ -1147,7 +1147,7 @@ msgstr ""
 msgid "The folder of the VDE programs"
 msgstr ""
 
-#: virtualbricks/config/settings.py virtualbricks/gui/dialogs/settings.py
+#: virtualbricks/config/settings.py
 msgid "Workspace"
 msgstr ""
 
@@ -2534,8 +2534,7 @@ msgstr ""
 msgid "Save as"
 msgstr "Guardar proyecto como"
 
-#: virtualbricks/gui/dialogs/exportproject.py
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
+#: virtualbricks/gui/dialogs/exportproject.py virtualbricks/gui/form.py
 #: virtualbricks/migrate/gui.py
 msgid "Choose…"
 msgstr ""
@@ -3100,8 +3099,7 @@ msgstr ""
 msgid "Save the messages"
 msgstr "_Mensajes"
 
-#: virtualbricks/gui/dialogs/logging.py
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
+#: virtualbricks/gui/dialogs/logging.py virtualbricks/gui/form.py
 #: virtualbricks/gui/mainwindow/rowtab.py virtualbricks/migrate/gui.py
 msgid "_Cancel"
 msgstr ""
@@ -3230,8 +3228,8 @@ msgstr "_Abrir proyecto"
 msgid "Select a project"
 msgstr "Guardar proyecto como"
 
-#: virtualbricks/gui/dialogs/projects.py virtualbricks/gui/messages.py
-#: virtualbricks/migrate/gui.py
+#: virtualbricks/gui/dialogs/projects.py virtualbricks/gui/dialogs/settings.py
+#: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
 msgid "Bricks"
 msgstr "Bricks (Bloques)"
 
@@ -3391,56 +3389,111 @@ msgstr "_Crear nueva imagen"
 msgid "Brick name"
 msgstr "Bricks (Bloques)"
 
-#: virtualbricks/gui/dialogs/settings.py
+#: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/messages.py
 #, fuzzy
-msgid "VDE binaries path"
+msgid "Settings"
+msgstr "_Preferencias"
+
+#: virtualbricks/gui/dialogs/settings.py
+#, fuzzy, python-brace-format
+msgid "Kept in {path}"
 msgstr "Creación de imagen"
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "Allow female plugs on devices"
+#, python-brace-format
+msgid "Kept on {where}, in its settings.toml"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/messages.py
+msgid "Windows"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/messages.py
+#: virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "Project"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid ""
+"No project is open. A new project starts with these settings, the defaults; "
+"open one to change its own."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "Qemu binaries path"
+#, fuzzy, python-brace-format
+msgid "Project {name}"
+msgstr "Quitar"
+
+#: virtualbricks/gui/dialogs/settings.py
+#, python-brace-format
+msgid "Kept in {path}. A new project starts with a copy of them."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "Virtualbricks Settings"
+#, python-brace-format
+msgid "Kept in {path} on {where}. A new project starts with a copy of them."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "Application"
+msgid "Programs"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/settings.py
+#, fuzzy
+msgid "The Folder of the QEMU Programs"
+msgstr "_Crear nueva imagen"
+
+#: virtualbricks/gui/dialogs/settings.py
+#, fuzzy
+msgid "The Folder of the VDE Programs"
+msgstr "_Crear nueva imagen"
+
+#: virtualbricks/gui/dialogs/settings.py
+#, python-brace-format
+msgid "{page}: {setting}: {problem}"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
 msgid ""
-"These settings belong to the open project: changing them doesn't change the "
-"other projects. A new project starts with a copy of them."
+"KSM is still off: Virtualbricks couldn't turn it on. File › Logs says why."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
+msgid ""
+"KSM is still on: Virtualbricks couldn't turn it off. File › Logs says why."
+msgstr ""
+
+#: virtualbricks/gui/form.py
+#, python-brace-format
+msgid "{help} · {note}"
+msgstr ""
+
+#: virtualbricks/gui/form.py
+msgid "The same both ways"
+msgstr ""
+
+#: virtualbricks/gui/form.py
 #, fuzzy
-msgid "This project"
-msgstr "_Abrir proyecto"
+msgid "From left to right"
+msgstr "De izquierda a derecha"
 
-#: virtualbricks/gui/dialogs/settings.py
-msgid "X-window terminal command"
+#: virtualbricks/gui/form.py
+msgid "From right to left"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/settings.py
-msgid "Enable systray"
+#: virtualbricks/gui/form.py
+msgid "Both ways"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/settings.py
-msgid "Warn about missing components at startup"
+#: virtualbricks/gui/form.py virtualbricks/migrate/gui.py
+msgid "_Select"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/settings.py
-msgid "Enable KSM"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/settings.py
-msgid "Audio driver of QEMU, as alsa, pa or pipewire"
+#: virtualbricks/gui/form.py
+#: virtualbricks/gui/mainwindow/bricks/config/vm/media.py
+#: virtualbricks/gui/mainwindow/bricks/config/vm/network.py
+msgid "Nothing"
 msgstr ""
 
 #: virtualbricks/gui/gui.py
@@ -3726,39 +3779,6 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
 #, python-brace-format
 msgid "{value}, not on this host"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-#, python-brace-format
-msgid "{help} · {note}"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-msgid "The same both ways"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-#, fuzzy
-msgid "From left to right"
-msgstr "De izquierda a derecha"
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-msgid "From right to left"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-msgid "Both ways"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-#: virtualbricks/migrate/gui.py
-msgid "_Select"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-#: virtualbricks/gui/mainwindow/bricks/config/vm/media.py
-#: virtualbricks/gui/mainwindow/bricks/config/vm/network.py
-msgid "Nothing"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
@@ -4741,22 +4761,8 @@ msgid "Main window"
 msgstr ""
 
 #: virtualbricks/gui/messages.py
-msgid "Windows"
-msgstr ""
-
-#: virtualbricks/gui/messages.py
 msgid "Migration"
 msgstr ""
-
-#: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
-#, fuzzy
-msgid "Project"
-msgstr "_Abrir proyecto"
-
-#: virtualbricks/gui/messages.py
-#, fuzzy
-msgid "Settings"
-msgstr "_Preferencias"
 
 #: virtualbricks/gui/messages.py
 msgid "Console"
@@ -5147,6 +5153,14 @@ msgstr ""
 #, python-brace-format
 msgid "Missing in PATH: {programs}"
 msgstr ""
+
+#, fuzzy
+#~ msgid "VDE binaries path"
+#~ msgstr "Creación de imagen"
+
+#, fuzzy
+#~ msgid "This project"
+#~ msgstr "_Abrir proyecto"
 
 #, fuzzy
 #~ msgid "Private COW format"

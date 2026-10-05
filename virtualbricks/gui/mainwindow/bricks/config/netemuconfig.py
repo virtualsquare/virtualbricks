@@ -32,7 +32,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango  # noqa: E402
 
-from virtualbricks.gui.mainwindow.bricks.config.form import (
+from virtualbricks.gui.form import (
     HIGHEST,
 )  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.panel import (

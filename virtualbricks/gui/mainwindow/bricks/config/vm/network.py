@@ -32,7 +32,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango  # noqa: E402
 
 from virtualbricks.bricks.virtualmachine import hostonly_sock  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks.config.form import (  # noqa: E402
+from virtualbricks.gui.form import (  # noqa: E402
     show_problem,
     socket_name,
 )

@@ -19,14 +19,22 @@
 
 from virtualbricks.bricks.draft import Draft, Problem
 from virtualbricks.bricks.switch import SwitchConfig, SwitchDraft
-from virtualbricks.config.schema import Int, define, field, field_values
+from virtualbricks.config.schema import (
+    Int,
+    define,
+    dump_record,
+    field,
+    field_values,
+)
+from virtualbricks.config.settings import AppSettings
+from virtualbricks.settingsdraft import Owner, SettingsDraft
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 
 if has_display:
     from gi.repository import Gtk, Pango
 
-    from virtualbricks.gui.mainwindow.bricks.config import form
-    from virtualbricks.gui.mainwindow.bricks.config.form import Form
+    from virtualbricks.gui import form
+    from virtualbricks.gui.form import Form
 
 
 @define
@@ -534,3 +542,61 @@ class TestReload(FormTestCase):
         draft.set("loss_right_to_left", 300.0)
         made.refresh()
         self.assertEqual(row.problem.get_text(), "300.0 is outside 0–100")
+
+
+class TestATextWithAMenu(FormTestCase):
+    """The rows of the Settings window: a text with a menu, a value shown."""
+
+    def draft(self):
+        values = dump_record(AppSettings())
+        return SettingsDraft(Owner(AppSettings, values.__getitem__))
+
+    def test_typed_or_chosen(self):
+        draft = self.draft()
+        made = self.make(draft)
+        made.section("Windows")
+        combo = made.combo_entry("terminal", ["xterm", "", "konsole"])
+        entry = combo.get_child()
+        self.assertEqual(entry.get_text(), "x-terminal-emulator")
+        self.assertIs(made.rows["terminal"].title.get_mnemonic_widget(), entry)
+        combo.set_active_id("konsole")
+        self.assertEqual(draft.get("terminal"), "konsole")
+        self.assertEqual(self.changes, 1)
+        entry.set_text("foot")
+        self.assertEqual(draft.get("terminal"), "foot")
+        # "" is a line between the options
+        model = combo.get_model()
+        self.assertTrue(form._is_line(model, model.get_iter(1)))
+        self.assertFalse(form._is_line(model, model.get_iter(0)))
+
+    def test_new_options_keep_the_text(self):
+        made = self.make(self.draft())
+        made.section("Bricks")
+        combo = made.combo_entry("audio_driver", ["alsa"])
+        form.set_options(combo, ["pipewire", "pa"])
+        model = combo.get_model()
+        self.assertEqual([item[0] for item in model], ["pipewire", "pa"])
+        self.assertEqual(combo.get_child().get_text(), "alsa")
+
+    def test_reload(self):
+        draft = self.draft()
+        made = self.make(draft)
+        made.section("Windows")
+        combo = made.combo_entry("terminal")
+        draft.follow("terminal", "xterm")
+        made.reload()
+        self.assertEqual(combo.get_child().get_text(), "xterm")
+        # nothing typed
+        self.assertEqual(self.changes, 0)
+
+    def test_a_value_shown(self):
+        draft = self.draft()
+        made = self.make(draft)
+        made.section("Bricks")
+        label = made.value("workspace", lambda path: f"<{path}>")
+        self.assertEqual(label.get_text(), f"<{draft.get('workspace')}>")
+        self.assertTrue(label.get_selectable())
+        self.assertEqual(made.rows["workspace"].title.get_text(), "Workspace")
+        draft.follow("workspace", "/srv/labs")
+        made.reload()
+        self.assertEqual(label.get_text(), "</srv/labs>")

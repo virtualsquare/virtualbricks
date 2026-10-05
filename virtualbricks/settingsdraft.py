@@ -137,8 +137,8 @@ class SettingsDraft(Draft):
         # the settings of the page; the others stay as the owner has them
         self.keys = tuple(keys) or tuple(field_names(owner.record))
         self.facts = Facts()
-        # the settings that OK couldn't change, as KSM, and why: errors,
-        # until they are set again
+        # the settings that OK couldn't change, as KSM, and why: warnings,
+        # since OK tries again, until they are set again
         self.failed: dict[str, str] = {}
         super().__init__(owner)
 
@@ -277,7 +277,7 @@ class SettingsDraft(Draft):
         problems = []
         for name in self.keys:
             if name in self.failed:
-                problems.append(Problem(name, self.failed[name]))
+                problems.append(Problem(name, self.failed[name], error=False))
                 continue
             check = getattr(self, f"_check_{name}", None)
             if check is None or name in self.refused:

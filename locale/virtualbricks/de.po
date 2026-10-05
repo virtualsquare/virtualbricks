@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 13:14+0200\n"
+"POT-Creation-Date: 2026-10-05 13:28+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -206,7 +206,7 @@ msgstr ""
 msgid "Machines and switches"
 msgstr ""
 
-#: virtualbricks/bricks/brickinfo.py
+#: virtualbricks/bricks/brickinfo.py virtualbricks/gui/dialogs/settings.py
 msgid "Links"
 msgstr ""
 
@@ -1082,7 +1082,7 @@ msgstr ""
 msgid "Loops of links"
 msgstr ""
 
-#: virtualbricks/config/settings.py virtualbricks/gui/dialogs/settings.py
+#: virtualbricks/config/settings.py
 msgid "Log an error when links make a loop"
 msgstr ""
 
@@ -1110,7 +1110,7 @@ msgstr ""
 msgid "The folder of the VDE programs"
 msgstr ""
 
-#: virtualbricks/config/settings.py virtualbricks/gui/dialogs/settings.py
+#: virtualbricks/config/settings.py
 msgid "Workspace"
 msgstr ""
 
@@ -2470,8 +2470,7 @@ msgstr ""
 msgid "Save as"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/exportproject.py
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
+#: virtualbricks/gui/dialogs/exportproject.py virtualbricks/gui/form.py
 #: virtualbricks/migrate/gui.py
 msgid "Choose…"
 msgstr ""
@@ -3023,8 +3022,7 @@ msgstr ""
 msgid "Save the messages"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/logging.py
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
+#: virtualbricks/gui/dialogs/logging.py virtualbricks/gui/form.py
 #: virtualbricks/gui/mainwindow/rowtab.py virtualbricks/migrate/gui.py
 msgid "_Cancel"
 msgstr ""
@@ -3143,8 +3141,8 @@ msgstr ""
 msgid "Select a project"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/projects.py virtualbricks/gui/messages.py
-#: virtualbricks/migrate/gui.py
+#: virtualbricks/gui/dialogs/projects.py virtualbricks/gui/dialogs/settings.py
+#: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
 msgid "Bricks"
 msgstr ""
 
@@ -3296,54 +3294,106 @@ msgstr ""
 msgid "Brick name"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/settings.py
-msgid "VDE binaries path"
+#: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/messages.py
+msgid "Settings"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "Allow female plugs on devices"
+#, python-brace-format
+msgid "Kept in {path}"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "Qemu binaries path"
+#, python-brace-format
+msgid "Kept on {where}, in its settings.toml"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/settings.py
-msgid "Virtualbricks Settings"
+#: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/messages.py
+msgid "Windows"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/settings.py
-msgid "Application"
+#: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/messages.py
+#: virtualbricks/migrate/gui.py
+msgid "Project"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
 msgid ""
-"These settings belong to the open project: changing them doesn't change the "
-"other projects. A new project starts with a copy of them."
+"No project is open. A new project starts with these settings, the defaults; "
+"open one to change its own."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "This project"
+#, python-brace-format
+msgid "Project {name}"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "X-window terminal command"
+#, python-brace-format
+msgid "Kept in {path}. A new project starts with a copy of them."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "Enable systray"
+#, python-brace-format
+msgid "Kept in {path} on {where}. A new project starts with a copy of them."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "Warn about missing components at startup"
+msgid "Programs"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "Enable KSM"
+msgid "The Folder of the QEMU Programs"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "Audio driver of QEMU, as alsa, pa or pipewire"
+msgid "The Folder of the VDE Programs"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/settings.py
+#, python-brace-format
+msgid "{page}: {setting}: {problem}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid ""
+"KSM is still off: Virtualbricks couldn't turn it on. File › Logs says why."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid ""
+"KSM is still on: Virtualbricks couldn't turn it off. File › Logs says why."
+msgstr ""
+
+#: virtualbricks/gui/form.py
+#, python-brace-format
+msgid "{help} · {note}"
+msgstr ""
+
+#: virtualbricks/gui/form.py
+msgid "The same both ways"
+msgstr ""
+
+#: virtualbricks/gui/form.py
+msgid "From left to right"
+msgstr ""
+
+#: virtualbricks/gui/form.py
+msgid "From right to left"
+msgstr ""
+
+#: virtualbricks/gui/form.py
+msgid "Both ways"
+msgstr ""
+
+#: virtualbricks/gui/form.py virtualbricks/migrate/gui.py
+msgid "_Select"
+msgstr ""
+
+#: virtualbricks/gui/form.py
+#: virtualbricks/gui/mainwindow/bricks/config/vm/media.py
+#: virtualbricks/gui/mainwindow/bricks/config/vm/network.py
+msgid "Nothing"
 msgstr ""
 
 #: virtualbricks/gui/gui.py
@@ -3624,38 +3674,6 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
 #, python-brace-format
 msgid "{value}, not on this host"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-#, python-brace-format
-msgid "{help} · {note}"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-msgid "The same both ways"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-msgid "From left to right"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-msgid "From right to left"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-msgid "Both ways"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-#: virtualbricks/migrate/gui.py
-msgid "_Select"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/form.py
-#: virtualbricks/gui/mainwindow/bricks/config/vm/media.py
-#: virtualbricks/gui/mainwindow/bricks/config/vm/network.py
-msgid "Nothing"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
@@ -4579,19 +4597,7 @@ msgid "Main window"
 msgstr ""
 
 #: virtualbricks/gui/messages.py
-msgid "Windows"
-msgstr ""
-
-#: virtualbricks/gui/messages.py
 msgid "Migration"
-msgstr ""
-
-#: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
-msgid "Project"
-msgstr ""
-
-#: virtualbricks/gui/messages.py
-msgid "Settings"
 msgstr ""
 
 #: virtualbricks/gui/messages.py

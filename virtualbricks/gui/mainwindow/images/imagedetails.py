@@ -42,7 +42,7 @@ from gi.repository import Gtk, Pango  # noqa: E402
 from virtualbricks.config import images  # noqa: E402
 from virtualbricks.gui import imageinfo  # noqa: E402
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks.config.form import (  # noqa: E402
+from virtualbricks.gui.form import (  # noqa: E402
     show_problem,
 )
 from virtualbricks.gui.mainwindow.bricks.config.panel import (  # noqa: E402

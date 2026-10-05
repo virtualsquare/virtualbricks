@@ -43,7 +43,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # noqa: E402
 
 from virtualbricks.engine import LocalEngine
-from virtualbricks.gui.mainwindow.bricks.config.form import Form
+from virtualbricks.gui.form import Form
 from virtualbricks.i18n import _
 from virtualbricks.bricks import is_running
 

@@ -16,405 +16,521 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Preferences dialog.
+The Settings window (page 23): a page for each owner of settings, each a
+form on a draft, and Cancel and OK in the header bar.
 
-On the machine of the bricks, two pages: Application and This project. Over
-a connection, three (page 19 R10): This computer, the settings of these
-windows; the machine of the bricks, its KSM and its audio driver, with its
-workspace shown; and the project open there, whose folders are paths of
-that machine, typed rather than chosen.
+On the machine of the bricks, two pages: This computer, the settings of its
+settings.toml, in two sections, those of these windows and those of the
+bricks; and the open project's. Over a connection, three (page 19 R10): the
+section of the bricks is the page of the machine there, which keeps them,
+and the folders of the project are paths there, typed, with the folders
+there to complete them.
+
+The facts that the drafts check against come from the engine when the
+window opens, and again half a second after the last key typed in a folder
+of the programs. A page with an error marks its tab, and OK, greyed out,
+says the first in its tooltip.
+
+OK writes what changed, and nothing else: the settings of this computer
+here, those of the machine of the bricks and of the project through the
+engine. If KSM changed, the window waits for it to turn: when it doesn't,
+the window stays open on its page, whose row says so, and OK tries again.
 """
 
+from __future__ import annotations
+
+import os
+from collections.abc import Callable
+
+import attr
 import gi
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gtk
+from gi.repository import Gtk  # noqa: E402
 
-from twisted.logger import Logger
+from twisted.internet import defer  # noqa: E402
+from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks.config.settings import (
+from virtualbricks import ksm, locations  # noqa: E402
+from virtualbricks.config import settings  # noqa: E402
+from virtualbricks.config.settings import (  # noqa: E402
+    AppSettings,
+    ProjectSettings,
     get_setting,
     set_setting,
     store_settings,
 )
-from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import Window
-from virtualbricks.gui.pathentry import PathCompletion
+from virtualbricks.gui.dialogs.base import Window  # noqa: E402
+from virtualbricks.gui.form import (  # noqa: E402
+    Form,
+    set_options,
+)
+from virtualbricks.i18n import _  # noqa: E402
+from virtualbricks.locations import short_path  # noqa: E402
+from virtualbricks.settingsdraft import (  # noqa: E402
+    PLAYING,
+    Facts,
+    Owner,
+    SettingsDraft,
+    audio_drivers,
+    terminals,
+)
 
 logger = Logger()
+settings_not_saved = "The settings weren't saved: {error}"
 
-apply_settings = "Apply settings..."
-
-
-def _grid():
-    return Gtk.Grid(
-        visible=True,
-        can_focus=False,
-        margin_top=4,
-        margin_bottom=4,
-        row_spacing=4,
-        column_spacing=4,
-    )
-
-
-def _label(text):
-    return Gtk.Label(
-        visible=True, can_focus=False, halign=Gtk.Align.START, label=text
-    )
+# The settings of these windows, and those of the bricks, which the machine
+# of the bricks keeps.
+WINDOWS = ("terminal", "tray_icon", "warn_missing_programs")
+BRICKS = ("kernel_samepage_merging", "audio_driver", "workspace")
+# Those of the project.
+PROGRAMS = ("qemu_path", "vde_path")
+LINKS = ("allow_female_plugs", "log_link_loops")
+KSM = "kernel_samepage_merging"
+# Seconds after the last key in a folder before the window asks what it holds.
+FOLDER_DELAY = 0.5
+WIDTH = 640
+MARGIN = 12
 
 
-def _attach(grid, row, text, widget):
-    """A row of grid: the label, which the screen readers say with widget."""
+def _write_here(changes) -> defer.Deferred:
+    """Write settings of this computer, in its settings.toml."""
 
-    label = _label(text)
-    label.set_mnemonic_widget(widget)
-    grid.attach(label, 0, row, 1, 1)
-    grid.attach(widget, 1, row, 1, 1)
-
-
-def _switch():
-    return Gtk.Switch(visible=True, can_focus=True, halign=Gtk.Align.START)
+    for name, value in changes.items():
+        set_setting(name, value)
+    store_settings()
+    return defer.succeed(None)
 
 
-def _folder_chooser():
-    return Gtk.FileChooserButton(
-        visible=True, can_focus=False, hexpand=True, title=""
-    )
+class Page:
+    """A page of the window: its draft, its form, and the mark of its tab."""
+
+    def __init__(
+        self,
+        title: str,
+        draft: SettingsDraft,
+        engine,
+        changed: Callable[[Page], None],
+    ) -> None:
+        self.title = title
+        self.draft = draft
+        self.form = Form(draft, lambda: changed(self), engine)
+        self.mark = Gtk.Image.new_from_icon_name(
+            "dialog-error-symbolic", Gtk.IconSize.MENU
+        )
+        self.tab = Gtk.Box(visible=True, spacing=4)
+        self.tab.pack_start(
+            Gtk.Label(visible=True, label=title), False, False, 0
+        )
+        self.tab.pack_start(self.mark, False, False, 0)
+
+    def label_of(self, key: str) -> str:
+        row = self.form.rows.get(key)
+        return key if row is None else row.title.get_text()
 
 
-class _FolderEntry(Gtk.Entry):
-    """
-    A folder of another machine, which a file chooser can't show: typed,
-    with the folders there to complete it.
-    """
+class SettingsWindow(Window):
+    """The settings of these windows, of the machine of the bricks, and of
+    the open project."""
 
-    def __init__(self, engine):
-        super().__init__(visible=True, can_focus=True, hexpand=True)
-        self.completer = PathCompletion(engine, self, folders=True)
+    def __init__(self, gui, clock=None) -> None:
+        """
+        :type gui: virtualbricks.gui.mainwindow.window.VBGUI
+        """
 
-    def set_current_folder(self, folder):
-        self.set_text(folder)
-
-    def get_current_folder(self):
-        return self.get_text().strip() or None
-
-
-class ProjectSettingsWidgets:
-    """The settings of the open project."""
-
-    def __init__(self, note, engine=None):
-        if engine is None or engine.local:
-            folder = _folder_chooser
+        if clock is None:
+            from twisted.internet import reactor as clock
+        self.gui = gui
+        self.engine = gui.engine
+        self.clock = clock
+        if self.engine.local:
+            available = ksm.ksm_available()
+            where = ""
         else:
-            folder = lambda: _FolderEntry(engine)  # noqa: E731
-        self.grid = grid = _grid()
-        grid.attach(
-            Gtk.Label(visible=True, label=note, xalign=0, wrap=True),
-            0,
-            0,
-            2,
-            1,
-        )
-        self.vde_path_chooser = folder()
-        self.female_plugs_switch = _switch()
-        self.link_loops_switch = _switch()
-        self.qemu_path_chooser = folder()
-        rows = (
-            (_("VDE binaries path"), self.vde_path_chooser),
-            (_("Allow female plugs on devices"), self.female_plugs_switch),
-            (_("Log an error when links make a loop"), self.link_loops_switch),
-            (_("Qemu binaries path"), self.qemu_path_chooser),
-        )
-        for row, (text, widget) in enumerate(rows, 1):
-            _attach(grid, row, text, widget)
+            available = self.engine.factory.machine.get("ksm_available")
+            where = self.engine.where
+        self.facts = Facts(ksm_available=available, where=where)
+        self.pages: list[Page] = []
+        # the facts asked last, of which folders, and the call that asks
+        # them again
+        self._asking = 0
+        self._asked: tuple[str, str] | None = None
+        self._later = None
+        # while OK waits for KSM; once the window is gone
+        self._turning = False
+        self._closed = False
+        super().__init__()
+        self._follow()
+        self.ask_facts()
 
-    def load(self, get):
-        self.vde_path_chooser.set_current_folder(get("vde_path"))
-        self.female_plugs_switch.set_active(get("allow_female_plugs"))
-        self.link_loops_switch.set_active(get("log_link_loops"))
-        self.qemu_path_chooser.set_current_folder(get("qemu_path"))
-
-    def store(self, set):
-        vde_path = self.vde_path_chooser.get_current_folder()
-        if vde_path is not None:
-            set("vde_path", vde_path)
-        set("allow_female_plugs", self.female_plugs_switch.get_active())
-        set("log_link_loops", self.link_loops_switch.get_active())
-        qemu_path = self.qemu_path_chooser.get_current_folder()
-        if qemu_path is not None:
-            set("qemu_path", qemu_path)
-
-
-class SettingsDialog(Window):
-    """The preferences: of the application, and of the open project."""
-
-    def __init__(self, virtualbricks_gui):
-        """
-        :type virtualbricks_gui: virtualbricks.gui.gui.VBGUI
-        """
-
-        self._setting_ksm_deferred = None
-        self.virtualbricks_gui = virtualbricks_gui
-        # the settings of the machine of the bricks and of its project go
-        # through it
-        self.engine = virtualbricks_gui.engine
-        self.build_ui()
-        self.load_settings()
+    # The window
 
     def build_ui(self) -> None:
-        """Create the widgets, formerly in ``settings.ui``."""
-
-        # dialog (Gtk.Dialog)
         self.dialog = Gtk.Dialog(
-            width_request=600,
-            height_request=400,
-            can_focus=False,
-            title=_("Virtualbricks Settings"),
+            title=_("Settings"),
+            use_header_bar=True,
             modal=True,
             destroy_with_parent=True,
-            type_hint=Gdk.WindowTypeHint.DIALOG,
         )
-        # TODO: empty Glade placeholder, nothing to create.
-        content_area = self.dialog.get_content_area()
-        content_area.set_properties(
-            can_focus=False,
+        self.dialog.add_button(_("Cancel"), Gtk.ResponseType.CANCEL)
+        self.ok_button = self.dialog.add_button(_("OK"), Gtk.ResponseType.OK)
+        self.ok_button.get_style_context().add_class("suggested-action")
+        self.spinner = Gtk.Spinner()
+        self.dialog.get_header_bar().pack_end(self.spinner)
+        self.notebook = Gtk.Notebook(visible=True)
+        # as wide as this at least: a window is as tall as its content is at
+        # its narrowest, where the captions take more lines
+        self.notebook.set_size_request(WIDTH, -1)
+        self.dialog.get_content_area().pack_start(self.notebook, True, True, 0)
+        engine = self.engine
+        here = Owner(AppSettings, get_setting, engine.set_settings)
+        if engine.local:
+            computer = self._page(
+                _("This computer"),
+                SettingsDraft(here, WINDOWS + BRICKS),
+                _("Kept in {path}").format(
+                    path=short_path(locations.settings_file())
+                ),
+            )
+            self._windows(computer.form)
+            self._bricks(computer.form)
+        else:
+            here.write = _write_here
+            computer = self._page(
+                _("This computer"),
+                SettingsDraft(here, WINDOWS),
+                _("Kept in {path}").format(
+                    path=short_path(locations.settings_file())
+                ),
+            )
+            self._windows(computer.form)
+            there = Owner(
+                AppSettings, engine.machine.setting, engine.set_settings
+            )
+            machine = self._page(
+                engine.where,
+                SettingsDraft(there, BRICKS),
+                _("Kept on {where}, in its settings.toml").format(
+                    where=engine.where
+                ),
+            )
+            self._bricks(machine.form)
+        self.project_page = self._project_page()
+        self.dialog.connect("response", self.on_response)
+        self.dialog.connect("destroy", self.on_destroy)
+        self.refresh()
+
+    def _page(self, title: str, draft: SettingsDraft, where: str) -> Page:
+        """A page, under a line that says where its settings are kept."""
+
+        page = Page(title, draft, self.engine, self.on_changed)
+        box = Gtk.Box(
+            visible=True,
             orientation=Gtk.Orientation.VERTICAL,
-            spacing=2,
+            spacing=6,
+            margin=MARGIN,
         )
-        action_area = self.dialog.get_action_area()
-        action_area.set_properties(
-            can_focus=False,
-            layout_style=Gtk.ButtonBoxStyle.END,
-        )
-        button1 = Gtk.Button(
-            label=_("Cancel"),
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-        )
-        self.dialog.add_action_widget(
-            button1,
-            Gtk.ResponseType.CANCEL,
-        )
-        # add_action_widget() packs the button at the end and aligns it to
-        # the baseline, restore the Glade packing and alignment.
-        button1.set_valign(Gtk.Align.FILL)
-        action_area.child_set(
-            button1,
-            pack_type=Gtk.PackType.START,
-            expand=True,
-            fill=True,
-        )
-        button2 = Gtk.Button(
-            label=_("OK"),
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-            always_show_image=True,
-        )
-        self.dialog.add_action_widget(
-            button2,
-            Gtk.ResponseType.OK,
-        )
-        button2.set_valign(Gtk.Align.FILL)
-        action_area.child_set(
-            button2,
-            pack_type=Gtk.PackType.START,
-            expand=True,
-            fill=True,
-        )
-        content_area.child_set(action_area, expand=False, fill=False)
-        notebook = Gtk.Notebook(visible=True, can_focus=True)
-        this_computer = self._build_this_computer_page()
+        line = Gtk.Label(visible=True, xalign=0.0, wrap=True, label=where)
+        line.get_style_context().add_class("dim-label")
+        box.pack_start(line, False, False, 0)
+        box.pack_start(page.form.widget, False, False, 0)
+        self.notebook.append_page(box, page.tab)
+        self.pages.append(page)
+        return page
+
+    def _windows(self, form: Form) -> None:
+        form.section(_("Windows"))
+        form.combo_entry("terminal", terminals(self.facts.which))
+        form.switch("tray_icon")
+        form.switch("warn_missing_programs")
+
+    def _bricks(self, form: Form) -> None:
+        form.section(_("Bricks"))
+        form.switch(KSM)
+        self.audio_combo = form.combo_entry("audio_driver", PLAYING)
         if self.engine.local:
-            # one page: the windows and the bricks are on this computer
-            self._build_machine_page(this_computer)
-            notebook.append_page(
-                this_computer, Gtk.Label(visible=True, label=_("Application"))
+            form.value("workspace", short_path)
+        else:
+            form.value("workspace")
+
+    def _project_page(self) -> Page:
+        engine = self.engine
+        current = engine.workspace.current
+        owner = Owner(
+            ProjectSettings, engine.machine.setting, engine.set_settings
+        )
+        if current is None:
+            title = _("Project")
+            where = _(
+                "No project is open. A new project starts with these"
+                " settings, the defaults; open one to change its own."
             )
         else:
-            notebook.append_page(
-                this_computer,
-                Gtk.Label(visible=True, label=_("This computer")),
-            )
-            notebook.append_page(
-                self._build_machine_page(_grid()),
-                Gtk.Label(visible=True, label=self.engine.where),
-            )
-        self.project_widgets = ProjectSettingsWidgets(
-            _(
-                "These settings belong to the open project: changing them "
-                "doesn't change the other projects. A new project starts "
-                "with a copy of them."
-            ),
-            self.engine,
-        )
-        notebook.append_page(
-            self.project_widgets.grid,
-            Gtk.Label(visible=True, label=_("This project")),
-        )
-        content_area.pack_start(notebook, True, True, 0)
-
-        # Signals
-        self.dialog.connect(
-            "delete-event",
-            self.on_dialog_delete_event,
-        )
-        self.dialog.connect(
-            "response",
-            self.on_dialog_response,
-        )
-        self.enable_ksm_switch.connect(
-            "notify::active",
-            self.on_enable_ksm_switch_active_notify,
-        )
-
-    def _build_this_computer_page(self):
-        """The settings of the windows."""
-
-        grid = _grid()
-        self.terminal_entry = Gtk.Entry(
-            visible=True, can_focus=True, hexpand=True
-        )
-        self.tray_icon_switch = _switch()
-        self.warn_missing_switch = _switch()
-        rows = (
-            (_("X-window terminal command"), self.terminal_entry),
-            (_("Enable systray"), self.tray_icon_switch),
-            (
-                _("Warn about missing components at startup"),
-                self.warn_missing_switch,
-            ),
-        )
-        for row, (text, widget) in enumerate(rows):
-            _attach(grid, row, text, widget)
-        return grid
-
-    def _build_machine_page(self, grid):
-        """The settings of the machine of the bricks, under those in grid."""
-
-        first = len(grid.get_children()) // 2
-        self.enable_ksm_switch = _switch()
-        self.audio_driver_entry = Gtk.Entry(
-            visible=True, can_focus=True, hexpand=True
-        )
-        rows = [
-            (_("Enable KSM"), self.enable_ksm_switch),
-            (
-                _("Audio driver of QEMU, as alsa, pa or pipewire"),
-                self.audio_driver_entry,
-            ),
-        ]
-        self.workspace_label = None
-        if not self.engine.local:
-            # shown, not changed: its command line chose it
-            self.workspace_label = _label(self.engine.workspace.path)
-            self.workspace_label.set_selectable(True)
-            rows.append((_("Workspace"), self.workspace_label))
-        for row, (text, widget) in enumerate(rows, first):
-            _attach(grid, row, text, widget)
-        return grid
+            title = _("Project {name}").format(name=current.name)
+            path = os.path.join(current.path, locations.PROJECT_FILE)
+            if engine.local:
+                where = _(
+                    "Kept in {path}. A new project starts with a copy of them."
+                ).format(path=short_path(path))
+            else:
+                where = _(
+                    "Kept in {path} on {where}. A new project starts with a"
+                    " copy of them."
+                ).format(path=path, where=engine.where)
+        page = self._page(title, SettingsDraft(owner, PROGRAMS + LINKS), where)
+        form = page.form
+        form.section(_("Programs"))
+        form.path("qemu_path", _("The Folder of the QEMU Programs"), True)
+        form.path("vde_path", _("The Folder of the VDE Programs"), True)
+        form.section(_("Links"))
+        form.switch("allow_female_plugs")
+        form.switch("log_link_loops")
+        # its defaults, which can't be changed while no project is open
+        form.widget.set_sensitive(current is not None)
+        return page
 
     def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
-    def on_dialog_response(self, dialog, response_id):
+    def refresh(self) -> None:
         """
-        :type dialog: Gtk.Dialog
-        :type response_id: Gtk.ResponseType
+        The rows as the drafts say, the marks of the tabs, and OK: greyed
+        out while a page has an error, which its tooltip says.
         """
 
+        first = None
+        for page in self.pages:
+            page.form.refresh()
+            errors = page.draft.errors()
+            page.mark.set_visible(bool(errors))
+            if errors and first is None:
+                first = (page, errors[0])
+        self.ok_button.set_sensitive(first is None and not self._turning)
+        if first is None:
+            self.ok_button.set_tooltip_text(None)
+        else:
+            page, problem = first
+            self.ok_button.set_tooltip_text(
+                _("{page}: {setting}: {problem}").format(
+                    page=page.title,
+                    setting=page.label_of(problem.key),
+                    problem=problem.text,
+                )
+            )
+
+    def on_changed(self, page: Page) -> None:
+        self.refresh()
+        if page is self.project_page and self._folders() != self._asked:
+            self._ask_later()
+
+    def _folders(self) -> tuple[str, str]:
+        draft = self.project_page.draft
+        return draft.get("vde_path"), draft.get("qemu_path")
+
+    # The facts
+
+    def _ask_later(self) -> None:
+        if self._later is not None and self._later.active():
+            self._later.cancel()
+        self._later = self.clock.callLater(FOLDER_DELAY, self.ask_facts)
+
+    def set_facts(self, **facts) -> None:
+        """New facts, for every draft: the rows say them."""
+
+        self.facts = attr.evolve(self.facts, **facts)
+        for page in self.pages:
+            page.draft.facts = self.facts
+        self.refresh()
+
+    def ask_facts(self) -> defer.Deferred:
+        """
+        What the folders of the project's page hold, then what the QEMU of
+        the folder lists; the answers of an older question are dropped.
+        """
+
+        self._asking += 1
+        asking = self._asking
+        self._asked = self._folders()
+        question = self.engine.programs_found(*self._asked)
+
+        def found(answer):
+            if asking != self._asking:
+                return None
+            vde, qemu = answer
+            self.set_facts(
+                vde=vde, qemu=qemu, qemu_version="", audio_drivers=None
+            )
+            path = qemu.qemu()
+            if path is None:
+                return None
+            return self.engine.qemu(path).addCallback(listed)
+
+        def listed(info):
+            if asking != self._asking:
+                return
+            self.set_facts(
+                qemu_version=str(info.version),
+                audio_drivers=info.audio_drivers,
+            )
+            if info.audio_drivers is not None:
+                playing, others = audio_drivers(info.audio_drivers)
+                set_options(
+                    self.audio_combo,
+                    playing + ([""] if playing and others else []) + others,
+                )
+
+        def failed(failure):
+            # no facts: the rows say nothing more
+            logger.debug(
+                "Facts for the Settings window: {error}",
+                error=failure.getErrorMessage(),
+            )
+
+        return question.addCallback(found).addErrback(failed)
+
+    # What changes elsewhere
+
+    def _follow(self) -> None:
+        settings.changed.connect(self.on_setting_changed)
+        if not self.engine.local:
+            self.engine.factory.settings_changed.connect(
+                self.on_settings_there
+            )
+
+    def _unfollow(self) -> None:
+        settings.changed.disconnect(self.on_setting_changed)
+        if not self.engine.local:
+            self.engine.factory.settings_changed.disconnect(
+                self.on_settings_there
+            )
+
+    def _take(self, pages, name: str, value) -> None:
+        for page in pages:
+            if name in page.draft.keys and page.draft.follow(name, value):
+                page.form.reload()
+
+    def on_setting_changed(self, name: str) -> None:
+        """A setting of this process changed, as in its console."""
+
+        if self.engine.local:
+            pages = self.pages
+        else:
+            # the settings of this computer
+            pages = self.pages[:1]
+        self._take(pages, name, get_setting(name))
+        self.refresh()
+
+    def on_settings_there(self, copy) -> None:
+        """The settings of the Virtualbricks there changed."""
+
+        for name, value in copy.settings.items():
+            self._take(self.pages[1:], name, value)
+        self.refresh()
+
+    # Cancel and OK
+
+    def on_response(self, dialog, response_id) -> bool:
         if response_id == Gtk.ResponseType.OK:
-            self.store_settings()
-        dialog.destroy()
+            self.ok()
+        else:
+            dialog.destroy()
         return True
 
-    def on_dialog_delete_event(self, dialog, event):
+    def on_destroy(self, dialog) -> None:
+        self._closed = True
+        self._unfollow()
+        if self._later is not None and self._later.active():
+            self._later.cancel()
+
+    def _ksm_page(self) -> Page | None:
+        for page in self.pages:
+            if KSM in page.draft.keys:
+                return page
+        return None
+
+    def ok(self) -> defer.Deferred:
         """
-        :type dialog: Gtk.Dialog
-        :type event: Gdk.Event
+        Write what changed; then, if KSM changed, or didn't turn the last
+        time, wait for it. The window closes when all went as asked.
         """
 
-        if self._setting_ksm_deferred is not None:
-            # We are setting KSM, prevent the dialog to close.
+        writes: dict = {}
+        for page in self.pages:
+            changes = page.draft.changes()
+            if changes:
+                writes.setdefault(page.draft.brick.write, {}).update(changes)
+        tray = None
+        for changes in writes.values():
+            tray = changes.get("tray_icon", tray)
+        ksm_page = self._ksm_page()
+        turn = ksm_page is not None and (
+            KSM in ksm_page.draft.changes() or KSM in ksm_page.draft.failed
+        )
+        self._turning = True
+        self.refresh()
+        writing = defer.gatherResults(
+            [
+                defer.maybeDeferred(write, changes)
+                for write, changes in writes.items()
+            ],
+            consumeErrors=True,
+        )
+
+        def written(_):
+            for page in self.pages:
+                page.draft.saved()
+            if tray is not None:
+                if tray:
+                    self.gui.start_systray()
+                else:
+                    self.gui.stop_systray()
+            if not turn:
+                return True
+            wanted = ksm_page.draft.get(KSM)
+            self.spinner.start()
+            self.spinner.show()
+            turning = self.engine.set_ksm(wanted)
+            return turning.addCallback(
+                lambda state: self._turned(wanted, state)
+            )
+
+        def not_written(failure):
+            failure = failure.value.subFailure
+            logger.error(settings_not_saved, error=failure.getErrorMessage())
+            return False
+
+        def done(close):
+            self._turning = False
+            self.spinner.stop()
+            self.spinner.hide()
+            if self._closed:
+                # Cancel, while KSM turned
+                return close
+            if close:
+                self.dialog.destroy()
+            else:
+                self.refresh()
+            return close
+
+        writing.addCallbacks(written, not_written)
+        return writing.addCallback(done)
+
+    def _turned(self, wanted: bool, state: bool) -> bool:
+        """Whether KSM turned as asked; if not, its row says so."""
+
+        if state == wanted:
             return True
-
-    def on_enable_ksm_switch_active_notify(self, switch, param):
-        """
-        :type button: Gtk.Switch
-        :type param: gobject.GParamSpec
-        :rtype: bool
-        """
-
-        self.toggle_ksm()
-        return False
-
-    def toggle_ksm(self):
-
-        def set_ksm_cb(ksm_enabled):
-            """
-            :type ksm_enabled: bool
-            :rtype: None
-            """
-
-            self._setting_ksm_deferred = None
-            self.enable_ksm_switch.set_sensitive(True)
-            if self.enable_ksm_switch.get_active() != ksm_enabled:
-                self.enable_ksm_switch.set_active(ksm_enabled)
-
-        if self._setting_ksm_deferred is not None:
-            # If we are already setting KSM, do nothing.
-            return
-        # disable the switch, try to change the value of KSM and reactivate
-        # the switch
-        self.enable_ksm_switch.set_sensitive(False)
-        deferred = self.engine.set_ksm(self.enable_ksm_switch.get_active())
-        deferred.addBoth(set_ksm_cb)
-        self._setting_ksm_deferred = deferred
-
-    def load_settings(self):
-        # those of the windows, of this computer
-        self.terminal_entry.set_text(get_setting("terminal"))
-        self.tray_icon_switch.set_active(get_setting("tray_icon"))
-        self.warn_missing_switch.set_active(
-            get_setting("warn_missing_programs")
-        )
-        # those of the machine of the bricks and of its project
-        machine = self.engine.machine
-        self.enable_ksm_switch.set_active(
-            machine.setting("kernel_samepage_merging")
-        )
-        self.audio_driver_entry.set_text(machine.setting("audio_driver"))
-        # with no project open, the defaults
-        self.project_widgets.load(machine.setting)
-        self.project_widgets.grid.set_sensitive(self.project_open())
-
-    def project_open(self) -> bool:
-        return self.engine.workspace.current is not None
-
-    def store_settings(self):
-        logger.debug(apply_settings)
-        # those of the windows
-        set_setting("terminal", self.terminal_entry.get_text())
-        set_setting("tray_icon", self.tray_icon_switch.get_active())
-        set_setting(
-            "warn_missing_programs", self.warn_missing_switch.get_active()
-        )
-        store_settings()
-        # those of the Virtualbricks of the bricks, and of its project,
-        # through the engine
-        ksm_active = self.enable_ksm_switch.get_active()
-        values = {
-            "audio_driver": self.audio_driver_entry.get_text().strip(),
-            "kernel_samepage_merging": ksm_active,
-        }
-        if self.project_open():
-            self.project_widgets.store(values.__setitem__)
-        engine = self.engine
-        engine.set_settings(values)
-        engine.set_ksm(ksm_active)
-        if self.tray_icon_switch.get_active():
-            self.virtualbricks_gui.start_systray()
+        page = self._ksm_page()
+        if wanted:
+            text = _(
+                "KSM is still off: Virtualbricks couldn't turn it on. File ›"
+                " Logs says why."
+            )
         else:
-            self.virtualbricks_gui.stop_systray()
+            text = _(
+                "KSM is still on: Virtualbricks couldn't turn it off. File ›"
+                " Logs says why."
+            )
+        page.draft.fail(KSM, text)
+        self.notebook.set_current_page(self.pages.index(page))
+        return False

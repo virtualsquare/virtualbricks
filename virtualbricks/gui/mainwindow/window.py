@@ -65,7 +65,7 @@ from virtualbricks.gui.mainwindow.topology import TopologyTab
 from virtualbricks.gui.dialogs.logging import LoggingWindow
 from virtualbricks.gui.dialogs import projectname
 from virtualbricks.gui.dialogs.projects import ProjectsWindow
-from virtualbricks.gui.dialogs.settings import SettingsDialog
+from virtualbricks.gui.dialogs.settings import SettingsWindow
 
 logger = Logger()
 cannot_open_project = 'Cannot open the project "{name}": {error}'
@@ -74,7 +74,8 @@ RECENT = 8
 
 start_virtualbricks = "Starting VirtualBricks"
 components_not_found = (
-    "{text}\nYou can disable this alert from the general settings."
+    "{text}\nThe Settings window turns this alert off: Missing programs, on"
+    " its page This computer."
 )
 ksm_not_found = (
     "The settings ask for KSM, which this Linux doesn't have: the machines"
@@ -830,7 +831,7 @@ class VBGUI:
         dialog.show(parent or self.window)
 
     def on_file_settings_item_activate(self, menuitem):
-        SettingsDialog(self).show(self.window)
+        SettingsWindow(self).show(self.window)
         return True
 
     def on_file_logs_item_activate(self, menuitem):
