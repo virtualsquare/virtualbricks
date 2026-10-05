@@ -795,11 +795,18 @@ alice ALL=(root) NOPASSWD: /usr/bin/vde_plug2tap, \(rs
 .EE
 .RE
 .PP
-The \f[B]kernel_samepage_merging\f[R] setting runs \f[I]/bin/sh\f[R] as
-root to write its value, and a rule that lets a shell run as root gives
-root to anyone who can use it.
-Turn KSM on at boot instead, with a \f[B]tmpfiles.d\f[R](5) line, and
-leave \f[B]kernel_samepage_merging\f[R] false:
+The \f[B]kernel_samepage_merging\f[R] setting runs \f[B]tee\f[R](1) as
+root, which writes to \f[I]/sys/kernel/mm/ksm/run\f[R] what
+Virtualbricks gives it: 1 to turn KSM on, 0 to turn it off.
+A rule of \f[B]sudoers\f[R](5) that names the file lets you run it
+without a password, and lets \f[B]tee\f[R] write to that file alone:
+.IP
+.EX
+alice ALL=(root) NOPASSWD: /usr/bin/tee /sys/kernel/mm/ksm/run
+.EE
+.PP
+Or turn KSM on at boot, with a \f[B]tmpfiles.d\f[R](5) line, and leave
+\f[B]kernel_samepage_merging\f[R] false:
 .IP
 .EX
 w /sys/kernel/mm/ksm/run \- \- \- \- 1

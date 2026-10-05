@@ -767,9 +767,16 @@ two ways:
         /usr/bin/vde_pcapplug
     ```
 
-The **kernel_samepage_merging** setting runs */bin/sh* as root to write its
-value, and a rule that lets a shell run as root gives root to anyone who can
-use it. Turn KSM on at boot instead, with a **tmpfiles.d**(5) line, and leave
+The **kernel_samepage_merging** setting runs **tee**(1) as root, which
+writes to */sys/kernel/mm/ksm/run* what Virtualbricks gives it: 1 to turn KSM
+on, 0 to turn it off. A rule of **sudoers**(5) that names the file lets you
+run it without a password, and lets **tee** write to that file alone:
+
+```
+alice ALL=(root) NOPASSWD: /usr/bin/tee /sys/kernel/mm/ksm/run
+```
+
+Or turn KSM on at boot, with a **tmpfiles.d**(5) line, and leave
 **kernel_samepage_merging** false:
 
 ```
