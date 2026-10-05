@@ -215,7 +215,7 @@ class TestSaving(DetailsTestCase):
         # under the name, in red, and OK waits
         self.assertTrue(details.name_problem.get_visible())
         self.assertEqual(
-            details.name_problem.get_text(), "The name “pc” is in use"
+            details.name_problem.get_text(), "pc is the name of an image"
         )
         for widget in (details.name_problem, details.name_entry):
             self.assertTrue(widget.get_style_context().has_class("error"))

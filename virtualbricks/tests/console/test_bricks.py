@@ -23,6 +23,7 @@ import signal
 from twisted.internet import defer, error
 
 from virtualbricks import errors
+from virtualbricks.bricks.eventaction import ConsoleAction, StartAction
 from virtualbricks.bricks.virtualmachine import hostonly_sock
 from virtualbricks.config import settings
 from virtualbricks.console import bricks as console_bricks
@@ -134,7 +135,7 @@ class TestNew(BricksTestCase):
         )
         self.assertEqual(
             self.fails("brick new tap router"),
-            "Normalized name router already in use",
+            "router is the name of a brick",
         )
         self.assertEqual(
             self.fails("brick new tap tap_of_the_lab_1"),
@@ -604,7 +605,7 @@ class TestNames(BricksTestCase):
         self.brick("tap", "tap1")
         self.assertEqual(
             self.fails("brick rename tap1 core_switch"),
-            "Normalized name core_switch already in use",
+            "core_switch is the name of a brick",
         )
         self.running(sw)
         self.assertEqual(
@@ -620,7 +621,7 @@ class TestNames(BricksTestCase):
         self.assertEqual(self.factory.get_brick("core").config.ports, 4)
         self.assertEqual(
             self.fails("brick duplicate sw1 core"),
-            "Normalized name core already in use",
+            "core is the name of a brick",
         )
         self.assertEqual(len(list(self.factory.bricks)), 3)
 
@@ -635,3 +636,12 @@ class TestNames(BricksTestCase):
         self.assertEqual(len(list(self.factory.bricks)), 3)
         self.assertEqual(self.run_line("brick delete sw1 sw2"), [])
         self.assertEqual([b.name for b in self.factory.bricks], ["tap1"])
+
+    def test_delete_drops_the_actions(self):
+        self.brick("switch", "sw1")
+        boot = self.factory.new_event("boot")
+        command = ConsoleAction("brick set sw1 ports=4")
+        boot.update_config({"actions": [StartAction("sw1"), command]})
+        self.assertEqual(self.run_line("brick delete sw1"), [])
+        # a command stays as it is written
+        self.assertEqual(boot.config.actions, [command])

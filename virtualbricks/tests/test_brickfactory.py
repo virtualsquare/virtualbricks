@@ -206,6 +206,37 @@ class TestFactory(BrickTestCase):
             self.factory.rename_item(item, name + "2")
             self.assertEqual(item.name, name + "2")
 
+    def test_a_name_in_use_says_what_has_it(self):
+        self.factory.new_brick("switch", "sw")
+        self.factory.new_event("boot")
+        self.factory.new_image("deb", "/lab/deb.qcow2")
+        for name, words in (
+            ("sw", "sw is the name of a brick"),
+            (" boot ", "boot is the name of an event"),
+            ("deb", "deb is the name of an image"),
+        ):
+            with self.assertRaises(errors.NameAlreadyInUseError) as cm:
+                self.factory.check_name(name)
+            self.assertEqual(str(cm.exception), words)
+        with self.assertRaises(errors.NameAlreadyInUseError) as cm:
+            self.factory.new_brick("tap", "sw")
+        self.assertEqual(str(cm.exception), "sw is the name of a brick")
+        self.assertEqual(str(errors.NameAlreadyInUseError("x")), "x is in use")
+
+    def test_what_is_wrong_with_a_name(self):
+        for name, words in (
+            ("", "A name can't be empty"),
+            ("1sw", "A name starts with a letter"),
+            (
+                "sw/1",
+                "A name has only letters, digits, underscores (_), hyphens"
+                " (-) and dots (.)",
+            ),
+        ):
+            with self.assertRaises(errors.InvalidNameError) as cm:
+                brickfactory.normalize_name(name)
+            self.assertEqual(str(cm.exception), words)
+
     def test_autosave_timer(self):
         calls = []
         self.patch(projects, "autosave", calls.append)
@@ -224,6 +255,107 @@ class TestFactory(BrickTestCase):
 
 
 CONFIG = {"verbosity": 0, "noterm": True}
+
+
+class TestUsers(BrickTestCase):
+    """What names a brick or an event, and what a delete does to it."""
+
+    def setUp(self):
+        super().setUp()
+        self.factory.runtime_dir = "/run/vb"
+        self.sw1 = self.factory.new_brick("switch", "sw1")
+        self.vm1 = self.factory.new_brick("qemu", "vm1")
+        self.vm1.connect(self.sw1.socks[0])
+        self.w1 = self.factory.new_brick("wire", "w1")
+        self.w1.plugs[0].connect(self.sw1.socks[0])
+        self.boot = self.factory.new_event("boot")
+        self.boot.update_config(
+            {
+                "actions": [
+                    StartAction("sw1"),
+                    StartAction("vm1"),
+                    ConsoleAction("brick set sw1 ports=4"),
+                    StopAction("boot"),
+                ]
+            }
+        )
+        self.halt = self.factory.new_event("halt")
+        self.halt.update_config(
+            {"actions": [StopAction("sw1"), StopAction("boot")]}
+        )
+        self.sw1.update_config({"on_start": "boot", "on_stop": "boot"})
+        self.vm1.update_config({"on_stop": "boot"})
+        self.changed = []
+        for item in (self.sw1, self.vm1, self.w1, self.boot, self.halt):
+            item.changed.connect(self.changed.append)
+
+    def test_a_brick(self):
+        users = self.factory.users(self.sw1)
+        self.assertEqual(users.plugs, [self.vm1.plugs[0], self.w1.plugs[0]])
+        # a command stays as it is written
+        self.assertEqual(
+            users.actions,
+            [(self.boot, StartAction("sw1")), (self.halt, StopAction("sw1"))],
+        )
+        self.assertEqual(users.settings, [])
+        users = self.factory.users(self.w1)
+        self.assertEqual((users.plugs, users.actions), ([], []))
+
+    def test_an_event(self):
+        users = self.factory.users(self.boot)
+        self.assertEqual(users.plugs, [])
+        # not its own actions
+        self.assertEqual(users.actions, [(self.halt, StopAction("boot"))])
+        self.assertEqual(
+            users.settings,
+            [
+                (self.sw1, "on_start"),
+                (self.sw1, "on_stop"),
+                (self.vm1, "on_stop"),
+            ],
+        )
+
+    def test_a_brick_deleted(self):
+        self.factory.remove_brick(self.sw1)
+        self.assertIsNone(self.factory.get_brick("sw1"))
+        self.assertIsNone(self.vm1.plugs[0].sock)
+        self.assertIsNone(self.w1.plugs[0].sock)
+        self.assertEqual(
+            self.boot.config.actions,
+            [
+                StartAction("vm1"),
+                ConsoleAction("brick set sw1 ports=4"),
+                StopAction("boot"),
+            ],
+        )
+        self.assertEqual(self.halt.config.actions, [StopAction("boot")])
+        # once each
+        self.assertEqual(self.changed, [self.boot, self.halt])
+
+    def test_an_event_deleted(self):
+        self.factory.remove_event(self.boot)
+        self.assertIsNone(self.factory.get_event("boot"))
+        self.assertEqual(self.halt.config.actions, [StopAction("sw1")])
+        self.assertEqual(
+            (self.sw1.config.on_start, self.sw1.config.on_stop), ("", "")
+        )
+        self.assertEqual(self.vm1.config.on_stop, "")
+        self.assertEqual(self.changed, [self.halt, self.sw1, self.vm1])
+
+    def test_a_running_brick_stays(self):
+        self.patch(self.sw1, "__isrunning__", lambda: True)
+        with self.assertRaises(errors.BrickRunningError):
+            self.factory.remove_brick(self.sw1)
+        self.assertEqual(len(self.boot.config.actions), 4)
+        self.assertEqual(self.changed, [])
+
+    def test_a_project_closed_changes_nothing(self):
+        self.factory.reset()
+        self.assertEqual(list(self.factory.bricks), [])
+        self.assertEqual(list(self.factory.events), [])
+        self.assertEqual(len(self.boot.config.actions), 4)
+        self.assertEqual(self.sw1.config.on_start, "boot")
+        self.assertEqual(self.changed, [])
 
 
 class FakeAppLogger:

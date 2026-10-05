@@ -80,7 +80,7 @@ class TestWords(AddTestCase):
         self.assertIsNone(check_name(self.factory, "frr"))
         self.factory.new_image("frr", "/lab/frr.qcow2")
         self.assertEqual(
-            check_name(self.factory, "frr"), "The name “frr” is in use"
+            check_name(self.factory, "frr"), "frr is the name of an image"
         )
         self.assertIsNotNone(check_name(self.factory, ""))
 

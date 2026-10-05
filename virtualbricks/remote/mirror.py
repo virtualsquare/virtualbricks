@@ -155,14 +155,14 @@ class MirrorFactory(BrickFactory):
         _refuse(event, EVENT_CALLS)
         return event
 
-    def remove_brick(self, brick):
+    def _remove_brick(self, brick):
         # its plugs wait for nothing any more
         self._waiting = [
             (p, t) for p, t in self._waiting if p.brick is not brick
         ]
-        BrickFactory.remove_brick(self, brick)
+        BrickFactory._remove_brick(self, brick)
 
-    def remove_event(self, event):
+    def _remove_event(self, event):
         # as the factory does, without stopping it: the copy runs nothing
         self._wait(event, None)
         event.changed.disconnect(self.event_changed.notify)
@@ -239,12 +239,13 @@ class MirrorFactory(BrickFactory):
         if item is None:
             return
         self._states.pop((kind, name), None)
+        # what named it follows as changes, as after a rename
         if kind == IMAGE:
             self.remove_image(item)
         elif kind == EVENT:
-            self.remove_event(item)
+            self._remove_event(item)
         else:
-            self.remove_brick(item)
+            self._remove_brick(item)
 
     def take_settings(self, settings) -> None:
         self.settings = settings

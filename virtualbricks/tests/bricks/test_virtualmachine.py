@@ -788,15 +788,15 @@ class TestTheDraftOfAnImage(BrickTestCase):
         self.draft.set("name", "sw1")
         self.assertEqual(
             self.draft.problems(),
-            [Problem("name", "The name “sw1” is in use")],
+            [Problem("name", "sw1 is the name of a brick")],
         )
         self.assertRaises(ValueError, apply, self.draft)
         self.assertEqual(self.image.name, "frr")
 
     def test_a_name_that_cant_be(self):
         for name, problem in (
-            ("1frr", "Name must start with a letter"),
-            ("", "Name is empty"),
+            ("1frr", "A name starts with a letter"),
+            ("", "A name can't be empty"),
         ):
             self.draft.set("name", name)
             self.assertEqual(self.draft.problems(), [Problem("name", problem)])

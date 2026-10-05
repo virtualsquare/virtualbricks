@@ -391,9 +391,6 @@ class ImageDraft(Draft):
     def check(self) -> list[Problem]:
         try:
             self.new_name()
-        except errors.NameAlreadyInUseError as exc:
-            text = _("The name “{name}” is in use").format(name=exc.name)
-            return [Problem("name", text)]
         except errors.InvalidNameError as exc:
             return [Problem("name", str(exc))]
         return []

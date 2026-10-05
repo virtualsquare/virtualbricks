@@ -403,7 +403,9 @@ def duplicate(context, name, new):
     "event",
     "delete",
     Arg("NAME", EVENT, many=True),
-    help=N_("Delete events"),
+    help=N_(
+        "Delete events, the actions that start or stop them, and the on_start and on_stop that name them"
+    ),
 )
 def delete(context, name):
     for event in name:

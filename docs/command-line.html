@@ -564,7 +564,7 @@ virtualbricks --connect --workspace ~/labs/a</code></pre></figure>
 <tr id="brick-card-remove"><th scope="row"><code class="key">brick card remove <em>VM</em> <em>CARD</em>&hellip;</code></th><td class="meaning"><p>Take network cards out of a machine.</p></td></tr>
 <tr id="brick-rename"><th scope="row"><code class="key">brick rename <em>NAME</em> <em>NEW</em></code></th><td class="meaning"><p>Rename a brick.</p></td></tr>
 <tr id="brick-duplicate"><th scope="row"><code class="key">brick duplicate <em>NAME</em> [<em>NEW</em>]</code></th><td class="meaning"><p>Copy a brick, with its links; without a new name, its name with the next free number.</p></td></tr>
-<tr id="brick-delete"><th scope="row"><code class="key">brick delete <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Delete bricks that don&#x27;t run.</p></td></tr>
+<tr id="brick-delete"><th scope="row"><code class="key">brick delete <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Delete bricks that don&#x27;t run, and the actions that start or stop them.</p></td></tr>
 </tbody></table></div>
 <h3 id="commands-events">Events</h3>
 <div class="scroll"><table class="fields cmds"><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
@@ -580,7 +580,7 @@ virtualbricks --connect --workspace ~/labs/a</code></pre></figure>
 <tr id="event-run"><th scope="row"><code class="key">event run <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Run the actions of events now, and wait for them.</p></td></tr>
 <tr id="event-rename"><th scope="row"><code class="key">event rename <em>NAME</em> <em>NEW</em></code></th><td class="meaning"><p>Rename an event, and every brick and action that names it.</p></td></tr>
 <tr id="event-duplicate"><th scope="row"><code class="key">event duplicate <em>NAME</em> [<em>NEW</em>]</code></th><td class="meaning"><p>Copy an event; without a new name, its name with the next free number.</p></td></tr>
-<tr id="event-delete"><th scope="row"><code class="key">event delete <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Delete events.</p></td></tr>
+<tr id="event-delete"><th scope="row"><code class="key">event delete <em>NAME</em>&hellip;</code></th><td class="meaning"><p>Delete events, the actions that start or stop them, and the on_start and on_stop that name them.</p></td></tr>
 </tbody></table></div>
 <h3 id="commands-images">Images</h3>
 <div class="scroll"><table class="fields cmds"><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>

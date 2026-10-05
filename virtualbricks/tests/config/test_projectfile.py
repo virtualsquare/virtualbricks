@@ -512,7 +512,7 @@ class TestLenientReading(ProjectFileTestCase):
                 "images.empty: has no path, image dropped",
                 "images.same: uses the file of another image, image dropped",
                 f"images.1bad: {path}2 not found, kept in the library",
-                "images.1bad: Name must start with a letter, image dropped",
+                "images.1bad: A name starts with a letter, image dropped",
             ],
         )
 

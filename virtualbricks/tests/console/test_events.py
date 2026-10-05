@@ -49,7 +49,7 @@ class TestMakeAndShow(EventsTestCase):
         self.assertEqual(self.run_line("event new"), ["new_event.1"])
         self.assertEqual(self.run_line("event new 'boot lab'"), ["boot_lab"])
         self.assertEqual(
-            self.fails("event new sw1"), "Normalized name sw1 already in use"
+            self.fails("event new sw1"), "sw1 is the name of a brick"
         )
 
     def test_list(self):
@@ -223,3 +223,19 @@ class TestNames(EventsTestCase):
         self.assertEqual(copy.config.delay, 3)
         self.assertEqual(self.run_line("event delete boot boot2"), [])
         self.assertEqual([e.name for e in self.factory.events], ["up"])
+
+    def test_delete_forgets_the_event(self):
+        self.event("boot", Action(Kind.START_BRICK, "vm1"))
+        later = self.event(
+            "later",
+            Action(Kind.STOP_EVENT, "boot"),
+            Action(Kind.START_BRICK, "sw1"),
+        )
+        self.sw1.update_config({"on_start": "boot"})
+        self.vm1.update_config({"on_stop": "boot"})
+        self.assertEqual(self.run_line("event delete boot"), [])
+        self.assertEqual(
+            later.config.actions, [write(Action(Kind.START_BRICK, "sw1"))]
+        )
+        self.assertEqual(self.sw1.config.on_start, "")
+        self.assertEqual(self.vm1.config.on_stop, "")

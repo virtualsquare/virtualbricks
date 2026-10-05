@@ -107,12 +107,12 @@ class TestTheName(NewEventTestCase):
         self.factory.new_event("boot")
         dialog = self.dialog()
         for name, message in (
-            ("", "Name is empty"),
-            ("1st", "Name must start with a letter"),
+            ("", "A name can't be empty"),
+            ("1st", "A name starts with a letter"),
             # a brick's too: the console would read "sw1 on" as the brick
-            ("sw1", "The name “sw1” is in use"),
-            ("boot", "The name “boot” is in use"),
-            (" boot ", "The name “boot” is in use"),
+            ("sw1", "sw1 is the name of a brick"),
+            ("boot", "boot is the name of an event"),
+            (" boot ", "boot is the name of an event"),
         ):
             self.assertEqual(self.type(dialog, name), (False, message), name)
         self.assertEqual(self.type(dialog, "start lab"), (True, None))

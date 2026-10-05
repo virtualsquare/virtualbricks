@@ -130,8 +130,6 @@ class NewEventDialog:
         message = None
         try:
             self.factory.check_name(self.name_entry.get_text())
-        except errors.NameAlreadyInUseError as exc:
-            message = _("The name “{name}” is in use").format(name=exc.name)
         except errors.InvalidNameError as exc:
             message = str(exc)
         self.name_message.set_text(message or "")

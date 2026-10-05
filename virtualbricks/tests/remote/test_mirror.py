@@ -417,6 +417,15 @@ class TestChanges(MirrorTestCase):
         self.turn()
         self.assertSame()
 
+    def test_what_named_a_deleted_one_follows(self):
+        # as changes, after the delete there, as after a rename
+        self.copy.take_removed("event", "boot")
+        self.assertEqual(self.copy.get_brick("sw1").config.on_start, "boot")
+        self.factory.remove_event(self.boot)
+        self.turn()
+        self.assertSame()
+        self.assertEqual(self.copy.get_brick("sw1").config.on_start, "")
+
     def test_a_brick_that_runs(self):
         self.sw1.proc = FakeProcess(self.sw1)
         self.sw1.changed.notify(self.sw1)

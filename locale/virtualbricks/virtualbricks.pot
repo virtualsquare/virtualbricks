@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 13:28+0200\n"
+"POT-Creation-Date: 2026-10-05 15:35+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,16 +23,16 @@ msgid "Name must be a string"
 msgstr ""
 
 #: virtualbricks/brickfactory.py
-msgid "Name is empty"
+msgid "A name can't be empty"
 msgstr ""
 
 #: virtualbricks/brickfactory.py
-msgid "Name must start with a letter"
+msgid "A name starts with a letter"
 msgstr ""
 
 #: virtualbricks/brickfactory.py
 msgid ""
-"Name must contains only letters, numbers, underscores, hyphens and points"
+"A name has only letters, digits, underscores (_), hyphens (-) and dots (.)"
 msgstr ""
 
 #: virtualbricks/brickfactory.py
@@ -747,12 +747,6 @@ msgstr ""
 
 #: virtualbricks/bricks/tunnellisten.py
 msgid "The UDP port to listen on"
-msgstr ""
-
-#: virtualbricks/bricks/virtualmachine.py virtualbricks/gui/dialogs/addimage.py
-#: virtualbricks/gui/mainwindow/events/newevent.py
-#, python-brace-format
-msgid "The name “{name}” is in use"
 msgstr ""
 
 #: virtualbricks/bricks/virtualmachine.py
@@ -1502,7 +1496,7 @@ msgid ""
 msgstr ""
 
 #: virtualbricks/console/bricks.py
-msgid "Delete bricks that don't run"
+msgid "Delete bricks that don't run, and the actions that start or stop them"
 msgstr ""
 
 #: virtualbricks/console/client.py
@@ -1931,7 +1925,9 @@ msgid "Copy an event; without a new name, its name with the next free number"
 msgstr ""
 
 #: virtualbricks/console/events.py
-msgid "Delete events"
+msgid ""
+"Delete events, the actions that start or stop them, and the on_start and "
+"on_stop that name them"
 msgstr ""
 
 #: virtualbricks/console/general.py
@@ -2313,8 +2309,23 @@ msgid "{path} isn't a socket"
 msgstr ""
 
 #: virtualbricks/errors.py
-#, python-format
-msgid "Normalized name %s already in use"
+#, python-brace-format
+msgid "{name} is the name of a brick"
+msgstr ""
+
+#: virtualbricks/errors.py
+#, python-brace-format
+msgid "{name} is the name of an event"
+msgstr ""
+
+#: virtualbricks/errors.py
+#, python-brace-format
+msgid "{name} is the name of an image"
+msgstr ""
+
+#: virtualbricks/errors.py
+#, python-brace-format
+msgid "{name} is in use"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/addimage.py

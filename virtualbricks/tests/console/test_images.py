@@ -68,7 +68,7 @@ class TestImages(ConsoleTestCase):
         )
         self.assertEqual(
             self.fails(f"image add vm1 {self.path}"),
-            "Normalized name vm1 already in use",
+            "vm1 is the name of a brick",
         )
         self.assertEqual(
             self.fails(f"image add deb {self.path} size=2"),

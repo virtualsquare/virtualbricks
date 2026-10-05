@@ -746,7 +746,7 @@ for a Virtualbricks that asks for one. See **Sockets on the network**.
 :   Copy a brick, with its links; without a new name, its name with the next free number.
 
 **brick delete** *NAME*...
-:   Delete bricks that don't run.
+:   Delete bricks that don't run, and the actions that start or stop them.
 
 ## Events
 
@@ -789,7 +789,7 @@ for a Virtualbricks that asks for one. See **Sockets on the network**.
 :   Copy an event; without a new name, its name with the next free number.
 
 **event delete** *NAME*...
-:   Delete events.
+:   Delete events, the actions that start or stop them, and the on_start and on_stop that name them.
 
 ## Images
 

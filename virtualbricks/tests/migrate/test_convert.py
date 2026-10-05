@@ -439,8 +439,8 @@ class TestSections(ConvertTestCase):
         self.assertEqual(
             messages(report),
             [
-                ".project:1: [Switch:1sw] Name must start with a letter, dropped",
-                ".project:2: [Event:2ev] Name must start with a letter, dropped",
+                ".project:1: [Switch:1sw] A name starts with a letter, dropped",
+                ".project:2: [Event:2ev] A name starts with a letter, dropped",
             ],
         )
 

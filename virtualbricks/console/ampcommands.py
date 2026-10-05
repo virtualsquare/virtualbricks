@@ -376,7 +376,10 @@ class BrickDuplicate(amp.Command):
 
 
 class BrickDelete(amp.Command):
-    """brick delete NAME…: Delete bricks that don't run."""
+    """
+    brick delete NAME…: Delete bricks that don't run, and the actions that
+    start or stop them.
+    """
 
     arguments = [
         (b"name", amp.ListOf(amp.Unicode())),
@@ -548,7 +551,10 @@ class EventDuplicate(amp.Command):
 
 
 class EventDelete(amp.Command):
-    """event delete NAME…: Delete events."""
+    """
+    event delete NAME…: Delete events, the actions that start or stop them,
+    and the on_start and on_stop that name them.
+    """
 
     arguments = [
         (b"name", amp.ListOf(amp.Unicode())),

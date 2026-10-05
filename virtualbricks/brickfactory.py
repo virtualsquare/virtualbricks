@@ -24,6 +24,7 @@ import re
 import copy
 import itertools
 
+import attr
 from twisted.application import app
 from twisted.internet import defer, task
 from twisted.python import failure
@@ -37,7 +38,7 @@ from twisted.logger import (
 )
 
 from virtualbricks import errors, locations
-from virtualbricks.config.schema import field_values
+from virtualbricks.config.schema import field_values, references
 from virtualbricks.config.settings import (
     get_setting,
     load_settings,
@@ -51,6 +52,7 @@ from virtualbricks.bricks import switchwrapper, tap, tunnelconnect
 from virtualbricks.bricks import tunnellisten, virtualmachine, wire
 from virtualbricks.errors import NameAlreadyInUseError
 from virtualbricks.bricks.event import Event, is_event
+from virtualbricks.bricks.eventaction import StartAction, StopAction
 from virtualbricks.bricks.sock import Sock
 from virtualbricks.i18n import _
 from virtualbricks.observable import Observable, Signal
@@ -66,6 +68,24 @@ removing_brick = "Removing brick {brick}"
 shut_down = "Server Shut Down."
 new_event_ok = "New event {name} OK"
 uncaught_exception = "Uncaught exception: {error()}"
+
+
+@attr.frozen
+class Users:
+    """What names a brick or an event, and loses it when it goes."""
+
+    # the plugs of the other bricks in its sockets
+    plugs: list
+    # (event, action): the actions of the other events that start or stop it
+    actions: list
+    # (brick or event, field): the settings that name it, as When It Starts
+    settings: list
+
+
+def _starts_or_stops(action, name) -> bool:
+    return (
+        isinstance(action, (StartAction, StopAction)) and action.target == name
+    )
 
 
 # The class of each type of brick, by its type in lower case: the name that
@@ -102,17 +122,17 @@ def normalize_name(name):
     if not isinstance(name, str):
         raise errors.InvalidNameError(_("Name must be a string"))
     if name == "":
-        raise errors.InvalidNameError(_("Name is empty"))
+        raise errors.InvalidNameError(_("A name can't be empty"))
     normalized_name = re.sub(r"\s+", "_", name.strip())
     if not re.search(r"\A[a-zA-Z]", normalized_name):
-        msg = _("Name must start with a letter")
-        raise errors.InvalidNameError(msg.format(brick_name=name))
+        raise errors.InvalidNameError(_("A name starts with a letter"))
     if not re.search(r"\A[a-zA-Z0-9_\.-]+\Z", normalized_name):
-        msg = _(
-            "Name must contains only letters, numbers, underscores, "
-            "hyphens and points"
-        ).format(brick_name=name)
-        raise errors.InvalidNameError(msg)
+        raise errors.InvalidNameError(
+            _(
+                "A name has only letters, digits, underscores (_), hyphens"
+                " (-) and dots (.)"
+            )
+        )
     return normalized_name
 
 
@@ -177,13 +197,14 @@ class BrickFactory:
         if any(is_running(brick) for brick in self._bricks):
             msg = _("Project cannot be closed: there are running bricks")
             raise errors.BrickRunningError(msg)
+        # all go, so nothing is told that it loses one of them
         # Don't change the list while iterating over it
         for brick in list(self._bricks):
-            self.remove_brick(brick)
+            self._remove_brick(brick)
 
         # Don't change the list while iterating over it
         for e in list(self._events.values()):
-            self.remove_event(e)
+            self._remove_event(e)
 
         del self.socks[:]
         for image in list(self._disk_images.values()):
@@ -198,7 +219,7 @@ class BrickFactory:
         new_name = normalize_name(name)
         path = os.path.abspath(path)
         if self.get_image(new_name) is not None:
-            raise NameAlreadyInUseError(new_name)
+            raise NameAlreadyInUseError(new_name, "image")
         if self.get_image_by_path(path) is not None:
             raise errors.ImageAlreadyInUseError(path)
         disk_image = virtualmachine.Image(new_name, path, description)
@@ -268,7 +289,7 @@ class BrickFactory:
         BrickClass = self._brick_class(type)
         name = normalize_name(name)
         if self.get_brick(name) is not None:
-            raise NameAlreadyInUseError(name)
+            raise NameAlreadyInUseError(name, "brick")
         brick = BrickClass(self, name)
         self._bricks.append(brick)
         brick.changed.connect(self.brick_changed.notify)
@@ -293,9 +314,18 @@ class BrickFactory:
         return new_brick
 
     def remove_brick(self, brick):
+        """
+        Delete a brick that doesn't run. What plugs into it is unplugged,
+        and the events lose their actions that start or stop it.
+        """
+
         if is_running(brick):
             msg = f"Cannot delete brick {brick.name}: brick is running"
             raise errors.BrickRunningError(msg)
+        self._forget(brick.name, self.users(brick))
+        self._remove_brick(brick)
+
+    def _remove_brick(self, brick):
         logger.info(removing_brick, brick=brick.name)
         socks = set(brick.socks)
         if socks:
@@ -342,7 +372,7 @@ class BrickFactory:
 
         norm_name = normalize_name(name)
         if self.get_event(norm_name) is not None:
-            raise NameAlreadyInUseError(norm_name)
+            raise NameAlreadyInUseError(norm_name, "event")
         event = Event(self, norm_name)
         logger.debug(new_event_ok, name=norm_name)
         self._events[norm_name] = event
@@ -357,10 +387,67 @@ class BrickFactory:
         return new
 
     def remove_event(self, event):
+        """
+        Delete an event, stopped first if it waits. The other events lose
+        their actions that start or stop it, and the bricks that run it
+        when they start or stop run nothing then.
+        """
+
+        self._forget(event.name, self.users(event))
+        self._remove_event(event)
+
+    def _remove_event(self, event):
         event.poweroff()
         event.changed.disconnect(self.event_changed.notify)
         del self._events[event.name]
         self.event_removed.notify(event)
+
+    def users(self, item) -> Users:
+        """What names the brick or the event item, and loses it if it goes."""
+
+        name = item.name
+        target = "event" if is_event(item) else "brick"
+        bricks = [brick for brick in self._bricks if brick is not item]
+        events = [
+            event for event in self._events.values() if event is not item
+        ]
+        plugs = [
+            plug
+            for brick in bricks
+            for plug in brick.plugs
+            if plug.sock is not None and plug.sock.brick is item
+        ]
+        actions = [
+            (event, action)
+            for event in events
+            for action in event.config.actions
+            if _starts_or_stops(action, name)
+        ]
+        settings = [
+            (other, field)
+            for other in bricks + events
+            for field, kind, value in references(other.config)
+            if kind == target and value == name
+        ]
+        return Users(plugs, actions, settings)
+
+    def _forget(self, name, users):
+        """The actions of users go, and its settings empty."""
+
+        # one change for each, which tells that it changed
+        changes = {}
+        for event, _action in users.actions:
+            changes[event] = {
+                "actions": [
+                    action
+                    for action in event.config.actions
+                    if not _starts_or_stops(action, name)
+                ]
+            }
+        for other, field in users.settings:
+            changes.setdefault(other, {})[field] = ""
+        for other, values in changes.items():
+            other.update_config(values)
 
     def get_event(self, name):
         """
@@ -398,11 +485,18 @@ class BrickFactory:
     def name_in_use(self, name):
         """Whether a brick, an event or a disk image already has the name."""
 
-        return (
-            self.get_brick(name) is not None
-            or self.get_event(name) is not None
-            or self.get_image(name) is not None
-        )
+        return self._holder(name) is not None
+
+    def _holder(self, name):
+        """What has the name: "brick", "event", "image", or None."""
+
+        if self.get_brick(name) is not None:
+            return "brick"
+        if self.get_event(name) is not None:
+            return "event"
+        if self.get_image(name) is not None:
+            return "image"
+        return None
 
     def rename_item(self, brick, name):
         """Rename a brick, event or image, and every reference to it."""
@@ -437,8 +531,9 @@ class BrickFactory:
         """
 
         normalized_name = normalize_name(name)
-        if self.name_in_use(normalized_name):
-            raise errors.NameAlreadyInUseError(normalized_name)
+        holder = self._holder(normalized_name)
+        if holder is not None:
+            raise errors.NameAlreadyInUseError(normalized_name, holder)
         return normalized_name
 
     def check_socket_room(self, name):

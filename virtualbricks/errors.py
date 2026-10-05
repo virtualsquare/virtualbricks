@@ -29,12 +29,21 @@ class InvalidNameError(Error):
 
 class NameAlreadyInUseError(InvalidNameError):
 
-    def __init__(self, name):
+    def __init__(self, name, kind=None):
         InvalidNameError.__init__(self, name)
         self.name = name
+        # what has the name: "brick", "event" or "image", if known
+        self.kind = kind
 
     def __str__(self):
-        return _("Normalized name %s already in use") % self.name
+        words = {
+            "brick": _("{name} is the name of a brick"),
+            "event": _("{name} is the name of an event"),
+            "image": _("{name} is the name of an image"),
+        }
+        return words.get(self.kind, _("{name} is in use")).format(
+            name=self.name
+        )
 
 
 class InvalidTypeError(Error, ValueError):

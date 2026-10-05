@@ -935,7 +935,9 @@ def duplicate(context, name, new):
     "brick",
     "delete",
     Arg("NAME", BRICK, many=True),
-    help=N_("Delete bricks that don't run"),
+    help=N_(
+        "Delete bricks that don't run, and the actions that start or stop them"
+    ),
 )
 def delete(context, name):
     for brick in name:

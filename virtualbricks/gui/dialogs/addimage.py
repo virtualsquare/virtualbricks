@@ -93,8 +93,6 @@ def check_name(factory, name) -> str | None:
 
     try:
         factory.check_name(name)
-    except errors.NameAlreadyInUseError as exc:
-        return _("The name “{name}” is in use").format(name=exc.name)
     except errors.InvalidNameError as exc:
         return str(exc)
     return None
