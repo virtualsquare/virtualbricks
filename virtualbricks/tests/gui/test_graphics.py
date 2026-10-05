@@ -66,17 +66,15 @@ class TestIcons(unittest.TestCase):
 
     def test_brick_icon(self):
         self.assertEqual(
-            graphics.brick_icon(FakeBrick("Switch")),
+            graphics.brick_icon_file(FakeBrick("Switch")),
             graphics.icon_file("switch.png"),
         )
         self.assertEqual(
-            graphics.brick_icon(FakeBrick("Qemu")),
+            graphics.brick_icon_file(FakeBrick("Qemu")),
             graphics.icon_file("qemu.png"),
         )
         machine = FakeBrick("Qemu", "/lab/router.png")
-        self.assertEqual(graphics.brick_icon(machine), "/lab/router.png")
+        self.assertEqual(graphics.brick_icon_file(machine), "/lab/router.png")
         # only a machine's own icon shows, for now
         switch = FakeBrick("Switch", "/lab/router.png")
-        self.assertEqual(
-            graphics.brick_icon(switch), graphics.icon_file("switch.png")
-        )
+        self.assertEqual(graphics.brick_icon_file(switch), "/lab/router.png")

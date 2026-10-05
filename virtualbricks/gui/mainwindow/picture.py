@@ -95,7 +95,7 @@ class Icons:
         self._icons: dict[tuple[str, bool], GdkPixbuf.Pixbuf | None] = {}
 
     def get(self, brick, running: bool) -> GdkPixbuf.Pixbuf | None:
-        filename = graphics.brick_icon(brick)
+        filename = graphics.brick_icon_file(brick)
         key = (filename, running)
         if key not in self._icons:
             try:

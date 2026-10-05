@@ -25,7 +25,7 @@ import gi
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf
 
-__all__ = ["brick_icon", "icon_file", "load_pixbuf"]
+__all__ = ["brick_icon_file", "icon_file", "load_pixbuf"]
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
@@ -42,13 +42,8 @@ def load_pixbuf(name: str) -> GdkPixbuf.Pixbuf:
     return GdkPixbuf.Pixbuf.new_from_file(icon_file(name))
 
 
-def has_custom_icon(brick):
-    # every brick has an icon, but only a machine's shows, for now
-    return brick.get_type() == "Qemu" and brick.config.icon
-
-
-def brick_icon(brick):
-    if has_custom_icon(brick):
+def brick_icon_file(brick) -> str:
+    if brick.config.icon:
         return brick.config.icon
     else:
         return icon_file(brick.get_type().lower() + ".png")
