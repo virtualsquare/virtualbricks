@@ -60,7 +60,15 @@
 - [ ] Decide how an icon is chosen for any brick or event, and where it
   shows (10 §13, 11 §11)
 - [ ] Select several bricks to start, stop or delete them at once
-  (07 §10)
+  (07 §10, 24 §10): the Delete dialog would say what goes with all of
+  them
+- [ ] Let the console's `brick delete` send a machine's private copies to
+  the trash too, as the Delete dialog does; a Virtualbricks started with
+  `--no-gui` has no trash, so there they would be deleted for good
+  (24 §10)
+- [ ] Undo a delete, as GNOME's applications do, if the engine can one
+  day put a brick or an event back, with its links, the actions and
+  settings that named it, and a machine's private copies (24 §5, D1 B)
 - [ ] Disconnect a brick from its menu: today only its panel does it
   (07 §10)
 - [ ] Say Paused in the row of a brick that Pause stopped, until
@@ -131,6 +139,10 @@
     refuse the rename naming the file in the way (the rename dialog and
     `brick rename` show the error); if a move fails, move back the files
     already moved
+  - since 32a9ef3 the Delete dialog sends a machine's private copies to
+    the trash (24 D4), so fewer of them are left in the way; the console's
+    `brick delete` still leaves them, and the Rename dialog shows a
+    refusal of the folder in red (08e07e5)
 
 - [ ] Show the images of all projects: each file once, the projects and
   disks that use it, and the files of vimages no project uses, as the
@@ -294,6 +306,13 @@
 - [ ] Update the copyright notice
 
 # DONE
+
+- [x] Redesign Rename and Delete: Rename asks the name as Rename Project
+  does, selected, with why a name can't be used under it; one Delete
+  dialog for a brick and an event says what goes with it; a delete clears
+  the actions and the When It Starts or Stops that name the item; a
+  running brick has Delete greyed; a machine's private copies go to the
+  trash with it (24)
 
 - [x] Redesign the Settings window: a page for each owner of settings, the
   rows of the schema, Cancel and OK on drafts, folders that say what they
