@@ -24,7 +24,22 @@ widget. Who wants to know when a window closes connects to the ``destroy``
 signal of that widget. The settings of the bricks, of the events and of the
 disk images are panels on drafts instead, of
 :mod:`virtualbricks.gui.mainwindow.bricks.config.panel`.
+
+The small dialogs that ask before an action, as Rename, Delete and Remove
+Image, are an ``action_dialog()`` of ``text_label()`` lines.
 """
+
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, Pango
+
+from virtualbricks.gui.pango import pango_attr_list
+from virtualbricks.i18n import _
+
+# around the lines of a dialog, and between them
+MARGIN = 18
+GAP = 8
 
 
 class Window:
@@ -42,3 +57,54 @@ class Window:
         if parent is not None:
             window.set_transient_for(parent)
         window.show()
+
+
+def text_label(
+    text="", dim=False, bold=False, heading=False, visible=True, **props
+):
+    """A line of a dialog, wrapped: grey if dim, bold, or bold and larger."""
+
+    label = Gtk.Label(
+        visible=visible,
+        label=text,
+        xalign=0.0,
+        wrap=True,
+        max_width_chars=56,
+        **props,
+    )
+    if dim:
+        label.get_style_context().add_class("dim-label")
+    if heading:
+        label.set_attributes(
+            pango_attr_list(
+                Pango.attr_weight_new(Pango.Weight.BOLD),
+                Pango.attr_scale_new(1.15),
+            )
+        )
+    elif bold:
+        label.set_attributes(
+            pango_attr_list(Pango.attr_weight_new(Pango.Weight.BOLD))
+        )
+    return label
+
+
+def action_dialog(title, action, destructive=False):
+    """
+    A dialog with Cancel and the button of action in its header bar: the
+    dialog, that button, and the box of its lines.
+    """
+
+    dialog = Gtk.Dialog(
+        title=title,
+        use_header_bar=True,
+        modal=True,
+        destroy_with_parent=True,
+        default_width=440,
+    )
+    dialog.add_button(_("Cancel"), Gtk.ResponseType.CANCEL)
+    button = dialog.add_button(action, Gtk.ResponseType.OK)
+    style = "destructive-action" if destructive else "suggested-action"
+    button.get_style_context().add_class(style)
+    box = dialog.get_content_area()
+    box.set_properties(spacing=GAP, margin=MARGIN)
+    return dialog, button, box

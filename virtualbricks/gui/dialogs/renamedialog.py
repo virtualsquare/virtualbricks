@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.gui.dialogs.test_renamedialog -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,210 +17,149 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Dialog to rename a brick, an event or a disk image.
+Rename a brick, an event or a disk image, as Rename Project does a project.
+
+The name is selected, so typing replaces it. It is checked as you type: the
+line under the field says why it can't be used, or what it becomes when
+spaces turn into underscores, and Rename waits for a name that can be used.
+A refusal keeps the dialog open with the reason, as a machine's private
+copies that the project folder doesn't let rename.
 """
+
+import os
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gtk
-
-from twisted.logger import Logger
+from gi.repository import Gtk
+from twisted.internet import defer
 
 from virtualbricks import errors
+from virtualbricks.brickfactory import normalize_name
 from virtualbricks.bricks.event import is_event
 from virtualbricks.bricks.virtualmachine import is_disk_image
-from virtualbricks.errors import InvalidNameError, NameAlreadyInUseError
+from virtualbricks.console import ampcommands, ampwire
+from virtualbricks.gui.dialogs.base import Window, action_dialog, text_label
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import Window
-
-logger = Logger()
-
-invalid_name = "Invalid name {name}"
 
 
 class RenameDialog(Window):
-    """
-    Rename a brick or an event. The OK button is sensitive only when the name
-    is valid and not in use.
-    """
+    """Ask a new name for a brick, an event or an image, and rename it."""
 
-    def __init__(self, engine, brick):
-        """
-        :type engine: virtualbricks.engine.LocalEngine
-        :type brick: Union[virtualbricks.bricks.Brick,
-            virtualbricks.bricks.event.Event]
-        :rtype: None
-        """
-
-        # the names are checked on its factory; it renames
-        self._engine = engine
-        self._factory = engine.factory
-        self._brick = brick
-        self._prev_name = brick.name
+    def __init__(self, engine, item):
+        self.engine = engine
+        # the names are checked on its factory
+        self.factory = engine.factory
+        self.item = item
         self.build_ui()
-        self.brick_name_entry.set_text(brick.name)
+        self.name_entry.set_text(item.name)
+        # after the name: the focus selects it
+        self.name_entry.grab_focus()
+        self.check()
 
     def build_ui(self) -> None:
-        """Create the widgets, formerly in ``renamedialog.ui``."""
-
-        # dialog (Gtk.Dialog)
-        self.dialog = Gtk.Dialog(
-            width_request=320,
-            can_focus=False,
-            title=_("Virtualbricks - Rename brick"),
-            modal=True,
-            window_position=Gtk.WindowPosition.CENTER_ON_PARENT,
-            type_hint=Gdk.WindowTypeHint.DIALOG,
+        if is_disk_image(self.item):
+            title = _("Rename Image")
+        elif is_event(self.item):
+            title = _("Rename Event")
+        else:
+            title = _("Rename Brick")
+        self.dialog, self.rename_button, box = action_dialog(
+            title, _("Rename")
         )
-        # TODO: empty Glade placeholder, nothing to create.
-        content_area = self.dialog.get_content_area()
-        content_area.set_properties(
-            can_focus=False,
-            orientation=Gtk.Orientation.VERTICAL,
-            spacing=2,
-        )
-        action_area = self.dialog.get_action_area()
-        action_area.set_properties(
-            can_focus=False,
-            layout_style=Gtk.ButtonBoxStyle.END,
-        )
-        cancel_button = Gtk.Button(
-            label=_("Cancel"),
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-        )
-        self.dialog.add_action_widget(
-            cancel_button,
-            Gtk.ResponseType.CANCEL,
-        )
-        # add_action_widget() packs the button at the end and aligns it to
-        # the baseline, restore the Glade packing and alignment.
-        cancel_button.set_valign(Gtk.Align.FILL)
-        action_area.child_set(
-            cancel_button,
-            pack_type=Gtk.PackType.START,
-            expand=True,
-            fill=True,
-        )
-        self.ok_button = Gtk.Button(
-            label=_("OK"),
-            visible=True,
-            sensitive=False,
-            can_focus=True,
-            can_default=True,
-            receives_default=True,
-            always_show_image=True,
-        )
-        self.dialog.add_action_widget(self.ok_button, Gtk.ResponseType.OK)
-        self.ok_button.set_valign(Gtk.Align.FILL)
-        action_area.child_set(
-            self.ok_button,
-            pack_type=Gtk.PackType.START,
-            expand=True,
-            fill=True,
-        )
-        content_area.child_set(action_area, expand=False, fill=False)
-        box1 = Gtk.Box(
-            visible=True,
-            can_focus=False,
-            orientation=Gtk.Orientation.VERTICAL,
-        )
-        label1 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            halign=Gtk.Align.START,
-            margin_top=5,
-            margin_bottom=5,
-            label=_("Chose a new name"),
-        )
-        box1.pack_start(label1, False, True, 0)
-        self.brick_name_entry = Gtk.Entry(
-            visible=True,
-            can_focus=True,
-            activates_default=True,
-            placeholder_text=_("Brick name"),
-        )
-        box1.pack_start(self.brick_name_entry, False, True, 0)
-        content_area.pack_start(box1, False, True, 0)
-
-        # Need the complete widget tree:
-        # default and focus widgets.
-        self.ok_button.grab_default()
-        self.brick_name_entry.grab_focus()
-
-        # Signals
-        self.dialog.connect("response", self.on_dialog_response)
-        self.brick_name_entry.connect(
-            "changed", self.on_brick_name_entry_changed
-        )
+        self.dialog.get_header_bar().set_subtitle(self.item.name)
+        self.dialog.set_default_response(Gtk.ResponseType.OK)
+        self.name_entry = Gtk.Entry(visible=True, activates_default=True)
+        # the screen readers say the label with the field
+        name_label = text_label(_("New name"), bold=True)
+        name_label.set_mnemonic_widget(self.name_entry)
+        box.pack_start(name_label, False, False, 0)
+        box.pack_start(self.name_entry, False, False, 0)
+        self.name_message = text_label(dim=True, visible=False)
+        box.pack_start(self.name_message, False, False, 0)
+        self.error_label = text_label(visible=False, selectable=True)
+        self.error_label.get_style_context().add_class("error")
+        box.pack_start(self.error_label, False, False, 0)
+        self.name_entry.connect("changed", self.on_name_changed)
+        self.dialog.connect("response", self.on_response)
 
     def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
-    def _set_error(self, tooltip):
-        """
-        :type tooltip: str
-        :rtype: None
-        """
+    # The name
 
-        style_context = self.brick_name_entry.get_style_context()
-        style_context.add_class("error")
-        self.brick_name_entry.set_tooltip_markup(tooltip)
-        self.ok_button.set_sensitive(False)
+    def problem(self, typed) -> tuple[bool, str | None]:
+        """Whether typed can be the new name, and what to say of it."""
 
-    def _reset_error(self):
-        """
-        :rtype: None
-        """
-
-        style_context = self.brick_name_entry.get_style_context()
-        style_context.remove_class("error")
-        self.brick_name_entry.set_tooltip_text(None)
-        self.ok_button.set_sensitive(True)
-
-    def on_brick_name_entry_changed(self, entry):
-        """
-        Set the status of the entry based on brick name validity.
-
-        :type entry: Gtk.Entry
-        :rtype: bool
-        """
-
-        brick_name = entry.get_text()
-        if not brick_name or brick_name == self._prev_name:
-            self._reset_error()
-            self.ok_button.set_sensitive(False)
-            return
+        if not typed:
+            return False, None
         try:
+            name = normalize_name(typed)
+            if name == self.item.name:
+                return False, None
             # only a brick has sockets, named after it, and a kind
-            if is_disk_image(self._brick) or is_event(self._brick):
-                self._factory.check_name(brick_name)
+            if is_disk_image(self.item) or is_event(self.item):
+                self.factory.check_name(name)
             else:
-                self._factory.check_brick_name(
-                    self._brick.get_type(), brick_name
-                )
-            self._reset_error()
-        except NameAlreadyInUseError:
-            tooltip = (
-                f'Name <span weight="bold">{brick_name}</span>'
-                " is already in use"
-            )
-            self._set_error(tooltip)
-        except InvalidNameError as exc:
-            self._set_error(str(exc))
-        return True
+                self.factory.check_brick_name(self.item.get_type(), name)
+        except errors.InvalidNameError as exc:
+            return False, str(exc)
+        if name != typed:
+            return True, _("It will be named {name}").format(name=name)
+        return True, None
 
-    def on_dialog_response(self, dialog, response_id):
-        if response_id == Gtk.ResponseType.OK:
-            name = self.brick_name_entry.get_text()
-            renaming = self._engine.rename(self._brick, name)
-            renaming.addErrback(self._refused, name)
-        dialog.destroy()
-        return True
+    def check(self) -> None:
+        usable, message = self.problem(self.name_entry.get_text())
+        self.name_message.set_text(message or "")
+        self.name_message.set_visible(message is not None)
+        self.rename_button.set_sensitive(usable)
 
-    def _refused(self, failure, name):
-        failure.trap(errors.InvalidNameError)
-        logger.error(invalid_name, name=name)
+    def on_name_changed(self, entry) -> None:
+        self.error_label.set_visible(False)
+        self.check()
+
+    # The rename
+
+    def on_response(self, dialog, response_id) -> None:
+        if response_id != Gtk.ResponseType.OK:
+            dialog.destroy()
+            return
+        # Enter, with a name that can't be used
+        if self.rename_button.get_sensitive():
+            self.rename()
+
+    def rename(self) -> defer.Deferred:
+        # once, while it is asked
+        self.rename_button.set_sensitive(False)
+        renaming = self.engine.rename(self.item, self.name_entry.get_text())
+        renaming.addCallbacks(self._renamed, self._refused)
+        return renaming
+
+    def _renamed(self, _old) -> None:
+        self.dialog.destroy()
+
+    def _refused(self, failure) -> None:
+        # here, or there over a connection
+        failure.trap(
+            OSError,
+            errors.Error,
+            ampwire.CommandFailed,
+            ampcommands.BadArgument,
+        )
+        self.check()
+        # a name taken meanwhile: the line under the field says it
+        if self.rename_button.get_sensitive():
+            self.error_label.set_text(refusal(failure.value))
+            self.error_label.set_visible(True)
+
+
+def refusal(error) -> str:
+    """What the dialog says of an error of the rename."""
+
+    if isinstance(error, OSError) and error.filename:
+        # the only files renamed are a machine's private copies
+        return _("Cannot rename the private copy {file}: {reason}").format(
+            file=os.path.basename(error.filename),
+            reason=error.strerror or error,
+        )
+    return str(error)

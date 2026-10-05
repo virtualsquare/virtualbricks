@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 15:35+0200\n"
+"POT-Creation-Date: 2026-10-05 15:44+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2328,14 +2328,12 @@ msgstr ""
 msgid "{name} is in use"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/addimage.py
+#: virtualbricks/gui/dialogs/addimage.py virtualbricks/gui/dialogs/base.py
 #: virtualbricks/gui/dialogs/exportproject.py
 #: virtualbricks/gui/dialogs/imagedialogs.py
 #: virtualbricks/gui/dialogs/importdialog.py
 #: virtualbricks/gui/dialogs/projectname.py
-#: virtualbricks/gui/dialogs/projects.py
-#: virtualbricks/gui/dialogs/renamedialog.py
-#: virtualbricks/gui/dialogs/settings.py
+#: virtualbricks/gui/dialogs/projects.py virtualbricks/gui/dialogs/settings.py
 #: virtualbricks/gui/mainwindow/events/newevent.py
 msgid "Cancel"
 msgstr ""
@@ -3055,6 +3053,7 @@ msgid "Rename Project"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/projectname.py
+#: virtualbricks/gui/dialogs/renamedialog.py
 msgid "Rename"
 msgstr ""
 
@@ -3069,6 +3068,7 @@ msgid "Duplicate"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/projectname.py
+#: virtualbricks/gui/dialogs/renamedialog.py
 msgid "New name"
 msgstr ""
 
@@ -3291,24 +3291,33 @@ msgid "The images it uses stay in your image library."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/renamedialog.py
-msgid "Virtualbricks - Rename brick"
+msgid "Rename Image"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/renamedialog.py
-#: virtualbricks/gui/dialogs/settings.py
-msgid "OK"
+msgid "Rename Event"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/renamedialog.py
-msgid "Chose a new name"
+msgid "Rename Brick"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/renamedialog.py
-msgid "Brick name"
+#, python-brace-format
+msgid "It will be named {name}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/renamedialog.py
+#, python-brace-format
+msgid "Cannot rename the private copy {file}: {reason}"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/messages.py
 msgid "Settings"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid "OK"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py

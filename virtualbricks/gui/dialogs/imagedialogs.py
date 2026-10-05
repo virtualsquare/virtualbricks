@@ -46,7 +46,7 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gio, Gtk, Pango
+from gi.repository import Gdk, Gio, Gtk
 from twisted.internet import defer
 from twisted.logger import Logger
 
@@ -56,8 +56,12 @@ from virtualbricks.config.workspace import projects
 from virtualbricks.console import ampcommands, ampwire
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.dialogs.addimage import check_name
-from virtualbricks.gui.dialogs.base import Window
-from virtualbricks.gui.pango import pango_attr_list
+from virtualbricks.gui.dialogs.base import (
+    GAP,
+    Window,
+    action_dialog,
+    text_label,
+)
 from virtualbricks.gui.pathentry import PathCompletion
 from virtualbricks.i18n import _, ngettext
 
@@ -65,9 +69,6 @@ logger = Logger()
 remove_failed = "Cannot remove the file {path}: {error}"
 start_over_failed = "Cannot start {vm}'s {device} over: {error}"
 show_failed = "Cannot show {path}: {error}"
-
-MARGIN = 18
-GAP = 8
 
 
 def show_in_files(parent, path):
@@ -79,44 +80,6 @@ def show_in_files(parent, path):
         Gtk.show_uri_on_window(parent, uri, Gdk.CURRENT_TIME)
     except Exception as exc:
         logger.error(show_failed, path=folder, error=exc)
-
-
-def _label(text="", dim=False, bold=False, visible=True, **props):
-    label = Gtk.Label(
-        visible=visible,
-        label=text,
-        xalign=0.0,
-        wrap=True,
-        max_width_chars=56,
-        **props,
-    )
-    if dim:
-        label.get_style_context().add_class("dim-label")
-    if bold:
-        label.set_attributes(
-            pango_attr_list(
-                Pango.attr_weight_new(Pango.Weight.BOLD),
-                Pango.attr_scale_new(1.15),
-            )
-        )
-    return label
-
-
-def _dialog(title, action, destructive=False):
-    dialog = Gtk.Dialog(
-        title=title,
-        use_header_bar=True,
-        modal=True,
-        destroy_with_parent=True,
-        default_width=440,
-    )
-    dialog.add_button(_("Cancel"), Gtk.ResponseType.CANCEL)
-    button = dialog.add_button(action, Gtk.ResponseType.OK)
-    style = "destructive-action" if destructive else "suggested-action"
-    button.get_style_context().add_class(style)
-    box = dialog.get_content_area()
-    box.set_properties(spacing=GAP, margin=MARGIN)
-    return dialog, button, box
 
 
 def disks_words(uses) -> str:
@@ -156,19 +119,21 @@ class RemoveImageDialog(Window):
         self.build_ui()
 
     def build_ui(self):
-        self.dialog, self.remove_button, box = _dialog(
+        self.dialog, self.remove_button, box = action_dialog(
             _("Remove Image"), _("Remove"), destructive=True
         )
         name = self.image.name
         path = self.image.path
         box.pack_start(
-            _label(_("Remove the image {name}?").format(name=name), bold=True),
+            text_label(
+                _("Remove the image {name}?").format(name=name), heading=True
+            ),
             False,
             False,
             0,
         )
         uses = images.uses(self.factory, self.image, self.machine.taken)
-        box.pack_start(_label(disks_words(uses)), False, False, 0)
+        box.pack_start(text_label(disks_words(uses)), False, False, 0)
         self.file_check = None
         # what it says of the file: over a connection, once the other
         # projects are known there
@@ -182,7 +147,7 @@ class RemoveImageDialog(Window):
             return
         self.remove_button.set_sensitive(False)
         self.file_box.pack_start(
-            _label(_("Looking at the file…"), dim=True), False, False, 0
+            text_label(_("Looking at the file…"), dim=True), False, False, 0
         )
         reading = self.machine.infos.read(path)
         reading.addBoth(lambda _: self.show_file())
@@ -203,7 +168,7 @@ class RemoveImageDialog(Window):
                 "The projects {names} use the file too: it stays.",
                 len({p for p, _i in others}),
             ).format(names=projects_names)
-            box.pack_start(_label(words, dim=True), False, False, 0)
+            box.pack_start(text_label(words, dim=True), False, False, 0)
         elif self.offers_file():
             size = imageinfo.human_size(self.machine.taken(path) or 0)
             if self.machine.can_trash(path):
@@ -216,7 +181,7 @@ class RemoveImageDialog(Window):
             box.pack_start(self.file_check, False, False, 0)
         else:
             box.pack_start(
-                _label(
+                text_label(
                     _("The file stays: {path}").format(
                         path=imageinfo.short_path(path)
                     ),
@@ -279,20 +244,21 @@ class FindFileDialog(Window):
         return path if os.path.isfile(path) else None
 
     def build_ui(self):
-        self.dialog, self.use_button, box = _dialog(
+        self.dialog, self.use_button, box = action_dialog(
             _("Find the File"), _("Use This File")
         )
         name = self.image.name
         box.pack_start(
-            _label(
-                _("Where is the file of {name}?").format(name=name), bold=True
+            text_label(
+                _("Where is the file of {name}?").format(name=name),
+                heading=True,
             ),
             False,
             False,
             0,
         )
         box.pack_start(
-            _label(
+            text_label(
                 _("{path} isn't there.").format(
                     path=imageinfo.short_path(self.image.path)
                 )
@@ -322,7 +288,7 @@ class FindFileDialog(Window):
         if found is not None:
             self.file_chooser.set_filename(found)
             box.pack_start(
-                _label(
+                text_label(
                     _("The image folder has a file of the same name."),
                     dim=True,
                 ),
@@ -332,7 +298,7 @@ class FindFileDialog(Window):
             )
         box.pack_start(self.file_chooser, False, False, 0)
         box.pack_start(
-            _label(
+            text_label(
                 _(
                     "The private copies of its disks are pointed at the file"
                     " first, so that they keep their changes."
@@ -343,7 +309,7 @@ class FindFileDialog(Window):
             False,
             0,
         )
-        self.error_label = _label(selectable=True, visible=False)
+        self.error_label = text_label(selectable=True, visible=False)
         self.error_label.get_style_context().add_class("error")
         box.pack_start(self.error_label, False, False, 0)
         self.chosen = found
@@ -403,7 +369,7 @@ class _JobDialog(Window):
     def _job_rows(self, box):
         self.progress = Gtk.ProgressBar(show_text=True, no_show_all=True)
         box.pack_start(self.progress, False, False, 0)
-        self.error_label = _label(selectable=True, visible=False)
+        self.error_label = text_label(selectable=True, visible=False)
         self.error_label.get_style_context().add_class("error")
         box.pack_start(self.error_label, False, False, 0)
         self.cancel_button = self.dialog.get_widget_for_response(
@@ -480,23 +446,23 @@ class SaveImageDialog(_JobDialog):
         self.check()
 
     def build_ui(self) -> None:
-        self.dialog, self.action_button, box = _dialog(
+        self.dialog, self.action_button, box = action_dialog(
             _("Save as a New Image"), _("Save")
         )
         vm, image = self.vm.name, self.image.name
         box.pack_start(
-            _label(
+            text_label(
                 _("Save {vm}'s {device} as a new image").format(
                     vm=vm, device=self.device
                 ),
-                bold=True,
+                heading=True,
             ),
             False,
             False,
             0,
         )
         box.pack_start(
-            _label(
+            text_label(
                 _(
                     "A file of its own in the image folder: {image} with the"
                     " changes {vm} made to it."
@@ -518,7 +484,7 @@ class SaveImageDialog(_JobDialog):
         row.pack_start(label, False, False, 0)
         row.pack_start(self.name_entry, True, True, 0)
         box.pack_start(row, False, False, 0)
-        self.name_message = _label(dim=True, visible=False)
+        self.name_message = text_label(dim=True, visible=False)
         box.pack_start(self.name_message, False, False, 0)
         self.use_check = Gtk.CheckButton(
             visible=True,
@@ -529,7 +495,7 @@ class SaveImageDialog(_JobDialog):
         )
         box.pack_start(self.use_check, False, False, 0)
         box.pack_start(
-            _label(
+            text_label(
                 _(
                     "The disk starts again from it, with an empty private copy."
                 ),
@@ -626,17 +592,17 @@ class MergeDialog(_JobDialog):
 
     def build_ui(self) -> None:
         image = self.image.name
-        self.dialog, self.action_button, box = _dialog(
+        self.dialog, self.action_button, box = action_dialog(
             _("Merge into {image}").format(image=image),
             _("Merge"),
             destructive=True,
         )
         box.pack_start(
-            _label(
+            text_label(
                 _("Merge {vm}'s changes into {image}?").format(
                     vm=self.vm.name, image=image
                 ),
-                bold=True,
+                heading=True,
             ),
             False,
             False,
@@ -661,7 +627,7 @@ class MergeDialog(_JobDialog):
             ).format(image=image, users=imageinfo.names(users))
         else:
             words = _("No other disk uses {image}.").format(image=image)
-        box.pack_start(_label(words), False, False, 0)
+        box.pack_start(text_label(words), False, False, 0)
         self.instead_button = Gtk.Button(
             visible=True,
             halign=Gtk.Align.START,
@@ -722,15 +688,15 @@ class StartOverDialog(Window):
         vm = self.vm.name
         disk = self.vm.disk(self.device)
         copy = disk.get_cow_path()
-        self.dialog, self.action_button, box = _dialog(
+        self.dialog, self.action_button, box = action_dialog(
             _("Start Over"), _("Start Over"), destructive=True
         )
         box.pack_start(
-            _label(
+            text_label(
                 _("Start {vm}'s {device} over from {image}?").format(
                     vm=vm, device=self.device, image=disk.image.name
                 ),
-                bold=True,
+                heading=True,
             ),
             False,
             False,
@@ -750,7 +716,7 @@ class StartOverDialog(Window):
                 " one."
             )
         box.pack_start(
-            _label(words.format(copy=os.path.basename(copy), size=size)),
+            text_label(words.format(copy=os.path.basename(copy), size=size)),
             False,
             False,
             0,
@@ -758,7 +724,7 @@ class StartOverDialog(Window):
         running = self.vm.__isrunning__()
         if running:
             box.pack_start(
-                _label(_stop_first([vm]), dim=True), False, False, 0
+                text_label(_stop_first([vm]), dim=True), False, False, 0
             )
         self.action_button.set_sensitive(not running)
         self.dialog.connect("response", self.on_response)

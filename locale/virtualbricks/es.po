@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 15:35+0200\n"
+"POT-Creation-Date: 2026-10-05 15:44+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -2383,14 +2383,12 @@ msgstr "<b> Icono de Maquina Virtual </b>"
 msgid "{name} is in use"
 msgstr "<b> Icono de Maquina Virtual </b>"
 
-#: virtualbricks/gui/dialogs/addimage.py
+#: virtualbricks/gui/dialogs/addimage.py virtualbricks/gui/dialogs/base.py
 #: virtualbricks/gui/dialogs/exportproject.py
 #: virtualbricks/gui/dialogs/imagedialogs.py
 #: virtualbricks/gui/dialogs/importdialog.py
 #: virtualbricks/gui/dialogs/projectname.py
-#: virtualbricks/gui/dialogs/projects.py
-#: virtualbricks/gui/dialogs/renamedialog.py
-#: virtualbricks/gui/dialogs/settings.py
+#: virtualbricks/gui/dialogs/projects.py virtualbricks/gui/dialogs/settings.py
 #: virtualbricks/gui/mainwindow/events/newevent.py
 msgid "Cancel"
 msgstr ""
@@ -3131,6 +3129,7 @@ msgid "Rename Project"
 msgstr "_Abrir proyecto"
 
 #: virtualbricks/gui/dialogs/projectname.py
+#: virtualbricks/gui/dialogs/renamedialog.py
 msgid "Rename"
 msgstr ""
 
@@ -3146,6 +3145,7 @@ msgid "Duplicate"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/projectname.py
+#: virtualbricks/gui/dialogs/renamedialog.py
 #, fuzzy
 msgid "New name"
 msgstr "Guardar proyecto como"
@@ -3381,28 +3381,37 @@ msgstr ""
 
 #: virtualbricks/gui/dialogs/renamedialog.py
 #, fuzzy
-msgid "Virtualbricks - Rename brick"
-msgstr "Virtualbricks"
+msgid "Rename Image"
+msgstr "Quitar"
 
 #: virtualbricks/gui/dialogs/renamedialog.py
-#: virtualbricks/gui/dialogs/settings.py
-msgid "OK"
+#, fuzzy
+msgid "Rename Event"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/gui/dialogs/renamedialog.py
+#, fuzzy
+msgid "Rename Brick"
+msgstr "Nuevo Brick"
+
+#: virtualbricks/gui/dialogs/renamedialog.py
+#, fuzzy, python-brace-format
+msgid "It will be named {name}"
+msgstr "Quitar"
+
+#: virtualbricks/gui/dialogs/renamedialog.py
+#, python-brace-format
+msgid "Cannot rename the private copy {file}: {reason}"
 msgstr ""
-
-#: virtualbricks/gui/dialogs/renamedialog.py
-#, fuzzy
-msgid "Chose a new name"
-msgstr "_Crear nueva imagen"
-
-#: virtualbricks/gui/dialogs/renamedialog.py
-#, fuzzy
-msgid "Brick name"
-msgstr "Bricks (Bloques)"
 
 #: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/messages.py
 #, fuzzy
 msgid "Settings"
 msgstr "_Preferencias"
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid "OK"
+msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
 #, fuzzy, python-brace-format
@@ -5163,6 +5172,18 @@ msgstr ""
 #, python-brace-format
 msgid "Missing in PATH: {programs}"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Virtualbricks - Rename brick"
+#~ msgstr "Virtualbricks"
+
+#, fuzzy
+#~ msgid "Chose a new name"
+#~ msgstr "_Crear nueva imagen"
+
+#, fuzzy
+#~ msgid "Brick name"
+#~ msgstr "Bricks (Bloques)"
 
 #, fuzzy
 #~ msgid "Delete events"
