@@ -90,6 +90,20 @@ that the tests can't do yet: those needs come first.
   `bricks.feature`
 - [x] Delete a brick from its menu, after the confirmation
   "Delete removes a brick, once confirmed", `bricks.feature`
+- [x] Rename a brick with F2
+  the dialog opens with the name selected; `project.toml` has the new
+  name
+  "F2 renames a brick, in a dialog that has its name selected",
+  `bricks.feature`
+- [x] Rename a brick to a name in use
+  the line under the field says what has it, and Rename waits
+  "Rename says why a name in use can't be the new name of a brick",
+  `bricks.feature`
+- [x] Try to delete a running brick
+  Delete… of its menu is disabled, the key Delete asks nothing, and it
+  still runs; `@needs-vde_switch`
+  "A running brick can't be deleted, from its menu nor with the key
+  Delete", `bricks.feature`
 - [x] Show only the running bricks with the switch over the list
   "The switch over the list shows only the running bricks, with their
   process", `bricks.feature`
@@ -119,6 +133,11 @@ that the tests can't do yet: those needs come first.
   its monitor doesn't answer until Continue, then it says it runs
   "A virtual machine paused from the menu of its process is stopped by
   the system, until it continues", `machines.feature`
+- [x] Delete a virtual machine with a private copy
+  the dialog says the copy goes to the trash, and the trash of the home
+  has it, out of the project folder; `@needs-qemu-system-i386`
+  "A virtual machine deleted takes its private copy to the trash",
+  `machines.feature`
 
 ### Disk images
 
@@ -249,6 +268,15 @@ that the tests can't do yet: those needs come first.
   `events.feature`
 - [x] See an event without actions: it can't start, and its row says why
   "An event without actions can't start, and its row says why",
+  `events.feature`
+- [x] Delete a switch that an event starts
+  the dialog says the event will no longer start it; the event has no
+  actions then, in its row and in `project.toml`
+  "A switch deleted leaves the event that started it without that
+  action", `events.feature`
+- [x] Delete an event that a brick runs when it starts
+  the dialog says so; `project.toml` has an empty `on_start`
+  "An event deleted is no longer the one a brick runs when it starts",
   `events.feature`
 
 # Settings

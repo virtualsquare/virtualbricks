@@ -179,6 +179,40 @@ Feature: Bricks
       | Brick | Type   |
       | sw1   | switch |
 
+  Scenario: F2 renames a brick, in a dialog that has its name selected
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I rename sw1 to core, with F2
+    Then the list of bricks has
+      | Brick | Detail            | State   |
+      | core  | Switch · 32 ports | Stopped |
+    When I quit Virtualbricks
+    Then Virtualbricks has quit
+    And project.toml has the bricks
+      | Brick | Type   |
+      | core  | switch |
+
+  Scenario: Rename says why a name in use can't be the new name of a brick
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I add the switch sw2
+    And I type sw1 as the new name of sw2, with F2
+    Then the Rename dialog says "sw1 is the name of a brick", and Rename is disabled
+    When I cancel the Rename dialog
+    Then the list of bricks has
+      | Brick | Detail            | State   |
+      | sw1   | Switch · 32 ports | Stopped |
+      | sw2   | Switch · 32 ports | Stopped |
+
+  @needs-vde_switch
+  Scenario: A running brick can't be deleted, from its menu nor with the key Delete
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I start sw1
+    And I press Delete on the row of sw1
+    Then Delete… is disabled in the menu of sw1, and nothing asks to delete it
+    And sw1 is still running
+
   @needs-vde_switch
   Scenario: The switch over the list shows only the running bricks, with their process
     Given Virtualbricks is running

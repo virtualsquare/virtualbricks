@@ -66,3 +66,37 @@ Feature: Events
     And new_event can't start: "Add an action to new_event first"
     When I try to start new_event
     Then new_event is not configured
+
+  Scenario: A switch deleted leaves the event that started it without that action
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I make an event that starts sw1 after 2 seconds, with the name it suggests, new_event
+    And I open the tab Bricks
+    And I ask to delete sw1, from its menu
+    Then the Delete dialog says "The event new_event will no longer start sw1."
+    When I confirm the delete
+    And I open the tab Events
+    Then the list of events has
+      | Event     | Detail         | State          |
+      | new_event | No actions yet | Not configured |
+    When I quit Virtualbricks
+    Then Virtualbricks has quit
+    And project.toml has the event new_event, without actions
+
+  Scenario: An event deleted is no longer the one a brick runs when it starts
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I add the switch sw2
+    And I make an event that starts sw2 at once, with the name it suggests, new_event
+    And I open the tab Bricks
+    And I choose new_event in When It Starts, in the menu of sw1
+    And I ask to delete the event new_event, from its menu
+    Then the Delete dialog says "sw1 will no longer run new_event when it starts."
+    When I confirm the delete
+    Then the list of events has
+      | Event | Detail | State |
+    When I quit Virtualbricks
+    Then Virtualbricks has quit
+    And project.toml has sw1 with
+      | Setting  | Value |
+      | on_start | ""    |

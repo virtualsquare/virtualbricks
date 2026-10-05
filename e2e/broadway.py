@@ -64,6 +64,7 @@ KEYSYMS = {
     "Return": 0xFF0D,
     "Escape": 0xFF1B,
     "Delete": 0xFFFF,
+    "F2": 0xFFBF,
     "Shift": 0xFFE1,
     "Control": 0xFFE3,
     "Alt": 0xFFE9,

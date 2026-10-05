@@ -54,3 +54,22 @@ Feature: Virtual machines
     And the monitor of vm1 answers "info status" with "VM status: running"
     When I terminate vm1, from its menu
     Then vm1 is stopped
+
+  @needs-qemu-img @needs-qemu-system-i386
+  Scenario: A virtual machine deleted takes its private copy to the trash
+    Given the empty disk image disk.qcow2 of 1 GB, in my home folder
+    And Virtualbricks is running
+    When I add an existing image, disk.qcow2 of my home folder, with the name it suggests, disk
+    And I open the tab Bricks
+    And I add the virtual machine vm1
+    And I turn on "No display" in the settings of vm1, on its page Display
+    And I give vm1 the image disk, on its disk hda
+    And I start vm1
+    Then vm1 runs on a private copy of disk.qcow2 of the image folder
+    When I terminate vm1, from its menu
+    And I ask to delete vm1, from its menu
+    Then the Delete dialog says that the private copy vm1_hda.cow goes to the trash
+    When I confirm the delete
+    Then the list of bricks has
+      | Brick | Detail | State |
+    And the file vm1_hda.cow of the project folder is in the trash

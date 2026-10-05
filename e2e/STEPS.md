@@ -29,6 +29,12 @@ The steps of a user:
 | `When I continue vm1, from its menu` | The same, then Continue: SIGCONT |
 | `When I duplicate sw1 from its menu` | Duplicate, in its menu; then the list has one more brick |
 | `When I delete sw2 from its menu, and confirm` | Delete…, in its menu, then Delete in the dialog that names it |
+| `When I ask to delete sw1, from its menu` | Delete…, in its menu: the dialog Delete Brick asks to delete it, by its name |
+| `When I confirm the delete` | Delete, in the dialog that asks to delete; then it closes |
+| `When I press Delete on the row of sw1` | A click on its name, which selects its row, then the key Delete |
+| `When I rename sw1 to core, with F2` | A click on its name, then F2: the dialog Rename Brick has its name, selected, as typing replaces it; the new name typed in place of it, then Rename, and the dialog closes |
+| `When I type sw1 as the new name of sw2, with F2` | The same, without Rename: the dialog stays |
+| `When I cancel the Rename dialog` | Its Cancel; then it closes |
 | `When I start all the bricks` | Start All; each brick whose row said Stopped must run, with the process its row tells, and Start All must start no other |
 | `When I stop all the bricks` | Stop All; each brick that ran must be able to start again |
 | `When I show only the running bricks` | Running, of the switch over the list; then it is on |
@@ -59,6 +65,9 @@ The steps of a user:
 | `Then sw1 runs with 34 ports, as a hub` | It runs, and its `vde_switch` has `-n 34` and `-x` |
 | `Then no brick runs` | No row of the list says Running, and no process of a brick runs: neither those that the steps started nor any with a socket of the tests; Virtualbricks runs no program |
 | `Then wr1 is not configured` | Its row says Not configured, its Start is disabled, and no process has its sockets |
+| `Then the Delete dialog says "The event new_event will no longer start sw1."` | A line of the dialog that asks to delete is the text |
+| `Then the Rename dialog says "sw1 is the name of a brick", and Rename is disabled` | The line under its field is the text, and its Rename is disabled |
+| `Then Delete… is disabled in the menu of sw1, and nothing asks to delete it` | Its menu opens, which it wouldn't under a dialog, with Delete… disabled, and no dialog shows; then Escape closes the menu |
 | `Then wr1 can't start: "Configure wr1 first"` | Its Start is disabled, and the state in its row says why, in its tooltip, which the screen readers read |
 | `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |
 | `Then Virtualbricks hasn't quit` | It still runs, and its main window shows |
@@ -139,6 +148,8 @@ The steps of the events, in the tab Events:
 | `When I make an event without actions, with the name it suggests, new_event` | New Event, in the tab Events, with the name it suggests: Create, then OK in the settings of the event |
 | `When I start the event new_event` | Its Start, in the tab Events; then it waits: its Stop shows |
 | `When I stop the event new_event while it waits` | Its Stop, in the tab Events, while its row says Waiting; then its Start shows, and its row says Ready |
+| `When I ask to delete the event new_event, from its menu` | Delete…, in its menu, in the tab Events: the dialog Delete Event asks to delete it, by its name. Then the steps of the dialog: `Then the Delete dialog says …`, `When I confirm the delete` |
+| `Then project.toml has the event new_event, without actions` | The event is in the file of the project, with no action |
 | `When I run the event new_event now, from its menu` | Run Now, in its menu, in the tab Events; then the menu closes |
 | `When I choose new_event in When It Starts, in the menu of sw1` | In the menu of the brick, When It Starts or When It Stops, then the event, and Escape, as a choice leaves the menu open. The choices of a menu of GTK 3 don't tell AT-SPI which is on: the row of the event says it, `· when sw1 starts` |
 | `Then new_event counts down from 2 seconds, then starts sw1` | Its row says `Waiting · 2 s`, then `Waiting · 1 s`, each in turn, while no process of sw1 runs; then Ready, and a process of sw1 runs |
@@ -213,6 +224,8 @@ The steps of the disk images:
 | `Then the details of disk say what qemu-img info says of disk.qcow2 of the image folder` | The facts of the details are those of `qemu-img info` of the file: File, its path with `~` for the home; Format; Size, the disk and the space it takes, in MB and GB of 1000; Snapshots, if any; and Changed, when the file changed, which isn't of `qemu-img` |
 | `Then vm1 runs on a private copy of disk.qcow2 of the image folder` | It runs, and a disk of its QEMU, after `-hda` or another device, is a file of its own whose backing file is that of the image folder, as `qemu-img info -U` says |
 | `Then the file disk.raw of the image folder is in the trash` | `vimages` has it no more, and the trash of the home has it: a `.trashinfo` with its path, and the file |
+| `Then the Delete dialog says that the private copy vm1_hda.cow goes to the trash` | A line of the dialog that asks to delete the machine says so, with the size of the copy, which depends on the file system |
+| `Then the file vm1_hda.cow of the project folder is in the trash` | The folder of the project has it no more, and the trash of the home has it: a `.trashinfo` with its path, and the file |
 | `Then the image folder still has disk.raw, in no trash` | `vimages` has the file, and the trash of the home doesn't |
 
 The steps of the migration of Virtualbricks 2.1:
@@ -306,7 +319,7 @@ def stop_brick(virtualbricks, name):
   | `click_text(widget, index, length)` | Clicks the middle of length characters of the text of the widget, from the index of the character in `a11y.text()`: a link or a toggle of a text view, which must show. GTK 3 counts the images of a text view in the offsets of AT-SPI, not in its text: `a11y.offset()` turns one into the other |
   | `spin(name, by, within=None)` | Clicks the + of the spin button `by` times, or its - `-by` times; after each click, its value changes |
   | `type(text, role, name=None, within=None, over=False)` | Clicks it, once it shows and is enabled, a spin button in its text, left of its - and +, and types text at its cursor; then it has the text: see [What it can't do yet](README.md#what-it-cant-do-yet). With `over`, in place of the text it has, as a user who selects it all first. A `password text` tells AT-SPI a dot for each character, as it shows them: then it has as many more |
-  | `key(keys, window)` | Presses keys, as `Escape`, `Return` or `Control+l`, in window, a frame or a dialog, once it is active: click in it first, as the keys go to the window clicked last. Text goes with `type()` |
+  | `key(keys, window)` | Presses keys, as `Escape`, `Return`, `Delete`, `F2` or `Control+l`, in window, a frame or a dialog, once it is active: click in it first, as the keys go to the window clicked last. Text goes with `type()` |
   | `drag(start, end, ready=None)` | Presses at start, a point of the screen, moves to end and releases there; `ready()`, if given, right before the press, half a second after the click before |
   | `choose(item, menu)` | A menu of the menu bar, then its item |
   | `row(name)` | The row of a list with that name, for `within=` |

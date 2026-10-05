@@ -122,6 +122,15 @@ def text(accessible) -> str:
     return Atspi.Text.get_text(accessible, 0, -1)
 
 
+def selection(accessible) -> tuple[int, int] | None:
+    """The first and the last offset of the text selected; None if none."""
+
+    if not Atspi.Text.get_n_selections(accessible):
+        return None
+    chosen = Atspi.Text.get_selection(accessible, 0)
+    return chosen.start_offset, chosen.end_offset
+
+
 def offset(accessible, index) -> int:
     """
     The offset of the character index of the text of the widget, as AT-SPI

@@ -710,16 +710,158 @@ def duplicate(virtualbricks, name):
 def delete(virtualbricks, name):
     """Delete…, in its menu, then Delete in the dialog that names it."""
 
+    ask_delete(virtualbricks, name, "brick")
+    confirm_delete(virtualbricks)
+
+
+@when(words("I ask to delete {name:Brick}, from its menu"))
+def ask_delete_brick(virtualbricks, name):
+    """Delete…, in its menu: the dialog Delete Brick names it."""
+
+    ask_delete(virtualbricks, name, "brick")
+
+
+def ask_delete(virtualbricks, name, kind):
+    """Delete…, in the menu of the brick or the event: its dialog shows."""
+
     virtualbricks.click("button", f"Menu of {name}")
     virtualbricks.click("button", "Delete…")
-    dialog = virtualbricks.find("dialog")
-    question = f"Delete the brick {name}?"
+    dialog = virtualbricks.find("dialog", f"Delete {kind.title()}")
+    question = f"Delete the {kind} {name}?"
     virtualbricks.wait_for(
         lambda: question in virtualbricks.names("label", within=dialog),
         f"the dialog asks to delete {name}",
     )
+
+
+@then(words('the Delete dialog says "{text}"'))
+def delete_says(virtualbricks, text):
+    """A line of the dialog that asks to delete is the text."""
+
+    virtualbricks.find("label", text, within=virtualbricks.find("dialog"))
+
+
+@then(
+    words(
+        "the Delete dialog says that the private copy {file} goes to the"
+        " trash"
+    )
+)
+def delete_says_copy(virtualbricks, file):
+    """
+    A line of the dialog says that the private copy goes to the trash, with
+    its size, which depends on the file system.
+    """
+
+    dialog = virtualbricks.find("dialog")
+    start = (
+        "Its private copy goes to the trash, with the changes it keeps:"
+        f" {file}, "
+    )
+    virtualbricks.wait_for(
+        lambda: any(
+            label.startswith(start)
+            for label in virtualbricks.names("label", within=dialog)
+        ),
+        f"the dialog says that {file} goes to the trash",
+    )
+
+
+@when("I confirm the delete")
+def confirm_delete(virtualbricks):
+    """Delete, in the dialog that asks to delete; then it closes."""
+
+    dialog = virtualbricks.find("dialog")
     virtualbricks.click("button", "Delete", within=dialog)
     virtualbricks.gone("dialog")
+
+
+@when(words("I press Delete on the row of {name:Brick}"))
+def press_delete(virtualbricks, name):
+    """A click on the name in its row, which selects it, then Delete."""
+
+    select_brick(virtualbricks, name)
+    virtualbricks.key("Delete", virtualbricks.find("frame"))
+
+
+@then(
+    words(
+        "Delete… is disabled in the menu of {name:Brick}, and nothing asks to"
+        " delete it"
+    )
+)
+def delete_disabled(virtualbricks, name):
+    """
+    Its menu opens, which it wouldn't under a dialog, with Delete…
+    disabled; no dialog shows. Then Escape closes the menu.
+    """
+
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.disabled("button", "Delete…")
+    assert virtualbricks.shows("dialog") is None, "a dialog shows"
+    virtualbricks.key("Escape", virtualbricks.find("frame"))
+    virtualbricks.gone("button", "Delete…")
+
+
+def select_brick(virtualbricks, name):
+    """A click on the name in the row of the brick: then it is selected."""
+
+    virtualbricks.click("label", name, within=virtualbricks.row(name))
+
+
+# The dialog of Rename, and the label of its field
+RENAME_BRICK = "Rename Brick"
+NEW_NAME = "New name"
+
+
+@when(words("I rename {name:Brick} to {new}, with F2"))
+def rename(virtualbricks, name, new):
+    """
+    F2 on its row: the dialog Rename Brick has its name, selected; the new
+    name typed in place of it, then Rename, and the dialog closes.
+    """
+
+    dialog = type_new_name(virtualbricks, name, new)
+    virtualbricks.click("button", "Rename", within=dialog)
+    virtualbricks.gone("dialog", RENAME_BRICK)
+
+
+@when(words("I type {new} as the new name of {name:Brick}, with F2"))
+def type_new_name(virtualbricks, name, new):
+    """
+    F2 on its row: the dialog Rename Brick has its name, selected, as
+    typing replaces it; then the new name typed in place of it.
+    """
+
+    select_brick(virtualbricks, name)
+    virtualbricks.key("F2", virtualbricks.find("frame"))
+    dialog = virtualbricks.find("dialog", RENAME_BRICK)
+    field = virtualbricks.find("text", NEW_NAME, within=dialog)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.text(field) == name
+        and harness.a11y.selection(field) == (0, len(name)),
+        f"the field of Rename has {name}, selected",
+    )
+    virtualbricks.type(new, "text", NEW_NAME, within=dialog, over=True)
+    return dialog
+
+
+@then(words('the Rename dialog says "{text}", and Rename is disabled'))
+def rename_says(virtualbricks, text):
+    """The line under the field is the text, and Rename is disabled."""
+
+    dialog = virtualbricks.find("dialog", RENAME_BRICK)
+    virtualbricks.find("label", text, within=dialog)
+    virtualbricks.disabled("button", "Rename", within=dialog)
+
+
+@when("I cancel the Rename dialog")
+def cancel_rename(virtualbricks):
+    """Its Cancel; then it closes."""
+
+    dialog = virtualbricks.find("dialog", RENAME_BRICK)
+    virtualbricks.click("button", "Cancel", within=dialog)
+    virtualbricks.gone("dialog", RENAME_BRICK)
 
 
 @when(words("I give {name:Brick} the control folder of that switch"))
@@ -2442,6 +2584,23 @@ def image_in_trash(virtualbricks, file):
     assert os.path.isfile(os.path.join(trash, "files", trashed))
 
 
+@then(words("the file {file} of the project folder is in the trash"))
+def project_file_in_trash(virtualbricks, file):
+    """
+    The folder of the project has the file no more, and the trash of the
+    home has it: a .trashinfo that says where it was, and the file.
+    """
+
+    path = os.path.join(os.path.dirname(project_path(virtualbricks)), file)
+    virtualbricks.wait_for(
+        lambda: not os.path.exists(path), f"the project folder has no {file}"
+    )
+    trash = os.path.join(virtualbricks.home, TRASH)
+    trashed = trashed_as(trash, path)
+    assert trashed is not None, f"the trash has no {path}"
+    assert os.path.isfile(os.path.join(trash, "files", trashed))
+
+
 @then(words("the image folder still has {file}, in no trash"))
 def image_kept(virtualbricks, file):
     """The image folder of the workspace has the file, and the trash not."""
@@ -2626,6 +2785,24 @@ def stop_event(virtualbricks, name):
     virtualbricks.click("button", f"Stop {name}", within=row)
     virtualbricks.find("button", f"Start {name}", within=row)
     virtualbricks.find("label", READY, within=row)
+
+
+@when(words("I ask to delete the event {name:Brick}, from its menu"))
+def ask_delete_event(virtualbricks, name):
+    """Delete…, in its menu, in the tab Events: Delete Event names it."""
+
+    on_tab(virtualbricks, EVENTS)
+    ask_delete(virtualbricks, name, "event")
+
+
+@then(words("project.toml has the event {name:Brick}, without actions"))
+def project_event_without_actions(virtualbricks, name):
+    """The event is in the file of the project, with no action."""
+
+    events = project_file(virtualbricks).get("events", {})
+    assert name in events, f"project.toml has no event {name}"
+    actions = events[name].get("actions", [])
+    assert actions == [], f"{name} has the actions {actions}"
 
 
 @when(words("I run the event {name:Brick} now, from its menu"))
