@@ -1440,13 +1440,15 @@ class VirtualMachine(bricks.Brick):
         self.changed.notify(self)
 
     def remove_plug(self, plug):
-        try:
-            if plug.mode == "sock":
-                self.socks.remove(plug)
-            else:
-                self.plugs.remove(plug)
-        except ValueError:
+        """Take a card out: a socket card is unplugged and forgotten."""
+
+        links = self.socks if plug.mode == "sock" else self.plugs
+        if plug not in links:
             self.logger.error(own_err, plug=plug, brick=self)
+            return
+        links.remove(plug)
+        if plug.mode == "sock":
+            self.factory.remove_sock(plug)
 
     def commit_disks(self, args):
         # XXX: fixme

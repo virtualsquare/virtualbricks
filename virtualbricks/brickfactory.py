@@ -327,18 +327,12 @@ class BrickFactory:
 
     def _remove_brick(self, brick):
         logger.info(removing_brick, brick=brick.name)
-        socks = set(brick.socks)
-        if socks:
+        if brick.socks:
             logger.info(
-                remove_socks, socks=", ".join(s.nickname for s in socks)
+                remove_socks, socks=", ".join(s.nickname for s in brick.socks)
             )
-            for _brick in self._bricks:
-                for plug in _brick.plugs:
-                    if plug.configured() and plug.sock in socks:
-                        logger.info(disconnect_plug, sock=plug.sock.nickname)
-                        plug.disconnect()
             for sock in [s for s in self.socks if s.brick is brick]:
-                self.socks.remove(sock)
+                self.remove_sock(sock)
         for plug in brick.plugs:
             if plug.configured():
                 plug.disconnect()
@@ -573,6 +567,14 @@ class BrickFactory:
         sock = Sock(brick, name)
         self.socks.append(sock)
         return sock
+
+    def remove_sock(self, sock):
+        """Forget a socket: what plugs into it is unplugged."""
+
+        for plug in list(sock.plugs):
+            logger.info(disconnect_plug, sock=sock.nickname)
+            plug.disconnect()
+        self.socks.remove(sock)
 
     def get_sock(self, name):
         if name == "_hostonly":

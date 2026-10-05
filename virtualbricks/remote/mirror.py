@@ -343,6 +343,8 @@ class MirrorFactory(BrickFactory):
             else:
                 sock.mac, sock.model = nic["mac"], nic["model"]
             kept.append(sock)
+        for sock in by_name.values():
+            vm.remove_plug(sock)
         vm.socks[:] = kept
         for plug in vm.plugs:
             if plug.sock is not None:

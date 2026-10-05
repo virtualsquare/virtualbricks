@@ -332,6 +332,14 @@ class TestUsers(BrickTestCase):
         # once each
         self.assertEqual(self.changed, [self.boot, self.halt])
 
+    def test_a_socket_removed(self):
+        sock = self.sw1.socks[0]
+        self.factory.remove_sock(sock)
+        self.assertIsNone(self.factory.get_sock(sock.nickname))
+        self.assertIsNone(self.vm1.plugs[0].sock)
+        self.assertIsNone(self.w1.plugs[0].sock)
+        self.assertEqual(sock.plugs, [])
+
     def test_an_event_deleted(self):
         self.factory.remove_event(self.boot)
         self.assertIsNone(self.factory.get_event("boot"))
