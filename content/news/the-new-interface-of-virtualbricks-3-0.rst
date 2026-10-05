@@ -1,22 +1,21 @@
 Virtualbricks 3.0: a tour of the new interface
 ##############################################
 
-:date: 2026-10-04 12:00
-:status: draft
+:date: 2026-10-05 12:00
 :category: News
-:tags: release, develop, interface, bricks, images, topology, readme, logs
+:tags: release, develop, topology, readme, logs, gui
 :slug: the-new-interface-of-virtualbricks-3-0
 :author: Marco Giusti
 :summary: The tabs of the main window, one by one: the Bricks tab that took
           in the Running tab, the new Images tab, a Topology tab that zooms,
-          a README in Markdown, and a messages window that reads like a
-          console.
+          a README in Markdown, a messages window that reads like a
+          console, and a Settings window that says what your folders hold.
 :lang: en
 
 The `first post <{filename}/news/whats-coming-in-virtualbricks-3-0.rst>`_
 of this series was a map of what changed in the ``develop`` branch. This one
-is about what you see: the tabs of the main window, one by one, and the
-messages window.
+is about what you see: the tabs of the main window, one by one, the messages
+window and the Settings window.
 
 The screenshots show a small lab: two sites joined by a slow link, a Netemu
 with 20 ms of delay and 1% of the packets lost, two routers, a client and a
@@ -26,7 +25,7 @@ tap that gives the host a way in.
 The Bricks tab
 ==============
 
-.. figure:: {static}/images/new-ui/bricks.png
+.. figure:: {static}/images/the-new-interface-of-virtualbricks-3-0/bricks.png
    :alt: The Bricks tab: a row for each of the eight bricks of the lab, six
          of them running
 
@@ -64,7 +63,8 @@ button, which nothing pointed to. Now:
   Topology tab open the same menu: Start or Stop, Configure…, Rename…,
   Duplicate, Connect To, the events to run when the brick starts and when
   it stops, Resume for a virtual machine, and Delete…. It has its keys:
-  Enter, F2 and Delete.
+  Enter, F2 and Delete. Rename… and Delete… wait until the brick stops:
+  while it runs they are greyed, and their keys do nothing.
 
 - **Connecting.** Connect To, in the menu, lists the bricks that this one
   can be plugged into. Dropping a brick on another still connects them.
@@ -79,7 +79,7 @@ the Bricks tab, and its Restart of a virtual machine sent an ACPI reset.
 
 The Running tab is gone, and its menu came to the Bricks tab:
 
-.. figure:: {static}/images/new-ui/bricks-process.png
+.. figure:: {static}/images/the-new-interface-of-virtualbricks-3-0/bricks-process.png
    :alt: The Bricks tab with only the running bricks, each with its process
          number, and the menu of r1 open on its process
 
@@ -100,6 +100,39 @@ The Running tab is gone, and its menu came to the Bricks tab:
 - **Send ACPI powerdown** is gone: Stop already does it.
 
 
+Rename and Delete
+-----------------
+
+In 2.1, Delete asked "Do you really want to delete sw2 (Switch)?", with No
+and Yes, and refused a running brick only after the Yes. A deleted brick
+stayed in the actions of the events that started it, and a deleted event in
+the bricks that ran it when they started.
+
+.. figure:: {static}/images/the-new-interface-of-virtualbricks-3-0/delete.png
+   :width: 71%
+   :alt: The Delete Brick dialog of sw2: ne1 and r1 (eth1) will be plugged
+         into nothing, and the event lab-up will no longer start sw2; Cancel
+         and a red Delete
+
+   Before you delete sw2, the dialog says what goes with it.
+
+- **Delete…** asks with Cancel and a red Delete, and says what changes: for
+  a brick, the bricks plugged into it and the events that will no longer
+  start or stop it; for an event, the bricks that will no longer run it
+  when they start or stop. Then it does what it says: the plugs are
+  unplugged, the actions leave the events, and the bricks forget the event.
+  A waiting event stops.
+
+- **The private copies of a machine** go to the trash with it, and the
+  dialog says so: a new machine with the same name would start from them.
+
+- **Rename…** opens on the name, selected, so typing replaces it. The line
+  under the field says why a name can't be used, as "sw1 is the name of a
+  brick", or what it becomes when its spaces turn into underscores, and
+  Rename waits for a name that can be used. The same dialog renames an
+  event and an image.
+
+
 The Images tab
 ==============
 
@@ -109,7 +142,7 @@ every machine. The library couldn't add an image, and removed one at once,
 even an image that disks used. They are all replaced by a tab, beside the
 Bricks and the Events, in the same shape:
 
-.. figure:: {static}/images/new-ui/images.png
+.. figure:: {static}/images/the-new-interface-of-virtualbricks-3-0/images.png
    :alt: The Images tab: three disk images, each with its format, its size,
          the space it takes and the disks that use it
 
@@ -137,7 +170,7 @@ Bricks and the Events, in the same shape:
   changes. In 2.1, changing the path of an image made the next start of each
   machine put its private copy aside and begin from an empty one.
 
-.. figure:: {static}/images/new-ui/images-details.png
+.. figure:: {static}/images/the-new-interface-of-virtualbricks-3-0/images-details.png
    :alt: The details of the image frr-debian: its name, description, file,
          format, size, and the two disks that use it
 
@@ -158,7 +191,7 @@ The Drives tab of a virtual machine had seven rows, from hda to mtdblock,
 each a list of names and a *Private COW* check. Now the Disks section shows
 the disks that the machine has, and Add Disk adds one on a free device:
 
-.. figure:: {static}/images/new-ui/vm-disks-picker.png
+.. figure:: {static}/images/the-new-interface-of-virtualbricks-3-0/vm-disks-picker.png
    :alt: The Disks section of the settings of pc1, with the image picker of
          its disk hda open
 
@@ -187,7 +220,7 @@ its top left corner: no zoom, white in the dark theme, every brick in colour,
 running or not. Export as Image copied that PNG, so ``lab.svg`` was a PNG
 file.
 
-.. figure:: {static}/images/new-ui/topology.png
+.. figure:: {static}/images/the-new-interface-of-virtualbricks-3-0/topology.png
    :alt: The Topology tab: the lab drawn from left to right, with the
          stopped bricks in grey and the zoom bar at the top right
 
@@ -219,7 +252,7 @@ cairo:
 
 - **The dark theme.** The picture takes the colours of the theme:
 
-.. figure:: {static}/images/new-ui/topology-dark.png
+.. figure:: {static}/images/the-new-interface-of-virtualbricks-3-0/topology-dark.png
    :alt: The Topology tab in the dark theme of GTK
 
    The same lab, with the dark theme of Adwaita.
@@ -228,10 +261,13 @@ cairo:
 The Readme tab
 ==============
 
-The README of a project is now Markdown. It is still a plain text file,
-``README``, so nothing changes on disk, in the archives or in the migration.
+The README of a project is now Markdown, and its file is ``README.md``. The
+``README`` of an older project, of 2.1 or of an earlier snapshot of 3.0,
+becomes ``README.md`` when the project opens, when its archive is imported
+and when the migration copies it; until then the Projects window and the
+archives read either.
 
-.. figure:: {static}/images/new-ui/readme-picture.png
+.. figure:: {static}/images/the-new-interface-of-virtualbricks-3-0/readme-picture.png
    :alt: The Readme tab: the README of the lab rendered, with a heading, the
          picture of the topology, a list of addresses and a block of code
 
@@ -260,7 +296,7 @@ The README of a project is now Markdown. It is still a plain text file,
 
 - **Help at hand.** While you write, a third button shows the syntax:
 
-.. figure:: {static}/images/new-ui/readme-syntax.png
+.. figure:: {static}/images/the-new-interface-of-virtualbricks-3-0/readme-syntax.png
    :alt: The editor of the Readme tab, with the popover of the Markdown
          syntax open
 
@@ -283,13 +319,13 @@ of a module hid which brick it came from, whatever a program wrote on its
 standard error was an error, and there was no filter. Now it reads like a
 console:
 
-.. figure:: {static}/images/new-ui/logs.png
-   :alt: The Logs window: the messages of a virtual machine and of a tap
-         that starts, with their sources, a symbol for each level and the
+.. figure:: {static}/images/the-new-interface-of-virtualbricks-3-0/logs.png
+   :alt: The Logs window: the messages of a switch, a virtual machine and a
+         tap that start, with their sources, a symbol for each level and the
          output of their programs
 
-   The start of a virtual machine and of a tap that sudo didn't run, then
-   a project that couldn't be saved.
+   A switch and a virtual machine start, then a tap that sudo didn't run,
+   and a project that couldn't be saved.
 
 - **One line, four columns.** The time, dimmed when it repeats within the
   same second, with a line for each day; the source, the name of a brick in
@@ -299,13 +335,14 @@ console:
   brick and its process.
 
 - **Folds.** The first line of a message shows, and the rest waits behind a
-  toggle: "▸ 2 more lines", or "▸ traceback, 8 calls". Expand all and
+  toggle: "▸ 2 more lines", or "▸ traceback, 6 calls". Expand all and
   Collapse all, in the menu, open or close them all.
 
 - **Program output, as printed.** What a program prints shows on a grey
   band, with ``2>`` before its standard error, line by line as a terminal
   shows it: the monitor of QEMU no longer comes as a dozen messages of
-  escape codes. It has a symbol of its own, and the status bar counts its
+  escape codes, and a line that is only its prompt, ``(qemu)``, isn't
+  logged at all. It has a symbol of its own, and the status bar counts its
   lines apart from the errors.
 
 - **A filter.** The field in the header bar filters as you type.
@@ -327,6 +364,70 @@ console:
 
 The window keeps the latest 2,000 messages, where 2.1 kept them all for as
 long as it ran, and each window has its own filter and its own folds.
+
+
+The Settings window
+===================
+
+*File › Settings* had three tabs in 2.1, General, VDE and Qemu, in the words
+of its Glade file: "X-window terminal command", "Binaries path", "Private
+COW format". The folders showed "(None)", the terminal was typed, the
+switch of KSM acted at once, before OK, and OK wrote every row back, also
+those you hadn't touched.
+
+.. figure:: {static}/images/the-new-interface-of-virtualbricks-3-0/settings.png
+   :alt: The Settings window on the page This computer: the sections
+         Windows and Bricks, each row with a label, a line of help and its
+         switch, menu or value
+
+   This computer: the settings of the windows and of the bricks, kept in
+   settings.toml.
+
+- **A page for each place the settings are kept.** *This computer* has
+  those of ``settings.toml``: the windows, as the terminal and the tray
+  icon, and the bricks, as KSM and the audio driver of QEMU. *Project
+  wan-lab* has those of the open project's ``project.toml``: the folders of
+  QEMU and VDE and two settings of the links. A line at the top of each page
+  says where they are kept. With no project open, the project page is
+  greyed, and says why.
+
+- **Rows that explain themselves.** Each setting has a label and a line of
+  help, the same words as the comments of the files.
+
+- **Menus of what the computer has.** The terminal offers those found that
+  can open a console, the audio driver those that the QEMU of the folder
+  lists, those that play sound first. The default terminal is now
+  ``x-terminal-emulator``, where it was ``/usr/bin/xterm``, which a desktop
+  doesn't always have.
+
+- **Folders that say what they hold.** Under the folder of QEMU, its version
+  and its programs; under that of VDE, whether the programs of the bricks
+  are there, or which one is missing and the package that has it. A folder
+  that doesn't exist is an error, which marks its page and greys OK, with the
+  reason in its tooltip.
+
+.. figure:: {static}/images/the-new-interface-of-virtualbricks-3-0/settings-project.png
+   :alt: The Settings window on the page Project wan-lab: the folders of
+         QEMU and VDE, each saying what it holds, and the two settings of
+         the links
+
+   The project's page: the QEMU folder has version 10.0.11, and the VDE
+   folder every program of the bricks.
+
+- **Cancel and OK.** OK writes only what you changed, so a setting changed
+  meanwhile from the console stays. Cancel changes nothing, KSM included:
+  KSM turns on or off at OK, and if it doesn't, the window stays open on its
+  row, which says why.
+
+- **No format for private copies.** A new private copy is always qcow2. The
+  menu of 2.1 also offered cow, which the QEMU of today no longer makes,
+  so a project set to it couldn't start a machine with a private disk. A
+  copy already made in qcow is still used.
+
+- **KSM at start.** The alert speaks of KSM only when the settings ask for
+  it, and says whether this Linux has none or it is still off. 2.1 said
+  "KSM not found in Linux" when KSM was only off, and turned the setting
+  off.
 
 
 Try it
