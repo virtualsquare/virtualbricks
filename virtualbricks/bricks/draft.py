@@ -54,7 +54,16 @@ from virtualbricks.i18n import _
 
 
 def copy(record):
-    """A copy of a record of settings, with copies of its lists."""
+    """
+    A copy of a record of settings, with copies of its lists.
+
+    attr.evolve() alone shares the lists with the record: one changed in
+    place would change the brick before OK, and the original too. Their
+    items, as the values of the other settings, are immutable, so copying
+    the lists is enough. attr.asdict() can't make the copy: it recurses by
+    default, and turns the items that are attrs instances, as the actions
+    of an event, into dicts, which their kind refuses.
+    """
 
     lists = {
         name: list(value)
