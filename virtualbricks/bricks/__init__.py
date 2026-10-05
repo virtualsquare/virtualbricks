@@ -356,7 +356,7 @@ class Base:
 def is_running(brick):
     """Whether a brick or an event is running."""
 
-    return brick.__isrunning__()
+    return brick.is_running()
 
 
 @define
@@ -659,7 +659,7 @@ class Brick(Base):
             state = _("off")
         return state
 
-    def __isrunning__(self):
+    def is_running(self):
         return self.proc is not None
 
     def __repr__(self):

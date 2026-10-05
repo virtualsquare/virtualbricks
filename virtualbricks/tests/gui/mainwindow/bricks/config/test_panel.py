@@ -136,7 +136,7 @@ class TestRunning(PanelTestCase):
     def test_whether_it_runs(self):
         panel = self.make(TwoRows, Draft(self.switch))
         self.assertFalse(panel.running())
-        self.switch.__isrunning__ = lambda: True
+        self.switch.is_running = lambda: True
         self.assertTrue(panel.running())
 
     def test_everything_at_once(self):

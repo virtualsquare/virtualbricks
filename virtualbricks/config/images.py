@@ -240,7 +240,7 @@ def uses(
                     private=private,
                     copy=copy,
                     copy_size=None if copy is None else taken(copy),
-                    running=brick.__isrunning__(),
+                    running=brick.is_running(),
                 )
             )
     return found
@@ -366,7 +366,7 @@ def start_over(vm: VirtualMachine, device: str, trasher=None) -> bool:
     the copy went to the trash.
     """
 
-    if vm.__isrunning__():
+    if vm.is_running():
         raise RunningError([vm.name])
     return discard(vm.disk(device).get_cow_path(), trasher)
 

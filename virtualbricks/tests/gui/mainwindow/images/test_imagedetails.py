@@ -148,7 +148,7 @@ class TestTheUses(DetailsTestCase):
         with open(r1.disk("hda").get_cow_path(), "wb") as fp:
             fp.write(b"x" * 5000)
         r2 = self.vm("r2", device="hdb")
-        r2.__isrunning__ = lambda: True
+        r2.is_running = lambda: True
         self.vm("vm", private=False)
         self.assertEqual(
             cells(self.details().uses),
@@ -231,5 +231,5 @@ class TestSaving(DetailsTestCase):
 
     def test_not_running(self):
         # a machine that uses it keeps its file, whatever the image's name
-        self.vm("r1").__isrunning__ = lambda: True
+        self.vm("r1").is_running = lambda: True
         self.assertFalse(self.details().running())

@@ -246,7 +246,7 @@ class ImagesTestCase(BrickTestCase):
         return path
 
     def running(self, vm):
-        vm.__isrunning__ = lambda: True
+        vm.is_running = lambda: True
         return vm
 
 

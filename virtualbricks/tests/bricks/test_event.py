@@ -128,7 +128,7 @@ class TestEvent(BrickTestCase):
         self.assertTrue(self.event.configured())
 
     def test_not_running(self):
-        self.assertFalse(self.event.__isrunning__())
+        self.assertFalse(self.event.is_running())
         self.assertIsNone(self.event.scheduled)
 
     def test_poweron_needs_a_configuration(self):
@@ -140,7 +140,7 @@ class TestEvent(BrickTestCase):
     def test_poweron_schedules_the_actions(self):
         self.configure(3, Recording("a on"))
         deferred = self.event.poweron()
-        self.assertTrue(self.event.__isrunning__())
+        self.assertTrue(self.event.is_running())
         [call] = self.clock.getDelayedCalls()
         self.assertEqual(call.getTime(), 3)
         self.assertFalse(deferred.called)
@@ -165,7 +165,7 @@ class TestEvent(BrickTestCase):
             Recording.performed,
             [("a on", self.factory), ("b on", self.factory)],
         )
-        self.assertFalse(self.event.__isrunning__())
+        self.assertFalse(self.event.is_running())
         self.assertEqual(self.clock.getDelayedCalls(), [])
         # the event is over
         self.assertEqual(self.changes, [self.event, self.event])
@@ -232,7 +232,7 @@ class TestEvent(BrickTestCase):
         self.event.poweron()
         del self.changes[:]
         self.assertIsNone(self.event.poweroff())
-        self.assertFalse(self.event.__isrunning__())
+        self.assertFalse(self.event.is_running())
         self.assertEqual(self.clock.getDelayedCalls(), [])
         self.assertEqual(self.changes, [self.event])
         self.clock.advance(5)

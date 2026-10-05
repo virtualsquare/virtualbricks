@@ -115,7 +115,7 @@ class ImagesTestCase(GuiTestCase):
         return vm
 
     def start(self, vm):
-        vm.__isrunning__ = lambda: True
+        vm.is_running = lambda: True
         vm.changed.notify(vm)
         return vm
 

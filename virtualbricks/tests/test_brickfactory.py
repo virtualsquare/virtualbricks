@@ -343,7 +343,7 @@ class TestUsers(BrickTestCase):
         self.assertEqual(self.changed, [self.halt, self.sw1, self.vm1])
 
     def test_a_running_brick_stays(self):
-        self.patch(self.sw1, "__isrunning__", lambda: True)
+        self.patch(self.sw1, "is_running", lambda: True)
         with self.assertRaises(errors.BrickRunningError):
             self.factory.remove_brick(self.sw1)
         self.assertEqual(len(self.boot.config.actions), 4)

@@ -63,7 +63,7 @@ class PictureTestCase(GuiTestCase):
         self.vm.connect(self.sw1.socks[0])
         self.vm.connect(self.sw2.socks[0])
         for brick in self.factory.bricks:
-            brick.__isrunning__ = lambda name=brick.name: name == "sw1"
+            brick.is_running = lambda name=brick.name: name == "sw1"
         self.lab = layout(self.factory.bricks)
         self.font = Pango.FontDescription.from_string(FONT)
 

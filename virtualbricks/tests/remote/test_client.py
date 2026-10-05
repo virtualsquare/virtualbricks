@@ -843,12 +843,12 @@ class TestFileCommands(ClientTestCase):
 
     def test_start_over_refused(self):
         copy = self.copy.get_brick("vm1")
-        self.vm.__isrunning__ = lambda: True
+        self.vm.is_running = lambda: True
         failure = self.refused(
             self.engine.start_over(copy, "hda"), ampcommands.BadArgument
         )
         self.assertIn("vm1", failure.getErrorMessage())
-        self.vm.__isrunning__ = lambda: False
+        self.vm.is_running = lambda: False
         self.refused(
             self.windows.callRemote(
                 commands.StartOver, vm="vm1", device="hdz"
@@ -935,7 +935,7 @@ class TestFileCommands(ClientTestCase):
             os.path.join(self.workspace.path, "vimages"), "new.qcow2"
         )
         self.qemu_img.infos[path] = INFO
-        self.vm.__isrunning__ = lambda: True
+        self.vm.is_running = lambda: True
         self.refused(
             self.engine.relink(self.copy.get_image("frr"), path),
             ampcommands.BadArgument,

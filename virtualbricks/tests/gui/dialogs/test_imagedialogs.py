@@ -373,7 +373,7 @@ class TestSave(DiskTestCase):
         self.assertFalse(dialog.action_button.get_sensitive())
 
     def test_not_while_it_runs(self):
-        self.r1.__isrunning__ = lambda: True
+        self.r1.is_running = lambda: True
         dialog = self.dialog()
         self.assertEqual(dialog.error_label.get_text(), "Stop r1 first.")
         self.assertFalse(dialog.action_button.get_sensitive())
@@ -471,8 +471,8 @@ class TestMerge(DiskTestCase):
         )
 
     def test_not_while_one_runs(self):
-        self.vm("r2", self.frr).__isrunning__ = lambda: True
-        self.vm("r3", self.frr).__isrunning__ = lambda: True
+        self.vm("r2", self.frr).is_running = lambda: True
+        self.vm("r3", self.frr).is_running = lambda: True
         dialog = self.dialog()
         self.assertEqual(
             dialog.error_label.get_text(), "Stop r2 and r3 first."
@@ -529,7 +529,7 @@ class TestStartOver(DiskTestCase):
         self.assertFalse(os.path.exists(self.copy))
 
     def test_not_while_it_runs(self):
-        self.r1.__isrunning__ = lambda: True
+        self.r1.is_running = lambda: True
         dialog = self.dialog()
         self.assertIn("Stop r1 first.", texts(dialog.dialog))
         self.assertFalse(dialog.action_button.get_sensitive())

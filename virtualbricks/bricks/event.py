@@ -57,7 +57,7 @@ class Event(Base):
     scheduled = None
     config_factory = EventConfig
 
-    def __isrunning__(self):
+    def is_running(self):
         return self.scheduled is not None
 
     def configured(self):

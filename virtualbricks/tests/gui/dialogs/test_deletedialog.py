@@ -155,7 +155,7 @@ class TestWhatItSays(DeleteTestCase):
         self.actions(self.halt, StopAction("boot"))
         self.sw1.update_config({"on_start": "boot"})
         self.vm1.update_config({"on_start": "boot", "on_stop": "boot"})
-        self.patch(self.boot, "__isrunning__", lambda: True)
+        self.patch(self.boot, "is_running", lambda: True)
         dialog = self.dialog(self.boot)
         self.assertEqual(dialog.dialog.get_title(), "Delete Event")
         self.assertEqual(
@@ -271,7 +271,7 @@ class TestTheDelete(DeleteTestCase):
     def test_a_refusal(self):
         # it started while the dialog was open
         dialog = self.dialog(self.sw1)
-        self.patch(self.sw1, "__isrunning__", lambda: True)
+        self.patch(self.sw1, "is_running", lambda: True)
         dialog.dialog.response(Gtk.ResponseType.OK)
         self.assertIs(self.factory.get_brick("sw1"), self.sw1)
         self.assertEqual(self.logger.levels(), ["error"])

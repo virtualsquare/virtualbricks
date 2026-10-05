@@ -117,7 +117,7 @@ class ViewTestCase(GuiTestCase):
         self.vm.connect(self.sw2.socks[0])
         self.running = {"sw1"}
         for brick in self.factory.bricks:
-            brick.__isrunning__ = lambda name=brick.name: name in self.running
+            brick.is_running = lambda name=brick.name: name in self.running
         self.lab = layout(self.factory.bricks)
         self.view = TopologyView()
         self.addCleanup(self.view.destroy)
