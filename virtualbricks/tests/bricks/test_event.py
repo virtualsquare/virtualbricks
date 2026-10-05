@@ -127,15 +127,6 @@ class TestEvent(BrickTestCase):
         self.event.update_config({"delay": 2})
         self.assertTrue(self.event.configured())
 
-    def test_state(self):
-        self.assertEqual(self.event.get_state(), "unconfigured")
-        self.configure(3, Recording("a on"))
-        self.assertEqual(self.event.get_state(), "off")
-        self.event.poweron()
-        self.assertEqual(self.event.get_state(), "running")
-        self.event.poweroff()
-        self.assertEqual(self.event.get_state(), "off")
-
     def test_not_running(self):
         self.assertFalse(self.event.__isrunning__())
         self.assertIsNone(self.event.scheduled)

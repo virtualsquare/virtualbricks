@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 17:01+0200\n"
+"POT-Creation-Date: 2026-10-05 18:31+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -439,18 +439,6 @@ msgstr ""
 msgid "when {brick} stops"
 msgstr ""
 
-#: virtualbricks/bricks/event.py virtualbricks/bricks/__init__.py
-msgid "running"
-msgstr ""
-
-#: virtualbricks/bricks/event.py
-msgid "unconfigured"
-msgstr ""
-
-#: virtualbricks/bricks/event.py virtualbricks/bricks/__init__.py
-msgid "off"
-msgstr ""
-
 #: virtualbricks/bricks/__init__.py
 #: virtualbricks/gui/mainwindow/bricks/config/vm/system.py
 msgid "Icon"
@@ -476,7 +464,15 @@ msgid "Cannot start '%s': not connected"
 msgstr ""
 
 #: virtualbricks/bricks/__init__.py
+msgid "running"
+msgstr ""
+
+#: virtualbricks/bricks/__init__.py
 msgid "disconnected"
+msgstr ""
+
+#: virtualbricks/bricks/__init__.py
+msgid "off"
 msgstr ""
 
 #: virtualbricks/bricks/netemu.py virtualbricks/gui/dialogs/addimage.py

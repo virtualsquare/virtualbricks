@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 15:55+0200\n"
+"POT-Creation-Date: 2026-10-05 18:31+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -455,18 +455,6 @@ msgstr "Avvia Mattone"
 msgid "when {brick} stops"
 msgstr "_Importa Mattoni"
 
-#: virtualbricks/bricks/event.py virtualbricks/bricks/__init__.py
-msgid "running"
-msgstr "acceso"
-
-#: virtualbricks/bricks/event.py
-msgid "unconfigured"
-msgstr "non configurato"
-
-#: virtualbricks/bricks/event.py virtualbricks/bricks/__init__.py
-msgid "off"
-msgstr "spento"
-
 #: virtualbricks/bricks/__init__.py
 #: virtualbricks/gui/mainwindow/bricks/config/vm/system.py
 msgid "Icon"
@@ -492,8 +480,16 @@ msgid "Cannot start '%s': not connected"
 msgstr "Impossibile avviare '%s': non connesso"
 
 #: virtualbricks/bricks/__init__.py
+msgid "running"
+msgstr "acceso"
+
+#: virtualbricks/bricks/__init__.py
 msgid "disconnected"
 msgstr "disconnesso"
+
+#: virtualbricks/bricks/__init__.py
+msgid "off"
+msgstr "spento"
 
 #: virtualbricks/bricks/netemu.py virtualbricks/gui/dialogs/addimage.py
 #: virtualbricks/gui/dialogs/imagedialogs.py
@@ -5321,6 +5317,9 @@ msgstr ""
 #, python-brace-format
 msgid "Missing in PATH: {programs}"
 msgstr ""
+
+#~ msgid "unconfigured"
+#~ msgstr "non configurato"
 
 #, fuzzy
 #~ msgid "No"

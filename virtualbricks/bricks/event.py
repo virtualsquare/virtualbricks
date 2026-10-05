@@ -32,7 +32,6 @@ from virtualbricks.bricks.eventaction import (
 )
 from virtualbricks.console.command import CommandError
 from virtualbricks.config.schema import Int, ListOf, define, field
-from virtualbricks.i18n import _
 
 process_ended = "Process ended with exit code {code}"
 action_failed = "Event {event}, action {number}, {action}: {error}"
@@ -60,17 +59,6 @@ class Event(Base):
 
     def __isrunning__(self):
         return self.scheduled is not None
-
-    def get_state(self):
-        """Return state of the event"""
-
-        if self.scheduled is not None:
-            state = _("running")
-        elif not self.configured():
-            state = _("unconfigured")
-        else:
-            state = _("off")
-        return state
 
     def configured(self):
         # a delay of 0 runs the actions at once
