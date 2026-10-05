@@ -12,21 +12,21 @@
 
         <meta name="author" content="Marco Giusti" />
 
-        <meta name="description" content="The tabs of the main window, one by one: the Bricks tab that took in the Running tab, the new Images tab, a Topology tab that zooms, a README in Markdown, and a messages window that reads like a console.
+        <meta name="description" content="The tabs of the main window, one by one: the Bricks tab that took in the Running tab, the new Images tab, a Topology tab that zooms, a README in Markdown, a messages window that reads like a console, and a Settings window that says what your folders hold.
 " />
         <meta property="og:type" content="article" />
         <meta name="twitter:card" content="summary">
 
-<meta name="keywords" content="release, develop, interface, bricks, images, topology, readme, logs, News, " />
+<meta name="keywords" content="release, develop, topology, readme, logs, gui, News, " />
 
 <meta property="og:title" content="Virtualbricks 3.0: a tour of the new interface "/>
-<meta property="og:url" content="https://www.virtualbricks.it/drafts/the-new-interface-of-virtualbricks-3-0.html" />
-<meta property="og:description" content="The tabs of the main window, one by one: the Bricks tab that took in the Running tab, the new Images tab, a Topology tab that zooms, a README in Markdown, and a messages window that reads like a console." />
+<meta property="og:url" content="https://www.virtualbricks.it/the-new-interface-of-virtualbricks-3-0.html" />
+<meta property="og:description" content="The tabs of the main window, one by one: the Bricks tab that took in the Running tab, the new Images tab, a Topology tab that zooms, a README in Markdown, a messages window that reads like a console, and a Settings window that says what your folders hold." />
 <meta property="og:site_name" content="Virtualbricks" />
 <meta property="og:article:author" content="Marco Giusti" />
-<meta property="og:article:published_time" content="2026-10-04T12:00:00+02:00" />
+<meta property="og:article:published_time" content="2026-10-05T12:00:00+02:00" />
 <meta name="twitter:title" content="Virtualbricks 3.0: a tour of the new interface ">
-<meta name="twitter:description" content="The tabs of the main window, one by one: the Bricks tab that took in the Running tab, the new Images tab, a Topology tab that zooms, a README in Markdown, and a messages window that reads like a console.">
+<meta name="twitter:description" content="The tabs of the main window, one by one: the Bricks tab that took in the Running tab, the new Images tab, a Topology tab that zooms, a README in Markdown, a messages window that reads like a console, and a Settings window that says what your folders hold.">
 
         <title>Virtualbricks 3.0: a tour of the new interface  · Virtualbricks
 </title>
@@ -55,6 +55,7 @@
                                 </li>
                                 <li ><a href="https://www.virtualbricks.it/pages/authors.html">Authors</a></li>
                                 <li  class="active"><a href="https://www.virtualbricks.it/category/news.html">News</a></li>
+                                <li ><a href="https://www.virtualbricks.it/category/documentation.html">Documentation</a></li>
                             </ul>
                         </div>
                     </div>
@@ -68,7 +69,7 @@
 <div class="row-fluid">
     <header class="page-header span10 offset2">
         <h1>
-            <a href="https://www.virtualbricks.it/drafts/the-new-interface-of-virtualbricks-3-0.html">
+            <a href="https://www.virtualbricks.it/the-new-interface-of-virtualbricks-3-0.html">
                 Virtualbricks 3.0: a tour of the new interface
             </a>
         </h1>
@@ -80,15 +81,15 @@
             
             <p>The <a class="reference external" href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html">first post</a>
 of this series was a map of what changed in the <tt class="docutils literal">develop</tt> branch. This one
-is about what you see: the tabs of the main window, one by one, and the
-messages window.</p>
+is about what you see: the tabs of the main window, one by one, the messages
+window and the Settings window.</p>
 <p>The screenshots show a small lab: two sites joined by a slow link, a Netemu
 with 20 ms of delay and 1% of the packets lost, two routers, a client and a
 tap that gives the host a way in.</p>
 <div class="section" id="the-bricks-tab">
 <h2>The Bricks tab</h2>
 <div class="figure">
-<img alt="The Bricks tab: a row for each of the eight bricks of the lab, six of them running" src="https://www.virtualbricks.it/images/new-ui/bricks.png" />
+<img alt="The Bricks tab: a row for each of the eight bricks of the lab, six of them running" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/bricks.png" />
 <p class="caption">The Bricks tab: six bricks of eight run. The tap couldn't start, and its
 icon is grey.</p>
 </div>
@@ -119,7 +120,8 @@ Escape go back to the list.</li>
 Topology tab open the same menu: Start or Stop, Configure…, Rename…,
 Duplicate, Connect To, the events to run when the brick starts and when
 it stops, Resume for a virtual machine, and Delete…. It has its keys:
-Enter, F2 and Delete.</li>
+Enter, F2 and Delete. Rename… and Delete… wait until the brick stops:
+while it runs they are greyed, and their keys do nothing.</li>
 <li><strong>Connecting.</strong> Connect To, in the menu, lists the bricks that this one
 can be plugged into. Dropping a brick on another still connects them.</li>
 </ul>
@@ -130,7 +132,7 @@ for their processes. Its Stop paused the process, which wasn't the Stop of
 the Bricks tab, and its Restart of a virtual machine sent an ACPI reset.</p>
 <p>The Running tab is gone, and its menu came to the Bricks tab:</p>
 <div class="figure">
-<img alt="The Bricks tab with only the running bricks, each with its process number, and the menu of r1 open on its process" src="https://www.virtualbricks.it/images/new-ui/bricks-process.png" />
+<img alt="The Bricks tab with only the running bricks, each with its process number, and the menu of r1 open on its process" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/bricks-process.png" />
 <p class="caption">Running shows the bricks that run, with their process. The menu of a
 running brick has a Process item, which slides to what the Running tab
 did.</p>
@@ -147,6 +149,32 @@ starts it again, a virtual machine too; Terminate and Kill.</li>
 <li><strong>Send ACPI powerdown</strong> is gone: Stop already does it.</li>
 </ul>
 </div>
+<div class="section" id="rename-and-delete">
+<h3>Rename and Delete</h3>
+<p>In 2.1, Delete asked &quot;Do you really want to delete sw2 (Switch)?&quot;, with No
+and Yes, and refused a running brick only after the Yes. A deleted brick
+stayed in the actions of the events that started it, and a deleted event in
+the bricks that ran it when they started.</p>
+<div class="figure">
+<img alt="The Delete Brick dialog of sw2: ne1 and r1 (eth1) will be plugged into nothing, and the event lab-up will no longer start sw2; Cancel and a red Delete" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/delete.png" style="width: 71%;" />
+<p class="caption">Before you delete sw2, the dialog says what goes with it.</p>
+</div>
+<ul class="simple">
+<li><strong>Delete…</strong> asks with Cancel and a red Delete, and says what changes: for
+a brick, the bricks plugged into it and the events that will no longer
+start or stop it; for an event, the bricks that will no longer run it
+when they start or stop. Then it does what it says: the plugs are
+unplugged, the actions leave the events, and the bricks forget the event.
+A waiting event stops.</li>
+<li><strong>The private copies of a machine</strong> go to the trash with it, and the
+dialog says so: a new machine with the same name would start from them.</li>
+<li><strong>Rename…</strong> opens on the name, selected, so typing replaces it. The line
+under the field says why a name can't be used, as &quot;sw1 is the name of a
+brick&quot;, or what it becomes when its spaces turn into underscores, and
+Rename waits for a name that can be used. The same dialog renames an
+event and an image.</li>
+</ul>
+</div>
 </div>
 <div class="section" id="the-images-tab">
 <h2>The Images tab</h2>
@@ -156,7 +184,7 @@ every machine. The library couldn't add an image, and removed one at once,
 even an image that disks used. They are all replaced by a tab, beside the
 Bricks and the Events, in the same shape:</p>
 <div class="figure">
-<img alt="The Images tab: three disk images, each with its format, its size, the space it takes and the disks that use it" src="https://www.virtualbricks.it/images/new-ui/images.png" />
+<img alt="The Images tab: three disk images, each with its format, its size, the space it takes and the disks that use it" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/images.png" />
 <p class="caption">A row for each image: what it is and who uses it.</p>
 </div>
 <ul class="simple">
@@ -180,7 +208,7 @@ changes. In 2.1, changing the path of an image made the next start of each
 machine put its private copy aside and begin from an empty one.</li>
 </ul>
 <div class="figure">
-<img alt="The details of the image frr-debian: its name, description, file, format, size, and the two disks that use it" src="https://www.virtualbricks.it/images/new-ui/images-details.png" />
+<img alt="The details of the image frr-debian: its name, description, file, format, size, and the two disks that use it" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/images-details.png" />
 <p class="caption">The details of an image, in the tab: what qemu-img says of it, and each
 disk that uses it.</p>
 </div>
@@ -195,7 +223,7 @@ same file.</p>
 each a list of names and a <em>Private COW</em> check. Now the Disks section shows
 the disks that the machine has, and Add Disk adds one on a free device:</p>
 <div class="figure">
-<img alt="The Disks section of the settings of pc1, with the image picker of its disk hda open" src="https://www.virtualbricks.it/images/new-ui/vm-disks-picker.png" />
+<img alt="The Disks section of the settings of pc1, with the image picker of its disk hda open" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/vm-disks-picker.png" />
 <p class="caption">Each disk has an image picker, with the facts of each image, and a mode.</p>
 </div>
 <ul class="simple">
@@ -220,7 +248,7 @@ its top left corner: no zoom, white in the dark theme, every brick in colour,
 running or not. Export as Image copied that PNG, so <tt class="docutils literal">lab.svg</tt> was a PNG
 file.</p>
 <div class="figure">
-<img alt="The Topology tab: the lab drawn from left to right, with the stopped bricks in grey and the zoom bar at the top right" src="https://www.virtualbricks.it/images/new-ui/topology.png" />
+<img alt="The Topology tab: the lab drawn from left to right, with the stopped bricks in grey and the zoom bar at the top right" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/topology.png" />
 <p class="caption">The picture takes the whole tab, and the zoom floats over it. Stopped
 bricks are grey, as in the Bricks tab.</p>
 </div>
@@ -246,16 +274,19 @@ on white, whatever the zoom and the theme.</li>
 <li><strong>The dark theme.</strong> The picture takes the colours of the theme:</li>
 </ul>
 <div class="figure">
-<img alt="The Topology tab in the dark theme of GTK" src="https://www.virtualbricks.it/images/new-ui/topology-dark.png" />
+<img alt="The Topology tab in the dark theme of GTK" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/topology-dark.png" />
 <p class="caption">The same lab, with the dark theme of Adwaita.</p>
 </div>
 </div>
 <div class="section" id="the-readme-tab">
 <h2>The Readme tab</h2>
-<p>The README of a project is now Markdown. It is still a plain text file,
-<tt class="docutils literal">README</tt>, so nothing changes on disk, in the archives or in the migration.</p>
+<p>The README of a project is now Markdown, and its file is <tt class="docutils literal">README.md</tt>. The
+<tt class="docutils literal">README</tt> of an older project, of 2.1 or of an earlier snapshot of 3.0,
+becomes <tt class="docutils literal">README.md</tt> when the project opens, when its archive is imported
+and when the migration copies it; until then the Projects window and the
+archives read either.</p>
 <div class="figure">
-<img alt="The Readme tab: the README of the lab rendered, with a heading, the picture of the topology, a list of addresses and a block of code" src="https://www.virtualbricks.it/images/new-ui/readme-picture.png" />
+<img alt="The Readme tab: the README of the lab rendered, with a heading, the picture of the topology, a list of addresses and a block of code" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/readme-picture.png" />
 <p class="caption">The README rendered, with a picture of the lab: the Topology tab
 exported it to the folder of the project.</p>
 </div>
@@ -279,7 +310,7 @@ or a file of more than 10 MB stays its text.</li>
 <li><strong>Help at hand.</strong> While you write, a third button shows the syntax:</li>
 </ul>
 <div class="figure">
-<img alt="The editor of the Readme tab, with the popover of the Markdown syntax open" src="https://www.virtualbricks.it/images/new-ui/readme-syntax.png" />
+<img alt="The editor of the Readme tab, with the popover of the Markdown syntax open" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/readme-syntax.png" />
 <p class="caption">The editor is plain text. The question mark shows the syntax.</p>
 </div>
 <p>The README is rendered in the Projects window too, and the Import dialog
@@ -296,9 +327,9 @@ of a module hid which brick it came from, whatever a program wrote on its
 standard error was an error, and there was no filter. Now it reads like a
 console:</p>
 <div class="figure">
-<img alt="The Logs window: the messages of a virtual machine and of a tap that starts, with their sources, a symbol for each level and the output of their programs" src="https://www.virtualbricks.it/images/new-ui/logs.png" />
-<p class="caption">The start of a virtual machine and of a tap that sudo didn't run, then
-a project that couldn't be saved.</p>
+<img alt="The Logs window: the messages of a switch, a virtual machine and a tap that start, with their sources, a symbol for each level and the output of their programs" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/logs.png" />
+<p class="caption">A switch and a virtual machine start, then a tap that sudo didn't run,
+and a project that couldn't be saved.</p>
 </div>
 <ul class="simple">
 <li><strong>One line, four columns.</strong> The time, dimmed when it repeats within the
@@ -308,12 +339,13 @@ Main window; a symbol for the level; and the message. The tooltip of the
 time has the date and the milliseconds, that of the source the type of the
 brick and its process.</li>
 <li><strong>Folds.</strong> The first line of a message shows, and the rest waits behind a
-toggle: &quot;▸ 2 more lines&quot;, or &quot;▸ traceback, 8 calls&quot;. Expand all and
+toggle: &quot;▸ 2 more lines&quot;, or &quot;▸ traceback, 6 calls&quot;. Expand all and
 Collapse all, in the menu, open or close them all.</li>
 <li><strong>Program output, as printed.</strong> What a program prints shows on a grey
 band, with <tt class="docutils literal">2&gt;</tt> before its standard error, line by line as a terminal
 shows it: the monitor of QEMU no longer comes as a dozen messages of
-escape codes. It has a symbol of its own, and the status bar counts its
+escape codes, and a line that is only its prompt, <tt class="docutils literal">(qemu)</tt>, isn't
+logged at all. It has a symbol of its own, and the status bar counts its
 lines apart from the errors.</li>
 <li><strong>A filter.</strong> The field in the header bar filters as you type.
 <tt class="docutils literal">level:warning</tt> keeps the warnings and the errors, <tt class="docutils literal">source:tap0,r1</tt>
@@ -332,6 +364,59 @@ before.</li>
 </ul>
 <p>The window keeps the latest 2,000 messages, where 2.1 kept them all for as
 long as it ran, and each window has its own filter and its own folds.</p>
+</div>
+<div class="section" id="the-settings-window">
+<h2>The Settings window</h2>
+<p><em>File › Settings</em> had three tabs in 2.1, General, VDE and Qemu, in the words
+of its Glade file: &quot;X-window terminal command&quot;, &quot;Binaries path&quot;, &quot;Private
+COW format&quot;. The folders showed &quot;(None)&quot;, the terminal was typed, the
+switch of KSM acted at once, before OK, and OK wrote every row back, also
+those you hadn't touched.</p>
+<div class="figure">
+<img alt="The Settings window on the page This computer: the sections Windows and Bricks, each row with a label, a line of help and its switch, menu or value" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/settings.png" />
+<p class="caption">This computer: the settings of the windows and of the bricks, kept in
+settings.toml.</p>
+</div>
+<ul class="simple">
+<li><strong>A page for each place the settings are kept.</strong> <em>This computer</em> has
+those of <tt class="docutils literal">settings.toml</tt>: the windows, as the terminal and the tray
+icon, and the bricks, as KSM and the audio driver of QEMU. <em>Project
+wan-lab</em> has those of the open project's <tt class="docutils literal">project.toml</tt>: the folders of
+QEMU and VDE and two settings of the links. A line at the top of each page
+says where they are kept. With no project open, the project page is
+greyed, and says why.</li>
+<li><strong>Rows that explain themselves.</strong> Each setting has a label and a line of
+help, the same words as the comments of the files.</li>
+<li><strong>Menus of what the computer has.</strong> The terminal offers those found that
+can open a console, the audio driver those that the QEMU of the folder
+lists, those that play sound first. The default terminal is now
+<tt class="docutils literal"><span class="pre">x-terminal-emulator</span></tt>, where it was <tt class="docutils literal">/usr/bin/xterm</tt>, which a desktop
+doesn't always have.</li>
+<li><strong>Folders that say what they hold.</strong> Under the folder of QEMU, its version
+and its programs; under that of VDE, whether the programs of the bricks
+are there, or which one is missing and the package that has it. A folder
+that doesn't exist is an error, which marks its page and greys OK, with the
+reason in its tooltip.</li>
+</ul>
+<div class="figure">
+<img alt="The Settings window on the page Project wan-lab: the folders of QEMU and VDE, each saying what it holds, and the two settings of the links" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/settings-project.png" />
+<p class="caption">The project's page: the QEMU folder has version 10.0.11, and the VDE
+folder every program of the bricks.</p>
+</div>
+<ul class="simple">
+<li><strong>Cancel and OK.</strong> OK writes only what you changed, so a setting changed
+meanwhile from the console stays. Cancel changes nothing, KSM included:
+KSM turns on or off at OK, and if it doesn't, the window stays open on its
+row, which says why.</li>
+<li><strong>No format for private copies.</strong> A new private copy is always qcow2. The
+menu of 2.1 also offered cow, which the QEMU of today no longer makes,
+so a project set to it couldn't start a machine with a private disk. A
+copy already made in qcow is still used.</li>
+<li><strong>KSM at start.</strong> The alert speaks of KSM only when the settings ask for
+it, and says whether this Linux has none or it is still off. 2.1 said
+&quot;KSM not found in Linux&quot; when KSM was only off, and turned the setting
+off.</li>
+</ul>
 </div>
 <div class="section" id="try-it">
 <h2>Try it</h2>
@@ -358,28 +443,28 @@ README with a picture, and tell us what breaks on <a class="reference external" 
         </div>
         <section id="article-sidebar" class="span2">
             <h4>Published</h4>
-            <time itemprop="dateCreated" datetime="2026-10-04T12:00:00+02:00">Sun 04 October 2026</time>
+            <time itemprop="dateCreated" datetime="2026-10-05T12:00:00+02:00">Mon 05 October 2026</time>
             <h4>Category</h4>
             <a class="category-link" href="https://www.virtualbricks.it/categories.html#news-ref">News</a>
             <h4>Tags</h4>
             <ul class="list-of-tags tags-in-article">
-                <li><a href="https://www.virtualbricks.it/tags.html#bricks-ref">bricks
-</a></li>
                 <li><a href="https://www.virtualbricks.it/tags.html#develop-ref">develop
-                    <span class="superscript">2</span>
+                    <span class="superscript">3</span>
 </a></li>
-                <li><a href="https://www.virtualbricks.it/tags.html#images-ref">images
-</a></li>
-                <li><a href="https://www.virtualbricks.it/tags.html#interface-ref">interface
+                <li><a href="https://www.virtualbricks.it/tags.html#gui-ref">gui
+                    <span class="superscript">1</span>
 </a></li>
                 <li><a href="https://www.virtualbricks.it/tags.html#logs-ref">logs
+                    <span class="superscript">1</span>
 </a></li>
                 <li><a href="https://www.virtualbricks.it/tags.html#readme-ref">readme
+                    <span class="superscript">1</span>
 </a></li>
                 <li><a href="https://www.virtualbricks.it/tags.html#release-ref">release
-                    <span class="superscript">2</span>
+                    <span class="superscript">3</span>
 </a></li>
                 <li><a href="https://www.virtualbricks.it/tags.html#topology-ref">topology
+                    <span class="superscript">1</span>
 </a></li>
             </ul>
             

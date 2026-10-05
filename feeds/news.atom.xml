@@ -1,5 +1,354 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Virtualbricks - News</title><link href="https://www.virtualbricks.it/" rel="alternate"/><link href="https://www.virtualbricks.it/feeds/news.atom.xml" rel="self"/><id>https://www.virtualbricks.it/</id><updated>2026-10-04T12:00:00+02:00</updated><entry><title>Virtualbricks 3.0: projects, workspaces and the new files</title><link href="https://www.virtualbricks.it/projects-workspaces-and-files-in-virtualbricks-3-0.html" rel="alternate"/><published>2026-10-04T12:00:00+02:00</published><updated>2026-10-04T12:00:00+02:00</updated><author><name>Marco Giusti</name></author><id>tag:www.virtualbricks.it,2026-10-04:/projects-workspaces-and-files-in-virtualbricks-3-0.html</id><summary type="html">&lt;p class="first last"&gt;Where Virtualbricks 3.0 keeps your settings and your labs, why
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Virtualbricks - News</title><link href="https://www.virtualbricks.it/" rel="alternate"/><link href="https://www.virtualbricks.it/feeds/news.atom.xml" rel="self"/><id>https://www.virtualbricks.it/</id><updated>2026-10-05T12:00:00+02:00</updated><entry><title>Virtualbricks 3.0: a tour of the new interface</title><link href="https://www.virtualbricks.it/the-new-interface-of-virtualbricks-3-0.html" rel="alternate"/><published>2026-10-05T12:00:00+02:00</published><updated>2026-10-05T12:00:00+02:00</updated><author><name>Marco Giusti</name></author><id>tag:www.virtualbricks.it,2026-10-05:/the-new-interface-of-virtualbricks-3-0.html</id><summary type="html">&lt;p class="first last"&gt;The tabs of the main window, one by one: the Bricks tab that took
+in the Running tab, the new Images tab, a Topology tab that zooms,
+a README in Markdown, a messages window that reads like a
+console, and a Settings window that says what your folders hold.&lt;/p&gt;
+</summary><content type="html">&lt;p&gt;The &lt;a class="reference external" href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html"&gt;first post&lt;/a&gt;
+of this series was a map of what changed in the &lt;tt class="docutils literal"&gt;develop&lt;/tt&gt; branch. This one
+is about what you see: the tabs of the main window, one by one, the messages
+window and the Settings window.&lt;/p&gt;
+&lt;p&gt;The screenshots show a small lab: two sites joined by a slow link, a Netemu
+with 20 ms of delay and 1% of the packets lost, two routers, a client and a
+tap that gives the host a way in.&lt;/p&gt;
+&lt;div class="section" id="the-bricks-tab"&gt;
+&lt;h2&gt;The Bricks tab&lt;/h2&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Bricks tab: a row for each of the eight bricks of the lab, six of them running" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/bricks.png" /&gt;
+&lt;p class="caption"&gt;The Bricks tab: six bricks of eight run. The tap couldn't start, and its
+icon is grey.&lt;/p&gt;
+&lt;/div&gt;
+&lt;p&gt;The Bricks tab of 2.1 was a list of five columns: an icon, the state, the
+type, the name, fourth, and the parameters, the text that the console
+prints. A double click started or stopped a brick, also a running virtual
+machine, without asking; everything else was in the menu of the right
+button, which nothing pointed to. Now:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;A row for each brick.&lt;/strong&gt; Its icon, grey when the brick is stopped; its
+name; its kind in words and what matters about it, as
+&lt;tt class="docutils literal"&gt;Netemu · sw2 ↔ sw3 · 20 ms · 1% loss&lt;/tt&gt;; its state; then Start or Stop,
+and its menu.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;States in words.&lt;/strong&gt; Running, with a green dot, or Stopped, with a grey
+one. A brick that can't start says why, with a warning sign: a wire with a
+free end is &lt;em&gt;Not connected&lt;/em&gt;, and its Start button tells you to connect it
+first; a tunnel client without a host is &lt;em&gt;Not configured&lt;/em&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;A row above the list.&lt;/strong&gt; New Brick; the search, which finds a brick by
+name or by kind, with Ctrl+F or by typing in the list; the switch between
+all the bricks and the running ones; how many run; Start All and Stop All.
+Start All starts the bricks that can start and leaves the others, where it
+used to fail on each of them.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The settings in the tab.&lt;/strong&gt; A double click or Enter shows the settings
+of a brick in place of the list, under a line that names the brick and
+its kind. The menus and the other tabs stay where they are; Cancel, OK or
+Escape go back to the list.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;One menu.&lt;/strong&gt; The button at the end of the row, the right button and the
+Topology tab open the same menu: Start or Stop, Configure…, Rename…,
+Duplicate, Connect To, the events to run when the brick starts and when
+it stops, Resume for a virtual machine, and Delete…. It has its keys:
+Enter, F2 and Delete. Rename… and Delete… wait until the brick stops:
+while it runs they are greyed, and their keys do nothing.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Connecting.&lt;/strong&gt; Connect To, in the menu, lists the bricks that this one
+can be plugged into. Dropping a brick on another still connects them.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="section" id="the-running-tab-is-a-menu-now"&gt;
+&lt;h3&gt;The Running tab is a menu now&lt;/h3&gt;
+&lt;p&gt;Virtualbricks 2.1 had a tab of its own for the bricks that run, with a menu
+for their processes. Its Stop paused the process, which wasn't the Stop of
+the Bricks tab, and its Restart of a virtual machine sent an ACPI reset.&lt;/p&gt;
+&lt;p&gt;The Running tab is gone, and its menu came to the Bricks tab:&lt;/p&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Bricks tab with only the running bricks, each with its process number, and the menu of r1 open on its process" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/bricks-process.png" /&gt;
+&lt;p class="caption"&gt;Running shows the bricks that run, with their process. The menu of a
+running brick has a Process item, which slides to what the Running tab
+did.&lt;/p&gt;
+&lt;/div&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;Running&lt;/strong&gt;, the switch above the list, shows only the bricks that run,
+with the number of their process in place of the summary. With &lt;strong&gt;All&lt;/strong&gt;,
+the number is in the tooltip of the state.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Process&lt;/strong&gt;, in the menu of a running brick, slides to the actions on its
+process: Open Control Monitor; Pause and Continue, which stop and resume
+the process; for a virtual machine, Suspend, which saves its state in its
+disk, and Reset, its reset button; Restart, which stops the brick and
+starts it again, a virtual machine too; Terminate and Kill.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Send ACPI powerdown&lt;/strong&gt; is gone: Stop already does it.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class="section" id="rename-and-delete"&gt;
+&lt;h3&gt;Rename and Delete&lt;/h3&gt;
+&lt;p&gt;In 2.1, Delete asked &amp;quot;Do you really want to delete sw2 (Switch)?&amp;quot;, with No
+and Yes, and refused a running brick only after the Yes. A deleted brick
+stayed in the actions of the events that started it, and a deleted event in
+the bricks that ran it when they started.&lt;/p&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Delete Brick dialog of sw2: ne1 and r1 (eth1) will be plugged into nothing, and the event lab-up will no longer start sw2; Cancel and a red Delete" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/delete.png" style="width: 71%;" /&gt;
+&lt;p class="caption"&gt;Before you delete sw2, the dialog says what goes with it.&lt;/p&gt;
+&lt;/div&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;Delete…&lt;/strong&gt; asks with Cancel and a red Delete, and says what changes: for
+a brick, the bricks plugged into it and the events that will no longer
+start or stop it; for an event, the bricks that will no longer run it
+when they start or stop. Then it does what it says: the plugs are
+unplugged, the actions leave the events, and the bricks forget the event.
+A waiting event stops.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The private copies of a machine&lt;/strong&gt; go to the trash with it, and the
+dialog says so: a new machine with the same name would start from them.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Rename…&lt;/strong&gt; opens on the name, selected, so typing replaces it. The line
+under the field says why a name can't be used, as &amp;quot;sw1 is the name of a
+brick&amp;quot;, or what it becomes when its spaces turn into underscores, and
+Rename waits for a name that can be used. The same dialog renames an
+event and an image.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-images-tab"&gt;
+&lt;h2&gt;The Images tab&lt;/h2&gt;
+&lt;p&gt;In 2.1, four places managed the disk images: the image library window, the
+other items of the &lt;em&gt;Disk images&lt;/em&gt; menu, and three buttons in the settings of
+every machine. The library couldn't add an image, and removed one at once,
+even an image that disks used. They are all replaced by a tab, beside the
+Bricks and the Events, in the same shape:&lt;/p&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Images tab: three disk images, each with its format, its size, the space it takes and the disks that use it" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/images.png" /&gt;
+&lt;p class="caption"&gt;A row for each image: what it is and who uses it.&lt;/p&gt;
+&lt;/div&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;A row for each image.&lt;/strong&gt; Its format, the size of the disk the machine
+sees, the space the file takes, and which disks use it and how: on a
+private copy, or the image itself. Its state is &lt;em&gt;In use&lt;/em&gt; while a running
+machine reads it, &lt;em&gt;Not in use&lt;/em&gt;, &lt;em&gt;No disk&lt;/em&gt; when no disk uses it, or &lt;em&gt;File
+missing&lt;/em&gt;. The facts come from &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;qemu-img&lt;/span&gt; info&lt;/tt&gt;, read in the background,
+so the list fills in as each file is read.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Add Image&lt;/strong&gt; adds an &lt;em&gt;Existing Image…&lt;/em&gt;, read with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;qemu-img&lt;/span&gt; info&lt;/tt&gt; as
+soon as you choose it and copied to the image folder unless you say
+otherwise, or a &lt;em&gt;New Empty Disk…&lt;/em&gt;, qcow2 or raw, which is added to the
+project at once. In 2.1, a new image had to be added again, from its file.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The menu&lt;/strong&gt; of an image has Details…, Rename…, Show in Files and
+Remove…. Remove says which disks lose their image, and offers to move the
+file to the trash only when it is in the image folder and no other project
+uses it.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Find the File…&lt;/strong&gt; comes first in the menu of an image whose file is
+missing. It points the private copies at the new file before the path
+changes. In 2.1, changing the path of an image made the next start of each
+machine put its private copy aside and begin from an empty one.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The details of the image frr-debian: its name, description, file, format, size, and the two disks that use it" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/images-details.png" /&gt;
+&lt;p class="caption"&gt;The details of an image, in the tab: what qemu-img says of it, and each
+disk that uses it.&lt;/p&gt;
+&lt;/div&gt;
+&lt;p&gt;The details show in the tab, as the settings of a brick do: the name and the
+description, which you can change, then the file, its format and backing
+file, the sizes, the snapshots, when it changed, each disk that uses the
+image with the size of its private copy, and the other projects that use the
+same file.&lt;/p&gt;
+&lt;div class="section" id="the-disks-of-a-machine"&gt;
+&lt;h3&gt;The disks of a machine&lt;/h3&gt;
+&lt;p&gt;The Drives tab of a virtual machine had seven rows, from hda to mtdblock,
+each a list of names and a &lt;em&gt;Private COW&lt;/em&gt; check. Now the Disks section shows
+the disks that the machine has, and Add Disk adds one on a free device:&lt;/p&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Disks section of the settings of pc1, with the image picker of its disk hda open" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/vm-disks-picker.png" /&gt;
+&lt;p class="caption"&gt;Each disk has an image picker, with the facts of each image, and a mode.&lt;/p&gt;
+&lt;/div&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;The picker&lt;/strong&gt; lists the images of the project, with what each is and who
+uses it, then Add an Existing Image…, New Empty Disk… and Manage
+Images…, which shows the Images tab.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The mode&lt;/strong&gt; is &lt;em&gt;Private copy&lt;/em&gt;, the default, or &lt;em&gt;The image itself&lt;/em&gt;. A line
+under the disk says what it does: &amp;quot;pc1's changes will be kept in
+pc1_hda.cow, made at the next start; debian-13 stays as it is.&amp;quot;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The menu of a disk&lt;/strong&gt; has Save as a New Image…, then Merge into and
+Start Over from its image, Show in Files and Remove Disk. Merge lists
+everything else that uses the image, here and in the other projects, and
+offers to save a new image instead. Save and Merge run in the background,
+with their progress, and can be stopped.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-topology-tab"&gt;
+&lt;h2&gt;The Topology tab&lt;/h2&gt;
+&lt;p&gt;In 2.1, the Topology tab was a PNG that Graphviz drew at one size, pinned to
+its top left corner: no zoom, white in the dark theme, every brick in colour,
+running or not. Export as Image copied that PNG, so &lt;tt class="docutils literal"&gt;lab.svg&lt;/tt&gt; was a PNG
+file.&lt;/p&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Topology tab: the lab drawn from left to right, with the stopped bricks in grey and the zoom bar at the top right" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/topology.png" /&gt;
+&lt;p class="caption"&gt;The picture takes the whole tab, and the zoom floats over it. Stopped
+bricks are grey, as in the Bricks tab.&lt;/p&gt;
+&lt;/div&gt;
+&lt;p&gt;Now Graphviz only places the bricks, and Virtualbricks draws them with
+cairo:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;The zoom.&lt;/strong&gt; A dark bar floats over the top right corner: zoom out, the
+zoom level, zoom in, fit all, and a menu. The zoom goes through fixed
+levels from 10% to 400%, and a click on the level goes back to 100%. The
+tab opens fitted, and the picture fits again when the tab changes size or
+the lab changes, until you zoom. Fitting never goes above 100%, so a small
+lab keeps its size, in the middle of the tab.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Mouse and keys.&lt;/strong&gt; Ctrl and the wheel, or a pinch on a touchpad, zoom
+around the pointer, as a map does. Dragging the background moves the
+picture. Ctrl++, Ctrl+−, Ctrl+0 for 100%, and F for fit all.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The bricks.&lt;/strong&gt; A stopped brick is grey. The brick under the pointer
+lights up, with its name, its type and its state in a tooltip. The right
+button opens the menu of the Bricks tab, and a double click opens its
+settings.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The menu&lt;/strong&gt; of the bar has the direction of the layout, left to right or
+top to bottom, and Export as Image…: a PNG, an SVG or a PDF, at 100% and
+on white, whatever the zoom and the theme.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The dark theme.&lt;/strong&gt; The picture takes the colours of the theme:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Topology tab in the dark theme of GTK" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/topology-dark.png" /&gt;
+&lt;p class="caption"&gt;The same lab, with the dark theme of Adwaita.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-readme-tab"&gt;
+&lt;h2&gt;The Readme tab&lt;/h2&gt;
+&lt;p&gt;The README of a project is now Markdown, and its file is &lt;tt class="docutils literal"&gt;README.md&lt;/tt&gt;. The
+&lt;tt class="docutils literal"&gt;README&lt;/tt&gt; of an older project, of 2.1 or of an earlier snapshot of 3.0,
+becomes &lt;tt class="docutils literal"&gt;README.md&lt;/tt&gt; when the project opens, when its archive is imported
+and when the migration copies it; until then the Projects window and the
+archives read either.&lt;/p&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Readme tab: the README of the lab rendered, with a heading, the picture of the topology, a list of addresses and a block of code" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/readme-picture.png" /&gt;
+&lt;p class="caption"&gt;The README rendered, with a picture of the lab: the Topology tab
+exported it to the folder of the project.&lt;/p&gt;
+&lt;/div&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;The preview first.&lt;/strong&gt; The tab opens on the README rendered. Two buttons
+float over its top right corner: the pencil opens the editor, the eye goes
+back to the preview. The editor saves 30 seconds after your last change,
+and when you leave the tab.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The syntax&lt;/strong&gt; is the core of CommonMark that GitHub, GitLab and most
+editors share: headings, bold, italic and struck text, code, lists,
+quotes, links and rules. A link opens in your browser, and a bare URL is a
+link too. Anything else, as a table, shows as you typed it.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Old READMEs read the same.&lt;/strong&gt; A new line in a paragraph stays a new line,
+as in the comments of GitHub, so a README written as plain text keeps its
+lines. What changes is what already looked like Markdown: a line that
+starts with &lt;tt class="docutils literal"&gt;-&lt;/tt&gt; is now a list item.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Pictures.&lt;/strong&gt; A picture that is a file of the folder of the project shows
+in the preview, as wide as it is or as the tab:
+&lt;tt class="docutils literal"&gt;![The &lt;span class="pre"&gt;lab](topology.png)&lt;/span&gt;&lt;/tt&gt;. A URL, a path that leads out of the folder
+or a file of more than 10 MB stays its text.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Help at hand.&lt;/strong&gt; While you write, a third button shows the syntax:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The editor of the Readme tab, with the popover of the Markdown syntax open" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/readme-syntax.png" /&gt;
+&lt;p class="caption"&gt;The editor is plain text. The question mark shows the syntax.&lt;/p&gt;
+&lt;/div&gt;
+&lt;p&gt;The README is rendered in the Projects window too, and the Import dialog
+shows its first paragraph.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-messages-window"&gt;
+&lt;h2&gt;The messages window&lt;/h2&gt;
+&lt;p&gt;&lt;em&gt;File › Logs&lt;/em&gt;, where 2.1 had &lt;em&gt;View › Messages&lt;/em&gt;, opens the messages of the
+run: those of Virtualbricks, of its bricks, and what their programs print.&lt;/p&gt;
+&lt;p&gt;In 2.1 the window was one text view, and each message a line of
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;2026-09-24T17:47:09+0200&lt;/span&gt; [virtualbricks.bricks.Process#error] …&lt;/tt&gt;,
+coloured by its level. The message started some 60 characters in, the path
+of a module hid which brick it came from, whatever a program wrote on its
+standard error was an error, and there was no filter. Now it reads like a
+console:&lt;/p&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Logs window: the messages of a switch, a virtual machine and a tap that start, with their sources, a symbol for each level and the output of their programs" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/logs.png" /&gt;
+&lt;p class="caption"&gt;A switch and a virtual machine start, then a tap that sudo didn't run,
+and a project that couldn't be saved.&lt;/p&gt;
+&lt;/div&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;One line, four columns.&lt;/strong&gt; The time, dimmed when it repeats within the
+same second, with a line for each day; the source, the name of a brick in
+blue after its icon, or the part of Virtualbricks in grey, as Project or
+Main window; a symbol for the level; and the message. The tooltip of the
+time has the date and the milliseconds, that of the source the type of the
+brick and its process.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Folds.&lt;/strong&gt; The first line of a message shows, and the rest waits behind a
+toggle: &amp;quot;▸ 2 more lines&amp;quot;, or &amp;quot;▸ traceback, 6 calls&amp;quot;. Expand all and
+Collapse all, in the menu, open or close them all.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Program output, as printed.&lt;/strong&gt; What a program prints shows on a grey
+band, with &lt;tt class="docutils literal"&gt;2&amp;gt;&lt;/tt&gt; before its standard error, line by line as a terminal
+shows it: the monitor of QEMU no longer comes as a dozen messages of
+escape codes, and a line that is only its prompt, &lt;tt class="docutils literal"&gt;(qemu)&lt;/tt&gt;, isn't
+logged at all. It has a symbol of its own, and the status bar counts its
+lines apart from the errors.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;A filter.&lt;/strong&gt; The field in the header bar filters as you type.
+&lt;tt class="docutils literal"&gt;level:warning&lt;/tt&gt; keeps the warnings and the errors, &lt;tt class="docutils literal"&gt;source:tap0,r1&lt;/tt&gt;
+the messages of those bricks, &lt;tt class="docutils literal"&gt;source:qemu&lt;/tt&gt; those of every virtual
+machine, and any other word the messages that have it. The standard error
+of a program counts as a warning, so &lt;tt class="docutils literal"&gt;level:warning&lt;/tt&gt; keeps the
+complaint of sudo next to the error it explains. Ctrl+F goes to the
+field, Escape empties it.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Following.&lt;/strong&gt; New messages scroll into view while &lt;em&gt;Following&lt;/em&gt; is on.
+Scrolling up turns it off, to read; scrolling back to the end turns it on.
+The status bar counts the messages, the errors, the warnings and the lines
+of program output.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The menu&lt;/strong&gt; has Expand all, Collapse all, Save…, Report a bug… and
+Clear. Save and Report a bug write every message, whatever the filter, as
+before.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The window keeps the latest 2,000 messages, where 2.1 kept them all for as
+long as it ran, and each window has its own filter and its own folds.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-settings-window"&gt;
+&lt;h2&gt;The Settings window&lt;/h2&gt;
+&lt;p&gt;&lt;em&gt;File › Settings&lt;/em&gt; had three tabs in 2.1, General, VDE and Qemu, in the words
+of its Glade file: &amp;quot;X-window terminal command&amp;quot;, &amp;quot;Binaries path&amp;quot;, &amp;quot;Private
+COW format&amp;quot;. The folders showed &amp;quot;(None)&amp;quot;, the terminal was typed, the
+switch of KSM acted at once, before OK, and OK wrote every row back, also
+those you hadn't touched.&lt;/p&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Settings window on the page This computer: the sections Windows and Bricks, each row with a label, a line of help and its switch, menu or value" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/settings.png" /&gt;
+&lt;p class="caption"&gt;This computer: the settings of the windows and of the bricks, kept in
+settings.toml.&lt;/p&gt;
+&lt;/div&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;A page for each place the settings are kept.&lt;/strong&gt; &lt;em&gt;This computer&lt;/em&gt; has
+those of &lt;tt class="docutils literal"&gt;settings.toml&lt;/tt&gt;: the windows, as the terminal and the tray
+icon, and the bricks, as KSM and the audio driver of QEMU. &lt;em&gt;Project
+wan-lab&lt;/em&gt; has those of the open project's &lt;tt class="docutils literal"&gt;project.toml&lt;/tt&gt;: the folders of
+QEMU and VDE and two settings of the links. A line at the top of each page
+says where they are kept. With no project open, the project page is
+greyed, and says why.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Rows that explain themselves.&lt;/strong&gt; Each setting has a label and a line of
+help, the same words as the comments of the files.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Menus of what the computer has.&lt;/strong&gt; The terminal offers those found that
+can open a console, the audio driver those that the QEMU of the folder
+lists, those that play sound first. The default terminal is now
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;x-terminal-emulator&lt;/span&gt;&lt;/tt&gt;, where it was &lt;tt class="docutils literal"&gt;/usr/bin/xterm&lt;/tt&gt;, which a desktop
+doesn't always have.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Folders that say what they hold.&lt;/strong&gt; Under the folder of QEMU, its version
+and its programs; under that of VDE, whether the programs of the bricks
+are there, or which one is missing and the package that has it. A folder
+that doesn't exist is an error, which marks its page and greys OK, with the
+reason in its tooltip.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="figure"&gt;
+&lt;img alt="The Settings window on the page Project wan-lab: the folders of QEMU and VDE, each saying what it holds, and the two settings of the links" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/settings-project.png" /&gt;
+&lt;p class="caption"&gt;The project's page: the QEMU folder has version 10.0.11, and the VDE
+folder every program of the bricks.&lt;/p&gt;
+&lt;/div&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;Cancel and OK.&lt;/strong&gt; OK writes only what you changed, so a setting changed
+meanwhile from the console stays. Cancel changes nothing, KSM included:
+KSM turns on or off at OK, and if it doesn't, the window stays open on its
+row, which says why.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;No format for private copies.&lt;/strong&gt; A new private copy is always qcow2. The
+menu of 2.1 also offered cow, which the QEMU of today no longer makes,
+so a project set to it couldn't start a machine with a private disk. A
+copy already made in qcow is still used.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;KSM at start.&lt;/strong&gt; The alert speaks of KSM only when the settings ask for
+it, and says whether this Linux has none or it is still off. 2.1 said
+&amp;quot;KSM not found in Linux&amp;quot; when KSM was only off, and turned the setting
+off.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class="section" id="try-it"&gt;
+&lt;h2&gt;Try it&lt;/h2&gt;
+&lt;p&gt;All of this is in the &lt;tt class="docutils literal"&gt;develop&lt;/tt&gt; branch: the &lt;a class="reference external" href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html"&gt;first post&lt;/a&gt; says how to
+install it. Open one of your labs, look at it in the Topology tab, give it a
+README with a picture, and tell us what breaks on &lt;a class="reference external" href="https://github.com/virtualsquare/virtualbricks/issues"&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+</content><category term="News"/><category term="release"/><category term="develop"/><category term="topology"/><category term="readme"/><category term="logs"/><category term="gui"/></entry><entry><title>Virtualbricks 3.0: projects, workspaces and the new files</title><link href="https://www.virtualbricks.it/projects-workspaces-and-files-in-virtualbricks-3-0.html" rel="alternate"/><published>2026-10-04T12:00:00+02:00</published><updated>2026-10-04T12:00:00+02:00</updated><author><name>Marco Giusti</name></author><id>tag:www.virtualbricks.it,2026-10-04:/projects-workspaces-and-files-in-virtualbricks-3-0.html</id><summary type="html">&lt;p class="first last"&gt;Where Virtualbricks 3.0 keeps your settings and your labs, why
 every file is now TOML, how workspaces let two labs run side by
 side, and how a project travels to another computer in a .vbp
 archive.&lt;/p&gt;
