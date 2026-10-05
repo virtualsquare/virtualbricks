@@ -61,18 +61,7 @@ class Event(Base):
         return self.scheduled is not None
 
     def configured(self):
-        # a delay of 0 runs the actions at once
         return len(self.config.actions) > 0
-
-    # def connect(self, endpoint):
-    #     return True
-
-    # def disconnect(self):
-    #     return
-
-    ############################
-    ########### Poweron/Poweroff
-    ############################
 
     def start(self):
         if self.scheduled:

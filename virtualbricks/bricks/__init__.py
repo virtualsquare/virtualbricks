@@ -407,7 +407,6 @@ class Brick(Base):
         Base.__init__(self, factory, name)
         self.plugs = []
         self.socks = []
-        self.config_socks = []
 
     def start(self, resume=""):
         """
@@ -455,7 +454,11 @@ class Brick(Base):
         self._exited_d = defer.Deferred()
         self._linking = True
         try:
-            d = self._check_links()
+            d = defer.DeferredList(
+                [plug.connected() for plug in self.plugs],
+                fireOnOneErrback=True,
+                consumeErrors=True,
+            )
         finally:
             self._linking = False
         d.addCallback(lambda _: self.prepare(resume))
@@ -546,12 +549,6 @@ class Brick(Base):
     def configured(self):
         return False
 
-    def _check_links(self):
-        deferreds = [plug.connected() for plug in self.plugs]
-        return defer.DeferredList(
-            deferreds, fireOnOneErrback=True, consumeErrors=True
-        )
-
     def prepare(self, resume=""):
         """
         Gather what the command line needs: here, the VDE programs.
@@ -633,10 +630,6 @@ class Brick(Base):
             if p.configured():
                 p.disconnect()
         self.changed.notify(self)
-
-    ############################
-    ########### Poweron/Poweroff
-    ############################
 
     def open_console(self):
         term = get_setting("terminal")
