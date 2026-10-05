@@ -266,25 +266,46 @@ class TestRemoteApplication(RemoteTestCase):
             str(failure.value), "Can't reach /run/lab.amp: Connection refused"
         )
 
-    def lacking(self):
+    def lacking(self, available=False):
         """The machine there lacks KSM and a program."""
 
         self.patch(follower.ksm, "check_ksm", lambda: False)
+        self.patch(follower.ksm, "ksm_available", lambda: available)
         self.patch(
             follower, "missing_programs", lambda vde, qemu: ["vde_switch"]
         )
 
-    def test_the_warning_at_start(self):
-        self.lacking()
-        self.launch()
+    def wanting_ksm(self):
+        settings.set_setting("kernel_samepage_merging", True)
+
+    def warning(self):
         self.assertEqual(self.logger.levels(), ["error"])
         [(_level, text, fields)] = self.logger.events
         self.assertEqual(text, window.components_not_found)
+        return fields["text"]
+
+    def test_the_warning_at_start(self):
+        self.lacking()
+        self.launch(self.wanting_ksm)
         self.assertEqual(
-            fields["text"],
+            self.warning(),
             window.ksm_not_found
             + "\n"
             + window.programs_not_found.format(programs="vde_switch"),
+        )
+
+    def test_ksm_still_off_there(self):
+        self.lacking(available=True)
+        self.launch(self.wanting_ksm)
+        self.assertEqual(self.warning().splitlines()[0], window.ksm_still_off)
+
+    def test_ksm_not_asked_for(self):
+        # off, as the settings there want it
+        self.lacking()
+        self.launch()
+        self.assertEqual(
+            self.warning(),
+            window.programs_not_found.format(programs="vde_switch"),
         )
 
     def test_no_warning(self):

@@ -257,7 +257,7 @@ class TestCreate(WorkspaceTestCase):
         self.projects.create("lab")
         data = load_toml(self.project_file("lab"))
         self.assertEqual(data["format"], FORMAT)
-        self.assertEqual(data["settings"]["cow_format"], "qcow2")
+        self.assertEqual(data["settings"]["qemu_path"], "/usr/bin")
         self.assertFalse(
             os.path.exists(os.path.join(self.path, "lab", "README"))
         )
@@ -265,10 +265,10 @@ class TestCreate(WorkspaceTestCase):
     def test_a_new_project_copies_the_open_one(self):
         self.projects.create("lab")
         self.projects.open("lab", self.factory)
-        set_setting("cow_format", "qcow")
+        set_setting("qemu_path", "/opt/qemu")
         self.projects.create("lab2")
         data = load_toml(self.project_file("lab2"))
-        self.assertEqual(data["settings"]["cow_format"], "qcow")
+        self.assertEqual(data["settings"]["qemu_path"], "/opt/qemu")
 
     def test_description(self):
         self.projects.create("lab", "OSPF between three routers")

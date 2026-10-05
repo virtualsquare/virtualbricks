@@ -157,12 +157,19 @@ settings they have: the last one to write wins.
     workspace it started in, whose lock it holds: a new value is for the
     next start.
 
-**terminal** = *string*, default `"/usr/bin/xterm"`
-:   The terminal that opens the console of a brick.
+**terminal** = *string*, default `"x-terminal-emulator"`
+:   The terminal that opens the console of a brick, a program in **PATH** or
+    a path to one. Virtualbricks runs it as *terminal* **-e** *program*
+    *arguments*, so it must take **-e** that way, as **xterm**(1) and
+    **konsole**(1) do. The default is the terminal of your desktop on Debian
+    and Ubuntu, through a wrapper for one that takes **-e** otherwise, as
+    GNOME Terminal does.
 
 **kernel_samepage_merging** = *boolean*, default `false`
-:   Enable Kernel Samepage Merging at start, so that virtual machines share
-    identical memory pages.
+:   Turn Kernel Samepage Merging on at start, so that virtual machines share
+    identical memory pages. If this Linux has no KSM, or KSM is still off
+    once Virtualbricks has tried, the warning at start says so; the setting
+    stays as it is.
 
 **tray_icon** = *boolean*, default `true`
 :   Show an icon in the system tray.
@@ -245,10 +252,6 @@ with the defaults when none is. An imported project brings the paths of the
 machine it comes from; the import dialog offers to replace them with those of
 the open project.
 
-**cow_format** = *choice*, default `"qcow2"`
-:   The format of the private copy-on-write disks of the virtual machines:
-    **"cow"**, **"qcow"** or **"qcow2"**.
-
 **log_link_loops** = *boolean*, default `false`
 :   Log an error when starting a brick finds a loop in the links. The bricks
     on a loop don't start either way.
@@ -262,6 +265,10 @@ the open project.
 
 **vde_path** = *path*, default `"/usr/bin"`
 :   The directory of the VDE programs, such as **vde_switch**(1).
+
+Older project files have a **cow_format** key, the format of the private
+copies of the disks, which are always qcow2 now: it's read without a word,
+and dropped at the next save.
 
 ## Images
 
@@ -533,8 +540,9 @@ each device, all of them always written:
 
 **disks.***device***.private** = *boolean*, default `false`
 :   Write to a private copy-on-write file, *vm*_*device*.cow in the project
-    directory, instead of the image, which then stays unchanged. The format
-    of the file is the project's **cow_format**.
+    directory, instead of the image, which then stays unchanged.
+    Virtualbricks makes the file in the qcow2 format; one in another format,
+    made by an older version, is still used.
 
 ### Network cards
 
@@ -893,7 +901,7 @@ its comments:
 ```
 format = 1
 workspace = "/home/alice/.virtualbricks"
-terminal = "/usr/bin/xterm"
+terminal = "x-terminal-emulator"
 kernel_samepage_merging = false
 tray_icon = true
 warn_missing_programs = true
@@ -920,7 +928,6 @@ the six empty disks.
 format = 2
 
 [settings]
-cow_format = "qcow2"
 log_link_loops = false
 allow_female_plugs = false
 qemu_path = "/usr/bin"

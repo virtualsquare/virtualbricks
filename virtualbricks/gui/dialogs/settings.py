@@ -34,7 +34,6 @@ from gi.repository import Gdk, Gtk
 from twisted.logger import Logger
 
 from virtualbricks.config.settings import (
-    COW_FORMATS,
     get_setting,
     set_setting,
     store_settings,
@@ -121,21 +120,11 @@ class ProjectSettingsWidgets:
         self.female_plugs_switch = _switch()
         self.link_loops_switch = _switch()
         self.qemu_path_chooser = folder()
-        formats = Gtk.ListStore(str)
-        for cow_format in COW_FORMATS:
-            formats.append([cow_format])
-        self.cow_format_combo = Gtk.ComboBox(
-            visible=True, can_focus=False, hexpand=True, model=formats
-        )
-        cell = Gtk.CellRendererText()
-        self.cow_format_combo.pack_start(cell, False)
-        self.cow_format_combo.add_attribute(cell, "text", 0)
         rows = (
             (_("VDE binaries path"), self.vde_path_chooser),
             (_("Allow female plugs on devices"), self.female_plugs_switch),
             (_("Log an error when links make a loop"), self.link_loops_switch),
             (_("Qemu binaries path"), self.qemu_path_chooser),
-            (_("Private COW format"), self.cow_format_combo),
         )
         for row, (text, widget) in enumerate(rows, 1):
             _attach(grid, row, text, widget)
@@ -145,7 +134,6 @@ class ProjectSettingsWidgets:
         self.female_plugs_switch.set_active(get("allow_female_plugs"))
         self.link_loops_switch.set_active(get("log_link_loops"))
         self.qemu_path_chooser.set_current_folder(get("qemu_path"))
-        combobox_set_active_value(self.cow_format_combo, get("cow_format"), 0)
 
     def store(self, set):
         vde_path = self.vde_path_chooser.get_current_folder()
@@ -156,48 +144,6 @@ class ProjectSettingsWidgets:
         qemu_path = self.qemu_path_chooser.get_current_folder()
         if qemu_path is not None:
             set("qemu_path", qemu_path)
-        cow_format = combobox_get_active_value(self.cow_format_combo, 0)
-        if cow_format is not None:
-            set("cow_format", cow_format)
-
-
-def combobox_get_active_value(combobox, column, default=None):
-    """
-    Get current active value in combobox at the given column.
-
-    :type combobox: Gtk.ComboBox
-    :type column: int
-    :type default: Any
-    :rtype: Any
-    """
-
-    model = combobox.get_model()
-    itr = combobox.get_active_iter()
-    if itr:
-        obj = model.get_value(itr, column)
-        return obj
-    else:
-        return default
-
-
-def combobox_set_active_value(combobox, value, column):
-    """
-    Set the current active value in the ComboBox to value if found.
-
-    :type combobox: Gtk.ComboBox
-    :type value: Any
-    :type column: int
-    :rtype: None
-    """
-
-    model = combobox.get_model()
-    itr = model.get_iter_first()
-    while itr:
-        obj = model.get_value(itr, column)
-        if obj == value:
-            combobox.set_active_iter(itr)
-            break
-        itr = model.iter_next(itr)
 
 
 class SettingsDialog(Window):

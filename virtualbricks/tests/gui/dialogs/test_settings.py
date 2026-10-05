@@ -51,7 +51,6 @@ class TestSettingsDialog(GuiTestCase):
         prj = self.manager.current
         set_setting("qemu_path", self.project_bin)
         set_setting("allow_female_plugs", True)
-        set_setting("cow_format", "cow")
         return prj
 
     def test_tabs(self):
@@ -82,12 +81,6 @@ class TestSettingsDialog(GuiTestCase):
             widgets.qemu_path_chooser.get_current_folder(), "/usr/bin"
         )
         self.assertEqual(
-            settings_window.combobox_get_active_value(
-                widgets.cow_format_combo, 0
-            ),
-            "qcow2",
-        )
-        self.assertEqual(
             dialog.terminal_entry.get_text(), get_setting("terminal")
         )
 
@@ -100,12 +93,6 @@ class TestSettingsDialog(GuiTestCase):
             widgets.qemu_path_chooser.get_current_folder(), self.project_bin
         )
         self.assertTrue(widgets.female_plugs_switch.get_active())
-        self.assertEqual(
-            settings_window.combobox_get_active_value(
-                widgets.cow_format_combo, 0
-            ),
-            "cow",
-        )
 
     def test_ok_stores_both_tabs(self):
         prj = self.open_project()
@@ -139,7 +126,7 @@ class TestSettingsDialog(GuiTestCase):
         dialog = self.dialog()
         dialog.terminal_entry.set_text("/usr/bin/foot")
         dialog.on_dialog_response(dialog.dialog, Gtk.ResponseType.CANCEL)
-        self.assertEqual(get_setting("terminal"), "/usr/bin/xterm")
+        self.assertEqual(get_setting("terminal"), "x-terminal-emulator")
         self.assertFalse(os.path.exists(locations.settings_file()))
 
     def test_unset_widgets_keep_the_values(self):
@@ -203,7 +190,6 @@ class TestOverAConnection(GuiTestCase):
                 "qemu_path": "/opt/qemu/bin",
                 "allow_female_plugs": True,
                 "log_link_loops": False,
-                "cow_format": "qcow2",
             }
         )
         gui = FakeGui(self.factory)

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-04 08:42+0200\n"
+"POT-Creation-Date: 2026-10-05 12:49+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1076,6 +1076,88 @@ msgstr ""
 #: virtualbricks/config/importing.py
 #, python-brace-format
 msgid "{name}: {path} doesn't exist"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "Loops of links"
+msgstr ""
+
+#: virtualbricks/config/settings.py virtualbricks/gui/dialogs/settings.py
+msgid "Log an error when links make a loop"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "Plugs into machines"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "Let plugs go into the socket cards of machines"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "QEMU folder"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "The folder of the QEMU programs"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "VDE folder"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "The folder of the VDE programs"
+msgstr ""
+
+#: virtualbricks/config/settings.py virtualbricks/gui/dialogs/settings.py
+msgid "Workspace"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "The folder of the projects"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "Terminal"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "The terminal that opens the consoles of the bricks"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "Share memory (KSM)"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "Share equal memory pages between machines, with KSM"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "Tray icon"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "Show an icon in the system tray"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "Missing programs"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "Warn at start about the programs Virtualbricks can't find"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+#: virtualbricks/gui/mainwindow/bricks/config/vm/devices.py
+msgid "Audio driver"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid ""
+"The audio driver QEMU plays the sound cards through, as alsa, pa or pipewire"
 msgstr ""
 
 #: virtualbricks/config/workspace.py
@@ -3223,15 +3305,7 @@ msgid "Allow female plugs on devices"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "Log an error when links make a loop"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/settings.py
 msgid "Qemu binaries path"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/settings.py
-msgid "Private COW format"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
@@ -3270,10 +3344,6 @@ msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
 msgid "Audio driver of QEMU, as alsa, pa or pipewire"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/settings.py
-msgid "Workspace"
 msgstr ""
 
 #: virtualbricks/gui/gui.py
@@ -3750,10 +3820,6 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/vm/devices.py
 msgid "Sound"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/vm/devices.py
-msgid "Audio driver"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/vm/devices.py

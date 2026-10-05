@@ -87,23 +87,32 @@ class TestConvertSettings(unittest.TestCase):
     def test_values(self):
         app, project, current, report = self.convert(
             femaleplugs="True",
-            cowfmt="qcow",
+            cowfmt="qcow2",
             workspace="/srv/vb",
             current_project="lab",
         )
+        # the format of private copies, the one they always have now
         self.assertEqual(len(report), 0)
         self.assertEqual(current, "lab")
         # the settings of the application, and of the migrated projects
         self.assertEqual(app.workspace, "/srv/vb")
         self.assertEqual(app.terminal, self.program)
         self.assertIs(project.allow_female_plugs, True)
-        self.assertEqual(project.cow_format, "qcow")
         self.assertEqual(project.qemu_path, self.bin)
 
+    def test_private_copies_are_qcow2(self):
+        _, _, _, report = self.convert(cowfmt="qcow")
+        self.assertEqual(
+            messages(report),
+            [
+                "vb.conf:4: cowfmt: private copies are always qcow2 now, dropped"
+            ],
+        )
+        self.assertEqual(report.warnings, 0)
+
     def test_defaults(self):
-        _, project, current, report = self.convert(current_project="")
+        _, _, current, report = self.convert(current_project="")
         self.assertEqual(current, locations.DEFAULT_PROJECT)
-        self.assertEqual(project.cow_format, "qcow2")
 
     def test_dropped_and_unknown(self):
         dropped = ("alt-term", "cdroms", "kvm", "python", "sudo")
@@ -124,17 +133,14 @@ class TestConvertSettings(unittest.TestCase):
         self.assertEqual(report.warnings, 1)
 
     def test_invalid_values(self):
-        app, project, _, report = self.convert(cowfmt="qed", ksm="maybe")
+        app, project, _, report = self.convert(ksm="maybe")
         self.assertEqual(
             messages(report),
             [
-                'vb.conf:4: cowfmt: "qed" is not one of cow, qcow, qcow2, '
-                'using the default "qcow2"',
-                'vb.conf:5: ksm: "maybe" is not true or false, using the '
+                'vb.conf:4: ksm: "maybe" is not true or false, using the '
                 "default false",
             ],
         )
-        self.assertEqual(project.cow_format, "qcow2")
         self.assertIs(app.kernel_samepage_merging, False)
 
     def test_programs_not_on_this_machine(self):

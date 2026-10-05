@@ -28,9 +28,9 @@ class TestSettings(ConsoleTestCase):
     def test_show(self):
         lines = self.run_line("setting show")
         self.assertEqual(lines[0], "# Virtualbricks")
-        self.assertIn('terminal = "/usr/bin/xterm"', lines)
+        self.assertIn('terminal = "x-terminal-emulator"', lines)
         self.assertEqual(lines[lines.index("") + 1], "# This project")
-        self.assertIn('cow_format = "qcow2"', lines)
+        self.assertIn('qemu_path = "/usr/bin"', lines)
         self.assertEqual(
             self.run_line("setting show tray_icon"), ["tray_icon = true"]
         )
@@ -41,18 +41,19 @@ class TestSettings(ConsoleTestCase):
 
     def test_set(self):
         self.assertEqual(
-            self.run_line("setting set tray_icon=false cow_format=qcow"), []
+            self.run_line("setting set tray_icon=false qemu_path=/opt/qemu"),
+            [],
         )
         self.assertFalse(get_setting("tray_icon"))
-        self.assertEqual(get_setting("cow_format"), "qcow")
+        self.assertEqual(get_setting("qemu_path"), "/opt/qemu")
         # settings.toml has the settings of Virtualbricks
         written = load_toml(locations.settings_file())
         self.assertFalse(written["tray_icon"])
 
     def test_all_or_none(self):
         self.assertEqual(
-            self.fails("setting set tray_icon=false cow_format=qed"),
-            'cow_format: "qed" is not one of cow, qcow, qcow2',
+            self.fails("setting set tray_icon=false log_link_loops=qed"),
+            "log_link_loops: 'qed' is not true or false",
         )
         self.assertTrue(get_setting("tray_icon"))
         self.assertEqual(
@@ -61,9 +62,9 @@ class TestSettings(ConsoleTestCase):
         )
 
     def test_unset(self):
-        self.run_line("setting set tray_icon=false cow_format=cow")
+        self.run_line("setting set tray_icon=false qemu_path=/opt/qemu")
         self.assertEqual(
-            self.run_line("setting unset tray_icon cow_format"), []
+            self.run_line("setting unset tray_icon qemu_path"), []
         )
         self.assertTrue(get_setting("tray_icon"))
-        self.assertEqual(get_setting("cow_format"), "qcow2")
+        self.assertEqual(get_setting("qemu_path"), "/usr/bin")

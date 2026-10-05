@@ -507,8 +507,9 @@ class Disk:
         logger.info(new_cow, backing_file=path)
 
         def create(info):
-            # -F is the format of the image, which may be raw
-            args = ["create", "-f", get_setting("cow_format")]
+            # a private copy is always qcow2; -F is the format of the image,
+            # which may be raw
+            args = ["create", "-f", "qcow2"]
             args += ["-b", path, "-F", info.format, filename]
             return qemu_img(args)
 

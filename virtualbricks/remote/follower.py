@@ -201,6 +201,7 @@ def machine_table(factory, workspace) -> dict:
         "qemu_programs": qemu_programs(qemu),
         "lacks": lacks,
         "ksm": ksm.check_ksm(),
+        "ksm_available": ksm.ksm_available(),
     }
 
 

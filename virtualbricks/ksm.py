@@ -19,7 +19,8 @@
 """
 Kernel Samepage Merging: whether it runs, and turning it on or off.
 
-KSM runs when /sys/kernel/mm/ksm/run holds 1. Only root can write the file:
+KSM runs when /sys/kernel/mm/ksm/run holds 1; a Linux without the file has
+no KSM. Only root can write the file:
 as root Virtualbricks writes it, otherwise it runs ``tee`` with sudo (see
 :mod:`virtualbricks.sudo`), which writes what it reads, without a shell.
 
@@ -40,6 +41,12 @@ from virtualbricks.sudo import sudo_command
 KSM_PATH = "/sys/kernel/mm/ksm/run"
 logger = Logger()
 ksm_error = "Cannot turn KSM {state}: {error}"
+
+
+def ksm_available() -> bool:
+    """Whether this Linux has KSM."""
+
+    return os.path.exists(KSM_PATH)
 
 
 def check_ksm() -> bool:

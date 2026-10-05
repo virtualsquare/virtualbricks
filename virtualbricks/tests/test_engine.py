@@ -458,9 +458,11 @@ class TestSettings(BrickTestCase):
         settings.use_project(None)
         os.makedirs(self.workspace.path)
         self.successResultOf(self.engine.new_project("lab1"))
-        self.successResultOf(self.engine.set_settings({"cow_format": "cow"}))
+        self.successResultOf(
+            self.engine.set_settings({"vde_path": "/opt/vde"})
+        )
         data = load_toml(self.workspace.current.project_file)
-        self.assertEqual(data["settings"]["cow_format"], "cow")
+        self.assertEqual(data["settings"]["vde_path"], "/opt/vde")
         # nothing of Virtualbricks changed
         self.assertFalse(os.path.exists(self.path))
 

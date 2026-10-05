@@ -457,14 +457,23 @@ class TestLenientReading(ProjectFileTestCase):
             {"format": 1, "settings": {"allow_female_plugs": True, "color": 1}}
         )
         self.assertTrue(project_settings.allow_female_plugs)
-        self.assertEqual(project_settings.cow_format, "qcow2")
+        self.assertEqual(project_settings.qemu_path, "/usr/bin")
         self.assertIn(
-            'settings.cow_format: missing, using the default "qcow2"',
+            'settings.qemu_path: missing, using the default "/usr/bin"',
             self.messages(),
         )
         self.assertIn(
             "settings.color: unknown field, dropped", self.messages()
         )
+
+    def test_retired_settings(self):
+        # every project written before private copies were always qcow2
+        _, project_settings = self.restore(
+            {"format": 1, "settings": {"cow_format": "qcow", "vde_path": "/v"}}
+        )
+        self.assertEqual(project_settings.vde_path, "/v")
+        # read without a word; the other missing settings are reported
+        self.assertFalse([m for m in self.messages() if "cow_format" in m])
 
     def test_empty_settings_table(self):
         self.restore({"format": 1, "settings": {}})

@@ -913,3 +913,36 @@ class TestSuspendAndResume(BrickTestCase):
         self.failureResultOf(resume(self.vm), RuntimeError)
         self.assertEqual(self.done, [])
         self.assertEqual(self.logger.formatted(), ["Error on snapshot"])
+
+
+class TestPrivateCopy(BrickTestCase):
+
+    def test_qcow2(self):
+        # whatever the format of the image, as raw
+        ran = []
+
+        def qemu_img(args):
+            ran.append(args)
+            if args[0] == "info":
+                return defer.succeed('{"format": "raw"}')
+            return defer.succeed("")
+
+        self.patch(virtualmachine, "qemu_img", qemu_img)
+        self.factory.new_image("deb", "/lab/deb.img")
+        vm = self.factory.new_brick("qemu", "vm")
+        vm.update_config({"hda_image": "deb"})
+        disk = vm._disks["hda"]
+        self.successResultOf(disk._new_disk_image_differential("/lab/vm.cow"))
+        self.assertEqual(
+            ran[-1],
+            [
+                "create",
+                "-f",
+                "qcow2",
+                "-b",
+                "/lab/deb.img",
+                "-F",
+                "raw",
+                "/lab/vm.cow",
+            ],
+        )

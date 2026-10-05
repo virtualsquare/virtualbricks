@@ -208,9 +208,7 @@ class TestFollow(FollowTestCase):
             ],
         )
         _, _, table, machine = got[0]
-        self.assertEqual(
-            table["cow_format"], settings.get_setting("cow_format")
-        )
+        self.assertEqual(table["qemu_path"], settings.get_setting("qemu_path"))
         self.assertEqual(table["terminal"], settings.get_setting("terminal"))
         self.assertEqual(machine["version"], __version__)
         self.assertEqual(machine["runtime_dir"], "/run/vb")

@@ -177,8 +177,8 @@ class TestTheProject(MirrorTestCase):
         self.assertEqual(self.copy.runtime_dir, "/run/vb")
         self.assertEqual(self.copy.machine["runtime_dir"], "/run/vb")
         self.assertEqual(
-            self.copy.settings["cow_format"],
-            settings.get_setting("cow_format"),
+            self.copy.settings["qemu_path"],
+            settings.get_setting("qemu_path"),
         )
         # the real classes, and the images the disks name
         vm1 = self.copy.get_brick("vm1")

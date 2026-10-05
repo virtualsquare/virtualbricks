@@ -169,7 +169,6 @@ SETTINGS_RENAMED = {
     "ksm": "kernel_samepage_merging",
     "systray": "tray_icon",
     "show_missing": "warn_missing_programs",
-    "cowfmt": "cow_format",
     "erroronloop": "log_link_loops",
     "femaleplugs": "allow_female_plugs",
     "qemupath": "qemu_path",
@@ -220,6 +219,14 @@ def convert_settings(
             continue
         if key in SETTINGS_DROPPED:
             report.info(f"{key}: not used any more, dropped", where)
+            continue
+        if key == "cowfmt":
+            # private copies are always qcow2 now (page 23 S7)
+            if text != "qcow2":
+                report.info(
+                    f"{key}: private copies are always qcow2 now, dropped",
+                    where,
+                )
             continue
         name = SETTINGS_RENAMED.get(key, key)
         target: AppSettings | ProjectSettings

@@ -25,7 +25,7 @@ from twisted.python import failure
 from twisted.trial import unittest
 
 from virtualbricks import ksm
-from virtualbricks.ksm import check_ksm, set_ksm
+from virtualbricks.ksm import check_ksm, ksm_available, set_ksm
 from virtualbricks.tests import FakeLogger
 
 
@@ -92,6 +92,13 @@ class TestCheck(KSMTestCase):
     def test_a_file_it_cant_read(self):
         self.run_file("on\n")
         self.assertFalse(check_ksm())
+
+    def test_available(self):
+        # a Linux without KSM has no file
+        self.assertFalse(ksm_available())
+        # off, but there
+        self.run_file("0\n")
+        self.assertTrue(ksm_available())
 
 
 class TestSetAsRoot(KSMTestCase):

@@ -33,14 +33,15 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING, TypeAlias, cast
 
+from twisted.internet import defer
 from twisted.logger import Logger
 
 from virtualbricks import locations
 from virtualbricks.config.report import Report
+from virtualbricks.i18n import N_
 from virtualbricks.observable import Observable, Signal
 from virtualbricks.config.schema import (
     Bool,
-    Choice,
     ListOf,
     Path,
     Record,
@@ -70,7 +71,6 @@ if TYPE_CHECKING:  # pragma: no cover
 SettingValue: TypeAlias = str | bool
 
 FORMAT = 1
-COW_FORMATS = ("cow", "qcow", "qcow2")
 SETTINGS_HEADER = """\
 The settings of Virtualbricks that aren't about a project.
 Virtualbricks writes this file and its comments, and rewrites it when the
@@ -115,25 +115,36 @@ def check_format(data: Table, report: Report, where: str) -> bool:
 class ProjectSettings:
     """The settings that each project has its own copy of."""
 
-    cow_format: str = field(
-        Choice(*COW_FORMATS),
-        default="qcow2",
-        help="The format of private copies",
-    )
     log_link_loops: bool = field(
-        Bool(), default=False, help="Log an error when links make a loop"
+        Bool(),
+        default=False,
+        label=N_("Loops of links"),
+        help=N_("Log an error when links make a loop"),
     )
     allow_female_plugs: bool = field(
         Bool(),
         default=False,
-        help="Let plugs go into the socket cards of machines",
+        label=N_("Plugs into machines"),
+        help=N_("Let plugs go into the socket cards of machines"),
     )
     qemu_path: str = field(
-        Path(), default="/usr/bin", help="The folder of the QEMU programs"
+        Path(),
+        default="/usr/bin",
+        label=N_("QEMU folder"),
+        help=N_("The folder of the QEMU programs"),
     )
     vde_path: str = field(
-        Path(), default="/usr/bin", help="The folder of the VDE programs"
+        Path(),
+        default="/usr/bin",
+        label=N_("VDE folder"),
+        help=N_("The folder of the VDE programs"),
     )
+
+
+# The settings that projects had once and have no more: a project file
+# written with one is read without a word, and loses it when it's saved.
+# Private copies are always qcow2 (page 23 S7).
+RETIRED_PROJECT_KEYS = frozenset(("cow_format",))
 
 
 @define
@@ -143,32 +154,43 @@ class AppSettings:
     workspace: str = field(
         Path(),
         factory=locations.default_workspace,
-        help="The folder of the projects",
+        label=N_("Workspace"),
+        help=N_("The folder of the projects"),
     )
+    # the terminal of the desktop on Debian and Ubuntu, which takes -e and a
+    # program with its arguments, through a wrapper for a terminal that
+    # doesn't, as GNOME Terminal (checked on every target, page 23)
     terminal: str = field(
         Str(),
-        default="/usr/bin/xterm",
-        help="The terminal that opens the consoles of the bricks",
+        default="x-terminal-emulator",
+        label=N_("Terminal"),
+        help=N_("The terminal that opens the consoles of the bricks"),
     )
     kernel_samepage_merging: bool = field(
         Bool(),
         default=False,
-        help="Share equal memory pages between machines, with KSM",
+        label=N_("Share memory (KSM)"),
+        help=N_("Share equal memory pages between machines, with KSM"),
     )
     tray_icon: bool = field(
-        Bool(), default=True, help="Show an icon in the system tray"
+        Bool(),
+        default=True,
+        label=N_("Tray icon"),
+        help=N_("Show an icon in the system tray"),
     )
     warn_missing_programs: bool = field(
         Bool(),
         default=True,
-        help="Warn at start about the programs Virtualbricks can't find",
+        label=N_("Missing programs"),
+        help=N_("Warn at start about the programs Virtualbricks can't find"),
     )
     # the audio driver of QEMU that plays the sound cards of the machines;
     # it's about this computer, not about a project
     audio_driver: str = field(
         Str(),
         default="alsa",
-        help=(
+        label=N_("Audio driver"),
+        help=N_(
             "The audio driver QEMU plays the sound cards through, as alsa, pa "
             "or pipewire"
         ),
@@ -207,6 +229,8 @@ _state = AppState()
 _settings_path: str | None = None
 _state_path: str | None = None
 _read_only = False
+# the start's attempt to turn KSM on, as the settings ask
+_ksm_start: defer.Deferred[bool] | None = None
 
 
 def _owner(name: str) -> type[AppSettings] | type[ProjectSettings]:
@@ -280,10 +304,11 @@ def project_settings() -> ProjectSettings | None:
 def load_settings(path: str | None = None) -> Report:
     """Read the settings, or save the defaults if there is no file yet."""
 
-    global _app, _settings_path, _read_only
+    global _app, _settings_path, _read_only, _ksm_start
     path = path or locations.settings_file()
     _settings_path = path
     _read_only = False
+    _ksm_start = None
     report = Report()
     try:
         data = load_toml(path)
@@ -306,8 +331,29 @@ def load_settings(path: str | None = None) -> Report:
     if _app.kernel_samepage_merging:
         from virtualbricks.ksm import set_ksm
 
-        set_ksm(enable=True)
+        _ksm_start = set_ksm(enable=True)
     return report
+
+
+def ksm_started() -> defer.Deferred[bool]:
+    """
+    Whether KSM runs, once the start has tried to turn it on, if the settings
+    ask for it.
+    """
+
+    from virtualbricks.ksm import check_ksm
+
+    if _ksm_start is None:
+        return defer.succeed(check_ksm())
+    started: defer.Deferred[bool] = defer.Deferred()
+
+    def fire(running: bool) -> bool:
+        started.callback(running)
+        return running
+
+    # set_ksm() never fails
+    _ksm_start.addCallback(fire)
+    return started
 
 
 def install() -> None:

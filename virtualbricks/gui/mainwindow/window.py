@@ -42,7 +42,7 @@ from virtualbricks import errors, ksm
 from virtualbricks.locations import short_path
 from virtualbricks.bricks.event import is_event
 from virtualbricks.bricks.virtualmachine import is_disk_image
-from virtualbricks.config.settings import get_setting, set_setting
+from virtualbricks.config.settings import get_setting, ksm_started
 from virtualbricks.config.workspace import projects
 from virtualbricks.programs import missing_programs
 from virtualbricks.i18n import _
@@ -77,7 +77,12 @@ components_not_found = (
     "{text}\nYou can disable this alert from the general settings."
 )
 ksm_not_found = (
-    "KSM not found in Linux. Samepage memory will not work on this system."
+    "The settings ask for KSM, which this Linux doesn't have: the machines"
+    " can't share memory."
+)
+ksm_still_off = (
+    "The settings ask for KSM, which is still off: Virtualbricks couldn't"
+    " turn it on."
 )
 programs_not_found = (
     "Some programs of the bricks are missing, each with the package that has"
@@ -87,6 +92,21 @@ quit_refused = "{error}"
 # the answers of the bar of a connection lost
 RECONNECT = 1
 QUIT = 2
+
+
+def ksm_warning(wanted, available, running):
+    """
+    What the warning at start says of KSM: nothing unless the settings ask
+    for it (wanted); then whether this Linux has it, and whether it runs.
+    """
+
+    if not wanted:
+        return None
+    if not available:
+        return ksm_not_found
+    if not running:
+        return ksm_still_off
+    return None
 
 
 def remote_title(engine):
@@ -491,21 +511,33 @@ class VBGUI:
     def get_root_widget(self) -> Gtk.Window:
         return self.window
 
-    def check_prerequisites(self):
-        """Say which programs are missing, and the packages that have them."""
+    def check_prerequisites(self) -> defer.Deferred:
+        """
+        Say which programs are missing, and the packages that have them; and
+        KSM, if the settings ask for it and it isn't on once the start has
+        tried to turn it on.
+        """
 
-        lines = []
-        if not ksm.check_ksm():
-            set_setting("kernel_samepage_merging", False)
-            lines.append(ksm_not_found)
         missing = missing_programs(
             get_setting("vde_path"), get_setting("qemu_path")
         )
-        if missing:
-            names = ", ".join(map(str, missing))
-            lines.append(programs_not_found.format(programs=names))
-        if lines and get_setting("warn_missing_programs"):
-            logger.error(components_not_found, text="\n".join(lines))
+
+        def warn(running):
+            lines = []
+            line = ksm_warning(
+                get_setting("kernel_samepage_merging"),
+                ksm.ksm_available(),
+                running,
+            )
+            if line:
+                lines.append(line)
+            if missing:
+                names = ", ".join(map(str, missing))
+                lines.append(programs_not_found.format(programs=names))
+            if lines and get_setting("warn_missing_programs"):
+                logger.error(components_not_found, text="\n".join(lines))
+
+        return ksm_started().addCallback(warn)
 
     """ ********************************************************     """
     """ Signal handlers                                           """

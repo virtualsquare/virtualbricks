@@ -245,7 +245,8 @@ class TestMigrateToFolder(EngineTestCase):
             self.assertTrue(text.startswith(first), path)
             self.assertIn("# The version of the layout of this file\n", text)
         # the per-project settings come from the old settings
-        self.assertEqual(project["settings"]["cow_format"], "qcow")
+        # private copies are always qcow2
+        self.assertNotIn("cow_format", project["settings"])
         self.assertIs(project["settings"]["allow_female_plugs"], True)
         with open(os.path.join(target.workspace, "lab1", "README")) as fp:
             self.assertEqual(fp.read(), "My lab\n")
@@ -297,7 +298,7 @@ class TestMigrateToFolder(EngineTestCase):
         project = load_toml(
             os.path.join(migration.target.project_dir("lab1"), "project.toml")
         )
-        self.assertEqual(project["settings"]["cow_format"], "qcow2")
+        self.assertEqual(project["settings"]["qemu_path"], "/usr/bin")
 
     def test_skip_what_is_migrated(self):
         self.folder_migration(self.legacy_settings).run()
@@ -625,12 +626,14 @@ class TestEntryPoints(EngineTestCase):
         self.assertEqual(migration.project_settings, ProjectSettings())
         migration = migration_for(self.workspace, output=self.output)
         self.assertIsInstance(migration.target, Folder)
-        self.assertEqual(migration.app_settings.terminal, "/usr/bin/xterm")
+        self.assertEqual(
+            migration.app_settings.terminal, "x-terminal-emulator"
+        )
         self.assertEqual(migration.project_settings, ProjectSettings())
         old = write_settings(os.path.join(self.root, "vb.conf"), "/srv/vb")
         migration = migration_for(self.workspace, old, self.output)
         # the settings of the projects come from the old settings
-        self.assertEqual(migration.project_settings.cow_format, "qcow")
+        self.assertIs(migration.project_settings.allow_female_plugs, True)
         self.assertEqual(migration.items[0].kind, "settings")
 
 
@@ -656,9 +659,9 @@ class TestImportedProject(EngineTestCase):
 
     def test_uses_the_settings_of_new_projects(self):
         # those of the open project
-        use_project(ProjectSettings(cow_format="cow"))
+        use_project(ProjectSettings(log_link_loops=True))
         data, _, _ = self.convert(CONFIG1)
-        self.assertEqual(data["settings"]["cow_format"], "cow")
+        self.assertIs(data["settings"]["log_link_loops"], True)
 
     def test_no_project_file(self):
         data, report, directory = self.convert()

@@ -17,16 +17,19 @@
 
 import os
 
+from twisted.internet import defer
 from twisted.trial import unittest
 
 from virtualbricks import ksm, locations
 from virtualbricks.config.settings import (
     PROJECT_KEYS,
+    RETIRED_PROJECT_KEYS,
     AppSettings,
     ProjectSettings,
     current_project,
     get_setting,
     has_option,
+    ksm_started,
     load_settings,
     load_state,
     new_project_settings,
@@ -37,7 +40,7 @@ from virtualbricks.config.settings import (
     store_settings,
 )
 from virtualbricks.config.report import Report
-from virtualbricks.config.schema import dump_record, field_names
+from virtualbricks.config.schema import dump_record, field_names, info_of
 from virtualbricks.config.tomlfile import dump_toml, load_toml
 from virtualbricks.config import settings
 from virtualbricks.config.settings import (
@@ -88,7 +91,7 @@ class TestCheckFormat(unittest.TestCase):
 class TestValues(SettingsTestCase):
 
     def test_defaults(self):
-        self.assertEqual(get_setting("terminal"), "/usr/bin/xterm")
+        self.assertEqual(get_setting("terminal"), "x-terminal-emulator")
         self.assertEqual(
             get_setting("workspace"),
             os.path.join(self.root, ".virtualbricks"),
@@ -98,7 +101,7 @@ class TestValues(SettingsTestCase):
 
     def test_has_option(self):
         self.assertTrue(has_option("terminal"))
-        self.assertTrue(has_option("cow_format"))
+        self.assertTrue(has_option("qemu_path"))
         self.assertFalse(has_option("python"))
 
     def test_set_validates(self):
@@ -114,17 +117,17 @@ class TestValues(SettingsTestCase):
         set_setting("tray_icon", False)
         self.assertIs(get_setting("tray_icon"), False)
         use_project(ProjectSettings())
-        self.assertRaises(ValueError, set_setting, "cow_format", "qed")
-        set_setting("cow_format", "qcow")
-        self.assertEqual(get_setting("cow_format"), "qcow")
+        self.assertRaises(ValueError, set_setting, "log_link_loops", "maybe")
+        set_setting("log_link_loops", True)
+        self.assertIs(get_setting("log_link_loops"), True)
 
     def test_parse(self):
         self.assertIs(parse_setting("allow_female_plugs", "yes"), True)
         self.assertIs(parse_setting("tray_icon", "no"), False)
-        self.assertRaises(ValueError, parse_setting, "cow_format", "qed")
+        self.assertRaises(ValueError, parse_setting, "log_link_loops", "qed")
 
     def test_setting_kind(self):
-        self.assertEqual(setting_kind("cow_format").format("qcow"), '"qcow"')
+        self.assertEqual(setting_kind("qemu_path").format("/opt"), '"/opt"')
         self.assertEqual(setting_kind("tray_icon").format(True), "true")
         self.assertRaises(KeyError, setting_kind, "python")
 
@@ -141,15 +144,15 @@ class TestProjectSettings(SettingsTestCase):
 
     def test_no_project_is_open(self):
         self.assertIsNone(project_settings())
-        self.assertEqual(get_setting("cow_format"), "qcow2")
+        self.assertIs(get_setting("log_link_loops"), False)
         error = self.assertRaises(
-            ValueError, set_setting, "cow_format", "qcow"
+            ValueError, set_setting, "log_link_loops", True
         )
         self.assertEqual(
             str(error),
-            "cow_format is a setting of a project, and none is open",
+            "log_link_loops is a setting of a project, and none is open",
         )
-        self.assertEqual(get_setting("cow_format"), "qcow2")
+        self.assertIs(get_setting("log_link_loops"), False)
 
     def test_the_open_project(self):
         project = ProjectSettings(qemu_path="/opt/qemu")
@@ -166,12 +169,12 @@ class TestProjectSettings(SettingsTestCase):
         self.assertEqual(get_setting("terminal"), "/usr/bin/foot")
 
     def test_a_new_project_copies_the_open_one(self):
-        project = ProjectSettings(vde_path="/opt/vde", cow_format="qcow")
+        project = ProjectSettings(vde_path="/opt/vde", log_link_loops=True)
         use_project(project)
         new = new_project_settings()
         self.assertEqual(new, project)
-        new.cow_format = "cow"
-        self.assertEqual(project.cow_format, "qcow")
+        new.log_link_loops = False
+        self.assertIs(project.log_link_loops, True)
 
     def test_a_new_project_without_an_open_one(self):
         self.assertEqual(new_project_settings(), ProjectSettings())
@@ -187,7 +190,6 @@ class TestProjectSettings(SettingsTestCase):
         self.assertEqual(
             PROJECT_KEYS,
             {
-                "cow_format",
                 "log_link_loops",
                 "allow_female_plugs",
                 "qemu_path",
@@ -196,6 +198,31 @@ class TestProjectSettings(SettingsTestCase):
         )
         # none of them is a setting of the application
         self.assertFalse(PROJECT_KEYS & set(field_names(AppSettings)))
+
+    def test_retired_keys(self):
+        # private copies are always qcow2
+        self.assertEqual(RETIRED_PROJECT_KEYS, {"cow_format"})
+        self.assertFalse(RETIRED_PROJECT_KEYS & PROJECT_KEYS)
+
+
+class TestLabels(unittest.TestCase):
+    """The rows of the Settings window take their words from the schema."""
+
+    def test_every_setting_has_a_label_and_help(self):
+        for cls in (AppSettings, ProjectSettings):
+            for name in field_names(cls):
+                info = info_of(cls, name)
+                self.assertTrue(info.label, name)
+                self.assertTrue(info.help, name)
+
+    def test_labels(self):
+        self.assertEqual(
+            info_of(ProjectSettings, "qemu_path").label, "QEMU folder"
+        )
+        self.assertEqual(
+            info_of(AppSettings, "kernel_samepage_merging").label,
+            "Share memory (KSM)",
+        )
 
 
 class TestLoadStore(SettingsTestCase):
@@ -228,7 +255,7 @@ class TestLoadStore(SettingsTestCase):
                 "format": 1,
                 "terminal": "/usr/bin/foot",
                 "color": 1,
-                "cow_format": "cow",
+                "qemu_path": "/opt/qemu",
             },
             self.path(),
         )
@@ -236,9 +263,9 @@ class TestLoadStore(SettingsTestCase):
         self.assertEqual(get_setting("terminal"), "/usr/bin/foot")
         messages = [str(m) for m in report]
         self.assertIn("color: unknown field, dropped", messages)
-        self.assertIn("cow_format: unknown field, dropped", messages)
+        self.assertIn("qemu_path: unknown field, dropped", messages)
         self.assertIn("tray_icon: missing, using the default true", messages)
-        self.assertEqual(get_setting("cow_format"), "qcow2")
+        self.assertEqual(get_setting("qemu_path"), "/usr/bin")
         self.assertEqual(self.ksm, [])
 
     def test_load_enables_ksm(self):
@@ -250,6 +277,29 @@ class TestLoadStore(SettingsTestCase):
         dump_toml(data, self.path())
         load_settings()
         self.assertEqual(self.ksm, [True])
+
+    def test_ksm_started_waits_for_the_start(self):
+        turning = defer.Deferred()
+        self.patch(ksm, "set_ksm", lambda enable: turning)
+        os.makedirs(os.path.dirname(self.path()))
+        data = {
+            "format": 1,
+            **dump_record(AppSettings(kernel_samepage_merging=True)),
+        }
+        dump_toml(data, self.path())
+        load_settings()
+        started = ksm_started()
+        self.assertNoResult(started)
+        # sudo couldn't turn it on
+        turning.callback(False)
+        self.assertIs(self.successResultOf(started), False)
+        # and once it is over, at once
+        self.assertIs(self.successResultOf(ksm_started()), False)
+
+    def test_ksm_started_without_the_setting(self):
+        # nothing to wait for: whether KSM runs
+        self.patch(ksm, "check_ksm", lambda: False)
+        self.assertIs(self.successResultOf(ksm_started()), False)
 
     def test_explicit_path(self):
         path = self.mktemp()
@@ -281,7 +331,7 @@ class TestLoadStore(SettingsTestCase):
         dump_toml({"format": 2, "terminal": "/x"}, self.path())
         report = load_settings()
         self.assertTrue(report.has_errors)
-        self.assertEqual(get_setting("terminal"), "/usr/bin/xterm")
+        self.assertEqual(get_setting("terminal"), "x-terminal-emulator")
         self.assertFalse(store_settings())
         self.assertEqual(load_toml(self.path())["format"], 2)
 
@@ -304,8 +354,8 @@ class TestLoadStore(SettingsTestCase):
             "\n# The version of the layout of this file\nformat = 1\n", text
         )
         self.assertIn(
-            "\n# The terminal that opens the consoles of the bricks"
-            ' (default "/usr/bin/xterm")\n'
+            "\n# The terminal that opens the consoles of the bricks\n"
+            '# (default "x-terminal-emulator")\n'
             'terminal = "/usr/bin/foot"\n',
             text,
         )

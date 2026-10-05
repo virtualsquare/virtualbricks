@@ -406,8 +406,14 @@ class RemoteApplication:
         if not get_setting("warn_missing_programs"):
             return
         lines = []
-        if not machine.get("ksm", True):
-            lines.append(window.ksm_not_found)
+        # a lab machine of before ksm_available has KSM, as far as we know
+        line = window.ksm_warning(
+            self.copy.settings.get("kernel_samepage_merging", False),
+            machine.get("ksm_available", True),
+            machine.get("ksm", True),
+        )
+        if line:
+            lines.append(line)
         missing = machine.get("missing") or []
         if missing:
             lines.append(

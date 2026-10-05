@@ -36,7 +36,7 @@ On Debian:
 
 ```sh
 sudo apt install qemu-system-x86 qemu-system-gui qemu-utils vde2 \
-    vde2-cryptcab xterm sudo
+    vde2-cryptcab sudo
 ```
 
 - `qemu-system-*` for each architecture of your VMs, and `qemu-img`;
@@ -49,8 +49,9 @@ sudo apt install qemu-system-x86 qemu-system-gui qemu-utils vde2 \
   `vde_pcapplug`, `dpipe`, `vdeterm` and `unixterm`, and `vde_cryptcab`, in
   its own package; the router brick needs `vde_router`, which no distribution
   ships;
-- a terminal, `xterm` by default, and `sudo`, which runs the bricks that need
-  root, a tap and a capture (see [Configuration](#configuration)).
+- a terminal, that of your desktop by default, `x-terminal-emulator`, and
+  `sudo`, which runs the bricks that need root, a tap and a capture (see
+  [Configuration](#configuration)).
 
 These are optional:
 

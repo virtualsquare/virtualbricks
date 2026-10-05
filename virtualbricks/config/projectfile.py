@@ -56,7 +56,10 @@ from virtualbricks.config.schema import (
     notes,
     references,
 )
-from virtualbricks.config.settings import ProjectSettings
+from virtualbricks.config.settings import (
+    RETIRED_PROJECT_KEYS,
+    ProjectSettings,
+)
 from virtualbricks.config.tomlfile import (
     FORMAT_NOTE,
     DecodeError,
@@ -710,7 +713,11 @@ def _read_settings(data: Table, report: Report) -> ProjectSettings:
                 f"missing, using the default {value}", f"settings.{key}"
             )
     return load_record(
-        ProjectSettings, {**defaults, **table}, report, "settings"
+        ProjectSettings,
+        {**defaults, **table},
+        report,
+        "settings",
+        ignore=RETIRED_PROJECT_KEYS,
     )
 
 

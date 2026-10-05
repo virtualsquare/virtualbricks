@@ -17,13 +17,23 @@
 
 """The main window: what closing the windows it opens tells it."""
 
-from virtualbricks.config.settings import set_current_project
+from twisted.internet import defer
+
+from virtualbricks import ksm
+from virtualbricks.config import settings
+from virtualbricks.config.settings import (
+    get_setting,
+    set_current_project,
+    set_setting,
+)
 from virtualbricks.engine import LocalEngine
+from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
     from gi.repository import Gtk
 
+    from virtualbricks.gui.mainwindow import window
     from virtualbricks.gui.mainwindow.window import VBGUI
 
 
@@ -102,3 +112,85 @@ class TestStartUpProblem(GuiTestCase):
         window.window.destroy()
         self.assertEqual(self.manager.current.name, "lab")
         self.assertEqual(self.gui.titles, 0)
+
+
+class TestWarningAtStart(GuiTestCase):
+    """What the warning at start says of KSM and of the programs."""
+
+    def setUp(self):
+        super().setUp()
+        self.logger = FakeLogger()
+        self.patch(window, "logger", self.logger)
+        self.missing = []
+        self.patch(window, "missing_programs", lambda vde, qemu: self.missing)
+        self.available = True
+        self.patch(ksm, "ksm_available", lambda: self.available)
+        self.patch(ksm, "check_ksm", lambda: False)
+
+    def check(self):
+        """The lines of the warning, once the check is over."""
+
+        # the check uses nothing of the main window
+        self.successResultOf(VBGUI.check_prerequisites(None))
+        return [fields["text"] for _, _, fields in self.logger.events]
+
+    def test_ksm_off_as_the_settings_want(self):
+        self.assertEqual(self.check(), [])
+
+    def test_ksm_missing(self):
+        set_setting("kernel_samepage_merging", True)
+        self.available = False
+        self.assertEqual(self.check(), [window.ksm_not_found])
+        # the setting stays as it is
+        self.assertIs(get_setting("kernel_samepage_merging"), True)
+
+    def test_ksm_still_off_after_the_start(self):
+        set_setting("kernel_samepage_merging", True)
+        turning = defer.Deferred()
+        self.patch(settings, "_ksm_start", turning)
+        checking = VBGUI.check_prerequisites(None)
+        # it waits for the start to try
+        self.assertNoResult(checking)
+        turning.callback(False)
+        self.successResultOf(checking)
+        [(_level, text, fields)] = self.logger.events
+        self.assertEqual(text, window.components_not_found)
+        self.assertEqual(fields["text"], window.ksm_still_off)
+
+    def test_ksm_turned_on_at_start(self):
+        set_setting("kernel_samepage_merging", True)
+        self.patch(settings, "_ksm_start", defer.succeed(True))
+        self.assertEqual(self.check(), [])
+
+    def test_programs(self):
+        self.missing = ["vde_switch (vde2)"]
+        set_setting("kernel_samepage_merging", True)
+        self.available = False
+        self.assertEqual(
+            self.check(),
+            [
+                window.ksm_not_found
+                + "\n"
+                + window.programs_not_found.format(
+                    programs="vde_switch (vde2)"
+                )
+            ],
+        )
+
+    def test_no_warning(self):
+        self.missing = ["vde_switch (vde2)"]
+        set_setting("warn_missing_programs", False)
+        self.assertEqual(self.check(), [])
+
+
+class TestKsmWarning(GuiTestCase):
+
+    def test_rule(self):
+        self.assertIsNone(window.ksm_warning(False, False, False))
+        self.assertEqual(
+            window.ksm_warning(True, False, False), window.ksm_not_found
+        )
+        self.assertEqual(
+            window.ksm_warning(True, True, False), window.ksm_still_off
+        )
+        self.assertIsNone(window.ksm_warning(True, True, True))

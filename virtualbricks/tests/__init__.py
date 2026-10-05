@@ -171,6 +171,7 @@ def reset_settings(test, **values):
     test.patch(settings, "_settings_path", None)
     test.patch(settings, "_state_path", None)
     test.patch(settings, "_read_only", False)
+    test.patch(settings, "_ksm_start", None)
 
 
 def make_factory(test=None):
