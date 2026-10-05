@@ -192,6 +192,8 @@ class Virtualbricks:
         # the Virtualbricks that runs the bricks it shows: another one, for
         # the windows of --connect
         self.lab = self
+        # the programs it doesn't find, as if this computer hadn't them
+        self.hidden = set()
 
     def make_home(self):
         """Its first settings, those of GTK, and its workspace."""
@@ -329,7 +331,36 @@ class Virtualbricks:
             env.update(
                 GDK_BACKEND="broadway", BROADWAY_DISPLAY=self.screen.display
             )
+        if self.hidden:
+            env["PATH"] = self.path_without(env.get("PATH", ""))
         return env
+
+    def path_without(self, path):
+        """
+        A PATH of one folder of its own, with a link to each program of the
+        folders of path, the first of a name, but those hidden.
+        """
+
+        folder = os.path.join(self.folder, "path")
+        shutil.rmtree(folder, ignore_errors=True)
+        os.makedirs(folder)
+        for directory in filter(None, path.split(os.pathsep)):
+            try:
+                names = os.listdir(directory)
+            except OSError:
+                continue
+            for name in names:
+                program = os.path.join(directory, name)
+                link = os.path.join(folder, name)
+                if (
+                    name in self.hidden
+                    or os.path.lexists(link)
+                    or os.path.isdir(program)
+                    or not os.access(program, os.X_OK)
+                ):
+                    continue
+                os.symlink(program, link)
+        return folder
 
     def control_socket(self):
         """
@@ -550,10 +581,20 @@ class Virtualbricks:
         self.browser.key(keys)
 
     def choose(self, item, menu):
-        """Click the menu of the menu bar, then its item."""
+        """
+        Click the menu of the menu bar, then its item, once it is under the
+        menu: GTK may show the menu at the top left of the screen first, and
+        move it under the menu bar after, later when the computer is busy.
+        """
 
-        self.click("menu", menu)
-        self.click("menu item", item)
+        title = self.click("menu", menu)
+        _x, top, _width, height = a11y.extents(title)
+        widget = self.enabled("menu item", item)
+        self.wait_for(
+            lambda: a11y.extents(widget)[1] >= top + height,
+            f"the menu item {item!r} is under the menu {menu!r}",
+        )
+        self.browser.click(*a11y.center(widget))
 
     def row(self, name):
         """The row of the list that is named name, once it shows."""

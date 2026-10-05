@@ -12,6 +12,7 @@ The steps of a user:
 | Step | What it does |
 | :- | :- |
 | `Given Virtualbricks is running` | Starts Virtualbricks, and waits for its main window |
+| `Given vde_cryptcab isn't on this computer` | Before Virtualbricks starts: its `PATH` is a folder of links to the programs of that of the tests but this one, so it finds it only in a folder of its settings that has it |
 | `Given Virtualbricks is running with --listen` | Starts it with the options, as the shell splits them, in place of `--lock none`, and waits for its main window; with `--listen` alone, until it listens on the socket of its workspace too. With `--connect`, these are the windows of the other Virtualbricks, which runs the bricks: see the steps of another Virtualbricks |
 | `When I add the switch sw1` | New Brick, the kind, then OK on its settings; the new brick must be named `sw1`. Any kind of New Brick: `the virtual machine vm1`, `the router r1`, … |
 | `When I join sw1 and sw2 with the wire w1` | New Brick, Wire, then sw1 for its left end and sw2 for its right end, and OK; the new wire must be named `w1` |
@@ -176,9 +177,14 @@ The steps of the Settings window:
 
 | Step | What it does |
 | :- | :- |
-| `When I turn off "Enable systray" in the Settings window, on its page Application` | Settings, in the menu File; on the page, the switch of the label, which must be the other way, turned off, or on with `turn on`; then OK, and the window closes |
+| `When I turn off "Tray icon" in the Settings window, on its page This computer` | Settings, in the menu File; on the page, the switch of the label, which must be the other way, turned off, or on with `turn on`; then OK, and the window closes. The page of the project is `Project new_project` |
+| `When I turn off "Tray icon" on the page This computer of the Settings window, then cancel` | The same, then Cancel, and the window closes |
+| `When I type "/usr/local/bin" as "VDE folder" on the page Project new_project of the Settings window` | Settings, in the menu File; on the page, the text typed in the entry of the label, in place of the one it has |
 | `When I open the Settings window` | Settings, in the menu File |
-| `Then the page Application of the Settings window has "Enable systray" off` | The page, then the switch of the label: it is off, or on |
+| `Then the page This computer of the Settings window has "Tray icon" off` | The page, then the switch of the label: it is off, or on |
+| `Then the row "VDE folder" of the Settings window says "Missing here and in PATH: vde_cryptcab (vde2-cryptcab)"` | The row of the label has the text, once the window says it: what is wrong with the setting |
+| `Then the menu of "Audio driver" in the Settings window has the audio drivers of qemu-system-x86_64` | The menu of the label, opened with its arrow, has the drivers that the program lists with `-audiodev help`: those that play sound first, `pipewire`, `pa`, `alsa`, `jack`, `oss`, `sdl`, `sndio`, then the others by their names |
+| `Then settings.toml is as it was` | The settings file is the one the tests wrote before the start: Virtualbricks hasn't written it |
 | `Then settings.toml has`, with a table under it | The settings of the table in the settings file, a name and a value each, the value as TOML writes it, once Virtualbricks has written them |
 | `Then project.toml has the settings`, with a table under it | The same, in the table `settings` of the file of the project |
 

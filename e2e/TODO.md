@@ -253,14 +253,31 @@ that the tests can't do yet: those needs come first.
 
 # Settings
 
-- [x] Change a setting of the application in Preferences, a switch
+- [x] Change a setting of this computer in the Settings window, a switch
   `settings.toml` has it, and the next start too
-  "A switch of the application turned off in the Settings window is off
-  in settings.toml, and at the next start", `settings.feature`
-- [x] Change a setting of the project in Preferences, This project
+  "A switch of this computer turned off in the Settings window is off in
+  settings.toml, and at the next start", `settings.feature`
+- [x] Change a setting of the project in the Settings window, on its page
   `project.toml` has it
   "A switch of the project turned on in the Settings window is on in its
   project.toml", `settings.feature`
+- [x] Cancel the Settings window: nothing changes, nor `settings.toml`
+  "Cancel in the Settings window leaves the settings as they were, and
+  settings.toml too", `settings.feature`
+- [x] Type a VDE folder that lacks a program this computer hasn't: its
+  row names the program and its package
+  "A VDE folder without a program that isn't on this computer names the
+  program, with its package", `settings.feature`
+- [x] Open the menu of the audio driver: the drivers of QEMU, those that
+  play sound first
+  "The menu of the audio driver has the drivers of QEMU, those that play
+  sound first", `settings.feature`
+- [ ] A folder that isn't there greys out OK, whose tooltip says why, and
+  marks the tab of its page
+- [ ] Turn KSM on with OK where sudo can't: the window stays on its page,
+  and the row says why (needs a sudo that fails, as a program of PATH)
+- [ ] The Settings window over a connection: three pages, the folders
+  typed with the folders there to complete them
 
 # Messages window
 

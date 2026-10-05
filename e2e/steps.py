@@ -191,6 +191,16 @@ def virtualbricks_running(virtualbricks):
     virtualbricks.start()
 
 
+@given(words("{program} isn't on this computer"))
+def program_missing(virtualbricks, program):
+    """
+    Virtualbricks, once it starts, doesn't find the program: its PATH has
+    every program of that of the tests but this one.
+    """
+
+    virtualbricks.hidden.add(program)
+
+
 @given(words("Virtualbricks is running with {options}"))
 def running_with(virtualbricks, request, options):
     """
@@ -3052,7 +3062,10 @@ def readme_file(virtualbricks, name, docstring):
 # Settings
 
 # The title of the Settings window
-SETTINGS_WINDOW = "Virtualbricks Settings"
+SETTINGS_WINDOW = "Settings"
+# The audio drivers of QEMU that play sound, in the order the menu of the
+# Settings window has them; the others come after, by their names
+PLAYING = ("pipewire", "pa", "alsa", "jack", "oss", "sdl", "sndio")
 
 
 @when(
@@ -3068,6 +3081,35 @@ def turn_setting(virtualbricks, state, setting, page):
     closes.
     """
 
+    dialog = turn_switch(virtualbricks, state, setting, page)
+    virtualbricks.click("button", "OK", within=dialog)
+    virtualbricks.gone("dialog", SETTINGS_WINDOW)
+
+
+@when(
+    words(
+        'I turn {state} "{setting}" on the page {page} of the Settings'
+        " window, then cancel"
+    )
+)
+def turn_setting_then_cancel(virtualbricks, state, setting, page):
+    """
+    Settings, in the menu File; on the page, the switch of the setting,
+    which is the other way, turned on or off; then Cancel, and the window
+    closes.
+    """
+
+    dialog = turn_switch(virtualbricks, state, setting, page)
+    virtualbricks.click("button", "Cancel", within=dialog)
+    virtualbricks.gone("dialog", SETTINGS_WINDOW)
+
+
+def turn_switch(virtualbricks, state, setting, page):
+    """
+    The Settings window, with the switch of the setting on the page turned
+    on or off, which was the other way.
+    """
+
     on = turned(state)
     dialog = open_settings(virtualbricks)
     switch = settings_switch(virtualbricks, dialog, page, setting)
@@ -3076,8 +3118,7 @@ def turn_setting(virtualbricks, state, setting, page):
     virtualbricks.wait_for(
         lambda: harness.a11y.checked(switch) == on, f"{setting} is {state}"
     )
-    virtualbricks.click("button", "OK", within=dialog)
-    virtualbricks.gone("dialog", SETTINGS_WINDOW)
+    return dialog
 
 
 @when("I open the Settings window")
@@ -3085,6 +3126,25 @@ def open_settings_window(virtualbricks):
     """Settings, in the menu File."""
 
     open_settings(virtualbricks)
+
+
+@when(
+    words(
+        'I type "{text}" as "{setting}" on the page {page} of the Settings'
+        " window"
+    )
+)
+def type_setting(virtualbricks, text, setting, page):
+    """
+    Settings, in the menu File; on the page, the text typed in the entry of
+    the setting, in place of the one it has.
+    """
+
+    dialog = open_settings(virtualbricks)
+    virtualbricks.click("page tab", page, within=dialog)
+    virtualbricks.type(
+        text, "text", within=virtualbricks.row(setting), over=True
+    )
 
 
 def open_settings(virtualbricks):
@@ -3118,6 +3178,70 @@ def settings_shows(virtualbricks, page, setting, state):
         lambda: harness.a11y.checked(switch) == turned(state),
         f"{setting} is {state}",
     )
+
+
+@then(words('the row "{setting}" of the Settings window says "{text}"'))
+def settings_row_says(virtualbricks, setting, text):
+    """
+    The row of the setting, on the page that shows, has the text: what is
+    wrong with the setting, as the window says once it knows.
+    """
+
+    virtualbricks.find("dialog", SETTINGS_WINDOW)
+    virtualbricks.find("label", text, within=virtualbricks.row(setting))
+
+
+@then(
+    words(
+        'the menu of "{setting}" in the Settings window has the audio'
+        " drivers of {program}"
+    )
+)
+def audio_drivers_menu(virtualbricks, setting, program):
+    """
+    The menu of the setting has the audio drivers that the program lists
+    with -audiodev help: those that play sound first, in the order of
+    PLAYING, then the others, by their names.
+    """
+
+    listed = subprocess.run(
+        [program, "-audiodev", "help"],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=10,
+    ).stdout.splitlines()
+    # "Available audio drivers:", then one a line
+    drivers = [line.strip() for line in listed[1:] if line.strip()]
+    playing = [driver for driver in PLAYING if driver in drivers]
+    wanted = playing + sorted(set(drivers) - set(playing))
+    virtualbricks.find("dialog", SETTINGS_WINDOW)
+    combo = virtualbricks.find("combo box", within=virtualbricks.row(setting))
+    # its arrow, at its right end: the middle of it is its text
+    x, y, width, height = harness.a11y.extents(combo)
+    virtualbricks.browser.click(x + width - height // 2, y + height // 2)
+    shown = []
+
+    def has():
+        shown[:] = virtualbricks.names("menu item", within=combo)
+        return shown == wanted
+
+    try:
+        virtualbricks.wait_for(has, f"the menu of {setting} has {wanted}")
+    except AssertionError:
+        raise AssertionError(f"the menu of {setting} has {shown}") from None
+
+
+@then("settings.toml is as it was")
+def settings_toml_unchanged(virtualbricks):
+    """
+    The settings file is the one the tests wrote before the start:
+    Virtualbricks hasn't written it.
+    """
+
+    with open(virtualbricks.settings) as file:
+        written = file.read()
+    assert written == harness.SETTINGS, f"settings.toml is {written!r}"
 
 
 @then("settings.toml has")
