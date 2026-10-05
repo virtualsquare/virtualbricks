@@ -567,7 +567,7 @@ class Brick(Base):
 
         raise NotImplementedError("Brick.command")
 
-    def needsudo(self):
+    def need_sudo(self):
         """Whether the program of the brick runs through sudo."""
 
         return False
@@ -585,7 +585,7 @@ class Brick(Base):
             self.logger.warn(left_out, warning=warning)
         args = command.argv
         self.logger.info(start_brick, args=" ".join(args))
-        if self.needsudo():
+        if self.need_sudo():
             args = sudo_command(args)
         self.proc = self.process_protocol(self)
         env = dict(os.environ, **command.env)
@@ -669,7 +669,7 @@ class Brick(Base):
 class PrivilegedBrick(Brick):
     """A brick that runs with sudo unless Virtualbricks runs as root."""
 
-    def needsudo(self):
+    def need_sudo(self):
         return os.geteuid() != 0
 
 
