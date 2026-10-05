@@ -188,7 +188,7 @@ class BrickFactory:
             raise errors.BrickRunningError(msg)
         logger.info(engine_bye)
         for e in self._events.values():
-            e.poweroff()
+            e.stop()
         self.quitting.notify(self)
         if not self.quit_d.called:
             self.quit_d.callback(None)
@@ -397,7 +397,7 @@ class BrickFactory:
         self._remove_event(event)
 
     def _remove_event(self, event):
-        event.poweroff()
+        event.stop()
         event.changed.disconnect(self.event_changed.notify)
         del self._events[event.name]
         self.event_removed.notify(event)

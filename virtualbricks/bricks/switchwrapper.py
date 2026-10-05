@@ -63,7 +63,7 @@ class SwitchWrapper(bricks.Brick):
             msg = _("Socket does not exists: %s") % self.config.socket_path
             return defer.fail(errors.BadConfigError(msg))
 
-    def poweroff(self, kill=False):
+    def stop(self, kill=False):
         if self.proc is not None:
             self.proc = None
             self.changed.notify(self)

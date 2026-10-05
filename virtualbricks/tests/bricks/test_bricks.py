@@ -201,11 +201,11 @@ class TestRestart(BrickTestCase):
         self.stopped = defer.Deferred()
         self.vm = self.factory.new_brick("qemu", "vm")
 
-        def poweroff(**kwargs):
+        def stop(**kwargs):
             self.done.append(("off", kwargs))
             return self.stopped
 
-        self.vm.poweroff = poweroff
+        self.vm.stop = stop
         self.vm.start = lambda: self.done.append("on") or self.vm
 
     def test_stops_then_starts(self):

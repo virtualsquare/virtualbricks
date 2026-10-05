@@ -203,10 +203,10 @@ def _stop(brick: Any) -> Any:
     if brick.proc is None:
         return None
     if brick.get_type() == "Qemu":
-        stopped = brick.poweroff(term=True)
+        stopped = brick.stop(term=True)
     else:
-        stopped = brick.poweroff()
-    timeout = reactor.callLater(STOPPING, brick.poweroff, kill=True)
+        stopped = brick.stop()
+    timeout = reactor.callLater(STOPPING, brick.stop, kill=True)
     try:
         _, status = yield stopped
     finally:

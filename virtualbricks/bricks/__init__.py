@@ -489,7 +489,7 @@ class Brick(Base):
 
         return self._waiting is not None
 
-    def poweroff(self, kill=False):
+    def stop(self, kill=False):
         if self.proc is None:
             return defer.succeed((self, self._last_status))
         self.logger.info(shutdown_brick, name=self.name, pid=self.proc.pid)
@@ -670,8 +670,8 @@ def restart(brick, clock) -> defer.Deferred:
     """Stop brick, killing it if it takes too long, and start it again."""
 
     logger.debug(restarting)
-    stopped = brick.poweroff()
-    call = clock.callLater(KILL_AFTER, brick.poweroff, kill=True)
+    stopped = brick.stop()
+    call = clock.callLater(KILL_AFTER, brick.stop, kill=True)
 
     def cancel(passthru):
         if call.active():

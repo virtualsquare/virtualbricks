@@ -532,7 +532,7 @@ def _stop(context, bricks, kill):
             lines.append(_("{name} isn't running").format(name=brick.name))
             continue
         try:
-            yield brick.poweroff(kill=kill)
+            yield brick.stop(kill=kill)
         except Exception:
             failure = Failure()
             logger.failure(stop_failed, failure, name=brick.name)

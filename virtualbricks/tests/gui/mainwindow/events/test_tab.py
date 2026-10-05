@@ -201,7 +201,7 @@ class TestTheRows(EventsTestCase):
         other = self.event("other", 9, "vm2 on")
         other.start()
         self.assertEqual(len(self.clock.getDelayedCalls()), 3)
-        self.ev.poweroff()
+        self.ev.stop()
         self.assertEqual(len(self.clock.getDelayedCalls()), 2)
         self.clock.advance(9)
         self.assertEqual(self.clock.getDelayedCalls(), [])
@@ -255,7 +255,7 @@ class TestTheRows(EventsTestCase):
             {"on_start": "start-vms"}
         )
         self.assertEqual(row.detail.get_text(), "After 5 s, starts vm1")
-        self.ev.poweroff()
+        self.ev.stop()
         self.tab.on_quit = lambda: None
 
 
@@ -314,7 +314,7 @@ class TestTheRowAboveTheList(EventsTestCase):
         self.assertFalse(tab.start_button.get_sensitive())
         self.assertTrue(tab.stop_button.get_sensitive())
         # nothing to start in an event without actions
-        self.ev.poweroff()
+        self.ev.stop()
         self.ev.update_config({"actions": []})
         self.assertFalse(tab.start_button.get_sensitive())
 

@@ -66,9 +66,9 @@ class StopAction:
     def perform(self, factory):
         found = _target(factory, self.target)
         if found.get_type() == "Event":
-            found.poweroff()
+            found.stop()
             return defer.succeed(None)
-        return found.poweroff()
+        return found.stop()
 
 
 @attr.frozen

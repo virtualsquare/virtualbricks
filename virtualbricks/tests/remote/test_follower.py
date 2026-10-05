@@ -436,7 +436,7 @@ class TestChanges(FollowTestCase):
         event = self.factory.new_event("boot")
         event.update_config({"delay": 30, "actions": [ShellAction("true")]})
         event.start()
-        self.addCleanup(event.poweroff)
+        self.addCleanup(event.stop)
         self.turn()
         [(_, _, _, _, state)] = self.got()
         self.assertGreater(state["left"], 29)

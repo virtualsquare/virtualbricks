@@ -442,7 +442,7 @@ class TestChanges(MirrorTestCase):
 
     def test_an_event_that_waits(self):
         self.boot.start()
-        self.addCleanup(self.boot.poweroff)
+        self.addCleanup(self.boot.stop)
         self.turn()
         self.assertSame()
         copy = self.copy.get_event("boot")
@@ -452,7 +452,7 @@ class TestChanges(MirrorTestCase):
         self.clock().advance(3)
         self.assertEqual(eventinfo.seconds_left(copy, self.clock()), 2)
         # stopped there before its time: the timer of the copy goes
-        self.boot.poweroff()
+        self.boot.stop()
         self.turn()
         self.assertIsNone(copy.scheduled)
         self.assertEqual(self.clock().getDelayedCalls(), [])
@@ -482,7 +482,7 @@ class TestTheCopy(MirrorTestCase):
 
     def test_it_starts_nothing(self):
         vm1 = self.copy.get_brick("vm1")
-        for call in ("start", "poweroff", "send", "send_signal"):
+        for call in ("start", "stop", "send", "send_signal"):
             self.assertRaises(NotOnTheCopy, getattr(vm1, call))
         with self.assertRaises(NotOnTheCopy) as cm:
             vm1.open_console()
@@ -492,7 +492,7 @@ class TestTheCopy(MirrorTestCase):
             " here is its copy",
         )
         boot = self.copy.get_event("boot")
-        for call in ("start", "poweroff", "run_actions"):
+        for call in ("start", "stop", "run_actions"):
             self.assertRaises(NotOnTheCopy, getattr(boot, call))
         stand_in = StandIn(vm1, 42)
         self.assertRaises(NotOnTheCopy, stand_in.signal_process, 15)

@@ -118,12 +118,12 @@ class TestPerform(BrickTestCase):
         self.sw1.start = lambda resume="": defer.succeed(
             self.done.append("sw1 on")
         )
-        self.sw1.poweroff = lambda kill=False: defer.succeed(
+        self.sw1.stop = lambda kill=False: defer.succeed(
             self.done.append("sw1 off")
         )
         self.boot = self.factory.new_event("boot")
         self.boot.start = lambda: self.done.append("boot on")
-        self.boot.poweroff = lambda: self.done.append("boot off")
+        self.boot.stop = lambda: self.done.append("boot off")
 
     def test_start_and_stop(self):
         for action in (

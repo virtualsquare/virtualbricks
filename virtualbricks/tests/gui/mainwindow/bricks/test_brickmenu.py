@@ -390,7 +390,7 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
         vm.open_console = lambda: done.append("console")
         vm.send_signal = lambda number: done.append(number)
         vm.send = lambda data: done.append(data)
-        vm.poweroff = lambda **kwargs: done.append(kwargs)
+        vm.stop = lambda **kwargs: done.append(kwargs)
         actions = BrickActions(self.gui, vm)
         for name in (
             "console",

@@ -74,12 +74,12 @@ class BricksTestCase(ConsoleTestCase):
         return brick
 
     def stoppable(self, brick):
-        def poweroff(kill=False):
+        def stop(kill=False):
             self.done.append(("off", brick.name, kill))
             brick.proc = None
             return defer.succeed((brick, 0))
 
-        brick.poweroff = poweroff
+        brick.stop = stop
         return brick
 
 

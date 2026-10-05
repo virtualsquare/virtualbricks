@@ -128,7 +128,7 @@ class TestStatusAndQuit(ConsoleTestCase):
                 "boot   7 s",
             ],
         )
-        event.poweroff()
+        event.stop()
 
     def test_quit(self):
         self.running("switch", "sw1", 41822)

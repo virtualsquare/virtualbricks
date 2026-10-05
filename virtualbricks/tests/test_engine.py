@@ -65,8 +65,8 @@ class FakeBrick:
         self.calls.append(("start",))
         return defer.succeed(self)
 
-    def poweroff(self, kill=False, term=False):
-        self.calls.append(("poweroff", kill, term))
+    def stop(self, kill=False, term=False):
+        self.calls.append(("stop", kill, term))
         return defer.succeed(self)
 
     def send_signal(self, number):
@@ -128,16 +128,16 @@ class TestBricks(EngineTestCase):
         self.assertEqual(
             brick.calls,
             [
-                ("poweroff", False, False),
-                ("poweroff", False, True),
-                ("poweroff", True, False),
+                ("stop", False, False),
+                ("stop", False, True),
+                ("stop", True, False),
             ],
         )
 
     def test_restart(self):
         brick = FakeBrick()
         self.successResultOf(self.engine.restart(brick))
-        self.assertEqual(brick.calls, [("poweroff", False, False), ("start",)])
+        self.assertEqual(brick.calls, [("stop", False, False), ("start",)])
         # stopped in time: nothing kills it later
         self.assertEqual(self.clock.getDelayedCalls(), [])
 

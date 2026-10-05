@@ -76,7 +76,7 @@ class Event(Base):
         self.changed.notify(self)
         return deferred
 
-    def poweroff(self):
+    def stop(self):
         if self.scheduled is None:
             return
         self.scheduled.cancel()

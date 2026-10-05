@@ -1242,7 +1242,7 @@ class VirtualMachine(bricks.Brick):
             self._exited_d.addBoth(release)
         return d
 
-    def poweroff(self, kill=False, term=False):
+    def stop(self, kill=False, term=False):
         if self.proc is None:
             return defer.succeed((self, self._last_status))
         elif not any((kill, term)):
@@ -1250,9 +1250,9 @@ class VirtualMachine(bricks.Brick):
             self.send(b"system_powerdown\n")
             return self._exited_d
         if term:
-            return bricks.Brick.poweroff(self)
+            return bricks.Brick.stop(self)
         else:
-            return bricks.Brick.poweroff(self, kill)
+            return bricks.Brick.stop(self, kill)
 
     def update_usb_devices(self, dev):
         self.logger.debug(update_usb, old=self.config.usb_devices, new=dev)
@@ -1737,7 +1737,7 @@ def suspend(vm) -> defer.Deferred:
     ):
         return _not_supported()
     vm.send(f"savevm {SNAPSHOT}\n".encode())
-    return vm.poweroff()
+    return vm.stop()
 
 
 def resume(vm) -> defer.Deferred:

@@ -140,12 +140,12 @@ class BricksTestCase(GuiTestCase):
             self.done.append(("on", name))
             return defer.succeed(brick)
 
-        def poweroff():
+        def stop():
             self.done.append(("off", name))
             return defer.succeed(brick)
 
         brick.start = start
-        brick.poweroff = poweroff
+        brick.stop = stop
         return brick
 
     def running(self, brick):
@@ -352,7 +352,7 @@ class TestTheRowAboveTheList(BricksTestCase):
         def fail():
             raise RuntimeError("gone")
 
-        vm.poweroff = fail
+        vm.stop = fail
         self.successResultOf(self.tab.stop_all())
         self.assertEqual(
             self.logger.formatted(),

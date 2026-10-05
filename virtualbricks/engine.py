@@ -189,15 +189,15 @@ class LocalEngine:
         return defer.maybeDeferred(brick.start)
 
     def stop(self, brick) -> defer.Deferred:
-        return defer.maybeDeferred(brick.poweroff)
+        return defer.maybeDeferred(brick.stop)
 
     def terminate(self, brick) -> defer.Deferred:
         """Stop brick with SIGTERM."""
 
-        return defer.maybeDeferred(brick.poweroff, term=True)
+        return defer.maybeDeferred(brick.stop, term=True)
 
     def kill(self, brick) -> defer.Deferred:
-        return defer.maybeDeferred(brick.poweroff, kill=True)
+        return defer.maybeDeferred(brick.stop, kill=True)
 
     def restart(self, brick) -> defer.Deferred:
         """Stop brick, killing it if it takes too long, and start it."""
@@ -307,7 +307,7 @@ class LocalEngine:
         return defer.maybeDeferred(event.start)
 
     def stop_event(self, event) -> defer.Deferred:
-        return defer.maybeDeferred(event.poweroff)
+        return defer.maybeDeferred(event.stop)
 
     def run_event(self, event) -> defer.Deferred:
         """Run the actions of an event now."""

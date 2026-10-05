@@ -341,7 +341,7 @@ def stop(context, name):
     for event in name:
         if not is_running(event):
             lines.append(_("{name} isn't waiting").format(name=event.name))
-        event.poweroff()
+        event.stop()
     return lines
 
 

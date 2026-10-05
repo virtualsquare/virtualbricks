@@ -227,20 +227,20 @@ class TestEvent(BrickTestCase):
             ],
         )
 
-    def test_poweroff_cancels_the_actions(self):
+    def test_stop_cancels_the_actions(self):
         self.configure(3, Recording("a on"))
         self.event.start()
         del self.changes[:]
-        self.assertIsNone(self.event.poweroff())
+        self.assertIsNone(self.event.stop())
         self.assertFalse(self.event.is_running())
         self.assertEqual(self.clock.getDelayedCalls(), [])
         self.assertEqual(self.changes, [self.event])
         self.clock.advance(5)
         self.assertEqual(Recording.performed, [])
 
-    def test_poweroff_when_off(self):
+    def test_stop_when_off(self):
         self.configure(3, Recording("a on"))
-        self.assertIsNone(self.event.poweroff())
+        self.assertIsNone(self.event.stop())
         self.assertEqual(self.changes, [])
 
     def test_set_notifies(self):

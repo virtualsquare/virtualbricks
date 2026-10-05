@@ -839,7 +839,7 @@ class TestSuspendAndResume(BrickTestCase):
         self.vm = self.factory.new_brick("qemu", "vm")
         self.done = []
         self.vm.send = lambda data: self.done.append(data)
-        self.vm.poweroff = lambda: defer.succeed(self.done.append("off"))
+        self.vm.stop = lambda: defer.succeed(self.done.append("off"))
         self.vm.start = lambda resume="": defer.succeed(
             self.done.append(("on", resume))
         )
