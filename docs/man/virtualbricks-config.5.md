@@ -143,8 +143,8 @@ The values have these types:
 The file *\$XDG_CONFIG_HOME*/virtualbricks/settings.toml, or
 *~/.config/virtualbricks/settings.toml* when **XDG_CONFIG_HOME** is not set.
 Virtualbricks creates it with the default values at its first start, and
-rewrites it when the settings window is closed with OK and when Virtualbricks
-quits. Two that run side by side, in two workspaces, each write all the
+rewrites it when OK in the Settings window changes one of its settings, and
+when Virtualbricks quits. Two that run side by side, in two workspaces, each write all the
 settings they have: the last one to write wins.
 
 **workspace** = *path*, default `"~/.virtualbricks"`
@@ -246,7 +246,7 @@ The file has these top-level keys:
 ## Project settings
 
 The **[settings]** table. While the project is open, these are the settings
-in effect, and the settings window changes them for this project only. A new
+in effect, and the Settings window changes them for this project only. A new
 project starts with a copy of the settings of the project that is open, or
 with the defaults when none is. An imported project brings the paths of the
 machine it comes from; the import dialog offers to replace them with those of

@@ -268,13 +268,15 @@ with `# default` the values that are the defaults. Virtualbricks writes the
 files again as it saves, so comments added by hand don't last.
 
 Each project has its own settings, in its `project.toml`: the first time,
-choose in *File › Settings*, on the page of the project, where
+choose in *File › Settings*, on the page *Project* and its name, where
 Virtualbricks finds the programs: `qemu_path` and `vde_path`, the folders of
-the Qemu and VDE binaries. A new project starts with a copy of the settings of
-the project that is open. The page of the application sets `terminal`, the
-terminal of the consoles, and `audio_driver`, the audio driver of QEMU that
-plays the sound cards of the machines: `alsa` by default, or `pa`,
-`pipewire`, and the others your QEMU has.
+the QEMU and VDE programs. Each folder says what it holds, and what it lacks
+with the package that has it. A new project starts with a copy of the
+settings of the project that is open. The page *This computer* sets
+`terminal`, the terminal of the consoles, one of those its menu offers or
+any that takes `-e` and a program, and `audio_driver`, the audio driver of
+QEMU that plays the sound cards of the machines: `alsa` by default, or one
+of the others that its menu offers, those your QEMU has.
 
 A tap and a capture need root. Unless Virtualbricks runs as root, it runs them
 with `sudo -A` when an askpass helper is configured, in `SUDO_ASKPASS` or

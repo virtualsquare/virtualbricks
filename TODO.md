@@ -13,7 +13,14 @@
   a restart (21 §14)
 - [ ] Move `locations` into `config` (maybe)
 - [ ] Drop the `log_link_loops` setting, maybe: a loop always stops a
-  start (10 §13)
+  start (10 §13, 23 §12)
+- [ ] Let the terminal be a command with a place for the console, so that
+  any terminal works: `gnome-terminal -- {command}`, `foot {command}`
+  (23 §12, S6 C)
+- [ ] Show what KSM saves in its row of the Settings window: the pages
+  shared, from `/sys/kernel/mm/ksm/pages_sharing` (23 §12)
+- [ ] Change the settings of a project that isn't open, from the Projects
+  window (23 §12)
 
 ## Projects
 
@@ -287,6 +294,11 @@
 - [ ] Update the copyright notice
 
 # DONE
+
+- [x] Redesign the Settings window: a page for each owner of settings, the
+  rows of the schema, Cancel and OK on drafts, folders that say what they
+  hold, menus for the terminal and the audio driver; private copies always
+  qcow2, and the warning of KSM only when the settings ask for it (23)
 
 - [x] Show the pictures of the project's folder in the preview of the
   Readme tab, over a connection too (`ReadmePicture`); any other picture

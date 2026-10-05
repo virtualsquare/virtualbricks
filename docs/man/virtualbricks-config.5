@@ -144,8 +144,8 @@ The file \f[I]$XDG_CONFIG_HOME\f[R]/virtualbricks/settings.toml, or
 \f[I]\(ti/.config/virtualbricks/settings.toml\f[R] when
 \f[B]XDG_CONFIG_HOME\f[R] is not set.
 Virtualbricks creates it with the default values at its first start, and
-rewrites it when the settings window is closed with OK and when
-Virtualbricks quits.
+rewrites it when OK in the Settings window changes one of its settings,
+and when Virtualbricks quits.
 Two that run side by side, in two workspaces, each write all the
 settings they have: the last one to write wins.
 .TP
@@ -254,7 +254,7 @@ Its \f[B]type\f[R] key says which kind; the other keys depend on it.
 .SS Project settings
 The \f[B][settings]\f[R] table.
 While the project is open, these are the settings in effect, and the
-settings window changes them for this project only.
+Settings window changes them for this project only.
 A new project starts with a copy of the settings of the project that is
 open, or with the defaults when none is.
 An imported project brings the paths of the machine it comes from; the
