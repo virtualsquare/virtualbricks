@@ -116,14 +116,6 @@ class UsbDevice:
             description = matchobj.group("description").strip()
             return cls(dev_id, description)
 
-    @property
-    def ID(self):
-        return self.id
-
-    @property
-    def desc(self):
-        return self.description
-
     def __str__(self):
         return self.id
 
