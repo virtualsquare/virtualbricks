@@ -106,13 +106,6 @@ class Event(Base):
         self.scheduled = None
         self.changed.notify(self)
 
-    def toggle(self):
-        if self.scheduled is not None:
-            self.poweroff()
-            return defer.succeed(self)
-        else:
-            return self.poweron()
-
     def do_actions(self, deferred):
         self.scheduled = None
         self.run_actions().chainDeferred(deferred)

@@ -492,7 +492,7 @@ class TestTheCopy(MirrorTestCase):
             " here is its copy",
         )
         boot = self.copy.get_event("boot")
-        for call in ("poweron", "poweroff", "toggle", "run_actions"):
+        for call in ("poweron", "poweroff", "run_actions"):
             self.assertRaises(NotOnTheCopy, getattr(boot, call))
         stand_in = StandIn(vm1, 42)
         self.assertRaises(NotOnTheCopy, stand_in.signal_process, 15)

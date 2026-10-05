@@ -66,7 +66,7 @@ not_copied = "The copy didn't take {command} of {name}"
 
 # What the bricks and the events of the copy refuse.
 BRICK_CALLS = ("poweron", "poweroff", "send", "send_signal", "open_console")
-EVENT_CALLS = ("poweron", "poweroff", "toggle", "run_actions")
+EVENT_CALLS = ("poweron", "poweroff", "run_actions")
 
 
 class NotOnTheCopy(Exception):

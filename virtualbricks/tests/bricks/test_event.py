@@ -252,19 +252,6 @@ class TestEvent(BrickTestCase):
         self.assertIsNone(self.event.poweroff())
         self.assertEqual(self.changes, [])
 
-    def test_toggle(self):
-        self.configure(3, Recording("a on"))
-        started = self.event.toggle()
-        self.assertTrue(self.event.__isrunning__())
-        self.assertFalse(started.called)
-        stopped = self.event.toggle()
-        self.assertFalse(self.event.__isrunning__())
-        self.assertEqual(self.clock.getDelayedCalls(), [])
-        return stopped.addCallback(self.assertIs, self.event)
-
-    def test_toggle_needs_a_configuration(self):
-        self.assertRaises(errors.BadConfigError, self.event.toggle)
-
     def test_set_notifies(self):
         self.event.update_config({"delay": 2})
         self.assertEqual(self.changes, [self.event])
