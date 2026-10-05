@@ -399,7 +399,7 @@ class Brick(Base):
 
     @property
     def pid(self):
-        if self.proc is None:
+        if not self.is_running():
             return -1
         return self.proc.pid
 
@@ -425,7 +425,7 @@ class Brick(Base):
         once its program runs.
         """
 
-        if self.proc is not None:
+        if self.is_running():
             return defer.succeed(self)
         if self._linking:
             if get_setting("log_link_loops"):
@@ -490,7 +490,7 @@ class Brick(Base):
         return self._waiting is not None
 
     def stop(self, kill=False):
-        if self.proc is None:
+        if not self.is_running():
             return defer.succeed((self, self._last_status))
         self.logger.info(shutdown_brick, name=self.name, pid=self.proc.pid)
         try:
@@ -520,7 +520,7 @@ class Brick(Base):
         )
 
     def send_signal(self, signal):
-        if self.proc:
+        if self.is_running():
             self.proc.signal_process(signal)
 
     # brick <--> process interface
@@ -639,12 +639,12 @@ class Brick(Base):
 
     def send(self, data):
         assert isinstance(data, bytes)
-        if self.proc:
+        if self.is_running():
             self.proc.write(data)
 
     def get_state(self):
         """return state of the brick"""
-        if self.proc is not None:
+        if self.is_running():
             state = _("running")
         elif not self._properly_connected():
             state = _("disconnected")

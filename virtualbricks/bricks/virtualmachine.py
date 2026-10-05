@@ -1223,7 +1223,7 @@ class VirtualMachine(bricks.Brick):
         The images of its disks are locked while it runs.
         """
 
-        if self.proc is not None or self.starting():
+        if self.is_running() or self.starting():
             # its images are locked already, or will be
             return bricks.Brick.start(self, resume)
 
@@ -1243,7 +1243,7 @@ class VirtualMachine(bricks.Brick):
         return d
 
     def stop(self, kill=False, term=False):
-        if self.proc is None:
+        if not self.is_running():
             return defer.succeed((self, self._last_status))
         elif not any((kill, term)):
             self.logger.info(powerdown, vm=self)

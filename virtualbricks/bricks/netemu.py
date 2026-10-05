@@ -556,7 +556,7 @@ class Netemu(Wire):
 
     # the set functions in base.py and wires.py are not suitable anymore for communicating with the emulator
     def update(self):
-        if self.proc is None:
+        if not self.is_running():
             return
 
         # state attributes

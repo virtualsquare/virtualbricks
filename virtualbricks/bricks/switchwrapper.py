@@ -52,7 +52,7 @@ class SwitchWrapper(bricks.Brick):
         self.socks.append(factory.new_sock(self, self.name + "_port"))
 
     def start(self):
-        if self.proc is not None:
+        if self.is_running():
             return defer.succeed(self)
         elif os.path.exists(self.config.socket_path):
             self.proc = bricks.FakeProcess(self)
@@ -64,7 +64,7 @@ class SwitchWrapper(bricks.Brick):
             return defer.fail(errors.BadConfigError(msg))
 
     def stop(self, kill=False):
-        if self.proc is not None:
+        if self.is_running():
             self.proc = None
             self.changed.notify(self)
         return defer.succeed((self, None))
