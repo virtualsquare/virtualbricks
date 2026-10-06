@@ -45,6 +45,10 @@ from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, cast
 
 import attr
 
+# attrs 21.2, shipped by Ubuntu 22.04, has no "attrs" namespace yet. Imported,
+# not assigned, so that mypy's plugin of attrs knows the classes it makes.
+from attr import define
+
 from virtualbricks.config.tomlfile import Note
 from virtualbricks.nic import MAC_PATTERN
 
@@ -84,9 +88,6 @@ __all__ = [
 ]
 
 _KEY = "virtualbricks.config.schema"
-
-# attrs 21.2, shipped by Ubuntu 22.04, has no "attrs" namespace yet.
-define = attr.define
 
 # The values of a field.
 T = TypeVar("T")

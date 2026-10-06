@@ -296,13 +296,16 @@ def _nic_table(link: Plug | Sock) -> Table:
     table: Table
     if link.mode == "sock":
         # The socket name is after the name of the virtual machine.
-        name = link.nickname[len(link.brick.name) + 1 :]
+        sock = cast("Sock", link)
+        name = sock.nickname[len(sock.brick.name) + 1 :]
         table = {"kind": "socket", "name": name}
-    elif link.sock is not None and link.sock.nickname == HOSTONLY:
-        table = {"kind": "hostonly"}
     else:
         # a card that isn't a socket is a plug
-        table = {"kind": "plug", "connect": _plug_target(cast("Plug", link))}
+        plug = cast("Plug", link)
+        if plug.sock is not None and plug.sock.nickname == HOSTONLY:
+            table = {"kind": "hostonly"}
+        else:
+            table = {"kind": "plug", "connect": _plug_target(plug)}
     table["model"] = link.model
     table["mac"] = link.mac
     return table
@@ -378,8 +381,8 @@ def _brick_notes(table: Table) -> Notes:
     if cls is None:
         return {}
     result = {("type",): Note(cls.summary), **cls.table_notes(table)}
-    if cls.connections in CONNECTION_NOTES:
-        key = cls.connections
+    key = cls.connections
+    if key is not None and key in CONNECTION_NOTES:
         result[(key,)] = CONNECTION_NOTES[key]
     elif cls.connections == "nics":
         result.update(_nics_notes(table))

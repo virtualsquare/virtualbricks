@@ -47,10 +47,12 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
+from collections.abc import Generator
 from typing import TYPE_CHECKING, Any, Callable
 
 from twisted.internet import defer
 from twisted.logger import Logger
+from twisted.python.failure import Failure
 
 from virtualbricks import errors
 from virtualbricks.qemu import run as qemu_run
@@ -58,7 +60,7 @@ from virtualbricks.qemu import run as qemu_run
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
-    from virtualbricks.config.workspace import Workspace
+    from virtualbricks.config.workspace import Trasher, Workspace
 
 logger = Logger()
 back_failed = (
@@ -68,6 +70,8 @@ back_failed = (
 
 # qemu-img with its arguments: its output, when it ends.
 Run = Callable[[list[str]], defer.Deferred]
+# The stamp of a file being read, and who waits for its info.
+Reading = tuple[tuple[int, int], list[defer.Deferred]]
 
 # The folder of the images, in the workspace.
 IMAGE_FOLDER = "vimages"
@@ -138,9 +142,7 @@ class InfoCache:
         self.run = run
         self._infos: dict[str, tuple[tuple[int, int], ImageInfo]] = {}
         # the files being read, and who waits for them
-        self._reading: dict[
-            str, tuple[tuple[int, int], list[defer.Deferred]]
-        ] = {}
+        self._reading: dict[str, Reading] = {}
 
     def get(self, path: str) -> ImageInfo | None:
         """The info of path, if it was read and the file hasn't changed."""
@@ -163,7 +165,7 @@ class InfoCache:
         cached = self._infos.get(path)
         if cached is not None and cached[0] == stamp:
             return defer.succeed(cached[1])
-        waiting = defer.Deferred()
+        waiting: defer.Deferred = defer.Deferred()
         reading = self._reading.get(path)
         if reading is not None and reading[0] == stamp:
             reading[1].append(waiting)
@@ -175,7 +177,9 @@ class InfoCache:
         deferred.addBoth(self._read, path, reading)
         return waiting
 
-    def _read(self, result, path, reading) -> None:
+    def _read(
+        self, result: ImageInfo | Failure, path: str, reading: Reading
+    ) -> None:
         if self._reading.get(path) is reading:
             del self._reading[path]
             if isinstance(result, ImageInfo):
@@ -271,12 +275,18 @@ def relink(
     running = [use.vm.name for use in disks if use.running]
     if running:
         return defer.fail(RunningError(sorted(set(running))))
-    copies = [use.copy for use in disks if use.copy_size is not None]
+    copies = [
+        use.copy
+        for use in disks
+        if use.copy is not None and use.copy_size is not None
+    ]
     return _relink(image, old, path, copies, run)
 
 
 @defer.inlineCallbacks
-def _relink(image, old, path, copies, run):
+def _relink(
+    image: Image, old: str, path: str, copies: list[str], run: Run
+) -> Generator[defer.Deferred, Any, None]:
     info = yield read_info(path, run)
     done = []
     try:
@@ -344,7 +354,7 @@ def other_projects(workspace: Workspace, path: str) -> list[tuple[str, str]]:
 # The private copies
 
 
-def discard(path: str, trasher=None) -> bool:
+def discard(path: str, trasher: Trasher | None = None) -> bool:
     """
     Move path to the trash, or delete it without one; True if it went to
     the trash. A missing file is gone already.
@@ -359,7 +369,9 @@ def discard(path: str, trasher=None) -> bool:
     return False
 
 
-def start_over(vm: VirtualMachine, device: str, trasher=None) -> bool:
+def start_over(
+    vm: VirtualMachine, device: str, trasher: Trasher | None = None
+) -> bool:
     """
     The private copy of a disk of vm goes, with its changes: the next start
     makes an empty one. Fail with ``RunningError`` while vm runs. True if
@@ -378,7 +390,7 @@ def adopt(
     name: str,
     path: str,
     use_it: bool,
-    trasher=None,
+    trasher: Trasher | None = None,
 ) -> Image:
     """
     Add the image saved from a disk of vm, name for the file path. use_it

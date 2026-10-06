@@ -44,7 +44,7 @@ import os
 import shutil
 import tempfile
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from virtualbricks import locations
 from virtualbricks.config.archive import (
@@ -56,6 +56,7 @@ from virtualbricks.config.archive import (
     ArchiveContents,
     ArchiveError,
     ArchiveJob,
+    Emit,
     Member,
     Progress,
     QemuImg,
@@ -82,6 +83,8 @@ from virtualbricks.config.settings import get_setting
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.interfaces import IReactorProcess
+
     from virtualbricks.config.tomlfile import Table
     from virtualbricks.config.workspace import Workspace
 
@@ -311,7 +314,7 @@ def import_project(
     workspace: Workspace,
     on_progress: Callable[[str, int, int], None] | None = None,
     qemu_img: str = "",
-    reactor=None,
+    reactor: IReactorProcess | None = None,
 ) -> ArchiveJob:
     """Run the import in the archive process; done fires with its result."""
 
@@ -344,7 +347,7 @@ class ImportResult:
 class _Import:
     """An import running in the archive process."""
 
-    def __init__(self, job: Table, emit, tool: Tool) -> None:
+    def __init__(self, job: Table, emit: Emit, tool: Tool) -> None:
         self.job = job
         self.emit = emit
         self.tool = tool
@@ -376,7 +379,8 @@ class _Import:
             remap_image(data, name, path)
         table = data.setdefault("settings", {})
         if isinstance(table, dict):
-            table.update(self.job.get("settings", {}))
+            # as the plan's job() writes them
+            table.update(cast("Table", self.job.get("settings", {})))
         write_project_file(data, project_file)
         self.rebase(data, paths)
         self.unpack()
@@ -398,7 +402,7 @@ class _Import:
     def unpack(self) -> None:
         """Turn the packed disks back into normal ones."""
 
-        todo = []
+        todo: list[tuple[str, str, tuple[str, str] | None]] = []
         for name, member in self.packed.items():
             if member.kind == IMAGE:
                 path = self.copied.get(member.image)
@@ -414,7 +418,10 @@ class _Import:
                         " read; it works as it is",
                         name,
                     )
-        if todo and self.qemu is None:
+        if not todo:
+            return
+        qemu = self.qemu
+        if qemu is None:
             for name, _path, _backing in todo:
                 self.report.warning(
                     "qemu-img not found: left compressed, it works as it is",
@@ -427,13 +434,15 @@ class _Import:
             size = os.path.getsize(path)
             start = progress.done
 
-            def on_percent(percent, start=start, size=size):
+            def on_percent(
+                percent: float, start: int = start, size: int = size
+            ) -> None:
                 progress.done = start
                 progress.advance(int(size * percent / 100))
 
             unpacked = path + ".unpacking"
             try:
-                self.qemu.convert(path, unpacked, False, backing, on_percent)
+                qemu.convert(path, unpacked, False, backing, on_percent)
             except ArchiveError as exc:
                 if os.path.lexists(unpacked):
                     os.remove(unpacked)
@@ -441,8 +450,7 @@ class _Import:
             else:
                 os.replace(unpacked, path)
             progress.done = start + size
-        if todo:
-            progress.send()
+        progress.send()
 
     def messages(self) -> list[list[str]]:
         return report_to_list(self.report)
@@ -468,7 +476,8 @@ class _Import:
         """Copy, use or leave unset each image; return their paths."""
 
         paths = {}
-        for image in self.job.get("images", []):
+        # as the plan's job() writes them
+        for image in cast("list[Table]", self.job.get("images", [])):
             name = str(image["name"])
             choice = str(image["choice"])
             source = os.path.join(self.images, name)
@@ -528,13 +537,13 @@ class _Import:
                     )
                     continue
                 try:
-                    self.rebase_disk(cow, path)
+                    self.rebase_disk(self.qemu, cow, path)
                 except ArchiveError as exc:
                     self.report.warning(str(exc), where)
 
-    def rebase_disk(self, cow: str, image: str) -> None:
-        image_format = str(self.qemu.info(image).get("format", "qcow2"))
-        self.qemu.rebase(cow, image, image_format)
+    def rebase_disk(self, qemu: QemuImg, cow: str, image: str) -> None:
+        image_format = str(qemu.info(image).get("format", "qcow2"))
+        qemu.rebase(cow, image, image_format)
         self.rebased[cow] = (image, image_format)
 
     def sparsify(self) -> None:
@@ -571,7 +580,7 @@ class _Import:
                 os.remove(path)
 
 
-def run_import(job: Table, emit, tool: Tool) -> dict[str, Any]:
+def run_import(job: Table, emit: Emit, tool: Tool) -> dict[str, Any]:
     """Run an import in the archive process; clean up if it fails."""
 
     running = _Import(job, emit, tool)

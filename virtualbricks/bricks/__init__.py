@@ -386,7 +386,7 @@ class Brick(Base):
     # What the brick is, the comment of its type in the project file.
     summary = ""
     # How the plugs are saved: "connect", "endpoints", "nics" or None.
-    connections = None
+    connections: str | None = None
     # The programs it runs, each a choice of names: any one of them will do.
     programs = ()
 

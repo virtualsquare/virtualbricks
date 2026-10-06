@@ -33,6 +33,7 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING, TypeAlias, cast
 
+import attr
 from twisted.internet import defer
 from twisted.logger import Logger
 
@@ -51,7 +52,6 @@ from virtualbricks.config.schema import (
     field,
     load_record,
     field_names,
-    field_values,
     kind_of,
     notes,
     parse_value,
@@ -287,7 +287,7 @@ def new_project_settings() -> ProjectSettings:
 
     if _project is None:
         return ProjectSettings()
-    return ProjectSettings(**field_values(_project))
+    return attr.evolve(_project)
 
 
 def use_project(project_settings: ProjectSettings | None) -> None:

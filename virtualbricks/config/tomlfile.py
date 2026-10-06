@@ -34,14 +34,15 @@ from __future__ import annotations
 import datetime
 import os
 import re
+import sys
 import tempfile
 import textwrap
 from collections.abc import Mapping
 from typing import NamedTuple, TypeAlias, TypeGuard
 
-try:
+if sys.version_info >= (3, 11):
     import tomllib
-except ImportError:  # pragma: no cover (Python 3.10)
+else:  # pragma: no cover (Python 3.10)
     import tomli as tomllib
 
 import tomlkit

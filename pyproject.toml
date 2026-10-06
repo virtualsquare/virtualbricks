@@ -144,11 +144,7 @@ ignore_missing_imports = true
 # it 100%.
 module = [
     "virtualbricks.bricks.command",
-    "virtualbricks.config.projectfile",
-    "virtualbricks.config.report",
-    "virtualbricks.config.schema",
-    "virtualbricks.config.settings",
-    "virtualbricks.config.tomlfile",
+    "virtualbricks.config.*",
     "virtualbricks.console.command",
     "virtualbricks.console.output",
     "virtualbricks.gui.pango",

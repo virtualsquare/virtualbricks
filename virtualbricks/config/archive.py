@@ -52,6 +52,7 @@ from __future__ import annotations
 import dataclasses
 import errno
 import gzip
+import io
 import json
 import os
 import posixpath
@@ -64,8 +65,8 @@ import tarfile
 import tempfile
 import time
 import traceback
-from collections.abc import Callable, Iterable
-from typing import IO, TYPE_CHECKING, Any
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from typing import IO, TYPE_CHECKING, Any, NoReturn, cast
 
 from twisted.internet import defer, protocol
 
@@ -82,7 +83,13 @@ from virtualbricks.config.tomlfile import (
 )
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.config.tomlfile import Table
+    from types import FrameType
+
+    from twisted.internet.interfaces import IProcessTransport, IReactorProcess
+    from twisted.python.failure import Failure
+
+    from virtualbricks.config.report import Level
+    from virtualbricks.config.tomlfile import Table, Value
 
 # The format of contents.toml.
 FORMAT = 1
@@ -103,6 +110,13 @@ IMAGE = "image"
 DISK = "disk"
 OTHER = "other"
 HEAD = frozenset((CONTENTS_KIND, PROJECT, LEGACY_PROJECT, README_KIND))
+
+# What the process sends to the application: an object, a line of JSON.
+Emit = Callable[[dict[str, Any]], None]
+# What qemu-img says of an operation: its percent done.
+OnPercent = Callable[[float], None]
+# A member of a new archive: (arcname, path, kind).
+Entry = tuple[str, str, str]
 
 
 class ArchiveError(Exception):
@@ -264,7 +278,10 @@ def report_to_list(report: Report) -> list[list[str]]:
 
 def report_from_list(items: Iterable[list[str]]) -> Report:
     report = Report()
-    report.messages.extend(Message(*item) for item in items)
+    report.messages.extend(
+        Message(cast("Level", level), text, where)
+        for level, text, where in items
+    )
     return report
 
 
@@ -274,7 +291,13 @@ def report_from_list(items: Iterable[list[str]]) -> Report:
 class Progress:
     """Send the progress of a step, at most ten times a second."""
 
-    def __init__(self, emit, step: str, total: int, clock=time.monotonic):
+    def __init__(
+        self,
+        emit: Emit,
+        step: str,
+        total: int,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
         self.emit = emit
         self.step = step
         self.total = total
@@ -383,11 +406,12 @@ def read_contents(data: bytes) -> list[Member]:
             f" (format {table.get('format')!r})"
         )
 
-    def number(value) -> int:
+    def number(value: object) -> int:
         return value if isinstance(value, int) else 0
 
     members = []
-    for item in table.get("members", []):
+    items = table.get("members", [])
+    for item in items if isinstance(items, list) else []:
         if isinstance(item, dict):
             name = str(item.get("name", ""))
             members.append(
@@ -403,7 +427,7 @@ def read_contents(data: bytes) -> list[Member]:
 
 
 def write_contents(members: Iterable[Member]) -> str:
-    items = []
+    items: list[Value] = []
     for m in members:
         item: Table = {"name": m.name, "size": m.size}
         if m.packed:
@@ -460,7 +484,7 @@ def convert_legacy(text: bytes, report: Report) -> Table:
     return data
 
 
-def inspect(path: str, tool: Tool, emit) -> ArchiveContents:
+def inspect(path: str, tool: Tool, emit: Emit) -> ArchiveContents:
     """
     Read what an archive holds.
 
@@ -475,7 +499,9 @@ def inspect(path: str, tool: Tool, emit) -> ArchiveContents:
         return _inspect_with_tool(path, tool, emit)
 
 
-def _inspect_with_tarfile(path: str, tool: Tool, emit) -> ArchiveContents:
+def _inspect_with_tarfile(
+    path: str, tool: Tool, emit: Emit
+) -> ArchiveContents:
     head = _Head()
     sent = False
     try:
@@ -483,7 +509,9 @@ def _inspect_with_tarfile(path: str, tool: Tool, emit) -> ArchiveContents:
         with open(path, "rb") as fp:
             progress = Progress(emit, "read", size)
             reader = CountingReader(fp, progress)
-            with tarfile.open(fileobj=reader, mode="r|*") as tar:
+            # a stream: tarfile only reads it
+            stream = cast("IO[bytes]", reader)
+            with tarfile.open(fileobj=stream, mode="r|*") as tar:
                 for tarinfo in tar:
                     _check(tarinfo, tool)
                     if not tarinfo.isfile():
@@ -495,7 +523,9 @@ def _inspect_with_tarfile(path: str, tool: Tool, emit) -> ArchiveContents:
                     )
                     data = None
                     if member.kind in HEAD:
-                        data = tar.extractfile(tarinfo).read()
+                        # a regular file always has one
+                        extracted = tar.extractfile(tarinfo)
+                        data = extracted.read() if extracted else None
                     head.add(member, data)
                     if head.is_read():
                         return contents_from_head(path, head, True)
@@ -509,7 +539,7 @@ def _inspect_with_tarfile(path: str, tool: Tool, emit) -> ArchiveContents:
     return contents_from_head(path, head, True)
 
 
-def _inspect_with_tool(path: str, tool: Tool, emit) -> ArchiveContents:
+def _inspect_with_tool(path: str, tool: Tool, emit: Emit) -> ArchiveContents:
     head = _Head()
     for member in list_with_tool(tool, path):
         data = None
@@ -571,7 +601,9 @@ def read_with_tool(tool: Tool, path: str, name: str) -> bytes:
 # Extracting
 
 
-def _safe_member(tarinfo: tarfile.TarInfo, destination: str):
+def _safe_member(
+    tarinfo: tarfile.TarInfo, destination: str
+) -> tarfile.TarInfo | None:
     """tarfile's data filter, or the same checks where Python lacks it."""
 
     data_filter = getattr(tarfile, "data_filter", None)
@@ -610,7 +642,7 @@ def compression_flags(path: str) -> list[str]:
     return []
 
 
-def extract(path: str, destination: str, tool: Tool, emit) -> None:
+def extract(path: str, destination: str, tool: Tool, emit: Emit) -> None:
     """
     Extract an archive into destination, keeping the holes of its files.
 
@@ -634,7 +666,7 @@ def extract(path: str, destination: str, tool: Tool, emit) -> None:
     progress.send()
 
 
-def _extract_with_tool(path: str, args: list[str], progress: Progress):
+def _extract_with_tool(path: str, args: list[str], progress: Progress) -> None:
     with tempfile.TemporaryFile() as stderr, open(path, "rb") as fp:
         try:
             process = subprocess.Popen(
@@ -642,6 +674,7 @@ def _extract_with_tool(path: str, args: list[str], progress: Progress):
             )
         except OSError as exc:
             raise ArchiveError(f"{args[0]}: {exc}") from None
+        assert process.stdin is not None, "stdin is a pipe"
         try:
             try:
                 while chunk := fp.read(CHUNK):
@@ -661,11 +694,15 @@ def _extract_with_tool(path: str, args: list[str], progress: Progress):
             raise ArchiveError(f"{os.path.basename(args[0])}: {text}")
 
 
-def _extract_with_tarfile(path: str, destination: str, progress: Progress):
+def _extract_with_tarfile(
+    path: str, destination: str, progress: Progress
+) -> None:
     try:
         with open(path, "rb") as fp:
             reader = CountingReader(fp, progress)
-            with tarfile.open(fileobj=reader, mode="r|*") as tar:
+            # a stream: tarfile only reads it
+            stream = cast("IO[bytes]", reader)
+            with tarfile.open(fileobj=stream, mode="r|*") as tar:
                 for tarinfo in tar:
                     _check(tarinfo, Tool(TARFILE))
                     safe = _safe_member(tarinfo, destination)
@@ -719,7 +756,9 @@ class QemuImg:
     def __init__(self, path: str) -> None:
         self.path = path
 
-    def _run(self, args: list[str], on_percent=None) -> str:
+    def _run(
+        self, args: list[str], on_percent: OnPercent | None = None
+    ) -> str:
         try:
             process = subprocess.Popen(
                 [self.path, *args],
@@ -728,6 +767,9 @@ class QemuImg:
             )
         except OSError as exc:
             raise ArchiveError(f"qemu-img: {exc}") from None
+        # pipes, buffered as Popen makes them by default
+        assert isinstance(process.stdout, io.BufferedReader)
+        assert process.stderr is not None
         try:
             output = b""
             while chunk := process.stdout.read1(4096):
@@ -756,7 +798,7 @@ class QemuImg:
         target: str,
         compress: bool,
         backing: tuple[str, str] | None = None,
-        on_percent=None,
+        on_percent: OnPercent | None = None,
     ) -> None:
         """Copy a qcow2 disk, compressed or not, above backing if given."""
 
@@ -787,7 +829,7 @@ class QemuImg:
     def rebase(self, disk: str, backing: str, backing_format: str) -> None:
         self._run(["rebase", "-u", "-b", backing, "-F", backing_format, disk])
 
-    def commit(self, disk: str, on_percent=None) -> None:
+    def commit(self, disk: str, on_percent: OnPercent | None = None) -> None:
         """Write the changes of disk into its backing file."""
 
         self._run(["commit", "-p", disk], on_percent)
@@ -847,7 +889,9 @@ class _SparseData:
         self._chunks = self._read(fd, regions)
         self._buffer = bytearray()
 
-    def _read(self, fd, regions):
+    def _read(
+        self, fd: int, regions: list[tuple[int, int]]
+    ) -> Iterator[bytes]:
         yield self.head
         for offset, length in regions:
             while length:
@@ -879,13 +923,19 @@ class _SparseInfo(tarfile.TarInfo):
     record, as tarfile itself would write it above 8 GiB.
     """
 
-    def create_pax_header(self, info, encoding):
-        size = info["size"]
+    def create_pax_header(
+        self,
+        info: Mapping[str, str | int | bytes | Mapping[str, str]],
+        encoding: str,
+    ) -> bytes:
+        size = cast(int, info["size"])
         if size <= OCTAL_SIZE_MAX:
             return super().create_pax_header(info, encoding)
         buf = super().create_pax_header(dict(info, size=0), encoding)
         header = bytearray(buf[-tarfile.BLOCKSIZE :])
-        header[124:136] = tarfile.itn(size, 12, tarfile.GNU_FORMAT)
+        # not in typeshed: tarfile's own number field
+        itn = tarfile.itn  # type: ignore[attr-defined]
+        header[124:136] = itn(size, 12, tarfile.GNU_FORMAT)
         header[148:156] = b" " * 8
         header[148:155] = b"%06o\0" % sum(header)
         return buf[: -tarfile.BLOCKSIZE] + bytes(header)
@@ -931,7 +981,9 @@ def add_sparse(tar: tarfile.TarFile, path: str, arcname: str) -> None:
         os.close(fd)
 
 
-def order_members(project: str, files: Iterable[str], images) -> list:
+def order_members(
+    project: str, files: Iterable[str], images: Iterable[Sequence[str]]
+) -> list[Entry]:
     """
     (arcname, path, kind) of each member, in the order of a new archive.
 
@@ -940,7 +992,7 @@ def order_members(project: str, files: Iterable[str], images) -> list:
     first.
     """
 
-    entries = []
+    entries: list[Entry] = []
     for name in files:
         path = os.path.join(project, name)
         entries.append((name, path, member_kind(name)))
@@ -948,7 +1000,7 @@ def order_members(project: str, files: Iterable[str], images) -> list:
         entries.append((f"{IMAGES}/{image}", str(path), IMAGE))
     rank = {PROJECT: 0, README_KIND: 1, OTHER: 2, DISK: 3, IMAGE: 4}
 
-    def key(entry):
+    def key(entry: Entry) -> tuple[int, int, str]:
         name, path, kind = entry
         return (rank.get(kind, 2), os.path.getsize(path), name)
 
@@ -978,7 +1030,7 @@ class _Output:
         self.fp.close()
 
 
-def write_archive(job: Table, emit, tool: Tool) -> dict[str, Any]:
+def write_archive(job: Table, emit: Emit, tool: Tool) -> dict[str, Any]:
     """Write a project to an archive, in a temporary file renamed at the end."""
 
     project = str(job["project"])
@@ -987,9 +1039,10 @@ def write_archive(job: Table, emit, tool: Tool) -> dict[str, Any]:
     compress = job.get("compression", "gzip") == "gzip"
     qemu_img = QemuImg(str(job["qemu_img"])) if job.get("qemu_img") else None
     report = Report()
-    entries = order_members(
-        project, job.get("files", []), job.get("images", [])
-    )
+    # as export_project() writes them
+    files = cast("list[str]", job.get("files", []))
+    images = cast("list[list[str]]", job.get("images", []))
+    entries = order_members(project, files, images)
     fd, part = tempfile.mkstemp(
         prefix=f".{os.path.basename(output)}.", suffix=".part", dir=folder
     )
@@ -1029,7 +1082,17 @@ def write_archive(job: Table, emit, tool: Tool) -> dict[str, Any]:
     }
 
 
-def _stage(entries, staging: str, qemu_img, emit, report: Report):
+# A qcow2 disk to pack: (arcname, path, kind, target, its qemu-img info).
+_Packing = tuple[str, str, str, str, dict[str, Any]]
+
+
+def _stage(
+    entries: list[Entry],
+    staging: str,
+    qemu_img: QemuImg | None,
+    emit: Emit,
+    report: Report,
+) -> list[Member]:
     """
     Put the members in staging under their names in the archive.
 
@@ -1037,7 +1100,7 @@ def _stage(entries, staging: str, qemu_img, emit, report: Report):
     file; the other files are links to themselves.
     """
 
-    packing = []
+    packing: list[_Packing] = []
     members = []
     for name, path, kind in entries:
         target = os.path.join(staging, name)
@@ -1053,6 +1116,26 @@ def _stage(entries, staging: str, qemu_img, emit, report: Report):
         else:
             os.symlink(os.path.abspath(path), target)
         members.append((name, path, kind))
+    packed: dict[str, int] = {}
+    if qemu_img is not None:
+        packed = _pack(qemu_img, packing, emit, report)
+    return [
+        Member(
+            name,
+            os.path.getsize(os.path.join(staging, name)),
+            kind,
+            name in packed,
+            packed.get(name, 0),
+        )
+        for name, path, kind in members
+    ]
+
+
+def _pack(
+    qemu_img: QemuImg, packing: list[_Packing], emit: Emit, report: Report
+) -> dict[str, int]:
+    """Pack the qcow2 disks; the size of each one packed, before."""
+
     total = sum(stored_size(path) for _, path, _, _, _ in packing)
     progress = Progress(emit, "pack", total)
     packed = {}
@@ -1060,7 +1143,9 @@ def _stage(entries, staging: str, qemu_img, emit, report: Report):
         size = stored_size(path)
         start = progress.done
 
-        def on_percent(percent, start=start, size=size):
+        def on_percent(
+            percent: float, start: int = start, size: int = size
+        ) -> None:
             progress.done = start
             progress.advance(int(size * percent / 100))
 
@@ -1077,21 +1162,14 @@ def _stage(entries, staging: str, qemu_img, emit, report: Report):
         progress.done = start + size
     if packing:
         progress.send()
-    return [
-        Member(
-            name,
-            os.path.getsize(os.path.join(staging, name)),
-            kind,
-            name in packed,
-            packed.get(name, 0),
-        )
-        for name, path, kind in members
-    ]
+    return packed
 
 
 def _write_with_tarfile(staging: str, names: list[str], out: _Output) -> None:
+    # a stream: tarfile only writes to it
+    stream = cast("IO[bytes]", out)
     with tarfile.open(
-        fileobj=out, mode="w|", format=tarfile.PAX_FORMAT
+        fileobj=stream, mode="w|", format=tarfile.PAX_FORMAT
     ) as tar:
         for name in names:
             add_sparse(
@@ -1099,7 +1177,9 @@ def _write_with_tarfile(staging: str, names: list[str], out: _Output) -> None:
             )
 
 
-def _write_with_tool(tool: Tool, staging: str, names: list[str], out) -> None:
+def _write_with_tool(
+    tool: Tool, staging: str, names: list[str], out: _Output
+) -> None:
     if tool.name == BSDTAR:
         args = [tool.path, "-c", "-L", "--format", "pax", "-f", "-"]
     else:
@@ -1120,6 +1200,7 @@ def _write_with_tool(tool: Tool, staging: str, names: list[str], out) -> None:
             )
         except OSError as exc:
             raise ArchiveError(f"{args[0]}: {exc}") from None
+        assert process.stdout is not None, "stdout is a pipe"
         try:
             while chunk := process.stdout.read(CHUNK):
                 out.write(chunk)
@@ -1137,7 +1218,7 @@ def _write_with_tool(tool: Tool, staging: str, names: list[str], out) -> None:
 # The jobs on disk images
 
 
-def _percent_progress(emit, step: str):
+def _percent_progress(emit: Emit, step: str) -> tuple[Progress, OnPercent]:
     """A Progress in percent, and what qemu-img's percent gives it."""
 
     progress = Progress(emit, step, 100)
@@ -1156,7 +1237,7 @@ def _qemu_img(job: Table) -> QemuImg:
     return QemuImg(path)
 
 
-def write_image(job: Table, emit) -> dict[str, Any]:
+def write_image(job: Table, emit: Emit) -> dict[str, Any]:
     """
     Write a disk, with the images below it, as a new qcow2 image of its
     own. A job stopped halfway leaves no file.
@@ -1179,7 +1260,7 @@ def write_image(job: Table, emit) -> dict[str, Any]:
     return {"output": output, "size": stored_size(output)}
 
 
-def commit_image(job: Table, emit) -> dict[str, Any]:
+def commit_image(job: Table, emit: Emit) -> dict[str, Any]:
     """
     Write the changes of a disk into its image. Stopped halfway, the image
     has part of them, and the disk all of them still.
@@ -1197,11 +1278,13 @@ def commit_image(job: Table, emit) -> dict[str, Any]:
 # The process
 
 
-def _on_sigterm(signum, frame):
+def _on_sigterm(signum: int, frame: FrameType | None) -> NoReturn:
     raise ArchiveCancelled()
 
 
-def run_job(job: Table, emit, tool: Tool | None = None) -> Any:
+def run_job(
+    job: Table, emit: Emit, tool: Tool | None = None
+) -> dict[str, Any]:
     """Run a job of the process and return its result."""
 
     if tool is None:
@@ -1274,16 +1357,18 @@ class ArchiveJob:
         self.on_progress = on_progress
         self.on_head = on_head
         self.leftovers = list(leftovers)
-        self.done = defer.Deferred()
+        self.done: defer.Deferred[Any] = defer.Deferred()
         self.cancelled = False
         self.protocol = _ArchiveProtocol(self)
         self._result: Any = None
         self._has_result = False
         self._error: str | None = None
 
-    def start(self, reactor=None) -> ArchiveJob:
+    def start(self, reactor: IReactorProcess | None = None) -> ArchiveJob:
         if reactor is None:
-            from twisted.internet import reactor
+            from twisted.internet import reactor as default
+
+            reactor = cast("IReactorProcess", default)
         reactor.spawnProcess(
             self.protocol,
             sys.executable,
@@ -1298,7 +1383,7 @@ class ArchiveJob:
 
     # From the protocol
 
-    def connected(self, transport) -> None:
+    def connected(self, transport: IProcessTransport) -> None:
         transport.write(dumps_toml(self.job).encode("utf-8"))
         transport.closeStdin()
 
@@ -1343,6 +1428,7 @@ class _ArchiveProtocol(protocol.ProcessProtocol):
         self._running = False
 
     def connectionMade(self) -> None:
+        assert self.transport is not None, "the process is connected"
         self._running = True
         self.job.connected(self.transport)
 
@@ -1362,13 +1448,13 @@ class _ArchiveProtocol(protocol.ProcessProtocol):
         self._stderr += data
 
     def terminate(self) -> None:
-        if self._running:
+        if self._running and self.transport is not None:
             try:
                 self.transport.signalProcess("TERM")
             except Exception:
                 pass
 
-    def processEnded(self, reason) -> None:
+    def processEnded(self, reason: Failure) -> None:
         self._running = False
         self.job.ended(self._stderr.decode("utf-8", "replace"))
 
@@ -1377,11 +1463,11 @@ def inspect_archive(
     path: str,
     on_head: Callable[[ArchiveContents], None] | None = None,
     on_progress: Callable[[str, int, int], None] | None = None,
-    reactor=None,
+    reactor: IReactorProcess | None = None,
 ) -> ArchiveJob:
     """Read an archive in the process; done fires with ArchiveContents."""
 
-    def head(table):
+    def head(table: dict[str, Any]) -> None:
         if on_head is not None:
             on_head(ArchiveContents.from_table(table))
 
@@ -1410,7 +1496,7 @@ def export_project(
     images: Iterable[tuple[str, str]] = (),
     on_progress: Callable[[str, int, int], None] | None = None,
     qemu_img: str = "",
-    reactor=None,
+    reactor: IReactorProcess | None = None,
 ) -> ArchiveJob:
     """
     Write an archive of the project in the process.
@@ -1441,7 +1527,7 @@ def save_image(
     output: str,
     on_progress: Callable[[str, int, int], None] | None = None,
     qemu_img: str = "",
-    reactor=None,
+    reactor: IReactorProcess | None = None,
 ) -> ArchiveJob:
     """
     Write disk, with its changes, as the new image output, in the process.
@@ -1464,7 +1550,7 @@ def merge_image(
     disk: str,
     on_progress: Callable[[str, int, int], None] | None = None,
     qemu_img: str = "",
-    reactor=None,
+    reactor: IReactorProcess | None = None,
 ) -> ArchiveJob:
     """Write the changes of disk into its image, in the process."""
 

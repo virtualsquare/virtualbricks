@@ -355,10 +355,8 @@ def free_name(name: str, taken: Callable[[str], bool]) -> str:
         return name
     match = re.fullmatch(r"(.*)-(\d+)", name)
     base = match.group(1) if match else name
-    for i in itertools.count(2):  # pragma: no branch
-        candidate = f"{base}-{i}"
-        if not taken(candidate):
-            return candidate
+    candidates = (f"{base}-{i}" for i in itertools.count(2))
+    return next(c for c in candidates if not taken(c))
 
 
 class Workspace:
@@ -478,7 +476,12 @@ class Workspace:
         except (OSError, ProjectFormatError):
             return []
 
-    def _validate(self, name: str, renaming: str | None = None, bricks=None):
+    def _validate(
+        self,
+        name: str,
+        renaming: str | None = None,
+        bricks: Iterable[str] | None = None,
+    ) -> None:
         message = self.check_name(name, renaming, bricks)
         if message is not None:
             raise errors.InvalidNameError(message)
@@ -593,7 +596,9 @@ class Workspace:
             write_description(path, description)
         logger.debug(creating_project, name=name)
 
-    def rename(self, name: str, new: str, bricks=None) -> None:
+    def rename(
+        self, name: str, new: str, bricks: Iterable[str] | None = None
+    ) -> None:
         """
         Rename a project, the open one included.
 
@@ -769,11 +774,12 @@ class Workspace:
             logger.error(cannot_find_project, name=name)
         except ProjectFormatError as exc:
             logger.error(cannot_open_project, name=name, error=exc)
-        for i in itertools.count():  # pragma: no branch
-            name = f"{locations.DEFAULT_PROJECT}_{i}"
-            if not os.path.lexists(self.project_path(name)):
-                self.create(name)
-                return self.open(name, factory)
+        names = (f"{locations.DEFAULT_PROJECT}_{i}" for i in itertools.count())
+        name = next(
+            n for n in names if not os.path.lexists(self.project_path(n))
+        )
+        self.create(name)
+        return self.open(name, factory)
 
 
 projects = Workspace()
