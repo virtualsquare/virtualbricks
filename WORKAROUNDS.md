@@ -273,14 +273,6 @@ no workaround, such as drag and drop.
   crashes with any window: with GTK 4 there, the tests would need Xvfb.
 - **Where:** `e2e/broadway.py`, `e2e/recording.py`.
 
-## Can go now
-
-### D2. The comments about a bug of GTK 2
-
-- **Why kept:** none: two lines of PyGTK commented out, `gtk.set_interactive`
-  and `gtk.link_button_set_uri_hook`.
-- **Where:** `virtualbricks/gui/gui.py`, `Application._run()`, "a bug in gtk2".
-
 ## Keeping this list
 
 - A new workaround comes here with its versions: those that need it, the
