@@ -41,7 +41,8 @@ from twisted.logger import (
 )
 from zope.interface import implementer
 
-from virtualbricks import app, errors, i18n
+from virtualbricks import errors, i18n
+from virtualbricks.app import AppLogger, Application
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks.config.report import Report
@@ -98,19 +99,36 @@ def should_show_to_user(event: LogEvent) -> NamedConstant:
     return PredicateResult.maybe
 
 
-def AppLoggerFactory(messages: MessageLog) -> type[app.AppLogger]:
+def AppLoggerFactory(messages: MessageLog) -> type[AppLogger]:
 
     observer = FilteringLogObserver(
         MessageLogObserver(messages),
         [LogLevelFilterPredicate(LogLevel.info)],
     )
 
-    class AppLogger(app.AppLogger):
+    class MessagesLogger(AppLogger):
 
         def get_observers(self) -> list[ILogObserver]:
             return super().get_observers() + [observer]
 
-    return AppLogger
+    return MessagesLogger
+
+
+def show_errors() -> MessageDialogObserver:
+    """
+    Show the errors logged from now on in a dialog each: their observer,
+    whose parent is the main window once it is there.
+    """
+
+    dialogs = MessageDialogObserver()
+    globalLogPublisher.addObserver(
+        FilteringLogObserver(
+            dialogs,
+            # a function is a predicate as much as a class
+            [should_show_to_user],  # type: ignore[list-item]
+        )
+    )
+    return dialogs
 
 
 def _now(deferred: defer.Deferred[T]) -> T:
@@ -148,27 +166,22 @@ class WindowFrontend:
         _now(self.gui.on_save())
 
 
-class Application(app.Application):
+class GuiApplication(Application):
+    """Virtualbricks that runs the bricks, with its windows."""
 
     def __init__(self, config: Mapping[str, Any]) -> None:
         # the messages of this run, for the messages window
         self.messages = MessageLog()
         self.logger_factory = AppLoggerFactory(self.messages)
-        app.Application.__init__(self, config)
+        super().__init__(config)
 
     def get_namespace(self) -> dict[str, object]:
         return {"gui": self.gui}
 
     def _run(self, factory: BrickFactory) -> None:
-        message_dialog = MessageDialogObserver()
-        observer = FilteringLogObserver(
-            message_dialog,
-            # a function is a predicate as much as a class
-            [should_show_to_user],  # type: ignore[list-item]
-        )
-        globalLogPublisher.addObserver(observer)
+        dialogs = show_errors()
         self.gui = VBGUI(LocalEngine(factory), self.messages)
-        message_dialog.set_parent(self.gui.window)
+        dialogs.set_parent(self.gui.window)
         # The workspace has no desktop of its own: removing a project moves
         # it to the trash only in the GUI.
         projects.trasher = DesktopTrash()
@@ -213,7 +226,7 @@ class Application(app.Application):
         self.gui.show_start_up_problem(message)
 
     def _start(self, reactor: PosixReactorBase) -> defer.Deferred[None]:
-        ret = app.Application._start(self, reactor)
+        ret = super()._start(reactor)
         self.gui.set_title()
         # the folders of QEMU and VDE are those of the project, open by now
         self.gui.check_prerequisites()
@@ -296,14 +309,7 @@ class RemoteApplication:
         from virtualbricks.remote import client, tunnel
         from virtualbricks.remote.client import RemoteEngine
 
-        message_dialog = MessageDialogObserver()
-        globalLogPublisher.addObserver(
-            FilteringLogObserver(
-                message_dialog,
-                # a function is a predicate as much as a class
-                [should_show_to_user],  # type: ignore[list-item]
-            )
-        )
+        dialogs = show_errors()
         # the consoles of the bricks there, each over a connection of its own
         self.consoles: Consoles = tunnel.Consoles(
             lambda: defer.ensureDeferred(
@@ -317,7 +323,7 @@ class RemoteApplication:
         )
         windows.lost.addCallback(self.lost)
         self.gui = VBGUI(self.engine, self.messages)
-        message_dialog.set_parent(self.gui.window)
+        dialogs.set_parent(self.gui.window)
         self.copy.synced.connect(self.synced)
         self.copy.ended.connect(self.on_ended)
         self.gui.set_title()

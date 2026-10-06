@@ -50,7 +50,7 @@ from virtualbricks.tests.remote.test_mirror import Project
 if has_display:
     from gi.repository import Gtk
 
-    from virtualbricks.gui import gui
+    from virtualbricks.gui import app as gui_app
     from virtualbricks.gui.dialogs.addimage import ExistingImageDialog
     from virtualbricks.gui.mainwindow import VBGUI, window
     from virtualbricks.gui.mainwindow.bricks import brickmenu
@@ -133,8 +133,8 @@ class RemoteTestCase(GuiTestCase):
         self.patch(mirror, "logger", FakeLogger())
         self.patch(amp, "_log", FakeLogger())
         self.logger = FakeLogger()
-        self.patch(gui, "logger", self.logger)
-        self.patch(gui, "globalLogPublisher", Publisher())
+        self.patch(gui_app, "logger", self.logger)
+        self.patch(gui_app, "globalLogPublisher", Publisher())
         self.manager.current = Project(self.folder("lab1"))
         settings.set_setting("workspace", self.manager.path)
         self.keeper = LogKeeper()
@@ -149,7 +149,7 @@ class RemoteTestCase(GuiTestCase):
         self.patch(client, "connect", self.connect)
         self.shown = []
         self.patch(
-            gui,
+            gui_app,
             "VBGUI",
             lambda engine, messages: FakeWindows(self.shown, engine, messages),
         )
@@ -186,7 +186,7 @@ class RemoteTestCase(GuiTestCase):
 
         config = cli.Options()
         config.parseOptions(args or ["--connect", "unix:/run/lab.amp"])
-        application = gui.RemoteApplication(config)
+        application = gui_app.RemoteApplication(config)
         application.install_locale = lambda: None
         # the settings of the test, which both sides share
         application.install_settings = install_settings or (lambda: None)
@@ -215,7 +215,7 @@ class TestRemoteApplication(RemoteTestCase):
         self.assertEqual(
             self.reactor.triggers,
             [
-                ("before", "shutdown", gui.store_settings),
+                ("before", "shutdown", gui_app.store_settings),
                 ("before", "shutdown", application.logger.stop),
             ],
         )

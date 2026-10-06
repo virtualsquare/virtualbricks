@@ -23,6 +23,7 @@ import os
 from twisted.internet import defer
 
 from virtualbricks import locations
+from virtualbricks.app import Application
 from virtualbricks.config import workspace
 from virtualbricks.config.settings import set_current_project
 from virtualbricks.console import projects as console_projects
@@ -36,7 +37,7 @@ from virtualbricks.tests.migrate.fixtures import (
 
 if has_display:
 
-    from virtualbricks.gui import gui
+    from virtualbricks.gui import app as gui_app
     from virtualbricks.gui.trash import DesktopTrash
     from virtualbricks.migrate import gui as migrate_gui
 
@@ -51,7 +52,7 @@ class TestStartupMigration(GuiTestCase):
             "show",
             lambda window: self.shown.append(window),
         )
-        self.app = gui.Application.__new__(gui.Application)
+        self.app = gui_app.GuiApplication.__new__(gui_app.GuiApplication)
         self.app.config = {}
 
     def test_nothing_to_migrate(self):
@@ -82,13 +83,13 @@ class TestStartupMigration(GuiTestCase):
             def check_prerequisites(self):
                 calls.append("check")
 
-        def start(app, reactor):
+        def start(application, reactor):
             # it opens the last project
             calls.append("open")
             return "quit"
 
         self.app.gui = VBGUI()
-        self.patch(gui.app.Application, "_start", start)
+        self.patch(Application, "_start", start)
         self.assertEqual(self.app._start("reactor"), "quit")
         # the programs are looked for in the folders of the open project
         self.assertEqual(calls, ["open", "title", "check"])
@@ -106,10 +107,10 @@ class TestStartupProject(GuiTestCase):
             def show_start_up_problem(self, message):
                 test.problems.append(message)
 
-        self.app = gui.Application.__new__(gui.Application)
+        self.app = gui_app.GuiApplication.__new__(gui_app.GuiApplication)
         self.app.gui = VBGUI()
         self.logger = FakeLogger()
-        self.patch(gui, "logger", self.logger)
+        self.patch(gui_app, "logger", self.logger)
         self.patch(workspace, "logger", FakeLogger())
 
     def test_the_last_project(self):
@@ -175,18 +176,20 @@ class TestStartupTrash(GuiTestCase):
             def __init__(self, factory, messages):
                 pass
 
-        self.patch(gui, "MessageDialogObserver", Observer)
-        self.patch(gui, "globalLogPublisher", Publisher())
-        self.patch(gui, "VBGUI", VBGUI)
+        self.patch(gui_app, "MessageDialogObserver", Observer)
+        self.patch(gui_app, "globalLogPublisher", Publisher())
+        self.patch(gui_app, "VBGUI", VBGUI)
         # the console opens projects through the main window too
         self.patch(console_projects, "frontend", console_projects.frontend)
-        app = gui.Application.__new__(gui.Application)
+        app = gui_app.GuiApplication.__new__(gui_app.GuiApplication)
         app.messages = None
         self.assertIsNone(self.manager.trasher)
         app._run(self.factory)
         self.assertIsInstance(self.manager.trasher, DesktopTrash)
         self.assertIsInstance(app.gui, VBGUI)
-        self.assertIsInstance(console_projects.frontend, gui.WindowFrontend)
+        self.assertIsInstance(
+            console_projects.frontend, gui_app.WindowFrontend
+        )
         self.assertIs(console_projects.frontend.gui, app.gui)
 
 
@@ -209,7 +212,7 @@ class TestWindowFrontend(GuiTestCase):
                 calls.append(("save",))
                 return defer.succeed(None)
 
-        frontend = gui.WindowFrontend(Window())
+        frontend = gui_app.WindowFrontend(Window())
         self.assertEqual(frontend.open("lab", self.factory), "report")
         frontend.new("lab2", self.factory)
         frontend.save(self.factory)

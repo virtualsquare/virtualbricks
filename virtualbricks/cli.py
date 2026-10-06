@@ -38,7 +38,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from twisted.internet.posixbase import PosixReactorBase
 
     from virtualbricks.app import Application
-    from virtualbricks.gui import gui
+    from virtualbricks.gui.app import GuiApplication, RemoteApplication
 
 _log_file: IO[str] = sys.stdout
 # The word after --listen is its description when it starts with a type.
@@ -534,18 +534,18 @@ def run_app(
     task.react(Application(config).run, ())
 
 
-def make_application(config: Options) -> gui.Application:
-    from virtualbricks.gui import gui
+def make_application(config: Options) -> GuiApplication:
+    from virtualbricks.gui.app import GuiApplication
 
-    return gui.Application(config)
+    return GuiApplication(config)
 
 
-def make_remote_application(config: Options) -> gui.RemoteApplication:
+def make_remote_application(config: Options) -> RemoteApplication:
     """The windows of another Virtualbricks: no lock, no project here."""
 
-    from virtualbricks.gui import gui
+    from virtualbricks.gui.app import RemoteApplication
 
-    return gui.RemoteApplication(config)
+    return RemoteApplication(config)
 
 
 def make_plain_application(config: Options) -> Application:
