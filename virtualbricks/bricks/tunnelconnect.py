@@ -18,36 +18,32 @@
 
 """A tunnel client: vde_cryptcab, connecting to a tunnel server."""
 
-from virtualbricks import bricks
+from __future__ import annotations
+
+from virtualbricks.bricks.command import Command, Prepared
 from virtualbricks.bricks.draft import Draft, Problem
-from virtualbricks.bricks.tunnellisten import TunnelListen
+from virtualbricks.bricks.tunnellisten import Tunnel, TunnelConfig
 from virtualbricks.config.schema import Int, Str, define, field
 from virtualbricks.i18n import N_, _
 
 
 @define
-class TunnelConnectConfig(bricks.BrickConfig):
+class TunnelConnectConfig(TunnelConfig):
 
-    password = field(
-        Str(),
-        default="",
-        label=N_("Password"),
-        help=N_("The password of the tunnel, in clear text"),
-    )
     # the host that runs the server end, and its port
-    server_host = field(
+    server_host: str = field(
         Str(),
         default="",
         label=N_("Server"),
         help=N_("The host that runs the server end"),
     )
-    server_port = field(
+    server_port: int = field(
         Int(1, 65535),
         default=7667,
         label=N_("Server port"),
         help=N_("The UDP port of the server end"),
     )
-    local_port = field(
+    local_port: int = field(
         Int(1, 65535),
         default=10771,
         label=N_("Local port"),
@@ -58,7 +54,7 @@ class TunnelConnectConfig(bricks.BrickConfig):
 class TunnelConnectDraft(Draft):
     """The settings of a tunnel client, which needs its server."""
 
-    def check(self):
+    def check(self) -> list[Problem]:
         problems = super().check()
         if not self.settings.server_host.strip():
             text = _("Without a server, {brick} can't start").format(
@@ -68,18 +64,18 @@ class TunnelConnectDraft(Draft):
         return problems
 
 
-class TunnelConnect(TunnelListen):
+class TunnelConnect(Tunnel):
 
     type = "TunnelConnect"
     summary = "The client end of an encrypted tunnel"
-    programs = (("vde_cryptcab",),)
     config_factory = TunnelConnectConfig
+    config: TunnelConnectConfig
     draft_factory = TunnelConnectDraft
 
-    def configured(self):
-        return self.plugs[0].sock is not None and self.config.server_host
+    def configured(self) -> bool:
+        return self.plugs[0].sock is not None and bool(self.config.server_host)
 
-    def command(self, prepared):
+    def command(self, prepared: Prepared) -> Command:
         config = self.config
         cmd = self.cryptcab(prepared)
         cmd.option("-p", config.local_port)

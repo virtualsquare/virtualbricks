@@ -307,11 +307,12 @@
 
 ## Types
 
-- [ ] Fix the errors that mypy finds, a package at a time as `config/` and
-  `console/` (187 on 6 Oct 2026): widgets maybe `None`, class attributes
-  `None` overridden by a `str`, `Deferred[X]` for `Deferred[object]`, and
-  the schemas' constructors called with values of the wrong type, now that
-  mypy knows them. Or keep a baseline and fail only on new errors
+- [ ] Fix the errors that mypy finds, a package at a time as `config/`,
+  `console/` and `bricks/` (165 on 6 Oct 2026): widgets maybe `None`,
+  `Deferred[X]` for `Deferred[object]` in `programs.py`, settings that are
+  `str | bool` given where a `str` goes, and the schemas' constructors
+  called with values of the wrong type, now that mypy knows them. Or keep a
+  baseline and fail only on new errors
 - [ ] Run mypy in pre-commit, a local hook in the environment of the
   project, as it needs the stubs of GTK 3
 - [ ] Add each module that `tools/typecoverage.py` gives 100% to the strict
@@ -320,6 +321,11 @@
   `console/control.py`, `remote/` (0–15% on 6 Oct 2026)
 
 # DONE
+
+- [x] Type `virtualbricks/bricks/` in full, checked strictly: `is_event()`
+  and `is_disk_image()` are type guards, as `is_virtualmachine()`, and
+  replace the casts after them; the fields of the brick configurations are
+  annotated; `Tunnel` is what both ends of a tunnel share
 
 - [x] Type `virtualbricks/console/` in full, checked strictly; ampgen
   writes `LINES` and `PAIR` typed

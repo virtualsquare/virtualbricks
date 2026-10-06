@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import signal
 from collections.abc import Generator, Sequence
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet import defer, error
 from twisted.logger import Logger
@@ -85,7 +85,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.bricks.plug import Plug
     from virtualbricks.bricks.virtualmachine import (
         VirtualMachine,
-        _HostonlySock,
+        HostonlySock,
     )
     from virtualbricks.config.schema import Kind as FieldKind
 
@@ -167,7 +167,7 @@ class KindOrBrick(ArgKind):
         return _bricks(context.factory) + KindArg().candidates(context, done)
 
 
-def _socket_name(sock: Sock) -> str:
+def _socket_name(sock: Sock | HostonlySock) -> str:
     """How a socket is named in the console: its brick, or vm:name."""
 
     brick = sock.brick
@@ -443,8 +443,7 @@ def keys(
 ) -> list[str]:
     config: object
     if isinstance(kind_name, brickinfo.Kind):
-        # the kind's class, a Brick
-        config = cast("type[Brick]", kind_name.brick).config_factory
+        config = kind_name.brick.config_factory
     else:
         config = kind_name.config
 
@@ -827,7 +826,7 @@ def _card_values(
     return values
 
 
-def _card_sock(context: Context, word: str) -> Sock | _HostonlySock | None:
+def _card_sock(context: Context, word: str) -> Sock | HostonlySock | None:
     if word == "":
         return None
     if word == "hostonly":

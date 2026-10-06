@@ -136,7 +136,7 @@ def show(context: Context, name: Image) -> list[str]:
 def set_(
     context: Context, name: Image, key_value: list[tuple[str, str]]
 ) -> None:
-    name.set_description(_description(key_value))
+    name.set_description(_description(key_value) or "")
 
 
 @command(

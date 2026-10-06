@@ -18,7 +18,14 @@
 
 """A socket: what the plugs of other bricks go into."""
 
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks import Brick
+    from virtualbricks.bricks.plug import Plug
 
 
 class Sock:
@@ -26,12 +33,12 @@ class Sock:
     model = ""
     mac = ""
 
-    def __init__(self, brick, name=""):
+    def __init__(self, brick: Brick, name: str = "") -> None:
         self.brick = brick
         self.path = name
         self.nickname = name
-        self.plugs = []
+        self.plugs: list[Plug] = []
         self.mode = "sock"
 
-    def has_valid_path(self):
+    def has_valid_path(self) -> bool:
         return os.access(os.path.dirname(self.path), os.W_OK)

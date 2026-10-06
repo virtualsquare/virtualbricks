@@ -27,7 +27,10 @@ follows. Each action has ``perform(factory)``, which returns a Deferred, or a
 failure that says why it can't run.
 """
 
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 import attr
 from twisted.internet import defer, utils
@@ -35,8 +38,15 @@ from twisted.internet import defer, utils
 from virtualbricks.config.schema import Kind
 from virtualbricks.i18n import _
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks import Brick
+    from virtualbricks.bricks.event import Event
+    from virtualbricks.config.report import Report
+    from virtualbricks.config.tomlfile import Value
 
-def _target(factory, name):
+
+def _target(factory: BrickFactory, name: str) -> Brick | Event:
     found = factory.get_brick(name) or factory.get_event(name)
     if found is None:
         raise ValueError(_("No brick or event named {name}").format(name=name))
@@ -49,9 +59,11 @@ class StartAction:
 
     target: str
 
-    def perform(self, factory):
+    def perform(self, factory: BrickFactory) -> defer.Deferred[Any] | None:
+        from virtualbricks.bricks.event import is_event
+
         found = _target(factory, self.target)
-        if found.get_type() == "Event":
+        if is_event(found):
             found.start()
             return defer.succeed(None)
         return found.start()
@@ -63,9 +75,11 @@ class StopAction:
 
     target: str
 
-    def perform(self, factory):
+    def perform(self, factory: BrickFactory) -> defer.Deferred[Any] | None:
+        from virtualbricks.bricks.event import is_event
+
         found = _target(factory, self.target)
-        if found.get_type() == "Event":
+        if is_event(found):
             found.stop()
             return defer.succeed(None)
         return found.stop()
@@ -77,7 +91,7 @@ class ConsoleAction:
 
     command: str
 
-    def perform(self, factory):
+    def perform(self, factory: BrickFactory) -> defer.Deferred[list[str]]:
         from virtualbricks.console.dispatch import run
 
         return run(factory, self.command)
@@ -89,12 +103,17 @@ class ShellAction:
 
     command: str
 
-    def perform(self, factory):
+    def perform(self, factory: BrickFactory) -> defer.Deferred[int]:
         return utils.getProcessValue("sh", ("-c", self.command), os.environ)
 
 
+# What an event keeps of an action.
+StoredAction: TypeAlias = (
+    StartAction | StopAction | ConsoleAction | ShellAction
+)
+
 # the kinds in the project file, and what each holds
-KINDS = {
+KINDS: dict[str, tuple[type[StoredAction], str]] = {
     "start": (StartAction, "target"),
     "stop": (StopAction, "target"),
     "console": (ConsoleAction, "command"),
@@ -102,23 +121,26 @@ KINDS = {
 }
 
 
-class EventAction(Kind):
+class EventAction(Kind[StoredAction]):
     """An action of an event, as KINDS has them."""
 
-    def check(self, value):
+    def check(self, value: object) -> None:
         if not isinstance(value, tuple(cls for cls, _key in KINDS.values())):
             raise ValueError(f"{value!r} is not an event action")
 
-    def to_data(self, value):
+    def to_data(self, value: StoredAction) -> Value:
         for kind, (cls, key) in KINDS.items():
             if isinstance(value, cls):
                 return {"kind": kind, key: getattr(value, key)}
+        raise ValueError(f"{value!r} is not an event action")
 
-    def from_data(self, data, report, where):
+    def from_data(
+        self, data: Value, report: Report, where: str
+    ) -> StoredAction:
         if not isinstance(data, dict):
             raise ValueError(f"{data!r} is not a table")
         kind = data.get("kind")
-        if kind not in KINDS:
+        if not isinstance(kind, str) or kind not in KINDS:
             raise ValueError(f"{kind!r} is not start, stop, console or shell")
         cls, key = KINDS[kind]
         value = data.get(key)
@@ -128,11 +150,11 @@ class EventAction(Kind):
             report.warning("unknown field, dropped", f"{where}.{other}")
         return cls(value)
 
-    def format(self, value):
+    def format(self, value: StoredAction) -> str:
         return describe(value)
 
 
-def describe(action) -> str:
+def describe(action: object) -> str:
     """An action in words of the console: start sw1, console "…"."""
 
     for kind, (cls, key) in KINDS.items():

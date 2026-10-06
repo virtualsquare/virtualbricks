@@ -27,19 +27,25 @@ that go with them have theirs too: eventaction, an action of an event, and
 plug and sock, the two ends of a link between bricks.
 """
 
+from __future__ import annotations
+
 import os
 import collections
 import functools
 import locale
 import re
+from collections.abc import Collection
+from contextlib import AbstractContextManager
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol, cast
 
 from twisted.internet import protocol, reactor, error, defer
 from twisted.logger import Logger
+from twisted.python.failure import Failure
 
 from virtualbricks import errors, observable, terminal
-from virtualbricks.bricks.command import Prepared
+from virtualbricks.bricks.command import Command, Prepared
 from virtualbricks.bricks.draft import Draft
-from virtualbricks.bricks.plug import link_loop
+from virtualbricks.bricks.plug import Plug, link_loop
 from virtualbricks.config.schema import (
     Path,
     Ref,
@@ -56,6 +62,20 @@ from virtualbricks.i18n import N_, _
 from virtualbricks.programs import programs
 from virtualbricks.sudo import sudo_command
 from virtualbricks.vde import which
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.interfaces import (
+        IProcessTransport,
+        IReactorProcess,
+        IReactorTime,
+    )
+
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks.event import Event
+    from virtualbricks.bricks.sock import Sock
+    from virtualbricks.bricks.virtualmachine import HostonlySock
+    from virtualbricks.config.report import Report
+    from virtualbricks.config.tomlfile import Notes, Table
 
 __all__ = [
     "Base",
@@ -95,7 +115,7 @@ console_terminated = (
 invalid_ack = "ACK received but no command sent."
 
 
-def _decode(data):
+def _decode(data: bytes | str) -> str:
     if isinstance(data, bytes):
         return data.decode(system_encoding, errors="replace")
     return data
@@ -103,53 +123,70 @@ def _decode(data):
 
 class ProcessLogger:
 
-    def __init__(self, logger):
+    def __init__(self, logger: Logger) -> None:
         self.logger = logger
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: Process | None, owner: type) -> Logger:
         if instance is not None:
             logger = self.logger.__get__(instance, owner)
-            logger.emit = functools.partial(logger.emit, pid=instance.pid)
+            setattr(
+                logger,
+                "emit",
+                functools.partial(logger.emit, pid=instance.pid),
+            )
             return logger
         return self.logger.__get__(instance, owner)
+
+
+class RunningProcess(Protocol):
+    """The process of a running brick, as the brick sees it."""
+
+    @property
+    def pid(self) -> int | None: ...
+
+    def signal_process(self, signal: str | int) -> None: ...
+
+    def write(self, data: bytes) -> None: ...
 
 
 class Process(protocol.ProcessProtocol):
 
     logger = ProcessLogger(Logger())
 
-    def __init__(self, brick):
+    def __init__(self, brick: Brick) -> None:
         self.brick = brick
         self.output = {
             "stdout": terminal.Lines(system_encoding),
             "stderr": terminal.Lines(system_encoding),
         }
 
-    def connectionMade(self):
+    def connectionMade(self) -> None:
         self.logger.info(process_started)
         self.brick.process_started(self)
 
-    def processEnded(self, status):
+    def processEnded(self, status: Failure) -> None:
         for stream, lines in self.output.items():
             self._log_output(stream, lines.flush())
+        # the reason of a process that was terminated, in words
+        ended: str | Failure = status
         if status.check(error.ProcessTerminated):
-            status = " ".join(status.value.args)
-            self.logger.error(process_terminated, status=status)
+            ended = " ".join(status.value.args)
+            self.logger.error(process_terminated, status=ended)
         else:
             assert status.check(error.ProcessDone)
             self.logger.info(process_terminated, status="Done")
-        self.brick.process_ended(self, status)
+        self.brick.process_ended(self, ended)
 
     # The output of the program, marked with its stream for the messages
     # window: the lines that it ends, as a terminal shows them.
 
-    def outReceived(self, data):
+    def outReceived(self, data: bytes) -> None:
         self._log_output("stdout", self.output["stdout"].feed(data))
 
-    def errReceived(self, data):
+    def errReceived(self, data: bytes) -> None:
         self._log_output("stderr", self.output["stderr"].feed(data))
 
-    def _log_output(self, stream, lines):
+    def _log_output(self, stream: str, lines: list[str]) -> None:
         if not lines:
             return
         output = "\n".join(lines)
@@ -162,28 +199,32 @@ class Process(protocol.ProcessProtocol):
 
     # new interface
 
+    def _process(self) -> IProcessTransport:
+        assert self.transport is not None, "the process runs"
+        return self.transport
+
     @property
-    def pid(self):
-        return self.transport.pid
+    def pid(self) -> int | None:
+        return self._process().pid
 
-    def signal_process(self, signalID):
-        self.transport.signalProcess(signalID)
+    def signal_process(self, signalID: str | int) -> None:
+        self._process().signalProcess(signalID)
 
-    def write(self, data):
-        self.transport.write(data)
+    def write(self, data: bytes) -> None:
+        self._process().write(data)
 
 
 class FakeProcess:
 
     pid = -1
 
-    def __init__(self, brick):
+    def __init__(self, brick: Brick) -> None:
         self.brick = brick
 
-    def signal_process(self, signo):
+    def signal_process(self, signo: str | int) -> None:
         pass
 
-    def write(self, data):
+    def write(self, data: bytes) -> None:
         pass
 
 
@@ -202,11 +243,11 @@ class VDEProcessProtocol(Process):
     prompt = re.compile(rb"^vde(?:\[[^]]*\]:|\$) ", re.MULTILINE)
     PIPELINE_SIZE = 1
 
-    def __init__(self, brick):
+    def __init__(self, brick: Brick) -> None:
         Process.__init__(self, brick)
-        self.queue = collections.deque()
+        self.queue: collections.deque[bytes] = collections.deque()
 
-    def _data_received(self, data):
+    def _data_received(self, data: bytes) -> None:
         """
         Translates bytes into lines, and calls _ack_received.
         """
@@ -217,29 +258,29 @@ class VDEProcessProtocol(Process):
         for ack in acks:
             self._ack_received(ack)
 
-    def _ack_received(self, ack):
+    def _ack_received(self, ack: bytes) -> None:
         self.logger.info("{ack}", ack=_decode(ack))
         try:
             self.queue.popleft()
         except IndexError:
             self.logger.warn(invalid_ack)
-            self.transport.loseConnection()
+            self._process().loseConnection()
         else:
             if len(self.queue):
                 self._send_command()
 
-    def _send_command(self):
+    def _send_command(self) -> None:
         cmd = self.queue[0]
         self.logger.info("{command}", command=_decode(cmd))
         if cmd.endswith(self.delimiter):
-            return self.transport.write(cmd)
+            self._process().write(cmd)
         else:
-            return self.transport.writeSequence((cmd, self.delimiter))
+            self._process().writeSequence((cmd, self.delimiter))
 
-    def outReceived(self, data):
+    def outReceived(self, data: bytes) -> None:
         self._data_received(data)
 
-    def write(self, cmd):
+    def write(self, cmd: bytes) -> None:
         self.queue.append(cmd)
         if 0 < len(self.queue) <= self.PIPELINE_SIZE:
             self._send_command()
@@ -249,20 +290,21 @@ class TermProtocol(protocol.ProcessProtocol):
 
     logger = Logger()
 
-    def __init__(self):
-        self.out = []
-        self.err = []
+    def __init__(self) -> None:
+        self.out: list[bytes] = []
+        self.err: list[bytes] = []
 
-    def connectionMade(self):
+    def connectionMade(self) -> None:
+        assert self.transport is not None, "the terminal runs"
         self.transport.closeStdin()
 
-    def outReceived(self, data):
+    def outReceived(self, data: bytes) -> None:
         self.out.append(data)
 
-    def errReceived(self, data):
+    def errReceived(self, data: bytes) -> None:
         self.err.append(data)
 
-    def processEnded(self, status):
+    def processEnded(self, status: Failure) -> None:
         if isinstance(status.value, error.ProcessTerminated):
             self.logger.error(
                 console_terminated,
@@ -280,7 +322,7 @@ class BaseConfig:
 
     # an image file to show instead of the icon of the type; not shown yet
     # but for virtual machines
-    icon = field(
+    icon: str = field(
         Path(),
         default="",
         label=N_("Icon"),
@@ -290,11 +332,13 @@ class BaseConfig:
 
 class Base:
 
-    _name = None
-    config_factory = None
+    # the kind, as the project file names it: "Switch", "Event"
+    type: ClassVar[str]
+    config_factory: ClassVar[Any]
+    config: BaseConfig
     logger = Logger()
 
-    def __init__(self, factory, name):
+    def __init__(self, factory: BrickFactory, name: str) -> None:
         self._observable = observable.Observable()
         self.changed = observable.Signal(self._observable, "changed")
         self.factory = factory
@@ -302,26 +346,26 @@ class Base:
         self.config = self.config_factory()
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Read-only: the factory's rename_item() changes it, with set_name()."""
 
         return self._name
 
-    def set_name(self, name):
+    def set_name(self, name: str) -> None:
         self._name = name
         self.changed.notify(self)
 
-    def get_type(self):
+    def get_type(self) -> str:
         return self.type
 
-    def _check_option(self, name):
+    def _check_option(self, name: str) -> None:
         if name not in field_names(self.config):
             raise KeyError(
                 _("%(config)s config has no %(option)s option.")
                 % {"config": self.name, "option": name}
             )
 
-    def update_config(self, changes):
+    def update_config(self, changes: dict[str, object]) -> None:
         """
         Set the settings in changes, a mapping of names to values: KeyError
         for a name the config doesn't have. Each value that changes goes to
@@ -339,18 +383,18 @@ class Base:
                     setter(value)
         self.changed.notify(self)
 
-    def rename_references(self, target, old, new):
+    def rename_references(self, target: str, old: str, new: str) -> bool:
         """Point the references to the image or event ``old`` at ``new``."""
 
         return rename_references(self.config, target, old, new)
 
-    def muted(self):
+    def muted(self) -> AbstractContextManager[None]:
         """A block in which the object tells no one that it changes."""
 
         return self._observable.muted()
 
 
-def is_running(brick):
+def is_running(brick: Brick | Event) -> bool:
     """Whether a brick or an event is running."""
 
     return brick.is_running()
@@ -360,52 +404,54 @@ def is_running(brick):
 class BrickConfig(BaseConfig):
 
     # the events to run when the brick starts and when it stops
-    on_start = field(
+    on_start: str = field(
         Ref("event"), default="", help="An event to run when the brick starts"
     )
-    on_stop = field(
+    on_stop: str = field(
         Ref("event"), default="", help="An event to run when the brick stops"
     )
 
 
 class Brick(Base):
 
-    proc = None
+    proc: RunningProcess | None = None
     term_command = "vdeterm"
     # While a start is under way, the Deferreds of those who wait for it:
     # the first is that of the call that began it.
-    _waiting = None
+    _waiting: list[defer.Deferred[Brick]] | None = None
     # While start() follows the links to the bricks it plugs into.
     _linking = False
-    _exited_d = None
-    _last_status = None
-    process_protocol = VDEProcessProtocol
-    config_factory = BrickConfig
+    # While it runs: fires with the brick and how its program ended.
+    _exited_d: defer.Deferred[tuple[Brick, object]] | None = None
+    _last_status: object = None
+    process_protocol: type[Process] = VDEProcessProtocol
+    config_factory: ClassVar[type[BrickConfig]] = BrickConfig
+    config: BrickConfig
     # what the panel of the brick works on
-    draft_factory = Draft
+    draft_factory: type[Draft] = Draft
     # What the brick is, the comment of its type in the project file.
     summary = ""
     # How the plugs are saved: "connect", "endpoints", "nics" or None.
     connections: str | None = None
     # The programs it runs, each a choice of names: any one of them will do.
-    programs = ()
+    programs: tuple[tuple[str, ...], ...] = ()
 
     @classmethod
-    def check_name(cls, name):
+    def check_name(cls, name: str) -> None:
         """Raise InvalidNameError if a brick of this kind can't have name."""
 
     @property
-    def pid(self):
-        if not self.is_running():
+    def pid(self) -> int | None:
+        if self.proc is None:
             return -1
         return self.proc.pid
 
-    def __init__(self, factory, name):
+    def __init__(self, factory: BrickFactory, name: str) -> None:
         Base.__init__(self, factory, name)
-        self.plugs = []
-        self.socks = []
+        self.plugs: list[Plug] = []
+        self.socks: list[Sock] = []
 
-    def start(self, resume=""):
+    def start(self, resume: str = "") -> defer.Deferred[Brick]:
         """
         Start the brick, in stages.
 
@@ -429,7 +475,7 @@ class Brick(Base):
                 self.logger.error(link_loop)
             return defer.fail(errors.LinkLoopError())
         if self._waiting is not None:
-            waiter = defer.Deferred()
+            waiter: defer.Deferred[Brick] = defer.Deferred()
             self._waiting.append(waiter)
             return waiter
 
@@ -446,7 +492,7 @@ class Brick(Base):
                 )
             )
 
-        started = defer.Deferred()
+        started: defer.Deferred[Brick] = defer.Deferred()
         self._waiting = [started]
         self._exited_d = defer.Deferred()
         self._linking = True
@@ -458,17 +504,12 @@ class Brick(Base):
             )
         finally:
             self._linking = False
-        d.addCallback(lambda _: self.prepare(resume))
-        d.addCallback(self.command)
-        d.addCallback(self.spawn)
 
-        def start_related_events(_):
+        def start_related_events(_: None) -> Brick:
             self._start_related_events(on=True)
             return self
 
-        d.addCallback(start_related_events)
-
-        def eb(failure):
+        def eb(failure: Failure) -> Failure | None:
             if failure.check(defer.FirstError):
                 failure = failure.value.subFailure
             waiting, self._waiting = self._waiting, None
@@ -477,17 +518,20 @@ class Brick(Base):
                 return failure
             for waiter in waiting:
                 waiter.errback(failure)
+            return None
 
-        d.addErrback(eb)
+        prepared = d.addCallback(lambda _: self.prepare(resume))
+        spawned = prepared.addCallback(self.command).addCallback(self.spawn)
+        spawned.addCallback(start_related_events).addErrback(eb)
         return started
 
-    def starting(self):
+    def starting(self) -> bool:
         """Whether a start of the brick is under way."""
 
         return self._waiting is not None
 
-    def stop(self, kill=False):
-        if not self.is_running():
+    def stop(self, kill: bool = False) -> defer.Deferred[tuple[Brick, object]]:
+        if self.proc is None:
             return defer.succeed((self, self._last_status))
         self.logger.info(shutdown_brick, name=self.name, pid=self.proc.pid)
         try:
@@ -496,77 +540,82 @@ class Brick(Base):
             return defer.fail(e)
         except error.ProcessExitedAlready:
             pass
+        assert self._exited_d is not None, "the start made it"
         return self._exited_d
 
-    def config_table(self):
+    def config_table(self) -> Table:
         """Return the configuration as saved in the project file."""
 
         return dump_record(self.config)
 
     @classmethod
-    def table_notes(cls, table):
+    def table_notes(cls, table: Table) -> Notes:
         """The notes of the keys of the configuration, in its table."""
 
         return notes(cls.config_factory, table)
 
-    def load_config_table(self, table, report, where, ignore):
+    def load_config_table(
+        self, table: Table, report: Report, where: str, ignore: Collection[str]
+    ) -> None:
         """Read the configuration from the table of the project file."""
 
         self.config = load_record(
             type(self.config), table, report, where, ignore=ignore
         )
 
-    def send_signal(self, signal):
-        if self.is_running():
+    def send_signal(self, signal: str | int) -> None:
+        if self.proc is not None:
             self.proc.signal_process(signal)
 
     # brick <--> process interface
 
-    def process_started(self, proc):
+    def process_started(self, proc: Process) -> None:
         waiting, self._waiting = self._waiting, None
+        assert waiting is not None, "a start waits for the process"
         for waiter in waiting:
             waiter.callback(self)
         self.changed.notify(self)
 
-    def process_ended(self, proc, status):
+    def process_ended(self, proc: Process, status: str | Failure) -> None:
         self.proc = None
         self._start_related_events(on=False, off=True)
         self._last_status = status
         # ovvensive programming, raise an exception instead of hide the error
         # behind a lambda (lambda _: None)
         exited, self._exited_d = self._exited_d, None
+        assert exited is not None, "the start made it"
         exited.callback((self, status))
         self.changed.notify(self)
 
     # Interal interface
 
-    def _properly_connected(self):
+    def _properly_connected(self) -> bool:
         return all(plug.configured() for plug in self.plugs)
 
-    def configured(self):
+    def configured(self) -> bool:
         return False
 
-    def prepare(self, resume=""):
+    def prepare(self, resume: str = "") -> defer.Deferred[Prepared]:
         """
         Gather what the command line needs: here, the VDE programs.
 
         Return a Deferred of a Prepared. resume is for a virtual machine.
         """
 
-        deferred = programs.vde(get_setting("vde_path"))
+        deferred = programs.vde(str(get_setting("vde_path")))
         return deferred.addCallback(lambda vde: Prepared(vde=vde))
 
-    def command(self, prepared):
+    def command(self, prepared: Prepared) -> Command:
         """Return the Command of the brick's program."""
 
         raise NotImplementedError("Brick.command")
 
-    def need_sudo(self):
+    def need_sudo(self) -> bool:
         """Whether the program of the brick runs through sudo."""
 
         return False
 
-    def spawn(self, command):
+    def spawn(self, command: Command) -> None:
         """
         Start the program of a Command.
 
@@ -581,11 +630,14 @@ class Brick(Base):
         self.logger.info(start_brick, args=" ".join(args))
         if self.need_sudo():
             args = sudo_command(args)
-        self.proc = self.process_protocol(self)
+        process = self.process_protocol(self)
+        self.proc = process
         env = dict(os.environ, **command.env)
-        reactor.spawnProcess(self.proc, args[0], args, env)
+        _reactor().spawnProcess(process, args[0], args, env)
 
-    def _start_related_events(self, on=True, off=False):
+    def _start_related_events(
+        self, on: bool = True, off: bool = False
+    ) -> None:
         if on and self.config.on_start:
             name = self.config.on_start
         elif off and self.config.on_stop:
@@ -606,40 +658,40 @@ class Brick(Base):
     # Console related operations.
     #############################
 
-    def runtime_path(self, filename):
+    def runtime_path(self, filename: str) -> str:
         return os.path.join(self.factory.runtime_dir, filename)
 
-    def path(self):
+    def path(self) -> str:
         return self.runtime_path(f"{self.name}.ctl")
 
-    def console(self):
+    def console(self) -> str:
         return self.runtime_path(f"{self.name}.mgmt")
 
-    def connect(self, endpoint, *args):
+    def connect(self, endpoint: Sock | HostonlySock, *args: str) -> None:
         for p in self.plugs:
             if not p.configured():
                 p.connect(endpoint)
                 self.changed.notify(self)
                 return
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         for p in self.plugs:
             if p.configured():
                 p.disconnect()
         self.changed.notify(self)
 
-    def open_console(self):
-        term = get_setting("terminal")
+    def open_console(self) -> None:
+        term = str(get_setting("terminal"))
         args = [term, "-e", which(self.term_command), self.console()]
         self.logger.info(open_console, name=self.name, args=" ".join(args))
-        reactor.spawnProcess(TermProtocol(), term, args, os.environ)
+        _reactor().spawnProcess(TermProtocol(), term, args, os.environ)
 
-    def send(self, data):
+    def send(self, data: bytes) -> None:
         assert isinstance(data, bytes)
-        if self.is_running():
+        if self.proc is not None:
             self.proc.write(data)
 
-    def get_state(self):
+    def get_state(self) -> str:
         """return state of the brick"""
         if self.is_running():
             state = _("running")
@@ -649,28 +701,32 @@ class Brick(Base):
             state = _("off")
         return state
 
-    def is_running(self):
+    def is_running(self) -> bool:
         return self.proc is not None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<{0.type} {0.name}>".format(self)
 
 
 class PrivilegedBrick(Brick):
     """A brick that runs with sudo unless Virtualbricks runs as root."""
 
-    def need_sudo(self):
+    def need_sudo(self) -> bool:
         return os.geteuid() != 0
 
 
-def restart(brick, clock) -> defer.Deferred:
+def _reactor() -> IReactorProcess:
+    return cast("IReactorProcess", reactor)
+
+
+def restart(brick: Brick, clock: IReactorTime) -> defer.Deferred[Any]:
     """Stop brick, killing it if it takes too long, and start it again."""
 
     logger.debug(restarting)
     stopped = brick.stop()
     call = clock.callLater(KILL_AFTER, brick.stop, kill=True)
 
-    def cancel(passthru):
+    def cancel(passthru: object) -> object:
         if call.active():
             call.cancel()
         return passthru

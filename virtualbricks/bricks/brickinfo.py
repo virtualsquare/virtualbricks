@@ -40,12 +40,15 @@ import enum
 import ipaddress
 import itertools
 import os
+from collections.abc import Callable, Iterable, Sequence
+from typing import TYPE_CHECKING, Any
 
 import attr
 
 from virtualbricks.bricks.capture import Capture
 from virtualbricks.bricks.netemu import Netemu
 from virtualbricks.bricks.router import Router
+from virtualbricks.bricks.sock import Sock
 from virtualbricks.bricks.switch import Switch
 from virtualbricks.bricks.switchwrapper import SwitchWrapper
 from virtualbricks.bricks.tap import Tap
@@ -55,7 +58,11 @@ from virtualbricks.bricks.virtualmachine import VirtualMachine
 from virtualbricks.bricks.wire import Wire
 from virtualbricks.i18n import _, ngettext
 from virtualbricks.programs import PACKAGES, Missing, find_program
-from virtualbricks.bricks import is_running
+from virtualbricks.bricks import Brick, is_running
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks.plug import Plug
 
 # Between the parts of a summary.
 SEPARATOR = " · "
@@ -93,13 +100,13 @@ LABELS = {
 }
 
 
-def kind(brick) -> str:
+def kind(brick: Brick) -> str:
     """The kind of a brick, in words."""
 
     return KINDS.get(brick.get_type(), brick.get_type())
 
 
-def state(brick) -> State:
+def state(brick: Brick) -> State:
     if is_running(brick):
         return State.RUNNING
     if not all(plug.configured() for plug in brick.plugs):
@@ -109,13 +116,13 @@ def state(brick) -> State:
     return State.STOPPED
 
 
-def process(brick) -> int | None:
+def process(brick: Brick) -> int | None:
     """The process of a running brick."""
 
     return brick.pid if is_running(brick) else None
 
 
-def summary(brick) -> str:
+def summary(brick: Brick) -> str:
     """What matters about a brick, and what it is plugged into."""
 
     describe = _SUMMARIES.get(brick.get_type())
@@ -124,23 +131,23 @@ def summary(brick) -> str:
     return SEPARATOR.join(describe(brick))
 
 
-def _end(plug) -> str:
+def _end(plug: Plug) -> str:
     return plug.sock.brick.name if plug.sock is not None else _("nothing")
 
 
-def _on(plug) -> list[str]:
+def _on(plug: Plug) -> list[str]:
     if plug.sock is None:
         return []
     return [_("on {brick}").format(brick=plug.sock.brick.name)]
 
 
-def _both_ways(value, back, symmetric) -> str:
+def _both_ways(value: float, back: float, symmetric: bool) -> str:
     if symmetric:
         return f"{value:g}"
     return f"{value:g}/{back:g}"
 
 
-def _switch(brick) -> list[str]:
+def _switch(brick: Switch) -> list[str]:
     ports = brick.config.ports
     parts = [ngettext("{n} port", "{n} ports", ports).format(n=ports)]
     if brick.config.fast_spanning_tree:
@@ -150,11 +157,11 @@ def _switch(brick) -> list[str]:
     return parts
 
 
-def _switch_wrapper(brick) -> list[str]:
+def _switch_wrapper(brick: SwitchWrapper) -> list[str]:
     return [brick.config.socket_path or _("no socket")]
 
 
-def _tap(brick) -> list[str]:
+def _tap(brick: Tap) -> list[str]:
     config = brick.config
     if config.address_mode == "manual":
         try:
@@ -169,11 +176,11 @@ def _tap(brick) -> list[str]:
     return _on(brick.plugs[0]) + [address]
 
 
-def _wire(brick) -> list[str]:
+def _wire(brick: Wire) -> list[str]:
     return [" ↔ ".join(_end(plug) for plug in brick.plugs)]
 
 
-def _netemu(brick) -> list[str]:
+def _netemu(brick: Netemu) -> list[str]:
     config = brick.config
     parts = _wire(brick)
     if config.delay or config.delay_right_to_left:
@@ -189,7 +196,7 @@ def _netemu(brick) -> list[str]:
     return parts
 
 
-def _capture(brick) -> list[str]:
+def _capture(brick: Capture) -> list[str]:
     interface = brick.config.interface or _("no interface")
     plug = brick.plugs[0]
     if plug.sock is None:
@@ -201,32 +208,32 @@ def _capture(brick) -> list[str]:
     ]
 
 
-def _tunnel_server(brick) -> list[str]:
+def _tunnel_server(brick: TunnelListen) -> list[str]:
     port = _("UDP port {port}").format(port=brick.config.listen_port)
     return _on(brick.plugs[0]) + [port]
 
 
-def _tunnel_client(brick) -> list[str]:
+def _tunnel_client(brick: TunnelConnect) -> list[str]:
     host = brick.config.server_host
     to = _("to {host}").format(host=host) if host else _("no host")
     return _on(brick.plugs[0]) + [to]
 
 
-def _router(brick) -> list[str]:
+def _router(brick: Router) -> list[str]:
     return []
 
 
-def _card(brick, number, link) -> str:
-    if link in brick.socks:
+def _card(brick: VirtualMachine, number: int, link: Plug | Sock) -> str:
+    if isinstance(link, Sock):
         return _("eth{n} as a socket").format(n=number)
     if link.sock is None:
         return _("eth{n} not connected").format(n=number)
-    if getattr(link.sock, "mode", None) == "hostonly":
+    if link.sock.mode == "hostonly":
         return _("eth{n} host only").format(n=number)
     return _("eth{n} on {brick}").format(n=number, brick=link.sock.brick.name)
 
 
-def _virtual_machine(brick) -> list[str]:
+def _virtual_machine(brick: VirtualMachine) -> list[str]:
     config = brick.config
     program = os.path.basename(config.qemu_program)
     if program.startswith(QEMU_PREFIX):
@@ -235,7 +242,7 @@ def _virtual_machine(brick) -> list[str]:
     if config.use_kvm:
         parts.append("KVM")
     parts.append(_("{size} MiB").format(size=config.memory))
-    links = list(itertools.chain(brick.plugs, brick.socks))
+    links: list[Plug | Sock] = list(itertools.chain(brick.plugs, brick.socks))
     if not links:
         parts.append(_("no network card"))
     for number, link in enumerate(links):
@@ -243,7 +250,8 @@ def _virtual_machine(brick) -> list[str]:
     return parts
 
 
-_SUMMARIES = {
+# The summary of each type, which takes a brick of the type.
+_SUMMARIES: dict[str, Callable[[Any], list[str]]] = {
     "Switch": _switch,
     "SwitchWrapper": _switch_wrapper,
     "Tap": _tap,
@@ -257,14 +265,14 @@ _SUMMARIES = {
 }
 
 
-def _takes_plug(brick) -> bool:
+def _takes_plug(brick: Brick) -> bool:
     # a virtual machine adds a network card for each connection
     return isinstance(brick, VirtualMachine) or any(
         plug.sock is None for plug in brick.plugs
     )
 
 
-def connection(source, destination):
+def connection(source: Brick, destination: Brick) -> tuple[Brick, Sock] | None:
     """
     How source, dropped on destination, connects to it: the brick that
     plugs in and the socket it plugs into, or None.
@@ -279,7 +287,7 @@ def connection(source, destination):
     return None
 
 
-def connect(source, destination) -> bool:
+def connect(source: Brick, destination: Brick) -> bool:
     """Connect source to destination, as a drop does; False if it can't."""
 
     found = connection(source, destination)
@@ -290,7 +298,7 @@ def connect(source, destination) -> bool:
     return True
 
 
-def connectable(brick, bricks) -> list:
+def connectable(brick: Brick, bricks: Iterable[Brick]) -> list[Brick]:
     """The bricks, of bricks, that brick can connect to."""
 
     return [other for other in bricks if connection(brick, other) is not None]
@@ -312,7 +320,7 @@ class Kind:
     """A kind of brick, as New Brick offers it."""
 
     # the class of its bricks
-    brick: type
+    brick: type[Brick]
     group: str
     # one line about it, and the longer text of its tooltip
     line: str
@@ -448,16 +456,14 @@ NEW_KINDS = (
 )
 
 
-def new_name(factory, kind: Kind) -> str:
+def new_name(factory: BrickFactory, kind: Kind) -> str:
     """The name of a new brick of kind: its prefix and the first number free.
 
     Free in the whole project: no brick, event or image has the name.
     """
 
-    for number in itertools.count(1):
-        name = f"{kind.prefix}{number}"
-        if not factory.name_in_use(name):
-            return name
+    names = (f"{kind.prefix}{number}" for number in itertools.count(1))
+    return next(name for name in names if not factory.name_in_use(name))
 
 
 @attr.define(frozen=True)
@@ -494,11 +500,11 @@ def issue(kind: Kind, vde_folder: str, qemu_folder: str) -> Issue | None:
     return Issue(line, " ".join(sentences))
 
 
-def _folder(name, vde_folder, qemu_folder) -> str:
+def _folder(name: str, vde_folder: str, qemu_folder: str) -> str:
     return qemu_folder if name.startswith("qemu-") else vde_folder
 
 
-def _not_installed(choice) -> str:
+def _not_installed(choice: Sequence[str]) -> str:
     if len(choice) > 1:
         names = [str(Missing(name, PACKAGES.get(name))) for name in choice]
         return _("Neither {programs} nor {last} is installed.").format(

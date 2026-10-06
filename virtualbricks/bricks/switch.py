@@ -18,29 +18,36 @@
 
 """A switch: vde_switch."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from virtualbricks import bricks
-from virtualbricks.bricks.command import Command, vde_program
+from virtualbricks.bricks.command import Command, Prepared, vde_program
 from virtualbricks.bricks.draft import Draft, Problem
 from virtualbricks.config.schema import Bool, Int, define, field
 from virtualbricks.i18n import N_, _, ngettext
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
 
 
 @define
 class SwitchConfig(bricks.BrickConfig):
 
-    ports = field(
+    ports: int = field(
         Int(1, 128),
         default=32,
         label=N_("Ports"),
         help=N_("Number of ports"),
     )
-    hub_mode = field(
+    hub_mode: bool = field(
         Bool(),
         default=False,
         label=N_("Hub mode"),
         help=N_("Send every packet to every port, as a hub"),
     )
-    fast_spanning_tree = field(
+    fast_spanning_tree: bool = field(
         Bool(),
         default=False,
         label=N_("Fast spanning tree"),
@@ -51,7 +58,7 @@ class SwitchConfig(bricks.BrickConfig):
 class SwitchDraft(Draft):
     """The settings of a switch: it needs a port for each plug in it."""
 
-    def plugged(self) -> list:
+    def plugged(self) -> list[bricks.Brick]:
         """The bricks plugged into the switch, once each, in their order."""
 
         bricks = []
@@ -63,13 +70,13 @@ class SwitchDraft(Draft):
     def needed(self) -> int:
         return len(self.brick.socks[0].plugs)
 
-    def limits(self, name):
+    def limits(self, name: str) -> tuple[float | None, float | None]:
         low, high = super().limits(name)
         if name == "ports":
             low = max(low, self.needed())
         return low, high
 
-    def note(self, name):
+    def note(self, name: str) -> str:
         needed = self.needed()
         if name != "ports" or not needed:
             return ""
@@ -80,7 +87,7 @@ class SwitchDraft(Draft):
             len(self.plugged()),
         ).format(count=needed, names=names, switch=self.brick.name)
 
-    def check(self):
+    def check(self) -> list[Problem]:
         needed = self.needed()
         if self.settings.ports >= needed:
             return super().check()
@@ -96,22 +103,23 @@ class Switch(bricks.Brick):
     summary = "A VDE switch"
     programs = (("vde_switch",),)
     config_factory = SwitchConfig
+    config: SwitchConfig
     draft_factory = SwitchDraft
 
-    def set_name(self, name):
+    def set_name(self, name: str) -> None:
         self._name = name
         for so in self.socks:
             so.nickname = name + "_port"
             so.path = self.path()
         self.changed.notify(self)
 
-    def __init__(self, factory, name):
+    def __init__(self, factory: BrickFactory, name: str) -> None:
         bricks.Brick.__init__(self, factory, name)
         sock = factory.new_sock(self, self.name + "_port")
         sock.path = self.path()
         self.socks.append(sock)
 
-    def command(self, prepared):
+    def command(self, prepared: Prepared) -> Command:
         config = self.config
         cmd = Command(vde_program(prepared.vde, "vde_switch"))
         cmd.flag("-x", config.hub_mode)
@@ -121,15 +129,15 @@ class Switch(bricks.Brick):
         cmd.option("-M", self.console())
         return cmd
 
-    def configured(self):
+    def configured(self) -> bool:
         return self.socks[0].has_valid_path()
 
     # what a running switch takes at once, by the name of the setting
-    def cbset_fast_spanning_tree(self, arg=False):
+    def cbset_fast_spanning_tree(self, arg: bool = False) -> None:
         self.send(b"fstp/setfstp %d\n" % bool(arg))
 
-    def cbset_hub_mode(self, arg=False):
+    def cbset_hub_mode(self, arg: bool = False) -> None:
         self.send(b"port/sethub %d\n" % bool(arg))
 
-    def cbset_ports(self, arg=32):
+    def cbset_ports(self, arg: int = 32) -> None:
         self.send(b"port/setnumports %d\n" % arg)

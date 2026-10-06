@@ -63,8 +63,8 @@ from virtualbricks.nic import random_mac
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks import Brick
     from virtualbricks.bricks.netemu import MarkovConfig, Netemu
+    from virtualbricks.bricks.virtualmachine import VirtualMachine
     from virtualbricks.config.report import Report
     from virtualbricks.config.settings import SettingValue
     from virtualbricks.config.tomlfile import Table
@@ -568,7 +568,7 @@ class _Converter:
             for name in BRICK_KEYS:
                 setattr(state, name, getattr(markov.states[0], name))
 
-    def qemu(self, brick: Brick, section: legacy.Section) -> None:
+    def qemu(self, brick: VirtualMachine, section: legacy.Section) -> None:
         """The keys of a machine, with those that became others."""
 
         label = section.label()
@@ -587,12 +587,12 @@ class _Converter:
                 plain.append(item)
         _apply(brick.config, plain, "qemu", label, self.filename, self.report)
         for key, choice in CDROM_SWITCHES.items():
-            item = switches.get(key)
-            if item is not None and legacy.parse_bool(item.value):
+            switch = switches.get(key)
+            if switch is not None and legacy.parse_bool(switch.value):
                 brick.config.cdrom = choice
                 break
-        item = switches.get(NOACPI)
-        if item is not None and item.value.strip():
+        switch = switches.get(NOACPI)
+        if switch is not None and switch.value.strip():
             brick.config.acpi = False
 
     def state_item(

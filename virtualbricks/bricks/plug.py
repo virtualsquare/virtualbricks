@@ -18,31 +18,41 @@
 
 """A plug: the end of a link that goes into a socket."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 from twisted.internet import defer
 from twisted.logger import Logger
 
 from virtualbricks import errors
 from virtualbricks.config.settings import get_setting
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks import Brick
+    from virtualbricks.bricks.sock import Sock
+    from virtualbricks.bricks.virtualmachine import HostonlySock
+
 link_loop = "The links make a loop: the bricks on it don't start."
 
 
 class Plug:
 
-    sock = None
+    # the socket it's in: a brick's, QEMU's own user network, or none
+    sock: Sock | HostonlySock | None = None
     _antiloop = False
     mode = "vde"
     logger = Logger()
     model = ""
     mac = ""
 
-    def __init__(self, brick):
+    def __init__(self, brick: Brick) -> None:
         self.brick = brick
 
-    def configured(self):
+    def configured(self) -> bool:
         return self.sock is not None
 
-    def connected(self):
+    def connected(self) -> defer.Deferred[Any]:
         if self._antiloop:
             if get_setting("log_link_loops"):
                 self.logger.error(link_loop)
@@ -60,7 +70,7 @@ class Plug:
             self._antiloop = False
             return defer.succeed(self.brick)
 
-        def clear_antiloop(passthru):
+        def clear_antiloop(passthru: object) -> object:
             self._antiloop = False
             return passthru
 
@@ -68,12 +78,12 @@ class Plug:
         d.addBoth(clear_antiloop)
         return d
 
-    def connect(self, sock):
+    def connect(self, sock: Sock | HostonlySock) -> None:
         assert sock is not None, "Cannot connect a plug to nothing"
         sock.plugs.append(self)
         self.sock = sock
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         assert self.sock is not None, "Plug not connected"
         assert self in self.sock.plugs, "sock %r has not reference to %r" % (
             self.sock,

@@ -15,8 +15,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import annotations
+
 from virtualbricks import bricks
-from virtualbricks.bricks.command import Command, vde_program
+from virtualbricks.bricks.command import Command, Prepared, vde_program
 
 
 class Router(bricks.Brick):
@@ -25,12 +27,12 @@ class Router(bricks.Brick):
     summary = "A VDE router"
     programs = (("vde_router",),)
 
-    def command(self, prepared):
+    def command(self, prepared: Prepared) -> Command:
         cmd = Command(vde_program(prepared.vde, "vde_router"))
         cmd.option("-M", self.console())
         return cmd
 
-    def configured(self):
+    def configured(self) -> bool:
         return True
 
 

@@ -17,17 +17,30 @@
 
 """A tunnel server: vde_cryptcab, listening for a tunnel client."""
 
+from __future__ import annotations
+
 import hashlib
 import os
+from typing import TYPE_CHECKING
+
+from twisted.internet import defer
 
 from virtualbricks import bricks
-from virtualbricks.bricks.command import Command, socket_path, vde_program
+from virtualbricks.bricks.command import (
+    Command,
+    Prepared,
+    socket_path,
+    vde_program,
+)
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.schema import Int, Str, define, field
 from virtualbricks.i18n import N_
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
 
-def tunnel_key(password):
+
+def tunnel_key(password: str) -> bytes:
     """
     The key of a tunnel, made from its password.
 
@@ -43,7 +56,7 @@ def tunnel_key(password):
     return f"{digest}  -\n".encode()
 
 
-def write_key(path, password):
+def write_key(path: str, password: str) -> None:
     """Write the key of a tunnel to path, readable by its owner only."""
 
     os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
@@ -71,7 +84,7 @@ activate = 1
 """
 
 
-def write_openssl_config(path):
+def write_openssl_config(path: str) -> None:
     """Write the configuration of OpenSSL for vde_cryptcab to path."""
 
     os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
@@ -80,15 +93,21 @@ def write_openssl_config(path):
 
 
 @define
-class TunnelListenConfig(bricks.BrickConfig):
+class TunnelConfig(bricks.BrickConfig):
+    """What both ends of a tunnel have: its password."""
 
-    password = field(
+    password: str = field(
         Str(),
         default="",
         label=N_("Password"),
         help=N_("The password of the tunnel, in clear text"),
     )
-    listen_port = field(
+
+
+@define
+class TunnelListenConfig(TunnelConfig):
+
+    listen_port: int = field(
         Int(1, 65535),
         default=7667,
         label=N_("Port"),
@@ -96,32 +115,28 @@ class TunnelListenConfig(bricks.BrickConfig):
     )
 
 
-class TunnelListen(bricks.Brick):
+class Tunnel(bricks.Brick):
+    """An end of an encrypted tunnel: vde_cryptcab, plugged into a switch."""
 
-    type = "TunnelListen"
-    summary = "The server end of an encrypted tunnel"
     programs = (("vde_cryptcab",),)
-    config_factory = TunnelListenConfig
+    config: TunnelConfig
     connections = "connect"
 
-    def __init__(self, factory, name):
+    def __init__(self, factory: BrickFactory, name: str) -> None:
         bricks.Brick.__init__(self, factory, name)
         self.plugs.append(Plug(self))
 
-    def configured(self):
-        return bool(self.plugs[0].sock)
-
-    def key_path(self):
+    def key_path(self) -> str:
         """The key of the tunnel, in the runtime folder."""
 
         return self.runtime_path(f"{self.name}.key")
 
-    def openssl_path(self):
+    def openssl_path(self) -> str:
         """The configuration of OpenSSL of the tunnel, in the runtime folder."""
 
         return self.runtime_path(f"{self.name}.openssl.cnf")
 
-    def prepare(self, resume=""):
+    def prepare(self, resume: str = "") -> defer.Deferred[Prepared]:
         """
         The VDE programs, and the key of the tunnel and its configuration of
         OpenSSL written.
@@ -129,14 +144,14 @@ class TunnelListen(bricks.Brick):
 
         deferred = bricks.Brick.prepare(self, resume)
 
-        def written(prepared):
+        def written(prepared: Prepared) -> Prepared:
             write_key(self.key_path(), self.config.password)
             write_openssl_config(self.openssl_path())
             return prepared
 
         return deferred.addCallback(written)
 
-    def cryptcab(self, prepared):
+    def cryptcab(self, prepared: Prepared) -> Command:
         """
         The Command of vde_cryptcab, with the key and the switch of the
         tunnel, and its configuration of OpenSSL.
@@ -148,7 +163,18 @@ class TunnelListen(bricks.Brick):
         cmd.option("-s", socket_path(self.plugs[0]))
         return cmd
 
-    def command(self, prepared):
+
+class TunnelListen(Tunnel):
+
+    type = "TunnelListen"
+    summary = "The server end of an encrypted tunnel"
+    config_factory = TunnelListenConfig
+    config: TunnelListenConfig
+
+    def configured(self) -> bool:
+        return bool(self.plugs[0].sock)
+
+    def command(self, prepared: Prepared) -> Command:
         cmd = self.cryptcab(prepared)
         cmd.option("-p", self.config.listen_port)
         return cmd

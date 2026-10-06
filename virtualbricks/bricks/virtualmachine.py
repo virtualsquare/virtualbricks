@@ -16,6 +16,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 import datetime
 import errno
@@ -23,7 +25,8 @@ import itertools
 import os
 import re
 import shutil
-from typing import TypeGuard
+from collections.abc import Iterator, Sequence
+from typing import TYPE_CHECKING, Any, TypeGuard
 
 import attr
 from twisted.internet import defer
@@ -40,6 +43,7 @@ from virtualbricks.bricks.command import (
 )
 from virtualbricks.bricks.draft import Draft, Problem
 from virtualbricks.bricks.plug import Plug
+from virtualbricks.bricks.sock import Sock
 from virtualbricks.config.images import read_info
 from virtualbricks.config.projectfile import DEFAULT_MODEL
 from virtualbricks.config.schema import (
@@ -69,6 +73,15 @@ from virtualbricks.observable import Observable, Signal
 from virtualbricks.qemu import imageformat
 from virtualbricks.qemu.imageformat import NotCowFileError
 from virtualbricks.qemu.run import qemu_img, which
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.config.images import ImageInfo
+    from virtualbricks.config.report import Report
+    from virtualbricks.config.tomlfile import Value
+    from virtualbricks.programs import QemuInfo
 
 logger = Logger()
 new_cow = (
@@ -105,19 +118,15 @@ class UsbDevice:
     description: str
 
     @classmethod
-    def parse_line(cls, line):
-        """
-        :type line: str
-        :rtype: Optional[UsbDevice]
-        """
-
+    def parse_line(cls, line: str) -> UsbDevice | None:
         matchobj = LSUSB_REGEX.search(line)
         if matchobj:
             dev_id = matchobj.group("id")
             description = matchobj.group("description").strip()
             return cls(dev_id, description)
+        return None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.id
 
 
@@ -125,17 +134,17 @@ LSUSB_REGEX = re.compile(r"(?P<id>\w{4}:\w{4})" r"(?:\s(?P<description>.+))?$")
 USB_ID = re.compile(r"\w{4}:\w{4}")
 
 
-class UsbDeviceKind(Kind):
+class UsbDeviceKind(Kind[UsbDevice]):
     """A USB device, stored as ``{ id, description }``."""
 
-    def check(self, value):
+    def check(self, value: object) -> None:
         if not isinstance(value, UsbDevice):
             raise ValueError(f"{value!r} is not a USB device")
 
-    def to_data(self, value):
+    def to_data(self, value: UsbDevice) -> Value:
         return {"id": value.id, "description": value.description}
 
-    def from_data(self, data, report, where):
+    def from_data(self, data: Value, report: Report, where: str) -> UsbDevice:
         if not isinstance(data, dict):
             raise ValueError(f"{data!r} is not a table")
         dev_id = data.get("id")
@@ -148,41 +157,32 @@ class UsbDeviceKind(Kind):
             report.warning("unknown field, dropped", f"{where}.{key}")
         return UsbDevice(dev_id, description)
 
-    def format(self, value):
+    def format(self, value: UsbDevice) -> str:
         return value.id
 
 
-def _parse_lsusb_output(stdout):
-    """
-    :type output: str
-    :rtype: List[UsbDevice]
-    """
-
+def _parse_lsusb_output(stdout: str) -> list[UsbDevice]:
     devices = map(UsbDevice.parse_line, stdout.splitlines())
     return list(filter(None, devices))
 
 
-def get_usb_devices():
-    """
-    :rtype: twisted.internet.defer.Deferred[List[UsbDevice]]
-    """
-
+def get_usb_devices() -> defer.Deferred[list[UsbDevice]]:
     logger.info(search_usb)
     deferred = getProcessOutput("lsusb", env=os.environ)
-    deferred.addCallback(decode_output)
-    deferred.addCallback(_parse_lsusb_output)
-    return deferred
+    return deferred.addCallback(decode_output).addCallback(_parse_lsusb_output)
 
 
 class _FakeBrick:
 
     name = "hostonly"
+    # as a brick's: its plug isn't saved by itself
+    connections: str | None = None
 
-    def start(self):
+    def start(self) -> defer.Deferred[_FakeBrick]:
         return defer.succeed(self)
 
 
-class _HostonlySock:
+class HostonlySock:
     """
     This is dummy implementation of a socket used with VirtualMachines that
     want a plug that is not connected to nothing. The instance is a singleton,
@@ -197,24 +197,19 @@ class _HostonlySock:
     mac = "?"
     mode = "hostonly"
     brick = _FakeBrick()
-    plugs = []
+    plugs: list[Plug] = []
 
 
-hostonly_sock = _HostonlySock()
+hostonly_sock = HostonlySock()
 
 
 class Image:
 
     readonly = False
-    master = None
+    # the disk that has it locked
+    master: Disk | None = None
 
-    def __init__(self, name, path, description=""):
-        """
-        :type name: str
-        :type path: str
-        :type description: str
-        """
-
+    def __init__(self, name: str, path: str, description: str = "") -> None:
         self._name = name
         self._path = os.path.abspath(path)
         self._description = description
@@ -226,11 +221,7 @@ class Image:
 
         return self._name
 
-    def set_name(self, value):
-        """
-        :type value: str
-        """
-
+    def set_name(self, value: str) -> None:
         self._name = value
         self.changed.notify(self)
 
@@ -240,11 +231,7 @@ class Image:
 
         return self._path
 
-    def set_path(self, value):
-        """
-        :type value: str
-        """
-
+    def set_path(self, value: str) -> None:
         self._path = value
         self.changed.notify(self)
 
@@ -254,27 +241,18 @@ class Image:
 
         return self._description
 
-    def set_description(self, description):
-        """
-        :type value: str
-        """
-
+    def set_description(self, description: str) -> None:
         if self._description != description:
             self._description = description
             self.changed.notify(self)
 
-    def basename(self):
+    def basename(self) -> str:
         return os.path.basename(self.path)
 
-    def exists(self):
+    def exists(self) -> bool:
         return os.path.exists(self.path)
 
-    def acquire(self, disk):
-        """
-        :type disk: virtualbricks.bricks.virtualmachine.Disk
-        :rtype: None
-        """
-
+    def acquire(self, disk: Disk) -> None:
         if self.master is None:
             self.master = disk
         elif self.master is disk:
@@ -283,12 +261,7 @@ class Image:
         else:
             raise errors.LockedImageError(self, self.master)
 
-    def release(self, disk):
-        """
-        :type disk: virtualbricks.bricks.virtualmachine.Disk
-        :rtype: None
-        """
-
+    def release(self, disk: Disk) -> None:
         # TODO: remove parameter
         if self.master is disk:
             self.master = None
@@ -313,7 +286,7 @@ class ImageDraft(Draft):
     image.
     """
 
-    def __init__(self, image: Image, factory) -> None:
+    def __init__(self, image: Image, factory: BrickFactory) -> None:
         self.factory = factory
         super().__init__(image)
 
@@ -354,11 +327,11 @@ class ImageDraft(Draft):
             image.set_description(self.settings.description)
 
 
-def is_disk_image(brick):
+def is_disk_image(brick: object) -> TypeGuard[Image]:
     return isinstance(brick, Image)
 
 
-def move(src, dst):
+def move(src: str, dst: str) -> None:
     try:
         os.rename(src, dst)
     except OSError as e:
@@ -371,20 +344,15 @@ def move(src, dst):
 class Disk:
 
     @property
-    def cow(self):
+    def cow(self) -> bool:
         return self.is_cow()
 
-    def __init__(self, vm, dev):
-        """
-        :param VirtualMachines vm:
-        :param str dev:
-        """
-
+    def __init__(self, vm: VirtualMachine, dev: str) -> None:
         self.vm = vm
         self.device = dev
 
     @property
-    def image(self):
+    def image(self) -> Image | None:
         """The image named in the configuration, if it's in the library."""
 
         name = getattr(self.vm.config, f"{self.device}_image")
@@ -392,20 +360,22 @@ class Disk:
             return None
         return self.vm.factory.get_image(name)
 
-    def set_image(self, image):
+    def set_image(self, image: Image | None) -> None:
         name = "" if image is None else image.name
         setattr(self.vm.config, f"{self.device}_image", name)
 
-    def is_cow(self):
-        return getattr(self.vm.config, f"{self.device}_private")
+    def is_cow(self) -> bool:
+        return bool(getattr(self.vm.config, f"{self.device}_private"))
 
-    def _basefolder(self):
-        return self.vm.project_folder()
+    def _basefolder(self) -> str:
+        folder = self.vm.project_folder()
+        assert folder is not None, "a project is open"
+        return folder
 
-    def acquire(self):
+    def acquire(self) -> None:
         self.lock_image()
 
-    def lock_image(self):
+    def lock_image(self) -> None:
         """
         Acquire a lock on the image. The image can be locked multiple times by
         the same disk but the first call to unlock_image will release all the
@@ -422,10 +392,10 @@ class Disk:
         ):
             self.image.acquire(self)
 
-    def release(self):
+    def release(self) -> None:
         self.unlock_image()
 
-    def unlock_image(self):
+    def unlock_image(self) -> None:
         """
         Release the lock on the image.
         """
@@ -437,14 +407,15 @@ class Disk:
         ):
             self.image.release(self)
 
-    def _new_disk_image_differential(self, filename):
+    def _new_disk_image_differential(
+        self, filename: str
+    ) -> defer.Deferred[None]:
         """
         Create a new disk image for Qemu with the given name. The new disk
         image is a differential of this disk image (self.image.path).
 
         :param str filename: the name of the new disk image.
         :return: A Deferred that fires when the image has been created.
-        :rtype: twisted.internet.defer.Deferred[None]
         """
 
         assert self.image is not None
@@ -452,7 +423,7 @@ class Disk:
         path = self.image.path
         logger.info(new_cow, backing_file=path)
 
-        def create(info):
+        def create(info: ImageInfo) -> defer.Deferred[str]:
             # a private copy is always qcow2; -F is the format of the image,
             # which may be raw
             args = ["create", "-f", "qcow2"]
@@ -460,11 +431,11 @@ class Disk:
             return qemu_img(args)
 
         deferred = read_info(path, qemu_img)
-        deferred.addCallback(create)
-        deferred.addCallback(lambda _: None)
-        return deferred
+        return deferred.addCallback(create).addCallback(lambda _: None)
 
-    def _ensure_private_image_cow(self, image_file):
+    def _ensure_private_image_cow(
+        self, image_file: str
+    ) -> defer.Deferred[None]:
         """
         Ensure that the private disk image exists and its backing file is this
         disk image (self.image.path).
@@ -478,7 +449,6 @@ class Disk:
 
         :param str image_file: the private cow image file for which we search
             the backing file.
-        :rtype: twisted.internet.defer.Deferred[None]
         """
 
         assert self.image is not None
@@ -517,28 +487,24 @@ class Disk:
             move(image_file, backup_file)
             return self._new_disk_image_differential(image_file)
 
-    def get_cow_path(self):
+    def get_cow_path(self) -> str:
         """
         Return the fullpath of the (private) image file that will be used for
         this disk devide.
-
-        :rtype: str
         """
 
         filename = f"{self.vm.name}_{self.device}.cow"
         return os.path.join(self._basefolder(), filename)
 
-    def get_real_disk_name(self):
+    def get_real_disk_name(self) -> defer.Deferred[str]:
         return self.disk_image_path()
 
-    def disk_image_path(self):
+    def disk_image_path(self) -> defer.Deferred[str]:
         """
         Return the path of the image used with this disk.
 
         If the image is differential, ensure that it exists and the backing
         file is the correct one.
-
-        :rtype: twisted.internet.defer.Deferred[str]
         """
 
         # TODO: what if the image file does not exist?
@@ -549,17 +515,17 @@ class Disk:
         if self.is_cow():
             private_image_path = self.get_cow_path()
             deferred = self._ensure_private_image_cow(private_image_path)
-            deferred.addCallback(lambda _: private_image_path)
-            return deferred
+            return deferred.addCallback(lambda _: private_image_path)
         else:
             return defer.succeed(self.image.path)
 
-    def readonly(self):
+    def readonly(self) -> bool:
         return self.vm.config.forget_disk_changes
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        path = None if self.image is None else self.image.path
         return (
-            f"<Disk {self.device}({self.vm.name}) image={self.image.path} "
+            f"<Disk {self.device}({self.vm.name}) image={path} "
             f"readonly={self.readonly()} cow={self.is_cow()}>"
         )
 
@@ -567,7 +533,7 @@ class Disk:
 DISK_DEVICES = ("hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock")
 
 
-def _rename_private_disks(folder, old, new):
+def _rename_private_disks(folder: str, old: str, new: str) -> None:
     """
     Rename the private disks of the machine ``old`` in ``folder``, and their
     backups, after the machine ``new``.
@@ -584,7 +550,7 @@ def _rename_private_disks(folder, old, new):
             os.rename(path, os.path.join(folder, f"{new}_{match['rest']}"))
 
 
-def _image(dev):
+def _image(dev: str) -> str:
     """
     The field of the image of a disk device, such as ``hda``.
 
@@ -606,7 +572,7 @@ def _image(dev):
     )
 
 
-def _private(dev):
+def _private(dev: str) -> bool:
     """
     The field that makes a disk device, such as ``hda``, private.
 
@@ -637,13 +603,13 @@ class VirtualMachineConfig(bricks.BrickConfig):
     """
 
     # the program and the machine
-    qemu_program = field(
+    qemu_program: str = field(
         Str(required=True),
         default="qemu-system-i386",
         label=N_("Program"),
         help=N_("The QEMU program, in the QEMU folder of the settings"),
     )
-    machine_type = field(
+    machine_type: str = field(
         Str(),
         default="",
         label=N_("Machine type"),
@@ -652,36 +618,36 @@ class VirtualMachineConfig(bricks.BrickConfig):
             " default"
         ),
     )
-    cpu_model = field(
+    cpu_model: str = field(
         Str(),
         default="",
         label=N_("CPU model"),
         help=N_("The CPU model, as -cpu takes it; empty for the QEMU default"),
     )
-    use_kvm = field(
+    use_kvm: bool = field(
         Bool(),
         default=False,
         label=N_("KVM"),
         help=N_("Use KVM when the host has it"),
     )
-    cpus = field(
+    cpus: int = field(
         Int(1, 64),
         default=1,
         label=N_("Virtual CPUs"),
         help=N_("The number of virtual CPUs"),
     )
     # in MiB
-    memory = field(
+    memory: int = field(
         Int(1, 99999), default=64, label=N_("Memory"), help=N_("Memory in MiB")
     )
-    use_kvm_shadow_memory = field(
+    use_kvm_shadow_memory: bool = field(
         Bool(),
         default=False,
         label=N_("KVM shadow memory"),
         help=N_("Set the size of the KVM shadow memory"),
         when=("use_kvm", True),
     )
-    kvm_shadow_memory = field(
+    kvm_shadow_memory: int = field(
         Int(0, 99999),
         default=1,
         label=N_("Shadow memory"),
@@ -689,7 +655,7 @@ class VirtualMachineConfig(bricks.BrickConfig):
         when=("use_kvm_shadow_memory", True),
     )
     # the boot and the disks
-    boot_order = field(
+    boot_order: str = field(
         Str(),
         default="",
         label=N_("Boot from"),
@@ -697,7 +663,7 @@ class VirtualMachineConfig(bricks.BrickConfig):
             "Boot order as -boot takes it: c the first disk, d the CD-ROM, a the floppy; empty for the QEMU default"
         ),
     )
-    forget_disk_changes = field(
+    forget_disk_changes: bool = field(
         Bool(),
         default=False,
         label=N_("Forget the changes"),
@@ -705,14 +671,14 @@ class VirtualMachineConfig(bricks.BrickConfig):
             "Write the changes to the disks in temporary files, forgotten when the machine stops"
         ),
     )
-    virtio_disks = field(
+    virtio_disks: bool = field(
         Bool(),
         default=False,
         label=N_("Virtio disks"),
         help=N_("Attach the disks as virtio devices"),
     )
     # the CD-ROM: none, an image file, or a drive of the host
-    cdrom = field(
+    cdrom: str = field(
         Choice("none", "image", "device"),
         default="none",
         label=N_("CD-ROM"),
@@ -720,14 +686,14 @@ class VirtualMachineConfig(bricks.BrickConfig):
             "What the CD-ROM holds: nothing, an image file or a drive of the host"
         ),
     )
-    cdrom_image = field(
+    cdrom_image: str = field(
         Path(),
         default="",
         label=N_("Image"),
         help=N_("An image file for the CD-ROM"),
         when=("cdrom", "image"),
     )
-    cdrom_device = field(
+    cdrom_device: str = field(
         Str(),
         default="",
         label=N_("Drive"),
@@ -735,19 +701,19 @@ class VirtualMachineConfig(bricks.BrickConfig):
         when=("cdrom", "device"),
     )
     # the display
-    headless = field(
+    headless: bool = field(
         Bool(),
         default=False,
         label=N_("No display"),
         help=N_("No display at all"),
     )
-    standard_vga = field(
+    standard_vga: bool = field(
         Bool(),
         default=False,
         label=N_("Standard VGA"),
         help=N_("A standard VGA card instead of the machine's"),
     )
-    use_vnc = field(
+    use_vnc: bool = field(
         Bool(),
         default=False,
         label=N_("VNC"),
@@ -755,14 +721,14 @@ class VirtualMachineConfig(bricks.BrickConfig):
         # no display at all wins over VNC and SDL
         when=("headless", False),
     )
-    vnc_display = field(
+    vnc_display: int = field(
         Int(0, 500),
         default=1,
         label=N_("VNC display"),
         help=N_("The VNC display number"),
         when=("use_vnc", True),
     )
-    sdl_window = field(
+    sdl_window: bool = field(
         Bool(),
         default=False,
         label=N_("SDL window"),
@@ -770,19 +736,19 @@ class VirtualMachineConfig(bricks.BrickConfig):
         when=("headless", False),
     )
     # sound and USB
-    sound_card = field(
+    sound_card: str = field(
         Str(),
         default="",
         label=N_("Sound card"),
         help=N_("The sound card, as ac97; empty for none"),
     )
-    use_usb = field(
+    use_usb: bool = field(
         Bool(),
         default=False,
         label=N_("USB"),
         help=N_("Give the machine USB, and its USB devices"),
     )
-    usb_devices = field(
+    usb_devices: list[UsbDevice] = field(
         ListOf(UsbDeviceKind()),
         factory=list,
         label=N_("USB devices"),
@@ -790,99 +756,99 @@ class VirtualMachineConfig(bricks.BrickConfig):
         when=("use_usb", True),
     )
     # the keyboard, the clock and the serial port
-    keyboard_layout = field(
+    keyboard_layout: str = field(
         Str(),
         default="",
         label=N_("Keyboard layout"),
         help=N_("The keyboard layout, two letters; empty for the default"),
     )
-    clock_local_time = field(
+    clock_local_time: bool = field(
         Bool(),
         default=False,
         label=N_("Local time"),
         help=N_("Start the clock of the machine at local time, not UTC"),
     )
-    clock_drift_fix = field(
+    clock_drift_fix: bool = field(
         Bool(),
         default=False,
         label=N_("Drift fix"),
         help=N_("Correct the drift of the clock of the machine"),
     )
-    serial_socket = field(
+    serial_socket: bool = field(
         Bool(),
         default=False,
         label=N_("Serial socket"),
         help=N_("Connect the serial port to a socket in the runtime folder"),
     )
     # booting a kernel directly, and debugging it
-    use_kernel = field(
+    use_kernel: bool = field(
         Bool(),
         default=False,
         label=N_("Boot a kernel"),
         help=N_("Boot a kernel directly"),
     )
-    kernel = field(
+    kernel: str = field(
         Path(),
         default="",
         label=N_("Kernel"),
         help=N_("A kernel image"),
         when=("use_kernel", True),
     )
-    use_initrd = field(
+    use_initrd: bool = field(
         Bool(),
         default=False,
         label=N_("Initial ramdisk"),
         help=N_("Load an initial ramdisk with the kernel"),
         when=("use_kernel", True),
     )
-    initrd = field(
+    initrd: str = field(
         Path(),
         default="",
         label=N_("Ramdisk"),
         help=N_("An initial ramdisk"),
         when=("use_initrd", True),
     )
-    kernel_command_line = field(
+    kernel_command_line: str = field(
         Str(),
         default="",
         label=N_("Command line"),
         help=N_("The command line of the kernel"),
         when=("use_kernel", True),
     )
-    use_gdb = field(
+    use_gdb: bool = field(
         Bool(),
         default=False,
         label=N_("GDB"),
         help=N_("Accept a GDB connection"),
     )
-    gdb_port = field(
+    gdb_port: int = field(
         Int(1, 65535),
         default=1234,
         label=N_("GDB port"),
         help=N_("The TCP port for GDB"),
         when=("use_gdb", True),
     )
-    acpi = field(
+    acpi: bool = field(
         Bool(),
         default=True,
         label=N_("ACPI"),
         help=N_("Give the machine ACPI"),
     )
     # the disks, one per device of DISK_DEVICES, in the same order
-    hda_image = _image("hda")
-    hda_private = _private("hda")
-    hdb_image = _image("hdb")
-    hdb_private = _private("hdb")
-    hdc_image = _image("hdc")
-    hdc_private = _private("hdc")
-    hdd_image = _image("hdd")
-    hdd_private = _private("hdd")
-    fda_image = _image("fda")
-    fda_private = _private("fda")
-    fdb_image = _image("fdb")
-    fdb_private = _private("fdb")
-    mtdblock_image = _image("mtdblock")
-    mtdblock_private = _private("mtdblock")
+    hda_image: str = _image("hda")
+    hda_private: bool = _private("hda")
+    hdb_image: str = _image("hdb")
+    hdb_private: bool = _private("hdb")
+    hdc_image: str = _image("hdc")
+    hdc_private: bool = _private("hdc")
+    hdd_image: str = _image("hdd")
+    hdd_private: bool = _private("hdd")
+    fda_image: str = _image("fda")
+    fda_private: bool = _private("fda")
+    fdb_image: str = _image("fdb")
+    fdb_private: bool = _private("fdb")
+    mtdblock_image: str = _image("mtdblock")
+    mtdblock_private: bool = _private("mtdblock")
 
 
 @attr.define
@@ -897,8 +863,8 @@ class Card:
     kind: str
     model: str
     mac: str
-    sock: object = None
-    link: object = None
+    sock: Sock | HostonlySock | None = None
+    link: Plug | Sock | None = None
 
     def needs_vde(self) -> bool:
         return self.kind == "socket" or self.sock is not hostonly_sock
@@ -917,22 +883,22 @@ class VirtualMachineDraft(Draft):
     ``machine_properties``, when they come; until then nothing lacks.
     """
 
-    def __init__(self, brick):
+    def __init__(self, brick: VirtualMachine) -> None:
         super().__init__(brick)
         # the cards are the draft's own, and not links
         self.links = []
         self.original_links = []
-        self.cards = [
+        self.cards: list[Card] = [
             Card("plug", plug.model, plug.mac, plug.sock, plug)
             for plug in brick.plugs
         ] + [
             Card("socket", sock.model, sock.mac, None, sock)
             for sock in brick.socks
         ]
-        self.qemu = None
-        self.machine_properties = frozenset()
+        self.qemu: QemuInfo | None = None
+        self.machine_properties: frozenset[str] = frozenset()
 
-    def note(self, name):
+    def note(self, name: str) -> str:
         qemu = self.qemu
         if name == "audio_driver" and qemu and qemu.audio_drivers is None:
             # QEMU 6.2
@@ -956,7 +922,7 @@ class VirtualMachineDraft(Draft):
     def remove_card(self, index: int) -> None:
         del self.cards[index]
 
-    def set_card(self, index: int, **values) -> None:
+    def set_card(self, index: int, **values: object) -> None:
         """
         Change a card: its model, mac, kind or sock. A plug that becomes a
         socket, or back, moves among the plugs or the sockets.
@@ -971,7 +937,7 @@ class VirtualMachineDraft(Draft):
 
     # what is wrong
 
-    def lacks(self) -> list:
+    def lacks(self) -> list[Lack]:
         """What the QEMU program lacks, once it answered."""
 
         if self.qemu is None:
@@ -982,10 +948,10 @@ class VirtualMachineDraft(Draft):
             cards,
             self.qemu,
             self.machine_properties,
-            get_setting("audio_driver"),
+            str(get_setting("audio_driver")),
         )
 
-    def check(self):
+    def check(self) -> list[Problem]:
         settings = self.settings
         problems = []
         for used, name, text in (
@@ -1037,14 +1003,14 @@ class VirtualMachineDraft(Draft):
 
     # to the machine
 
-    def changes(self):
+    def changes(self) -> dict[str, object]:
         return {
             name: value
             for name, value in super().changes().items()
             if name not in DISK_IMAGES
         }
 
-    def apply_extras(self):
+    def apply_extras(self) -> bool:
         changed = self._apply_images()
         before = list(self.original.usb_devices)
         after = list(self.settings.usb_devices)
@@ -1077,11 +1043,12 @@ class VirtualMachineDraft(Draft):
             if card.link is not None and card.kind == _kind(brick, card.link)
         }
         changed = False
-        for link in list(brick.plugs) + list(brick.socks):
-            if id(link) not in kept:
-                if link in brick.plugs and link.sock is not None:
-                    link.disconnect()
-                brick.remove_plug(link)
+        links: list[Plug | Sock] = [*brick.plugs, *brick.socks]
+        for gone in links:
+            if id(gone) not in kept:
+                if isinstance(gone, Plug) and gone.sock is not None:
+                    gone.disconnect()
+                brick.remove_plug(gone)
                 changed = True
         for card in self.cards:
             link = card.link
@@ -1096,7 +1063,7 @@ class VirtualMachineDraft(Draft):
                 link.model = card.model
                 link.mac = card.mac
                 changed = True
-            if card.kind == "plug" and link.sock is not card.sock:
+            if isinstance(link, Plug) and link.sock is not card.sock:
                 if link.sock is not None:
                     link.disconnect()
                 if card.sock is not None:
@@ -1105,7 +1072,7 @@ class VirtualMachineDraft(Draft):
         return changed
 
 
-def _kind(brick, link) -> str:
+def _kind(brick: VirtualMachine, link: Plug | Sock) -> str:
     return "socket" if link in brick.socks else "plug"
 
 
@@ -1118,7 +1085,7 @@ class QemuProcess(bricks.Process):
     nothing and is not logged.
     """
 
-    def _log_output(self, stream, lines):
+    def _log_output(self, stream: str, lines: list[str]) -> None:
         if stream == "stdout":
             lines = [line for line in lines if line.rstrip() != MONITOR_PROMPT]
         bricks.Process._log_output(self, stream, lines)
@@ -1132,15 +1099,16 @@ class VirtualMachine(bricks.Brick):
     programs = (("qemu-system-i386",),)
     term_command = "unixterm"
     config_factory = VirtualMachineConfig
+    config: VirtualMachineConfig
     draft_factory = VirtualMachineDraft
     process_protocol = QemuProcess
     connections = "nics"
 
-    def __init__(self, factory, name):
+    def __init__(self, factory: BrickFactory, name: str) -> None:
         bricks.Brick.__init__(self, factory, name)
         self._disks = {dev: Disk(self, dev) for dev in DISK_DEVICES}
 
-    def set_name(self, name):
+    def set_name(self, name: str) -> None:
         """The sockets and the private disks named after it follow."""
 
         if projects.current is not None:
@@ -1148,7 +1116,7 @@ class VirtualMachine(bricks.Brick):
         self.rename_sockets(name)
         bricks.Brick.set_name(self, name)
 
-    def rename_sockets(self, name):
+    def rename_sockets(self, name: str) -> None:
         """Name the sockets named after the machine after name."""
 
         prefix = f"{self.name}_"
@@ -1158,7 +1126,7 @@ class VirtualMachine(bricks.Brick):
                 sock.nickname = f"{name}_{suffix}"
                 sock.path = self.runtime_path(f"{name}_{suffix}[]")
 
-    def start(self, resume=""):
+    def start(self, resume: str = "") -> defer.Deferred[bricks.Brick]:
         """
         Start the machine, from the saved state resume if given.
 
@@ -1169,11 +1137,11 @@ class VirtualMachine(bricks.Brick):
             # its images are locked already, or will be
             return bricks.Brick.start(self, resume)
 
-        def acquire(passthru):
+        def acquire(passthru: bricks.Brick) -> bricks.Brick:
             self.acquire()
             return passthru
 
-        def release(passthru):
+        def release(passthru: object) -> object:
             self.release()
             return passthru
 
@@ -1184,37 +1152,40 @@ class VirtualMachine(bricks.Brick):
             self._exited_d.addBoth(release)
         return d
 
-    def stop(self, kill=False, term=False):
+    def stop(
+        self, kill: bool = False, term: bool = False
+    ) -> defer.Deferred[tuple[bricks.Brick, object]]:
         if not self.is_running():
             return defer.succeed((self, self._last_status))
         elif not any((kill, term)):
             self.logger.info(powerdown, vm=self)
             self.send(b"system_powerdown\n")
+            assert self._exited_d is not None, "the start made it"
             return self._exited_d
         if term:
             return bricks.Brick.stop(self)
         else:
             return bricks.Brick.stop(self, kill)
 
-    def update_usb_devices(self, dev):
+    def update_usb_devices(self, dev: list[UsbDevice]) -> None:
         self.logger.debug(update_usb, old=self.config.usb_devices, new=dev)
         for usb_dev in set(dev) - set(self.config.usb_devices):
             self.send(f"usb_add host:{usb_dev.id}\n".encode())
         # FIXME: Don't know how to remove old devices, due to the ugly syntax
         # of usb_del command.
 
-    def configured(self):
+    def configured(self) -> bool:
         for p in self.plugs:
             if p.sock is None and p.mode == "vde":
                 return False
         return True
 
-    def program(self):
+    def program(self) -> str:
         """The path of the QEMU program; FileNotFoundError if missing."""
 
         return which(self.config.qemu_program)
 
-    def prepare(self, resume=""):
+    def prepare(self, resume: str = "") -> defer.Deferred[Prepared]:
         """
         Ask the QEMU program what it has, and make sure of the disks.
 
@@ -1230,36 +1201,35 @@ class VirtualMachine(bricks.Brick):
             return defer.fail(ProgramError(f"{missing} isn't installed"))
         disks = [disk for disk in self.disks() if disk.image]
 
-        def ask_machine(qemu):
+        def ask_machine(
+            qemu: QemuInfo,
+        ) -> defer.Deferred[tuple[QemuInfo, frozenset[str]]]:
             machine = self.config.machine_type
             if not qemu.has_machine(machine):
                 machine = ""
             deferred = programs.machine_properties(qemu, machine)
             return deferred.addCallback(lambda properties: (qemu, properties))
 
-        def prepared(results):
+        def prepared(results: list[Any]) -> Prepared:
             (qemu, properties), paths = results
             return Prepared(
                 qemu=qemu,
                 machine_properties=properties,
                 disks=tuple((disk.device, p) for disk, p in zip(disks, paths)),
-                audio_driver=get_setting("audio_driver"),
+                audio_driver=str(get_setting("audio_driver")),
                 resume=resume,
             )
 
-        deferred = defer.gatherResults(
-            [
-                programs.qemu(path).addCallback(ask_machine),
-                defer.gatherResults(
-                    [disk.get_real_disk_name() for disk in disks],
-                    consumeErrors=True,
-                ),
-            ],
-            consumeErrors=True,
+        machine: defer.Deferred[Any] = programs.qemu(path).addCallback(
+            ask_machine
         )
+        paths: defer.Deferred[Any] = defer.gatherResults(
+            [disk.get_real_disk_name() for disk in disks], consumeErrors=True
+        )
+        deferred = defer.gatherResults([machine, paths], consumeErrors=True)
         return deferred.addCallback(prepared)
 
-    def command(self, prepared):
+    def command(self, prepared: Prepared) -> Command:
         """
         The command line, with what the QEMU program has: what it lacks is
         left out, with the warnings of lacks().
@@ -1267,8 +1237,11 @@ class VirtualMachine(bricks.Brick):
 
         config = self.config
         qemu = prepared.qemu
+        assert qemu is not None, "prepare() asks the QEMU program"
         cmd = Command(qemu.path)
-        links = list(itertools.chain(self.plugs, self.socks))
+        links: list[Plug | Sock] = list(
+            itertools.chain(self.plugs, self.socks)
+        )
         found = lacks(
             config,
             [(link.model, needs_vde(link)) for link in links],
@@ -1282,7 +1255,9 @@ class VirtualMachine(bricks.Brick):
         machine = "" if "machine_type" in lacked else config.machine_type
         acpi_off = not config.acpi
         machine_acpi = acpi_off and "acpi" in prepared.machine_properties
-        sound, speaker = self._sound(prepared, "sound_card" in lacked)
+        sound, speaker = self._sound(
+            qemu, prepared.audio_driver, "sound_card" in lacked
+        )
         cmd.option(
             "-machine",
             joined(
@@ -1335,8 +1310,8 @@ class VirtualMachine(bricks.Brick):
         if config.standard_vga:
             cmd.option("-vga", "std")
         if config.use_usb:
-            for device in config.usb_devices:
-                vendor, product = device.id.split(":")
+            for usb in config.usb_devices:
+                vendor, product = usb.id.split(":")
                 cmd.option(
                     "-device",
                     f"usb-host,vendorid=0x{vendor},productid=0x{product}",
@@ -1365,7 +1340,9 @@ class VirtualMachine(bricks.Brick):
         cmd.arg("-chardev", "stdio,id=mon_cons,signal=off")
         return cmd
 
-    def _sound(self, prepared, lacked):
+    def _sound(
+        self, qemu: QemuInfo, audio_driver: str, lacked: bool
+    ) -> tuple[list[str], bool]:
         """
         The arguments of the sound card, and whether it's the PC speaker;
         none when the program lacks the card or the driver.
@@ -1374,14 +1351,23 @@ class VirtualMachine(bricks.Brick):
         card = self.config.sound_card
         if not card or lacked:
             return [], False
-        audiodev = ["-audiodev", f"{prepared.audio_driver},id=snd0"]
+        audiodev = ["-audiodev", f"{audio_driver},id=snd0"]
         # the PC speaker is part of the machine, not a device of its own
         if card == "pcspk":
             return audiodev, True
-        device = prepared.qemu.device(card)
+        device = qemu.device(card)
+        if device is None:
+            # lacked says so already
+            return [], False
         return audiodev + ["-device", f"{device.name},audiodev=snd0"], False
 
-    def _cards(self, cmd, qemu, links, lacked):
+    def _cards(
+        self,
+        cmd: Command,
+        qemu: QemuInfo,
+        links: Sequence[Plug | Sock],
+        lacked: set[str],
+    ) -> None:
         """The network cards, each with its backend when QEMU has it."""
 
         if not links:
@@ -1400,7 +1386,12 @@ class VirtualMachine(bricks.Brick):
                 cmd.option("-device", f"{device},netdev=vx{index}")
                 cmd.option("-netdev", netdev)
 
-    def add_sock(self, mac=None, model=None, name=None):
+    def add_sock(
+        self,
+        mac: str | None = None,
+        model: str | None = None,
+        name: str | None = None,
+    ) -> Sock:
         """
         Add a network card with a VDE socket other bricks can plug into.
 
@@ -1417,7 +1408,12 @@ class VirtualMachine(bricks.Brick):
         self.socks.append(sock)
         return sock
 
-    def add_plug(self, sock, mac=None, model=None):
+    def add_plug(
+        self,
+        sock: Sock | HostonlySock | None,
+        mac: str | None = None,
+        model: str | None = None,
+    ) -> Plug:
         plug = Plug(self)
         plug.model = model or DEFAULT_MODEL
         plug.mac = mac or random_mac()
@@ -1426,27 +1422,28 @@ class VirtualMachine(bricks.Brick):
             plug.connect(sock)
         return plug
 
-    def connect(self, sock, *args):
+    def connect(self, sock: Sock | HostonlySock, *args: str) -> None:
         """A new network card, plugged into sock: the brick says it changed."""
 
         self.add_plug(sock, *args)
         self.changed.notify(self)
 
-    def remove_plug(self, plug):
+    def remove_plug(self, plug: Plug | Sock) -> None:
         """Take a card out: a socket card is unplugged and forgotten."""
 
-        links = self.socks if plug.mode == "sock" else self.plugs
-        if plug not in links:
+        if plug not in (self.socks if isinstance(plug, Sock) else self.plugs):
             self.logger.error(own_err, plug=plug, brick=self)
             return
-        links.remove(plug)
-        if plug.mode == "sock":
+        if isinstance(plug, Sock):
+            self.socks.remove(plug)
             self.factory.remove_sock(plug)
+        else:
+            self.plugs.remove(plug)
 
-    def acquire(self):
+    def acquire(self) -> None:
         """Acquire locks on images if needed."""
         self.logger.debug(acquire_lock)
-        acquired = []
+        acquired: list[Disk] = []
         for disk in self.disks():
             try:
                 disk.acquire()
@@ -1457,12 +1454,12 @@ class VirtualMachine(bricks.Brick):
             else:
                 acquired.append(disk)
 
-    def release(self):
+    def release(self) -> None:
         self.logger.debug(release_lock)
         for disk in self.disks():
             disk.release()
 
-    def project_folder(self):
+    def project_folder(self) -> str | None:
         """
         The folder of the project of the machine, where its private copies
         are; None while no project is open, as while one loads.
@@ -1471,21 +1468,21 @@ class VirtualMachine(bricks.Brick):
         current = projects.current
         return None if current is None else current.path
 
-    def disks(self):
+    def disks(self) -> Iterator[Disk]:
         for dev in DISK_DEVICES:
             yield self._disks[dev]
 
-    def disk(self, dev):
+    def disk(self, dev: str) -> Disk:
         return self._disks[dev]
 
-    def set_image(self, dev, image):
+    def set_image(self, dev: str, image: Image | None) -> None:
         self._disks[dev].set_image(image)
 
 
-def _netdev(link, index, vde):
+def _netdev(link: Plug | Sock, index: int, vde: bool) -> str | None:
     """The backend of a card, or None when it needs VDE and QEMU has none."""
 
-    if link.mode == "sock":
+    if isinstance(link, Sock):
         # a socket card: other bricks plug into it
         sock = vde_socket(link.path)
         return f"vde,id=vx{index},sock={sock}" if vde else None
@@ -1497,10 +1494,10 @@ def _netdev(link, index, vde):
     return f"user,id=vx{index}"
 
 
-def needs_vde(link):
+def needs_vde(link: Plug | Sock) -> bool:
     """Whether a card of the machine joins a VDE socket, as _netdev() says."""
 
-    if link.mode == "sock":
+    if isinstance(link, Sock):
         return True
     if link.sock is not None and link.sock.mode == "hostonly":
         return False
@@ -1535,7 +1532,13 @@ class Lack:
         return line
 
 
-def lacks(config, cards, qemu, machine_properties, audio_driver):
+def lacks(
+    config: VirtualMachineConfig,
+    cards: Sequence[tuple[str, bool]],
+    qemu: QemuInfo,
+    machine_properties: frozenset[str],
+    audio_driver: str,
+) -> list[Lack]:
     """
     What the QEMU program lacks of the settings of a machine, in the order
     of its command line: a Lack for each.
@@ -1635,14 +1638,13 @@ def lacks(config, cards, qemu, machine_properties, audio_driver):
 
 
 def is_virtualmachine(brick: object) -> TypeGuard[VirtualMachine]:
-
     return isinstance(brick, bricks.Brick) and brick.get_type() == "Qemu"
 
 
 # Suspend and resume a machine, as its menu does
 
 
-def _first_disk(vm) -> str | None:
+def _first_disk(vm: VirtualMachine) -> str | None:
     disk = vm.disk("hda")
     if disk.is_cow():
         return disk.get_cow_path()
@@ -1651,14 +1653,14 @@ def _first_disk(vm) -> str | None:
     return None
 
 
-def _not_supported() -> defer.Deferred:
+def _not_supported() -> defer.Deferred[Any]:
     logger.error(not_supported)
     return defer.fail(
         RuntimeError(_("Suspend/Resume not supported on this disk."))
     )
 
 
-def suspend(vm) -> defer.Deferred:
+def suspend(vm: VirtualMachine) -> defer.Deferred[Any]:
     """Save the state of a virtual machine in its first disk, and stop it."""
 
     path = _first_disk(vm)
@@ -1674,20 +1676,20 @@ def suspend(vm) -> defer.Deferred:
     return vm.stop()
 
 
-def resume(vm) -> defer.Deferred:
+def resume(vm: VirtualMachine) -> defer.Deferred[Any]:
     """Start a virtual machine from what Suspend saved in its first disk."""
 
-    def found(output):
+    def found(output: str) -> None:
         if output.find(SNAPSHOT) == -1:
             raise RuntimeError(_("Cannot find suspend point."))
 
-    def load(_):
+    def load(_: None) -> defer.Deferred[bricks.Brick] | None:
         if vm.proc is not None:
             vm.send(f"loadvm {SNAPSHOT}\n".encode())
-        else:
-            return vm.start(resume=SNAPSHOT)
+            return None
+        return vm.start(resume=SNAPSHOT)
 
-    def failed(failure):
+    def failed(failure: Failure) -> Failure:
         logger.failure(snapshot_error, failure)
         return failure
 

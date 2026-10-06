@@ -18,12 +18,24 @@
 
 """A capture: vde_pcapplug, a host interface plugged to a switch."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from virtualbricks import bricks
-from virtualbricks.bricks.command import Command, socket_path, vde_program
+from virtualbricks.bricks.command import (
+    Command,
+    Prepared,
+    socket_path,
+    vde_program,
+)
 from virtualbricks.bricks.draft import Draft, Problem
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.schema import Str, define, field
 from virtualbricks.i18n import N_, _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
 
 NET_DEV = "/proc/net/dev"
 
@@ -32,7 +44,7 @@ NET_DEV = "/proc/net/dev"
 class CaptureConfig(bricks.BrickConfig):
 
     # the interface of the host to capture
-    interface = field(
+    interface: str = field(
         Str(),
         default="",
         label=N_("Interface"),
@@ -56,11 +68,11 @@ def host_interfaces() -> list[str]:
 class CaptureDraft(Draft):
     """The settings of a capture, with the interfaces of the host."""
 
-    def __init__(self, brick):
+    def __init__(self, brick: Capture) -> None:
         super().__init__(brick)
         self.interfaces = host_interfaces()
 
-    def check(self):
+    def check(self) -> list[Problem]:
         interface = self.settings.interface
         if not interface:
             text = _("Without an interface, {brick} can't start")
@@ -78,21 +90,22 @@ class Capture(bricks.PrivilegedBrick):
     summary = "An interface of the host, whose packets go to a switch"
     programs = (("vde_pcapplug",),)
     config_factory = CaptureConfig
+    config: CaptureConfig
     draft_factory = CaptureDraft
     connections = "connect"
 
-    def __init__(self, factory, name):
+    def __init__(self, factory: BrickFactory, name: str) -> None:
         bricks.Brick.__init__(self, factory, name)
         self.plugs.append(Plug(self))
 
-    def command(self, prepared):
+    def command(self, prepared: Prepared) -> Command:
         cmd = Command(vde_program(prepared.vde, "vde_pcapplug"))
         cmd.option("-s", socket_path(self.plugs[0]))
         cmd.arg(self.config.interface)
         return cmd
 
-    def open_console(self):
+    def open_console(self) -> None:
         pass
 
-    def configured(self):
-        return self.plugs[0].sock and self.config.interface
+    def configured(self) -> bool:
+        return self.plugs[0].sock is not None and bool(self.config.interface)

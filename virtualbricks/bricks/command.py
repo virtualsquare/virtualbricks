@@ -97,12 +97,14 @@ def vde_socket(path: str) -> str:
 def socket_path(plug: Plug) -> str:
     """The socket a plug is in, as the VDE programs take it."""
 
+    assert plug.sock is not None, "a brick starts with its plugs in sockets"
     return vde_socket(plug.sock.path)
 
 
-def vde_program(vde: VdeInfo, name: str) -> str:
+def vde_program(vde: VdeInfo | None, name: str) -> str:
     """The path of a VDE program; ProgramError if it isn't installed."""
 
+    assert vde is not None, "prepare() gathers the VDE programs"
     path = vde.programs.get(name)
     if path is None:
         raise ProgramError(

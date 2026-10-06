@@ -33,15 +33,25 @@ from __future__ import annotations
 import dataclasses
 import enum
 import math
+from collections.abc import Iterable, Sequence
+from typing import TYPE_CHECKING
 
 from virtualbricks.bricks.eventaction import (
     ConsoleAction,
     ShellAction,
     StartAction,
     StopAction,
+    StoredAction,
 )
 from virtualbricks.i18n import _, ngettext
 from virtualbricks.bricks import is_running
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.interfaces import IReactorTime
+
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks import Brick
+    from virtualbricks.bricks.event import Event
 
 # Between the parts of a row's line.
 SEPARATOR = " · "
@@ -79,7 +89,7 @@ class Action:
     subject: str
 
 
-def state(event) -> State:
+def state(event: Event) -> State:
     if is_running(event):
         return State.WAITING
     if not event.config.actions:
@@ -87,7 +97,7 @@ def state(event) -> State:
     return State.READY
 
 
-def seconds_left(event, clock) -> int | None:
+def seconds_left(event: Event, clock: IReactorTime) -> int | None:
     """The whole seconds before a waiting event runs its actions."""
 
     if event.scheduled is None:
@@ -95,7 +105,7 @@ def seconds_left(event, clock) -> int | None:
     return max(0, math.ceil(event.scheduled.getTime() - clock.seconds()))
 
 
-def read(command, factory) -> Action:
+def read(command: StoredAction, factory: BrickFactory) -> Action:
     """The action of an action of an event, as the settings show it."""
 
     if isinstance(command, ShellAction):
@@ -111,7 +121,7 @@ def read(command, factory) -> Action:
     return Action(kind, command.target)
 
 
-def write(action: Action):
+def write(action: Action) -> StoredAction:
     """The action as the event keeps it."""
 
     if action.kind is Kind.SHELL:
@@ -123,7 +133,7 @@ def write(action: Action):
     return StopAction(action.subject)
 
 
-def missing(action: Action, factory) -> bool:
+def missing(action: Action, factory: BrickFactory) -> bool:
     """Whether the brick or the event of an action is not in the project."""
 
     if action.kind in (Kind.START_BRICK, Kind.STOP_BRICK):
@@ -133,7 +143,7 @@ def missing(action: Action, factory) -> bool:
     return False
 
 
-def triggers(event, bricks) -> list:
+def triggers(event: Event, bricks: Iterable[Brick]) -> list[tuple[Brick, str]]:
     """(brick, ON or OFF): the bricks that start event when they start or
     stop."""
 
@@ -146,7 +156,7 @@ def triggers(event, bricks) -> list:
     return found
 
 
-def names(items) -> str:
+def names(items: Sequence[str]) -> str:
     """Names in a sentence: "sw1", "sw1 and sw2", "sw1, sw2 and sw3"."""
 
     if len(items) == 1:
@@ -165,7 +175,7 @@ GROUPED = (
 )
 
 
-def _together(kind, count) -> str:
+def _together(kind: Kind, count: int) -> str:
     if kind is Kind.START_BRICK:
         return _("starts {names}")
     if kind is Kind.STOP_BRICK:
@@ -179,11 +189,11 @@ def _together(kind, count) -> str:
     )
 
 
-def what_it_does(actions) -> list:
+def what_it_does(actions: Iterable[Action]) -> list[str]:
     """The actions in words: those of a kind together, in their order."""
 
-    parts = []
-    grouped: dict[Kind, list] = {}
+    parts: list[Kind | Action] = []
+    grouped: dict[Kind, list[str]] = {}
     for action in actions:
         if action.kind in GROUPED:
             if action.kind not in grouped:
@@ -208,7 +218,7 @@ def what_it_does(actions) -> list:
     return words
 
 
-def summary(event, factory) -> str:
+def summary(event: Event, factory: BrickFactory) -> str:
     """What the row of event says: its actions, its delay, its bricks."""
 
     actions = [read(command, factory) for command in event.config.actions]

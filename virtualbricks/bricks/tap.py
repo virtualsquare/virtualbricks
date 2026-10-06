@@ -18,12 +18,24 @@
 
 """A tap: vde_plug2tap, a tap interface of the host plugged to a switch."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from virtualbricks import bricks, errors
-from virtualbricks.bricks.command import Command, socket_path, vde_program
+from virtualbricks.bricks.command import (
+    Command,
+    Prepared,
+    socket_path,
+    vde_program,
+)
 from virtualbricks.bricks.draft import Draft
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.schema import Choice, IPv4, define, field
 from virtualbricks.i18n import N_, _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
 
 # The longest name of a network interface: IFNAMSIZ, less the NUL.
 INTERFACE_NAME_MAX = 15
@@ -32,27 +44,27 @@ INTERFACE_NAME_MAX = 15
 @define
 class TapConfig(bricks.BrickConfig):
 
-    address_mode = field(
+    address_mode: str = field(
         Choice("off", "dhcp", "manual"),
         default="off",
         label=N_("Address"),
         help=N_("How the interface gets its address"),
     )
-    ip_address = field(
+    ip_address: str = field(
         IPv4(),
         default="10.0.0.1",
         label=N_("IP address"),
         help=N_("The address of the interface, when it's set by hand"),
         when=("address_mode", "manual"),
     )
-    netmask = field(
+    netmask: str = field(
         IPv4(),
         default="255.255.255.0",
         label=N_("Netmask"),
         help=N_("The netmask, when the address is set by hand"),
         when=("address_mode", "manual"),
     )
-    gateway = field(
+    gateway: str = field(
         IPv4(optional=True),
         default="",
         label=N_("Gateway"),
@@ -64,7 +76,7 @@ class TapConfig(bricks.BrickConfig):
 class TapDraft(Draft):
     """The settings of a tap: its addresses, when they are set by hand."""
 
-    def note(self, name):
+    def note(self, name: str) -> str:
         if name == "address_mode" and self.settings.address_mode != "off":
             # the TODO has it
             return _("Virtualbricks doesn't set it yet")
@@ -77,11 +89,12 @@ class Tap(bricks.PrivilegedBrick):
     summary = "A tap interface of the host, plugged into a switch"
     programs = (("vde_plug2tap",),)
     config_factory = TapConfig
+    config: TapConfig
     draft_factory = TapDraft
     connections = "connect"
 
     @classmethod
-    def check_name(cls, name):
+    def check_name(cls, name: str) -> None:
         """The interface of the host takes the name of the tap."""
 
         if len(name) > INTERFACE_NAME_MAX:
@@ -93,19 +106,19 @@ class Tap(bricks.PrivilegedBrick):
                 msg.format(most=INTERFACE_NAME_MAX, size=len(name))
             )
 
-    def __init__(self, factory, name):
+    def __init__(self, factory: BrickFactory, name: str) -> None:
         bricks.Brick.__init__(self, factory, name)
         self.plugs.append(Plug(self))
 
-    def command(self, prepared):
+    def command(self, prepared: Prepared) -> Command:
         cmd = Command(vde_program(prepared.vde, "vde_plug2tap"))
         cmd.option("-s", socket_path(self.plugs[0]))
         # the interface of the host has the name of the brick
         cmd.arg(self.name)
         return cmd
 
-    def open_console(self):
+    def open_console(self) -> None:
         pass
 
-    def configured(self):
+    def configured(self) -> bool:
         return bool(self.plugs[0].sock)

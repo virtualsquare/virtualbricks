@@ -18,6 +18,10 @@
 
 """An event: actions that run after a delay."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, TypeGuard, cast
+
 import attr
 from twisted.internet import defer, reactor
 
@@ -28,10 +32,14 @@ from virtualbricks.bricks.eventaction import (
     ShellAction,
     StartAction,
     StopAction,
+    StoredAction,
     describe,
 )
 from virtualbricks.console.command import CommandError
 from virtualbricks.config.schema import Int, ListOf, define, field
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.interfaces import IDelayedCall, IReactorTime
 
 process_ended = "Process ended with exit code {code}"
 action_failed = "Event {event}, action {number}, {action}: {error}"
@@ -40,10 +48,10 @@ action_failed = "Event {event}, action {number}, {action}: {error}"
 @define
 class EventConfig(BaseConfig):
 
-    delay = field(
+    delay: int = field(
         Int(), default=0, help="Seconds to wait before the actions run"
     )
-    actions = field(
+    actions: list[StoredAction] = field(
         ListOf(EventAction()),
         factory=list,
         help="The actions: start or stop a brick or an event, or a command"
@@ -54,44 +62,47 @@ class EventConfig(BaseConfig):
 class Event(Base):
 
     type = "Event"
-    scheduled = None
+    # the call of its actions, while it waits for them
+    scheduled: IDelayedCall | None = None
     config_factory = EventConfig
+    config: EventConfig
 
-    def is_running(self):
+    def is_running(self) -> bool:
         return self.scheduled is not None
 
-    def configured(self):
+    def configured(self) -> bool:
         return len(self.config.actions) > 0
 
-    def start(self):
+    def start(self) -> defer.Deferred[Event] | None:
         if self.scheduled:
-            return
+            return None
         if not self.configured():
             raise errors.BadConfigError("Event %s not configured" % self.name)
 
-        deferred = defer.Deferred()
-        self.scheduled = reactor.callLater(
+        deferred: defer.Deferred[Event] = defer.Deferred()
+        clock = cast("IReactorTime", reactor)
+        self.scheduled = clock.callLater(
             self.config.delay, self.do_actions, deferred
         )
         self.changed.notify(self)
         return deferred
 
-    def stop(self):
+    def stop(self) -> None:
         if self.scheduled is None:
             return
         self.scheduled.cancel()
         self.scheduled = None
         self.changed.notify(self)
 
-    def do_actions(self, deferred):
+    def do_actions(self, deferred: defer.Deferred[Event]) -> None:
         self.scheduled = None
         self.run_actions().chainDeferred(deferred)
         self.changed.notify(self)
 
-    def run_actions(self):
+    def run_actions(self) -> defer.Deferred[Event]:
         """Run the actions now; a wait goes on. Each that fails is logged."""
 
-        def logged(results):
+        def logged(results: list[tuple[bool, Any]]) -> Event:
             for number, (success, result) in enumerate(results, start=1):
                 action = self.config.actions[number - 1]
                 if success:
@@ -125,7 +136,7 @@ class Event(Base):
             logged
         )
 
-    def rename_references(self, target, old, new):
+    def rename_references(self, target: str, old: str, new: str) -> bool:
         """
         Point the references to old at new: those of the settings, and the
         targets of the actions that start or stop a brick or an event.
@@ -148,5 +159,5 @@ class Event(Base):
         return changed
 
 
-def is_event(brick):
-    return brick.get_type() == "Event"
+def is_event(brick: object) -> TypeGuard[Event]:
+    return isinstance(brick, Base) and brick.get_type() == "Event"

@@ -72,11 +72,11 @@ from virtualbricks.nic import random_mac
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.virtualmachine import VirtualMachine
     from virtualbricks.config.report import Report
     from virtualbricks.config.tomlfile import Notes, Table, Value
     from virtualbricks.bricks.plug import Plug
     from virtualbricks.bricks.sock import Sock
+    from virtualbricks.bricks.virtualmachine import HostonlySock
 
 FORMAT = 2
 TOP_KEYS = frozenset(("format", "settings", "images", "events", "bricks"))
@@ -277,7 +277,7 @@ Targets: TypeAlias = list[str] | list[Nic]
 # Writing
 
 
-def socket_target(sock: Sock) -> str:
+def socket_target(sock: Sock | HostonlySock) -> str:
     """Return how a connection to this socket is written."""
 
     if sock.brick.connections == "nics":
@@ -293,19 +293,18 @@ def _plug_target(plug: Plug) -> str:
 
 
 def _nic_table(link: Plug | Sock) -> Table:
+    from virtualbricks.bricks.sock import Sock
+
     table: Table
-    if link.mode == "sock":
+    if isinstance(link, Sock):
         # The socket name is after the name of the virtual machine.
-        sock = cast("Sock", link)
-        name = sock.nickname[len(sock.brick.name) + 1 :]
+        name = link.nickname[len(link.brick.name) + 1 :]
         table = {"kind": "socket", "name": name}
+    elif link.sock is not None and link.sock.nickname == HOSTONLY:
+        table = {"kind": "hostonly"}
     else:
         # a card that isn't a socket is a plug
-        plug = cast("Plug", link)
-        if plug.sock is not None and plug.sock.nickname == HOSTONLY:
-            table = {"kind": "hostonly"}
-        else:
-            table = {"kind": "plug", "connect": _plug_target(plug)}
+        table = {"kind": "plug", "connect": _plug_target(link)}
     table["model"] = link.model
     table["mac"] = link.mac
     return table
@@ -560,6 +559,8 @@ def _read_connections(
 ) -> Targets:
     """Return the targets of the plugs and create the socket cards."""
 
+    from virtualbricks.bricks.virtualmachine import is_virtualmachine
+
     style = brick.connections
     if style == "connect":
         where = f"{where}.connect"
@@ -575,9 +576,8 @@ def _read_connections(
             _read_target(end, report, f"{where}.endpoints[{i}]")
             for i, end in enumerate(ends)
         ]
-    if style == "nics":
+    if is_virtualmachine(brick):
         # only virtual machines have network cards
-        vm = cast("VirtualMachine", brick)
         nics = table.get("nics", [])
         if not isinstance(nics, list):
             report.warning("nics: is not a list, cards dropped", where)
@@ -588,7 +588,7 @@ def _read_connections(
             if nic is None:
                 continue
             if nic["kind"] == "socket":
-                vm.add_sock(nic["mac"], nic["model"], nic["name"])
+                brick.add_sock(nic["mac"], nic["model"], nic["name"])
             else:
                 plugs.append(nic)
         return plugs
@@ -602,15 +602,16 @@ def _connect(
     report: Report,
     where: str,
 ) -> None:
+    from virtualbricks.bricks.virtualmachine import is_virtualmachine
+
     # the targets are network cards if the brick has them, else sockets
-    if brick.connections == "nics":
-        vm = cast("VirtualMachine", brick)
+    if is_virtualmachine(brick):
         for nic in cast("list[Nic]", targets):
             if nic["kind"] == "hostonly":
                 sock = factory.get_sock(HOSTONLY)
             else:
                 sock = _find_socket(factory, nic["connect"], report, where)
-            vm.add_plug(sock, nic["mac"], nic["model"])
+            brick.add_plug(sock, nic["mac"], nic["model"])
         return
     for plug, target in zip(brick.plugs, cast("list[str]", targets)):
         sock = _find_socket(factory, target, report, where)

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 18:31+0200\n"
+"POT-Creation-Date: 2026-10-06 13:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -700,14 +700,6 @@ msgid ""
 "characters, and this one has {size}"
 msgstr ""
 
-#: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
-msgid "Password"
-msgstr ""
-
-#: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
-msgid "The password of the tunnel, in clear text"
-msgstr ""
-
 #: virtualbricks/bricks/tunnelconnect.py
 msgid "Server"
 msgstr ""
@@ -735,6 +727,14 @@ msgstr ""
 #: virtualbricks/bricks/tunnelconnect.py
 #, python-brace-format
 msgid "Without a server, {brick} can't start"
+msgstr ""
+
+#: virtualbricks/bricks/tunnellisten.py
+msgid "Password"
+msgstr ""
+
+#: virtualbricks/bricks/tunnellisten.py
+msgid "The password of the tunnel, in clear text"
 msgstr ""
 
 #: virtualbricks/bricks/tunnellisten.py

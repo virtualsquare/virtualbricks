@@ -44,7 +44,7 @@ Nothing here imports GTK.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import attr
 
@@ -52,8 +52,14 @@ from virtualbricks.config.schema import field_names, kind_of, why_unused
 from virtualbricks.config.settings import get_setting
 from virtualbricks.i18n import _
 
+if TYPE_CHECKING:  # pragma: no cover
+    # attrs 21.2, of Ubuntu 22.04, has no AttrsInstance yet
+    from attr import AttrsInstance
 
-def copy(record):
+R = TypeVar("R", bound="AttrsInstance")
+
+
+def copy(record: R) -> R:
     """
     A copy of a record of settings, with copies of its lists.
 
@@ -70,7 +76,8 @@ def copy(record):
         for name, value in attr.asdict(record, recurse=False).items()
         if isinstance(value, list)
     }
-    return attr.evolve(record, **lists)
+    # mypy's plugin of attrs takes no type variable here
+    return attr.evolve(cast(Any, record), **lists)
 
 
 @attr.define(frozen=True)
@@ -99,7 +106,7 @@ class Draft:
         ]
         self.links = list(self.original_links)
 
-    def read(self):
+    def read(self) -> Any:
         """The record of the settings, which the draft copies."""
 
         return self.brick.config

@@ -18,13 +18,19 @@
 
 """A network emulator: wirefilter, a wire with a Markov chain of states."""
 
+from __future__ import annotations
+
 import re
+from collections.abc import Collection
+from typing import TYPE_CHECKING
 
 import attr
+from twisted.internet import defer
 
 from virtualbricks import bricks, errors
-from virtualbricks.bricks.command import Command, socket_path
+from virtualbricks.bricks.command import Command, Prepared, socket_path
 from virtualbricks.bricks.draft import Draft, Problem
+from virtualbricks.bricks.virtualmachine import is_virtualmachine
 from virtualbricks.bricks.wire import Wire
 from virtualbricks.config.schema import (
     Bool,
@@ -46,6 +52,12 @@ from virtualbricks.config.schema import (
 from virtualbricks.i18n import N_, _
 from virtualbricks.programs import ProgramError
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.config.report import Report
+    from virtualbricks.config.tomlfile import Notes, Table
+    from virtualbricks.programs import VdeInfo
+
 # The options that Netemu passes to its program.
 OPTIONS = ("-v", "-b", "-d", "-c", "-l", "--nofifo", "-M")
 
@@ -60,14 +72,14 @@ class NetemuConfig(bricks.BrickConfig):
     events are keys of the brick and the states are tables without them.
     """
 
-    name = field(
+    name: str = field(
         Str(),
         default="default name",
         label=N_("Name"),
         help=N_("The name of the state"),
     )
     # each value both ways, or from left to right and from right to left
-    bandwidth = field(
+    bandwidth: int = field(
         Int(),
         default=125000,
         label=N_("Bandwidth"),
@@ -76,20 +88,20 @@ class NetemuConfig(bricks.BrickConfig):
             " to right, unless the same both ways"
         ),
     )
-    bandwidth_right_to_left = field(
+    bandwidth_right_to_left: int = field(
         Int(),
         default=125000,
         label=N_("Bandwidth from right to left"),
         help=N_("Bytes per second from right to left"),
         when=("bandwidth_symmetric", False),
     )
-    bandwidth_symmetric = field(
+    bandwidth_symmetric: bool = field(
         Bool(),
         default=True,
         label=N_("The same bandwidth both ways"),
         help=N_("Use bandwidth both ways"),
     )
-    delay = field(
+    delay: int = field(
         Int(),
         default=0,
         label=N_("Delay"),
@@ -98,20 +110,20 @@ class NetemuConfig(bricks.BrickConfig):
             " right, unless the same both ways"
         ),
     )
-    delay_right_to_left = field(
+    delay_right_to_left: int = field(
         Int(),
         default=0,
         label=N_("Delay from right to left"),
         help=N_("Delay in ms from right to left"),
         when=("delay_symmetric", False),
     )
-    delay_symmetric = field(
+    delay_symmetric: bool = field(
         Bool(),
         default=True,
         label=N_("The same delay both ways"),
         help=N_("Use delay both ways"),
     )
-    buffer_size = field(
+    buffer_size: int = field(
         Int(),
         default=75000,
         label=N_("Buffer"),
@@ -120,20 +132,20 @@ class NetemuConfig(bricks.BrickConfig):
             " unless the same both ways"
         ),
     )
-    buffer_size_right_to_left = field(
+    buffer_size_right_to_left: int = field(
         Int(),
         default=75000,
         label=N_("Buffer from right to left"),
         help=N_("Channel buffer in bytes from right to left"),
         when=("buffer_size_symmetric", False),
     )
-    buffer_size_symmetric = field(
+    buffer_size_symmetric: bool = field(
         Bool(),
         default=True,
         label=N_("The same buffer both ways"),
         help=N_("Use buffer_size both ways"),
     )
-    loss = field(
+    loss: float = field(
         Float(0, 100),
         default=0.0,
         label=N_("Loss"),
@@ -142,14 +154,14 @@ class NetemuConfig(bricks.BrickConfig):
             " to right, unless the same both ways"
         ),
     )
-    loss_right_to_left = field(
+    loss_right_to_left: float = field(
         Float(0, 100),
         default=0.0,
         label=N_("Loss from right to left"),
         help=N_("Percentage of packets lost from right to left"),
         when=("loss_symmetric", False),
     )
-    loss_symmetric = field(
+    loss_symmetric: bool = field(
         Bool(),
         default=True,
         label=N_("The same loss both ways"),
@@ -166,12 +178,12 @@ STATE_KEYS = frozenset(field_names(NetemuConfig)) - BRICK_KEYS
 class NetemuTable(bricks.BrickConfig):
     """The table of a Netemu in the project file."""
 
-    transition_period = field(
+    transition_period: int = field(
         Int(1),
         default=100,
         help="How often the emulator may change state, in ms",
     )
-    transitions = field(
+    transitions: list[list[float]] = field(
         ListOf(ListOf(Float(0))),
         factory=lambda: [[0.0]],
         help=(
@@ -179,7 +191,7 @@ class NetemuTable(bricks.BrickConfig):
             "a column, at each period"
         ),
     )
-    states = field(
+    states: list[NetemuConfig] = field(
         ListOf(Record(NetemuConfig, exclude=BRICK_KEYS), min_length=1),
         factory=lambda: [NetemuConfig()],
         help="The states of the emulator; it starts in the first",
@@ -190,16 +202,16 @@ class NetemuTable(bricks.BrickConfig):
 class MarkovConfig:
 
     # calling __init__ with the current active config (Netemu.config) will link it to state nr. 0
-    def __init__(self, config):
-        self.states = list()
-        self.weights = list()
+    def __init__(self, config: NetemuConfig) -> None:
+        self.states: list[NetemuConfig] = list()
+        self.weights: list[list[float]] = list()
         self.weights.append(list())
         self.weights[0].append(0.0)
         self.states.append(config)
 
     # append a new state with default config at the end of the state list
     # all weights to and from the new state are 0 by default
-    def add(self, index):
+    def add(self, index: int) -> None:
         # the events belong to the brick, so every state has the same ones
         new = NetemuConfig(
             **{name: getattr(self.states[0], name) for name in BRICK_KEYS}
@@ -209,7 +221,7 @@ class MarkovConfig:
 
         unavailable = []
         defaultOccupied = False
-        defaultName = field_default(NetemuConfig, "name")
+        defaultName = str(field_default(NetemuConfig, "name"))
 
         for i, state in enumerate(self.states):
             self.weights[i].insert(index, 0.0)
@@ -244,7 +256,7 @@ class MarkovConfig:
         self.states.insert(index, new)
 
     # delete a state and all weights from and to the state
-    def remove(self, index):
+    def remove(self, index: int) -> None:
         if len(self.states) == 1:
             return
 
@@ -265,7 +277,7 @@ class NetemuDraft(Draft):
     What a state doesn't move to it keeps: its row adds up to 100 at most.
     """
 
-    def __init__(self, brick):
+    def __init__(self, brick: Netemu) -> None:
         super().__init__(brick)
         manager = brick.markov_manager
         self.states = [attr.evolve(state) for state in manager.states]
@@ -323,7 +335,7 @@ class NetemuDraft(Draft):
         row = self.weights[index]
         return 100.0 - sum(row) + row[index]
 
-    def check(self):
+    def check(self) -> list[Problem]:
         problems = []
         names = [state.name for state in self.states]
         for name in dict.fromkeys(names):
@@ -337,16 +349,16 @@ class NetemuDraft(Draft):
                 ).format(state=state.name)
                 problems.append(Problem("transitions", text))
         left = self.links[0]
-        if left is not None and left.brick.get_type() == "Qemu":
+        if left is not None and is_virtualmachine(left.brick):
             text = _("A machine's socket card can only be the right end")
             problems.append(Problem("plug0", text))
         return problems + super().check()
 
-    def changes(self):
+    def changes(self) -> dict[str, object]:
         # the states are the brick's own, in apply_extras()
         return {}
 
-    def apply_extras(self):
+    def apply_extras(self) -> bool:
         brick = self.brick
         manager = brick.markov_manager
         if (
@@ -377,10 +389,11 @@ class Netemu(Wire):
     # wirefilter runs in place of vde-netemu
     programs = (("vde-netemu", "wirefilter"),)
     config_factory = NetemuConfig
+    config: NetemuConfig
     draft_factory = NetemuDraft
     process_protocol = WFProcessProtocol
 
-    def __init__(self, factory, name):
+    def __init__(self, factory: BrickFactory, name: str) -> None:
         Wire.__init__(self, factory, name)
         self.markov_manager = MarkovConfig(self.config)
         self.currentState = (
@@ -389,20 +402,21 @@ class Netemu(Wire):
         self.startupState = 0  # the state the emulator will start into
         self.transPeriod = 100  # default value for Netemu
 
-    def start(self):
+    def start(self, resume: str = "") -> defer.Deferred[bricks.Brick]:
         d = bricks.Brick.start(self)
         self.currentState = self.startupState
         self.config = self.markov_manager.states[self.currentState]
         self.update()
         return d
 
-    def program(self, vde):
+    def program(self, vde: VdeInfo | None) -> tuple[str, str | None]:
         """
         The program: vde-netemu, or wirefilter of VDE, which it's a fork of.
 
         Return the path and a warning, or None.
         """
 
+        assert vde is not None, "prepare() gathers the VDE programs"
         if "vde-netemu" in vde.programs:
             return vde.programs["vde-netemu"], None
         path = vde.programs.get("wirefilter")
@@ -426,7 +440,7 @@ class Netemu(Wire):
         )
         return path, warning
 
-    def command(self, prepared):
+    def command(self, prepared: Prepared) -> Command:
         config = self.config
         path, warning = self.program(prepared.vde)
         cmd = Command(path)
@@ -476,7 +490,7 @@ class Netemu(Wire):
         cmd.option("-M", self.console())
         return cmd
 
-    def update_config(self, changes):
+    def update_config(self, changes: dict[str, object]) -> None:
         self._set(
             changes,
             "buffer_size_symmetric",
@@ -498,21 +512,27 @@ class Netemu(Wire):
             for state in self.markov_manager.states:
                 setattr(state, name, value)
 
-    def _set(self, attrs, symm, left_to_right, right_to_left):
+    def _set(
+        self,
+        attrs: dict[str, object],
+        symm: str,
+        left_to_right: str,
+        right_to_left: str,
+    ) -> None:
         if symm in attrs and attrs[symm] != getattr(self.config, symm):
             if left_to_right in attrs:
                 setattr(self.config, left_to_right, attrs.pop(left_to_right))
             if right_to_left in attrs:
                 setattr(self.config, right_to_left, attrs.pop(right_to_left))
 
-    def rename_references(self, target, old, new):
+    def rename_references(self, target: str, old: str, new: str) -> bool:
         changed = False
         for state in self.markov_manager.states:
             if rename_references(state, target, old, new):
                 changed = True
         return changed
 
-    def config_table(self):
+    def config_table(self) -> Table:
         table = dump_record(self.config, exclude=STATE_KEYS)
         table["transition_period"] = self.transPeriod
         table["transitions"] = [
@@ -526,10 +546,12 @@ class Netemu(Wire):
         return table
 
     @classmethod
-    def table_notes(cls, table):
+    def table_notes(cls, table: Table) -> Notes:
         return notes(NetemuTable, table)
 
-    def load_config_table(self, table, report, where, ignore):
+    def load_config_table(
+        self, table: Table, report: Report, where: str, ignore: Collection[str]
+    ) -> None:
         data = load_record(NetemuTable, table, report, where, ignore=ignore)
         states = data.states
         # the states are read without the events, which are the brick's
@@ -552,7 +574,7 @@ class Netemu(Wire):
         self.config = states[0]
 
     # the set functions in base.py and wires.py are not suitable anymore for communicating with the emulator
-    def update(self):
+    def update(self) -> None:
         if not self.is_running():
             return
 
@@ -584,7 +606,7 @@ class Netemu(Wire):
         self.changed.notify(self)
 
     # utility function with logging like in base.py
-    def _update(self, name, value, *args):
+    def _update(self, name: str, value: object, *args: int) -> None:
         attribute_set = (
             "Attribute {attr} set in {brick} with value " "{value}."
         )
@@ -596,74 +618,74 @@ class Netemu(Wire):
 
     # callbacks for live-management
 
-    def cbset_numnodes(self, value):
+    def cbset_numnodes(self, value: int) -> None:
         self.send(b"markov-numnodes %d\n" % (value))
 
-    def cbset_weight(self, stateFrom, stateTo, value):
+    def cbset_weight(self, stateFrom: int, stateTo: int, value: float) -> None:
         self.send(b"setedge %d,%d,%f\n" % (stateFrom, stateTo, value))
 
-    def cbset_time(self, value):
+    def cbset_time(self, value: int) -> None:
         self.send(b"markov-time %d\n" % (value))
 
-    def cbset_name(self, value):
+    def cbset_name(self, value: str) -> None:
         self.send(
             b"markov-name %d,%b\n" % (self.currentState, value.encode("UTF-8"))
         )
 
-    def cbset_buffer_size(self, value):
+    def cbset_buffer_size(self, value: int) -> None:
         if self.config.buffer_size_symmetric:
             self.send(b"chanbufsize %d[%d]\n" % (value, self.currentState))
         else:
             self.send(b"chanbufsize LR %d[%d]\n" % (value, self.currentState))
 
-    def cbset_buffer_size_right_to_left(self, value):
+    def cbset_buffer_size_right_to_left(self, value: int) -> None:
         if not self.config.buffer_size_symmetric:
             self.send(b"chanbufsize RL %d[%d]\n" % (value, self.currentState))
 
-    def cbset_buffer_size_symmetric(self, value):
+    def cbset_buffer_size_symmetric(self, value: bool) -> None:
         self.cbset_buffer_size(self.config.buffer_size)
         self.cbset_buffer_size_right_to_left(
             self.config.buffer_size_right_to_left
         )
 
-    def cbset_delay(self, value):
+    def cbset_delay(self, value: int) -> None:
         if self.config.delay_symmetric:
             self.send(b"delay %d[%d]\n" % (value, self.currentState))
         else:
             self.send(b"delay LR %d[%d]\n" % (value, self.currentState))
 
-    def cbset_delay_right_to_left(self, value):
+    def cbset_delay_right_to_left(self, value: int) -> None:
         if not self.config.delay_symmetric:
             self.send(b"delay RL %d[%d]\n" % (value, self.currentState))
 
-    def cbset_delay_symmetric(self, value):
+    def cbset_delay_symmetric(self, value: bool) -> None:
         self.cbset_delay(self.config.delay)
         self.cbset_delay_right_to_left(self.config.delay_right_to_left)
 
-    def cbset_loss(self, value):
+    def cbset_loss(self, value: float) -> None:
         if self.config.loss_symmetric:
             self.send(b"loss %f[%d]\n" % (value, self.currentState))
         else:
             self.send(b"loss LR %f[%d]\n" % (value, self.currentState))
 
-    def cbset_loss_right_to_left(self, value):
+    def cbset_loss_right_to_left(self, value: float) -> None:
         if not self.config.loss_symmetric:
             self.send(b"loss RL %f[%d]\n" % (value, self.currentState))
 
-    def cbset_loss_symmetric(self, value):
+    def cbset_loss_symmetric(self, value: bool) -> None:
         self.cbset_loss(self.config.loss)
         self.cbset_loss_right_to_left(self.config.loss_right_to_left)
 
-    def cbset_bandwidth(self, value):
+    def cbset_bandwidth(self, value: int) -> None:
         if self.config.bandwidth_symmetric:
             self.send(b"bandwidth %d[%d]\n" % (value, self.currentState))
         else:
             self.send(b"bandwidth LR %d[%d]\n" % (value, self.currentState))
 
-    def cbset_bandwidth_right_to_left(self, value):
+    def cbset_bandwidth_right_to_left(self, value: int) -> None:
         if not self.config.bandwidth_symmetric:
             self.send(b"bandwidth RL %d[%d]\n" % (value, self.currentState))
 
-    def cbset_bandwidth_symmetric(self, value):
+    def cbset_bandwidth_symmetric(self, value: bool) -> None:
         self.cbset_bandwidth(self.config.bandwidth)
         self.cbset_bandwidth_right_to_left(self.config.bandwidth_right_to_left)

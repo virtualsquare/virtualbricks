@@ -17,9 +17,21 @@
 
 """A wire: dpipe between two vde_plug, from a switch to another."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from virtualbricks import bricks
-from virtualbricks.bricks.command import Command, socket_path, vde_program
+from virtualbricks.bricks.command import (
+    Command,
+    Prepared,
+    socket_path,
+    vde_program,
+)
 from virtualbricks.bricks.plug import Plug
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
 
 
 class Wire(bricks.Brick):
@@ -27,18 +39,18 @@ class Wire(bricks.Brick):
     type = "Wire"
     summary = "A wire between two sockets"
     # dpipe joins two vde_plug
-    programs = (("dpipe",), ("vde_plug",))
+    programs: tuple[tuple[str, ...], ...] = (("dpipe",), ("vde_plug",))
     connections = "endpoints"
 
-    def __init__(self, factory, name):
+    def __init__(self, factory: BrickFactory, name: str) -> None:
         bricks.Brick.__init__(self, factory, name)
         self.plugs.append(Plug(self))
         self.plugs.append(Plug(self))
 
-    def configured(self):
-        return len(self.plugs) == 2 and all(map(lambda p: p.sock, self.plugs))
+    def configured(self) -> bool:
+        return len(self.plugs) == 2 and all(p.sock for p in self.plugs)
 
-    def command(self, prepared):
+    def command(self, prepared: Prepared) -> Command:
         # dpipe joins two vde_plug, one in each switch
         plug = vde_program(prepared.vde, "vde_plug")
         cmd = Command(vde_program(prepared.vde, "dpipe"))
