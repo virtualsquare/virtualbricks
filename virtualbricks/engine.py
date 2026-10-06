@@ -301,7 +301,7 @@ class LocalEngine:
 
     def rename(
         self, item: Brick | Event | Image, name: str
-    ) -> defer.Deferred[None]:
+    ) -> defer.Deferred[str]:
         """Rename a brick, an event or an image, and what names it."""
 
         return defer.maybeDeferred(self.factory.rename_item, item, name)

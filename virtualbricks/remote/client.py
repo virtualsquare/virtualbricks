@@ -51,7 +51,7 @@ from twisted.python.failure import Failure
 from virtualbricks import __version__, locations
 from virtualbricks.brickfactory import normalize_name
 from virtualbricks.bricks.brickinfo import NEW_KINDS, Issue
-from virtualbricks.bricks.virtualmachine import UsbDevice
+from virtualbricks.bricks.virtualmachine import UsbDevice, is_virtualmachine
 from virtualbricks.config.images import IMAGE_FOLDER, parse_info
 from virtualbricks.config.workspace import (
     TAKEN,
@@ -98,6 +98,16 @@ if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.remote.tunnel import Consoles
 
 _T = TypeVar("_T")
+
+
+def _there(get: Callable[[str], _T | None], name: str) -> _T:
+    """What get finds of name in the copy, which a command's answer follows."""
+
+    found = get(name)
+    assert found is not None, f"the copy has {name}"
+    return found
+
+
 _P = TypeVar("_P", bound=amp.AMP)
 
 # the words of the console for the kinds of bricks, by their types
@@ -411,6 +421,8 @@ class RemoteMachine:
             if image.path == path:
                 return mirror.state(IMAGE, image.name).get("file")
         for brick in mirror.bricks:
+            if not is_virtualmachine(brick):
+                continue
             copies = mirror.state(BRICK, brick.name).get("copies", {})
             for device, facts in copies.items():
                 if brick.disk(device).get_cow_path() == path:
@@ -619,7 +631,8 @@ class RemoteEngine:
     def new_brick(self, type: str, name: str) -> defer.Deferred[Brick]:
         making = self.call(ampcommands.BrickNew, kind=WORDS[type], name=name)
         return self._then(
-            making, lambda: self.factory.get_brick(normalize_name(name))
+            making,
+            lambda: _there(self.factory.get_brick, normalize_name(name)),
         )
 
     def connect(
@@ -643,13 +656,21 @@ class RemoteEngine:
 
     def duplicate(self, item: Brick | Event) -> defer.Deferred[Brick | Event]:
         # the answer names the copy, as the Virtualbricks there named it
+        get: Callable[[str], Brick | Event | None]
         if kind_of_item(item) == EVENT:
             copying = self.call(ampcommands.EventDuplicate, name=item.name)
             get = self.factory.get_event
         else:
             copying = self.call(ampcommands.BrickDuplicate, name=item.name)
             get = self.factory.get_brick
-        return copying.addCallback(lambda answer: get(answer["lines"][0]))
+
+        def copy(answer: Json) -> Brick | Event:
+            name = answer["lines"][0]
+            found = get(name)
+            assert found is not None, f"the copy has {name}"
+            return found
+
+        return copying.addCallback(copy)
 
     def remove(self, item: Item) -> defer.Deferred[Any]:
         kind = kind_of_item(item)
@@ -698,7 +719,7 @@ class RemoteEngine:
                 key_value=_pairs({"delay": str(delay)}),
             )
         )
-        return self._then(setting, lambda: self.factory.get_event(new))
+        return self._then(setting, lambda: _there(self.factory.get_event, new))
 
     def start_event(self, event: Event) -> defer.Deferred[Any]:
         return self.call(ampcommands.EventStart, name=[event.name])
@@ -722,7 +743,8 @@ class RemoteEngine:
             key_value=_pairs(values),
         )
         return self._then(
-            adding, lambda: self.factory.get_image(normalize_name(name))
+            adding,
+            lambda: _there(self.factory.get_image, normalize_name(name)),
         )
 
     def make_image(

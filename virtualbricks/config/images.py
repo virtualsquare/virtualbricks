@@ -227,9 +227,11 @@ def uses(
     space a copy takes, where the machine is.
     """
 
+    from virtualbricks.bricks.virtualmachine import is_virtualmachine
+
     found = []
     for brick in factory.bricks:
-        if brick.get_type() != "Qemu":
+        if not is_virtualmachine(brick):
             continue
         is_open = brick.project_folder() is not None
         for disk in brick.disks():

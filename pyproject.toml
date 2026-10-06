@@ -143,6 +143,7 @@ ignore_missing_imports = true
 # The modules typed in full stay so: add one when tools/typecoverage.py gives
 # it 100%.
 module = [
+    "virtualbricks.brickfactory",
     "virtualbricks.bricks.*",
     "virtualbricks.config.*",
     "virtualbricks.console.*",

@@ -54,12 +54,12 @@ from virtualbricks.bricks import Brick
 from virtualbricks.bricks.event import Event, EventConfig, is_event
 from virtualbricks.bricks.virtualmachine import (
     VirtualMachine,
+    hostonly_sock,
     is_disk_image,
     is_virtualmachine,
 )
 from virtualbricks.config.projectfile import (
     CONNECTION_KEYS,
-    HOSTONLY,
     resolve,
 )
 from virtualbricks.config.report import Report
@@ -385,7 +385,7 @@ class MirrorFactory(BrickFactory):
                 continue
             plug = vm.add_plug(None, nic["mac"], nic["model"])
             if nic.get("kind") == "hostonly":
-                plug.connect(self.get_sock(HOSTONLY))
+                plug.connect(hostonly_sock)
             else:
                 self._plug(plug, nic.get("connect", ""))
 

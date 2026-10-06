@@ -69,6 +69,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.config.settings import SettingValue
     from virtualbricks.config.tomlfile import Table
     from virtualbricks.bricks.sock import Sock
+    from virtualbricks.bricks.virtualmachine import HostonlySock
 
 SETTINGS_DROPPED = frozenset(("alt-term", "cdroms", "kvm", "python", "sudo"))
 BRICK_TYPES = {
@@ -479,6 +480,7 @@ class _Converter:
             self.factory.new_image(section.name, path, description)
         except errors.ImageAlreadyInUseError:
             same = self.factory.get_image_by_path(os.path.abspath(path))
+            assert same is not None, "the image of the file is there"
             self.image_aliases[section.name] = same.name
             self.report.warning(
                 f"{section.label()} is the same file as {same.name}; "
@@ -515,9 +517,12 @@ class _Converter:
             return
         if section.type == "Wirefilter":
             self.report.info(f"{section.label()} became netemu", where)
-        if brick_type == "netemu":
+        from virtualbricks.bricks.netemu import Netemu
+        from virtualbricks.bricks.virtualmachine import is_virtualmachine
+
+        if isinstance(brick, Netemu):
             self.netemu(brick, section)
-        elif brick_type == "qemu":
+        elif is_virtualmachine(brick):
             self.qemu(brick, section)
         else:
             _apply(
@@ -650,12 +655,14 @@ class _Converter:
         return mac
 
     def sockets(self) -> None:
+        from virtualbricks.bricks.virtualmachine import is_virtualmachine
+
         for link in self.project.links:
             if link.kind != "sock":
                 continue
             where = self.where(link.lineno)
             vm = self.factory.get_brick(link.owner)
-            if vm is None or vm.connections != "nics":
+            if not is_virtualmachine(vm):
                 self.report.warning(
                     f'socket card of "{link.owner}", which is not a virtual '
                     "machine, dropped",
@@ -677,6 +684,8 @@ class _Converter:
             vm.add_sock(self.mac(link), model, name if valid else None)
 
     def plugs(self) -> None:
+        from virtualbricks.bricks.virtualmachine import is_virtualmachine
+
         # the plugs used by each brick, in order
         used: defaultdict[str, int] = defaultdict(int)
         for link in self.project.links:
@@ -690,14 +699,14 @@ class _Converter:
                     where,
                 )
                 continue
-            sock: Sock | None = None
+            sock: Sock | HostonlySock | None = None
             if link.socket:
                 sock = self.factory.get_sock(link.socket)
                 if sock is None:
                     self.report.warning(
                         f'no socket "{link.socket}", left unconnected', where
                     )
-            if brick.connections == "nics":
+            if is_virtualmachine(brick):
                 model = link.model or DEFAULT_MODEL
                 brick.add_plug(sock, self.mac(link), model)
                 continue
@@ -726,13 +735,17 @@ class _Converter:
         of the console of today: start and stop become actions.
         """
 
-        from virtualbricks.bricks.eventaction import ConsoleAction, EventAction
+        from virtualbricks.bricks.eventaction import (
+            ConsoleAction,
+            EventAction,
+            StoredAction,
+        )
 
         bricks = {brick.name for brick in self.factory.bricks}
         events = {event.name for event in self.factory.events}
         for event in self.factory.events:
             where = self.where(self.seen["event"][event.name])
-            actions: list[object] = []
+            actions: list[StoredAction] = []
             for action in event.config.actions:
                 if isinstance(action, ConsoleAction):
                     old = action.command

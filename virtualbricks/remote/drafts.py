@@ -47,6 +47,7 @@ from virtualbricks.bricks.virtualmachine import (
     VirtualMachineDraft,
     hostonly_sock,
     is_disk_image,
+    is_virtualmachine,
 )
 from virtualbricks.config.projectfile import HOSTONLY, resolve, socket_target
 from virtualbricks.config.report import Report
@@ -192,6 +193,7 @@ def apply_changes(
         draft.link(index, _socket(factory, target, f"plug {index}"))
     extras = data.get("extras", {})
     if "cards" in extras and isinstance(draft, VirtualMachineDraft):
+        assert is_virtualmachine(item), "a machine's draft is of a machine"
         links = list(item.plugs) + list(item.socks)
         draft.cards = [
             Card(

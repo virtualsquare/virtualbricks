@@ -16,6 +16,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import annotations
+
 import os
 import shlex
 import sys
@@ -23,6 +25,8 @@ import threading
 import re
 import copy
 import itertools
+from collections.abc import Iterator, Mapping
+from typing import IO, TYPE_CHECKING, Any, TypeVar
 
 import attr
 from twisted.application import app
@@ -59,6 +63,24 @@ from virtualbricks.observable import Observable, Signal
 from virtualbricks.bricks import is_running
 from virtualbricks.bricks.virtualmachine import is_disk_image
 
+if TYPE_CHECKING:  # pragma: no cover
+    from types import TracebackType
+
+    from twisted.internet.posixbase import PosixReactorBase
+    from twisted.logger import ILogObserver
+
+    from virtualbricks.bricks import Brick
+    from virtualbricks.bricks.eventaction import StoredAction
+    from virtualbricks.bricks.plug import Plug
+    from virtualbricks.bricks.virtualmachine import (
+        Disk,
+        HostonlySock,
+        Image,
+    )
+    from virtualbricks.remote.follower import Item
+
+T = TypeVar("T")
+
 logger = Logger()
 engine_bye = "Engine: Bye!"
 create_image = "Creating new disk image at '{path}'"
@@ -75,14 +97,14 @@ class Users:
     """What names a brick or an event, and loses it when it goes."""
 
     # the plugs of the other bricks in its sockets
-    plugs: list
+    plugs: list[Plug]
     # (event, action): the actions of the other events that start or stop it
-    actions: list
+    actions: list[tuple[Event, StoredAction]]
     # (brick or event, field): the settings that name it, as When It Starts
-    settings: list
+    settings: list[tuple[Brick | Event, str]]
 
 
-def _starts_or_stops(action, name) -> bool:
+def _starts_or_stops(action: StoredAction, name: str) -> bool:
     return (
         isinstance(action, (StartAction, StopAction)) and action.target == name
     )
@@ -90,7 +112,7 @@ def _starts_or_stops(action, name) -> bool:
 
 # The class of each type of brick, by its type in lower case: the name that
 # new_brick() takes and the project file writes.
-BRICK_CLASSES = {
+BRICK_CLASSES: dict[str, type[Brick]] = {
     cls.type.lower(): cls
     for cls in (
         capture.Capture,
@@ -107,7 +129,7 @@ BRICK_CLASSES = {
 }
 
 
-def normalize_name(name):
+def normalize_name(name: str) -> str:
     """
     Return the new normalized name or raise InvalidNameError.
 
@@ -143,29 +165,29 @@ class BrickFactory:
     """
 
     @property
-    def bricks(self):
+    def bricks(self) -> Iterator[Brick]:
         """The bricks, in the order they came in."""
 
         return iter(self._bricks)
 
     @property
-    def events(self):
+    def events(self) -> Iterator[Event]:
         """The events, in the order they came in."""
 
         return iter(self._events.values())
 
     @property
-    def images(self):
+    def images(self) -> Iterator[Image]:
         """The disk images, in the order they came in."""
 
         return iter(self._disk_images.values())
 
-    def __init__(self, quit):
+    def __init__(self, quit: defer.Deferred[None]) -> None:
         self.quit_d = quit
-        self._bricks = []
-        self._events = {}
-        self.socks = []
-        self._disk_images = {}
+        self._bricks: list[Brick] = []
+        self._events: dict[str, Event] = {}
+        self.socks: list[Sock] = []
+        self._disk_images: dict[str, Image] = {}
         # Where the sockets of the running bricks are; each open project
         # gets a directory of its own.
         self.runtime_dir = locations.runtime_dir()
@@ -181,7 +203,7 @@ class BrickFactory:
         self.image_removed = Signal(observable, "image-removed")
         self.image_changed = Signal(observable, "image-changed")
 
-    def quit(self):
+    def quit(self) -> None:
         if any(is_running(brick) for brick in self._bricks):
             msg = _("Cannot close virtualbricks: there are running bricks")
             raise errors.BrickRunningError(msg)
@@ -192,7 +214,7 @@ class BrickFactory:
         if not self.quit_d.called:
             self.quit_d.callback(None)
 
-    def reset(self):
+    def reset(self) -> None:
         if any(is_running(brick) for brick in self._bricks):
             msg = _("Project cannot be closed: there are running bricks")
             raise errors.BrickRunningError(msg)
@@ -211,7 +233,7 @@ class BrickFactory:
 
     # Disk Images
 
-    def new_image(self, name, path, description=""):
+    def new_image(self, name: str, path: str, description: str = "") -> Image:
         """Add one disk image to the library."""
 
         logger.info(create_image, path=path)
@@ -227,7 +249,7 @@ class BrickFactory:
         self.image_added.notify(disk_image)
         return disk_image
 
-    def remove_image(self, disk_image):
+    def remove_image(self, disk_image: Image) -> list[Disk]:
         """
         Remove an image from the library. The disks that used it are left
         without an image, and returned; their private copies stay.
@@ -248,31 +270,24 @@ class BrickFactory:
         self.image_removed.notify(disk_image)
         return disks
 
-    def get_image(self, name):
-        """
-        Return a disk image given its name.
-
-        :type name: str
-        :rtype: Optional[virtualbricks.bricks.virtualmachine.Image]
-        """
+    def get_image(self, name: str) -> Image | None:
+        """Return a disk image given its name."""
 
         return self._disk_images.get(name)
 
-    def get_image_by_path(self, path):
-        """
-        Get disk image object from the image library by its path.
-
-        :type path: str
-        :rtype: Optional[virtualbricks.bricks.virtualmachine.Image]
-        """
+    def get_image_by_path(self, path: str) -> Image | None:
+        """Get disk image object from the image library by its path."""
 
         for disk_image in self._disk_images.values():
             if disk_image.path == path:
                 return disk_image
+        return None
 
     # Bricks
 
-    def new_brick(self, type, name, host="", remote=False):
+    def new_brick(
+        self, type: str, name: str, host: str = "", remote: bool = False
+    ) -> Brick:
         """Return a new brick.
 
         @param type: The type of new brick.
@@ -295,13 +310,13 @@ class BrickFactory:
         self.brick_added.notify(brick)
         return brick
 
-    def _brick_class(self, type):
+    def _brick_class(self, type: str) -> type[Brick]:
         try:
             return BRICK_CLASSES[type.lower()]
         except KeyError:
             raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
 
-    def duplicate_brick(self, brick):
+    def duplicate_brick(self, brick: Brick) -> Brick:
         name = self.next_name(brick.name)
         new_brick = self.new_brick(brick.get_type(), name)
         new_brick.update_config(copy.deepcopy(field_values(brick.config)))
@@ -312,7 +327,7 @@ class BrickFactory:
 
         return new_brick
 
-    def remove_brick(self, brick):
+    def remove_brick(self, brick: Brick) -> None:
         """
         Delete a brick that doesn't run. What plugs into it is unplugged,
         and the events lose their actions that start or stop it.
@@ -324,7 +339,7 @@ class BrickFactory:
         self._forget(brick.name, self.users(brick))
         self._remove_brick(brick)
 
-    def _remove_brick(self, brick):
+    def _remove_brick(self, brick: Brick) -> None:
         logger.info(removing_brick, brick=brick.name)
         if brick.socks:
             logger.info(
@@ -339,13 +354,8 @@ class BrickFactory:
         self._bricks.remove(brick)
         self.brick_removed.notify(brick)
 
-    def get_brick(self, name):
-        """
-        Return a brick given its name.
-
-        :type name: str
-        :rtype: Optional[virtualbricks.bricks.Brick]
-        """
+    def get_brick(self, name: str) -> Brick | None:
+        """Return a brick given its name."""
 
         for brick in self._bricks:
             if brick.name == name:
@@ -354,7 +364,7 @@ class BrickFactory:
 
     # Events
 
-    def new_event(self, name):
+    def new_event(self, name: str) -> Event:
         """Create a new event.
 
         @arg name: The event name.
@@ -373,13 +383,13 @@ class BrickFactory:
         self.event_added.notify(event)
         return event
 
-    def duplicate_event(self, event):
+    def duplicate_event(self, event: Event) -> Event:
         name = self.next_name(event.name)
         new = self.new_event(name)
         new.config = copy.deepcopy(event.config)
         return new
 
-    def remove_event(self, event):
+    def remove_event(self, event: Event) -> None:
         """
         Delete an event, stopped first if it waits. The other events lose
         their actions that start or stop it, and the bricks that run it
@@ -389,24 +399,27 @@ class BrickFactory:
         self._forget(event.name, self.users(event))
         self._remove_event(event)
 
-    def _remove_event(self, event):
+    def _remove_event(self, event: Event) -> None:
         event.stop()
         event.changed.disconnect(self.event_changed.notify)
         del self._events[event.name]
         self.event_removed.notify(event)
 
-    def users(self, item) -> Users:
+    def users(self, item: Brick | Event) -> Users:
         """What names the brick or the event item, and loses it if it goes."""
 
         name = item.name
         target = "event" if is_event(item) else "brick"
-        bricks = [brick for brick in self._bricks if brick is not item]
+        bricks: list[Brick | Event] = [
+            brick for brick in self._bricks if brick is not item
+        ]
         events = [
             event for event in self._events.values() if event is not item
         ]
         plugs = [
             plug
-            for brick in bricks
+            for brick in self._bricks
+            if brick is not item
             for plug in brick.plugs
             if plug.sock is not None and plug.sock.brick is item
         ]
@@ -424,11 +437,11 @@ class BrickFactory:
         ]
         return Users(plugs, actions, settings)
 
-    def _forget(self, name, users):
+    def _forget(self, name: str, users: Users) -> None:
         """The actions of users go, and its settings empty."""
 
         # one change for each, which tells that it changed
-        changes = {}
+        changes: dict[Brick | Event, dict[str, object]] = {}
         for event, _action in users.actions:
             changes[event] = {
                 "actions": [
@@ -442,17 +455,12 @@ class BrickFactory:
         for other, values in changes.items():
             other.update_config(values)
 
-    def get_event(self, name):
-        """
-        Return an event given its name.
-
-        :type name: str
-        :rtype: Optional[virtualbricks.bricks.event.Event]
-        """
+    def get_event(self, name: str) -> Event | None:
+        """Return an event given its name."""
 
         return self._events.get(name)
 
-    def unused_name(self, name):
+    def unused_name(self, name: str) -> str:
         c = 1
         orig_name = name
         while self.name_in_use(name):
@@ -460,7 +468,7 @@ class BrickFactory:
             c += 1
         return name
 
-    def next_name(self, name):
+    def next_name(self, name: str) -> str:
         """The name of a copy: the number at the end of name, increased.
 
         The first free one from there: the copy of sw1 is sw2, or sw3 if sw2
@@ -468,19 +476,22 @@ class BrickFactory:
         in front stay: vm02 for vm01.
         """
 
-        prefix, digits = re.fullmatch(r"(.*?)(\d*)", name).groups()
+        found = re.fullmatch(r"(.*?)(\d*)", name)
+        assert found is not None, "any name matches"
+        prefix, digits = found.groups()
         start = int(digits) + 1 if digits else 2
-        for number in itertools.count(start):
-            candidate = f"{prefix}{number:0{len(digits)}d}"
-            if not self.name_in_use(candidate):
-                return candidate
+        candidates = (
+            f"{prefix}{number:0{len(digits)}d}"
+            for number in itertools.count(start)
+        )
+        return next(c for c in candidates if not self.name_in_use(c))
 
-    def name_in_use(self, name):
+    def name_in_use(self, name: str) -> bool:
         """Whether a brick, an event or a disk image already has the name."""
 
         return self._holder(name) is not None
 
-    def _holder(self, name):
+    def _holder(self, name: str) -> str | None:
         """What has the name: "brick", "event", "image", or None."""
 
         if self.get_brick(name) is not None:
@@ -491,7 +502,7 @@ class BrickFactory:
             return "image"
         return None
 
-    def rename_item(self, brick, name):
+    def rename_item(self, brick: Item, name: str) -> str:
         """Rename a brick, event or image, and every reference to it."""
 
         prev_name = brick.name
@@ -513,7 +524,7 @@ class BrickFactory:
                 obj.changed.notify(obj)
         return prev_name
 
-    def check_name(self, name):
+    def check_name(self, name: str) -> str:
         """
         Return the new normalized name or raise InvalidNameError.
 
@@ -529,7 +540,7 @@ class BrickFactory:
             raise errors.NameAlreadyInUseError(normalized_name, holder)
         return normalized_name
 
-    def check_socket_room(self, name):
+    def check_socket_room(self, name: str) -> None:
         """
         Raise InvalidNameError if a brick's name is too long for its sockets.
 
@@ -546,7 +557,7 @@ class BrickFactory:
             )
             raise errors.InvalidNameError(msg.format(size=size, room=room))
 
-    def check_brick_name(self, type, name):
+    def check_brick_name(self, type: str, name: str) -> str:
         """
         Return name normalized, or raise InvalidNameError if a brick of type
         can't have it: it is in use, too long for the sockets of the project,
@@ -562,12 +573,12 @@ class BrickFactory:
         brick_class.check_name(normalized_name)
         return normalized_name
 
-    def new_sock(self, brick, name=""):
+    def new_sock(self, brick: Brick, name: str = "") -> Sock:
         sock = Sock(brick, name)
         self.socks.append(sock)
         return sock
 
-    def remove_sock(self, sock):
+    def remove_sock(self, sock: Sock) -> None:
         """Forget a socket: what plugs into it is unplugged."""
 
         for plug in list(sock.plugs):
@@ -575,21 +586,24 @@ class BrickFactory:
             plug.disconnect()
         self.socks.remove(sock)
 
-    def get_sock(self, name):
+    def get_sock(self, name: str) -> Sock | HostonlySock | None:
         if name == "_hostonly":
             return virtualmachine.hostonly_sock
         for sock in self.socks:
             if sock.nickname == name:
                 return sock
+        return None
 
 
-def AutosaveTimer(factory, interval=180):
+def AutosaveTimer(
+    factory: BrickFactory, interval: float = 180
+) -> task.LoopingCall:
     timer = task.LoopingCall(projects.autosave, factory)
     timer.start(interval, now=False)
     return timer
 
 
-def log_level(verbosity):
+def log_level(verbosity: int) -> LogLevel:
     """Return the minimum level logged for the given -v/-q verbosity."""
 
     if verbosity > 0:
@@ -603,12 +617,12 @@ def log_level(verbosity):
 
 class AppLogger(app.AppLogger):
 
-    def __init__(self, options):
+    def __init__(self, options: Mapping[str, Any]) -> None:
         self._observer_factory = options.get("logger")
         self._level = log_level(options.get("verbosity", 0))
-        self._observers = []
+        self._observers: list[ILogObserver] = []
 
-    def get_observers(self):
+    def get_observers(self) -> list[ILogObserver]:
         if self._observer_factory is None:
             return []
         observer = FilteringLogObserver(
@@ -617,7 +631,7 @@ class AppLogger(app.AppLogger):
         )
         return [observer]
 
-    def start(self, application):
+    def start(self, application: object) -> None:
         self._observers = self.get_observers()
         # The standard streams are used by the interactive console.
         globalLogBeginner.beginLoggingTo(
@@ -625,7 +639,7 @@ class AppLogger(app.AppLogger):
         )
         self._initialLog()
 
-    def stop(self):
+    def stop(self) -> None:
         logger.info(shut_down)
         for observer in self._observers:
             globalLogPublisher.removeObserver(observer)
@@ -634,24 +648,24 @@ class AppLogger(app.AppLogger):
 
 class Application:
 
-    logger_factory = AppLogger
-    factory_factory = BrickFactory
+    logger_factory: type[AppLogger] = AppLogger
+    factory_factory: type[BrickFactory] = BrickFactory
 
-    def __init__(self, config):
+    def __init__(self, config: Mapping[str, Any]) -> None:
         self.config = config
         self.logger = self.logger_factory(config)
 
-    def getComponent(self, interface, default):
+    def getComponent(self, interface: object, default: T) -> T:
         return default
 
-    def install_locale(self):
+    def install_locale(self) -> None:
         i18n.install()
 
-    def install_settings(self):
+    def install_settings(self) -> None:
         load_settings()
         load_state()
 
-    def install_workspace(self):
+    def install_workspace(self) -> None:
         # the folder of the command line, for this run only: the setting
         # stays as it is. Either stays for the run, whose lock is that of
         # this folder: a new setting is for the next start.
@@ -659,18 +673,24 @@ class Application:
             get_setting("workspace")
         )
 
-    def install_sys_hooks(self):
+    def install_sys_hooks(self) -> None:
         sys.excepthook = self.excepthook
         threading.excepthook = self.thread_excepthook
 
-    def thread_excepthook(self, args):
+    def thread_excepthook(self, args: threading.ExceptHookArgs) -> None:
         # Like threading's default hook, a thread may exit silently.
         if args.exc_type is SystemExit:
             return
         self.excepthook(args.exc_type, args.exc_value, args.exc_traceback)
 
-    def excepthook(self, exc_type, exc_value, traceback):
+    def excepthook(
+        self,
+        exc_type: type[BaseException],
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         if exc_type in (SystemExit, KeyboardInterrupt):
+            assert exc_value is not None, "what is raised is there"
             sys.__excepthook__(exc_type, exc_value, traceback)
         else:
             fail = failure.Failure(exc_value, exc_type, traceback)
@@ -680,14 +700,14 @@ class Application:
                 error=lambda: fail.getErrorMessage(),
             )
 
-    def install_home(self):
+    def install_home(self) -> None:
         # with the link to the workspace, and room for its socket
         projects.make_runtime_dir()
 
-    def get_namespace(self):
+    def get_namespace(self) -> dict[str, object]:
         return {}
 
-    def migrate(self):
+    def migrate(self) -> defer.Deferred[Any] | None:
         """Convert the files of older versions, once; may return a Deferred."""
 
         from virtualbricks.migrate import startup_migration
@@ -696,19 +716,19 @@ class Application:
         if migration is not None:
             migration.run()
             migration.log(logger)
+        return None
 
-    def run(self, reactor):
+    def run(self, reactor: PosixReactorBase) -> defer.Deferred[None]:
         self.install_locale()
         d = defer.maybeDeferred(self.migrate)
-        d.addCallback(lambda _: self._start(reactor))
-        return d
+        return d.addCallback(lambda _: self._start(reactor))
 
-    def _start(self, reactor):
+    def _start(self, reactor: PosixReactorBase) -> defer.Deferred[None]:
         self.install_settings()
         self.install_workspace()
         self.logger.start(self)
         self.install_home()
-        quit = defer.Deferred()
+        quit: defer.Deferred[None] = defer.Deferred()
         factory = self.factory_factory(quit)
         self._run(factory)
         if self.config["verbosity"] >= 2 and not self.config["noterm"]:
@@ -726,7 +746,7 @@ class Application:
         )
         reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         AutosaveTimer(factory)
-        started = defer.succeed(None)
+        started: defer.Deferred[Any] = defer.succeed(None)
         if self.config.get("run"):
             started = self.run_script(factory, self.config["run"])
         if not self.config["noterm"]:
@@ -737,17 +757,17 @@ class Application:
         self.install_sys_hooks()
         return quit
 
-    def _run(self, factory):
+    def _run(self, factory: BrickFactory) -> None:
         pass
 
-    def start_console(self, factory):
+    def start_console(self, factory: BrickFactory) -> None:
         """Read the console in the terminal that started Virtualbricks."""
 
         from virtualbricks.console.terminal import start
 
         start(factory, self.get_namespace())
 
-    def listen(self, factory, reactor):
+    def listen(self, factory: BrickFactory, reactor: PosixReactorBase) -> None:
         """Answer on the control sockets of --listen; on none without it."""
 
         sockets = self.config.get("sockets")
@@ -758,7 +778,9 @@ class Application:
         for socket in sockets:
             listen(factory, socket, reactor)
 
-    def run_script(self, factory, path):
+    def run_script(
+        self, factory: BrickFactory, path: str
+    ) -> defer.Deferred[list[str]]:
         """Run the commands of path, as the console's source does."""
 
         from virtualbricks.console.dispatch import run
@@ -766,7 +788,7 @@ class Application:
 
         done = run(factory, f"source {shlex.quote(path)}")
 
-        def write(lines, stream):
+        def write(lines: list[str], stream: IO[str]) -> None:
             for line in lines:
                 stream.write(line + "\n")
             stream.flush()
@@ -774,11 +796,11 @@ class Application:
         done.addCallbacks(
             write,
             lambda failure: write(error_lines(failure), sys.stderr),
-            (sys.stdout,),
+            callbackArgs=(sys.stdout,),
         )
         return done
 
-    def open_last_project(self, factory):
+    def open_last_project(self, factory: BrickFactory) -> None:
         """Open the project open last, or a new new_project_N."""
 
         projects.restore_last(factory)

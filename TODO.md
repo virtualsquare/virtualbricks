@@ -308,18 +308,23 @@
 ## Types
 
 - [ ] Fix the errors that mypy finds, a package at a time as `config/`,
-  `console/`, `bricks/` and `remote/`: none on 6 Oct 2026, but 30 with
-  `--check-untyped-defs`, in `gui/gui.py`, `brickfactory.py` and the
-  lambdas without annotations that read `failure.value`, which may be
-  `None` for mypy
+  `console/`, `bricks/` and `remote/`: none on 6 Oct 2026, but 27 with
+  `--check-untyped-defs`, in `gui/gui.py` and the lambdas without
+  annotations that read `failure.value`, which may be `None` for mypy
 - [ ] Run mypy in pre-commit, a local hook in the environment of the
   project, as it needs the stubs of GTK 3
 - [ ] Add each module that `tools/typecoverage.py` gives 100% to the strict
   override of `pyproject.toml`
-- [ ] Type the old core that is left: `app.py`, `brickfactory.py`,
-  `gui/gui.py` and `scripts/` (0–2% on 6 Oct 2026)
+- [ ] Type the old core that is left: `app.py`, `gui/gui.py` and
+  `scripts/` (0% on 6 Oct 2026)
 
 # DONE
+
+- [x] Type `brickfactory.py` in full, checked strictly: the bricks, the
+  events and the images of the factory have their types, and what reads
+  them asks a brick whether it is a machine or a Netemu by its class; over
+  a connection, a brick, an event or an image made that the copy hasn't
+  fails, instead of giving None
 
 - [x] Type `gui/mainwindow/` in full, checked strictly: the rows, the lists
   and the tabs of rows are generic over their objects; the methods named as

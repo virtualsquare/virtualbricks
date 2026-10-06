@@ -72,6 +72,7 @@ from virtualbricks.nic import random_mac
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.bricks import Brick
+    from virtualbricks.bricks.event import Event
     from virtualbricks.config.report import Report
     from virtualbricks.config.tomlfile import Notes, Table, Value
     from virtualbricks.bricks.plug import Plug
@@ -490,10 +491,12 @@ def _tables(
 def resolve(factory: BrickFactory, target: str) -> Sock | None:
     """Return the socket named by a connection, or None."""
 
+    from virtualbricks.bricks.sock import Sock
+
     if ":" in target:
         brick_name, _, socket_name = target.partition(":")
         sock = factory.get_sock(f"{brick_name}_{socket_name}")
-        if sock is not None and sock.brick.name == brick_name:
+        if isinstance(sock, Sock) and sock.brick.name == brick_name:
             return sock
         return None
     brick = factory.get_brick(target)
@@ -701,6 +704,7 @@ def _check_references(factory: BrickFactory, report: Report) -> None:
         "event": factory.get_event,
         "image": factory.get_image,
     }
+    objects: list[tuple[str, Brick | Event]]
     objects = [("bricks", brick) for brick in factory.bricks]
     objects += [("events", event) for event in factory.events]
     for kind, obj in objects:
