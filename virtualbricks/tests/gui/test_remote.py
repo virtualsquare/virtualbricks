@@ -190,7 +190,7 @@ class RemoteTestCase(GuiTestCase):
         application.install_locale = lambda: None
         # the settings of the test, which both sides share
         application.install_settings = install_settings or (lambda: None)
-        self.patch(application.logger, "start", lambda application: None)
+        self.patch(application.logger, "start", lambda reactor: None)
         self.reactor = Reactor()
         self.done = application.run(self.reactor)
         return application

@@ -24,7 +24,7 @@ import shlex
 import sys
 from collections.abc import Callable, Iterable
 from types import ModuleType
-from typing import IO, TYPE_CHECKING, Any, Protocol, TypeVar
+from typing import IO, TYPE_CHECKING, Any, Protocol
 
 from twisted.python import usage, reflect
 from twisted.internet import defer, task
@@ -37,10 +37,8 @@ if TYPE_CHECKING:  # pragma: no cover
     # posixbase loads TCP and TLS, which --command goes without
     from twisted.internet.posixbase import PosixReactorBase
 
-    from virtualbricks.brickfactory import Application
+    from virtualbricks.app import Application
     from virtualbricks.gui import gui
-
-T = TypeVar("T")
 
 _log_file: IO[str] = sys.stdout
 # The word after --listen is its description when it starts with a type.
@@ -536,87 +534,6 @@ def run_app(
     task.react(Application(config).run, ())
 
 
-class _LockedApplication:
-
-    factory: Callable[[Options], Application] | None = None
-
-    def __init__(self, config: Options) -> None:
-        self.config = config
-
-    def run(self, reactor: PosixReactorBase) -> defer.Deferred[Any]:
-        assert self.factory is not None, "factory attribute is not set"
-        from virtualbricks.migrate import settings_to_convert
-        from virtualbricks.migrate import startup_workspace
-
-        policy = self.config.get("lock", locks.SYSTEM)
-        # the settings of 2.1 are the user's: converted by one alone
-        user_alone = policy == locks.WORKSPACE and bool(settings_to_convert())
-        workspace = os.path.abspath(
-            startup_workspace(self.config.get("workspace"))
-        )
-        try:
-            lock = self.lock(policy, user_alone, workspace)
-        except locks.Held as held:
-            return defer.fail(SystemExit(str(held)))
-        except OSError as error:
-            msg = (
-                f"Cannot take the lock {error.filename}: {error.strerror}. "
-                "With --lock none, Virtualbricks runs without locks."
-            )
-            return defer.fail(SystemExit(msg))
-        reactor.addSystemEventTrigger("after", "shutdown", lock.unlock)
-        app = self.factory(self.config)
-        if user_alone:
-            migrate = app.migrate
-            # this run's app migrates, then shares the lock
-            app.migrate = lambda: self.migrate_then_share(  # type: ignore[method-assign]
-                migrate, lock
-            )
-        return app.run(reactor)
-
-    def lock(
-        self, policy: str, user_alone: bool, workspace: str
-    ) -> locks.Lock:
-        """The locks of policy, and that of workspace, made if missing."""
-
-        lock = locks.acquire(policy, user_alone)
-        try:
-            if lock.locked:
-                os.makedirs(workspace, exist_ok=True)
-            lock.take_workspace(workspace)
-        except BaseException:
-            lock.unlock()
-            raise
-        return lock
-
-    def migrate_then_share(
-        self,
-        migrate: Callable[[], defer.Deferred[Any] | None],
-        lock: locks.Lock,
-    ) -> defer.Deferred[Any]:
-        """Migrate, then share the user lock with the other workspaces."""
-
-        def share(result: T) -> T:
-            try:
-                lock.share_user()
-            except locks.Held as held:
-                raise SystemExit(str(held)) from None
-            return result
-
-        return defer.maybeDeferred(migrate).addCallback(share)
-
-
-def LockedApplication(
-    factory: Callable[[Options], Application],
-) -> Callable[[Options], _LockedApplication]:
-    def init(config: Options) -> _LockedApplication:
-        app = _LockedApplication(config)
-        app.factory = factory
-        return app
-
-    return init
-
-
 def make_application(config: Options) -> gui.Application:
     from virtualbricks.gui import gui
 
@@ -634,9 +551,9 @@ def make_remote_application(config: Options) -> gui.RemoteApplication:
 def make_plain_application(config: Options) -> Application:
     """The application without the windows: no GTK is loaded."""
 
-    from virtualbricks import brickfactory
+    from virtualbricks import app
 
-    return brickfactory.Application(config)
+    return app.Application(config)
 
 
 def install_gtk_reactor() -> None:
@@ -680,4 +597,4 @@ def main() -> None:
     else:
         install_gtk_reactor()
         factory = make_application
-    run_app(LockedApplication(factory), config)
+    run_app(factory, config)

@@ -41,7 +41,7 @@ from twisted.logger import (
 )
 from zope.interface import implementer
 
-from virtualbricks import brickfactory, errors, i18n
+from virtualbricks import app, errors, i18n
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks.config.report import Report
@@ -98,14 +98,14 @@ def should_show_to_user(event: LogEvent) -> NamedConstant:
     return PredicateResult.maybe
 
 
-def AppLoggerFactory(messages: MessageLog) -> type[brickfactory.AppLogger]:
+def AppLoggerFactory(messages: MessageLog) -> type[app.AppLogger]:
 
     observer = FilteringLogObserver(
         MessageLogObserver(messages),
         [LogLevelFilterPredicate(LogLevel.info)],
     )
 
-    class AppLogger(brickfactory.AppLogger):
+    class AppLogger(app.AppLogger):
 
         def get_observers(self) -> list[ILogObserver]:
             return super().get_observers() + [observer]
@@ -148,13 +148,13 @@ class WindowFrontend:
         _now(self.gui.on_save())
 
 
-class Application(brickfactory.Application):
+class Application(app.Application):
 
     def __init__(self, config: Mapping[str, Any]) -> None:
         # the messages of this run, for the messages window
         self.messages = MessageLog()
         self.logger_factory = AppLoggerFactory(self.messages)
-        brickfactory.Application.__init__(self, config)
+        app.Application.__init__(self, config)
 
     def get_namespace(self) -> dict[str, object]:
         return {"gui": self.gui}
@@ -213,7 +213,7 @@ class Application(brickfactory.Application):
         self.gui.show_start_up_problem(message)
 
     def _start(self, reactor: PosixReactorBase) -> defer.Deferred[None]:
-        ret = brickfactory.Application._start(self, reactor)
+        ret = app.Application._start(self, reactor)
         self.gui.set_title()
         # the folders of QEMU and VDE are those of the project, open by now
         self.gui.check_prerequisites()
@@ -240,9 +240,6 @@ class RemoteApplication:
         # the Virtualbricks there said it quits
         self.ended = False
 
-    def getComponent(self, interface: object, default: T) -> T:
-        return default
-
     def install_locale(self) -> None:
         i18n.install()
 
@@ -263,7 +260,7 @@ class RemoteApplication:
 
         self.install_locale()
         self.install_settings()
-        self.logger.start(self)
+        self.logger.start(reactor)
         reactor.addSystemEventTrigger("before", "shutdown", store_settings)
         reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         self.reactor = reactor

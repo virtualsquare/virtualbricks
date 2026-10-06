@@ -88,7 +88,7 @@ class TestStartupMigration(GuiTestCase):
             return "quit"
 
         self.app.gui = VBGUI()
-        self.patch(gui.brickfactory.Application, "_start", start)
+        self.patch(gui.app.Application, "_start", start)
         self.assertEqual(self.app._start("reactor"), "quit")
         # the programs are looked for in the folders of the open project
         self.assertEqual(calls, ["open", "title", "check"])

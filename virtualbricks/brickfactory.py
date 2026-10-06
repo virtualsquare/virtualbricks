@@ -19,42 +19,19 @@
 from __future__ import annotations
 
 import os
-import shlex
-import sys
-import threading
 import re
 import copy
 import itertools
-from collections.abc import Iterator, Mapping
-from types import TracebackType
-from typing import IO, TYPE_CHECKING, Any, TypeVar
+from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 import attr
-from twisted.application import app
-from twisted.internet import defer, task
-from twisted.internet.posixbase import PosixReactorBase
-from twisted.python import failure
-from twisted.logger import (
-    FilteringLogObserver,
-    ILogObserver,
-    LogLevel,
-    LogLevelFilterPredicate,
-    Logger,
-    globalLogBeginner,
-    globalLogPublisher,
-)
+from twisted.internet import defer
+from twisted.logger import Logger
 
 from virtualbricks import errors, locations
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.schema import field_values, references
-from virtualbricks.config.settings import (
-    get_setting,
-    load_settings,
-    load_state,
-    store_settings,
-)
-from virtualbricks.config.workspace import projects
-from virtualbricks import i18n
 from virtualbricks.bricks import Brick, capture, netemu, router, switch
 from virtualbricks.bricks import switchwrapper, tap, tunnelconnect
 from virtualbricks.bricks import tunnellisten, virtualmachine, wire
@@ -79,17 +56,13 @@ from virtualbricks.bricks.virtualmachine import (
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.remote.follower import Item
 
-T = TypeVar("T")
-
 logger = Logger()
 engine_bye = "Engine: Bye!"
 create_image = "Creating new disk image at '{path}'"
 remove_socks = "Removing socks: {socks}"
 disconnect_plug = "Disconnecting plug to {sock}"
 removing_brick = "Removing brick {brick}"
-shut_down = "Server Shut Down."
 new_event_ok = "New event {name} OK"
-uncaught_exception = "Uncaught exception: {error()}"
 
 
 @attr.frozen
@@ -593,214 +566,3 @@ class BrickFactory:
             if sock.nickname == name:
                 return sock
         return None
-
-
-def AutosaveTimer(
-    factory: BrickFactory, interval: float = 180
-) -> task.LoopingCall:
-    timer = task.LoopingCall(projects.autosave, factory)
-    timer.start(interval, now=False)
-    return timer
-
-
-def log_level(verbosity: int) -> LogLevel:
-    """Return the minimum level logged for the given -v/-q verbosity."""
-
-    if verbosity > 0:
-        return LogLevel.debug
-    if verbosity == 0:
-        return LogLevel.info
-    if verbosity == -1:
-        return LogLevel.warn
-    return LogLevel.error
-
-
-class AppLogger(app.AppLogger):
-
-    def __init__(self, options: Mapping[str, Any]) -> None:
-        self._observer_factory = options.get("logger")
-        self._level = log_level(options.get("verbosity", 0))
-        self._observers: list[ILogObserver] = []
-
-    def get_observers(self) -> list[ILogObserver]:
-        if self._observer_factory is None:
-            return []
-        observer = FilteringLogObserver(
-            self._observer_factory(),
-            [LogLevelFilterPredicate(self._level)],
-        )
-        return [observer]
-
-    def start(self, application: object) -> None:
-        self._observers = self.get_observers()
-        # The standard streams are used by the interactive console.
-        globalLogBeginner.beginLoggingTo(
-            self._observers, redirectStandardIO=False
-        )
-        self._initialLog()
-
-    def stop(self) -> None:
-        logger.info(shut_down)
-        for observer in self._observers:
-            globalLogPublisher.removeObserver(observer)
-        self._observers = []
-
-
-class Application:
-
-    logger_factory: type[AppLogger] = AppLogger
-    factory_factory: type[BrickFactory] = BrickFactory
-
-    def __init__(self, config: Mapping[str, Any]) -> None:
-        self.config = config
-        self.logger = self.logger_factory(config)
-
-    def getComponent(self, interface: object, default: T) -> T:
-        return default
-
-    def install_locale(self) -> None:
-        i18n.install()
-
-    def install_settings(self) -> None:
-        load_settings()
-        load_state()
-
-    def install_workspace(self) -> None:
-        # the folder of the command line, for this run only: the setting
-        # stays as it is. Either stays for the run, whose lock is that of
-        # this folder: a new setting is for the next start.
-        projects.path = self.config.get("workspace") or str(
-            get_setting("workspace")
-        )
-
-    def install_sys_hooks(self) -> None:
-        sys.excepthook = self.excepthook
-        threading.excepthook = self.thread_excepthook
-
-    def thread_excepthook(self, args: threading.ExceptHookArgs) -> None:
-        # Like threading's default hook, a thread may exit silently.
-        if args.exc_type is SystemExit:
-            return
-        self.excepthook(args.exc_type, args.exc_value, args.exc_traceback)
-
-    def excepthook(
-        self,
-        exc_type: type[BaseException],
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
-        if exc_type in (SystemExit, KeyboardInterrupt):
-            assert exc_value is not None, "what is raised is there"
-            sys.__excepthook__(exc_type, exc_value, traceback)
-        else:
-            fail = failure.Failure(exc_value, exc_type, traceback)
-            logger.error(
-                uncaught_exception,
-                log_failure=fail,
-                error=lambda: fail.getErrorMessage(),
-            )
-
-    def install_home(self) -> None:
-        # with the link to the workspace, and room for its socket
-        projects.make_runtime_dir()
-
-    def get_namespace(self) -> dict[str, object]:
-        return {}
-
-    def migrate(self) -> defer.Deferred[Any] | None:
-        """Convert the files of older versions, once; may return a Deferred."""
-
-        from virtualbricks.migrate import startup_migration
-
-        migration = startup_migration(self.config.get("workspace"))
-        if migration is not None:
-            migration.run()
-            migration.log(logger)
-        return None
-
-    def run(self, reactor: PosixReactorBase) -> defer.Deferred[None]:
-        self.install_locale()
-        d = defer.maybeDeferred(self.migrate)
-        return d.addCallback(lambda _: self._start(reactor))
-
-    def _start(self, reactor: PosixReactorBase) -> defer.Deferred[None]:
-        self.install_settings()
-        self.install_workspace()
-        self.logger.start(self)
-        self.install_home()
-        quit: defer.Deferred[None] = defer.Deferred()
-        factory = self.factory_factory(quit)
-        self._run(factory)
-        if self.config["verbosity"] >= 2 and not self.config["noterm"]:
-            import signal
-            import pdb
-
-            signal.signal(signal.SIGUSR2, lambda *args: pdb.set_trace())
-            signal.signal(signal.SIGINT, lambda *args: pdb.set_trace())
-            app.fixPdb()
-        reactor.addSystemEventTrigger("before", "shutdown", store_settings)
-        self.open_last_project(factory)
-        self.listen(factory, reactor)
-        reactor.addSystemEventTrigger(
-            "before", "shutdown", projects.save, factory
-        )
-        reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
-        AutosaveTimer(factory)
-        started: defer.Deferred[Any] = defer.succeed(None)
-        if self.config.get("run"):
-            started = self.run_script(factory, self.config["run"])
-        if not self.config["noterm"]:
-            started.addCallback(lambda _: self.start_console(factory))
-        # delay as much as possible the installation of hooks because the
-        # exception hook can hide errors in the code requiring to start the
-        # application again with logging redirected
-        self.install_sys_hooks()
-        return quit
-
-    def _run(self, factory: BrickFactory) -> None:
-        pass
-
-    def start_console(self, factory: BrickFactory) -> None:
-        """Read the console in the terminal that started Virtualbricks."""
-
-        from virtualbricks.console.terminal import start
-
-        start(factory, self.get_namespace())
-
-    def listen(self, factory: BrickFactory, reactor: PosixReactorBase) -> None:
-        """Answer on the control sockets of --listen; on none without it."""
-
-        sockets = self.config.get("sockets")
-        if not sockets:
-            return
-        from virtualbricks.console.control import listen
-
-        for socket in sockets:
-            listen(factory, socket, reactor)
-
-    def run_script(
-        self, factory: BrickFactory, path: str
-    ) -> defer.Deferred[list[str]]:
-        """Run the commands of path, as the console's source does."""
-
-        from virtualbricks.console.dispatch import run
-        from virtualbricks.console.terminal import error_lines
-
-        done = run(factory, f"source {shlex.quote(path)}")
-
-        def write(lines: list[str], stream: IO[str]) -> None:
-            for line in lines:
-                stream.write(line + "\n")
-            stream.flush()
-
-        done.addCallbacks(
-            write,
-            lambda failure: write(error_lines(failure), sys.stderr),
-            callbackArgs=(sys.stdout,),
-        )
-        return done
-
-    def open_last_project(self, factory: BrickFactory) -> None:
-        """Open the project open last, or a new new_project_N."""
-
-        projects.restore_last(factory)
