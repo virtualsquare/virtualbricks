@@ -38,7 +38,8 @@ a label.
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
 import gi
@@ -56,6 +57,9 @@ from virtualbricks.markdown import (
     plain_text,
 )  # noqa: E402
 
+if TYPE_CHECKING:  # pragma: no cover
+    from markdown_it.token import Token
+
 logger = Logger()
 cannot_open_link = "Cannot open {uri}: {error}"
 
@@ -66,7 +70,7 @@ OPEN_SCHEMES = frozenset(("http", "https", "mailto"))
 INDENT = 24
 BLOCK_SPACE = 8
 # The style of each name that the lines use; the colours come from the theme.
-STYLES = {
+STYLES: dict[str, dict[str, Any]] = {
     "h1": {"weight": Pango.Weight.BOLD, "scale": 1.4, "pixels_above_lines": 2},
     "h2": {"weight": Pango.Weight.BOLD, "scale": 1.2, "pixels_above_lines": 6},
     "h3": {
@@ -124,7 +128,7 @@ class Line:
         return "".join(run.text for run in self.runs)
 
 
-def layout(tokens) -> list[Line]:
+def layout(tokens: Sequence[Token]) -> list[Line]:
     """The lines of the tokens of a README, see :func:`markdown.parse`."""
 
     return _Layout().run(tokens)
@@ -143,14 +147,16 @@ class _Layout:
         # the marker of the list item whose first line is still to come
         self.marker: str | None = None
 
-    def run(self, tokens) -> list[Line]:
+    def run(self, tokens: Sequence[Token]) -> list[Line]:
         for token in tokens:
             handler = getattr(self, "on_" + token.type, None)
             if handler is not None:
                 handler(token)
         return self.lines
 
-    def add_line(self, runs, styles=(), rule=False) -> None:
+    def add_line(
+        self, runs: list[Run], styles: tuple[str, ...] = (), rule: bool = False
+    ) -> None:
         if self.quotes:
             styles = (*styles, "quote")
         if self.heading is not None:
@@ -170,20 +176,20 @@ class _Layout:
 
     # Blocks
 
-    def on_bullet_list_open(self, token) -> None:
+    def on_bullet_list_open(self, token: Token) -> None:
         self.lists.append(None)
 
-    def on_ordered_list_open(self, token) -> None:
+    def on_ordered_list_open(self, token: Token) -> None:
         start = token.attrGet("start")
         self.lists.append(int(start) if start is not None else 1)
 
-    def on_bullet_list_close(self, token) -> None:
+    def on_bullet_list_close(self, token: Token) -> None:
         self.lists.pop()
         self.end_block()
 
     on_ordered_list_close = on_bullet_list_close
 
-    def on_list_item_open(self, token) -> None:
+    def on_list_item_open(self, token: Token) -> None:
         number = self.lists[-1]
         if number is None:
             self.marker = "•"
@@ -191,47 +197,50 @@ class _Layout:
             self.marker = f"{number}{token.markup or '.'}"
             self.lists[-1] = number + 1
 
-    def on_list_item_close(self, token) -> None:
+    def on_list_item_close(self, token: Token) -> None:
         if self.marker is not None:
             # an empty item still shows its marker
             self.add_line([])
 
-    def on_blockquote_open(self, token) -> None:
+    def on_blockquote_open(self, token: Token) -> None:
         self.quotes += 1
 
-    def on_blockquote_close(self, token) -> None:
+    def on_blockquote_close(self, token: Token) -> None:
         self.quotes -= 1
         self.end_block()
 
-    def on_heading_open(self, token) -> None:
+    def on_heading_open(self, token: Token) -> None:
         self.heading = HEADINGS.get(token.tag, "h3")
 
-    def on_heading_close(self, token) -> None:
+    def on_heading_close(self, token: Token) -> None:
         self.heading = None
         self.end_block()
 
-    def on_paragraph_close(self, token) -> None:
+    def on_paragraph_close(self, token: Token) -> None:
         self.end_block()
 
-    def on_fence(self, token) -> None:
+    def on_fence(self, token: Token) -> None:
         for line in token.content.rstrip("\n").split("\n"):
             self.add_line([Run(line)], ("pre",))
         self.end_block()
 
     on_code_block = on_fence
 
-    def on_hr(self, token) -> None:
+    def on_hr(self, token: Token) -> None:
         self.add_line([], rule=True)
         self.end_block()
 
     # Text
 
-    def on_inline(self, token) -> None:
+    def on_inline(self, token: Token) -> None:
         styles: list[str] = []
-        links: list[str] = []
+        # the href of each link open, as markdown-it read it
+        links: list[str | None] = []
         runs: list[Run] = []
 
-        def add(text, *more, picture=None):
+        def add(
+            text: str | None, *more: str, picture: str | None = None
+        ) -> None:
             if text:
                 href = links[-1] if links else None
                 runs.append(Run(text, (*styles, *more), href, picture))
@@ -246,7 +255,8 @@ class _Layout:
             elif kind.endswith("_close") and kind[:-6] in self.INLINE:
                 styles.pop()
             elif kind == "link_open":
-                links.append(child.attrGet("href"))
+                href = child.attrGet("href")
+                links.append(None if href is None else str(href))
             elif kind == "link_close":
                 links.pop()
             elif kind == "text":
@@ -254,7 +264,7 @@ class _Layout:
             elif kind == "code_inline":
                 add(child.content, "code")
             elif kind == "image":
-                path = picture_path(child.attrGet("src") or "")
+                path = picture_path(str(child.attrGet("src") or ""))
                 text = plain_text(child.children or []) or child.content
                 # a picture without a text: its path, until it shows
                 add(text or path, "em", picture=path)
@@ -266,7 +276,9 @@ def read_picture(data: bytes) -> GdkPixbuf.Pixbuf | None:
 
     loader = GdkPixbuf.PixbufLoader()
 
-    def size_prepared(loader, width, height):
+    def size_prepared(
+        loader: GdkPixbuf.PixbufLoader, width: int, height: int
+    ) -> None:
         if width * height > PICTURE_PIXELS:
             # the loader gives up, before it takes the memory
             loader.set_size(0, 0)
@@ -376,7 +388,7 @@ class MarkdownLabel(Gtk.Label):
     lines that fit show a frame later.
     """
 
-    def __init__(self, lines: int, **properties) -> None:
+    def __init__(self, lines: int, **properties: Any) -> None:
         super().__init__(
             wrap=True,
             wrap_mode=Pango.WrapMode.WORD_CHAR,
@@ -434,15 +446,17 @@ class MarkdownLabel(Gtk.Label):
         self.fit()
         return GLib.SOURCE_REMOVE
 
-    def on_size_allocate(self, label, allocation) -> None:
+    def on_size_allocate(
+        self, label: Gtk.Widget, allocation: Gdk.Rectangle
+    ) -> None:
         if self._fitting is None:
             self._fitting = GLib.idle_add(self._fit_later)
 
-    def on_style_updated(self, label) -> None:
+    def on_style_updated(self, label: Gtk.Widget) -> None:
         # another font: the lines take another room
         self._width = None
 
-    def on_destroy(self, label) -> None:
+    def on_destroy(self, label: Gtk.Widget) -> None:
         if self._fitting is not None:
             GLib.source_remove(self._fitting)
             self._fitting = None
@@ -465,7 +479,7 @@ class MarkdownView(Gtk.TextView):
     view keeps its height, and cuts them off.
     """
 
-    def __init__(self, **properties) -> None:
+    def __init__(self, **properties: Any) -> None:
         properties.setdefault("wrap_mode", Gtk.WrapMode.WORD_CHAR)
         super().__init__(editable=False, cursor_visible=False, **properties)
         self.buffer = self.get_buffer()
@@ -490,7 +504,11 @@ class MarkdownView(Gtk.TextView):
         self.connect("destroy", self.on_destroy)
 
     def _tag(self, name: str) -> Gtk.TextTag:
-        return self.buffer.get_tag_table().lookup(name)
+        """A tag that the view made: of a style, or of a link."""
+
+        tag = self.buffer.get_tag_table().lookup(name)
+        assert tag is not None, "the view made it"
+        return tag
 
     def update_colors(self) -> None:
         """The colours of the links, quotes and code, from the theme."""
@@ -538,12 +556,14 @@ class MarkdownView(Gtk.TextView):
                 )
         # once the lines are there: a picture may come at once
         rendering = self._rendering
+        if pictures is None:
+            return
         for picture in self._pictures:
             asking = defer.maybeDeferred(pictures, picture.path)
             asking.addCallbacks(
                 self._picture_came,
                 lambda failure: None,
-                (picture, rendering),
+                callbackArgs=(picture, rendering),
             )
 
     def _clear(self) -> None:
@@ -551,7 +571,7 @@ class MarkdownView(Gtk.TextView):
         self.buffer.set_text("")
         table = self.buffer.get_tag_table()
         for name in self._links:
-            table.remove(table.lookup(name))
+            table.remove(self._tag(name))
         self._links.clear()
         for separator, _left in self._rules:
             separator.destroy()
@@ -598,23 +618,28 @@ class MarkdownView(Gtk.TextView):
                 0
             ]
         name = f"margin:{left}:{indent}"
-        if self._tag(name) is None:
+        if self.buffer.get_tag_table().lookup(name) is None:
             self.buffer.create_tag(name, left_margin=left, indent=indent)
         return name
 
-    def _size_rule(self, separator, left, width) -> None:
+    def _size_rule(
+        self, separator: Gtk.Separator, left: int, width: int
+    ) -> None:
         room = width - left - self.get_right_margin()
         separator.set_size_request(max(room, 1), -1)
 
     # Pictures
 
-    def _picture_came(self, data, picture, rendering) -> None:
+    def _picture_came(
+        self, data: bytes, picture: _Picture, rendering: int
+    ) -> None:
         if rendering != self._rendering:
             # another README now
             return
         pixbuf = read_picture(data)
         if pixbuf is None:
             return
+        assert picture.mark is not None, "its text is there until it comes"
         # the picture takes the place of its text, and its tags
         start = self.buffer.get_iter_at_mark(picture.mark)
         end = start.copy()
@@ -637,10 +662,10 @@ class MarkdownView(Gtk.TextView):
         self.add_child_at_anchor(picture.image, anchor)
         self._size_picture(picture, self.get_allocated_width())
 
-    def _size_picture(self, picture, width) -> None:
+    def _size_picture(self, picture: _Picture, width: int) -> None:
         """The picture as wide as it is, or as the room in its line."""
 
-        if picture.pixbuf is None or width <= 1:
+        if picture.pixbuf is None or picture.image is None or width <= 1:
             # not yet
             return
         room = width - picture.left - self.get_right_margin()
@@ -675,22 +700,24 @@ class MarkdownView(Gtk.TextView):
                 return href
         return None
 
-    def _iter_at(self, x, y) -> Gtk.TextIter | None:
+    def _iter_at(self, x: float, y: float) -> Gtk.TextIter | None:
         bx, by = self.window_to_buffer_coords(
             Gtk.TextWindowType.TEXT, int(x), int(y)
         )
         found = self.get_iter_at_location(bx, by)
         if isinstance(found, tuple):
-            found, it = found
-            return it if found else None
+            inside, it = found
+            return it if inside else None
         return found
 
     # Signals
 
-    def on_style_updated(self, view) -> None:
+    def on_style_updated(self, view: Gtk.Widget) -> None:
         self.update_colors()
 
-    def on_button_release_event(self, view, event) -> bool:
+    def on_button_release_event(
+        self, view: Gtk.Widget, event: Gdk.EventButton
+    ) -> bool:
         if event.button != 1 or self.buffer.get_has_selection():
             return False
         it = self._iter_at(event.x, event.y)
@@ -700,7 +727,9 @@ class MarkdownView(Gtk.TextView):
         open_link(self, href)
         return True
 
-    def on_motion_notify_event(self, view, event) -> bool:
+    def on_motion_notify_event(
+        self, view: Gtk.Widget, event: Gdk.EventMotion
+    ) -> bool:
         it = self._iter_at(event.x, event.y)
         hovering = it is not None and self.link_at(it) is not None
         if hovering != self._hovering:
@@ -713,13 +742,15 @@ class MarkdownView(Gtk.TextView):
                 window.set_cursor(cursor)
         return False
 
-    def on_size_allocate(self, view, allocation) -> None:
+    def on_size_allocate(
+        self, view: Gtk.Widget, allocation: Gdk.Rectangle
+    ) -> None:
         for separator, left in self._rules:
             self._size_rule(separator, left, allocation.width)
         if self._pictures and self._fitting is None:
             self._fitting = GLib.idle_add(self._fit_later)
 
-    def on_destroy(self, view) -> None:
+    def on_destroy(self, view: Gtk.Widget) -> None:
         if self._fitting is not None:
             GLib.source_remove(self._fitting)
             self._fitting = None

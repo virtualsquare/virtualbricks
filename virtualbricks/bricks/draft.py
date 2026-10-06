@@ -116,9 +116,10 @@ class Draft:
 
         self.brick.update_config(changes)
 
-    def get(self, name: str) -> object:
+    def get(self, name: str) -> Any:
         """The value of a setting, as it was typed if its kind refused it."""
 
+        # Any: of the type of the setting's kind, which mypy can't tell by name
         if name in self.refused:
             return self.refused[name][0]
         return getattr(self.settings, name)

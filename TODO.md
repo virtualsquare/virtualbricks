@@ -308,7 +308,7 @@
 ## Types
 
 - [ ] Fix the errors that mypy finds, a package at a time as `config/`,
-  `console/`, `bricks/` and `remote/` (130 on 6 Oct 2026, all in `gui/`):
+  `console/`, `bricks/` and `remote/` (111 on 6 Oct 2026, all in `gui/`):
   widgets maybe `None`, and the schemas' constructors called with values
   of the wrong type, now that mypy knows them. Or keep a baseline and fail
   only on new errors
@@ -320,6 +320,12 @@
   `scripts/` (0–2% on 6 Oct 2026)
 
 # DONE
+
+- [x] Type the modules of `gui/` but `gui.py`: `form.py`, `graphics.py`,
+  `imageinfo.py`, `markdownview.py`, `messages.py` and `pathentry.py`,
+  checked strictly; `engine.Engine` is the engine the windows take, local or
+  over a connection, and `Draft.get()` gives an `Any`, as a setting's kind
+  says
 
 - [x] No mypy error in `qemu/`, `vde.py` and `programs.py`: the cache of
   the answers of the programs keeps the type of each; `qemu/` is checked

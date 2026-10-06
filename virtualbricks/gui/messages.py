@@ -24,8 +24,11 @@ whether it's the output of a brick's program. :class:`MessageLog` keeps the
 latest entries and tells the windows that show them what changes.
 """
 
+from __future__ import annotations
+
 import collections
 import itertools
+from typing import TYPE_CHECKING, Any, Protocol
 
 import attr
 from gi.repository import GLib
@@ -34,6 +37,9 @@ from zope.interface import implementer
 
 from virtualbricks.bricks import Base
 from virtualbricks.i18n import _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.logger import LogEvent
 
 # The output of a brick's program is logged with one of these as "stream".
 STREAMS = ("stdout", "stderr")
@@ -46,28 +52,28 @@ LIMIT = 2000
 class Entry:
     """A message of the log, ready to show."""
 
-    number = attr.field()
-    time = attr.field()
-    level = attr.field()
+    number: int = attr.field()
+    time: float = attr.field()
+    level: str = attr.field()
     # "stdout" or "stderr" for the output of a brick's program, else None
-    stream = attr.field()
+    stream: str | None = attr.field()
     # the brick or event, else the part of Virtualbricks
-    source = attr.field()
+    source: str = attr.field()
     # the type of the brick or "event", else None
-    source_type = attr.field()
-    namespace = attr.field()
-    pid = attr.field()
-    lines = attr.field()
-    traceback = attr.field()
+    source_type: str | None = attr.field()
+    namespace: str = attr.field()
+    pid: int | None = attr.field()
+    lines: list[str] = attr.field()
+    traceback: list[str] = attr.field()
     # the whole message as text, for saving and bug reports
-    text = attr.field()
+    text: str = attr.field()
 
     @property
-    def is_output(self):
+    def is_output(self) -> bool:
         return self.stream is not None
 
     @property
-    def category(self):
+    def category(self) -> str:
         """What the status bar counts it as: output, error, warn or info."""
 
         if self.is_output:
@@ -77,7 +83,7 @@ class Entry:
         return self.level
 
     @property
-    def rank(self):
+    def rank(self) -> int:
         """The level, for the level: filter; output of stderr is a warning."""
 
         if self.stream == "stderr":
@@ -87,13 +93,13 @@ class Entry:
         return LEVELS.index(self.level)
 
     @property
-    def calls(self):
+    def calls(self) -> int:
         """The number of calls in the traceback."""
 
         return sum(1 for line in self.traceback if line.startswith('  File "'))
 
 
-def part_name(namespace):
+def part_name(namespace: str) -> str:
     """The part of Virtualbricks that a logger namespace belongs to."""
 
     parts = (
@@ -119,7 +125,7 @@ def part_name(namespace):
     return namespace.split(".")[0].capitalize() or "Virtualbricks"
 
 
-def type_name(source_type):
+def type_name(source_type: str) -> str:
     """How the type of a brick is called, in words."""
 
     names = {
@@ -138,7 +144,7 @@ def type_name(source_type):
     return names.get(source_type, source_type)
 
 
-def describe_source(event):
+def describe_source(event: LogEvent) -> tuple[str, str | None]:
     """Return the name and the type of the brick of an event, or its part."""
 
     source = event.get("log_source")
@@ -150,7 +156,7 @@ def describe_source(event):
     return part_name(event.get("log_namespace", "")), None
 
 
-def _lines(event, stream):
+def _lines(event: LogEvent, stream: str | None) -> list[str]:
     text = formatEvent(event)
     if stream is not None:
         # as the program printed it, without the empty lines at the end
@@ -165,7 +171,7 @@ def _lines(event, stream):
     ]
 
 
-def _traceback(event):
+def _traceback(event: LogEvent) -> list[str]:
     failure = event.get("log_failure")
     if failure is None:
         return []
@@ -176,7 +182,7 @@ def _traceback(event):
     return text.rstrip("\n").split("\n")
 
 
-def entry_from_event(event, number):
+def entry_from_event(event: LogEvent, number: int) -> Entry:
     level = event.get("log_level", LogLevel.info)
     stream = event.get("stream")
     if stream not in STREAMS:
@@ -209,11 +215,11 @@ class Filter:
     the message or its source.
     """
 
-    level = attr.field(default=None)
-    sources = attr.field(factory=frozenset)
-    words = attr.field(factory=tuple)
+    level: str | None = attr.field(default=None)
+    sources: frozenset[str] = attr.field(factory=frozenset)
+    words: tuple[str, ...] = attr.field(factory=tuple)
 
-    def match(self, entry):
+    def match(self, entry: Entry) -> bool:
         if self.level is not None and entry.rank < LEVELS.index(self.level):
             return False
         if self.sources and not (
@@ -227,10 +233,10 @@ class Filter:
         return True
 
 
-def parse_filter(text):
+def parse_filter(text: str) -> Filter:
     level = None
-    sources = set()
-    words = []
+    sources: set[str] = set()
+    words: list[str] = []
     for token in text.split():
         key, sep, value = token.partition(":")
         key = key.lower()
@@ -244,6 +250,14 @@ def parse_filter(text):
     return Filter(level, frozenset(sources), tuple(words))
 
 
+class Listener(Protocol):
+    """A window that shows the messages."""
+
+    def message_added(self, entry: Entry, dropped: Entry | None) -> None: ...
+
+    def messages_cleared(self) -> None: ...
+
+
 class MessageLog:
     """
     The latest messages, and the windows that show them.
@@ -253,28 +267,30 @@ class MessageLog:
     ``messages_cleared()``.
     """
 
-    def __init__(self, limit=LIMIT):
-        self.entries = collections.deque(maxlen=limit)
-        self.counts = collections.Counter()
+    def __init__(self, limit: int = LIMIT) -> None:
+        self.entries: collections.deque[Entry] = collections.deque(
+            maxlen=limit
+        )
+        self.counts: collections.Counter[str] = collections.Counter()
         self._numbers = itertools.count(1)
-        self._listeners = []
+        self._listeners: list[Listener] = []
 
-    def subscribe(self, listener):
+    def subscribe(self, listener: Listener) -> None:
         self._listeners.append(listener)
 
-    def unsubscribe(self, listener):
+    def unsubscribe(self, listener: Listener) -> None:
         self._listeners.remove(listener)
 
-    def _count(self, entry, sign):
+    def _count(self, entry: Entry, sign: int) -> None:
         if entry.is_output:
             self.counts["output lines"] += sign * len(entry.lines)
         else:
             self.counts[entry.category] += sign
 
-    def add_event(self, event):
+    def add_event(self, event: LogEvent) -> Entry:
         return self._add(entry_from_event(event, next(self._numbers)))
 
-    def add_message(self, message, where):
+    def add_message(self, message: dict[str, Any], where: str) -> Entry:
         """
         A message of the log of the Virtualbricks at where, as the windows
         of another machine get it: its source says where it comes from.
@@ -310,7 +326,7 @@ class MessageLog:
             )
         return self._add(entry)
 
-    def _add(self, entry):
+    def _add(self, entry: Entry) -> Entry:
         dropped = None
         if len(self.entries) == self.entries.maxlen:
             dropped = self.entries[0]
@@ -321,13 +337,13 @@ class MessageLog:
             listener.message_added(entry, dropped)
         return entry
 
-    def clear(self):
+    def clear(self) -> None:
         self.entries.clear()
         self.counts.clear()
         for listener in list(self._listeners):
             listener.messages_cleared()
 
-    def text(self):
+    def text(self) -> str:
         """The messages as text, as the log file has them."""
 
         return "".join(entry.text + "\n" for entry in self.entries)
@@ -337,14 +353,14 @@ class MessageLog:
 class MessageLogObserver:
     """A log observer that adds the events to a MessageLog."""
 
-    def __init__(self, messages):
+    def __init__(self, messages: MessageLog) -> None:
         self.messages = messages
 
-    def __call__(self, event):
+    def __call__(self, event: LogEvent) -> None:
         # Events can come from any thread: add them in the main loop.
         GLib.idle_add(self._add, event)
 
-    def _add(self, event):
+    def _add(self, event: LogEvent) -> bool:
         self.messages.add_event(event)
         # run once
         return False

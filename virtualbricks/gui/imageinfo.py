@@ -35,9 +35,15 @@ from __future__ import annotations
 
 import enum
 import os
+from collections.abc import Iterable, Sequence
+from typing import TYPE_CHECKING
 
 from virtualbricks.i18n import _, ngettext
 from virtualbricks.locations import short_path
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
+    from virtualbricks.config.images import DiskUse, ImageInfo
 
 # Between the parts of a line.
 SEPARATOR = " · "
@@ -80,7 +86,7 @@ def names(items: list[str]) -> str:
     )
 
 
-def state(image, uses, there: bool) -> State:
+def state(image: Image, uses: Sequence[DiskUse], there: bool) -> State:
     """
     The state of image, which the disks of uses use; there says whether its
     file is on the machine of the bricks.
@@ -95,7 +101,7 @@ def state(image, uses, there: bool) -> State:
     return State.NO_DISK
 
 
-def facts(info) -> str:
+def facts(info: ImageInfo) -> str:
     """The format and the sizes of an image: "qcow2 · 4.0 GB disk · …"."""
 
     return SEPARATOR.join(
@@ -107,9 +113,9 @@ def facts(info) -> str:
     )
 
 
-def _machines(uses) -> list[str]:
+def _machines(uses: Iterable[DiskUse]) -> list[str]:
     # each machine once, in its order
-    found = []
+    found: list[str] = []
     for use in uses:
         name = use.vm.name
         if name not in found:
@@ -117,7 +123,7 @@ def _machines(uses) -> list[str]:
     return found
 
 
-def use_words(uses) -> str:
+def use_words(uses: Sequence[DiskUse]) -> str:
     """Which machines use an image, and how: "r1 and r2, private copies"."""
 
     if not uses:
@@ -140,7 +146,9 @@ def use_words(uses) -> str:
     return SEPARATOR.join(parts)
 
 
-def summary(image, info, uses, there: bool) -> str:
+def summary(
+    image: Image, info: ImageInfo | None, uses: Sequence[DiskUse], there: bool
+) -> str:
     """
     What the row of image says: its facts, once read, and who uses it; or
     that its file isn't there.
@@ -154,7 +162,9 @@ def summary(image, info, uses, there: bool) -> str:
     return SEPARATOR.join((facts(info), use_words(uses)))
 
 
-def tooltip(image, image_state: State, uses) -> str | None:
+def tooltip(
+    image: Image, image_state: State, uses: Sequence[DiskUse]
+) -> str | None:
     """What the state of image says, when pointed at."""
 
     if image_state is State.MISSING:
@@ -170,13 +180,13 @@ def tooltip(image, image_state: State, uses) -> str | None:
 # The picker and the disks of a machine
 
 
-def short_facts(info) -> str:
+def short_facts(info: ImageInfo) -> str:
     """The format and the size of the disk: "qcow2 · 4.0 GB"."""
 
     return SEPARATOR.join((info.format, human_size(info.virtual_size)))
 
 
-def others_words(uses, vm) -> str:
+def others_words(uses: Sequence[DiskUse], vm: VirtualMachine) -> str:
     """
     Which machines other than vm use an image, and how: "r2 and r3 use it ·
     gw writes into it"; empty for none.
@@ -201,7 +211,13 @@ def others_words(uses, vm) -> str:
     return SEPARATOR.join(parts)
 
 
-def option_words(image, info, uses, vm, there: bool) -> str:
+def option_words(
+    image: Image,
+    info: ImageInfo | None,
+    uses: Sequence[DiskUse],
+    vm: VirtualMachine,
+    there: bool,
+) -> str:
     """What the picker of a disk of vm says of image, under its name."""
 
     if not there:
@@ -213,7 +229,15 @@ def option_words(image, info, uses, vm, there: bool) -> str:
     return SEPARATOR.join(parts)
 
 
-def disk_line(vm, image, saved, private, copy, copy_size, there) -> str:
+def disk_line(
+    vm: str,
+    image: Image | None,
+    saved: Image | None,
+    private: bool,
+    copy: str,
+    copy_size: int | None,
+    there: bool,
+) -> str:
     """
     What a disk of the machine named vm does with image in its mode: its
     private copy, copy, which takes copy_size or isn't made yet (None), or

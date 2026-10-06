@@ -44,6 +44,7 @@ for what only keeps the brick from starting.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Sequence
+from typing import TYPE_CHECKING, Any
 
 import gi
 
@@ -55,6 +56,11 @@ from virtualbricks.config.schema import Float, info_of, kind_of  # noqa: E402
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.gui.pathentry import PathCompletion  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.draft import Draft
+    from virtualbricks.bricks.sock import Sock
+    from virtualbricks.engine import Engine
 
 # Between the sections, and around the texts of a row, in pixels.
 GAP = 8
@@ -70,7 +76,7 @@ _css = Gtk.CssProvider()
 _css.load_from_data(b"label.lack { color: @warning_color; }")
 
 
-def show_problem(label: Gtk.Label, problem) -> None:
+def show_problem(label: Gtk.Label, problem: Problem | None) -> None:
     """A problem in label: red for an error, else the colour of warnings."""
 
     label.set_text("" if problem is None else problem.text)
@@ -86,7 +92,7 @@ def show_problem(label: Gtk.Label, problem) -> None:
             context.remove_class(name)
 
 
-def _separate(row, before) -> None:
+def _separate(row: Gtk.ListBoxRow, before: Gtk.ListBoxRow | None) -> None:
     """A line between two rows."""
 
     if before is not None and row.get_header() is None:
@@ -104,11 +110,11 @@ def set_options(combo: Gtk.ComboBoxText, options: Iterable[str]) -> None:
         combo.append(option, option)
 
 
-def _is_line(model, row) -> bool:
+def _is_line(model: Gtk.TreeModel, row: Gtk.TreeIter) -> bool:
     return model[row][0] == ""
 
 
-def socket_name(sock) -> str:
+def socket_name(sock: Sock) -> str:
     """A switch by its name, the socket of another brick by its own."""
 
     if sock.brick.get_type().startswith("Switch"):
@@ -130,7 +136,7 @@ class Row(Gtk.ListBoxRow):
         # the other settings of the row, by name, and their widgets
         self.parts: dict[str, Gtk.Widget] = {}
         # shows the draft's value again
-        self.load: Callable[[], None] = lambda: None
+        self.load: Callable[[], object] = lambda: None
         grid = Gtk.Grid(
             visible=True,
             column_spacing=16,
@@ -201,7 +207,10 @@ class Form:
     """The sections and the rows of a panel, on a draft."""
 
     def __init__(
-        self, draft, changed: Callable[[], None], engine=None
+        self,
+        draft: Draft,
+        changed: Callable[[], None],
+        engine: Engine | None = None,
     ) -> None:
         self.draft = draft
         self.changed = changed
@@ -345,7 +354,7 @@ class Form:
         row.title.set_mnemonic_widget(forward)
         row.parts = {reverse: backward, symmetric: both}
 
-        def load():
+        def load() -> None:
             forward.set_value(self.draft.get(name))
             backward.set_value(self.draft.get(reverse))
             both.set_active(self.draft.get(symmetric))
@@ -367,7 +376,7 @@ class Form:
         spin.set_increments(1, 10)
         spin.set_value(value)
 
-        def on_changed(widget):
+        def on_changed(widget: Gtk.SpinButton) -> None:
             number = (
                 widget.get_value() if is_float else widget.get_value_as_int()
             )
@@ -405,6 +414,7 @@ class Form:
         combo.set_row_separator_func(_is_line)
         set_options(combo, options)
         entry = combo.get_child()
+        assert isinstance(entry, Gtk.Entry), "new_with_entry() made it"
         entry.set_width_chars(20)
         entry.set_text(self.draft.get(name))
         entry.connect(
@@ -415,9 +425,7 @@ class Form:
         row.load = lambda: entry.set_text(self.draft.get(name))
         return combo
 
-    def value(
-        self, name: str, show: Callable[[object], str] = str
-    ) -> Gtk.Label:
+    def value(self, name: str, show: Callable[[Any], str] = str) -> Gtk.Label:
         """A setting shown, as show() writes it, and not changed."""
 
         label = Gtk.Label(
@@ -444,7 +452,10 @@ class Form:
         if self.engine is not None and not self.engine.local:
             # a chooser shows the files of this computer: typed, with the
             # folders there to complete it (19 R9)
-            entry.completer = PathCompletion(self.engine, entry, folder)
+            # kept as long as the entry
+            entry.completer = PathCompletion(  # type: ignore[attr-defined]
+                self.engine, entry, folder
+            )
         else:
             button = Gtk.Button.new_from_icon_name(
                 "document-open-symbolic", Gtk.IconSize.BUTTON
@@ -458,14 +469,19 @@ class Form:
         row.load = lambda: entry.set_text(self.draft.get(name))
         return entry
 
-    def _choose(self, button, entry, title: str, folder: bool) -> None:
+    def _choose(
+        self, button: Gtk.Button, entry: Gtk.Entry, title: str, folder: bool
+    ) -> None:
         if folder:
             action = Gtk.FileChooserAction.SELECT_FOLDER
         else:
             action = Gtk.FileChooserAction.OPEN
+        toplevel = button.get_toplevel()
         dialog = Gtk.FileChooserDialog(
             title=title,
-            transient_for=button.get_toplevel(),
+            transient_for=(
+                toplevel if isinstance(toplevel, Gtk.Window) else None
+            ),
             modal=True,
             action=action,
         )
@@ -478,7 +494,7 @@ class Form:
         if entry.get_text():
             dialog.set_filename(entry.get_text())
 
-        def on_response(dialog, response):
+        def on_response(dialog: Gtk.FileChooserDialog, response: int) -> None:
             if response == Gtk.ResponseType.ACCEPT:
                 entry.set_text(dialog.get_filename() or "")
             dialog.destroy()
@@ -517,6 +533,7 @@ class Form:
         box = Gtk.Box(visible=True)
         box.get_style_context().add_class("linked")
         group = None
+        buttons: dict[str, Gtk.RadioButton] = {}
         for option, words in options:
             button = Gtk.RadioButton(
                 visible=True, label=words, draw_indicator=False, group=group
@@ -525,10 +542,10 @@ class Form:
             button.set_active(option == value)
             button.connect("toggled", self._on_toggled, name, option)
             box.pack_start(button, False, False, 0)
+            buttons.setdefault(option, button)
         row = self._row(name, box)
-        buttons = dict(zip(dict(options), box.get_children()))
 
-        def load():
+        def load() -> None:
             button = buttons.get(self.draft.get(name))
             if button is not None:
                 button.set_active(True)
@@ -536,7 +553,9 @@ class Form:
         row.load = load
         return box
 
-    def _on_toggled(self, button, name: str, option: str) -> None:
+    def _on_toggled(
+        self, button: Gtk.ToggleButton, name: str, option: str
+    ) -> None:
         if button.get_active():
             self._set(name, option)
 
@@ -556,7 +575,7 @@ class Form:
         else:
             combo.set_active_id(str(sockets.index(current)))
 
-        def on_changed(widget):
+        def on_changed(widget: Gtk.ComboBoxText) -> None:
             chosen = widget.get_active_id()
             sock = sockets[int(chosen)] if chosen else None
             self.draft.link(index, sock)

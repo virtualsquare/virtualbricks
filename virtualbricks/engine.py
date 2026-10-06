@@ -40,7 +40,7 @@ from __future__ import annotations
 import os
 import signal
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 from twisted.internet import defer, error, reactor, threads
 
@@ -91,6 +91,11 @@ if TYPE_CHECKING:  # pragma: no cover
         Workspace,
     )
     from virtualbricks.programs import FolderPrograms, Programs, QemuInfo
+    from virtualbricks.remote.client import RemoteEngine
+
+# What the windows go through: the engine of this process, or one over a
+# connection to another Virtualbricks.
+Engine: TypeAlias = "LocalEngine | RemoteEngine"
 
 # How many entries of a folder the completion of a path gets at once.
 FOLDER_LIMIT = 200
