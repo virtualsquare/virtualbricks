@@ -308,7 +308,7 @@
 ## Types
 
 - [ ] Fix the errors that mypy finds, a package at a time as `config/`,
-  `console/` and `bricks/` (165 on 6 Oct 2026): widgets maybe `None`,
+  `console/` and `bricks/` (155 on 6 Oct 2026): widgets maybe `None`,
   `Deferred[X]` for `Deferred[object]` in `programs.py`, settings that are
   `str | bool` given where a `str` goes, and the schemas' constructors
   called with values of the wrong type, now that mypy knows them. Or keep a
@@ -321,6 +321,11 @@
   `console/control.py`, `remote/` (0–15% on 6 Oct 2026)
 
 # DONE
+
+- [x] Type `engine.py`, `i18n.py`, `ksm.py`, `locations.py`,
+  `observable.py`, `settingsdraft.py`, `terminal.py` and `topology.py` in
+  full, checked strictly; the topology leaves out the cards in the
+  host-only network, which made it fail
 
 - [x] Type `virtualbricks/bricks/` in full, checked strictly: `is_event()`
   and `is_disk_image()` are type guards, as `is_virtualmachine()`, and

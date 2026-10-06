@@ -28,12 +28,18 @@ SOURCE_LOCALEDIR = join(dirname(dirname(abspath(__file__))), "locale")
 NAMES = ["gettext", "ngettext"]
 
 
+# gettext.install() puts gettext and ngettext in the builtins, out of the
+# sight of mypy.
+
+
 def _(message: str) -> str:
-    return builtins.gettext(message)
+    return builtins.gettext(message)  # type: ignore[attr-defined]
 
 
 def ngettext(singular: str, plural: str, count: int) -> str:
-    return builtins.ngettext(singular, plural, count)
+    return builtins.ngettext(  # type: ignore[attr-defined]
+        singular, plural, count
+    )
 
 
 def N_(message: str) -> str:
@@ -49,7 +55,7 @@ def N_(message: str) -> str:
     return message
 
 
-def find_localedir():
+def find_localedir() -> str | None:
     """
     Return the directory that holds the compiled catalogs, or None.
 
@@ -68,7 +74,7 @@ def find_localedir():
     return None
 
 
-def install():
+def install() -> None:
     """
     Set up translations: the locale, the domain of the C libraries such as
     GTK, and the ``_``, ``gettext`` and ``ngettext`` builtins.

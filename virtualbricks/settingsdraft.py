@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import shutil
 from collections.abc import Callable, Iterable, Sequence
+from typing import Any
 
 import attr
 
@@ -124,7 +125,7 @@ class Owner:
         self.setting = setting
         self.write = write
 
-    def read(self):
+    def read(self) -> Any:
         return self.record(
             **{name: self.setting(name) for name in field_names(self.record)}
         )
@@ -142,13 +143,13 @@ class SettingsDraft(Draft):
         self.failed: dict[str, str] = {}
         super().__init__(owner)
 
-    def read(self):
+    def read(self) -> Any:
         return self.brick.read()
 
-    def give(self, changes: dict[str, object]):
-        """Write the settings that changed; what the owner's write gives."""
+    def give(self, changes: dict[str, object]) -> None:
+        """Write the settings that changed."""
 
-        return self.brick.write(changes)
+        self.brick.write(changes)
 
     def set(self, name: str, value: object) -> None:
         self.failed.pop(name, None)
@@ -287,7 +288,7 @@ class SettingsDraft(Draft):
                 problems.append(problem)
         return problems
 
-    def _check_terminal(self, name: str, terminal) -> Problem | None:
+    def _check_terminal(self, name: str, terminal: str) -> Problem | None:
         if not terminal:
             text = _("No terminal: the consoles of the bricks can't open")
         elif self.facts.which(terminal) is None:
@@ -299,7 +300,7 @@ class SettingsDraft(Draft):
             return None
         return Problem(name, text, error=False)
 
-    def _check_audio_driver(self, name: str, driver) -> Problem | None:
+    def _check_audio_driver(self, name: str, driver: str) -> Problem | None:
         drivers = self.facts.audio_drivers
         if not self.facts.qemu_version or drivers is None or driver in drivers:
             return None
@@ -312,7 +313,7 @@ class SettingsDraft(Draft):
             error=False,
         )
 
-    def _check_folder(self, name: str, folder) -> Problem | None:
+    def _check_folder(self, name: str, folder: str) -> Problem | None:
         found = getattr(self.facts, name.removesuffix("_path"))
         if found is None or found.folder != folder:
             return None

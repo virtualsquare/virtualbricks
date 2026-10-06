@@ -33,10 +33,16 @@ from __future__ import annotations
 
 import os
 
+from typing import TYPE_CHECKING, cast
+
 from twisted.internet import defer, error, protocol
 from twisted.logger import Logger
 
 from virtualbricks.sudo import sudo_command
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.interfaces import IReactorProcess
+    from twisted.python.failure import Failure
 
 KSM_PATH = "/sys/kernel/mm/ksm/run"
 logger = Logger()
@@ -69,26 +75,31 @@ class _WriteProtocol(protocol.ProcessProtocol):
     ProcessTerminated.
     """
 
-    def __init__(self, value: bytes, done: defer.Deferred) -> None:
+    def __init__(
+        self, value: bytes, done: defer.Deferred[BaseException]
+    ) -> None:
         self.value = value
         self.done = done
 
     def connectionMade(self) -> None:
+        assert self.transport is not None, "tee runs"
         self.transport.write(self.value)
         self.transport.closeStdin()
 
-    def processEnded(self, reason) -> None:
+    def processEnded(self, reason: Failure) -> None:
         # the exception: a Failure would fail done
         self.done.callback(reason.value)
 
 
-def _ended(reason: Exception, enable: bool) -> bool:
+def _ended(reason: BaseException, enable: bool) -> bool:
     if not isinstance(reason, error.ProcessDone):
         logger.error(ksm_error, state=_state(enable), error=reason)
     return check_ksm()
 
 
-def set_ksm(enable: bool, reactor=None) -> defer.Deferred:
+def set_ksm(
+    enable: bool, reactor: IReactorProcess | None = None
+) -> defer.Deferred[bool]:
     """
     Turn KSM on or off; the Deferred fires with the state of KSM then, and
     never fails.
@@ -106,9 +117,11 @@ def set_ksm(enable: bool, reactor=None) -> defer.Deferred:
             logger.error(ksm_error, state=_state(enable), error=exc)
         return defer.succeed(check_ksm())
     if reactor is None:
-        from twisted.internet import reactor
+        from twisted.internet import reactor as default
+
+        reactor = cast("IReactorProcess", default)
     args = sudo_command(["tee", KSM_PATH])
-    done = defer.Deferred()
+    done: defer.Deferred[BaseException] = defer.Deferred()
     try:
         reactor.spawnProcess(
             _WriteProtocol(value, done), args[0], args, os.environ

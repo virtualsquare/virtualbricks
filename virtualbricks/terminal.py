@@ -33,6 +33,8 @@ the other sequences, the colours of ``m`` too, and the other control
 characters: a log has no screen to clear, nor a cursor to move up.
 """
 
+from __future__ import annotations
+
 import codecs
 import re
 
@@ -67,19 +69,19 @@ class Lines:
     that the program didn't end.
     """
 
-    def __init__(self, encoding):
+    def __init__(self, encoding: str) -> None:
         self._decoder = codecs.getincrementaldecoder(encoding)("replace")
         # the start of a sequence that the next piece ends
         self._pending = ""
-        self._cells = []
+        self._cells: list[str] = []
         self._column = 0
 
-    def feed(self, data):
+    def feed(self, data: bytes) -> list[str]:
         """Read data, bytes, and return the lines that it ends."""
 
         return self._read(self._decoder.decode(data))
 
-    def flush(self):
+    def flush(self) -> list[str]:
         """The lines that the program didn't end, as feed() returns them."""
 
         lines = self._read(self._decoder.decode(b"", final=True))
@@ -90,7 +92,7 @@ class Lines:
             lines.append(self._end_line())
         return lines
 
-    def _read(self, text):
+    def _read(self, text: str) -> list[str]:
         text = self._pending + text
         self._pending = ""
         lines = []
@@ -123,20 +125,20 @@ class Lines:
                 position += 1
         return lines
 
-    def _end_line(self):
+    def _end_line(self) -> str:
         line = "".join(self._cells)
         self._cells = []
         self._column = 0
         return line
 
-    def _write(self, text):
+    def _write(self, text: str) -> None:
         cells = self._cells
         if self._column > len(cells):
             cells.extend(" " * (self._column - len(cells)))
         cells[self._column : self._column + len(text)] = text
         self._column += len(text)
 
-    def _control(self, char):
+    def _control(self, char: str) -> None:
         if char == "\r":
             self._column = 0
         elif char == "\b":
@@ -144,7 +146,7 @@ class Lines:
         elif char == "\t":
             self._column = (self._column // TAB + 1) * TAB
 
-    def _csi(self, params, final):
+    def _csi(self, params: str, final: str) -> None:
         # ? K, a selective erase, erases as K does
         first = params.lstrip("<=>?").split(";")[0]
         number = int(first) if first.isdigit() else 0
@@ -172,7 +174,7 @@ class Lines:
             if column < len(cells):
                 cells[column:column] = " " * count
 
-    def _blank(self, start, end):
+    def _blank(self, start: int, end: int) -> None:
         """Erase from start to end: the blanks at the end go."""
 
         cells = self._cells

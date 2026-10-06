@@ -40,8 +40,15 @@ from __future__ import annotations
 
 import dataclasses
 import math
+from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING
 
 import pygraphviz
+
+from virtualbricks.bricks.sock import Sock
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks import Brick
 
 # The icon and the line of the name, at 100%.
 ICON = 64
@@ -62,7 +69,7 @@ POINTS_PER_INCH = 72
 class Node:
     """A brick and its box: its centre, width and height."""
 
-    brick: object
+    brick: Brick
     x: float
     y: float
     width: float
@@ -73,8 +80,8 @@ class Node:
 class Link:
     """A link between two bricks, as a curve."""
 
-    tail: object
-    head: object
+    tail: Brick
+    head: Brick
     points: tuple[tuple[float, float], ...]
 
 
@@ -88,7 +95,7 @@ class Layout:
     links: tuple[Link, ...] = ()
 
 
-def links(bricks) -> list[tuple[object, object]]:
+def links(bricks: Iterable[Brick]) -> list[tuple[Brick, Brick]]:
     """
     The links of the bricks, as (tail, head): the tail comes first in the
     layout.
@@ -98,7 +105,8 @@ def links(bricks) -> list[tuple[object, object]]:
     for brick in bricks:
         connected = 0
         for plug in brick.plugs:
-            if plug.sock is None:
+            # in nothing, or in the host-only network: no brick at the end
+            if not isinstance(plug.sock, Sock):
                 continue
             other = plug.sock.brick
             if brick.get_type() == "Tap":
@@ -136,7 +144,11 @@ def estimate(name: str) -> float:
     return len(name) * CHAR_WIDTH
 
 
-def layout(bricks, direction: str = "LR", measure=estimate) -> Layout:
+def layout(
+    bricks: Iterable[Brick],
+    direction: str = "LR",
+    measure: Callable[[str], float] = estimate,
+) -> Layout:
     """
     Lay the bricks out, left to right ("LR") or top to bottom ("TB").
     measure(name) is the width of a name at 100%, in points.
@@ -170,7 +182,7 @@ def layout(bricks, direction: str = "LR", measure=estimate) -> Layout:
         float(value) for value in graph.graph_attr["bb"].split(",")
     )
 
-    def place(x, y):
+    def place(x: float, y: float) -> tuple[float, float]:
         # from Graphviz's bottom left corner, y going up
         return x - left, top - y
 

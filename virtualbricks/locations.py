@@ -56,11 +56,11 @@ WORKSPACE_LOCK_FILE = ".virtualbricks.lock"
 SYSTEM_LOCK_FILE = "/tmp/virtualbricks.lock"
 
 
-def home():
+def home() -> str:
     return os.path.expanduser("~")
 
 
-def short_path(path):
+def short_path(path: str) -> str:
     """A path, with ~ for the home folder."""
 
     folder = home()
@@ -69,7 +69,7 @@ def short_path(path):
     return path
 
 
-def _xdg_dir(variable, fallback):
+def _xdg_dir(variable: str, fallback: str) -> str:
     # The specification says to ignore relative paths.
     value = os.environ.get(variable, "")
     if os.path.isabs(value):
@@ -77,39 +77,39 @@ def _xdg_dir(variable, fallback):
     return os.path.join(home(), fallback)
 
 
-def config_dir():
+def config_dir() -> str:
     return os.path.join(_xdg_dir("XDG_CONFIG_HOME", ".config"), APP)
 
 
-def state_dir():
+def state_dir() -> str:
     fallback = os.path.join(".local", "state")
     return os.path.join(_xdg_dir("XDG_STATE_HOME", fallback), APP)
 
 
-def settings_file():
+def settings_file() -> str:
     return os.path.join(config_dir(), SETTINGS_FILE)
 
 
-def state_file():
+def state_file() -> str:
     return os.path.join(state_dir(), STATE_FILE)
 
 
-def default_workspace():
+def default_workspace() -> str:
     return os.path.join(home(), ".virtualbricks")
 
 
-def legacy_settings_file():
+def legacy_settings_file() -> str:
     return os.path.join(home(), LEGACY_SETTINGS_FILE)
 
 
-def runtime_dir():
+def runtime_dir() -> str:
     value = os.environ.get("XDG_RUNTIME_DIR", "")
     if os.path.isabs(value):
         return os.path.join(value, APP)
     return os.path.join(tempfile.gettempdir(), f"{APP}-{os.getuid()}")
 
 
-def workspace_key(workspace):
+def workspace_key(workspace: str) -> str:
     """
     The name of the folder of workspace in the runtime directory.
 
@@ -121,50 +121,50 @@ def workspace_key(workspace):
     return digest[:WORKSPACE_KEY_SIZE].decode("ascii").lower()
 
 
-def workspace_runtime_dir(workspace):
+def workspace_runtime_dir(workspace: str) -> str:
     """The runtime directory of workspace: its projects' own are in it."""
 
     return os.path.join(runtime_dir(), workspace_key(workspace))
 
 
-def workspace_lock_file(workspace):
+def workspace_lock_file(workspace: str) -> str:
     """The lock of workspace, which one Virtualbricks at a time holds."""
 
     return os.path.join(workspace, WORKSPACE_LOCK_FILE)
 
 
-def user_lock_file():
+def user_lock_file() -> str:
     # a project's name never starts with a dot, so no project's runtime
     # directory is named like it
     return os.path.join(runtime_dir(), ".lock")
 
 
-def control_socket(workspace):
+def control_socket(workspace: str) -> str:
     """The socket of --listen alone, of the Virtualbricks of workspace."""
 
     # named with a dot, as the link to the workspace
     return os.path.join(workspace_runtime_dir(workspace), CONTROL_SOCKET)
 
 
-def control_lock_file(socket):
+def control_lock_file(socket: str) -> str:
     """The lock that the Virtualbricks listening on socket holds."""
 
     return socket + ".lock"
 
 
-def token_file():
+def token_file() -> str:
     """The token that a client of a tcp or ssl socket proves it knows."""
 
     return os.path.join(config_dir(), TOKEN_FILE)
 
 
-def brick_name_room(runtime_dir):
+def brick_name_room(runtime_dir: str) -> int:
     """The bytes a brick's name can have in the sockets under runtime_dir."""
 
     used = len(os.fsencode(runtime_dir)) + len("/") + BRICK_SOCKET_SUFFIX
     return SOCKET_PATH_MAX - used
 
 
-def ensure_private_dir(path):
+def ensure_private_dir(path: str) -> str:
     os.makedirs(path, mode=0o700, exist_ok=True)
     return path
