@@ -35,9 +35,13 @@ project or of another: the windows offer no more, and a connection gets no
 more than they offer.
 """
 
+from __future__ import annotations
+
 import dataclasses
 import json
 import os
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, NoReturn
 
 from twisted.internet import defer
 from twisted.logger import Logger
@@ -56,6 +60,16 @@ from virtualbricks.remote import commands
 from virtualbricks.remote.drafts import apply_changes
 from virtualbricks.remote.facts import one_value
 
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.bricks import Brick
+    from virtualbricks.bricks.virtualmachine import VirtualMachine
+    from virtualbricks.config.workspace import OpenProject
+    from virtualbricks.remote.follower import Connection as _Base
+else:
+    _Base = amp.CommandLocator
+
 logger = Logger()
 failed = "{command} of {name} failed"
 
@@ -63,15 +77,21 @@ failed = "{command} of {name} failed"
 FORMATS = ("qcow2", "raw")
 
 
-class Answers(amp.CommandLocator):
+class Answers(_Base):
     """
     The answers to Apply, Connect and the commands of the files; the
     connection has brickfactory, requests, pushes_first(), _log_line() and
     _log_failed().
     """
 
-    def _answer_in_order(self, line, name, call, log=True):
-        def refused(failure):
+    def _answer_in_order(
+        self,
+        line: str,
+        name: str,
+        call: Callable[[], object],
+        log: bool = True,
+    ) -> defer.Deferred[Any]:
+        def refused(failure: Failure) -> NoReturn:
             exc = failure.value
             if failure.check(LookupError):
                 # a KeyError's str() has quotes
@@ -91,7 +111,7 @@ class Answers(amp.CommandLocator):
             logger.failure(failed, failure, command=line.split()[0], name=name)
             raise ampwire.CommandFailed(str(exc) or type(exc).__name__)
 
-        def run():
+        def run() -> defer.Deferred[Any]:
             if log:
                 self._log_line(line)
             return defer.maybeDeferred(call).addErrback(refused)
@@ -99,23 +119,25 @@ class Answers(amp.CommandLocator):
         return self.requests.add(run).addBoth(self.pushes_first)
 
     @commands.Apply.responder
-    def apply(self, kind, name, changes, links, extras):
+    def apply(
+        self, kind: str, name: str, changes: str, links: str, extras: str
+    ) -> defer.Deferred[Any]:
         data = {
             "changes": json.loads(changes),
             "links": json.loads(links),
             "extras": json.loads(extras),
         }
 
-        def call():
+        def call() -> dict[str, object]:
             apply_changes(self.brickfactory, kind, name, data)
             return {}
 
         return self._answer_in_order(f"apply {kind} {name}", name, call)
 
     @commands.Connect.responder
-    def connect(self, source, target):
-        def call():
-            bricks = []
+    def connect(self, source: str, target: str) -> defer.Deferred[Any]:
+        def call() -> dict[str, object]:
+            bricks: list[Brick] = []
             for name in (source, target):
                 brick = self.brickfactory.get_brick(name)
                 if brick is None:
@@ -129,7 +151,7 @@ class Answers(amp.CommandLocator):
 
     # The files of the images
 
-    def _vm(self, name):
+    def _vm(self, name: str) -> VirtualMachine:
         vm = self.brickfactory.get_brick(name)
         if vm is None or not is_virtualmachine(vm):
             raise LookupError(
@@ -138,8 +160,10 @@ class Answers(amp.CommandLocator):
         return vm
 
     @commands.MakeImage.responder
-    def make_image(self, path, format, size):
-        def call():
+    def make_image(
+        self, path: str, format: str, size: int
+    ) -> defer.Deferred[Any]:
+        def call() -> defer.Deferred[Any]:
             if format not in FORMATS:
                 raise ValueError(
                     _("The format is {formats}").format(
@@ -163,8 +187,8 @@ class Answers(amp.CommandLocator):
         return self._answer_in_order(f"make image {path}", path, call)
 
     @commands.StartOver.responder
-    def start_over(self, vm, device):
-        def call():
+    def start_over(self, vm: str, device: str) -> defer.Deferred[Any]:
+        def call() -> dict[str, object]:
             machine = self._vm(vm)
             if machine.project_folder() is None:
                 raise ValueError(_("No project is open"))
@@ -178,8 +202,8 @@ class Answers(amp.CommandLocator):
         return self._answer_in_order(f"start over {vm} {device}", vm, call)
 
     @commands.TrashFile.responder
-    def trash_file(self, path):
-        def call():
+    def trash_file(self, path: str) -> defer.Deferred[Any]:
+        def call() -> dict[str, object]:
             path_there = os.path.abspath(path)
             if not images.is_inside(path_there, projects.path):
                 raise ValueError(
@@ -203,8 +227,8 @@ class Answers(amp.CommandLocator):
         return self._answer_in_order(f"trash {path}", path, call)
 
     @commands.Relink.responder
-    def relink(self, name, path):
-        def call():
+    def relink(self, name: str, path: str) -> defer.Deferred[Any]:
+        def call() -> defer.Deferred[Any]:
             image = self.brickfactory.get_image(name)
             if image is None:
                 raise LookupError(_("No image named {name}").format(name=name))
@@ -218,7 +242,7 @@ class Answers(amp.CommandLocator):
     # The projects and the README
 
     @commands.ProjectNames.responder
-    def project_names(self):
+    def project_names(self) -> defer.Deferred[Any]:
         return self._answer_in_order(
             "project names",
             "the workspace",
@@ -227,8 +251,8 @@ class Answers(amp.CommandLocator):
         )
 
     @commands.ProjectSummary.responder
-    def project_summary(self, name):
-        def call():
+    def project_summary(self, name: str) -> defer.Deferred[Any]:
+        def call() -> dict[str, object]:
             if not projects.exists(name):
                 raise LookupError(
                     _("No project named {name}").format(name=name)
@@ -242,23 +266,23 @@ class Answers(amp.CommandLocator):
             f"project summary {name}", name, call, log=False
         )
 
-    def _open_project(self):
+    def _open_project(self) -> OpenProject:
         current = projects.current
         if current is None:
             raise ValueError(_("No project is open"))
         return current
 
     @commands.Readme.responder
-    def readme(self):
-        def call():
+    def readme(self) -> defer.Deferred[Any]:
+        def call() -> dict[str, object]:
             text = self._open_project().get_description()
             return {"text": one_value(text)}
 
         return self._answer_in_order("readme", "the README", call, log=False)
 
     @commands.SetReadme.responder
-    def set_readme(self, text):
-        def call():
+    def set_readme(self, text: str) -> defer.Deferred[Any]:
+        def call() -> dict[str, object]:
             self._open_project().set_description(text)
             return {}
 
@@ -267,8 +291,8 @@ class Answers(amp.CommandLocator):
     # The machine
 
     @commands.SetKsm.responder
-    def set_ksm(self, enable):
-        def call():
+    def set_ksm(self, enable: bool) -> defer.Deferred[Any]:
+        def call() -> defer.Deferred[Any]:
             # it logs why KSM didn't change, and says whether it runs
             setting = ksm.set_ksm(enable)
             return setting.addCallback(lambda enabled: {"enabled": enabled})

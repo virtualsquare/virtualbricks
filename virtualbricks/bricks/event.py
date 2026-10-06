@@ -20,7 +20,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeGuard, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import attr
 from twisted.internet import defer, reactor
@@ -40,6 +40,7 @@ from virtualbricks.config.schema import Int, ListOf, define, field
 
 if TYPE_CHECKING:  # pragma: no cover
     from twisted.internet.interfaces import IDelayedCall, IReactorTime
+    from typing_extensions import TypeIs
 
 process_ended = "Process ended with exit code {code}"
 action_failed = "Event {event}, action {number}, {action}: {error}"
@@ -159,5 +160,5 @@ class Event(Base):
         return changed
 
 
-def is_event(brick: object) -> TypeGuard[Event]:
+def is_event(brick: object) -> TypeIs[Event]:
     return isinstance(brick, Base) and brick.get_type() == "Event"

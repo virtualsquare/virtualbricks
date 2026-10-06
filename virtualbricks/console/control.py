@@ -80,7 +80,6 @@ if TYPE_CHECKING:  # pragma: no cover
         IAddress,
         IDelayedCall,
         IListeningPort,
-        IReactorTime,
         ISSLTransport,
         ITCPTransport,
         ITransport,
@@ -191,7 +190,7 @@ class Visitor(_Connection):
 
     # the factory of the socket, and what the connection waits with
     factory: ControlFactory
-    reactor: IReactorTime
+    reactor: PosixReactorBase
     # who connects, for the log; None on a unix socket
     who: str | None = None
     # what closes the connection when the proof of the token is late
@@ -269,7 +268,7 @@ class ControlProtocol(Visitor, basic.LineOnlyReceiver):
     delimiter = b"\n"
     MAX_LENGTH = wire.MAX_LINE
 
-    def __init__(self, brickfactory: BrickFactory, reactor: IReactorTime):
+    def __init__(self, brickfactory: BrickFactory, reactor: PosixReactorBase):
         # not factory: Twisted sets that, the ControlFactory
         self.brickfactory = brickfactory
         self.reactor = reactor
@@ -442,7 +441,7 @@ class AMPControl(
     LINES = amp.ListOf(amp.Unicode())
 
     def __init__(
-        self, brickfactory: BrickFactory, reactor: IReactorTime
+        self, brickfactory: BrickFactory, reactor: PosixReactorBase
     ) -> None:
         super().__init__()
         # not factory: Twisted sets that, the ControlFactory
@@ -695,7 +694,7 @@ class ControlFactory(protocol.Factory[Any]):
     def __init__(
         self,
         brickfactory: BrickFactory,
-        reactor: IReactorTime,
+        reactor: PosixReactorBase,
         protocol: Callable[..., Connection] = ControlProtocol,
         socket: wire.Socket | None = None,
         token: str | None = None,

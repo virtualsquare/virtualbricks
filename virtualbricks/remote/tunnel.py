@@ -32,10 +32,15 @@ bytes of the console both ways, AMP's ProtocolSwitchCommand, and the
 windows join it to the terminal.
 """
 
+from __future__ import annotations
+
 import os
 import shutil
+from collections.abc import Callable
+from typing import TYPE_CHECKING, NoReturn
 
 from twisted.internet import defer, endpoints, error, protocol
+from twisted.internet.protocol import connectionDone
 from twisted.logger import Logger
 from twisted.protocols import amp
 
@@ -47,6 +52,22 @@ from virtualbricks.config.settings import get_setting
 from virtualbricks.console import ampcommands, ampwire
 from virtualbricks.i18n import _
 from virtualbricks.remote import commands
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.interfaces import (
+        IAddress,
+        IConnector,
+        IListeningPort,
+        IReactorUNIX,
+    )
+    from twisted.internet.posixbase import PosixReactorBase
+    from twisted.python.failure import Failure
+
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks import Brick
+    from virtualbricks.remote.follower import Connection as _Base
+else:
+    _Base = amp.CommandLocator
 
 logger = Logger()
 console_failed = "Cannot open the console of {name}: {error}"
@@ -65,31 +86,32 @@ class Relay(protocol.Protocol):
     the other. What it gets to write before it's connected waits.
     """
 
-    def __init__(self):
-        self.other = None
+    def __init__(self) -> None:
+        self.other: Relay | None = None
         # what it received before the join, what it must write once
         # connected
-        self.received = []
-        self.writing = []
+        self.received: list[bytes] = []
+        self.writing: list[bytes] = []
         self.gone = False
         # closed before it was connected: it closes once it is
         self.closing = False
-        self.lost = defer.Deferred()
+        self.lost: defer.Deferred[None] = defer.Deferred()
 
-    def connectionMade(self):
+    def connectionMade(self) -> None:
+        assert self.transport is not None, "the connection is made"
         writing, self.writing = self.writing, []
         for data in writing:
             self.transport.write(data)
         if self.closing:
             self.transport.loseConnection()
 
-    def dataReceived(self, data):
+    def dataReceived(self, data: bytes) -> None:
         if self.other is None:
             self.received.append(data)
         else:
             self.other.write(data)
 
-    def write(self, data):
+    def write(self, data: bytes) -> None:
         if self.gone:
             return
         if self.transport is None:
@@ -97,7 +119,7 @@ class Relay(protocol.Protocol):
         else:
             self.transport.write(data)
 
-    def close(self):
+    def close(self) -> None:
         if self.gone:
             return
         if self.transport is None:
@@ -105,14 +127,14 @@ class Relay(protocol.Protocol):
         else:
             self.transport.loseConnection()
 
-    def connectionLost(self, reason):
+    def connectionLost(self, reason: Failure = connectionDone) -> None:
         self.gone = True
         if self.other is not None:
             self.other.close()
         self.lost.callback(None)
 
 
-def join(one, other):
+def join(one: Relay, other: Relay) -> None:
     """Join the two ends: what each received goes to the other."""
 
     one.other, other.other = other, one
@@ -121,15 +143,15 @@ def join(one, other):
         for data in received:
             target.write(data)
     # an end gone before the join
-    for end in (one, other):
+    for end, far in ((one, other), (other, one)):
         if end.gone:
-            end.other.close()
+            far.close()
 
 
 # The Virtualbricks of the bricks
 
 
-def console_path(factory, name, console):
+def console_path(factory: BrickFactory, name: str, console: str) -> str:
     """
     The socket of console of the brick name: LookupError if there's no
     brick, ValueError if it has no such console or doesn't run.
@@ -161,21 +183,23 @@ def console_path(factory, name, console):
     )
 
 
-def connect_console(reactor, path, relay):
+def connect_console(
+    reactor: IReactorUNIX, path: str, relay: Relay
+) -> defer.Deferred[Relay]:
     """Connect relay to the console at path: a Deferred of it."""
 
     endpoint = endpoints.UNIXClientEndpoint(reactor, path)
     return endpoints.connectProtocol(endpoint, relay)
 
 
-class Attaching(amp.CommandLocator):
+class Attaching(_Base):
     """
     The answer to Attach; the connection has brickfactory, reactor,
     _log_line() and _log_failed().
     """
 
     @commands.Attach.responder
-    def attach(self, brick, console):
+    def attach(self, brick: str, console: str) -> defer.Deferred[Relay]:
         try:
             path = console_path(self.brickfactory, brick, console)
         except LookupError as exc:
@@ -187,13 +211,13 @@ class Attaching(amp.CommandLocator):
         self._log_line(f"attach {brick} {console}")
         console_end = Relay()
 
-        def connected(_):
+        def connected(_: Relay) -> Relay:
             # the end of the connection, once the answer is written
             connection_end = Relay()
             join(connection_end, console_end)
             return connection_end
 
-        def not_connected(failure):
+        def not_connected(failure: Failure) -> NoReturn:
             if not failure.check(error.ConnectError):
                 logger.failure(attach_failed, failure, name=brick)
                 raise ampwire.CommandFailed(failure.getErrorMessage())
@@ -213,31 +237,35 @@ class Attaching(amp.CommandLocator):
 class _Switched(protocol.ClientFactory):
     """The end of the connection of the windows, once Attach answers."""
 
-    def __init__(self):
-        self.relay = None
+    def __init__(self) -> None:
+        self.relay: Relay | None = None
 
-    def buildProtocol(self, addr):
+    def buildProtocol(self, addr: IAddress | None) -> Relay:
         self.relay = Relay()
         return self.relay
 
-    def clientConnectionFailed(self, connector, reason):
+    def clientConnectionFailed(
+        self, connector: IConnector, reason: Failure
+    ) -> None:
         # Attach failed: its errback says why
         pass
 
-    def clientConnectionLost(self, connector, reason):
+    def clientConnectionLost(
+        self, connector: IConnector, reason: Failure
+    ) -> None:
         pass
 
 
 class Terminal(protocol.Factory):
     """The socket of a terminal: one connection, which a console joins."""
 
-    def __init__(self, consoles, name, console):
+    def __init__(self, consoles: Consoles, name: str, console: str) -> None:
         self.consoles = consoles
         self.name = name
         self.console = console
-        self.port = None
+        self.port: IListeningPort | None = None
 
-    def buildProtocol(self, addr):
+    def buildProtocol(self, addr: IAddress | None) -> Relay:
         relay = Relay()
         # one terminal: no other may connect
         if self.port is not None:
@@ -257,17 +285,23 @@ class Consoles:
     of the settings on it.
     """
 
-    def __init__(self, connect, where, reactor, spawn=None):
+    def __init__(
+        self,
+        connect: Callable[[], defer.Deferred[amp.AMP]],
+        where: str,
+        reactor: PosixReactorBase,
+        spawn: Callable[..., object] | None = None,
+    ) -> None:
         self.connect = connect
         self.where = where
         self.reactor = reactor
         # how the terminal starts: the reactor's, unless a test gives one
         self.spawn = spawn
         # the folder of the sockets, made when first needed
-        self.folder = None
+        self.folder: str | None = None
         self.count = 0
 
-    def lacks(self, brick):
+    def lacks(self, brick: Brick) -> str | None:
         """
         Why this computer can't open the console of brick: the program
         that the terminal needs, and its package; None if it can.
@@ -285,7 +319,7 @@ class Consoles:
             )
         return None
 
-    def _folder(self):
+    def _folder(self) -> str:
         if self.folder is None:
             self.folder = locations.ensure_private_dir(
                 os.path.join(
@@ -294,7 +328,7 @@ class Consoles:
             )
         return self.folder
 
-    async def open(self, brick, console=MONITOR):
+    async def open(self, brick: Brick, console: str = MONITOR) -> None:
         """
         Listen for the terminal, and start it: the Deferred fires once it
         runs; the console joins it when it connects.
@@ -310,7 +344,7 @@ class Consoles:
         terminal = Terminal(self, brick.name, console)
         endpoint = endpoints.UNIXServerEndpoint(self.reactor, path, mode=0o600)
         terminal.port = await endpoint.listen(terminal)
-        term = get_setting("terminal")
+        term = str(get_setting("terminal"))
         args = [term, "-e", program, path]
         logger.info(
             console_open,
@@ -321,10 +355,10 @@ class Consoles:
         spawn = self.reactor.spawnProcess if self.spawn is None else self.spawn
         spawn(TermProtocol(), term, args, os.environ)
 
-    async def attach(self, terminal, name, console):
+    async def attach(self, terminal: Relay, name: str, console: str) -> None:
         """Join terminal to the console of the brick name there."""
 
-        connection = None
+        connection: amp.AMP | None = None
         try:
             connection = await self.connect()
             switched = _Switched()
@@ -337,9 +371,11 @@ class Consoles:
             if connection is not None and connection.transport is not None:
                 connection.transport.loseConnection()
             return
+        # Attach answered: the connection is switched to the relay
+        assert switched.relay is not None, "Attach made it"
         join(terminal, switched.relay)
 
-    def close(self):
+    def close(self) -> None:
         """The windows close: their folder goes."""
 
         if self.folder is not None:

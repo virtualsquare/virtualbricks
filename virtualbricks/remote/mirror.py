@@ -37,9 +37,13 @@ is never saved.
 ``Mirroring`` gives the pushes of a connection to its ``mirror``.
 """
 
+from __future__ import annotations
+
 import functools
 import itertools
 import json
+from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING, Any, NoReturn, cast
 
 from twisted.internet import defer
 from twisted.logger import Logger
@@ -47,8 +51,12 @@ from twisted.protocols import amp
 
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks import Brick
-from virtualbricks.bricks.event import EventConfig
-from virtualbricks.bricks.virtualmachine import is_virtualmachine
+from virtualbricks.bricks.event import Event, EventConfig, is_event
+from virtualbricks.bricks.virtualmachine import (
+    VirtualMachine,
+    is_disk_image,
+    is_virtualmachine,
+)
 from virtualbricks.config.projectfile import (
     CONNECTION_KEYS,
     HOSTONLY,
@@ -60,6 +68,16 @@ from virtualbricks.i18n import _
 from virtualbricks.observable import Observable, Signal
 from virtualbricks.remote import commands
 from virtualbricks.remote.commands import BRICK, EVENT, IMAGE
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.interfaces import IReactorTime
+
+    from virtualbricks.bricks.plug import Plug
+    from virtualbricks.bricks.sock import Sock
+    from virtualbricks.remote.follower import Item
+
+# What the Virtualbricks there sends: JSON's types.
+Json = dict[str, Any]
 
 logger = Logger()
 not_copied = "The copy didn't take {command} of {name}"
@@ -73,7 +91,9 @@ class NotOnTheCopy(Exception):
     """A call that is for the Virtualbricks of the bricks, not its copy."""
 
 
-def _refused(call, item, *args, **kwargs):
+def _refused(
+    call: str, item: Brick | Event, *args: object, **kwargs: object
+) -> NoReturn:
     raise NotOnTheCopy(
         _(
             "{call} of {name} is for the Virtualbricks of the bricks: here"
@@ -82,7 +102,7 @@ def _refused(call, item, *args, **kwargs):
     )
 
 
-def _refuse(item, calls) -> None:
+def _refuse(item: Brick | Event, calls: Iterable[str]) -> None:
     for call in calls:
         setattr(item, call, functools.partial(_refused, call, item))
 
@@ -90,14 +110,14 @@ def _refuse(item, calls) -> None:
 class StandIn:
     """The process of a running brick of the copy: its number, no more."""
 
-    def __init__(self, brick, pid):
+    def __init__(self, brick: Brick, pid: int) -> None:
         self.brick = brick
         self.pid = pid
 
-    def signal_process(self, number):
+    def signal_process(self, number: str | int) -> None:
         _refused("signal_process", self.brick)
 
-    def write(self, data):
+    def write(self, data: bytes) -> None:
         _refused("write", self.brick)
 
 
@@ -107,23 +127,25 @@ class MirrorFactory(BrickFactory):
     project open there, its settings, what its machine has, and its objects.
     """
 
-    def __init__(self, clock=None):
+    def __init__(self, clock: IReactorTime | None = None) -> None:
         BrickFactory.__init__(self, defer.Deferred())
         if clock is None:
-            from twisted.internet import reactor as clock
+            from twisted.internet import reactor
+
+            clock = cast("IReactorTime", reactor)
         self.clock = clock
         # the project open there, None if none is
-        self.project = None
+        self.project: str | None = None
         # the settings of Virtualbricks and of the project, by name
-        self.settings = {}
+        self.settings: Json = {}
         # what its machine has: version, workspace, runtime_dir, missing,
         # lacks, ksm
-        self.machine = {}
+        self.machine: Json = {}
         # the states of the images and the bricks, by kind and name: the
         # facts of their files, their processes
-        self._states = {}
+        self._states: dict[tuple[str, str], Json] = {}
         # the plugs whose sockets haven't come yet, and their targets
-        self._waiting = []
+        self._waiting: list[tuple[Plug, str]] = []
         observable = Observable()
         # the whole project has come
         self.synced = Signal(observable, "synced")
@@ -133,39 +155,43 @@ class MirrorFactory(BrickFactory):
 
     # The objects, which refuse what runs programs
 
-    def new_brick(self, type, name, host="", remote=False):
+    def new_brick(
+        self, type: str, name: str, host: str = "", remote: bool = False
+    ) -> Brick:
         brick = BrickFactory.new_brick(self, type, name, host, remote)
         _refuse(brick, BRICK_CALLS)
         if is_virtualmachine(brick):
             # its private copies are in the project there
-            brick.project_folder = lambda: self.machine.get("project_folder")
+            brick.project_folder = (  # type: ignore[method-assign]
+                lambda: self.machine.get("project_folder")
+            )
         return brick
 
-    def state(self, kind, name) -> dict:
+    def state(self, kind: str, name: str) -> Json:
         """The last state sent of an image or a brick."""
 
         return self._states.get((kind, name), {})
 
-    def new_event(self, name):
+    def new_event(self, name: str) -> Event:
         event = BrickFactory.new_event(self, name)
         _refuse(event, EVENT_CALLS)
         return event
 
-    def _remove_brick(self, brick):
+    def _remove_brick(self, brick: Brick) -> None:
         # its plugs wait for nothing any more
         self._waiting = [
             (p, t) for p, t in self._waiting if p.brick is not brick
         ]
         BrickFactory._remove_brick(self, brick)
 
-    def _remove_event(self, event):
+    def _remove_event(self, event: Event) -> None:
         # as the factory does, without stopping it: the copy runs nothing
         self._wait(event, None)
         event.changed.disconnect(self.event_changed.notify)
         del self._events[event.name]
         self.event_removed.notify(event)
 
-    def _get(self, kind, name):
+    def _get(self, kind: str, name: str) -> Item | None:
         return {
             BRICK: self.get_brick,
             EVENT: self.get_event,
@@ -174,7 +200,9 @@ class MirrorFactory(BrickFactory):
 
     # The pushes
 
-    def take_opened(self, project, settings, machine) -> None:
+    def take_opened(
+        self, project: str | None, settings: Json, machine: Json
+    ) -> None:
         """A project opened there: the copy starts again, empty."""
 
         # none of them runs here: the factory removes them all
@@ -191,7 +219,9 @@ class MirrorFactory(BrickFactory):
     def take_synced(self) -> None:
         self.synced.notify(self)
 
-    def take_changed(self, kind, name, table, state) -> None:
+    def take_changed(
+        self, kind: str, name: str, table: Json, state: Json
+    ) -> None:
         """A new object, or one changed: its table and its state."""
 
         report = Report()
@@ -207,7 +237,7 @@ class MirrorFactory(BrickFactory):
             self._change_brick(name, table, state, report)
         report.log(logger)
 
-    def take_renamed(self, kind, old, new) -> None:
+    def take_renamed(self, kind: str, old: str, new: str) -> None:
         item = self._get(kind, old)
         if item is None:
             return
@@ -227,20 +257,20 @@ class MirrorFactory(BrickFactory):
         for other in itertools.chain(self._bricks, self._events.values()):
             other.rename_references(kind, old, new)
 
-    def take_removed(self, kind, name) -> None:
+    def take_removed(self, kind: str, name: str) -> None:
         item = self._get(kind, name)
         if item is None:
             return
         self._states.pop((kind, name), None)
         # what named it follows as changes, as after a rename
-        if kind == IMAGE:
+        if is_disk_image(item):
             self.remove_image(item)
-        elif kind == EVENT:
+        elif is_event(item):
             self._remove_event(item)
         else:
             self._remove_brick(item)
 
-    def take_settings(self, settings) -> None:
+    def take_settings(self, settings: Json) -> None:
         self.settings = settings
         self.settings_changed.notify(self)
 
@@ -249,7 +279,9 @@ class MirrorFactory(BrickFactory):
 
     # Images
 
-    def _change_image(self, name, table, state_changed) -> None:
+    def _change_image(
+        self, name: str, table: Json, state_changed: bool
+    ) -> None:
         path = table.get("path", "")
         description = table.get("description", "")
         image = self.get_image(name)
@@ -267,7 +299,9 @@ class MirrorFactory(BrickFactory):
 
     # Events
 
-    def _change_event(self, name, table, state, report) -> None:
+    def _change_event(
+        self, name: str, table: Json, state: Json, report: Report
+    ) -> None:
         event = self.get_event(name)
         if event is None:
             event = self.new_event(name)
@@ -277,7 +311,7 @@ class MirrorFactory(BrickFactory):
         self._wait(event, state.get("left"))
         event.changed.notify(event)
 
-    def _wait(self, event, left) -> None:
+    def _wait(self, event: Event, left: float | None) -> None:
         """The timer of a waiting event, on the clock of the copy."""
 
         call = event.scheduled
@@ -287,14 +321,16 @@ class MirrorFactory(BrickFactory):
         if left is not None:
             event.scheduled = self.clock.callLater(left, self._waited, event)
 
-    def _waited(self, event) -> None:
+    def _waited(self, event: Event) -> None:
         # the Virtualbricks of the bricks says what follows
         event.scheduled = None
         event.changed.notify(event)
 
     # Bricks
 
-    def _change_brick(self, name, table, state, report) -> None:
+    def _change_brick(
+        self, name: str, table: Json, state: Json, report: Report
+    ) -> None:
         brick = self.get_brick(name)
         if brick is None:
             brick = self.new_brick(table.get("type", ""), name)
@@ -308,7 +344,7 @@ class MirrorFactory(BrickFactory):
         brick.changed.notify(brick)
         self._connect_waiting()
 
-    def _links(self, brick, table) -> None:
+    def _links(self, brick: Brick, table: Json) -> None:
         style = brick.connections
         if style == "connect":
             self._plug(brick.plugs[0], table.get("connect", ""))
@@ -316,17 +352,17 @@ class MirrorFactory(BrickFactory):
             ends = table.get("endpoints", ["", ""])
             for plug, target in zip(brick.plugs, ends):
                 self._plug(plug, target)
-        elif style == "nics":
+        elif is_virtualmachine(brick):
             self._cards(brick, table.get("nics", []))
 
-    def _cards(self, vm, nics) -> None:
+    def _cards(self, vm: VirtualMachine, nics: list[Json]) -> None:
         """
         The cards of a machine: the socket cards kept by name, since other
         bricks plug into them; the others made again.
         """
 
         by_name = {sock.nickname: sock for sock in vm.socks}
-        kept = []
+        kept: list[Sock] = []
         for nic in nics:
             if nic.get("kind") != "socket":
                 continue
@@ -353,7 +389,7 @@ class MirrorFactory(BrickFactory):
             else:
                 self._plug(plug, nic.get("connect", ""))
 
-    def _plug(self, plug, target) -> None:
+    def _plug(self, plug: Plug, target: str) -> None:
         """Plug plug into the socket of target; later, if it hasn't come."""
 
         self._waiting = [(p, t) for p, t in self._waiting if p is not plug]
@@ -386,9 +422,16 @@ class Mirroring(amp.CommandLocator):
     ``Logged`` isn't the copy's: the connection of the windows shows it.
     """
 
-    mirror = None
+    # the copy, which the connection gives it
+    mirror: MirrorFactory
 
-    def _take(self, command, name, take, *args):
+    def _take(
+        self,
+        command: str,
+        name: str | None,
+        take: Callable[..., object],
+        *args: object,
+    ) -> dict[str, object]:
         try:
             take(*args)
         except Exception:
@@ -396,7 +439,9 @@ class Mirroring(amp.CommandLocator):
         return {}
 
     @commands.Opened.responder
-    def take_opened(self, project, settings, machine):
+    def take_opened(
+        self, project: str | None, settings: str, machine: str
+    ) -> dict[str, object]:
         return self._take(
             "Opened",
             project,
@@ -407,7 +452,9 @@ class Mirroring(amp.CommandLocator):
         )
 
     @commands.Changed.responder
-    def take_changed(self, kind, name, table, state):
+    def take_changed(
+        self, kind: str, name: str, table: str, state: str
+    ) -> dict[str, object]:
         return self._take(
             "Changed",
             name,
@@ -419,23 +466,23 @@ class Mirroring(amp.CommandLocator):
         )
 
     @commands.Renamed.responder
-    def take_renamed(self, kind, old, new):
+    def take_renamed(self, kind: str, old: str, new: str) -> dict[str, object]:
         return self._take(
             "Renamed", old, self.mirror.take_renamed, kind, old, new
         )
 
     @commands.Removed.responder
-    def take_removed(self, kind, name):
+    def take_removed(self, kind: str, name: str) -> dict[str, object]:
         return self._take(
             "Removed", name, self.mirror.take_removed, kind, name
         )
 
     @commands.Synced.responder
-    def take_synced(self):
+    def take_synced(self) -> dict[str, object]:
         return self._take("Synced", "", self.mirror.take_synced)
 
     @commands.SettingsChanged.responder
-    def take_settings(self, settings):
+    def take_settings(self, settings: str) -> dict[str, object]:
         return self._take(
             "SettingsChanged",
             "",
@@ -444,5 +491,5 @@ class Mirroring(amp.CommandLocator):
         )
 
     @commands.Quitting.responder
-    def take_quitting(self):
+    def take_quitting(self) -> dict[str, object]:
         return self._take("Quitting", "", self.mirror.take_quitting)

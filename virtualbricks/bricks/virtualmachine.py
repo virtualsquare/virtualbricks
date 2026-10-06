@@ -26,7 +26,7 @@ import os
 import re
 import shutil
 from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, Any, TypeGuard
+from typing import TYPE_CHECKING, Any
 
 import attr
 from twisted.internet import defer
@@ -76,6 +76,7 @@ from virtualbricks.qemu.run import qemu_img, which
 
 if TYPE_CHECKING:  # pragma: no cover
     from twisted.python.failure import Failure
+    from typing_extensions import TypeIs
 
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.config.images import ImageInfo
@@ -327,7 +328,7 @@ class ImageDraft(Draft):
             image.set_description(self.settings.description)
 
 
-def is_disk_image(brick: object) -> TypeGuard[Image]:
+def is_disk_image(brick: object) -> TypeIs[Image]:
     return isinstance(brick, Image)
 
 
@@ -1637,7 +1638,7 @@ def lacks(
     return found
 
 
-def is_virtualmachine(brick: object) -> TypeGuard[VirtualMachine]:
+def is_virtualmachine(brick: object) -> TypeIs[VirtualMachine]:
     return isinstance(brick, bricks.Brick) and brick.get_type() == "Qemu"
 
 

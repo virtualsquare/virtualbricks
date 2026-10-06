@@ -49,7 +49,7 @@ class DraftTestCase(MirrorTestCase):
             "event": self.copy.get_event,
             "image": self.copy.get_image,
         }[kind](name)
-        return draft_of(self.copy, kind, item)
+        return draft_of(self.copy, item)
 
     def ok(self, kind, name, draft):
         """OK: the data, through JSON, applied there; the copy follows."""

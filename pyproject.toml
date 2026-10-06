@@ -159,6 +159,7 @@ module = [
     "virtualbricks.observable",
     "virtualbricks.programs",
     "virtualbricks.qemu.imageformat",
+    "virtualbricks.remote.*",
     "virtualbricks.settingsdraft",
     "virtualbricks.sudo",
     "virtualbricks.terminal",

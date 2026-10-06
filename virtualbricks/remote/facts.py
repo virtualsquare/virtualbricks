@@ -30,7 +30,11 @@ when the programs have, the pushes that wait first. Nothing goes to the log
 but the failures.
 """
 
+from __future__ import annotations
+
 import json
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet import defer, threads
 from twisted.logger import Logger
@@ -52,6 +56,16 @@ from virtualbricks.programs import (
 from virtualbricks.qemu import run
 from virtualbricks.remote import commands
 from virtualbricks.remote.follower import file_facts
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.bricks.virtualmachine import UsbDevice
+    from virtualbricks.config.workspace import DiskUsage
+    from virtualbricks.programs import Answer
+    from virtualbricks.remote.follower import Connection as _Base
+else:
+    _Base = amp.CommandLocator
 
 logger = Logger()
 fact_failed = "{command} for the windows of another machine failed"
@@ -80,13 +94,15 @@ def _which(program: str) -> str:
         ) from None
 
 
-class Facts(amp.CommandLocator):
+class Facts(_Base):
     """The answers of the facts; the connection has pushes_first()."""
 
-    def _answer_fact(self, command, ask):
+    def _answer_fact(
+        self, command: str, ask: Callable[[], object]
+    ) -> defer.Deferred[Any]:
         """The answer of ask(), a Deferred, with the errors of AMP."""
 
-        def failed(failure):
+        def failed(failure: Failure) -> Failure:
             if failure.check(
                 ampcommands.NotFound,
                 ampcommands.BadArgument,
@@ -111,12 +127,12 @@ class Facts(amp.CommandLocator):
         return answering.addBoth(self.pushes_first)
 
     @commands.QemuFacts.responder
-    def qemu_facts(self, program):
-        def ask():
+    def qemu_facts(self, program: str) -> defer.Deferred[Any]:
+        def ask() -> defer.Deferred[dict[str, str]]:
             path = _which(program)
             asking = programs.qemu_answers(path)
 
-            def answer(answers):
+            def answer(answers: dict[str, Answer]) -> dict[str, str]:
                 box = {"path": path}
                 for name in commands.QEMU_ANSWERS:
                     box[name] = one_value(
@@ -129,29 +145,33 @@ class Facts(amp.CommandLocator):
         return self._answer_fact("QemuFacts", ask)
 
     @commands.MachineProperties.responder
-    def machine_properties(self, program, machine):
-        def ask():
+    def machine_properties(
+        self, program: str, machine: str
+    ) -> defer.Deferred[Any]:
+        def ask() -> defer.Deferred[dict[str, str]]:
             path = _which(program)
+            asking: defer.Deferred[str]
             if machine:
                 asking = defer.succeed(machine)
             else:
-                asking = programs.qemu(path)
-                asking.addCallback(lambda info: info.default_machine)
-            asking.addCallback(
+                asking = programs.qemu(path).addCallback(
+                    lambda info: info.default_machine
+                )
+            answering = asking.addCallback(
                 lambda chosen: programs.machine_answer(path, chosen)
             )
-            return asking.addCallback(
+            return answering.addCallback(
                 lambda answer: {"text": one_value(answer.out)}
             )
 
         return self._answer_fact("MachineProperties", ask)
 
     @commands.UsbDevices.responder
-    def usb_devices(self):
-        def ask():
+    def usb_devices(self) -> defer.Deferred[Any]:
+        def ask() -> defer.Deferred[dict[str, str]]:
             asking = get_usb_devices()
 
-            def answer(devices):
+            def answer(devices: list[UsbDevice]) -> dict[str, str]:
                 found = [
                     {"id": device.id, "description": device.description}
                     for device in devices
@@ -165,8 +185,8 @@ class Facts(amp.CommandLocator):
         return self._answer_fact("UsbDevices", ask)
 
     @commands.ImageFacts.responder
-    def image_facts(self, path):
-        def ask():
+    def image_facts(self, path: str) -> defer.Deferred[Any]:
+        def ask() -> defer.Deferred[Any]:
             facts = file_facts(path)
             if facts is None:
                 raise ampcommands.NotFound(
@@ -188,26 +208,30 @@ class Facts(amp.CommandLocator):
         return self._answer_fact("ImageFacts", ask)
 
     @commands.DiskUsage.responder
-    def disk_usage(self, name):
-        def ask():
+    def disk_usage(self, name: str) -> defer.Deferred[Any]:
+        def ask() -> defer.Deferred[dict[str, int]]:
             if not projects.exists(name):
                 raise ampcommands.NotFound(
                     _("No project named {name}").format(name=name)
                 )
             # the files of a project may be many: counted in a thread
             counting = threads.deferToThread(projects.disk_usage, name)
-            return counting.addCallback(
-                lambda usage: {
+
+            def answer(usage: DiskUsage) -> dict[str, int]:
+                return {
                     "private_disks": usage.private_disks,
                     "other_files": usage.other_files,
                 }
-            )
+
+            return counting.addCallback(answer)
 
         return self._answer_fact("DiskUsage", ask)
 
     @commands.ReadmePicture.responder
-    def readme_picture(self, name, path, offset):
-        def ask():
+    def readme_picture(
+        self, name: str, path: str, offset: int
+    ) -> defer.Deferred[Any]:
+        def ask() -> dict[str, object]:
             try:
                 data, size = projects.picture(
                     name, path, offset, amp.MAX_VALUE_LENGTH
@@ -227,16 +251,18 @@ class Facts(amp.CommandLocator):
         return self._answer_fact("ReadmePicture", ask)
 
     @commands.Folder.responder
-    def folder(self, path):
-        def ask():
+    def folder(self, path: str) -> defer.Deferred[Any]:
+        def ask() -> dict[str, object]:
             entries, more = folder_entries(path)
             return {"entries": entries, "more": more}
 
         return self._answer_fact("Folder", ask)
 
     @commands.ProgramsFound.responder
-    def programs_found(self, vde_path, qemu_path):
-        def ask():
+    def programs_found(
+        self, vde_path: str, qemu_path: str
+    ) -> defer.Deferred[Any]:
+        def ask() -> dict[str, str]:
             return {
                 name: one_value(
                     json.dumps(found.to_data(), ensure_ascii=False)

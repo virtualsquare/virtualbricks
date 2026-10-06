@@ -342,7 +342,7 @@ class TestEngine(ClientTestCase):
         self.assertEqual(self.copy.get_brick("sw1").config.on_start, "boot")
 
     def test_apply(self):
-        draft = draft_of(self.copy, "brick", self.copy.get_brick("sw1"))
+        draft = draft_of(self.copy, self.copy.get_brick("sw1"))
         draft.set("ports", 8)
         self.done(self.engine.apply(draft))
         self.assertEqual(self.sw1.config.ports, 8)
@@ -352,7 +352,7 @@ class TestEngine(ClientTestCase):
         self.factory.new_image("frr", "/lab/frr.qcow2")
         self.clock().advance(0)
         self.pump.flush()
-        draft = draft_of(self.copy, "image", self.copy.get_image("frr"))
+        draft = draft_of(self.copy, self.copy.get_image("frr"))
         draft.set("name", "debian")
         self.done(self.engine.apply(draft))
         self.assertIsNotNone(self.factory.get_image("debian"))

@@ -32,14 +32,21 @@ so the last OK wins for those, and the rest keeps what another window set
 meanwhile. A running brick takes at once what it can, as with a panel.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 from virtualbricks.bricks.draft import Draft, apply
+from virtualbricks.bricks.event import is_event
 from virtualbricks.bricks.netemu import NetemuConfig, NetemuDraft
 from virtualbricks.bricks.virtualmachine import (
     DISK_IMAGES,
     Card,
+    HostonlySock,
     ImageDraft,
     VirtualMachineDraft,
     hostonly_sock,
+    is_disk_image,
 )
 from virtualbricks.config.projectfile import HOSTONLY, resolve, socket_target
 from virtualbricks.config.report import Report
@@ -51,26 +58,33 @@ from virtualbricks.config.schema import (
 )
 from virtualbricks.remote.commands import BRICK, EVENT, IMAGE
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks.plug import Plug
+    from virtualbricks.bricks.sock import Sock
+    from virtualbricks.bricks.virtualmachine import VirtualMachine
+    from virtualbricks.remote.follower import Item
 
-def draft_of(factory, kind, item):
+
+def draft_of(factory: BrickFactory, item: Item) -> Draft:
     """A new draft of item, a brick, an event or an image, as a panel's."""
 
-    if kind == IMAGE:
+    if is_disk_image(item):
         return ImageDraft(item, factory)
-    if kind == EVENT:
+    if is_event(item):
         return Draft(item)
     return item.draft_factory(item)
 
 
-def _target(sock) -> str:
+def _target(sock: Sock | HostonlySock | None) -> str:
     if sock is None:
         return ""
-    if sock is hostonly_sock:
+    if isinstance(sock, HostonlySock):
         return HOSTONLY
     return socket_target(sock)
 
 
-def _cards_of(brick) -> list:
+def _cards_of(brick: VirtualMachine) -> list[Card]:
     return [
         Card("plug", plug.model, plug.mac, plug.sock, plug)
         for plug in brick.plugs
@@ -80,7 +94,7 @@ def _cards_of(brick) -> list:
     ]
 
 
-def _card_data(card, links) -> dict:
+def _card_data(card: Card, links: list[Plug | Sock]) -> dict[str, object]:
     index = next(
         (i for i, link in enumerate(links) if link is card.link), None
     )
@@ -93,7 +107,7 @@ def _card_data(card, links) -> dict:
     }
 
 
-def what_changed(draft) -> dict:
+def what_changed(draft: Draft) -> dict[str, Any]:
     """What the OK of the panel of draft gives: changes, links, extras."""
 
     settings = draft.settings
@@ -111,7 +125,7 @@ def what_changed(draft) -> dict:
         if name in names
     }
     links = [[index, _target(sock)] for index, sock in draft.moved().items()]
-    extras = {}
+    extras: dict[str, object] = {}
     brick = draft.brick
     if isinstance(draft, VirtualMachineDraft):
         links_now = list(brick.plugs) + list(brick.socks)
@@ -132,7 +146,9 @@ def what_changed(draft) -> dict:
     return {"changes": changes, "links": links, "extras": extras}
 
 
-def _socket(factory, target, where):
+def _socket(
+    factory: BrickFactory, target: str, where: str
+) -> Sock | HostonlySock | None:
     if not target:
         return None
     if target == HOSTONLY:
@@ -143,7 +159,9 @@ def _socket(factory, target, where):
     return sock
 
 
-def apply_changes(factory, kind, name, data) -> None:
+def apply_changes(
+    factory: BrickFactory, kind: str, name: str, data: dict[str, Any]
+) -> None:
     """
     Give the object name of kind in factory what a panel changed, data as
     what_changed() makes it. LookupError if there is no such object,
@@ -158,7 +176,7 @@ def apply_changes(factory, kind, name, data) -> None:
     }[kind](name)
     if item is None:
         raise LookupError(f"No {kind} named {name}")
-    draft = draft_of(factory, kind, item)
+    draft = draft_of(factory, item)
     report = Report()
     for key, value in data.get("changes", {}).items():
         if key not in field_names(draft.settings):
@@ -173,7 +191,7 @@ def apply_changes(factory, kind, name, data) -> None:
             raise ValueError(f"{name} has no plug {index}")
         draft.link(index, _socket(factory, target, f"plug {index}"))
     extras = data.get("extras", {})
-    if "cards" in extras:
+    if "cards" in extras and isinstance(draft, VirtualMachineDraft):
         links = list(item.plugs) + list(item.socks)
         draft.cards = [
             Card(
@@ -185,7 +203,7 @@ def apply_changes(factory, kind, name, data) -> None:
             )
             for card in extras["cards"]
         ]
-    if "states" in extras:
+    if "states" in extras and isinstance(draft, NetemuDraft):
         draft.states = [
             load_record(NetemuConfig, state, report, f"states[{i}]")
             for i, state in enumerate(extras["states"])

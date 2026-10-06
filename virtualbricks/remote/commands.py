@@ -32,6 +32,8 @@ Like ampcommands, it loads nothing but Twisted's amp and the errors of
 ampwire and ampcommands, so that a program can import it, or copy it.
 """
 
+from typing import ClassVar
+
 from twisted.protocols import amp
 
 from virtualbricks.console.ampcommands import ERRORS
@@ -110,9 +112,10 @@ class QemuFacts(amp.Command):
     """
 
     arguments = [(b"program", amp.Unicode())]
-    response = [(b"path", amp.Unicode())] + [
-        (name.encode(), amp.Unicode()) for name in QEMU_ANSWERS
+    response: ClassVar[list[tuple[bytes, amp.Argument]]] = [
+        (b"path", amp.Unicode())
     ]
+    response += [(name.encode(), amp.Unicode()) for name in QEMU_ANSWERS]
     errors = ERRORS
 
 

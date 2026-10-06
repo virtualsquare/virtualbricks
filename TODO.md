@@ -308,11 +308,11 @@
 ## Types
 
 - [ ] Fix the errors that mypy finds, a package at a time as `config/`,
-  `console/` and `bricks/` (155 on 6 Oct 2026): widgets maybe `None`,
-  `Deferred[X]` for `Deferred[object]` in `programs.py`, settings that are
-  `str | bool` given where a `str` goes, and the schemas' constructors
-  called with values of the wrong type, now that mypy knows them. Or keep a
-  baseline and fail only on new errors
+  `console/`, `bricks/` and `remote/` (144 on 6 Oct 2026): widgets maybe
+  `None`, `Deferred[X]` for `Deferred[object]` in `programs.py`, settings
+  that are `str | bool` given where a `str` goes, and the schemas'
+  constructors called with values of the wrong type, now that mypy knows
+  them. Or keep a baseline and fail only on new errors
 - [ ] Run mypy in pre-commit, a local hook in the environment of the
   project, as it needs the stubs of GTK 3
 - [ ] Add each module that `tools/typecoverage.py` gives 100% to the strict
@@ -321,6 +321,11 @@
   `console/control.py`, `remote/` (0–15% on 6 Oct 2026)
 
 # DONE
+
+- [x] Type `virtualbricks/remote/` in full, checked strictly: the mixins of
+  the AMP connection see what it gives them through `follower.Connection`,
+  for mypy only; the guards `is_virtualmachine()`, `is_event()` and
+  `is_disk_image()` are `TypeIs`, which narrows the other branch too
 
 - [x] Type `engine.py`, `i18n.py`, `ksm.py`, `locations.py`,
   `observable.py`, `settingsdraft.py`, `terminal.py` and `topology.py` in

@@ -36,15 +36,21 @@ Virtualbricks listens on an AMP socket; a program that follows gets them
 first, then each new one.
 """
 
+from __future__ import annotations
+
 import collections
 import json
 import os
 import threading
+from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 
+from twisted.internet import defer
 from twisted.logger import (
     ILogObserver,
     LogLevel,
     Logger,
+    LogPublisher,
     formatEvent,
     globalLogPublisher,
 )
@@ -52,10 +58,12 @@ from twisted.protocols import amp
 from zope.interface import implementer
 
 from virtualbricks import __version__, ksm, locations
-from virtualbricks.bricks import Base, is_running
+from virtualbricks.bricks import Base, Brick, is_running
 from virtualbricks.bricks.brickinfo import NEW_KINDS, issue
-from virtualbricks.bricks.event import is_event
+from virtualbricks.bricks.event import Event, is_event
+from virtualbricks.bricks.sock import Sock
 from virtualbricks.bricks.virtualmachine import (
+    Image,
     is_disk_image,
     is_virtualmachine,
 )
@@ -67,6 +75,29 @@ from virtualbricks.programs import missing_programs, qemu_programs
 from virtualbricks.remote import commands
 from virtualbricks.remote.commands import BRICK, EVENT, IMAGE
 
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.interfaces import (
+        IDelayedCall,
+        IReactorThreads,
+        IReactorTime,
+    )
+    from twisted.internet.posixbase import PosixReactorBase
+    from twisted.logger import LogEvent
+
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.config.settings import SettingValue
+    from virtualbricks.config.tomlfile import Table
+    from virtualbricks.config.workspace import Workspace
+    from virtualbricks.console.control import InOrder
+    from virtualbricks.observable import Callback, Signal
+
+_T = TypeVar("_T")
+
+# What the program follows: an image, a brick or an event.
+Item: TypeAlias = Brick | Event | Image
+# A message of the log, as message_of() makes it.
+Message: TypeAlias = dict[str, object]
+
 logger = Logger()
 too_long = "Not sent to {who}: {command} of {about} is too long for AMP"
 
@@ -75,11 +106,11 @@ KEPT = 500
 STREAMS = ("stdout", "stderr")
 
 
-def _json(value) -> str:
+def _json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
-def message_of(event) -> dict:
+def message_of(event: LogEvent) -> Message:
     """A message of the log, as a program shows it: JSON's types only."""
 
     level = event.get("log_level", LogLevel.info)
@@ -115,17 +146,21 @@ def message_of(event) -> dict:
 class LogKeeper:
     """The last messages of the log, info and above, and who wants the next."""
 
-    def __init__(self, size=KEPT, reactor=None):
-        self.messages = collections.deque(maxlen=size)
-        self.listeners = []
+    def __init__(
+        self, size: int = KEPT, reactor: IReactorThreads | None = None
+    ) -> None:
+        self.messages: collections.deque[Message] = collections.deque(
+            maxlen=size
+        )
+        self.listeners: list[Callable[[Message], None]] = []
         self.reactor = reactor
-        self.observing = None
+        self.observing: LogPublisher | None = None
         # the sockets that listen, which want it to keep the log
         self.users = 0
         # the thread of the reactor, which makes it
         self.thread = threading.get_ident()
 
-    def start(self, publisher=None) -> None:
+    def start(self, publisher: LogPublisher | None = None) -> None:
         """
         Keep the messages of publisher, the global one if None, until each
         start() has its stop().
@@ -142,7 +177,7 @@ class LogKeeper:
             self.observing.removeObserver(self)
             self.observing = None
 
-    def __call__(self, event) -> None:
+    def __call__(self, event: LogEvent) -> None:
         if event.get("log_level", LogLevel.info) == LogLevel.debug:
             return
         if threading.get_ident() == self.thread:
@@ -151,10 +186,12 @@ class LogKeeper:
             # a message of a thread: the listeners send it in the reactor
             reactor = self.reactor
             if reactor is None:
-                from twisted.internet import reactor
+                from twisted.internet import reactor as default
+
+                reactor = cast("IReactorThreads", default)
             reactor.callFromThread(self._keep, event)
 
-    def _keep(self, event) -> None:
+    def _keep(self, event: LogEvent) -> None:
         message = message_of(event)
         self.messages.append(message)
         for listener in list(self.listeners):
@@ -164,7 +201,7 @@ class LogKeeper:
 keeper = LogKeeper()
 
 
-def settings_table() -> dict:
+def settings_table() -> dict[str, SettingValue]:
     """The settings of Virtualbricks and of the open project, by name."""
 
     names = field_names(settings.AppSettings) + field_names(
@@ -173,12 +210,14 @@ def settings_table() -> dict:
     return {name: settings.get_setting(name) for name in names}
 
 
-def machine_table(factory, workspace) -> dict:
+def machine_table(
+    factory: BrickFactory, workspace: Workspace
+) -> dict[str, object]:
     """What the machine of the bricks has, for the windows."""
 
-    vde = settings.get_setting("vde_path")
-    qemu = settings.get_setting("qemu_path")
-    lacks = {}
+    vde = str(settings.get_setting("vde_path"))
+    qemu = str(settings.get_setting("qemu_path"))
+    lacks: dict[str, dict[str, str] | None] = {}
     for kind in NEW_KINDS:
         found = issue(kind, vde, qemu)
         lacks[kind.type] = (
@@ -205,7 +244,7 @@ def machine_table(factory, workspace) -> dict:
     }
 
 
-def kind_of(item) -> str:
+def kind_of(item: Item) -> str:
     if is_disk_image(item):
         return IMAGE
     if is_event(item):
@@ -213,7 +252,7 @@ def kind_of(item) -> str:
     return BRICK
 
 
-def table_of(item) -> dict:
+def table_of(item: Item) -> Table:
     """What the project file writes of an image, a brick or an event."""
 
     if is_disk_image(item):
@@ -223,7 +262,7 @@ def table_of(item) -> dict:
     return brick_table(item)
 
 
-def file_facts(path: str) -> dict | None:
+def file_facts(path: str) -> dict[str, int] | None:
     """
     What the windows show of a file: its size, the time it changed, in
     nanoseconds, and the space it takes; None if it isn't there.
@@ -240,7 +279,7 @@ def file_facts(path: str) -> dict | None:
     }
 
 
-def state_of(item) -> dict:
+def state_of(item: Item) -> dict[str, object]:
     """
     What the project file doesn't write: the file of an image, the process
     of a brick and the private copies of a machine, the seconds an event
@@ -253,9 +292,11 @@ def state_of(item) -> dict:
         call = item.scheduled
         left = None
         if call is not None and call.active():
-            left = max(0.0, call.getTime() - call.seconds())
+            # a DelayedCall has the seconds() of its clock
+            now = call.seconds()  # type: ignore[attr-defined]
+            left = max(0.0, call.getTime() - now)
         return {"left": left}
-    state = {"pid": item.pid if is_running(item) else None}
+    state: dict[str, object] = {"pid": item.pid if is_running(item) else None}
     if is_virtualmachine(item) and item.project_folder() is not None:
         state["copies"] = {
             disk.device: file_facts(disk.get_cow_path())
@@ -265,27 +306,31 @@ def state_of(item) -> dict:
     return state
 
 
-def _targets(brick) -> list:
+def _targets(brick: Brick) -> list[Brick]:
     """The bricks that brick plugs into."""
 
     return [
-        plug.sock.brick
-        for plug in getattr(brick, "plugs", ())
-        if plug.sock is not None and getattr(plug.sock, "brick", None)
+        plug.sock.brick for plug in brick.plugs if isinstance(plug.sock, Sock)
     ]
 
 
-def in_order(items) -> list:
+def in_order(items: Iterable[Item]) -> list[Item]:
     """
     The items, images first, then the bricks, each after those it plugs
     into, then the events; in their order otherwise.
     """
 
-    kinds = {IMAGE: [], BRICK: [], EVENT: []}
+    images: list[Item] = []
+    bricks: list[Brick] = []
+    events: list[Item] = []
     for item in items:
-        kinds[kind_of(item)].append(item)
-    images, bricks, events = kinds[IMAGE], kinds[BRICK], kinds[EVENT]
-    ordered = []
+        if is_disk_image(item):
+            images.append(item)
+        elif is_event(item):
+            events.append(item)
+        else:
+            bricks.append(item)
+    ordered: list[Item] = []
     waiting = list(bricks)
     while waiting:
         placed = False
@@ -314,7 +359,15 @@ class Follower:
     send(command, **arguments) calls a push on the program.
     """
 
-    def __init__(self, send, factory, workspace, keeper, clock, who=None):
+    def __init__(
+        self,
+        send: Callable[..., object],
+        factory: BrickFactory,
+        workspace: Workspace,
+        keeper: LogKeeper,
+        clock: IReactorTime,
+        who: str | None = None,
+    ) -> None:
         self.send = send
         self.factory = factory
         self.workspace = workspace
@@ -323,18 +376,18 @@ class Follower:
         # the program, for the log
         self.who = who or "a program"
         # the objects the program knows, with the name it knows them by
-        self.known = {}
+        self.known: dict[Item, str] = {}
         # renames and deletes, in the order they came
-        self.queue = []
+        self.queue: list[tuple[str, ...]] = []
         # the objects changed, in the order they first changed
-        self.changed = {}
-        self.logs = []
+        self.changed: dict[Item, None] = {}
+        self.logs: list[Message] = []
         # the whole project is sent again
         self.project = True
         self.settings = False
         self.quitting = False
-        self.call = None
-        self.signals = []
+        self.call: IDelayedCall | None = None
+        self.signals: list[tuple[Signal, Callback]] = []
 
     def start(self) -> None:
         """Follow the factory, the workspace, the settings and the log."""
@@ -379,7 +432,7 @@ class Follower:
 
     # What changes
 
-    def on_changed(self, item) -> None:
+    def on_changed(self, item: Item) -> None:
         # while the whole project waits, _send_project() drops these
         kind = kind_of(item)
         known = self.known.get(item)
@@ -394,25 +447,25 @@ class Follower:
                     self.changed.setdefault(disk.image, None)
         self._later()
 
-    def on_removed(self, item) -> None:
+    def on_removed(self, item: Item) -> None:
         self.changed.pop(item, None)
         known = self.known.pop(item, None)
         if known is not None:
             self.queue.append(("removed", kind_of(item), known))
         self._later()
 
-    def on_opened(self, workspace) -> None:
+    def on_opened(self, workspace: Workspace) -> None:
         self.again()
 
-    def on_setting(self, name) -> None:
+    def on_setting(self, name: str) -> None:
         self.settings = True
         self._later()
 
-    def on_message(self, message) -> None:
+    def on_message(self, message: Message) -> None:
         self.logs.append(message)
         self._later()
 
-    def on_quitting(self, factory) -> None:
+    def on_quitting(self, factory: BrickFactory) -> None:
         self.quitting = True
         self.flush()
 
@@ -485,7 +538,7 @@ class Follower:
             self._send_item(item)
         self._push(commands.Synced, "the project")
 
-    def _send_item(self, item) -> None:
+    def _send_item(self, item: Item) -> None:
         self.known[item] = item.name
         self._push(
             commands.Changed,
@@ -496,7 +549,9 @@ class Follower:
             state=_json(state_of(item)),
         )
 
-    def _push(self, command, about, **arguments) -> None:
+    def _push(
+        self, command: type[amp.Command], about: str, **arguments: object
+    ) -> None:
         """Call command on the program; about is what it's about, for the log."""
 
         try:
@@ -510,20 +565,44 @@ class Follower:
             )
 
 
-class Following(amp.CommandLocator):
+if TYPE_CHECKING:  # pragma: no cover
+
+    class Connection(amp.AMP):
+        """
+        For mypy, what the mixins of this package work on: the AMP connection
+        of a control socket, console.control.AMPControl, which takes them on.
+        """
+
+        brickfactory: BrickFactory
+        reactor: PosixReactorBase
+        requests: InOrder
+        who: str | None
+
+        def pushes_first(self, result: _T) -> _T: ...
+
+        def _log_line(self, line: str) -> None: ...
+
+        def _log_failed(self, message: str) -> None: ...
+
+    _Base = Connection
+else:
+    _Base = amp.CommandLocator
+
+
+class Following(_Base):
     """
     The answer to Follow, which the AMP connections of the control sockets
     take on; they have brickfactory, reactor, requests and who.
     """
 
-    follower = None
+    follower: Follower | None = None
     workspace = projects
 
     @commands.Follow.responder
-    def follow(self):
+    def follow(self) -> defer.Deferred[Any]:
         return self.requests.add(self._follow)
 
-    def _follow(self):
+    def _follow(self) -> dict[str, object]:
         if self.follower is None:
             self.follower = Follower(
                 self.callRemote,
@@ -543,7 +622,7 @@ class Following(amp.CommandLocator):
             "version": __version__,
         }
 
-    def pushes_first(self, result):
+    def pushes_first(self, result: _T) -> _T:
         """Send the pushes that wait, before the answer of result."""
 
         if self.follower is not None:
