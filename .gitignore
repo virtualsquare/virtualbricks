@@ -5,6 +5,7 @@ __pycache__/
 /build/
 _trial_temp/
 /.pytest_cache/
+/.mypy_cache/
 /.coverage
 /htmlcov
 /virtualbricks.egg-info/

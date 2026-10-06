@@ -48,8 +48,13 @@ dev = [
     "pypandoc-binary==1.17",
     "pyflakes>=3.0",
     "ruff>=0.16",
+    # the types; mypy-zope holds mypy to the versions it supports
+    "mypy>=2.4",
+    "mypy-zope>=1.0.17",
     # The types of the libraries: Twisted, attrs, tomlkit and tomli ship
-    # theirs. There are none for pygraphviz and zope.interface.
+    # theirs, mypy-zope has zope.interface's. There are none for pygraphviz.
+    # The stubs are of GTK 4 unless PYGOBJECT_STUB_CONFIG=Gtk3,Gdk3 at their
+    # install: see Setting up in README.md.
     "PyGObject-stubs>=2.17",
 ]
 
@@ -118,3 +123,45 @@ extend-exclude = ["_trial_temp"]
 select = ["E4", "E7", "E9", "F"]
 # gi.require_version() has to run before the gi.repository imports
 ignore = ["E402"]
+
+[tool.mypy]
+# mypy alone checks these; the tests are left out
+files = ["virtualbricks", "tools"]
+exclude = ["^virtualbricks/tests/"]
+python_version = "3.10"
+# the interfaces of zope.interface and @implementer
+plugins = ["mypy_zope:plugin"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+[[tool.mypy.overrides]]
+# no types, no stubs
+module = ["pygraphviz", "pygraphviz.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# The modules typed in full stay so: add one when tools/typecoverage.py gives
+# it 100%.
+module = [
+    "virtualbricks.bricks.command",
+    "virtualbricks.config.projectfile",
+    "virtualbricks.config.report",
+    "virtualbricks.config.schema",
+    "virtualbricks.config.settings",
+    "virtualbricks.config.tomlfile",
+    "virtualbricks.console.command",
+    "virtualbricks.console.output",
+    "virtualbricks.gui.pango",
+    "virtualbricks.gui.trash",
+    "virtualbricks.locks",
+    "virtualbricks.markdown",
+    "virtualbricks.migrate.*",
+    "virtualbricks.nic",
+    "virtualbricks.programs",
+    "virtualbricks.qemu.imageformat",
+    "virtualbricks.sudo",
+    "virtualbricks.vde",
+    "typecoverage",
+]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true

@@ -307,17 +307,30 @@ cd virtualbricks
 python3 -m venv .venv
 . .venv/bin/activate
 pip install --upgrade pip
-pip install -e . --group dev
+PYGOBJECT_STUB_CONFIG=Gtk3,Gdk3 pip install -e . --group dev
 pre-commit install
 ```
 
 The `dev` dependency group has the tools of the project: `coverage`, `pytest`,
 `pytest-bdd` and `pytest-repeat` for the end-to-end tests, `black`, `ruff`,
 `pyflakes`, `pre-commit`, `pypandoc-binary`, which brings pandoc for the
-manual page, and `PyGObject-stubs`, the types of GTK. `--group` needs pip
-25.1 or newer, and the pip of a new environment is often older, hence the
-upgrade. The editable install (`-e`) makes the `virtualbricks` command run
-your working copy.
+manual page, `mypy` and `mypy-zope`, which check the types, and
+`PyGObject-stubs`, the types of GTK. `--group` needs pip 25.1 or newer, and
+the pip of a new environment is often older, hence the upgrade. The editable
+install (`-e`) makes the `virtualbricks` command run your working copy.
+
+`PyGObject-stubs` are built at their install, of GTK 4 unless
+`PYGOBJECT_STUB_CONFIG` asks for GTK 3. pip keeps what it built in its cache,
+whatever the GTK: if it built them once without the variable, it installs
+those again. To install them again, of GTK 3:
+
+```sh
+PYGOBJECT_STUB_CONFIG=Gtk3,Gdk3 pip install --no-deps --no-cache-dir \
+    --force-reinstall PyGObject-stubs
+```
+
+With the stubs of GTK 4, mypy finds hundreds of errors such as `"Box" has no
+attribute "pack_start"`.
 
 The code has to run on Python 3.10, the oldest that is supported, so it is
 best to work with that one.
@@ -438,6 +451,18 @@ pre-commit run --all-files     # run them without committing
 When a hook changes files, as when you add a message the translations have to
 know, the commit stops: stage what it changed and commit again.
 
+The types are checked with mypy, which `pyproject.toml` configures: run
+`mypy` from the root of the sources. It doesn't run on commit yet, as it still
+finds errors. The modules typed in full are checked strictly, so that they stay
+typed; `tools/typecoverage.py` tells how much of each module has annotations,
+the most typed first (`--sort name` in the order of the files):
+
+```sh
+mypy                                   # virtualbricks/ and tools/
+python tools/typecoverage.py           # every module of virtualbricks/
+python tools/typecoverage.py virtualbricks/config e2e
+```
+
 The messages that the user reads go through `_()`, from `virtualbricks.i18n`.
 To add a language, see the top of `l10n.sh`.
 
@@ -512,6 +537,7 @@ To add a language, see the top of `l10n.sh`.
   `control-protocols.html`; in `redesign/`, the designs of the parts that
   were rewritten, numbered in the order of the work, from the conversion of
   the Glade files to the console.
+- `tools/`: the scripts of the development, as `typecoverage.py`.
 - `locale/`: the translations; `share/`: the desktop file and the icon.
 
 ## License

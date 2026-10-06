@@ -305,7 +305,28 @@
 
 - [ ] Update the copyright notice
 
+## Types
+
+- [ ] Fix the errors that mypy finds (326 on 6 Oct 2026): 59 of them in
+  `console/ampcommands.py` are the same (a `list` of `ListOf` where Twisted
+  wants `Argument`), 51 in `config/importing.py` and `config/archive.py`
+  index TOML values unnarrowed; the rest are widgets maybe `None`, class
+  attributes `None` overridden by a `str`, `Deferred[X]` for
+  `Deferred[object]`, and `tomllib` imported in a `try` and not by
+  `sys.version_info`. Or keep a baseline and fail only on new errors
+- [ ] Run mypy in pre-commit, a local hook in the environment of the
+  project, as it needs the stubs of GTK 3
+- [ ] Add each module that `tools/typecoverage.py` gives 100% to the strict
+  override of `pyproject.toml`
+- [ ] Type the old core: `bricks/`, `app.py`, `brickfactory.py`,
+  `console/control.py`, `remote/` (0–15% on 6 Oct 2026)
+
 # DONE
+
+- [x] Check the types: mypy and mypy-zope in the dev group, its
+  configuration in `pyproject.toml` with the modules typed in full checked
+  strictly, the stubs of GTK 3 (`PYGOBJECT_STUB_CONFIG`), and
+  `tools/typecoverage.py`, the annotations of each module
 
 - [x] Redesign Rename and Delete: Rename asks the name as Rename Project
   does, selected, with why a name can't be used under it; one Delete

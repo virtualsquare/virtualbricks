@@ -2,6 +2,7 @@ include COPYING LICENCE
 include l10n.sh
 include docs/*.html docs/redesign/*.html
 include docs/man/build.py docs/man/*.md docs/man/*.[1-9]
+include tools/*.py
 include locale/virtualbricks/virtualbricks.pot locale/virtualbricks/*.po
 recursive-include share *
 recursive-include virtualbricks/tests/data *.json *.py *.txt
