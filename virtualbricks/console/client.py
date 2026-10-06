@@ -47,6 +47,8 @@ import shlex
 import socket
 import ssl
 import sys
+from collections.abc import Callable, Iterable, Iterator, Sequence
+from typing import IO
 
 from virtualbricks import locations, locks
 from virtualbricks.console import ampbox, wire
@@ -108,7 +110,7 @@ class Connection:
             first = self.prove(first.get("nonce"))
         return first
 
-    def close(self):
+    def close(self) -> None:
         self.reader.close()
         self.sock.close()
 
@@ -170,16 +172,16 @@ class Connection:
                 _("{reason}: no command sent").format(reason=exc)
             ) from None
 
-    def send(self, message: dict):
+    def send(self, message: dict) -> None:
         self.send_bytes(wire.encode(message))
 
-    def send_bytes(self, data: bytes):
+    def send_bytes(self, data: bytes) -> None:
         try:
             self.sock.sendall(data)
         except (BrokenPipeError, ConnectionResetError):
             raise Unanswered(_closed()) from None
 
-    def reading(self, read):
+    def reading(self, read: Callable[[], bytes]) -> bytes:
         """What read() reads; b"" at the end of the connection."""
 
         try:
@@ -252,7 +254,7 @@ class AMPConnection(Connection):
             raise Unanswered(_another_protocol(greeting["version"]))
         return greeting
 
-    def authenticate(self):
+    def authenticate(self) -> None:
         """Prove that this end knows the token: Challenge, Authenticate."""
 
         token = self.read_token()
@@ -365,7 +367,7 @@ def _timed_out(where: str) -> str:
     )
 
 
-def _processes(holders) -> str:
+def _processes(holders: Iterable[tuple[int, str]]) -> str:
     return _and([f"{pid} of {user}" for pid, user in holders])
 
 
@@ -578,11 +580,12 @@ def connect(
 
     if target is None:
         target = wire.Socket(None)
-    if target.kind == "unix" and target.path is None:
-        target = target._replace(path=_default_socket(workspace))
     if target.kind != "unix":
         return _connect_network(target)
     path = target.path
+    if path is None:
+        path = _default_socket(workspace)
+        target = target._replace(path=path)
     try:
         _check_there(path, workspace)
     except wire.Unusable as exc:
@@ -659,9 +662,9 @@ def _tls(target: wire.Socket) -> ssl.SSLContext:
                         "{path} isn't a certificate in PEM: no command sent"
                     ).format(path=path)
                 ) from None
-    if target.private_key or target.cert:
-        cert = target.cert or target.private_key
-        key = target.private_key or target.cert
+    cert = target.cert or target.private_key
+    key = target.private_key or target.cert
+    if cert and key:
         try:
             context.load_cert_chain(cert, key)
         except ssl.SSLError:
@@ -697,11 +700,11 @@ def _refused_by(target: wire.Socket | None, exc: ssl.SSLError) -> str:
 
 def _connect_network(target: wire.Socket) -> Connection:
     where = target.where()
+    host, port = target.host, target.port
+    assert host is not None and port is not None, "parse_socket() sets them"
     context = _tls(target) if target.kind == "ssl" else None
     try:
-        sock = socket.create_connection(
-            (target.host, target.port), timeout=CONNECT_TIMEOUT
-        )
+        sock = socket.create_connection((host, port), timeout=CONNECT_TIMEOUT)
     except socket.gaierror as exc:
         raise Unanswered(
             _("Can't find {host}: {reason}").format(
@@ -710,7 +713,7 @@ def _connect_network(target: wire.Socket) -> Connection:
         ) from None
     except ConnectionRefusedError:
         message = _("Nothing listens on {where}").format(where=where)
-        if _loopback(target.host):
+        if _loopback(host):
             message = _(
                 "Nothing listens on {where}. Start Virtualbricks with"
                 " --listen {kind}:{port}"
@@ -741,7 +744,9 @@ def _open(sock: socket.socket, target: wire.Socket) -> Connection:
     return connection
 
 
-def _handshake(context, sock, target):
+def _handshake(
+    context: ssl.SSLContext, sock: socket.socket, target: wire.Socket
+) -> ssl.SSLSocket:
     """The TLS of sock, once the certificate of target is checked."""
 
     try:
@@ -765,7 +770,9 @@ def _handshake(context, sock, target):
         raise Unanswered(f"{target.where()}: {exc.strerror}") from None
 
 
-def _commands(words, stdin):
+def _commands(
+    words: Sequence[str], stdin: Iterable[str]
+) -> Iterator[tuple[int | None, str]]:
     """The commands to send, with the number of their line of input."""
 
     if words:
@@ -778,13 +785,13 @@ def _commands(words, stdin):
 
 
 def main(
-    words,
-    target=None,
-    stdin=None,
-    stdout=None,
-    stderr=None,
-    script=None,
-    workspace=None,
+    words: Sequence[str],
+    target: wire.Socket | None = None,
+    stdin: Iterable[str] | None = None,
+    stdout: IO[str] | None = None,
+    stderr: IO[str] | None = None,
+    script: str | None = None,
+    workspace: str | None = None,
 ) -> int:
     """
     Send the command of words, the lines of the file script, or else the

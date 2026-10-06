@@ -33,9 +33,11 @@ from collections.abc import Sequence
 import attr
 
 from virtualbricks.console.command import (
+    Arg,
     Command,
     CommandError,
     Context,
+    KeyValues,
     find,
     keyword,
     nouns,
@@ -169,7 +171,7 @@ def bind(context: Context, command: Command, given: dict) -> Parsed:
     return Parsed(command, values)
 
 
-def _word(value) -> str:
+def _word(value: object) -> str:
     if isinstance(value, dict):
         return f"{value['key']}={value['value']}"
     return str(value)
@@ -207,7 +209,7 @@ def _verbs(words: Sequence[str]) -> list[str]:
     ]
 
 
-def _read_quietly(context: Context, arg, words: Sequence[str]):
+def _read_quietly(context: Context, arg: Arg, words: Sequence[str]) -> object:
     values = []
     for word in words:
         try:
@@ -241,19 +243,18 @@ def _candidates(context: Context, words: list[str], partial: str) -> list[str]:
             )
         index += 1
     position = len(given)
-    arg = None
+    current: Arg | None = None
     for number, each in enumerate(command.args):
         if each.many or number == position:
-            arg = each
+            current = each
             break
-    if arg is None:
+    if current is None:
         return []
     key, sep, _value = partial.partition("=")
-    if sep and hasattr(arg.kind, "values"):
-        return [
-            f"{key}={value}" for value in arg.kind.values(context, done, key)
-        ]
-    return arg.kind.candidates(context, done)
+    kind = current.kind
+    if sep and isinstance(kind, KeyValues):
+        return [f"{key}={value}" for value in kind.values(context, done, key)]
+    return kind.candidates(context, done)
 
 
 def complete(context: Context, text: str) -> tuple[str, list[str]]:

@@ -307,13 +307,11 @@
 
 ## Types
 
-- [ ] Fix the errors that mypy finds, a package at a time as `config/`
-  (260 on 6 Oct 2026): 59 of them in `console/ampcommands.py` are the same
-  (a `list` of `ListOf` where Twisted wants `Argument`); the rest are
-  widgets maybe `None`, class attributes `None` overridden by a `str`,
-  `Deferred[X]` for `Deferred[object]`, and the schemas' constructors
-  called with values of the wrong type, now that mypy knows them. Or keep a
-  baseline and fail only on new errors
+- [ ] Fix the errors that mypy finds, a package at a time as `config/` and
+  `console/` (187 on 6 Oct 2026): widgets maybe `None`, class attributes
+  `None` overridden by a `str`, `Deferred[X]` for `Deferred[object]`, and
+  the schemas' constructors called with values of the wrong type, now that
+  mypy knows them. Or keep a baseline and fail only on new errors
 - [ ] Run mypy in pre-commit, a local hook in the environment of the
   project, as it needs the stubs of GTK 3
 - [ ] Add each module that `tools/typecoverage.py` gives 100% to the strict
@@ -322,6 +320,9 @@
   `console/control.py`, `remote/` (0–15% on 6 Oct 2026)
 
 # DONE
+
+- [x] Type `virtualbricks/console/` in full, checked strictly; ampgen
+  writes `LINES` and `PAIR` typed
 
 - [x] Type `virtualbricks/config/` in full, checked strictly: mypy knows
   the schemas as attrs classes (`define` imported, not assigned)

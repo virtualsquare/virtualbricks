@@ -65,8 +65,13 @@ ERRORS = {
     AnswerTooLong: b"ANSWER_TOO_LONG",
     TokenNeeded: b"TOKEN_NEEDED",
 }
-LINES = [(b"lines", amp.ListOf(amp.Unicode()))]
-PAIR = [(b"key", amp.Unicode()), (b"value", amp.Unicode())]
+LINES: list[tuple[bytes, amp.Argument]] = [
+    (b"lines", amp.ListOf(amp.Unicode()))
+]
+PAIR: list[tuple[bytes, amp.Argument]] = [
+    (b"key", amp.Unicode()),
+    (b"value", amp.Unicode()),
+]
 CWD = (b"cwd", amp.Unicode(optional=True))
 
 

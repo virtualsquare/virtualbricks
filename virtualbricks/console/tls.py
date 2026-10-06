@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import os
 import re
+from typing import TYPE_CHECKING
 
 from OpenSSL import SSL, crypto
 from twisted.internet import error, ssl
@@ -38,12 +39,16 @@ from twisted.internet import error, ssl
 from virtualbricks.console import wire
 from virtualbricks.i18n import _
 
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.interfaces import IOpenSSLClientConnectionCreator
+    from twisted.python.failure import Failure
+
 CERTIFICATE = re.compile(
     rb"-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----", re.DOTALL
 )
 
 
-def _read(path):
+def _read(path: str) -> bytes:
     try:
         with open(path, "rb") as file:
             return file.read()
@@ -55,7 +60,7 @@ def _read(path):
         raise wire.Unusable(f"{path}: {exc.strerror}") from None
 
 
-def _certificate(path, data=None):
+def _certificate(path: str, data: bytes | None = None) -> ssl.Certificate:
     try:
         return ssl.Certificate.loadPEM(_read(path) if data is None else data)
     except (crypto.Error, SSL.Error, ValueError):
@@ -64,7 +69,9 @@ def _certificate(path, data=None):
         ) from None
 
 
-def private_certificate(cert_path, key_path):
+def private_certificate(
+    cert_path: str, key_path: str
+) -> ssl.PrivateCertificate:
     """
     The certificate of cert_path with the key of key_path, which can be the
     same file; raise wire.Unusable if they can't be read, or don't match.
@@ -89,7 +96,7 @@ def private_certificate(cert_path, key_path):
         ) from None
 
 
-def chain(path):
+def chain(path: str) -> list[crypto.X509]:
     """The certificates of the file at path, between one and its CA."""
 
     found = CERTIFICATE.findall(_read(path))
@@ -100,7 +107,7 @@ def chain(path):
     return [_certificate(path, data).original for data in found]
 
 
-def trusted(folder):
+def trusted(folder: str) -> list[ssl.Certificate]:
     """
     The certificates of the .pem files of folder, as Twisted reads its
     caCertsDir; raise wire.Unusable if it has none.
@@ -132,16 +139,16 @@ def trusted(folder):
     return certificates
 
 
-def server_options(socket):
+def server_options(socket: wire.Socket) -> ssl.CertificateOptions:
     """
     The TLS options of socket, a wire.Socket of type ssl: its certificate,
     and the certificates that its clients show when it has ca_dir. Raise
     wire.Unusable if one of its files can't be used.
     """
 
-    certificate = private_certificate(
-        socket.cert or socket.private_key, socket.private_key
-    )
+    key = socket.private_key
+    assert key is not None, "parse_socket() asks for it"
+    certificate = private_certificate(socket.cert or key, key)
     extra = chain(socket.chain) if socket.chain else None
     trust = None
     if socket.ca_dir is not None:
@@ -154,7 +161,7 @@ def server_options(socket):
     )
 
 
-def client_options(socket):
+def client_options(socket: wire.Socket) -> IOpenSSLClientConnectionCreator:
     """
     The TLS options of the windows for socket, a wire.Socket of --connect
     of type ssl: the certificates they trust for Virtualbricks, those of
@@ -167,17 +174,17 @@ def client_options(socket):
     else:
         trust = ssl.platformTrust()
     mine = None
-    if socket.private_key or socket.cert:
-        mine = private_certificate(
-            socket.cert or socket.private_key,
-            socket.private_key or socket.cert,
-        )
+    cert = socket.cert or socket.private_key
+    key = socket.private_key or socket.cert
+    if cert and key:
+        mine = private_certificate(cert, key)
+    assert socket.host is not None, "parse_socket() sets it"
     return ssl.optionsForClientTLS(
         socket.host, trustRoot=trust, clientCertificate=mine
     )
 
 
-def common_name(certificate):
+def common_name(certificate: crypto.X509 | None) -> str | None:
     """The name of a client's certificate, a pyOpenSSL X509, for the log."""
 
     if certificate is None:
@@ -185,7 +192,7 @@ def common_name(certificate):
     return certificate.get_subject().commonName
 
 
-def describe(failure):
+def describe(failure: Failure) -> str:
     """Why a TLS handshake failed, from the Failure of the connection."""
 
     exc = failure.value

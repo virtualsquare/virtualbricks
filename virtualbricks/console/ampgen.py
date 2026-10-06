@@ -142,8 +142,13 @@ class ProtocolNeeded(Exception):
 ERRORS = {{
 {errors}
 }}
-LINES = [(b"lines", amp.ListOf(amp.Unicode()))]
-PAIR = [(b"key", amp.Unicode()), (b"value", amp.Unicode())]
+LINES: list[tuple[bytes, amp.Argument]] = [
+    (b"lines", amp.ListOf(amp.Unicode()))
+]
+PAIR: list[tuple[bytes, amp.Argument]] = [
+    (b"key", amp.Unicode()),
+    (b"value", amp.Unicode()),
+]
 CWD = (b"cwd", amp.Unicode(optional=True))
 '''
 
@@ -201,12 +206,12 @@ def record() -> str:
         ]
         words += ["->", "lines:[str]", "!"] + [code for _, code in ERRORS]
         lines.append(" ".join(words))
-    for command in windows.FROM_PROGRAM + windows.PUSHES:
-        lines.append(class_record(command))
+    for amp_command in windows.FROM_PROGRAM + windows.PUSHES:
+        lines.append(class_record(amp_command))
     return "\n".join(lines) + "\n"
 
 
-def _recorded_type(argument) -> str:
+def _recorded_type(argument: amp.Argument) -> str:
     if isinstance(argument, amp.ListOf):
         return f"[{_recorded_type(argument.elementType)}]"
     if isinstance(argument, amp.AmpList):
@@ -219,7 +224,7 @@ def _recorded_type(argument) -> str:
     }[type(argument)]
 
 
-def _recorded(pairs) -> list[str]:
+def _recorded(pairs: list[tuple[bytes, amp.Argument]]) -> list[str]:
     return [
         f"{key.decode()}:{_recorded_type(argument)}"
         f"{'?' if argument.optional else ''}"

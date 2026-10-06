@@ -23,11 +23,14 @@ those of the open project, as the two tabs of the Settings window.
 
 from __future__ import annotations
 
+from typing import cast
+
 from virtualbricks.config.schema import field_default, field_names
 from virtualbricks.config.settings import (
     PROJECT_KEYS,
     AppSettings,
     ProjectSettings,
+    SettingValue,
     get_setting,
     has_option,
     parse_setting,
@@ -39,6 +42,7 @@ from virtualbricks.console.command import (
     Arg,
     ArgKind,
     CommandError,
+    Context,
     KeyValues,
     command,
 )
@@ -50,22 +54,22 @@ def _names() -> list[str]:
 
 
 class Key(ArgKind):
-    def read(self, context, word):
+    def read(self, context: Context, word: str) -> str:
         if not has_option(word):
             raise CommandError(
                 _("No setting {key}: setting show lists them").format(key=word)
             )
         return word
 
-    def candidates(self, context, done):
+    def candidates(self, context: Context, done: dict) -> list[str]:
         return _names()
 
 
-def _line(name) -> str:
+def _line(name: str) -> str:
     return f"{name} = {setting_kind(name).format(get_setting(name))}"
 
 
-def _set(values) -> None:
+def _set(values: dict[str, SettingValue]) -> None:
     """Set the settings of values, a dict, and write settings.toml."""
 
     for name, value in values.items():
@@ -83,7 +87,7 @@ def _set(values) -> None:
     Arg("KEY", Key(), optional=True),
     help=N_("The settings of Virtualbricks and of the open project"),
 )
-def show(context, key):
+def show(context: Context, key: str | None) -> list[str]:
     if key is not None:
         return [_line(key)]
     lines = [_("# Virtualbricks")]
@@ -109,7 +113,7 @@ def show(context, key):
     help=N_("Change settings, all or none"),
     example="setting set terminal=/usr/bin/gnome-terminal",
 )
-def set_(context, key_value):
+def set_(context: Context, key_value: list[tuple[str, str]]) -> None:
     values = {}
     for name, text in key_value:
         Key().read(context, name)
@@ -127,9 +131,10 @@ def set_(context, key_value):
     Arg("KEY", Key(), many=True),
     help=N_("Put settings back to their defaults"),
 )
-def unset(context, key):
+def unset(context: Context, key: list[str]) -> None:
     values = {}
     for name in key:
         owner = ProjectSettings if name in PROJECT_KEYS else AppSettings
-        values[name] = field_default(owner, name)
+        # a setting is a string or a boolean
+        values[name] = cast(SettingValue, field_default(owner, name))
     _set(values)

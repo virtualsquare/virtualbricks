@@ -301,7 +301,7 @@ def parse_socket(text: str, client: bool = False) -> Socket:
         host, port = _host_and_port(text, kind, args[1:], keywords)
     else:
         host, port = _interface_and_port(text, kind, args[1:], keywords)
-    files = {}
+    files: dict[str, str | None] = {}
     for key, field in FILES.items():
         if keywords.get(key) == "":
             raise ValueError(f"{text}: {key} needs a file")
@@ -313,7 +313,7 @@ def parse_socket(text: str, client: bool = False) -> Socket:
     return Socket(None, protocol, kind, host, port, **files)
 
 
-def _path(text, args, keywords):
+def _path(text: str, args: list[str], keywords: dict[str, str]) -> str:
     paths = list(args)
     if "address" in keywords:
         paths.append(keywords["address"])
@@ -326,7 +326,7 @@ def _path(text, args, keywords):
     return paths[0]
 
 
-def _port(text, kind, value):
+def _port(text: str, kind: str, value: str | None) -> int:
     if not value:
         raise ValueError(f"{text} needs a port, as {kind}:8765")
     if not PORT.fullmatch(value) or not 1 <= int(value) <= 65535:
@@ -334,19 +334,21 @@ def _port(text, kind, value):
     return int(value)
 
 
-def _interface_and_port(text, kind, args, keywords):
+def _interface_and_port(
+    text: str, kind: str, args: list[str], keywords: dict[str, str]
+) -> tuple[str, int]:
     """The address and the port of a socket to listen on."""
 
     if len(args) > 1:
         raise ValueError(
             f"{text}: the address to listen on is interface={args[0]}"
         )
-    port = keywords.get("port")
+    given = keywords.get("port")
     if args:
-        if port is not None:
+        if given is not None:
             raise ValueError(f"{text}: port is given twice")
-        port = args[0]
-    port = _port(text, kind, port)
+        given = args[0]
+    port = _port(text, kind, given)
     try:
         address = ipaddress.ip_address(keywords.get("interface", LOOPBACK))
     except ValueError:
@@ -361,7 +363,9 @@ def _interface_and_port(text, kind, args, keywords):
     return str(address), port
 
 
-def _host_and_port(text, kind, args, keywords):
+def _host_and_port(
+    text: str, kind: str, args: list[str], keywords: dict[str, str]
+) -> tuple[str, int]:
     """
     The machine and the port that --connect names, as Twisted's clients
     read them: HOST:PORT, host= and port=; PORT alone is this machine.

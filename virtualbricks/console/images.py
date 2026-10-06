@@ -21,17 +21,24 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 from virtualbricks.bricks.virtualmachine import is_virtualmachine
 from virtualbricks.console.command import (
     Arg,
     CommandError,
+    Context,
     Named,
     Pair,
     command,
 )
 from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks.virtualmachine import Image
 
 IMAGE = Named(
     lambda factory, name: factory.get_image(name),
@@ -40,7 +47,7 @@ IMAGE = Named(
 )
 
 
-def _users(factory, image) -> list[str]:
+def _users(factory: BrickFactory, image: Image) -> list[str]:
     """The disks that use image: vm1 hda."""
 
     return [
@@ -52,7 +59,7 @@ def _users(factory, image) -> list[str]:
     ]
 
 
-def _description(pairs):
+def _description(pairs: Iterable[tuple[str, str]]) -> str | None:
     text = None
     for key, value in pairs:
         if key != "description":
@@ -66,7 +73,7 @@ def _description(pairs):
 
 
 @command("image", "list", help=N_("The disk images and their users"))
-def list_(context):
+def list_(context: Context) -> list[str]:
     factory = context.factory
     images = list(factory.images)
     if not images:
@@ -87,7 +94,9 @@ def list_(context):
     help=N_("Add an image file to the project; description= says what it is"),
     example='image add debian ~/images/debian.qcow2 description="Debian 13"',
 )
-def add(context, name, path, key_value):
+def add(
+    context: Context, name: str, path: str, key_value: list[tuple[str, str]]
+) -> list[str]:
     factory = context.factory
     description = _description(key_value) or ""
     name = factory.check_name(name)
@@ -103,7 +112,7 @@ def add(context, name, path, key_value):
     Arg("NAME", IMAGE),
     help=N_("An image's file, description and users"),
 )
-def show(context, name):
+def show(context: Context, name: Image) -> list[str]:
     image = name
     users = _users(context.factory, image)
     lines = [image.name, image.path]
@@ -124,7 +133,9 @@ def show(context, name):
     Arg("KEY=VALUE", Pair(), many=True),
     help=N_("Change the description of an image"),
 )
-def set_(context, name, key_value):
+def set_(
+    context: Context, name: Image, key_value: list[tuple[str, str]]
+) -> None:
     name.set_description(_description(key_value))
 
 
@@ -135,7 +146,7 @@ def set_(context, name, key_value):
     Arg("NEW"),
     help=N_("Rename an image, in the disks that use it too"),
 )
-def rename(context, name, new):
+def rename(context: Context, name: Image, new: str) -> list[str]:
     context.factory.rename_item(name, new)
     return [name.name] if name.name != new else []
 
@@ -149,7 +160,7 @@ def rename(context, name, new):
         " stay"
     ),
 )
-def delete(context, name):
+def delete(context: Context, name: Image) -> list[str]:
     disks = context.factory.remove_image(name)
     return [
         _("{brick} {device} has no image now").format(

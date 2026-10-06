@@ -76,7 +76,7 @@ def read(read: Callable[[int], bytes]) -> dict[bytes, bytes]:
     the connection. Raise Closed at the end, BadBox for what isn't a box.
     """
 
-    box = {}
+    box: dict[bytes, bytes] = {}
     while True:
         key = _string(read, MAX_KEY, bool(box))
         if not key:
@@ -84,7 +84,7 @@ def read(read: Callable[[int], bytes]) -> dict[bytes, bytes]:
         box[key] = _string(read, MAX_VALUE, True)
 
 
-def _string(read, most, begun):
+def _string(read: Callable[[int], bytes], most: int, begun: bool) -> bytes:
     size = _exactly(read, LENGTH.size, begun)
     (length,) = LENGTH.unpack(size)
     if length > most:
@@ -92,7 +92,7 @@ def _string(read, most, begun):
     return _exactly(read, length, True)
 
 
-def _exactly(read, count, begun):
+def _exactly(read: Callable[[int], bytes], count: int, begun: bool) -> bytes:
     data = b""
     while len(data) < count:
         more = read(count - len(data))

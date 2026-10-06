@@ -41,17 +41,26 @@ that ``quit`` answers too.
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, NoReturn, TypeAlias, cast
 
 from twisted.internet import defer, error, protocol
 from twisted.internet.interfaces import IHandshakeListener
+from twisted.internet.protocol import connectionDone
 from twisted.logger import Logger
 from twisted.protocols import amp, basic
+from twisted.python.failure import Failure
 from zope.interface import implementer
 
 from virtualbricks import __version__, locations, locks
 from virtualbricks.config.workspace import projects
 from virtualbricks.console import ampcommands, ampgen, ampwire, wire
-from virtualbricks.console.command import COMMANDS, CommandError, NotFound
+from virtualbricks.console.command import (
+    COMMANDS,
+    Command,
+    CommandError,
+    NotFound,
+)
 from virtualbricks.console.dispatch import run, run_command
 from virtualbricks.console.parser import line_of
 from virtualbricks.i18n import _
@@ -62,6 +71,28 @@ from virtualbricks.remote import (
     follower,
     tunnel,
 )
+
+if TYPE_CHECKING:  # pragma: no cover
+    from OpenSSL.crypto import X509
+    from twisted.internet import ssl
+    from twisted.internet.address import IPv4Address, IPv6Address
+    from twisted.internet.interfaces import (
+        IAddress,
+        IDelayedCall,
+        IListeningPort,
+        IReactorTime,
+        ISSLTransport,
+        ITCPTransport,
+        ITransport,
+    )
+    from twisted.internet.posixbase import PosixReactorBase
+
+    from virtualbricks.brickfactory import BrickFactory
+
+    # a mixin: what it works on comes from the protocol that takes it
+    _Connection = protocol.Protocol
+else:
+    _Connection = object
 
 logger = Logger()
 listening = "Listening on {path}, protocol {protocol}"
@@ -98,31 +129,32 @@ CLOSE_TIMEOUT = 2
 class InOrder:
     """The requests of a connection, each run after the one before."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        self.waiting: list[tuple[Callable[[], object], defer.Deferred[Any]]]
         self.waiting = []
         # a request runs, and the loop of _next() runs
         self.busy = False
         self.looping = False
         self.stopped = False
 
-    def add(self, call):
+    def add(self, call: Callable[[], object]) -> defer.Deferred[Any]:
         """
         Run call() once the requests before it are done: a Deferred of its
         result, which never fires if the connection is lost first.
         """
 
-        done = defer.Deferred()
+        done: defer.Deferred[Any] = defer.Deferred()
         self.waiting.append((call, done))
         self._next()
         return done
 
-    def stop(self):
+    def stop(self) -> None:
         """The connection is lost: drop the requests that wait."""
 
         self.stopped = True
         self.waiting = []
 
-    def _next(self):
+    def _next(self) -> None:
         if self.looping:
             return
         self.looping = True
@@ -136,35 +168,40 @@ class InOrder:
         finally:
             self.looping = False
 
-    def _finished(self, _):
+    def _finished(self, _: object) -> None:
         self.busy = False
         self._next()
 
 
-def _peer(transport):
+def _peer(transport: ITransport) -> str:
     """Who is at the other end of a network socket, for the log."""
 
-    address = transport.getPeer()
+    # a network socket's
+    address = cast("IPv4Address | IPv6Address", transport.getPeer())
     return f"{address.host} port {address.port}"
 
 
 @implementer(IHandshakeListener)
-class Visitor:
+class Visitor(_Connection):
     """
     What a connection of either protocol knows of its client, on a network
     socket: who it is, for the log, the time it has to prove the token, and
     the certificate that it showed over ssl.
     """
 
+    # the factory of the socket, and what the connection waits with
+    factory: ControlFactory
+    reactor: IReactorTime
     # who connects, for the log; None on a unix socket
-    who = None
+    who: str | None = None
     # what closes the connection when the proof of the token is late
-    timer = None
+    timer: IDelayedCall | None = None
     handshaken = False
 
-    def arrive(self):
+    def arrive(self) -> None:
         """The connection is made: who it is, and the time to prove."""
 
+        assert self.transport is not None, "the connection is made"
         if self.factory.network():
             self.who = _peer(self.transport)
         if self.factory.token is not None:
@@ -172,7 +209,7 @@ class Visitor:
                 wire.PROOF_TIMEOUT, self._too_slow
             )
 
-    def leave(self, reason):
+    def leave(self, reason: Failure) -> None:
         """The connection is lost; over ssl, maybe before its handshake."""
 
         self._stop_timer()
@@ -187,25 +224,28 @@ class Visitor:
                 reason=tls.describe(reason),
             )
 
-    def handshakeCompleted(self):
+    def handshakeCompleted(self) -> None:
         self.handshaken = True
         if self.factory.token is not None:
             # the proof of the token says who it is
             return
         from virtualbricks.console import tls
 
-        name = tls.common_name(self.transport.getPeerCertificate())
+        transport = cast("ISSLTransport", self.transport)
+        # pyOpenSSL's, as Twisted's TLS has it
+        certificate = cast("X509 | None", transport.getPeerCertificate())
+        name = tls.common_name(certificate)
         logger.info(
             connected_as, who=self.who, socket=self.factory.label(), name=name
         )
-        self.who = f"{name} at {self.transport.getPeer().host}"
+        self.who = f"{name} at {transport.getPeer().host}"
 
-    def _stop_timer(self):
+    def _stop_timer(self) -> None:
         if self.timer is not None and self.timer.active():
             self.timer.cancel()
         self.timer = None
 
-    def _too_slow(self):
+    def _too_slow(self) -> None:
         self.timer = None
         logger.warn(
             too_slow,
@@ -219,7 +259,7 @@ class Visitor:
             )
         )
 
-    def _shut_out(self, error):
+    def _shut_out(self, error: str) -> None:
         raise NotImplementedError()
 
 
@@ -229,17 +269,17 @@ class ControlProtocol(Visitor, basic.LineOnlyReceiver):
     delimiter = b"\n"
     MAX_LENGTH = wire.MAX_LINE
 
-    def __init__(self, brickfactory, reactor):
+    def __init__(self, brickfactory: BrickFactory, reactor: IReactorTime):
         # not factory: Twisted sets that, the ControlFactory
         self.brickfactory = brickfactory
         self.reactor = reactor
         self.requests = InOrder()
         # the nonce of the proof that a client of a socket with a token
         # owes, until it gives it; once shut out, nothing it sends counts
-        self.nonce = None
+        self.nonce: str | None = None
         self.shut = False
 
-    def connectionMade(self):
+    def connectionMade(self) -> None:
         self.factory.connections.add(self)
         self.arrive()
         if self.factory.token is None:
@@ -248,12 +288,12 @@ class ControlProtocol(Visitor, basic.LineOnlyReceiver):
         self.nonce = wire.new_nonce()
         self.send(wire.challenge(self.nonce))
 
-    def greet(self, proof=None):
+    def greet(self, proof: str | None = None) -> None:
         current = projects.current
         name = current.name if current is not None else None
         self.send(wire.greeting(__version__, os.getpid(), name, proof))
 
-    def connectionLost(self, reason):
+    def connectionLost(self, reason: Failure = connectionDone) -> None:
         # the command that runs goes on; its answer is dropped. Twisted
         # doesn't reset connected.
         self.connected = False
@@ -261,22 +301,26 @@ class ControlProtocol(Visitor, basic.LineOnlyReceiver):
         self.requests.stop()
         self.factory.lost(self)
 
-    def send(self, message):
-        if self.connected:
+    def send(self, message: dict) -> None:
+        if self.connected and self.transport is not None:
             self.transport.write(wire.encode(message))
 
-    def lineReceived(self, line):
+    def lineReceived(self, line: bytes) -> None:
         if self.shut or not line.strip():
             return
         if self.nonce is not None:
-            self.prove(line)
+            self.prove(line, self.nonce)
         else:
             self.requests.add(lambda: self.handle(line))
 
-    def prove(self, line):
-        """The first line of a client of a socket with a token: its proof."""
+    def prove(self, line: bytes, mine: str) -> None:
+        """
+        The first line of a client of a socket with a token: its proof, over
+        mine, the nonce of the challenge.
+        """
 
         token = self.factory.token
+        assert token is not None, "the socket has a token"
         socket = self.factory.label()
         try:
             nonce, given = wire.read_proof(line)
@@ -285,23 +329,24 @@ class ControlProtocol(Visitor, basic.LineOnlyReceiver):
             self._shut_out(str(exc))
             return
         if not wire.same_proof(
-            given, wire.proof(token, "client", self.nonce, nonce)
+            given, wire.proof(token, "client", mine, nonce)
         ):
             logger.warn(wrong_token, who=self.who, socket=socket)
             self._shut_out(_("Wrong token"))
             return
         self._stop_timer()
-        mine, self.nonce = self.nonce, None
+        self.nonce = None
         logger.info(proved, who=self.who, socket=socket)
         self.greet(wire.proof(token, "server", mine, nonce))
 
-    def _shut_out(self, error):
+    def _shut_out(self, error: str) -> None:
         self._stop_timer()
         self.shut = True
         self.send(wire.refusal(error))
+        assert self.transport is not None, "the connection is made"
         self.transport.loseConnection()
 
-    def handle(self, line):
+    def handle(self, line: bytes) -> defer.Deferred[None]:
         try:
             text, cwd = wire.read_request(line)
         except wire.BadRequest as exc:
@@ -312,13 +357,12 @@ class ControlProtocol(Visitor, basic.LineOnlyReceiver):
         else:
             logger.info(command_from, who=self.who, line=text)
         done = run(self.brickfactory, text, self.reactor, cwd=cwd)
-        done.addCallbacks(self._answer, self._refuse)
-        return done
+        return done.addCallbacks(self._answer, self._refuse)
 
-    def _answer(self, lines):
+    def _answer(self, lines: list[str]) -> None:
         self.send(wire.answer(lines))
 
-    def _refuse(self, failure):
+    def _refuse(self, failure: Failure) -> None:
         # run() fails with a CommandError, and logs the failures of bugs
         exc = failure.value
         message = str(exc) or type(exc).__name__
@@ -340,8 +384,12 @@ TYPED = {
 }
 
 
-def _responder(found, typed):
-    def respond(self, cwd, **given):
+def _responder(
+    found: Command, typed: type[amp.Command]
+) -> Callable[..., defer.Deferred[Any]]:
+    def respond(
+        self: AMPControl, cwd: str | None, **given: Any
+    ) -> defer.Deferred[Any]:
         running = self.requests.add(lambda: self.run_typed(found, given, cwd))
         return running.addBoth(self.pushes_first)
 
@@ -350,14 +398,20 @@ def _responder(found, typed):
 
 # The responders of the typed commands, which AMP finds by their commands;
 # Twisted collects them when the class is made.
-TypedCommands = type(
-    "TypedCommands",
-    (amp.CommandLocator,),
-    {
-        f"typed_{name.decode()}": _responder(found, typed)
-        for name, (found, typed) in TYPED.items()
-    },
-)
+if TYPE_CHECKING:  # pragma: no cover
+
+    class TypedCommands(amp.CommandLocator):
+        """Made by type(), which mypy can't follow."""
+
+else:
+    TypedCommands = type(
+        "TypedCommands",
+        (amp.CommandLocator,),
+        {
+            f"typed_{name.decode()}": _responder(found, typed)
+            for name, (found, typed) in TYPED.items()
+        },
+    )
 
 
 # The commands of the windows of another machine, which have the checks of
@@ -387,7 +441,9 @@ class AMPControl(
     # how Run writes its answer, to measure it first
     LINES = amp.ListOf(amp.Unicode())
 
-    def __init__(self, brickfactory, reactor):
+    def __init__(
+        self, brickfactory: BrickFactory, reactor: IReactorTime
+    ) -> None:
         super().__init__()
         # not factory: Twisted sets that, the ControlFactory
         self.brickfactory = brickfactory
@@ -396,21 +452,21 @@ class AMPControl(
         # whether the program owes the proof of the token, and the nonce of
         # its Challenge
         self.owes_proof = False
-        self.nonce = None
+        self.nonce: str | None = None
         # the protocol that Hello agreed on
         self.agreed = 1
 
-    def makeConnection(self, transport):
+    def makeConnection(self, transport: ITransport) -> None:
         # AMP logs each connection with the addresses of its objects: listen()
         # logs what the log needs
         amp.BinaryBoxProtocol.makeConnection(self, transport)
 
-    def connectionMade(self):
+    def connectionMade(self) -> None:
         self.factory.connections.add(self)
         self.arrive()
         self.owes_proof = self.factory.token is not None
 
-    def connectionLost(self, reason):
+    def connectionLost(self, reason: Failure = connectionDone) -> None:
         # the command that runs goes on; its answer is dropped
         amp.BinaryBoxProtocol.connectionLost(self, reason)
         self.transport = None
@@ -419,21 +475,21 @@ class AMPControl(
         self.requests.stop()
         self.factory.lost(self)
 
-    def _check_proved(self):
+    def _check_proved(self) -> None:
         if self.owes_proof:
             raise ampwire.TokenNeeded(
                 _("Prove the token first: Challenge, then Authenticate")
             )
 
     @ampwire.Challenge.responder
-    def challenge(self):
+    def challenge(self) -> dict[str, str]:
         if self.factory.token is None:
             raise ampwire.WrongToken(_("This socket takes no token"))
         self.nonce = wire.new_nonce()
         return {"nonce": self.nonce}
 
     @ampwire.Authenticate.responder
-    def authenticate(self, nonce, proof):
+    def authenticate(self, nonce: str, proof: str) -> dict[str, str]:
         token = self.factory.token
         if token is None:
             raise ampwire.WrongToken(_("This socket takes no token"))
@@ -455,25 +511,25 @@ class AMPControl(
         logger.info(proved, who=self.who, socket=socket)
         return {"proof": wire.proof(token, "server", mine, nonce)}
 
-    def _shut_out(self, error):
+    def _shut_out(self, error: str) -> None:
         """Close the connection once the error, if any, is written."""
 
         self._stop_timer()
         self.owes_proof = True
 
-        def close():
+        def close() -> None:
             if self.transport is not None:
                 self.transport.loseConnection()
 
         self.reactor.callLater(0, close)
 
-    def locateResponder(self, name):
+    def locateResponder(self, name: bytes) -> Callable[..., Any] | None:
         responder = super().locateResponder(name)
         typed = TYPED[name][1] if name in TYPED else WINDOWS.get(name)
         if responder is None or typed is None:
             return responder
 
-        def checked(box):
+        def checked(box: amp.AmpBox) -> Any:
             # what AMP would drop, or close the connection on
             try:
                 self._check_proved()
@@ -492,7 +548,7 @@ class AMPControl(
 
         return checked
 
-    def _check_agreed(self):
+    def _check_agreed(self) -> None:
         if self.agreed != ampcommands.PROTOCOL:
             raise ampcommands.ProtocolNeeded(
                 _(
@@ -502,7 +558,7 @@ class AMPControl(
             )
 
     @ampwire.Hello.responder
-    def hello(self, protocols):
+    def hello(self, protocols: list[int] | None) -> dict[str, object]:
         self._check_proved()
         asked = {1, *(protocols or ())}
         self.agreed = max(
@@ -518,22 +574,25 @@ class AMPControl(
         }
 
     @ampwire.Run.responder
-    def run_line(self, line, cwd):
+    def run_line(self, line: str, cwd: str | None) -> defer.Deferred[Any]:
         self._check_proved()
         running = self.requests.add(lambda: self.handle(line, cwd))
         return running.addBoth(self.pushes_first)
 
-    def handle(self, line, cwd):
+    def handle(
+        self, line: str, cwd: str | None
+    ) -> defer.Deferred[dict[str, list[str]]]:
         try:
             wire.check_cwd(cwd)
         except wire.BadRequest as exc:
             raise ampwire.CommandFailed(str(exc)) from None
         self._log_line(line)
         done = run(self.brickfactory, line, self.reactor, cwd=cwd)
-        done.addCallbacks(self._answer, self._refuse)
-        return done
+        return done.addCallbacks(self._answer, self._refuse)
 
-    def run_typed(self, found, given, cwd):
+    def run_typed(
+        self, found: Command, given: dict[str, Any], cwd: str | None
+    ) -> defer.Deferred[dict[str, list[str]]]:
         """Run the typed command of found, a command of the console."""
 
         try:
@@ -551,22 +610,21 @@ class AMPControl(
         except CommandError as exc:
             self._log_failed(str(exc))
             raise ampcommands.BadArgument(str(exc)) from None
-        done.addCallbacks(self._answer, self._refuse)
-        return done
+        return done.addCallbacks(self._answer, self._refuse)
 
-    def _log_line(self, line):
+    def _log_line(self, line: str) -> None:
         if self.who is None:
             logger.info(amp_command_received, line=line)
         else:
             logger.info(command_from, who=self.who, line=line)
 
-    def _log_failed(self, message):
+    def _log_failed(self, message: str) -> None:
         if self.who is None:
             logger.info(amp_command_failed, error=message)
         else:
             logger.info(command_from_failed, who=self.who, error=message)
 
-    def _answer(self, lines):
+    def _answer(self, lines: list[str]) -> dict[str, list[str]]:
         size = len(self.LINES.toString(lines))
         if size > amp.MAX_VALUE_LENGTH:
             logger.info(answer_too_long, size=size)
@@ -579,7 +637,7 @@ class AMPControl(
             )
         return {"lines": lines}
 
-    def _refuse(self, failure):
+    def _refuse(self, failure: Failure) -> NoReturn:
         # run() fails with a CommandError, and logs the failures of bugs;
         # what the command did first is dropped
         exc = failure.value
@@ -588,7 +646,7 @@ class AMPControl(
         raise ampwire.CommandFailed(message)
 
 
-def _check_keys(typed, box):
+def _check_keys(typed: type[amp.Command], box: amp.AmpBox) -> None:
     """
     BadArgument if box has a key that typed doesn't declare, or lacks one it
     needs: AMP drops the first, and closes the connection on the second.
@@ -618,7 +676,12 @@ def _check_keys(typed, box):
         )
 
 
-class ControlFactory(protocol.Factory):
+# A connection of a control socket.
+Connection: TypeAlias = ControlProtocol | AMPControl
+
+
+# Any: Twisted's wants protocols whose factory is a Factory[Self]
+class ControlFactory(protocol.Factory[Any]):
     """
     The connections of a control socket, a wire.Socket, of the protocol it
     speaks; with a token, each client proves first that it knows it.
@@ -626,46 +689,49 @@ class ControlFactory(protocol.Factory):
 
     # listen() logs what the log needs: not the address of the object
     noisy = False
+    # what makes the connections, of brickfactory and reactor
+    protocol: Callable[..., Connection]
 
     def __init__(
         self,
-        brickfactory,
-        reactor,
-        protocol=ControlProtocol,
-        socket=None,
-        token=None,
-    ):
+        brickfactory: BrickFactory,
+        reactor: IReactorTime,
+        protocol: Callable[..., Connection] = ControlProtocol,
+        socket: wire.Socket | None = None,
+        token: str | None = None,
+    ) -> None:
         self.brickfactory = brickfactory
         self.reactor = reactor
         self.protocol = protocol
         self.socket = socket
         self.token = token
-        self.connections = set()
+        self.connections: set[Connection] = set()
         # fired once every connection is closed, while closing
-        self._closed = None
+        self._closed: defer.Deferred[None] | None = None
 
-    def network(self):
+    def network(self) -> bool:
         """Whether it listens on a port, where anyone can connect."""
 
         return self.socket is not None and self.socket.kind != "unix"
 
-    def label(self):
+    def label(self) -> str:
         """A network socket, as the log names it after a client."""
 
+        assert self.socket is not None, "a network socket"
         return f"{self.socket.kind} port {self.socket.port}"
 
-    def buildProtocol(self, addr):
+    def buildProtocol(self, addr: IAddress | None) -> Connection:
         connection = self.protocol(self.brickfactory, self.reactor)
         connection.factory = self
         return connection
 
-    def lost(self, connection):
+    def lost(self, connection: Connection) -> None:
         self.connections.discard(connection)
         if self._closed is not None and not self.connections:
             closed, self._closed = self._closed, None
             closed.callback(None)
 
-    def close(self):
+    def close(self) -> defer.Deferred[None]:
         """
         Close the connections once their answers are written; a Deferred.
 
@@ -674,22 +740,27 @@ class ControlFactory(protocol.Factory):
 
         if not self.connections:
             return defer.succeed(None)
-        self._closed = closed = defer.Deferred()
+        closed: defer.Deferred[None] = defer.Deferred()
+        self._closed = closed
         timer = self.reactor.callLater(CLOSE_TIMEOUT, self._abort)
 
-        def stop_timer(result):
+        def stop_timer(result: None) -> None:
             if timer.active():
                 timer.cancel()
             return result
 
         closed.addBoth(stop_timer)
         for connection in list(self.connections):
-            connection.transport.loseConnection()
+            # a connection in the set is connected
+            transport = cast("ITransport", connection.transport)
+            transport.loseConnection()
         return closed
 
-    def _abort(self):
+    def _abort(self) -> None:
         for connection in list(self.connections):
-            connection.transport.abortConnection()
+            # those of unix sockets have it too
+            transport = cast("ITCPTransport", connection.transport)
+            transport.abortConnection()
 
 
 class Control:
@@ -698,7 +769,13 @@ class Control:
     lock of a unix one.
     """
 
-    def __init__(self, socket, port, lock, factory):
+    def __init__(
+        self,
+        socket: wire.Socket,
+        port: IListeningPort,
+        lock: locks.Lock | None,
+        factory: ControlFactory,
+    ) -> None:
         self.socket = socket
         self.port = port
         self.lock = lock
@@ -709,10 +786,10 @@ class Control:
             follower.keeper.start()
 
     @property
-    def path(self):
+    def path(self) -> str | None:
         return self.socket.path
 
-    def close(self):
+    def close(self) -> defer.Deferred[None]:
         """Stop listening, close the connections, release the lock."""
 
         if self.closed:
@@ -721,10 +798,11 @@ class Control:
         if self.socket.protocol == wire.AMP:
             follower.keeper.stop()
         # Twisted removes the socket as it stops listening
+        done: defer.Deferred[Any]
         done = defer.maybeDeferred(self.port.stopListening)
         done.addCallback(lambda _: self.factory.close())
 
-        def release(result):
+        def release(result: None) -> None:
             if self.lock is not None:
                 self.lock.unlock()
             return result
@@ -733,7 +811,7 @@ class Control:
         return done
 
 
-def _holder(lock_file):
+def _holder(lock_file: str) -> str:
     """Who holds the lock of a socket, for the log."""
 
     pids = [pid for pid, _ in locks.holders(lock_file)]
@@ -744,7 +822,9 @@ def _holder(lock_file):
     return "Processes " + ", ".join(map(str, pids))
 
 
-def _listen_unix(reactor, path, factory):
+def _listen_unix(
+    reactor: PosixReactorBase, path: str, factory: ControlFactory
+) -> IListeningPort:
     # nobody else can connect between the bind and the chmod of Twisted
     umask = os.umask(0o177)
     try:
@@ -754,10 +834,17 @@ def _listen_unix(reactor, path, factory):
 
 
 # The protocol of the connections of a socket, by the protocol it speaks.
-PROTOCOLS = {wire.TEXT: ControlProtocol, wire.AMP: AMPControl}
+PROTOCOLS: dict[str, Callable[..., Connection]] = {
+    wire.TEXT: ControlProtocol,
+    wire.AMP: AMPControl,
+}
 
 
-def listen(brickfactory, socket=None, reactor=None):
+def listen(
+    brickfactory: BrickFactory,
+    socket: wire.Socket | None = None,
+    reactor: PosixReactorBase | None = None,
+) -> Control | None:
     """
     Answer the commands of socket, a wire.Socket of --listen: the text
     socket at ``.control`` in the runtime folder of the workspace if None,
@@ -769,14 +856,17 @@ def listen(brickfactory, socket=None, reactor=None):
     """
 
     if reactor is None:
-        from twisted.internet import reactor
+        from twisted.internet import reactor as default
+
+        reactor = cast("PosixReactorBase", default)
     if socket is None:
         socket = wire.Socket(None)
-    if socket.kind == "unix" and socket.path is None:
-        socket = socket._replace(path=locations.control_socket(projects.path))
     if socket.kind != "unix":
         return _listen_network(brickfactory, socket, reactor)
     path = socket.path
+    if path is None:
+        path = locations.control_socket(projects.path)
+        socket = socket._replace(path=path)
     lock_file = locations.control_lock_file(path)
     try:
         wire.check_path(path, wire.in_runtime_dir(path))
@@ -816,7 +906,7 @@ def listen(brickfactory, socket=None, reactor=None):
     return control
 
 
-def _token(path):
+def _token(path: str) -> str:
     """The token of the file at path, made if it isn't there."""
 
     try:
@@ -834,18 +924,24 @@ def _token(path):
     return token
 
 
-def _strerror(exc):
+def _strerror(exc: object) -> str:
     return getattr(exc, "strerror", None) or str(exc)
 
 
-def _listen_network(brickfactory, socket, reactor):
+def _listen_network(
+    brickfactory: BrickFactory, socket: wire.Socket, reactor: PosixReactorBase
+) -> Control | None:
     """
     listen() on the port of a tcp or ssl socket, with its token, or with
     the certificates that its clients show.
     """
 
     where = socket.name()
-    token = token_file = options = None
+    host, number = socket.host, socket.port
+    assert host is not None and number is not None, "parse_socket() sets them"
+    token: str | None = None
+    token_file: str | None = None
+    options: ssl.CertificateOptions | None = None
     try:
         if socket.kind == "ssl":
             from virtualbricks.console import tls
@@ -865,13 +961,9 @@ def _listen_network(brickfactory, socket, reactor):
     )
     try:
         if options is None:
-            port = reactor.listenTCP(
-                socket.port, factory, interface=socket.host
-            )
+            port = reactor.listenTCP(number, factory, interface=host)
         else:
-            port = reactor.listenSSL(
-                socket.port, factory, options, interface=socket.host
-            )
+            port = reactor.listenSSL(number, factory, options, interface=host)
     except error.CannotListenError as exc:
         logger.warn(no_socket, reason=f"{where}: {_strerror(exc.socketError)}")
         return None

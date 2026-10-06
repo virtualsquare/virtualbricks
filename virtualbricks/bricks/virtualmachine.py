@@ -23,6 +23,7 @@ import itertools
 import os
 import re
 import shutil
+from typing import TypeGuard
 
 import attr
 from twisted.internet import defer
@@ -1633,8 +1634,9 @@ def lacks(config, cards, qemu, machine_properties, audio_driver):
     return found
 
 
-def is_virtualmachine(brick):
-    return brick.get_type() == "Qemu"
+def is_virtualmachine(brick: object) -> TypeGuard[VirtualMachine]:
+
+    return isinstance(brick, bricks.Brick) and brick.get_type() == "Qemu"
 
 
 # Suspend and resume a machine, as its menu does

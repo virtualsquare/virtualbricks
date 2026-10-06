@@ -145,8 +145,7 @@ ignore_missing_imports = true
 module = [
     "virtualbricks.bricks.command",
     "virtualbricks.config.*",
-    "virtualbricks.console.command",
-    "virtualbricks.console.output",
+    "virtualbricks.console.*",
     "virtualbricks.gui.pango",
     "virtualbricks.gui.trash",
     "virtualbricks.locks",

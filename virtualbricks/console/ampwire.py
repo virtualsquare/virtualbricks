@@ -113,7 +113,7 @@ class Authenticate(amp.Command):
     errors = {WrongToken: b"WRONG_TOKEN"}
 
 
-def proof(token, side, server_nonce, client_nonce):
+def proof(token: str, side: str, server_nonce: str, client_nonce: str) -> str:
     """
     The proof that side, "client" or "server", knows token: the HMAC-SHA256
     of both nonces under the token, in hex.
@@ -123,7 +123,7 @@ def proof(token, side, server_nonce, client_nonce):
     return hmac.new(token.encode(), message.encode(), "sha256").hexdigest()
 
 
-async def authenticate(vb, token):
+async def authenticate(vb: amp.AMP, token: str) -> None:
     """
     Prove to the Virtualbricks of vb, an AMP connection, that the program
     knows token; raise WrongToken if either end doesn't know it.

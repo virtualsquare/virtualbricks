@@ -27,6 +27,8 @@ Brick; a running brick can't be renamed, deleted or plugged elsewhere.
 from __future__ import annotations
 
 import signal
+from collections.abc import Generator, Sequence
+from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet import defer, error
 from twisted.logger import Logger
@@ -43,6 +45,7 @@ from virtualbricks.bricks.brickinfo import (
     new_name,
 )
 from virtualbricks.bricks.draft import apply
+from virtualbricks.bricks.sock import Sock
 from virtualbricks.bricks.virtualmachine import (
     hostonly_sock,
     is_virtualmachine,
@@ -64,6 +67,7 @@ from virtualbricks.console.command import (
     ArgKind,
     Choice,
     CommandError,
+    Context,
     KeyValues,
     Named,
     NotFound,
@@ -74,6 +78,17 @@ from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _
 from virtualbricks.bricks import is_running
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks import Brick
+    from virtualbricks.bricks.draft import Draft, Problem
+    from virtualbricks.bricks.plug import Plug
+    from virtualbricks.bricks.virtualmachine import (
+        VirtualMachine,
+        _HostonlySock,
+    )
+    from virtualbricks.config.schema import Kind as FieldKind
+
 logger = Logger()
 start_failed = "Starting {name} failed"
 stop_failed = "Stopping {name} failed"
@@ -82,7 +97,7 @@ stop_failed = "Stopping {name} failed"
 # The arguments
 
 
-def _bricks(factory):
+def _bricks(factory: BrickFactory) -> list[str]:
     return [brick.name for brick in factory.bricks]
 
 
@@ -96,7 +111,7 @@ BRICK = Named(
 class VirtualMachineArg(Named):
     """The name of a virtual machine of the project."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             lambda factory, name: factory.get_brick(name),
             lambda factory: [
@@ -105,7 +120,7 @@ class VirtualMachineArg(Named):
             N_("No brick named {name}"),
         )
 
-    def read(self, context, word):
+    def read(self, context: Context, word: str) -> VirtualMachine:
         brick = super().read(context, word)
         if not is_virtualmachine(brick):
             raise CommandError(
@@ -117,7 +132,7 @@ class VirtualMachineArg(Named):
 VM = VirtualMachineArg()
 
 
-def _find_kind(word):
+def _find_kind(word: str) -> brickinfo.Kind | None:
     for kind in NEW_KINDS:
         if word.lower() in (kind.word, kind.type.lower()):
             return kind
@@ -127,7 +142,7 @@ def _find_kind(word):
 class KindArg(ArgKind):
     """A kind of brick: its word, as vm, or its type, as qemu."""
 
-    def read(self, context, word):
+    def read(self, context: Context, word: str) -> brickinfo.Kind:
         kind = _find_kind(word)
         if kind is None:
             raise CommandError(
@@ -135,24 +150,24 @@ class KindArg(ArgKind):
             )
         return kind
 
-    def candidates(self, context, done):
+    def candidates(self, context: Context, done: dict) -> list[str]:
         return [kind.word for kind in NEW_KINDS]
 
 
 class KindOrBrick(ArgKind):
     """A brick of the project, or else a kind of brick."""
 
-    def read(self, context, word):
+    def read(self, context: Context, word: str) -> Brick | brickinfo.Kind:
         brick = context.factory.get_brick(word)
         if brick is not None:
             return brick
         return KindArg().read(context, word)
 
-    def candidates(self, context, done):
+    def candidates(self, context: Context, done: dict) -> list[str]:
         return _bricks(context.factory) + KindArg().candidates(context, done)
 
 
-def _socket_name(sock):
+def _socket_name(sock: Sock) -> str:
     """How a socket is named in the console: its brick, or vm:name."""
 
     brick = sock.brick
@@ -164,7 +179,7 @@ def _socket_name(sock):
 class Target(ArgKind):
     """A socket to plug into: a brick with one, as sw1, or vm1:sock_eth1."""
 
-    def read(self, context, word):
+    def read(self, context: Context, word: str) -> Sock:
         factory = context.factory
         for sock in factory.socks:
             if sock.brick is not None and _socket_name(sock) == word:
@@ -176,7 +191,7 @@ class Target(ArgKind):
             _("{name} has no socket to plug into").format(name=word)
         )
 
-    def candidates(self, context, done):
+    def candidates(self, context: Context, done: dict) -> list[str]:
         return sorted(
             {
                 _socket_name(sock)
@@ -189,26 +204,26 @@ class Target(ArgKind):
 class CardArg(ArgKind):
     """A network card of a machine, as its summary names it: eth0."""
 
-    def read(self, context, word):
+    def read(self, context: Context, word: str) -> int:
         if word.startswith("eth") and word[3:].isdigit():
             return int(word[3:])
         raise CommandError(
             _('"{word}" is not a card: eth0, eth1…').format(word=word)
         )
 
-    def candidates(self, context, done):
+    def candidates(self, context: Context, done: dict) -> list[str]:
         vm = done.get("vm")
         if vm is None:
             return []
         return [f"eth{n}" for n in range(len(vm.plugs) + len(vm.socks))]
 
 
-def _config(done):
+def _config(done: dict) -> object | None:
     brick = done.get("name")
     return None if brick is None else brick.config
 
 
-def _kind_of_key(config, key):
+def _kind_of_key(config: object, key: str) -> FieldKind[object] | None:
     try:
         return kind_of(config, key)
     except KeyError:
@@ -229,7 +244,7 @@ BRICK_KEYS = KeyValues(
 class BrickKey(ArgKind):
     """A key of the brick named before."""
 
-    def candidates(self, context, done):
+    def candidates(self, context: Context, done: dict) -> list[str]:
         config = _config(done)
         return [] if config is None else field_names(config)
 
@@ -237,14 +252,14 @@ class BrickKey(ArgKind):
 # What the commands share
 
 
-def _stopped(brick):
+def _stopped(brick: Brick) -> None:
     if is_running(brick):
         raise CommandError(
             _("{name} is running: stop it first").format(name=brick.name)
         )
 
 
-def _key_error(brick, key):
+def _key_error(brick: Brick, key: str) -> CommandError:
     return CommandError(
         _("{name} has no key {key}: brick keys {name} lists them").format(
             name=brick.name, key=key
@@ -252,11 +267,11 @@ def _key_error(brick, key):
     )
 
 
-def _problem(brick, problem):
+def _problem(brick: Brick, problem: Problem) -> str:
     return f"{brick.name} {problem.key}: {problem.text}"
 
 
-def _give(brick, draft, changed):
+def _give(brick: Brick, draft: Draft, changed: list[str]) -> list[str]:
     """Apply draft, and say what the brick keeps for later."""
 
     errors_ = draft.errors()
@@ -279,7 +294,7 @@ def _give(brick, draft, changed):
     return lines
 
 
-def _set(brick, values):
+def _set(brick: Brick, values: dict[str, object]) -> list[str]:
     """Set the keys of values, a dict of key and value, all or none."""
 
     draft = brick.draft_factory(brick)
@@ -292,8 +307,8 @@ def _set(brick, values):
     return _give(brick, draft, changed)
 
 
-def _card_line(brick, number, link):
-    if link in brick.socks:
+def _card_line(brick: VirtualMachine, number: int, link: Plug | Sock) -> str:
+    if isinstance(link, Sock):
         where = _("socket {name}").format(name=_socket_name(link))
     elif link.sock is None:
         where = _("in nothing")
@@ -304,7 +319,7 @@ def _card_line(brick, number, link):
     return f"eth{number}: {where}, {link.model}, {link.mac}"
 
 
-def _links(brick):
+def _links(brick: Brick) -> list[str]:
     """The lines of a brick's links: its cards, ends or plug."""
 
     if is_virtualmachine(brick):
@@ -331,9 +346,9 @@ def _links(brick):
     "types",
     help=N_("The kinds of brick, and what this computer lacks for each"),
 )
-def types(context):
+def types(context: Context) -> list[str]:
     rows = []
-    vde, qemu = get_setting("vde_path"), get_setting("qemu_path")
+    vde, qemu = str(get_setting("vde_path")), str(get_setting("qemu_path"))
     for kind in NEW_KINDS:
         found = issue(kind, vde, qemu)
         rows.append(
@@ -343,7 +358,7 @@ def types(context):
 
 
 @command("brick", "list", help=N_("The bricks, their state and settings"))
-def list_(context):
+def list_(context: Context) -> list[str]:
     bricks = list(context.factory.bricks)
     if not bricks:
         return [_("No bricks")]
@@ -369,7 +384,7 @@ def list_(context):
     ),
     example="brick new switch",
 )
-def new(context, kind, name):
+def new(context: Context, kind: brickinfo.Kind, name: str | None) -> list[str]:
     factory = context.factory
     if name is None:
         name = new_name(factory, kind)
@@ -377,7 +392,9 @@ def new(context, kind, name):
         name = factory.check_brick_name(kind.type, name)
     factory.new_brick(kind.type, name)
     lines = [name]
-    found = issue(kind, get_setting("vde_path"), get_setting("qemu_path"))
+    found = issue(
+        kind, str(get_setting("vde_path")), str(get_setting("qemu_path"))
+    )
     if found is not None:
         lines.append(found.line)
     return lines
@@ -389,7 +406,7 @@ def new(context, kind, name):
     Arg("NAME", BRICK),
     help=N_("A brick's state, links and keys"),
 )
-def show(context, name):
+def show(context: Context, name: Brick) -> list[str]:
     brick = name
     head = [brick.name, brickinfo.kind(brick), LABELS[brickinfo.state(brick)]]
     process = brickinfo.process(brick)
@@ -421,13 +438,17 @@ def show(context, name):
     ),
     example="brick keys vm memory",
 )
-def keys(context, kind_name, key):
+def keys(
+    context: Context, kind_name: Brick | brickinfo.Kind, key: str | None
+) -> list[str]:
+    config: object
     if isinstance(kind_name, brickinfo.Kind):
-        config = kind_name.brick.config_factory
+        # the kind's class, a Brick
+        config = cast("type[Brick]", kind_name.brick).config_factory
     else:
         config = kind_name.config
 
-    def described(name):
+    def described(name: str) -> str:
         help, detail = field_help(config, name)
         text = _(help) if help else ""
         return f"{text} ({detail})" if detail else text
@@ -450,7 +471,9 @@ def keys(context, kind_name, key):
     help=N_("Change keys of a brick, all or none"),
     example="brick set sw1 ports=16 hub_mode=true",
 )
-def set_(context, name, key_value):
+def set_(
+    context: Context, name: Brick, key_value: list[tuple[str, str]]
+) -> list[str]:
     brick = name
     values = {}
     for key, text in key_value:
@@ -472,7 +495,7 @@ def set_(context, name, key_value):
     help=N_("Put keys of a brick back to their defaults"),
     example="brick unset sw1 ports",
 )
-def unset(context, name, key):
+def unset(context: Context, name: Brick, key: list[str]) -> list[str]:
     brick = name
     values = {}
     for each in key:
@@ -483,11 +506,11 @@ def unset(context, name, key):
     return _set(brick, values)
 
 
-def _message(failure):
+def _message(failure: Failure) -> str:
     return failure.getErrorMessage() or failure.type.__name__
 
 
-def _started(factory, before):
+def _started(factory: BrickFactory, before: set[Brick]) -> list[str]:
     return [
         _("{name} runs, process {pid}").format(name=b.name, pid=b.pid)
         for b in factory.bricks
@@ -503,7 +526,9 @@ def _started(factory, before):
     example="brick start router",
 )
 @defer.inlineCallbacks
-def start(context, name):
+def start(
+    context: Context, name: list[Brick]
+) -> Generator[defer.Deferred[Any], Any, list[str]]:
     factory = context.factory
     before = {b for b in factory.bricks if is_running(b)}
     lines = [
@@ -525,8 +550,10 @@ def start(context, name):
 
 
 @defer.inlineCallbacks
-def _stop(context, bricks, kill):
-    lines = []
+def _stop(
+    context: Context, bricks: list[Brick], kill: bool
+) -> Generator[defer.Deferred[Any], Any, list[str]]:
+    lines: list[str] = []
     for brick in bricks:
         if not is_running(brick):
             lines.append(_("{name} isn't running").format(name=brick.name))
@@ -549,7 +576,7 @@ def _stop(context, bricks, kill):
     Arg("NAME", BRICK, many=True),
     help=N_("Stop bricks, and wait until their programs end"),
 )
-def stop(context, name):
+def stop(context: Context, name: list[Brick]) -> defer.Deferred[list[str]]:
     return _stop(context, name, kill=False)
 
 
@@ -559,11 +586,11 @@ def stop(context, name):
     Arg("NAME", BRICK, many=True),
     help=N_("Kill the programs of bricks"),
 )
-def kill(context, name):
+def kill(context: Context, name: list[Brick]) -> defer.Deferred[list[str]]:
     return _stop(context, name, kill=True)
 
 
-def _running(brick):
+def _running(brick: Brick) -> None:
     if not is_running(brick):
         raise CommandError(_("{name} isn't running").format(name=brick.name))
 
@@ -575,10 +602,12 @@ def _running(brick):
     help=N_("Stop bricks, killing them after two seconds, and start them"),
 )
 @defer.inlineCallbacks
-def restart(context, name):
+def restart(
+    context: Context, name: list[Brick]
+) -> Generator[defer.Deferred[Any], Any, list[str]]:
     for brick in name:
         _running(brick)
-    lines = []
+    lines: list[str] = []
     for brick in name:
         try:
             yield bricks_module.restart(brick, context.reactor)
@@ -595,7 +624,7 @@ def restart(context, name):
     return lines
 
 
-def _signal(bricks, number):
+def _signal(bricks: list[Brick], number: int) -> None:
     for brick in bricks:
         _running(brick)
     for brick in bricks:
@@ -611,7 +640,7 @@ def _signal(bricks, number):
     Arg("NAME", BRICK, many=True),
     help=N_("Pause the programs of bricks"),
 )
-def pause(context, name):
+def pause(context: Context, name: list[Brick]) -> None:
     _signal(name, signal.SIGSTOP)
 
 
@@ -621,7 +650,7 @@ def pause(context, name):
     Arg("NAME", BRICK, many=True),
     help=N_("Let paused bricks go on"),
 )
-def continue_(context, name):
+def continue_(context: Context, name: list[Brick]) -> None:
     _signal(name, signal.SIGCONT)
 
 
@@ -632,7 +661,9 @@ def continue_(context, name):
     help=N_("Save a machine's state in its first disk, and stop it"),
 )
 @defer.inlineCallbacks
-def suspend(context, vm):
+def suspend(
+    context: Context, vm: VirtualMachine
+) -> Generator[defer.Deferred[Any], Any, list[str]]:
     _running(vm)
     yield suspend_vm(vm)
     return [_("{name} is suspended").format(name=vm.name)]
@@ -645,7 +676,9 @@ def suspend(context, vm):
     help=N_("Start a machine from the state that suspend saved"),
 )
 @defer.inlineCallbacks
-def resume(context, vm):
+def resume(
+    context: Context, vm: VirtualMachine
+) -> Generator[defer.Deferred[Any], Any, list[str]]:
     yield resume_vm(vm)
     return [_("{name} is resumed").format(name=vm.name)]
 
@@ -656,7 +689,7 @@ def resume(context, vm):
     Arg("VM", VM),
     help=N_("Reset a running machine, as its reset button"),
 )
-def reset(context, vm):
+def reset(context: Context, vm: VirtualMachine) -> None:
     _running(vm)
     vm.send(b"system_reset\n")
 
@@ -667,7 +700,7 @@ def reset(context, vm):
     Arg("NAME", BRICK),
     help=N_("Open the control monitor of a running brick in a terminal"),
 )
-def monitor(context, name):
+def monitor(context: Context, name: Brick) -> None:
     brick = name
     if brick.get_type() in NO_CONSOLE:
         raise CommandError(
@@ -677,7 +710,7 @@ def monitor(context, name):
     brick.open_console()
 
 
-def _plugs(brick):
+def _plugs(brick: Brick) -> None:
     """The plugs of a brick that isn't a machine, which cards replace."""
 
     if is_virtualmachine(brick):
@@ -703,7 +736,7 @@ def _plugs(brick):
     ),
     example="brick connect w1 sw1 sw2",
 )
-def connect(context, name, target):
+def connect(context: Context, name: Brick, target: list[Sock]) -> list[str]:
     brick = name
     _plugs(brick)
     _stopped(brick)
@@ -745,11 +778,12 @@ def connect(context, name, target):
     Arg("END", Choice("left", "right"), optional=True),
     help=N_("Unplug a brick, or one end of a wire or a Netemu"),
 )
-def disconnect(context, name, end):
+def disconnect(context: Context, name: Brick, end: str | None) -> list[str]:
     brick = name
     _plugs(brick)
     _stopped(brick)
     draft = brick.draft_factory(brick)
+    indexes: Sequence[int]
     if end is None:
         indexes = range(len(brick.plugs))
     elif len(brick.plugs) != 2:
@@ -769,10 +803,15 @@ def disconnect(context, name, end):
 # The network cards of a machine
 
 
-def _card_values(context, vm, words, target_allowed):
+def _card_values(
+    context: Context,
+    vm: VirtualMachine,
+    words: list[str],
+    target_allowed: bool,
+) -> dict[str, object]:
     """The target and the model and mac of the words of a card command."""
 
-    values = {}
+    values: dict[str, object] = {}
     for word in words:
         key, sep, value = word.partition("=")
         if sep and key in ("model", "mac"):
@@ -788,7 +827,7 @@ def _card_values(context, vm, words, target_allowed):
     return values
 
 
-def _card_sock(context, word):
+def _card_sock(context: Context, word: str) -> Sock | _HostonlySock | None:
     if word == "":
         return None
     if word == "hostonly":
@@ -796,7 +835,7 @@ def _card_sock(context, word):
     return Target().read(context, word)
 
 
-def _check_cards(vm, draft):
+def _check_cards(vm: VirtualMachine, draft: Draft) -> None:
     for problem in draft.errors():
         if problem.key.startswith("card"):
             number = problem.key[len("card") :]
@@ -804,7 +843,7 @@ def _check_cards(vm, draft):
         raise CommandError(_problem(vm, problem))
 
 
-def _card_index(vm, number):
+def _card_index(vm: VirtualMachine, number: int) -> int:
     count = len(vm.plugs) + len(vm.socks)
     if number >= count:
         raise CommandError(
@@ -825,7 +864,9 @@ def _card_index(vm, number):
     ),
     example="brick card add vm1 plug sw1 model=virtio-net-pci",
 )
-def card_add(context, vm, kind, options):
+def card_add(
+    context: Context, vm: VirtualMachine, kind: str, options: list[str]
+) -> list[str]:
     _stopped(vm)
     values = _card_values(context, vm, options, kind == "plug")
     if kind == "hostonly":
@@ -864,7 +905,12 @@ def card_add(context, vm, kind, options):
     ),
     example="brick card set vm1 eth0 model=e1000 target=sw2",
 )
-def card_set(context, vm, card, key_value):
+def card_set(
+    context: Context,
+    vm: VirtualMachine,
+    card: int,
+    key_value: list[tuple[str, str]],
+) -> list[str]:
     _stopped(vm)
     index = _card_index(vm, card)
     draft = vm.draft_factory(vm)
@@ -885,7 +931,9 @@ def card_set(context, vm, card, key_value):
     Arg("CARD", CardArg(), many=True),
     help=N_("Take network cards out of a machine"),
 )
-def card_remove(context, vm, card):
+def card_remove(
+    context: Context, vm: VirtualMachine, card: list[int]
+) -> list[str]:
     _stopped(vm)
     draft = vm.draft_factory(vm)
     for index in sorted({_card_index(vm, n) for n in card}, reverse=True):
@@ -901,7 +949,7 @@ def card_remove(context, vm, card):
     Arg("NEW"),
     help=N_("Rename a brick"),
 )
-def rename(context, name, new):
+def rename(context: Context, name: Brick, new: str) -> list[str]:
     brick = name
     _stopped(brick)
     factory = context.factory
@@ -920,7 +968,7 @@ def rename(context, name, new):
         " the next free number"
     ),
 )
-def duplicate(context, name, new):
+def duplicate(context: Context, name: Brick, new: str | None) -> list[str]:
     factory = context.factory
     if new is not None:
         new = factory.check_brick_name(name.get_type(), new)
@@ -939,7 +987,7 @@ def duplicate(context, name, new):
         "Delete bricks that don't run, and the actions that start or stop them"
     ),
 )
-def delete(context, name):
+def delete(context: Context, name: list[Brick]) -> None:
     for brick in name:
         _stopped(brick)
     for brick in name:

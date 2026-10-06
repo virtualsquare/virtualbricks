@@ -27,8 +27,11 @@ failed, and its message is the error.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any, cast
+
 from twisted.internet import defer
 from twisted.logger import Logger
+from twisted.python.failure import Failure
 
 from virtualbricks import errors
 
@@ -41,15 +44,21 @@ from virtualbricks.console import (  # noqa: F401
     projects,
     settings,
 )
-from virtualbricks.console.command import CommandError, Context
-from virtualbricks.console.parser import bind, line_of, parse
+from virtualbricks.console.command import Command, CommandError, Context
+from virtualbricks.console.parser import Parsed, bind, line_of, parse
 from virtualbricks.i18n import _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.interfaces import IReactorTime
+
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.console.terminal import ConsoleLine
 
 logger = Logger()
 command_failed = "The command {line!r} failed"
 
 
-def _reason(failure, line):
+def _reason(failure: Failure, line: str) -> Failure:
     if failure.check(CommandError):
         return failure
     if failure.check(errors.Error):
@@ -61,7 +70,13 @@ def _reason(failure, line):
     )
 
 
-def run(factory, line, reactor=None, terminal=None, cwd=None):
+def run(
+    factory: BrickFactory,
+    line: str,
+    reactor: IReactorTime | None = None,
+    terminal: ConsoleLine | None = None,
+    cwd: str | None = None,
+) -> defer.Deferred[list[str]]:
     """
     Run a line of the console on factory; its paths are read from cwd, the
     folder of Virtualbricks if None.
@@ -71,7 +86,7 @@ def run(factory, line, reactor=None, terminal=None, cwd=None):
     """
 
     if reactor is None:
-        from twisted.internet import reactor
+        reactor = _reactor()
     context = Context(factory, reactor, terminal, cwd)
     try:
         parsed = parse(context, line)
@@ -82,7 +97,13 @@ def run(factory, line, reactor=None, terminal=None, cwd=None):
     return _call(context, parsed, line)
 
 
-def run_command(factory, command, given, reactor=None, cwd=None):
+def run_command(
+    factory: BrickFactory,
+    command: Command,
+    given: dict[str, Any],
+    reactor: IReactorTime | None = None,
+    cwd: str | None = None,
+) -> defer.Deferred[list[str]]:
     """
     Run command on factory, with given, its arguments by keyword as a typed
     command of the AMP socket gives them; its paths are read from cwd.
@@ -93,22 +114,31 @@ def run_command(factory, command, given, reactor=None, cwd=None):
     """
 
     if reactor is None:
-        from twisted.internet import reactor
+        reactor = _reactor()
     context = Context(factory, reactor, cwd=cwd)
     parsed = bind(context, command, given)
     return _call(context, parsed, line_of(command, given))
 
 
-def _call(context, parsed, line):
+def _reactor() -> IReactorTime:
+    """The reactor, imported when a command runs: not at import."""
+
+    from twisted.internet import reactor
+
+    return cast("IReactorTime", reactor)
+
+
+def _call(
+    context: Context, parsed: Parsed, line: str
+) -> defer.Deferred[list[str]]:
     done = defer.maybeDeferred(
         parsed.command.function, context, **parsed.values
     )
-    done.addCallback(lambda lines: list(lines or []))
-    done.addErrback(_reason, line)
-    return done
+    answer = done.addCallback(lambda lines: list(lines or []))
+    return answer.addErrback(_reason, line)
 
 
-def check(factory, line):
+def check(factory: BrickFactory, line: str) -> str | None:
     """Why line isn't a command the parser reads, or None if it is one."""
 
     try:

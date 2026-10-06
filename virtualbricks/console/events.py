@@ -27,6 +27,8 @@ is checked as it's added.
 from __future__ import annotations
 
 import shlex
+from collections.abc import Generator
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet import defer
 
@@ -39,6 +41,7 @@ from virtualbricks.console.command import (
     ArgKind,
     Choice,
     CommandError,
+    Context,
     Flag,
     Named,
     Number,
@@ -49,11 +52,17 @@ from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _
 from virtualbricks.bricks import is_running
 
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.interfaces import IReactorTime
+
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks.event import Event
+
 # the name an event gets, as New Event, when none is given
 NEW_EVENT = "new_event"
 
 
-def _events(factory):
+def _events(factory: BrickFactory) -> list[str]:
     return [event.name for event in factory.events]
 
 
@@ -67,7 +76,7 @@ EVENT = Named(
 class Subject(ArgKind):
     """What an action does: a brick or an event, or a command."""
 
-    def candidates(self, context, done):
+    def candidates(self, context: Context, done: dict) -> list[str]:
         if done.get("what") in ("start", "stop"):
             factory = context.factory
             return sorted([b.name for b in factory.bricks] + _events(factory))
@@ -83,14 +92,14 @@ def _described(action: Action) -> str:
     return f"{word} {shlex.quote(action.subject)}"
 
 
-def _actions(event):
+def _actions(event: Event) -> list[Action]:
     factory = event.factory
     return [
         eventinfo.read(command, factory) for command in event.config.actions
     ]
 
 
-def _state(event, clock):
+def _state(event: Event, clock: IReactorTime) -> str:
     state = eventinfo.state(event)
     left = eventinfo.seconds_left(event, clock)
     if left is None:
@@ -98,7 +107,7 @@ def _state(event, clock):
     return _("{state}, {seconds} s").format(state=LABELS[state], seconds=left)
 
 
-def _action(context, what, subject):
+def _action(context: Context, what: str, subject: str | None) -> Action:
     """The action of what and subject, checked."""
 
     if subject is None:
@@ -128,7 +137,7 @@ def _action(context, what, subject):
     return Action(Kind.SHELL, subject)
 
 
-def _give_actions(event, actions):
+def _give_actions(event: Event, actions: list[Action]) -> None:
     draft = Draft(event)
     draft.set("actions", [eventinfo.write(action) for action in actions])
     errors = draft.errors()
@@ -137,14 +146,14 @@ def _give_actions(event, actions):
     apply(draft)
 
 
-def _numbered(event):
+def _numbered(event: Event) -> list[str]:
     return [
         f"{number}  {_described(action)}"
         for number, action in enumerate(_actions(event), start=1)
     ]
 
 
-def _index(event, number, count):
+def _index(event: Event, number: int, count: int) -> int:
     if not 1 <= number <= count:
         raise CommandError(
             _("{name} has no action {number}").format(
@@ -155,7 +164,7 @@ def _index(event, number, count):
 
 
 @command("event", "list", help=N_("The events, their state and actions"))
-def list_(context):
+def list_(context: Context) -> list[str]:
     factory = context.factory
     events = list(factory.events)
     if not events:
@@ -177,7 +186,7 @@ def list_(context):
     Arg("NAME", optional=True),
     help=N_("Make an event; without a name, new_event or the next free one"),
 )
-def new(context, name):
+def new(context: Context, name: str | None) -> list[str]:
     factory = context.factory
     if name is None:
         name = factory.unused_name(NEW_EVENT)
@@ -192,7 +201,7 @@ def new(context, name):
     Arg("NAME", EVENT),
     help=N_("An event's delay, its actions numbered, what starts it"),
 )
-def show(context, name):
+def show(context: Context, name: Event) -> list[str]:
     event = name
     lines = [f"{event.name}  {_state(event, context.reactor)}"]
     lines.append(f"delay = {event.config.delay}")
@@ -222,7 +231,9 @@ def show(context, name):
     help=N_("Change an event's delay or icon"),
     example="event set boot delay=10",
 )
-def set_(context, name, key_value):
+def set_(
+    context: Context, name: Event, key_value: list[tuple[str, str]]
+) -> None:
     event = name
     draft = Draft(event)
     for key, text in key_value:
@@ -257,7 +268,13 @@ def set_(context, name, key_value):
     ),
     example='event action add boot console "brick set vm1 memory=1024"',
 )
-def action_add(context, name, what, subject, at):
+def action_add(
+    context: Context,
+    name: Event,
+    what: str,
+    subject: str | None,
+    at: int | None,
+) -> list[str]:
     event = name
     actions = _actions(event)
     action = _action(context, what, subject)
@@ -276,7 +293,7 @@ def action_add(context, name, what, subject, at):
     Arg("N", Number(), many=True),
     help=N_("Remove actions of an event, by their numbers"),
 )
-def action_remove(context, name, n):
+def action_remove(context: Context, name: Event, n: list[int]) -> list[str]:
     event = name
     actions = _actions(event)
     for index in sorted(
@@ -295,7 +312,7 @@ def action_remove(context, name, n):
     Arg("TO", Number()),
     help=N_("Move an action of an event to another place"),
 )
-def action_move(context, name, n, to):
+def action_move(context: Context, name: Event, n: int, to: int) -> list[str]:
     event = name
     actions = _actions(event)
     action = actions.pop(_index(event, n, len(actions)))
@@ -310,8 +327,8 @@ def action_move(context, name, n, to):
     Arg("NAME", EVENT, many=True),
     help=N_("Start events: each waits its delay, then runs its actions"),
 )
-def start(context, name):
-    lines = []
+def start(context: Context, name: list[Event]) -> list[str]:
+    lines: list[str] = []
     for event in name:
         if not event.configured():
             raise CommandError(
@@ -336,7 +353,7 @@ def start(context, name):
     Arg("NAME", EVENT, many=True),
     help=N_("Stop events that wait"),
 )
-def stop(context, name):
+def stop(context: Context, name: list[Event]) -> list[str]:
     lines = []
     for event in name:
         if not is_running(event):
@@ -352,8 +369,10 @@ def stop(context, name):
     help=N_("Run the actions of events now, and wait for them"),
 )
 @defer.inlineCallbacks
-def run(context, name):
-    lines = []
+def run(
+    context: Context, name: list[Event]
+) -> Generator[defer.Deferred[Any], Any, list[str]]:
+    lines: list[str] = []
     for event in name:
         if not event.configured():
             raise CommandError(
@@ -372,7 +391,7 @@ def run(context, name):
     Arg("NEW"),
     help=N_("Rename an event, and every brick and action that names it"),
 )
-def rename(context, name, new):
+def rename(context: Context, name: Event, new: str) -> list[str]:
     factory = context.factory
     factory.rename_item(name, new)
     return [name.name] if name.name != new else []
@@ -388,7 +407,7 @@ def rename(context, name, new):
         " number"
     ),
 )
-def duplicate(context, name, new):
+def duplicate(context: Context, name: Event, new: str | None) -> list[str]:
     factory = context.factory
     if new is not None:
         new = factory.check_name(new)
@@ -407,6 +426,6 @@ def duplicate(context, name, new):
         "Delete events, the actions that start or stop them, and the on_start and on_stop that name them"
     ),
 )
-def delete(context, name):
+def delete(context: Context, name: list[Event]) -> None:
     for event in name:
         context.factory.remove_event(event)

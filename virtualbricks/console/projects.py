@@ -28,11 +28,15 @@ its tabs hold and shows the project that opens. The GUI sets it with
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Protocol
+
+from virtualbricks.config.report import Report
 from virtualbricks.config.workspace import projects
 from virtualbricks.console.command import (
     Arg,
     ArgKind,
     CommandError,
+    Context,
     Flag,
     NotFound,
     command,
@@ -41,27 +45,41 @@ from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _, ngettext
 from virtualbricks.bricks import is_running
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
 
-class Frontend:
-    """How the console opens, makes and saves projects, without windows."""
 
-    def open(self, name, factory):
+class Frontend(Protocol):
+    """How the console opens, makes and saves projects."""
+
+    def open(self, name: str, factory: BrickFactory) -> Report:
         """Open a project; return the report of reading it."""
 
+    def new(self, name: str, factory: BrickFactory) -> None:
+        """Make a project and open it."""
+
+    def save(self, factory: BrickFactory) -> None:
+        """Save the open project."""
+
+
+class WorkspaceFrontend:
+    """How the console opens, makes and saves projects, without windows."""
+
+    def open(self, name: str, factory: BrickFactory) -> Report:
         return projects.open(name, factory)
 
-    def new(self, name, factory):
+    def new(self, name: str, factory: BrickFactory) -> None:
         projects.create(name)
-        return projects.open(name, factory)
+        projects.open(name, factory)
 
-    def save(self, factory):
+    def save(self, factory: BrickFactory) -> None:
         projects.save(factory)
 
 
-frontend = Frontend()
+frontend: Frontend = WorkspaceFrontend()
 
 
-def use_frontend(new):
+def use_frontend(new: Frontend) -> None:
     """The front end the console opens and saves projects through."""
 
     global frontend
@@ -69,19 +87,19 @@ def use_frontend(new):
 
 
 class ProjectName(ArgKind):
-    def read(self, context, word):
+    def read(self, context: Context, word: str) -> str:
         if not projects.exists(word):
             raise NotFound(_("No project named {name}").format(name=word))
         return word
 
-    def candidates(self, context, done):
+    def candidates(self, context: Context, done: dict) -> list[str]:
         return projects.names()
 
 
 PROJECT = ProjectName()
 
 
-def refuse_running(factory):
+def refuse_running(factory: BrickFactory) -> None:
     """CommandError if bricks run: the project can't change under them."""
 
     from virtualbricks.bricks.eventinfo import names
@@ -97,7 +115,7 @@ def refuse_running(factory):
         )
 
 
-def _check(name, renaming=None):
+def _check(name: str, renaming: str | None = None) -> None:
     reason = projects.check_name(name, renaming=renaming)
     if reason is not None:
         raise CommandError(f"{name}: {reason}")
@@ -111,7 +129,7 @@ def _first_line(text: str) -> str:
 
 
 @command("project", "list", help=N_("The projects of the workspace"))
-def list_(context):
+def list_(context: Context) -> list[str]:
     current = projects.current.name if projects.current else None
     rows = [
         (
@@ -126,7 +144,7 @@ def list_(context):
 
 
 @command("project", "show", help=N_("The open project"))
-def show(context):
+def show(context: Context) -> list[str]:
     current = projects.current
     if current is None:
         return [_("No project is open")]
@@ -142,7 +160,7 @@ def show(context):
     ]
 
 
-def _report(report):
+def _report(report: Report) -> list[str]:
     return [str(message) for message in report.messages]
 
 
@@ -152,7 +170,7 @@ def _report(report):
     Arg("NAME", PROJECT),
     help=N_("Save the open project and open another"),
 )
-def open_(context, name):
+def open_(context: Context, name: str) -> list[str]:
     refuse_running(context.factory)
     return _report(frontend.open(name, context.factory))
 
@@ -163,14 +181,14 @@ def open_(context, name):
     Arg("NAME"),
     help=N_("Save the open project, make a new one and open it"),
 )
-def new(context, name):
+def new(context: Context, name: str) -> None:
     refuse_running(context.factory)
     _check(name)
     frontend.new(name, context.factory)
 
 
 @command("project", "save", help=N_("Save the open project now"))
-def save(context):
+def save(context: Context) -> None:
     frontend.save(context.factory)
 
 
@@ -181,7 +199,7 @@ def save(context):
     Arg("NEW"),
     help=N_("Rename a project"),
 )
-def rename(context, name, new):
+def rename(context: Context, name: str, new: str) -> None:
     _check(new, renaming=name)
     projects.rename(name, new)
 
@@ -193,7 +211,7 @@ def rename(context, name, new):
     Arg("NEW"),
     help=N_("Copy a project, its disks included"),
 )
-def duplicate(context, name, new):
+def duplicate(context: Context, name: str, new: str) -> None:
     _check(new)
     projects.duplicate(name, new)
 
@@ -208,7 +226,7 @@ def duplicate(context, name, new):
         " good"
     ),
 )
-def delete(context, name, force):
+def delete(context: Context, name: str, force: bool) -> list[str]:
     if projects.current is not None and projects.current.name == name:
         raise CommandError(
             _("{name} is open: open another first").format(name=name)
@@ -223,3 +241,4 @@ def delete(context, name, force):
             ).format(name=name)
         )
     projects.delete(name)
+    return []

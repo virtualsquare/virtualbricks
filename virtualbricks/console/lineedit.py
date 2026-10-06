@@ -41,11 +41,18 @@ two words; for Ctrl+W it is anything up to a space.
 
 from __future__ import annotations
 
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from twisted.conch.insults import insults
 
-ALT = insults.ServerProtocol.ALT
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.conch.recvline import HistoricRecvLine as _Line
+else:
+    # a mixin: what it works on comes from the line that takes it
+    _Line = object
+
+# insults sets it with setattr(), out of the sight of mypy
+ALT: bytes = getattr(insults.ServerProtocol, "ALT")
 BACKSPACE = insults.ServerProtocol.BACKSPACE
 BELL = b"\a"
 CTRL_A = b"\x01"
@@ -73,11 +80,11 @@ def _printable(key: bytes) -> bool:
 
 
 class Step(NamedTuple):
-    """Where a search is: its text, and the line and position it found."""
+    """Where a search is: its text, and the line and column it found."""
 
     text: bytes
     number: int
-    index: int
+    column: int
     failed: bool
 
 
@@ -88,11 +95,13 @@ class Search:
     to where the text was one character shorter.
     """
 
-    def __init__(self, lines, number, index, backward):
+    def __init__(
+        self, lines: list[bytes], number: int, column: int, backward: bool
+    ) -> None:
         # the history, and the line being edited among them, at number
         self.lines = lines
         self.backward = backward
-        self.steps = [Step(b"", number, index, False)]
+        self.steps = [Step(b"", number, column, False)]
 
     @property
     def step(self) -> Step:
@@ -124,8 +133,8 @@ class Search:
         step = self.step
         if not step.text:
             return bool(last) and self._push(last, self._find(last, step))
-        start = step.index - 1 if backward else step.index + 1
-        found = self._find(step.text, step._replace(index=start), True)
+        start = step.column - 1 if backward else step.column + 1
+        found = self._find(step.text, step._replace(column=start), True)
         return self._push(step.text, found)
 
     def back(self) -> bool:
@@ -138,22 +147,24 @@ class Search:
             self.steps.pop()
         return True
 
-    def _push(self, text, found) -> bool:
+    def _push(self, text: bytes, found: tuple[int, int] | None) -> bool:
         step = self.step
         if found is None:
-            self.steps.append(Step(text, step.number, step.index, True))
+            self.steps.append(Step(text, step.number, step.column, True))
             return False
         self.steps.append(Step(text, *found, False))
         return True
 
-    def _find(self, text, step, skip_same=False):
+    def _find(
+        self, text: bytes, step: Step, skip_same: bool = False
+    ) -> tuple[int, int] | None:
         """
         The line and position of the first match of text from the step's
         on, the search's way. With skip_same, the lines equal to the step's
         are passed over, as readline does for the next match.
         """
 
-        number, start = step.number, step.index
+        number, start = step.number, step.column
         same = self.lines[number]
         first = True
         while 0 <= number < len(self.lines):
@@ -173,7 +184,7 @@ class Search:
         return None
 
 
-class ReadlineKeys:
+class ReadlineKeys(_Line):
     """
     The keys of readline, as the module says, for a line of recvline's
     HistoricRecvLine. The class that takes them has end_of_input(), what
@@ -186,10 +197,16 @@ class ReadlineKeys:
     after_kill = False
     killing = False
     # the search of Ctrl+R and Ctrl+S, while it runs, and its last text
-    search = None
+    search: Search | None = None
     last_search = b""
+    # the line, its cursor and the place in the history before the search
+    search_origin: tuple[list[bytes], int, int]
 
-    def connectionMade(self):
+    if TYPE_CHECKING:  # pragma: no cover
+
+        def end_of_input(self) -> None: ...
+
+    def connectionMade(self) -> None:
         super().connectionMade()
         self.keyHandlers.update(
             {
@@ -216,7 +233,7 @@ class ReadlineKeys:
             CTRL_H: self.handle_BACKWARD_KILL_WORD,
         }
 
-    def keystrokeReceived(self, keyID, modifier):
+    def keystrokeReceived(self, keyID: bytes, modifier: bytes | None) -> None:
         self.after_kill, self.killing = self.killing, False
         if self.search is not None and self._search_key(keyID, modifier):
             return
@@ -229,7 +246,7 @@ class ReadlineKeys:
             return
         super().keystrokeReceived(keyID, modifier)
 
-    def unhandledControlSequence(self, seq):
+    def unhandledControlSequence(self, seq: bytes) -> None:
         self.after_kill, self.killing = self.killing, False
         if self.search is not None:
             self._end_search(accept=True)
@@ -240,11 +257,11 @@ class ReadlineKeys:
         else:
             super().unhandledControlSequence(seq)
 
-    def drawInputLine(self):
+    def drawInputLine(self) -> None:
         # the cursor goes back where it is in the line
         if self.search is not None:
             prompt, line = self.search.prompt(), self.search.line()
-            index = self.search.step.index
+            index = self.search.step.column
         else:
             prompt, line = self.ps[self.pn], b"".join(self.lineBuffer)
             index = self.lineBufferIndex
@@ -254,15 +271,15 @@ class ReadlineKeys:
 
     # moving
 
-    def handle_BACKWARD_WORD(self):
+    def handle_BACKWARD_WORD(self) -> None:
         self._move(self._word_start(self.lineBufferIndex))
 
-    def handle_FORWARD_WORD(self):
+    def handle_FORWARD_WORD(self) -> None:
         self._move(self._word_end(self.lineBufferIndex))
 
     # deleting
 
-    def handle_EOF(self):
+    def handle_EOF(self) -> None:
         if not self.lineBuffer:
             self.end_of_input()
         elif self.lineBufferIndex < len(self.lineBuffer):
@@ -270,7 +287,7 @@ class ReadlineKeys:
         else:
             self._bell()
 
-    def handle_WORD_RUBOUT(self):
+    def handle_WORD_RUBOUT(self) -> None:
         # a word ends at a space, and the spaces after it go with it
         start = self.lineBufferIndex
         while start and self.lineBuffer[start - 1].isspace():
@@ -279,28 +296,28 @@ class ReadlineKeys:
             start -= 1
         self._kill(start, self.lineBufferIndex)
 
-    def handle_BACKWARD_KILL_WORD(self):
+    def handle_BACKWARD_KILL_WORD(self) -> None:
         index = self.lineBufferIndex
         self._kill(self._word_start(index), index)
 
-    def handle_KILL_WORD(self):
+    def handle_KILL_WORD(self) -> None:
         index = self.lineBufferIndex
         self._kill(index, self._word_end(index))
 
-    def handle_LINE_DISCARD(self):
+    def handle_LINE_DISCARD(self) -> None:
         self._kill(0, self.lineBufferIndex)
 
-    def handle_KILL_LINE(self):
+    def handle_KILL_LINE(self) -> None:
         self._kill(self.lineBufferIndex, len(self.lineBuffer))
 
-    def handle_YANK(self):
+    def handle_YANK(self) -> None:
         if not self.killed:
             self._bell()
             return
         for character in self.killed:
             self.characterReceived(bytes([character]), False)
 
-    def handle_TRANSPOSE_CHARS(self):
+    def handle_TRANSPOSE_CHARS(self) -> None:
         # the character before the cursor goes past the one under it; at
         # the end of the line, the last two change places
         line, index = self.lineBuffer, self.lineBufferIndex
@@ -313,7 +330,7 @@ class ReadlineKeys:
         self.lineBufferIndex = index + 1
         self._redraw()
 
-    def handle_TRANSPOSE_WORDS(self):
+    def handle_TRANSPOSE_WORDS(self) -> None:
         # the word before the cursor goes past the one after it, found as
         # readline finds them; at the end of the line, the last two
         second_end = self._word_end(self.lineBufferIndex)
@@ -334,13 +351,13 @@ class ReadlineKeys:
 
     # searching
 
-    def handle_SEARCH_BACKWARD(self):
+    def handle_SEARCH_BACKWARD(self) -> None:
         self._start_search(backward=True)
 
-    def handle_SEARCH_FORWARD(self):
+    def handle_SEARCH_FORWARD(self) -> None:
         self._start_search(backward=False)
 
-    def _start_search(self, backward):
+    def _start_search(self, backward: bool) -> None:
         lines = list(self.historyLines)
         number = self.historyPosition
         current = b"".join(self.lineBuffer)
@@ -357,10 +374,12 @@ class ReadlineKeys:
         )
         self._redraw()
 
-    def _search_key(self, keyID, modifier):
+    def _search_key(self, keyID: bytes, modifier: bytes | None) -> bool:
         """A key while searching; False when it ends the search."""
 
         search = self.search
+        assert search is not None, "a search runs"
+        found: bool | None
         if modifier is not None:
             found = None
         elif keyID in (CTRL_R, CTRL_S):
@@ -382,15 +401,16 @@ class ReadlineKeys:
         self._redraw()
         return True
 
-    def _end_search(self, accept):
+    def _end_search(self, accept: bool) -> None:
         search, self.search = self.search, None
+        assert search is not None, "a search runs"
         if search.step.text:
             self.last_search = search.step.text
         if accept:
             # the line found, where Up and Down go on from
             step = search.step
             self.lineBuffer = [bytes([c]) for c in search.lines[step.number]]
-            self.lineBufferIndex = step.index
+            self.lineBufferIndex = step.column
             self.historyPosition = step.number
         else:
             line, index, position = self.search_origin
@@ -401,15 +421,15 @@ class ReadlineKeys:
 
     # helpers
 
-    def _bell(self):
+    def _bell(self) -> None:
         self.terminal.write(BELL)
 
-    def _redraw(self):
+    def _redraw(self) -> None:
         self.terminal.write(b"\r")
         self.terminal.eraseToLineEnd()
         self.drawInputLine()
 
-    def _move(self, index):
+    def _move(self, index: int) -> None:
         offset = index - self.lineBufferIndex
         if offset > 0:
             self.terminal.cursorForward(offset)
@@ -417,7 +437,7 @@ class ReadlineKeys:
             self.terminal.cursorBackward(-offset)
         self.lineBufferIndex = index
 
-    def _word_start(self, index):
+    def _word_start(self, index: int) -> int:
         line = self.lineBuffer
         while index and not line[index - 1].isalnum():
             index -= 1
@@ -425,7 +445,7 @@ class ReadlineKeys:
             index -= 1
         return index
 
-    def _word_end(self, index):
+    def _word_end(self, index: int) -> int:
         line = self.lineBuffer
         while index < len(line) and not line[index].isalnum():
             index += 1
@@ -433,7 +453,7 @@ class ReadlineKeys:
             index += 1
         return index
 
-    def _kill(self, start, end):
+    def _kill(self, start: int, end: int) -> None:
         """
         Delete the line from start to end, one of them the cursor, and keep
         it for Ctrl+Y: after another deletion, together with that one's.

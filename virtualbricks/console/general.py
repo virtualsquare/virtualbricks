@@ -20,13 +20,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
+
 from twisted.internet import defer
 
 from virtualbricks.console.command import (
     NOUN_HELP,
     Arg,
     ArgKind,
+    Command,
     CommandError,
+    Context,
     command,
     find,
     nouns,
@@ -42,7 +46,7 @@ from virtualbricks.bricks import is_running
 class Topic(ArgKind):
     """A noun, then one of its verbs; or a command without a noun."""
 
-    def candidates(self, context, done):
+    def candidates(self, context: Context, done: dict) -> list[str]:
         words = done.get("topic") or []
         if not words:
             return nouns() + [c.verb for c in of_noun(None)]
@@ -63,7 +67,7 @@ def _overview() -> list[str]:
     return lines + table(rows)
 
 
-def _command(found) -> list[str]:
+def _command(found: Command) -> list[str]:
     lines = [found.usage(), _(found.help)]
     if found.example:
         lines.append(_("Example: {example}").format(example=found.example))
@@ -77,7 +81,7 @@ def _command(found) -> list[str]:
     help=N_("The commands, a noun's verbs, or one command"),
     example="help brick set",
 )
-def help_(context, topic):
+def help_(context: Context, topic: list[str]) -> list[str]:
     if not topic:
         return _overview()
     found, used = find(topic)
@@ -102,7 +106,7 @@ def help_(context, topic):
         "What runs: the bricks with their processes, the events that wait"
     ),
 )
-def status(context):
+def status(context: Context) -> list[str]:
     factory = context.factory
     bricks = [
         (brick.name, brickinfo.kind(brick), str(brick.pid))
@@ -136,7 +140,7 @@ def status(context):
     "quit",
     help=N_("Quit Virtualbricks; refused while bricks run"),
 )
-def quit_(context):
+def quit_(context: Context) -> None:
     refuse_running(context.factory)
     context.factory.quit()
 
@@ -149,7 +153,9 @@ def quit_(context):
     example="source ~/labs/start.vb",
 )
 @defer.inlineCallbacks
-def source(context, file):
+def source(
+    context: Context, file: str
+) -> Generator[defer.Deferred[list[str]], list[str], list[str]]:
     from virtualbricks.console.dispatch import run
 
     path = context.path(file)
@@ -162,7 +168,7 @@ def source(context, file):
                 file=file, error=exc.strerror
             )
         ) from None
-    lines = []
+    lines: list[str] = []
     for number, line in enumerate(text.splitlines(), start=1):
         try:
             answer = yield run(
