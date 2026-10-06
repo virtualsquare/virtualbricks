@@ -26,7 +26,10 @@ A refusal keeps the dialog open with the reason, as a machine's private
 copies that the project folder doesn't let rename.
 """
 
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING, Any
 
 import gi
 
@@ -42,11 +45,17 @@ from virtualbricks.console import ampcommands, ampwire
 from virtualbricks.gui.dialogs.base import Window, action_dialog, text_label
 from virtualbricks.i18n import _
 
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.engine import Engine
+    from virtualbricks.remote.follower import Item
+
 
 class RenameDialog(Window):
     """Ask a new name for a brick, an event or an image, and rename it."""
 
-    def __init__(self, engine, item):
+    def __init__(self, engine: Engine, item: Item) -> None:
         self.engine = engine
         # the names are checked on its factory
         self.factory = engine.factory
@@ -88,7 +97,7 @@ class RenameDialog(Window):
 
     # The name
 
-    def problem(self, typed) -> tuple[bool, str | None]:
+    def problem(self, typed: str) -> tuple[bool, str | None]:
         """Whether typed can be the new name, and what to say of it."""
 
         if not typed:
@@ -114,13 +123,13 @@ class RenameDialog(Window):
         self.name_message.set_visible(message is not None)
         self.rename_button.set_sensitive(usable)
 
-    def on_name_changed(self, entry) -> None:
+    def on_name_changed(self, entry: Gtk.Entry) -> None:
         self.error_label.set_visible(False)
         self.check()
 
     # The rename
 
-    def on_response(self, dialog, response_id) -> None:
+    def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         if response_id != Gtk.ResponseType.OK:
             dialog.destroy()
             return
@@ -128,17 +137,17 @@ class RenameDialog(Window):
         if self.rename_button.get_sensitive():
             self.rename()
 
-    def rename(self) -> defer.Deferred:
+    def rename(self) -> defer.Deferred[Any]:
         # once, while it is asked
         self.rename_button.set_sensitive(False)
         renaming = self.engine.rename(self.item, self.name_entry.get_text())
         renaming.addCallbacks(self._renamed, self._refused)
         return renaming
 
-    def _renamed(self, _old) -> None:
+    def _renamed(self, _old: object) -> None:
         self.dialog.destroy()
 
-    def _refused(self, failure) -> None:
+    def _refused(self, failure: Failure) -> None:
         # here, or there over a connection
         failure.trap(
             OSError,
@@ -153,7 +162,7 @@ class RenameDialog(Window):
             self.error_label.set_visible(True)
 
 
-def refusal(error) -> str:
+def refusal(error: BaseException | None) -> str:
     """What the dialog says of an error of the rename."""
 
     if isinstance(error, OSError) and error.filename:

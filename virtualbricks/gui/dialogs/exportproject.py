@@ -25,7 +25,11 @@ expander, all included. The archive is written in the archive process, to a
 temporary file renamed at the end, so a stopped export leaves nothing.
 """
 
+from __future__ import annotations
+
 import os
+from collections.abc import Callable, Iterable, Sized
+from typing import TYPE_CHECKING, Any
 
 import gi
 
@@ -39,6 +43,11 @@ from virtualbricks.config.archive import DISK, find_qemu_img, member_kind
 from virtualbricks.i18n import _
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import ngettext
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.config.archive import ArchiveJob
 
 logger = Logger()
 exported = 'Project "{name}" exported to {path}'
@@ -62,7 +71,7 @@ STEPS = {
 }
 
 
-def human_size(size):
+def human_size(size: float) -> str:
     for unit in ("B", "KB", "MB", "GB"):
         if size < 1000 or unit == "GB":
             if unit == "B":
@@ -72,7 +81,7 @@ def human_size(size):
     return f"{size:.1f} TB"  # pragma: no cover
 
 
-def usage(path):
+def usage(path: str) -> int:
     """The bytes a file takes on disk, without its holes."""
 
     try:
@@ -81,16 +90,18 @@ def usage(path):
         return 0
 
 
-def archive_filename(filename):
+def archive_filename(filename: str) -> str:
     """The file name, with the .vbp extension."""
 
     return filename if filename.endswith(".vbp") else f"{filename}.vbp"
 
 
-def project_files(path):
+def project_files(path: str) -> tuple[list[str], list[str], list[str]]:
     """(required, private disks, other files) of the folder, relative."""
 
-    required, disks, others = [], [], []
+    required: list[str] = []
+    disks: list[str] = []
+    others: list[str] = []
     for folder, dirs, files in os.walk(path):
         relative = os.path.relpath(folder, path)
         if relative == ".":
@@ -110,32 +121,46 @@ def project_files(path):
     return required, disks, others
 
 
-def ngettext_n(singular, plural, items):
+def ngettext_n(singular: str, plural: str, items: Sized) -> str:
     count = len(items)
     return ngettext(singular, plural, count).format(n=count)
 
 
-def _label(text="", dim=False, bold=False, wrap=False, xalign=0.0, **props):
+def _label(
+    text: str = "",
+    dim: bool = False,
+    bold: bool = False,
+    wrap: bool = False,
+    xalign: float = 0.0,
+    **props: Any,
+) -> Gtk.Label:
     label = Gtk.Label(
         visible=True, label=text, xalign=xalign, wrap=wrap, **props
     )
     if dim:
         label.get_style_context().add_class("dim-label")
     if bold:
-        label.set_attributes(pango_attr_list(Pango.attr_weight_new(700)))
+        label.set_attributes(
+            pango_attr_list(Pango.attr_weight_new(Pango.Weight.BOLD))
+        )
     return label
 
 
 class ExportProjectDialog:
     """Export a project: images is a list of (name, path)."""
 
-    def __init__(self, path, images=(), run=export_project):
+    def __init__(
+        self,
+        path: str,
+        images: Iterable[tuple[str, str]] = (),
+        run: Callable[..., ArchiveJob] = export_project,
+    ) -> None:
         self.path = path
         self.name = os.path.basename(path)
         self.images = [(n, p) for n, p in images if os.path.isfile(p)]
         self._run = run
         self.required, self.disks, self.others = project_files(path)
-        self.job = None
+        self.job: ArchiveJob | None = None
         self.destroyed = False
         self.build_ui()
         self.filename_entry.set_text(
@@ -144,7 +169,7 @@ class ExportProjectDialog:
 
     # The widgets
 
-    def build_ui(self):
+    def build_ui(self) -> None:
         self.window = Gtk.Window(
             title=_("Export Project"),
             default_width=520,
@@ -176,7 +201,7 @@ class ExportProjectDialog:
         self.choose_button.connect("clicked", self.on_choose_clicked)
         self.filename_entry.connect("changed", self.on_changed)
 
-    def _page(self):
+    def _page(self) -> Gtk.Box:
         return Gtk.Box(
             visible=True,
             orientation=Gtk.Orientation.VERTICAL,
@@ -184,7 +209,13 @@ class ExportProjectDialog:
             margin=MARGIN,
         )
 
-    def _check(self, label, size, active=True, sensitive=True):
+    def _check(
+        self,
+        label: str,
+        size: int,
+        active: bool = True,
+        sensitive: bool = True,
+    ) -> Gtk.CheckButton:
         check = Gtk.CheckButton(
             visible=True, active=active, sensitive=sensitive
         )
@@ -195,10 +226,10 @@ class ExportProjectDialog:
         check.connect("toggled", self.on_changed)
         return check
 
-    def size_of(self, names):
+    def size_of(self, names: Iterable[str]) -> int:
         return sum(usage(os.path.join(self.path, name)) for name in names)
 
-    def _build_form(self):
+    def _build_form(self) -> Gtk.Box:
         box = self._page()
         box.pack_start(_label(_("Save as"), bold=True), False, False, 0)
         row = Gtk.Box(visible=True, spacing=6)
@@ -241,7 +272,7 @@ class ExportProjectDialog:
             orientation=Gtk.Orientation.VERTICAL,
             margin_start=12,
         )
-        self.other_checks = {}
+        self.other_checks: dict[str, Gtk.CheckButton] = {}
         for name in self.others:
             check = self._check(name, self.size_of([name]))
             self.other_checks[name] = check
@@ -256,7 +287,7 @@ class ExportProjectDialog:
         box.pack_start(self.form_error, False, False, 0)
         return box
 
-    def _build_running(self):
+    def _build_running(self) -> Gtk.Box:
         box = self._page()
         box.set_valign(Gtk.Align.CENTER)
         self.step_label = _label(_("Compressing the disks…"), xalign=0.5)
@@ -265,23 +296,23 @@ class ExportProjectDialog:
         box.pack_start(self.progress_bar, False, False, 0)
         return box
 
-    def _build_done(self):
+    def _build_done(self) -> Gtk.Box:
         box = self._page()
         box.set_valign(Gtk.Align.CENTER)
         self.done_label = _label(wrap=True, selectable=True, xalign=0.5)
         box.pack_start(self.done_label, False, False, 0)
         return box
 
-    def get_root_widget(self):
+    def get_root_widget(self) -> Gtk.Window:
         return self.window
 
-    def show(self, parent=None):
+    def show(self, parent: Gtk.Window | None = None) -> None:
         if parent is not None:
             self.window.set_transient_for(parent)
         self.window.show()
         self.on_changed()
 
-    def show_page(self, name):
+    def show_page(self, name: str) -> None:
         self.stack.set_visible_child_name(name)
         self.export_button.set_visible(name == "form")
         self.close_button.set_visible(name == "done")
@@ -292,7 +323,7 @@ class ExportProjectDialog:
 
     # The choices
 
-    def files(self):
+    def files(self) -> list[str]:
         """The files of the folder to include, relative to it."""
 
         files = list(self.required)
@@ -301,14 +332,14 @@ class ExportProjectDialog:
         files += [n for n, c in self.other_checks.items() if c.get_active()]
         return files
 
-    def chosen_images(self):
+    def chosen_images(self) -> list[tuple[str, str]]:
         return self.images if self.images_check.get_active() else []
 
-    def output(self):
+    def output(self) -> str:
         text = self.filename_entry.get_text().strip()
         return archive_filename(os.path.expanduser(text)) if text else ""
 
-    def on_changed(self, *args):
+    def on_changed(self, *args: object) -> None:
         size = self.size_of(self.files()) + sum(
             usage(path) for _name, path in self.chosen_images()
         )
@@ -327,12 +358,12 @@ class ExportProjectDialog:
         self.form_error.set_visible(bool(problem))
         self.export_button.set_sensitive(bool(output) and problem is None)
 
-    def on_choose_clicked(self, button):
+    def on_choose_clicked(self, button: Gtk.Button) -> None:
         path = self.choose_file()
         if path:
             self.filename_entry.set_text(archive_filename(path))
 
-    def choose_file(self):
+    def choose_file(self) -> str | None:
         """Ask where to save; None if cancelled."""
 
         chooser = Gtk.FileChooserNative.new(
@@ -358,7 +389,7 @@ class ExportProjectDialog:
         finally:
             chooser.destroy()
 
-    def confirm_overwrite(self, path):
+    def confirm_overwrite(self, path: str) -> bool:
         dialog = Gtk.MessageDialog(
             transient_for=self.window,
             modal=True,
@@ -382,7 +413,7 @@ class ExportProjectDialog:
 
     # Running the export
 
-    def on_export_clicked(self, button):
+    def on_export_clicked(self, button: Gtk.Button) -> None:
         output = self.output()
         if not output:
             return
@@ -390,7 +421,7 @@ class ExportProjectDialog:
             return
         self.start(output)
 
-    def start(self, output):
+    def start(self, output: str) -> None:
         self.progress_bar.set_fraction(0.0)
         self.progress_bar.set_text("")
         self.show_page("running")
@@ -406,7 +437,7 @@ class ExportProjectDialog:
             self.on_exported, self.on_failed, errbackArgs=(output,)
         )
 
-    def on_progress(self, step, done, total):
+    def on_progress(self, step: str, done: int, total: int) -> None:
         if self.destroyed:
             return
         self.step_label.set_text(STEPS.get(step, step))
@@ -415,7 +446,7 @@ class ExportProjectDialog:
             f"{human_size(min(done, total))} / {human_size(total)}"
         )
 
-    def on_exported(self, result):
+    def on_exported(self, result: dict[str, Any]) -> None:
         self.job = None
         logger.info(exported, name=self.name, path=result["output"])
         if self.destroyed:
@@ -427,7 +458,7 @@ class ExportProjectDialog:
         )
         self.show_page("done")
 
-    def on_failed(self, failure, output):
+    def on_failed(self, failure: Failure, output: str) -> None:
         self.job = None
         if failure.check(ArchiveCancelled):
             if not self.destroyed:
@@ -445,12 +476,12 @@ class ExportProjectDialog:
             self.show_page("done")
         return None
 
-    def on_cancel_clicked(self, button):
+    def on_cancel_clicked(self, button: Gtk.Button) -> None:
         if self.job is not None:
             self.job.cancel()
         else:
             self.window.destroy()
 
-    def on_destroyed(self, window):
+    def on_destroyed(self, window: Gtk.Window) -> None:
         # A running export goes on, and logs when it's done.
         self.destroyed = True

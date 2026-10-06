@@ -5,6 +5,8 @@ The UI is the Virtualbricks "About" dialog: a ``Gtk.AboutDialog`` with the
 program name, version, copyright, license, website, authors, artists and logo.
 """
 
+from __future__ import annotations
+
 from typing import List
 
 import gi
@@ -133,12 +135,12 @@ class AboutDialog(Window):
     def get_root_widget(self) -> Gtk.AboutDialog:
         return self.AboutDialog
 
-    def show(self, parent=None):
+    def show(self, parent: Gtk.Window | None = None) -> None:
         if parent is not None:
             self.get_root_widget().set_transient_for(parent)
         self.get_root_widget().show()
 
     def on_AboutDialog_response(
-        self, dialog: Gtk.AboutDialog, response_id: int, data=None
+        self, dialog: Gtk.AboutDialog, response_id: int, data: object = None
     ) -> None:
         dialog.destroy()

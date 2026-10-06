@@ -40,7 +40,8 @@ the window stays open on its page, whose row says so, and OK tries again.
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING, Any, cast
 
 import attr
 import gi
@@ -76,6 +77,16 @@ from virtualbricks.settingsdraft import (  # noqa: E402
     terminals,
 )
 
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.interfaces import IDelayedCall, IReactorTime
+    from twisted.python.failure import Failure
+
+    from virtualbricks.config.settings import SettingValue
+    from virtualbricks.engine import Engine
+    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.programs import FolderPrograms, QemuInfo
+    from virtualbricks.remote.mirror import MirrorFactory
+
 logger = Logger()
 settings_not_saved = "The settings weren't saved: {error}"
 
@@ -93,7 +104,7 @@ WIDTH = 640
 MARGIN = 12
 
 
-def _write_here(changes) -> defer.Deferred:
+def _write_here(changes: dict[str, SettingValue]) -> defer.Deferred[None]:
     """Write settings of this computer, in its settings.toml."""
 
     for name, value in changes.items():
@@ -109,7 +120,7 @@ class Page:
         self,
         title: str,
         draft: SettingsDraft,
-        engine,
+        engine: Engine,
         changed: Callable[[Page], None],
     ) -> None:
         self.title = title
@@ -133,13 +144,11 @@ class SettingsWindow(Window):
     """The settings of these windows, of the machine of the bricks, and of
     the open project."""
 
-    def __init__(self, gui, clock=None) -> None:
-        """
-        :type gui: virtualbricks.gui.mainwindow.window.VBGUI
-        """
-
+    def __init__(self, gui: VBGUI, clock: IReactorTime | None = None) -> None:
         if clock is None:
-            from twisted.internet import reactor as clock
+            from twisted.internet import reactor
+
+            clock = cast("IReactorTime", reactor)
         self.gui = gui
         self.engine = gui.engine
         self.clock = clock
@@ -155,7 +164,7 @@ class SettingsWindow(Window):
         # them again
         self._asking = 0
         self._asked: tuple[str, str] | None = None
-        self._later = None
+        self._later: IDelayedCall | None = None
         # while OK waits for KSM; once the window is gone
         self._turning = False
         self._closed = False
@@ -338,7 +347,7 @@ class SettingsWindow(Window):
             self._later.cancel()
         self._later = self.clock.callLater(FOLDER_DELAY, self.ask_facts)
 
-    def set_facts(self, **facts) -> None:
+    def set_facts(self, **facts: Any) -> None:
         """New facts, for every draft: the rows say them."""
 
         self.facts = attr.evolve(self.facts, **facts)
@@ -346,7 +355,7 @@ class SettingsWindow(Window):
             page.draft.facts = self.facts
         self.refresh()
 
-    def ask_facts(self) -> defer.Deferred:
+    def ask_facts(self) -> defer.Deferred[Any]:
         """
         What the folders of the project's page hold, then what the QEMU of
         the folder lists; the answers of an older question are dropped.
@@ -357,7 +366,9 @@ class SettingsWindow(Window):
         self._asked = self._folders()
         question = self.engine.programs_found(*self._asked)
 
-        def found(answer):
+        def found(
+            answer: tuple[FolderPrograms, FolderPrograms],
+        ) -> defer.Deferred[None] | None:
             if asking != self._asking:
                 return None
             vde, qemu = answer
@@ -369,7 +380,7 @@ class SettingsWindow(Window):
                 return None
             return self.engine.qemu(path).addCallback(listed)
 
-        def listed(info):
+        def listed(info: QemuInfo) -> None:
             if asking != self._asking:
                 return
             self.set_facts(
@@ -383,7 +394,7 @@ class SettingsWindow(Window):
                     playing + ([""] if playing and others else []) + others,
                 )
 
-        def failed(failure):
+        def failed(failure: Failure) -> None:
             # no facts: the rows say nothing more
             logger.debug(
                 "Facts for the Settings window: {error}",
@@ -408,7 +419,7 @@ class SettingsWindow(Window):
                 self.on_settings_there
             )
 
-    def _take(self, pages, name: str, value) -> None:
+    def _take(self, pages: Iterable[Page], name: str, value: object) -> None:
         for page in pages:
             if name in page.draft.keys and page.draft.follow(name, value):
                 page.form.reload()
@@ -424,7 +435,7 @@ class SettingsWindow(Window):
         self._take(pages, name, get_setting(name))
         self.refresh()
 
-    def on_settings_there(self, copy) -> None:
+    def on_settings_there(self, copy: MirrorFactory) -> None:
         """The settings of the Virtualbricks there changed."""
 
         for name, value in copy.settings.items():
@@ -433,14 +444,14 @@ class SettingsWindow(Window):
 
     # Cancel and OK
 
-    def on_response(self, dialog, response_id) -> bool:
+    def on_response(self, dialog: Gtk.Dialog, response_id: int) -> bool:
         if response_id == Gtk.ResponseType.OK:
             self.ok()
         else:
             dialog.destroy()
         return True
 
-    def on_destroy(self, dialog) -> None:
+    def on_destroy(self, dialog: Gtk.Dialog) -> None:
         self._closed = True
         self._unfollow()
         if self._later is not None and self._later.active():
@@ -452,13 +463,15 @@ class SettingsWindow(Window):
                 return page
         return None
 
-    def ok(self) -> defer.Deferred:
+    def ok(self) -> defer.Deferred[bool]:
         """
         Write what changed; then, if KSM changed, or didn't turn the last
         time, wait for it. The window closes when all went as asked.
         """
 
-        writes: dict = {}
+        # the changes to write, by what writes them
+        writes: dict[Callable[[dict[str, Any]], object], dict[str, Any]]
+        writes = {}
         for page in self.pages:
             changes = page.draft.changes()
             if changes:
@@ -480,7 +493,7 @@ class SettingsWindow(Window):
             consumeErrors=True,
         )
 
-        def written(_):
+        def written(_: object) -> bool | defer.Deferred[bool]:
             for page in self.pages:
                 page.draft.saved()
             if tray is not None:
@@ -488,7 +501,7 @@ class SettingsWindow(Window):
                     self.gui.start_systray()
                 else:
                     self.gui.stop_systray()
-            if not turn:
+            if not turn or ksm_page is None:
                 return True
             wanted = ksm_page.draft.get(KSM)
             self.spinner.start()
@@ -498,12 +511,14 @@ class SettingsWindow(Window):
                 lambda state: self._turned(wanted, state)
             )
 
-        def not_written(failure):
-            failure = failure.value.subFailure
-            logger.error(settings_not_saved, error=failure.getErrorMessage())
+        def not_written(failure: Failure) -> bool:
+            first = failure.value
+            assert isinstance(first, defer.FirstError), "gatherResults failed"
+            error = first.subFailure.getErrorMessage()
+            logger.error(settings_not_saved, error=error)
             return False
 
-        def done(close):
+        def done(close: bool) -> bool:
             self._turning = False
             self.spinner.stop()
             self.spinner.hide()
@@ -516,8 +531,7 @@ class SettingsWindow(Window):
                 self.refresh()
             return close
 
-        writing.addCallbacks(written, not_written)
-        return writing.addCallback(done)
+        return writing.addCallbacks(written, not_written).addCallback(done)
 
     def _turned(self, wanted: bool, state: bool) -> bool:
         """Whether KSM turned as asked; if not, its row says so."""
@@ -525,6 +539,7 @@ class SettingsWindow(Window):
         if state == wanted:
             return True
         page = self._ksm_page()
+        assert page is not None, "a window that turns KSM has its page"
         if wanted:
             text = _(
                 "KSM is still off: Virtualbricks couldn't turn it on. File ›"

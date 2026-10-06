@@ -308,7 +308,7 @@
 ## Types
 
 - [ ] Fix the errors that mypy finds, a package at a time as `config/`,
-  `console/`, `bricks/` and `remote/` (111 on 6 Oct 2026, all in `gui/`):
+  `console/`, `bricks/` and `remote/` (94 on 6 Oct 2026, all in `gui/`):
   widgets maybe `None`, and the schemas' constructors called with values
   of the wrong type, now that mypy knows them. Or keep a baseline and fail
   only on new errors
@@ -320,6 +320,11 @@
   `scripts/` (0–2% on 6 Oct 2026)
 
 # DONE
+
+- [x] Type `gui/dialogs/` in full, checked strictly: the `local` of an
+  engine is `Literal[True]` or `Literal[False]`, so `if engine.local:`
+  narrows `Engine`; an `Owner` writes changes of any type, as a setting's
+  kind says; GTK's maybe-`None` that can't be are asserted with why
 
 - [x] Type the modules of `gui/` but `gui.py`: `form.py`, `graphics.py`,
   `imageinfo.py`, `markdownview.py`, `messages.py` and `pathentry.py`,

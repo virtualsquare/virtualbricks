@@ -147,6 +147,7 @@ module = [
     "virtualbricks.config.*",
     "virtualbricks.console.*",
     "virtualbricks.engine",
+    "virtualbricks.gui.dialogs.*",
     "virtualbricks.gui.form",
     "virtualbricks.gui.graphics",
     "virtualbricks.gui.imageinfo",

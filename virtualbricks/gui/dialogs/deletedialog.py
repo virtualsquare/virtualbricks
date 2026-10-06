@@ -27,8 +27,12 @@ one, for good, as Start Over sends one: a new machine of the same name would
 start from them. A running brick doesn't get here: its Delete is greyed.
 """
 
+from __future__ import annotations
+
 import itertools
 import os
+from collections.abc import Iterable, Sequence
+from typing import TYPE_CHECKING, Any
 
 import gi
 
@@ -47,6 +51,15 @@ from virtualbricks.gui import imageinfo
 from virtualbricks.gui.dialogs.base import Window, action_dialog, text_label
 from virtualbricks.i18n import _, ngettext
 
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.bricks import Brick
+    from virtualbricks.bricks.event import Event
+    from virtualbricks.bricks.eventaction import StoredAction
+    from virtualbricks.bricks.plug import Plug
+    from virtualbricks.engine import Engine
+
 logger = Logger()
 not_deleted = "Cannot delete {name}: {error}"
 copy_stays = "Cannot discard {vm}'s private copy of {device}: {error}"
@@ -60,11 +73,11 @@ REFUSALS = (
 )
 
 
-def _unique(names) -> list[str]:
+def _unique(names: Iterable[str]) -> list[str]:
     return list(dict.fromkeys(names))
 
 
-def _plugged(plug) -> str:
+def _plugged(plug: Plug) -> str:
     """A brick plugged in; a machine with its card."""
 
     brick = plug.brick
@@ -74,7 +87,9 @@ def _plugged(plug) -> str:
     return _("{vm} (eth{n})").format(vm=brick.name, n=number)
 
 
-def _actions_words(name, actions) -> str:
+def _actions_words(
+    name: str, actions: Sequence[tuple[Event, StoredAction]]
+) -> str:
     events = _unique(event.name for event, _action in actions)
     starts = {isinstance(action, StartAction) for _event, action in actions}
     if starts == {True}:
@@ -98,7 +113,7 @@ def _actions_words(name, actions) -> str:
     return words.format(events=imageinfo.names(events), name=name)
 
 
-def _runs_words(name, settings) -> list[str]:
+def _runs_words(name: str, settings: Sequence[tuple[Brick, str]]) -> list[str]:
     lines = []
     for field, singular, plural in (
         (
@@ -121,7 +136,7 @@ def _runs_words(name, settings) -> list[str]:
     return lines
 
 
-def uses_words(item, users) -> list[str]:
+def uses_words(item: Brick | Event, users: Any) -> list[str]:
     """What changes with item, of the users the factory found: a line each."""
 
     lines = []
@@ -142,7 +157,7 @@ def uses_words(item, users) -> list[str]:
     return lines
 
 
-def copies_words(paths, size, trash) -> str:
+def copies_words(paths: Sequence[str], size: int, trash: bool) -> str:
     """What happens to the private copies of a machine deleted."""
 
     files = imageinfo.names([os.path.basename(path) for path in paths])
@@ -168,7 +183,7 @@ def copies_words(paths, size, trash) -> str:
 class DeleteDialog(Window):
     """Ask to delete a brick or an event, saying what goes with it."""
 
-    def __init__(self, engine, item):
+    def __init__(self, engine: Engine, item: Brick | Event) -> None:
         self.engine = engine
         self.item = item
         # the files are those of the machine of the bricks
@@ -202,7 +217,7 @@ class DeleteDialog(Window):
                 _("It is waiting: it stops, and its actions don't run.")
             )
         devices = self.copies()
-        if devices:
+        if devices and is_virtualmachine(self.item):
             paths = [
                 self.item.disk(device).get_cow_path() for device in devices
             ]
@@ -224,32 +239,34 @@ class DeleteDialog(Window):
             if disk.is_cow() and self.machine.exists(disk.get_cow_path())
         ]
 
-    def on_response(self, dialog, response_id) -> None:
+    def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         if response_id == Gtk.ResponseType.OK:
             self.delete()
         dialog.destroy()
 
-    def delete(self) -> defer.Deferred:
+    def delete(self) -> defer.Deferred[Any]:
         """The private copies go first, then the item; a refusal is logged."""
 
-        deleting = defer.succeed(None)
-        for device in self.copies():
-            deleting.addCallback(
-                lambda _, device=device: self.engine.start_over(
-                    self.item, device
-                )
-            )
-            deleting.addErrback(self._copy_stays, device)
+        item = self.item
+        deleting: defer.Deferred[Any] = defer.succeed(None)
+        if is_virtualmachine(item):
+
+            def start_over(_: object, device: str) -> defer.Deferred[bool]:
+                return self.engine.start_over(item, device)
+
+            for device in self.copies():
+                deleting.addCallback(start_over, device)
+                deleting.addErrback(self._copy_stays, device)
         deleting.addCallback(lambda _: self.engine.remove(self.item))
         deleting.addErrback(self._not_deleted)
         return deleting
 
-    def _copy_stays(self, failure, device) -> None:
+    def _copy_stays(self, failure: Failure, device: str) -> None:
         failure.trap(*REFUSALS)
         logger.error(
             copy_stays, vm=self.item.name, device=device, error=failure.value
         )
 
-    def _not_deleted(self, failure) -> None:
+    def _not_deleted(self, failure: Failure) -> None:
         failure.trap(*REFUSALS)
         logger.error(not_deleted, name=self.item.name, error=failure.value)

@@ -36,22 +36,36 @@ engine reads the file, makes the new one and adds the image; the copy is
 made here.
 """
 
+from __future__ import annotations
+
 import math
 import os
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Pango
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gdk, Gtk, Pango
 from twisted.internet import defer, threads
 
 from virtualbricks import errors
 from virtualbricks.config import images
-from virtualbricks.config.workspace import copy_sparse
+from virtualbricks.config.workspace import Workspace, copy_sparse
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.gui.pathentry import PathCompletion
 from virtualbricks.i18n import _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks.virtualmachine import Image
+    from virtualbricks.config.images import ImageInfo
+    from virtualbricks.engine import Engine
+    from virtualbricks.remote.client import RemoteWorkspace
 
 MARGIN = 18
 GAP = 6
@@ -60,7 +74,14 @@ UNITS = (("MB", 1000**2), ("GB", 1000**3))
 FORMATS = ("qcow2", "raw")
 
 
-def _label(text="", dim=False, bold=False, wrap=False, visible=True, **props):
+def _label(
+    text: str = "",
+    dim: bool = False,
+    bold: bool = False,
+    wrap: bool = False,
+    visible: bool = True,
+    **props: Any,
+) -> Gtk.Label:
     label = Gtk.Label(
         visible=visible, label=text, xalign=0.0, wrap=wrap, **props
     )
@@ -73,7 +94,7 @@ def _label(text="", dim=False, bold=False, wrap=False, visible=True, **props):
     return label
 
 
-def _dialog(title, action):
+def _dialog(title: str, action: str) -> tuple[Gtk.Dialog, Gtk.Widget]:
     dialog = Gtk.Dialog(
         title=title,
         use_header_bar=True,
@@ -88,7 +109,7 @@ def _dialog(title, action):
     return dialog, button
 
 
-def check_name(factory, name) -> str | None:
+def check_name(factory: BrickFactory, name: str) -> str | None:
     """What is wrong with a name for a new image, if anything."""
 
     try:
@@ -117,24 +138,42 @@ def read_description(path: str) -> str:
 
 class _AddDialog:
 
-    on_added = None
+    # called with the image added
+    on_added: Callable[[Image], object] | None = None
+    engine: Engine
+    factory: BrickFactory
+    # the workspace of the machine of the bricks
+    workspace: Workspace | RemoteWorkspace
+    dialog: Gtk.Dialog
+    working: bool
 
-    def show(self, parent=None):
+    def check(self) -> bool:
+        """Whether the dialog can add; if not, it says why."""
+
+        raise NotImplementedError
+
+    def show(self, parent: Gtk.Window | None = None) -> None:
         if parent is not None:
             self.dialog.set_transient_for(parent)
         self.dialog.show()
 
-    def get_root_widget(self):
+    def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
-    def _grid(self):
+    def _image_folder(self) -> str:
+        """The image folder, made if it isn't there: of this computer."""
+
+        assert isinstance(self.workspace, Workspace), "files made here only"
+        return images.image_folder(self.workspace)
+
+    def _grid(self) -> Gtk.Grid:
         grid = Gtk.Grid(
             visible=True, row_spacing=GAP, column_spacing=12, margin=MARGIN
         )
         self.dialog.get_content_area().pack_start(grid, True, True, 0)
         return grid
 
-    def _name_rows(self, grid, row):
+    def _name_rows(self, grid: Gtk.Grid, row: int) -> None:
         label = _label(_("Name"), bold=True)
         self.name_entry = Gtk.Entry(
             visible=True, hexpand=True, activates_default=True
@@ -146,7 +185,7 @@ class _AddDialog:
         grid.attach(self.name_message, 1, row + 1, 1, 1)
         self.name_entry.connect("changed", lambda entry: self.check())
 
-    def _error_row(self, grid, row):
+    def _error_row(self, grid: Gtk.Grid, row: int) -> None:
         self.error_label = _label(wrap=True, selectable=True, visible=False)
         self.error_label.get_style_context().add_class("error")
         grid.attach(self.error_label, 0, row, 2, 1)
@@ -159,13 +198,13 @@ class _AddDialog:
         self.name_message.set_visible(message is not None)
         return bool(name) and message is None
 
-    def _added(self, image):
+    def _added(self, image: Image) -> Image:
         self.dialog.destroy()
         if self.on_added is not None:
             self.on_added(image)
         return image
 
-    def _failed(self, failure):
+    def _failed(self, failure: Failure) -> None:
         self.working = False
         self.error_label.set_text(failure.getErrorMessage())
         self.error_label.show()
@@ -175,23 +214,29 @@ class _AddDialog:
 class ExistingImageDialog(_AddDialog):
     """Add an image of an existing file."""
 
-    def __init__(self, engine, workspace=None):
+    def __init__(
+        self,
+        engine: Engine,
+        workspace: Workspace | RemoteWorkspace | None = None,
+    ) -> None:
         self.engine = engine
         self.factory = engine.factory
-        # the workspace of the machine of the bricks
         self.workspace = engine.workspace if workspace is None else workspace
-        self.path = None
-        self.info = None
+        self.path: str | None = None
+        self.info: ImageInfo | None = None
         self.working = False
         self.build_ui()
         self.check()
 
-    def build_ui(self):
+    def build_ui(self) -> None:
         self.dialog, self.add_button = _dialog(
             _("Add an Existing Image"), _("Add")
         )
         grid = self._grid()
         label = _label(_("File"), bold=True)
+        self.file_chooser: Gtk.FileChooserButton | None
+        self.file_entry: Gtk.Entry | None
+        chooser: Gtk.FileChooserButton | Gtk.Entry
         if self.engine.local:
             self.file_chooser = Gtk.FileChooserButton(
                 visible=True,
@@ -207,8 +252,8 @@ class ExistingImageDialog(_AddDialog):
             # and read when Enter is pressed or the entry is left
             self.file_chooser = None
             self.file_entry = Gtk.Entry(visible=True, hexpand=True)
-            self.file_entry.completer = PathCompletion(
-                self.engine, self.file_entry
+            self.file_entry.completer = (  # type: ignore[attr-defined]
+                PathCompletion(self.engine, self.file_entry)
             )
             self.file_entry.connect("activate", self.on_file_typed)
             self.file_entry.connect("focus-out-event", self.on_file_left)
@@ -255,21 +300,21 @@ class ExistingImageDialog(_AddDialog):
 
     # The file
 
-    def on_file_set(self, chooser):
+    def on_file_set(self, chooser: Gtk.FileChooserButton) -> None:
         path = chooser.get_filename()
         if path is not None:
             self.choose(path)
 
-    def on_file_typed(self, entry):
+    def on_file_typed(self, entry: Gtk.Entry) -> None:
         path = entry.get_text().strip()
         if path and path != self.path:
             self.choose(path)
 
-    def on_file_left(self, entry, event):
+    def on_file_left(self, entry: Gtk.Entry, event: Gdk.EventFocus) -> bool:
         self.on_file_typed(entry)
         return False
 
-    def choose(self, path):
+    def choose(self, path: str) -> defer.Deferred[None]:
         """Read path with qemu-img info, and start the name from it."""
 
         self.path = os.path.abspath(path)
@@ -283,8 +328,7 @@ class ExistingImageDialog(_AddDialog):
         if not buffer.get_char_count() and self.engine.local:
             # what the file says of itself, beside it here
             buffer.set_text(read_description(self.path))
-        reading = self.engine.image_info(self.path)
-        reading.addCallbacks(
+        reading = self.engine.image_info(self.path).addCallbacks(
             self._read,
             self._not_read,
             callbackArgs=(self.path,),
@@ -293,7 +337,7 @@ class ExistingImageDialog(_AddDialog):
         self.check()
         return reading
 
-    def _read(self, info, path):
+    def _read(self, info: ImageInfo, path: str) -> None:
         if path != self.path:
             return
         self.info = info
@@ -305,7 +349,7 @@ class ExistingImageDialog(_AddDialog):
         self.file_facts.set_text(words)
         self.check()
 
-    def _not_read(self, failure, path):
+    def _not_read(self, failure: Failure, path: str) -> None:
         if path != self.path:
             return
         self.file_facts.set_text(
@@ -332,12 +376,14 @@ class ExistingImageDialog(_AddDialog):
             and self.copy_radio.get_active()
         )
 
-    def check(self):
+    def check(self) -> bool:
         """Show what the file allows, and wait for a good file and name."""
 
         name_ok = self._name_ok()
         outside = self.outside() and self.info is not None
-        backing = outside and bool(self.info.backing_file)
+        backing = (
+            outside and self.info is not None and bool(self.info.backing_file)
+        )
         for widget in (self.copy_radio, self.in_place_radio):
             widget.set_visible(outside)
         # over a connection, a copy waits (19 R13)
@@ -354,6 +400,7 @@ class ExistingImageDialog(_AddDialog):
                 _("No copy over a connection, for now: it's used where it is.")
             )
         elif outside:
+            assert self.path is not None, "a file outside is a file"
             size = imageinfo.human_size(os.stat(self.path).st_blocks * 512)
             self.copy_note.set_text(
                 _(
@@ -367,7 +414,7 @@ class ExistingImageDialog(_AddDialog):
 
     # The action
 
-    def on_response(self, dialog, response_id):
+    def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         if response_id != Gtk.ResponseType.OK:
             dialog.destroy()
             return
@@ -375,9 +422,10 @@ class ExistingImageDialog(_AddDialog):
             return
         self.add()
 
-    def add(self):
+    def add(self) -> defer.Deferred[Any]:
         """Copy the file if it has to be, then add its image."""
 
+        assert self.path is not None, "Add has a file"
         name = self.name_entry.get_text()
         buffer = self.description_view.get_buffer()
         description = buffer.get_text(
@@ -386,8 +434,9 @@ class ExistingImageDialog(_AddDialog):
         path = self.path
         self.working = True
         self.check()
+        copying: defer.Deferred[Any]
         if self.copies():
-            folder = images.image_folder(self.workspace)
+            folder = self._image_folder()
             path = images.free_path(folder, os.path.basename(self.path))
             self.progress.set_text(_("Copying the file…"))
             self.progress.show()
@@ -403,7 +452,7 @@ class ExistingImageDialog(_AddDialog):
         )
         return copying
 
-    def _copy_failed(self, failure, path):
+    def _copy_failed(self, failure: Failure, path: str) -> None:
         # a copy stopped halfway is of no use
         if path != self.path and os.path.exists(path):
             os.remove(path)
@@ -414,16 +463,19 @@ class ExistingImageDialog(_AddDialog):
 class NewDiskDialog(_AddDialog):
     """Add an image of a new empty disk."""
 
-    def __init__(self, engine, workspace=None):
+    def __init__(
+        self,
+        engine: Engine,
+        workspace: Workspace | RemoteWorkspace | None = None,
+    ) -> None:
         self.engine = engine
         self.factory = engine.factory
-        # the workspace of the machine of the bricks
         self.workspace = engine.workspace if workspace is None else workspace
         self.working = False
         self.build_ui()
         self.check()
 
-    def build_ui(self):
+    def build_ui(self) -> None:
         self.dialog, self.create_button = _dialog(
             _("New Empty Disk"), _("Create")
         )
@@ -462,6 +514,8 @@ class NewDiskDialog(_AddDialog):
         grid.attach(label, 0, 3, 1, 1)
         grid.attach(self.format_combo, 1, 3, 1, 1)
         label = _label(_("Folder"), bold=True)
+        self.folder_chooser: Gtk.FileChooserButton | None
+        folder: Gtk.FileChooserButton | Gtk.Entry
         if self.engine.local:
             self.folder_chooser = Gtk.FileChooserButton(
                 visible=True,
@@ -469,9 +523,7 @@ class NewDiskDialog(_AddDialog):
                 action=Gtk.FileChooserAction.SELECT_FOLDER,
                 title=_("Choose a Folder"),
             )
-            self.folder_chooser.set_filename(
-                images.image_folder(self.workspace)
-            )
+            self.folder_chooser.set_filename(self._image_folder())
             label.set_mnemonic_widget(self.folder_chooser)
             folder = self.folder_chooser
         else:
@@ -483,8 +535,8 @@ class NewDiskDialog(_AddDialog):
                 hexpand=True,
                 text=self.engine.machine.image_folder(),
             )
-            folder.completer = PathCompletion(
-                self.engine, folder, folders=True
+            folder.completer = (  # type: ignore[attr-defined]
+                PathCompletion(self.engine, folder, folders=True)
             )
             folder.connect("changed", lambda entry: self.check())
             label.set_mnemonic_widget(folder)
@@ -504,9 +556,7 @@ class NewDiskDialog(_AddDialog):
     def folder(self) -> str:
         if self.folder_chooser is None:
             return self.folder_entry.get_text().strip()
-        return self.folder_chooser.get_filename() or images.image_folder(
-            self.workspace
-        )
+        return self.folder_chooser.get_filename() or self._image_folder()
 
     def target(self) -> str:
         """The file of the new disk."""
@@ -518,11 +568,13 @@ class NewDiskDialog(_AddDialog):
     def size(self) -> int:
         """The size of the disk in bytes, a whole number of sectors."""
 
-        unit = dict(UNITS)[self.unit_combo.get_active_id()]
+        unit_id = self.unit_combo.get_active_id()
+        assert unit_id is not None, "a unit is always chosen"
+        unit = dict(UNITS)[unit_id]
         size = self.size_spin.get_value_as_int() * unit
         return math.ceil(size / 512) * 512
 
-    def check(self):
+    def check(self) -> bool:
         name_ok = self._name_ok()
         target = self.target()
         # over a connection, a file that isn't known there yet is refused
@@ -542,7 +594,7 @@ class NewDiskDialog(_AddDialog):
         self.create_button.set_sensitive(ready)
         return ready
 
-    def on_response(self, dialog, response_id):
+    def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         if response_id != Gtk.ResponseType.OK:
             dialog.destroy()
             return
@@ -550,13 +602,14 @@ class NewDiskDialog(_AddDialog):
             return
         self.create()
 
-    def create(self):
+    def create(self) -> defer.Deferred[Any]:
         """Make the file with qemu-img create, then add its image."""
 
         self.size_spin.update()
         name = self.name_entry.get_text()
         path = self.target()
         fmt = self.format_combo.get_active_id()
+        assert fmt is not None, "a format is always chosen"
         self.working = True
         self.check()
         creating = self.engine.make_image(path, fmt, self.size())

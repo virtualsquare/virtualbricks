@@ -26,8 +26,12 @@ unset. The import runs in the archive process too; the window follows its
 progress, and can be closed meanwhile.
 """
 
+from __future__ import annotations
+
 import collections
 import os
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import gi
 
@@ -51,6 +55,20 @@ from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import ngettext
 from virtualbricks.markdown import first_paragraph
 
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.config.archive import ArchiveContents, ArchiveJob
+    from virtualbricks.config.importing import (
+        ImageUse,
+        ImportPlan,
+        ImportResult,
+        MachinePath,
+    )
+    from virtualbricks.config.tomlfile import Table
+    from virtualbricks.config.workspace import Workspace
+
 logger = Logger()
 imported = 'Project imported as "{name}"'
 import_failed = "Cannot import {path}: {error}"
@@ -67,7 +85,7 @@ PATTERNS = ("*.vbp", "*.tar.gz", "*.tgz", "*.tar")
 DESCRIPTION_LINES = 4
 
 
-def facts(data):
+def facts(data: Table) -> str:
     """ "3 bricks · 1 event" for the project file data."""
 
     bricks = data.get("bricks", {})
@@ -89,7 +107,7 @@ def facts(data):
     return " · ".join(parts) if parts else _("No bricks")
 
 
-def human_size(size):
+def human_size(size: float) -> str:
     for unit in ("B", "KB", "MB", "GB"):
         if size < 1000 or unit == "GB":
             return (
@@ -99,21 +117,30 @@ def human_size(size):
     return f"{size:.1f} TB"  # pragma: no cover
 
 
-def _label(text="", dim=False, bold=False, wrap=False, xalign=0.0, **props):
+def _label(
+    text: str = "",
+    dim: bool = False,
+    bold: bool = False,
+    wrap: bool = False,
+    xalign: float = 0.0,
+    **props: Any,
+) -> Gtk.Label:
     label = Gtk.Label(
         visible=True, label=text, xalign=xalign, wrap=wrap, **props
     )
     if dim:
         label.get_style_context().add_class("dim-label")
     if bold:
-        label.set_attributes(pango_attr_list(Pango.attr_weight_new(700)))
+        label.set_attributes(
+            pango_attr_list(Pango.attr_weight_new(Pango.Weight.BOLD))
+        )
     return label
 
 
 class ImageRow:
     """The choice for one image: copy it, use a file, leave it unset."""
 
-    def __init__(self, dialog, image):
+    def __init__(self, dialog: ImportDialog, image: ImageUse) -> None:
         self.dialog = dialog
         self.image = image
         self.row = Gtk.ListBoxRow(visible=True, activatable=False)
@@ -165,7 +192,7 @@ class ImageRow:
         for choice, button in self.buttons.items():
             button.connect("toggled", self.on_toggled, choice)
 
-    def update(self):
+    def update(self) -> None:
         image = self.image
         self._updating = True
         try:
@@ -187,7 +214,7 @@ class ImageRow:
         self.path_label.set_text(self.describe())
         self.path_label.set_tooltip_text(image.path or None)
 
-    def describe(self):
+    def describe(self) -> str:
         image = self.image
         if image.choice == COPY and not image.known:
             return _(
@@ -199,7 +226,7 @@ class ImageRow:
             return _("Uses {path}").format(path=image.path)
         return _("Unset: its disks get an image later, in their settings")
 
-    def on_toggled(self, button, choice):
+    def on_toggled(self, button: Gtk.RadioButton, choice: str) -> None:
         if self._updating or not button.get_active():
             return
         if choice == USE:
@@ -224,28 +251,28 @@ class ImportDialog(Window):
 
     def __init__(
         self,
-        factory,
-        workspace=None,
-        inspect=inspect_archive,
-        run=import_project,
-    ):
+        factory: BrickFactory,
+        workspace: Workspace | None = None,
+        inspect: Callable[..., ArchiveJob] = inspect_archive,
+        run: Callable[..., ArchiveJob] = import_project,
+    ) -> None:
         self.factory = factory
         self.workspace = projects if workspace is None else workspace
         self._inspect = inspect
         self._run = run
-        self.archive_path = None
-        self.plan = None
-        self.rows = []
-        self.inspect_job = None
-        self.import_job = None
-        self.result = None
+        self.archive_path: str | None = None
+        self.plan: ImportPlan | None = None
+        self.rows: list[ImageRow] = []
+        self.inspect_job: ArchiveJob | None = None
+        self.import_job: ArchiveJob | None = None
+        self.result: ImportResult | None = None
         self.scanning = False
         self.destroyed = False
         super().__init__()
 
     # The widgets
 
-    def build_ui(self):
+    def build_ui(self) -> None:
         self.window = Gtk.Window(
             title=_("Import Project"),
             default_width=680,
@@ -282,7 +309,7 @@ class ImportDialog(Window):
         self.name_entry.connect("changed", self.on_name_changed)
         self.open_check.connect("toggled", self.on_open_toggled)
 
-    def _page(self):
+    def _page(self) -> Gtk.Box:
         return Gtk.Box(
             visible=True,
             orientation=Gtk.Orientation.VERTICAL,
@@ -290,7 +317,7 @@ class ImportDialog(Window):
             margin=MARGIN,
         )
 
-    def _build_choose(self):
+    def _build_choose(self) -> Gtk.Box:
         box = self._page()
         box.set_valign(Gtk.Align.CENTER)
         box.pack_start(
@@ -317,7 +344,7 @@ class ImportDialog(Window):
         box.pack_start(self.file_button, False, False, 0)
         return box
 
-    def _build_reading(self):
+    def _build_reading(self) -> Gtk.Box:
         box = self._page()
         box.set_valign(Gtk.Align.CENTER)
         self.reading_label = _label(_("Reading the archive…"), xalign=0.5)
@@ -326,7 +353,7 @@ class ImportDialog(Window):
         box.pack_start(self.reading_bar, False, False, 0)
         return box
 
-    def _build_form(self):
+    def _build_form(self) -> Gtk.ScrolledWindow:
         scrolled = Gtk.ScrolledWindow(
             visible=True, hscrollbar_policy=Gtk.PolicyType.NEVER
         )
@@ -379,7 +406,7 @@ class ImportDialog(Window):
             visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=6
         )
         box.pack_start(self.paths_box, False, False, 0)
-        self.machine_checks = {}
+        self.machine_checks: dict[str, Gtk.CheckButton] = {}
 
         self.open_check = Gtk.CheckButton(
             visible=True,
@@ -393,7 +420,7 @@ class ImportDialog(Window):
         scrolled.add(box)
         return scrolled
 
-    def _build_running(self):
+    def _build_running(self) -> Gtk.Box:
         box = self._page()
         box.set_valign(Gtk.Align.CENTER)
         self.step_label = _label(xalign=0.5)
@@ -416,7 +443,7 @@ class ImportDialog(Window):
         )
         return box
 
-    def _build_done(self):
+    def _build_done(self) -> Gtk.Box:
         box = self._page()
         self.done_label = _label(wrap=True, bold=True)
         box.pack_start(self.done_label, False, False, 0)
@@ -431,20 +458,20 @@ class ImportDialog(Window):
         box.pack_start(frame, False, False, 0)
         return box
 
-    def _build_failed(self):
+    def _build_failed(self) -> Gtk.Box:
         box = self._page()
         box.set_valign(Gtk.Align.CENTER)
         self.error_label = _label(wrap=True, selectable=True, xalign=0.5)
         box.pack_start(self.error_label, False, False, 0)
         return box
 
-    def get_root_widget(self):
+    def get_root_widget(self) -> Gtk.Window:
         return self.window
 
-    def page(self):
+    def page(self) -> str | None:
         return self.stack.get_visible_child_name()
 
-    def show_page(self, name):
+    def show_page(self, name: str) -> None:
         self.stack.set_visible_child_name(name)
         running = name == "running"
         finished = name in ("done", "failed")
@@ -455,7 +482,7 @@ class ImportDialog(Window):
 
     # Reading the archive
 
-    def choose(self, path):
+    def choose(self, path: str) -> None:
         """Read the archive at path."""
 
         if self.inspect_job is not None:
@@ -475,19 +502,19 @@ class ImportDialog(Window):
             errbackArgs=(job,),
         )
 
-    def on_read_progress(self, step, done, total):
+    def on_read_progress(self, step: str, done: int, total: int) -> None:
         fraction = done / total if total else 0.0
         self.reading_bar.set_fraction(fraction)
         self.reading_bar.set_text(f"{human_size(done)} / {human_size(total)}")
         self.scan_bar.set_fraction(fraction)
 
-    def on_head(self, contents):
+    def on_head(self, contents: ArchiveContents) -> None:
         if self.destroyed or self.plan is not None:
             return
         self.scanning = True
         self.show_form(plan_import(contents, self.workspace))
 
-    def on_contents(self, contents, job):
+    def on_contents(self, contents: ArchiveContents, job: ArchiveJob) -> None:
         if job is not self.inspect_job or self.destroyed:
             return
         self.inspect_job = None
@@ -498,7 +525,7 @@ class ImportDialog(Window):
             update_plan(self.plan, contents)
             self.refresh()
 
-    def on_inspect_failed(self, failure, job):
+    def on_inspect_failed(self, failure: Failure, job: ArchiveJob) -> None:
         if job is not self.inspect_job or self.destroyed:
             return None
         self.inspect_job = None
@@ -514,7 +541,7 @@ class ImportDialog(Window):
 
     # The form
 
-    def show_form(self, plan):
+    def show_form(self, plan: ImportPlan) -> None:
         self.plan = plan
         self.archive_label.set_text(plan.contents.path)
         self.name_entry.set_text(plan.name)
@@ -548,13 +575,13 @@ class ImportDialog(Window):
         self.show_page("form")
         self.refresh()
 
-    def refresh(self):
+    def refresh(self) -> None:
         self.scan_box.set_visible(self.scanning)
         for row in self.rows:
             row.update()
         self.check()
 
-    def check(self):
+    def check(self) -> None:
         """Show what stops the import; Import waits for none."""
 
         if self.plan is None:
@@ -568,25 +595,28 @@ class ImportDialog(Window):
         self.problems_label.set_visible(bool(others))
         self.import_button.set_sensitive(not problems)
 
-    def on_name_changed(self, entry):
+    def on_name_changed(self, entry: Gtk.Entry) -> None:
         if self.plan is not None:
             self.plan.name = entry.get_text()
             self.check()
 
-    def on_open_toggled(self, check):
+    def on_open_toggled(self, check: Gtk.CheckButton) -> None:
         if self.plan is not None:
             self.plan.open = check.get_active()
 
-    def on_machine_path_toggled(self, check, path):
+    def on_machine_path_toggled(
+        self, check: Gtk.CheckButton, path: MachinePath
+    ) -> None:
         path.use_ours = check.get_active()
 
-    def copy_destination(self, image):
+    def copy_destination(self, image: ImageUse) -> str:
         from virtualbricks.config.importing import free_file
 
+        assert self.plan is not None, "the form has a plan"
         name = os.path.basename(image.original) or image.name
         return free_file(os.path.join(self.plan.library, name))
 
-    def choose_image(self, image):
+    def choose_image(self, image: ImageUse) -> str | None:
         """Ask for the file of an image; None if cancelled."""
 
         chooser = Gtk.FileChooserNative.new(
@@ -608,13 +638,14 @@ class ImportDialog(Window):
 
     # Running the import
 
-    def start_import(self):
+    def start_import(self) -> None:
         if self.inspect_job is not None:
             # The import reads the whole archive anyway.
             job, self.inspect_job = self.inspect_job, None
             job.cancel()
             self.scanning = False
         plan = self.plan
+        assert plan is not None, "Import needs a plan"
         self.step_label.set_text(_("Importing {name}").format(name=plan.name))
         self.run_bar.set_fraction(0.0)
         self.run_bar.set_text("")
@@ -627,18 +658,19 @@ class ImportDialog(Window):
         )
         job.done.addCallbacks(self.on_imported, self.on_import_failed)
 
-    def on_import_progress(self, step, done, total):
+    def on_import_progress(self, step: str, done: int, total: int) -> None:
         if self.destroyed:
             return
         self.step_label.set_text(STEPS.get(step, step))
         self.run_bar.set_fraction(done / total if total else 0.0)
         self.run_bar.set_text(f"{human_size(done)} / {human_size(total)}")
 
-    def on_imported(self, result):
+    def on_imported(self, result: ImportResult) -> None:
         self.import_job = None
         self.result = result
         logger.info(imported, name=result.name)
         result.report.log(logger)
+        assert self.plan is not None, "an import has its plan"
         if self.plan.open:
             self.open_project(result)
         if self.destroyed:
@@ -668,7 +700,7 @@ class ImportDialog(Window):
         self.warnings_frame.set_visible(has_messages)
         self.show_page("done")
 
-    def open_project(self, result):
+    def open_project(self, result: ImportResult) -> None:
         try:
             self.workspace.save(self.factory)
             report = self.workspace.open(result.name, self.factory)
@@ -680,7 +712,7 @@ class ImportDialog(Window):
         else:
             result.report.extend(report)
 
-    def on_import_failed(self, failure):
+    def on_import_failed(self, failure: Failure) -> None:
         self.import_job = None
         if failure.check(ArchiveCancelled):
             if not self.destroyed:
@@ -696,31 +728,31 @@ class ImportDialog(Window):
             self.fail(failure.getErrorMessage())
         return None
 
-    def fail(self, message):
+    def fail(self, message: str) -> None:
         self.error_label.set_text(message)
         self.show_page("failed")
 
     # Signals
 
-    def on_file_set(self, button):
+    def on_file_set(self, button: Gtk.FileChooserButton) -> None:
         path = button.get_filename()
         if path:
             self.choose(path)
 
-    def on_import_clicked(self, button):
+    def on_import_clicked(self, button: Gtk.Button) -> None:
         if self.plan is not None and not self.plan.problems(self.workspace):
             self.start_import()
 
-    def on_cancel_clicked(self, button):
+    def on_cancel_clicked(self, button: Gtk.Button) -> None:
         if self.import_job is not None:
             self.import_job.cancel()
             return
         self.window.destroy()
 
-    def on_close_clicked(self, button):
+    def on_close_clicked(self, button: Gtk.Button) -> None:
         self.window.destroy()
 
-    def on_destroyed(self, window):
+    def on_destroyed(self, window: Gtk.Window) -> None:
         self.destroyed = True
         if self.inspect_job is not None:
             self.inspect_job.cancel()

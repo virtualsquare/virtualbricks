@@ -40,7 +40,11 @@ copy to the trash, or deletes it without one: the next start makes an empty
 one.
 """
 
+from __future__ import annotations
+
 import os
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any
 
 import gi
 
@@ -65,13 +69,23 @@ from virtualbricks.gui.dialogs.base import (
 from virtualbricks.gui.pathentry import PathCompletion
 from virtualbricks.i18n import _, ngettext
 
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
+    from virtualbricks.config.archive import ArchiveJob
+    from virtualbricks.config.images import DiskUse
+    from virtualbricks.config.workspace import Workspace
+    from virtualbricks.engine import Engine
+
 logger = Logger()
 remove_failed = "Cannot remove the file {path}: {error}"
 start_over_failed = "Cannot start {vm}'s {device} over: {error}"
 show_failed = "Cannot show {path}: {error}"
 
 
-def show_in_files(parent, path):
+def show_in_files(parent: Gtk.Window | None, path: str) -> None:
     """Open the folder of path in the file manager."""
 
     folder = os.path.dirname(path)
@@ -82,7 +96,7 @@ def show_in_files(parent, path):
         logger.error(show_failed, path=folder, error=exc)
 
 
-def disks_words(uses) -> str:
+def disks_words(uses: Sequence[DiskUse]) -> str:
     """Which disks lose an image, and that their private copies stay."""
 
     if not uses:
@@ -107,10 +121,10 @@ def disks_words(uses) -> str:
 class RemoveImageDialog(Window):
     """Remove an image from the library, and maybe its file."""
 
-    def get_root_widget(self):
+    def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
-    def __init__(self, engine, image):
+    def __init__(self, engine: Engine, image: Image) -> None:
         self.engine = engine
         self.factory = engine.factory
         # the files are those of the machine of the bricks
@@ -118,7 +132,7 @@ class RemoveImageDialog(Window):
         self.image = image
         self.build_ui()
 
-    def build_ui(self):
+    def build_ui(self) -> None:
         self.dialog, self.remove_button, box = action_dialog(
             _("Remove Image"), _("Remove"), destructive=True
         )
@@ -134,7 +148,7 @@ class RemoveImageDialog(Window):
         )
         uses = images.uses(self.factory, self.image, self.machine.taken)
         box.pack_start(text_label(disks_words(uses)), False, False, 0)
-        self.file_check = None
+        self.file_check: Gtk.CheckButton | None = None
         # what it says of the file: over a connection, once the other
         # projects are known there
         self.file_box = Gtk.Box(
@@ -152,7 +166,7 @@ class RemoveImageDialog(Window):
         reading = self.machine.infos.read(path)
         reading.addBoth(lambda _: self.show_file())
 
-    def show_file(self):
+    def show_file(self) -> None:
         """What the dialog says of the file, and offers to do with it."""
 
         for child in self.file_box.get_children():
@@ -200,12 +214,12 @@ class RemoveImageDialog(Window):
             path, self.machine.image_folder()
         )
 
-    def on_response(self, dialog, response_id):
+    def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         if response_id == Gtk.ResponseType.OK:
             self.remove()
         dialog.destroy()
 
-    def remove(self):
+    def remove(self) -> defer.Deferred[Any]:
         path = self.image.path
         removing = self.engine.remove(self.image)
         if self.file_check is not None and self.file_check.get_active():
@@ -214,7 +228,7 @@ class RemoveImageDialog(Window):
             removing.addErrback(self._not_removed, path)
         return removing
 
-    def _not_removed(self, failure, path):
+    def _not_removed(self, failure: Failure, path: str) -> None:
         # here, or there over a connection
         failure.trap(OSError, ampwire.CommandFailed, ampcommands.BadArgument)
         logger.error(remove_failed, path=path, error=failure.value)
@@ -223,10 +237,12 @@ class RemoveImageDialog(Window):
 class FindFileDialog(Window):
     """Give an image whose file is missing its file again."""
 
-    def get_root_widget(self):
+    def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
-    def __init__(self, engine, image, workspace=None):
+    def __init__(
+        self, engine: Engine, image: Image, workspace: Workspace | None = None
+    ) -> None:
         self.engine = engine
         self.factory = engine.factory
         self.image = image
@@ -243,7 +259,7 @@ class FindFileDialog(Window):
         path = os.path.join(folder, os.path.basename(self.image.path))
         return path if os.path.isfile(path) else None
 
-    def build_ui(self):
+    def build_ui(self) -> None:
         self.dialog, self.use_button, box = action_dialog(
             _("Find the File"), _("Use This File")
         )
@@ -267,6 +283,7 @@ class FindFileDialog(Window):
             False,
             0,
         )
+        self.file_chooser: Gtk.FileChooserButton | Gtk.Entry
         if self.engine.local:
             self.file_chooser = Gtk.FileChooserButton(
                 visible=True,
@@ -276,16 +293,19 @@ class FindFileDialog(Window):
             self.file_chooser.connect("file-set", self.on_file_set)
         else:
             # a file there: typed, with the folders there to complete it
-            self.file_chooser = Gtk.Entry(visible=True, hexpand=True)
-            self.file_chooser.completer = PathCompletion(
-                self.engine, self.file_chooser
+            entry = self.file_chooser = Gtk.Entry(visible=True, hexpand=True)
+            entry.completer = PathCompletion(  # type: ignore[attr-defined]
+                self.engine, entry
             )
-            self.file_chooser.connect(
+            entry.connect(
                 "changed",
                 lambda entry: self.choose(entry.get_text().strip() or None),
             )
         found = self.found()
         if found is not None:
+            assert isinstance(
+                self.file_chooser, Gtk.FileChooserButton
+            ), "found() finds a file here only"
             self.file_chooser.set_filename(found)
             box.pack_start(
                 text_label(
@@ -316,31 +336,31 @@ class FindFileDialog(Window):
         self.use_button.set_sensitive(found is not None)
         self.dialog.connect("response", self.on_response)
 
-    def on_file_set(self, chooser):
+    def on_file_set(self, chooser: Gtk.FileChooserButton) -> None:
         self.choose(chooser.get_filename())
 
-    def choose(self, path):
+    def choose(self, path: str | None) -> None:
         self.chosen = path
         self.error_label.hide()
         self.use_button.set_sensitive(path is not None)
 
-    def on_response(self, dialog, response_id):
+    def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         if response_id != Gtk.ResponseType.OK:
             dialog.destroy()
             return
         if self.chosen is not None:
             self.use()
 
-    def use(self):
+    def use(self) -> defer.Deferred[None]:
+        assert self.chosen is not None, "Use This File has a file"
         self.use_button.set_sensitive(False)
         relinked = self.engine.relink(self.image, self.chosen)
-        relinked.addCallbacks(self._used, self._failed)
-        return relinked
+        return relinked.addCallbacks(self._used, self._failed)
 
-    def _used(self, result):
+    def _used(self, result: object) -> None:
         self.dialog.destroy()
 
-    def _failed(self, failure):
+    def _failed(self, failure: Failure) -> None:
         self.error_label.set_text(failure.getErrorMessage())
         self.error_label.show()
         self.use_button.set_sensitive(True)
@@ -349,7 +369,7 @@ class FindFileDialog(Window):
 # The disk of a machine
 
 
-def _stop_first(names) -> str:
+def _stop_first(names: list[str]) -> str:
     return _("Stop {names} first.").format(names=imageinfo.names(names))
 
 
@@ -359,34 +379,46 @@ class _JobDialog(Window):
     and Cancel stops it.
     """
 
-    job = None
+    job: ArchiveJob | None = None
     # called when the job is done
-    on_done = None
+    on_done: Callable[[], object] | None = None
+    dialog: Gtk.Dialog
+    action_button: Gtk.Widget
 
-    def get_root_widget(self):
+    def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
-    def _job_rows(self, box):
+    def check(self) -> bool:
+        """Whether the job can run; if not, the dialog says why."""
+
+        raise NotImplementedError
+
+    def run(self) -> ArchiveJob:
+        """Start the job."""
+
+        raise NotImplementedError
+
+    def _job_rows(self, box: Gtk.Box) -> None:
         self.progress = Gtk.ProgressBar(show_text=True, no_show_all=True)
         box.pack_start(self.progress, False, False, 0)
         self.error_label = text_label(selectable=True, visible=False)
         self.error_label.get_style_context().add_class("error")
         box.pack_start(self.error_label, False, False, 0)
-        self.cancel_button = self.dialog.get_widget_for_response(
-            Gtk.ResponseType.CANCEL
-        )
+        cancel = self.dialog.get_widget_for_response(Gtk.ResponseType.CANCEL)
+        assert isinstance(cancel, Gtk.Button), "action_dialog() adds Cancel"
+        self.cancel_button = cancel
         self.dialog.connect("response", self.on_response)
 
-    def _say(self, text) -> None:
+    def _say(self, text: str) -> None:
         self.error_label.set_text(text)
         self.error_label.set_visible(bool(text))
 
-    def on_progress(self, step, done, total) -> None:
+    def on_progress(self, step: str, done: int, total: int) -> None:
         fraction = done / total if total else 0.0
         self.progress.set_fraction(fraction)
         self.progress.set_text(f"{fraction:.0%}")
 
-    def on_response(self, dialog, response_id) -> None:
+    def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         if self.job is not None:
             # Stop, or the window closed: the job ends first
             self.job.cancel()
@@ -399,7 +431,7 @@ class _JobDialog(Window):
             return
         dialog.destroy()
 
-    def _started(self, job):
+    def _started(self, job: ArchiveJob) -> ArchiveJob:
         self.job = job
         self._say("")
         self.progress.set_fraction(0.0)
@@ -410,7 +442,7 @@ class _JobDialog(Window):
         job.done.addErrback(self._failed)
         return job
 
-    def _failed(self, failure) -> None:
+    def _failed(self, failure: Failure) -> None:
         self.job = None
         self.progress.hide()
         self.cancel_button.set_label(_("Cancel"))
@@ -431,17 +463,24 @@ class SaveImageDialog(_JobDialog):
     """Save a disk of a machine, with its changes, as a new image."""
 
     def __init__(
-        self, factory, vm, device, workspace=None, start=None
+        self,
+        factory: BrickFactory,
+        vm: VirtualMachine,
+        device: str,
+        workspace: Workspace | None = None,
+        start: Callable[..., ArchiveJob] | None = None,
     ) -> None:
         self.factory = factory
         self.vm = vm
         self.device = device
-        self.image = vm.disk(device).image
+        image = vm.disk(device).image
+        assert image is not None, "a disk with a private copy has its image"
+        self.image = image
         self.workspace = projects if workspace is None else workspace
         # starts the job; the archive process's save_image
         self.start = archive.save_image if start is None else start
         # called with the new image, and whether the disk uses it
-        self.on_saved = None
+        self.on_saved: Callable[[Image, bool], object] | None = None
         self.build_ui()
         self.check()
 
@@ -537,7 +576,7 @@ class SaveImageDialog(_JobDialog):
         self.action_button.set_sensitive(ready and self.job is None)
         return ready
 
-    def run(self):
+    def run(self) -> ArchiveJob:
         name = self.name_entry.get_text()
         use_it = self.use_check.get_active()
         job = self.start(
@@ -548,7 +587,7 @@ class SaveImageDialog(_JobDialog):
         job.done.addCallback(self._saved, name, use_it)
         return self._started(job)
 
-    def _saved(self, result, name, use_it) -> None:
+    def _saved(self, result: dict[str, Any], name: str, use_it: bool) -> None:
         image = images.adopt(
             self.factory,
             self.vm,
@@ -567,21 +606,28 @@ class MergeDialog(_JobDialog):
     """Merge the changes of a disk of a machine into its image."""
 
     def __init__(
-        self, factory, vm, device, workspace=None, start=None
+        self,
+        factory: BrickFactory,
+        vm: VirtualMachine,
+        device: str,
+        workspace: Workspace | None = None,
+        start: Callable[..., ArchiveJob] | None = None,
     ) -> None:
         self.factory = factory
         self.vm = vm
         self.device = device
-        self.image = vm.disk(device).image
+        image = vm.disk(device).image
+        assert image is not None, "a disk with a private copy has its image"
+        self.image = image
         self.workspace = projects if workspace is None else workspace
         # starts the job; the archive process's merge_image
         self.start = archive.merge_image if start is None else start
         # passed to Save as a New Image, instead
-        self.on_saved = None
+        self.on_saved: Callable[[Image, bool], object] | None = None
         self.build_ui()
         self.check()
 
-    def others(self) -> list:
+    def others(self) -> list[DiskUse]:
         """The other disks of the project that use the image."""
 
         return [
@@ -651,7 +697,7 @@ class MergeDialog(_JobDialog):
         self.instead_button.set_sensitive(self.job is None)
         return not running
 
-    def run(self):
+    def run(self) -> ArchiveJob:
         job = self.start(
             self.vm.disk(self.device).get_cow_path(), self.on_progress
         )
@@ -673,20 +719,25 @@ class MergeDialog(_JobDialog):
 class StartOverDialog(Window):
     """Start a disk over from its image, without its private copy."""
 
-    def get_root_widget(self):
+    def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
-    def __init__(self, engine, vm, device) -> None:
+    def __init__(
+        self, engine: Engine, vm: VirtualMachine, device: str
+    ) -> None:
         self.engine = engine
         self.vm = vm
         self.device = device
         # called when the copy is gone
-        self.on_done = None
+        self.on_done: Callable[[], object] | None = None
         self.build_ui()
 
     def build_ui(self) -> None:
         vm = self.vm.name
         disk = self.vm.disk(self.device)
+        assert (
+            disk.image is not None
+        ), "a disk with a private copy has its image"
         copy = disk.get_cow_path()
         self.dialog, self.action_button, box = action_dialog(
             _("Start Over"), _("Start Over"), destructive=True
@@ -729,21 +780,22 @@ class StartOverDialog(Window):
         self.action_button.set_sensitive(not running)
         self.dialog.connect("response", self.on_response)
 
-    def on_response(self, dialog, response_id) -> None:
+    def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         if response_id == Gtk.ResponseType.OK:
             self.start_over()
         dialog.destroy()
 
-    def start_over(self) -> defer.Deferred:
+    def start_over(self) -> defer.Deferred[None]:
         starting = self.engine.start_over(self.vm, self.device)
-        starting.addCallbacks(self._started_over, self._not_started_over)
-        return starting
+        return starting.addCallbacks(
+            self._started_over, self._not_started_over
+        )
 
-    def _started_over(self, trashed) -> None:
+    def _started_over(self, trashed: bool) -> None:
         if self.on_done is not None:
             self.on_done()
 
-    def _not_started_over(self, failure) -> None:
+    def _not_started_over(self, failure: Failure) -> None:
         # here, or there over a connection
         failure.trap(
             OSError,

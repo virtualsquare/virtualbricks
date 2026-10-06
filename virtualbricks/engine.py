@@ -40,7 +40,7 @@ from __future__ import annotations
 import os
 import signal
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from twisted.internet import defer, error, reactor, threads
 
@@ -193,7 +193,7 @@ class LocalEngine:
     """
 
     # the windows are those of the Virtualbricks of this process
-    local = True
+    local: Literal[True] = True
 
     def __init__(
         self,

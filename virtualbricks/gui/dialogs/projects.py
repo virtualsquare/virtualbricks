@@ -27,13 +27,17 @@ The space a project takes is read in the background, for the selected
 project only.
 """
 
+from __future__ import annotations
+
 import datetime
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gio, Gtk, Pango
+from gi.repository import Gdk, Gio, GLib, Gtk, Pango
 from twisted.internet import defer
 from twisted.logger import Logger
 
@@ -46,6 +50,19 @@ from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import ngettext
 from virtualbricks.markdown import first_line
 
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.config.report import Report
+    from virtualbricks.config.workspace import (
+        DiskUsage,
+        ProjectSummary,
+        Workspace,
+    )
+    from virtualbricks.engine import Engine
+    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.remote.client import RemoteWorkspace
+
 logger = Logger()
 project_trashed = 'Project "{name}" moved to the trash'
 project_deleted = 'Project "{name}" deleted'
@@ -57,18 +74,27 @@ MARGIN = 12
 README_CSS = b"textview, textview text { background-color: transparent; }"
 
 
-def _label(text="", dim=False, bold=False, wrap=False, xalign=0.0, **props):
+def _label(
+    text: str = "",
+    dim: bool = False,
+    bold: bool = False,
+    wrap: bool = False,
+    xalign: float = 0.0,
+    **props: Any,
+) -> Gtk.Label:
     label = Gtk.Label(
         visible=True, label=text, xalign=xalign, wrap=wrap, **props
     )
     if dim:
         label.get_style_context().add_class("dim-label")
     if bold:
-        label.set_attributes(pango_attr_list(Pango.attr_weight_new(700)))
+        label.set_attributes(
+            pango_attr_list(Pango.attr_weight_new(Pango.Weight.BOLD))
+        )
     return label
 
 
-def human_size(size):
+def human_size(size: float) -> str:
     for unit in ("B", "KB", "MB", "GB"):
         if size < 1000 or unit == "GB":
             if unit == "B":
@@ -78,7 +104,7 @@ def human_size(size):
     return f"{size:.1f} TB"  # pragma: no cover
 
 
-def when(timestamp, now=None):
+def when(timestamp: float, now: datetime.datetime | None = None) -> str:
     """Today at 14:03, Yesterday, 12 Sep, 3 Aug 2024."""
 
     now = datetime.datetime.now() if now is None else now
@@ -93,12 +119,14 @@ def when(timestamp, now=None):
     return f"{moment.day} {moment.strftime('%b %Y')}"
 
 
-def count_bricks(summary):
+def count_bricks(summary: ProjectSummary) -> str:
     total = sum(summary.bricks.values())
     return ngettext("{n} brick", "{n} bricks", total).format(n=total)
 
 
-def facts(summary, now=None):
+def facts(
+    summary: ProjectSummary, now: datetime.datetime | None = None
+) -> str:
     """The line under a project's name in the list."""
 
     if summary.problem is not None:
@@ -114,11 +142,24 @@ def facts(summary, now=None):
     return " · ".join(parts)
 
 
+def project_of(row: Gtk.ListBoxRow) -> ProjectRow:
+    """The project of a row of the list."""
+
+    # ProjectRow sets it
+    return row.project  # type: ignore[attr-defined]
+
+
 class ProjectRow:
-    def __init__(self, summary, is_open, now=None):
+    def __init__(
+        self,
+        summary: ProjectSummary,
+        is_open: bool,
+        now: datetime.datetime | None = None,
+    ) -> None:
         self.summary = summary
         self.row = Gtk.ListBoxRow(visible=True)
-        self.row.project = self
+        # the row's project, for project_of()
+        self.row.project = self  # type: ignore[attr-defined]
         box = Gtk.Box(
             visible=True,
             orientation=Gtk.Orientation.VERTICAL,
@@ -149,7 +190,7 @@ class ProjectRow:
         box.pack_start(self.facts_label, False, False, 0)
         self.row.add(box)
 
-    def matches(self, text):
+    def matches(self, text: str) -> bool:
         text = text.casefold()
         return (
             text in self.summary.name.casefold()
@@ -165,7 +206,12 @@ class ProjectsWindow:
     it, as its menus do, and it runs the import and the export.
     """
 
-    def __init__(self, gui, workspace=None, disk_usage=None):
+    def __init__(
+        self,
+        gui: VBGUI,
+        workspace: Workspace | RemoteWorkspace | None = None,
+        disk_usage: Callable[[str], defer.Deferred[DiskUsage]] | None = None,
+    ) -> None:
         self.gui = gui
         # the workspace of the Virtualbricks of the bricks
         self.workspace = (
@@ -174,16 +220,16 @@ class ProjectsWindow:
         if disk_usage is None:
             disk_usage = gui.engine.disk_usage
         self._disk_usage = disk_usage
-        self.rows = []
-        self.selected = None
-        self._usage_for = None
+        self.rows: list[ProjectRow] = []
+        self.selected: ProjectSummary | None = None
+        self._usage_for: str | None = None
         self.destroyed = False
         self.build_ui()
         self.reload()
 
     # The widgets
 
-    def build_ui(self):
+    def build_ui(self) -> None:
         self.window = Gtk.Window(
             title=_("Projects"),
             default_width=860,
@@ -241,9 +287,9 @@ class ProjectsWindow:
             self.export_button.set_tooltip_text(
                 _("Not over a connection, for now")
             )
-            self.actions.lookup_action("show").set_enabled(False)
+            self._action("show").set_enabled(False)
 
-    def _build_empty(self):
+    def _build_empty(self) -> Gtk.Box:
         box = Gtk.Box(
             visible=True,
             orientation=Gtk.Orientation.VERTICAL,
@@ -282,7 +328,7 @@ class ProjectsWindow:
         box.pack_start(buttons, False, False, 0)
         return box
 
-    def _build_projects(self):
+    def _build_projects(self) -> Gtk.Paned:
         paned = Gtk.Paned(visible=True, position=320)
         left = Gtk.Box(visible=True, orientation=Gtk.Orientation.VERTICAL)
         self.search_entry = Gtk.SearchEntry(
@@ -310,7 +356,7 @@ class ProjectsWindow:
         paned.pack2(self.details_stack, True, False)
         return paned
 
-    def _build_details(self):
+    def _build_details(self) -> Gtk.ScrolledWindow:
         scrolled = Gtk.ScrolledWindow(
             visible=True, hscrollbar_policy=Gtk.PolicyType.NEVER
         )
@@ -342,7 +388,7 @@ class ProjectsWindow:
         self.facts_grid = Gtk.Grid(
             visible=True, column_spacing=18, row_spacing=6, margin_top=6
         )
-        self.fact_values = {}
+        self.fact_values: dict[str, Gtk.Label] = {}
         for i, (key, title) in enumerate(
             (
                 ("bricks", _("Bricks")),
@@ -395,15 +441,20 @@ class ProjectsWindow:
         scrolled.add(box)
         return scrolled
 
-    def get_root_widget(self):
+    def _action(self, name: str) -> Gio.SimpleAction:
+        action = self.actions.lookup_action(name)
+        assert isinstance(action, Gio.SimpleAction), "the menu has it"
+        return action
+
+    def get_root_widget(self) -> Gtk.Window:
         return self.window
 
-    def show(self, parent=None):
+    def show(self, parent: Gtk.Window | None = None) -> None:
         if parent is not None:
             self.window.set_transient_for(parent)
         self.window.present()
 
-    def show_problem(self, message):
+    def show_problem(self, message: str) -> None:
         """Say why at the top, as at start-up when a project fails."""
 
         self.info_label.set_text(message)
@@ -411,14 +462,16 @@ class ProjectsWindow:
 
     # The list
 
-    def reload(self):
+    def reload(self) -> None:
         """Read the projects again, keeping the selection."""
 
         selected = self.selected.name if self.selected else None
         reading = self.gui.engine.project_summaries()
-        reading.addCallbacks(self._fill, self._not_listed, (selected,))
+        reading.addCallbacks(
+            self._fill, self._not_listed, callbackArgs=(selected,)
+        )
 
-    def _not_listed(self, failure):
+    def _not_listed(self, failure: Failure) -> None:
         # over a connection: lost, or a summary more than AMP carries
         if not self.destroyed:
             self.show_problem(
@@ -427,7 +480,9 @@ class ProjectsWindow:
                 )
             )
 
-    def _fill(self, summaries, selected):
+    def _fill(
+        self, summaries: list[ProjectSummary], selected: str | None
+    ) -> None:
         if self.destroyed:
             return
         for child in self.list.get_children():
@@ -443,7 +498,7 @@ class ProjectsWindow:
         self.stack.set_visible_child_name("projects" if self.rows else "empty")
         self.select(selected or open_name)
 
-    def select(self, name):
+    def select(self, name: str | None) -> None:
         for row in self.rows:
             if row.summary.name == name:
                 self.list.select_row(row.row)
@@ -451,25 +506,29 @@ class ProjectsWindow:
         self.list.unselect_all()
         self.show_details(None)
 
-    def _filter(self, row):
-        return row.project.matches(self.search_entry.get_text())
+    def _filter(self, row: Gtk.ListBoxRow) -> bool:
+        return project_of(row).matches(self.search_entry.get_text())
 
-    def on_search_changed(self, entry):
+    def on_search_changed(self, entry: Gtk.SearchEntry) -> None:
         self.list.invalidate_filter()
 
-    def on_row_selected(self, listbox, row):
-        self.show_details(row.project.summary if row is not None else None)
+    def on_row_selected(
+        self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow | None
+    ) -> None:
+        self.show_details(project_of(row).summary if row is not None else None)
 
-    def on_row_activated(self, listbox, row):
-        self.open(row.project.summary.name)
+    def on_row_activated(
+        self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow
+    ) -> None:
+        self.open(project_of(row).summary.name)
 
     # The details
 
-    def is_open(self, name):
+    def is_open(self, name: str) -> bool:
         current = self.workspace.current
         return current is not None and current.name == name
 
-    def show_details(self, summary):
+    def show_details(self, summary: ProjectSummary | None) -> None:
         self.selected = summary
         if summary is None:
             self.details_stack.set_visible_child_name("none")
@@ -522,42 +581,45 @@ class ProjectsWindow:
         )
         self.duplicate_button.set_sensitive(readable)
         self.export_button.set_sensitive(readable and self.local)
-        self.actions.lookup_action("rename").set_enabled(readable)
+        self._action("rename").set_enabled(readable)
         self.read_usage(summary.name)
 
-    def read_usage(self, name):
+    def read_usage(self, name: str) -> None:
         self._usage_for = name
         deferred = self._disk_usage(name)
         deferred.addCallbacks(
-            self.on_usage, self.on_usage_failed, (name,), None, (name,)
+            self.on_usage,
+            self.on_usage_failed,
+            callbackArgs=(name,),
+            errbackArgs=(name,),
         )
 
-    def on_usage(self, usage, name):
+    def on_usage(self, usage: DiskUsage, name: str) -> None:
         if self.destroyed or name != self._usage_for:
             return
         self.fact_values["disks"].set_text(human_size(usage.private_disks))
         self.fact_values["other"].set_text(human_size(usage.other_files))
 
-    def on_usage_failed(self, failure, name):
+    def on_usage_failed(self, failure: Failure, name: str) -> None:
         if not self.destroyed and name == self._usage_for:
             self.fact_values["disks"].set_text(_("Unknown"))
             self.fact_values["other"].set_text(_("Unknown"))
 
     # The actions
 
-    def open(self, name):
+    def open(self, name: str) -> None:
         if self.is_open(name) or not self._is_readable(name):
             return
         opening = defer.maybeDeferred(self.gui.on_open, name)
         opening.addCallbacks(
-            self._opened, self._not_opened, None, None, (name,)
+            self._opened, self._not_opened, errbackArgs=(name,)
         )
 
-    def _opened(self, report):
+    def _opened(self, report: Report | None) -> None:
         self.gui.set_title()
         self.window.destroy()
 
-    def _not_opened(self, failure, name):
+    def _not_opened(self, failure: Failure, name: str) -> None:
         failure.trap(OSError, errors.Error)
         exc = failure.value
         logger.error(cannot_open, name=name, error=exc)
@@ -565,13 +627,15 @@ class ProjectsWindow:
             _("Cannot open {name}: {error}").format(name=name, error=exc)
         )
 
-    def _is_readable(self, name):
+    def _is_readable(self, name: str) -> bool:
         for row in self.rows:
             if row.summary.name == name:
                 return row.summary.problem is None
         return False
 
-    def name_dialog(self, kind, original=None):
+    def name_dialog(
+        self, kind: str, original: str | None = None
+    ) -> projectname.ProjectNameDialog:
         dialog = projectname.ProjectNameDialog(
             self.gui, kind, original, workspace=self.workspace
         )
@@ -579,7 +643,7 @@ class ProjectsWindow:
         dialog.show(self.window)
         return dialog
 
-    def on_name_done(self, name):
+    def on_name_done(self, name: str) -> None:
         if self.destroyed:
             return
         if self.is_open(name):
@@ -590,33 +654,41 @@ class ProjectsWindow:
         self.reload()
         self.select(name)
 
-    def on_new_clicked(self, button):
+    def on_new_clicked(self, button: Gtk.Button) -> None:
         self.name_dialog(projectname.NEW)
 
-    def on_import_clicked(self, button):
+    def on_import_clicked(self, button: Gtk.Button) -> None:
         self.gui.import_project(on_closed=self.on_import_closed)
 
-    def on_import_closed(self):
+    def on_import_closed(self) -> None:
         if not self.destroyed:
             self.reload()
 
-    def on_open_clicked(self, button):
+    def on_open_clicked(self, button: Gtk.Button) -> None:
         if self.selected is not None:
             self.open(self.selected.name)
 
-    def on_duplicate_clicked(self, button):
+    def on_duplicate_clicked(self, button: Gtk.Button) -> None:
         if self.selected is not None:
             self.name_dialog(projectname.DUPLICATE, self.selected.name)
 
-    def on_export_clicked(self, button):
+    def on_export_clicked(self, button: Gtk.Button) -> None:
         if self.selected is not None:
             self.gui.export_project(self.selected, self.window)
 
-    def on_rename(self, action=None, parameter=None):
+    def on_rename(
+        self,
+        action: Gio.SimpleAction | None = None,
+        parameter: GLib.Variant | None = None,
+    ) -> None:
         if self.selected is not None and self.selected.problem is None:
             self.name_dialog(projectname.RENAME, self.selected.name)
 
-    def on_show(self, action=None, parameter=None):
+    def on_show(
+        self,
+        action: Gio.SimpleAction | None = None,
+        parameter: GLib.Variant | None = None,
+    ) -> None:
         if self.selected is not None:
             uri = Gio.File.new_for_path(self.selected.path).get_uri()
             try:
@@ -624,7 +696,11 @@ class ProjectsWindow:
             except Exception as exc:
                 logger.error("{error}", error=exc)
 
-    def on_remove(self, action=None, parameter=None):
+    def on_remove(
+        self,
+        action: Gio.SimpleAction | None = None,
+        parameter: GLib.Variant | None = None,
+    ) -> RemoveDialog | None:
         if self.selected is not None:
             dialog = RemoveDialog(
                 self.gui.engine, self.workspace, self.selected
@@ -632,13 +708,14 @@ class ProjectsWindow:
             dialog.on_done = self.on_removed
             dialog.show(self.window)
             return dialog
+        return None
 
-    def on_removed(self, name):
+    def on_removed(self, name: str) -> None:
         if not self.destroyed:
             self.selected = None
             self.reload()
 
-    def on_key_press(self, window, event):
+    def on_key_press(self, window: Gtk.Window, event: Gdk.EventKey) -> bool:
         if self.window.get_focus() is self.search_entry:
             return False
         if event.keyval == Gdk.KEY_F2:
@@ -650,7 +727,7 @@ class ProjectsWindow:
         # typing searches
         return self.search_entry.handle_event(event)
 
-    def on_destroy(self, window):
+    def on_destroy(self, window: Gtk.Window) -> None:
         self.destroyed = True
 
 
@@ -659,9 +736,15 @@ class RemoveDialog:
 
     TRASH = 1
     DELETE = 2
-    on_done = None
+    on_done: Callable[[str], object] | None = None
 
-    def __init__(self, engine, workspace, summary, disk_usage=None):
+    def __init__(
+        self,
+        engine: Engine,
+        workspace: Workspace | RemoteWorkspace,
+        summary: ProjectSummary,
+        disk_usage: DiskUsage | None = None,
+    ) -> None:
         self.engine = engine
         self.workspace = workspace
         self.summary = summary
@@ -680,6 +763,8 @@ class RemoveDialog:
             text=_("Remove {name}?").format(name=self.name),
         )
         self.dialog.add_button(_("Cancel"), Gtk.ResponseType.CANCEL)
+        self.delete_button: Gtk.Widget | None
+        self.trash_button: Gtk.Widget | None
         if is_open:
             self.dialog.set_property("message-type", Gtk.MessageType.INFO)
             self.dialog.set_property(
@@ -713,10 +798,10 @@ class RemoveDialog:
                 counting.addCallbacks(self._counted, lambda failure: None)
         self.dialog.connect("response", self.on_response)
 
-    def _counted(self, usage):
+    def _counted(self, usage: DiskUsage) -> None:
         self.dialog.format_secondary_text(self.explain(usage))
 
-    def explain(self, usage):
+    def explain(self, usage: DiskUsage | None) -> str:
         if usage is not None and usage.private_disks:
             what = _("Its folder, with {size} of private disks, goes").format(
                 size=human_size(usage.private_disks)
@@ -738,18 +823,17 @@ class RemoveDialog:
             + _("The images it uses stay in your image library.")
         )
 
-    def show(self, parent=None):
+    def show(self, parent: Gtk.Window | None = None) -> None:
         if parent is not None:
             self.dialog.set_transient_for(parent)
         self.dialog.show()
 
-    def remove(self, how) -> defer.Deferred:
+    def remove(self, how: int) -> defer.Deferred[None]:
         trash = how == self.TRASH
         removing = self.engine.remove_project(self.name, trash)
-        removing.addCallback(self._removed, trash)
-        return removing
+        return removing.addCallback(self._removed, trash)
 
-    def _removed(self, result, trash):
+    def _removed(self, result: object, trash: bool) -> None:
         if trash:
             logger.info(project_trashed, name=self.name)
         else:
@@ -757,11 +841,11 @@ class RemoveDialog:
         if self.on_done is not None:
             self.on_done(self.name)
 
-    def _not_removed(self, failure):
+    def _not_removed(self, failure: Failure) -> None:
         failure.trap(OSError, errors.Error)
         logger.error(cannot_remove, name=self.name, error=failure.value)
 
-    def on_response(self, dialog, response_id):
+    def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         dialog.destroy()
         if response_id not in (self.TRASH, self.DELETE):
             return

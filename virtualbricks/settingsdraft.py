@@ -119,7 +119,7 @@ class Owner:
         self,
         record: type,
         setting: Callable[[str], object],
-        write: Callable[[dict[str, object]], object] = lambda changes: None,
+        write: Callable[[dict[str, Any]], object] = lambda changes: None,
     ) -> None:
         self.record = record
         self.setting = setting

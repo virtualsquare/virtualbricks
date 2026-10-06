@@ -24,6 +24,11 @@ the main button waits until the name is valid. A failure keeps the dialog
 open, with the reason.
 """
 
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -34,6 +39,13 @@ from twisted.logger import Logger
 from virtualbricks import errors
 from virtualbricks.i18n import _
 from virtualbricks.gui.pango import pango_attr_list
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.config.workspace import Workspace
+    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.remote.client import RemoteWorkspace
 
 logger = Logger()
 project_created = 'Project "{name}" created'
@@ -46,12 +58,20 @@ DUPLICATE = "duplicate"
 MARGIN = 18
 
 
-def _label(text="", dim=False, bold=False, wrap=False, **props):
+def _label(
+    text: str = "",
+    dim: bool = False,
+    bold: bool = False,
+    wrap: bool = False,
+    **props: Any,
+) -> Gtk.Label:
     label = Gtk.Label(visible=True, label=text, xalign=0.0, wrap=wrap, **props)
     if dim:
         label.get_style_context().add_class("dim-label")
     if bold:
-        label.set_attributes(pango_attr_list(Pango.attr_weight_new(700)))
+        label.set_attributes(
+            pango_attr_list(Pango.attr_weight_new(Pango.Weight.BOLD))
+        )
     return label
 
 
@@ -64,9 +84,15 @@ class ProjectNameDialog:
     engine. on_done, if set, is called after a change.
     """
 
-    on_done = None
+    on_done: Callable[[str], object] | None = None
 
-    def __init__(self, gui, kind, original=None, workspace=None):
+    def __init__(
+        self,
+        gui: VBGUI,
+        kind: str,
+        original: str | None = None,
+        workspace: Workspace | RemoteWorkspace | None = None,
+    ) -> None:
         self.gui = gui
         self.kind = kind
         self.original = original
@@ -80,7 +106,7 @@ class ProjectNameDialog:
 
     # The widgets
 
-    def build_ui(self):
+    def build_ui(self) -> None:
         titles = {
             NEW: (_("New Project"), _("Create")),
             RENAME: (_("Rename Project"), _("Rename")),
@@ -118,7 +144,7 @@ class ProjectNameDialog:
         self.name_message = _label(dim=True, wrap=True)
         box.pack_start(self.name_message, False, False, 0)
 
-        self.description_view = None
+        self.description_view: Gtk.TextView | None = None
         if self.kind == NEW:
             self.description_view = Gtk.TextView(
                 visible=True, wrap_mode=Gtk.WrapMode.WORD_CHAR
@@ -150,7 +176,7 @@ class ProjectNameDialog:
                 0,
             )
 
-        self.open_check = None
+        self.open_check: Gtk.CheckButton | None = None
         if self.kind == DUPLICATE:
             self.open_check = Gtk.CheckButton(
                 visible=True,
@@ -168,35 +194,36 @@ class ProjectNameDialog:
         self.name_entry.connect("changed", self.on_name_changed)
         self.dialog.connect("response", self.on_response)
 
-    def get_root_widget(self):
+    def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
-    def show(self, parent=None):
+    def show(self, parent: Gtk.Window | None = None) -> None:
         if parent is not None:
             self.dialog.set_transient_for(parent)
         self.dialog.show()
 
     # The name
 
-    def suggested_name(self):
+    def suggested_name(self) -> str:
         if self.kind == RENAME:
+            assert self.original is not None, "a rename has the name"
             return self.original
         if self.kind == DUPLICATE:
             return self.workspace.free_name(f"{self.original}-copy")
         return self.workspace.free_name("new_project")
 
-    def is_current(self):
+    def is_current(self) -> bool:
         current = self.workspace.current
         return current is not None and current.name == self.original
 
-    def bricks(self):
+    def bricks(self) -> list[str] | None:
         """The bricks of the project renamed, if it's the open one."""
 
         if self.kind == RENAME and self.is_current():
             return [brick.name for brick in self.gui.brickfactory.bricks]
         return None
 
-    def check(self):
+    def check(self) -> None:
         name = self.name_entry.get_text()
         if self.kind == RENAME:
             if name == self.original:
@@ -218,23 +245,24 @@ class ProjectNameDialog:
         self.show_message(message)
         self.ok_button.set_sensitive(message is None)
 
-    def show_message(self, message):
+    def show_message(self, message: str | None) -> None:
         self.name_message.set_text(message or "")
         self.name_message.set_visible(bool(message))
 
-    def on_name_changed(self, entry):
+    def on_name_changed(self, entry: Gtk.Entry) -> None:
         self.error_label.set_visible(False)
         self.check()
 
     # The action
 
-    def description(self):
+    def description(self) -> str:
+        assert self.description_view is not None, "a new project has it"
         buffer = self.description_view.get_buffer()
         return buffer.get_text(
             buffer.get_start_iter(), buffer.get_end_iter(), False
         )
 
-    def apply(self) -> defer.Deferred:
+    def apply(self) -> defer.Deferred[str]:
         """
         Do what the dialog is for, through the main window and its engine:
         a Deferred of the name, or of the failure of the engine.
@@ -242,6 +270,7 @@ class ProjectNameDialog:
 
         name = self.name_entry.get_text()
         engine = self.gui.engine
+        doing: defer.Deferred[Any]
         if self.kind == NEW:
             doing = defer.maybeDeferred(
                 self.gui.on_new, name, self.description()
@@ -265,16 +294,16 @@ class ProjectNameDialog:
                     project_duplicated, old=self.original, name=name
                 )
             )
+            assert self.open_check is not None, "a duplicate has it"
             if self.open_check.get_active():
                 doing.addCallback(lambda _: self.gui.on_open(name))
-        doing.addCallback(lambda _: name)
-        return doing
+        return doing.addCallback(lambda _: name)
 
-    def _renamed(self, result, name):
+    def _renamed(self, result: object, name: str) -> None:
         logger.info(project_renamed, old=self.original, name=name)
         self.gui.set_title()
 
-    def on_response(self, dialog, response_id):
+    def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         if response_id != Gtk.ResponseType.OK:
             dialog.destroy()
             return
@@ -282,12 +311,12 @@ class ProjectNameDialog:
             return
         self.apply().addCallbacks(self._done, self._failed)
 
-    def _done(self, name):
+    def _done(self, name: str) -> None:
         self.dialog.destroy()
         if self.on_done is not None:
             self.on_done(name)
 
-    def _failed(self, failure):
+    def _failed(self, failure: Failure) -> None:
         failure.trap(OSError, errors.Error)
         self.error_label.set_text(str(failure.value))
         self.error_label.set_visible(True)

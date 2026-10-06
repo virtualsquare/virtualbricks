@@ -29,6 +29,10 @@ The small dialogs that ask before an action, as Rename, Delete and Remove
 Image, are an ``action_dialog()`` of ``text_label()`` lines.
 """
 
+from __future__ import annotations
+
+from typing import Any
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -50,10 +54,20 @@ class Window:
     parent if given.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.build_ui()
 
-    def show(self, parent=None):
+    def build_ui(self) -> None:
+        """Make the widgets."""
+
+        raise NotImplementedError
+
+    def get_root_widget(self) -> Gtk.Window:
+        """The window, or the dialog."""
+
+        raise NotImplementedError
+
+    def show(self, parent: Gtk.Window | None = None) -> None:
         window = self.get_root_widget()
         if parent is not None:
             window.set_transient_for(parent)
@@ -61,8 +75,13 @@ class Window:
 
 
 def text_label(
-    text="", dim=False, bold=False, heading=False, visible=True, **props
-):
+    text: str = "",
+    dim: bool = False,
+    bold: bool = False,
+    heading: bool = False,
+    visible: bool = True,
+    **props: Any,
+) -> Gtk.Label:
     """A line of a dialog, wrapped: grey if dim, bold, or bold and larger."""
 
     label = Gtk.Label(
@@ -89,7 +108,9 @@ def text_label(
     return label
 
 
-def action_dialog(title, action, destructive=False):
+def action_dialog(
+    title: str, action: str, destructive: bool = False
+) -> tuple[Gtk.Dialog, Gtk.Widget, Gtk.Box]:
     """
     A dialog with Cancel and the button of action in its header bar: the
     dialog, that button, and the box of its lines.

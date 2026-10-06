@@ -41,7 +41,7 @@ from __future__ import annotations
 import json
 import os
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Any, NoReturn, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, TypeVar
 
 from twisted.internet import defer, endpoints, error
 from twisted.internet.protocol import connectionDone
@@ -526,7 +526,7 @@ class RemoteEngine:
     connection windows: its copy is what the windows read.
     """
 
-    local = False
+    local: Literal[False] = False
 
     def __init__(
         self,

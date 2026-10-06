@@ -25,10 +25,14 @@ folded behind a toggle. A line for each day separates the days, and a time
 repeated within the same second is dimmed.
 """
 
+from __future__ import annotations
+
 import os
 import tempfile
 import textwrap
 import time
+from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING, Any
 
 import gi
 
@@ -43,6 +47,9 @@ from virtualbricks.gui import graphics
 from virtualbricks.gui.messages import parse_filter, type_name
 from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.i18n import _, ngettext
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.gui.messages import Entry, MessageLog
 
 logger = Logger()
 
@@ -109,7 +116,7 @@ MESSAGE_TAGS = {
     "error": ("error",),
     "critical": ("critical",),
 }
-TAGS = {
+TAGS: dict[str, dict[str, Any]] = {
     "day": {
         "weight": Pango.Weight.BOLD,
         "foreground": DIM,
@@ -143,11 +150,11 @@ TAGS.update(
 )
 FOLDS = ("lines", "traceback")
 
-_symbol_icons = {}
-_type_icons = {}
+_symbol_icons: dict[str, GdkPixbuf.Pixbuf | None] = {}
+_type_icons: dict[str, GdkPixbuf.Pixbuf | None] = {}
 
 
-def symbol_icon(kind):
+def symbol_icon(kind: str) -> GdkPixbuf.Pixbuf | None:
     """The symbolic icon of a level, in its colour, or None."""
 
     if kind not in _symbol_icons:
@@ -167,7 +174,7 @@ def symbol_icon(kind):
     return _symbol_icons[kind]
 
 
-def type_icon(source_type):
+def type_icon(source_type: str) -> GdkPixbuf.Pixbuf | None:
     """The icon of a type of brick, as in the main window, or None."""
 
     if source_type not in _type_icons:
@@ -184,15 +191,15 @@ def type_icon(source_type):
     return _type_icons[source_type]
 
 
-def clock(entry):
+def clock(entry: Entry) -> str:
     return time.strftime("%H:%M:%S", time.localtime(entry.time))
 
 
-def day(entry):
+def day(entry: Entry) -> str:
     return time.strftime(_("%A %d %B %Y"), time.localtime(entry.time))
 
 
-def moment(entry):
+def moment(entry: Entry) -> str:
     """The date and the time of an entry, to the millisecond."""
 
     local = time.localtime(entry.time)
@@ -202,13 +209,13 @@ def moment(entry):
     )
 
 
-def source_text(entry):
+def source_text(entry: Entry) -> str:
     if len(entry.source) > SOURCE_CHARS:
         return entry.source[: SOURCE_CHARS - 1] + "…"
     return entry.source
 
 
-def source_tooltip(entry):
+def source_tooltip(entry: Entry) -> str:
     if entry.source_type is None:
         return entry.namespace
     parts = [entry.source, type_name(entry.source_type)]
@@ -220,7 +227,7 @@ def source_tooltip(entry):
     return " · ".join(parts)
 
 
-def symbol_tooltip(entry):
+def symbol_tooltip(entry: Entry) -> str:
     if entry.is_output:
         return _("Output of the program on {stream}").format(
             stream=entry.stream
@@ -235,7 +242,7 @@ def symbol_tooltip(entry):
     return names[entry.level]
 
 
-def folds_of(entry):
+def folds_of(entry: Entry) -> list[str]:
     """The parts of an entry that can be folded."""
 
     folds = []
@@ -251,7 +258,7 @@ class _Rendered:
 
     __slots__ = ("entry", "mark")
 
-    def __init__(self, entry, mark):
+    def __init__(self, entry: Entry, mark: Gtk.TextMark) -> None:
         self.entry = entry
         self.mark = mark
 
@@ -263,18 +270,18 @@ class ConsoleView:
     It follows the MessageLog it's given until detach() is called.
     """
 
-    def __init__(self, messages):
+    def __init__(self, messages: MessageLog) -> None:
         self.messages = messages
         self.filter = parse_filter("")
         # (entry number, fold) of the folds that are open
-        self.expanded = set()
+        self.expanded: set[tuple[int, str]] = set()
         self.following = True
         # called when the entries shown change
-        self.on_changed = None
+        self.on_changed: Callable[[], object] | None = None
         # called when a fold is opened or closed with a click, with True if
         # it's of the last entry
-        self.on_folded = None
-        self._rendered = []
+        self.on_folded: Callable[[bool], object] | None = None
+        self._rendered: list[_Rendered] = []
         self._hovering = False
         self.textview = Gtk.TextView(
             visible=True,
@@ -313,19 +320,21 @@ class ConsoleView:
         messages.subscribe(self)
         self.refresh()
 
-    def detach(self):
+    def detach(self) -> None:
         self.messages.unsubscribe(self)
 
     @property
-    def shown(self):
+    def shown(self) -> int:
         return len(self._rendered)
 
-    def _tag(self, name):
-        return self.buffer.get_tag_table().lookup(name)
+    def _tag(self, name: str) -> Gtk.TextTag:
+        tag = self.buffer.get_tag_table().lookup(name)
+        assert tag is not None, "the buffer has all the TAGS"
+        return tag
 
     # Geometry
 
-    def update_geometry(self):
+    def update_geometry(self) -> None:
         """Set the columns and the indents from the width of the font."""
 
         layout = self.textview.create_pango_layout("0" * 20)
@@ -349,16 +358,18 @@ class ConsoleView:
         self._tag("first").set_property("indent", -message)
         self._tag("more").set_property("left-margin", MARGIN + message)
 
-    def on_style_updated(self, textview):
+    def on_style_updated(self, textview: Gtk.TextView) -> None:
         self.update_geometry()
 
     # Rendering
 
-    def _apply(self, name, start_offset, end):
+    def _apply(self, name: str, start_offset: int, end: Gtk.TextIter) -> None:
         start = self.buffer.get_iter_at_offset(start_offset)
         self.buffer.apply_tag_by_name(name, start, end)
 
-    def _insert_toggle(self, it, entry, fold):
+    def _insert_toggle(
+        self, it: Gtk.TextIter, entry: Entry, fold: str
+    ) -> None:
         is_open = (entry.number, fold) in self.expanded
         if fold == "lines":
             count = len(entry.lines) - 1
@@ -376,14 +387,18 @@ class ConsoleView:
             it, text, "toggle", "toggle-" + fold
         )
 
-    def _insert_lines(self, it, lines, *tags):
+    def _insert_lines(
+        self, it: Gtk.TextIter, lines: Iterable[str], *tags: str
+    ) -> None:
         for line in lines:
             start = it.get_offset()
             self.buffer.insert_with_tags_by_name(it, line, *tags)
             self.buffer.insert(it, "\n")
             self._apply("more", start, it)
 
-    def _insert(self, it, entry, previous):
+    def _insert(
+        self, it: Gtk.TextIter, entry: Entry, previous: Entry | None
+    ) -> None:
         """Insert an entry at it, which then points after it."""
 
         buffer = self.buffer
@@ -394,7 +409,11 @@ class ConsoleView:
                 it, day(entry).upper() + "\n", "day"
             )
         start = it.get_offset()
-        repeat = same_day and clock(previous) == clock(entry)
+        repeat = (
+            same_day
+            and previous is not None
+            and clock(previous) == clock(entry)
+        )
         buffer.insert_with_tags_by_name(
             it, clock(entry), "time-repeat" if repeat else "time"
         )
@@ -446,19 +465,19 @@ class ConsoleView:
         )
         self._apply("first", start, buffer.get_iter_at_offset(first_end))
 
-    def _append(self, entry):
+    def _append(self, entry: Entry) -> None:
         previous = self._rendered[-1].entry if self._rendered else None
         it = self.buffer.get_end_iter()
         mark = self.buffer.create_mark(None, it, True)
         self._insert(it, entry, previous)
         self._rendered.append(_Rendered(entry, mark))
 
-    def _end_of(self, index):
+    def _end_of(self, index: int) -> Gtk.TextIter:
         if index + 1 < len(self._rendered):
             return self.buffer.get_iter_at_mark(self._rendered[index + 1].mark)
         return self.buffer.get_end_iter()
 
-    def _rerender(self, index):
+    def _rerender(self, index: int) -> None:
         """Render an entry again, in its place."""
 
         item = self._rendered[index]
@@ -470,7 +489,7 @@ class ConsoleView:
         if index + 1 < len(self._rendered):
             self.buffer.move_mark(self._rendered[index + 1].mark, it)
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Render the entries that match the filter again, all of them."""
 
         for item in self._rendered:
@@ -484,16 +503,16 @@ class ConsoleView:
             self.scroll_to_end()
         self._changed()
 
-    def _changed(self):
+    def _changed(self) -> None:
         if self.on_changed is not None:
             self.on_changed()
 
-    def scroll_to_end(self):
+    def scroll_to_end(self) -> None:
         self.textview.scroll_to_mark(self._end, 0.0, True, 0.0, 1.0)
 
     # The MessageLog
 
-    def message_added(self, entry, dropped):
+    def message_added(self, entry: Entry, dropped: Entry | None) -> None:
         if (
             dropped is not None
             and self._rendered
@@ -516,21 +535,21 @@ class ConsoleView:
                 self.scroll_to_end()
         self._changed()
 
-    def messages_cleared(self):
+    def messages_cleared(self) -> None:
         self.refresh()
 
     # Filtering and folding
 
-    def set_filter(self, text):
+    def set_filter(self, text: str) -> None:
         self.filter = parse_filter(text)
         self.refresh()
 
-    def toggle(self, index, fold):
+    def toggle(self, index: int, fold: str) -> None:
         key = (self._rendered[index].entry.number, fold)
         self.expanded ^= {key}
         self._rerender(index)
 
-    def expand_all(self, expand=True):
+    def expand_all(self, expand: bool = True) -> None:
         self.expanded = set()
         if expand:
             for entry in self.messages.entries:
@@ -538,7 +557,7 @@ class ConsoleView:
                     self.expanded.add((entry.number, fold))
         self.refresh()
 
-    def _index_at(self, it):
+    def _index_at(self, it: Gtk.TextIter) -> int | None:
         """The index of the rendered entry that holds it, or None."""
 
         offset = it.get_offset()
@@ -552,19 +571,20 @@ class ConsoleView:
                 high = middle
         return low - 1 if low else None
 
-    def _iter_at(self, x, y, window_type):
+    def _iter_at(
+        self, x: float, y: float, window_type: Gtk.TextWindowType
+    ) -> Gtk.TextIter | None:
         bx, by = self.textview.window_to_buffer_coords(
             window_type, int(x), int(y)
         )
-        found = self.textview.get_iter_at_location(bx, by)
-        if isinstance(found, tuple):
-            found, it = found
-            return it if found else None
-        return found
+        found, it = self.textview.get_iter_at_location(bx, by)
+        return it if found else None
 
     # Signals
 
-    def on_button_release_event(self, textview, event):
+    def on_button_release_event(
+        self, textview: Gtk.TextView, event: Gdk.EventButton
+    ) -> bool:
         if event.button != 1 or self.buffer.get_has_selection():
             return False
         it = self._iter_at(event.x, event.y, Gtk.TextWindowType.TEXT)
@@ -580,23 +600,35 @@ class ConsoleView:
                 return True
         return False
 
-    def on_motion_notify_event(self, textview, event):
+    def on_motion_notify_event(
+        self, textview: Gtk.TextView, event: Gdk.EventMotion
+    ) -> bool:
         it = self._iter_at(event.x, event.y, Gtk.TextWindowType.TEXT)
         hovering = it is not None and it.has_tag(self._tag("toggle"))
         if hovering != self._hovering:
             self._hovering = hovering
             window = textview.get_window(Gtk.TextWindowType.TEXT)
+            assert window is not None, "a realized view has its text window"
             cursor = Gdk.Cursor.new_from_name(
                 textview.get_display(), "pointer" if hovering else "text"
             )
             window.set_cursor(cursor)
         return False
 
-    def on_query_tooltip(self, textview, x, y, keyboard_mode, tooltip):
+    def on_query_tooltip(
+        self,
+        textview: Gtk.TextView,
+        x: int,
+        y: int,
+        keyboard_mode: bool,
+        tooltip: Gtk.Tooltip,
+    ) -> bool:
         if keyboard_mode:
             return False
         it = self._iter_at(x, y, Gtk.TextWindowType.WIDGET)
-        index = None if it is None else self._index_at(it)
+        if it is None:
+            return False
+        index = self._index_at(it)
         if index is None:
             return False
         entry = self._rendered[index].entry
@@ -619,11 +651,7 @@ class LoggingWindow(Window):
     them, to clear them and to report a bug.
     """
 
-    def __init__(self, messages):
-        """
-        :type messages: virtualbricks.gui.messages.MessageLog
-        """
-
+    def __init__(self, messages: MessageLog) -> None:
         self.messages = messages
         self.build_ui()
 
@@ -704,7 +732,7 @@ class LoggingWindow(Window):
         )
         self.update_status()
 
-    def _build_menu(self):
+    def _build_menu(self) -> Gio.Menu:
         menu = Gio.Menu()
         fold = Gio.Menu()
         fold.append(_("Expand all"), "log.expand-all")
@@ -719,7 +747,7 @@ class LoggingWindow(Window):
         menu.append_section(None, clear)
         return menu
 
-    def _build_actions(self):
+    def _build_actions(self) -> Gio.SimpleActionGroup:
         group = Gio.SimpleActionGroup()
         for name, handler in (
             ("expand-all", lambda *args: self.console.expand_all(True)),
@@ -738,7 +766,7 @@ class LoggingWindow(Window):
 
     # The status bar
 
-    def update_status(self):
+    def update_status(self) -> None:
         counts = self.messages.counts
         total = len(self.messages.entries)
         shown = self.console.shown
@@ -788,7 +816,7 @@ class LoggingWindow(Window):
 
     # Following the newest messages
 
-    def set_following(self, following):
+    def set_following(self, following: bool) -> None:
         if following == self.console.following:
             return
         self.console.following = following
@@ -796,12 +824,12 @@ class LoggingWindow(Window):
             self.follow_button.set_active(following)
         self.update_status()
 
-    def on_follow_button_toggled(self, button):
+    def on_follow_button_toggled(self, button: Gtk.ToggleButton) -> None:
         self.set_following(button.get_active())
         if self.console.following:
             self.console.scroll_to_end()
 
-    def on_folded(self, is_last):
+    def on_folded(self, is_last: bool) -> None:
         """A fold was clicked: keep the newest in view, or stop following."""
 
         if is_last:
@@ -813,7 +841,7 @@ class LoggingWindow(Window):
         if adjustment.get_upper() > adjustment.get_page_size():
             self.set_following(False)
 
-    def on_vadjustment_value_changed(self, adjustment):
+    def on_vadjustment_value_changed(self, adjustment: Gtk.Adjustment) -> None:
         self.set_following(
             adjustment.get_value()
             >= adjustment.get_upper()
@@ -823,24 +851,28 @@ class LoggingWindow(Window):
 
     # Signals
 
-    def on_search_changed(self, entry):
+    def on_search_changed(self, entry: Gtk.SearchEntry) -> None:
         self.console.set_filter(entry.get_text())
 
-    def on_stop_search(self, entry):
+    def on_stop_search(self, entry: Gtk.SearchEntry) -> None:
         entry.set_text("")
 
-    def on_key_press_event(self, window, event):
+    def on_key_press_event(
+        self, window: Gtk.Window, event: Gdk.EventKey
+    ) -> bool:
         control = event.state & Gdk.ModifierType.CONTROL_MASK
         if control and Gdk.keyval_to_lower(event.keyval) == Gdk.KEY_f:
             self.filter_entry.grab_focus()
             return True
         return False
 
-    def on_window_destroy(self, window):
+    def on_window_destroy(self, window: Gtk.Window) -> bool:
         self.console.detach()
         return True
 
-    def on_save_activate(self, action, parameter):
+    def on_save_activate(
+        self, action: Gio.SimpleAction, parameter: GLib.Variant | None
+    ) -> None:
         chooser = Gtk.FileChooserDialog(
             title=_("Save the messages"),
             transient_for=self.window,
@@ -856,19 +888,25 @@ class LoggingWindow(Window):
         chooser.connect("response", self.on_save_dialog_response)
         chooser.show()
 
-    def on_save_dialog_response(self, dialog, response_id):
+    def on_save_dialog_response(
+        self, dialog: Gtk.FileChooserDialog, response_id: int
+    ) -> bool:
         try:
             if response_id == Gtk.ResponseType.OK:
-                with open(dialog.get_filename(), "w") as fp:
+                filename = dialog.get_filename()
+                assert filename is not None, "Save has a file name"
+                with open(filename, "w") as fp:
                     fp.write(self.messages.text())
         finally:
             dialog.destroy()
         return True
 
-    def on_report_bug_activate(self, action, parameter):
+    def on_report_bug_activate(
+        self, action: Gio.SimpleAction, parameter: GLib.Variant | None
+    ) -> None:
         logger.info(bug_send)
 
-        def xdg_email_exit_cb(codes):
+        def xdg_email_exit_cb(codes: tuple[bytes, bytes, int]) -> None:
             stdout, stderr, code = codes
             if code == 0:
                 logger.info(bug_sent)
