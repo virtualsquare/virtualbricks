@@ -32,19 +32,19 @@ Like ampcommands, it loads nothing but Twisted's amp and the errors of
 ampwire and ampcommands, so that a program can import it, or copy it.
 """
 
-from typing import ClassVar
+from typing import ClassVar, Final
 
 from twisted.protocols import amp
 
 from virtualbricks.console.ampcommands import ERRORS
 
 # The protocol of these commands, which Hello agrees on.
-PROTOCOL = 2
+PROTOCOL: Final = 2
 
 # the kinds of the objects of a project, as the pushes name them
-BRICK = "brick"
-EVENT = "event"
-IMAGE = "image"
+BRICK: Final = "brick"
+EVENT: Final = "event"
+IMAGE: Final = "image"
 
 
 class Follow(amp.Command):
@@ -90,7 +90,7 @@ class Connect(amp.Command):
 
 
 # The questions of programs.QEMU_QUESTIONS, whose answers QemuFacts gives.
-QEMU_ANSWERS = (
+QEMU_ANSWERS: Final[tuple[str, ...]] = (
     "version",
     "options",
     "machines",
@@ -382,7 +382,7 @@ class Quitting(_Push):
 
 
 # What a program calls, and what Virtualbricks calls on it.
-FROM_PROGRAM = (
+FROM_PROGRAM: tuple[type[amp.Command], ...] = (
     Follow,
     Apply,
     Connect,
@@ -405,7 +405,7 @@ FROM_PROGRAM = (
     ProgramsFound,
     Attach,
 )
-PUSHES = (
+PUSHES: tuple[type[amp.Command], ...] = (
     Opened,
     Changed,
     Renamed,
