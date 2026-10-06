@@ -181,6 +181,7 @@ class Windows(Mirroring, amp.AMP):
         self.connected = False
         amp.BinaryBoxProtocol.connectionLost(self, reason)
         # the exception: a Failure would fire the errbacks
+        assert reason.value is not None, "a connection is lost for a reason"
         self.lost.callback(reason.value)
 
     @commands.Logged.responder
@@ -837,7 +838,9 @@ class RemoteEngine:
         def first(failure: Failure) -> Failure:
             # the failure of the summary that failed first
             failure.trap(defer.FirstError)
-            return failure.value.subFailure
+            first = failure.value
+            assert isinstance(first, defer.FirstError), "trapped"
+            return first.subFailure
 
         def each(names: list[str]) -> defer.Deferred[list[Json | None]]:
             summaries = [summary(name) for name in names]

@@ -506,6 +506,7 @@ def unset(context: Context, name: Brick, key: list[str]) -> list[str]:
 
 
 def _message(failure: Failure) -> str:
+    assert failure.type is not None, "a Failure has its exception's type"
     return failure.getErrorMessage() or failure.type.__name__
 
 

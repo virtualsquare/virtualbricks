@@ -18,6 +18,11 @@
 
 # This module is ported to new GTK3 using PyGObject
 
+from __future__ import annotations
+
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any, TypeVar
+
 from gi.repository import Gtk
 from twisted.internet import defer
 from twisted.python.failure import Failure
@@ -26,10 +31,13 @@ from twisted.logger import (
     LogLevel,
     LogLevelFilterPredicate,
     Logger,
+    ILogObserver,
+    LogEvent,
     PredicateResult,
     formatEvent,
     globalLogPublisher,
 )
+from zope.interface import implementer
 
 from virtualbricks import brickfactory, errors, i18n
 from virtualbricks.config.projectfile import ProjectFormatError
@@ -46,31 +54,44 @@ from virtualbricks.gui.messages import MessageLog, MessageLogObserver
 from virtualbricks.gui.trash import DesktopTrash
 from virtualbricks.i18n import _
 
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.posixbase import PosixReactorBase
+    from constantly import NamedConstant
+
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.config.report import Report
+    from virtualbricks.remote.client import RemoteEngine, Windows
+    from virtualbricks.remote.mirror import MirrorFactory
+    from virtualbricks.remote.tunnel import Consoles
+
+T = TypeVar("T")
+
 logger = Logger()
 cannot_open_last = "{message}"
 
 
+@implementer(ILogObserver)
 class MessageDialogObserver:
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Gtk.Window | None = None) -> None:
         self.__parent = parent
 
-    def set_parent(self, parent):
+    def set_parent(self, parent: Gtk.Window | None) -> None:
         self.__parent = parent
 
-    def __call__(self, event):
+    def __call__(self, event: LogEvent) -> None:
         dialog = Gtk.MessageDialog(
-            self.__parent,
-            Gtk.DialogFlags.MODAL,
-            Gtk.MessageType.ERROR,
-            Gtk.ButtonsType.CLOSE,
+            transient_for=self.__parent,
+            modal=True,
+            message_type=Gtk.MessageType.ERROR,
+            buttons=Gtk.ButtonsType.CLOSE,
         )
         dialog.set_property("text", formatEvent(event))
         dialog.connect("response", lambda d, r: d.destroy())
         dialog.show()
 
 
-def should_show_to_user(event):
+def should_show_to_user(event: LogEvent) -> NamedConstant:
     if "hide_to_user" in event:
         return PredicateResult.no
     if event["log_level"] not in (LogLevel.error, LogLevel.critical):
@@ -78,7 +99,7 @@ def should_show_to_user(event):
     return PredicateResult.maybe
 
 
-def AppLoggerFactory(messages):
+def AppLoggerFactory(messages: MessageLog) -> type[brickfactory.AppLogger]:
 
     observer = FilteringLogObserver(
         MessageLogObserver(messages),
@@ -87,19 +108,19 @@ def AppLoggerFactory(messages):
 
     class AppLogger(brickfactory.AppLogger):
 
-        def get_observers(self):
+        def get_observers(self) -> list[ILogObserver]:
             return super().get_observers() + [observer]
 
     return AppLogger
 
 
-def _now(deferred):
+def _now(deferred: defer.Deferred[T]) -> T:
     """
     What a Deferred of the engine of this process gives, which has fired
     already: its result, or its failure raised.
     """
 
-    results = []
+    results: list[T | Failure] = []
     deferred.addBoth(results.append)
     [result] = results
     if isinstance(result, Failure):
@@ -115,33 +136,37 @@ class WindowFrontend:
     console wants.
     """
 
-    def __init__(self, gui):
+    def __init__(self, gui: VBGUI) -> None:
         self.gui = gui
 
-    def open(self, name, factory):
+    def open(self, name: str, factory: BrickFactory) -> Report:
         return _now(self.gui.on_open(name))
 
-    def new(self, name, factory):
+    def new(self, name: str, factory: BrickFactory) -> None:
         _now(self.gui.on_new(name))
 
-    def save(self, factory):
+    def save(self, factory: BrickFactory) -> None:
         _now(self.gui.on_save())
 
 
 class Application(brickfactory.Application):
 
-    def __init__(self, config):
+    def __init__(self, config: Mapping[str, Any]) -> None:
         # the messages of this run, for the messages window
         self.messages = MessageLog()
         self.logger_factory = AppLoggerFactory(self.messages)
         brickfactory.Application.__init__(self, config)
 
-    def get_namespace(self):
+    def get_namespace(self) -> dict[str, object]:
         return {"gui": self.gui}
 
-    def _run(self, factory):
+    def _run(self, factory: BrickFactory) -> None:
         message_dialog = MessageDialogObserver()
-        observer = FilteringLogObserver(message_dialog, [should_show_to_user])
+        observer = FilteringLogObserver(
+            message_dialog,
+            # a function is a predicate as much as a class
+            [should_show_to_user],  # type: ignore[list-item]
+        )
         globalLogPublisher.addObserver(observer)
         self.gui = VBGUI(LocalEngine(factory), self.messages)
         message_dialog.set_parent(self.gui.window)
@@ -150,7 +175,7 @@ class Application(brickfactory.Application):
         projects.trasher = DesktopTrash()
         use_frontend(WindowFrontend(self.gui))
 
-    def migrate(self):
+    def migrate(self) -> defer.Deferred[Any] | None:
         from virtualbricks.migrate import startup_migration
         from virtualbricks.migrate.gui import MigrationWindow
 
@@ -161,7 +186,7 @@ class Application(brickfactory.Application):
         window.show()
         return window.closed
 
-    def open_last_project(self, factory):
+    def open_last_project(self, factory: BrickFactory) -> None:
         """
         Open the project open last, or say why in the Projects window.
 
@@ -188,7 +213,7 @@ class Application(brickfactory.Application):
         logger.warn(cannot_open_last, message=message)
         self.gui.show_start_up_problem(message)
 
-    def _start(self, reactor):
+    def _start(self, reactor: PosixReactorBase) -> defer.Deferred[None]:
         ret = brickfactory.Application._start(self, reactor)
         self.gui.set_title()
         # the folders of QEMU and VDE are those of the project, open by now
@@ -205,27 +230,33 @@ class RemoteApplication:
     computer. Quit closes the windows; the Virtualbricks there goes on.
     """
 
-    def __init__(self, config):
+    def __init__(self, config: Mapping[str, Any]) -> None:
         self.config = config
         self.target = config["target"]
         self.messages = MessageLog()
         self.logger = AppLoggerFactory(self.messages)(config)
-        self.gui = None
-        self.engine = None
+        self.gui: VBGUI | None = None
+        self.engine: RemoteEngine | None = None
         self.quitting = False
         # the Virtualbricks there said it quits
         self.ended = False
 
-    def getComponent(self, interface, default):
+    def getComponent(self, interface: object, default: T) -> T:
         return default
 
-    def install_locale(self):
+    def install_locale(self) -> None:
         i18n.install()
 
-    def install_settings(self):
+    def install_settings(self) -> None:
         load_settings()
 
-    def run(self, reactor):
+    def windows(self) -> VBGUI:
+        """The windows, once the connection shows them."""
+
+        assert self.gui is not None, "the windows show"
+        return self.gui
+
+    def run(self, reactor: PosixReactorBase) -> defer.Deferred[None]:
         """Connect, then show the windows: a Deferred of their end."""
 
         from virtualbricks.remote import client
@@ -239,12 +270,12 @@ class RemoteApplication:
         self.reactor = reactor
         self.where = client.where(self.target)
         self.copy = MirrorFactory(reactor)
-        self.done = defer.Deferred()
+        self.done: defer.Deferred[None] = defer.Deferred()
         connecting = defer.ensureDeferred(self.reach())
         connecting.addCallbacks(self.show, self.not_connected)
         return self.done
 
-    async def reach(self):
+    async def reach(self) -> Windows:
         """
         The connection; with --connect alone, to the socket that a
         Virtualbricks of yours listens on, found once: Reconnect goes there.
@@ -257,13 +288,13 @@ class RemoteApplication:
             self.target, self.copy, self.reactor, self.made
         )
 
-    def not_connected(self, failure):
+    def not_connected(self, failure: Failure) -> None:
         from virtualbricks.remote.client import Refused
 
         failure.trap(Refused)
         self.done.errback(SystemExit(failure.getErrorMessage()))
 
-    def show(self, windows):
+    def show(self, windows: Windows) -> None:
         """The windows, on the copy that the connection keeps."""
 
         from virtualbricks.remote import client, tunnel
@@ -271,10 +302,14 @@ class RemoteApplication:
 
         message_dialog = MessageDialogObserver()
         globalLogPublisher.addObserver(
-            FilteringLogObserver(message_dialog, [should_show_to_user])
+            FilteringLogObserver(
+                message_dialog,
+                # a function is a predicate as much as a class
+                [should_show_to_user],  # type: ignore[list-item]
+            )
         )
         # the consoles of the bricks there, each over a connection of its own
-        self.consoles = tunnel.Consoles(
+        self.consoles: Consoles = tunnel.Consoles(
             lambda: defer.ensureDeferred(
                 client.connect_again(self.target, self.reactor)
             ),
@@ -292,7 +327,7 @@ class RemoteApplication:
         self.gui.set_title()
         self.warn(self.copy.machine)
 
-    def made(self, windows):
+    def made(self, windows: Windows) -> None:
         """
         A connection, before it follows: the messages of the log that come
         with the project go to the windows, and so do the calls of the
@@ -303,17 +338,17 @@ class RemoteApplication:
         if self.engine is not None:
             self.engine.windows = windows
 
-    def logged(self, message):
+    def logged(self, message: dict[str, Any]) -> None:
         self.messages.add_message(message, self.where)
 
-    def synced(self, copy):
+    def synced(self, copy: MirrorFactory) -> None:
         # a project opened there, or the same again after Reconnect
-        self.gui.on_opened()
+        self.windows().on_opened()
 
-    def on_ended(self, copy):
+    def on_ended(self, copy: MirrorFactory) -> None:
         self.ended = True
 
-    def warn(self, machine):
+    def warn(self, machine: Mapping[str, Any]) -> None:
         """What the machine of the bricks lacks, as the warning at start."""
 
         if not get_setting("warn_missing_programs"):
@@ -335,7 +370,7 @@ class RemoteApplication:
         if lines:
             logger.error(window.components_not_found, text="\n".join(lines))
 
-    def lost(self, reason):
+    def lost(self, reason: object) -> None:
         if self.quitting:
             return
         if self.ended:
@@ -344,9 +379,9 @@ class RemoteApplication:
             text = _("The connection to {where} is lost: {reason}").format(
                 where=self.where, reason=reason
             )
-        self.gui.connection_lost(text, self.reconnect)
+        self.windows().connection_lost(text, self.reconnect)
 
-    def reconnect(self):
+    def reconnect(self) -> defer.Deferred[None]:
         """Connect again; the copy starts again, from nothing."""
 
         from virtualbricks.remote import client
@@ -355,20 +390,21 @@ class RemoteApplication:
         connecting = defer.ensureDeferred(
             client.connect(self.target, self.copy, self.reactor, self.made)
         )
-        connecting.addCallbacks(self.reconnected, self.not_reconnected)
-        return connecting
+        return connecting.addCallbacks(self.reconnected, self.not_reconnected)
 
-    def reconnected(self, windows):
+    def reconnected(self, windows: Windows) -> None:
         windows.lost.addCallback(self.lost)
-        self.gui.reconnected()
+        self.windows().reconnected()
 
-    def not_reconnected(self, failure):
+    def not_reconnected(self, failure: Failure) -> None:
         from virtualbricks.remote.client import Refused
 
         failure.trap(Refused)
-        self.gui.connection_lost(failure.getErrorMessage(), self.reconnect)
+        self.windows().connection_lost(
+            failure.getErrorMessage(), self.reconnect
+        )
 
-    def quit(self):
+    def quit(self) -> None:
         """The windows close; the Virtualbricks there goes on."""
 
         if self.quitting:

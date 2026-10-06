@@ -452,10 +452,11 @@ When a hook changes files, as when you add a message the translations have to
 know, the commit stops: stage what it changed and commit again.
 
 The types are checked with mypy, which `pyproject.toml` configures: run
-`mypy` from the root of the sources. It doesn't run on commit yet, as it still
-finds errors. The modules typed in full are checked strictly, so that they stay
-typed; `tools/typecoverage.py` tells how much of each module has annotations,
-the most typed first (`--sort name` in the order of the files):
+`mypy` from the root of the sources. It doesn't run on commit yet. Every
+module is typed in full and checked strictly, the bodies of the functions too,
+so a function without annotations is an error; `tools/typecoverage.py` tells
+how much of each module has annotations, the most typed first (`--sort name`
+in the order of the files):
 
 ```sh
 mypy                                   # virtualbricks/ and tools/

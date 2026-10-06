@@ -16,16 +16,25 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+from __future__ import annotations
+
 import sys
+from collections.abc import Callable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks import brickfactory
+    from virtualbricks.app import Options
+    from virtualbricks.gui import gui
 
 
-def make_application(config):
+def make_application(config: Options) -> gui.Application:
     from virtualbricks.gui import gui
 
     return gui.Application(config)
 
 
-def make_remote_application(config):
+def make_remote_application(config: Options) -> gui.RemoteApplication:
     """The windows of another Virtualbricks: no lock, no project here."""
 
     from virtualbricks.gui import gui
@@ -33,7 +42,7 @@ def make_remote_application(config):
     return gui.RemoteApplication(config)
 
 
-def make_plain_application(config):
+def make_plain_application(config: Options) -> brickfactory.Application:
     """The application without the windows: no GTK is loaded."""
 
     from virtualbricks import brickfactory
@@ -41,7 +50,7 @@ def make_plain_application(config):
     return brickfactory.Application(config)
 
 
-def install_gtk_reactor():
+def install_gtk_reactor() -> None:
     import gi
 
     gi.require_version("Gtk", "3.0")
@@ -51,7 +60,7 @@ def install_gtk_reactor():
     gireactor.install()
 
 
-def run():
+def run() -> None:
     from virtualbricks import app
 
     config = app.Options()
@@ -76,6 +85,7 @@ def run():
                 workspace=config["workspace"],
             )
         )
+    factory: Callable[[Options], brickfactory.Application]
     if config["no-gui"]:
         factory = make_plain_application
     else:

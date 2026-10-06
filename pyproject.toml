@@ -133,48 +133,12 @@ python_version = "3.10"
 plugins = ["mypy_zope:plugin"]
 warn_unused_ignores = true
 warn_redundant_casts = true
+# every module is typed in full, and stays so
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
 
 [[tool.mypy.overrides]]
 # no types, no stubs
-module = ["pygraphviz", "pygraphviz.*"]
+module = ["constantly", "pygraphviz", "pygraphviz.*"]
 ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-# The modules typed in full stay so: add one when tools/typecoverage.py gives
-# it 100%.
-module = [
-    "virtualbricks.brickfactory",
-    "virtualbricks.bricks.*",
-    "virtualbricks.config.*",
-    "virtualbricks.console.*",
-    "virtualbricks.engine",
-    "virtualbricks.gui.dialogs.*",
-    "virtualbricks.gui.form",
-    "virtualbricks.gui.mainwindow.*",
-    "virtualbricks.gui.graphics",
-    "virtualbricks.gui.imageinfo",
-    "virtualbricks.gui.markdownview",
-    "virtualbricks.gui.messages",
-    "virtualbricks.gui.pango",
-    "virtualbricks.gui.pathentry",
-    "virtualbricks.gui.trash",
-    "virtualbricks.i18n",
-    "virtualbricks.ksm",
-    "virtualbricks.locations",
-    "virtualbricks.locks",
-    "virtualbricks.markdown",
-    "virtualbricks.migrate.*",
-    "virtualbricks.nic",
-    "virtualbricks.observable",
-    "virtualbricks.programs",
-    "virtualbricks.qemu.*",
-    "virtualbricks.remote.*",
-    "virtualbricks.settingsdraft",
-    "virtualbricks.sudo",
-    "virtualbricks.terminal",
-    "virtualbricks.topology",
-    "virtualbricks.vde",
-    "typecoverage",
-]
-disallow_untyped_defs = true
-disallow_incomplete_defs = true

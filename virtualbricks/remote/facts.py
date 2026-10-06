@@ -113,11 +113,15 @@ class Facts(_Base):
             if failure.check(ProgramError, CommandError):
                 raise ampwire.CommandFailed(failure.getErrorMessage())
             if failure.check(FileNotFoundError):
+                assert failure.value is not None, "checked"
                 # the program that would say
                 raise ampwire.CommandFailed(
                     _("No program {name}").format(name=failure.value.args[0])
                 )
             logger.failure(fact_failed, failure, command=command)
+            assert (
+                failure.type is not None
+            ), "a Failure has its exception's type"
             raise ampwire.CommandFailed(
                 failure.getErrorMessage() or failure.type.__name__
             )

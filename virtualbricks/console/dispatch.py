@@ -64,6 +64,7 @@ def _reason(failure: Failure, line: str) -> Failure:
     if failure.check(errors.Error):
         raise CommandError(failure.getErrorMessage())
     logger.failure(command_failed, failure, line=line)
+    assert failure.type is not None, "a Failure has its exception's type"
     message = failure.getErrorMessage() or failure.type.__name__
     raise CommandError(
         _("{error}; the messages have the details").format(error=message)

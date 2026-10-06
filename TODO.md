@@ -307,18 +307,17 @@
 
 ## Types
 
-- [ ] Fix the errors that mypy finds, a package at a time as `config/`,
-  `console/`, `bricks/` and `remote/`: none on 6 Oct 2026, but 27 with
-  `--check-untyped-defs`, in `gui/gui.py` and the lambdas without
-  annotations that read `failure.value`, which may be `None` for mypy
 - [ ] Run mypy in pre-commit, a local hook in the environment of the
-  project, as it needs the stubs of GTK 3
-- [ ] Add each module that `tools/typecoverage.py` gives 100% to the strict
-  override of `pyproject.toml`
-- [ ] Type the old core that is left: `app.py`, `gui/gui.py` and
-  `scripts/` (0% on 6 Oct 2026)
+  project, as it needs the stubs of GTK 3: it finds no error since 6 Oct
+  2026
 
 # DONE
+
+- [x] Type every module in full: `app.py`, `errors.py`, `gui/gui.py` and
+  `scripts/` too. mypy checks them all strictly, the bodies of the
+  functions too (`check_untyped_defs`), with no list of modules to keep:
+  it finds no error. A Failure's exception and its type may be None for
+  mypy, so they are asserted where they are read
 
 - [x] Type `brickfactory.py` in full, checked strictly: the bricks, the
   events and the images of the factory have their types, and what reads

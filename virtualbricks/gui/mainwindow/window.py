@@ -624,7 +624,7 @@ class VBGUI:
 
     # gui (programming) interface
 
-    def on_quit(self, factory: BrickFactory) -> None:
+    def on_quit(self, factory: BrickFactory | None) -> None:
         for tab in tabs(self.main_notebook):
             tab.on_quit()
 

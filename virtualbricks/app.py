@@ -15,11 +15,16 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import annotations
+
 import importlib
 import os
 import re
 import shlex
 import sys
+from collections.abc import Callable, Iterable
+from types import ModuleType
+from typing import IO, TYPE_CHECKING, Any, Protocol, TypeVar
 
 from twisted.python import usage, reflect
 from twisted.internet import defer, task
@@ -28,16 +33,24 @@ from twisted.logger import textFileLogObserver
 from virtualbricks import locations, locks
 from virtualbricks.console import wire
 
-_log_file = sys.stdout
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.posixbase import PosixReactorBase
+    from twisted.logger import ILogObserver
+
+    from virtualbricks.brickfactory import Application
+
+T = TypeVar("T")
+
+_log_file: IO[str] = sys.stdout
 # The word after --listen is its description when it starts with a type.
 DESCRIPTION = re.compile(r"[a-z][a-z0-9]*:", re.IGNORECASE)
 
 
-def file_logger():
+def file_logger() -> ILogObserver:
     return textFileLogObserver(_log_file)
 
 
-def _file_logger(filename):
+def _file_logger(filename: str) -> str:
     if filename != "-":
         from twisted.python import logfile
 
@@ -132,7 +145,7 @@ class Options(usage.Options):
         "logger",
     )
 
-    def __init__(self):
+    def __init__(self) -> None:
         usage.Options.__init__(self)
         self["verbosity"] = 0
         self["words"] = []
@@ -145,21 +158,21 @@ class Options(usage.Options):
         self["windows"] = False
         # the descriptions of --listen and of --connect, None for the option
         # alone, read once the options are known to go together
-        self.descriptions = []
-        self.targets = []
+        self.descriptions: list[str | None] = []
+        self.targets: list[str | None] = []
         # the options given whose value doesn't tell
-        self.given = set()
+        self.given: set[str] = set()
 
-    def parseOptions(self, options=None):
+    def parseOptions(self, options: Iterable[str] | None = None) -> None:
         if options is None:
             options = sys.argv[1:]
         usage.Options.parseOptions(self, self.take_sockets(options))
 
-    def parseArgs(self, *words):
+    def parseArgs(self, *words: str) -> None:
         # the options end at the first word: the command's own come after
         self["words"] = list(words)
 
-    def take_sockets(self, args):
+    def take_sockets(self, args: Iterable[str]) -> list[str]:
         """
         Read each --listen and --connect of args, and return the other
         arguments.
@@ -200,7 +213,7 @@ class Options(usage.Options):
                 rest.append(args.pop(0))
         return rest
 
-    def _long_option(self, name):
+    def _long_option(self, name: str) -> str | None:
         """The long option that name is, as getopt reads it, or None."""
 
         if not name.startswith("--"):
@@ -213,7 +226,7 @@ class Options(usage.Options):
         found = [option for option in options if option.startswith(name)]
         return found[0] if len(found) == 1 else None
 
-    def _takes_value(self, arg):
+    def _takes_value(self, arg: str) -> bool:
         """Whether the option arg takes the next word as its value."""
 
         if arg.startswith("--"):
@@ -229,7 +242,7 @@ class Options(usage.Options):
                 return position == len(arg) - 1
         return False
 
-    def socket(self, description, option):
+    def socket(self, description: str | None, option: str) -> wire.Socket:
         """
         The socket of description, or the default one if None: one to
         listen on for --listen, the one to talk to for --connect. A
@@ -252,7 +265,8 @@ class Options(usage.Options):
             return self._unix_socket(socket, option)
         return self._network_socket(socket, client)
 
-    def _unix_socket(self, socket, option):
+    def _unix_socket(self, socket: wire.Socket, option: str) -> wire.Socket:
+        assert socket.path is not None, "a unix socket described has a path"
         path = os.path.abspath(os.path.expanduser(socket.path))
         folder = os.path.dirname(path)
         # Virtualbricks makes the runtime folder at start
@@ -270,13 +284,15 @@ class Options(usage.Options):
             raise usage.UsageError(f"--listen: {path} is given twice")
         return socket._replace(path=path)
 
-    def _network_socket(self, socket, client):
-        socket = socket._replace(
-            **{
-                wire.FILES[key]: os.path.abspath(os.path.expanduser(path))
-                for key, path in socket.files().items()
-            }
-        )
+    def _network_socket(
+        self, socket: wire.Socket, client: bool
+    ) -> wire.Socket:
+        # the files of the description, as absolute paths
+        files: dict[str, Any] = {
+            wire.FILES[key]: os.path.abspath(os.path.expanduser(path))
+            for key, path in socket.files().items()
+        }
+        socket = socket._replace(**files)
         if client:
             # the client reads its files, and says what is wrong with them
             return socket
@@ -297,7 +313,7 @@ class Options(usage.Options):
             self._check_token(socket.token_file)
         return socket
 
-    def _tls(self):
+    def _tls(self) -> ModuleType:
         """The module of the ssl sockets, which needs pyOpenSSL."""
 
         try:
@@ -307,7 +323,7 @@ class Options(usage.Options):
                 "--listen: ssl needs pyOpenSSL: the package python3-openssl"
             ) from None
 
-    def _check_token(self, path):
+    def _check_token(self, path: str | None) -> None:
         """
         Refuse a token file that can't be used; one that isn't there is made
         when the socket opens, in the config folder or in its own.
@@ -326,13 +342,13 @@ class Options(usage.Options):
         except wire.Unusable as exc:
             raise usage.UsageError(f"--listen: {exc}") from None
 
-    def opt_logfile(self, arg):
+    def opt_logfile(self, arg: str) -> None:
         """Write log messages to file."""
 
         self.given.add("logfile")
         self["logger"] = _file_logger(arg)
 
-    def opt_workspace(self, arg):
+    def opt_workspace(self, arg: str) -> None:
         """
         The folder of the projects for this run, instead of the setting;
         with --command or --connect, the Virtualbricks that runs there.
@@ -346,14 +362,14 @@ class Options(usage.Options):
             raise usage.UsageError(f"--workspace: {path} is not a folder")
         self["workspace"] = path
 
-    def opt_run(self, arg):
+    def opt_run(self, arg: str) -> None:
         # the help is the text of optParameters
         path = os.path.abspath(os.path.expanduser(arg))
         if not os.path.isfile(path):
             raise usage.UsageError(f"--run: {path} is not a file")
         self["run"] = path
 
-    def opt_lock(self, arg):
+    def opt_lock(self, arg: str) -> None:
         # the help is the text of optParameters
         if arg not in locks.POLICIES:
             choices = ", ".join(locks.POLICIES)
@@ -361,26 +377,26 @@ class Options(usage.Options):
         self.given.add("lock")
         self["lock"] = arg
 
-    def opt_verbose(self):
+    def opt_verbose(self) -> None:
         """Increase log verbosity."""
         self["verbosity"] += 1
 
-    def opt_quiet(self):
+    def opt_quiet(self) -> None:
         """Decrease log verbosity."""
         self["verbosity"] -= 1
 
-    def opt_debug(self):
+    def opt_debug(self) -> None:
         """Verbose debug output"""
         self["verbosity"] = 2
 
-    def opt_version(self):
+    def opt_version(self) -> None:
         """Print version and exit."""
         from virtualbricks import __version__
 
         print("Virtualbricks", __version__)
         sys.exit(0)
 
-    def check_client(self):
+    def check_client(self) -> None:
         """
         Refuse words without --command, --connect without --command or
         --run, and with either the options of a run and --listen.
@@ -428,7 +444,7 @@ class Options(usage.Options):
                 " list, or lines on its standard input"
             )
 
-    def check_target(self):
+    def check_target(self) -> None:
         """Refuse two --connect, or one with a description and --workspace."""
 
         if len(self.targets) > 1:
@@ -439,7 +455,7 @@ class Options(usage.Options):
                 " one of them"
             )
 
-    def check_windows(self):
+    def check_windows(self) -> None:
         """
         Refuse, with the windows of another Virtualbricks, what is for the
         Virtualbricks that runs the bricks; --workspace names the one whose
@@ -460,7 +476,7 @@ class Options(usage.Options):
                 f" --{given[0]} is for the one that runs the bricks"
             )
 
-    def postOptions(self):
+    def postOptions(self) -> None:
         self.check_client()
         # the windows of another Virtualbricks, which speak AMP
         windows = bool(self.targets) and not self["command"]
@@ -496,7 +512,7 @@ class Options(usage.Options):
     opt_b = opt_debug
 
 
-def parse_options(config):
+def parse_options(config: Options) -> None:
     """Read the command line into config, or exit with the error."""
 
     try:
@@ -505,7 +521,15 @@ def parse_options(config):
         raise SystemExit("%s: %s" % (sys.argv[0], ue))
 
 
-def run_app(Application, config):
+class Runnable(Protocol):
+    """What runs on the reactor, until its Deferred fires."""
+
+    def run(self, reactor: PosixReactorBase) -> defer.Deferred[Any]: ...
+
+
+def run_app(
+    Application: Callable[[Options], Runnable], config: Options
+) -> None:
     """Run Application with config, whose options are read already."""
 
     task.react(Application(config).run, ())
@@ -513,12 +537,12 @@ def run_app(Application, config):
 
 class _LockedApplication:
 
-    factory = None
+    factory: Callable[[Options], Application] | None = None
 
-    def __init__(self, config):
+    def __init__(self, config: Options) -> None:
         self.config = config
 
-    def run(self, reactor):
+    def run(self, reactor: PosixReactorBase) -> defer.Deferred[Any]:
         assert self.factory is not None, "factory attribute is not set"
         from virtualbricks.migrate import settings_to_convert
         from virtualbricks.migrate import startup_workspace
@@ -543,10 +567,15 @@ class _LockedApplication:
         app = self.factory(self.config)
         if user_alone:
             migrate = app.migrate
-            app.migrate = lambda: self.migrate_then_share(migrate, lock)
+            # this run's app migrates, then shares the lock
+            app.migrate = lambda: self.migrate_then_share(  # type: ignore[method-assign]
+                migrate, lock
+            )
         return app.run(reactor)
 
-    def lock(self, policy, user_alone, workspace):
+    def lock(
+        self, policy: str, user_alone: bool, workspace: str
+    ) -> locks.Lock:
         """The locks of policy, and that of workspace, made if missing."""
 
         lock = locks.acquire(policy, user_alone)
@@ -559,10 +588,14 @@ class _LockedApplication:
             raise
         return lock
 
-    def migrate_then_share(self, migrate, lock):
+    def migrate_then_share(
+        self,
+        migrate: Callable[[], defer.Deferred[Any] | None],
+        lock: locks.Lock,
+    ) -> defer.Deferred[Any]:
         """Migrate, then share the user lock with the other workspaces."""
 
-        def share(result):
+        def share(result: T) -> T:
             try:
                 lock.share_user()
             except locks.Held as held:
@@ -572,8 +605,10 @@ class _LockedApplication:
         return defer.maybeDeferred(migrate).addCallback(share)
 
 
-def LockedApplication(factory):
-    def init(config):
+def LockedApplication(
+    factory: Callable[[Options], Application],
+) -> Callable[[Options], _LockedApplication]:
+    def init(config: Options) -> _LockedApplication:
         app = _LockedApplication(config)
         app.factory = factory
         return app

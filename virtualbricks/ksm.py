@@ -88,6 +88,7 @@ class _WriteProtocol(protocol.ProcessProtocol):
 
     def processEnded(self, reason: Failure) -> None:
         # the exception: a Failure would fail done
+        assert reason.value is not None, "a process ends for a reason"
         self.done.callback(reason.value)
 
 

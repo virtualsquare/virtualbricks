@@ -645,7 +645,9 @@ def _first_error(failure: Failure) -> Failure:
     """The failure of the question that failed first."""
 
     failure.trap(defer.FirstError)
-    return failure.value.subFailure
+    first = failure.value
+    assert isinstance(first, defer.FirstError), "trapped"
+    return first.subFailure
 
 
 class Programs:

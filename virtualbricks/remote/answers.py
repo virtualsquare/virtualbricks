@@ -93,6 +93,7 @@ class Answers(_Base):
     ) -> defer.Deferred[Any]:
         def refused(failure: Failure) -> NoReturn:
             exc = failure.value
+            assert exc is not None, "a Failure has its exception"
             if failure.check(LookupError):
                 # a KeyError's str() has quotes
                 message = str(exc.args[0]) if exc.args else str(exc)

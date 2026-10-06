@@ -16,7 +16,14 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from virtualbricks.i18n import _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.virtualmachine import Disk, Image
 
 
 class Error(Exception):
@@ -29,21 +36,22 @@ class InvalidNameError(Error):
 
 class NameAlreadyInUseError(InvalidNameError):
 
-    def __init__(self, name, kind=None):
+    def __init__(self, name: str, kind: str | None = None) -> None:
         InvalidNameError.__init__(self, name)
         self.name = name
         # what has the name: "brick", "event" or "image", if known
         self.kind = kind
 
-    def __str__(self):
+    def __str__(self) -> str:
         words = {
             "brick": _("{name} is the name of a brick"),
             "event": _("{name} is the name of an event"),
             "image": _("{name} is the name of an image"),
         }
-        return words.get(self.kind, _("{name} is in use")).format(
-            name=self.name
-        )
+        in_use = _("{name} is in use")
+        if self.kind is not None:
+            in_use = words.get(self.kind, in_use)
+        return in_use.format(name=self.name)
 
 
 class InvalidTypeError(Error, ValueError):
@@ -64,12 +72,12 @@ class LinkLoopError(Error):
 
 class LockedImageError(Error):
 
-    def __init__(self, image, master):
+    def __init__(self, image: Image, master: Disk | None) -> None:
         Exception.__init__(self, image, master)
         self.image = image
         self.master = master
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Image {0} already locked by {1}".format(
             self.image, self.master
         )
@@ -99,7 +107,7 @@ class CommandError(Exception):
     One utility command failed. Ex. qemu-img.
     """
 
-    def __init__(self, exit_code, stderr):
+    def __init__(self, exit_code: int, stderr: str) -> None:
         super().__init__(stderr)
         self.exit_code = exit_code
         self.stderr = stderr

@@ -170,6 +170,7 @@ class Process(protocol.ProcessProtocol):
         # the reason of a process that was terminated, in words
         ended: str | Failure = status
         if status.check(error.ProcessTerminated):
+            assert status.value is not None, "checked"
             ended = " ".join(status.value.args)
             self.logger.error(process_terminated, status=ended)
         else:
@@ -511,7 +512,9 @@ class Brick(Base):
 
         def eb(failure: Failure) -> Failure | None:
             if failure.check(defer.FirstError):
-                failure = failure.value.subFailure
+                first = failure.value
+                assert isinstance(first, defer.FirstError), "checked"
+                failure = first.subFailure
             waiting, self._waiting = self._waiting, None
             if waiting is None:
                 # the program runs, and the event of its start failed
