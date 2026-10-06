@@ -41,14 +41,11 @@ from __future__ import annotations
 import dataclasses
 import math
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING
 
 import pygraphviz
 
+from virtualbricks.bricks import Brick
 from virtualbricks.bricks.sock import Sock
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks import Brick
 
 # The icon and the line of the name, at 100%.
 ICON = 64

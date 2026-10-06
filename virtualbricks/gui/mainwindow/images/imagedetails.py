@@ -41,22 +41,19 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango  # noqa: E402
 
+from virtualbricks.bricks.virtualmachine import ImageDraft  # noqa: E402
 from virtualbricks.config import images  # noqa: E402
+from virtualbricks.config.images import DiskUse, ImageInfo  # noqa: E402
+from virtualbricks.engine import LocalMachine  # noqa: E402
 from virtualbricks.gui import imageinfo  # noqa: E402
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
-from virtualbricks.gui.form import (  # noqa: E402
-    show_problem,
-)
+from virtualbricks.gui.form import Form, show_problem  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.panel import (  # noqa: E402
     Panel,
 )
 from virtualbricks.i18n import _, ngettext  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks.virtualmachine import ImageDraft
-    from virtualbricks.config.images import DiskUse, ImageInfo
-    from virtualbricks.engine import LocalMachine
-    from virtualbricks.gui.form import Form
     from virtualbricks.remote.client import RemoteMachine
 
 GAP = 8

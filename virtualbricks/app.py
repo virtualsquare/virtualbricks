@@ -28,14 +28,14 @@ from typing import IO, TYPE_CHECKING, Any, Protocol, TypeVar
 
 from twisted.python import usage, reflect
 from twisted.internet import defer, task
-from twisted.logger import textFileLogObserver
+from twisted.logger import ILogObserver, textFileLogObserver
 
 from virtualbricks import locations, locks
 from virtualbricks.console import wire
 
 if TYPE_CHECKING:  # pragma: no cover
+    # posixbase loads TCP and TLS, which --command goes without
     from twisted.internet.posixbase import PosixReactorBase
-    from twisted.logger import ILogObserver
 
     from virtualbricks.brickfactory import Application
 

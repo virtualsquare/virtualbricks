@@ -49,22 +49,21 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
 from twisted.internet import defer, threads
+from twisted.python.failure import Failure
 
 from virtualbricks import errors
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks.virtualmachine import Image
 from virtualbricks.config import images
+from virtualbricks.config.images import ImageInfo
 from virtualbricks.config.workspace import Workspace, copy_sparse
+from virtualbricks.engine import Engine
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.gui.pathentry import PathCompletion
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.python.failure import Failure
-
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks.virtualmachine import Image
-    from virtualbricks.config.images import ImageInfo
-    from virtualbricks.engine import Engine
     from virtualbricks.remote.client import RemoteWorkspace
 
 MARGIN = 18

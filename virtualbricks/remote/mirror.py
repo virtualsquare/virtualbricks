@@ -46,12 +46,15 @@ from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, NoReturn, cast
 
 from twisted.internet import defer
+from twisted.internet.interfaces import IReactorTime
 from twisted.logger import Logger
 from twisted.protocols import amp
 
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks import Brick
 from virtualbricks.bricks.event import Event, EventConfig, is_event
+from virtualbricks.bricks.plug import Plug
+from virtualbricks.bricks.sock import Sock
 from virtualbricks.bricks.virtualmachine import (
     VirtualMachine,
     hostonly_sock,
@@ -70,10 +73,6 @@ from virtualbricks.remote import commands
 from virtualbricks.remote.commands import BRICK, EVENT, IMAGE
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IReactorTime
-
-    from virtualbricks.bricks.plug import Plug
-    from virtualbricks.bricks.sock import Sock
     from virtualbricks.remote.follower import Item
 
 # What the Virtualbricks there sends: JSON's types.

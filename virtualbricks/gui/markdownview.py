@@ -39,7 +39,7 @@ from __future__ import annotations
 
 import dataclasses
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from urllib.parse import urlsplit
 
 import gi
@@ -48,6 +48,7 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Gdk, GdkPixbuf, GLib, Gtk, Pango  # noqa: E402
+from markdown_it.token import Token  # noqa: E402
 from twisted.internet import defer  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
@@ -56,9 +57,6 @@ from virtualbricks.markdown import (
     picture_path,
     plain_text,
 )  # noqa: E402
-
-if TYPE_CHECKING:  # pragma: no cover
-    from markdown_it.token import Token
 
 logger = Logger()
 cannot_open_link = "Cannot open {uri}: {error}"

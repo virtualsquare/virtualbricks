@@ -32,7 +32,7 @@ from __future__ import annotations
 import itertools
 import os
 from collections.abc import Iterable, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import gi
 
@@ -40,25 +40,19 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from twisted.internet import defer
 from twisted.logger import Logger
+from twisted.python.failure import Failure
 
 from virtualbricks import errors
-from virtualbricks.bricks import is_running
-from virtualbricks.bricks.event import is_event
-from virtualbricks.bricks.eventaction import StartAction
+from virtualbricks.bricks import Brick, is_running
+from virtualbricks.bricks.event import Event, is_event
+from virtualbricks.bricks.eventaction import StartAction, StoredAction
+from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.virtualmachine import is_virtualmachine
 from virtualbricks.console import ampcommands, ampwire
+from virtualbricks.engine import Engine
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.dialogs.base import Window, action_dialog, text_label
 from virtualbricks.i18n import _, ngettext
-
-if TYPE_CHECKING:  # pragma: no cover
-    from twisted.python.failure import Failure
-
-    from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.event import Event
-    from virtualbricks.bricks.eventaction import StoredAction
-    from virtualbricks.bricks.plug import Plug
-    from virtualbricks.engine import Engine
 
 logger = Logger()
 not_deleted = "Cannot delete {name}: {error}"

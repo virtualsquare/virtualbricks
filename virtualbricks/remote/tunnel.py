@@ -40,12 +40,21 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, NoReturn
 
 from twisted.internet import defer, endpoints, error, protocol
+from twisted.internet.interfaces import (
+    IAddress,
+    IConnector,
+    IListeningPort,
+    IReactorUNIX,
+)
+from twisted.internet.posixbase import PosixReactorBase
 from twisted.internet.protocol import connectionDone
 from twisted.logger import Logger
 from twisted.protocols import amp
+from twisted.python.failure import Failure
 
 from virtualbricks import locations
-from virtualbricks.bricks import TermProtocol, is_running
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks import Brick, TermProtocol, is_running
 from virtualbricks.bricks.brickinfo import NO_CONSOLE
 from virtualbricks.bricks.virtualmachine import is_virtualmachine
 from virtualbricks.config.settings import get_setting
@@ -54,17 +63,6 @@ from virtualbricks.i18n import _
 from virtualbricks.remote import commands
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import (
-        IAddress,
-        IConnector,
-        IListeningPort,
-        IReactorUNIX,
-    )
-    from twisted.internet.posixbase import PosixReactorBase
-    from twisted.python.failure import Failure
-
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks import Brick
     from virtualbricks.remote.follower import Connection as _Base
 else:
     _Base = amp.CommandLocator

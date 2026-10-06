@@ -40,19 +40,18 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 from twisted.internet import defer, task
+from twisted.internet.interfaces import IReactorCore
 from twisted.logger import Logger
+from twisted.python.failure import Failure
 
 from virtualbricks import i18n, locations
 from virtualbricks.i18n import _, ngettext
+from virtualbricks.locks import Lock
 from virtualbricks.migrate import engine
 from virtualbricks.config.report import ERROR, INFO, WARNING
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IReactorCore
-    from twisted.python.failure import Failure
     from typing_extensions import Unpack
-
-    from virtualbricks.locks import Lock
 
 logger = Logger()
 migration_failed = "The migration stopped on an error"

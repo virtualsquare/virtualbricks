@@ -22,9 +22,9 @@ from __future__ import annotations
 
 import os
 from collections.abc import Iterable
-from typing import TYPE_CHECKING
 
-from virtualbricks.bricks.virtualmachine import is_virtualmachine
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks.virtualmachine import Image, is_virtualmachine
 from virtualbricks.console.command import (
     Arg,
     CommandError,
@@ -35,10 +35,6 @@ from virtualbricks.console.command import (
 )
 from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks.virtualmachine import Image
 
 IMAGE = Named(
     lambda factory, name: factory.get_image(name),

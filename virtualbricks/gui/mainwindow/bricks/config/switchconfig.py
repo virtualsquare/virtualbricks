@@ -22,13 +22,9 @@ The panel of a switch: its ports, hub mode and fast spanning tree.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
+from virtualbricks.gui.form import Form
 from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
 from virtualbricks.i18n import _
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.form import Form
 
 
 class SwitchPanel(Panel):

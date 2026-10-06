@@ -42,6 +42,7 @@ from collections.abc import Callable, Collection, Iterator
 from typing import TYPE_CHECKING, TypeAlias, TypedDict, cast
 
 from virtualbricks import errors, locations
+from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
     Choice,
     Mac,
@@ -64,6 +65,9 @@ from virtualbricks.config.tomlfile import (
     FORMAT_NOTE,
     DecodeError,
     Note,
+    Notes,
+    Table,
+    Value,
     dump_toml,
     load_toml,
 )
@@ -73,8 +77,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.bricks import Brick
     from virtualbricks.bricks.event import Event
-    from virtualbricks.config.report import Report
-    from virtualbricks.config.tomlfile import Notes, Table, Value
     from virtualbricks.bricks.plug import Plug
     from virtualbricks.bricks.sock import Sock
     from virtualbricks.bricks.virtualmachine import HostonlySock

@@ -31,7 +31,7 @@ above every key.
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, TypeAlias, cast
+from typing import TypeAlias, cast
 
 import attr
 from twisted.internet import defer
@@ -43,6 +43,7 @@ from virtualbricks.i18n import N_
 from virtualbricks.observable import Observable, Signal
 from virtualbricks.config.schema import (
     Bool,
+    Kind,
     ListOf,
     Path,
     Record,
@@ -59,13 +60,10 @@ from virtualbricks.config.schema import (
 from virtualbricks.config.tomlfile import (
     FORMAT_NOTE,
     DecodeError,
+    Table,
     dump_toml,
     load_toml,
 )
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.config.schema import Kind
-    from virtualbricks.config.tomlfile import Table
 
 # The settings are strings and booleans.
 SettingValue: TypeAlias = str | bool

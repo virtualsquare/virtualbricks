@@ -44,8 +44,19 @@ import os
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, NoReturn, TypeAlias, cast
 
-from twisted.internet import defer, error, protocol
-from twisted.internet.interfaces import IHandshakeListener
+from OpenSSL.crypto import X509
+from twisted.internet import defer, error, protocol, ssl
+from twisted.internet.address import IPv4Address, IPv6Address
+from twisted.internet.interfaces import (
+    IAddress,
+    IDelayedCall,
+    IHandshakeListener,
+    IListeningPort,
+    ISSLTransport,
+    ITCPTransport,
+    ITransport,
+)
+from twisted.internet.posixbase import PosixReactorBase
 from twisted.internet.protocol import connectionDone
 from twisted.logger import Logger
 from twisted.protocols import amp, basic
@@ -53,6 +64,7 @@ from twisted.python.failure import Failure
 from zope.interface import implementer
 
 from virtualbricks import __version__, locations, locks
+from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.config.workspace import projects
 from virtualbricks.console import ampcommands, ampgen, ampwire, wire
 from virtualbricks.console.command import (
@@ -73,21 +85,6 @@ from virtualbricks.remote import (
 )
 
 if TYPE_CHECKING:  # pragma: no cover
-    from OpenSSL.crypto import X509
-    from twisted.internet import ssl
-    from twisted.internet.address import IPv4Address, IPv6Address
-    from twisted.internet.interfaces import (
-        IAddress,
-        IDelayedCall,
-        IListeningPort,
-        ISSLTransport,
-        ITCPTransport,
-        ITransport,
-    )
-    from twisted.internet.posixbase import PosixReactorBase
-
-    from virtualbricks.brickfactory import BrickFactory
-
     # a mixin: what it works on comes from the protocol that takes it
     _Connection = protocol.Protocol
 else:

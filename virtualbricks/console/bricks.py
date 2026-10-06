@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import signal
 from collections.abc import Generator, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from twisted.internet import defer, error
 from twisted.logger import Logger
@@ -36,7 +36,8 @@ from twisted.python.failure import Failure
 
 from virtualbricks import bricks as bricks_module
 from virtualbricks import errors
-from virtualbricks.bricks import brickinfo
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks import Brick, brickinfo
 from virtualbricks.bricks.brickinfo import (
     LABELS,
     NEW_KINDS,
@@ -44,15 +45,19 @@ from virtualbricks.bricks.brickinfo import (
     issue,
     new_name,
 )
-from virtualbricks.bricks.draft import apply
+from virtualbricks.bricks.draft import Draft, Problem, apply
+from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.sock import Sock
 from virtualbricks.bricks.virtualmachine import (
+    HostonlySock,
+    VirtualMachine,
     hostonly_sock,
     is_virtualmachine,
     resume as resume_vm,
     suspend as suspend_vm,
 )
 from virtualbricks.config.schema import (
+    Kind as FieldKind,
     field_default,
     field_help,
     field_names,
@@ -77,17 +82,6 @@ from virtualbricks.console.command import (
 from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _
 from virtualbricks.bricks import is_running
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.draft import Draft, Problem
-    from virtualbricks.bricks.plug import Plug
-    from virtualbricks.bricks.virtualmachine import (
-        VirtualMachine,
-        HostonlySock,
-    )
-    from virtualbricks.config.schema import Kind as FieldKind
 
 logger = Logger()
 start_failed = "Starting {name} failed"

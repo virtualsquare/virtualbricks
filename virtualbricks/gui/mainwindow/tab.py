@@ -29,7 +29,7 @@ of the bricks and the events, their items and where they open.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TypeVar
 
 import gi
 
@@ -37,9 +37,8 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.observable import Signal
+from virtualbricks.brickfactory import BrickFactory  # noqa: E402
+from virtualbricks.observable import Signal  # noqa: E402
 
 B = TypeVar("B", bound=Gtk.Button)
 

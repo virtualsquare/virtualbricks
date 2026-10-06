@@ -44,23 +44,20 @@ for what only keeps the brick from starting.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango  # noqa: E402
 
-from virtualbricks.bricks.draft import Problem  # noqa: E402
+from virtualbricks.bricks.draft import Draft, Problem  # noqa: E402
+from virtualbricks.bricks.sock import Sock  # noqa: E402
 from virtualbricks.config.schema import Float, info_of, kind_of  # noqa: E402
+from virtualbricks.engine import Engine  # noqa: E402
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.gui.pathentry import PathCompletion  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks.draft import Draft
-    from virtualbricks.bricks.sock import Sock
-    from virtualbricks.engine import Engine
 
 # Between the sections, and around the texts of a row, in pixels.
 GAP = 8

@@ -30,11 +30,19 @@ import os
 import shutil
 import stat
 from collections.abc import Collection, Iterator
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import Final, Literal, TypeAlias
 
 import attr
+from twisted.logger import Logger
 
-from virtualbricks.config.report import ERROR, INFO, WARNING, Report
+from virtualbricks.config.report import (
+    ERROR,
+    INFO,
+    WARNING,
+    Level,
+    Message,
+    Report,
+)
 from virtualbricks.config.projectfile import (
     upgrade_readme,
     write_project_file,
@@ -48,16 +56,10 @@ from virtualbricks.config.settings import (
     write_settings,
     write_state,
 )
-from virtualbricks.config.tomlfile import DecodeError, load_toml
+from virtualbricks.config.tomlfile import DecodeError, Table, load_toml
 from virtualbricks.config.schema import load_record
 from virtualbricks import locations, locks
 from virtualbricks.migrate import convert, legacy
-
-if TYPE_CHECKING:  # pragma: no cover
-    from twisted.logger import Logger
-
-    from virtualbricks.config.report import Level, Message
-    from virtualbricks.config.tomlfile import Table
 
 Status = Literal["waiting", "migrating", "migrated", "failed", "skipped"]
 

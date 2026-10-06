@@ -43,15 +43,13 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # noqa: E402
 
-from virtualbricks.engine import LocalEngine
-from virtualbricks.gui.form import Form
+from virtualbricks.bricks.draft import Draft
+from virtualbricks.engine import Engine, LocalEngine
+from virtualbricks.gui.form import Form, Row
 from virtualbricks.i18n import _
 from virtualbricks.bricks import is_running
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks.draft import Draft
-    from virtualbricks.engine import Engine
-    from virtualbricks.gui.form import Row
     from virtualbricks.gui.mainwindow.window import VBGUI
 
 

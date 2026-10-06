@@ -44,15 +44,26 @@ from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, Literal, NoReturn, TypeVar
 
 from twisted.internet import defer, endpoints, error
+from twisted.internet.interfaces import IStreamClientEndpoint, ITransport
+from twisted.internet.posixbase import PosixReactorBase
 from twisted.internet.protocol import connectionDone
 from twisted.protocols import amp
 from twisted.python.failure import Failure
 
 from virtualbricks import __version__, locations
 from virtualbricks.brickfactory import normalize_name
-from virtualbricks.bricks.brickinfo import NEW_KINDS, Issue
-from virtualbricks.bricks.virtualmachine import UsbDevice, is_virtualmachine
-from virtualbricks.config.images import IMAGE_FOLDER, parse_info
+from virtualbricks.bricks import Brick
+from virtualbricks.bricks.brickinfo import NEW_KINDS, Issue, Kind
+from virtualbricks.bricks.draft import Draft
+from virtualbricks.bricks.event import Event
+from virtualbricks.bricks.virtualmachine import (
+    Image,
+    UsbDevice,
+    VirtualMachine,
+    is_virtualmachine,
+)
+from virtualbricks.config.images import IMAGE_FOLDER, ImageInfo, parse_info
+from virtualbricks.config.report import Report
 from virtualbricks.config.workspace import (
     TAKEN,
     DiskUsage,
@@ -62,39 +73,25 @@ from virtualbricks.config.workspace import (
     name_problem,
     room_problem,
 )
-from virtualbricks.config.settings import setting_kind
-from virtualbricks.config.schema import kind_of
+from virtualbricks.config.settings import SettingValue, setting_kind
+from virtualbricks.config.schema import Kind as FieldKind, kind_of
 from virtualbricks.console import ampcommands, ampwire, wire
 from virtualbricks.console import client as console_client
 from virtualbricks.i18n import _
 from virtualbricks.programs import (
     Answer,
     FolderPrograms,
+    QemuInfo,
     parse_machine_properties,
     qemu_info,
 )
 from virtualbricks.remote import commands
 from virtualbricks.remote.commands import BRICK, EVENT, IMAGE
 from virtualbricks.remote.drafts import what_changed
-from virtualbricks.remote.follower import kind_of as kind_of_item
-from virtualbricks.remote.mirror import Mirroring
+from virtualbricks.remote.follower import Item, kind_of as kind_of_item
+from virtualbricks.remote.mirror import Json, MirrorFactory, Mirroring
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IStreamClientEndpoint, ITransport
-    from twisted.internet.posixbase import PosixReactorBase
-
-    from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.brickinfo import Kind
-    from virtualbricks.bricks.draft import Draft
-    from virtualbricks.bricks.event import Event
-    from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
-    from virtualbricks.config.images import ImageInfo
-    from virtualbricks.config.report import Report
-    from virtualbricks.config.schema import Kind as FieldKind
-    from virtualbricks.config.settings import SettingValue
-    from virtualbricks.programs import QemuInfo
-    from virtualbricks.remote.follower import Item
-    from virtualbricks.remote.mirror import Json, MirrorFactory
     from virtualbricks.remote.tunnel import Consoles
 
 _T = TypeVar("_T")
@@ -868,8 +865,6 @@ class RemoteEngine:
         return self.call(ampcommands.ProjectSave)
 
     def open_project(self, name: str) -> defer.Deferred[Report]:
-        from virtualbricks.config.report import Report
-
         # the pushes bring the project before the answer
         return self._then(
             self.call(ampcommands.ProjectOpen, name=name), Report
@@ -878,8 +873,6 @@ class RemoteEngine:
     def new_project(
         self, name: str, description: str = ""
     ) -> defer.Deferred[Report]:
-        from virtualbricks.config.report import Report
-
         making = self.call(ampcommands.ProjectNew, name=name)
         if description:
             # its README, once it is open there

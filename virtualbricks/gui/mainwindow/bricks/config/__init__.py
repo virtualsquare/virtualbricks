@@ -31,6 +31,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from virtualbricks.bricks import Brick
+
 from .captureconfig import CapturePanel
 from .netemuconfig import NetemuPanel
 from .switchconfig import SwitchPanel
@@ -42,7 +44,6 @@ from .vm.panel import VirtualMachinePanel
 from .wireconfig import WirePanel
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks import Brick
     from virtualbricks.gui.mainwindow.window import VBGUI
 
     from .panel import Panel

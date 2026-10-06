@@ -40,13 +40,14 @@ event saved without changes stays the same.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # noqa: E402
 
+from virtualbricks.brickfactory import BrickFactory  # noqa: E402
+from virtualbricks.gui.form import Form  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.panel import (  # noqa: E402
     Panel,
 )
@@ -58,10 +59,6 @@ from virtualbricks.bricks.eventinfo import (  # noqa: E402
 )
 from virtualbricks.gui.mainwindow.tab import icon_button  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.gui.form import Form
 
 # Between the widgets, in pixels.
 GAP = 8

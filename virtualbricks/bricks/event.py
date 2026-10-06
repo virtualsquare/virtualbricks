@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import attr
 from twisted.internet import defer, reactor
+from twisted.internet.interfaces import IDelayedCall, IReactorTime
 
 from virtualbricks import errors
 from virtualbricks.bricks import Base, BaseConfig
@@ -39,7 +40,6 @@ from virtualbricks.console.command import CommandError
 from virtualbricks.config.schema import Int, ListOf, define, field
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IDelayedCall, IReactorTime
     from typing_extensions import TypeIs
 
 process_ended = "Process ended with exit code {code}"

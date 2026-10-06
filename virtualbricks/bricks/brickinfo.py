@@ -47,6 +47,7 @@ import attr
 
 from virtualbricks.bricks.capture import Capture
 from virtualbricks.bricks.netemu import Netemu
+from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.router import Router
 from virtualbricks.bricks.sock import Sock
 from virtualbricks.bricks.switch import Switch
@@ -62,7 +63,6 @@ from virtualbricks.bricks import Brick, is_running
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks.plug import Plug
 
 # Between the parts of a summary.
 SEPARATOR = " · "

@@ -32,6 +32,7 @@ from virtualbricks.bricks.command import Command, Prepared, socket_path
 from virtualbricks.bricks.draft import Draft, Problem
 from virtualbricks.bricks.virtualmachine import is_virtualmachine
 from virtualbricks.bricks.wire import Wire
+from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
     Bool,
     Float,
@@ -49,14 +50,12 @@ from virtualbricks.config.schema import (
     notes,
     rename_references,
 )
+from virtualbricks.config.tomlfile import Notes, Table
 from virtualbricks.i18n import N_, _
-from virtualbricks.programs import ProgramError
+from virtualbricks.programs import ProgramError, VdeInfo
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.config.report import Report
-    from virtualbricks.config.tomlfile import Notes, Table
-    from virtualbricks.programs import VdeInfo
 
 # The options that Netemu passes to its program.
 OPTIONS = ("-v", "-b", "-d", "-c", "-l", "--nofifo", "-M")

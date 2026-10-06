@@ -43,29 +43,26 @@ import os
 import sys
 import termios
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 from twisted.conch import manhole, recvline
 from twisted.conch.insults import insults
 from twisted.internet import defer, stdio
+from twisted.internet.base import ReactorBase
+from twisted.internet.interfaces import IPushProducer, IReactorTime
 from twisted.internet.protocol import connectionDone
 from twisted.logger import Logger
 from twisted.protocols import basic
 from twisted.python.failure import Failure
 
 from virtualbricks import __version__, locations
+from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.config.workspace import projects
 from virtualbricks.console.command import CommandError, Context
 from virtualbricks.console.dispatch import run
 from virtualbricks.console.lineedit import ReadlineKeys
 from virtualbricks.console.parser import complete
 from virtualbricks.i18n import _
-
-if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.base import ReactorBase
-    from twisted.internet.interfaces import IPushProducer, IReactorTime
-
-    from virtualbricks.brickfactory import BrickFactory
 
 logger = Logger()
 history_error = "The history of the console can't be written"

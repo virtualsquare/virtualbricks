@@ -36,19 +36,18 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from twisted.internet import defer
+from twisted.python.failure import Failure
 
 from virtualbricks import errors
 from virtualbricks.brickfactory import normalize_name
 from virtualbricks.bricks.event import is_event
 from virtualbricks.bricks.virtualmachine import is_disk_image
 from virtualbricks.console import ampcommands, ampwire
+from virtualbricks.engine import Engine
 from virtualbricks.gui.dialogs.base import Window, action_dialog, text_label
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.python.failure import Failure
-
-    from virtualbricks.engine import Engine
     from virtualbricks.remote.follower import Item
 
 

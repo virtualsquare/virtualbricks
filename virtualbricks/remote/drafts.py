@@ -36,14 +36,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks.draft import Draft, apply
 from virtualbricks.bricks.event import is_event
 from virtualbricks.bricks.netemu import NetemuConfig, NetemuDraft
+from virtualbricks.bricks.plug import Plug
+from virtualbricks.bricks.sock import Sock
 from virtualbricks.bricks.virtualmachine import (
     DISK_IMAGES,
     Card,
     HostonlySock,
     ImageDraft,
+    VirtualMachine,
     VirtualMachineDraft,
     hostonly_sock,
     is_disk_image,
@@ -60,10 +64,6 @@ from virtualbricks.config.schema import (
 from virtualbricks.remote.commands import BRICK, EVENT, IMAGE
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks.plug import Plug
-    from virtualbricks.bricks.sock import Sock
-    from virtualbricks.bricks.virtualmachine import VirtualMachine
     from virtualbricks.remote.follower import Item
 
 

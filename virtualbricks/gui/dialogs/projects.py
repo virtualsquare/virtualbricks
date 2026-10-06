@@ -40,8 +40,12 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gio, GLib, Gtk, Pango
 from twisted.internet import defer
 from twisted.logger import Logger
+from twisted.python.failure import Failure
 
 from virtualbricks import errors
+from virtualbricks.config.report import Report
+from virtualbricks.config.workspace import DiskUsage, ProjectSummary, Workspace
+from virtualbricks.engine import Engine
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.markdownview import MarkdownView
 from virtualbricks.gui.dialogs import projectname
@@ -51,15 +55,6 @@ from virtualbricks.i18n import ngettext
 from virtualbricks.markdown import first_line
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.python.failure import Failure
-
-    from virtualbricks.config.report import Report
-    from virtualbricks.config.workspace import (
-        DiskUsage,
-        ProjectSummary,
-        Workspace,
-    )
-    from virtualbricks.engine import Engine
     from virtualbricks.gui.mainwindow.window import VBGUI
     from virtualbricks.remote.client import RemoteWorkspace
 

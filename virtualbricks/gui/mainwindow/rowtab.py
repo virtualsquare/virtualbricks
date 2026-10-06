@@ -60,7 +60,13 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango  # noqa: E402
 from twisted.internet import defer  # noqa: E402
+from twisted.logger import Logger  # noqa: E402
+from twisted.python.failure import Failure  # noqa: E402
 
+from virtualbricks.brickfactory import BrickFactory  # noqa: E402
+from virtualbricks.bricks import Brick  # noqa: E402
+from virtualbricks.bricks.event import Event  # noqa: E402
+from virtualbricks.bricks.virtualmachine import Image  # noqa: E402
 from virtualbricks.gui import graphics  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.panel import (
     Panel,
@@ -73,17 +79,10 @@ from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
 )
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
+from virtualbricks.observable import Signal  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.logger import Logger
-    from twisted.python.failure import Failure
-
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.event import Event
-    from virtualbricks.bricks.virtualmachine import Image
     from virtualbricks.gui.mainwindow.window import VBGUI
-    from virtualbricks.observable import Signal
 
 # The objects of a tab: bricks, events or disk images.
 T = TypeVar("T", bound="Brick | Event | Image")

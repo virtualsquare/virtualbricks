@@ -35,15 +35,15 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 import attr
 from twisted.internet import defer, utils
 
+from virtualbricks.bricks import Brick
+from virtualbricks.config.report import Report
 from virtualbricks.config.schema import Kind
+from virtualbricks.config.tomlfile import Value
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks import Brick
     from virtualbricks.bricks.event import Event
-    from virtualbricks.config.report import Report
-    from virtualbricks.config.tomlfile import Value
 
 
 def _target(factory: BrickFactory, name: str) -> Brick | Event:

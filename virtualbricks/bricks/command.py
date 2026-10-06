@@ -29,15 +29,16 @@ nothing.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import attr
 
-from virtualbricks.programs import PACKAGES, Missing, ProgramError
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks.plug import Plug
-    from virtualbricks.programs import QemuInfo, VdeInfo
+from virtualbricks.bricks.plug import Plug
+from virtualbricks.programs import (
+    PACKAGES,
+    Missing,
+    ProgramError,
+    QemuInfo,
+    VdeInfo,
+)
 
 __all__ = ["Command", "Prepared", "joined", "socket_path", "vde_program"]
 

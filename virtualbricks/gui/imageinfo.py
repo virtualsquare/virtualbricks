@@ -36,14 +36,11 @@ from __future__ import annotations
 import enum
 import os
 from collections.abc import Iterable, Sequence
-from typing import TYPE_CHECKING
 
+from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
+from virtualbricks.config.images import DiskUse, ImageInfo
 from virtualbricks.i18n import _, ngettext
 from virtualbricks.locations import short_path
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
-    from virtualbricks.config.images import DiskUse, ImageInfo
 
 # Between the parts of a line.
 SEPARATOR = " · "

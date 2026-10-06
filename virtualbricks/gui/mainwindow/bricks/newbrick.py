@@ -36,7 +36,6 @@ its tooltip says why.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 import gi
 
@@ -44,15 +43,17 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import GdkPixbuf, GLib, Gtk, Pango  # noqa: E402
 
 from virtualbricks import errors  # noqa: E402
+from virtualbricks.bricks import Brick  # noqa: E402
+from virtualbricks.engine import Engine  # noqa: E402
 from virtualbricks.gui import graphics  # noqa: E402
-from virtualbricks.bricks.brickinfo import NEW_KINDS, new_name  # noqa: E402
+from virtualbricks.bricks.brickinfo import (  # noqa: E402
+    NEW_KINDS,
+    Issue,
+    Kind,
+    new_name,
+)
 from virtualbricks.gui.mainwindow.rowtab import styled  # noqa: E402
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.brickinfo import Issue, Kind
-    from virtualbricks.engine import Engine
 
 ICON_SIZE = 24
 # The longest line, in characters: the tooltip has it whole.

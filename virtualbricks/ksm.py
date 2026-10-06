@@ -33,16 +33,14 @@ from __future__ import annotations
 
 import os
 
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from twisted.internet import defer, error, protocol
+from twisted.internet.interfaces import IReactorProcess
 from twisted.logger import Logger
+from twisted.python.failure import Failure
 
 from virtualbricks.sudo import sudo_command
-
-if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IReactorProcess
-    from twisted.python.failure import Failure
 
 KSM_PATH = "/sys/kernel/mm/ksm/run"
 logger = Logger()

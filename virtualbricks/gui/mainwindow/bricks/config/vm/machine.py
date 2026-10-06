@@ -26,12 +26,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from virtualbricks.bricks.virtualmachine import VirtualMachineDraft
+from virtualbricks.gui.form import Form
 from virtualbricks.gui.mainwindow.bricks.config.picker import Option, Picker
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks.virtualmachine import VirtualMachineDraft
-    from virtualbricks.gui.form import Form
     from virtualbricks.gui.mainwindow.bricks.config.vm.panel import (
         Page,
         VirtualMachinePanel,

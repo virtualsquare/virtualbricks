@@ -30,12 +30,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet import defer
+from twisted.internet.interfaces import IReactorTime
 from twisted.logger import Logger
 from twisted.python.failure import Failure
 
 from virtualbricks import errors
 
 # the modules of the nouns declare their commands
+from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.console import (  # noqa: F401
     bricks,
     events,
@@ -49,9 +51,6 @@ from virtualbricks.console.parser import Parsed, bind, line_of, parse
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IReactorTime
-
-    from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.console.terminal import ConsoleLine
 
 logger = Logger()

@@ -26,14 +26,17 @@ import re
 import copy
 import itertools
 from collections.abc import Iterator, Mapping
+from types import TracebackType
 from typing import IO, TYPE_CHECKING, Any, TypeVar
 
 import attr
 from twisted.application import app
 from twisted.internet import defer, task
+from twisted.internet.posixbase import PosixReactorBase
 from twisted.python import failure
 from twisted.logger import (
     FilteringLogObserver,
+    ILogObserver,
     LogLevel,
     LogLevelFilterPredicate,
     Logger,
@@ -42,6 +45,7 @@ from twisted.logger import (
 )
 
 from virtualbricks import errors, locations
+from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.schema import field_values, references
 from virtualbricks.config.settings import (
     get_setting,
@@ -51,32 +55,28 @@ from virtualbricks.config.settings import (
 )
 from virtualbricks.config.workspace import projects
 from virtualbricks import i18n
-from virtualbricks.bricks import capture, netemu, router, switch
+from virtualbricks.bricks import Brick, capture, netemu, router, switch
 from virtualbricks.bricks import switchwrapper, tap, tunnelconnect
 from virtualbricks.bricks import tunnellisten, virtualmachine, wire
 from virtualbricks.errors import NameAlreadyInUseError
 from virtualbricks.bricks.event import Event, is_event
-from virtualbricks.bricks.eventaction import StartAction, StopAction
+from virtualbricks.bricks.eventaction import (
+    StartAction,
+    StopAction,
+    StoredAction,
+)
 from virtualbricks.bricks.sock import Sock
 from virtualbricks.i18n import _
 from virtualbricks.observable import Observable, Signal
 from virtualbricks.bricks import is_running
-from virtualbricks.bricks.virtualmachine import is_disk_image
+from virtualbricks.bricks.virtualmachine import (
+    Disk,
+    HostonlySock,
+    Image,
+    is_disk_image,
+)
 
 if TYPE_CHECKING:  # pragma: no cover
-    from types import TracebackType
-
-    from twisted.internet.posixbase import PosixReactorBase
-    from twisted.logger import ILogObserver
-
-    from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.eventaction import StoredAction
-    from virtualbricks.bricks.plug import Plug
-    from virtualbricks.bricks.virtualmachine import (
-        Disk,
-        HostonlySock,
-        Image,
-    )
     from virtualbricks.remote.follower import Item
 
 T = TypeVar("T")

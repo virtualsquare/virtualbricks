@@ -32,7 +32,7 @@ import tempfile
 import textwrap
 import time
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import gi
 
@@ -44,12 +44,14 @@ from twisted.logger import Logger
 
 from virtualbricks import __version__
 from virtualbricks.gui import graphics
-from virtualbricks.gui.messages import parse_filter, type_name
+from virtualbricks.gui.messages import (
+    Entry,
+    MessageLog,
+    parse_filter,
+    type_name,
+)
 from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.i18n import _, ngettext
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.messages import Entry, MessageLog
 
 logger = Logger()
 

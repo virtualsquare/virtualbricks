@@ -35,6 +35,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, Gio, Gtk  # noqa: E402
 
+from virtualbricks.bricks.virtualmachine import Image  # noqa: E402
 from virtualbricks.gui.mainwindow import tab  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
     MenuActions,
@@ -50,7 +51,6 @@ from virtualbricks.gui.dialogs.renamedialog import RenameDialog  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks.virtualmachine import Image
     from virtualbricks.gui.mainwindow.window import VBGUI
 
 GROUP = "image"

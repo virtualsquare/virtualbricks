@@ -38,6 +38,7 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, GdkPixbuf, Gio, Gtk  # noqa: E402
 
+from virtualbricks.brickfactory import BrickFactory  # noqa: E402
 from virtualbricks.bricks import Brick, brickinfo, is_running  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks import brickmenu  # noqa: E402
 from virtualbricks.bricks.brickinfo import (  # noqa: E402
@@ -52,11 +53,10 @@ from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     RowList,
 )
 from virtualbricks.i18n import _  # noqa: E402
+from virtualbricks.observable import Signal  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.gui.mainwindow.window import VBGUI
-    from virtualbricks.observable import Signal
 
 DRAG_ICON_SIZE = 24
 TARGETS = [

@@ -39,6 +39,11 @@ from contextlib import AbstractContextManager
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, cast
 
 from twisted.internet import protocol, reactor, error, defer
+from twisted.internet.interfaces import (
+    IProcessTransport,
+    IReactorProcess,
+    IReactorTime,
+)
 from twisted.logger import Logger
 from twisted.python.failure import Failure
 
@@ -46,6 +51,7 @@ from virtualbricks import errors, observable, terminal
 from virtualbricks.bricks.command import Command, Prepared
 from virtualbricks.bricks.draft import Draft
 from virtualbricks.bricks.plug import Plug, link_loop
+from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
     Path,
     Ref,
@@ -58,24 +64,17 @@ from virtualbricks.config.schema import (
     rename_references,
 )
 from virtualbricks.config.settings import get_setting
+from virtualbricks.config.tomlfile import Notes, Table
 from virtualbricks.i18n import N_, _
 from virtualbricks.programs import programs
 from virtualbricks.sudo import sudo_command
 from virtualbricks.vde import which
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import (
-        IProcessTransport,
-        IReactorProcess,
-        IReactorTime,
-    )
-
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.bricks.event import Event
     from virtualbricks.bricks.sock import Sock
     from virtualbricks.bricks.virtualmachine import HostonlySock
-    from virtualbricks.config.report import Report
-    from virtualbricks.config.tomlfile import Notes, Table
 
 __all__ = [
     "Base",

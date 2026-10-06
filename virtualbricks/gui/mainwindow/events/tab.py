@@ -42,7 +42,9 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, Gio, Gtk  # noqa: E402
 from twisted.internet import reactor, task  # noqa: E402
+from twisted.internet.interfaces import IReactorTime  # noqa: E402
 
+from virtualbricks.brickfactory import BrickFactory  # noqa: E402
 from virtualbricks.bricks.draft import Draft  # noqa: E402
 from virtualbricks.bricks import eventinfo  # noqa: E402
 from virtualbricks.bricks.event import Event  # noqa: E402
@@ -69,13 +71,10 @@ from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import brick_signals  # noqa: E402
 from virtualbricks.i18n import _, ngettext  # noqa: E402
 from virtualbricks.bricks import Brick, is_running  # noqa: E402
+from virtualbricks.observable import Signal  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IReactorTime
-
-    from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.gui.mainwindow.window import VBGUI
-    from virtualbricks.observable import Signal
 
 # How often the countdown moves, in seconds.
 TICK = 1

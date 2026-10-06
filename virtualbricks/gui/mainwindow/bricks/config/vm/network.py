@@ -35,7 +35,11 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango  # noqa: E402
 
-from virtualbricks.bricks.virtualmachine import hostonly_sock  # noqa: E402
+from virtualbricks.bricks.draft import Problem  # noqa: E402
+from virtualbricks.bricks.virtualmachine import (  # noqa: E402
+    Card,
+    hostonly_sock,
+)
 from virtualbricks.gui.form import (  # noqa: E402
     show_problem,
     socket_name,
@@ -50,15 +54,13 @@ from virtualbricks.gui.mainwindow.bricks.config.vm.machine import (  # noqa: E40
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.nic import random_mac  # noqa: E402
+from virtualbricks.programs import QemuInfo  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks.draft import Problem
-    from virtualbricks.bricks.virtualmachine import Card
     from virtualbricks.gui.mainwindow.bricks.config.vm.panel import (
         Page,
         VirtualMachinePanel,
     )
-    from virtualbricks.programs import QemuInfo
 
 GAP = 8
 NOTHING = ""

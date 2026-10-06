@@ -21,12 +21,10 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Final, Literal
+from typing import Final, Literal
 
 import attr
-
-if TYPE_CHECKING:  # pragma: no cover
-    from twisted.logger import Logger
+from twisted.logger import Logger
 
 Level = Literal["info", "warning", "error"]
 

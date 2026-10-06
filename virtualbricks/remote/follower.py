@@ -46,8 +46,15 @@ from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 
 from twisted.internet import defer
+from twisted.internet.interfaces import (
+    IDelayedCall,
+    IReactorThreads,
+    IReactorTime,
+)
+from twisted.internet.posixbase import PosixReactorBase
 from twisted.logger import (
     ILogObserver,
+    LogEvent,
     LogLevel,
     Logger,
     LogPublisher,
@@ -58,6 +65,7 @@ from twisted.protocols import amp
 from zope.interface import implementer
 
 from virtualbricks import __version__, ksm, locations
+from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks import Base, Brick, is_running
 from virtualbricks.bricks.brickinfo import NEW_KINDS, issue
 from virtualbricks.bricks.event import Event, is_event
@@ -70,26 +78,16 @@ from virtualbricks.bricks.virtualmachine import (
 from virtualbricks.config import settings
 from virtualbricks.config.projectfile import brick_table
 from virtualbricks.config.schema import dump_record, field_names
-from virtualbricks.config.workspace import projects
+from virtualbricks.config.settings import SettingValue
+from virtualbricks.config.tomlfile import Table
+from virtualbricks.config.workspace import Workspace, projects
+from virtualbricks.observable import Callback, Signal
 from virtualbricks.programs import missing_programs, qemu_programs
 from virtualbricks.remote import commands
 from virtualbricks.remote.commands import BRICK, EVENT, IMAGE
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import (
-        IDelayedCall,
-        IReactorThreads,
-        IReactorTime,
-    )
-    from twisted.internet.posixbase import PosixReactorBase
-    from twisted.logger import LogEvent
-
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.config.settings import SettingValue
-    from virtualbricks.config.tomlfile import Table
-    from virtualbricks.config.workspace import Workspace
     from virtualbricks.console.control import InOrder
-    from virtualbricks.observable import Callback, Signal
 
 _T = TypeVar("_T")
 

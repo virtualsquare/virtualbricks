@@ -40,8 +40,11 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, GdkPixbuf, Gio, Gtk  # noqa: E402
 
+from virtualbricks.brickfactory import BrickFactory  # noqa: E402
+from virtualbricks.bricks import Brick  # noqa: E402
 from virtualbricks.bricks.virtualmachine import Image, ImageDraft  # noqa: E402
 from virtualbricks.config import images  # noqa: E402
+from virtualbricks.config.images import ImageInfo  # noqa: E402
 from virtualbricks.gui import imageinfo  # noqa: E402
 from virtualbricks.gui.imageinfo import LABELS, State  # noqa: E402
 from virtualbricks.gui.mainwindow.images import imagemenu  # noqa: E402
@@ -64,16 +67,13 @@ from virtualbricks.gui.dialogs.addimage import (  # noqa: E402
     NewDiskDialog,
 )
 from virtualbricks.i18n import _, ngettext  # noqa: E402
+from virtualbricks.observable import Signal  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks import Brick
-    from virtualbricks.config.images import ImageInfo
     from virtualbricks.gui.mainwindow.bricks.config.vm.imagepicker import (
         Infos,
     )
     from virtualbricks.gui.mainwindow.window import VBGUI
-    from virtualbricks.observable import Signal
 
 # The icon of an image, the first that the theme has.
 ICONS = ("drive-harddisk", "drive-harddisk-symbolic", "media-floppy")

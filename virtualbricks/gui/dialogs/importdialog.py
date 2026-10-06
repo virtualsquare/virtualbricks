@@ -31,21 +31,33 @@ from __future__ import annotations
 import collections
 import os
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango
 from twisted.logger import Logger
+from twisted.python.failure import Failure
 
-from virtualbricks.config.archive import ArchiveCancelled, inspect_archive
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.config.archive import (
+    ArchiveCancelled,
+    ArchiveContents,
+    ArchiveJob,
+    inspect_archive,
+)
 from virtualbricks.config.importing import (
+    ImageUse,
+    ImportPlan,
+    ImportResult,
+    MachinePath,
     import_project,
     plan_import,
     update_plan,
 )
-from virtualbricks.config.workspace import projects
+from virtualbricks.config.tomlfile import Table
+from virtualbricks.config.workspace import Workspace, projects
 from virtualbricks.config.archive import find_qemu_img
 from virtualbricks.config.importing import COPY, SKIP, USE
 from virtualbricks.gui.markdownview import MarkdownLabel
@@ -54,20 +66,6 @@ from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import ngettext
 from virtualbricks.markdown import first_paragraph
-
-if TYPE_CHECKING:  # pragma: no cover
-    from twisted.python.failure import Failure
-
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.config.archive import ArchiveContents, ArchiveJob
-    from virtualbricks.config.importing import (
-        ImageUse,
-        ImportPlan,
-        ImportResult,
-        MachinePath,
-    )
-    from virtualbricks.config.tomlfile import Table
-    from virtualbricks.config.workspace import Workspace
 
 logger = Logger()
 imported = 'Project imported as "{name}"'

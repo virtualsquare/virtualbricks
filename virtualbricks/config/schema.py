@@ -41,7 +41,7 @@ import ipaddress
 import re
 from collections.abc import Callable, Collection, Iterator
 from functools import partial
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, cast
+from typing import Any, ClassVar, Generic, TypeVar, cast
 
 import attr
 
@@ -49,12 +49,9 @@ import attr
 # not assigned, so that mypy's plugin of attrs knows the classes it makes.
 from attr import define
 
-from virtualbricks.config.tomlfile import Note
+from virtualbricks.config.report import Report
+from virtualbricks.config.tomlfile import Note, Notes, Table, Value
 from virtualbricks.nic import MAC_PATTERN
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.config.report import Report
-    from virtualbricks.config.tomlfile import Notes, Table, Value
 
 __all__ = [
     "Bool",

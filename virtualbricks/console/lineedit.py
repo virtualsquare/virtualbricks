@@ -44,9 +44,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, NamedTuple
 
 from twisted.conch.insults import insults
+from twisted.conch.recvline import HistoricRecvLine
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.conch.recvline import HistoricRecvLine as _Line
+    _Line = HistoricRecvLine
 else:
     # a mixin: what it works on comes from the line that takes it
     _Line = object

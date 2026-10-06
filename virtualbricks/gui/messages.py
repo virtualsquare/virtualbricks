@@ -28,18 +28,21 @@ from __future__ import annotations
 
 import collections
 import itertools
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import Any, Protocol
 
 import attr
 from gi.repository import GLib
-from twisted.logger import ILogObserver, LogLevel, eventAsText, formatEvent
+from twisted.logger import (
+    ILogObserver,
+    LogEvent,
+    LogLevel,
+    eventAsText,
+    formatEvent,
+)
 from zope.interface import implementer
 
 from virtualbricks.bricks import Base
 from virtualbricks.i18n import _
-
-if TYPE_CHECKING:  # pragma: no cover
-    from twisted.logger import LogEvent
 
 # The output of a brick's program is logged with one of these as "stream".
 STREAMS = ("stdout", "stderr")

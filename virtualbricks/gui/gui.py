@@ -23,8 +23,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, TypeVar
 
+from constantly import NamedConstant
 from gi.repository import Gtk
 from twisted.internet import defer
+from twisted.internet.posixbase import PosixReactorBase
 from twisted.python.failure import Failure
 from twisted.logger import (
     FilteringLogObserver,
@@ -40,7 +42,9 @@ from twisted.logger import (
 from zope.interface import implementer
 
 from virtualbricks import brickfactory, errors, i18n
+from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.config.projectfile import ProjectFormatError
+from virtualbricks.config.report import Report
 from virtualbricks.config.settings import (
     get_setting,
     load_settings,
@@ -55,11 +59,6 @@ from virtualbricks.gui.trash import DesktopTrash
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.posixbase import PosixReactorBase
-    from constantly import NamedConstant
-
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.config.report import Report
     from virtualbricks.remote.client import RemoteEngine, Windows
     from virtualbricks.remote.mirror import MirrorFactory
     from virtualbricks.remote.tunnel import Consoles

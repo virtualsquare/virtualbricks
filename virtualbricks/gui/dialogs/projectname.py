@@ -35,15 +35,14 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango
 from twisted.internet import defer
 from twisted.logger import Logger
+from twisted.python.failure import Failure
 
 from virtualbricks import errors
+from virtualbricks.config.workspace import Workspace
 from virtualbricks.i18n import _
 from virtualbricks.gui.pango import pango_attr_list
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.python.failure import Failure
-
-    from virtualbricks.config.workspace import Workspace
     from virtualbricks.gui.mainwindow.window import VBGUI
     from virtualbricks.remote.client import RemoteWorkspace
 

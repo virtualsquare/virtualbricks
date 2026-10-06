@@ -46,6 +46,8 @@ import tempfile
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, cast
 
+from twisted.internet.interfaces import IReactorProcess
+
 from virtualbricks import locations
 from virtualbricks.config.archive import (
     BSDTAR,
@@ -80,12 +82,10 @@ from virtualbricks.config.projectfile import (
 )
 from virtualbricks.config.report import Report
 from virtualbricks.config.settings import get_setting
+from virtualbricks.config.tomlfile import Table
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IReactorProcess
-
-    from virtualbricks.config.tomlfile import Table
     from virtualbricks.config.workspace import Workspace
 
 LIBRARY = "vimages"

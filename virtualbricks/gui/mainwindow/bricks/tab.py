@@ -31,8 +31,6 @@ draft of the brick; a router has none.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -47,6 +45,9 @@ from virtualbricks.gui.mainwindow.bricks.bricklist import (  # noqa: E402
     BrickList,
 )
 from virtualbricks.gui.mainwindow.bricks.config import new_panel  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks.config.panel import (  # noqa: E402
+    Panel,
+)
 from virtualbricks.gui.mainwindow.bricks.newbrick import (  # noqa: E402
     NewBrickPopover,
 )
@@ -56,10 +57,7 @@ from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
 )
 from virtualbricks.i18n import _, ngettext  # noqa: E402
 from virtualbricks.bricks import Brick, is_running  # noqa: E402
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
-    from virtualbricks.observable import Signal
+from virtualbricks.observable import Signal  # noqa: E402
 
 logger = Logger()
 not_started = "Brick not started."

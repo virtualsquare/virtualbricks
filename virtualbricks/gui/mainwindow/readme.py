@@ -35,7 +35,7 @@ folder of the open project.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 import gi
 
@@ -43,17 +43,17 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, GLib, Gtk  # noqa: E402
 from twisted.internet import defer, reactor  # noqa: E402
+from twisted.internet.interfaces import (  # noqa: E402
+    IDelayedCall,
+    IReactorTime,
+)
 from twisted.logger import Logger  # noqa: E402
+from twisted.python.failure import Failure  # noqa: E402
 
+from virtualbricks.engine import Engine  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
 from virtualbricks.gui.markdownview import MarkdownView  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
-
-if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IDelayedCall, IReactorTime
-    from twisted.python.failure import Failure
-
-    from virtualbricks.engine import Engine
 
 # The room around the text, and between the buttons and the corner, in
 # pixels.

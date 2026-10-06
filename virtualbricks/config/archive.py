@@ -66,30 +66,26 @@ import tempfile
 import time
 import traceback
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from typing import IO, TYPE_CHECKING, Any, NoReturn, cast
+from types import FrameType
+from typing import IO, Any, NoReturn, cast
 
 from twisted.internet import defer, protocol
+from twisted.internet.interfaces import IProcessTransport, IReactorProcess
+from twisted.python.failure import Failure
 
 from virtualbricks import locations
 from virtualbricks.config.projectfile import (
     ProjectFormatError,
     upgrade_project,
 )
-from virtualbricks.config.report import Message, Report
+from virtualbricks.config.report import Level, Message, Report
 from virtualbricks.config.tomlfile import (
     DecodeError,
+    Table,
+    Value,
     dumps_toml,
     loads_toml,
 )
-
-if TYPE_CHECKING:  # pragma: no cover
-    from types import FrameType
-
-    from twisted.internet.interfaces import IProcessTransport, IReactorProcess
-    from twisted.python.failure import Failure
-
-    from virtualbricks.config.report import Level
-    from virtualbricks.config.tomlfile import Table, Value
 
 # The format of contents.toml.
 FORMAT = 1

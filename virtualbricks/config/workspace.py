@@ -63,19 +63,19 @@ from virtualbricks.config.projectfile import (
 )
 from virtualbricks.config.report import Report
 from virtualbricks.config.settings import (
+    ProjectSettings,
     current_project,
     get_setting,
     new_project_settings,
     set_current_project,
     use_project,
 )
+from virtualbricks.config.tomlfile import Table
 from virtualbricks.i18n import N_, _
 from virtualbricks.observable import Observable, Signal
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.config.settings import ProjectSettings
-    from virtualbricks.config.tomlfile import Table
 
 # The longest name of a project, in bytes of UTF-8.
 NAME_MAX = 40

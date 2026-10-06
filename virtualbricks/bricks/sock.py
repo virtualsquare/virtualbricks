@@ -21,11 +21,9 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.plug import Plug
+from virtualbricks.bricks import Brick
+from virtualbricks.bricks.plug import Plug
 
 
 class Sock:

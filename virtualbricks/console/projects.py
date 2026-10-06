@@ -28,8 +28,9 @@ its tabs hold and shows the project that opens. The GUI sets it with
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import Protocol
 
+from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.config.report import Report
 from virtualbricks.config.workspace import projects
 from virtualbricks.console.command import (
@@ -44,9 +45,6 @@ from virtualbricks.console.command import (
 from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _, ngettext
 from virtualbricks.bricks import is_running
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.brickfactory import BrickFactory
 
 
 class Frontend(Protocol):

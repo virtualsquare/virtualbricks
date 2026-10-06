@@ -44,7 +44,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import gi
 
@@ -53,11 +53,17 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gio, Gtk
 from twisted.internet import defer
 from twisted.logger import Logger
+from twisted.python.failure import Failure
 
 from virtualbricks import errors
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
 from virtualbricks.config import archive, images
-from virtualbricks.config.workspace import projects
+from virtualbricks.config.archive import ArchiveJob
+from virtualbricks.config.images import DiskUse
+from virtualbricks.config.workspace import Workspace, projects
 from virtualbricks.console import ampcommands, ampwire
+from virtualbricks.engine import Engine
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.dialogs.addimage import check_name
 from virtualbricks.gui.dialogs.base import (
@@ -68,16 +74,6 @@ from virtualbricks.gui.dialogs.base import (
 )
 from virtualbricks.gui.pathentry import PathCompletion
 from virtualbricks.i18n import _, ngettext
-
-if TYPE_CHECKING:  # pragma: no cover
-    from twisted.python.failure import Failure
-
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
-    from virtualbricks.config.archive import ArchiveJob
-    from virtualbricks.config.images import DiskUse
-    from virtualbricks.config.workspace import Workspace
-    from virtualbricks.engine import Engine
 
 logger = Logger()
 remove_failed = "Cannot remove the file {path}: {error}"

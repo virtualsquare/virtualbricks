@@ -32,6 +32,7 @@ import attr
 from twisted.internet import defer
 from twisted.internet.utils import getProcessOutput
 from twisted.logger import Logger
+from twisted.python.failure import Failure
 
 from virtualbricks import bricks, errors
 from virtualbricks.bricks.command import (
@@ -44,8 +45,9 @@ from virtualbricks.bricks.command import (
 from virtualbricks.bricks.draft import Draft, Problem
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.sock import Sock
-from virtualbricks.config.images import read_info
+from virtualbricks.config.images import ImageInfo, read_info
 from virtualbricks.config.projectfile import DEFAULT_MODEL
+from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
     Bool,
     Choice,
@@ -59,6 +61,7 @@ from virtualbricks.config.schema import (
     field,
 )
 from virtualbricks.config.settings import get_setting
+from virtualbricks.config.tomlfile import Value
 from virtualbricks.config.workspace import projects
 from virtualbricks.i18n import N_, _
 from virtualbricks.nic import is_valid_mac, random_mac
@@ -66,6 +69,7 @@ from virtualbricks.programs import (
     PACKAGES,
     Missing,
     ProgramError,
+    QemuInfo,
     decode_output,
     programs,
 )
@@ -75,14 +79,9 @@ from virtualbricks.qemu.imageformat import NotCowFileError
 from virtualbricks.qemu.run import qemu_img, which
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.python.failure import Failure
     from typing_extensions import TypeIs
 
     from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.config.images import ImageInfo
-    from virtualbricks.config.report import Report
-    from virtualbricks.config.tomlfile import Value
-    from virtualbricks.programs import QemuInfo
 
 logger = Logger()
 new_cow = (

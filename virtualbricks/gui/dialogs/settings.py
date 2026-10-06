@@ -50,17 +50,24 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # noqa: E402
 
 from twisted.internet import defer  # noqa: E402
+from twisted.internet.interfaces import (  # noqa: E402
+    IDelayedCall,
+    IReactorTime,
+)
 from twisted.logger import Logger  # noqa: E402
+from twisted.python.failure import Failure  # noqa: E402
 
 from virtualbricks import ksm, locations  # noqa: E402
 from virtualbricks.config import settings  # noqa: E402
 from virtualbricks.config.settings import (  # noqa: E402
     AppSettings,
     ProjectSettings,
+    SettingValue,
     get_setting,
     set_setting,
     store_settings,
 )
+from virtualbricks.engine import Engine  # noqa: E402
 from virtualbricks.gui.dialogs.base import Window  # noqa: E402
 from virtualbricks.gui.form import (  # noqa: E402
     Form,
@@ -68,6 +75,7 @@ from virtualbricks.gui.form import (  # noqa: E402
 )
 from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.locations import short_path  # noqa: E402
+from virtualbricks.programs import FolderPrograms, QemuInfo  # noqa: E402
 from virtualbricks.settingsdraft import (  # noqa: E402
     PLAYING,
     Facts,
@@ -78,13 +86,7 @@ from virtualbricks.settingsdraft import (  # noqa: E402
 )
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IDelayedCall, IReactorTime
-    from twisted.python.failure import Failure
-
-    from virtualbricks.config.settings import SettingValue
-    from virtualbricks.engine import Engine
     from virtualbricks.gui.mainwindow.window import VBGUI
-    from virtualbricks.programs import FolderPrograms, QemuInfo
     from virtualbricks.remote.mirror import MirrorFactory
 
 logger = Logger()

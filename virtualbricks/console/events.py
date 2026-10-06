@@ -28,12 +28,15 @@ from __future__ import annotations
 
 import shlex
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from twisted.internet import defer
+from twisted.internet.interfaces import IReactorTime
 
+from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks import eventinfo
 from virtualbricks.bricks.draft import Draft, apply
+from virtualbricks.bricks.event import Event
 from virtualbricks.bricks.eventinfo import LABELS, Action, Kind
 from virtualbricks.config.schema import field_names, parse_value
 from virtualbricks.console.command import (
@@ -51,12 +54,6 @@ from virtualbricks.console.command import (
 from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _
 from virtualbricks.bricks import is_running
-
-if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IReactorTime
-
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks.event import Event
 
 # the name an event gets, as New Event, when none is given
 NEW_EVENT = "new_event"

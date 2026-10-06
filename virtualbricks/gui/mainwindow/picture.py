@@ -33,7 +33,7 @@ import dataclasses
 import math
 import os
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import cairo
 import gi
@@ -50,12 +50,8 @@ from gi.repository import (  # noqa: E402
 
 from virtualbricks.gui import graphics  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.bricks import is_running  # noqa: E402
-from virtualbricks.topology import ICON  # noqa: E402
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks import Base
-    from virtualbricks.topology import Layout, Node
+from virtualbricks.bricks import Base, is_running  # noqa: E402
+from virtualbricks.topology import ICON, Layout, Node  # noqa: E402
 
 # Around the lab, in pixels.
 MARGIN = 20

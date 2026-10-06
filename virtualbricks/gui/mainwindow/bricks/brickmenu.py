@@ -47,12 +47,14 @@ from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 from twisted.internet import defer  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
+from virtualbricks.bricks.event import Event  # noqa: E402
 from virtualbricks.bricks.virtualmachine import (  # noqa: E402
     VirtualMachine,
     is_virtualmachine,
 )
+from virtualbricks.engine import Engine  # noqa: E402
 from virtualbricks.gui.mainwindow import tab  # noqa: E402
-from virtualbricks.bricks import brickinfo  # noqa: E402
+from virtualbricks.bricks import Brick, brickinfo  # noqa: E402
 from virtualbricks.bricks.brickinfo import NO_CONSOLE, State  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
     MenuActions,
@@ -65,9 +67,6 @@ from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.bricks import is_running  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.event import Event
-    from virtualbricks.engine import Engine
     from virtualbricks.gui.mainwindow.window import VBGUI
 
 logger = Logger()

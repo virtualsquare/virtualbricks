@@ -21,15 +21,13 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
 
 import gi
 
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf
 
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks import Base
+from virtualbricks.bricks import Base
 
 __all__ = ["brick_icon_file", "icon_file", "load_pixbuf"]
 

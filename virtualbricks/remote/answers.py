@@ -46,12 +46,17 @@ from typing import TYPE_CHECKING, Any, NoReturn
 from twisted.internet import defer
 from twisted.logger import Logger
 from twisted.protocols import amp
+from twisted.python.failure import Failure
 
 from virtualbricks import errors, ksm
-from virtualbricks.bricks import brickinfo
-from virtualbricks.bricks.virtualmachine import DISK_DEVICES, is_virtualmachine
+from virtualbricks.bricks import Brick, brickinfo
+from virtualbricks.bricks.virtualmachine import (
+    DISK_DEVICES,
+    VirtualMachine,
+    is_virtualmachine,
+)
 from virtualbricks.config import images
-from virtualbricks.config.workspace import projects
+from virtualbricks.config.workspace import OpenProject, projects
 from virtualbricks.console import ampcommands, ampwire
 from virtualbricks.errors import CommandError
 from virtualbricks.i18n import _
@@ -61,11 +66,6 @@ from virtualbricks.remote.drafts import apply_changes
 from virtualbricks.remote.facts import one_value
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.python.failure import Failure
-
-    from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.virtualmachine import VirtualMachine
-    from virtualbricks.config.workspace import OpenProject
     from virtualbricks.remote.follower import Connection as _Base
 else:
     _Base = amp.CommandLocator

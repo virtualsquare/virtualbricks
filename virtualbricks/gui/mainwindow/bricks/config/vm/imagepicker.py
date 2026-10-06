@@ -37,7 +37,10 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import GObject, Gtk, Pango
 
+from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
 from virtualbricks.config import images
+from virtualbricks.config.images import ImageInfo, InfoCache
+from virtualbricks.engine import Engine
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.dialogs.addimage import (
     ExistingImageDialog,
@@ -47,9 +50,6 @@ from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
-    from virtualbricks.config.images import ImageInfo, InfoCache
-    from virtualbricks.engine import Engine
     from virtualbricks.remote.client import RemoteInfos
 
     # what the machine of the bricks says of its files

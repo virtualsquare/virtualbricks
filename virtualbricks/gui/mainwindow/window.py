@@ -41,13 +41,18 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 from twisted.internet import defer, task
 from twisted.logger import Logger
+from twisted.python.failure import Failure
 
 from virtualbricks import errors, ksm
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks import Brick
+from virtualbricks.config.report import Report
+from virtualbricks.engine import Engine
 from virtualbricks.locations import short_path
-from virtualbricks.bricks.event import is_event
-from virtualbricks.bricks.virtualmachine import is_disk_image
+from virtualbricks.bricks.event import Event, is_event
+from virtualbricks.bricks.virtualmachine import Image, is_disk_image
 from virtualbricks.config.settings import get_setting, ksm_started
-from virtualbricks.config.workspace import projects
+from virtualbricks.config.workspace import ProjectSummary, projects
 from virtualbricks.programs import missing_programs
 from virtualbricks.i18n import _
 from virtualbricks.gui.graphics import load_pixbuf
@@ -61,7 +66,7 @@ from virtualbricks.gui.mainwindow.bricks import BricksTab
 from virtualbricks.gui.mainwindow.events import EventsTab
 from virtualbricks.gui.mainwindow.images import ImagesTab
 from virtualbricks.gui.mainwindow.readme import ReadmeTab
-from virtualbricks.gui.mainwindow.tab import switch, tabs
+from virtualbricks.gui.mainwindow.tab import Tab, switch, tabs
 from virtualbricks.gui.mainwindow.topology import TopologyTab
 from virtualbricks.gui.dialogs.logging import LoggingWindow
 from virtualbricks.gui.dialogs import projectname
@@ -69,17 +74,7 @@ from virtualbricks.gui.dialogs.projects import ProjectsWindow
 from virtualbricks.gui.dialogs.settings import SettingsWindow
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.python.failure import Failure
-
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.event import Event
-    from virtualbricks.bricks.virtualmachine import Image
-    from virtualbricks.config.report import Report
-    from virtualbricks.config.workspace import ProjectSummary
-    from virtualbricks.engine import Engine
     from virtualbricks.gui.mainwindow.rowtab import RowsTab
-    from virtualbricks.gui.mainwindow.tab import Tab
     from virtualbricks.remote.client import RemoteEngine
     from virtualbricks.remote.follower import Item
 

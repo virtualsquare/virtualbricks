@@ -36,6 +36,9 @@ import math
 from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING
 
+from twisted.internet.interfaces import IReactorTime
+
+from virtualbricks.bricks.event import Event
 from virtualbricks.bricks.eventaction import (
     ConsoleAction,
     ShellAction,
@@ -44,14 +47,10 @@ from virtualbricks.bricks.eventaction import (
     StoredAction,
 )
 from virtualbricks.i18n import _, ngettext
-from virtualbricks.bricks import is_running
+from virtualbricks.bricks import Brick, is_running
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IReactorTime
-
     from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.event import Event
 
 # Between the parts of a row's line.
 SEPARATOR = " · "

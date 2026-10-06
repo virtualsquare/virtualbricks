@@ -39,15 +39,17 @@ from typing import TYPE_CHECKING, Any
 from twisted.internet import defer, threads
 from twisted.logger import Logger
 from twisted.protocols import amp
+from twisted.python.failure import Failure
 
-from virtualbricks.bricks.virtualmachine import get_usb_devices
+from virtualbricks.bricks.virtualmachine import UsbDevice, get_usb_devices
 from virtualbricks.config import images
-from virtualbricks.config.workspace import projects
+from virtualbricks.config.workspace import DiskUsage, projects
 from virtualbricks.console import ampcommands, ampwire
 from virtualbricks.engine import folder_entries
 from virtualbricks.errors import CommandError, InvalidNameError
 from virtualbricks.i18n import _
 from virtualbricks.programs import (
+    Answer,
     ProgramError,
     programs,
     qemu_found,
@@ -58,11 +60,6 @@ from virtualbricks.remote import commands
 from virtualbricks.remote.follower import file_facts
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.python.failure import Failure
-
-    from virtualbricks.bricks.virtualmachine import UsbDevice
-    from virtualbricks.config.workspace import DiskUsage
-    from virtualbricks.programs import Answer
     from virtualbricks.remote.follower import Connection as _Base
 else:
     _Base = amp.CommandLocator

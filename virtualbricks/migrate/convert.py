@@ -42,10 +42,12 @@ from virtualbricks.config.projectfile import (
     old_action,
     project_document,
 )
+from virtualbricks.config.report import Report
 from virtualbricks.config.settings import (
     PROJECT_KEYS,
     AppSettings,
     ProjectSettings,
+    SettingValue,
 )
 from virtualbricks.config.schema import (
     Bool,
@@ -58,6 +60,7 @@ from virtualbricks.config.schema import (
     field_names,
     kind_of,
 )
+from virtualbricks.config.tomlfile import Table
 from virtualbricks.migrate import legacy
 from virtualbricks.nic import random_mac
 
@@ -65,9 +68,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.bricks.netemu import MarkovConfig, Netemu
     from virtualbricks.bricks.virtualmachine import VirtualMachine
-    from virtualbricks.config.report import Report
-    from virtualbricks.config.settings import SettingValue
-    from virtualbricks.config.tomlfile import Table
     from virtualbricks.bricks.sock import Sock
     from virtualbricks.bricks.virtualmachine import HostonlySock
 

@@ -43,26 +43,42 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from twisted.internet import defer, error, reactor, threads
+from twisted.internet.interfaces import IReactorTime
 
 from virtualbricks import ksm
-from virtualbricks.bricks import brickinfo, restart
-from virtualbricks.bricks.draft import apply
-from virtualbricks.bricks.event import is_event
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks import Brick, brickinfo, restart
+from virtualbricks.bricks.draft import Draft, apply
+from virtualbricks.bricks.event import Event, is_event
 from virtualbricks.bricks.virtualmachine import (
+    Image,
+    UsbDevice,
+    VirtualMachine,
     get_usb_devices,
     is_disk_image,
     resume,
     suspend,
 )
 from virtualbricks.config import images
+from virtualbricks.config.report import Report
 from virtualbricks.config.settings import (
     PROJECT_KEYS,
+    SettingValue,
     get_setting,
     set_setting,
     store_settings,
 )
-from virtualbricks.config.workspace import projects
+from virtualbricks.config.workspace import (
+    DiskUsage,
+    OpenProject,
+    ProjectSummary,
+    Workspace,
+    projects,
+)
 from virtualbricks.programs import (
+    FolderPrograms,
+    Programs,
+    QemuInfo,
     programs as known_programs,
     qemu_found,
     qemu_programs,
@@ -71,26 +87,6 @@ from virtualbricks.programs import (
 from virtualbricks.qemu import run
 
 if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IReactorTime
-
-    from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks import Brick
-    from virtualbricks.bricks.draft import Draft
-    from virtualbricks.bricks.event import Event
-    from virtualbricks.bricks.virtualmachine import (
-        Image,
-        UsbDevice,
-        VirtualMachine,
-    )
-    from virtualbricks.config.report import Report
-    from virtualbricks.config.settings import SettingValue
-    from virtualbricks.config.workspace import (
-        DiskUsage,
-        OpenProject,
-        ProjectSummary,
-        Workspace,
-    )
-    from virtualbricks.programs import FolderPrograms, Programs, QemuInfo
     from virtualbricks.remote.client import RemoteEngine
 
 # What the windows go through: the engine of this process, or one over a

@@ -55,12 +55,12 @@ from twisted.logger import Logger
 from twisted.python.failure import Failure
 
 from virtualbricks import errors
+from virtualbricks.config.workspace import Trasher, Workspace
 from virtualbricks.qemu import run as qemu_run
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
-    from virtualbricks.config.workspace import Trasher, Workspace
 
 logger = Logger()
 back_failed = (

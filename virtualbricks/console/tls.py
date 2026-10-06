@@ -31,17 +31,14 @@ from __future__ import annotations
 
 import os
 import re
-from typing import TYPE_CHECKING
 
 from OpenSSL import SSL, crypto
 from twisted.internet import error, ssl
+from twisted.internet.interfaces import IOpenSSLClientConnectionCreator
+from twisted.python.failure import Failure
 
 from virtualbricks.console import wire
 from virtualbricks.i18n import _
-
-if TYPE_CHECKING:  # pragma: no cover
-    from twisted.internet.interfaces import IOpenSSLClientConnectionCreator
-    from twisted.python.failure import Failure
 
 CERTIFICATE = re.compile(
     rb"-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----", re.DOTALL

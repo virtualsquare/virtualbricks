@@ -42,7 +42,13 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gio, GLib, Gtk, Pango
 
-from virtualbricks.bricks.virtualmachine import DISK_DEVICES
+from virtualbricks.bricks.virtualmachine import (
+    DISK_DEVICES,
+    Image,
+    VirtualMachine,
+    VirtualMachineDraft,
+)
+from virtualbricks.engine import Engine
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.gui.dialogs.imagedialogs import (
@@ -58,12 +64,6 @@ from virtualbricks.gui.mainwindow.tab import simple_action
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.bricks.virtualmachine import (
-        Image,
-        VirtualMachine,
-        VirtualMachineDraft,
-    )
-    from virtualbricks.engine import Engine
     from virtualbricks.gui.mainwindow.bricks.config.vm.imagepicker import (
         Infos,
     )
