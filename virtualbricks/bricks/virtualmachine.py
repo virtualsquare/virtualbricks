@@ -1698,7 +1698,4 @@ def resume(vm: VirtualMachine) -> defer.Deferred[Any]:
     if path is None:
         return _not_supported()
     output = qemu_img(["snapshot", "-l", path])
-    output.addCallback(found)
-    output.addCallback(load)
-    output.addErrback(failed)
-    return output
+    return output.addCallback(found).addCallback(load).addErrback(failed)

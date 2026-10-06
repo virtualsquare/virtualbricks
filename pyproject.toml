@@ -158,7 +158,7 @@ module = [
     "virtualbricks.nic",
     "virtualbricks.observable",
     "virtualbricks.programs",
-    "virtualbricks.qemu.imageformat",
+    "virtualbricks.qemu.*",
     "virtualbricks.remote.*",
     "virtualbricks.settingsdraft",
     "virtualbricks.sudo",

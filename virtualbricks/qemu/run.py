@@ -21,8 +21,12 @@ Finding the QEMU programs, in the folder of the ``qemu_path`` setting or on
 PATH, and running ``qemu-img``.
 """
 
-import os
+from __future__ import annotations
 
+import os
+from collections.abc import Sequence
+
+from twisted.internet import defer
 from twisted.internet.utils import getProcessOutputAndValue
 
 from virtualbricks.config.settings import get_setting
@@ -39,38 +43,30 @@ def which(program: str) -> str:
         returns None.
     """
 
-    path = find_program(program, get_setting("qemu_path"))
+    path = find_program(program, str(get_setting("qemu_path")))
     if path is None:
         raise FileNotFoundError(program)
     return path
 
 
-def _decode_or_complain(codes):
+def _decode_or_complain(codes: tuple[bytes, bytes, int]) -> str:
     stdout, stderr, exit_status = codes
     if exit_status != 0:
         raise CommandError(exit_status, decode_output(stderr))
     return decode_output(stdout)
 
 
-def _output(program, args):
+def _output(program: str, args: Sequence[str]) -> defer.Deferred[str]:
     """
     Run a QEMU program: its standard output, when it ends; CommandError if it
     fails, FileNotFoundError if there's none.
-
-    :type args: List[str]
-    :rtype: twisted.internet.defer.Deferred[str]
     """
 
     deferred = getProcessOutputAndValue(which(program), args, env=os.environ)
     return deferred.addCallback(_decode_or_complain)
 
 
-def qemu_img(args):
-    """
-    Run qemu-img: its standard output, when it ends.
-
-    :type args: List[str]
-    :rtype: twisted.internet.defer.Deferred[str]
-    """
+def qemu_img(args: Sequence[str]) -> defer.Deferred[str]:
+    """Run qemu-img: its standard output, when it ends."""
 
     return _output("qemu-img", args)

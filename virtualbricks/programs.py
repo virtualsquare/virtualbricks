@@ -39,7 +39,7 @@ import locale
 import os
 import re
 from collections.abc import Callable, Iterable, Mapping
-from typing import NamedTuple
+from typing import Any, Generic, NamedTuple, TypeVar
 
 import attr
 from twisted.internet import defer
@@ -413,7 +413,7 @@ def qemu_programs(folder: str) -> list[str]:
     """The names of the QEMU system emulators, in folder and in PATH."""
 
     folders = [folder] + os.environ.get("PATH", "").split(os.pathsep)
-    names = set()
+    names: set[str] = set()
     for directory in filter(None, folders):
         try:
             entries = os.listdir(directory)
@@ -600,19 +600,23 @@ def _key(path: str) -> Key:
     return (os.path.realpath(path), stat.st_size, stat.st_mtime_ns)
 
 
-class _Once:
+_T = TypeVar("_T")
+
+
+class _Once(Generic[_T]):
     """One result, given to everyone who waits for it."""
 
     def __init__(
-        self, deferred: defer.Deferred[object], forget: Callable[[], None]
+        self, deferred: defer.Deferred[_T], forget: Callable[[], object]
     ) -> None:
         self.done = False
-        self.result: object = None
-        self.waiting: list[defer.Deferred[object]] = []
+        # once done
+        self.result: _T | Failure
+        self.waiting: list[defer.Deferred[_T]] = []
         self.forget = forget
         deferred.addBoth(self._fire)
 
-    def _fire(self, result: object) -> None:
+    def _fire(self, result: _T | Failure) -> None:
         self.done = True
         self.result = result
         if isinstance(result, Failure):
@@ -622,14 +626,14 @@ class _Once:
         for deferred in waiting:
             self._give(deferred)
 
-    def _give(self, deferred: defer.Deferred[object]) -> None:
+    def _give(self, deferred: defer.Deferred[_T]) -> None:
         if isinstance(self.result, Failure):
             deferred.errback(self.result)
         else:
             deferred.callback(self.result)
 
-    def wait(self) -> defer.Deferred[object]:
-        deferred: defer.Deferred[object] = defer.Deferred()
+    def wait(self) -> defer.Deferred[_T]:
+        deferred: defer.Deferred[_T] = defer.Deferred()
         if self.done:
             self._give(deferred)
         else:
@@ -653,11 +657,12 @@ class Programs:
 
     def __init__(self, run: Run = run) -> None:
         self._run = run
-        self._asked: dict[object, _Once] = {}
+        # the results of the questions, each of its own type
+        self._asked: dict[object, _Once[Any]] = {}
 
     def _once(
-        self, key: object, ask: Callable[[], defer.Deferred[object]]
-    ) -> defer.Deferred[object]:
+        self, key: object, ask: Callable[[], defer.Deferred[_T]]
+    ) -> defer.Deferred[_T]:
         once = self._asked.get(key)
         if once is None:
             once = _Once(ask(), lambda: self._asked.pop(key, None))
@@ -673,8 +678,10 @@ class Programs:
             [self._run(path, questions[name]) for name in names],
             consumeErrors=True,
         )
-        deferred.addCallback(lambda answers: dict(zip(names, answers)))
-        return deferred.addErrback(_first_error)
+        answered = deferred.addCallback(
+            lambda answers: dict(zip(names, answers))
+        )
+        return answered.addErrback(_first_error)
 
     def qemu_answers(self, path: str) -> defer.Deferred[dict[str, Answer]]:
         """What the QEMU program at path answers to QEMU_QUESTIONS."""
@@ -693,7 +700,7 @@ class Programs:
         except OSError as exc:
             return defer.fail(ProgramError(f"{path}: {exc.strerror}"))
 
-        def ask() -> defer.Deferred[object]:
+        def ask() -> defer.Deferred[QemuInfo]:
             deferred = self.qemu_answers(path)
             return deferred.addCallback(lambda a: qemu_info(path, a))
 
@@ -738,17 +745,17 @@ class Programs:
             return defer.fail(ProgramError(f"{folder}: {exc.strerror}"))
         asked = [name for name in VDE_QUESTIONS if name in found]
 
-        def ask() -> defer.Deferred[object]:
+        def ask() -> defer.Deferred[VdeInfo]:
             deferreds = [
                 self._run(found[name], VDE_QUESTIONS[name]) for name in asked
             ]
             deferred = defer.gatherResults(deferreds, consumeErrors=True)
-            deferred.addCallback(
+            answered = deferred.addCallback(
                 lambda answers: vde_info(
                     folder, found, dict(zip(asked, answers))
                 )
             )
-            return deferred.addErrback(_first_error)
+            return answered.addErrback(_first_error)
 
         return self._once(key, ask)
 

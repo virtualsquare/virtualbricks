@@ -308,19 +308,22 @@
 ## Types
 
 - [ ] Fix the errors that mypy finds, a package at a time as `config/`,
-  `console/`, `bricks/` and `remote/` (144 on 6 Oct 2026): widgets maybe
-  `None`, `Deferred[X]` for `Deferred[object]` in `programs.py`, settings
-  that are `str | bool` given where a `str` goes, and the schemas'
-  constructors called with values of the wrong type, now that mypy knows
-  them. Or keep a baseline and fail only on new errors
+  `console/`, `bricks/` and `remote/` (130 on 6 Oct 2026, all in `gui/`):
+  widgets maybe `None`, and the schemas' constructors called with values
+  of the wrong type, now that mypy knows them. Or keep a baseline and fail
+  only on new errors
 - [ ] Run mypy in pre-commit, a local hook in the environment of the
   project, as it needs the stubs of GTK 3
 - [ ] Add each module that `tools/typecoverage.py` gives 100% to the strict
   override of `pyproject.toml`
-- [ ] Type the old core: `bricks/`, `app.py`, `brickfactory.py`,
-  `console/control.py`, `remote/` (0–15% on 6 Oct 2026)
+- [ ] Type the old core that is left: `app.py`, `brickfactory.py` and
+  `scripts/` (0–2% on 6 Oct 2026)
 
 # DONE
+
+- [x] No mypy error in `qemu/`, `vde.py` and `programs.py`: the cache of
+  the answers of the programs keeps the type of each; `qemu/` is checked
+  strictly
 
 - [x] Type `virtualbricks/remote/` in full, checked strictly: the mixins of
   the AMP connection see what it gives them through `follower.Connection`,

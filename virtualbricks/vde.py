@@ -34,7 +34,7 @@ def which(program: str) -> str:
         returns None.
     """
 
-    path = find_program(program, get_setting("vde_path"))
+    path = find_program(program, str(get_setting("vde_path")))
     if path is None:
         raise FileNotFoundError(program)
     return path
