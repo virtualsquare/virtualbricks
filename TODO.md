@@ -305,13 +305,10 @@
 
 - [ ] Update the copyright notice
 
-## Types
-
-- [ ] Run mypy in pre-commit, a local hook in the environment of the
-  project, as it needs the stubs of GTK 3: it finds no error since 6 Oct
-  2026
-
 # DONE
+
+- [x] Run mypy at each commit: a local hook, with the mypy of `.venv`,
+  which has the stubs of GTK 3
 
 - [x] Type every module in full: `app.py`, `errors.py`, `gui/gui.py` and
   `scripts/` too. mypy checks them all strictly, the bodies of the

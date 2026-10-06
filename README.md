@@ -432,7 +432,7 @@ scenario from a use case in words.
 ### Code style
 
 The code is formatted with `black`, at 79 columns, and checked with `ruff`.
-`pre-commit` runs them, and two more hooks, on every commit:
+`pre-commit` runs them, and three more hooks, on every commit:
 
 ```sh
 pre-commit run --all-files     # run them without committing
@@ -447,14 +447,17 @@ pre-commit run --all-files     # run them without committing
   each language and compiles the `.mo` catalogs, which are committed too. It
   needs the GNU gettext tools: `xgettext`, `msgmerge` and `msgfmt` (`gettext`
   in Debian).
+- **types**: `mypy` checks the types of the whole project, when a module or
+  `pyproject.toml` changes, with the mypy of `.venv`, which has the stubs of
+  GTK 3 (see [Setting up](#setting-up)).
 
 When a hook changes files, as when you add a message the translations have to
 know, the commit stops: stage what it changed and commit again.
 
 The types are checked with mypy, which `pyproject.toml` configures: run
-`mypy` from the root of the sources. It doesn't run on commit yet. Every
-module is typed in full and checked strictly, the bodies of the functions too,
-so a function without annotations is an error; `tools/typecoverage.py` tells
+`mypy` from the root of the sources; a hook runs it on commit. Every module
+is typed in full and checked strictly, the bodies of the functions too, so a
+function without annotations is an error; `tools/typecoverage.py` tells
 how much of each module has annotations, the most typed first (`--sort name`
 in the order of the files):
 

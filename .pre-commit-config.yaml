@@ -25,3 +25,13 @@ repos:
         language: system
         pass_filenames: false
         files: ^(virtualbricks/.*\.py|locale/virtualbricks/.*\.po)$
+      - id: mypy
+        name: check the types
+        # the mypy of the environment of Setting up, which has the stubs of
+        # GTK 3; it checks what pyproject.toml says, not the files staged
+        entry: .venv/bin/mypy
+        language: system
+        pass_filenames: false
+        files: ^(virtualbricks/.*\.py|tools/.*\.py|pyproject\.toml)$
+        # mypy leaves the tests out
+        exclude: ^virtualbricks/tests/
