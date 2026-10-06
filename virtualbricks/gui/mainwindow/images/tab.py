@@ -33,13 +33,14 @@ are :mod:`virtualbricks.gui.mainwindow.images.imagedetails`'s.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # noqa: E402
+from gi.repository import Gdk, GdkPixbuf, Gio, Gtk  # noqa: E402
 
-from virtualbricks.bricks.virtualmachine import ImageDraft  # noqa: E402
+from virtualbricks.bricks.virtualmachine import Image, ImageDraft  # noqa: E402
 from virtualbricks.config import images  # noqa: E402
 from virtualbricks.gui import imageinfo  # noqa: E402
 from virtualbricks.gui.imageinfo import LABELS, State  # noqa: E402
@@ -50,6 +51,7 @@ from virtualbricks.gui.mainwindow.images.imagedetails import (  # noqa: E402
 from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     EMPTY_ICON_SIZE,
     ICON_SIZE,
+    Pictures,
     Row,
     RowList,
     RowsTab,
@@ -63,11 +65,21 @@ from virtualbricks.gui.dialogs.addimage import (  # noqa: E402
 )
 from virtualbricks.i18n import _, ngettext  # noqa: E402
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks import Brick
+    from virtualbricks.config.images import ImageInfo
+    from virtualbricks.gui.mainwindow.bricks.config.vm.imagepicker import (
+        Infos,
+    )
+    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.observable import Signal
+
 # The icon of an image, the first that the theme has.
 ICONS = ("drive-harddisk", "drive-harddisk-symbolic", "media-floppy")
 
 
-def count(image_list, items) -> str:
+def count(image_list: RowList[Image], items: list[Image]) -> str:
     """How many images are in use, of how many."""
 
     total = len(items)
@@ -77,22 +89,29 @@ def count(image_list, items) -> str:
     ).format(in_use=in_use, total=total)
 
 
-class ImageRow(Row):
+class ImageRow(Row[Image]):
     """An image, what it is and who uses it, and what can be done to it."""
 
     GROUP = imagemenu.GROUP
     DELETE = "remove"
     STARTS = False
 
-    def __init__(self, gui, item, icons, sizes, infos) -> None:
+    def __init__(
+        self,
+        gui: VBGUI,
+        item: Image,
+        icons: Pictures[Image],
+        sizes: Gtk.SizeGroup,
+        infos: Infos,
+    ) -> None:
         # the first update() needs it
         self.infos = infos
         super().__init__(gui, item, icons, sizes)
 
-    def make_actions(self):
+    def make_actions(self) -> imagemenu.ImageActions:
         return imagemenu.ImageActions(self.gui, self.item)
 
-    def menu_model(self):
+    def menu_model(self) -> Gio.Menu:
         return imagemenu.menu(self.item, self.there())
 
     def there(self) -> bool:
@@ -100,7 +119,7 @@ class ImageRow(Row):
 
         return self.gui.engine.machine.exists(self.item.path)
 
-    def info(self):
+    def info(self) -> ImageInfo | None:
         """What qemu-img info says of the file, once read; read it if not."""
 
         path = self.item.path
@@ -111,17 +130,17 @@ class ImageRow(Row):
             reading.addCallback(self._read)
         return info
 
-    def _read(self, info) -> None:
+    def _read(self, info: ImageInfo | None) -> None:
         # the file may have gone, or the row with it; what the read says,
         # once: a file that a running machine keeps changing isn't read
         # again at each change
         if info is not None and self.get_parent() is not None:
             self.show_image(info)
 
-    def update(self, processes=False) -> None:
+    def update(self, processes: bool = False) -> None:
         self.show_image(None, read=True)
 
-    def show_image(self, info, read=False) -> None:
+    def show_image(self, info: ImageInfo | None, read: bool = False) -> None:
         """Show the image with info, or what the cache has if read."""
 
         image = self.item
@@ -133,7 +152,7 @@ class ImageRow(Row):
             info = None
         elif read:
             info = self.info()
-        self.show(
+        self.show_state(
             imageinfo.summary(image, info, uses, there),
             LABELS[image_state],
             image_state is State.IN_USE,
@@ -141,12 +160,14 @@ class ImageRow(Row):
             imageinfo.tooltip(image, image_state, uses),
         )
 
-    def on_startstop_clicked(self, button) -> None:  # pragma: no cover
+    def on_startstop_clicked(
+        self, button: Gtk.Button
+    ) -> None:  # pragma: no cover
         # no Start or Stop for an image
         pass
 
 
-class ImageList(RowList):
+class ImageList(RowList[Image]):
     """
     The images of the factory, a row each. The rows follow the bricks too:
     they say which machines use the images.
@@ -157,7 +178,7 @@ class ImageList(RowList):
     NONE_RUNNING = _("No image is in use")
     NO_RUNNING_MATCH = _("No image in use matches “{text}”")
 
-    def __init__(self, gui, factory) -> None:
+    def __init__(self, gui: VBGUI, factory: BrickFactory) -> None:
         # the rows need it, from the first
         self.infos = gui.engine.machine.infos
         super().__init__(gui, factory)
@@ -165,7 +186,7 @@ class ImageList(RowList):
         for signal in brick_signals(factory):
             signal.connect(self.on_brick_changed)
 
-    def signals(self) -> tuple:
+    def signals(self) -> tuple[Signal, Signal, Signal]:
         factory = self.factory
         return (
             factory.image_added,
@@ -173,16 +194,16 @@ class ImageList(RowList):
             factory.image_changed,
         )
 
-    def items(self) -> list:
+    def items(self) -> list[Image]:
         return list(self.factory.images)
 
-    def make_row(self, item) -> ImageRow:
+    def make_row(self, item: Image) -> ImageRow:
         return ImageRow(self.gui, item, self.icons, self._sizes, self.infos)
 
-    def make_icons(self):
+    def make_icons(self) -> ThemeIcons:
         return ThemeIcons(ICONS, ICON_SIZE)
 
-    def running(self, item) -> bool:
+    def running(self, item: Image) -> bool:
         return any(use.running for use in images.uses(self.factory, item))
 
     def close(self) -> None:
@@ -190,11 +211,11 @@ class ImageList(RowList):
         for signal in brick_signals(self.factory):
             signal.disconnect(self.on_brick_changed)
 
-    def on_brick_changed(self, brick) -> None:
+    def on_brick_changed(self, brick: Brick) -> None:
         self.update()
 
 
-class ImagesTab(RowsTab):
+class ImagesTab(RowsTab[Image]):
     """The disk images of the project, and what can be done with them."""
 
     title = _("_Images")
@@ -208,20 +229,20 @@ class ImagesTab(RowsTab):
     )
     STARTS = False
 
-    def __init__(self, gui, factory) -> None:
+    def __init__(self, gui: VBGUI, factory: BrickFactory) -> None:
         super().__init__(gui, factory)
         # the menu of Add Image, made at its first click
         self._add_menu: Gtk.Popover | None = None
         for signal in brick_signals(factory):
             signal.connect(self.on_changed)
 
-    def empty_picture(self):
+    def empty_picture(self) -> GdkPixbuf.Pixbuf | None:
         return theme_icon(ICONS, EMPTY_ICON_SIZE, grey=True)
 
     def make_list(self) -> ImageList:
         return ImageList(self.gui, self.factory)
 
-    def signals(self) -> tuple:
+    def signals(self) -> tuple[Signal, Signal, Signal]:
         factory = self.factory
         return (
             factory.image_added,
@@ -229,13 +250,13 @@ class ImagesTab(RowsTab):
             factory.image_changed,
         )
 
-    def items(self) -> list:
+    def items(self) -> list[Image]:
         return list(self.factory.images)
 
-    def count_text(self, items) -> str:
+    def count_text(self, items: list[Image]) -> str:
         return count(self.list, items)
 
-    def new(self) -> None:
+    def new_item(self) -> None:
         """Offer an existing image or a new empty disk, under the button."""
 
         if self._add_menu is None:
@@ -272,15 +293,17 @@ class ImagesTab(RowsTab):
         dialog.show(self.gui.window)
         return dialog
 
-    def popup(self, widget, event, item) -> Gtk.Menu:
+    def popup(
+        self, widget: Gtk.Widget, event: Gdk.EventButton | None, item: Image
+    ) -> Gtk.Menu:
         return imagemenu.popup(widget, event, self.gui, item, True)
 
-    def panel_for(self, item) -> ImageDetails:
+    def panel_for(self, item: Image) -> ImageDetails:
         return ImageDetails(
             ImageDraft(item, self.factory), self.gui.engine.machine
         )
 
-    def settings_words(self, item) -> str:
+    def settings_words(self, item: Image) -> str:
         return _("Disk image")
 
     def on_quit(self) -> None:

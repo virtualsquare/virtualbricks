@@ -28,7 +28,9 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 if has_display:
     from gi.repository import GdkPixbuf, Gio, GLib, Gtk
 
+    from virtualbricks.bricks import is_running
     from virtualbricks.gui.mainwindow import rowtab
+    from virtualbricks.gui.mainwindow.picture import Icons
     from virtualbricks.gui.mainwindow.rowtab import (
         Row,
         RowList,
@@ -59,7 +61,7 @@ if has_display:
 
         def update(self, processes=False):
             running = self.item.scheduled is not None
-            self.show(
+            self.show_state(
                 "an event",
                 "Waiting" if running else "Ready",
                 running,
@@ -83,6 +85,12 @@ if has_display:
         def make_row(self, item):
             return EventRow(self.gui, item, self.icons, self._sizes)
 
+        def make_icons(self):
+            return Icons(rowtab.ICON_SIZE)
+
+        def running(self, item):
+            return is_running(item)
+
 
 class Scheduled:
     def cancel(self):
@@ -105,13 +113,13 @@ class TestWhatEachKindSays(GuiTestCase):
     def test_the_hooks(self):
         for cls, names in (
             (Row, ("make_actions", "menu_model", "update")),
-            (RowList, ("items",)),
+            (RowList, ("items", "make_icons")),
             (
                 RowsTab,
                 (
                     "make_list",
                     "items",
-                    "new",
+                    "new_item",
                     "start_all",
                     "stop_all",
                 ),
@@ -121,7 +129,10 @@ class TestWhatEachKindSays(GuiTestCase):
                 self.assertRaises(
                     NotImplementedError, getattr(cls, name), None
                 )
-        self.assertRaises(NotImplementedError, RowList.make_row, None, None)
+        for name in ("make_row", "running"):
+            self.assertRaises(
+                NotImplementedError, getattr(RowList, name), None, None
+            )
         for name in (
             "count_text",
             "can_start",

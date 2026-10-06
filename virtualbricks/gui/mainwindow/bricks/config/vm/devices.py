@@ -25,10 +25,14 @@ them when the section is made, and those the machine has that the host
 hasn't: a switch each.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Pango  # noqa: E402
+from gi.repository import GObject, Gtk, Pango  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
 from virtualbricks.gui.mainwindow.bricks.config.picker import (  # noqa: E402
@@ -40,6 +44,16 @@ from virtualbricks.gui.mainwindow.bricks.config.vm.machine import (  # noqa: E40
 )
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.bricks.virtualmachine import UsbDevice
+    from virtualbricks.gui.mainwindow.bricks.config.vm.panel import (
+        Page,
+        VirtualMachinePanel,
+    )
+    from virtualbricks.programs import QemuInfo
 
 logger = Logger()
 usb_error = "Cannot list the USB devices"
@@ -55,7 +69,7 @@ NOT_ALONE = (
 )
 
 
-def sound_options(info, chosen: str) -> list:
+def sound_options(info: QemuInfo | None, chosen: str) -> list[Option]:
     """The sound cards to choose from; the chosen one by its own name."""
 
     options = [
@@ -75,7 +89,7 @@ def sound_options(info, chosen: str) -> list:
     return options
 
 
-def build_display(panel, page) -> None:
+def build_display(panel: VirtualMachinePanel, page: Page) -> None:
     form = page.form
     form.section(_("Display"))
     form.switch("headless")
@@ -87,12 +101,12 @@ def build_display(panel, page) -> None:
     form.entry("keyboard_layout")
 
 
-def build_sound(panel, page) -> None:
+def build_sound(panel: VirtualMachinePanel, page: Page) -> None:
     form = page.form
     draft = panel.draft
     form.section(_("Sound"))
 
-    def chose(value):
+    def chose(value: str) -> None:
         draft.set("sound_card", value)
         panel.on_changed()
 
@@ -100,11 +114,11 @@ def build_sound(panel, page) -> None:
     panel.sound_picker = made
     form.row("sound_card", made)
     driver = Gtk.Label(
-        visible=True, label=panel.engine.machine.setting("audio_driver")
+        visible=True, label=str(panel.engine.machine.setting("audio_driver"))
     )
     form.row("audio_driver", driver, _("Audio driver"), _("From the settings"))
 
-    def fill():
+    def fill() -> None:
         made.missing = missing(draft)
         made.set_options(sound_options(draft.qemu, draft.get("sound_card")))
 
@@ -122,13 +136,20 @@ def build_sound(panel, page) -> None:
     )
 
 
+class UsbRow(Gtk.ListBoxRow):
+    """A USB device, and the switch that gives it to the machine."""
+
+    switch: Gtk.Switch
+    device: UsbDevice
+
+
 class UsbDevices(Gtk.ListBox):
     """The USB devices of the host, and of the machine: a switch each."""
 
-    def __init__(self, panel) -> None:
+    def __init__(self, panel: VirtualMachinePanel) -> None:
         super().__init__(visible=True, selection_mode=Gtk.SelectionMode.NONE)
         self.panel = panel
-        self.found = None
+        self.found: list[UsbDevice] | None = None
         self.set_placeholder(
             Gtk.Label(
                 visible=True,
@@ -140,17 +161,18 @@ class UsbDevices(Gtk.ListBox):
         deferred.addCallback(self.show_devices)
         deferred.addErrback(self.failed)
 
-    def show_devices(self, found) -> None:
+    def show_devices(self, found: list[UsbDevice]) -> None:
         self.found = list(found)
         self.fill()
 
-    def failed(self, failure) -> None:
+    def failed(self, failure: Failure) -> None:
         logger.failure(usb_error, failure)
         self.show_devices([])
 
     def fill(self) -> None:
         for row in self.get_children():
             row.destroy()
+        assert self.found is not None, "the devices of the host are found"
         chosen = list(self.panel.draft.get("usb_devices"))
         ids = {device.id for device in self.found}
         devices = self.found + [d for d in chosen if d.id not in ids]
@@ -165,8 +187,8 @@ class UsbDevices(Gtk.ListBox):
                 )
             )
 
-    def _row(self, device, on: bool, there: bool) -> Gtk.ListBoxRow:
-        row = Gtk.ListBoxRow(visible=True, activatable=False, selectable=False)
+    def _row(self, device: UsbDevice, on: bool, there: bool) -> UsbRow:
+        row = UsbRow(visible=True, activatable=False, selectable=False)
         box = Gtk.Box(visible=True, spacing=12, margin=GAP, margin_start=12)
         texts = Gtk.Box(visible=True, orientation=Gtk.Orientation.VERTICAL)
         name = Gtk.Label(
@@ -195,7 +217,9 @@ class UsbDevices(Gtk.ListBox):
         row.device = device
         return row
 
-    def on_switched(self, switch, param, device) -> None:
+    def on_switched(
+        self, switch: Gtk.Switch, param: GObject.ParamSpec, device: UsbDevice
+    ) -> None:
         draft = self.panel.draft
         chosen = [d for d in draft.get("usb_devices") if d.id != device.id]
         if switch.get_active():

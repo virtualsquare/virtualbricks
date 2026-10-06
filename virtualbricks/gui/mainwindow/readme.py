@@ -35,16 +35,25 @@ folder of the open project.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any, cast
+
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, Gtk  # noqa: E402
-from twisted.internet import reactor  # noqa: E402
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gdk, GLib, Gtk  # noqa: E402
+from twisted.internet import defer, reactor  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
 from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
 from virtualbricks.gui.markdownview import MarkdownView  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.internet.interfaces import IDelayedCall, IReactorTime
+    from twisted.python.failure import Failure
+
+    from virtualbricks.engine import Engine
 
 # The room around the text, and between the buttons and the corner, in
 # pixels.
@@ -68,7 +77,7 @@ SYNTAX = (
 )
 
 
-def _syntax_popover(button):
+def _syntax_popover(button: Gtk.Widget) -> Gtk.Popover:
     grid = Gtk.Grid(
         visible=True, column_spacing=18, row_spacing=6, margin=MARGIN
     )
@@ -94,7 +103,7 @@ def _syntax_popover(button):
     return popover
 
 
-def _scrolled(view):
+def _scrolled(view: Gtk.Widget) -> Gtk.ScrolledWindow:
     scrolled = Gtk.ScrolledWindow(visible=True)
     scrolled.add(view)
     return scrolled
@@ -105,13 +114,15 @@ class ReadmeTab(Tab, Gtk.Overlay):
 
     title = _("Readme")
 
-    def __init__(self, engine, clock=None) -> None:
+    def __init__(
+        self, engine: Engine, clock: IReactorTime | None = None
+    ) -> None:
         super().__init__(visible=True)
         self.engine = engine
-        self.clock = reactor if clock is None else clock
+        self.clock = cast("IReactorTime", reactor) if clock is None else clock
         # the save of an edit, on its way
-        self._saving = None
-        margins = {
+        self._saving: IDelayedCall | None = None
+        margins: dict[str, Any] = {
             "left_margin": MARGIN,
             "top_margin": MARGIN,
             "bottom_margin": MARGIN,
@@ -194,7 +205,7 @@ class ReadmeTab(Tab, Gtk.Overlay):
         # over a connection lost, it stays as it is
         self.engine.readme().addCallbacks(self._loaded, lambda failure: None)
 
-    def _loaded(self, text) -> None:
+    def _loaded(self, text: str) -> None:
         textbuffer = self.editor.get_buffer()
         textbuffer.set_text(text)
         textbuffer.set_modified(False)
@@ -209,7 +220,7 @@ class ReadmeTab(Tab, Gtk.Overlay):
             textbuffer.set_modified(False)
             saving.addErrback(self._not_saved, textbuffer)
 
-    def _not_saved(self, failure, textbuffer) -> None:
+    def _not_saved(self, failure: Failure, textbuffer: Gtk.TextBuffer) -> None:
         # over a connection: the edits wait for the next save
         logger.error(readme_not_saved, error=failure.getErrorMessage())
         textbuffer.set_modified(True)
@@ -230,7 +241,7 @@ class ReadmeTab(Tab, Gtk.Overlay):
         self.syntax_button.set_visible(not self.showing_preview())
         self._set_margin()
 
-    def _picture(self, path):
+    def _picture(self, path: str) -> defer.Deferred[bytes]:
         current = self.engine.workspace.current
         if current is None:
             raise LookupError(_("No project is open"))
@@ -278,15 +289,15 @@ class ReadmeTab(Tab, Gtk.Overlay):
 
     # Signals
 
-    def on_toggled(self, button) -> None:
+    def on_toggled(self, button: Gtk.RadioButton) -> None:
         self._switch()
 
-    def on_changed(self, textbuffer) -> None:
+    def on_changed(self, textbuffer: Gtk.TextBuffer) -> None:
         # loaded while the preview shows
         if self.showing_preview():
             self._render()
 
-    def on_modified_changed(self, textbuffer) -> None:
+    def on_modified_changed(self, textbuffer: Gtk.TextBuffer) -> None:
         # saved a while after the first edit, unless it's saved before
         if textbuffer.get_modified():
             if self._saving is None:
@@ -297,13 +308,15 @@ class ReadmeTab(Tab, Gtk.Overlay):
             self._saving.cancel()
             self._saving = None
 
-    def on_size_allocate(self, box, allocation) -> None:
+    def on_size_allocate(
+        self, box: Gtk.Box, allocation: Gdk.Rectangle
+    ) -> None:
         # the buttons in another theme; not now, GTK would lose the resize
         # of the view
         if self._measuring is None:
             self._measuring = GLib.idle_add(self._set_margin_later)
 
-    def on_destroy(self, tab) -> None:
+    def on_destroy(self, tab: ReadmeTab) -> None:
         if self._measuring is not None:
             GLib.source_remove(self._measuring)
             self._measuring = None

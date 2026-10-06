@@ -27,6 +27,11 @@ file is missing can't be chosen. What the Add items add is chosen for the
 disk. Choosing emits ``chosen``.
 """
 
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, TypeAlias
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -41,10 +46,21 @@ from virtualbricks.gui.dialogs.addimage import (
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
+    from virtualbricks.config.images import ImageInfo, InfoCache
+    from virtualbricks.engine import Engine
+    from virtualbricks.remote.client import RemoteInfos
+
+    # what the machine of the bricks says of its files
+    Infos: TypeAlias = InfoCache | RemoteInfos
+
 GAP = 10
 
 
-def _label(text="", dim=False, bold=False, **props):
+def _label(
+    text: str = "", dim: bool = False, bold: bool = False, **props: Any
+) -> Gtk.Label:
     label = Gtk.Label(visible=True, label=text, xalign=0.0, **props)
     if dim:
         label.get_style_context().add_class("dim-label")
@@ -55,7 +71,7 @@ def _label(text="", dim=False, bold=False, **props):
     return label
 
 
-def _two_lines(name, words):
+def _two_lines(name: Gtk.Widget, words: Gtk.Widget) -> Gtk.Box:
     box = Gtk.Box(
         visible=True, orientation=Gtk.Orientation.VERTICAL, hexpand=True
     )
@@ -67,7 +83,7 @@ def _two_lines(name, words):
 class ImageOption(Gtk.ListBoxRow):
     """An image of the list of the picker, or No image."""
 
-    def __init__(self, image, chosen) -> None:
+    def __init__(self, image: Image | None, chosen: bool) -> None:
         super().__init__(visible=True)
         self.image = image
         box = Gtk.Box(visible=True, spacing=GAP, margin=6)
@@ -85,7 +101,7 @@ class ImageOption(Gtk.ListBoxRow):
         self.add(box)
         self.show_words("")
 
-    def show_words(self, text) -> None:
+    def show_words(self, text: str) -> None:
         self.words.set_text(text)
         self.words.set_visible(bool(text))
 
@@ -95,7 +111,14 @@ class ImagePicker(Gtk.MenuButton):
 
     __gsignals__ = {"chosen": (GObject.SignalFlags.RUN_FIRST, None, ())}
 
-    def __init__(self, engine, vm, image=None, infos=None, manage=None):
+    def __init__(
+        self,
+        engine: Engine,
+        vm: VirtualMachine,
+        image: Image | None = None,
+        infos: Infos | None = None,
+        manage: Callable[[], object] | None = None,
+    ) -> None:
         super().__init__(visible=True, hexpand=True)
         # it adds images; they are those of its factory
         self.engine = engine
@@ -208,14 +231,16 @@ class ImagePicker(Gtk.MenuButton):
             return
         self.facts_label.set_text("")
         reading = self.infos.read(path)
-        reading.addCallbacks(self._read, lambda failure: None, (image,))
+        reading.addCallbacks(
+            self._read, lambda failure: None, callbackArgs=(image,)
+        )
 
-    def _read(self, info, image) -> None:
+    def _read(self, info: ImageInfo, image: Image) -> None:
         # another may be chosen by now
         if image is self.image:
             self.facts_label.set_text(imageinfo.facts(info))
 
-    def choose(self, image) -> None:
+    def choose(self, image: Image | None) -> None:
         """Make image the image of the disk, and say so."""
 
         self.image = image
@@ -225,7 +250,11 @@ class ImagePicker(Gtk.MenuButton):
     # The popover
 
     def options(self) -> list[ImageOption]:
-        return self.list.get_children()
+        return [
+            row
+            for row in self.list.get_children()
+            if isinstance(row, ImageOption)
+        ]
 
     def fill(self) -> None:
         """The images of the library, as they are now, then No image."""
@@ -240,8 +269,11 @@ class ImagePicker(Gtk.MenuButton):
         self.list.add(ImageOption(None, self.image is None))
         self.search.grab_focus()
 
-    def show_option(self, option, info=None) -> None:
+    def show_option(
+        self, option: ImageOption, info: ImageInfo | None = None
+    ) -> None:
         image = option.image
+        assert image is not None, "No image has nothing to show"
         path = image.path
         machine = self.engine.machine
         there = machine.exists(path)
@@ -259,17 +291,20 @@ class ImagePicker(Gtk.MenuButton):
                 lambda failure: None,
             )
 
-    def _visible(self, option) -> bool:
+    def _visible(self, option: Gtk.ListBoxRow) -> bool:
+        assert isinstance(option, ImageOption), "the list has images"
         text = self.search.get_text().strip().lower()
         if option.image is None:
             return not text
         return text in option.image.name.lower()
 
-    def on_row_activated(self, listbox, option) -> None:
+    def on_row_activated(
+        self, listbox: Gtk.ListBox, option: ImageOption
+    ) -> None:
         self.popover.popdown()
         self.choose(option.image)
 
-    def _window(self):
+    def _window(self) -> Gtk.Window | None:
         window = self.get_toplevel()
         return window if isinstance(window, Gtk.Window) else None
 

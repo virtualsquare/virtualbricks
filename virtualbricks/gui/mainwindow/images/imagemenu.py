@@ -28,14 +28,16 @@ the File comes first, and Show in Files can't show it.
 from __future__ import annotations
 
 import functools
+from typing import TYPE_CHECKING
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gio, Gtk  # noqa: E402
+from gi.repository import Gdk, Gio, Gtk  # noqa: E402
 
 from virtualbricks.gui.mainwindow import tab  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
+    MenuActions,
     menu_item,
     menu_of,
     menu_section,
@@ -47,18 +49,22 @@ from virtualbricks.gui.dialogs.imagedialogs import (  # noqa: E402
 from virtualbricks.gui.dialogs.renamedialog import RenameDialog  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.virtualmachine import Image
+    from virtualbricks.gui.mainwindow.window import VBGUI
+
 GROUP = "image"
 
 _item = functools.partial(menu_item, GROUP)
 
 
-def menu(image, there, keys=False) -> Gio.Menu:
+def menu(image: Image, there: bool, keys: bool = False) -> Gio.Menu:
     """
     The menu of image, whose file is there or not. keys shows the keys of
     the Images tab next to the items: Enter, F2 and Delete.
     """
 
-    def key(name):
+    def key(name: str) -> str | None:
         return name if keys else None
 
     return menu_of(
@@ -74,10 +80,10 @@ def menu(image, there, keys=False) -> Gio.Menu:
     )
 
 
-class ImageActions(Gio.SimpleActionGroup):
+class ImageActions(MenuActions):
     """What the items of the menu of an image do."""
 
-    def __init__(self, gui, image) -> None:
+    def __init__(self, gui: VBGUI, image: Image) -> None:
         super().__init__()
         self.gui = gui
         self.image = image
@@ -86,7 +92,7 @@ class ImageActions(Gio.SimpleActionGroup):
             ("details", self.details),
             ("rename", self.rename),
             ("show", self.show),
-            ("remove", self.remove),
+            ("remove", self.remove_image),
         ):
             action = Gio.SimpleAction.new(name, None)
             action.connect("activate", lambda a, p, call=callback: call())
@@ -97,9 +103,9 @@ class ImageActions(Gio.SimpleActionGroup):
         """The actions that the image allows now."""
 
         there = self.gui.engine.machine.exists(self.image.path)
-        self.lookup_action("find-file").set_enabled(not there)
+        self.action("find-file").set_enabled(not there)
         # the file manager shows the files of this machine only
-        self.lookup_action("show").set_enabled(there and self.gui.engine.local)
+        self.action("show").set_enabled(there and self.gui.engine.local)
 
     def find_file(self) -> None:
         FindFileDialog(self.gui.engine, self.image).show(self.gui.window)
@@ -113,11 +119,17 @@ class ImageActions(Gio.SimpleActionGroup):
     def show(self) -> None:
         show_in_files(self.gui.window, self.image.path)
 
-    def remove(self) -> None:
+    def remove_image(self) -> None:
         self.gui.ask_remove_image(self.image)
 
 
-def popup(widget, event, gui, image, keys=False) -> Gtk.Menu:
+def popup(
+    widget: Gtk.Widget,
+    event: Gdk.EventButton | None,
+    gui: VBGUI,
+    image: Image,
+    keys: bool = False,
+) -> Gtk.Menu:
     """
     Open the menu of image: at the pointer, for a click on widget, or under
     widget when event is None, as for the Menu key. Keep the menu that it

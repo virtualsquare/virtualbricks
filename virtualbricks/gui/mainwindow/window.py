@@ -28,7 +28,11 @@ run or ask of the machine goes through its engine, ``engine``, and they
 read the bricks, the events and the images of ``engine.factory``.
 """
 
+from __future__ import annotations
+
 import os
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import gi
 
@@ -64,6 +68,24 @@ from virtualbricks.gui.dialogs import projectname
 from virtualbricks.gui.dialogs.projects import ProjectsWindow
 from virtualbricks.gui.dialogs.settings import SettingsWindow
 
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks import Brick
+    from virtualbricks.bricks.event import Event
+    from virtualbricks.bricks.virtualmachine import Image
+    from virtualbricks.config.report import Report
+    from virtualbricks.config.workspace import ProjectSummary
+    from virtualbricks.engine import Engine
+    from virtualbricks.gui.mainwindow.rowtab import RowsTab
+    from virtualbricks.gui.mainwindow.tab import Tab
+    from virtualbricks.remote.client import RemoteEngine
+    from virtualbricks.remote.follower import Item
+
+T = TypeVar("T")
+ItemT = TypeVar("ItemT", bound="Brick | Event | Image")
+
 logger = Logger()
 cannot_open_project = 'Cannot open the project "{name}": {error}'
 # The projects in Open Recent.
@@ -92,7 +114,7 @@ RECONNECT = 1
 QUIT = 2
 
 
-def ksm_warning(wanted, available, running):
+def ksm_warning(wanted: bool, available: bool, running: bool) -> str | None:
     """
     What the warning at start says of KSM: nothing unless the settings ask
     for it (wanted); then whether this Linux has it, and whether it runs.
@@ -107,7 +129,7 @@ def ksm_warning(wanted, available, running):
     return None
 
 
-def remote_title(engine):
+def remote_title(engine: RemoteEngine) -> str:
     """The title of the windows of another Virtualbricks: its project."""
 
     copy = engine.factory
@@ -131,13 +153,12 @@ class Freezer:
     insensitive until an operation completes.
     """
 
-    def __init__(self, freeze, unfreeze, parent):
-        """
-        :type freeze: Callable
-        :type unfreeze: Callable
-        :type parent: Optional[Gtk.Window]
-        """
-
+    def __init__(
+        self,
+        freeze: Callable[[], None],
+        unfreeze: Callable[[], None],
+        parent: Gtk.Window | None,
+    ) -> None:
         self.freeze_parent_window = freeze
         self.unfreeze_parent_window = unfreeze
         self.build_ui()
@@ -179,13 +200,11 @@ class Freezer:
         vbox1.pack_start(label2, True, True, 0)
         self.window.add(vbox1)
 
-    def wait_for(self, deferred, *args):
-        """
-        :type deferred: Union[twisted.internet.defer.Deferred[Any], Callable]
-        :type args: Tuple[Any]
-        :rtype: twisted.internet.defer.Deferred[Any]
-        """
-
+    def wait_for(
+        self,
+        deferred: defer.Deferred[Any] | Callable[..., Any],
+        *args: Any,
+    ) -> defer.Deferred[Any]:
         if not isinstance(deferred, defer.Deferred):
             if callable(deferred):
                 deferred = defer.maybeDeferred(deferred, *args)
@@ -195,24 +214,14 @@ class Freezer:
         deferred.addBoth(self.stop, pulse)
         return deferred
 
-    def start(self):
-        """
-        :rtype: twisted.internet.task.LoopingCall
-        """
-
+    def start(self) -> task.LoopingCall:
         self.freeze_parent_window()
         self.window.show_all()
         looping_call = task.LoopingCall(self.progress.pulse)
         looping_call.start(0.2, False)
         return looping_call
 
-    def stop(self, passthru, looping_call):
-        """
-        :type passthru: Any
-        :type looping_call: twisted.internet.task.LoopingCall
-        :rtype: Any
-        """
-
+    def stop(self, passthru: T, looping_call: task.LoopingCall) -> T:
         looping_call.stop()
         self.window.destroy()
         self.unfreeze_parent_window()
@@ -224,12 +233,14 @@ class ProgressBar:
     Wait for an operation, freezing the main window.
     """
 
-    def __init__(self, gui):
+    def __init__(self, gui: VBGUI) -> None:
         self.freezer = Freezer(
             gui.set_insensitive, gui.set_sensitive, gui.window
         )
 
-    def wait_for(self, something, *args):
+    def wait_for(
+        self, something: defer.Deferred[Any] | Callable[..., Any], *args: Any
+    ) -> defer.Deferred[Any]:
         return self.freezer.wait_for(something, *args)
 
 
@@ -239,7 +250,9 @@ class VBGUI:
     the widgets and the connections to the main engine.
     """
 
-    def __init__(self, engine, messages=None):
+    def __init__(
+        self, engine: Engine, messages: MessageLog | None = None
+    ) -> None:
         # what the windows call, and what they read
         self.engine = engine
         self.factory = self.brickfactory = factory = engine.factory
@@ -282,7 +295,7 @@ class VBGUI:
         )
         menubar1 = Gtk.MenuBar(visible=True, can_focus=False)
 
-        def menu(label):
+        def menu(label: str) -> tuple[Gtk.MenuItem, Gtk.Menu]:
             """A menu of the bar, empty."""
 
             top = Gtk.MenuItem(
@@ -293,14 +306,14 @@ class VBGUI:
             menubar1.append(top)
             return top, submenu
 
-        def item(submenu, label):
+        def item(submenu: Gtk.Menu, label: str) -> Gtk.MenuItem:
             menu_item = Gtk.MenuItem(
                 visible=True, label=label, use_underline=True
             )
             submenu.append(menu_item)
             return menu_item
 
-        def separator(submenu):
+        def separator(submenu: Gtk.Menu) -> None:
             submenu.append(Gtk.SeparatorMenuItem(visible=True))
 
         # File: what isn't a project's
@@ -365,7 +378,7 @@ class VBGUI:
         self.lost_bar.add_button(_("_Reconnect"), RECONNECT)
         self.lost_bar.add_button(_("_Quit"), QUIT)
         self.lost_bar.connect("response", self.on_lost_bar_response)
-        self._reconnect = None
+        self._reconnect: Callable[[], object] | None = None
         vbox1.pack_start(self.lost_bar, False, False, 0)
         self.main_notebook = Gtk.Notebook(visible=True, can_focus=True)
         self.bricks = BricksTab(self, self.factory)
@@ -452,7 +465,7 @@ class VBGUI:
             "activate",
             accel_group,
             Gdk.KEY_F1,
-            0,
+            Gdk.ModifierType(0),
             Gtk.AccelFlags.VISIBLE,
         )
 
@@ -502,14 +515,15 @@ class VBGUI:
         self.status_icon.connect("activate", self.on_status_icon_activate)
         self.status_icon.connect("popup-menu", self.on_status_icon_popup_menu)
 
-    def append_tab(self, tab) -> None:
+    def append_tab(self, tab: Tab) -> None:
+        assert isinstance(tab, Gtk.Widget), "a tab is the widget of its page"
         label = Gtk.Label(visible=True, label=tab.title, use_underline=True)
         self.main_notebook.append_page(tab, label)
 
     def get_root_widget(self) -> Gtk.Window:
         return self.window
 
-    def check_prerequisites(self) -> defer.Deferred:
+    def check_prerequisites(self) -> defer.Deferred[None]:
         """
         Say which programs are missing, and the packages that have them; and
         KSM, if the settings ask for it and it isn't on once the start has
@@ -517,13 +531,13 @@ class VBGUI:
         """
 
         missing = missing_programs(
-            get_setting("vde_path"), get_setting("qemu_path")
+            str(get_setting("vde_path")), str(get_setting("qemu_path"))
         )
 
-        def warn(running):
+        def warn(running: bool) -> None:
             lines = []
             line = ksm_warning(
-                get_setting("kernel_samepage_merging"),
+                bool(get_setting("kernel_samepage_merging")),
                 ksm.ksm_available(),
                 running,
             )
@@ -541,7 +555,7 @@ class VBGUI:
     """ Signal handlers                                           """
     """ ********************************************************     """
 
-    def curtain_down(self):
+    def curtain_down(self) -> None:
         """
         Close the settings that show, in the tab that shows them: their OK
         and Cancel are there.
@@ -550,10 +564,16 @@ class VBGUI:
         page = self.main_notebook.get_nth_page(
             self.main_notebook.get_current_page()
         )
-        if page in (self.bricks, self.events, self.images):
-            page.close_settings()
+        rows_tabs: tuple[RowsTab[Any], ...] = (
+            self.bricks,
+            self.events,
+            self.images,
+        )
+        for tab in rows_tabs:
+            if page is tab:
+                tab.close_settings()
 
-    def curtain_up(self, item):
+    def curtain_up(self, item: Item) -> None:
         """
         Show the settings of a brick in the Bricks tab, of an event in the
         Events tab, or the details of a disk image in the Images tab.
@@ -561,15 +581,17 @@ class VBGUI:
 
         # an image has no type: ask it first
         if is_disk_image(item):
-            tab = self.images
+            self._configure(self.images, item)
         elif is_event(item):
-            tab = self.events
+            self._configure(self.events, item)
         else:
-            tab = self.bricks
+            self._configure(self.bricks, item)
+
+    def _configure(self, tab: RowsTab[ItemT], item: ItemT) -> None:
         self.main_notebook.set_current_page(self.main_notebook.page_num(tab))
         tab.configure(item)
 
-    def set_title(self):
+    def set_title(self) -> None:
         if not self.engine.local:
             self.window.set_title(remote_title(self.engine))
             return
@@ -594,53 +616,55 @@ class VBGUI:
 
     # Notebook signals
 
-    def on_main_notebook_switch_page(self, notebook, page, page_num):
+    def on_main_notebook_switch_page(
+        self, notebook: Gtk.Notebook, page: Gtk.Widget, page_num: int
+    ) -> bool:
         switch(notebook, page)
         return True
 
     # gui (programming) interface
 
-    def on_quit(self, factory):
+    def on_quit(self, factory: BrickFactory) -> None:
         for tab in tabs(self.main_notebook):
             tab.on_quit()
 
-    def on_save(self):
+    def on_save(self) -> defer.Deferred[None]:
         """Save the open project, with what the tabs hold: a Deferred."""
 
         for tab in tabs(self.main_notebook):
             tab.on_save()
         return self.engine.save_project()
 
-    def on_open(self, name):
+    def on_open(self, name: str) -> defer.Deferred[Report]:
         """Save the open project and open name: a Deferred of the report."""
 
         opening = self.on_save()
-        opening.addCallback(lambda _: self.engine.open_project(name))
-        opening.addCallback(self._opened)
-        return opening
+        return opening.addCallback(
+            lambda _: self.engine.open_project(name)
+        ).addCallback(self._opened)
 
-    def on_new(self, name, description=""):
+    def on_new(
+        self, name: str, description: str = ""
+    ) -> defer.Deferred[Report]:
         """Save the open project, make name and open it: a Deferred."""
 
         making = self.on_save()
-        making.addCallback(
+        return making.addCallback(
             lambda _: self.engine.new_project(name, description)
-        )
-        making.addCallback(self._opened)
-        return making
+        ).addCallback(self._opened)
 
-    def _opened(self, report):
+    def _opened(self, report: Report) -> Report:
         self.on_opened()
         return report
 
-    def on_opened(self):
+    def on_opened(self) -> None:
         """A project opened: the tabs show it, and the title names it."""
 
         for tab in tabs(self.main_notebook):
             tab.on_open()
         self.set_title()
 
-    def do_quit(self, *_):
+    def do_quit(self, *_: object) -> bool:
         quitting = self.engine.quit()
         quitting.addErrback(
             lambda failure: logger.error(
@@ -651,23 +675,26 @@ class VBGUI:
 
     # end gui (programming) interface
 
-    def on_window_delete_event(self, window, event):
+    def on_window_delete_event(
+        self, window: Gtk.Window, event: Gdk.Event
+    ) -> bool:
         # don't delete; hide instead
         if get_setting("tray_icon"):
             window.hide()
             self.status_icon.set_tooltip_text(_("Virtualbricks hidden"))
             return True
+        return False
 
-    def ask_remove_brick(self, brick):
+    def ask_remove_brick(self, brick: Brick) -> None:
         DeleteDialog(self.engine, brick).show(self.window)
 
-    def ask_remove_event(self, event):
+    def ask_remove_event(self, event: Event) -> None:
         DeleteDialog(self.engine, event).show(self.window)
 
-    def ask_remove_image(self, image):
+    def ask_remove_image(self, image: Image) -> None:
         RemoveImageDialog(self.engine, image).show(self.window)
 
-    def show_images(self):
+    def show_images(self) -> None:
         """Show the Images tab."""
 
         self.main_notebook.set_current_page(
@@ -676,15 +703,15 @@ class VBGUI:
 
     # status icon handling
 
-    def start_systray(self):
+    def start_systray(self) -> None:
         if not self.status_icon.get_visible():
             self.status_icon.set_visible(True)
 
-    def stop_systray(self):
+    def stop_systray(self) -> None:
         if self.status_icon.get_visible():
             self.status_icon.set_visible(False)
 
-    def window_toggle(self):
+    def window_toggle(self) -> None:
         if self.window.get_visible():
             self.window.hide()
             self.status_icon.set_tooltip_text(_("Virtualbricks hidden"))
@@ -692,27 +719,29 @@ class VBGUI:
             self.window.show()
             self.status_icon.set_tooltip_text(_("Virtualbricks visible"))
 
-    def on_status_icon_activate(self, statusicon):
+    def on_status_icon_activate(self, statusicon: Gtk.StatusIcon) -> None:
         self.window_toggle()
 
-    def on_status_icon_popup_menu(self, statusicon, button, time):
+    def on_status_icon_popup_menu(
+        self, statusicon: Gtk.StatusIcon, button: int, time: int
+    ) -> None:
         if button == 3:
-            self.systray_menu.popup(None, None, None, button, time)
+            self.systray_menu.popup(None, None, None, None, button, time)
 
-    def on_systray_toggle_item_activate(self, menuitem):
+    def on_systray_toggle_item_activate(self, menuitem: Gtk.MenuItem) -> None:
         self.window_toggle()
 
     # menu items signals
 
-    def on_projects_new_item_activate(self, menuitem):
+    def on_projects_new_item_activate(self, menuitem: Gtk.MenuItem) -> bool:
         self.project_name_dialog(projectname.NEW)
         return True
 
-    def on_projects_open_item_activate(self, menuitem):
+    def on_projects_open_item_activate(self, menuitem: Gtk.MenuItem) -> bool:
         self.show_projects()
         return True
 
-    def on_projects_menu_activate(self, menuitem):
+    def on_projects_menu_activate(self, menuitem: Gtk.MenuItem) -> None:
         """Fill Open Recent with the projects used last."""
 
         for child in self.recent_menu.get_children():
@@ -720,13 +749,13 @@ class VBGUI:
         reading = self.engine.project_summaries()
         reading.addCallback(self._fill_recent)
 
-    def _fill_recent(self, summaries):
+    def _fill_recent(self, summaries: list[ProjectSummary]) -> None:
         current = self.engine.workspace.current
-        current = current.name if current is not None else None
+        current_name = current.name if current is not None else None
         recent = [
             summary
             for summary in summaries
-            if summary.name != current and summary.problem is None
+            if summary.name != current_name and summary.problem is None
         ][:RECENT]
         for summary in recent:
             recent_item = Gtk.MenuItem(visible=True, label=summary.name)
@@ -736,53 +765,58 @@ class VBGUI:
             self.recent_menu.append(recent_item)
         self.projects_recent_item.set_sensitive(bool(recent))
 
-    def on_recent_item_activate(self, menuitem, name):
+    def on_recent_item_activate(
+        self, menuitem: Gtk.MenuItem, name: str
+    ) -> bool:
         self.on_open(name).addErrback(self._not_opened, name)
         return True
 
-    def _not_opened(self, failure, name):
+    def _not_opened(self, failure: Failure, name: str) -> None:
         failure.trap(OSError, errors.Error)
         logger.error(cannot_open_project, name=name, error=failure.value)
 
-    def on_projects_rename_item_activate(self, menuitem):
-        self.project_name_dialog(
-            projectname.RENAME, self.engine.workspace.current.name
-        )
+    def _current_name(self) -> str:
+        current = self.engine.workspace.current
+        assert current is not None, "a project is open"
+        return current.name
+
+    def on_projects_rename_item_activate(self, menuitem: Gtk.MenuItem) -> bool:
+        self.project_name_dialog(projectname.RENAME, self._current_name())
         return True
 
-    def on_projects_save_item_activate(self, menuitem):
+    def on_projects_save_item_activate(self, menuitem: Gtk.MenuItem) -> bool:
         self.on_save()
         return True
 
-    def on_projects_duplicate_item_activate(self, menuitem):
-        self.project_name_dialog(
-            projectname.DUPLICATE, self.engine.workspace.current.name
-        )
+    def on_projects_duplicate_item_activate(
+        self, menuitem: Gtk.MenuItem
+    ) -> bool:
+        self.project_name_dialog(projectname.DUPLICATE, self._current_name())
         return True
 
-    def on_projects_import_item_activate(self, menuitem):
+    def on_projects_import_item_activate(self, menuitem: Gtk.MenuItem) -> bool:
         self.import_project()
         return True
 
-    def on_projects_export_item_activate(self, menuitem):
+    def on_projects_export_item_activate(self, menuitem: Gtk.MenuItem) -> bool:
         self.export_project(None)
         return True
 
     # The projects, for the Projects window and the name dialog
 
-    def show_projects(self, problem=None):
+    def show_projects(self, problem: str | None = None) -> ProjectsWindow:
         window = ProjectsWindow(self)
         if problem is not None:
             window.show_problem(problem)
         window.show(self.window)
         return window
 
-    def show_start_up_problem(self, message):
+    def show_start_up_problem(self, message: str) -> ProjectsWindow:
         """The last project can't be opened: choose one in Projects."""
 
         window = self.show_projects(problem=message)
 
-        def closed(widget):
+        def closed(widget: Gtk.Widget) -> None:
             # closed without opening a project: the last one, or a new one
             if self.engine.workspace.current is None:
                 restoring = self.engine.restore_last()
@@ -791,17 +825,21 @@ class VBGUI:
         window.get_root_widget().connect("destroy", closed)
         return window
 
-    def project_name_dialog(self, kind, original=None):
+    def project_name_dialog(
+        self, kind: str, original: str | None = None
+    ) -> projectname.ProjectNameDialog:
         dialog = projectname.ProjectNameDialog(self, kind, original)
         dialog.show(self.window)
         return dialog
 
-    def import_project(self, on_closed=None):
+    def import_project(
+        self, on_closed: Callable[[], object] | None = None
+    ) -> ImportDialog:
         """Import a project; on_closed is called when the window closes."""
 
         dialog = ImportDialog(self.brickfactory)
 
-        def destroyed(window):
+        def destroyed(window: Gtk.Widget) -> None:
             self.set_title()
             if on_closed is not None:
                 on_closed()
@@ -810,13 +848,16 @@ class VBGUI:
         dialog.get_root_widget().connect("destroy", destroyed)
         return dialog
 
-    def export_project(self, summary, parent=None):
+    def export_project(
+        self, summary: ProjectSummary | None, parent: Gtk.Window | None = None
+    ) -> None:
         """Export a project, the open one if summary is None."""
 
         if summary is None or (
             projects.current and summary.name == projects.current.name
         ):
             self.on_save()
+            assert projects.current is not None, "Export is of a project"
             path = projects.current.path
             images = [
                 (image.name, image.path) for image in self.brickfactory.images
@@ -827,22 +868,24 @@ class VBGUI:
         dialog = ExportProjectDialog(path, images)
         dialog.show(parent or self.window)
 
-    def on_file_settings_item_activate(self, menuitem):
+    def on_file_settings_item_activate(self, menuitem: Gtk.MenuItem) -> bool:
         SettingsWindow(self).show(self.window)
         return True
 
-    def on_file_logs_item_activate(self, menuitem):
+    def on_file_logs_item_activate(self, menuitem: Gtk.MenuItem) -> bool:
         LoggingWindow(self.messages).show()
         return True
 
-    def on_help_about_item_activate(self, menuitem):
+    def on_help_about_item_activate(self, menuitem: Gtk.MenuItem) -> bool:
         dialog = AboutDialog()
         dialog.show(self.window)
         return True
 
     # The connection to another Virtualbricks, for its windows
 
-    def connection_lost(self, text, reconnect):
+    def connection_lost(
+        self, text: str, reconnect: Callable[[], object]
+    ) -> None:
         """
         Say that the connection is lost, and why; the windows wait, while
         reconnect() tries again.
@@ -854,22 +897,24 @@ class VBGUI:
         self.menubar.set_sensitive(False)
         self.main_notebook.set_sensitive(False)
 
-    def reconnected(self):
+    def reconnected(self) -> None:
         self.lost_bar.hide()
         self.menubar.set_sensitive(True)
         self.main_notebook.set_sensitive(True)
 
-    def on_lost_bar_response(self, bar, response):
+    def on_lost_bar_response(self, bar: Gtk.InfoBar, response: int) -> None:
         if response == RECONNECT and self._reconnect is not None:
             self._reconnect()
         elif response == QUIT:
             self.do_quit()
 
-    def user_wait_action(self, action, *args):
+    def user_wait_action(
+        self, action: defer.Deferred[Any] | Callable[..., Any], *args: Any
+    ) -> None:
         ProgressBar(self).wait_for(action, *args)
 
-    def set_insensitive(self):
+    def set_insensitive(self) -> None:
         self.window.set_sensitive(False)
 
-    def set_sensitive(self):
+    def set_sensitive(self) -> None:
         self.window.set_sensitive(True)

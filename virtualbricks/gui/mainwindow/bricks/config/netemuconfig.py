@@ -27,6 +27,11 @@ keeps: the grid shows it, and a row that adds up to more than 100 % is an
 error.
 """
 
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -41,11 +46,15 @@ from virtualbricks.gui.mainwindow.bricks.config.panel import (
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.netemu import NetemuConfig, NetemuDraft
+    from virtualbricks.gui.form import Form
+
 # Around the texts of a state, and between the cells of the grid, in pixels.
 GAP = 6
 
 
-def summary(state) -> str:
+def summary(state: NetemuConfig) -> str:
     """What a state does, in a line."""
 
     return _("{bandwidth} bytes/s · {delay} ms · {loss:g} % lost").format(
@@ -65,7 +74,7 @@ def _bold(text: str) -> Gtk.Label:
 class StateRow(Gtk.ListBoxRow):
     """A state in the list: its name, and what it does."""
 
-    def __init__(self, state) -> None:
+    def __init__(self, state: NetemuConfig) -> None:
         super().__init__(visible=True)
         box = Gtk.Box(
             visible=True,
@@ -83,7 +92,7 @@ class StateRow(Gtk.ListBoxRow):
         self.add(box)
         self.update(state)
 
-    def update(self, state) -> None:
+    def update(self, state: NetemuConfig) -> None:
         self.name.set_text(state.name)
         self.words.set_text(summary(state))
 
@@ -91,7 +100,9 @@ class StateRow(Gtk.ListBoxRow):
 class Transitions(Gtk.Grid):
     """The chances of moving between the states, in %: a row for each."""
 
-    def __init__(self, draft, changed) -> None:
+    def __init__(
+        self, draft: NetemuDraft, changed: Callable[[], None]
+    ) -> None:
         super().__init__(visible=True, column_spacing=GAP, row_spacing=GAP)
         self.draft = draft
         self.changed = changed
@@ -141,7 +152,9 @@ class Transitions(Gtk.Grid):
             percent = round(self.draft.stays(index), 2)
             label.set_text(_("{percent:g} % stays").format(percent=percent))
 
-    def on_value_changed(self, spin, row: int, column: int) -> None:
+    def on_value_changed(
+        self, spin: Gtk.SpinButton, row: int, column: int
+    ) -> None:
         self.draft.set_weight(row, column, spin.get_value())
         self.update_stays()
         self.changed()
@@ -150,7 +163,9 @@ class Transitions(Gtk.Grid):
 class NetemuPanel(Panel):
     """The settings of a Netemu."""
 
-    def build(self, form):
+    draft: NetemuDraft
+
+    def build(self, form: Form) -> None:
         form.section(_("Ends"))
         form.socket(0, _("Left end"), _("The switch at one end of the link"))
         form.socket(1, _("Right end"), _("The switch at the other end"))
@@ -236,7 +251,7 @@ class NetemuPanel(Panel):
 
     def on_changed(self) -> None:
         row = self.states.get_row_at_index(self.draft.selected)
-        if row is not None:
+        if isinstance(row, StateRow):
             row.update(self.draft.states[self.draft.selected])
         if [
             state.name for state in self.draft.states
@@ -248,25 +263,27 @@ class NetemuPanel(Panel):
         self.form.reload()
         self.on_changed()
 
-    def on_state_selected(self, listbox, row) -> None:
+    def on_state_selected(
+        self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow | None
+    ) -> None:
         if row is None or getattr(self, "_filling", False):
             return
         self.draft.select(row.get_index())
         self._show_another()
 
-    def on_add_clicked(self, button) -> None:
+    def on_add_clicked(self, button: Gtk.Button) -> None:
         self.draft.add()
         self._fill()
         self.transitions.rebuild()
         self._show_another()
 
-    def on_remove_clicked(self, button) -> None:
+    def on_remove_clicked(self, button: Gtk.Button) -> None:
         self.draft.remove()
         self._fill()
         self.transitions.rebuild()
         self._show_another()
 
-    def on_period_changed(self, spin) -> None:
+    def on_period_changed(self, spin: Gtk.SpinButton) -> None:
         self.draft.period = spin.get_value_as_int()
         self.on_changed()
 

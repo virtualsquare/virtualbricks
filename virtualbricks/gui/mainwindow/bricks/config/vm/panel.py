@@ -23,6 +23,9 @@ of the machine's QEMU program.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import TYPE_CHECKING
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -41,6 +44,21 @@ from virtualbricks.gui.mainwindow.bricks.config.vm import (  # noqa: E402
     system,
 )
 from virtualbricks.i18n import _  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.python.failure import Failure
+
+    from virtualbricks.bricks.virtualmachine import VirtualMachineDraft
+    from virtualbricks.gui.form import Row
+    from virtualbricks.gui.mainwindow.bricks.config.picker import Picker
+    from virtualbricks.gui.mainwindow.bricks.config.vm.devices import (
+        UsbDevices,
+    )
+    from virtualbricks.gui.mainwindow.bricks.config.vm.disks import (
+        DisksSection,
+    )
+    from virtualbricks.gui.mainwindow.bricks.config.vm.network import Cards
+    from virtualbricks.programs import QemuInfo
 
 logger = Logger()
 qemu_error = "Cannot ask {program} what it has"
@@ -111,12 +129,21 @@ SECTIONS = (
 class VirtualMachinePanel(Panel):
     """The settings of a virtual machine."""
 
-    def build(self, form):
+    draft: VirtualMachineDraft
+    # what the sections make
+    machine_picker: Picker
+    cpu_picker: Picker
+    sound_picker: Picker
+    disks: DisksSection
+    cards: Cards
+    usb: UsbDevices
+
+    def build(self, form: Form) -> Gtk.Box:
         self.pages: list[Page] = []
         # called when the rows refresh, and when the QEMU answers
-        self.refreshers = []
-        self.fillers = []
-        self.asked = None
+        self.refreshers: list[Callable[[], None]] = []
+        self.fillers: list[Callable[[], None]] = []
+        self.asked: tuple[str, str] | None = None
         self.stack = Gtk.Stack(visible=True, vhomogeneous=False)
         self.sidebar = Gtk.ListBox(visible=True)
         self.sidebar.connect("row-selected", self.on_section_selected)
@@ -161,7 +188,7 @@ class VirtualMachinePanel(Panel):
         raise KeyError(key)
 
     @property
-    def rows(self) -> dict:
+    def rows(self) -> dict[str, Row]:
         rows = {}
         for page in self.pages:
             rows.update(page.form.rows)
@@ -174,6 +201,7 @@ class VirtualMachinePanel(Panel):
             refresh()
         problems = self.draft.problems()
         for row in self.sidebar.get_children():
+            assert isinstance(row, SidebarRow), "the sidebar has sections"
             found = [p for p in problems if row.page.has(p.key)]
             row.show_problems(
                 any(p.error for p in found), any(not p.error for p in found)
@@ -188,7 +216,9 @@ class VirtualMachinePanel(Panel):
         if self.asked is not None and wanted != self.asked:
             self.ask()
 
-    def on_section_selected(self, listbox, row) -> None:
+    def on_section_selected(
+        self, listbox: Gtk.ListBox, row: SidebarRow | None
+    ) -> None:
         if row is not None:
             self.stack.set_visible_child_name(row.page.key)
 
@@ -202,12 +232,13 @@ class VirtualMachinePanel(Panel):
         deferred.addCallbacks(
             self.answered,
             self.not_answered,
-            (program, chosen),
-            None,
-            (program, chosen),
+            callbackArgs=(program, chosen),
+            errbackArgs=(program, chosen),
         )
 
-    def not_answered(self, failure, program: str, chosen: str) -> None:
+    def not_answered(
+        self, failure: Failure, program: str, chosen: str
+    ) -> None:
         if self.asked != (program, chosen):
             return
         if not failure.check(FileNotFoundError):
@@ -228,7 +259,7 @@ class VirtualMachinePanel(Panel):
         )
         self.fill()
 
-    def answered(self, info, program: str, chosen: str) -> None:
+    def answered(self, info: QemuInfo, program: str, chosen: str) -> None:
         if self.asked != (program, chosen):
             return
         self.draft.qemu = info
@@ -249,7 +280,9 @@ class VirtualMachinePanel(Panel):
             )
         )
 
-    def described(self, properties, program: str, chosen: str) -> None:
+    def described(
+        self, properties: frozenset[str], program: str, chosen: str
+    ) -> None:
         if self.asked != (program, chosen):
             return
         self.draft.machine_properties = properties

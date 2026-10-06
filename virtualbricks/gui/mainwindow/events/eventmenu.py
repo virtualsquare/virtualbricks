@@ -28,16 +28,18 @@ runs the actions at once, to try an event out; a wait goes on.
 from __future__ import annotations
 
 import functools
+from typing import TYPE_CHECKING
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gio, Gtk  # noqa: E402
+from gi.repository import Gdk, Gio, Gtk  # noqa: E402
 
 from virtualbricks.gui.mainwindow import tab  # noqa: E402
 from virtualbricks.bricks import eventinfo  # noqa: E402
 from virtualbricks.bricks.eventinfo import State  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
+    MenuActions,
     menu_item,
     menu_of,
     menu_section,
@@ -46,18 +48,23 @@ from virtualbricks.gui.dialogs.renamedialog import RenameDialog  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.bricks import is_running  # noqa: E402
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.event import Event
+    from virtualbricks.engine import Engine
+    from virtualbricks.gui.mainwindow.window import VBGUI
+
 GROUP = "event"
 
 _item = functools.partial(menu_item, GROUP)
 
 
-def menu(event, keys=False) -> Gio.Menu:
+def menu(event: Event, keys: bool = False) -> Gio.Menu:
     """
     The menu of event. keys shows the keys of the Events tab next to the
     items: Enter, F2 and Delete.
     """
 
-    def key(name):
+    def key(name: str) -> str | None:
         return name if keys else None
 
     return menu_of(
@@ -74,7 +81,7 @@ def menu(event, keys=False) -> Gio.Menu:
     )
 
 
-def startstop(engine, event) -> None:
+def startstop(engine: Engine, event: Event) -> None:
     """Stop event if it waits, or else start it."""
 
     if event.scheduled is not None:
@@ -83,10 +90,10 @@ def startstop(engine, event) -> None:
         engine.start_event(event)
 
 
-class EventActions(Gio.SimpleActionGroup):
+class EventActions(MenuActions):
     """What the items of the menu of an event do."""
 
-    def __init__(self, gui, event) -> None:
+    def __init__(self, gui: VBGUI, event: Event) -> None:
         super().__init__()
         self.gui = gui
         self.event = event
@@ -113,7 +120,7 @@ class EventActions(Gio.SimpleActionGroup):
             "rename": state is not State.WAITING,
         }
         for name, value in enabled.items():
-            self.lookup_action(name).set_enabled(value)
+            self.action(name).set_enabled(value)
 
     def startstop(self) -> None:
         startstop(self.gui.engine, self.event)
@@ -134,7 +141,13 @@ class EventActions(Gio.SimpleActionGroup):
         self.gui.ask_remove_event(self.event)
 
 
-def popup(widget, event, gui, the_event, keys=False) -> Gtk.Menu:
+def popup(
+    widget: Gtk.Widget,
+    event: Gdk.EventButton | None,
+    gui: VBGUI,
+    the_event: Event,
+    keys: bool = False,
+) -> Gtk.Menu:
     """
     Open the menu of the_event: at the pointer, for a click on widget, or
     under widget when event is None, as for the Menu key. Keep the menu that

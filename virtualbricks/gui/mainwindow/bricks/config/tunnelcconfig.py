@@ -21,14 +21,21 @@ The panel of a tunnel client: the switch at its end, the server it connects
 to, its ports and its password.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
 from virtualbricks.i18n import _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.gui.form import Form
 
 
 class TunnelConnectPanel(Panel):
     """The settings of the client end of a tunnel."""
 
-    def build(self, form):
+    def build(self, form: Form) -> None:
         form.section(_("Connection"))
         form.socket(
             0, _("Plugged into"), _("The switch at this end of the tunnel")

@@ -22,10 +22,20 @@ boot, its ramdisk, its command line and GDB; the clock, the serial port and
 the icon.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from virtualbricks.i18n import _
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.gui.mainwindow.bricks.config.vm.panel import (
+        Page,
+        VirtualMachinePanel,
+    )
 
-def build_kernel(panel, page) -> None:
+
+def build_kernel(panel: VirtualMachinePanel, page: Page) -> None:
     form = page.form
     form.section(_("Kernel"))
     form.switch("use_kernel")
@@ -38,7 +48,7 @@ def build_kernel(panel, page) -> None:
     form.spin("gdb_port")
 
 
-def build_advanced(panel, page) -> None:
+def build_advanced(panel: VirtualMachinePanel, page: Page) -> None:
     form = page.form
     form.section(_("Clock and serial port"))
     form.switch("clock_local_time")

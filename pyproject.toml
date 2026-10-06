@@ -149,6 +149,7 @@ module = [
     "virtualbricks.engine",
     "virtualbricks.gui.dialogs.*",
     "virtualbricks.gui.form",
+    "virtualbricks.gui.mainwindow.*",
     "virtualbricks.gui.graphics",
     "virtualbricks.gui.imageinfo",
     "virtualbricks.gui.markdownview",

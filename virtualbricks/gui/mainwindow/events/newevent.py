@@ -28,6 +28,8 @@ event, without actions.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -39,6 +41,9 @@ from virtualbricks.gui.mainwindow.events.eventeditor import (  # noqa: E402
 )
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.gui.mainwindow.window import VBGUI
 
 # The name suggested, and the delay, in seconds.
 NAME = "new_event"
@@ -54,14 +59,14 @@ class NewEventDialog:
     gui is the main window, which has the factory and shows the settings.
     """
 
-    def __init__(self, gui):
+    def __init__(self, gui: VBGUI) -> None:
         self.gui = gui
         self.factory = gui.brickfactory
         self.build_ui()
         self.name_entry.set_text(self.factory.unused_name(NAME))
         self.check()
 
-    def build_ui(self):
+    def build_ui(self) -> None:
         self.dialog = Gtk.Dialog(
             title=_("New Event"),
             use_header_bar=True,
@@ -114,17 +119,17 @@ class NewEventDialog:
         self.name_entry.connect("changed", self.on_name_changed)
         self.dialog.connect("response", self.on_response)
 
-    def get_root_widget(self):
+    def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
-    def show(self, parent=None):
+    def show(self, parent: Gtk.Window | None = None) -> None:
         if parent is not None:
             self.dialog.set_transient_for(parent)
         self.dialog.show()
 
     # The name
 
-    def check(self):
+    def check(self) -> None:
         """Say what is wrong with the name, if anything, and wait for it."""
 
         message = None
@@ -136,12 +141,12 @@ class NewEventDialog:
         self.name_message.set_visible(message is not None)
         self.create_button.set_sensitive(message is None)
 
-    def on_name_changed(self, entry):
+    def on_name_changed(self, entry: Gtk.Entry) -> None:
         self.check()
 
     # The action
 
-    def on_response(self, dialog, response_id):
+    def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         if response_id != Gtk.ResponseType.OK:
             dialog.destroy()
             return

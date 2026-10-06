@@ -21,14 +21,24 @@ The panel of a capture: the switch that gets the packets, and the interface
 of the host that they come from.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
 from virtualbricks.i18n import _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.capture import CaptureDraft
+    from virtualbricks.gui.form import Form
 
 
 class CapturePanel(Panel):
     """The settings of a capture."""
 
-    def build(self, form):
+    draft: CaptureDraft
+
+    def build(self, form: Form) -> None:
         form.section(_("Connection"))
         form.socket(
             0, _("Plugged into"), _("The switch that gets the packets")

@@ -31,10 +31,12 @@ draft of the brick; a router has none.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # noqa: E402
+from gi.repository import Gdk, Gtk  # noqa: E402
 from twisted.internet import defer  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
@@ -53,14 +55,18 @@ from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     log_failures,
 )
 from virtualbricks.i18n import _, ngettext  # noqa: E402
-from virtualbricks.bricks import is_running  # noqa: E402
+from virtualbricks.bricks import Brick, is_running  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
+    from virtualbricks.observable import Signal
 
 logger = Logger()
 not_started = "Brick not started."
 not_stopped = "Brick not stopped."
 
 
-def count(bricks) -> str:
+def count(bricks: list[Brick]) -> str:
     """How many bricks run, of how many."""
 
     total = len(bricks)
@@ -70,7 +76,7 @@ def count(bricks) -> str:
     ).format(running=running, total=total)
 
 
-class BricksTab(RowsTab):
+class BricksTab(RowsTab[Brick]):
     """The bricks of the project, and what can be done with them."""
 
     title = _("_Bricks")
@@ -89,7 +95,7 @@ class BricksTab(RowsTab):
     def make_list(self) -> BrickList:
         return BrickList(self.gui, self.factory)
 
-    def signals(self) -> tuple:
+    def signals(self) -> tuple[Signal, Signal, Signal]:
         factory = self.factory
         return (
             factory.brick_added,
@@ -97,16 +103,16 @@ class BricksTab(RowsTab):
             factory.brick_changed,
         )
 
-    def items(self) -> list:
+    def items(self) -> list[Brick]:
         return list(self.factory.bricks)
 
-    def count_text(self, items) -> str:
+    def count_text(self, items: list[Brick]) -> str:
         return count(items)
 
-    def can_start(self, item) -> bool:
+    def can_start(self, item: Brick) -> bool:
         return brickinfo.state(item) is State.STOPPED
 
-    def start_all(self) -> defer.Deferred:
+    def start_all(self) -> defer.Deferred[None]:
         """Start the bricks that can start; the failures are logged."""
 
         engine = self.gui.engine
@@ -117,7 +123,7 @@ class BricksTab(RowsTab):
         ]
         return log_failures(deferreds, not_started, logger)
 
-    def stop_all(self) -> defer.Deferred:
+    def stop_all(self) -> defer.Deferred[None]:
         """Stop the running bricks; the failures are logged."""
 
         engine = self.gui.engine
@@ -126,26 +132,29 @@ class BricksTab(RowsTab):
         ]
         return log_failures(deferreds, not_stopped, logger)
 
-    def new(self) -> None:
+    def new_item(self) -> None:
         """Offer the kinds of bricks, under the button."""
 
         if self.new_popover is None:
             self.new_popover = NewBrickPopover(self.gui.engine, self.on_made)
         self.new_popover.popup_at(self.new_button)
 
-    def on_made(self, brick) -> None:
+    def on_made(self, brick: Brick) -> None:
         """Select the new brick, and show its settings."""
 
         row = self.list.row_of(brick)
+        assert row is not None, "the list follows the factory"
         self.list.select_row(row)
         row.grab_focus()
         self.gui.curtain_up(brick)
 
-    def popup(self, widget, event, item) -> Gtk.Menu:
+    def popup(
+        self, widget: Gtk.Widget, event: Gdk.EventButton | None, item: Brick
+    ) -> Gtk.Menu:
         return brickmenu.popup(widget, event, self.gui, item, True)
 
-    def panel_for(self, item):
+    def panel_for(self, item: Brick) -> Panel | None:
         return new_panel(item, self.gui)
 
-    def settings_words(self, item) -> str:
+    def settings_words(self, item: Brick) -> str:
         return _("{kind} settings").format(kind=brickinfo.kind(item))

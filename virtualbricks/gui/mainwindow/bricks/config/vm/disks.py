@@ -32,6 +32,11 @@ called after each change, and ``to_draft()`` writes the images and the modes
 into the machine's draft.
 """
 
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -49,7 +54,19 @@ from virtualbricks.gui.dialogs.imagedialogs import (
 from virtualbricks.gui.mainwindow.bricks.config.vm.imagepicker import (
     ImagePicker,
 )
+from virtualbricks.gui.mainwindow.tab import simple_action
 from virtualbricks.i18n import _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.virtualmachine import (
+        Image,
+        VirtualMachine,
+        VirtualMachineDraft,
+    )
+    from virtualbricks.engine import Engine
+    from virtualbricks.gui.mainwindow.bricks.config.vm.imagepicker import (
+        Infos,
+    )
 
 # The modes of a disk: whether it has a private copy.
 PRIVATE = "private"
@@ -57,7 +74,9 @@ ITSELF = "image"
 MODES = ((PRIVATE, _("Private copy")), (ITSELF, _("The image itself")))
 
 
-def _label(text="", dim=False, bold=False, **props):
+def _label(
+    text: str = "", dim: bool = False, bold: bool = False, **props: Any
+) -> Gtk.Label:
     label = Gtk.Label(visible=True, label=text, xalign=0.0, **props)
     if dim:
         label.get_style_context().add_class("dim-label")
@@ -71,7 +90,13 @@ def _label(text="", dim=False, bold=False, **props):
 class DiskRow(Gtk.ListBoxRow):
     """A disk: its device, its image, its mode and what the mode does."""
 
-    def __init__(self, section, device, image, private) -> None:
+    def __init__(
+        self,
+        section: DisksSection,
+        device: str,
+        image: Image | None,
+        private: bool,
+    ) -> None:
         super().__init__(visible=True, activatable=False, selectable=False)
         self.section = section
         self.device = device
@@ -102,7 +127,7 @@ class DiskRow(Gtk.ListBoxRow):
             ("merge", self.merge),
             ("start-over", self.start_over),
             ("show", self.show_in_files),
-            ("remove", self.remove),
+            ("remove", self.remove_disk),
         ):
             action = Gio.SimpleAction.new(name, None)
             action.connect("activate", lambda a, p, call=callback: call())
@@ -128,7 +153,7 @@ class DiskRow(Gtk.ListBoxRow):
         self.update()
 
     @property
-    def image(self):
+    def image(self) -> Image | None:
         return self.picker.image
 
     @property
@@ -157,11 +182,11 @@ class DiskRow(Gtk.ListBoxRow):
         # over a connection, the long work and the file manager wait (19
         # R13); a copy starts over there
         local = self.section.engine.local
-        self.actions.lookup_action("show").set_enabled(there and local)
+        simple_action(self.actions, "show").set_enabled(there and local)
         changes = self.keeps_changes()
         for name in ("save", "merge"):
-            self.actions.lookup_action(name).set_enabled(changes and local)
-        self.actions.lookup_action("start-over").set_enabled(changes)
+            simple_action(self.actions, name).set_enabled(changes and local)
+        simple_action(self.actions, "start-over").set_enabled(changes)
         self._make_menu()
 
     def _make_menu(self) -> None:
@@ -184,7 +209,7 @@ class DiskRow(Gtk.ListBoxRow):
 
     def _changed(self) -> None:
         self.update()
-        self.section.notify()
+        self.section.disks_changed()
 
     def keeps_changes(self) -> bool:
         """
@@ -211,7 +236,7 @@ class DiskRow(Gtk.ListBoxRow):
         dialog.show(self._window())
         return dialog
 
-    def _saved(self, image, use_it) -> None:
+    def _saved(self, image: Image, use_it: bool) -> None:
         # the row follows the disk, or OK would give it its old image
         if use_it:
             self.picker.choose(image)
@@ -233,12 +258,13 @@ class DiskRow(Gtk.ListBoxRow):
         return dialog
 
     def show_in_files(self) -> None:
+        assert self.image is not None, "Show in Files needs the file"
         show_in_files(self._window(), self.image.path)
 
-    def remove(self) -> None:
+    def remove_disk(self) -> None:
         self.section.remove_disk(self.device)
 
-    def _window(self):
+    def _window(self) -> Gtk.Window | None:
         window = self.get_toplevel()
         return window if isinstance(window, Gtk.Window) else None
 
@@ -247,7 +273,12 @@ class DisksSection(Gtk.Box):
     """The disks of vm, and Add Disk; engine starts a copy over."""
 
     def __init__(
-        self, vm, engine, infos=None, manage=None, changed=None
+        self,
+        vm: VirtualMachine,
+        engine: Engine,
+        infos: Infos | None = None,
+        manage: Callable[[], object] | None = None,
+        changed: Callable[[], object] | None = None,
     ) -> None:
         super().__init__(
             visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=8
@@ -265,10 +296,7 @@ class DisksSection(Gtk.Box):
         self.list = Gtk.ListBox(
             visible=True, selection_mode=Gtk.SelectionMode.NONE
         )
-        self.list.set_sort_func(
-            lambda a, b: DISK_DEVICES.index(a.device)
-            - DISK_DEVICES.index(b.device)
-        )
+        self.list.set_sort_func(self._order)
         self.list.set_header_func(self._separate)
         self.list.set_placeholder(
             _label(
@@ -320,12 +348,25 @@ class DisksSection(Gtk.Box):
         self._update_add()
 
     @staticmethod
-    def _separate(row, before) -> None:
+    def _order(first: Gtk.ListBoxRow, second: Gtk.ListBoxRow) -> int:
+        assert isinstance(first, DiskRow), "the list has disks"
+        assert isinstance(second, DiskRow), "the list has disks"
+        return DISK_DEVICES.index(first.device) - DISK_DEVICES.index(
+            second.device
+        )
+
+    @staticmethod
+    def _separate(row: Gtk.ListBoxRow, before: Gtk.ListBoxRow | None) -> None:
         if before is not None and row.get_header() is None:
             row.set_header(Gtk.Separator(visible=True))
 
-    def row(self, device) -> DiskRow | None:
-        for row in self.list.get_children():
+    def rows(self) -> list[DiskRow]:
+        return [
+            row for row in self.list.get_children() if isinstance(row, DiskRow)
+        ]
+
+    def row(self, device: str) -> DiskRow | None:
+        for row in self.rows():
             if row.device == device:
                 return row
         return None
@@ -333,7 +374,7 @@ class DisksSection(Gtk.Box):
     def free(self) -> list[str]:
         """The devices without a disk, in order."""
 
-        taken = {row.device for row in self.list.get_children()}
+        taken = {row.device for row in self.rows()}
         return [device for device in DISK_DEVICES if device not in taken]
 
     def _update_add(self) -> None:
@@ -346,31 +387,31 @@ class DisksSection(Gtk.Box):
             self.add_menu.append_item(item)
         self.add_button.set_sensitive(bool(self.free()))
 
-    def add_disk(self, device) -> DiskRow:
+    def add_disk(self, device: str) -> DiskRow:
         """A disk on device, without an image yet, with a private copy."""
 
         row = DiskRow(self, device, None, True)
         self.list.add(row)
         self._update_add()
-        self.notify()
+        self.disks_changed()
         return row
 
-    def remove_disk(self, device) -> None:
+    def remove_disk(self, device: str) -> None:
         row = self.row(device)
         if row is not None:
             row.destroy()
             # the next row has no row above it any more
-            for other in self.list.get_children():
+            for other in self.rows():
                 other.set_header(None)
             self.list.invalidate_headers()
         self._update_add()
-        self.notify()
+        self.disks_changed()
 
-    def notify(self) -> None:
+    def disks_changed(self) -> None:
         if self.changed is not None:
             self.changed()
 
-    def to_draft(self, draft) -> None:
+    def to_draft(self, draft: VirtualMachineDraft) -> None:
         """Write the images of the disks, and their modes, into a draft."""
 
         for device in DISK_DEVICES:

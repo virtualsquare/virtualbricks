@@ -26,6 +26,10 @@ socket that other bricks plug into. Add Card adds a card in nothing, and a
 card's Remove removes it. Nothing reaches the machine before OK.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -47,13 +51,22 @@ from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.nic import random_mac  # noqa: E402
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.draft import Problem
+    from virtualbricks.bricks.virtualmachine import Card
+    from virtualbricks.gui.mainwindow.bricks.config.vm.panel import (
+        Page,
+        VirtualMachinePanel,
+    )
+    from virtualbricks.programs import QemuInfo
+
 GAP = 8
 NOTHING = ""
 HOST = "host"
 SOCKET = "socket"
 
 
-def model_options(info, chosen: str) -> list:
+def model_options(info: QemuInfo | None, chosen: str) -> list[Option]:
     """The card models of a QEMU; the chosen one by its own name."""
 
     if info is None:
@@ -70,7 +83,7 @@ def model_options(info, chosen: str) -> list:
     ]
 
 
-def build(panel, page) -> None:
+def build(panel: VirtualMachinePanel, page: Page) -> None:
     cards = Cards(panel)
     panel.cards = cards
     page.form.add(cards)
@@ -92,7 +105,7 @@ def _bold(text: str) -> Gtk.Label:
 class CardRow(Gtk.ListBoxRow):
     """A card: eth and its number, its model, its MAC, where it plugs."""
 
-    def __init__(self, cards, index: int) -> None:
+    def __init__(self, cards: Cards, index: int) -> None:
         super().__init__(visible=True, activatable=False, selectable=False)
         self.cards = cards
         self.index = index
@@ -111,7 +124,7 @@ class CardRow(Gtk.ListBoxRow):
         self.remove_button.set_hexpand(True)
         self.remove_button.show()
         self.remove_button.connect(
-            "clicked", lambda button: cards.remove(self.index)
+            "clicked", lambda button: cards.remove_card(self.index)
         )
         grid.attach(self.remove_button, 2, 0, 1, 1)
 
@@ -161,7 +174,7 @@ class CardRow(Gtk.ListBoxRow):
         grid.attach(self.problem, 0, 4, 3, 1)
         self.add(grid)
 
-    def _plugged_id(self, card) -> str:
+    def _plugged_id(self, card: Card) -> str:
         if card.kind == SOCKET:
             return SOCKET
         if card.sock is None:
@@ -173,10 +186,10 @@ class CardRow(Gtk.ListBoxRow):
     def on_model(self, value: str) -> None:
         self.cards.change(self.index, model=value)
 
-    def on_mac(self, entry) -> None:
+    def on_mac(self, entry: Gtk.Entry) -> None:
         self.cards.change(self.index, mac=entry.get_text())
 
-    def on_plugged(self, combo) -> None:
+    def on_plugged(self, combo: Gtk.ComboBoxText) -> None:
         chosen = combo.get_active_id()
         if chosen == SOCKET:
             self.cards.change(self.index, rebuild=True, kind=SOCKET)
@@ -186,20 +199,21 @@ class CardRow(Gtk.ListBoxRow):
         elif chosen == HOST:
             sock = hostonly_sock
         else:
+            assert chosen is not None, "a choice is always active"
             sock = self.sockets[int(chosen)]
         kind = self.cards.panel.draft.cards[self.index].kind
         self.cards.change(
             self.index, rebuild=kind != "plug", kind="plug", sock=sock
         )
 
-    def show_problem(self, problem) -> None:
+    def show_problem(self, problem: Problem | None) -> None:
         show_problem(self.problem, problem)
 
 
 class Cards(Gtk.Box):
     """The cards of the draft, and Add Card."""
 
-    def __init__(self, panel) -> None:
+    def __init__(self, panel: VirtualMachinePanel) -> None:
         super().__init__(
             visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=GAP
         )
@@ -225,12 +239,15 @@ class Cards(Gtk.Box):
         self.rebuild()
 
     @staticmethod
-    def _separate(row, before) -> None:
+    def _separate(row: Gtk.ListBoxRow, before: Gtk.ListBoxRow | None) -> None:
         if before is not None and row.get_header() is None:
             row.set_header(Gtk.Separator(visible=True))
 
-    def rows(self) -> list:
-        return sorted(self.list.get_children(), key=lambda row: row.index)
+    def rows(self) -> list[CardRow]:
+        rows = [
+            row for row in self.list.get_children() if isinstance(row, CardRow)
+        ]
+        return sorted(rows, key=lambda row: row.index)
 
     def rebuild(self) -> None:
         for row in self.list.get_children():
@@ -241,21 +258,21 @@ class Cards(Gtk.Box):
 
     def fill(self) -> None:
         draft = self.panel.draft
-        for row in self.list.get_children():
+        for row in self.rows():
             card = draft.cards[row.index]
             row.model.missing = missing(draft)
             row.model.set_options(model_options(draft.qemu, card.model))
 
     def refresh(self) -> None:
         problems = self.panel.draft.problems()
-        found = {}
+        found: dict[str, Problem] = {}
         for problem in problems:
             found.setdefault(problem.key, problem)
-        for row in self.list.get_children():
+        for row in self.rows():
             row.show_problem(found.get(f"card{row.index}"))
         show_problem(self.lack, found.get("cards"))
 
-    def change(self, index: int, rebuild: bool = False, **values) -> None:
+    def change(self, index: int, rebuild: bool = False, **values: Any) -> None:
         self.panel.draft.set_card(index, **values)
         if rebuild:
             self.rebuild()
@@ -266,7 +283,7 @@ class Cards(Gtk.Box):
         self.rebuild()
         self.panel.on_changed()
 
-    def remove(self, index: int) -> None:
+    def remove_card(self, index: int) -> None:
         self.panel.draft.remove_card(index)
         self.rebuild()
         self.panel.on_changed()

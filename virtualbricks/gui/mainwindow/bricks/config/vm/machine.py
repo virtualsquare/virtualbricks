@@ -22,11 +22,23 @@ type and the CPU model, chosen of what the program has, KVM, the CPUs, the
 memory, and ACPI.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from virtualbricks.gui.mainwindow.bricks.config.picker import Option, Picker
 from virtualbricks.i18n import _
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.virtualmachine import VirtualMachineDraft
+    from virtualbricks.gui.form import Form
+    from virtualbricks.gui.mainwindow.bricks.config.vm.panel import (
+        Page,
+        VirtualMachinePanel,
+    )
 
-def missing(draft) -> str:
+
+def missing(draft: VirtualMachineDraft) -> str:
     """What a picker says of a choice its QEMU doesn't have."""
 
     if draft.qemu is None:
@@ -34,10 +46,10 @@ def missing(draft) -> str:
     return _("not in QEMU {version}").format(version=draft.qemu.version)
 
 
-def picker(panel, form, name: str) -> Picker:
+def picker(panel: VirtualMachinePanel, form: Form, name: str) -> Picker:
     """A picker of name, that sets it in the draft."""
 
-    def chose(value):
+    def chose(value: str) -> None:
         panel.draft.set(name, value)
         panel.on_changed()
 
@@ -46,7 +58,7 @@ def picker(panel, form, name: str) -> Picker:
     return made
 
 
-def build(panel, page) -> None:
+def build(panel: VirtualMachinePanel, page: Page) -> None:
     form = page.form
     draft = panel.draft
     form.section(_("Machine"))
@@ -66,7 +78,7 @@ def build(panel, page) -> None:
     form.spin("kvm_shadow_memory")
     form.switch("acpi")
 
-    def fill():
+    def fill() -> None:
         info = draft.qemu
         machines = [Option("", _("The default"))]
         cpus = [Option("", _("The default"))]

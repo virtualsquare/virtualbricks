@@ -35,6 +35,9 @@ its tooltip says why.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import TYPE_CHECKING
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -46,13 +49,18 @@ from virtualbricks.bricks.brickinfo import NEW_KINDS, new_name  # noqa: E402
 from virtualbricks.gui.mainwindow.rowtab import styled  # noqa: E402
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks import Brick
+    from virtualbricks.bricks.brickinfo import Issue, Kind
+    from virtualbricks.engine import Engine
+
 ICON_SIZE = 24
 # The longest line, in characters: the tooltip has it whole.
 LINE_CHARS = 40
 MARGIN = 6
 
 
-def picture(kind) -> GdkPixbuf.Pixbuf | None:
+def picture(kind: Kind) -> GdkPixbuf.Pixbuf | None:
     """The picture of the bricks of kind, at the size of a row."""
 
     filename = graphics.icon_file(kind.type.lower() + ".png")
@@ -67,7 +75,7 @@ def picture(kind) -> GdkPixbuf.Pixbuf | None:
 class KindRow(Gtk.ListBoxRow):
     """A kind of brick, and what this computer has for it."""
 
-    def __init__(self, kind) -> None:
+    def __init__(self, kind: Kind) -> None:
         super().__init__(visible=True)
         self.kind = kind
         box = Gtk.Box(
@@ -116,7 +124,7 @@ class KindRow(Gtk.ListBoxRow):
 
         self._show(self.kind.line, None, True)
 
-    def show_issue(self, found) -> None:
+    def show_issue(self, found: Issue) -> None:
         """A program is missing: the bricks can be made, and won't start."""
 
         self._show(found.line, found.text, True)
@@ -142,10 +150,11 @@ class KindRow(Gtk.ListBoxRow):
         self.set_sensitive(sensitive)
 
 
-def _group_header(row, before) -> None:
+def _group_header(row: Gtk.ListBoxRow, before: Gtk.ListBoxRow | None) -> None:
     """A title over the first row of each group, a line above all but one."""
 
-    if before is not None and before.kind.group == row.kind.group:
+    assert isinstance(row, KindRow), "the popover has rows of kinds"
+    if isinstance(before, KindRow) and before.kind.group == row.kind.group:
         row.set_header(None)
         return
     if row.get_header() is not None:
@@ -178,12 +187,14 @@ class NewBrickPopover(Gtk.Popover):
     gets each brick made. The popover stays, from one opening to the next.
     """
 
-    def __init__(self, engine, made) -> None:
+    def __init__(
+        self, engine: Engine, made: Callable[[Brick], object]
+    ) -> None:
         super().__init__(position=Gtk.PositionType.BOTTOM)
         self.engine = engine
         self.made = made
         # the kind of the brick made last, where the popover opens
-        self.last = None
+        self.last: Kind | None = None
         self.list = Gtk.ListBox(
             visible=True,
             selection_mode=Gtk.SelectionMode.BROWSE,
@@ -196,7 +207,7 @@ class NewBrickPopover(Gtk.Popover):
         self.add(self.list)
         self.list.connect("row-activated", self.on_row_activated)
 
-    def popup_at(self, widget) -> None:
+    def popup_at(self, widget: Gtk.Widget) -> None:
         """Open under widget, on the kind made last or else the first."""
 
         self.set_relative_to(widget)
@@ -225,13 +236,13 @@ class NewBrickPopover(Gtk.Popover):
                 continue
             self.engine.lacks(kind).addCallback(self._show_lacks, row)
 
-    def _show_lacks(self, found, row) -> None:
+    def _show_lacks(self, found: Issue | None, row: KindRow) -> None:
         if found is None:
             row.show_kind()
         else:
             row.show_issue(found)
 
-    def on_row_activated(self, listbox, row) -> None:
+    def on_row_activated(self, listbox: Gtk.ListBox, row: KindRow) -> None:
         self.popdown()
         kind = row.kind
         name = new_name(self.engine.factory, kind)

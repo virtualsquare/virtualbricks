@@ -32,12 +32,13 @@ opens its menu, a double click configures it.
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
+from gi.repository import Gdk, Gio, GLib, GObject, Gtk  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
 from virtualbricks.gui.mainwindow import picture  # noqa: E402
@@ -55,6 +56,11 @@ from virtualbricks.gui.mainwindow.topologyview import (  # noqa: E402
 )
 from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.topology import layout  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks import Brick
+    from virtualbricks.gui.mainwindow.window import VBGUI
 
 logger = Logger()
 drawing_topology = "drawing topology"
@@ -93,15 +99,25 @@ def with_extension(filename: str, extension: str | None) -> str:
     return filename + (extension or ".png")
 
 
+def extension_of(
+    chooser: Gtk.FileChooser, formats: dict[Gtk.FileFilter, str]
+) -> str | None:
+    """The extension of the format chosen in chooser, if any."""
+
+    chosen = chooser.get_filter()
+    return None if chosen is None else formats.get(chosen)
+
+
 class TopologyTab(Tab, Gtk.Overlay):
     """The picture of the bricks of the project and how they connect."""
 
     title = _("_Topology")
 
-    def __init__(self, gui, factory) -> None:
+    def __init__(self, gui: VBGUI, factory: BrickFactory) -> None:
         super().__init__(visible=True)
         self.gui = gui
         self.factory = factory
+        self._menu: Gtk.Menu | None = None
         self.direction = "LR"
         self._shown = False
         self._should_draw = True
@@ -136,7 +152,9 @@ class TopologyTab(Tab, Gtk.Overlay):
         )
         self.level_button = Gtk.Button(visible=True, label=level(1.0))
         # as wide at 100% as at 10%
-        self.level_button.get_child().set_width_chars(5)
+        level_label = self.level_button.get_child()
+        assert isinstance(level_label, Gtk.Label), "a label makes its label"
+        level_label.set_width_chars(5)
         # the screen readers say the level, then the tooltip
         self.level_button.set_tooltip_text(_("Zoom to 100%"))
         self.in_button = icon_button(
@@ -188,7 +206,7 @@ class TopologyTab(Tab, Gtk.Overlay):
             signal.connect(self.on_brick_changed)
         self._update()
 
-    def draw(self) -> None:
+    def lay_out(self) -> None:
         """Lay the lab out now if the tab shows, else when it shows."""
 
         if self._shown:
@@ -219,7 +237,7 @@ class TopologyTab(Tab, Gtk.Overlay):
         self.hint.set_visible(empty)
         self.export_action.set_enabled(not empty)
 
-    def export(self, filename) -> None:
+    def export(self, filename: str) -> None:
         """Save the picture of the lab in a file: PNG, SVG or PDF."""
 
         context = self.view.area.get_style_context()
@@ -249,38 +267,38 @@ class TopologyTab(Tab, Gtk.Overlay):
 
     # Signals
 
-    def on_brick_changed(self, brick) -> None:
-        self.draw()
+    def on_brick_changed(self, brick: Brick) -> None:
+        self.lay_out()
 
-    def on_zoom_changed(self, view) -> None:
+    def on_zoom_changed(self, view: TopologyView) -> None:
         self._update()
 
-    def on_fit(self, button) -> None:
+    def on_fit(self, button: Gtk.ToggleButton) -> None:
         # a click fits, even on the button that is on; the zoom says after
         self.view.fit()
 
-    def on_direction(self, action, value) -> None:
+    def on_direction(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ) -> None:
         action.set_state(value)
         self.direction = value.get_string()
-        self.draw()
+        self.lay_out()
 
-    def on_export(self, action, parameter) -> None:
+    def on_export(
+        self, action: Gio.SimpleAction, parameter: GLib.Variant | None
+    ) -> None:
         chooser = Gtk.FileChooserDialog(
-            title=_("Export as Image"),
-            action=Gtk.FileChooserAction.SAVE,
-            buttons=(
-                "_Cancel",
-                Gtk.ResponseType.CANCEL,
-                "_Save",
-                Gtk.ResponseType.OK,
-            ),
+            title=_("Export as Image"), action=Gtk.FileChooserAction.SAVE
+        )
+        chooser.add_buttons(
+            "_Cancel", Gtk.ResponseType.CANCEL, "_Save", Gtk.ResponseType.OK
         )
         toplevel = self.get_toplevel()
         if isinstance(toplevel, Gtk.Window):
             chooser.set_transient_for(toplevel)
         chooser.set_do_overwrite_confirmation(True)
         # the extension of each filter
-        formats = {}
+        formats: dict[Gtk.FileFilter, str] = {}
         for extension, name in picture.FORMATS.items():
             kind = Gtk.FileFilter()
             kind.set_name(name)
@@ -295,22 +313,36 @@ class TopologyTab(Tab, Gtk.Overlay):
         chooser.connect("response", self.on_export_response, formats)
         chooser.show()
 
-    def on_export_format(self, chooser, pspec, formats) -> None:
+    def on_export_format(
+        self,
+        chooser: Gtk.FileChooserDialog,
+        pspec: GObject.ParamSpec,
+        formats: dict[Gtk.FileFilter, str],
+    ) -> None:
         # the name follows the format
-        extension = formats.get(chooser.get_filter())
+        extension = extension_of(chooser, formats)
         base, old = os.path.splitext(chooser.get_current_name())
         if extension is not None and old.lower() in picture.FORMATS:
             chooser.set_current_name(base + extension)
 
-    def on_export_response(self, dialog, response_id, formats) -> None:
+    def on_export_response(
+        self,
+        dialog: Gtk.FileChooserDialog,
+        response_id: int,
+        formats: dict[Gtk.FileFilter, str],
+    ) -> None:
         try:
             if response_id == Gtk.ResponseType.OK:
-                extension = formats.get(dialog.get_filter())
-                self.export(with_extension(dialog.get_filename(), extension))
+                extension = extension_of(dialog, formats)
+                filename = dialog.get_filename()
+                assert filename is not None, "Save has a file name"
+                self.export(with_extension(filename, extension))
         finally:
             dialog.destroy()
 
-    def on_button_press(self, area, event) -> bool:
+    def on_button_press(
+        self, area: Gtk.DrawingArea, event: Gdk.EventButton
+    ) -> bool:
         brick = self.view.brick_at(event.x, event.y)
         if brick is None:
             return False
@@ -321,7 +353,9 @@ class TopologyTab(Tab, Gtk.Overlay):
             self.gui.curtain_up(brick)
         return True
 
-    def on_bar_allocated(self, bar, allocation) -> None:
+    def on_bar_allocated(
+        self, bar: Gtk.Box, allocation: Gdk.Rectangle
+    ) -> None:
         # the room of the bar in the view; not now, GTK would lose the resize
         if self._measuring is None:
             self._measuring = GLib.idle_add(self._measure)
@@ -331,7 +365,7 @@ class TopologyTab(Tab, Gtk.Overlay):
         self.view.set_top(self.bar.get_allocated_height() + 2 * GAP)
         return GLib.SOURCE_REMOVE
 
-    def on_destroy(self, tab) -> None:
+    def on_destroy(self, tab: TopologyTab) -> None:
         if self._measuring is not None:
             GLib.source_remove(self._measuring)
             self._measuring = None

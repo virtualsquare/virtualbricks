@@ -36,6 +36,7 @@ or else the engine of this machine.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
+from typing import TYPE_CHECKING
 
 import gi
 
@@ -46,6 +47,12 @@ from virtualbricks.engine import LocalEngine
 from virtualbricks.gui.form import Form
 from virtualbricks.i18n import _
 from virtualbricks.bricks import is_running
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.draft import Draft
+    from virtualbricks.engine import Engine
+    from virtualbricks.gui.form import Row
+    from virtualbricks.gui.mainwindow.window import VBGUI
 
 
 def spin_buttons(widget: Gtk.Widget) -> Iterator[Gtk.SpinButton]:
@@ -61,7 +68,7 @@ def spin_buttons(widget: Gtk.Widget) -> Iterator[Gtk.SpinButton]:
 class Panel:
     """The settings of a brick, on a draft."""
 
-    def __init__(self, draft, gui=None) -> None:
+    def __init__(self, draft: Draft, gui: VBGUI | None = None) -> None:
         self.draft = draft
         self.gui = gui
         self._callbacks: list[Callable[[Panel], None]] = []
@@ -72,7 +79,7 @@ class Panel:
         self.widget = self.form.widget if root is None else root
         self.refresh()
 
-    def build(self, form: Form):
+    def build(self, form: Form) -> Gtk.Widget | None:
         """
         Add the sections and the rows of the panel; return the widget of the
         panel when it isn't the form's.
@@ -81,7 +88,7 @@ class Panel:
         raise NotImplementedError
 
     @property
-    def engine(self):
+    def engine(self) -> Engine:
         """What the panel asks of the machine: through the main window."""
 
         if self.gui is None:
@@ -89,7 +96,7 @@ class Panel:
         return self.gui.engine
 
     @property
-    def rows(self) -> dict:
+    def rows(self) -> dict[str, Row]:
         """The rows of the panel, by their key."""
 
         return self.form.rows

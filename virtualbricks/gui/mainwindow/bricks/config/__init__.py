@@ -27,6 +27,10 @@ Only the names that code outside this package imports from it are exported;
 the tests import the others from their modules.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from .captureconfig import CapturePanel
 from .netemuconfig import NetemuPanel
 from .switchconfig import SwitchPanel
@@ -37,13 +41,19 @@ from .tunnellconfig import TunnelListenPanel
 from .vm.panel import VirtualMachinePanel
 from .wireconfig import WirePanel
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks import Brick
+    from virtualbricks.gui.mainwindow.window import VBGUI
+
+    from .panel import Panel
+
 __all__ = [
     "PANELS",
     "new_panel",
 ]
 
 # The panels on drafts, by the type of their brick.
-PANELS = {
+PANELS: dict[str, type[Panel]] = {
     "Capture": CapturePanel,
     "Netemu": NetemuPanel,
     "Qemu": VirtualMachinePanel,
@@ -56,7 +66,7 @@ PANELS = {
 }
 
 
-def new_panel(brick, gui=None):
+def new_panel(brick: Brick, gui: VBGUI | None = None) -> Panel | None:
     """The panel of brick on a new draft, or None if it has none yet."""
 
     panel = PANELS.get(brick.get_type())

@@ -32,6 +32,8 @@ from __future__ import annotations
 import dataclasses
 import math
 import os
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import cairo
 import gi
@@ -50,6 +52,10 @@ from virtualbricks.gui import graphics  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.bricks import is_running  # noqa: E402
 from virtualbricks.topology import ICON  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks import Base
+    from virtualbricks.topology import Layout, Node
 
 # Around the lab, in pixels.
 MARGIN = 20
@@ -94,7 +100,7 @@ class Icons:
         self.size = size
         self._icons: dict[tuple[str, bool], GdkPixbuf.Pixbuf | None] = {}
 
-    def get(self, brick, running: bool) -> GdkPixbuf.Pixbuf | None:
+    def get(self, brick: Base, running: bool) -> GdkPixbuf.Pixbuf | None:
         filename = graphics.brick_icon_file(brick)
         key = (filename, running)
         if key not in self._icons:
@@ -108,26 +114,46 @@ class Icons:
             except GLib.Error:
                 pixbuf = None
             if pixbuf is not None and not running:
-                grey = pixbuf.copy()
-                pixbuf.saturate_and_pixelate(grey, 0.0, False)
-                pixbuf = grey
+                pixbuf = greyed(pixbuf)
             self._icons[key] = pixbuf
         return self._icons[key]
 
 
-def scaled_font(font: Pango.FontDescription, zoom: float):
+def greyed(pixbuf: GdkPixbuf.Pixbuf) -> GdkPixbuf.Pixbuf:
+    """A copy of pixbuf, grey."""
+
+    grey = pixbuf.copy()
+    assert grey is not None, "only out of memory is there no copy"
+    pixbuf.saturate_and_pixelate(grey, 0.0, False)
+    return grey
+
+
+def scaled_font(
+    font: Pango.FontDescription, zoom: float
+) -> Pango.FontDescription:
     """A font, for the names at a zoom."""
 
-    font = font.copy()
-    size = max(1, round(font.get_size() * zoom))
-    if font.get_size_is_absolute():
-        font.set_absolute_size(size)
+    scaled = font.copy()
+    assert scaled is not None, "a copy of a font is a font"
+    size = max(1, round(scaled.get_size() * zoom))
+    if scaled.get_size_is_absolute():
+        scaled.set_absolute_size(size)
     else:
-        font.set_size(size)
-    return font
+        scaled.set_size(size)
+    return scaled
 
 
-def draw(cr, layout, zoom, origin, palette, font, text, icons, hover=None):
+def draw(
+    cr: cairo.Context[Any],
+    layout: Layout,
+    zoom: float,
+    origin: tuple[float, float],
+    palette: Palette,
+    font: Pango.FontDescription,
+    text: Callable[[str], Pango.Layout],
+    icons: Icons,
+    hover: Node | None = None,
+) -> None:
     """
     Draw a layout at a zoom, from origin, a point (x, y) of cr.
 
@@ -180,7 +206,7 @@ def draw(cr, layout, zoom, origin, palette, font, text, icons, hover=None):
         PangoCairo.show_layout(cr, name)
 
 
-def export(layout, filename: str, font: Pango.FontDescription) -> None:
+def export(layout: Layout, filename: str, font: Pango.FontDescription) -> None:
     """
     Write the lab at 100%, on white, in a light theme's colours. The
     extension of filename chooses the format; another raises ValueError.
@@ -191,6 +217,7 @@ def export(layout, filename: str, font: Pango.FontDescription) -> None:
         raise ValueError(f"Unknown image format {extension!r}")
     width = math.ceil(layout.width + 2 * MARGIN)
     height = math.ceil(layout.height + 2 * MARGIN)
+    surface: cairo.Surface
     if extension == ".png":
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
     elif extension == ".svg":
@@ -201,7 +228,7 @@ def export(layout, filename: str, font: Pango.FontDescription) -> None:
     cr.set_source_rgb(*WHITE)
     cr.paint()
 
-    def text(name):
+    def text(name: str) -> Pango.Layout:
         result = PangoCairo.create_layout(cr)
         result.set_text(name, -1)
         return result

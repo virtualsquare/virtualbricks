@@ -23,9 +23,19 @@ The disks are the section of :mod:`.disks`, which writes each change into
 the draft: the image of each device, by name, and its mode.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from virtualbricks.bricks.virtualmachine import DISK_DEVICES
 from virtualbricks.gui.mainwindow.bricks.config.vm.disks import DisksSection
 from virtualbricks.i18n import _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.gui.mainwindow.bricks.config.vm.panel import (
+        Page,
+        VirtualMachinePanel,
+    )
 
 # What -boot takes, and its words.
 BOOT = (
@@ -37,13 +47,13 @@ BOOT = (
 )
 
 
-def build_disks(panel, page) -> None:
+def build_disks(panel: VirtualMachinePanel, page: Page) -> None:
     form = page.form
     vm = panel.draft.brick
     # the main window shows the Images tab
     manage = getattr(panel.gui, "show_images", None)
 
-    def changed():
+    def changed() -> None:
         section.to_draft(panel.draft)
         panel.on_changed()
 
@@ -60,7 +70,7 @@ def build_disks(panel, page) -> None:
     )
 
 
-def build_cdrom(panel, page) -> None:
+def build_cdrom(panel: VirtualMachinePanel, page: Page) -> None:
     form = page.form
     form.section(_("CD-ROM"))
     form.choice(

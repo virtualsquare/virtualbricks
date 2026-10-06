@@ -82,7 +82,7 @@ class EditorTestCase(GuiTestCase):
                 row.kind_combo.get_active_id(),
                 self.subject(row),
             )
-            for row in editor.rows()
+            for row in editor.action_rows()
         ]
 
     def subject(self, row):
@@ -127,7 +127,7 @@ class TestReadingAnEvent(EditorTestCase):
         )
 
     def test_the_kinds(self):
-        row = self.edit(5, vb("sw1 on")).rows()[0]
+        row = self.edit(5, vb("sw1 on")).action_rows()[0]
         labels = [entry[0] for entry in row.kind_combo.get_model()]
         self.assertEqual(
             labels,
@@ -150,13 +150,13 @@ class TestReadingAnEvent(EditorTestCase):
     def test_the_bricks_and_the_events(self):
         # an event doesn't start itself
         editor = self.edit(5, vb("sw1 on"), vb("boot on"))
-        brick, event = editor.rows()
+        brick, event = editor.action_rows()
         self.assertEqual(self.choices(brick), ["sw1", "sw2"])
         self.assertEqual(self.choices(event), ["boot"])
 
     def test_a_missing_brick(self):
         editor = self.edit(5, vb("vm9 on"))
-        [row] = editor.rows()
+        [row] = editor.action_rows()
         self.assertEqual(self.choices(row), ["sw1", "sw2", "vm9 (missing)"])
         self.assertEqual(self.subject(row), "vm9")
         self.ok(editor)
@@ -165,7 +165,7 @@ class TestReadingAnEvent(EditorTestCase):
     def test_the_event_itself(self):
         # not missing, but not a choice either
         editor = self.edit(5, vb("start-lab off"))
-        [row] = editor.rows()
+        [row] = editor.action_rows()
         self.assertEqual(row.kind, Kind.STOP_EVENT)
         self.assertEqual(self.choices(row), ["boot", "start-lab"])
 
@@ -215,7 +215,7 @@ class TestSaving(EditorTestCase):
     def test_on_the_draft(self):
         editor = self.edit(5, vb("sw1 on"))
         editor.delay.set_value(12)
-        editor.rows()[0].kind_combo.set_active_id("stop-brick")
+        editor.action_rows()[0].kind_combo.set_active_id("stop-brick")
         self.assertEqual(
             editor.draft.changes(),
             {"delay": 12, "actions": [vb("sw1 off")]},
@@ -239,7 +239,7 @@ class TestSaving(EditorTestCase):
 
     def test_without_a_subject(self):
         editor = self.edit(5, vb("sw1 on"), sh("ls"))
-        editor.rows()[1].subject.set_text("  ")
+        editor.action_rows()[1].subject.set_text("  ")
         self.ok(editor)
         self.assertEqual(commands(self.event), ["start sw1"])
 
@@ -253,7 +253,7 @@ class TestTheConsoleCommand(EditorTestCase):
 
     def test_checked_as_typed(self):
         editor = self.edit(5, ConsoleAction("brick set sw1 ports=4"))
-        [row] = editor.rows()
+        [row] = editor.action_rows()
         self.assertEqual(self.icon(row.subject), (None, None))
         row.subject.set_text("brick set nope ports=4")
         self.assertEqual(
@@ -265,7 +265,7 @@ class TestTheConsoleCommand(EditorTestCase):
 
     def test_a_shell_command_isnt(self):
         editor = self.edit(5, ShellAction("nope"))
-        [row] = editor.rows()
+        [row] = editor.action_rows()
         self.assertEqual(self.icon(row.subject), (None, None))
 
 
@@ -273,7 +273,7 @@ class TestChangingAnAction(EditorTestCase):
 
     def test_a_brick_stays_a_brick(self):
         editor = self.edit(5, vb("sw2 on"))
-        [row] = editor.rows()
+        [row] = editor.action_rows()
         row.kind_combo.set_active_id("stop-brick")
         self.assertEqual(self.subject(row), "sw2")
         self.ok(editor)
@@ -281,7 +281,7 @@ class TestChangingAnAction(EditorTestCase):
 
     def test_a_missing_brick_stays(self):
         editor = self.edit(5, vb("vm9 on"))
-        [row] = editor.rows()
+        [row] = editor.action_rows()
         row.kind_combo.set_active_id("stop-brick")
         self.assertEqual(self.choices(row), ["sw1", "sw2", "vm9 (missing)"])
         row.subject.set_active_id("sw1")
@@ -290,14 +290,14 @@ class TestChangingAnAction(EditorTestCase):
 
     def test_to_an_event(self):
         editor = self.edit(5, vb("sw2 on"))
-        [row] = editor.rows()
+        [row] = editor.action_rows()
         row.kind_combo.set_active_id("start-event")
         self.assertEqual(self.choices(row), ["boot"])
         self.assertEqual(self.subject(row), "boot")
 
     def test_to_a_command(self):
         editor = self.edit(5, vb("sw2 on"))
-        [row] = editor.rows()
+        [row] = editor.action_rows()
         row.kind_combo.set_active_id("console")
         self.assertIsInstance(row.subject, Gtk.Entry)
         # in place of the choice of a brick
@@ -324,7 +324,7 @@ class TestChangingAnAction(EditorTestCase):
     def test_no_event_to_choose(self):
         self.factory.remove_event(self.boot)
         editor = self.edit(5, vb("sw1 on"))
-        [row] = editor.rows()
+        [row] = editor.action_rows()
         row.kind_combo.set_active_id("start-event")
         self.assertEqual(self.choices(row), [])
         self.assertIsNone(row.action())
@@ -336,12 +336,12 @@ class TestTheSubjectAlone(EditorTestCase):
 
     def test_another_brick(self):
         editor = self.edit(5, vb("sw1 on"))
-        editor.rows()[0].subject.set_active_id("sw2")
+        editor.action_rows()[0].subject.set_active_id("sw2")
         self.assertEqual(editor.draft.changes(), {"actions": [vb("sw2 on")]})
 
     def test_another_command(self):
         editor = self.edit(5, sh("ls"))
-        editor.rows()[0].subject.set_text("ls -l")
+        editor.action_rows()[0].subject.set_text("ls -l")
         self.assertEqual(editor.draft.changes(), {"actions": [sh("ls -l")]})
 
 
@@ -367,12 +367,12 @@ class TestAddingAndRemoving(EditorTestCase):
             self.factory.remove_brick(brick)
         editor = self.edit()
         editor.add_button.clicked()
-        [row] = editor.rows()
+        [row] = editor.action_rows()
         self.assertIsNone(row.action())
 
     def test_remove(self):
         editor = self.edit(5, vb("sw1 on"), vb("sw2 on"), sh("ls"))
-        editor.rows()[1].remove_button.clicked()
+        editor.action_rows()[1].remove_button.clicked()
         self.assertEqual(
             self.rows(editor), [("start-brick", "sw1"), ("shell", "ls")]
         )
@@ -385,13 +385,13 @@ class TestAddingAndRemoving(EditorTestCase):
     def test_remove_the_last(self):
         # nothing left, nothing fails
         editor = self.edit(5, vb("sw1 on"))
-        editor.rows()[0].remove_button.clicked()
+        editor.action_rows()[0].remove_button.clicked()
         self.ok(editor)
         self.assertEqual(commands(self.event), [])
 
     def test_the_rows(self):
         editor = self.edit(5, vb("sw1 on"), sh("ls"))
-        first, second = editor.rows()
+        first, second = editor.action_rows()
         self.assertEqual(
             first.remove_button.get_tooltip_text(), "Remove the action"
         )

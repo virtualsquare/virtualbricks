@@ -21,14 +21,21 @@ The panel of a tap: the switch it joins, and how its interface gets an
 address.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
 from virtualbricks.i18n import _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.gui.form import Form
 
 
 class TapPanel(Panel):
     """The settings of a tap."""
 
-    def build(self, form):
+    def build(self, form: Form) -> None:
         form.section(_("Connection"))
         form.socket(0, _("Plugged into"), _("The switch the interface joins"))
         form.section(_("Address"))

@@ -982,14 +982,14 @@ class RemoteEngine:
 
     def programs_found(
         self, vde_path: str, qemu_path: str
-    ) -> defer.Deferred[tuple[FolderPrograms, ...]]:
+    ) -> defer.Deferred[tuple[FolderPrograms, FolderPrograms]]:
         asking = self.call(
             commands.ProgramsFound, vde_path=vde_path, qemu_path=qemu_path
         )
         return asking.addCallback(
-            lambda answer: tuple(
-                FolderPrograms.from_data(json.loads(answer[name]))
-                for name in ("vde", "qemu")
+            lambda answer: (
+                FolderPrograms.from_data(json.loads(answer["vde"])),
+                FolderPrograms.from_data(json.loads(answer["qemu"])),
             )
         )
 

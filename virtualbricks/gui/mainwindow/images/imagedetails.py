@@ -31,8 +31,10 @@ use the file.
 
 from __future__ import annotations
 
+import enum
 import os
 import time
+from typing import TYPE_CHECKING, Any
 
 import gi
 
@@ -50,12 +52,27 @@ from virtualbricks.gui.mainwindow.bricks.config.panel import (  # noqa: E402
 )
 from virtualbricks.i18n import _, ngettext  # noqa: E402
 
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.virtualmachine import ImageDraft
+    from virtualbricks.config.images import DiskUse, ImageInfo
+    from virtualbricks.engine import LocalMachine
+    from virtualbricks.gui.form import Form
+    from virtualbricks.remote.client import RemoteMachine
+
 GAP = 8
+
+
+class _Reading(enum.Enum):
+    READING = "reading"
+
+
 # the facts of a file that qemu-img reads
-READING = object()
+READING = _Reading.READING
 
 
-def _label(text="", dim=False, bold=False, **props):
+def _label(
+    text: str = "", dim: bool = False, bold: bool = False, **props: Any
+) -> Gtk.Label:
     label = Gtk.Label(visible=True, label=text, xalign=0.0, **props)
     if dim:
         label.get_style_context().add_class("dim-label")
@@ -66,7 +83,7 @@ def _label(text="", dim=False, bold=False, **props):
     return label
 
 
-def mode_words(use) -> str:
+def mode_words(use: DiskUse) -> str:
     """How a disk uses its image: its private copy, or the image itself."""
 
     if not use.private:
@@ -87,7 +104,11 @@ def mode_words(use) -> str:
 class ImageDetails(Panel):
     """The name, the description and the facts of an image, on a draft."""
 
-    def __init__(self, draft, machine) -> None:
+    draft: ImageDraft
+
+    def __init__(
+        self, draft: ImageDraft, machine: LocalMachine | RemoteMachine
+    ) -> None:
         self.image = draft.brick
         self.factory = draft.factory
         # what the windows read of the machine of the bricks: the facts of
@@ -96,7 +117,7 @@ class ImageDetails(Panel):
         self.infos = machine.infos
         super().__init__(draft)
 
-    def build(self, form) -> Gtk.Box:
+    def build(self, form: Form) -> Gtk.Box:
         self.panel = Gtk.Box(
             visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=14
         )
@@ -203,7 +224,9 @@ class ImageDetails(Panel):
         )
         reading.addCallback(lambda _: self.show_others())
 
-    def fact_rows(self, info) -> list[tuple[str, str]]:
+    def fact_rows(
+        self, info: ImageInfo | _Reading | None
+    ) -> list[tuple[str, str]]:
         """
         The facts of the image, a name and a value each. info is what
         qemu-img info says of the file, None if it can't read it, or
@@ -252,7 +275,7 @@ class ImageDetails(Panel):
             )
         return rows
 
-    def show_facts(self, info) -> None:
+    def show_facts(self, info: ImageInfo | _Reading | None) -> None:
         for child in self.facts.get_children():
             child.destroy()
         for row, (name, value) in enumerate(self.fact_rows(info)):
@@ -290,11 +313,11 @@ class ImageDetails(Panel):
 
     # Signals
 
-    def on_name_changed(self, entry) -> None:
+    def on_name_changed(self, entry: Gtk.Entry) -> None:
         self.draft.set("name", entry.get_text())
         self.on_changed()
 
-    def on_description_changed(self, buffer) -> None:
+    def on_description_changed(self, buffer: Gtk.TextBuffer) -> None:
         text = buffer.get_text(
             buffer.get_start_iter(), buffer.get_end_iter(), False
         )

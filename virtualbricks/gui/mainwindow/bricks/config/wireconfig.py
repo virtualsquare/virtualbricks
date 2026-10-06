@@ -20,14 +20,21 @@
 The panel of a wire: the two sockets it joins.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
 from virtualbricks.i18n import _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.gui.form import Form
 
 
 class WirePanel(Panel):
     """The settings of a wire."""
 
-    def build(self, form):
+    def build(self, form: Form) -> None:
         form.section(_("Ends"))
         form.socket(0, _("Left end"), _("The switch at one end of the wire"))
         form.socket(1, _("Right end"), _("The switch at the other end"))

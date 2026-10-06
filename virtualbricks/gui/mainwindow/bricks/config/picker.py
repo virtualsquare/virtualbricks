@@ -194,5 +194,5 @@ class Picker(Gtk.MenuButton):
         self.popover.popdown()
         self.chose(value)
 
-    def on_row_activated(self, listbox, row: OptionRow) -> None:
+    def on_row_activated(self, listbox: Gtk.ListBox, row: OptionRow) -> None:
         self.choose(row.option.value)

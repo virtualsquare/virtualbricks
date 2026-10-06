@@ -29,11 +29,19 @@ of the bricks and the events, their items and where they open.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, TypeVar
+
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.observable import Signal
+
+B = TypeVar("B", bound=Gtk.Button)
 
 
 class Tab:
@@ -61,19 +69,19 @@ class Tab:
         """Another tab is about to show instead."""
 
 
-def brick_signals(factory) -> tuple:
+def brick_signals(factory: BrickFactory) -> tuple[Signal, Signal, Signal]:
     """The factory's signals of the bricks: one added, removed, changed."""
 
     return factory.brick_added, factory.brick_removed, factory.brick_changed
 
 
-def tabs(notebook) -> list[Tab]:
+def tabs(notebook: Gtk.Notebook) -> list[Tab]:
     """The tabs of a notebook, in their order."""
 
     return [page for page in notebook.get_children() if isinstance(page, Tab)]
 
 
-def switch(notebook, page) -> None:
+def switch(notebook: Gtk.Notebook, page: Gtk.Widget) -> None:
     """
     Tell the tab that shows and the one that goes: for the switch-page
     signal of a notebook, before the notebook switches.
@@ -88,7 +96,7 @@ def switch(notebook, page) -> None:
         page.on_shown()
 
 
-def icon_button(button, icon, name):
+def icon_button(button: B, icon: str, name: str) -> B:
     """An icon, with a name for the tooltip and the screen readers."""
 
     button.set_image(Gtk.Image.new_from_icon_name(icon, Gtk.IconSize.BUTTON))
@@ -100,7 +108,35 @@ def icon_button(button, icon, name):
 # The menus of the bricks and the events
 
 
-def menu_item(group, label, action, target=None, keys=None) -> Gio.MenuItem:
+def simple_action(group: Gio.ActionMap, name: str) -> Gio.SimpleAction:
+    """The action name of group, which made it."""
+
+    found = group.lookup_action(name)
+    assert isinstance(found, Gio.SimpleAction), "the group made it"
+    return found
+
+
+class MenuActions(Gio.SimpleActionGroup):
+    """What the items of the menu of an object do: a brick, an event."""
+
+    def update(self) -> None:
+        """Enable the actions that the object allows now."""
+
+        raise NotImplementedError
+
+    def action(self, name: str) -> Gio.SimpleAction:
+        """The action name of the group."""
+
+        return simple_action(self, name)
+
+
+def menu_item(
+    group: str,
+    label: str,
+    action: str,
+    target: str | None = None,
+    keys: str | None = None,
+) -> Gio.MenuItem:
     """
     An item that activates the action of group, with a string target if
     there is one; keys, as Gtk.accelerator_parse() reads them, show next to
@@ -119,7 +155,7 @@ def menu_item(group, label, action, target=None, keys=None) -> Gio.MenuItem:
     return item
 
 
-def menu_section(*items) -> Gio.Menu:
+def menu_section(*items: Gio.MenuItem | None) -> Gio.Menu:
     """The items that aren't None, together."""
 
     section = Gio.Menu()
@@ -129,7 +165,7 @@ def menu_section(*items) -> Gio.Menu:
     return section
 
 
-def menu_of(*sections) -> Gio.Menu:
+def menu_of(*sections: Gio.Menu) -> Gio.Menu:
     """A menu of the sections that aren't empty."""
 
     result = Gio.Menu()
@@ -139,7 +175,13 @@ def menu_of(*sections) -> Gio.Menu:
     return result
 
 
-def popup(widget, event, model, group, actions) -> Gtk.Menu:
+def popup(
+    widget: Gtk.Widget,
+    event: Gdk.Event | None,
+    model: Gio.MenuModel,
+    group: str,
+    actions: Gio.ActionGroup,
+) -> Gtk.Menu:
     """
     Open the menu of model, with the actions of group: at the pointer, for
     a click on widget, or under widget when event is None, as for the Menu

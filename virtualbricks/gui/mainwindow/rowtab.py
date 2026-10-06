@@ -51,22 +51,44 @@ shows the objects in use, as the list says which are.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
+
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, GdkPixbuf, GLib, Gtk, Pango  # noqa: E402
+from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango  # noqa: E402
 from twisted.internet import defer  # noqa: E402
 
 from virtualbricks.gui import graphics  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.config.panel import (
     Panel,
 )  # noqa: E402
-from virtualbricks.gui.mainwindow.picture import Icons  # noqa: E402
-from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
+from virtualbricks.gui.mainwindow.picture import greyed  # noqa: E402
+from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
+    MenuActions,
+    Tab,
+    icon_button,
+)
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.bricks import is_running  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover
+    from twisted.logger import Logger
+    from twisted.python.failure import Failure
+
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks import Brick
+    from virtualbricks.bricks.event import Event
+    from virtualbricks.bricks.virtualmachine import Image
+    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.observable import Signal
+
+# The objects of a tab: bricks, events or disk images.
+T = TypeVar("T", bound="Brick | Event | Image")
+T_contra = TypeVar("T_contra", contravariant=True)
+W = TypeVar("W", bound=Gtk.Widget)
 
 ICON_SIZE = 32
 # A stopped object's icon, this opaque.
@@ -92,7 +114,15 @@ _css.load_from_data(b"""
     """)
 
 
-def styled(widget, *classes):
+class Pictures(Protocol[T_contra]):
+    """What gives the picture of an object, running or not."""
+
+    def get(
+        self, item: T_contra, running: bool, /
+    ) -> GdkPixbuf.Pixbuf | None: ...
+
+
+def styled(widget: W, *classes: str) -> W:
     context = widget.get_style_context()
     context.add_provider(_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
     for name in classes:
@@ -100,7 +130,7 @@ def styled(widget, *classes):
     return widget
 
 
-def _icon_button(label, icon):
+def _icon_button(label: str, icon: str) -> Gtk.Button:
     return Gtk.Button(
         visible=True,
         label=label,
@@ -109,7 +139,7 @@ def _icon_button(label, icon):
     )
 
 
-def empty_icon(name):
+def empty_icon(name: str) -> GdkPixbuf.Pixbuf | None:
     """The picture of a project without objects: an icon, grey."""
 
     filename = graphics.icon_file(name)
@@ -119,12 +149,13 @@ def empty_icon(name):
         )
     except GLib.Error:
         return None
-    grey = pixbuf.copy()
-    pixbuf.saturate_and_pixelate(grey, 0.0, False)
-    return grey
+    assert pixbuf is not None, "a file that can't be read raises GLib.Error"
+    return greyed(pixbuf)
 
 
-def theme_icon(names, size, grey=False):
+def theme_icon(
+    names: Iterable[str], size: int, grey: bool = False
+) -> GdkPixbuf.Pixbuf | None:
     """The first of the icon names that the theme has, at size; grey."""
 
     theme = Gtk.IconTheme.get_default()
@@ -138,9 +169,7 @@ def theme_icon(names, size, grey=False):
         if pixbuf is None:
             continue
         if grey:
-            copy = pixbuf.copy()
-            pixbuf.saturate_and_pixelate(copy, 0.0, False)
-            pixbuf = copy
+            pixbuf = greyed(pixbuf)
         return pixbuf
     return None
 
@@ -148,17 +177,18 @@ def theme_icon(names, size, grey=False):
 class ThemeIcons:
     """The icons of the rows of one kind: an icon of the theme, for all."""
 
-    def __init__(self, names, size) -> None:
+    def __init__(self, names: Iterable[str], size: int) -> None:
+        names = tuple(names)
         self._pixbufs = {
             running: theme_icon(names, size, grey=not running)
             for running in (True, False)
         }
 
-    def get(self, item, running: bool) -> GdkPixbuf.Pixbuf | None:
+    def get(self, item: object, running: bool) -> GdkPixbuf.Pixbuf | None:
         return self._pixbufs[bool(running)]
 
 
-def types(event) -> bool:
+def types(event: Gdk.EventKey) -> bool:
     """Whether a key typed in the list goes to the search: a character."""
 
     modifiers = Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.MOD1_MASK
@@ -167,10 +197,12 @@ def types(event) -> bool:
     return chr(Gdk.keyval_to_unicode(event.keyval)).isprintable()
 
 
-def log_failures(deferreds, message, logger) -> defer.Deferred:
+def log_failures(
+    deferreds: list[defer.Deferred[Any]], message: str, logger: Logger
+) -> defer.Deferred[None]:
     """Wait for deferreds, and log with message the ones that fail."""
 
-    def done(results):
+    def done(results: list[tuple[bool, Any]]) -> None:
         for success, value in results:
             if not success:
                 logger.failure(message, value)
@@ -178,7 +210,7 @@ def log_failures(deferreds, message, logger) -> defer.Deferred:
     return defer.DeferredList(deferreds, consumeErrors=True).addCallback(done)
 
 
-class Row(Gtk.ListBoxRow):
+class Row(Gtk.ListBoxRow, Generic[T]):
     """An object, what it is and what it does, and what can be done to it."""
 
     # The prefix of the actions of the menu.
@@ -188,7 +220,13 @@ class Row(Gtk.ListBoxRow):
     # Whether the object starts and stops, with a button of the row.
     STARTS = True
 
-    def __init__(self, gui, item, icons, sizes) -> None:
+    def __init__(
+        self,
+        gui: VBGUI,
+        item: T,
+        icons: Pictures[T],
+        sizes: Gtk.SizeGroup,
+    ) -> None:
         super().__init__(visible=True)
         self.gui = gui
         self.item = item
@@ -262,30 +300,39 @@ class Row(Gtk.ListBoxRow):
 
     # What each kind of row says
 
-    def make_actions(self):
+    def make_actions(self) -> MenuActions:
         """The group of actions of the menu of the object."""
 
         raise NotImplementedError
 
-    def menu_model(self):
+    def menu_model(self) -> Gio.MenuModel:
         """The menu of the object, made now: it depends on the others."""
 
         raise NotImplementedError
 
-    def update(self, processes=False) -> None:
+    def update(self, processes: bool = False) -> None:
         """
-        Say again what the object is and does, with show(). processes asks
-        for the process of a running object in place of its summary.
+        Say again what the object is and does, with show_state().
+        processes asks for the process of a running object in place of its
+        summary.
         """
 
         raise NotImplementedError
 
-    def on_startstop_clicked(self, button) -> None:
+    def on_startstop_clicked(self, button: Gtk.Button) -> None:
         raise NotImplementedError
 
     # What the rows share
 
-    def show(self, detail, state, running, warning, tooltip, dot="running"):
+    def show_state(
+        self,
+        detail: str,
+        state: str,
+        running: bool,
+        warning: bool,
+        tooltip: str | None,
+        dot: str = "running",
+    ) -> None:
         """
         Show detail under the name, and the state in words, with a dot of
         the colour dot while running, or a warning sign. A warning means that
@@ -331,17 +378,17 @@ class Row(Gtk.ListBoxRow):
         """Show the menu of the object under its button."""
 
         # a popover shows no keys
-        self.popover = Gtk.Popover.new_from_model(
+        popover = self.popover = Gtk.Popover.new_from_model(
             self.menu_button, self.menu_model()
         )
-        self.popover.connect("closed", self.on_menu_closed)
-        self.popover.popup()
-        return self.popover
+        popover.connect("closed", self.on_menu_closed)
+        popover.popup()
+        return popover
 
-    def on_menu_clicked(self, button) -> None:
+    def on_menu_clicked(self, button: Gtk.Button) -> None:
         self.open_menu()
 
-    def on_menu_closed(self, popover) -> None:
+    def on_menu_closed(self, popover: Gtk.Popover) -> None:
         if popover is self.popover:
             self.popover = None
         # later: GTK still uses the popover after "closed", and a click on
@@ -350,21 +397,21 @@ class Row(Gtk.ListBoxRow):
         GLib.idle_add(popover.destroy)
 
 
-def _activate(row, name) -> None:
+def _activate(row: Row[Any], name: str) -> None:
     """Do the action name of the menu of row, unless it is greyed."""
 
     if row.actions.get_action_enabled(name):
         row.actions.activate_action(name, None)
 
 
-class RowList(Gtk.ListBox):
+class RowList(Gtk.ListBox, Generic[T]):
     """The objects of a kind, a row each."""
 
     # When no row is left: without a search or the running switch, with a
     # search, with the switch, with both.
     NONE = NO_MATCH = NONE_RUNNING = NO_RUNNING_MATCH = ""
 
-    def __init__(self, gui, factory) -> None:
+    def __init__(self, gui: VBGUI, factory: BrickFactory) -> None:
         super().__init__(
             visible=True,
             selection_mode=Gtk.SelectionMode.SINGLE,
@@ -376,7 +423,7 @@ class RowList(Gtk.ListBox):
         self.only_running = False
         self.icons = self.make_icons()
         self._sizes = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
-        self._rows: dict[object, Row] = {}
+        self._rows: dict[T, Row[T]] = {}
 
         self.placeholder = Gtk.Label(
             visible=True,
@@ -397,36 +444,36 @@ class RowList(Gtk.ListBox):
 
     # What each kind of list says
 
-    def signals(self) -> tuple:
+    def signals(self) -> tuple[Signal, Signal, Signal]:
         """The factory's signals: an object added, removed, changed."""
 
         raise NotImplementedError
 
-    def items(self) -> list:
+    def items(self) -> list[T]:
         """The objects, in their order."""
 
         raise NotImplementedError
 
-    def make_row(self, item) -> Row:
+    def make_row(self, item: T) -> Row[T]:
         raise NotImplementedError
 
-    def kind(self, item) -> str:
+    def kind(self, item: T) -> str:
         """The kind of an object in words, which the search finds."""
 
         return ""
 
-    def prepare(self, row) -> None:
+    def prepare(self, row: Row[T]) -> None:
         """Make ready a row, before the list takes it."""
 
-    def make_icons(self):
+    def make_icons(self) -> Pictures[T]:
         """The icons of the rows: what gives, for an object, its picture."""
 
-        return Icons(ICON_SIZE)
+        raise NotImplementedError
 
-    def running(self, item) -> bool:
+    def running(self, item: T) -> bool:
         """Whether item shows with the running ones: it runs, or is in use."""
 
-        return is_running(item)
+        raise NotImplementedError
 
     # What the lists share
 
@@ -438,12 +485,19 @@ class RowList(Gtk.ListBox):
         removed.disconnect(self.on_removed)
         changed.disconnect(self.on_changed)
 
-    def row_of(self, item) -> Row | None:
+    def row_of(self, item: T) -> Row[T] | None:
         return self._rows.get(item)
 
-    def selected(self):
+    def item_of(self, row: Gtk.ListBoxRow) -> T:
+        """The object of a row of the list."""
+
+        assert isinstance(row, Row), "the list has only rows of objects"
+        item: T = row.item
+        return item
+
+    def selected(self) -> T | None:
         row = self.get_selected_row()
-        return None if row is None else row.item
+        return None if row is None else self.item_of(row)
 
     def set_search(self, text: str) -> None:
         """Keep the objects whose name or kind has text in it."""
@@ -464,14 +518,14 @@ class RowList(Gtk.ListBox):
         self.invalidate_filter()
         self._update_placeholder()
 
-    def _add(self, item) -> None:
+    def _add(self, item: T) -> None:
         row = self.make_row(item)
         self._rows[item] = row
         self.prepare(row)
         self.add(row)
 
-    def _visible(self, row) -> bool:
-        item = row.item
+    def _visible(self, row: Gtk.ListBoxRow) -> bool:
+        item = self.item_of(row)
         if self.only_running and not self.running(item):
             return False
         text = self.search.strip().casefold()
@@ -493,23 +547,23 @@ class RowList(Gtk.ListBox):
 
     # The factory
 
-    def on_added(self, item) -> None:
+    def on_added(self, item: T) -> None:
         # the list filters a row it takes
         self._add(item)
 
-    def on_removed(self, item) -> None:
+    def on_removed(self, item: T) -> None:
         row = self._rows.pop(item, None)
         if row is not None:
             row.destroy()
         # the objects that used it may change, and not be told
         self.update()
 
-    def on_changed(self, item) -> None:
+    def on_changed(self, item: T) -> None:
         # every row: an object's name shows in the rows of others
         self.update()
 
 
-class RowsTab(Tab, Gtk.Stack):
+class RowsTab(Tab, Gtk.Stack, Generic[T]):
     """The objects of a kind, and what can be done with them."""
 
     # The words of the tab.
@@ -519,13 +573,13 @@ class RowsTab(Tab, Gtk.Stack):
     # Whether the objects start and stop: then Start All and Stop All.
     STARTS = True
 
-    def __init__(self, gui, factory) -> None:
+    def __init__(self, gui: VBGUI, factory: BrickFactory) -> None:
         super().__init__(visible=True)
         self.gui = gui
         self.factory = factory
         self._menu: Gtk.Menu | None = None
         # the object whose settings show, and their panel
-        self.configuring = None
+        self.configuring: T | None = None
         self._controller: Panel | None = None
         self.settings: Gtk.Box | None = None
         # the object running, and the first error of the draft
@@ -609,7 +663,7 @@ class RowsTab(Tab, Gtk.Stack):
         removed.connect(self.on_removed)
         self.update()
 
-    def signals(self) -> tuple:
+    def signals(self) -> tuple[Signal, Signal, Signal]:
         """The factory's signals: an object added, removed, changed."""
 
         raise NotImplementedError
@@ -650,51 +704,53 @@ class RowsTab(Tab, Gtk.Stack):
 
     # What each kind of tab does
 
-    def empty_picture(self):
+    def empty_picture(self) -> GdkPixbuf.Pixbuf | None:
         """The picture of a project without objects, grey."""
 
         return empty_icon(self.EMPTY_ICON)
 
-    def make_list(self) -> RowList:
+    def make_list(self) -> RowList[T]:
         raise NotImplementedError
 
-    def items(self) -> list:
+    def items(self) -> list[T]:
         """The objects, in their order."""
 
         raise NotImplementedError
 
-    def count_text(self, items) -> str:
+    def count_text(self, items: list[T]) -> str:
         """How many of items run, of how many."""
 
         raise NotImplementedError
 
-    def can_start(self, item) -> bool:
+    def can_start(self, item: T) -> bool:
         """Whether Start All starts item."""
 
         raise NotImplementedError
 
-    def start_all(self) -> defer.Deferred:
+    def start_all(self) -> defer.Deferred[None] | None:
         raise NotImplementedError
 
-    def stop_all(self) -> defer.Deferred:
+    def stop_all(self) -> defer.Deferred[None] | None:
         raise NotImplementedError
 
-    def new(self) -> None:
+    def new_item(self) -> None:
         """What New does."""
 
         raise NotImplementedError
 
-    def popup(self, widget, event, item) -> Gtk.Menu:
+    def popup(
+        self, widget: Gtk.Widget, event: Gdk.EventButton | None, item: T
+    ) -> Gtk.Menu:
         """Open the menu of item, with its keys."""
 
         raise NotImplementedError
 
-    def panel_for(self, item) -> Panel | None:
+    def panel_for(self, item: T) -> Panel | None:
         """The panel of the settings of item, on a new draft, or None."""
 
         raise NotImplementedError
 
-    def settings_words(self, item) -> str:
+    def settings_words(self, item: T) -> str:
         """What the line above the settings of item says under its name."""
 
         raise NotImplementedError
@@ -711,9 +767,9 @@ class RowsTab(Tab, Gtk.Stack):
             widget.set_sensitive(bool(items))
         if self.STARTS:
             self.start_button.set_sensitive(any(map(self.can_start, items)))
-            self.stop_button.set_sensitive(any(map(is_running, items)))
+            self.stop_button.set_sensitive(any(map(self.list.running, items)))
 
-    def open_menu(self, event=None) -> None:
+    def open_menu(self, event: Gdk.EventButton | None = None) -> None:
         """
         Open the menu of the selected object: at the pointer for a click,
         under its button for the Menu key.
@@ -722,8 +778,11 @@ class RowsTab(Tab, Gtk.Stack):
         item = self.list.selected()
         if item is None:
             return
+        widget: Gtk.Widget
         if event is None:
-            widget = self.list.row_of(item).menu_button
+            row = self.list.row_of(item)
+            assert row is not None, "the selected object has its row"
+            widget = row.menu_button
         else:
             widget = self.list
         # kept while it shows
@@ -731,7 +790,7 @@ class RowsTab(Tab, Gtk.Stack):
 
     # The settings of an object
 
-    def configure(self, item) -> None:
+    def configure(self, item: T) -> None:
         """
         Show the settings of item in place of the list. Those of another
         object close first, as with Cancel. An object without a panel, as a
@@ -749,7 +808,7 @@ class RowsTab(Tab, Gtk.Stack):
         self.add_named(self.settings, "settings")
         self.set_visible_child(self.settings)
 
-    def _settings_page(self, item, controller: Panel) -> Gtk.Box:
+    def _settings_page(self, item: T, controller: Panel) -> Gtk.Box:
         page = Gtk.Box(visible=True, orientation=Gtk.Orientation.VERTICAL)
         head = Gtk.Box(visible=True, spacing=12, margin=GAP)
         image = Gtk.Image(visible=True, pixel_size=ICON_SIZE)
@@ -798,21 +857,23 @@ class RowsTab(Tab, Gtk.Stack):
         actions.pack_end(self.ok_button, False, False, 0)
         self.cancel_button.connect("clicked", self.on_cancel_clicked)
         self.ok_button.connect("clicked", self.on_ok_clicked)
-        self.why = Gtk.Label(
+        why = self.why = Gtk.Label(
             visible=False, xalign=1.0, ellipsize=Pango.EllipsizeMode.END
         )
-        self.why.get_style_context().add_class("error")
-        actions.pack_end(self.why, True, True, 0)
-        self.running_bar = Gtk.InfoBar(message_type=Gtk.MessageType.INFO)
+        why.get_style_context().add_class("error")
+        actions.pack_end(why, True, True, 0)
+        running_bar = self.running_bar = Gtk.InfoBar(
+            message_type=Gtk.MessageType.INFO
+        )
         self.running_words = Gtk.Label(visible=True, xalign=0.0, wrap=True)
-        self.running_bar.get_content_area().add(self.running_words)
+        running_bar.get_content_area().add(self.running_words)
         controller.connect_changed(self.on_panel_changed)
         self.on_panel_changed(controller)
         self.show_running(controller)
 
         for widget, expand in (
             (head, False),
-            (self.running_bar, False),
+            (running_bar, False),
             (Gtk.Separator(visible=True), False),
             (scrolled, True),
             (Gtk.Separator(visible=True), False),
@@ -825,12 +886,15 @@ class RowsTab(Tab, Gtk.Stack):
     def show_running(self, panel: Panel) -> None:
         """The info bar of the panel, while its object runs."""
 
+        assert self.running_bar is not None, "the settings show"
+        assert self.running_words is not None, "the settings show"
         running = panel.running()
         if running:
             self.running_words.set_text(panel.running_words())
         self.running_bar.set_visible(running)
 
     def on_panel_changed(self, panel: Panel) -> None:
+        assert self.why is not None, "the settings show"
         errors = panel.draft.errors()
         self.ok_button.set_sensitive(not errors)
         if errors:
@@ -845,8 +909,9 @@ class RowsTab(Tab, Gtk.Stack):
             self.why.set_text(text)
         self.why.set_visible(bool(errors))
 
-    def on_ok_clicked(self, button) -> None:
+    def on_ok_clicked(self, button: Gtk.Button) -> None:
         panel = self._controller
+        assert panel is not None, "OK is of the settings that show"
         panel.commit()
         # a number just taken can make an error, which shows beside OK
         if panel.draft.errors():
@@ -856,13 +921,16 @@ class RowsTab(Tab, Gtk.Stack):
             lambda _: self.close_settings(), self._not_applied
         )
 
-    def _not_applied(self, failure) -> None:
+    def _not_applied(self, failure: Failure) -> None:
         """The engine refused the draft: why shows beside OK."""
 
+        if self.why is None:
+            # the settings closed meanwhile
+            return
         self.why.set_text(failure.getErrorMessage())
         self.why.set_visible(True)
 
-    def on_cancel_clicked(self, button) -> None:
+    def on_cancel_clicked(self, button: Gtk.Button) -> None:
         self.close_settings()
 
     def close_settings(self) -> None:
@@ -874,6 +942,7 @@ class RowsTab(Tab, Gtk.Stack):
         self.configuring = self._controller = None
         self.running_bar = self.running_words = self.why = None
         # the stack shows the list once the page goes
+        assert self.settings is not None, "the settings of item show"
         self.settings.destroy()
         self.settings = None
         row = self.list.row_of(item)
@@ -899,47 +968,54 @@ class RowsTab(Tab, Gtk.Stack):
 
     # Signals
 
-    def on_changed(self, item) -> None:
+    def on_changed(self, item: T) -> None:
         self.update()
         if item is self.configuring:
+            assert self._controller is not None, "item's settings show"
             self.show_running(self._controller)
 
-    def on_removed(self, item) -> None:
+    def on_removed(self, item: T) -> None:
         if item is self.configuring:
             self.close_settings()
 
-    def on_settings_key_press(self, page, event) -> bool:
+    def on_settings_key_press(
+        self, page: Gtk.Box, event: Gdk.EventKey
+    ) -> bool:
         if event.keyval == Gdk.KEY_Escape:
             self.close_settings()
             return True
         return False
 
-    def on_new_clicked(self, button) -> None:
-        self.new()
+    def on_new_clicked(self, button: Gtk.Button) -> None:
+        self.new_item()
 
-    def on_start_clicked(self, button) -> None:
+    def on_start_clicked(self, button: Gtk.Button) -> None:
         self.start_all()
 
-    def on_stop_clicked(self, button) -> None:
+    def on_stop_clicked(self, button: Gtk.Button) -> None:
         self.stop_all()
 
-    def on_search_changed(self, entry) -> None:
+    def on_search_changed(self, entry: Gtk.SearchEntry) -> None:
         self.list.set_search(entry.get_text())
 
-    def on_stop_search(self, entry) -> None:
+    def on_stop_search(self, entry: Gtk.SearchEntry) -> None:
         entry.set_text("")
         # back to the list, on the selected object or the first
         row = self.list.get_selected_row() or self.list.get_row_at_index(0)
         if row is not None:
             row.grab_focus()
 
-    def on_running_toggled(self, button) -> None:
+    def on_running_toggled(self, button: Gtk.RadioButton) -> None:
         self.list.set_only_running(button.get_active())
 
-    def on_row_activated(self, listbox, row) -> None:
-        self.gui.curtain_up(row.item)
+    def on_row_activated(
+        self, listbox: RowList[T], row: Gtk.ListBoxRow
+    ) -> None:
+        self.gui.curtain_up(listbox.item_of(row))
 
-    def on_button_press(self, listbox, event) -> bool:
+    def on_button_press(
+        self, listbox: RowList[T], event: Gdk.EventButton
+    ) -> bool:
         if not event.triggers_context_menu():
             return False
         row = listbox.get_row_at_y(int(event.y))
@@ -950,7 +1026,9 @@ class RowsTab(Tab, Gtk.Stack):
         self.open_menu(event)
         return True
 
-    def on_list_key_press(self, listbox, event) -> bool:
+    def on_list_key_press(
+        self, listbox: RowList[T], event: Gdk.EventKey
+    ) -> bool:
         keyval = event.keyval
         shift = event.state & Gdk.ModifierType.SHIFT_MASK
         item = listbox.selected()
@@ -974,7 +1052,7 @@ class RowsTab(Tab, Gtk.Stack):
                 return True
         return False
 
-    def on_key_press(self, tab, event) -> bool:
+    def on_key_press(self, tab: RowsTab[T], event: Gdk.EventKey) -> bool:
         control = event.state & Gdk.ModifierType.CONTROL_MASK
         if self.configuring is not None:
             return False

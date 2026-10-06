@@ -308,18 +308,25 @@
 ## Types
 
 - [ ] Fix the errors that mypy finds, a package at a time as `config/`,
-  `console/`, `bricks/` and `remote/` (94 on 6 Oct 2026, all in `gui/`):
-  widgets maybe `None`, and the schemas' constructors called with values
-  of the wrong type, now that mypy knows them. Or keep a baseline and fail
-  only on new errors
+  `console/`, `bricks/` and `remote/`: none on 6 Oct 2026, but 30 with
+  `--check-untyped-defs`, in `gui/gui.py`, `brickfactory.py` and the
+  lambdas without annotations that read `failure.value`, which may be
+  `None` for mypy
 - [ ] Run mypy in pre-commit, a local hook in the environment of the
   project, as it needs the stubs of GTK 3
 - [ ] Add each module that `tools/typecoverage.py` gives 100% to the strict
   override of `pyproject.toml`
-- [ ] Type the old core that is left: `app.py`, `brickfactory.py` and
-  `scripts/` (0–2% on 6 Oct 2026)
+- [ ] Type the old core that is left: `app.py`, `brickfactory.py`,
+  `gui/gui.py` and `scripts/` (0–2% on 6 Oct 2026)
 
 # DONE
+
+- [x] Type `gui/mainwindow/` in full, checked strictly: the rows, the lists
+  and the tabs of rows are generic over their objects; the methods named as
+  a GTK one, with another signature, are renamed (`new_item()`,
+  `show_state()`, `lay_out()`, `remove_disk()`, `remove_card()`,
+  `remove_image()`, `disks_changed()`, `action_rows()`); the right click
+  on the status icon opens its menu again, a TypeError before
 
 - [x] Type `gui/dialogs/` in full, checked strictly: the `local` of an
   engine is `Literal[True]` or `Literal[False]`, so `if engine.local:`

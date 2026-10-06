@@ -30,21 +30,33 @@ other, and only then is the row under the pointer framed.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, GdkPixbuf, Gtk  # noqa: E402
+from gi.repository import Gdk, GdkPixbuf, Gio, Gtk  # noqa: E402
 
-from virtualbricks.bricks import brickinfo  # noqa: E402
+from virtualbricks.bricks import Brick, brickinfo, is_running  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks import brickmenu  # noqa: E402
 from virtualbricks.bricks.brickinfo import (  # noqa: E402
     LABELS,
     SEPARATOR,
     State,
 )
-from virtualbricks.gui.mainwindow.rowtab import Row, RowList  # noqa: E402
+from virtualbricks.gui.mainwindow.picture import Icons  # noqa: E402
+from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
+    ICON_SIZE,
+    Row,
+    RowList,
+)
 from virtualbricks.i18n import _  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.observable import Signal
 
 DRAG_ICON_SIZE = 24
 TARGETS = [
@@ -53,7 +65,7 @@ TARGETS = [
 WARNINGS = frozenset((State.NOT_CONNECTED, State.NOT_CONFIGURED))
 
 
-def state_tooltip(brick, state: State) -> str | None:
+def state_tooltip(brick: Brick, state: State) -> str | None:
     if state is State.RUNNING:
         return _("Process {pid}").format(pid=brickinfo.process(brick))
     if state is State.NOT_CONNECTED:
@@ -63,15 +75,15 @@ def state_tooltip(brick, state: State) -> str | None:
     return None
 
 
-class BrickRow(Row):
+class BrickRow(Row[Brick]):
     """A brick, what it is and what it does, and what can be done to it."""
 
     GROUP = brickmenu.GROUP
 
-    def make_actions(self):
+    def make_actions(self) -> brickmenu.BrickActions:
         return brickmenu.BrickActions(self.gui, self.item)
 
-    def menu_model(self):
+    def menu_model(self) -> Gio.Menu:
         factory = self.gui.brickfactory
         return brickmenu.menu(
             self.item,
@@ -80,7 +92,7 @@ class BrickRow(Row):
             console_lacks=self.gui.engine.console_lacks(self.item),
         )
 
-    def update(self, processes=False) -> None:
+    def update(self, processes: bool = False) -> None:
         brick = self.item
         state = brickinfo.state(brick)
         running = state is State.RUNNING
@@ -92,7 +104,7 @@ class BrickRow(Row):
             detail = SEPARATOR.join(
                 part for part in (kind, brickinfo.summary(brick)) if part
             )
-        self.show(
+        self.show_state(
             detail,
             LABELS[state],
             running,
@@ -100,11 +112,11 @@ class BrickRow(Row):
             state_tooltip(brick, state),
         )
 
-    def on_startstop_clicked(self, button) -> None:
+    def on_startstop_clicked(self, button: Gtk.Button) -> None:
         brickmenu.startstop(self.gui.engine, self.item)
 
 
-class BrickList(RowList):
+class BrickList(RowList[Brick]):
     """The bricks of the factory, a row each."""
 
     NONE = _("No bricks")
@@ -112,12 +124,12 @@ class BrickList(RowList):
     NONE_RUNNING = _("No brick is running")
     NO_RUNNING_MATCH = _("No running brick matches “{text}”")
 
-    def __init__(self, gui, factory) -> None:
+    def __init__(self, gui: VBGUI, factory: BrickFactory) -> None:
         super().__init__(gui, factory)
         self._drag_icon: Gtk.Widget | None = None
         self._drag_label: Gtk.Label | None = None
 
-    def signals(self) -> tuple:
+    def signals(self) -> tuple[Signal, Signal, Signal]:
         factory = self.factory
         return (
             factory.brick_added,
@@ -125,20 +137,26 @@ class BrickList(RowList):
             factory.brick_changed,
         )
 
-    def items(self) -> list:
+    def items(self) -> list[Brick]:
         return list(self.factory.bricks)
 
-    def make_row(self, item) -> BrickRow:
+    def make_row(self, item: Brick) -> BrickRow:
         return BrickRow(self.gui, item, self.icons, self._sizes)
 
-    def kind(self, item) -> str:
+    def kind(self, item: Brick) -> str:
         return brickinfo.kind(item)
 
-    def prepare(self, row) -> None:
+    def make_icons(self) -> Icons:
+        return Icons(ICON_SIZE)
+
+    def running(self, item: Brick) -> bool:
+        return is_running(item)
+
+    def prepare(self, row: Row[Brick]) -> None:
         row.drag_source_set(
             Gdk.ModifierType.BUTTON1_MASK, TARGETS, Gdk.DragAction.LINK
         )
-        row.drag_dest_set(0, TARGETS, Gdk.DragAction.LINK)
+        row.drag_dest_set(Gtk.DestDefaults(0), TARGETS, Gdk.DragAction.LINK)
         row.connect("drag-begin", self.on_drag_begin)
         row.connect("drag-end", self.on_drag_end)
         row.connect("drag-motion", self.on_drag_motion)
@@ -148,13 +166,13 @@ class BrickList(RowList):
     # Dragging a brick on another
 
     @staticmethod
-    def dragged(context):
+    def dragged(context: Gdk.DragContext) -> Brick | None:
         """The brick dragged, if it comes from a row."""
 
         source = Gtk.drag_get_source_widget(context)
         return source.item if isinstance(source, BrickRow) else None
 
-    def on_drag_begin(self, row, context) -> None:
+    def on_drag_begin(self, row: BrickRow, context: Gdk.DragContext) -> None:
         icon = Gtk.Box(visible=True, spacing=8, margin=4)
         image = Gtk.Image(visible=True, pixel_size=DRAG_ICON_SIZE)
         pixbuf = row.icon.get_pixbuf()
@@ -173,17 +191,24 @@ class BrickList(RowList):
         Gtk.drag_set_icon_widget(context, icon, -8, -8)
         row.set_opacity(0.45)
 
-    def on_drag_end(self, row, context) -> None:
+    def on_drag_end(self, row: BrickRow, context: Gdk.DragContext) -> None:
         row.set_opacity(1.0)
         if self._drag_icon is not None:
             self._drag_icon.destroy()
         self._drag_icon = self._drag_label = None
 
-    def _say(self, words) -> None:
+    def _say(self, words: str) -> None:
         if self._drag_label is not None:
             self._drag_label.set_text(words)
 
-    def on_drag_motion(self, row, context, x, y, time) -> bool:
+    def on_drag_motion(
+        self,
+        row: BrickRow,
+        context: Gdk.DragContext,
+        x: int,
+        y: int,
+        time: int,
+    ) -> bool:
         source = self.dragged(context)
         if source is None:
             return False
@@ -201,19 +226,28 @@ class BrickList(RowList):
             )
         return True
 
-    def on_drag_leave(self, row, context, time) -> None:
+    def on_drag_leave(
+        self, row: BrickRow, context: Gdk.DragContext, time: int
+    ) -> None:
         row.drag_unhighlight()
         source = self.dragged(context)
         if source is not None:
             self._say(source.name)
 
-    def on_drag_drop(self, row, context, x, y, time) -> bool:
+    def on_drag_drop(
+        self,
+        row: BrickRow,
+        context: Gdk.DragContext,
+        x: int,
+        y: int,
+        time: int,
+    ) -> bool:
         source = self.dragged(context)
         if source is None:
             Gtk.drag_finish(context, False, False, time)
             return True
 
-        def finish(done):
+        def finish(done: object) -> object:
             # a failure goes on, to the log
             Gtk.drag_finish(context, done is True, False, time)
             return done

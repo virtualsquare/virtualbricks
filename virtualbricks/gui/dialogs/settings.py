@@ -152,6 +152,7 @@ class SettingsWindow(Window):
         self.gui = gui
         self.engine = gui.engine
         self.clock = clock
+        available: bool | None
         if self.engine.local:
             available = ksm.ksm_available()
             where = ""
@@ -280,6 +281,7 @@ class SettingsWindow(Window):
             )
         else:
             title = _("Project {name}").format(name=current.name)
+            assert current.path is not None, "the project there has a folder"
             path = os.path.join(current.path, locations.PROJECT_FILE)
             if engine.local:
                 where = _(
@@ -368,16 +370,16 @@ class SettingsWindow(Window):
 
         def found(
             answer: tuple[FolderPrograms, FolderPrograms],
-        ) -> defer.Deferred[None] | None:
+        ) -> defer.Deferred[None]:
             if asking != self._asking:
-                return None
+                return defer.succeed(None)
             vde, qemu = answer
             self.set_facts(
                 vde=vde, qemu=qemu, qemu_version="", audio_drivers=None
             )
             path = qemu.qemu()
             if path is None:
-                return None
+                return defer.succeed(None)
             return self.engine.qemu(path).addCallback(listed)
 
         def listed(info: QemuInfo) -> None:

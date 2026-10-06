@@ -279,16 +279,21 @@ class ProjectNameDialog:
                 lambda _: logger.info(project_created, name=name)
             )
         elif self.kind == RENAME:
+            assert self.original is not None, "Rename has its project"
             doing = engine.rename_project(self.original, name)
             doing.addCallback(self._renamed, name)
         else:
+            original = self.original
+            assert original is not None, "Duplicate has its project"
+
+            def duplicate(_: object) -> defer.Deferred[Any]:
+                return engine.duplicate_project(original, name)
+
             if self.is_current():
                 doing = defer.maybeDeferred(self.gui.on_save)
             else:
                 doing = defer.succeed(None)
-            doing.addCallback(
-                lambda _: engine.duplicate_project(self.original, name)
-            )
+            doing.addCallback(duplicate)
             doing.addCallback(
                 lambda _: logger.info(
                     project_duplicated, old=self.original, name=name

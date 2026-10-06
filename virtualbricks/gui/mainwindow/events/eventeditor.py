@@ -39,6 +39,9 @@ event saved without changes stays the same.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import TYPE_CHECKING
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -55,6 +58,10 @@ from virtualbricks.bricks.eventinfo import (  # noqa: E402
 )
 from virtualbricks.gui.mainwindow.tab import icon_button  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.gui.form import Form
 
 # Between the widgets, in pixels.
 GAP = 8
@@ -107,7 +114,7 @@ def delay_button(seconds: int) -> Gtk.SpinButton:
     )
 
 
-def _is_separator(model, itr) -> bool:
+def _is_separator(model: Gtk.TreeModel, itr: Gtk.TreeIter) -> bool:
     # the id of a Gtk.ComboBoxText
     return model[itr][1] == SEPARATOR_ID
 
@@ -118,7 +125,13 @@ class ActionRow(Gtk.Box):
     and a button that removes it.
     """
 
-    def __init__(self, action: Action, choices, factory, changed) -> None:
+    def __init__(
+        self,
+        action: Action,
+        choices: dict[str, list[str]],
+        factory: BrickFactory,
+        changed: Callable[[], None],
+    ) -> None:
         super().__init__(visible=True, spacing=GAP)
         # the names of the bricks and of the events, by BRICK and EVENT
         self.choices = choices
@@ -135,7 +148,7 @@ class ActionRow(Gtk.Box):
                 kind, label = entry
                 self.kind_combo.append(kind.value, label)
         self.kind_combo.set_active_id(action.kind.value)
-        self.subject: Gtk.Widget | None = None
+        self.subject: Gtk.Entry | Gtk.ComboBoxText | None = None
         self.subject_box = Gtk.Box(visible=True)
         self.remove_button = Gtk.Button(
             visible=True, relief=Gtk.ReliefStyle.NONE
@@ -155,6 +168,7 @@ class ActionRow(Gtk.Box):
         if self.subject is not None:
             self.subject.destroy()
         source = SUBJECTS[self.kind]
+        widget: Gtk.Entry | Gtk.ComboBoxText
         if source == COMMAND:
             widget = Gtk.Entry(
                 visible=True,
@@ -194,6 +208,7 @@ class ActionRow(Gtk.Box):
     def _subject(self) -> str:
         if isinstance(self.subject, Gtk.Entry):
             return self.subject.get_text()
+        assert self.subject is not None, "the row shows its subject"
         return self.subject.get_active_id() or ""
 
     def action(self) -> Action | None:
@@ -204,8 +219,10 @@ class ActionRow(Gtk.Box):
             return None
         return Action(self.kind, subject)
 
-    def on_kind_changed(self, combo) -> None:
-        kind = Kind(combo.get_active_id())
+    def on_kind_changed(self, combo: Gtk.ComboBoxText) -> None:
+        chosen = combo.get_active_id()
+        assert chosen is not None, "a kind is always active"
+        kind = Kind(chosen)
         # the brick stays a brick, the command a command
         subject = self._subject()
         if SUBJECTS[kind] != SUBJECTS[self.kind]:
@@ -218,7 +235,7 @@ class ActionRow(Gtk.Box):
 class EventEditor(Panel):
     """The delay and the actions of an event, on a draft."""
 
-    def build(self, form) -> Gtk.Box:
+    def build(self, form: Form) -> Gtk.Box:
         event = self.draft.brick
         factory = event.factory
         self.choices = {
@@ -269,8 +286,12 @@ class EventEditor(Panel):
         self.panel.pack_start(self.add_button, False, False, 0)
         return self.panel
 
-    def rows(self) -> list[ActionRow]:
-        return self.actions.get_children()
+    def action_rows(self) -> list[ActionRow]:
+        return [
+            row
+            for row in self.actions.get_children()
+            if isinstance(row, ActionRow)
+        ]
 
     def add(self, action: Action) -> ActionRow:
         """A row for action, after the others."""
@@ -289,7 +310,7 @@ class EventEditor(Panel):
     def take_actions(self) -> None:
         """The actions of the rows into the draft, as the event keeps them."""
 
-        actions = [row.action() for row in self.rows()]
+        actions = [row.action() for row in self.action_rows()]
         self.draft.set(
             "actions",
             [
@@ -308,15 +329,15 @@ class EventEditor(Panel):
 
     # Signals
 
-    def on_delay_changed(self, spin) -> None:
+    def on_delay_changed(self, spin: Gtk.SpinButton) -> None:
         self.draft.set("delay", spin.get_value_as_int())
         self.on_changed()
 
-    def on_add_clicked(self, button) -> None:
+    def on_add_clicked(self, button: Gtk.Button) -> None:
         row = self.add(Action(Kind.START_BRICK, ""))
         self.take_actions()
         row.kind_combo.grab_focus()
 
-    def on_remove_clicked(self, button, row) -> None:
+    def on_remove_clicked(self, button: Gtk.Button, row: ActionRow) -> None:
         row.destroy()
         self.take_actions()

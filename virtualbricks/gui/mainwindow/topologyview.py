@@ -38,6 +38,7 @@ tooltip.
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING, Any
 
 import gi
 
@@ -52,6 +53,12 @@ from virtualbricks.gui.mainwindow.picture import (  # noqa: E402
     draw,
 )
 from virtualbricks.topology import Layout  # noqa: E402
+
+if TYPE_CHECKING:  # pragma: no cover
+    import cairo
+
+    from virtualbricks.bricks import Brick
+    from virtualbricks.topology import Node
 
 # The zooms of zoom in and zoom out, the first and the last also the limits.
 LEVELS = (0.1, 0.25, 0.33, 0.5, 0.67, 0.8, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0)
@@ -105,7 +112,7 @@ def origin(size: float, zoom: float, room: float) -> float:
     return max(MARGIN, (room - size * zoom) / 2)
 
 
-def tooltip_text(brick) -> str:
+def tooltip_text(brick: Brick) -> str:
     return f"{brick.name} · {brick.get_type()} · {brick.get_state()}"
 
 
@@ -126,7 +133,7 @@ class TopologyView(Gtk.ScrolledWindow):
         # fit all is on
         self.fitting = True
         # the node under the pointer
-        self.hover = None
+        self.hover: Node | None = None
         self.icons = Icons()
         # the scroll, once the area has the size of the new zoom
         self._scroll_to: tuple[float, float] | None = None
@@ -136,7 +143,7 @@ class TopologyView(Gtk.ScrolledWindow):
         self._drag: tuple[float, float, float, float] | None = None
         self._wheel = 0.0
         self._pinch_zoom = 1.0
-        self._pinch_anchor = (0.0, 0.0)
+        self._pinch_anchor: tuple[float, float] | None = (0.0, 0.0)
 
         self.area = Gtk.DrawingArea(
             visible=True, can_focus=True, has_tooltip=True
@@ -201,7 +208,9 @@ class TopologyView(Gtk.ScrolledWindow):
         width, height = self.room()
         self._zoom(fit_zoom(self.layout, width, height - self.top), None)
 
-    def set_zoom(self, zoom: float, anchor=None) -> None:
+    def set_zoom(
+        self, zoom: float, anchor: tuple[float, float] | None = None
+    ) -> None:
         """
         Zoom around anchor, a point of the view, or its centre: fit all is
         off.
@@ -210,10 +219,10 @@ class TopologyView(Gtk.ScrolledWindow):
         self.fitting = False
         self._zoom(clamp(zoom), anchor)
 
-    def zoom_in(self, anchor=None) -> None:
+    def zoom_in(self, anchor: tuple[float, float] | None = None) -> None:
         self.set_zoom(zoom_in(self.zoom), anchor)
 
-    def zoom_out(self, anchor=None) -> None:
+    def zoom_out(self, anchor: tuple[float, float] | None = None) -> None:
         self.set_zoom(zoom_out(self.zoom), anchor)
 
     def zoom_to_100(self) -> None:
@@ -224,7 +233,7 @@ class TopologyView(Gtk.ScrolledWindow):
 
         return self.get_allocated_width(), self.get_allocated_height()
 
-    def _zoom(self, zoom: float, anchor) -> None:
+    def _zoom(self, zoom: float, anchor: tuple[float, float] | None) -> None:
         width, height = self.room()
         ax, ay = (width / 2, height / 2) if anchor is None else anchor
         hadjustment, vadjustment = (
@@ -282,7 +291,7 @@ class TopologyView(Gtk.ScrolledWindow):
         ox, oy = self.origin()
         return (x - ox) / self.zoom, (y - oy) / self.zoom
 
-    def node_at(self, x: float, y: float):
+    def node_at(self, x: float, y: float) -> Node | None:
         """The node whose box holds a point of the area, or None."""
 
         lx, ly = self.to_layout(x, y)
@@ -304,13 +313,13 @@ class TopologyView(Gtk.ScrolledWindow):
         )
         return text.get_pixel_size()[0]
 
-    def brick_at(self, x: float, y: float):
+    def brick_at(self, x: float, y: float) -> Brick | None:
         node = self.node_at(x, y)
         return None if node is None else node.brick
 
     # Drawing
 
-    def on_draw(self, area, cr) -> bool:
+    def on_draw(self, area: Gtk.DrawingArea, cr: cairo.Context[Any]) -> bool:
         context = area.get_style_context()
         width, height = area.get_allocated_width(), area.get_allocated_height()
         Gtk.render_background(context, cr, 0, 0, width, height)
@@ -339,7 +348,9 @@ class TopologyView(Gtk.ScrolledWindow):
 
     # Signals
 
-    def on_allocated(self, view, allocation) -> None:
+    def on_allocated(
+        self, view: TopologyView, allocation: Gdk.Rectangle
+    ) -> None:
         size = (allocation.width, allocation.height)
         if size != self._size:
             self._size = size
@@ -353,7 +364,9 @@ class TopologyView(Gtk.ScrolledWindow):
             self.fit()
         return GLib.SOURCE_REMOVE
 
-    def on_area_allocated(self, area, allocation) -> None:
+    def on_area_allocated(
+        self, area: Gtk.DrawingArea, allocation: Gdk.Rectangle
+    ) -> None:
         # the adjustments know the new size now
         if self._scroll_to is not None:
             x, y = self._scroll_to
@@ -361,7 +374,9 @@ class TopologyView(Gtk.ScrolledWindow):
             self.get_hadjustment().set_value(x)
             self.get_vadjustment().set_value(y)
 
-    def on_button_press(self, area, event) -> bool:
+    def on_button_press(
+        self, area: Gtk.DrawingArea, event: Gdk.EventButton
+    ) -> bool:
         area.grab_focus()
         if event.button != 1 or self.node_at(event.x, event.y) is not None:
             # the bricks are the tab's
@@ -375,14 +390,16 @@ class TopologyView(Gtk.ScrolledWindow):
         self._set_cursor("grabbing")
         return True
 
-    def on_button_release(self, area, event) -> bool:
+    def on_button_release(
+        self, area: Gtk.DrawingArea, event: Gdk.EventButton
+    ) -> bool:
         if event.button == 1 and self._drag is not None:
             self._drag = None
             self._set_cursor(None)
             return True
         return False
 
-    def on_motion(self, area, event) -> bool:
+    def on_motion(self, area: Gtk.DrawingArea, event: Gdk.EventMotion) -> bool:
         if self._drag is not None:
             x0, y0, h, v = self._drag
             self.get_hadjustment().set_value(h - (event.x_root - x0))
@@ -396,13 +413,15 @@ class TopologyView(Gtk.ScrolledWindow):
             area.queue_draw()
         return False
 
-    def on_leave(self, area, event) -> bool:
+    def on_leave(
+        self, area: Gtk.DrawingArea, event: Gdk.EventCrossing
+    ) -> bool:
         if self.hover is not None and self._drag is None:
             self.hover = None
             area.queue_draw()
         return False
 
-    def on_scroll(self, area, event) -> bool:
+    def on_scroll(self, area: Gtk.DrawingArea, event: Gdk.EventScroll) -> bool:
         if not event.state & Gdk.ModifierType.CONTROL_MASK:
             # the scrolled window scrolls
             return False
@@ -428,7 +447,7 @@ class TopologyView(Gtk.ScrolledWindow):
                 self.zoom_out(anchor)
         return True
 
-    def on_key_press(self, area, event) -> bool:
+    def on_key_press(self, area: Gtk.DrawingArea, event: Gdk.EventKey) -> bool:
         modifiers = event.state & Gtk.accelerator_get_default_mod_mask()
         control = modifiers & ~Gdk.ModifierType.SHIFT_MASK
         key = event.keyval
@@ -457,20 +476,31 @@ class TopologyView(Gtk.ScrolledWindow):
             vadjustment.set_value(vadjustment.get_value() + step)
         elif key in (Gdk.KEY_Page_Up, Gdk.KEY_Page_Down):
             page = vadjustment.get_page_increment()
-            step = page if key == Gdk.KEY_Page_Down else -page
-            vadjustment.set_value(vadjustment.get_value() + step)
+            vadjustment.set_value(
+                vadjustment.get_value()
+                + (page if key == Gdk.KEY_Page_Down else -page)
+            )
         else:
             return False
         return True
 
-    def on_query_tooltip(self, area, x, y, keyboard, tooltip) -> bool:
+    def on_query_tooltip(
+        self,
+        area: Gtk.DrawingArea,
+        x: int,
+        y: int,
+        keyboard: bool,
+        tooltip: Gtk.Tooltip,
+    ) -> bool:
         node = self.node_at(x, y)
         if node is None:
             return False
         tooltip.set_text(tooltip_text(node.brick))
         return True
 
-    def on_pinch_begin(self, gesture, sequence) -> None:
+    def on_pinch_begin(
+        self, gesture: Gtk.GestureZoom, sequence: Gdk.EventSequence | None
+    ) -> None:
         self._pinch_zoom = self.zoom
         found, x, y = gesture.get_bounding_box_center()
         if found:
@@ -481,15 +511,15 @@ class TopologyView(Gtk.ScrolledWindow):
         else:
             self._pinch_anchor = None
 
-    def on_pinch(self, gesture, scale) -> None:
+    def on_pinch(self, gesture: Gtk.GestureZoom, scale: float) -> None:
         self.set_zoom(self._pinch_zoom * scale, self._pinch_anchor)
 
-    def on_destroy(self, view) -> None:
+    def on_destroy(self, view: TopologyView) -> None:
         if self._fitting_later is not None:
             GLib.source_remove(self._fitting_later)
             self._fitting_later = None
 
-    def _set_cursor(self, name) -> None:
+    def _set_cursor(self, name: str | None) -> None:
         window = self.area.get_window()
         if window is None:
             return
