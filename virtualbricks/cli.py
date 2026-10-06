@@ -38,6 +38,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from twisted.internet.posixbase import PosixReactorBase
 
     from virtualbricks.brickfactory import Application
+    from virtualbricks.gui import gui
 
 T = TypeVar("T")
 
@@ -56,7 +57,7 @@ def _file_logger(filename: str) -> str:
 
         global _log_file
         _log_file = logfile.LogFile.fromFullPath(filename)
-    return "virtualbricks.app.file_logger"
+    return "virtualbricks.cli.file_logger"
 
 
 class Options(usage.Options):
@@ -614,3 +615,69 @@ def LockedApplication(
         return app
 
     return init
+
+
+def make_application(config: Options) -> gui.Application:
+    from virtualbricks.gui import gui
+
+    return gui.Application(config)
+
+
+def make_remote_application(config: Options) -> gui.RemoteApplication:
+    """The windows of another Virtualbricks: no lock, no project here."""
+
+    from virtualbricks.gui import gui
+
+    return gui.RemoteApplication(config)
+
+
+def make_plain_application(config: Options) -> Application:
+    """The application without the windows: no GTK is loaded."""
+
+    from virtualbricks import brickfactory
+
+    return brickfactory.Application(config)
+
+
+def install_gtk_reactor() -> None:
+    import gi
+
+    gi.require_version("Gtk", "3.0")
+    gi.require_version("Gdk", "3.0")
+    from twisted.internet import gireactor
+
+    gireactor.install()
+
+
+def main() -> None:
+    """The virtualbricks command: with the windows, or without."""
+
+    config = Options()
+    parse_options(config)
+    if config["windows"]:
+        install_gtk_reactor()
+        run_app(make_remote_application, config)
+        return
+    if config["command"] or config["connect"]:
+        # no lock, no reactor, no GTK: the Virtualbricks that runs has them
+        from virtualbricks import i18n
+        from virtualbricks.console import client
+
+        i18n.install()
+        # --connect alone sends the commands of --run
+        script = None if config["command"] else config["run"]
+        sys.exit(
+            client.main(
+                config["words"],
+                config["target"],
+                script=script,
+                workspace=config["workspace"],
+            )
+        )
+    factory: Callable[[Options], Application]
+    if config["no-gui"]:
+        factory = make_plain_application
+    else:
+        install_gtk_reactor()
+        factory = make_application
+    run_app(LockedApplication(factory), config)

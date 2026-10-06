@@ -27,7 +27,7 @@ from twisted.logger import LogLevel
 from twisted.protocols import amp
 from twisted.test import iosim
 
-from virtualbricks import app
+from virtualbricks import cli
 from virtualbricks.bricks import FakeProcess
 from virtualbricks.config import images, settings
 from virtualbricks.config.workspace import OpenProject, projects
@@ -184,7 +184,7 @@ class RemoteTestCase(GuiTestCase):
     def launch(self, install_settings=None, args=None):
         """The windows of the Virtualbricks at /run/lab.amp, started."""
 
-        config = app.Options()
+        config = cli.Options()
         config.parseOptions(args or ["--connect", "unix:/run/lab.amp"])
         application = gui.RemoteApplication(config)
         application.install_locale = lambda: None

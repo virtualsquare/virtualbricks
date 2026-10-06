@@ -62,7 +62,7 @@ dev = [
 Homepage = "https://github.com/virtualsquare/virtualbricks"
 
 [project.scripts]
-virtualbricks = "virtualbricks.scripts.virtualbricks:run"
+virtualbricks = "virtualbricks.cli:main"
 
 [project.gui-scripts]
 virtualbricks-migrate = "virtualbricks.migrate.cli:gui_main"

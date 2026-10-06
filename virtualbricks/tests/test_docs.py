@@ -42,7 +42,7 @@ import tomlkit
 from twisted.trial import unittest
 
 from virtualbricks import locations
-from virtualbricks.app import Options
+from virtualbricks.cli import Options
 from virtualbricks.console import ampcommands, ampgen, ampwire, dispatch
 from virtualbricks.console.command import COMMANDS
 from virtualbricks.config.projectfile import DEFAULT_MODEL

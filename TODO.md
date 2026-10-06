@@ -42,7 +42,7 @@
 - [ ] Extract the logic from the windows: windows take state and
   callbacks
 - [ ] Move the GTK code outside `gui/` into it:
-  `migrate/gui.py`, the GTK parts of `scripts/virtualbricks.py`
+  `migrate/gui.py`, the GTK parts of `cli.py`
 - [ ] Stop passing VBGUI around: set the transient window of a dialog
   another way
 - [ ] Take the work of the tabs (on_open, on_save, ...) to the main

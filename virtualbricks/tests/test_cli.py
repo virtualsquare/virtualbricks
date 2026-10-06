@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-"""The launcher: the lock, the logging, the options."""
+"""The command line: the options, the lock, the logging, the windows."""
 
 import functools
 import os
@@ -27,7 +27,7 @@ from twisted.internet import defer
 from twisted.python import usage
 from twisted.trial import unittest
 
-from virtualbricks import app, locations, locks
+from virtualbricks import brickfactory, cli, locations, locks
 from virtualbricks.config.settings import AppSettings, write_settings
 from virtualbricks.console import wire
 from virtualbricks.tests import (
@@ -82,13 +82,13 @@ class TestLock(unittest.TestCase):
         self.workspace = os.path.join(self.root, ".virtualbricks")
 
     def parse(self, *args):
-        options = app.Options()
+        options = cli.Options()
         options.parseOptions(list(args))
         return options
 
     def run_app(self, *args):
         factory = functools.partial(FakeApplication, self.started)
-        application = app.LockedApplication(factory)(self.parse(*args))
+        application = cli.LockedApplication(factory)(self.parse(*args))
         return application.run(self.reactor)
 
     def test_the_policy(self):
@@ -199,7 +199,7 @@ class TestLock(unittest.TestCase):
             return fake
 
         config = self.parse("--workspace", os.path.join(self.root, "a"))
-        running = app.LockedApplication(application)(config)
+        running = cli.LockedApplication(application)(config)
         self.successResultOf(running.run(self.reactor))
         [d] = refused
         failure = self.failureResultOf(d, SystemExit)
@@ -242,7 +242,7 @@ class TestWorkspace(unittest.TestCase):
         self.root = isolate(self)
 
     def parse(self, *args):
-        options = app.Options()
+        options = cli.Options()
         options.parseOptions(list(args))
         return options["workspace"]
 
@@ -284,7 +284,7 @@ class TestSocket(unittest.TestCase):
         self.default = None
 
     def parse(self, *args):
-        options = app.Options()
+        options = cli.Options()
         options.parseOptions(list(args))
         return options
 
@@ -416,7 +416,7 @@ class TestTcpSocket(unittest.TestCase):
         self.patch(sys, "stdin", Input(False))
 
     def parse(self, *args):
-        options = app.Options()
+        options = cli.Options()
         options.parseOptions(list(args))
         return options
 
@@ -543,7 +543,7 @@ class TestSslSocket(unittest.TestCase):
         self.patch(sys, "stdin", Input(False))
 
     def parse(self, *args):
-        options = app.Options()
+        options = cli.Options()
         options.parseOptions(list(args))
         return options
 
@@ -663,7 +663,7 @@ class TestCommand(unittest.TestCase):
         self.patch(sys, "stdin", Input(False))
 
     def parse(self, *args):
-        options = app.Options()
+        options = cli.Options()
         options.parseOptions(list(args))
         return options
 
@@ -740,7 +740,7 @@ class TestCommand(unittest.TestCase):
             ["--run", script],
             ["--lock", "system"],
             ["--logfile", "-"],
-            ["--logger", "virtualbricks.app.file_logger"],
+            ["--logger", "virtualbricks.cli.file_logger"],
         ):
             name = args[0][2:]
             self.assertEqual(
@@ -777,7 +777,7 @@ class TestConnect(unittest.TestCase):
         open(self.script, "w").close()
 
     def parse(self, *args):
-        options = app.Options()
+        options = cli.Options()
         options.parseOptions(list(args))
         return options
 
@@ -876,7 +876,7 @@ class TestWindows(TestConnect):
             ["--noterm"],
             ["--lock", "system"],
             ["--logfile", "-"],
-            ["--logger", "virtualbricks.app.file_logger"],
+            ["--logger", "virtualbricks.cli.file_logger"],
         ):
             name = args[0][2:]
             self.assertEqual(
@@ -925,7 +925,7 @@ class TestTheConsoleOptions(unittest.TestCase):
         self.root = isolate(self)
 
     def parse(self, *args):
-        options = app.Options()
+        options = cli.Options()
         options.parseOptions(list(args))
         return options
 
@@ -945,3 +945,26 @@ class TestTheConsoleOptions(unittest.TestCase):
 
     def test_no_daemon(self):
         self.assertRaises(usage.UsageError, self.parse, "--daemon")
+
+
+class TestMain(unittest.TestCase):
+
+    def setUp(self):
+        isolate(self)
+        self.ran = []
+        self.patch(
+            cli,
+            "run_app",
+            lambda application, config: self.ran.append(
+                (application(config), config)
+            ),
+        )
+
+    def test_without_the_windows(self):
+        self.patch(sys, "argv", ["virtualbricks", "--no-gui", "--noterm"])
+        cli.main()
+        [(locked, config)] = self.ran
+        self.assertTrue(config["no-gui"])
+        self.assertIs(locked.factory, cli.make_plain_application)
+        plain = locked.factory(config)
+        self.assertIs(type(plain), brickfactory.Application)
