@@ -69,8 +69,6 @@ Feature: Projects
     Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my home folder
     And Virtualbricks is running
     When I import the archive DTN2hops_26_Feb_2026.vbp of my home folder with the name it suggests, DTN2hops_26_Feb_2026
-    Then the Import Project window says "Imported as "DTN2hops_26_Feb_2026"."
-    When I close the Import Project window
     Then the main window shows the project DTN2hops_26_Feb_2026
     And the folder of DTN2hops_26_Feb_2026 has project.toml
     And the list of bricks has
@@ -97,8 +95,6 @@ Feature: Projects
       | Brick | Type   |
       | sw1   | switch |
     When I import the archive new_project.vbp of my home folder, typing its path, with the name it suggests, new_project-2
-    Then the Import Project window says "Imported as "new_project-2"."
-    When I close the Import Project window
     Then the main window shows the project new_project-2
     And the list of bricks has
       | Brick | Detail            | State   |

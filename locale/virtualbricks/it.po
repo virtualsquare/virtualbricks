@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-07 13:35+0200\n"
+"POT-Creation-Date: 2026-10-07 18:43+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -3079,11 +3079,6 @@ msgstr "Formato immagine"
 #: virtualbricks/gui/dialogs/importdialog.py
 #, python-brace-format
 msgid "Imported as \"{name}\"."
-msgstr ""
-
-#: virtualbricks/gui/dialogs/importdialog.py
-#, python-brace-format
-msgid "cannot be opened: {error}"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/logging.py

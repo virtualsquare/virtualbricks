@@ -344,21 +344,15 @@ class TestImport(ImportTestCase):
         self.assertEqual(self.dialog.run_bar.get_fraction(), 0.25)
         job.on_progress("other", 0, 0)
         self.assertEqual(self.dialog.step_label.get_text(), "other")
-        # the process made the project, and the window opens it
+        # the process made the project, and the window opens it, then
+        # closes, its report in the logs
         self.manager.create("ospf-lab")
         report = Report()
         report.warning("left unset", "images.deb")
         job.done.callback(ImportResult("ospf-lab", report))
-        self.assertEqual(self.dialog.page(), "done")
-        self.assertEqual(
-            self.dialog.done_label.get_text(), 'Imported as "ospf-lab".'
-        )
         self.assertEqual(self.manager.current.name, "ospf-lab")
-        [row] = self.dialog.warnings_list.get_children()
-        self.assertTrue(self.dialog.warnings_frame.get_visible())
         self.assertIn('Project imported as "{name}"', self.logger.events[0])
-        self.assertTrue(self.dialog.close_button.get_visible())
-        self.dialog.close_button.clicked()
+        self.assertEqual(self.logger.levels()[1], "warn")
         self.assertTrue(self.dialog.destroyed)
 
     def test_import_without_opening(self):
@@ -366,15 +360,34 @@ class TestImport(ImportTestCase):
         self.dialog.open_check.set_active(False)
         self.dialog.import_button.clicked()
         job = self.imports[0][3]
-        job.done.callback(ImportResult("ospf-lab", Report()))
+        report = Report()
+        report.warning("left unset", "images.deb")
+        job.done.callback(ImportResult("ospf-lab", report))
         self.assertIsNone(self.manager.current)
+        self.assertEqual(self.dialog.page(), "done")
+        self.assertEqual(
+            self.dialog.done_label.get_text(), 'Imported as "ospf-lab".'
+        )
+        [row] = self.dialog.warnings_list.get_children()
+        self.assertTrue(self.dialog.warnings_frame.get_visible())
+        self.assertTrue(self.dialog.close_button.get_visible())
+        self.dialog.close_button.clicked()
+        self.assertTrue(self.dialog.destroyed)
+
+    def test_import_without_opening_and_no_report(self):
+        self.read()
+        self.dialog.open_check.set_active(False)
+        self.dialog.import_button.clicked()
+        job = self.imports[0][3]
+        job.done.callback(ImportResult("ospf-lab", Report()))
+        self.assertEqual(self.dialog.page(), "done")
         self.assertFalse(self.dialog.warnings_frame.get_visible())
 
     def test_the_project_cannot_be_opened(self):
         plan, job = self.start()
         job.done.callback(ImportResult("gone", Report()))
-        [row] = self.dialog.warnings_list.get_children()
         self.assertEqual(self.logger.levels()[-1], "error")
+        self.assertTrue(self.dialog.destroyed)
 
     def test_import_during_the_scan(self):
         self.dialog.choose(self.archive)

@@ -1874,7 +1874,8 @@ def import_archive(virtualbricks, archive, name):
     """
     Import…, in the menu Projects; in the window, the button of the file,
     then Home and the archive in the file chooser, and Open; the name it
-    suggests is name; then Import, and the window says how it ended.
+    suggests is name; then Import, and the window closes once the project
+    opens.
     """
 
     def choose(chooser):
@@ -1917,7 +1918,8 @@ def import_with(virtualbricks, choose, name):
     """
     Import…, in the menu Projects; in the window, the button of the file,
     then choose(chooser) in the file chooser, which closes; the name it
-    suggests is name; then Import, and the window says how it ended.
+    suggests is name; then Import, and the window closes once the project
+    opens.
     """
 
     virtualbricks.choose("Import…", "Projects")
@@ -1928,8 +1930,7 @@ def import_with(virtualbricks, choose, name):
     virtualbricks.gone("file chooser", CHOOSE_ARCHIVE)
     suggests(virtualbricks, window, "Name", name)
     virtualbricks.click("button", "Import", within=window)
-    # in place of Import and Cancel, once it is imported, or failed
-    virtualbricks.find("button", "Close", within=window)
+    virtualbricks.gone("frame", IMPORT_WINDOW)
 
 
 EXPORT_WINDOW = "Export Project"
@@ -1968,19 +1969,6 @@ def archive_bricks(virtualbricks, archive, datatable):
     with tarfile.open(path) as tar:
         project = tomllib.load(tar.extractfile("project.toml"))
     has_bricks(project, datatable, f"the project.toml of {archive}")
-
-
-@then(words('the Import Project window says "{text}"'))
-def import_window_says(virtualbricks, text):
-    window = virtualbricks.find("frame", IMPORT_WINDOW)
-    virtualbricks.find("label", text, within=window)
-
-
-@when("I close the Import Project window")
-def close_import(virtualbricks):
-    window = virtualbricks.find("frame", IMPORT_WINDOW)
-    virtualbricks.click("button", "Close", within=window)
-    virtualbricks.gone("frame", IMPORT_WINDOW)
 
 
 @then(words('the Projects window says "{text}"'))

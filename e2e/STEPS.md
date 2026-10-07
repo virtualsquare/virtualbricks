@@ -51,9 +51,8 @@ The steps of a user:
 | `When I duplicate the project new_project with the name it suggests, new_project-copy` | In the Projects window, its row, then Duplicate… in its details: the name of the copy must be the one the dialog suggests; then Duplicate, with Open the copy as it is, and the dialog closes |
 | `When I remove the project new_project, and move it to the trash` | In the Projects window, its row, then Remove… in the menu of its details; the question that names it says its folder goes to the trash: Move to Trash, and the question closes |
 | `When I remove the project new_project, which can't go to the trash, and delete it permanently` | The same, where the question has no Move to Trash and says the drive of the workspace has no trash: Delete Permanently |
-| `When I import the archive lab.vbp of my home folder with the name it suggests, lab` | Import…, in the menu Projects; in the window, the button of the file, then Home and the archive in the file chooser, and Open; the name must be the one the window suggests; then Import, with Open the project as it is, until the window says how it ended |
+| `When I import the archive lab.vbp of my home folder with the name it suggests, lab` | Import…, in the menu Projects; in the window, the button of the file, then Home and the archive in the file chooser, and Open; the name must be the one the window suggests; then Import, with Open the project as it is, and the window closes once the project opens |
 | `When I import the archive new_project.vbp of my home folder, typing its path, with the name it suggests, new_project-2` | The same, where in the file chooser, once clicked, Ctrl+L shows the entry of its location: the path of the archive typed there, then Return once Open is enabled |
-| `When I close the Import Project window` | Its button Close |
 | `When I export the project to new_project.vbp of my home folder` | Export…, in the menu Projects, for the open project; the window suggests the archive in the home; then Export, and Close once it says where it exported it |
 | `Then sw1 is running` | Its row says Running, and the processes of its start run; when no step started it, as with `--command`, the process its row tells, which has its sockets |
 | `Then sw1 is still running` | The same |
@@ -75,7 +74,6 @@ The steps of a user:
 | `Then the main window shows the project lab on this computer` | The windows of another Virtualbricks: their title names the project and where it runs |
 | `Then the Projects window says "Cannot open new_project: …"` | A label of the window has the text, as the bar over its list |
 | `Then the Projects window doesn't list new_project` | No row of its list has the project |
-| `Then the Import Project window says "Imported as "lab"."` | A label of the window has the text |
 | `Then the folder of new_project-2 has project.toml` | The folder of the project in the workspace has the file of a project, which TOML reads, with its format |
 | `Then the folder of new_project-copy is a copy of that of new_project` | It has project.toml, and the two folders of the workspace have the same files, with the same bytes |
 | `Then the archive new_project.vbp of my home folder has the bricks`, with a table under it | The bricks of the project.toml of the archive, all of them and in order: the name of each and its type |

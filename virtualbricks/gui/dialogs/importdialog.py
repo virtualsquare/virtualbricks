@@ -673,6 +673,10 @@ class ImportDialog(Window):
             self.open_project(result)
         if self.destroyed:
             return
+        if self.plan.open:
+            # The main window shows the project, the Logs window the report.
+            self.window.destroy()
+            return
         self.done_label.set_text(
             _('Imported as "{name}".').format(name=result.name)
         )
@@ -701,14 +705,9 @@ class ImportDialog(Window):
     def open_project(self, result: ImportResult) -> None:
         try:
             self.workspace.save(self.factory)
-            report = self.workspace.open(result.name, self.factory)
+            self.workspace.open(result.name, self.factory)
         except Exception as exc:
             logger.error(open_failed, name=result.name, error=exc)
-            result.report.error(
-                _("cannot be opened: {error}").format(error=exc), result.name
-            )
-        else:
-            result.report.extend(report)
 
     def on_import_failed(self, failure: Failure) -> None:
         self.import_job = None
