@@ -18,7 +18,7 @@
 
 """
 The control sockets: the Virtualbricks that runs answers the commands of
-``virtualbricks --command``, and of any program that speaks the text
+``virtualbricks --command``, and of any program that speaks the JSON
 protocol of :mod:`virtualbricks.console.wire`, or the AMP commands of
 :mod:`virtualbricks.console.ampwire`, and, once a connection agrees on
 protocol 2, the typed commands of :mod:`virtualbricks.console.ampcommands`.
@@ -260,7 +260,7 @@ class Visitor(_Connection):
 
 
 class ControlProtocol(Visitor, basic.LineOnlyReceiver):
-    """A connection of the text protocol: its requests and their answers."""
+    """A connection of the JSON protocol: its requests and their answers."""
 
     delimiter = b"\n"
     MAX_LENGTH = wire.MAX_LINE
@@ -627,7 +627,7 @@ class AMPControl(
             raise ampwire.AnswerTooLong(
                 _(
                     "The command was done, but its answer, {size} bytes, is"
-                    " longer than the {most} that AMP carries; a text socket"
+                    " longer than the {most} that AMP carries; a JSON socket"
                     " carries it"
                 ).format(size=size, most=amp.MAX_VALUE_LENGTH)
             )
@@ -831,7 +831,7 @@ def _listen_unix(
 
 # The protocol of the connections of a socket, by the protocol it speaks.
 PROTOCOLS: dict[str, Callable[..., Connection]] = {
-    wire.TEXT: ControlProtocol,
+    wire.JSON: ControlProtocol,
     wire.AMP: AMPControl,
 }
 
@@ -842,7 +842,7 @@ def listen(
     reactor: PosixReactorBase | None = None,
 ) -> Control | None:
     """
-    Answer the commands of socket, a wire.Socket of --listen: the text
+    Answer the commands of socket, a wire.Socket of --listen: the AMP
     socket at ``.control`` in the runtime folder of the workspace if None,
     or if a unix socket without a path, as --listen alone.
 

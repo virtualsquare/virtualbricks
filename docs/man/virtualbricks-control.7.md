@@ -8,16 +8,16 @@ date: DATE
 
 # NAME
 
-virtualbricks-control - the protocols of the control sockets: text, AMP 1
+virtualbricks-control - the protocols of the control sockets: JSON, AMP 1
 and AMP 2
 
 # SYNOPSIS
 
-**virtualbricks** **--listen** **unix:***path***:protocol=text**
+**virtualbricks** **--listen** **unix:***path***:protocol=json**
 
 **virtualbricks** **--listen** [**unix:***path*]
 
-**virtualbricks** **--listen** **tcp:***port*[**:protocol=text**]
+**virtualbricks** **--listen** **tcp:***port*[**:protocol=json**]
 
 # DESCRIPTION
 
@@ -27,13 +27,13 @@ program, and what the windows of another Virtualbricks ask. A socket
 carries lines of JSON or the boxes of AMP, Twisted's Asynchronous Messaging
 Protocol, and on them three protocols:
 
-**text**
-:   Lines of JSON, on a socket of **protocol=text**: a line of the console
+**JSON**
+:   Lines of JSON, on a socket of **protocol=json**: a line of the console
     in each request, the lines it prints in each answer. Any language that
     reads and writes JSON speaks it, and a shell with **socat**(1).
 
 **AMP 1**
-:   On an AMP socket, as a socket is without **protocol=text**: **Hello**,
+:   On an AMP socket, as a socket is without **protocol=json**: **Hello**,
     who answers, and **Run**, a line of the console and its lines.
     **virtualbricks --command** speaks it, and so can a program written
     with Twisted.
@@ -46,7 +46,7 @@ Protocol, and on them three protocols:
 
 ```
   +--------------+  +-------------+---------------------------+
-  |     text     |  |    AMP 1    |           AMP 2           |
+  |     JSON     |  |    AMP 1    |           AMP 2           |
   |  line, cwd   |  | Hello, Run  | typed commands, Follow    |
   |  -> lines    |  |             | and its pushes, Attach    |
   +--------------+  +-------------+---------------------------+
@@ -57,13 +57,13 @@ Protocol, and on them three protocols:
   +--------------+--+-----------------------------------------+
   |  a unix, tcp or ssl socket of --listen                    |
   +-----------------------------------------------------------+
-     protocol=text      protocol=amp, the default
+     protocol=json      protocol=amp, the default
 ```
 
 A **tcp** socket answers only a client that proves first that it knows the
 token of Virtualbricks, in either format. This page describes the
 protocols for whoever writes a client: the sockets (**THE SOCKETS**), the
-proof of the token (**THE TOKEN**), the text protocol (**THE TEXT
+proof of the token (**THE TOKEN**), the JSON protocol (**THE JSON
 PROTOCOL**), the boxes of AMP (**AMP**) and the commands of its two
 protocols (**AMP PROTOCOL 1**, **AMP PROTOCOL 2**), how they change
 (**VERSIONS**) and how much they carry (**LIMITS**). How to open the
@@ -152,7 +152,7 @@ printf 'virtualbricks client %s %s' "$nonce" "$mine" |
     openssl dgst -sha256 -hmac "$token"
 ```
 
-# THE TEXT PROTOCOL
+# THE JSON PROTOCOL
 
 ## Lines
 
@@ -172,7 +172,7 @@ Virtualbricks writes the first line as soon as a client connects:
 ```
 
 **protocol**
-:   1, the version of the text protocol. A client that doesn't know it
+:   1, the version of the JSON protocol. A client that doesn't know it
     sends nothing, and closes the connection.
 
 **version**
@@ -336,7 +336,7 @@ Authenticate  nonce:str proof:str -> proof:str
     **Hello** speaks protocol 1.
 
 **Run**
-:   A line of the console and its **cwd**, as in a request of the text
+:   A line of the console and its **cwd**, as in a request of the JSON
     protocol; the answer is the lines it printed. If the command fails,
     the error says why, and what it printed before is lost.
 
@@ -354,7 +354,7 @@ Their errors:
 
 **ANSWER_TOO_LONG**
 :   **Run**: the command was done, but its lines are longer than the 65535
-    bytes of a value; a text socket carries them.
+    bytes of a value; a JSON socket carries them.
 
 **TOKEN_NEEDED**
 :   **Hello**, **Run** and the commands of protocol 2: on a socket that
@@ -770,7 +770,7 @@ Virtualbricks can't reach the console. The windows of **virtualbricks
 
 # VERSIONS
 
-The text protocol is 1, in the greeting; another would have another
+The JSON protocol is 1, in the greeting; another would have another
 number. Over AMP, **Hello** agrees on the protocol: the highest that both
 ends speak. 1 is always one of them.
 
@@ -789,7 +789,7 @@ Virtualbricks at both ends: the **version** in the answer of **Hello**.
 
 # LIMITS
 
-A line of the text protocol
+A line of the JSON protocol
 :   64 KiB, 65536 bytes; a longer one closes the connection.
 
 A key of AMP
@@ -810,13 +810,13 @@ The log, for a program that follows
 
 # EXAMPLES
 
-A shell on a text socket, with **socat**(1); the lines it prints are the
+A shell on a JSON socket, with **socat**(1); the lines it prints are the
 greeting and the answers:
 
 ```
 virtualbricks --no-gui --listen \
-    unix:~/labs/lab1.text:protocol=text &
-socat - UNIX-CONNECT:$HOME/labs/lab1.text
+    unix:~/labs/lab1.json:protocol=json &
+socat - UNIX-CONNECT:$HOME/labs/lab1.json
 {"protocol": 1, "version": "3.0.0", "pid": 4200, ...}
 {"line": "brick new switch sw1"}
 {"ok": true, "lines": ["sw1"]}
@@ -824,8 +824,8 @@ socat - UNIX-CONNECT:$HOME/labs/lab1.text
 {"ok": true, "lines": ["sw1 runs, process 4242"]}
 ```
 
-A client of the text protocol in Python, without anything else, for a
-Virtualbricks started with **--listen tcp:8765:protocol=text**:
+A client of the JSON protocol in Python, without anything else, for a
+Virtualbricks started with **--listen tcp:8765:protocol=json**:
 
 ```
 import hmac, json, os, secrets, socket, sys
@@ -860,7 +860,7 @@ def connect(port, token):
         if not hmac.compare_digest(given, expected):
             sys.exit(first.get("error", "Wrong token"))
     if first.get("protocol") != 1:
-        sys.exit("It doesn't speak the text protocol 1")
+        sys.exit("It doesn't speak the JSON protocol 1")
     return lines
 
 

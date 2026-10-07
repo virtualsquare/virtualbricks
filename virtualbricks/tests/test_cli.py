@@ -133,8 +133,8 @@ class TestSocket(unittest.TestCase):
             [wire.Socket("/tmp/lab.sock")],
         )
         self.assertEqual(
-            self.sockets("--listen=unix:/tmp/lab.sock:protocol=TEXT"),
-            [wire.Socket("/tmp/lab.sock", wire.TEXT)],
+            self.sockets("--listen=unix:/tmp/lab.sock:protocol=JSON"),
+            [wire.Socket("/tmp/lab.sock", wire.JSON)],
         )
         self.assertEqual(
             self.sockets(
@@ -272,12 +272,12 @@ class TestTcpSocket(unittest.TestCase):
         self.assertEqual(
             self.sockets(
                 "--listen",
-                "--listen=tcp:8766:protocol=text",
+                "--listen=tcp:8766:protocol=json",
                 r"--listen=tcp:8765:interface=\:\:1",
             ),
             [
                 wire.Socket(None),
-                self.tcp(8766, protocol="text"),
+                self.tcp(8766, protocol="json"),
                 self.tcp(8765, "::1"),
             ],
         )
@@ -288,7 +288,7 @@ class TestTcpSocket(unittest.TestCase):
                 "--listen",
                 "tcp:8765",
                 "--listen",
-                "tcp:port=8765:protocol=text",
+                "tcp:port=8765:protocol=json",
             ),
             "--listen: 127.0.0.1 port 8765 is given twice",
         )
@@ -530,11 +530,11 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(
             self.parse(
                 "--connect",
-                "unix:/tmp/a.sock:protocol=text",
+                "unix:/tmp/a.sock:protocol=json",
                 "--command",
                 "status",
             )["target"],
-            wire.Socket("/tmp/a.sock", wire.TEXT),
+            wire.Socket("/tmp/a.sock", wire.JSON),
         )
 
     def test_no_listen(self):
@@ -666,8 +666,8 @@ class TestWindows(TestConnect):
 
     def test_text(self):
         self.assertEqual(
-            self.refused("--connect", "tcp:lab:8765:protocol=text"),
-            "--connect opens the windows, which speak AMP: protocol=text is"
+            self.refused("--connect", "tcp:lab:8765:protocol=json"),
+            "--connect opens the windows, which speak AMP: protocol=json is"
             " for --command",
         )
 

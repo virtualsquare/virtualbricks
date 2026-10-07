@@ -20,8 +20,8 @@
 ``virtualbricks --command``: a command of the console, sent to the
 Virtualbricks that runs through its control socket, the one of
 ``--connect``, and its answer; ``--connect --run`` sends those of a file. It
-speaks AMP, through :mod:`virtualbricks.console.ampbox`, or the text
-protocol to a socket with ``protocol=text``. Over tcp, it proves first that
+speaks AMP, through :mod:`virtualbricks.console.ampbox`, or the JSON
+protocol to a socket with ``protocol=json``. Over tcp, it proves first that
 it knows the token, and checks that the other end knows it too. Over ssl, it
 checks the certificate of Virtualbricks, shows its own if it has one, and
 proves the token when asked.
@@ -86,7 +86,7 @@ def _another_protocol(version: object) -> str:
 
 class Connection:
     """
-    A connection to a text socket, a wire.Socket: requests and their
+    A connection to a JSON socket, a wire.Socket: requests and their
     answers. A socket that asks for the proof of the token gets it first.
     """
 
@@ -200,7 +200,7 @@ class Connection:
         # an AMP socket waits for the first box
         return _(
             "{where} didn't greet in {seconds} seconds: if it speaks AMP,"
-            " leave out protocol=text"
+            " leave out protocol=json"
         ).format(where=self.where(), seconds=CONNECT_TIMEOUT)
 
     def receive(self) -> dict:
@@ -235,7 +235,7 @@ class AMPConnection(Connection):
     """
 
     tag = 0
-    # whether a box came: a text socket greets with what isn't one
+    # whether a box came: a JSON socket greets with what isn't one
     boxed = False
 
     def open(self) -> dict:
@@ -315,7 +315,7 @@ class AMPConnection(Connection):
             raise Unanswered(
                 _(
                     "What answers on {where} doesn't speak AMP: if it speaks"
-                    " the text protocol, add protocol=text"
+                    " the JSON protocol, add protocol=json"
                 ).format(where=self.where())
             ) from None
         self.boxed = True
@@ -331,7 +331,7 @@ class AMPConnection(Connection):
 
     def ask(self, line: str, cwd: str | None = None) -> dict:
         """
-        The answer to the command of line, as the text protocol gives it:
+        The answer to the command of line, as the JSON protocol gives it:
         what a command did before it failed doesn't come over AMP.
         """
 
@@ -595,7 +595,7 @@ def connect(
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
         sock.connect(path)
-        # a text socket greets at once, an AMP one answers Hello at once
+        # a JSON socket greets at once, an AMP one answers Hello at once
         sock.settimeout(CONNECT_TIMEOUT)
         return _open(sock, target)
     except (ConnectionRefusedError, FileNotFoundError):

@@ -53,7 +53,7 @@ one leaves the list.
   `privateKey=~/vb/lab.key:certKey=~/vb/lab.pem`, or the command writes
   both into one file. Four examples in `docs/man/virtualbricks.1.md`, the
   same in `docs/command-line.html` and in `docs/man/virtualbricks.1`.
-- [ ] **virtualbricks(1): the text protocol greets with version
-  `"2.1.0"`.** The example of the token's proof, in "The text protocol",
+- [ ] **virtualbricks(1): the JSON protocol greets with version
+  `"2.1.0"`.** The example of the token's proof, in "The JSON protocol",
   greets with `"version": "2.1.0"`; Virtualbricks 3 greets with its own,
   as `virtualbricks-control`(7) shows with `"3.0.0"`. Same three files.

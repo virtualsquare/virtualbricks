@@ -75,7 +75,7 @@ class TestBoxes(unittest.TestCase):
         ampbox.encode({b"line": b"x" * 65535, b"k" * 255: b""})
 
     def test_not_a_box(self):
-        # the greeting of a text socket: a key of 31522 bytes
+        # the greeting of a JSON socket: a key of 31522 bytes
         read = reader(b'{"protocol": 1}\n')
         self.assertRaises(ampbox.BadBox, ampbox.read, read)
 

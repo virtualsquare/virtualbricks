@@ -106,7 +106,7 @@ Virtualbricks of yours here. The bricks run there, the windows here. See
 :   Listen on a control socket: alone, the socket *.control* in the
     runtime folder of the workspace; with a *description*, as
     **unix:~/labs/lab1.sock** or **tcp:8765**, the socket it describes.
-    It speaks AMP, or the text protocol with **protocol=text**. It can be
+    It speaks AMP, or the JSON protocol with **protocol=json**. It can be
     given more than once. The next word is the description when it starts
     with a type and a colon, as **unix:**; after **=** it is too. See
     **THE CONTROL SOCKET**.
@@ -116,14 +116,14 @@ Virtualbricks of yours here. The bricks run there, the windows here. See
     to: alone, the one of the socket *.control* of its workspace, that of
     **--workspace** or the only one that listens; with a *description*,
     the one of the socket it describes, as **unix:~/labs/lab1.sock** or
-    **tcp:lab.example:8765**. It speaks AMP, or the text protocol with
-    **protocol=text**. The next word is its description as for
+    **tcp:lab.example:8765**. It speaks AMP, or the JSON protocol with
+    **protocol=json**. The next word is its description as for
     **--listen**. With **--command** or **--run**, it takes no
     **--listen**, no other option of a start, and no **--workspace** with
     a description. See **THE CONTROL SOCKET**.
 
     Without them, it opens the windows of that Virtualbricks, which
-    speak AMP, so it takes no **protocol=text**; nor **--no-gui**,
+    speak AMP, so it takes no **protocol=json**; nor **--no-gui**,
     **--lock** or **--listen**, which are for the Virtualbricks that runs
     the bricks, nor **--workspace** with a description. See **THE WINDOWS
     OF ANOTHER VIRTUALBRICKS**.
@@ -250,14 +250,14 @@ workspace. A description, in the syntax
 of Twisted's endpoints, names another: its type, **unix**, **tcp** or
 **ssl**; the path of a **unix** socket, or **address=***path*; the port of
 the others, or **port=***port*; and **protocol=amp**, the default, or
-**protocol=text**. **:** separates the parts, and a backslash makes the
+**protocol=json**. **:** separates the parts, and a backslash makes the
 next character plain. The option can be given more than once:
 
 ```
 virtualbricks --no-gui --listen
 virtualbricks --no-gui --listen unix:~/labs/lab1.sock
 virtualbricks --no-gui --listen \
-    --listen unix:~/labs/lab1.text:protocol=text
+    --listen unix:~/labs/lab1.json:protocol=json
 virtualbricks --no-gui --listen tcp:8765
 ```
 
@@ -273,7 +273,7 @@ virtualbricks --command brick set vm1 memory=1024
 virtualbricks --workspace ~/labs/bgp --command status
 virtualbricks --connect unix:~/labs/lab1.sock --command status
 virtualbricks --connect tcp:8765 --command status
-virtualbricks --connect unix:~/labs/lab1.text:protocol=text \
+virtualbricks --connect unix:~/labs/lab1.json:protocol=json \
     --command status
 ```
 
@@ -299,7 +299,7 @@ STATUS**. A relative path, as that of **source** *file*, is read from the
 folder where **virtualbricks** runs. Ctrl+C stops waiting, not the
 command. Virtualbricks logs each command it gets, and answers in its own
 language. Over AMP, what a command did before it failed doesn't come, and
-an answer longer than 65535 bytes is an error; a text socket carries
+an answer longer than 65535 bytes is an error; a JSON socket carries
 both, and what a command did first goes to the standard output before
 its error.
 
@@ -375,11 +375,11 @@ openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
     -keyout alice.key -out alice.pem
 ```
 
-## The text protocol
+## The JSON protocol
 
 **virtualbricks-control**(7) describes the protocols in full, for whoever
-writes a client: the text protocol, and protocols 1 and 2 of AMP, with the
-proof of the token. In short, any program can talk to a text socket, one of **protocol=text**: UTF-8
+writes a client: the JSON protocol, and protocols 1 and 2 of AMP, with the
+proof of the token. In short, any program can talk to a JSON socket, one of **protocol=json**: UTF-8
 JSON, an object on each line.
 Virtualbricks greets with the **protocol**, 1, its **version**, its
 **pid** and the open **project**; then it answers each request in turn.
@@ -417,7 +417,7 @@ printf 'virtualbricks client %s %s' "$nonce" "$mine" |
 ## The AMP protocol
 
 A program written with Twisted drives an AMP socket, as one is without
-**protocol=text**, with the commands of protocol 1, and with the typed
+**protocol=json**, with the commands of protocol 1, and with the typed
 commands of protocol 2 too. **Hello** agrees on the protocol of the
 connection: it takes **protocols**, those the program speaks, optional,
 and answers in **protocol** the highest that Virtualbricks speaks too, 1
@@ -603,7 +603,7 @@ switches the connection to the bytes of the console of a brick, AMP's
 Virtualbricks of the socket of *description*: the lab machine, which
 runs the bricks, this machine or another, and the desktop, which shows
 them. The Virtualbricks there listens with **--listen**, on a socket that
-speaks AMP, as one does without **protocol=text**, with its own windows
+speaks AMP, as one does without **protocol=json**, with its own windows
 or with **--no-gui**, and both run the same version:
 
 ```

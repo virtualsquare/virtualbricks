@@ -239,7 +239,7 @@
   the remote windows (15 §11, 19 §13)
 - [ ] Answer `--command` in the language of its own terminal, not in
   that of the Virtualbricks that runs (15 §11)
-- [ ] Follow what changes through the text control socket, `watch`, for
+- [ ] Follow what changes through the JSON control socket, `watch`, for
   a status bar or a script (15 §11, 19 §13); over AMP, `Follow` does it
 - [ ] Open the sockets of a setting, for a Virtualbricks started from the
   desktop's menu, which has no options (16 §10)
@@ -414,7 +414,7 @@
   a browser of `broadwayd`; `/e2e`, a skill of Claude Code, writes a
   scenario from a use case in words; guide in `e2e/README.md`
 
-- [x] Document the protocols of the control sockets, the text one and
+- [x] Document the protocols of the control sockets, the JSON one and
   protocols 1 and 2 of AMP, with the proof of the token:
   `virtualbricks-control(7)` and `docs/control-protocols.html`
 - [x] Open the windows of another Virtualbricks: `virtualbricks --connect

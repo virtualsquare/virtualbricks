@@ -52,10 +52,10 @@ class FakeVirtualbricks:
     """
     A Virtualbricks that listens on path in a thread, or on a free tcp port
     of this machine without it: it greets, keeps the requests, and gives the
-    answers in order, in AMP or in the text protocol; it closes when they
+    answers in order, in AMP or in the JSON protocol; it closes when they
     are over. A greeting of bytes is what something else sends first.
 
-    With a token, the text protocol asks for the proof first, and refuses a
+    With a token, the JSON protocol asks for the proof first, and refuses a
     wrong one; with lie too, it doesn't know the token and sends a proof of
     its own.
     """
@@ -125,7 +125,7 @@ class FakeVirtualbricks:
             conn.sendall(wire.encode(self.answers.pop(0)))
 
     def serve_amp(self, conn, reader):
-        """Hello, then Run, each request a request of the text protocol."""
+        """Hello, then Run, each request a request of the JSON protocol."""
 
         if isinstance(self.greeting, bytes):
             conn.sendall(self.greeting)
@@ -256,7 +256,7 @@ class TestCommands(ClientTestCase):
             self,
             self.path,
             wire.refusal("vm2: no image", ["vm1 runs"]),
-            protocol=wire.TEXT,
+            protocol=wire.JSON,
         )
         status = self.main(
             "brick", "start", "vm1", "vm2", target=server.target
@@ -465,7 +465,7 @@ class TestUnanswered(ClientTestCase):
         self.assertEqual(
             self.unanswered(),
             f"What answers on {self.path} doesn't speak AMP: if it speaks the"
-            " text protocol, add protocol=text\n",
+            " JSON protocol, add protocol=json\n",
         )
 
     def test_a_text_socket(self):
@@ -474,12 +474,12 @@ class TestUnanswered(ClientTestCase):
         self.assertEqual(
             self.unanswered(),
             f"What answers on {self.path} doesn't speak AMP: if it speaks the"
-            " text protocol, add protocol=text\n",
+            " JSON protocol, add protocol=json\n",
         )
 
     def test_not_the_text_protocol(self):
         server = FakeVirtualbricks(
-            self, self.path, greeting=b"SSH-2.0-OpenSSH\n", protocol=wire.TEXT
+            self, self.path, greeting=b"SSH-2.0-OpenSSH\n", protocol=wire.JSON
         )
         status = self.main("status", target=server.target)
         self.assertEqual(status, client.UNANSWERED)
@@ -656,7 +656,7 @@ class TestWorkspaces(ClientTestCase):
 
 class TestTcp(ClientTestCase):
     """
-    --command over tcp, with the token of the text protocol; test_control
+    --command over tcp, with the token of the JSON protocol; test_control
     proves it over AMP, to a Virtualbricks that listens.
     """
 
@@ -673,7 +673,7 @@ class TestTcp(ClientTestCase):
 
     def fake(self, *answers, **kwargs):
         return FakeVirtualbricks(
-            self, None, *answers, protocol=wire.TEXT, **kwargs
+            self, None, *answers, protocol=wire.JSON, **kwargs
         )
 
     def unanswered(self, target, *words):
@@ -799,11 +799,11 @@ class TestTcp(ClientTestCase):
         )
         # an AMP socket waits for the first box
         self.stderr = io.StringIO()
-        target = target._replace(protocol=wire.TEXT)
+        target = target._replace(protocol=wire.JSON)
         self.assertEqual(
             self.unanswered(target),
             f"127.0.0.1 port {port} didn't greet in 0.1 seconds: if it speaks"
-            " AMP, leave out protocol=text\n",
+            " AMP, leave out protocol=json\n",
         )
 
     def test_the_folder_stays_here(self):

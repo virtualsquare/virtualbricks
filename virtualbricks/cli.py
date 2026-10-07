@@ -86,7 +86,7 @@ class Options(usage.Options):
             "Listen on a control socket: .control in the runtime folder of "
             "the workspace, or the one of the description after it, as "
             "unix:PATH, tcp:PORT or ssl:PORT:privateKey=FILE. It speaks AMP, "
-            "or the text protocol with protocol=text. Give it again for more "
+            "or the JSON protocol with protocol=json. Give it again for more "
             "sockets.",
         ],
         [
@@ -490,7 +490,7 @@ class Options(usage.Options):
         if windows and self["target"].protocol != wire.AMP:
             raise usage.UsageError(
                 "--connect opens the windows, which speak AMP:"
-                " protocol=text is for --command"
+                " protocol=json is for --command"
             )
         self["connect"] = bool(self.targets)
         self["windows"] = windows

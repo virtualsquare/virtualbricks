@@ -207,12 +207,12 @@ class TestDescriptions(unittest.TestCase):
     def test_the_protocol(self):
         parse = wire.parse_socket
         self.assertEqual(
-            parse("unix:/tmp/lab.sock:protocol=text"),
-            wire.Socket("/tmp/lab.sock", "text"),
+            parse("unix:/tmp/lab.sock:protocol=json"),
+            wire.Socket("/tmp/lab.sock", "json"),
         )
         self.assertEqual(
-            parse("unix:protocol=TEXT:address=/tmp/lab.sock"),
-            wire.Socket("/tmp/lab.sock", "text"),
+            parse("unix:protocol=JSON:address=/tmp/lab.sock"),
+            wire.Socket("/tmp/lab.sock", "json"),
         )
         self.assertEqual(
             parse("unix:/tmp/lab.amp:protocol=amp"),
@@ -223,8 +223,8 @@ class TestDescriptions(unittest.TestCase):
             wire.Socket("/tmp/lab.amp", "amp"),
         )
         self.assertEqual(
-            self.refused("unix:/tmp/lab.sock:protocol=json"),
-            "unix:/tmp/lab.sock:protocol=json: the protocol is text or amp",
+            self.refused("unix:/tmp/lab.sock:protocol=text"),
+            "unix:/tmp/lab.sock:protocol=text: the protocol is json or amp",
         )
 
     def test_the_rules_of_twisted(self):
@@ -258,8 +258,8 @@ class TestDescriptions(unittest.TestCase):
             "/tmp/a:b.sock needs its type, as unix:PATH",
         )
         self.assertEqual(
-            self.refused("protocol=text"),
-            "protocol=text needs its type and its path, as"
+            self.refused("protocol=json"),
+            "protocol=json needs its type and its path, as"
             " unix:~/labs/lab1.sock",
         )
 
@@ -290,8 +290,8 @@ class TestDescriptions(unittest.TestCase):
             " of unix are address and protocol",
         )
         self.assertEqual(
-            self.refused("unix:/tmp/a.sock:protocol=text:protocol=text"),
-            "unix:/tmp/a.sock:protocol=text:protocol=text: protocol is given"
+            self.refused("unix:/tmp/a.sock:protocol=json:protocol=json"),
+            "unix:/tmp/a.sock:protocol=json:protocol=json: protocol is given"
             " twice",
         )
 
@@ -312,7 +312,7 @@ class TestTcpDescriptions(unittest.TestCase):
         self.assertEqual(parse("tcp:8765"), self.tcp(8765))
         self.assertEqual(parse("TCP:port=8765"), self.tcp(8765))
         self.assertEqual(
-            parse("tcp:8765:protocol=text"), self.tcp(8765, protocol="text")
+            parse("tcp:8765:protocol=json"), self.tcp(8765, protocol="json")
         )
         self.assertEqual(
             parse(r"tcp:8765:interface=\:\:1"), self.tcp(8765, "::1")
@@ -461,13 +461,13 @@ class TestSslDescriptions(unittest.TestCase):
         socket = wire.parse_socket(
             "ssl:8765:interface=0.0.0.0:privateKey=/vb/lab.key"
             ":certKey=/vb/lab.pem:extraCertChain=/vb/chain.pem"
-            ":caCertsDir=/vb/clients:protocol=text"
+            ":caCertsDir=/vb/clients:protocol=json"
         )
         self.assertEqual(
             socket,
             wire.Socket(
                 None,
-                "text",
+                "json",
                 "ssl",
                 "0.0.0.0",
                 8765,

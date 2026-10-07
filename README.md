@@ -111,7 +111,7 @@ The options are:
 - `--listen [DESCRIPTION]`: listen on a control socket, `.control` in the
   runtime directory of the workspace, or the one of a description, as
   `unix:~/labs/lab1.sock`, `tcp:8765` or `ssl:8765:privateKey=FILE`; it
-  speaks AMP, or JSON with `protocol=text`, and can be given more than
+  speaks AMP, or JSON with `protocol=json`, and can be given more than
   once.
 - `--connect [DESCRIPTION]`: the Virtualbricks that runs that `--command`
   and `--run` talk to, the one of `.control` of its workspace or of a
@@ -199,11 +199,11 @@ of its answer; `virtualbricks/console/ampwire.py` has the commands. Once
 of its own, with typed arguments, as `BrickStart(name=["sw1", "vm1"])`:
 `virtualbricks/console/ampcommands.py` has them. A description after
 `--listen`, in the syntax of Twisted's endpoints, puts a socket elsewhere,
-as `--listen unix:~/labs/lab1.sock`, and `protocol=text` makes it speak
+as `--listen unix:~/labs/lab1.sock`, and `protocol=json` makes it speak
 JSON, a line for each request and answer, so any program can use it. The
 option can be given more than once, for an AMP socket and a JSON one at
 once. `--command` talks to either: `--connect
-unix:~/labs/lab1.text:protocol=text --command status`.
+unix:~/labs/lab1.json:protocol=json --command status`.
 
 `--listen tcp:8765` listens on a port of this machine, and
 `--listen ssl:8765:interface=0.0.0.0:privateKey=lab.pem` on a port open to
@@ -214,7 +214,7 @@ certificate instead, and the log names it. `--command` talks to them as
 `--connect tcp:8765` on this machine, or as
 `--connect ssl:lab.example:8765:caCertsDir=FOLDER` from another.
 
-The three protocols of the sockets, the text one and protocols 1 and 2 of
+The three protocols of the sockets, the JSON one and protocols 1 and 2 of
 AMP, and the proof of the token are described for whoever writes a client in
 `man ./docs/man/virtualbricks-control.7` and
 [`docs/control-protocols.html`](docs/control-protocols.html).
@@ -500,7 +500,7 @@ To add a language, see the top of `l10n.sh`.
   `lineedit.py` has the keys of readline for its line. `control.py` listens
   on the control sockets, `client.py` is `--command` and `--connect --run`,
   with `ampbox.py`, the boxes of AMP read and written without Twisted, and
-  `wire.py` has what both share: the text protocol, the descriptions of
+  `wire.py` has what both share: the JSON protocol, the descriptions of
   `--listen` and `--connect`, the checks of a socket's path, the token and
   its proof. `tls.py` has the certificates of the ssl sockets, and is the
   only module that needs pyOpenSSL.

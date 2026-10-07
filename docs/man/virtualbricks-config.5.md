@@ -867,7 +867,7 @@ an old project is converted when it's imported.
     **--listen** answers **virtualbricks --command** in Twisted's AMP;
     *.control.lock* beside it is held by the one that listens. A
     description after **--listen** puts a socket elsewhere, and with
-    **protocol=text** it speaks the text protocol; see
+    **protocol=json** it speaks the JSON protocol; see
     **virtualbricks**(1).
 
 *\$XDG_RUNTIME_DIR*/virtualbricks/.connect-*pid*/

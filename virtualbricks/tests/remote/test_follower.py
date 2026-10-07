@@ -598,7 +598,7 @@ class TestListening(ConsoleTestCase):
         self.assertEqual(self.started, [])
 
     def test_text(self):
-        found = self.control(wire.TEXT)
+        found = self.control(wire.JSON)
         self.assertEqual(self.started, [])
         self.successResultOf(found.close())
 

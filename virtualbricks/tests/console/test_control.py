@@ -572,7 +572,7 @@ class TestAMP(AMPTestCase):
         self.assertEqual(
             str(failure.value),
             "The command was done, but its answer, 70140 bytes, is longer than"
-            " the 65535 that AMP carries; a text socket carries it",
+            " the 65535 that AMP carries; a JSON socket carries it",
         )
         self.assertEqual(
             self.logger.formatted()[1],
@@ -1157,10 +1157,10 @@ class TestListen(ConsoleTestCase):
     @defer.inlineCallbacks
     def test_text(self):
         path = os.path.join(os.path.dirname(self.path), ".control.text")
-        found = self.listen(path, wire.TEXT)
+        found = self.listen(path, wire.JSON)
         self.assertListening(found, path)
         self.assertEqual(
-            self.logger.formatted(), [f"Listening on {path}, protocol text"]
+            self.logger.formatted(), [f"Listening on {path}, protocol json"]
         )
         client = yield self.connect(path)
         greeting = yield client.messages.get()
@@ -1179,10 +1179,10 @@ class TestListen(ConsoleTestCase):
         path = os.path.join(short_folder(self), "lab.sock")
         make_socket(path)
         self.assertListening(self.listen(), self.path)
-        self.assertListening(self.listen(path, wire.TEXT), path)
+        self.assertListening(self.listen(path, wire.JSON), path)
         # another Virtualbricks goes without both
         self.assertIsNone(self.listen())
-        self.assertIsNone(self.listen(path, wire.TEXT))
+        self.assertIsNone(self.listen(path, wire.JSON))
         self.assertEqual(
             self.logger.formatted()[2:],
             [
@@ -1284,13 +1284,13 @@ class TestListen(ConsoleTestCase):
         self.assertRegex(
             stderr,
             "^Error: The command was done, but its answer, [0-9]+ bytes, is"
-            " longer than the 65535 that AMP carries; a text socket carries"
+            " longer than the 65535 that AMP carries; a JSON socket carries"
             " it\n$",
         )
 
     @defer.inlineCallbacks
     def test_the_wrong_protocol(self):
-        text = self.listen(self.path + ".text", wire.TEXT)
+        text = self.listen(self.path + ".text", wire.JSON)
         amp_socket = self.listen()
         result = yield command_in_thread(text, "status", protocol=wire.AMP)
         self.assertEqual(
@@ -1299,13 +1299,13 @@ class TestListen(ConsoleTestCase):
                 client.UNANSWERED,
                 "",
                 f"What answers on {text.path} doesn't speak AMP: if it speaks"
-                " the text protocol, add protocol=text\n",
+                " the JSON protocol, add protocol=json\n",
             ),
         )
         # an AMP socket waits for the first box
         self.patch(client, "CONNECT_TIMEOUT", 0.2)
         result = yield command_in_thread(
-            amp_socket, "status", protocol=wire.TEXT
+            amp_socket, "status", protocol=wire.JSON
         )
         self.assertEqual(
             result,
@@ -1313,7 +1313,7 @@ class TestListen(ConsoleTestCase):
                 client.UNANSWERED,
                 "",
                 f"{amp_socket.path} didn't greet in 0.2 seconds: if it speaks"
-                " AMP, leave out protocol=text\n",
+                " AMP, leave out protocol=json\n",
             ),
         )
 
@@ -1346,7 +1346,7 @@ class ListenTestCase(ConsoleTestCase):
         self.token_file = locations.token_file()
 
     def listen(self, port=0, **fields):
-        socket = wire.Socket(None, wire.TEXT, "tcp", "127.0.0.1", port)
+        socket = wire.Socket(None, wire.JSON, "tcp", "127.0.0.1", port)
         found = control.listen(
             self.factory, socket._replace(**fields), self.reactor
         )
@@ -1385,7 +1385,7 @@ class TestListenTcp(ListenTestCase):
             self.logger.formatted(),
             [
                 f"Made the token {self.token_file}",
-                f"Listening on tcp 127.0.0.1 port {port}, protocol text, with"
+                f"Listening on tcp 127.0.0.1 port {port}, protocol json, with"
                 f" the token of {self.token_file}",
             ],
         )
@@ -1506,7 +1506,7 @@ class TestListenSsl(ListenTestCase):
     def listen(self, port=0, **fields):
         socket = wire.Socket(
             None,
-            wire.TEXT,
+            wire.JSON,
             "ssl",
             "127.0.0.1",
             port,
@@ -1574,7 +1574,7 @@ class TestListenSsl(ListenTestCase):
             log[:2],
             [
                 f"Made the token {self.token_file}",
-                f"Listening on ssl 127.0.0.1 port {port}, protocol text, with"
+                f"Listening on ssl 127.0.0.1 port {port}, protocol json, with"
                 f" the token of {self.token_file}",
             ],
         )
@@ -1592,7 +1592,7 @@ class TestListenSsl(ListenTestCase):
         self.assertEqual(
             self.logger.formatted(),
             [
-                f"Listening on ssl 127.0.0.1 port {port}, protocol text, with"
+                f"Listening on ssl 127.0.0.1 port {port}, protocol json, with"
                 f" the certificates of {clients}"
             ],
         )

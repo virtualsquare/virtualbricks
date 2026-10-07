@@ -21,7 +21,7 @@ What the two ends of the control socket share: the messages of its
 protocol, the descriptions of the sockets and the checks of their paths. It
 loads no Twisted, for the client.
 
-The text protocol is JSON Lines: UTF-8, an object on each line. On connecting,
+The JSON protocol is JSON Lines: UTF-8, an object on each line. On connecting,
 the Virtualbricks that listens greets::
 
     {"protocol": 1, "version": "2.1.0", "pid": 4200, "project": "lab1"}
@@ -73,9 +73,9 @@ MAX_LINE = 64 * 1024
 
 # The protocols a socket speaks: the lines of JSON of this module, and the
 # commands of virtualbricks.console.ampwire.
-TEXT = "text"
+JSON = "json"
 AMP = "amp"
-PROTOCOLS = (TEXT, AMP)
+PROTOCOLS = (JSON, AMP)
 # The types of socket.
 TYPES = ("unix", "tcp", "ssl")
 # The keywords of a description of each type, after its path or its port:
@@ -247,7 +247,7 @@ def _parts(text: str) -> list[list[str]]:
 def parse_socket(text: str, client: bool = False) -> Socket:
     """
     The socket of a description: its type, its path or its port, and its
-    keywords, as ``unix:PATH:protocol=text`` or ``tcp:8765``. The protocol
+    keywords, as ``unix:PATH:protocol=json`` or ``tcp:8765``. The protocol
     is AMP if left out. With client, the description of
     --connect, which names the machine to talk to: ``tcp:HOST:PORT``, or
     ``tcp:PORT`` for this one.

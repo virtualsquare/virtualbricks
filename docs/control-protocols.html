@@ -1,5 +1,5 @@
 <title>Virtualbricks Control Protocols</title>
-<meta name="description" content="Reference of the protocols of the control sockets of Virtualbricks: the text protocol, AMP protocols 1 and 2, the proof of the token, the typed commands, the commands of the windows of another Virtualbricks and their pushes.">
+<meta name="description" content="Reference of the protocols of the control sockets of Virtualbricks: the JSON protocol, AMP protocols 1 and 2, the proof of the token, the typed commands, the commands of the windows of another Virtualbricks and their pushes.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
@@ -239,7 +239,7 @@
 </style>
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Reference &middot; text protocol 1 &middot; AMP protocols 1 and 2</div>
+    <div class="eyebrow">Reference &middot; JSON protocol 1 &middot; AMP protocols 1 and 2</div>
     <h1>Virtualbricks Control Protocols</h1>
     <p class="lede">A Virtualbricks started with <code>--listen</code> answers on control sockets: the commands of its console, from <code>virtualbricks --command</code> or from any program, and what the windows of another Virtualbricks ask. A socket carries lines of JSON or the boxes of AMP, Twisted&#x27;s Asynchronous Messaging Protocol, and on them three protocols:</p>
     <ul class="meta">
@@ -253,9 +253,9 @@
 
   <ul class="files" aria-label="The three protocols">
     <li class="file">
-      <h2><a href="#text">text</a></h2>
-      <p class="how">--listen unix:PATH<b>:protocol=text</b></p>
-      <p>Lines of JSON, on a socket of <code>protocol=text</code>: a line of the console in each request, the lines it prints in each answer. Any language that reads and writes JSON speaks it, and a shell with <a class="man" href="https://manpages.debian.org/socat.1"><code>socat</code>(1)</a>.</p>
+      <h2><a href="#json">JSON</a></h2>
+      <p class="how">--listen unix:PATH<b>:protocol=json</b></p>
+      <p>Lines of JSON, on a socket of <code>protocol=json</code>: a line of the console in each request, the lines it prints in each answer. Any language that reads and writes JSON speaks it, and a shell with <a class="man" href="https://manpages.debian.org/socat.1"><code>socat</code>(1)</a>.</p>
       <dl>
         <dt>Carries</dt><dd>a JSON object a line</dd>
         <dt>Commands</dt><dd>a line of the console, its lines</dd>
@@ -266,7 +266,7 @@
     <li class="file">
       <h2><a href="#amp-1">AMP 1</a></h2>
       <p class="how">--listen unix:PATH, <b>the default</b></p>
-      <p>On an AMP socket, as a socket is without <code>protocol=text</code>: <code>Hello</code>, who answers, and <code>Run</code>, a line of the console and its lines. <code>virtualbricks --command</code> speaks it, and so can a program written with Twisted.</p>
+      <p>On an AMP socket, as a socket is without <code>protocol=json</code>: <code>Hello</code>, who answers, and <code>Run</code>, a line of the console and its lines. <code>virtualbricks --command</code> speaks it, and so can a program written with Twisted.</p>
       <dl>
         <dt>Carries</dt><dd>the boxes of AMP</dd>
         <dt>Commands</dt><dd><code>Hello</code>, <code>Run</code></dd>
@@ -288,10 +288,10 @@
   </ul>
 
   <figure class="diagram hero">
-    <div class="canvas"><svg class="dg" viewBox="0 0 760 300" role="img" aria-label="The three protocols: text over JSON lines, on a socket of protocol=text; AMP 1 and AMP 2 over AMP boxes, on an AMP socket, the default, where Hello with protocols [2] takes a connection from protocol 1 to protocol 2. Under both, the proof of the token when the socket asks for it, and a unix, tcp or ssl socket of --listen."><defs><marker id="ly-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker><marker id="ly-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker><marker id="ly-warn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-warn"/></marker></defs><rect x="20" y="16" width="200" height="104" rx="7" class="box-accent"/><text x="120" y="44" text-anchor="middle" class="title">text</text><text x="120" y="66" text-anchor="middle" class="small">a line of the console,</text><text x="120" y="83" text-anchor="middle" class="small">the lines it prints</text><text x="120" y="106" text-anchor="middle" class="small muted">protocol 1 of the greeting</text><rect x="250" y="16" width="170" height="104" rx="7" class="box-accent"/><text x="335" y="44" text-anchor="middle" class="title">AMP 1</text><text x="335" y="66" text-anchor="middle" class="small">Hello, who answers</text><text x="335" y="83" text-anchor="middle" class="small">Run, a line and its lines</text><text x="335" y="106" text-anchor="middle" class="small muted">without Hello, too</text><rect x="500" y="16" width="240" height="104" rx="7" class="box-accent"/><text x="620" y="44" text-anchor="middle" class="title">AMP 2</text><text x="620" y="66" text-anchor="middle" class="small">a typed command for each</text><text x="620" y="83" text-anchor="middle" class="small">command of the console</text><text x="620" y="106" text-anchor="middle" class="small muted">Follow and its pushes, Attach</text><line x1="424" y1="68" x2="496" y2="68" class="ln-accent" marker-end="url(#ly-acc)"/><text x="460" y="58" text-anchor="middle" class="mono small t-accent">Hello</text><text x="460" y="86" text-anchor="middle" class="mono small t-accent">[2]</text><rect x="20" y="130" width="200" height="44" rx="7" class="box-ghost"/><text x="120" y="157" text-anchor="middle" class="small">the token, if asked</text><rect x="250" y="130" width="490" height="44" rx="7" class="box-ghost"/><text x="495" y="157" text-anchor="middle" class="small">the token, if asked: Challenge, Authenticate</text><rect x="20" y="184" width="200" height="40" rx="7" class="box"/><text x="120" y="209" text-anchor="middle" class="mono">JSON lines</text><rect x="250" y="184" width="490" height="40" rx="7" class="box"/><text x="495" y="209" text-anchor="middle" class="mono">AMP boxes</text><rect x="20" y="234" width="720" height="40" rx="7" class="box"/><text x="380" y="259" text-anchor="middle" class="mono">a unix, tcp or ssl socket of --listen</text><text x="120" y="292" text-anchor="middle" class="mono small muted">protocol=text</text><text x="495" y="292" text-anchor="middle" class="mono small muted">protocol=amp, the default</text></svg></div>
+    <div class="canvas"><svg class="dg" viewBox="0 0 760 300" role="img" aria-label="The three protocols: JSON, lines of JSON on a socket of protocol=json; AMP 1 and AMP 2 over AMP boxes, on an AMP socket, the default, where Hello with protocols [2] takes a connection from protocol 1 to protocol 2. Under both, the proof of the token when the socket asks for it, and a unix, tcp or ssl socket of --listen."><defs><marker id="ly-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker><marker id="ly-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker><marker id="ly-warn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-warn"/></marker></defs><rect x="20" y="16" width="200" height="104" rx="7" class="box-accent"/><text x="120" y="44" text-anchor="middle" class="title">JSON</text><text x="120" y="66" text-anchor="middle" class="small">a line of the console,</text><text x="120" y="83" text-anchor="middle" class="small">the lines it prints</text><text x="120" y="106" text-anchor="middle" class="small muted">protocol 1 of the greeting</text><rect x="250" y="16" width="170" height="104" rx="7" class="box-accent"/><text x="335" y="44" text-anchor="middle" class="title">AMP 1</text><text x="335" y="66" text-anchor="middle" class="small">Hello, who answers</text><text x="335" y="83" text-anchor="middle" class="small">Run, a line and its lines</text><text x="335" y="106" text-anchor="middle" class="small muted">without Hello, too</text><rect x="500" y="16" width="240" height="104" rx="7" class="box-accent"/><text x="620" y="44" text-anchor="middle" class="title">AMP 2</text><text x="620" y="66" text-anchor="middle" class="small">a typed command for each</text><text x="620" y="83" text-anchor="middle" class="small">command of the console</text><text x="620" y="106" text-anchor="middle" class="small muted">Follow and its pushes, Attach</text><line x1="424" y1="68" x2="496" y2="68" class="ln-accent" marker-end="url(#ly-acc)"/><text x="460" y="58" text-anchor="middle" class="mono small t-accent">Hello</text><text x="460" y="86" text-anchor="middle" class="mono small t-accent">[2]</text><rect x="20" y="130" width="200" height="44" rx="7" class="box-ghost"/><text x="120" y="157" text-anchor="middle" class="small">the token, if asked</text><rect x="250" y="130" width="490" height="44" rx="7" class="box-ghost"/><text x="495" y="157" text-anchor="middle" class="small">the token, if asked: Challenge, Authenticate</text><rect x="20" y="184" width="200" height="40" rx="7" class="box"/><text x="120" y="209" text-anchor="middle" class="mono">JSON lines</text><rect x="250" y="184" width="490" height="40" rx="7" class="box"/><text x="495" y="209" text-anchor="middle" class="mono">AMP boxes</text><rect x="20" y="234" width="720" height="40" rx="7" class="box"/><text x="380" y="259" text-anchor="middle" class="mono">a unix, tcp or ssl socket of --listen</text><text x="120" y="292" text-anchor="middle" class="mono small muted">protocol=json</text><text x="495" y="292" text-anchor="middle" class="mono small muted">protocol=amp, the default</text></svg></div>
     <figcaption>One socket speaks lines of JSON or the boxes of AMP, as its description says. On AMP, a connection starts in protocol 1, and <code>Hello</code> takes it to protocol 2.</figcaption>
   </figure>
-  <p class="intro">A <code>tcp</code> socket answers only a client that proves first that it knows the token of Virtualbricks, in either format. This page describes the protocols for whoever writes a client: the sockets (<a href="#sockets">The sockets</a>), the proof of the token (<a href="#token">The token</a>), the text protocol (<a href="#text">The text protocol</a>), the boxes of AMP (<a href="#amp">AMP</a>) and the commands of its two protocols (<a href="#amp-1">AMP protocol 1</a>, <a href="#amp-2">AMP protocol 2</a>), how they change (<a href="#versions">Versions</a>) and how much they carry (<a href="#limits">Limits</a>). How to open the sockets, and which, is in <a href="command-line.html#control-socket">The control socket</a> of <a class="man" href="command-line.html"><code>virtualbricks</code>(1)</a>.</p>
+  <p class="intro">A <code>tcp</code> socket answers only a client that proves first that it knows the token of Virtualbricks, in either format. This page describes the protocols for whoever writes a client: the sockets (<a href="#sockets">The sockets</a>), the proof of the token (<a href="#token">The token</a>), the JSON protocol (<a href="#json">The JSON protocol</a>), the boxes of AMP (<a href="#amp">AMP</a>) and the commands of its two protocols (<a href="#amp-1">AMP protocol 1</a>, <a href="#amp-2">AMP protocol 2</a>), how they change (<a href="#versions">Versions</a>) and how much they carry (<a href="#limits">Limits</a>). How to open the sockets, and which, is in <a href="command-line.html#control-socket">The control socket</a> of <a class="man" href="command-line.html"><code>virtualbricks</code>(1)</a>.</p>
 
   <div class="layout">
     <nav class="toc" aria-label="Contents">
@@ -300,11 +300,11 @@
 <li><a href="#synopsis">Synopsis</a></li>
 <li><a href="#sockets">The sockets</a></li>
 <li><a href="#token">The token</a></li>
-<li><a href="#text">The text protocol</a></li>
-<li class="sub"><a href="#text-lines">Lines</a></li>
-<li class="sub"><a href="#text-the-greeting">The greeting</a></li>
-<li class="sub"><a href="#text-requests-and-answers">Requests and answers</a></li>
-<li class="sub"><a href="#text-with-the-token">With the token</a></li>
+<li><a href="#json">The JSON protocol</a></li>
+<li class="sub"><a href="#json-lines">Lines</a></li>
+<li class="sub"><a href="#json-the-greeting">The greeting</a></li>
+<li class="sub"><a href="#json-requests-and-answers">Requests and answers</a></li>
+<li class="sub"><a href="#json-with-the-token">With the token</a></li>
 <li><a href="#amp">AMP</a></li>
 <li class="sub"><a href="#amp-boxes">Boxes</a></li>
 <li class="sub"><a href="#amp-values">Values</a></li>
@@ -325,9 +325,9 @@
     <main>
 <section id="synopsis">
 <h2>Synopsis</h2>
-<figure class="code"><pre><code>virtualbricks --listen unix:path:protocol=text
+<figure class="code"><pre><code>virtualbricks --listen unix:path:protocol=json
 virtualbricks --listen [unix:path]
-virtualbricks --listen tcp:port[:protocol=text]</code></pre></figure>
+virtualbricks --listen tcp:port[:protocol=json]</code></pre></figure>
 </section>
 <section id="sockets">
 <h2>The sockets</h2>
@@ -348,35 +348,35 @@ virtualbricks --listen tcp:port[:protocol=text]</code></pre></figure>
 <figure class="code"><pre><code>printf 'virtualbricks client %s %s' "$nonce" "$mine" |
     openssl dgst -sha256 -hmac "$token"</code></pre></figure>
 </section>
-<section id="text">
-<h2>The text protocol</h2>
-<h3 id="text-lines">Lines</h3>
+<section id="json">
+<h2>The JSON protocol</h2>
+<h3 id="json-lines">Lines</h3>
 <p>Each message is a JSON object on a line of its own, in UTF-8, ended by a newline, LF. Virtualbricks skips the empty lines it gets, and closes the connection on a line longer than 64 KiB, 65536 bytes. A key that a message doesn&#x27;t need is ignored: a client ignores the keys it doesn&#x27;t know too, so that a later version can add some.</p>
-<h3 id="text-the-greeting">The greeting</h3>
+<h3 id="json-the-greeting">The greeting</h3>
 <p>Virtualbricks writes the first line as soon as a client connects:</p>
 <figure class="code"><pre><code>{"protocol": 1, "version": "3.0.0", "pid": 4200,
  "project": "lab1"}</code></pre></figure>
 <dl class="terms">
-<dt><code>protocol</code></dt><dd><p>1, the version of the text protocol. A client that doesn&#x27;t know it sends nothing, and closes the connection.</p></dd>
+<dt><code>protocol</code></dt><dd><p>1, the version of the JSON protocol. A client that doesn&#x27;t know it sends nothing, and closes the connection.</p></dd>
 <dt><code>version</code></dt><dd><p>The version of Virtualbricks.</p></dd>
 <dt><code>pid</code></dt><dd><p>Its process.</p></dd>
 <dt><code>project</code></dt><dd><p>The name of the open project, or <code>null</code>.</p></dd>
 </dl>
-<h3 id="text-requests-and-answers">Requests and answers</h3>
+<h3 id="json-requests-and-answers">Requests and answers</h3>
 <p>A request has the command, <code>line</code>, a line of the console as it is typed, and <code>cwd</code>, optional, the folder of its paths. Its answer has <code>ok</code>, whether the command was done, <code>lines</code>, what it printed, a text for each line, without newlines, and <code>error</code>, why it failed, when <code>ok</code> is <code>false</code>; <code>lines</code> is then what it printed before it failed:</p>
 <figure class="code"><pre><code>{"line": "brick start sw1", "cwd": "/home/alice/labs"}
 {"ok": true, "lines": ["sw1 runs, process 4242"]}
 {"line": "brick start vm9"}
 {"ok": false, "lines": [], "error": "No brick named vm9"}</code></pre></figure>
 <p>A line that isn&#x27;t a request gets an answer with <code>ok</code> <code>false</code> and why, as &quot;Not a request: &quot;cwd&quot; is not an absolute path&quot;, and the connection goes on.</p>
-<h3 id="text-with-the-token">With the token</h3>
+<h3 id="json-with-the-token">With the token</h3>
 <p>On a socket that asks for the token, the first line asks for the proof, with the nonce of Virtualbricks, and the client answers with its own nonce and its proof. The greeting follows a right proof, with the proof of Virtualbricks:</p>
 <figure class="code"><pre><code>{"protocol": 1, "auth": "token", "nonce": "3f9a..."}
 {"nonce": "c41d...", "proof": "8e02..."}
 {"protocol": 1, "version": "3.0.0", "pid": 4200,
  "project": "lab1", "proof": "51b7..."}</code></pre></figure>
 <p>A wrong proof, a line that isn&#x27;t one, or none in 10 seconds gets an answer with <code>ok</code> <code>false</code> and why, as &quot;Wrong token&quot;, and the connection closes.</p>
-<figure class="diagram"><div class="canvas"><svg class="dg" viewBox="0 0 760 436" role="img" aria-label="A session of the text protocol: on a socket that asks for the token, Virtualbricks first asks for the proof and the client gives it; then the greeting; then the client sends two requests, one line each, and gets the two answers in the same order."><defs><marker id="tx-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker><marker id="tx-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker><marker id="tx-warn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-warn"/></marker></defs><rect x="115" y="16" width="110" height="34" rx="6" class="box"/><text x="170" y="38" text-anchor="middle" class="title">client</text><line x1="170" y1="50" x2="170" y2="424" class="life"/><rect x="468" y="16" width="145" height="34" rx="6" class="box"/><text x="540" y="38" text-anchor="middle" class="title">Virtualbricks</text><line x1="540" y1="50" x2="540" y2="424" class="life"/><text x="355" y="91" text-anchor="middle" class="mono">{&quot;protocol&quot;: 1, &quot;auth&quot;: &quot;token&quot;, &quot;nonce&quot;: S}</text><line x1="536" y1="100" x2="174" y2="100" class="ln-warn" marker-end="url(#tx-warn)"/><text x="554" y="108" class="small muted">on a socket that asks</text><text x="554" y="123" class="small muted">for the token</text><text x="355" y="145" text-anchor="middle" class="mono">{&quot;nonce&quot;: C, &quot;proof&quot;: ...}</text><line x1="174" y1="154" x2="536" y2="154" class="ln-warn" marker-end="url(#tx-warn)"/><text x="355" y="193" text-anchor="middle" class="mono">{&quot;protocol&quot;: 1, &quot;version&quot;: ..., &quot;pid&quot;: ...,</text><text x="355" y="209" text-anchor="middle" class="mono">&quot;project&quot;: ...[, &quot;proof&quot;: ...]}</text><line x1="536" y1="218" x2="174" y2="218" class="ln-accent" marker-end="url(#tx-acc)"/><text x="554" y="226" class="small muted">the greeting</text><text x="355" y="257" text-anchor="middle" class="mono">{&quot;line&quot;: &quot;brick start sw1&quot;}</text><line x1="174" y1="266" x2="536" y2="266" class="ln" marker-end="url(#tx-tip)"/><text x="355" y="297" text-anchor="middle" class="mono">{&quot;line&quot;: &quot;status&quot;}</text><line x1="174" y1="306" x2="536" y2="306" class="ln" marker-end="url(#tx-tip)"/><text x="554" y="314" class="small muted">a request may go</text><text x="554" y="329" class="small muted">before the answer</text><text x="355" y="351" text-anchor="middle" class="mono">{&quot;ok&quot;: true, &quot;lines&quot;: [...]}</text><line x1="536" y1="360" x2="174" y2="360" class="ln-accent" marker-end="url(#tx-acc)"/><text x="554" y="368" class="small muted">in the same order</text><text x="355" y="391" text-anchor="middle" class="mono">{&quot;ok&quot;: true, &quot;lines&quot;: [...]}</text><line x1="536" y1="400" x2="174" y2="400" class="ln-accent" marker-end="url(#tx-acc)"/></svg></div><figcaption>The text protocol: the proof first, on a socket that asks for it; the greeting; then each request gets its answer, in the order the requests came.</figcaption></figure>
+<figure class="diagram"><div class="canvas"><svg class="dg" viewBox="0 0 760 436" role="img" aria-label="A session of the JSON protocol: on a socket that asks for the token, Virtualbricks first asks for the proof and the client gives it; then the greeting; then the client sends two requests, one line each, and gets the two answers in the same order."><defs><marker id="tx-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker><marker id="tx-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker><marker id="tx-warn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-warn"/></marker></defs><rect x="115" y="16" width="110" height="34" rx="6" class="box"/><text x="170" y="38" text-anchor="middle" class="title">client</text><line x1="170" y1="50" x2="170" y2="424" class="life"/><rect x="468" y="16" width="145" height="34" rx="6" class="box"/><text x="540" y="38" text-anchor="middle" class="title">Virtualbricks</text><line x1="540" y1="50" x2="540" y2="424" class="life"/><text x="355" y="91" text-anchor="middle" class="mono">{&quot;protocol&quot;: 1, &quot;auth&quot;: &quot;token&quot;, &quot;nonce&quot;: S}</text><line x1="536" y1="100" x2="174" y2="100" class="ln-warn" marker-end="url(#tx-warn)"/><text x="554" y="108" class="small muted">on a socket that asks</text><text x="554" y="123" class="small muted">for the token</text><text x="355" y="145" text-anchor="middle" class="mono">{&quot;nonce&quot;: C, &quot;proof&quot;: ...}</text><line x1="174" y1="154" x2="536" y2="154" class="ln-warn" marker-end="url(#tx-warn)"/><text x="355" y="193" text-anchor="middle" class="mono">{&quot;protocol&quot;: 1, &quot;version&quot;: ..., &quot;pid&quot;: ...,</text><text x="355" y="209" text-anchor="middle" class="mono">&quot;project&quot;: ...[, &quot;proof&quot;: ...]}</text><line x1="536" y1="218" x2="174" y2="218" class="ln-accent" marker-end="url(#tx-acc)"/><text x="554" y="226" class="small muted">the greeting</text><text x="355" y="257" text-anchor="middle" class="mono">{&quot;line&quot;: &quot;brick start sw1&quot;}</text><line x1="174" y1="266" x2="536" y2="266" class="ln" marker-end="url(#tx-tip)"/><text x="355" y="297" text-anchor="middle" class="mono">{&quot;line&quot;: &quot;status&quot;}</text><line x1="174" y1="306" x2="536" y2="306" class="ln" marker-end="url(#tx-tip)"/><text x="554" y="314" class="small muted">a request may go</text><text x="554" y="329" class="small muted">before the answer</text><text x="355" y="351" text-anchor="middle" class="mono">{&quot;ok&quot;: true, &quot;lines&quot;: [...]}</text><line x1="536" y1="360" x2="174" y2="360" class="ln-accent" marker-end="url(#tx-acc)"/><text x="554" y="368" class="small muted">in the same order</text><text x="355" y="391" text-anchor="middle" class="mono">{&quot;ok&quot;: true, &quot;lines&quot;: [...]}</text><line x1="536" y1="400" x2="174" y2="400" class="ln-accent" marker-end="url(#tx-acc)"/></svg></div><figcaption>The JSON protocol: the proof first, on a socket that asks for it; the greeting; then each request gets its answer, in the order the requests came.</figcaption></figure>
 </section>
 <section id="amp">
 <h2>AMP</h2>
@@ -409,14 +409,14 @@ virtualbricks --listen tcp:port[:protocol=text]</code></pre></figure>
 </tbody></table></div>
 <dl class="terms">
 <dt id="about-hello"><code>Hello</code></dt><dd><p>Who answers, and the protocol of the connection from then on. <code>protocols</code> are those the program speaks; <code>protocol</code> is the highest that Virtualbricks speaks too, 1 without them or when it speaks none of them. Then the <code>version</code> of Virtualbricks, its <code>pid</code>, and the open <code>project</code>, left out if none is. A connection that doesn&#x27;t call <code>Hello</code> speaks protocol 1.</p></dd>
-<dt id="about-run"><code>Run</code></dt><dd><p>A line of the console and its <code>cwd</code>, as in a request of the text protocol; the answer is the lines it printed. If the command fails, the error says why, and what it printed before is lost.</p></dd>
+<dt id="about-run"><code>Run</code></dt><dd><p>A line of the console and its <code>cwd</code>, as in a request of the JSON protocol; the answer is the lines it printed. If the command fails, the error says why, and what it printed before is lost.</p></dd>
 <dt id="about-challenge"><code>Challenge</code></dt><dd><p>The nonce of Virtualbricks, for the proof of the token.</p></dd>
 <dt id="about-authenticate"><code>Authenticate</code></dt><dd><p>The nonce of the program and its proof; the answer is the proof of Virtualbricks, which the program checks, see <a href="#token">The token</a>.</p></dd>
 </dl>
 <p>Their errors:</p>
 <dl class="terms">
 <dt><code>COMMAND_FAILED</code></dt><dd><p><code>Run</code>: the command failed, or its <code>cwd</code> isn&#x27;t an absolute path.</p></dd>
-<dt><code>ANSWER_TOO_LONG</code></dt><dd><p><code>Run</code>: the command was done, but its lines are longer than the 65535 bytes of a value; a text socket carries them.</p></dd>
+<dt><code>ANSWER_TOO_LONG</code></dt><dd><p><code>Run</code>: the command was done, but its lines are longer than the 65535 bytes of a value; a JSON socket carries them.</p></dd>
 <dt><code>TOKEN_NEEDED</code></dt><dd><p><code>Hello</code>, <code>Run</code> and the commands of protocol 2: on a socket that asks for the token, each fails until the program proves that it knows it.</p></dd>
 <dt><code>WRONG_TOKEN</code></dt><dd><p><code>Challenge</code> and <code>Authenticate</code>: the socket takes no token, and the connection goes on; or the proof is wrong, or <code>Authenticate</code> came without a <code>Challenge</code> before it, and the connection closes.</p></dd>
 </dl>
@@ -576,14 +576,14 @@ virtualbricks --listen tcp:port[:protocol=text]</code></pre></figure>
 </section>
 <section id="versions">
 <h2>Versions</h2>
-<p>The text protocol is 1, in the greeting; another would have another number. Over AMP, <code>Hello</code> agrees on the protocol: the highest that both ends speak. 1 is always one of them.</p>
+<p>The JSON protocol is 1, in the greeting; another would have another number. Over AMP, <code>Hello</code> agrees on the protocol: the highest that both ends speak. 1 is always one of them.</p>
 <p>Protocol 2 keeps its commands as they are. A later Virtualbricks may add commands to it, and optional arguments to its commands, and nothing else: an older one answers a command it doesn&#x27;t have with <code>UNHANDLED</code>, and an argument it doesn&#x27;t know with <code>BAD_ARGUMENT</code>, so a program that sends them knows that they weren&#x27;t done. A change of any other kind makes protocol 3, which would take the place of 2: a program that speaks both calls <code>Hello</code> with <code>protocols</code> [1, 2, 3]. The sources keep the commands of protocol 2 in <em>tests/data/amp-protocol-2.txt</em>, which the tests compare with the modules.</p>
 <p>The windows of <code>virtualbricks --connect</code> also want the same version of Virtualbricks at both ends: the <code>version</code> in the answer of <code>Hello</code>.</p>
 </section>
 <section id="limits">
 <h2>Limits</h2>
 <dl class="terms">
-<dt>A line of the text protocol</dt><dd><p>64 KiB, 65536 bytes; a longer one closes the connection.</p></dd>
+<dt>A line of the JSON protocol</dt><dd><p>64 KiB, 65536 bytes; a longer one closes the connection.</p></dd>
 <dt>A key of AMP</dt><dd><p>255 bytes.</p></dd>
 <dt>A value of AMP</dt><dd><p>65535 bytes. A longer answer is <code>ANSWER_TOO_LONG</code>, after the command was done; a longer push isn&#x27;t sent.</p></dd>
 <dt>The proof of the token</dt><dd><p>10 seconds from connecting.</p></dd>
@@ -593,16 +593,16 @@ virtualbricks --listen tcp:port[:protocol=text]</code></pre></figure>
 </section>
 <section id="examples">
 <h2>Examples</h2>
-<p>A shell on a text socket, with <a class="man" href="https://manpages.debian.org/socat.1"><code>socat</code>(1)</a>; the lines it prints are the greeting and the answers:</p>
+<p>A shell on a JSON socket, with <a class="man" href="https://manpages.debian.org/socat.1"><code>socat</code>(1)</a>; the lines it prints are the greeting and the answers:</p>
 <figure class="code"><pre><code>virtualbricks --no-gui --listen \
-    unix:~/labs/lab1.text:protocol=text &amp;
-socat - UNIX-CONNECT:$HOME/labs/lab1.text
+    unix:~/labs/lab1.json:protocol=json &amp;
+socat - UNIX-CONNECT:$HOME/labs/lab1.json
 {"protocol": 1, "version": "3.0.0", "pid": 4200, ...}
 {"line": "brick new switch sw1"}
 {"ok": true, "lines": ["sw1"]}
 {"line": "brick start sw1"}
 {"ok": true, "lines": ["sw1 runs, process 4242"]}</code></pre></figure>
-<p>A client of the text protocol in Python, without anything else, for a Virtualbricks started with <code>--listen tcp:8765:protocol=text</code>:</p>
+<p>A client of the JSON protocol in Python, without anything else, for a Virtualbricks started with <code>--listen tcp:8765:protocol=json</code>:</p>
 <figure class="code"><pre><code>import hmac, json, os, secrets, socket, sys
 
 
@@ -635,7 +635,7 @@ def connect(port, token):
         if not hmac.compare_digest(given, expected):
             sys.exit(first.get("error", "Wrong token"))
     if first.get("protocol") != 1:
-        sys.exit("It doesn't speak the text protocol 1")
+        sys.exit("It doesn't speak the JSON protocol 1")
     return lines
 
 
