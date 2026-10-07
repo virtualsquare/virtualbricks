@@ -108,6 +108,7 @@ def part_name(namespace: str) -> str:
     parts = (
         ("virtualbricks.gui.mainwindow", _("Main window")),
         ("virtualbricks.gui.app", "Virtualbricks"),
+        ("virtualbricks.gui.dialogs.importdialog", _("Import")),
         ("virtualbricks.gui", _("Windows")),
         ("virtualbricks.migrate", _("Migration")),
         ("virtualbricks.config.workspace", _("Project")),

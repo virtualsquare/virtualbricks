@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-07 18:43+0200\n"
+"POT-Creation-Date: 2026-10-07 18:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2901,7 +2901,7 @@ msgstr ""
 msgid "Import Project"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/importdialog.py
+#: virtualbricks/gui/dialogs/importdialog.py virtualbricks/gui/messages.py
 msgid "Import"
 msgstr ""
 

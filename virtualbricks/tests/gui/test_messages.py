@@ -107,6 +107,7 @@ class TestSource(unittest.TestCase):
         for namespace, name in (
             ("virtualbricks.gui.mainwindow.window", "Main window"),
             ("virtualbricks.gui.dialogs.logging", "Windows"),
+            ("virtualbricks.gui.dialogs.importdialog", "Import"),
             ("virtualbricks.gui.app", "Virtualbricks"),
             ("virtualbricks.gui.app.GuiApplication", "Virtualbricks"),
             ("virtualbricks.migrate.engine", "Migration"),
