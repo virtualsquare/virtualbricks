@@ -370,9 +370,8 @@ that the tests can't do yet: those needs come first.
 
 # Conventions
 
-- One item per line, starting with a verb, the use case in words; detail
-  indented below it: what it checks besides the windows, and what it
-  needs.
+- Items start with a verb, the use case in words; detail indented below
+  it: what it checks besides the windows, and what it needs.
 - Sections by area, the most used first; what the scenarios need comes
   before them all.
 - A scenario written is ticked where it is, with its name and its

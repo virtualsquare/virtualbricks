@@ -1,5 +1,24 @@
 # TODO
 
+## Config
+
+- [ ] Let the terminal be a command with a place for the console, so that
+  any terminal works: `gnome-terminal -- {command}`, `foot {command}`
+  (23 §12, S6 C)
+
+## Projects
+
+- [ ] Import an archive dropped on the Projects window (04 §3, §9)
+
+## Bricks and programs
+
+- [ ] Ask QEMU for other architectures the same way; only
+  qemu-system-x86 is recorded (10 §13)
+
+## Misc
+
+- [ ] Update the copyright notice
+
 # IDEAS
 
 ## Config
@@ -14,9 +33,6 @@
 - [ ] Move `locations` into `config` (maybe)
 - [ ] Drop the `log_link_loops` setting, maybe: a loop always stops a
   start (10 §13, 23 §12)
-- [ ] Let the terminal be a command with a place for the console, so that
-  any terminal works: `gnome-terminal -- {command}`, `foot {command}`
-  (23 §12, S6 C)
 - [ ] Show what KSM saves in its row of the Settings window: the pages
   shared, from `/sys/kernel/mm/ksm/pages_sharing` (23 §12)
 - [ ] Change the settings of a project that isn't open, from the Projects
@@ -29,7 +45,6 @@
   new workspace and releases the old one's (21 §14)
 - [ ] Open several projects at once (04 §11: D6 rules it out for now)
 - [ ] Make new projects from templates (04 §11)
-- [ ] Import an archive dropped on the Projects window (04 §3, §9)
 - [ ] Open a project by dropping its file on the main window
 - [ ] Switch projects from a popover on the main window's title, once
   the main window has a header bar (04 §3, direction B)
@@ -39,8 +54,6 @@
 ## GUI code
 
 - [ ] Add build_ui in the tabs classes as well
-- [ ] Extract the logic from the windows: windows take state and
-  callbacks
 - [ ] Move the GTK code outside `gui/` into it:
   `migrate/gui.py`, the GTK parts of `cli.py`
 - [ ] Stop passing VBGUI around: set the transient window of a dialog
@@ -50,8 +63,6 @@
 - [ ] Add an attribute to the Tab class that says whether it is the tab
   shown (maybe)
 - [ ] Move the tab files inside `virtualbricks/gui/mainwindow/tabs`
-- [ ] Drop ngettext from `count()` in `gui/mainwindow/bricks/tab.py`:
-  its singular and plural are the same text
 
 ## Bricks and programs
 
@@ -102,8 +113,6 @@
 - [ ] Add a Programs window: each program found, its version, what it
   lacks and the packages to install (10 §13, 12 §9)
   - the tooltip of a missing program in New Brick could open it
-- [ ] Ask QEMU for other architectures the same way; only
-  qemu-system-x86 is recorded (10 §13)
 - [ ] Support Wirefilter along Netemu
 
 ## Events
@@ -300,10 +309,6 @@
   killed, with the parent-death signal
 - [ ] Run the end-to-end scenarios on X11 too, on Xvfb, beside Broadway:
   real keys, and drag and drop; `e2e/TODO.md` compares the two
-
-## Misc
-
-- [ ] Update the copyright notice
 
 # DONE
 
@@ -527,13 +532,11 @@
 
 # Conventions
 
-- One item per line, starting with a verb; detail indented below it.
 - Sections by area, most urgent first.
 - Blocked items go under Waiting, saying what they wait for.
 - New ideas go under IDEAS, never straight into TODO, including what the
   Later section of a design page keeps for later. The maintainer moves an
   idea into TODO when it is to be done.
-- When an item is done, tick it and move it to the top of DONE.
 - An item that comes from a design page cites it: (07 §10) is §10 of
   `docs/redesign/07 - bricks-redesign.html`. When it is done, say so in
   that page's "Since then" too.
