@@ -9,11 +9,14 @@
 ## Projects
 
 - [ ] Import an archive dropped on the Projects window (04 §3, §9)
+- [ ] Drop the import message window
 
 ## Bricks and programs
 
 - [ ] Ask QEMU for other architectures the same way; only
   qemu-system-x86 is recorded (10 §13)
+- [ ] Switchwrapper not configured if the path does not exist / switch
+  is not started
 
 ## Misc
 
