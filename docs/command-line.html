@@ -403,7 +403,7 @@ virtualbricks --no-gui --listen \
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
     -nodes -days 3650 -subj /CN=alice-laptop \
     -keyout alice.key -out alice.pem</code></pre></figure>
-<h3 id="control-socket-the-text-protocol">The JSON protocol</h3>
+<h3 id="control-socket-the-json-protocol">The JSON protocol</h3>
 <p><a class="man" href="control-protocols.html"><code>virtualbricks-control</code>(7)</a> describes the protocols in full, for whoever writes a client: the JSON protocol, and protocols 1 and 2 of AMP, with the proof of the token. In short, any program can talk to a JSON socket, one of <code>protocol=json</code>: UTF-8 JSON, an object on each line. Virtualbricks greets with the <code>protocol</code>, 1, its <code>version</code>, its <code>pid</code> and the open <code>project</code>; then it answers each request in turn. A request&#x27;s <code>cwd</code>, the folder of its paths, is optional:</p>
 <figure class="code"><pre><code>{"line": "brick start sw1", "cwd": "/home/alice/labs"}
 {"ok": true, "lines": ["sw1 runs, process 4242"]}
