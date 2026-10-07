@@ -57,6 +57,10 @@ dev = [
     # install: see Setting up in README.md.
     "PyGObject-stubs>=2.17",
 ]
+website = [
+    { include-group = "dev" },
+    "pelican[markdown]==4.11.0.post0",
+]
 
 [project.urls]
 Homepage = "https://github.com/virtualsquare/virtualbricks"
