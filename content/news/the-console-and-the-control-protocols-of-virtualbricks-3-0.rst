@@ -177,7 +177,7 @@ character plain, as the colons of an IPv6 address:
 .. code-block:: text
 
    unix:~/labs/lab1.sock
-   unix:address=~/labs/lab1.sock:protocol=text
+   unix:address=~/labs/lab1.sock:protocol=json
    tcp:8765
    tcp:port=8765:interface=\:\:1
    ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem
@@ -185,7 +185,7 @@ character plain, as the colons of an IPv6 address:
    ssl:host=lab.example:port=8765:caCertsDir=~/vb/lab
 
 The three types are ``unix``, ``tcp`` and ``ssl``. Each takes
-``protocol=amp``, the default, or ``protocol=text``. The keywords of each
+``protocol=amp``, the default, or ``protocol=json``. The keywords of each
 type, for a socket that ``--listen`` opens and one that ``--connect``
 reaches:
 
@@ -229,7 +229,7 @@ socket, each with its protocol:
 
    virtualbricks --no-gui --noterm \
        --listen \
-       --listen unix:~/labs/lab1.text:protocol=text \
+       --listen unix:~/labs/lab1.json:protocol=json \
        --listen tcp:8765 \
        --listen 'ssl:8768:privateKey=~/vb/lab-key.pem:caCertsDir=~/vb/clients'
 
@@ -554,14 +554,14 @@ add or remove its ``.pem`` and start Virtualbricks again.
 Three protocols
 ===============
 
-A socket carries lines of JSON, with ``protocol=text``, or the boxes of
+A socket carries lines of JSON, with ``protocol=json``, or the boxes of
 AMP, Twisted's Asynchronous Messaging Protocol, the default. On them,
 Virtualbricks speaks three protocols:
 
 .. code-block:: text
 
      +--------------+  +-------------+---------------------------+
-     |     text     |  |    AMP 1    |           AMP 2           |
+     |     JSON     |  |    AMP 1    |           AMP 2           |
      |  line, cwd   |  | Hello, Run  | typed commands, Follow    |
      |  -> lines    |  |             | and its pushes, Attach    |
      +--------------+  +-------------+---------------------------+
@@ -572,9 +572,9 @@ Virtualbricks speaks three protocols:
      +--------------+--+-----------------------------------------+
      |  a unix, tcp or ssl socket of --listen                    |
      +-----------------------------------------------------------+
-        protocol=text      protocol=amp, the default
+        protocol=json      protocol=amp, the default
 
-**text**
+**JSON**
    A line of the console in each request, the lines it prints in each
    answer. Any language that reads and writes JSON speaks it, and so does a
    shell with ``socat``.
@@ -608,7 +608,7 @@ What they share:
   read them within 2 seconds is cut off.
 
 
-The text protocol
+The JSON protocol
 =================
 
 Each message is a JSON object on a line of its own, in UTF-8, ended by a
@@ -622,12 +622,12 @@ A request has ``line``, a line of the console as it is typed, and
 ``lines``, what it printed, and ``error``, why it failed, when ``ok`` is
 ``false``; ``lines`` is then what it printed before it failed. A line that
 isn't a request gets an answer with ``ok`` ``false`` and why, and the
-connection goes on. With ``socat``, on a text socket:
+connection goes on. With ``socat``, on a JSON socket:
 
 .. code-block:: text
 
-   $ virtualbricks --no-gui --listen unix:~/labs/lab1.text:protocol=text &
-   $ socat - UNIX-CONNECT:$HOME/labs/lab1.text
+   $ virtualbricks --no-gui --listen unix:~/labs/lab1.json:protocol=json &
+   $ socat - UNIX-CONNECT:$HOME/labs/lab1.json
    {"protocol": 1, "version": "3.0.0.dev3", "pid": 430482, "project": "lab1"}
    {"line": "brick start sw2", "cwd": "/home/alice/labs"}
    {"ok": true, "lines": ["sw2 runs, process 430557"]}
@@ -643,9 +643,9 @@ connection goes on. With ``socat``, on a text socket:
 Virtualbricks skips the empty lines, and closes the connection on a line
 longer than 64 KiB. A key that a message doesn't need is ignored, and a
 client should ignore the keys it doesn't know, so that a later version can
-add some. Over text, an answer can be as long as it needs, and what a
+add some. Over JSON, an answer can be as long as it needs, and what a
 command printed before it failed comes with its error:
-``virtualbricks --command`` prints it, on a text socket, before the error.
+``virtualbricks --command`` prints it, on a JSON socket, before the error.
 
 **With the token.** On a tcp or ssl socket that asks for the token, the
 first line asks for the proof, with the nonce of Virtualbricks; the client
@@ -661,7 +661,7 @@ the proof of Virtualbricks:
 A wrong proof, a line that isn't one, or none in 10 seconds gets an answer
 with ``ok`` ``false`` and why, as ``Wrong token``, and the connection
 closes. A whole client, in Python and nothing else, for a Virtualbricks
-started with ``--listen tcp:8766:protocol=text``:
+started with ``--listen tcp:8766:protocol=json``:
 
 .. code-block:: python
 
@@ -694,7 +694,7 @@ started with ``--listen tcp:8766:protocol=text``:
            if not hmac.compare_digest(first.get("proof", ""), expected):
                sys.exit(first.get("error", "Wrong token"))
        if first.get("protocol") != 1:
-           sys.exit("It doesn't speak the text protocol 1")
+           sys.exit("It doesn't speak the JSON protocol 1")
        return lines
 
 
@@ -810,7 +810,7 @@ Their errors:
 
 ``ANSWER_TOO_LONG``
    ``Run``: the command was done, but its lines are longer than the 65535
-   bytes of a value. A text socket carries them.
+   bytes of a value. A JSON socket carries them.
 
 ``TOKEN_NEEDED``
    On a socket that asks for the token, every command but ``Challenge`` and
@@ -1204,7 +1204,7 @@ yours on this machine, found as ``--command`` finds it: that of
 ``--workspace``, or the only one that listens. The windows call it *this
 computer*.
 
-The windows speak protocol 2, so ``--connect`` takes no ``protocol=text``
+The windows speak protocol 2, so ``--connect`` takes no ``protocol=json``
 here; nor ``--no-gui``, ``--lock`` or ``--listen``, which are for the
 Virtualbricks that runs the bricks. They prove the token, or show their
 certificate, as ``--command`` does.
@@ -1234,7 +1234,7 @@ merging the private copy of a disk, copying an image to the image folder,
 Limits
 ======
 
-A line of the text protocol
+A line of the JSON protocol
    64 KiB; a longer one closes the connection.
 
 A key of AMP

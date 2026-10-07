@@ -151,7 +151,7 @@ Remote control
      virtualbricks --connect --run start-lab.vb
 
 - **For programs.** The socket speaks Twisted's AMP, with a typed command
-  for each command of the console, or JSON lines with ``protocol=text``, for
+  for each command of the console, or JSON lines with ``protocol=json``, for
   programs in any language.
 
 - **Across the network.** ``--listen tcp:PORT`` listens on a port of this
