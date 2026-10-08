@@ -18,10 +18,6 @@
 - [ ] Switchwrapper not configured if the path does not exist / switch
   is not started
 
-## Misc
-
-- [ ] Update the copyright notice
-
 # IDEAS
 
 ## Config
@@ -315,6 +311,9 @@
 
 # DONE
 
+- [x] Update the copyright notice to 2026: the headers, COPYING, the
+  About dialog and the `--help` text; in the About dialog VDE is
+  2003-2025 (vdeplug4) and QEMU 2003-2026, as `qemu -version` says
 - [x] Hashes in contents.toml, thought over and discarded: the benefit is
   small for its cost; revisit if there is new interest (26 rev 2). Only a
   fingerprint of the disk's contents, recorded when a private disk is

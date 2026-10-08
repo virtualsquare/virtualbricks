@@ -1,6 +1,6 @@
 #!/bin/sh
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2019 Virtualbricks team
+# Copyright (C) 2026 Virtualbricks team
 #
 # Update the translations: extract the messages from the sources into the
 # template, merge the template into every .po file and compile the catalogs.

@@ -21,9 +21,9 @@ from virtualbricks.gui import graphics
 from virtualbricks.i18n import _
 
 COPYRIGHT = """\
-Copyright © 2019 Virtualbricks team
-VDE - Copyright © 2003-2011 Renzo Davoli.
-QEMU - Copyright © 2005-2011 Fabrice Bellard.
+Copyright © 2026 Virtualbricks team
+VDE - Copyright © 2003-2025 Renzo Davoli.
+QEMU - Copyright © 2003-2026 Fabrice Bellard and the QEMU Project developers.
 QEMU is a trademark of Fabrice Bellard.
 Icons by Fabio Viola, Licensed under CC BY-NC-SA 3.0. See COPYING for more details.
 Debian package created and maintained by Francesco Namuri (franam@debian.org)."""
