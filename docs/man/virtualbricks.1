@@ -369,9 +369,9 @@ The log names each client, by its address or by its certificate:
 .IP
 .EX
 virtualbricks \-\-no\-gui \-\-listen \(rs
-    \(aqssl:8765:interface=0.0.0.0:privateKey=\(ti/vb/lab.pem\(aq
+    \(aqssl:8765:interface=0.0.0.0:privateKey=\(ti/vb/lab.key\(aq
 virtualbricks \-\-no\-gui \-\-listen \(rs
-    \(aqssl:8765:privateKey=\(ti/vb/lab.pem:caCertsDir=\(ti/vb/clients\(aq
+    \(aqssl:8765:privateKey=\(ti/vb/lab.key:caCertsDir=\(ti/vb/clients\(aq
 .EE
 .PP
 \f[B]\-\-connect\f[R] names the machine as
@@ -395,13 +395,17 @@ virtualbricks \(rs
 .PP
 The certificates, made with \f[B]openssl\f[R](1): that of the machine of
 Virtualbricks, for its name and address, and that of a client, whose
-\&.pem goes into the directory of \f[B]caCertsDir=\f[R]:
+\&.pem goes into the directory of \f[B]caCertsDir=\f[R].
+A .pem holds a certificate alone, for the other end; \f[B]lab.key\f[R],
+the file of \f[B]privateKey=\f[R] above, holds the key of Virtualbricks,
+and its certificate too:
 .IP
 .EX
 openssl req \-x509 \-newkey ec \-pkeyopt ec_paramgen_curve:P\-256 \(rs
     \-nodes \-days 3650 \-subj /CN=lab.example \(rs
     \-addext subjectAltName=DNS:lab.example,IP:192.0.2.7 \(rs
     \-keyout lab.key \-out lab.pem
+cat lab.pem >> lab.key
 openssl req \-x509 \-newkey ec \-pkeyopt ec_paramgen_curve:P\-256 \(rs
     \-nodes \-days 3650 \-subj /CN=alice\-laptop \(rs
     \-keyout alice.key \-out alice.pem
@@ -437,7 +441,7 @@ A wrong proof is refused, and the connection closed:
 .EX
 {\(dqprotocol\(dq: 1, \(dqauth\(dq: \(dqtoken\(dq, \(dqnonce\(dq: \(dq3f9a...\(dq}
 {\(dqnonce\(dq: \(dqc41d...\(dq, \(dqproof\(dq: \(dq8e02...\(dq}
-{\(dqprotocol\(dq: 1, \(dqversion\(dq: \(dq2.1.0\(dq, \(dqpid\(dq: 4200,
+{\(dqprotocol\(dq: 1, \(dqversion\(dq: \(dq3.0.0\(dq, \(dqpid\(dq: 4200,
  \(dqproject\(dq: \(dqlab1\(dq, \(dqproof\(dq: \(dq51b7...\(dq}
 .EE
 .PP
@@ -658,7 +662,7 @@ version:
 .IP
 .EX
 virtualbricks \-\-no\-gui \-\-noterm \-\-listen \(rs
-    \(aqssl:8765:interface=0.0.0.0:privateKey=\(ti/vb/lab.pem\(aq
+    \(aqssl:8765:interface=0.0.0.0:privateKey=\(ti/vb/lab.key\(aq
 virtualbricks \-\-connect \(rs
     \(aqssl:lab.example:8765:caCertsDir=\(ti/vb/lab\(aq
 .EE
@@ -1036,7 +1040,7 @@ started from a laptop that has a copy of the token and of
 .IP
 .EX
 virtualbricks \-\-no\-gui \-\-noterm \-\-run \(ti/labs/ospf.vb \-\-listen \(rs
-    \(aqssl:8765:interface=0.0.0.0:privateKey=\(ti/vb/lab.pem\(aq
+    \(aqssl:8765:interface=0.0.0.0:privateKey=\(ti/vb/lab.key\(aq
 virtualbricks \(rs
     \-\-connect \(aqssl:lab.example:8765:caCertsDir=\(ti/vb/lab\(aq \(rs
     \-\-command brick start router

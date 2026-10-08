@@ -72,17 +72,3 @@ one leaves the list.
            compressed        uncompressed  ratio uncompressed_name
                   617               10240  94.4% .gz.vbp.2or1v0ic.part
   ```
-
-## Manual pages
-
-- [ ] **virtualbricks(1): the ssl examples pass the certificate as the
-  key.** They pass `privateKey=~/vb/lab.pem`, but the `openssl` command of
-  the same page writes the key to `lab.key` and the certificate to
-  `lab.pem`. Either the examples pass
-  `privateKey=~/vb/lab.key:certKey=~/vb/lab.pem`, or the command writes
-  both into one file. Four examples in `docs/man/virtualbricks.1.md`, the
-  same in `docs/command-line.html` and in `docs/man/virtualbricks.1`.
-- [ ] **virtualbricks(1): the JSON protocol greets with version
-  `"2.1.0"`.** The example of the token's proof, in "The JSON protocol",
-  greets with `"version": "2.1.0"`; Virtualbricks 3 greets with its own,
-  as `virtualbricks-control`(7) shows with `"3.0.0"`. Same three files.

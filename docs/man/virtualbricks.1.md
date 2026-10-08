@@ -340,9 +340,9 @@ log names each client, by its address or by its certificate:
 
 ```
 virtualbricks --no-gui --listen \
-    'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.pem'
+    'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.key'
 virtualbricks --no-gui --listen \
-    'ssl:8765:privateKey=~/vb/lab.pem:caCertsDir=~/vb/clients'
+    'ssl:8765:privateKey=~/vb/lab.key:caCertsDir=~/vb/clients'
 ```
 
 **--connect** names the machine as **tcp:***host***:***port*, or with
@@ -363,13 +363,16 @@ virtualbricks \
 
 The certificates, made with **openssl**(1): that of the machine of
 Virtualbricks, for its name and address, and that of a client, whose .pem
-goes into the directory of **caCertsDir=**:
+goes into the directory of **caCertsDir=**. A .pem holds a certificate
+alone, for the other end; **lab.key**, the file of **privateKey=** above,
+holds the key of Virtualbricks, and its certificate too:
 
 ```
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
     -nodes -days 3650 -subj /CN=lab.example \
     -addext subjectAltName=DNS:lab.example,IP:192.0.2.7 \
     -keyout lab.key -out lab.pem
+cat lab.pem >> lab.key
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
     -nodes -days 3650 -subj /CN=alice-laptop \
     -keyout alice.key -out alice.pem
@@ -403,7 +406,7 @@ connection closed:
 ```
 {"protocol": 1, "auth": "token", "nonce": "3f9a..."}
 {"nonce": "c41d...", "proof": "8e02..."}
-{"protocol": 1, "version": "2.1.0", "pid": 4200,
+{"protocol": 1, "version": "3.0.0", "pid": 4200,
  "project": "lab1", "proof": "51b7..."}
 ```
 
@@ -608,7 +611,7 @@ or with **--no-gui**, and both run the same version:
 
 ```
 virtualbricks --no-gui --noterm --listen \
-    'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.pem'
+    'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.key'
 virtualbricks --connect \
     'ssl:lab.example:8765:caCertsDir=~/vb/lab'
 ```
@@ -979,7 +982,7 @@ from a laptop that has a copy of the token and of **lab.pem**, in
 
 ```
 virtualbricks --no-gui --noterm --run ~/labs/ospf.vb --listen \
-    'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.pem'
+    'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.key'
 virtualbricks \
     --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
     --command brick start router
