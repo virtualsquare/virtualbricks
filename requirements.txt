@@ -6,7 +6,7 @@ ghp-import==2.1.0
 idna==3.20
 Jinja2==3.1.6
 markdown-it-py==4.2.0
-MarkupSafe==3.0.3
+MarkupSafe==3.0.4
 mdurl==0.1.2
 ordered-set==4.1.0
 pelican==4.12.0
