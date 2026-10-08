@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-08 23:59+0200\n"
+"POT-Creation-Date: 2026-10-09 00:02+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -3473,6 +3473,10 @@ msgid ""
 "KSM is still on: Virtualbricks couldn't turn it off. File › Logs says why."
 msgstr ""
 
+#: virtualbricks/gui/dialogs/wait.py
+msgid "Virtualbricks: action in progress"
+msgstr ""
+
 #: virtualbricks/gui/form.py
 #, python-brace-format
 msgid "{help} · {note}"
@@ -3732,6 +3736,16 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "Kill"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#, python-brace-format
+msgid "Resuming {name}…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#, python-brace-format
+msgid "Suspending {name}…"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
@@ -4582,14 +4596,6 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/window.py
 #, python-brace-format
 msgid "Virtualbricks (project: {name} on {where})"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "Virtualbricks: action in progress"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "Please wait"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/window.py

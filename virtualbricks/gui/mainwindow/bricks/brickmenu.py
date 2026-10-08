@@ -77,6 +77,8 @@ sending_acpi = "send ACPI {acpievent}"
 stop_error = "Error on stopping brick."
 start_error = "Error on starting brick."
 console_error = "Cannot open the console of {name}: {error}"
+suspend_error = "Cannot suspend {name}: {error}"
+resume_error = "Cannot resume {name}: {error}"
 
 GROUP = "brick"
 # The kinds of bricks without a settings panel.
@@ -296,6 +298,22 @@ class BrickActions(MenuActions):
         assert is_virtualmachine(self.brick), "a machine's menu has the item"
         return self.brick
 
+    def _wait(
+        self, deferred: defer.Deferred[Any], text: str, error: str
+    ) -> None:
+        """
+        The main window waits for deferred, saying text, with the name of
+        the brick; a failure is logged as error.
+        """
+
+        name = self.brick.name
+        waiting = self.gui.wait_for(deferred, text.format(name=name))
+        waiting.addErrback(
+            lambda failure: logger.error(
+                error, name=name, error=failure.getErrorMessage()
+            )
+        )
+
     def startstop(self) -> None:
         startstop(self.engine, self.brick)
 
@@ -323,7 +341,11 @@ class BrickActions(MenuActions):
 
     def resume(self) -> None:
         logger.debug(resuming, name=self.brick.name)
-        self.gui.user_wait_action(self.engine.resume(self._machine()))
+        self._wait(
+            self.engine.resume(self._machine()),
+            _("Resuming {name}…"),
+            resume_error,
+        )
 
     def delete(self) -> None:
         self.gui.ask_remove_brick(self.brick)
@@ -350,7 +372,11 @@ class BrickActions(MenuActions):
 
     def suspend(self) -> None:
         logger.debug(suspending, name=self.brick.name)
-        self.gui.user_wait_action(self.engine.suspend(self._machine()))
+        self._wait(
+            self.engine.suspend(self._machine()),
+            _("Suspending {name}…"),
+            suspend_error,
+        )
 
     def reset(self) -> None:
         logger.info(sending_acpi, acpievent="reset")

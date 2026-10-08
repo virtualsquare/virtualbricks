@@ -54,8 +54,9 @@ class FakeGui:
     def ask_remove_brick(self, brick):
         self.calls.append(("delete", brick))
 
-    def user_wait_action(self, action):
-        self.calls.append(("wait", action))
+    def wait_for(self, deferred, text):
+        self.calls.append(("wait", text))
+        return deferred
 
 
 class FakeDialog:
@@ -382,7 +383,10 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
         self.assertEqual(
             self.gui.engine.calls, [("suspend", vm), ("resume", vm)]
         )
-        self.assertEqual([call[0] for call in self.gui.calls], ["wait"] * 2)
+        self.assertEqual(
+            self.gui.calls,
+            [("wait", "Suspending vm…"), ("wait", "Resuming vm…")],
+        )
 
     def test_the_process(self):
         vm = self.running(self.brick("qemu", "vm"))

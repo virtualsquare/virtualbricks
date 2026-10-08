@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-08 23:59+0200\n"
+"POT-Creation-Date: 2026-10-09 00:02+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -3615,6 +3615,10 @@ msgid ""
 "KSM is still on: Virtualbricks couldn't turn it off. File › Logs says why."
 msgstr ""
 
+#: virtualbricks/gui/dialogs/wait.py
+msgid "Virtualbricks: action in progress"
+msgstr "Virtualbricks: azione in corso"
+
 #: virtualbricks/gui/form.py
 #, python-brace-format
 msgid "{help} · {note}"
@@ -3887,6 +3891,16 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "Kill"
 msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#, fuzzy, python-brace-format
+msgid "Resuming {name}…"
+msgstr "_Rinomina"
+
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#, fuzzy, python-brace-format
+msgid "Suspending {name}…"
+msgstr "connesso a"
 
 #: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
 #: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
@@ -4813,14 +4827,6 @@ msgid "Virtualbricks (project: {name} on {where})"
 msgstr "Lista Mattoni di Virtualbricks"
 
 #: virtualbricks/gui/mainwindow/window.py
-msgid "Virtualbricks: action in progress"
-msgstr "Virtualbricks: azione in corso"
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "Please wait"
-msgstr "Prego attendere"
-
-#: virtualbricks/gui/mainwindow/window.py
 msgid "Virtualbricks"
 msgstr "Virtualbricks"
 
@@ -5322,6 +5328,9 @@ msgstr ""
 #, python-brace-format
 msgid "Missing in PATH: {programs}"
 msgstr ""
+
+#~ msgid "Please wait"
+#~ msgstr "Prego attendere"
 
 #~ msgid "unconfigured"
 #~ msgstr "non configurato"

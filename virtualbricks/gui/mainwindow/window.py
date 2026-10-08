@@ -23,9 +23,10 @@ The main window of Virtualbricks.
 a notebook with the tabs of the other modules of this package, which it
 tells when a project opens, is saved, or Virtualbricks quits (see
 :mod:`virtualbricks.gui.mainwindow.tab`). It keeps what the menus of the
-bricks and the events call: configure and remove. What the windows change,
-run or ask of the machine goes through its engine, ``engine``, and they
-read the bricks, the events and the images of ``engine.factory``.
+bricks and the events call: configure, remove, and wait_for(), which says
+what Suspend and Resume wait for. What the windows change, run or ask of
+the machine goes through its engine, ``engine``, and they read the bricks,
+the events and the images of ``engine.factory``.
 """
 
 from __future__ import annotations
@@ -39,7 +40,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
-from twisted.internet import defer, task
+from twisted.internet import defer
 from twisted.logger import Logger
 from twisted.python.failure import Failure
 
@@ -72,6 +73,7 @@ from virtualbricks.gui.dialogs.logging import LoggingWindow
 from virtualbricks.gui.dialogs import projectname
 from virtualbricks.gui.dialogs.projects import ProjectsWindow
 from virtualbricks.gui.dialogs.settings import SettingsWindow
+from virtualbricks.gui.dialogs.wait import WaitWindow
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.rowtab import RowsTab
@@ -140,103 +142,6 @@ def remote_title(engine: RemoteEngine) -> str:
     return _("Virtualbricks (project: {name} on {where})").format(
         name=copy.project, where=engine.where
     )
-
-
-class Freezer:
-    """
-    Show a window with a pulsing progress bar and make the parent window
-    insensitive until an operation completes.
-    """
-
-    def __init__(
-        self,
-        freeze: Callable[[], None],
-        unfreeze: Callable[[], None],
-        parent: Gtk.Window | None,
-    ) -> None:
-        self.freeze_parent_window = freeze
-        self.unfreeze_parent_window = unfreeze
-        self.build_ui()
-        self.window.set_transient_for(parent)
-        self.window.set_modal(True)
-
-    def build_ui(self) -> None:
-        """Create the widgets, formerly in ``userwait.ui``."""
-
-        # window (Gtk.Window)
-        self.window = Gtk.Window(
-            width_request=200,
-            height_request=50,
-            can_focus=False,
-            title=_("Virtualbricks: action in progress"),
-            window_position=Gtk.WindowPosition.CENTER_ALWAYS,
-            destroy_with_parent=True,
-            type_hint=Gdk.WindowTypeHint.NOTIFICATION,
-            skip_taskbar_hint=True,
-            skip_pager_hint=True,
-            urgency_hint=True,
-            decorated=False,
-            deletable=False,
-        )
-        vbox1 = Gtk.Box(
-            visible=True,
-            can_focus=False,
-            orientation=Gtk.Orientation.VERTICAL,
-        )
-        Pleaselabel = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Please wait"),
-        )
-        vbox1.pack_start(Pleaselabel, True, True, 0)
-        self.progress = Gtk.ProgressBar(visible=True, can_focus=False)
-        vbox1.pack_start(self.progress, False, False, 0)
-        label2 = Gtk.Label(visible=True, can_focus=False)
-        vbox1.pack_start(label2, True, True, 0)
-        self.window.add(vbox1)
-
-    def wait_for(
-        self,
-        deferred: defer.Deferred[Any] | Callable[..., Any],
-        *args: Any,
-    ) -> defer.Deferred[Any]:
-        if not isinstance(deferred, defer.Deferred):
-            if callable(deferred):
-                deferred = defer.maybeDeferred(deferred, *args)
-            else:
-                raise RuntimeError("Invalid argument")
-        pulse = self.start()
-        deferred.addBoth(self.stop, pulse)
-        return deferred
-
-    def start(self) -> task.LoopingCall:
-        self.freeze_parent_window()
-        self.window.show_all()
-        looping_call = task.LoopingCall(self.progress.pulse)
-        looping_call.start(0.2, False)
-        return looping_call
-
-    def stop(self, passthru: T, looping_call: task.LoopingCall) -> T:
-        looping_call.stop()
-        self.window.destroy()
-        self.unfreeze_parent_window()
-        return passthru
-
-
-class ProgressBar:
-    """
-    Wait for an operation, freezing the main window.
-    """
-
-    def __init__(self, gui: MainWindow) -> None:
-        self.freezer = Freezer(
-            gui.set_insensitive, gui.set_sensitive, gui.window
-        )
-
-    def wait_for(
-        self, something: defer.Deferred[Any] | Callable[..., Any], *args: Any
-    ) -> defer.Deferred[Any]:
-        return self.freezer.wait_for(something, *args)
 
 
 class MainWindow:
@@ -696,6 +601,16 @@ class MainWindow:
             self.main_notebook.page_num(self.images)
         )
 
+    def wait_for(
+        self, deferred: defer.Deferred[T], text: str
+    ) -> defer.Deferred[T]:
+        """
+        Say text above the window, insensitive, until deferred fires;
+        deferred, which fires with what it had.
+        """
+
+        return WaitWindow(text).wait_for(deferred, self.window)
+
     # status icon handling
 
     def start_systray(self) -> None:
@@ -902,14 +817,3 @@ class MainWindow:
             self._reconnect()
         elif response == QUIT:
             self.do_quit()
-
-    def user_wait_action(
-        self, action: defer.Deferred[Any] | Callable[..., Any], *args: Any
-    ) -> None:
-        ProgressBar(self).wait_for(action, *args)
-
-    def set_insensitive(self) -> None:
-        self.window.set_sensitive(False)
-
-    def set_sensitive(self) -> None:
-        self.window.set_sensitive(True)
