@@ -34,7 +34,7 @@ if has_display:
     from gi.repository import Gtk
 
     from virtualbricks.gui.mainwindow import window
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
 
 
 class FakeGui:
@@ -73,7 +73,7 @@ class TestImport(GuiTestCase):
         self.closed = []
 
     def test_closed(self):
-        dialog = VBGUI.import_project(
+        dialog = MainWindow.import_project(
             self.gui, lambda: self.closed.append(True)
         )
         self.assertTrue(dialog.get_root_widget().get_visible())
@@ -83,7 +83,7 @@ class TestImport(GuiTestCase):
         self.assertEqual((self.closed, self.gui.titles), ([True], 1))
 
     def test_nobody_to_tell(self):
-        dialog = VBGUI.import_project(self.gui)
+        dialog = MainWindow.import_project(self.gui)
         dialog.get_root_widget().destroy()
         self.assertEqual(self.gui.titles, 1)
 
@@ -97,7 +97,7 @@ class TestStartUpProblem(GuiTestCase):
         set_current_project(self.manager.path, "gone")
 
     def test_closed_without_a_project(self):
-        window = VBGUI.show_start_up_problem(self.gui, "gone is gone")
+        window = MainWindow.show_start_up_problem(self.gui, "gone is gone")
         self.assertIs(window, self.gui.projects)
         self.assertEqual(self.gui.problem, "gone is gone")
         window.window.destroy()
@@ -106,7 +106,7 @@ class TestStartUpProblem(GuiTestCase):
         self.assertEqual(self.gui.titles, 1)
 
     def test_closed_after_opening_one(self):
-        window = VBGUI.show_start_up_problem(self.gui, "gone is gone")
+        window = MainWindow.show_start_up_problem(self.gui, "gone is gone")
         self.manager.create("lab")
         self.manager.open("lab", self.factory)
         window.window.destroy()
@@ -131,7 +131,7 @@ class TestWarningAtStart(GuiTestCase):
         """The lines of the warning, once the check is over."""
 
         # the check uses nothing of the main window
-        self.successResultOf(VBGUI.check_prerequisites(None))
+        self.successResultOf(MainWindow.check_prerequisites(None))
         return [fields["text"] for _, _, fields in self.logger.events]
 
     def test_ksm_off_as_the_settings_want(self):
@@ -148,7 +148,7 @@ class TestWarningAtStart(GuiTestCase):
         set_setting("kernel_samepage_merging", True)
         turning = defer.Deferred()
         self.patch(settings, "_ksm_start", turning)
-        checking = VBGUI.check_prerequisites(None)
+        checking = MainWindow.check_prerequisites(None)
         # it waits for the start to try
         self.assertNoResult(checking)
         turning.callback(False)

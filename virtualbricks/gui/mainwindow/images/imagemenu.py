@@ -51,7 +51,7 @@ from virtualbricks.gui.dialogs.renamedialog import RenameDialog  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
 
 GROUP = "image"
 
@@ -83,7 +83,7 @@ def menu(image: Image, there: bool, keys: bool = False) -> Gio.Menu:
 class ImageActions(MenuActions):
     """What the items of the menu of an image do."""
 
-    def __init__(self, gui: VBGUI, image: Image) -> None:
+    def __init__(self, gui: MainWindow, image: Image) -> None:
         super().__init__()
         self.gui = gui
         self.image = image
@@ -126,7 +126,7 @@ class ImageActions(MenuActions):
 def popup(
     widget: Gtk.Widget,
     event: Gdk.EventButton | None,
-    gui: VBGUI,
+    gui: MainWindow,
     image: Image,
     keys: bool = False,
 ) -> Gtk.Menu:

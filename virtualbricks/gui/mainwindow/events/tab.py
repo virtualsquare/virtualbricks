@@ -74,7 +74,7 @@ from virtualbricks.bricks import Brick, is_running  # noqa: E402
 from virtualbricks.observable import Signal  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
 
 # How often the countdown moves, in seconds.
 TICK = 1
@@ -97,7 +97,7 @@ class EventRow(Row[Event]):
 
     def __init__(
         self,
-        gui: VBGUI,
+        gui: MainWindow,
         item: Event,
         icons: Pictures[Event],
         sizes: Gtk.SizeGroup,
@@ -153,7 +153,7 @@ class EventList(RowList[Event]):
 
     def __init__(
         self,
-        gui: VBGUI,
+        gui: MainWindow,
         factory: BrickFactory,
         clock: IReactorTime | None = None,
     ) -> None:
@@ -236,7 +236,7 @@ class EventsTab(RowsTab[Event]):
 
     def __init__(
         self,
-        gui: VBGUI,
+        gui: MainWindow,
         factory: BrickFactory,
         clock: IReactorTime | None = None,
     ) -> None:

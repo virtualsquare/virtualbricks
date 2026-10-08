@@ -55,7 +55,7 @@ from virtualbricks.i18n import ngettext
 from virtualbricks.markdown import first_line
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
     from virtualbricks.remote.client import RemoteWorkspace
 
 logger = Logger()
@@ -203,7 +203,7 @@ class ProjectsWindow:
 
     def __init__(
         self,
-        gui: VBGUI,
+        gui: MainWindow,
         workspace: Workspace | RemoteWorkspace | None = None,
         disk_usage: Callable[[str], defer.Deferred[DiskUsage]] | None = None,
     ) -> None:

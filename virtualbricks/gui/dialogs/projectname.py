@@ -43,7 +43,7 @@ from virtualbricks.i18n import _
 from virtualbricks.gui.pango import pango_attr_list
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
     from virtualbricks.remote.client import RemoteWorkspace
 
 logger = Logger()
@@ -87,7 +87,7 @@ class ProjectNameDialog:
 
     def __init__(
         self,
-        gui: VBGUI,
+        gui: MainWindow,
         kind: str,
         original: str | None = None,
         workspace: Workspace | RemoteWorkspace | None = None,

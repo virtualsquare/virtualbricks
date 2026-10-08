@@ -44,7 +44,7 @@ from .vm.panel import VirtualMachinePanel
 from .wireconfig import WirePanel
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
 
     from .panel import Panel
 
@@ -67,7 +67,7 @@ PANELS: dict[str, type[Panel]] = {
 }
 
 
-def new_panel(brick: Brick, gui: VBGUI | None = None) -> Panel | None:
+def new_panel(brick: Brick, gui: MainWindow | None = None) -> Panel | None:
     """The panel of brick on a new draft, or None if it has none yet."""
 
     panel = PANELS.get(brick.get_type())

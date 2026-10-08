@@ -56,7 +56,7 @@ from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.observable import Signal  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
 
 DRAG_ICON_SIZE = 24
 TARGETS = [
@@ -124,7 +124,7 @@ class BrickList(RowList[Brick]):
     NONE_RUNNING = _("No brick is running")
     NO_RUNNING_MATCH = _("No running brick matches “{text}”")
 
-    def __init__(self, gui: VBGUI, factory: BrickFactory) -> None:
+    def __init__(self, gui: MainWindow, factory: BrickFactory) -> None:
         super().__init__(gui, factory)
         self._drag_icon: Gtk.Widget | None = None
         self._drag_label: Gtk.Label | None = None

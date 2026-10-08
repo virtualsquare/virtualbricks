@@ -19,7 +19,7 @@
 """
 The main window of Virtualbricks.
 
-``VBGUI`` builds its UI in ``build_ui()``: the menus, the status icon, and
+``MainWindow`` builds its UI in ``build_ui()``: the menus, the status icon, and
 a notebook with the tabs of the other modules of this package, which it
 tells when a project opens, is saved, or Virtualbricks quits (see
 :mod:`virtualbricks.gui.mainwindow.tab`). It keeps what the menus of the
@@ -228,7 +228,7 @@ class ProgressBar:
     Wait for an operation, freezing the main window.
     """
 
-    def __init__(self, gui: VBGUI) -> None:
+    def __init__(self, gui: MainWindow) -> None:
         self.freezer = Freezer(
             gui.set_insensitive, gui.set_sensitive, gui.window
         )
@@ -239,7 +239,7 @@ class ProgressBar:
         return self.freezer.wait_for(something, *args)
 
 
-class VBGUI:
+class MainWindow:
     """
     The main GUI object for virtualbricks, containing all the configuration for
     the widgets and the connections to the main engine.

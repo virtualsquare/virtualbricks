@@ -86,7 +86,7 @@ from virtualbricks.settingsdraft import (  # noqa: E402
 )
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
     from virtualbricks.remote.mirror import MirrorFactory
 
 logger = Logger()
@@ -146,7 +146,9 @@ class SettingsWindow(Window):
     """The settings of these windows, of the machine of the bricks, and of
     the open project."""
 
-    def __init__(self, gui: VBGUI, clock: IReactorTime | None = None) -> None:
+    def __init__(
+        self, gui: MainWindow, clock: IReactorTime | None = None
+    ) -> None:
         if clock is None:
             from twisted.internet import reactor
 

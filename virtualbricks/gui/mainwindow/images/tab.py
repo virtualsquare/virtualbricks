@@ -73,7 +73,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.bricks.config.vm.imagepicker import (
         Infos,
     )
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
 
 # The icon of an image, the first that the theme has.
 ICONS = ("drive-harddisk", "drive-harddisk-symbolic", "media-floppy")
@@ -98,7 +98,7 @@ class ImageRow(Row[Image]):
 
     def __init__(
         self,
-        gui: VBGUI,
+        gui: MainWindow,
         item: Image,
         icons: Pictures[Image],
         sizes: Gtk.SizeGroup,
@@ -178,7 +178,7 @@ class ImageList(RowList[Image]):
     NONE_RUNNING = _("No image is in use")
     NO_RUNNING_MATCH = _("No image in use matches “{text}”")
 
-    def __init__(self, gui: VBGUI, factory: BrickFactory) -> None:
+    def __init__(self, gui: MainWindow, factory: BrickFactory) -> None:
         # the rows need it, from the first
         self.infos = gui.engine.machine.infos
         super().__init__(gui, factory)
@@ -229,7 +229,7 @@ class ImagesTab(RowsTab[Image]):
     )
     STARTS = False
 
-    def __init__(self, gui: VBGUI, factory: BrickFactory) -> None:
+    def __init__(self, gui: MainWindow, factory: BrickFactory) -> None:
         super().__init__(gui, factory)
         # the menu of Add Image, made at its first click
         self._add_menu: Gtk.Popover | None = None

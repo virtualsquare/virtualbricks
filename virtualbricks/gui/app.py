@@ -54,7 +54,7 @@ from virtualbricks.config.settings import (
 from virtualbricks.config.workspace import projects
 from virtualbricks.console.projects import use_frontend
 from virtualbricks.engine import LocalEngine
-from virtualbricks.gui.mainwindow import VBGUI, window
+from virtualbricks.gui.mainwindow import MainWindow, window
 from virtualbricks.gui.messages import MessageLog, MessageLogObserver
 from virtualbricks.gui.trash import DesktopTrash
 from virtualbricks.i18n import _
@@ -153,7 +153,7 @@ class WindowFrontend:
     console wants.
     """
 
-    def __init__(self, gui: VBGUI) -> None:
+    def __init__(self, gui: MainWindow) -> None:
         self.gui = gui
 
     def open(self, name: str, factory: BrickFactory) -> Report:
@@ -180,7 +180,7 @@ class GuiApplication(Application):
 
     def _run(self, factory: BrickFactory) -> None:
         dialogs = show_errors()
-        self.gui = VBGUI(LocalEngine(factory), self.messages)
+        self.gui = MainWindow(LocalEngine(factory), self.messages)
         dialogs.set_parent(self.gui.window)
         # The workspace has no desktop of its own: removing a project moves
         # it to the trash only in the GUI.
@@ -247,7 +247,7 @@ class RemoteApplication:
         self.target = config["target"]
         self.messages = MessageLog()
         self.logger = AppLoggerFactory(self.messages)(config)
-        self.gui: VBGUI | None = None
+        self.gui: MainWindow | None = None
         self.engine: RemoteEngine | None = None
         self.quitting = False
         # the Virtualbricks there said it quits
@@ -259,7 +259,7 @@ class RemoteApplication:
     def install_settings(self) -> None:
         load_settings()
 
-    def windows(self) -> VBGUI:
+    def windows(self) -> MainWindow:
         """The windows, once the connection shows them."""
 
         assert self.gui is not None, "the windows show"
@@ -322,7 +322,7 @@ class RemoteApplication:
             self.copy, windows, self.where, self.quit, self.consoles
         )
         windows.lost.addCallback(self.lost)
-        self.gui = VBGUI(self.engine, self.messages)
+        self.gui = MainWindow(self.engine, self.messages)
         dialogs.set_parent(self.gui.window)
         self.copy.synced.connect(self.synced)
         self.copy.ended.connect(self.on_ended)

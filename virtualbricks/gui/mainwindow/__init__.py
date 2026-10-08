@@ -22,6 +22,6 @@ Only the classes that code outside this package imports from it are exported;
 the tests import the others from their modules.
 """
 
-from .window import VBGUI
+from .window import MainWindow
 
-__all__ = ["VBGUI"]
+__all__ = ["MainWindow"]

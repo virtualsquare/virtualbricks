@@ -82,7 +82,7 @@ from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.observable import Signal  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
 
 # The objects of a tab: bricks, events or disk images.
 T = TypeVar("T", bound="Brick | Event | Image")
@@ -221,7 +221,7 @@ class Row(Gtk.ListBoxRow, Generic[T]):
 
     def __init__(
         self,
-        gui: VBGUI,
+        gui: MainWindow,
         item: T,
         icons: Pictures[T],
         sizes: Gtk.SizeGroup,
@@ -410,7 +410,7 @@ class RowList(Gtk.ListBox, Generic[T]):
     # search, with the switch, with both.
     NONE = NO_MATCH = NONE_RUNNING = NO_RUNNING_MATCH = ""
 
-    def __init__(self, gui: VBGUI, factory: BrickFactory) -> None:
+    def __init__(self, gui: MainWindow, factory: BrickFactory) -> None:
         super().__init__(
             visible=True,
             selection_mode=Gtk.SelectionMode.SINGLE,
@@ -572,7 +572,7 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
     # Whether the objects start and stop: then Start All and Stop All.
     STARTS = True
 
-    def __init__(self, gui: VBGUI, factory: BrickFactory) -> None:
+    def __init__(self, gui: MainWindow, factory: BrickFactory) -> None:
         super().__init__(visible=True)
         self.gui = gui
         self.factory = factory

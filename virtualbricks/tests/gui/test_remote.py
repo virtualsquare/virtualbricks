@@ -52,7 +52,7 @@ if has_display:
 
     from virtualbricks.gui import app as gui_app
     from virtualbricks.gui.dialogs.addimage import ExistingImageDialog
-    from virtualbricks.gui.mainwindow import VBGUI, window
+    from virtualbricks.gui.mainwindow import MainWindow, window
     from virtualbricks.gui.mainwindow.bricks import brickmenu
     from virtualbricks.gui.mainwindow.bricks.brickmenu import BrickActions
     from virtualbricks.gui.mainwindow.bricks.config.vm.disks import (
@@ -150,7 +150,7 @@ class RemoteTestCase(GuiTestCase):
         self.shown = []
         self.patch(
             gui_app,
-            "VBGUI",
+            "MainWindow",
             lambda engine, messages: FakeWindows(self.shown, engine, messages),
         )
         self.sw1 = self.factory.new_brick("switch", "sw1")
@@ -461,7 +461,7 @@ class TestTheMainWindow(GuiTestCase):
         self.engine = RemoteEngine(
             self.copy, None, "lab", quit=lambda: self.quits.append(True)
         )
-        self.gui = VBGUI(self.engine)
+        self.gui = MainWindow(self.engine)
         self.addCleanup(self.gui.window.destroy)
 
     def test_the_title(self):

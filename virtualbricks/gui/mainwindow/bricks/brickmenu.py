@@ -67,7 +67,7 @@ from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.bricks import is_running  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
 
 logger = Logger()
 resuming = "Resuming virtual machine {name}"
@@ -215,7 +215,7 @@ def _process_menu(brick: Brick, console_lacks: str | None = None) -> Gio.Menu:
 class BrickActions(MenuActions):
     """What the items of the menu of a brick do."""
 
-    def __init__(self, gui: VBGUI, brick: Brick) -> None:
+    def __init__(self, gui: MainWindow, brick: Brick) -> None:
         super().__init__()
         self.gui = gui
         self.engine = gui.engine
@@ -368,7 +368,7 @@ class BrickActions(MenuActions):
 def popup(
     widget: Gtk.Widget,
     event: Gdk.EventButton | None,
-    gui: VBGUI,
+    gui: MainWindow,
     brick: Brick,
     keys: bool = False,
 ) -> Gtk.Menu:

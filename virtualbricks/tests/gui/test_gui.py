@@ -76,7 +76,7 @@ class TestStartupMigration(GuiTestCase):
     def test_start_sets_the_title_and_checks_the_programs(self):
         calls = []
 
-        class VBGUI:
+        class MainWindow:
             def set_title(self):
                 calls.append("title")
 
@@ -88,7 +88,7 @@ class TestStartupMigration(GuiTestCase):
             calls.append("open")
             return "quit"
 
-        self.app.gui = VBGUI()
+        self.app.gui = MainWindow()
         self.patch(Application, "_start", start)
         self.assertEqual(self.app._start("reactor"), "quit")
         # the programs are looked for in the folders of the open project
@@ -103,12 +103,12 @@ class TestStartupProject(GuiTestCase):
         self.problems = []
         test = self
 
-        class VBGUI:
+        class MainWindow:
             def show_start_up_problem(self, message):
                 test.problems.append(message)
 
         self.app = gui_app.GuiApplication.__new__(gui_app.GuiApplication)
-        self.app.gui = VBGUI()
+        self.app.gui = MainWindow()
         self.logger = FakeLogger()
         self.patch(gui_app, "logger", self.logger)
         self.patch(workspace, "logger", FakeLogger())
@@ -170,7 +170,7 @@ class TestStartupTrash(GuiTestCase):
             def addObserver(self, observer):
                 self.observers.append(observer)
 
-        class VBGUI:
+        class MainWindow:
             window = "window"
 
             def __init__(self, factory, messages):
@@ -178,7 +178,7 @@ class TestStartupTrash(GuiTestCase):
 
         self.patch(gui_app, "MessageDialogObserver", Observer)
         self.patch(gui_app, "globalLogPublisher", Publisher())
-        self.patch(gui_app, "VBGUI", VBGUI)
+        self.patch(gui_app, "MainWindow", MainWindow)
         # the console opens projects through the main window too
         self.patch(console_projects, "frontend", console_projects.frontend)
         app = gui_app.GuiApplication.__new__(gui_app.GuiApplication)
@@ -186,7 +186,7 @@ class TestStartupTrash(GuiTestCase):
         self.assertIsNone(self.manager.trasher)
         app._run(self.factory)
         self.assertIsInstance(self.manager.trasher, DesktopTrash)
-        self.assertIsInstance(app.gui, VBGUI)
+        self.assertIsInstance(app.gui, MainWindow)
         self.assertIsInstance(
             console_projects.frontend, gui_app.WindowFrontend
         )

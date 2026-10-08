@@ -55,8 +55,8 @@
 - [ ] Add build_ui in the tabs classes as well
 - [ ] Move the GTK code outside `gui/` into it:
   `migrate/gui.py`, the GTK parts of `cli.py`
-- [ ] Stop passing VBGUI around: set the transient window of a dialog
-  another way
+- [ ] Stop passing MainWindow around: set the transient window of a
+  dialog another way
 - [ ] Take the work of the tabs (on_open, on_save, ...) to the main
   window, which coordinates it
 - [ ] Add an attribute to the Tab class that says whether it is the tab

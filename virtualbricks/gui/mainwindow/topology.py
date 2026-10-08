@@ -60,7 +60,7 @@ from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.topology import layout  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
 
 logger = Logger()
 drawing_topology = "drawing topology"
@@ -113,7 +113,7 @@ class TopologyTab(Tab, Gtk.Overlay):
 
     title = _("_Topology")
 
-    def __init__(self, gui: VBGUI, factory: BrickFactory) -> None:
+    def __init__(self, gui: MainWindow, factory: BrickFactory) -> None:
         super().__init__(visible=True)
         self.gui = gui
         self.factory = factory

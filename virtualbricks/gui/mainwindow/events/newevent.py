@@ -43,7 +43,7 @@ from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
 
 # The name suggested, and the delay, in seconds.
 NAME = "new_event"
@@ -59,7 +59,7 @@ class NewEventDialog:
     gui is the main window, which has the factory and shows the settings.
     """
 
-    def __init__(self, gui: VBGUI) -> None:
+    def __init__(self, gui: MainWindow) -> None:
         self.gui = gui
         self.factory = gui.brickfactory
         self.build_ui()

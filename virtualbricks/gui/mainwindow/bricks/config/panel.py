@@ -50,7 +50,7 @@ from virtualbricks.i18n import _
 from virtualbricks.bricks import is_running
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
 
 
 def spin_buttons(widget: Gtk.Widget) -> Iterator[Gtk.SpinButton]:
@@ -66,7 +66,7 @@ def spin_buttons(widget: Gtk.Widget) -> Iterator[Gtk.SpinButton]:
 class Panel:
     """The settings of a brick, on a draft."""
 
-    def __init__(self, draft: Draft, gui: VBGUI | None = None) -> None:
+    def __init__(self, draft: Draft, gui: MainWindow | None = None) -> None:
         self.draft = draft
         self.gui = gui
         self._callbacks: list[Callable[[Panel], None]] = []

@@ -51,7 +51,7 @@ from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.bricks import is_running  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import VBGUI
+    from virtualbricks.gui.mainwindow.window import MainWindow
 
 GROUP = "event"
 
@@ -93,7 +93,7 @@ def startstop(engine: Engine, event: Event) -> None:
 class EventActions(MenuActions):
     """What the items of the menu of an event do."""
 
-    def __init__(self, gui: VBGUI, event: Event) -> None:
+    def __init__(self, gui: MainWindow, event: Event) -> None:
         super().__init__()
         self.gui = gui
         self.event = event
@@ -144,7 +144,7 @@ class EventActions(MenuActions):
 def popup(
     widget: Gtk.Widget,
     event: Gdk.EventButton | None,
-    gui: VBGUI,
+    gui: MainWindow,
     the_event: Event,
     keys: bool = False,
 ) -> Gtk.Menu:
