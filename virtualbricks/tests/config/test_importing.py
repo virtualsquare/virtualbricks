@@ -91,7 +91,7 @@ class ImportingTestCase(unittest.TestCase):
         self.root = isolate(self)
         reset_settings(self)
         self.workspace = Workspace(os.path.join(self.root, "workspace"))
-        self.library = os.path.join(self.workspace.path, "vimages")
+        self.library = os.path.join(self.workspace.path, "shared_images")
         os.makedirs(self.library)
 
     def path(self, *segments):
@@ -498,7 +498,7 @@ class TestRunImport(ImportingTestCase):
         plan = self.plan(self.lab())
         make_archive(plan.contents.path, {"README": b"x"})
         self.assertRaises(ArchiveError, self.run_import, plan)
-        self.assertEqual(os.listdir(self.workspace.path), ["vimages"])
+        self.assertEqual(os.listdir(self.workspace.path), ["shared_images"])
 
     def test_a_newer_project_file(self):
         plan = self.plan(self.lab())
@@ -513,7 +513,7 @@ class TestRunImport(ImportingTestCase):
 
         self.patch(importing._Import, "rebase", fail)
         self.assertRaises(OSError, self.run_import, self.plan(self.lab()))
-        self.assertEqual(os.listdir(self.workspace.path), ["vimages"])
+        self.assertEqual(os.listdir(self.workspace.path), ["shared_images"])
         self.assertEqual(os.listdir(self.library), [])
 
     def test_a_project_appeared_meanwhile(self):

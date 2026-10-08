@@ -123,7 +123,7 @@ class MachineThere(LocalMachine):
         return False
 
     def image_folder(self):
-        return "/lab/vimages"
+        return "/lab/shared_images"
 
 
 class FakeGui:
@@ -297,7 +297,7 @@ class TestTheDialogs(ThereTestCase):
 
     def test_remove_an_image(self):
         infos = self.machine.infos = LaterInfos(self.machine)
-        self.frr.set_path("/lab/vimages/frr.qcow2")
+        self.frr.set_path("/lab/shared_images/frr.qcow2")
         self.machine.files[self.frr.path] = 5000
         dialog = RemoveImageDialog(self.engine, self.frr)
         self.addCleanup(dialog.dialog.destroy)
@@ -313,7 +313,7 @@ class TestTheDialogs(ThereTestCase):
 
     def test_remove_an_image_others_use(self):
         infos = self.machine.infos = LaterInfos(self.machine)
-        self.frr.set_path("/lab/vimages/frr.qcow2")
+        self.frr.set_path("/lab/shared_images/frr.qcow2")
         self.machine.files[self.frr.path] = 5000
         dialog = RemoveImageDialog(self.engine, self.frr)
         self.addCleanup(dialog.dialog.destroy)
@@ -328,7 +328,7 @@ class TestTheDialogs(ThereTestCase):
         # the Virtualbricks there refuses: the log says why
         logger = FakeLogger()
         self.patch(imagedialogs, "logger", logger)
-        self.frr.set_path("/lab/vimages/frr.qcow2")
+        self.frr.set_path("/lab/shared_images/frr.qcow2")
         self.machine.files[self.frr.path] = 5000
         self.engine.remove = lambda image: defer.succeed(None)
         self.engine.discard_file = lambda path: defer.fail(
@@ -343,7 +343,7 @@ class TestTheDialogs(ThereTestCase):
         self.assertEqual(
             logger.formatted(),
             [
-                "Cannot remove the file /lab/vimages/frr.qcow2: The project"
+                "Cannot remove the file /lab/shared_images/frr.qcow2: The project"
                 " ospf uses the file"
             ],
         )
@@ -362,10 +362,10 @@ class TestTheDialogs(ThereTestCase):
         self.addCleanup(dialog.dialog.destroy)
         self.assertIsNone(dialog.folder_chooser)
         dialog.name_entry.set_text("pc")
-        self.assertEqual(dialog.target(), "/lab/vimages/pc.qcow2")
+        self.assertEqual(dialog.target(), "/lab/shared_images/pc.qcow2")
         self.assertTrue(dialog.create_button.get_sensitive())
         # a file there already
-        self.machine.files["/lab/vimages/pc.qcow2"] = 10
+        self.machine.files["/lab/shared_images/pc.qcow2"] = 10
         self.assertFalse(dialog.check())
         self.assertIn("is there already", dialog.file_label.get_text())
 
@@ -406,14 +406,14 @@ class TestTypedPaths(ThereTestCase):
         self.addCleanup(dialog.dialog.destroy)
         self.assertIsNone(dialog.file_chooser)
         entry = dialog.file_entry
-        entry.set_text("/lab/vimages/")
-        self.assertEqual(self.asked, ["/lab/vimages/"])
-        entry.set_text("/lab/vimages/frr.qcow2")
+        entry.set_text("/lab/shared_images/")
+        self.assertEqual(self.asked, ["/lab/shared_images/"])
+        entry.set_text("/lab/shared_images/frr.qcow2")
         entry.emit("activate")
-        self.assertEqual(self.read, ["/lab/vimages/frr.qcow2"])
+        self.assertEqual(self.read, ["/lab/shared_images/frr.qcow2"])
         # the same again: read once
         dialog.on_file_left(entry, None)
-        self.assertEqual(self.read, ["/lab/vimages/frr.qcow2"])
+        self.assertEqual(self.read, ["/lab/shared_images/frr.qcow2"])
         self.assertEqual(dialog.name_entry.get_text(), "frr")
         # what a file beside it says is here only
         buffer = dialog.description_view.get_buffer()
@@ -424,15 +424,15 @@ class TestTypedPaths(ThereTestCase):
     def test_a_new_disk_elsewhere(self):
         dialog = NewDiskDialog(self.engine)
         self.addCleanup(dialog.dialog.destroy)
-        self.assertEqual(dialog.folder_entry.get_text(), "/lab/vimages")
+        self.assertEqual(dialog.folder_entry.get_text(), "/lab/shared_images")
         dialog.folder_entry.set_text("/srv/disks/")
         self.assertEqual(self.asked[-1], "/srv/disks/")
         dialog.name_entry.set_text("pc")
         self.assertEqual(dialog.target(), "/srv/disks/pc.qcow2")
 
     def test_find_the_file(self):
-        # a file of that name in the image folder here: not the one there
-        folder = os.path.join(self.manager.path, "vimages")
+        # a file of that name in the shared images here: not the one there
+        folder = os.path.join(self.manager.path, "shared_images")
         os.makedirs(folder)
         with open(os.path.join(folder, "here.qcow2"), "w"):
             pass
@@ -440,8 +440,8 @@ class TestTypedPaths(ThereTestCase):
         self.addCleanup(dialog.dialog.destroy)
         self.assertIsNone(dialog.found())
         self.assertFalse(dialog.use_button.get_sensitive())
-        dialog.file_chooser.set_text("/lab/vimages/here.qcow2")
-        self.assertEqual(dialog.chosen, "/lab/vimages/here.qcow2")
+        dialog.file_chooser.set_text("/lab/shared_images/here.qcow2")
+        self.assertEqual(dialog.chosen, "/lab/shared_images/here.qcow2")
         self.assertTrue(dialog.use_button.get_sensitive())
         dialog.file_chooser.set_text("")
         self.assertFalse(dialog.use_button.get_sensitive())

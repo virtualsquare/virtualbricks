@@ -33,8 +33,8 @@ The path of an image changes through ``relink()``: it points the private
 copies at the new file first, with ``qemu-img rebase -u``, so that no
 machine loses its changes at its next start.
 
-The files of the images go in the image folder of the workspace,
-``<workspace>/vimages``, which the import fills too; several projects may
+The files of the images go in the shared images of the workspace,
+``<workspace>/shared_images``, which the import fills too; several projects may
 use one file, under different names. ``other_projects()`` says which, from
 the summaries that the list of the projects reads.
 
@@ -54,7 +54,7 @@ from twisted.internet import defer
 from twisted.logger import Logger
 from twisted.python.failure import Failure
 
-from virtualbricks import errors
+from virtualbricks import errors, locations
 from virtualbricks.config.workspace import Trasher, Workspace
 from virtualbricks.qemu import run as qemu_run
 
@@ -72,9 +72,6 @@ back_failed = (
 Run = Callable[[list[str]], defer.Deferred]
 # The stamp of a file being read, and who waits for its info.
 Reading = tuple[tuple[int, int], list[defer.Deferred]]
-
-# The folder of the images, in the workspace.
-IMAGE_FOLDER = "vimages"
 
 
 class RunningError(errors.Error):
@@ -309,9 +306,9 @@ def _relink(
 
 
 def image_folder(workspace: Workspace) -> str:
-    """The folder of the images of the workspace, made if it isn't there."""
+    """The shared images of the workspace, made if it isn't there."""
 
-    folder = os.path.join(workspace.path, IMAGE_FOLDER)
+    folder = os.path.join(workspace.path, locations.SHARED_IMAGES)
     os.makedirs(folder, exist_ok=True)
     return folder
 

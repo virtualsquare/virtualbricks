@@ -152,10 +152,10 @@ settings they have: the last one to write wins.
     by default. Write it as an absolute path: **~** is not expanded.
     **virtualbricks --workspace** *directory* uses another directory for
     one run, made if it isn't there, and leaves this setting as it is. Each
-    workspace has its images, in its *vimages* directory, and the project
-    that opens at start in it (see **STATE**). A Virtualbricks stays in the
-    workspace it started in, whose lock it holds: a new value is for the
-    next start.
+    workspace has its shared images, in its *shared_images* directory, and
+    the project that opens at start in it (see **STATE**). A Virtualbricks
+    stays in the workspace it started in, whose lock it holds: a new value
+    is for the next start.
 
 **terminal** = *string*, default `"x-terminal-emulator"`
 :   The terminal that opens the console of a brick, a program in **PATH** or
@@ -828,8 +828,12 @@ an old project is converted when it's imported.
 *workspace*/*project*/project.toml
 :   A project.
 
-*workspace*/vimages/
-:   The images saved when a project is imported.
+*workspace*/shared_images/
+:   The shared images: the images that the projects of the workspace share,
+    which stay when a project is removed. The import copies the images of
+    an archive there, and so does the Add Image of the Images tab, by
+    default. Virtualbricks 2.1 had them in *workspace*/vimages/, which
+    stays as it was: the projects that use its images keep their paths.
 
 *workspace*/.virtualbricks.lock
 :   The lock of the workspace: the Virtualbricks that runs there holds it
@@ -942,7 +946,7 @@ qemu_path = "/usr/bin"
 vde_path = "/usr/bin"
 
 [images.debian]
-path = "/home/alice/.virtualbricks/vimages/debian-12.qcow2"
+path = "/home/alice/.virtualbricks/shared_images/debian.qcow2"
 description = "Debian 12\nbase image"
 
 [events.start_lab]

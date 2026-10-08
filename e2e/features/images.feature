@@ -2,17 +2,17 @@ Feature: Disk images
   The disk images of a project, which its virtual machines start from.
 
   @needs-qemu-img
-  Scenario: A disk image of my home folder, added from the Images tab, is copied into the image folder
+  Scenario: A disk image of my home folder, added from the Images tab, is copied into the shared images
     Given the empty disk image disk.qcow2 of 1 GB, in my home folder
     And Virtualbricks is running
     When I add an existing image, disk.qcow2 of my home folder, with the name it suggests, disk
     Then the list of images has
       | Image | Detail                                | State   |
       | disk  | qcow2 · 1.0 GB disk · no disk uses it | No disk |
-    And the image folder has disk.qcow2, a copy of that of my home folder
+    And the shared images have disk.qcow2, a copy of that of my home folder
     When I quit Virtualbricks
     Then Virtualbricks has quit
-    And project.toml has the image disk, of disk.qcow2 in the image folder
+    And project.toml has the image disk, of disk.qcow2 in the shared images
 
   @needs-qemu-img
   Scenario: A disk image of my home folder, added to be used where it is, keeps its path and isn't copied
@@ -22,7 +22,7 @@ Feature: Disk images
     Then the list of images has
       | Image | Detail                                | State   |
       | disk  | qcow2 · 1.0 GB disk · no disk uses it | No disk |
-    And the image folder has no copy of disk.qcow2
+    And the shared images have no copy of disk.qcow2
     When I open the details of disk
     Then the details of disk have
       | Fact   | Value        |
@@ -33,16 +33,16 @@ Feature: Disk images
     And project.toml has the image disk, of disk.qcow2 of my home folder
 
   @needs-qemu-img
-  Scenario: A new empty disk added from the Images tab is a file of the image folder, of the size and the format chosen
+  Scenario: A new empty disk added from the Images tab is a file of the shared images, of the size and the format chosen
     Given Virtualbricks is running
     When I add a new empty disk, disk, of 20 MB in the format raw
     Then the list of images has
       | Image | Detail                               | State   |
       | disk  | raw · 20.0 MB disk · no disk uses it | No disk |
-    And the image folder has disk.raw, a raw disk of 20 MB
+    And the shared images have disk.raw, a raw disk of 20 MB
     When I quit Virtualbricks
     Then Virtualbricks has quit
-    And project.toml has the image disk, of disk.raw in the image folder
+    And project.toml has the image disk, of disk.raw in the shared images
 
   @needs-qemu-img
   Scenario: The details of a disk image say what qemu-img info says of its file
@@ -50,7 +50,7 @@ Feature: Disk images
     And Virtualbricks is running
     When I add an existing image, disk.qcow2 of my home folder, with the name it suggests, disk
     And I open the details of disk
-    Then the details of disk say what qemu-img info says of disk.qcow2 of the image folder
+    Then the details of disk say what qemu-img info says of disk.qcow2 of the shared images
 
   @needs-qemu-img @needs-qemu-system-i386
   Scenario: A disk image given to a virtual machine names it in its row, and is in use while the machine runs
@@ -67,7 +67,7 @@ Feature: Disk images
       | disk  | qcow2 · 1.0 GB disk · vm1, private copy | Not in use |
     When I open the tab Bricks
     And I start vm1
-    Then vm1 runs on a private copy of disk.qcow2 of the image folder
+    Then vm1 runs on a private copy of disk.qcow2 of the shared images
     When I open the tab Images
     Then the list of images has
       | Image | Detail                                  | State  |
@@ -89,7 +89,7 @@ Feature: Disk images
     And I remove the image disk, which the disk vm1 (hda) loses, and move its file to the trash
     Then the list of images has
       | Image | Detail | State |
-    And the file disk.raw of the image folder is in the trash
+    And the file disk.raw of the shared images is in the trash
     When I quit Virtualbricks
     Then Virtualbricks has quit
     And project.toml has the disk hda of vm1, without an image
@@ -108,7 +108,7 @@ Feature: Disk images
       | Image | Detail | State |
     When I quit Virtualbricks
     Then Virtualbricks has quit
-    And the image folder still has disk.raw, in no trash
+    And the shared images still have disk.raw, in no trash
 
   @needs-qemu-img
   Scenario: The file of an image that is missing, found in my home folder, is the file of the image again

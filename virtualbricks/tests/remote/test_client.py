@@ -733,7 +733,7 @@ class TestFileCommands(ClientTestCase):
         self.logger = FakeLogger()
         self.patch(answers, "logger", self.logger)
         self.patch(control, "logger", self.control_log)
-        self.frr = self.file(os.path.join(root, "vimages"), "frr.qcow2")
+        self.frr = self.file(os.path.join(root, "shared_images"), "frr.qcow2")
         self.qemu_img.infos[self.frr] = INFO
         self.image = self.factory.new_image("frr", self.frr)
         self.vm = self.factory.new_brick("qemu", "vm1")
@@ -765,11 +765,11 @@ class TestFileCommands(ClientTestCase):
         self.assertFalse(self.engine.machine.can_trash("/anything"))
         self.assertEqual(
             self.engine.machine.image_folder(),
-            os.path.join(self.workspace.path, "vimages"),
+            os.path.join(self.workspace.path, "shared_images"),
         )
 
     def test_a_new_disk(self):
-        path = os.path.join(self.workspace.path, "vimages", "pc.qcow2")
+        path = os.path.join(self.workspace.path, "shared_images", "pc.qcow2")
         self.done(self.engine.make_image(path, "qcow2", 1024))
         self.assertEqual(
             self.qemu_img.calls,
@@ -781,7 +781,7 @@ class TestFileCommands(ClientTestCase):
 
     def test_the_folder_of_the_images(self):
         # made when first needed
-        folder = os.path.join(self.workspace.path, "vimages")
+        folder = os.path.join(self.workspace.path, "shared_images")
         os.remove(self.frr)
         os.rmdir(folder)
         path = os.path.join(folder, "pc.qcow2")
@@ -810,7 +810,7 @@ class TestFileCommands(ClientTestCase):
             return defer.fail(CommandError(1, "qemu-img: No space left"))
 
         self.patch(answers.qemu_run, "qemu_img", qemu_img)
-        path = os.path.join(self.workspace.path, "vimages", "pc.qcow2")
+        path = os.path.join(self.workspace.path, "shared_images", "pc.qcow2")
         failure = self.refused(
             self.engine.make_image(path, "qcow2", 1024), ampwire.CommandFailed
         )
@@ -823,7 +823,7 @@ class TestFileCommands(ClientTestCase):
             return defer.fail(RuntimeError("broken"))
 
         self.patch(answers.qemu_run, "qemu_img", qemu_img)
-        path = os.path.join(self.workspace.path, "vimages", "pc.qcow2")
+        path = os.path.join(self.workspace.path, "shared_images", "pc.qcow2")
         self.refused(
             self.engine.make_image(path, "qcow2", 1024), ampwire.CommandFailed
         )
@@ -920,7 +920,7 @@ class TestFileCommands(ClientTestCase):
 
     def test_relink(self):
         path = self.file(
-            os.path.join(self.workspace.path, "vimages"), "new.qcow2"
+            os.path.join(self.workspace.path, "shared_images"), "new.qcow2"
         )
         self.qemu_img.infos[path] = INFO
         self.done(self.engine.relink(self.copy.get_image("frr"), path))
@@ -934,7 +934,7 @@ class TestFileCommands(ClientTestCase):
 
     def test_relink_refused(self):
         path = self.file(
-            os.path.join(self.workspace.path, "vimages"), "new.qcow2"
+            os.path.join(self.workspace.path, "shared_images"), "new.qcow2"
         )
         self.qemu_img.infos[path] = INFO
         self.vm.is_running = lambda: True

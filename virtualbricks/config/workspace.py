@@ -756,7 +756,9 @@ class Workspace:
         InvalidNameError, when the project can't be opened.
         """
 
-        os.makedirs(os.path.join(self.path, "vimages"), exist_ok=True)
+        os.makedirs(
+            os.path.join(self.path, locations.SHARED_IMAGES), exist_ok=True
+        )
         name = self.last_name()
         if DEFAULT_PROJECT_RE.match(name) and not os.path.lexists(
             self.project_path(name)

@@ -258,8 +258,8 @@ Virtualbricks keeps its files in TOML, and writes them itself:
   as the project that was open last in each workspace. It is in
   `$XDG_STATE_HOME` if that is set.
 - `~/.virtualbricks/`: the workspace, a folder for each project, with its
-  `project.toml`, its README and its private disks, and `vimages/`, the disk
-  images its projects share. The `workspace` setting changes it, and
+  `project.toml`, its README and its private disks, and `shared_images/`,
+  the disk images its projects share. The `workspace` setting changes it, and
   `virtualbricks --workspace FOLDER` uses another one for a run, as a folder
   of projects for each course or each client; the setting stays as it is.
 

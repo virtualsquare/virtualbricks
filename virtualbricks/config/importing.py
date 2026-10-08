@@ -26,8 +26,8 @@ it (``run_import``):
 1. The archive is extracted into a hidden folder of the workspace,
    ``.importing-<name>-*``, which the list of projects ignores; a README of
    before 3.0 becomes ``README.md``.
-2. The images copied from the archive go to the image library,
-   ``<workspace>/vimages``.
+2. The images copied from the archive go to the shared images,
+   ``<workspace>/shared_images``.
 3. The project file gets the paths of the images and, if chosen, this
    computer's paths.
 4. The private disks are pointed at their images with ``qemu-img rebase -u``.
@@ -88,7 +88,6 @@ from virtualbricks.i18n import _
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.config.workspace import Workspace
 
-LIBRARY = "vimages"
 # The paths of the machine a project comes from, that can be replaced.
 MACHINE_PATHS = ("qemu_path", "vde_path")
 
@@ -135,7 +134,7 @@ class ImportPlan:
     name: str
     images: list[ImageUse]
     machine_paths: list[MachinePath]
-    # The image library, where the copies go.
+    # The shared images, where the copies go.
     library: str
     open: bool = True
 
@@ -265,7 +264,7 @@ def plan_import(contents: ArchiveContents, workspace: Workspace) -> ImportPlan:
     # Room for "-2" and the like.
     name = _shorten(archive_name(contents.path), 38).lstrip(".")
     name = workspace.free_name(name or "imported")
-    library = os.path.join(workspace.path, LIBRARY)
+    library = os.path.join(workspace.path, locations.SHARED_IMAGES)
     in_archive = contents.images
     images = []
     for image_name, path in image_paths(data).items():

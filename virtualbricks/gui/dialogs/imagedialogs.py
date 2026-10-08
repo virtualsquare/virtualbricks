@@ -20,18 +20,18 @@
 What can be done to a disk image, in dialogs.
 
 Remove lists the disks that lose the image; their private copies stay. The
-file stays too, except that, when it's in the image folder and no other
+file stays too, except that, when it's in the shared images and no other
 project uses it, the dialog offers to move it to the trash, or, without a
 trash, to delete it for good.
 
 Find the File is for an image whose file is missing: it offers the file of
-the same name in the image folder, if there's one, else a file to choose.
+the same name in the shared images, if there's one, else a file to choose.
 The private copies are pointed at the new file before the image is, with
 ``config.images.relink``.
 
 The disk menu of a machine opens the other three, for a disk with a private
 copy, while its machine is stopped. Save as a New Image writes the image
-with the disk's changes as a file of its own in the image folder, and adds
+with the disk's changes as a file of its own in the shared images, and adds
 it; by default the disk uses it then, with an empty private copy. Merge
 writes the disk's changes into its image, after the list of the others
 that use it. Both run in the archive process, with their progress, and can
@@ -55,7 +55,7 @@ from twisted.internet import defer
 from twisted.logger import Logger
 from twisted.python.failure import Failure
 
-from virtualbricks import errors
+from virtualbricks import errors, locations
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
 from virtualbricks.config import archive, images
@@ -246,12 +246,12 @@ class FindFileDialog(Window):
         self.build_ui()
 
     def found(self) -> str | None:
-        """The file of the same name in the image folder, if there's one."""
+        """The file of the same name in the shared images, if there's one."""
 
         if not self.engine.local:
             # there: not known here before it's asked
             return None
-        folder = os.path.join(self.workspace.path, images.IMAGE_FOLDER)
+        folder = os.path.join(self.workspace.path, locations.SHARED_IMAGES)
         path = os.path.join(folder, os.path.basename(self.image.path))
         return path if os.path.isfile(path) else None
 
@@ -305,7 +305,7 @@ class FindFileDialog(Window):
             self.file_chooser.set_filename(found)
             box.pack_start(
                 text_label(
-                    _("The image folder has a file of the same name."),
+                    _("The shared images have a file of the same name."),
                     dim=True,
                 ),
                 False,
@@ -499,7 +499,7 @@ class SaveImageDialog(_JobDialog):
         box.pack_start(
             text_label(
                 _(
-                    "A file of its own in the image folder: {image} with the"
+                    "A file of its own in the shared images: {image} with the"
                     " changes {vm} made to it."
                 ).format(image=image, vm=vm)
             ),

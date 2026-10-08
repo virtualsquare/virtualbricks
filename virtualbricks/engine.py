@@ -45,7 +45,7 @@ from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 from twisted.internet import defer, error, reactor, threads
 from twisted.internet.interfaces import IReactorTime
 
-from virtualbricks import ksm
+from virtualbricks import ksm, locations
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks import Brick, brickinfo, restart
 from virtualbricks.bricks.draft import Draft, apply
@@ -168,7 +168,7 @@ class LocalMachine:
     def image_folder(self) -> str:
         """The folder of the images of the workspace."""
 
-        return os.path.join(self.workspace.path, images.IMAGE_FOLDER)
+        return os.path.join(self.workspace.path, locations.SHARED_IMAGES)
 
     def setting(self, name: str) -> SettingValue:
         """A setting of Virtualbricks, or of the open project."""

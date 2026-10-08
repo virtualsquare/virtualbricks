@@ -516,7 +516,7 @@ class TestSummaries(WorkspaceTestCase):
 
     def lab(self):
         self.projects.create("lab", "OSPF between routers\n\nDetails")
-        image = self.file("vimages", "deb.qcow2")
+        image = self.file("shared_images", "deb.qcow2")
         self.file("lab", "local.qcow2")
         data = load_toml(self.project_file("lab"))
         data["images"] = {
@@ -947,7 +947,9 @@ class TestStartUp(WorkspaceTestCase):
         set_current_project(self.path, "lab")
         self.projects.open_last(self.factory)
         self.assertEqual(self.projects.current.name, "lab")
-        self.assertTrue(os.path.isdir(os.path.join(self.path, "vimages")))
+        self.assertTrue(
+            os.path.isdir(os.path.join(self.path, "shared_images"))
+        )
 
     def test_the_last_project_of_each_workspace(self):
         other = Workspace(os.path.join(self.root, "other"))

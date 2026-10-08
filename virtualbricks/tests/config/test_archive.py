@@ -709,8 +709,8 @@ class TestArchiveJob(ArchiveTestCase):
         os.makedirs(os.path.join(leftover, "sub"))
         job = self.job()
         job.leftovers.append(leftover)
-        os.makedirs(self.path("vimages"))
-        created = sparse_file(self.path("vimages", "deb"), 0)
+        os.makedirs(self.path("shared_images"))
+        created = sparse_file(self.path("shared_images", "deb"), 0)
         job.protocol.outReceived(
             json.dumps({"created": created}).encode() + b"\n"
         )
@@ -1078,7 +1078,7 @@ exit 0
 
 
 class ImageJobTestCase(ArchiveTestCase):
-    """The fake qemu-img, and the image folder."""
+    """The fake qemu-img, and the shared images."""
 
     def setUp(self):
         super().setUp()
@@ -1087,7 +1087,7 @@ class ImageJobTestCase(ArchiveTestCase):
         self.qemu_img = self.script(
             "qemu-img", FAKE_QEMU_IMG.format(log=self.log, fail=self.failing)
         )
-        self.output = self.path("vimages", "frr-r1.qcow2")
+        self.output = self.path("shared_images", "frr-r1.qcow2")
         os.makedirs(os.path.dirname(self.output))
 
 

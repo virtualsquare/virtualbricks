@@ -142,14 +142,14 @@ that the tests can't do yet: those needs come first.
 ### Disk images
 
 - [x] Add a new empty disk from the Images tab
-  the file is in the image folder, of the size and format chosen;
+  the file is in the shared images, of the size and format chosen;
   `@needs-qemu-img`
   "A new empty disk added from the Images tab is a file of the image
   folder, of the size and the format chosen", `images.feature`
 - [x] Add an existing disk image from a file, copied into the image
   folder
   "A disk image of my home folder, added from the Images tab, is copied
-  into the image folder", `images.feature`
+  into the shared images", `images.feature`
 - [x] Add an existing disk image from a file, used where it is
   its details have the path of the file, and no copy is made; the row
   doesn't say the path

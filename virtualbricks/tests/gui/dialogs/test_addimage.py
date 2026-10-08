@@ -184,7 +184,7 @@ class TestExistingImage(AddTestCase):
         self.assertTrue(self.dialog.copy_radio.get_active())
         self.assertTrue(self.dialog.copies())
         self.dialog.dialog.response(Gtk.ResponseType.OK)
-        folder = os.path.join(self.manager.path, "vimages")
+        folder = os.path.join(self.manager.path, "shared_images")
         copy = os.path.join(folder, "frr.qcow2")
         self.assertEqual(self.copies, [(path, copy)])
         with open(copy, "rb") as fp:
@@ -194,7 +194,7 @@ class TestExistingImage(AddTestCase):
         self.assertEqual(self.added, [image])
 
     def test_a_copy_beside_another(self):
-        folder = self.folder(os.path.join("workspace", "vimages"))
+        folder = self.folder(os.path.join("workspace", "shared_images"))
         open(os.path.join(folder, "frr.qcow2"), "w").close()
         self.dialog.choose(self.file("lab", "frr.qcow2"))
         self.dialog.name_entry.set_text("frr2")
@@ -239,7 +239,7 @@ class TestExistingImage(AddTestCase):
         self.patch(addimage, "copy_sparse", fail)
         self.dialog.choose(self.file("lab", "frr.qcow2"))
         self.dialog.add()
-        folder = os.path.join(self.manager.path, "vimages")
+        folder = os.path.join(self.manager.path, "shared_images")
         self.assertEqual(os.listdir(folder), [])
         self.assertIsNone(self.factory.get_image("frr"))
         self.assertIn("No space left", self.dialog.error_label.get_text())
@@ -272,18 +272,18 @@ class TestNewDisk(AddTestCase):
         self.dialog = self.track(
             NewDiskDialog(LocalEngine(self.factory, qemu_img=self.qemu_img))
         )
-        self.vimages = os.path.join(self.manager.path, "vimages")
+        self.shared_images = os.path.join(self.manager.path, "shared_images")
 
     def test_in_the_image_folder(self):
         self.dialog.name_entry.set_text("scratch disk")
         self.assertEqual(
             self.dialog.target(),
-            os.path.join(self.vimages, "scratch_disk.qcow2"),
+            os.path.join(self.shared_images, "scratch_disk.qcow2"),
         )
         self.dialog.format_combo.set_active_id("raw")
         self.assertEqual(
             self.dialog.target(),
-            os.path.join(self.vimages, "scratch_disk.raw"),
+            os.path.join(self.shared_images, "scratch_disk.raw"),
         )
 
     def test_waits_for_a_name(self):
@@ -302,7 +302,7 @@ class TestNewDisk(AddTestCase):
     def test_create(self):
         self.dialog.name_entry.set_text("scratch")
         self.dialog.dialog.response(Gtk.ResponseType.OK)
-        path = os.path.join(self.vimages, "scratch.qcow2")
+        path = os.path.join(self.shared_images, "scratch.qcow2")
         self.assertEqual(
             self.qemu_img.calls,
             [["create", "-q", "-f", "qcow2", path, str(10 * 1000**3)]],
@@ -312,8 +312,8 @@ class TestNewDisk(AddTestCase):
         self.assertEqual(self.added, [image])
 
     def test_a_file_there_already(self):
-        os.makedirs(self.vimages, exist_ok=True)
-        open(os.path.join(self.vimages, "scratch.qcow2"), "w").close()
+        os.makedirs(self.shared_images, exist_ok=True)
+        open(os.path.join(self.shared_images, "scratch.qcow2"), "w").close()
         self.dialog.name_entry.set_text("scratch")
         self.assertIn("is there already", self.dialog.file_label.get_text())
         self.assertFalse(self.dialog.create_button.get_sensitive())

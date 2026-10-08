@@ -200,8 +200,8 @@ of a private disk is left unset, the disk stays compressed and the import
 reports it: the disk works as it is.
 
 The **real_size** also lets the import recognize an image that this computer
-already has: a file of the image library with the same name and size is used
-instead of a copy.
+already has: a file of the shared images with the same name and size is
+used instead of a copy.
 
 ## Holes
 
@@ -303,7 +303,7 @@ An import, for one, says:
    |                                            | extract
    |  {"progress": {"step": "extract", ...}}    |
    |<-------------------------------------------|
-   |  {"created": ".../vimages/debian.qcow2"}   | copy
+   |  {"created": ".../debian.qcow2"}           | copy
    |<-------------------------------------------|
    |  {"progress": {"step": "unpack", ...}}     | unpack
    |<-------------------------------------------|
@@ -344,7 +344,7 @@ SIGTERM stops the job wherever it is. The process stops its **tar** or
 - An export removes its unfinished archive and its folder. An archive that
   was already there under the same name is left as it was.
 - An import removes its folder in the workspace and the images it copied to
-  the image library.
+  the shared images.
 - An inspection writes nothing.
 
 ## Cleaning up
@@ -363,8 +363,8 @@ it, and every path that the process sent with **created**.
 :   The folder of an import, which the application makes before it starts
     the process.
 
-*workspace*/vimages/*file*
-:   An image that the import copied to the library, and sent with
+*workspace*/shared_images/*file*
+:   An image that the import copied to the shared images, and sent with
     **created**.
 
 The application removes them only when the process ended without a
@@ -533,7 +533,7 @@ qemu_img = "/usr/bin/qemu-img"
 [[images]]
 name = "debian"
 choice = "copy"
-path = "/home/user/.virtualbricks/vimages/debian-12.qcow2"
+path = "/home/user/.virtualbricks/shared_images/debian-12.qcow2"
 fallback = ""
 
 [settings]
@@ -584,10 +584,10 @@ qemupath = "/usr/bin"
 :   The **qemu-img** that unpacks and rebases the disks, or \"\".
 
 The application gives every image a default. An image that the archive has is
-copied into the image library, *workspace*/vimages, unless the library has a
+copied into the shared images, *workspace*/shared_images, unless they have a
 file with the same file name and size, which is used. An image that the archive
 doesn't have uses its file if this computer has it at the same path, or a file
-of the library with its name, and is left unset otherwise. A setting is
+of the shared images with its name, and is left unset otherwise. A setting is
 replaced, unless you say otherwise, when its folder doesn't exist on this
 computer.
 
@@ -604,7 +604,7 @@ The import takes these steps:
  |     vm1_hda.cow        |     5  rewrite project.toml
  |                        |     6  rebase -u the private
  |                        |        disks on their images
- +-- vimages/             |     7  unpack the packed disks
+ +-- shared_images/       |     7  unpack the packed disks
  |     debian-12.qcow2 <--'     8  turn zeros into holes
  |
  +-- lab/  <------------------  9  rename into place
@@ -615,8 +615,9 @@ The import takes these steps:
    isn't a file of the project. Rename **README**, the README of before
    3.0, to **README.md**, unless there is one.
 3. Read the project file and upgrade it, or convert **.project**.
-4. Move each copied image to the library, sending it with **created**; then
-   remove the *.images* folder with the images that aren't copied.
+4. Move each copied image to the shared images, sending it with
+   **created**; then remove the *.images* folder with the images that
+   aren't copied.
 5. Rewrite **project.toml** with the path of each image, \"\" for an image
    left unset, and with **settings**.
 6. Point each private disk at its image, in the format of the image:
@@ -764,8 +765,8 @@ job.done.addCallback(show)
 *workspace*/.importing-*name*-*XXXXXXXX*/
 :   A project being imported.
 
-*workspace*/vimages/
-:   The image library, where the import copies the images.
+*workspace*/shared_images/
+:   The shared images, where the import copies the images.
 
 *workspace*/*name*/
 :   An imported project.

@@ -17,7 +17,7 @@
 
 """
 The disk images: what qemu-img info says, who uses them, relinking, the
-image folder, the other projects that use a file, and the private copies.
+shared images, the other projects that use a file, and the private copies.
 """
 
 import json
@@ -425,20 +425,32 @@ class TestFiles(BrickTestCase):
     def test_the_image_folder(self):
         workspace = use_workspace(self, os.path.abspath(self.mktemp()))
         folder = image_folder(workspace)
-        self.assertEqual(folder, os.path.join(workspace.path, "vimages"))
+        self.assertEqual(folder, os.path.join(workspace.path, "shared_images"))
         self.assertTrue(os.path.isdir(folder))
         # made once
         self.assertEqual(image_folder(workspace), folder)
 
     def test_inside(self):
-        self.assertTrue(is_inside("/ws/vimages/frr.qcow2", "/ws/vimages"))
-        self.assertTrue(is_inside("/ws/vimages/old/frr.qcow2", "/ws/vimages"))
-        self.assertTrue(is_inside("/ws/vimages/../vimages/a", "/ws/vimages/"))
+        self.assertTrue(
+            is_inside("/ws/shared_images/frr.qcow2", "/ws/shared_images")
+        )
+        self.assertTrue(
+            is_inside("/ws/shared_images/old/frr.qcow2", "/ws/shared_images")
+        )
+        self.assertTrue(
+            is_inside(
+                "/ws/shared_images/../shared_images/a", "/ws/shared_images/"
+            )
+        )
 
     def test_outside(self):
-        self.assertFalse(is_inside("/ws/vimages2/frr.qcow2", "/ws/vimages"))
-        self.assertFalse(is_inside("/ws/vimages/../frr.qcow2", "/ws/vimages"))
-        self.assertFalse(is_inside("/tmp/frr.qcow2", "/ws/vimages"))
+        self.assertFalse(
+            is_inside("/ws/shared_images2/frr.qcow2", "/ws/shared_images")
+        )
+        self.assertFalse(
+            is_inside("/ws/shared_images/../frr.qcow2", "/ws/shared_images")
+        )
+        self.assertFalse(is_inside("/tmp/frr.qcow2", "/ws/shared_images"))
 
     def test_a_free_path(self):
         folder = self.mktemp()
@@ -489,13 +501,19 @@ class TestOtherProjects(BrickTestCase):
     def test_the_projects_that_use_the_file(self):
         workspace = FakeWorkspace(
             "lab",
-            lab=[("frr", "/ws/vimages/frr.qcow2")],
-            ospf=[("router", "/ws/vimages/frr.qcow2"), ("pc", "/ws/pc.img")],
+            lab=[("frr", "/ws/shared_images/frr.qcow2")],
+            ospf=[
+                ("router", "/ws/shared_images/frr.qcow2"),
+                ("pc", "/ws/pc.img"),
+            ],
             bgp=[("pc", "/ws/pc.img")],
-            rip=[("r", "/ws/vimages/../vimages/frr.qcow2"), ("empty", "")],
+            rip=[
+                ("r", "/ws/shared_images/../shared_images/frr.qcow2"),
+                ("empty", ""),
+            ],
         )
         self.assertEqual(
-            other_projects(workspace, "/ws/vimages/frr.qcow2"),
+            other_projects(workspace, "/ws/shared_images/frr.qcow2"),
             [("ospf", "router"), ("rip", "r")],
         )
 

@@ -459,7 +459,7 @@
     [-B backing -F backing-format] disk packed-disk</code></pre></figure>
 <p>with zlib, without <code>-o compression_type=zstd</code>, when QEMU is older than 5.1. A private disk keeps its backing file, the image, as it is. A packed disk is a valid qcow2 file, that QEMU runs as it is. The member is marked <code>packed</code> in <code>contents.toml</code>, with its <code>real_size</code>. A disk or an image in another format, as raw, is stored as it is; so is a disk that <code>qemu-img</code> can&#39;t read, as when its image is gone, and the export reports it as a warning.</p>
 <p>The import converts the packed members back to normal qcow2 files, the private disks on top of their new image. When <code>qemu-img</code> isn&#39;t found, or the image of a private disk is left unset, the disk stays compressed and the import reports it: the disk works as it is.</p>
-<p>The <code>real_size</code> also lets the import recognize an image that this computer already has: a file of the image library with the same name and size is used instead of a copy.</p>
+<p>The <code>real_size</code> also lets the import recognize an image that this computer already has: a file of the shared images with the same name and size is used instead of a copy.</p>
 
 <h3 id="archive-holes">Holes</h3>
 <p>Disks are sparse files: a disk of 20 GB can take 2 GB of space. The archive keeps their holes, as GNU sparse 1.0 members, written by <code>bsdtar</code>, by GNU <code>tar</code> with <code>--sparse</code>, or by Virtualbricks itself when neither is installed. A member larger than 8 GiB written by Virtualbricks has its size in base-256 in its tar header, not in a pax record, which Python&#39;s <code>tarfile</code> would read wrong (see <a href="#known-problems">Known problems</a>).</p>
@@ -518,7 +518,7 @@
       <line x1="549" y1="122" x2="121" y2="122" class="ln" marker-end="url(#s-tip)"/>
       <text x="333" y="113" text-anchor="middle" class="mono">{"progress": {"step": "extract", &#8230;}}</text>
       <line x1="549" y1="164" x2="121" y2="164" class="ln" marker-end="url(#s-tip)"/>
-      <text x="333" y="155" text-anchor="middle" class="mono">{"created": "&#8230;/vimages/debian-12.qcow2"}</text>
+      <text x="333" y="155" text-anchor="middle" class="mono">{"created": "&#8230;/shared_images/debian-12.qcow2"}</text>
       <line x1="549" y1="206" x2="121" y2="206" class="ln" marker-end="url(#s-tip)"/>
       <text x="333" y="197" text-anchor="middle" class="mono">{"progress": {"step": "unpack", &#8230;}}</text>
       <line x1="549" y1="248" x2="121" y2="248" class="ln-accent" marker-end="url(#s-tip-acc)"/>
@@ -550,7 +550,7 @@
 <p>SIGTERM stops the job wherever it is. The process stops its <code>tar</code> or <code>qemu-img</code>, removes the files it wrote, and exits with 1:</p>
 <ul>
 <li>An export removes its unfinished archive and its folder. An archive that was already there under the same name is left as it was.</li>
-<li>An import removes its folder in the workspace and the images it copied to the image library.</li>
+<li>An import removes its folder in the workspace and the images it copied to the shared images.</li>
 <li>An inspection writes nothing.</li>
 </ul>
 
@@ -559,7 +559,7 @@
 <dl class="terms">
 <dt>.<em>name</em>.vbp.<em>XXXXXXXX</em>.part, .virtualbricks-export-<em>XXXXXXXX</em>/</dt><dd><p>The unfinished archive and its folder, next to the archive, which the export makes and sends with <code>created</code>.</p></dd>
 <dt><em>workspace</em>/.importing-<em>name</em>-<em>XXXXXXXX</em>/</dt><dd><p>The folder of an import, which the application makes before it starts the process.</p></dd>
-<dt><em>workspace</em>/vimages/<em>file</em></dt><dd><p>An image that the import copied to the library, and sent with <code>created</code>.</p></dd>
+<dt><em>workspace</em>/shared_images/<em>file</em></dt><dd><p>An image that the import copied to the shared images, and sent with <code>created</code>.</p></dd>
 </dl>
 <p>The application removes them only when the process ended without a <code>result</code>.</p>
 </section>
@@ -717,7 +717,7 @@
 <span class="h">[[images]]</span>
 <span class="k">name</span> = "debian"
 <span class="k">choice</span> = "copy"
-<span class="k">path</span> = "/home/user/.virtualbricks/vimages/debian-12.qcow2"
+<span class="k">path</span> = "/home/user/.virtualbricks/shared_images/debian-12.qcow2"
 <span class="k">fallback</span> = ""
 
 <span class="h">[settings]</span>
@@ -736,9 +736,9 @@
 </tbody></table></div>
 <p>The application gives every image a default:</p>
 <div class="scroll"><table class="fields keys"><thead><tr><th>The image</th><th>Default</th><th>When</th></tr></thead><tbody>
-<tr><th scope="row" rowspan="2">is in the archive</th><td class="kind">use</td><td class="meaning"><p>The image library, <em>workspace</em>/vimages, has a file with the same file name and size: that file.</p></td></tr>
-<tr><td class="kind">copy</td><td class="meaning"><p>Otherwise: into the library, under the next free name.</p></td></tr>
-<tr><th scope="row" rowspan="2">isn&#39;t in the archive</th><td class="kind">use</td><td class="meaning"><p>This computer has its file at the same path, or the library has a file with its name.</p></td></tr>
+<tr><th scope="row" rowspan="2">is in the archive</th><td class="kind">use</td><td class="meaning"><p>The shared images, <em>workspace</em>/shared_images, have a file with the same file name and size: that file.</p></td></tr>
+<tr><td class="kind">copy</td><td class="meaning"><p>Otherwise: into the shared images, under the next free name.</p></td></tr>
+<tr><th scope="row" rowspan="2">isn&#39;t in the archive</th><td class="kind">use</td><td class="meaning"><p>This computer has its file at the same path, or the shared images have a file with its name.</p></td></tr>
 <tr><td class="kind">skip</td><td class="meaning"><p>Otherwise.</p></td></tr>
 <tr><th scope="row">isn&#39;t known yet</th><td class="kind">auto</td><td class="meaning"><p>The import started before the inspection of an older archive reached the end; the fallback is found as above.</p></td></tr>
 </tbody></table></div>
@@ -746,7 +746,7 @@
 <p id="import-steps">The import takes these steps:</p>
 <figure class="diagram">
   <div class="canvas">
-    <svg class="dg" viewBox="0 0 760 256" role="img" aria-label="The import extracts the archive into a hidden folder of the workspace, moves the copied image to workspace/vimages, points the private disk at it as its backing file, and renames the folder to workspace/lab. The numbers are the steps of the import.">
+    <svg class="dg" viewBox="0 0 760 256" role="img" aria-label="The import extracts the archive into a hidden folder of the workspace, moves the copied image to workspace/shared_images, points the private disk at it as its backing file, and renames the folder to workspace/lab. The numbers are the steps of the import.">
       <defs>
         <marker id="m-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
         <marker id="m-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
@@ -778,19 +778,19 @@
       <text x="480" y="104" class="mono small">README.md</text>
       <text x="480" y="132" class="mono small">vm1_hda.cow</text>
       <rect x="460" y="184" width="284" height="58" rx="8" class="box"/>
-      <text x="474" y="206" class="mono small strong">workspace/vimages/</text>
+      <text x="474" y="206" class="mono small strong">workspace/shared_images/</text>
       <text x="480" y="230" class="mono small">debian-12.qcow2</text>
       <path d="M564,128 H712 V226 H592" class="ln-accent dash" marker-end="url(#m-tip-acc)"/>
       <text x="704" y="170" text-anchor="end" class="small t-accent">6 &#183; backing file, rebase -u</text>
     </svg>
   </div>
-  <figcaption>The files of an import, before and after. The numbers are the steps below: the private disk is rebased onto the image&#39;s new path before the folder is renamed, so the dashed arrow ends up pointing from <em>lab/vm1_hda.cow</em> to <em>vimages/debian-12.qcow2</em>.</figcaption>
+  <figcaption>The files of an import, before and after. The numbers are the steps below: the private disk is rebased onto the image&#39;s new path before the folder is renamed, so the dashed arrow ends up pointing from <em>lab/vm1_hda.cow</em> to <em>shared_images/debian-12.qcow2</em>.</figcaption>
 </figure>
 <ol class="steps">
 <li>Extract the archive into <code>staging</code>, in the step <code>extract</code>.</li>
 <li>Read which members are packed from <code>contents.toml</code>, and remove it: it isn&#39;t a file of the project. Rename <code>README</code>, the README of before 3.0, to <code>README.md</code>, unless there is one.</li>
 <li>Read the project file and upgrade it, or convert <code>.project</code>.</li>
-<li>Move each copied image to the library, sending it with <code>created</code>; then remove the <em>.images</em> folder with the images that aren&#39;t copied.</li>
+<li>Move each copied image to the shared images, sending it with <code>created</code>; then remove the <em>.images</em> folder with the images that aren&#39;t copied.</li>
 <li>Rewrite <code>project.toml</code> with the path of each image, &quot;&quot; for an image left unset, and with <code>settings</code>.</li>
 <li>Point each private disk at its image, in the format of the image: <code>qemu-img rebase -u -b</code> <em>image</em> <code>-F</code> <em>format</em> <em>disk</em>.</li>
 <li>Unpack the packed disks and images, in the step <code>unpack</code>.</li>
@@ -867,7 +867,7 @@ job.done.addCallback(show)</code></pre></figure>
 <dt>.<em>name</em>.vbp.<em>XXXXXXXX</em>.part</dt><dd><p>An archive being written, next to it.</p></dd>
 <dt>.virtualbricks-export-<em>XXXXXXXX</em>/</dt><dd><p>The members of an archive being written, next to it.</p></dd>
 <dt><em>workspace</em>/.importing-<em>name</em>-<em>XXXXXXXX</em>/</dt><dd><p>A project being imported.</p></dd>
-<dt><em>workspace</em>/vimages/</dt><dd><p>The image library, where the import copies the images.</p></dd>
+<dt><em>workspace</em>/shared_images/</dt><dd><p>The shared images, where the import copies the images.</p></dd>
 <dt><em>workspace</em>/<em>name</em>/</dt><dd><p>An imported project.</p></dd>
 </dl>
 </section>

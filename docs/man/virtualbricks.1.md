@@ -647,7 +647,7 @@ windows join it to the console there over another connection.
 The windows start no program of a brick here, and the files they work
 on are those of the lab machine. Some items wait for a later version,
 greyed: **Import** and **Export**, saving or merging the private copy of
-a disk, copying an image to the image folder, **Show in Files**, and
+a disk, copying an image to the shared images, **Show in Files**, and
 **Terminate**, which stops a machine with **SIGTERM**.
 
 When the connection is lost, a bar says why, and the windows wait:

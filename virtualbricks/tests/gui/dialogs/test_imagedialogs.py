@@ -88,7 +88,9 @@ class DialogTestCase(GuiTestCase):
         self.patch(imagedialogs, "logger", self.logger)
         self.trash = FakeTrash()
         self.workspace = FakeWorkspace(self.folder("workspace"), self.trash)
-        self.vimages = self.folder(os.path.join("workspace", "vimages"))
+        self.shared_images = self.folder(
+            os.path.join("workspace", "shared_images")
+        )
         # the private copies are in the open project
         self.manager.current = OpenProject(
             self.folder(os.path.join("workspace", "lab")), None
@@ -160,7 +162,7 @@ class TestRemove(DialogTestCase):
         return dialog
 
     def test_the_disks_lose_the_image(self):
-        image = self.factory.new_image("frr", self.file(self.vimages))
+        image = self.factory.new_image("frr", self.file(self.shared_images))
         vm = self.vm("r1", image)
         dialog = self.dialog(image)
         self.assertIn(
@@ -174,7 +176,7 @@ class TestRemove(DialogTestCase):
         self.assertTrue(os.path.exists(image.path))
 
     def test_the_file_to_the_trash(self):
-        image = self.factory.new_image("frr", self.file(self.vimages))
+        image = self.factory.new_image("frr", self.file(self.shared_images))
         dialog = self.dialog(image)
         self.assertEqual(
             dialog.file_check.get_label(),
@@ -186,7 +188,7 @@ class TestRemove(DialogTestCase):
 
     def test_no_trash(self):
         self.workspace.trasher = None
-        image = self.factory.new_image("frr", self.file(self.vimages))
+        image = self.factory.new_image("frr", self.file(self.shared_images))
         dialog = self.dialog(image)
         self.assertIn("there is no trash", dialog.file_check.get_label())
         dialog.file_check.set_active(True)
@@ -195,7 +197,7 @@ class TestRemove(DialogTestCase):
 
     def test_the_trash_fails(self):
         self.trash.error = OSError(13, "Permission denied")
-        image = self.factory.new_image("frr", self.file(self.vimages))
+        image = self.factory.new_image("frr", self.file(self.shared_images))
         dialog = self.dialog(image)
         dialog.file_check.set_active(True)
         dialog.remove()
@@ -215,7 +217,7 @@ class TestRemove(DialogTestCase):
     def test_a_file_that_other_projects_use(self):
         from virtualbricks.tests.config.test_images import FakeWorkspace
 
-        path = self.file(self.vimages)
+        path = self.file(self.shared_images)
         others = FakeWorkspace(
             None, ospf=[("router", path)], bgp=[("a", path), ("b", path)]
         )
@@ -229,7 +231,7 @@ class TestRemove(DialogTestCase):
         )
 
     def test_cancel(self):
-        image = self.factory.new_image("frr", self.file(self.vimages))
+        image = self.factory.new_image("frr", self.file(self.shared_images))
         dialog = self.dialog(image)
         dialog.dialog.response(Gtk.ResponseType.CANCEL)
         self.assertIs(self.factory.get_image("frr"), image)
@@ -259,12 +261,12 @@ class TestFindFile(DialogTestCase):
         self.assertEqual(self.qemu_img.calls, [])
 
     def test_the_file_in_the_image_folder(self):
-        path = self.file(self.vimages)
+        path = self.file(self.shared_images)
         dialog = self.dialog()
         self.assertEqual(dialog.chosen, path)
         self.assertTrue(dialog.use_button.get_sensitive())
         self.assertIn(
-            "The image folder has a file of the same name.",
+            "The shared images have a file of the same name.",
             texts(dialog.dialog),
         )
 
@@ -323,7 +325,7 @@ class DiskTestCase(DialogTestCase):
 
     def setUp(self):
         super().setUp()
-        self.frr = self.factory.new_image("frr", self.file(self.vimages))
+        self.frr = self.factory.new_image("frr", self.file(self.shared_images))
         self.r1 = self.vm("r1", self.frr)
         self.copy = self.r1.disk("hda").get_cow_path()
         with open(self.copy, "wb") as fp:
@@ -358,7 +360,7 @@ class TestSave(DiskTestCase):
         dialog = self.dialog()
         self.assertEqual(dialog.name_entry.get_text(), "frr-r1")
         self.assertEqual(
-            dialog.output(), os.path.join(self.vimages, "frr-r1.qcow2")
+            dialog.output(), os.path.join(self.shared_images, "frr-r1.qcow2")
         )
         self.factory.new_image("frr-r1", "/lab/other.qcow2")
         self.assertEqual(self.dialog().name_entry.get_text(), "frr-r1-2")
@@ -384,7 +386,7 @@ class TestSave(DiskTestCase):
         dialog = self.dialog()
         dialog.dialog.response(Gtk.ResponseType.OK)
         (job,) = self.jobs
-        output = os.path.join(self.vimages, "frr-r1.qcow2")
+        output = os.path.join(self.shared_images, "frr-r1.qcow2")
         self.assertEqual(job.args, (self.copy, output, dialog.on_progress))
         self.assertEqual(dialog.cancel_button.get_label(), "Stop")
         self.assertFalse(dialog.action_button.get_sensitive())

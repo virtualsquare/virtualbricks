@@ -157,7 +157,7 @@
     refusal of the folder in red (08e07e5)
 
 - [ ] Show the images of all projects: each file once, the projects and
-  disks that use it, and the files of vimages no project uses, as the
+  disks that use it, and the files of shared_images no project uses, as the
   copies an import leaves (09 §11 S3, 04 §11)
   - a file nobody uses can be added to this project or moved to the
     trash

@@ -185,7 +185,7 @@ class TestReading(ImportTestCase):
         [row] = self.rows()
         self.assertEqual(row.used_label.get_text(), "Used by vm.hda")
         self.assertTrue(row.copy_button.get_active())
-        library = os.path.join(self.manager.path, "vimages")
+        library = os.path.join(self.manager.path, "shared_images")
         self.assertEqual(
             row.path_label.get_text(),
             f"Copied to {library}/deb.qcow2",
@@ -310,7 +310,7 @@ class TestChoices(ImportTestCase):
         row.copy_button.set_active(True)
         self.assertEqual(
             row.image.path,
-            os.path.join(self.manager.path, "vimages", "deb.qcow2"),
+            os.path.join(self.manager.path, "shared_images", "deb.qcow2"),
         )
 
     def test_machine_paths_and_open(self):

@@ -35,6 +35,9 @@ LEGACY_PROJECT_FILE = ".project"
 # The README of a project, and its name before 3.0.
 README = "README.md"
 LEGACY_README = "README"
+# The folder of a workspace for the images its projects share; Virtualbricks
+# 2.1 had vimages, which stays as it was.
+SHARED_IMAGES = "shared_images"
 # The longest path a Unix socket can have, without the final NUL.
 SOCKET_PATH_MAX = 107
 # The longest a brick's name adds to the runtime directory: a plug's socket

@@ -48,7 +48,7 @@ from twisted.logger import Logger
 from twisted.protocols import amp
 from twisted.python.failure import Failure
 
-from virtualbricks import errors, ksm
+from virtualbricks import errors, ksm, locations
 from virtualbricks.bricks import Brick, brickinfo
 from virtualbricks.bricks.virtualmachine import (
     DISK_DEVICES,
@@ -176,7 +176,7 @@ class Answers(_Base):
                     _("{path} is there already").format(path=path)
                 )
             if os.path.dirname(path) == os.path.join(
-                projects.path, images.IMAGE_FOLDER
+                projects.path, locations.SHARED_IMAGES
             ):
                 # the folder of the images, made when first needed
                 images.image_folder(projects)

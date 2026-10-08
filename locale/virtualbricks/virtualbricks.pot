@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-07 18:53+0200\n"
+"POT-Creation-Date: 2026-10-08 06:39+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2374,7 +2374,7 @@ msgid "Choose a Disk Image"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/addimage.py
-msgid "Copy it to the image folder"
+msgid "Copy it to the shared images"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/addimage.py
@@ -2717,7 +2717,7 @@ msgid "Choose the File"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/imagedialogs.py
-msgid "The image folder has a file of the same name."
+msgid "The shared images have a file of the same name."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/imagedialogs.py
@@ -2751,8 +2751,8 @@ msgstr ""
 #: virtualbricks/gui/dialogs/imagedialogs.py
 #, python-brace-format
 msgid ""
-"A file of its own in the image folder: {image} with the changes {vm} made to "
-"it."
+"A file of its own in the shared images: {image} with the changes {vm} made "
+"to it."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/imagedialogs.py
@@ -3363,7 +3363,7 @@ msgid " for good: the drive of the workspace has no trash."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/projects.py
-msgid "The images it uses stay in your image library."
+msgid "The images it uses stay where they are."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/renamedialog.py

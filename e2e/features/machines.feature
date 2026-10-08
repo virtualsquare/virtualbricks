@@ -17,7 +17,7 @@ Feature: Virtual machines
       | vm1   | Virtual machine · x86_64 · 64 MiB · no network card | Stopped |
     When I start vm1
     Then vm1 runs qemu-system-x86_64, with no display
-    And vm1 runs on a private copy of disk.qcow2 of the image folder
+    And vm1 runs on a private copy of disk.qcow2 of the shared images
     When I terminate vm1, from its menu
     Then vm1 is stopped
     When I quit Virtualbricks
@@ -65,7 +65,7 @@ Feature: Virtual machines
     And I turn on "No display" in the settings of vm1, on its page Display
     And I give vm1 the image disk, on its disk hda
     And I start vm1
-    Then vm1 runs on a private copy of disk.qcow2 of the image folder
+    Then vm1 runs on a private copy of disk.qcow2 of the shared images
     When I terminate vm1, from its menu
     And I ask to delete vm1, from its menu
     Then the Delete dialog says that the private copy vm1_hda.cow goes to the trash

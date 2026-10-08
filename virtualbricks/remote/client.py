@@ -62,7 +62,7 @@ from virtualbricks.bricks.virtualmachine import (
     VirtualMachine,
     is_virtualmachine,
 )
-from virtualbricks.config.images import IMAGE_FOLDER, ImageInfo, parse_info
+from virtualbricks.config.images import ImageInfo, parse_info
 from virtualbricks.config.report import Report
 from virtualbricks.config.workspace import (
     TAKEN,
@@ -448,7 +448,7 @@ class RemoteMachine:
 
     def image_folder(self) -> str:
         return os.path.join(
-            self.mirror.machine.get("workspace", ""), IMAGE_FOLDER
+            self.mirror.machine.get("workspace", ""), locations.SHARED_IMAGES
         )
 
     def setting(self, name: str) -> SettingValue:

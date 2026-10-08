@@ -203,28 +203,28 @@ The steps of the disk images:
 | :- | :- |
 | `Given the empty disk image disk.qcow2 of 1 GB, in my home folder` | Made with `qemu-img create`, of MB or GB of 1000, as Virtualbricks counts them, in the format of its extension: `qcow2` or `raw` |
 | `Given the empty disk image disk.qcow2 of 1 GB, in my home folder, with the snapshot clean` | The same, then the snapshot, made with `qemu-img snapshot -c` |
-| `When I add an existing image, disk.qcow2 of my home folder, with the name it suggests, disk` | The tab Images, Add Image, then Existing Image…; in the dialog, the button of the file, then Home and the file in the file chooser, and Open; the name must be the one the dialog suggests; then Add, with Copy it to the image folder as it is, and the dialog closes |
+| `When I add an existing image, disk.qcow2 of my home folder, with the name it suggests, disk` | The tab Images, Add Image, then Existing Image…; in the dialog, the button of the file, then Home and the file in the file chooser, and Open; the name must be the one the dialog suggests; then Add, with Copy it to the shared images as it is, and the dialog closes |
 | `When I add an existing image, disk.qcow2 of my home folder, used where it is, with the name it suggests, disk` | The same, with Use it where it is in place of the copy |
-| `When I add a new empty disk, disk, of 20 MB in the format raw` | The tab Images, Add Image, then New Empty Disk…; in the dialog, the name typed, the size typed in Size, its unit and the format chosen in their lists, the folder as it is, the image folder; then Create, and the dialog closes |
+| `When I add a new empty disk, disk, of 20 MB in the format raw` | The tab Images, Add Image, then New Empty Disk…; in the dialog, the name typed, the size typed in Size, its unit and the format chosen in their lists, the folder as it is, the shared images; then Create, and the dialog closes |
 | `When I give vm1 the image disk, on its disk hda` | Configure… in its menu; on the page Disks of its settings, Add Disk and the device, then the image in the picker of the new disk; then OK |
 | `When I open the details of disk` | Details…, in its menu, in the tab Images; then they show, with its name |
 | `When I remove the image disk, which the disk vm1 (hda) loses, and move its file to the trash` | Remove…, in its menu, in the tab Images: the dialog asks to remove it, and says that the disks lose it, `The disk vm1 (hda) will have no image.`; Also move the file to the trash turned on, then Remove, and the dialog closes |
 | `When I remove the image disk, which the disk vm1 (hda) loses, and whose file new_project uses too` | The same, where the dialog says `The project new_project uses the file too: it stays.`, and offers nothing for the file; then Remove |
 | `When I find the file of debian13, debian13.qcow2 of my home folder` | Find the File…, in its menu, in the tab Images; in the dialog, which asks where the file is, the button of the file, then Home and the file in the file chooser, and Open; then Use This File, and the dialog closes |
 | `Then the list of images has`, with a table under it | The rows of the tab Images, all of them and in order, once they are those of the table: the name of each image, its detail without the space its file takes (`… on disk`), which depends on the file system, and its state |
-| `Then the image folder has disk.qcow2, a copy of that of my home folder` | `vimages` of the workspace has the file, with the same bytes, and the home still has it |
-| `Then project.toml has the image disk, of disk.qcow2 in the image folder` | The image in the file of the project has the file of the image folder |
+| `Then the shared images have disk.qcow2, a copy of that of my home folder` | `shared_images` of the workspace has the file, with the same bytes, and the home still has it |
+| `Then project.toml has the image disk, of disk.qcow2 in the shared images` | The image in the file of the project has the file of the shared images |
 | `Then project.toml has the image disk, of disk.qcow2 of my home folder` | The same, with the file of the home |
 | `Then project.toml has the disk hda of vm1, without an image` | The disk of the machine, in the file of the project, has no image |
-| `Then the image folder has no copy of disk.qcow2` | The home still has the file, and no file of `vimages`, if there is one, has its bytes |
-| `Then the image folder has disk.raw, a raw disk of 20 MB` | `vimages` has the file, which `qemu-img info` says is of the format, with a disk of the size, up to a sector more |
+| `Then the shared images have no copy of disk.qcow2` | The home still has the file, and no file of `shared_images`, if there is one, has its bytes |
+| `Then the shared images have disk.raw, a raw disk of 20 MB` | `shared_images` has the file, which `qemu-img info` says is of the format, with a disk of the size, up to a sector more |
 | `Then the details of disk have`, with a table under it | The facts of the table, a name and a value each, as File or Format, are those of the details of the image, which show, once it has read its file |
-| `Then the details of disk say what qemu-img info says of disk.qcow2 of the image folder` | The facts of the details are those of `qemu-img info` of the file: File, its path with `~` for the home; Format; Size, the disk and the space it takes, in MB and GB of 1000; Snapshots, if any; and Changed, when the file changed, which isn't of `qemu-img` |
-| `Then vm1 runs on a private copy of disk.qcow2 of the image folder` | It runs, and a disk of its QEMU, after `-hda` or another device, is a file of its own whose backing file is that of the image folder, as `qemu-img info -U` says |
-| `Then the file disk.raw of the image folder is in the trash` | `vimages` has it no more, and the trash of the home has it: a `.trashinfo` with its path, and the file |
+| `Then the details of disk say what qemu-img info says of disk.qcow2 of the shared images` | The facts of the details are those of `qemu-img info` of the file: File, its path with `~` for the home; Format; Size, the disk and the space it takes, in MB and GB of 1000; Snapshots, if any; and Changed, when the file changed, which isn't of `qemu-img` |
+| `Then vm1 runs on a private copy of disk.qcow2 of the shared images` | It runs, and a disk of its QEMU, after `-hda` or another device, is a file of its own whose backing file is that of the shared images, as `qemu-img info -U` says |
+| `Then the file disk.raw of the shared images is in the trash` | `shared_images` has it no more, and the trash of the home has it: a `.trashinfo` with its path, and the file |
 | `Then the Delete dialog says that the private copy vm1_hda.cow goes to the trash` | A line of the dialog that asks to delete the machine says so, with the size of the copy, which depends on the file system |
 | `Then the file vm1_hda.cow of the project folder is in the trash` | The folder of the project has it no more, and the trash of the home has it: a `.trashinfo` with its path, and the file |
-| `Then the image folder still has disk.raw, in no trash` | `vimages` has the file, and the trash of the home doesn't |
+| `Then the shared images still have disk.raw, in no trash` | `shared_images` has the file, and the trash of the home doesn't |
 
 The steps of the migration of Virtualbricks 2.1:
 

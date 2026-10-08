@@ -2034,7 +2034,7 @@ IMAGES = "Images"
 # The units of the sizes of the disks, as Virtualbricks counts them
 UNITS = {"MB": 1000**2, "GB": 1000**3}
 # The folder of the images, in the workspace
-IMAGE_FOLDER = "vimages"
+IMAGE_FOLDER = "shared_images"
 ADD_IMAGE = "Add an Existing Image"
 CHOOSE_IMAGE = "Choose a Disk Image"
 NEW_DISK = "New Empty Disk"
@@ -2118,7 +2118,7 @@ def add_image_in_place(virtualbricks, file, name):
 def add_existing(virtualbricks, file, name, copy):
     """
     Add Image, then Existing Image…, with the file of the home and the name
-    it suggests; the file copied to the image folder, as the dialog has it
+    it suggests; the file copied to the shared images, as the dialog has it
     at first, or used where it is.
     """
 
@@ -2130,7 +2130,7 @@ def add_existing(virtualbricks, file, name, copy):
     suggests(virtualbricks, dialog, "Name", name)
     # it shows once the file is read, a disk image out of the workspace
     copies = virtualbricks.find(
-        "radio button", "Copy it to the image folder", within=dialog
+        "radio button", "Copy it to the shared images", within=dialog
     )
     assert harness.a11y.checked(copies), "the file is used where it is"
     if not copy:
@@ -2168,7 +2168,7 @@ def add_new_disk(virtualbricks, name, size, unit, fmt):
     """
     The tab Images, Add Image, then New Empty Disk…; in the dialog, the
     name typed, the size typed and its unit chosen, the format chosen, in
-    the image folder as it is; then Create, and the dialog closes.
+    the shared images as it is; then Create, and the dialog closes.
     """
 
     tab = virtualbricks.click("page tab", IMAGES)
@@ -2416,7 +2416,7 @@ def details_have(virtualbricks, name, datatable):
 @then(
     words(
         "the details of {name:Image} say what qemu-img info says of {file} of"
-        " the image folder"
+        " the shared images"
     )
 )
 def details_info(virtualbricks, name, file):
@@ -2479,10 +2479,10 @@ def short_path(virtualbricks, path):
     return path
 
 
-@then(words("the image folder has {file}, a copy of that of my home folder"))
+@then(words("the shared images have {file}, a copy of that of my home folder"))
 def image_copied(virtualbricks, file):
     """
-    The image folder of the workspace has the file, with the bytes of that
+    The shared images of the workspace have the file, with the bytes of that
     of the home, which stays.
     """
 
@@ -2494,10 +2494,10 @@ def image_copied(virtualbricks, file):
         assert ours.read() == theirs.read(), f"{copy} differs from {original}"
 
 
-@then(words("the image folder has no copy of {file}"))
+@then(words("the shared images have no copy of {file}"))
 def image_not_copied(virtualbricks, file):
     """
-    The file of the home stays, and no file of the image folder of the
+    The file of the home stays, and no file of the shared images of the
     workspace, if there is one, has its bytes.
     """
 
@@ -2511,10 +2511,10 @@ def image_not_copied(virtualbricks, file):
             assert ours.read() != data, f"{copy} is a copy of {original}"
 
 
-@then(words("the image folder has {file}, a {fmt} disk of {size:d} {unit}"))
+@then(words("the shared images have {file}, a {fmt} disk of {size:d} {unit}"))
 def image_made(virtualbricks, file, fmt, size, unit):
     """
-    The image folder of the workspace has the file, which qemu-img info
+    The shared images of the workspace have the file, which qemu-img info
     says is of the format, with a disk of the size, up to a sector more.
     """
 
@@ -2527,11 +2527,13 @@ def image_made(virtualbricks, file, fmt, size, unit):
     assert least <= virtual < least + 512, f"{file} has {virtual} bytes"
 
 
-@then(words("{vm:Brick} runs on a private copy of {file} of the image folder"))
+@then(
+    words("{vm:Brick} runs on a private copy of {file} of the shared images")
+)
 def runs_on_copy(virtualbricks, brick_processes, vm, file):
     """
     It runs, and a disk of its QEMU is a file of its own above the file of
-    the image folder, as qemu-img info says: its private copy.
+    the shared images, as qemu-img info says: its private copy.
     """
 
     brick_running(virtualbricks, brick_processes, vm)
@@ -2555,16 +2557,16 @@ def runs_on_copy(virtualbricks, brick_processes, vm, file):
     raise AssertionError(f"the disks {disks} of {vm} are above {above}")
 
 
-@then(words("the file {file} of the image folder is in the trash"))
+@then(words("the file {file} of the shared images is in the trash"))
 def image_in_trash(virtualbricks, file):
     """
-    The image folder of the workspace has the file no more, and the trash
+    The shared images of the workspace have the file no more, and the trash
     of the home has it: a .trashinfo that says where it was, and the file.
     """
 
     path = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
     virtualbricks.wait_for(
-        lambda: not os.path.exists(path), f"the image folder has no {file}"
+        lambda: not os.path.exists(path), f"the shared images have no {file}"
     )
     trash = os.path.join(virtualbricks.home, TRASH)
     trashed = trashed_as(trash, path)
@@ -2589,9 +2591,9 @@ def project_file_in_trash(virtualbricks, file):
     assert os.path.isfile(os.path.join(trash, "files", trashed))
 
 
-@then(words("the image folder still has {file}, in no trash"))
+@then(words("the shared images still have {file}, in no trash"))
 def image_kept(virtualbricks, file):
-    """The image folder of the workspace has the file, and the trash not."""
+    """The shared images of the workspace have the file, and the trash not."""
 
     path = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
     assert os.path.isfile(path), f"{path} is gone"
@@ -2601,13 +2603,13 @@ def image_kept(virtualbricks, file):
 
 @then(
     words(
-        "project.toml has the image {name:Image}, of {file} in the image"
-        " folder"
+        "project.toml has the image {name:Image}, of {file} in the shared"
+        " images"
     )
 )
 def project_image(virtualbricks, name, file):
     """
-    The image in the file of the project has the file of the image folder
+    The image in the file of the project has the file of the shared images
     of the workspace: its path, or one relative to the folder of the
     project.
     """

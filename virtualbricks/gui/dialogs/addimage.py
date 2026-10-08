@@ -23,12 +23,12 @@ empty disk.
 Add an Existing Image reads the file with ``qemu-img info`` as soon as it's
 chosen, and waits for a file that is a disk image. The name starts from the
 file name and is checked as it's typed. A file outside the workspace is
-copied to the image folder by default, keeping its holes; Use It Where It Is
+copied to the shared images by default, keeping its holes; Use It Where It Is
 keeps its path, and a file above a backing file is always used where it is.
 The description starts from a ``<file>.md`` beside the file, as plain text.
 
 New Empty Disk asks a name, a size in MB or GB and a format, qcow2 or raw,
-and makes the file in the image folder, or another folder, with ``qemu-img
+and makes the file in the shared images, or another folder, with ``qemu-img
 create``.
 
 Both add the image to the library, then call ``on_added`` with it. The
@@ -160,7 +160,7 @@ class _AddDialog:
         return self.dialog
 
     def _image_folder(self) -> str:
-        """The image folder, made if it isn't there: of this computer."""
+        """The shared images, made if they aren't there: of this computer."""
 
         assert isinstance(self.workspace, Workspace), "files made here only"
         return images.image_folder(self.workspace)
@@ -265,7 +265,7 @@ class ExistingImageDialog(_AddDialog):
         self._name_rows(grid, 2)
 
         self.copy_radio = Gtk.RadioButton(
-            label=_("Copy it to the image folder"), no_show_all=True
+            label=_("Copy it to the shared images"), no_show_all=True
         )
         self.in_place_radio = Gtk.RadioButton(
             label=_("Use it where it is"),
@@ -366,7 +366,7 @@ class ExistingImageDialog(_AddDialog):
         )
 
     def copies(self) -> bool:
-        """Whether Add copies the file to the image folder."""
+        """Whether Add copies the file to the shared images."""
 
         return (
             self.outside()
@@ -526,7 +526,7 @@ class NewDiskDialog(_AddDialog):
             label.set_mnemonic_widget(self.folder_chooser)
             folder = self.folder_chooser
         else:
-            # the image folder there, or another: a file chooser shows
+            # the shared images there, or another: a file chooser shows
             # those of here
             self.folder_chooser = None
             self.folder_entry = folder = Gtk.Entry(

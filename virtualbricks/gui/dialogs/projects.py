@@ -812,10 +812,7 @@ class RemoveDialog:
         else:
             where = _(" for good: the drive of the workspace has no trash.")
         return (
-            what
-            + where
-            + " "
-            + _("The images it uses stay in your image library.")
+            what + where + " " + _("The images it uses stay where they are.")
         )
 
     def show(self, parent: Gtk.Window | None = None) -> None:
