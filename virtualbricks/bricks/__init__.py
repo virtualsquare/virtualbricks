@@ -83,6 +83,7 @@ __all__ = [
     "BrickConfig",
     "PrivilegedBrick",
     "is_running",
+    "must_stop",
 ]
 
 
@@ -400,6 +401,16 @@ def is_running(brick: Brick | Event) -> bool:
     return brick.is_running()
 
 
+def must_stop(brick: Brick) -> bool:
+    """
+    Whether brick runs a program of Virtualbricks, which has to stop before
+    the brick is deleted or renamed, the project closes or Virtualbricks
+    quits. A switch wrapper runs while another program runs its switch.
+    """
+
+    return brick.runs_program and brick.is_running()
+
+
 @define
 class BrickConfig(BaseConfig):
 
@@ -435,6 +446,9 @@ class Brick(Base):
     connections: str | None = None
     # The programs it runs, each a choice of names: any one of them will do.
     programs: tuple[tuple[str, ...], ...] = ()
+    # Whether Virtualbricks runs and stops the program of the brick, or
+    # another program does: a switch wrapper.
+    runs_program: ClassVar[bool] = True
 
     @classmethod
     def check_name(cls, name: str) -> None:

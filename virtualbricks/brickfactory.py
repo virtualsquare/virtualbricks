@@ -45,7 +45,7 @@ from virtualbricks.bricks.eventaction import (
 from virtualbricks.bricks.sock import Sock
 from virtualbricks.i18n import _
 from virtualbricks.observable import Observable, Signal
-from virtualbricks.bricks import is_running
+from virtualbricks.bricks import must_stop
 from virtualbricks.bricks.virtualmachine import (
     Disk,
     HostonlySock,
@@ -177,7 +177,7 @@ class BrickFactory:
         self.image_changed = Signal(observable, "image-changed")
 
     def quit(self) -> None:
-        if any(is_running(brick) for brick in self._bricks):
+        if any(must_stop(brick) for brick in self._bricks):
             msg = _("Cannot close virtualbricks: there are running bricks")
             raise errors.BrickRunningError(msg)
         logger.info(engine_bye)
@@ -188,7 +188,7 @@ class BrickFactory:
             self.quit_d.callback(None)
 
     def reset(self) -> None:
-        if any(is_running(brick) for brick in self._bricks):
+        if any(must_stop(brick) for brick in self._bricks):
             msg = _("Project cannot be closed: there are running bricks")
             raise errors.BrickRunningError(msg)
         # all go, so nothing is told that it loses one of them
@@ -302,11 +302,12 @@ class BrickFactory:
 
     def remove_brick(self, brick: Brick) -> None:
         """
-        Delete a brick that doesn't run. What plugs into it is unplugged,
-        and the events lose their actions that start or stop it.
+        Delete a brick whose program doesn't run; a switch wrapper also
+        while another program runs its switch. What plugs into it is
+        unplugged, and the events lose their actions that start or stop it.
         """
 
-        if is_running(brick):
+        if must_stop(brick):
             msg = f"Cannot delete brick {brick.name}: brick is running"
             raise errors.BrickRunningError(msg)
         self._forget(brick.name, self.users(brick))

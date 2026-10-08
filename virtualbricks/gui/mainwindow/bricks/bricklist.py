@@ -67,7 +67,11 @@ WARNINGS = frozenset((State.NOT_CONNECTED, State.NOT_CONFIGURED))
 
 def state_tooltip(brick: Brick, state: State) -> str | None:
     if state is State.RUNNING:
-        return _("Process {pid}").format(pid=brickinfo.process(brick))
+        pid = brickinfo.process(brick)
+        if pid is None:
+            # a switch wrapper whose switch is another user's
+            return None
+        return _("Process {pid}").format(pid=pid)
     if state is State.NOT_CONNECTED:
         return _("Connect {name} first").format(name=brick.name)
     if state is State.NOT_CONFIGURED:
@@ -97,8 +101,9 @@ class BrickRow(Row[Brick]):
         state = brickinfo.state(brick)
         running = state is State.RUNNING
         kind = brickinfo.kind(brick)
-        if processes and running:
-            process = _("process {pid}").format(pid=brickinfo.process(brick))
+        pid = brickinfo.process(brick)
+        if processes and pid is not None:
+            process = _("process {pid}").format(pid=pid)
             detail = SEPARATOR.join((kind, process))
         else:
             detail = SEPARATOR.join(
@@ -111,6 +116,9 @@ class BrickRow(Row[Brick]):
             state in WARNINGS,
             state_tooltip(brick, state),
         )
+        if running and not brick.runs_program:
+            # a switch wrapper: another program stops its switch
+            self.startstop.set_sensitive(False)
 
     def on_startstop_clicked(self, button: Gtk.Button) -> None:
         brickmenu.startstop(self.gui.engine, self.item)

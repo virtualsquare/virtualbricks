@@ -230,7 +230,7 @@ class TestFollow(FollowTestCase):
         )
         self.assertEqual(got[3][3], table_of(tap))
         self.assertEqual(got[3][3]["connect"], "sw1")
-        self.assertEqual(got[3][4], {"pid": None})
+        self.assertEqual(got[3][4], {"running": False, "pid": None})
         self.assertEqual(got[4][4], {"left": None})
 
     def test_no_project_open(self):
@@ -388,7 +388,7 @@ class TestChanges(FollowTestCase):
         self.switch.proc = FakeProcess(self.switch)
         self.switch.changed.notify(self.switch)
         self.turn()
-        self.assertEqual(self.got()[0][4], {"pid": -1})
+        self.assertEqual(self.got()[0][4], {"running": True, "pid": -1})
 
     def test_a_machine_that_runs(self):
         # the files of its private copies, and its images again: it writes
@@ -695,4 +695,4 @@ class TestOrder(ConsoleTestCase):
         # its private copies aren't known
         vm = self.factory.new_brick("qemu", "vm1")
         vm.update_config({"hda_private": True})
-        self.assertEqual(state_of(vm), {"pid": None})
+        self.assertEqual(state_of(vm), {"running": False, "pid": None})

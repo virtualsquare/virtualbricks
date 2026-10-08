@@ -74,18 +74,17 @@ Feature: Bricks
     Then no brick runs
 
   @needs-vde_switch
-  Scenario: A switch wrapper runs on a switch that another program runs
+  Scenario: A switch wrapper runs while the switch that another program runs is there
     Given a switch that another program runs
     And Virtualbricks is running
     When I add the switch wrapper wr1
     Then wr1 is not configured
     When I give wr1 the control folder of that switch
+    Then wr1 is running, with the process of that switch
+    When the switch that another program runs quits
     Then wr1 is stopped
-    When I start wr1
-    Then wr1 is running
-    When I stop wr1
-    Then wr1 is stopped
-    And the switch that another program runs still runs
+    When the switch that another program runs starts again
+    Then wr1 is running, with the process of that switch
 
   Scenario: A switch wrapper without a control folder can't start, and its row says why
     Given Virtualbricks is running

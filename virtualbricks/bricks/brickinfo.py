@@ -117,7 +117,10 @@ def state(brick: Brick) -> State:
 
 
 def process(brick: Brick) -> int | None:
-    """The process of a running brick."""
+    """
+    The process of a running brick; None if it doesn't run, or for a switch
+    wrapper whose switch is another user's.
+    """
 
     return brick.pid if is_running(brick) else None
 
@@ -306,8 +309,9 @@ def connectable(brick: Brick, bricks: Iterable[Brick]) -> list[Brick]:
 
 # New Brick
 
-# The kinds of brick without a control monitor.
-NO_CONSOLE = frozenset(("Tap", "Capture"))
+# The kinds of brick without a control monitor: a switch wrapper's switch
+# has its own, if any, which Virtualbricks doesn't know.
+NO_CONSOLE = frozenset(("Tap", "Capture", "SwitchWrapper"))
 
 # The groups of the kinds.
 MACHINES = _("Machines and switches")

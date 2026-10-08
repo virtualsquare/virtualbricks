@@ -67,9 +67,9 @@ that the tests can't do yet: those needs come first.
   a switch", `bricks.feature`
 - [ ] Start a router between two switches
   `@needs-vde_router`, which this machine lacks
-- [x] Run a switch wrapper on a switch that a fixture starts
-  "A switch wrapper runs on a switch that another program runs",
-  `bricks.feature`
+- [x] A switch wrapper runs while the switch that a fixture starts is
+  there: "A switch wrapper runs while the switch that another program runs
+  is there", `bricks.feature`
 - [x] See why a brick can't start: a switch wrapper without a path
   "A switch wrapper without a control folder can't start, and its row
   says why", `bricks.feature`

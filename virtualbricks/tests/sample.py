@@ -39,6 +39,7 @@ from typing import Any
 from twisted.internet import defer, reactor, task
 from twisted.logger import formatEvent, globalLogPublisher
 
+from virtualbricks.bricks import must_stop, switchwrapper
 from virtualbricks.bricks.eventaction import (
     ConsoleAction,
 )
@@ -200,7 +201,8 @@ def _sleep(seconds: float) -> defer.Deferred:
 
 @defer.inlineCallbacks
 def _stop(brick: Any) -> Any:
-    if brick.proc is None:
+    # a switch wrapper's switch stops with the switch it wraps
+    if not must_stop(brick):
         return None
     if brick.get_type() == "Qemu":
         stopped = brick.stop(term=True)
@@ -257,6 +259,8 @@ def run(factory: Any) -> Any:
             status = yield _stop(brick)
             if status is not None and brick.name in report["bricks"]:
                 report["bricks"][brick.name]["exit"] = status
+        # as Virtualbricks looks, every second: the wrapper of sw1 stops
+        switchwrapper.look_all(factory)
         globalLogPublisher.removeObserver(messages)
     for name, entry in report["bricks"].items():
         entry["warnings"] = messages.warnings.get(name, [])

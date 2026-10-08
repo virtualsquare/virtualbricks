@@ -65,6 +65,10 @@
 
 ## Bricks and programs
 
+- [ ] Give a switch wrapper an error state when its control folder isn't
+  a switch's: a folder without the socket `ctl`, now Stopped, or the `ctl`
+  that a killed switch leaves, now Running; a connection to `ctl` would
+  tell
 - [ ] Give the router settings and a panel: it has neither (07 §10,
   10 §13, 11 §11, 12 §9)
 - [ ] Decide how an icon is chosen for any brick or event, and where it

@@ -102,6 +102,10 @@ class BrickRunningError(Error):
     """There is one or more brick that is running."""
 
 
+class OtherProgramError(Error):
+    """The program of a brick is another's: Virtualbricks can't stop it."""
+
+
 class CommandError(Exception):
     """
     One utility command failed. Ex. qemu-img.

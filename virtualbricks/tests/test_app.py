@@ -28,6 +28,7 @@ from twisted.internet import defer, task
 from twisted.trial import unittest
 
 from virtualbricks import app, locations, locks
+from virtualbricks.bricks import switchwrapper
 from virtualbricks.config import settings, workspace
 from virtualbricks.config.settings import (
     AppSettings,
@@ -103,6 +104,7 @@ class AppTestCase(unittest.TestCase):
         self.patch(workspace, "logger", FakeLogger())
         self.manager = use_workspace(self)
         self.patch(app, "AutosaveTimer", lambda factory: None)
+        self.patch(app, "WrapperTimer", lambda factory: None)
         # the socket where the Virtualbricks would listen, not a real one
         self.listened = []
         self.patch(
@@ -503,4 +505,26 @@ class TestAutosave(BrickTestCase):
         timer = app.AutosaveTimer(self.factory, 10)
         clock.advance(10)
         self.assertEqual(calls, [self.factory])
+        timer.stop()
+
+
+class TestWrapperTimer(BrickTestCase):
+
+    def test_it_looks_at_each_interval(self):
+        calls = []
+        self.patch(switchwrapper, "look_all", calls.append)
+        clock = task.Clock()
+
+        class LoopingCall(task.LoopingCall):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.clock = clock
+
+        self.patch(task, "LoopingCall", LoopingCall)
+        timer = app.WrapperTimer(self.factory)
+        self.assertEqual(calls, [])
+        clock.advance(switchwrapper.LOOK_EVERY)
+        self.assertEqual(calls, [self.factory])
+        clock.advance(switchwrapper.LOOK_EVERY)
+        self.assertEqual(calls, [self.factory, self.factory])
         timer.stop()

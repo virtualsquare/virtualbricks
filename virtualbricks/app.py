@@ -43,6 +43,7 @@ from twisted.logger import (
 
 from virtualbricks import __version__, i18n, locks
 from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks import switchwrapper
 from virtualbricks.config.settings import (
     get_setting,
     load_settings,
@@ -64,6 +65,16 @@ def AutosaveTimer(
     factory: BrickFactory, interval: float = 180
 ) -> task.LoopingCall:
     timer = task.LoopingCall(projects.autosave, factory)
+    timer.start(interval, now=False)
+    return timer
+
+
+def WrapperTimer(
+    factory: BrickFactory, interval: float = switchwrapper.LOOK_EVERY
+) -> task.LoopingCall:
+    """Look at the control folders of the switch wrappers, at each interval."""
+
+    timer = task.LoopingCall(switchwrapper.look_all, factory)
     timer.start(interval, now=False)
     return timer
 
@@ -274,6 +285,7 @@ class Application:
         )
         reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         AutosaveTimer(factory)
+        WrapperTimer(factory)
         started: defer.Deferred[Any] = defer.succeed(None)
         if self.config.get("run"):
             started = self.run_script(factory, self.config["run"])

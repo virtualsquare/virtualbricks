@@ -44,7 +44,7 @@ from virtualbricks.console.command import (
 )
 from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _, ngettext
-from virtualbricks.bricks import is_running
+from virtualbricks.bricks import must_stop
 
 
 class Frontend(Protocol):
@@ -102,7 +102,7 @@ def refuse_running(factory: BrickFactory) -> None:
 
     from virtualbricks.bricks.eventinfo import names
 
-    running = [brick.name for brick in factory.bricks if is_running(brick)]
+    running = [brick.name for brick in factory.bricks if must_stop(brick)]
     if running:
         raise CommandError(
             ngettext(

@@ -81,7 +81,7 @@ from virtualbricks.console.command import (
 )
 from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _
-from virtualbricks.bricks import is_running
+from virtualbricks.bricks import is_running, must_stop
 
 logger = Logger()
 start_failed = "Starting {name} failed"
@@ -247,7 +247,7 @@ class BrickKey(ArgKind):
 
 
 def _stopped(brick: Brick) -> None:
-    if is_running(brick):
+    if must_stop(brick):
         raise CommandError(
             _("{name} is running: stop it first").format(name=brick.name)
         )
@@ -506,10 +506,19 @@ def _message(failure: Failure) -> str:
 
 def _started(factory: BrickFactory, before: set[Brick]) -> list[str]:
     return [
-        _("{name} runs, process {pid}").format(name=b.name, pid=b.pid)
-        for b in factory.bricks
-        if is_running(b) and b not in before
+        _runs(b) for b in factory.bricks if is_running(b) and b not in before
     ]
+
+
+def _runs(brick: Brick) -> str:
+    """That brick runs, with its process if it is known."""
+
+    if brick.pid is None:
+        # a switch wrapper whose switch is another user's
+        return _("{name} runs").format(name=brick.name)
+    return _("{name} runs, process {pid}").format(
+        name=brick.name, pid=brick.pid
+    )
 
 
 @command(
@@ -556,7 +565,8 @@ def _stop(
             yield brick.stop(kill=kill)
         except Exception:
             failure = Failure()
-            logger.failure(stop_failed, failure, name=brick.name)
+            if not failure.check(errors.Error):
+                logger.failure(stop_failed, failure, name=brick.name)
             raise CommandError(
                 f"{brick.name}: {_message(failure)}", lines
             ) from None

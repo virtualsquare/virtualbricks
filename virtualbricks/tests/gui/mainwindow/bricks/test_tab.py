@@ -344,6 +344,15 @@ class TestTheRowAboveTheList(BricksTestCase):
         self.tab.stop_button.clicked()
         self.assertEqual(self.done, [("off", "sw")])
 
+    def test_stop_all_leaves_the_switch_wrappers(self):
+        # another program runs their switches
+        self.running(self.brick("switchwrapper", "wr"))
+        self.assertFalse(self.tab.stop_button.get_sensitive())
+        self.running(self.sw)
+        self.assertTrue(self.tab.stop_button.get_sensitive())
+        self.tab.stop_button.clicked()
+        self.assertEqual(self.done, [("off", "sw")])
+
     def test_what_fails_is_logged(self):
         self.sw.start = lambda: defer.fail(RuntimeError("no vde_switch"))
         self.successResultOf(self.tab.start_all())

@@ -27,7 +27,7 @@ Feature: Migration
         | sw2                  | Switch · 32 ports                                                                  | Stopped        |
         | sw3                  | Switch · 32 ports                                                                  | Stopped        |
         | sw4                  | Switch · 32 ports                                                                  | Stopped        |
-        | switchwrapper        | Switch wrapper · /var/run/switch/sck                                               | Not configured |
+        | switchwrapper        | Switch wrapper · /var/run/switch/sck                                               | Stopped        |
         | sw5                  | Switch · 32 ports                                                                  | Stopped        |
         | channel_emulator     | Netemu · sw1 ↔ sw2 · 10 ms                                                         | Stopped        |
         | sat_channel_emulator | Netemu · sw3 ↔ sw4 · 20 ms                                                         | Stopped        |

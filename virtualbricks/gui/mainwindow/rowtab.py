@@ -726,6 +726,11 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
 
         raise NotImplementedError
 
+    def can_stop(self, item: T) -> bool:
+        """Whether Stop All stops item: whether it runs, unless told."""
+
+        return self.list.running(item)
+
     def start_all(self) -> defer.Deferred[None] | None:
         raise NotImplementedError
 
@@ -766,7 +771,7 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
             widget.set_sensitive(bool(items))
         if self.STARTS:
             self.start_button.set_sensitive(any(map(self.can_start, items)))
-            self.stop_button.set_sensitive(any(map(self.list.running, items)))
+            self.stop_button.set_sensitive(any(map(self.can_stop, items)))
 
     def open_menu(self, event: Gdk.EventButton | None = None) -> None:
         """

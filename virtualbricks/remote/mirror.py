@@ -107,9 +107,12 @@ def _refuse(item: Brick | Event, calls: Iterable[str]) -> None:
 
 
 class StandIn:
-    """The process of a running brick of the copy: its number, no more."""
+    """
+    The process of a running brick of the copy: its number, no more; None
+    for a switch wrapper whose switch is another user's.
+    """
 
-    def __init__(self, brick: Brick, pid: int) -> None:
+    def __init__(self, brick: Brick, pid: int | None) -> None:
         self.brick = brick
         self.pid = pid
 
@@ -339,7 +342,9 @@ class MirrorFactory(BrickFactory):
             brick.load_config_table(table, report, where, ignore)
             self._links(brick, table)
             pid = state.get("pid")
-            brick.proc = None if pid is None else StandIn(brick, pid)
+            # with no running, a Virtualbricks that sends the pid alone
+            running = state.get("running", pid is not None)
+            brick.proc = StandIn(brick, pid) if running else None
         brick.changed.notify(brick)
         self._connect_waiting()
 

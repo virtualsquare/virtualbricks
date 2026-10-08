@@ -64,7 +64,7 @@ from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
 )
 from virtualbricks.gui.dialogs.renamedialog import RenameDialog  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.bricks import is_running  # noqa: E402
+from virtualbricks.bricks import is_running, must_stop  # noqa: E402
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.window import MainWindow
@@ -143,7 +143,8 @@ def menu(
         for action, setting, label in WHEN
     ]
     process = None
-    if running:
+    # what is done to a process of Virtualbricks: none to another's
+    if must_stop(brick):
         process = Gio.MenuItem.new_submenu(
             _("Process {pid}").format(pid=brickinfo.process(brick)),
             _process_menu(brick, console_lacks),
@@ -256,26 +257,28 @@ class BrickActions(MenuActions):
 
         state = brickinfo.state(self.brick)
         running = state is State.RUNNING
+        # a program of Virtualbricks, not another's, as a switch wrapper has
+        program = must_stop(self.brick)
         vm = isinstance(self.brick, VirtualMachine)
         # over a connection, SIGTERM waits; the console needs a terminal
         # program here
         local = self.engine.local
         enabled = {
-            "startstop": state in (State.RUNNING, State.STOPPED),
+            "startstop": state is State.STOPPED or program,
             "configure": self.brick.get_type() not in NO_PANEL,
-            "rename": not running,
-            "delete": not running,
+            "rename": not program,
+            "delete": not program,
             "resume": vm,
             "console": running
             and self.brick.get_type() not in NO_CONSOLE
             and self.engine.console_lacks(self.brick) is None,
-            "pause": running,
-            "continue": running,
+            "pause": program,
+            "continue": program,
             "suspend": running and vm,
             "reset": running and vm,
-            "restart": running,
+            "restart": program,
             "terminate": running and vm and local,
-            "kill": running,
+            "kill": program,
         }
         for name, value in enabled.items():
             self.action(name).set_enabled(value)

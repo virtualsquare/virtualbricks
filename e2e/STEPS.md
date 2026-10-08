@@ -16,7 +16,7 @@ The steps of a user:
 | `Given Virtualbricks is running with --listen` | Starts it with the options, as the shell splits them, in place of `--lock none`, and waits for its main window; with `--listen` alone, until it listens on the socket of its workspace too. With `--connect`, these are the windows of the other Virtualbricks, which runs the bricks: see the steps of another Virtualbricks |
 | `When I add the switch sw1` | New Brick, the kind, then OK on its settings; the new brick must be named `sw1`. Any kind of New Brick: `the virtual machine vm1`, `the router r1`, … |
 | `When I join sw1 and sw2 with the wire w1` | New Brick, Wire, then sw1 for its left end and sw2 for its right end, and OK; the new wire must be named `w1` |
-| `When I start sw1` | Its Start button; it must run, with new processes, but a switch wrapper, which runs no program |
+| `When I start sw1` | Its Start button; it must run, with new processes |
 | `When I try to start wr1` | A click on its Start, also when it is disabled, as a user may click it |
 | `When I stop sw1` | Its Stop button; it must stop |
 | `When I give sw1 34 ports and hub mode, with the buttons of its settings` | Configure… in its menu, the + or the - of Ports until it says 34, Hub mode turned on, then OK |
@@ -123,7 +123,9 @@ The steps of a switch that another program runs, for a switch wrapper:
 | :- | :- |
 | `Given a switch that another program runs` | A `vde_switch` that the tests run, not Virtualbricks, in the runtime folder of the tests; it quits at the end of the scenario |
 | `When I give wr1 the control folder of that switch` | Configure… in its menu, the folder typed in Control folder, then OK; its row says the folder |
-| `Then the switch that another program runs still runs` | Its process runs, and its socket is there |
+| `When the switch that another program runs quits` | That program stops it: it quits at the end of its input, and its folder goes |
+| `When the switch that another program runs starts again` | That program starts it again, in the same folder, until it listens |
+| `Then wr1 is running, with the process of that switch` | Its row says Running, and its state tells the process of that switch, which runs; its Stop is disabled, as that program stops it. Virtualbricks looks at the folder every second |
 
 The steps of another Virtualbricks, of the same user, with the same home and
 workspace:

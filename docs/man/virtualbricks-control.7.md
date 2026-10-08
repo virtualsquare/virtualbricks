@@ -681,10 +681,11 @@ Quitting
     **event**, is new or changed: its **table**, as the project file
     writes it, and its **state**, what the project file doesn't write:
     {**file**}, the **size**, **mtime** and **taken** of the file of an
-    image, **null** if it isn't there; {**pid**, **copies**}, the process
-    of a brick, **null** if it doesn't run, and the private copies of a
-    machine, as **file**, by device; {**left**}, the seconds that an event
-    still waits, **null** if it doesn't.
+    image, **null** if it isn't there; {**running**, **pid**, **copies**},
+    whether a brick runs, its process, **null** if it doesn't run or isn't
+    known, as that of a switch wrapper whose switch is another user's, and
+    the private copies of a machine, as **file**, by device; {**left**},
+    the seconds that an event still waits, **null** if it doesn't.
 
 **Renamed**
 :   An image, a brick or an event has a new name.

@@ -279,9 +279,9 @@ def file_facts(path: str) -> dict[str, int] | None:
 
 def state_of(item: Item) -> dict[str, object]:
     """
-    What the project file doesn't write: the file of an image, the process
-    of a brick and the private copies of a machine, the seconds an event
-    still waits.
+    What the project file doesn't write: the file of an image, whether a
+    brick runs and its process, the private copies of a machine, the
+    seconds an event still waits.
     """
 
     if is_disk_image(item):
@@ -294,7 +294,11 @@ def state_of(item: Item) -> dict[str, object]:
             now = call.seconds()  # type: ignore[attr-defined]
             left = max(0.0, call.getTime() - now)
         return {"left": left}
-    state: dict[str, object] = {"pid": item.pid if is_running(item) else None}
+    running = is_running(item)
+    state: dict[str, object] = {
+        "running": running,
+        "pid": item.pid if running else None,
+    }
     if is_virtualmachine(item) and item.project_folder() is not None:
         state["copies"] = {
             disk.device: file_facts(disk.get_cow_path())

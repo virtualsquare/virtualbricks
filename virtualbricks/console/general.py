@@ -109,7 +109,7 @@ def help_(context: Context, topic: list[str]) -> list[str]:
 def status(context: Context) -> list[str]:
     factory = context.factory
     bricks = [
-        (brick.name, brickinfo.kind(brick), str(brick.pid))
+        (brick.name, brickinfo.kind(brick), _pid(brick.pid))
         for brick in factory.bricks
         if is_running(brick)
     ]
@@ -133,6 +133,11 @@ def status(context: Context) -> list[str]:
             lines.append("")
         lines += table(events, [_("EVENT"), _("RUNS IN")])
     return lines
+
+
+def _pid(pid: int | None) -> str:
+    # unknown for a switch wrapper whose switch is another user's
+    return "-" if pid is None else str(pid)
 
 
 @command(

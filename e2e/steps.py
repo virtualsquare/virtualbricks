@@ -44,7 +44,6 @@ import subprocess
 import tarfile
 import tempfile
 import time
-import types
 import urllib.parse
 
 try:
@@ -125,38 +124,60 @@ def migrated_before():
     return {}
 
 
+class OtherSwitch:
+    """
+    A vde_switch that the tests run, as another program would, for a switch
+    wrapper: its control folder, path, and its process, which quits at the
+    end of its input, and removes the folder.
+    """
+
+    def __init__(self, folder, log):
+        self.path = os.path.join(folder, "switch.ctl")
+        self.log = log
+        self.process = None
+
+    def start(self):
+        """Start it, until it listens in its folder."""
+
+        with open(self.log, "ab") as log:
+            self.process = subprocess.Popen(
+                ["vde_switch", "-s", self.path],
+                stdin=subprocess.PIPE,
+                stdout=log,
+                stderr=log,
+            )
+        harness.a11y.wait_for(
+            lambda: os.path.exists(os.path.join(self.path, "ctl")),
+            "the switch of another program listens",
+        )
+
+    def quit(self):
+        """The end of its input, then it quits; killed if it doesn't."""
+
+        self.process.stdin.close()
+        try:
+            self.process.wait(harness.TIMEOUT)
+        except subprocess.TimeoutExpired:
+            self.process.kill()
+            self.process.wait()
+
+
 @pytest.fixture
 def other_switch(desktop, tmp_path):
     """
-    A vde_switch that the tests run, as another program would, for a switch
-    wrapper: its control folder, path, and its process. It is in the
-    runtime folder of the tests, out of that of Virtualbricks, and quits at
-    the end of the scenario.
+    The OtherSwitch of the scenario, running. It is in the runtime folder of
+    the tests, out of that of Virtualbricks, and quits at the end of the
+    scenario.
     """
 
     folder = tempfile.mkdtemp(dir=desktop.runtime)
-    path = os.path.join(folder, "switch.ctl")
-    with open(tmp_path / "other-switch.log", "wb") as log:
-        # it quits at the end of its input
-        process = subprocess.Popen(
-            ["vde_switch", "-s", path],
-            stdin=subprocess.PIPE,
-            stdout=log,
-            stderr=log,
-        )
+    switch = OtherSwitch(folder, tmp_path / "other-switch.log")
     try:
-        harness.a11y.wait_for(
-            lambda: os.path.exists(os.path.join(path, "ctl")),
-            "the switch of another program listens",
-        )
-        yield types.SimpleNamespace(path=path, process=process)
+        switch.start()
+        yield switch
     finally:
-        process.stdin.close()
-        try:
-            process.wait(harness.TIMEOUT)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
+        if switch.process is not None:
+            switch.quit()
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -476,27 +497,17 @@ def join(virtualbricks, left, right, name):
     virtualbricks.find("button", f"Start {name}")
 
 
-# The kinds of bricks that run no program, as their rows say them: a switch
-# wrapper is a switch that another program runs.
-NO_PROGRAM = ("Switch wrapper",)
 # What the tab Bricks says in place of its list, when there are no bricks
 NO_BRICKS = "No Bricks Yet"
 
 
 @when(words("I start {name:Brick}"))
 def start_brick(virtualbricks, brick_processes, name):
-    """
-    Its button Start; then it runs, with new processes, unless it is of a
-    kind that runs no program.
-    """
+    """Its button Start; then it runs, with new processes."""
 
-    detail = virtualbricks.names("label", within=virtualbricks.row(name))[1]
     before = virtualbricks.children()
     virtualbricks.click("button", f"Start {name}")
     virtualbricks.find("button", f"Stop {name}")
-    if detail.startswith(NO_PROGRAM):
-        brick_processes[name] = set()
-        return
     brick_processes[name] = virtualbricks.wait_for(
         lambda: virtualbricks.children() - before, f"a process of {name} runs"
     )
@@ -3692,11 +3703,34 @@ def other_switch_runs(other_switch):
     """The tests run it, in other_switch."""
 
 
-@then("the switch that another program runs still runs")
-def other_switch_still_runs(other_switch):
-    assert other_switch.process.poll() is None, "it quit"
-    control = os.path.join(other_switch.path, "ctl")
-    assert os.path.exists(control), f"{control} is gone"
+@when("the switch that another program runs quits")
+def other_switch_quits(other_switch):
+    """That program stops it: it quits, and its folder goes."""
+
+    other_switch.quit()
+    assert not os.path.exists(other_switch.path), "its folder is still there"
+
+
+@when("the switch that another program runs starts again")
+def other_switch_starts_again(other_switch):
+    """That program starts it again, in the same folder, until it listens."""
+
+    other_switch.start()
+
+
+@then(words("{name:Brick} is running, with the process of that switch"))
+def wrapper_running(virtualbricks, other_switch, name):
+    """
+    Its row says Running, with the process of the switch that another
+    program runs, which runs; its Stop is disabled: that program stops it.
+    """
+
+    row = virtualbricks.row(name)
+    virtualbricks.find("label", "Running", within=row)
+    virtualbricks.disabled("button", f"Stop {name}", within=row)
+    pid = process(virtualbricks, name)
+    assert pid == other_switch.process.pid, f"{pid} isn't that switch's"
+    assert other_switch.process.poll() is None, "that switch quit"
 
 
 # Migration: the files of Virtualbricks 2.1

@@ -56,7 +56,7 @@ from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     log_failures,
 )
 from virtualbricks.i18n import _, ngettext  # noqa: E402
-from virtualbricks.bricks import Brick, is_running  # noqa: E402
+from virtualbricks.bricks import Brick, is_running, must_stop  # noqa: E402
 from virtualbricks.observable import Signal  # noqa: E402
 
 logger = Logger()
@@ -110,6 +110,10 @@ class BricksTab(RowsTab[Brick]):
     def can_start(self, item: Brick) -> bool:
         return brickinfo.state(item) is State.STOPPED
 
+    def can_stop(self, item: Brick) -> bool:
+        # not a switch wrapper, whose switch another program runs
+        return must_stop(item)
+
     def start_all(self) -> defer.Deferred[None]:
         """Start the bricks that can start; the failures are logged."""
 
@@ -122,11 +126,13 @@ class BricksTab(RowsTab[Brick]):
         return log_failures(deferreds, not_started, logger)
 
     def stop_all(self) -> defer.Deferred[None]:
-        """Stop the running bricks; the failures are logged."""
+        """Stop the bricks that can stop; the failures are logged."""
 
         engine = self.gui.engine
         deferreds = [
-            engine.stop(brick) for brick in self.items() if is_running(brick)
+            engine.stop(brick)
+            for brick in self.items()
+            if self.can_stop(brick)
         ]
         return log_failures(deferreds, not_stopped, logger)
 

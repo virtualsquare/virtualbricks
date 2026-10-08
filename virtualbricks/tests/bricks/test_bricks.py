@@ -22,7 +22,7 @@ import os
 
 from twisted.internet import defer, task
 
-from virtualbricks import bricks, errors
+from virtualbricks import bricks
 from virtualbricks.bricks import BaseConfig
 from virtualbricks.bricks import BrickConfig
 from virtualbricks.bricks.eventaction import StartAction
@@ -159,16 +159,6 @@ class TestSchemas(BrickTestCase):
         self.assertFalse(listen.configured())
         listen.connect(sw.socks[0])
         self.assertTrue(listen.configured())
-
-    def test_switch_wrapper(self):
-        wrapper = self.factory.new_brick("switchwrapper", "wr")
-        wrapper.update_config({"socket_path": "/nonexistent"})
-        failure = self.failureResultOf(wrapper.start())
-        failure.trap(errors.BadConfigError)
-        path = self.mktemp()
-        os.makedirs(path)
-        wrapper.update_config({"socket_path": path})
-        self.assertIs(self.successResultOf(wrapper.start()), wrapper)
 
     def test_router_has_no_name_field(self):
         router = self.factory.new_brick("router", "r")

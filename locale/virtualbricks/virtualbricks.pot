@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-08 21:56+0200\n"
+"POT-Creation-Date: 2026-10-08 23:59+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -453,7 +453,7 @@ msgstr ""
 msgid "%(config)s config has no %(option)s option."
 msgstr ""
 
-#: virtualbricks/bricks/__init__.py
+#: virtualbricks/bricks/__init__.py virtualbricks/bricks/switchwrapper.py
 #, python-format
 msgid "Cannot start '%s': not configured"
 msgstr ""
@@ -644,6 +644,11 @@ msgid "{switch} needs {count} ports, one for each plug"
 msgstr ""
 
 #: virtualbricks/bricks/switchwrapper.py
+#, python-brace-format
+msgid "Another program runs the switch of {name}"
+msgstr ""
+
+#: virtualbricks/bricks/switchwrapper.py
 msgid "Control folder"
 msgstr ""
 
@@ -653,7 +658,7 @@ msgstr ""
 
 #: virtualbricks/bricks/switchwrapper.py
 #, python-format
-msgid "Socket does not exists: %s"
+msgid "No switch listens in %s"
 msgstr ""
 
 #: virtualbricks/bricks/tap.py
@@ -1335,6 +1340,11 @@ msgstr ""
 
 #: virtualbricks/console/bricks.py
 msgid "Put keys of a brick back to their defaults"
+msgstr ""
+
+#: virtualbricks/console/bricks.py
+#, python-brace-format
+msgid "{name} runs"
 msgstr ""
 
 #: virtualbricks/console/bricks.py
