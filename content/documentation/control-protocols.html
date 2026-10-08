@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Virtualbricks Control Protocols</title>
+<meta name="date" content="2026-10-06 11:00">
+<meta name="status" content="draft">
+<meta name="category" content="Documentation">
+<meta name="slug" content="control-protocols">
+<meta name="url" content="documentation/control-protocols.html">
+<meta name="save_as" content="documentation/control-protocols.html">
+<meta name="template" content="doc">
+<meta name="stylesheet" content="control-protocols.css">
+<meta name="summary" content="Reference of the protocols of the control sockets of Virtualbricks: the JSON protocol, AMP protocols 1 and 2, the proof of the token, the typed commands, the commands of the windows of another Virtualbricks and their pushes.">
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Reference &middot; JSON protocol 1 &middot; AMP protocols 1 and 2</div>
+    <h1>Virtualbricks Control Protocols</h1>
+    <p class="lede">A Virtualbricks started with <code>--listen</code> answers on control sockets: the commands of its console, from <code>virtualbricks --command</code> or from any program, and what the windows of another Virtualbricks ask. A socket carries lines of JSON or the boxes of AMP, Twisted&#x27;s Asynchronous Messaging Protocol, and on them three protocols:</p>
+    <ul class="meta">
+      <li><b>virtualbricks</b> 3.0.0.dev3</li>
+      <li><b>59</b> typed commands</li>
+      <li><b>19</b> commands of the windows</li>
+      <li><b>8</b> pushes</li>
+      <li>also as <b>man 7 virtualbricks-control</b></li>
+    </ul>
+  </header>
+
+  <ul class="files" aria-label="The three protocols">
+    <li class="file">
+      <h2><a href="#json">JSON</a></h2>
+      <p class="how">--listen unix:PATH<b>:protocol=json</b></p>
+      <p>Lines of JSON, on a socket of <code>protocol=json</code>: a line of the console in each request, the lines it prints in each answer. Any language that reads and writes JSON speaks it, and a shell with <a class="man" href="https://manpages.debian.org/socat.1"><code>socat</code>(1)</a>.</p>
+      <dl>
+        <dt>Carries</dt><dd>a JSON object a line</dd>
+        <dt>Commands</dt><dd>a line of the console, its lines</dd>
+        <dt>Token</dt><dd>the first line, if asked</dd>
+        <dt>Speaks it</dt><dd>any language, a shell</dd>
+      </dl>
+    </li>
+    <li class="file">
+      <h2><a href="#amp-1">AMP 1</a></h2>
+      <p class="how">--listen unix:PATH, <b>the default</b></p>
+      <p>On an AMP socket, as a socket is without <code>protocol=json</code>: <code>Hello</code>, who answers, and <code>Run</code>, a line of the console and its lines. <code>virtualbricks --command</code> speaks it, and so can a program written with Twisted.</p>
+      <dl>
+        <dt>Carries</dt><dd>the boxes of AMP</dd>
+        <dt>Commands</dt><dd><code>Hello</code>, <code>Run</code></dd>
+        <dt>Token</dt><dd><code>Challenge</code>, <code>Authenticate</code></dd>
+        <dt>Speaks it</dt><dd><code>--command</code>, Twisted programs</dd>
+      </dl>
+    </li>
+    <li class="file">
+      <h2><a href="#amp-2">AMP 2</a></h2>
+      <p class="how">Hello <b>protocols=[1, 2]</b></p>
+      <p>On the same connection, once <code>Hello</code> agrees on it: a typed command for each command of the console, as <code>BrickStart</code> with its names, and the commands of the windows of <code>virtualbricks --connect</code>: <code>Follow</code>, which sends the project, then each change, and the others.</p>
+      <dl>
+        <dt>Carries</dt><dd>the boxes of AMP, on the same connection</dd>
+        <dt>Commands</dt><dd>59 typed, 19 of the windows, 8 pushes</dd>
+        <dt>Token</dt><dd>as AMP 1</dd>
+        <dt>Speaks it</dt><dd>Twisted programs, the windows of <code>--connect</code></dd>
+      </dl>
+    </li>
+  </ul>
+
+  <figure class="diagram hero">
+    <div class="canvas"><svg class="dg" viewBox="0 0 760 300" role="img" aria-label="The three protocols: JSON, lines of JSON on a socket of protocol=json; AMP 1 and AMP 2 over AMP boxes, on an AMP socket, the default, where Hello with protocols [2] takes a connection from protocol 1 to protocol 2. Under both, the proof of the token when the socket asks for it, and a unix, tcp or ssl socket of --listen."><defs><marker id="ly-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker><marker id="ly-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker><marker id="ly-warn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-warn"/></marker></defs><rect x="20" y="16" width="200" height="104" rx="7" class="box-accent"/><text x="120" y="44" text-anchor="middle" class="title">JSON</text><text x="120" y="66" text-anchor="middle" class="small">a line of the console,</text><text x="120" y="83" text-anchor="middle" class="small">the lines it prints</text><text x="120" y="106" text-anchor="middle" class="small muted">protocol 1 of the greeting</text><rect x="250" y="16" width="170" height="104" rx="7" class="box-accent"/><text x="335" y="44" text-anchor="middle" class="title">AMP 1</text><text x="335" y="66" text-anchor="middle" class="small">Hello, who answers</text><text x="335" y="83" text-anchor="middle" class="small">Run, a line and its lines</text><text x="335" y="106" text-anchor="middle" class="small muted">without Hello, too</text><rect x="500" y="16" width="240" height="104" rx="7" class="box-accent"/><text x="620" y="44" text-anchor="middle" class="title">AMP 2</text><text x="620" y="66" text-anchor="middle" class="small">a typed command for each</text><text x="620" y="83" text-anchor="middle" class="small">command of the console</text><text x="620" y="106" text-anchor="middle" class="small muted">Follow and its pushes, Attach</text><line x1="424" y1="68" x2="496" y2="68" class="ln-accent" marker-end="url(#ly-acc)"/><text x="460" y="58" text-anchor="middle" class="mono small t-accent">Hello</text><text x="460" y="86" text-anchor="middle" class="mono small t-accent">[2]</text><rect x="20" y="130" width="200" height="44" rx="7" class="box-ghost"/><text x="120" y="157" text-anchor="middle" class="small">the token, if asked</text><rect x="250" y="130" width="490" height="44" rx="7" class="box-ghost"/><text x="495" y="157" text-anchor="middle" class="small">the token, if asked: Challenge, Authenticate</text><rect x="20" y="184" width="200" height="40" rx="7" class="box"/><text x="120" y="209" text-anchor="middle" class="mono">JSON lines</text><rect x="250" y="184" width="490" height="40" rx="7" class="box"/><text x="495" y="209" text-anchor="middle" class="mono">AMP boxes</text><rect x="20" y="234" width="720" height="40" rx="7" class="box"/><text x="380" y="259" text-anchor="middle" class="mono">a unix, tcp or ssl socket of --listen</text><text x="120" y="292" text-anchor="middle" class="mono small muted">protocol=json</text><text x="495" y="292" text-anchor="middle" class="mono small muted">protocol=amp, the default</text></svg></div>
+    <figcaption>One socket speaks lines of JSON or the boxes of AMP, as its description says. On AMP, a connection starts in protocol 1, and <code>Hello</code> takes it to protocol 2.</figcaption>
+  </figure>
+  <p class="intro">A <code>tcp</code> socket answers only a client that proves first that it knows the token of Virtualbricks, in either format. This page describes the protocols for whoever writes a client: the sockets (<a href="#sockets">The sockets</a>), the proof of the token (<a href="#token">The token</a>), the JSON protocol (<a href="#json">The JSON protocol</a>), the boxes of AMP (<a href="#amp">AMP</a>) and the commands of its two protocols (<a href="#amp-1">AMP protocol 1</a>, <a href="#amp-2">AMP protocol 2</a>), how they change (<a href="#versions">Versions</a>) and how much they carry (<a href="#limits">Limits</a>). How to open the sockets, and which, is in <a href="command-line.html#control-socket">The control socket</a> of <a class="man" href="command-line.html"><code>virtualbricks</code>(1)</a>.</p>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+<li><a href="#synopsis">Synopsis</a></li>
+<li><a href="#sockets">The sockets</a></li>
+<li><a href="#token">The token</a></li>
+<li><a href="#json">The JSON protocol</a></li>
+<li class="sub"><a href="#json-lines">Lines</a></li>
+<li class="sub"><a href="#json-the-greeting">The greeting</a></li>
+<li class="sub"><a href="#json-requests-and-answers">Requests and answers</a></li>
+<li class="sub"><a href="#json-with-the-token">With the token</a></li>
+<li><a href="#amp">AMP</a></li>
+<li class="sub"><a href="#amp-boxes">Boxes</a></li>
+<li class="sub"><a href="#amp-values">Values</a></li>
+<li class="sub"><a href="#amp-errors">Errors</a></li>
+<li><a href="#amp-1">AMP protocol 1</a></li>
+<li><a href="#amp-2">AMP protocol 2</a></li>
+<li class="sub"><a href="#amp-2-the-typed-commands">The typed commands</a></li>
+<li class="sub"><a href="#amp-2-the-commands-of-the-windows">The commands of the windows</a></li>
+<li class="sub"><a href="#amp-2-follow-and-the-pushes">Follow and the pushes</a></li>
+<li class="sub"><a href="#amp-2-attach">Attach</a></li>
+<li><a href="#versions">Versions</a></li>
+<li><a href="#limits">Limits</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#files">Files</a></li>
+<li><a href="#see-also">See also</a></li>
+      </ol>
+    </nav>
+    <main>
+<section id="synopsis">
+<h2>Synopsis</h2>
+<figure class="code"><pre><code>virtualbricks --listen unix:path:protocol=json
+virtualbricks --listen [unix:path]
+virtualbricks --listen tcp:port[:protocol=json]</code></pre></figure>
+</section>
+<section id="sockets">
+<h2>The sockets</h2>
+<p>The protocols are the same on each type of socket: <code>unix</code>, a path that only its user can connect to; <code>tcp</code>, a port of this machine; and <code>ssl</code>, a port inside TLS. Each <code>tcp</code> socket asks a client for the token, and so may an <code>ssl</code> socket, see <a class="man" href="command-line.html"><code>virtualbricks</code>(1)</a>; a <code>unix</code> socket never does. The first message tells the client which, see <a href="#token">The token</a>. The socket of <code>--listen</code> alone, <em>$XDG_RUNTIME_DIR</em>/virtualbricks/<em>key</em>/.control, speaks AMP.</p>
+<p>Each connection runs its requests one after the other, in the order they came: a client may send the next request before the answer to the one before, and the answers come in the same order. Over AMP, the commands that only read the machine answer at once, beside those that wait, see <a href="#amp-2">AMP protocol 2</a>. Connections don&#x27;t wait for each other, nor for the terminal or the events of Virtualbricks.</p>
+<p>The paths of a command, as that of <code>source</code> <em>file</em>, are read from <code>cwd</code>, an absolute path that a request may give, or else from the folder where Virtualbricks runs. A client on another machine leaves <code>cwd</code> out: its folders aren&#x27;t those of Virtualbricks. Virtualbricks answers in its own language, and logs each command it gets, with the address of the client on a network socket.</p>
+<p>When Virtualbricks quits, it closes each connection once the answers it owes are written; a client that doesn&#x27;t read them within 2 seconds is cut off. <code>quit</code> answers too, and a connection that follows Virtualbricks gets <code>Quitting</code> first.</p>
+</section>
+<section id="token">
+<h2>The token</h2>
+<p>The token is a line of text of at least 16 characters, in a file: <em>$XDG_CONFIG_HOME</em>/virtualbricks/token, or the file of <code>tokenFile=</code> in the description of the socket. The first start of a socket that needs it makes the file, with 43 random characters. The file must be a regular file of the user that nobody else can read or change, mode 0600; the spaces around the line don&#x27;t count. A client reads the same token: copy the file to its machine.</p>
+<p>Neither end sends the token. Each proves that it knows it, over two nonces, a random number of each end in lowercase hex digits: Virtualbricks sends one of 64 digits, and the client&#x27;s has from 32 to 128. The proof of a <em>side</em>, <code>client</code> or <code>server</code>, is the HMAC-SHA256, under the token in UTF-8, of the text</p>
+<figure class="code"><pre><code>virtualbricks side S C</code></pre></figure>
+<p>where <em>S</em> is the nonce of Virtualbricks and <em>C</em> that of the client, one space between the words, written in lowercase hex digits:</p>
+<figure class="diagram"><div class="canvas"><svg class="dg" viewBox="0 0 760 272" role="img" aria-label="The client and Virtualbricks each prove that they know the token: Virtualbricks sends its nonce S; the client sends its nonce C and the HMAC of &#x27;virtualbricks client S C&#x27; under the token, which Virtualbricks checks; then Virtualbricks sends the HMAC of &#x27;virtualbricks server S C&#x27;, which the client checks. A wrong proof closes the connection."><defs><marker id="tk-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker><marker id="tk-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker><marker id="tk-warn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-warn"/></marker></defs><rect x="115" y="16" width="110" height="34" rx="6" class="box"/><text x="170" y="38" text-anchor="middle" class="title">client</text><line x1="170" y1="50" x2="170" y2="260" class="life"/><rect x="468" y="16" width="145" height="34" rx="6" class="box"/><text x="540" y="38" text-anchor="middle" class="title">Virtualbricks</text><line x1="540" y1="50" x2="540" y2="260" class="life"/><text x="355" y="91" text-anchor="middle" class="mono">nonce S</text><line x1="536" y1="100" x2="174" y2="100" class="ln-warn" marker-end="url(#tk-warn)"/><text x="355" y="137" text-anchor="middle" class="mono">nonce C,</text><text x="355" y="153" text-anchor="middle" class="mono">HMAC(token, &quot;virtualbricks client S C&quot;)</text><line x1="174" y1="162" x2="536" y2="162" class="ln-warn" marker-end="url(#tk-warn)"/><text x="554" y="170" class="small muted">checks it: if wrong,</text><text x="554" y="185" class="small muted">closes the connection</text><text x="355" y="213" text-anchor="middle" class="mono">HMAC(token, &quot;virtualbricks server S C&quot;)</text><line x1="536" y1="222" x2="174" y2="222" class="ln-warn" marker-end="url(#tk-warn)"/><text x="156" y="230" text-anchor="end" class="small muted">checks it: if wrong,</text><text x="156" y="245" text-anchor="end" class="small muted">closes the connection</text></svg></div><figcaption>The messages of the proof, in amber here and in the diagrams below, come before any other on a socket that asks for the token.</figcaption></figure>
+<p>The client proves first, and Virtualbricks then proves it to the client: a program that took the port in place of Virtualbricks doesn&#x27;t know the token, so it can&#x27;t, and the client doesn&#x27;t send it any command. With new nonces each time, a proof is good for one connection only, and nobody who reads it learns the token. A client has 10 seconds from connecting to give a right proof; then the connection is closed.</p>
+<p>In a shell, <a class="man" href="https://manpages.debian.org/openssl.1"><code>openssl</code>(1)</a> computes the proof of the client:</p>
+<figure class="code"><pre><code>printf 'virtualbricks client %s %s' "$nonce" "$mine" |
+    openssl dgst -sha256 -hmac "$token"</code></pre></figure>
+</section>
+<section id="json">
+<h2>The JSON protocol</h2>
+<h3 id="json-lines">Lines</h3>
+<p>Each message is a JSON object on a line of its own, in UTF-8, ended by a newline, LF. Virtualbricks skips the empty lines it gets, and closes the connection on a line longer than 64 KiB, 65536 bytes. A key that a message doesn&#x27;t need is ignored: a client ignores the keys it doesn&#x27;t know too, so that a later version can add some.</p>
+<h3 id="json-the-greeting">The greeting</h3>
+<p>Virtualbricks writes the first line as soon as a client connects:</p>
+<figure class="code"><pre><code>{"protocol": 1, "version": "3.0.0", "pid": 4200,
+ "project": "lab1"}</code></pre></figure>
+<dl class="terms">
+<dt><code>protocol</code></dt><dd><p>1, the version of the JSON protocol. A client that doesn&#x27;t know it sends nothing, and closes the connection.</p></dd>
+<dt><code>version</code></dt><dd><p>The version of Virtualbricks.</p></dd>
+<dt><code>pid</code></dt><dd><p>Its process.</p></dd>
+<dt><code>project</code></dt><dd><p>The name of the open project, or <code>null</code>.</p></dd>
+</dl>
+<h3 id="json-requests-and-answers">Requests and answers</h3>
+<p>A request has the command, <code>line</code>, a line of the console as it is typed, and <code>cwd</code>, optional, the folder of its paths. Its answer has <code>ok</code>, whether the command was done, <code>lines</code>, what it printed, a text for each line, without newlines, and <code>error</code>, why it failed, when <code>ok</code> is <code>false</code>; <code>lines</code> is then what it printed before it failed:</p>
+<figure class="code"><pre><code>{"line": "brick start sw1", "cwd": "/home/alice/labs"}
+{"ok": true, "lines": ["sw1 runs, process 4242"]}
+{"line": "brick start vm9"}
+{"ok": false, "lines": [], "error": "No brick named vm9"}</code></pre></figure>
+<p>A line that isn&#x27;t a request gets an answer with <code>ok</code> <code>false</code> and why, as &quot;Not a request: &quot;cwd&quot; is not an absolute path&quot;, and the connection goes on.</p>
+<h3 id="json-with-the-token">With the token</h3>
+<p>On a socket that asks for the token, the first line asks for the proof, with the nonce of Virtualbricks, and the client answers with its own nonce and its proof. The greeting follows a right proof, with the proof of Virtualbricks:</p>
+<figure class="code"><pre><code>{"protocol": 1, "auth": "token", "nonce": "3f9a..."}
+{"nonce": "c41d...", "proof": "8e02..."}
+{"protocol": 1, "version": "3.0.0", "pid": 4200,
+ "project": "lab1", "proof": "51b7..."}</code></pre></figure>
+<p>A wrong proof, a line that isn&#x27;t one, or none in 10 seconds gets an answer with <code>ok</code> <code>false</code> and why, as &quot;Wrong token&quot;, and the connection closes.</p>
+<figure class="diagram"><div class="canvas"><svg class="dg" viewBox="0 0 760 436" role="img" aria-label="A session of the JSON protocol: on a socket that asks for the token, Virtualbricks first asks for the proof and the client gives it; then the greeting; then the client sends two requests, one line each, and gets the two answers in the same order."><defs><marker id="tx-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker><marker id="tx-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker><marker id="tx-warn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-warn"/></marker></defs><rect x="115" y="16" width="110" height="34" rx="6" class="box"/><text x="170" y="38" text-anchor="middle" class="title">client</text><line x1="170" y1="50" x2="170" y2="424" class="life"/><rect x="468" y="16" width="145" height="34" rx="6" class="box"/><text x="540" y="38" text-anchor="middle" class="title">Virtualbricks</text><line x1="540" y1="50" x2="540" y2="424" class="life"/><text x="355" y="91" text-anchor="middle" class="mono">{&quot;protocol&quot;: 1, &quot;auth&quot;: &quot;token&quot;, &quot;nonce&quot;: S}</text><line x1="536" y1="100" x2="174" y2="100" class="ln-warn" marker-end="url(#tx-warn)"/><text x="554" y="108" class="small muted">on a socket that asks</text><text x="554" y="123" class="small muted">for the token</text><text x="355" y="145" text-anchor="middle" class="mono">{&quot;nonce&quot;: C, &quot;proof&quot;: ...}</text><line x1="174" y1="154" x2="536" y2="154" class="ln-warn" marker-end="url(#tx-warn)"/><text x="355" y="193" text-anchor="middle" class="mono">{&quot;protocol&quot;: 1, &quot;version&quot;: ..., &quot;pid&quot;: ...,</text><text x="355" y="209" text-anchor="middle" class="mono">&quot;project&quot;: ...[, &quot;proof&quot;: ...]}</text><line x1="536" y1="218" x2="174" y2="218" class="ln-accent" marker-end="url(#tx-acc)"/><text x="554" y="226" class="small muted">the greeting</text><text x="355" y="257" text-anchor="middle" class="mono">{&quot;line&quot;: &quot;brick start sw1&quot;}</text><line x1="174" y1="266" x2="536" y2="266" class="ln" marker-end="url(#tx-tip)"/><text x="355" y="297" text-anchor="middle" class="mono">{&quot;line&quot;: &quot;status&quot;}</text><line x1="174" y1="306" x2="536" y2="306" class="ln" marker-end="url(#tx-tip)"/><text x="554" y="314" class="small muted">a request may go</text><text x="554" y="329" class="small muted">before the answer</text><text x="355" y="351" text-anchor="middle" class="mono">{&quot;ok&quot;: true, &quot;lines&quot;: [...]}</text><line x1="536" y1="360" x2="174" y2="360" class="ln-accent" marker-end="url(#tx-acc)"/><text x="554" y="368" class="small muted">in the same order</text><text x="355" y="391" text-anchor="middle" class="mono">{&quot;ok&quot;: true, &quot;lines&quot;: [...]}</text><line x1="536" y1="400" x2="174" y2="400" class="ln-accent" marker-end="url(#tx-acc)"/></svg></div><figcaption>The JSON protocol: the proof first, on a socket that asks for it; the greeting; then each request gets its answer, in the order the requests came.</figcaption></figure>
+</section>
+<section id="amp">
+<h2>AMP</h2>
+<h3 id="amp-boxes">Boxes</h3>
+<p>AMP carries boxes: a key and its value, then another, and so on, up to a key of no bytes. Each key and each value has its length first, in two bytes, the high byte first: a key has from 1 to 255 bytes, a value from 0 to 65535. A request of <code>Hello</code>, and its answer:</p>
+<figure class="diagram"><div class="canvas"><svg class="dg" viewBox="0 0 760 258" role="img" aria-label="The bytes of a request of Hello and of its answer: each key and each value has its length first, in two bytes, and a key of no bytes ends the box. The request has _ask 1, _command Hello and protocols, a list of 1 and 2; the answer has _answer 1, protocol 2, version, pid and project."><text x="20" y="40" class="title">A request of Hello</text><text x="28" y="60" class="small muted">length</text><text x="80" y="60" class="small muted">key</text><text x="176" y="60" class="small muted">length</text><text x="228" y="60" class="small muted">value</text><rect x="20" y="70" width="52" height="28" class="box"/><text x="28" y="88" class="mono muted">00 04</text><rect x="72" y="70" width="96" height="28" class="box-accent"/><text x="80" y="88" class="mono t-accent">_ask</text><rect x="168" y="70" width="52" height="28" class="box"/><text x="176" y="88" class="mono muted">00 01</text><rect x="220" y="70" width="160" height="28" class="box"/><text x="228" y="88" class="mono">1</text><rect x="20" y="98" width="52" height="28" class="box"/><text x="28" y="116" class="mono muted">00 08</text><rect x="72" y="98" width="96" height="28" class="box-accent"/><text x="80" y="116" class="mono t-accent">_command</text><rect x="168" y="98" width="52" height="28" class="box"/><text x="176" y="116" class="mono muted">00 05</text><rect x="220" y="98" width="160" height="28" class="box"/><text x="228" y="116" class="mono">Hello</text><rect x="20" y="126" width="52" height="28" class="box"/><text x="28" y="144" class="mono muted">00 09</text><rect x="72" y="126" width="96" height="28" class="box-accent"/><text x="80" y="144" class="mono t-accent">protocols</text><rect x="168" y="126" width="52" height="28" class="box"/><text x="176" y="144" class="mono muted">00 06</text><rect x="220" y="126" width="160" height="28" class="box"/><text x="228" y="144" class="mono">00 01 &quot;1&quot; 00 01 &quot;2&quot;</text><rect x="20" y="154" width="52" height="28" class="box"/><text x="28" y="172" class="mono muted">00 00</text><rect x="72" y="154" width="308" height="28" class="box-ghost"/><text x="226" y="172" text-anchor="middle" class="small muted">a key of no bytes: the end of the box</text><text x="390" y="40" class="title">Its answer</text><text x="398" y="60" class="small muted">length</text><text x="450" y="60" class="small muted">key</text><text x="546" y="60" class="small muted">length</text><text x="598" y="60" class="small muted">value</text><rect x="390" y="70" width="52" height="28" class="box"/><text x="398" y="88" class="mono muted">00 07</text><rect x="442" y="70" width="96" height="28" class="box-accent"/><text x="450" y="88" class="mono t-accent">_answer</text><rect x="538" y="70" width="52" height="28" class="box"/><text x="546" y="88" class="mono muted">00 01</text><rect x="590" y="70" width="160" height="28" class="box"/><text x="598" y="88" class="mono">1</text><rect x="390" y="98" width="52" height="28" class="box"/><text x="398" y="116" class="mono muted">00 08</text><rect x="442" y="98" width="96" height="28" class="box-accent"/><text x="450" y="116" class="mono t-accent">protocol</text><rect x="538" y="98" width="52" height="28" class="box"/><text x="546" y="116" class="mono muted">00 01</text><rect x="590" y="98" width="160" height="28" class="box"/><text x="598" y="116" class="mono">2</text><rect x="390" y="126" width="52" height="28" class="box"/><text x="398" y="144" class="mono muted">00 07</text><rect x="442" y="126" width="96" height="28" class="box-accent"/><text x="450" y="144" class="mono t-accent">version</text><rect x="538" y="126" width="52" height="28" class="box"/><text x="546" y="144" class="mono muted">00 05</text><rect x="590" y="126" width="160" height="28" class="box"/><text x="598" y="144" class="mono">3.0.0</text><rect x="390" y="154" width="52" height="28" class="box"/><text x="398" y="172" class="mono muted">00 03</text><rect x="442" y="154" width="96" height="28" class="box-accent"/><text x="450" y="172" class="mono t-accent">pid</text><rect x="538" y="154" width="52" height="28" class="box"/><text x="546" y="172" class="mono muted">00 04</text><rect x="590" y="154" width="160" height="28" class="box"/><text x="598" y="172" class="mono">4200</text><rect x="390" y="182" width="52" height="28" class="box"/><text x="398" y="200" class="mono muted">00 07</text><rect x="442" y="182" width="96" height="28" class="box-accent"/><text x="450" y="200" class="mono t-accent">project</text><rect x="538" y="182" width="52" height="28" class="box"/><text x="546" y="200" class="mono muted">00 04</text><rect x="590" y="182" width="160" height="28" class="box"/><text x="598" y="200" class="mono">lab1</text><rect x="390" y="210" width="52" height="28" class="box"/><text x="398" y="228" class="mono muted">00 00</text><rect x="442" y="210" width="308" height="28" class="box-ghost"/><text x="596" y="228" text-anchor="middle" class="small muted">a key of no bytes: the end of the box</text></svg></div><figcaption>The boxes of a request of <code>Hello</code> and of its answer, byte by byte: the lengths in hex, the keys and the values as text.</figcaption></figure>
+<p>A request has <code>_ask</code>, a tag that the program chooses, different from those of its requests that wait, and <code>_command</code>, the name of the command; then its arguments, in any order. Its answer has <code>_answer</code>, the same tag, and the values of the answer; or, if the command failed, <code>_error</code>, the tag, <code>_error_code</code> and <code>_error_description</code>, why. The tags pair the answers with the requests, which may be answered in another order. A request without <code>_ask</code> wants no answer: the pushes of <code>Follow</code> are such. A program written with Twisted has all this in <code>twisted.protocols.amp</code>; in Python without Twisted, <code>virtualbricks.console.ampbox</code> reads and writes the boxes.</p>
+<h3 id="amp-values">Values</h3>
+<p>A value is bytes, read as the command says:</p>
+<dl class="terms">
+<dt><code>str</code></dt><dd><p>A text, in UTF-8.</p></dd>
+<dt><code>int</code></dt><dd><p>An integer, in decimal digits, with <code>-</code> before it if negative.</p></dd>
+<dt><code>bool</code></dt><dd><p><code>True</code> or <code>False</code>.</p></dd>
+<dt><code>bytes</code></dt><dd><p>Bytes, as they are.</p></dd>
+<dt><code>[str]</code>, <code>[int]</code></dt><dd><p>A list: each item with its length in two bytes, one after the other.</p></dd>
+<dt><code>pairs</code></dt><dd><p>A list of records, each with <code>key</code> and <code>value</code>, both <code>str</code>: each record a box, with its end, one after the other.</p></dd>
+</dl>
+<p>An optional argument, written <code>?</code> after its kind, is left out of the box when it has no value, and so is an optional value of an answer.</p>
+<h3 id="amp-errors">Errors</h3>
+<p><code>_error_code</code> is one of the codes of the command, which name what went wrong; each protocol below lists its own. Twisted adds two: <code>UNHANDLED</code>, there is no command of that name, as a command of a later version or of a protocol that the connection doesn&#x27;t speak, see <a href="#versions">Versions</a>; and <code>UNKNOWN</code>, a failure that Virtualbricks didn&#x27;t expect, after which the connection closes. A box that isn&#x27;t one closes the connection too.</p>
+</section>
+<section id="amp-1">
+<h2>AMP protocol 1</h2>
+<p>The commands of protocol 1 are in the module <code>virtualbricks.console.ampwire</code>, which loads nothing but Twisted&#x27;s <code>amp</code>: a program imports it, or copies it, as <a href="command-line.html#control-socket">The control socket</a> of <a class="man" href="command-line.html"><code>virtualbricks</code>(1)</a> does. They are written here as in <em>tests/data/amp-protocol-2.txt</em> of the sources: each argument as <em>name</em>:<em>kind</em>, then <code>-&gt;</code> and what the answer has:</p>
+<div class="scroll"><table class="fields amp"><thead><tr><th>Command</th><th>Arguments</th><th>Answer</th></tr></thead><tbody>
+<tr id="cmd-hello"><th scope="row"><a href="#about-hello"><code class="key">Hello</code></a></th><td class="sig"><span class="arg">protocols<span class="kind">:[int]?</span></span></td><td class="sig"><span class="arg">protocol<span class="kind">:int</span></span> <span class="arg">version<span class="kind">:str</span></span> <span class="arg">pid<span class="kind">:int</span></span> <span class="arg">project<span class="kind">:str?</span></span></td></tr>
+<tr id="cmd-run"><th scope="row"><a href="#about-run"><code class="key">Run</code></a></th><td class="sig"><span class="arg">line<span class="kind">:str</span></span> <span class="arg">cwd<span class="kind">:str?</span></span></td><td class="sig"><span class="arg">lines<span class="kind">:[str]</span></span></td></tr>
+<tr id="cmd-challenge"><th scope="row"><a href="#about-challenge"><code class="key">Challenge</code></a></th><td class="sig"><span class="none">&mdash;</span></td><td class="sig"><span class="arg">nonce<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-authenticate"><th scope="row"><a href="#about-authenticate"><code class="key">Authenticate</code></a></th><td class="sig"><span class="arg">nonce<span class="kind">:str</span></span> <span class="arg">proof<span class="kind">:str</span></span></td><td class="sig"><span class="arg">proof<span class="kind">:str</span></span></td></tr>
+</tbody></table></div>
+<dl class="terms">
+<dt id="about-hello"><code>Hello</code></dt><dd><p>Who answers, and the protocol of the connection from then on. <code>protocols</code> are those the program speaks; <code>protocol</code> is the highest that Virtualbricks speaks too, 1 without them or when it speaks none of them. Then the <code>version</code> of Virtualbricks, its <code>pid</code>, and the open <code>project</code>, left out if none is. A connection that doesn&#x27;t call <code>Hello</code> speaks protocol 1.</p></dd>
+<dt id="about-run"><code>Run</code></dt><dd><p>A line of the console and its <code>cwd</code>, as in a request of the JSON protocol; the answer is the lines it printed. If the command fails, the error says why, and what it printed before is lost.</p></dd>
+<dt id="about-challenge"><code>Challenge</code></dt><dd><p>The nonce of Virtualbricks, for the proof of the token.</p></dd>
+<dt id="about-authenticate"><code>Authenticate</code></dt><dd><p>The nonce of the program and its proof; the answer is the proof of Virtualbricks, which the program checks, see <a href="#token">The token</a>.</p></dd>
+</dl>
+<p>Their errors:</p>
+<dl class="terms">
+<dt><code>COMMAND_FAILED</code></dt><dd><p><code>Run</code>: the command failed, or its <code>cwd</code> isn&#x27;t an absolute path.</p></dd>
+<dt><code>ANSWER_TOO_LONG</code></dt><dd><p><code>Run</code>: the command was done, but its lines are longer than the 65535 bytes of a value; a JSON socket carries them.</p></dd>
+<dt><code>TOKEN_NEEDED</code></dt><dd><p><code>Hello</code>, <code>Run</code> and the commands of protocol 2: on a socket that asks for the token, each fails until the program proves that it knows it.</p></dd>
+<dt><code>WRONG_TOKEN</code></dt><dd><p><code>Challenge</code> and <code>Authenticate</code>: the socket takes no token, and the connection goes on; or the proof is wrong, or <code>Authenticate</code> came without a <code>Challenge</code> before it, and the connection closes.</p></dd>
+</dl>
+<figure class="diagram"><div class="canvas"><svg class="dg" viewBox="0 0 760 526" role="img" aria-label="A session over AMP: on a socket that asks for the token, Challenge and Authenticate first; then Hello with protocols 1 and 2, answered with protocol 2; then Run, a command of protocol 1, and BrickStart, a typed command of protocol 2, each answered with its lines."><defs><marker id="am-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker><marker id="am-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker><marker id="am-warn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-warn"/></marker></defs><rect x="115" y="16" width="110" height="34" rx="6" class="box"/><text x="170" y="38" text-anchor="middle" class="title">program</text><line x1="170" y1="50" x2="170" y2="514" class="life"/><rect x="468" y="16" width="145" height="34" rx="6" class="box"/><text x="540" y="38" text-anchor="middle" class="title">Virtualbricks</text><line x1="540" y1="50" x2="540" y2="514" class="life"/><text x="355" y="91" text-anchor="middle" class="mono">Challenge</text><line x1="174" y1="100" x2="536" y2="100" class="ln-warn" marker-end="url(#am-warn)"/><text x="554" y="108" class="small muted">on a socket that asks</text><text x="554" y="123" class="small muted">for the token</text><text x="355" y="145" text-anchor="middle" class="mono">nonce S</text><line x1="536" y1="154" x2="174" y2="154" class="ln-warn" marker-end="url(#am-warn)"/><text x="355" y="185" text-anchor="middle" class="mono">Authenticate nonce C, proof</text><line x1="174" y1="194" x2="536" y2="194" class="ln-warn" marker-end="url(#am-warn)"/><text x="355" y="225" text-anchor="middle" class="mono">proof of Virtualbricks</text><line x1="536" y1="234" x2="174" y2="234" class="ln-warn" marker-end="url(#am-warn)"/><text x="355" y="273" text-anchor="middle" class="mono">Hello protocols [1, 2]</text><line x1="174" y1="282" x2="536" y2="282" class="ln" marker-end="url(#am-tip)"/><text x="355" y="313" text-anchor="middle" class="mono">protocol 2, version, pid, project</text><line x1="536" y1="322" x2="174" y2="322" class="ln-accent" marker-end="url(#am-acc)"/><text x="554" y="330" class="small muted">agreed on 2</text><text x="355" y="361" text-anchor="middle" class="mono">Run line &quot;brick start sw1&quot;</text><line x1="174" y1="370" x2="536" y2="370" class="ln" marker-end="url(#am-tip)"/><text x="554" y="378" class="small muted">protocol 1</text><text x="355" y="401" text-anchor="middle" class="mono">lines [...]</text><line x1="536" y1="410" x2="174" y2="410" class="ln-accent" marker-end="url(#am-acc)"/><text x="355" y="441" text-anchor="middle" class="mono">BrickStart name [&quot;vm1&quot;]</text><line x1="174" y1="450" x2="536" y2="450" class="ln" marker-end="url(#am-tip)"/><text x="554" y="458" class="small muted">protocol 2</text><text x="355" y="481" text-anchor="middle" class="mono">lines [...]</text><line x1="536" y1="490" x2="174" y2="490" class="ln-accent" marker-end="url(#am-acc)"/></svg></div><figcaption>A session over AMP: the proof of the token, <code>Hello</code>, then the commands of protocols 1 and 2 on the same connection.</figcaption></figure>
+</section>
+<section id="amp-2">
+<h2>AMP protocol 2</h2>
+<p>Once <code>Hello</code> has agreed on 2, a connection speaks the commands of protocol 1 and those of protocol 2; before, these fail with <code>PROTOCOL_NEEDED</code>. They are in two modules that load nothing else of Virtualbricks but <code>ampwire</code>: <code>virtualbricks.console.ampcommands</code>, the typed commands, and <code>virtualbricks.remote.commands</code>, those of the windows; a program imports them, or copies them. Each command of protocol 2 has the same errors:</p>
+<dl class="terms">
+<dt><code>NOT_FOUND</code></dt><dd><p>A name of the command names nothing there: a brick, an event, an image, a project, a program or a file. Nothing was done.</p></dd>
+<dt><code>BAD_ARGUMENT</code></dt><dd><p>An argument isn&#x27;t one the command takes; or the box has a key that the command doesn&#x27;t have, or lacks one it needs, which Twisted would drop, or close the connection on. Nothing was done.</p></dd>
+<dt><code>PROTOCOL_NEEDED</code></dt><dd><p><code>Hello</code> hasn&#x27;t agreed on protocol 2.</p></dd>
+<dt><code>COMMAND_FAILED</code></dt><dd><p>The command failed on the way: a program or a file said no. Part of it may be done.</p></dd>
+<dt><code>ANSWER_TOO_LONG</code></dt><dd><p>The command was done, but its answer is longer than the 65535 bytes of a value.</p></dd>
+<dt><code>TOKEN_NEEDED</code></dt><dd><p>As in protocol 1.</p></dd>
+</dl>
+<p>In the modules, <code>NotFound</code> and <code>BadArgument</code> are subclasses of <code>CommandFailed</code>: a program that catches <code>CommandFailed</code> catches the three.</p>
+<h3 id="amp-2-the-typed-commands">The typed commands</h3>
+<p>A typed command for each command of the console. Its name is the words of the command, each with a capital letter: <code>brick card add</code> is <code>BrickCardAdd</code>, <code>status</code> is <code>Status</code>. Its arguments are named after those of the command in <a href="command-line.html#commands">Commands</a> of <a class="man" href="command-line.html"><code>virtualbricks</code>(1)</a>, in lower case, with <code>_</code> for what isn&#x27;t a letter or a digit: <em>NAME</em> is <code>name</code>, <em>KEY</em>=<em>VALUE</em> is <code>key_value</code>, <code>--at</code> is <code>at</code>. A number is an <code>int</code>, an argument that repeats a list, <em>KEY</em>=<em>VALUE</em>... a list of <code>pairs</code>, an option without a value a <code>bool</code>, the rest a <code>str</code>; what is optional in the console is optional here. Each takes <code>cwd</code> too, as <code>Run</code> does, and answers <code>lines:[str]</code>, the lines of the console:</p>
+<div class="scroll"><table class="fields amp"><thead><tr><th>Command</th><th>Arguments</th><th>In the console</th></tr></thead><tbody>
+<tr id="cmd-bricktypes"><th scope="row"><code class="key">BrickTypes</code></th><td class="sig"><span class="none">&mdash;</span></td><td class="console"><code>brick types</code></td></tr>
+<tr id="cmd-bricklist"><th scope="row"><code class="key">BrickList</code></th><td class="sig"><span class="none">&mdash;</span></td><td class="console"><code>brick list</code></td></tr>
+<tr id="cmd-bricknew"><th scope="row"><code class="key">BrickNew</code></th><td class="sig"><span class="arg">kind<span class="kind">:str</span></span> <span class="arg">name<span class="kind">:str?</span></span></td><td class="console"><code>brick new <em>KIND</em> [<em>NAME</em>]</code></td></tr>
+<tr id="cmd-brickshow"><th scope="row"><code class="key">BrickShow</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span></td><td class="console"><code>brick show <em>NAME</em></code></td></tr>
+<tr id="cmd-brickkeys"><th scope="row"><code class="key">BrickKeys</code></th><td class="sig"><span class="arg">kind_name<span class="kind">:str</span></span> <span class="arg">key<span class="kind">:str?</span></span></td><td class="console"><code>brick keys <em>KIND</em>|<em>NAME</em> [<em>KEY</em>]</code></td></tr>
+<tr id="cmd-brickset"><th scope="row"><code class="key">BrickSet</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">key_value<span class="kind">:pairs</span></span></td><td class="console"><code>brick set <em>NAME</em> <em>KEY</em>=<em>VALUE</em>&hellip;</code></td></tr>
+<tr id="cmd-brickunset"><th scope="row"><code class="key">BrickUnset</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">key<span class="kind">:[str]</span></span></td><td class="console"><code>brick unset <em>NAME</em> <em>KEY</em>&hellip;</code></td></tr>
+<tr id="cmd-brickstart"><th scope="row"><code class="key">BrickStart</code></th><td class="sig"><span class="arg">name<span class="kind">:[str]</span></span></td><td class="console"><code>brick start <em>NAME</em>&hellip;</code></td></tr>
+<tr id="cmd-brickstop"><th scope="row"><code class="key">BrickStop</code></th><td class="sig"><span class="arg">name<span class="kind">:[str]</span></span></td><td class="console"><code>brick stop <em>NAME</em>&hellip;</code></td></tr>
+<tr id="cmd-brickkill"><th scope="row"><code class="key">BrickKill</code></th><td class="sig"><span class="arg">name<span class="kind">:[str]</span></span></td><td class="console"><code>brick kill <em>NAME</em>&hellip;</code></td></tr>
+<tr id="cmd-brickrestart"><th scope="row"><code class="key">BrickRestart</code></th><td class="sig"><span class="arg">name<span class="kind">:[str]</span></span></td><td class="console"><code>brick restart <em>NAME</em>&hellip;</code></td></tr>
+<tr id="cmd-brickpause"><th scope="row"><code class="key">BrickPause</code></th><td class="sig"><span class="arg">name<span class="kind">:[str]</span></span></td><td class="console"><code>brick pause <em>NAME</em>&hellip;</code></td></tr>
+<tr id="cmd-brickcontinue"><th scope="row"><code class="key">BrickContinue</code></th><td class="sig"><span class="arg">name<span class="kind">:[str]</span></span></td><td class="console"><code>brick continue <em>NAME</em>&hellip;</code></td></tr>
+<tr id="cmd-bricksuspend"><th scope="row"><code class="key">BrickSuspend</code></th><td class="sig"><span class="arg">vm<span class="kind">:str</span></span></td><td class="console"><code>brick suspend <em>VM</em></code></td></tr>
+<tr id="cmd-brickresume"><th scope="row"><code class="key">BrickResume</code></th><td class="sig"><span class="arg">vm<span class="kind">:str</span></span></td><td class="console"><code>brick resume <em>VM</em></code></td></tr>
+<tr id="cmd-brickreset"><th scope="row"><code class="key">BrickReset</code></th><td class="sig"><span class="arg">vm<span class="kind">:str</span></span></td><td class="console"><code>brick reset <em>VM</em></code></td></tr>
+<tr id="cmd-brickmonitor"><th scope="row"><code class="key">BrickMonitor</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span></td><td class="console"><code>brick monitor <em>NAME</em></code></td></tr>
+<tr id="cmd-brickconnect"><th scope="row"><code class="key">BrickConnect</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">target<span class="kind">:[str]</span></span></td><td class="console"><code>brick connect <em>NAME</em> <em>TARGET</em>&hellip;</code></td></tr>
+<tr id="cmd-brickdisconnect"><th scope="row"><code class="key">BrickDisconnect</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">end<span class="kind">:str?</span></span></td><td class="console"><code>brick disconnect <em>NAME</em> [<em>END</em>]</code></td></tr>
+<tr id="cmd-brickcardadd"><th scope="row"><code class="key">BrickCardAdd</code></th><td class="sig"><span class="arg">vm<span class="kind">:str</span></span> <span class="arg">kind<span class="kind">:str</span></span> <span class="arg">options<span class="kind">:[str]?</span></span></td><td class="console"><code>brick card add <em>VM</em> <em>KIND</em> [<em>OPTIONS</em>&hellip;]</code></td></tr>
+<tr id="cmd-brickcardset"><th scope="row"><code class="key">BrickCardSet</code></th><td class="sig"><span class="arg">vm<span class="kind">:str</span></span> <span class="arg">card<span class="kind">:str</span></span> <span class="arg">key_value<span class="kind">:pairs</span></span></td><td class="console"><code>brick card set <em>VM</em> <em>CARD</em> <em>KEY</em>=<em>VALUE</em>&hellip;</code></td></tr>
+<tr id="cmd-brickcardremove"><th scope="row"><code class="key">BrickCardRemove</code></th><td class="sig"><span class="arg">vm<span class="kind">:str</span></span> <span class="arg">card<span class="kind">:[str]</span></span></td><td class="console"><code>brick card remove <em>VM</em> <em>CARD</em>&hellip;</code></td></tr>
+<tr id="cmd-brickrename"><th scope="row"><code class="key">BrickRename</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">new<span class="kind">:str</span></span></td><td class="console"><code>brick rename <em>NAME</em> <em>NEW</em></code></td></tr>
+<tr id="cmd-brickduplicate"><th scope="row"><code class="key">BrickDuplicate</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">new<span class="kind">:str?</span></span></td><td class="console"><code>brick duplicate <em>NAME</em> [<em>NEW</em>]</code></td></tr>
+<tr id="cmd-brickdelete"><th scope="row"><code class="key">BrickDelete</code></th><td class="sig"><span class="arg">name<span class="kind">:[str]</span></span></td><td class="console"><code>brick delete <em>NAME</em>&hellip;</code></td></tr>
+<tr id="cmd-eventlist"><th scope="row"><code class="key">EventList</code></th><td class="sig"><span class="none">&mdash;</span></td><td class="console"><code>event list</code></td></tr>
+<tr id="cmd-eventnew"><th scope="row"><code class="key">EventNew</code></th><td class="sig"><span class="arg">name<span class="kind">:str?</span></span></td><td class="console"><code>event new [<em>NAME</em>]</code></td></tr>
+<tr id="cmd-eventshow"><th scope="row"><code class="key">EventShow</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span></td><td class="console"><code>event show <em>NAME</em></code></td></tr>
+<tr id="cmd-eventset"><th scope="row"><code class="key">EventSet</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">key_value<span class="kind">:pairs</span></span></td><td class="console"><code>event set <em>NAME</em> <em>KEY</em>=<em>VALUE</em>&hellip;</code></td></tr>
+<tr id="cmd-eventactionadd"><th scope="row"><code class="key">EventActionAdd</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">what<span class="kind">:str</span></span> <span class="arg">subject<span class="kind">:str?</span></span> <span class="arg">at<span class="kind">:int?</span></span></td><td class="console"><code>event action add <em>NAME</em> <em>WHAT</em> [<em>SUBJECT</em>] [--at <em>N</em>]</code></td></tr>
+<tr id="cmd-eventactionremove"><th scope="row"><code class="key">EventActionRemove</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">n<span class="kind">:[int]</span></span></td><td class="console"><code>event action remove <em>NAME</em> <em>N</em>&hellip;</code></td></tr>
+<tr id="cmd-eventactionmove"><th scope="row"><code class="key">EventActionMove</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">n<span class="kind">:int</span></span> <span class="arg">to<span class="kind">:int</span></span></td><td class="console"><code>event action move <em>NAME</em> <em>N</em> <em>TO</em></code></td></tr>
+<tr id="cmd-eventstart"><th scope="row"><code class="key">EventStart</code></th><td class="sig"><span class="arg">name<span class="kind">:[str]</span></span></td><td class="console"><code>event start <em>NAME</em>&hellip;</code></td></tr>
+<tr id="cmd-eventstop"><th scope="row"><code class="key">EventStop</code></th><td class="sig"><span class="arg">name<span class="kind">:[str]</span></span></td><td class="console"><code>event stop <em>NAME</em>&hellip;</code></td></tr>
+<tr id="cmd-eventrun"><th scope="row"><code class="key">EventRun</code></th><td class="sig"><span class="arg">name<span class="kind">:[str]</span></span></td><td class="console"><code>event run <em>NAME</em>&hellip;</code></td></tr>
+<tr id="cmd-eventrename"><th scope="row"><code class="key">EventRename</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">new<span class="kind">:str</span></span></td><td class="console"><code>event rename <em>NAME</em> <em>NEW</em></code></td></tr>
+<tr id="cmd-eventduplicate"><th scope="row"><code class="key">EventDuplicate</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">new<span class="kind">:str?</span></span></td><td class="console"><code>event duplicate <em>NAME</em> [<em>NEW</em>]</code></td></tr>
+<tr id="cmd-eventdelete"><th scope="row"><code class="key">EventDelete</code></th><td class="sig"><span class="arg">name<span class="kind">:[str]</span></span></td><td class="console"><code>event delete <em>NAME</em>&hellip;</code></td></tr>
+<tr id="cmd-projectlist"><th scope="row"><code class="key">ProjectList</code></th><td class="sig"><span class="none">&mdash;</span></td><td class="console"><code>project list</code></td></tr>
+<tr id="cmd-projectshow"><th scope="row"><code class="key">ProjectShow</code></th><td class="sig"><span class="none">&mdash;</span></td><td class="console"><code>project show</code></td></tr>
+<tr id="cmd-projectopen"><th scope="row"><code class="key">ProjectOpen</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span></td><td class="console"><code>project open <em>NAME</em></code></td></tr>
+<tr id="cmd-projectnew"><th scope="row"><code class="key">ProjectNew</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span></td><td class="console"><code>project new <em>NAME</em></code></td></tr>
+<tr id="cmd-projectsave"><th scope="row"><code class="key">ProjectSave</code></th><td class="sig"><span class="none">&mdash;</span></td><td class="console"><code>project save</code></td></tr>
+<tr id="cmd-projectrename"><th scope="row"><code class="key">ProjectRename</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">new<span class="kind">:str</span></span></td><td class="console"><code>project rename <em>NAME</em> <em>NEW</em></code></td></tr>
+<tr id="cmd-projectduplicate"><th scope="row"><code class="key">ProjectDuplicate</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">new<span class="kind">:str</span></span></td><td class="console"><code>project duplicate <em>NAME</em> <em>NEW</em></code></td></tr>
+<tr id="cmd-projectdelete"><th scope="row"><code class="key">ProjectDelete</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">force<span class="kind">:bool?</span></span></td><td class="console"><code>project delete <em>NAME</em> [--force]</code></td></tr>
+<tr id="cmd-help"><th scope="row"><code class="key">Help</code></th><td class="sig"><span class="arg">topic<span class="kind">:[str]?</span></span></td><td class="console"><code>help [<em>TOPIC</em>&hellip;]</code></td></tr>
+<tr id="cmd-status"><th scope="row"><code class="key">Status</code></th><td class="sig"><span class="none">&mdash;</span></td><td class="console"><code>status</code></td></tr>
+<tr id="cmd-quit"><th scope="row"><code class="key">Quit</code></th><td class="sig"><span class="none">&mdash;</span></td><td class="console"><code>quit</code></td></tr>
+<tr id="cmd-source"><th scope="row"><code class="key">Source</code></th><td class="sig"><span class="arg">file<span class="kind">:str</span></span></td><td class="console"><code>source <em>FILE</em></code></td></tr>
+<tr id="cmd-imagelist"><th scope="row"><code class="key">ImageList</code></th><td class="sig"><span class="none">&mdash;</span></td><td class="console"><code>image list</code></td></tr>
+<tr id="cmd-imageadd"><th scope="row"><code class="key">ImageAdd</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">path<span class="kind">:str</span></span> <span class="arg">key_value<span class="kind">:pairs?</span></span></td><td class="console"><code>image add <em>NAME</em> <em>PATH</em> [<em>KEY</em>=<em>VALUE</em>&hellip;]</code></td></tr>
+<tr id="cmd-imageshow"><th scope="row"><code class="key">ImageShow</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span></td><td class="console"><code>image show <em>NAME</em></code></td></tr>
+<tr id="cmd-imageset"><th scope="row"><code class="key">ImageSet</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">key_value<span class="kind">:pairs</span></span></td><td class="console"><code>image set <em>NAME</em> <em>KEY</em>=<em>VALUE</em>&hellip;</code></td></tr>
+<tr id="cmd-imagerename"><th scope="row"><code class="key">ImageRename</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">new<span class="kind">:str</span></span></td><td class="console"><code>image rename <em>NAME</em> <em>NEW</em></code></td></tr>
+<tr id="cmd-imagedelete"><th scope="row"><code class="key">ImageDelete</code></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span></td><td class="console"><code>image delete <em>NAME</em></code></td></tr>
+<tr id="cmd-settingshow"><th scope="row"><code class="key">SettingShow</code></th><td class="sig"><span class="arg">key<span class="kind">:str?</span></span></td><td class="console"><code>setting show [<em>KEY</em>]</code></td></tr>
+<tr id="cmd-settingset"><th scope="row"><code class="key">SettingSet</code></th><td class="sig"><span class="arg">key_value<span class="kind">:pairs</span></span></td><td class="console"><code>setting set <em>KEY</em>=<em>VALUE</em>&hellip;</code></td></tr>
+<tr id="cmd-settingunset"><th scope="row"><code class="key">SettingUnset</code></th><td class="sig"><span class="arg">key<span class="kind">:[str]</span></span></td><td class="console"><code>setting unset <em>KEY</em>&hellip;</code></td></tr>
+</tbody></table></div>
+<p>What each does and prints is what <a class="man" href="command-line.html"><code>virtualbricks</code>(1)</a> says of its command. <code>BrickSet</code>(name=&quot;vm1&quot;, key_value=[{&quot;key&quot;: &quot;memory&quot;, &quot;value&quot;: &quot;1024&quot;}]) is <code>brick set vm1 memory=1024</code>; <code>BrickStart</code>(name=[&quot;sw1&quot;, &quot;vm1&quot;]) is <code>brick start sw1 vm1</code>.</p>
+<h3 id="amp-2-the-commands-of-the-windows">The commands of the windows</h3>
+<p>What the windows of <code>virtualbricks --connect</code> need that the console has no command for. A table, a state and the other JSON of this section are JSON in a <code>str</code>, since AMP has no tables:</p>
+<div class="scroll"><table class="fields amp"><thead><tr><th>Command</th><th>Arguments</th><th>Answer</th></tr></thead><tbody>
+<tr id="cmd-follow"><th scope="row"><a href="#about-follow"><code class="key">Follow</code></a></th><td class="sig"><span class="none">&mdash;</span></td><td class="sig"><span class="arg">project<span class="kind">:str?</span></span> <span class="arg">version<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-apply"><th scope="row"><a href="#about-apply"><code class="key">Apply</code></a></th><td class="sig"><span class="arg">kind<span class="kind">:str</span></span> <span class="arg">name<span class="kind">:str</span></span> <span class="arg">changes<span class="kind">:str</span></span> <span class="arg">links<span class="kind">:str</span></span> <span class="arg">extras<span class="kind">:str</span></span></td><td class="sig"><span class="none">&mdash;</span></td></tr>
+<tr id="cmd-connect"><th scope="row"><a href="#about-connect"><code class="key">Connect</code></a></th><td class="sig"><span class="arg">source<span class="kind">:str</span></span> <span class="arg">target<span class="kind">:str</span></span></td><td class="sig"><span class="arg">connected<span class="kind">:bool</span></span></td></tr>
+<tr id="cmd-qemufacts"><th scope="row"><a href="#about-qemufacts"><code class="key">QemuFacts</code></a></th><td class="sig"><span class="arg">program<span class="kind">:str</span></span></td><td class="sig"><span class="arg">path<span class="kind">:str</span></span> <span class="arg">version<span class="kind">:str</span></span> <span class="arg">options<span class="kind">:str</span></span> <span class="arg">machines<span class="kind">:str</span></span> <span class="arg">cpus<span class="kind">:str</span></span> <span class="arg">devices<span class="kind">:str</span></span> <span class="arg">displays<span class="kind">:str</span></span> <span class="arg">audio_drivers<span class="kind">:str</span></span> <span class="arg">netdevs<span class="kind">:str</span></span> <span class="arg">accelerators<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-machineproperties"><th scope="row"><a href="#about-machineproperties"><code class="key">MachineProperties</code></a></th><td class="sig"><span class="arg">program<span class="kind">:str</span></span> <span class="arg">machine<span class="kind">:str</span></span></td><td class="sig"><span class="arg">text<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-usbdevices"><th scope="row"><a href="#about-usbdevices"><code class="key">UsbDevices</code></a></th><td class="sig"><span class="none">&mdash;</span></td><td class="sig"><span class="arg">devices<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-imagefacts"><th scope="row"><a href="#about-imagefacts"><code class="key">ImageFacts</code></a></th><td class="sig"><span class="arg">path<span class="kind">:str</span></span></td><td class="sig"><span class="arg">file<span class="kind">:str</span></span> <span class="arg">info<span class="kind">:str</span></span> <span class="arg">others<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-makeimage"><th scope="row"><a href="#about-makeimage"><code class="key">MakeImage</code></a></th><td class="sig"><span class="arg">path<span class="kind">:str</span></span> <span class="arg">format<span class="kind">:str</span></span> <span class="arg">size<span class="kind">:int</span></span></td><td class="sig"><span class="none">&mdash;</span></td></tr>
+<tr id="cmd-startover"><th scope="row"><a href="#about-startover"><code class="key">StartOver</code></a></th><td class="sig"><span class="arg">vm<span class="kind">:str</span></span> <span class="arg">device<span class="kind">:str</span></span></td><td class="sig"><span class="arg">trashed<span class="kind">:bool</span></span></td></tr>
+<tr id="cmd-trashfile"><th scope="row"><a href="#about-trashfile"><code class="key">TrashFile</code></a></th><td class="sig"><span class="arg">path<span class="kind">:str</span></span></td><td class="sig"><span class="arg">trashed<span class="kind">:bool</span></span></td></tr>
+<tr id="cmd-relink"><th scope="row"><a href="#about-relink"><code class="key">Relink</code></a></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">path<span class="kind">:str</span></span></td><td class="sig"><span class="none">&mdash;</span></td></tr>
+<tr id="cmd-projectnames"><th scope="row"><a href="#about-projectnames"><code class="key">ProjectNames</code></a></th><td class="sig"><span class="none">&mdash;</span></td><td class="sig"><span class="arg">names<span class="kind">:[str]</span></span></td></tr>
+<tr id="cmd-projectsummary"><th scope="row"><a href="#about-projectsummary"><code class="key">ProjectSummary</code></a></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span></td><td class="sig"><span class="arg">summary<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-diskusage"><th scope="row"><a href="#about-diskusage"><code class="key">DiskUsage</code></a></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span></td><td class="sig"><span class="arg">private_disks<span class="kind">:int</span></span> <span class="arg">other_files<span class="kind">:int</span></span></td></tr>
+<tr id="cmd-readme"><th scope="row"><a href="#about-readme"><code class="key">Readme</code></a></th><td class="sig"><span class="none">&mdash;</span></td><td class="sig"><span class="arg">text<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-setreadme"><th scope="row"><a href="#about-setreadme"><code class="key">SetReadme</code></a></th><td class="sig"><span class="arg">text<span class="kind">:str</span></span></td><td class="sig"><span class="none">&mdash;</span></td></tr>
+<tr id="cmd-readmepicture"><th scope="row"><a href="#about-readmepicture"><code class="key">ReadmePicture</code></a></th><td class="sig"><span class="arg">name<span class="kind">:str</span></span> <span class="arg">path<span class="kind">:str</span></span> <span class="arg">offset<span class="kind">:int</span></span></td><td class="sig"><span class="arg">data<span class="kind">:bytes</span></span> <span class="arg">size<span class="kind">:int</span></span></td></tr>
+<tr id="cmd-setksm"><th scope="row"><a href="#about-setksm"><code class="key">SetKsm</code></a></th><td class="sig"><span class="arg">enable<span class="kind">:bool</span></span></td><td class="sig"><span class="arg">enabled<span class="kind">:bool</span></span></td></tr>
+<tr id="cmd-folder"><th scope="row"><a href="#about-folder"><code class="key">Folder</code></a></th><td class="sig"><span class="arg">path<span class="kind">:str</span></span></td><td class="sig"><span class="arg">entries<span class="kind">:[str]</span></span> <span class="arg">more<span class="kind">:bool</span></span></td></tr>
+<tr id="cmd-programsfound"><th scope="row"><a href="#about-programsfound"><code class="key">ProgramsFound</code></a></th><td class="sig"><span class="arg">vde_path<span class="kind">:str</span></span> <span class="arg">qemu_path<span class="kind">:str</span></span></td><td class="sig"><span class="arg">vde<span class="kind">:str</span></span> <span class="arg">qemu<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-attach"><th scope="row"><a href="#about-attach"><code class="key">Attach</code></a></th><td class="sig"><span class="arg">brick<span class="kind">:str</span></span> <span class="arg">console<span class="kind">:str</span></span></td><td class="sig"><span class="none">&mdash;</span></td></tr>
+</tbody></table></div>
+<dl class="terms">
+<dt id="about-follow"><code>Follow</code></dt><dd><p>Send the project, then each change, see <a href="#amp-2-follow-and-the-pushes">Follow and the pushes</a>; the answer is the open project, and the version of Virtualbricks.</p></dd>
+<dt id="about-apply"><code>Apply</code></dt><dd><p>The OK of the panel of a brick, an event or an image, <em>kind</em> <code>brick</code>, <code>event</code> or <code>image</code>: what the panel changed, all or nothing. <code>changes</code> is an object of the settings changed, by their names and with their values as the project file writes them, see <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>; <code>links</code>, a list of the plugs moved, each [<em>index</em>, <em>target</em>], the target written as in the project file, <code>&quot;&quot;</code> for none; <code>extras</code>, what a brick has beyond its settings, only when it changed: the <code>cards</code> of a machine, each {<code>kind</code>, <code>model</code>, <code>mac</code>, <code>connect</code>, <code>link</code>}, and the <code>states</code>, <code>transitions</code> and <code>period</code> of a Netemu. Only the keys given change: the last OK wins for them, and the rest keeps what another window set.</p></dd>
+<dt id="about-connect"><code>Connect</code></dt><dd><p>Connect brick <em>source</em> to brick <em>target</em>, as a drop does: a free plug, or a new card of a machine. Whether it could.</p></dd>
+<dt id="about-qemufacts"><code>QemuFacts</code></dt><dd><p>What the QEMU program <em>program</em>, as <code>qemu-system-x86_64</code>, prints: its <code>path</code>, and for each question a JSON list [<em>out</em>, <em>err</em>, <em>status</em>], a value each, since all of them are more than a value carries.</p></dd>
+<dt id="about-machineproperties"><code>MachineProperties</code></dt><dd><p>What <code>-machine</code> <em>type</em><code>,help</code> prints, for <em>machine</em>, or for the default type if it is <code>&quot;&quot;</code>.</p></dd>
+<dt id="about-usbdevices"><code>UsbDevices</code></dt><dd><p>The USB devices of the machine: a JSON list of {<code>id</code>, <code>description</code>}.</p></dd>
+<dt id="about-imagefacts"><code>ImageFacts</code></dt><dd><p>What the file <em>path</em> is: <code>file</code>, {<code>size</code>, <code>mtime</code>, <code>taken</code>}, the time in nanoseconds and the space it takes in bytes; <code>info</code>, what <code>qemu-img info --output=json</code> prints; <code>others</code>, a JSON list of [<em>project</em>, <em>image</em>], the images of the other projects of the workspace with that file.</p></dd>
+<dt id="about-makeimage"><code>MakeImage</code></dt><dd><p>Make the file of an empty disk, of <em>format</em> <code>qcow2</code> or <code>raw</code>, and of <em>size</em> bytes. <code>BAD_ARGUMENT</code> if the file is there already.</p></dd>
+<dt id="about-startover"><code>StartOver</code></dt><dd><p>The private copy of disk <em>device</em> of machine <em>vm</em> goes to the trash, or is deleted without one: whether it went to the trash.</p></dd>
+<dt id="about-trashfile"><code>TrashFile</code></dt><dd><p>A file of the workspace that no image uses goes to the trash, or is deleted without one: whether it went to the trash.</p></dd>
+<dt id="about-relink"><code>Relink</code></dt><dd><p>Give image <em>name</em> the file <em>path</em>, and the private copies made on the image with it.</p></dd>
+<dt id="about-projectnames"><code>ProjectNames</code></dt><dd><p>The names of the projects of the workspace, sorted.</p></dd>
+<dt id="about-projectsummary"><code>ProjectSummary</code></dt><dd><p>What the list of the projects shows of one, as a JSON object: <code>name</code>, <code>path</code>, <code>description</code>, <code>modified</code>, <code>bricks</code> (a count for each type), <code>events</code> (a count), <code>images</code> (each {<code>name</code>, <code>path</code>, <code>found</code>}) and <code>problem</code>, <code>null</code> unless the project file can&#x27;t be read.</p></dd>
+<dt id="about-diskusage"><code>DiskUsage</code></dt><dd><p>The space that a project takes, in bytes: its private disks, and the other files.</p></dd>
+<dt id="about-readme"><span id="about-setreadme"></span><code>Readme</code>, <code>SetReadme</code></dt><dd><p>The README of the open project; the new one is written when the project is saved.</p></dd>
+<dt id="about-readmepicture"><code>ReadmePicture</code></dt><dd><p>A picture of the README of project <em>name</em>, <em>path</em> relative to its folder, see <a class="man" href="config-files.html#projects-readme"><code>virtualbricks-config</code>(5)</a>: its <code>data</code> from byte <em>offset</em>, as much as a value carries, and the <code>size</code> of the file. A program asks again from the end of what came, until it has <code>size</code> bytes. <code>BAD_ARGUMENT</code> for a path that leads out of the folder, a file that isn&#x27;t one or that is larger than 10 MB.</p></dd>
+<dt id="about-setksm"><code>SetKsm</code></dt><dd><p>Turn KSM on or off; whether it runs afterwards.</p></dd>
+<dt id="about-folder"><code>Folder</code></dt><dd><p>What completes <em>path</em> as it is typed: the entries of its folder that start with its last part, a folder with a <code>/</code> after it, at most 200, and whether there are more.</p></dd>
+<dt id="about-programsfound"><code>ProgramsFound</code></dt><dd><p>What the folders <em>vde_path</em> and <em>qemu_path</em> hold, before they are the settings, as the Settings window shows them: for each, <code>vde</code> and <code>qemu</code>, an object <code>{folder, exists, found, missing}</code>, whether the folder is there, the programs found, by name, with their path, in the folder or else in <code>PATH</code>, and those missing, each a pair of the program and its package, <code>null</code> if no package has it.</p></dd>
+<dt id="about-attach"><code>Attach</code></dt><dd><p>Join the program to a console of a running brick, see <a href="#amp-2-attach">Attach</a>.</p></dd>
+</dl>
+<p><code>QemuFacts</code>, <code>MachineProperties</code>, <code>UsbDevices</code>, <code>ImageFacts</code>, <code>DiskUsage</code>, <code>ReadmePicture</code>, <code>Folder</code> and <code>ProgramsFound</code> change nothing: they answer as soon as they can, beside the requests that wait. The others wait for their turn, as the typed commands do, and Virtualbricks logs them.</p>
+<h3 id="amp-2-follow-and-the-pushes">Follow and the pushes</h3>
+<p><code>Follow</code> asks Virtualbricks for its project and its changes. It sends them as <em>pushes</em>: commands that it calls on the program, without <code>_ask</code>, that want no answer. A program that follows declares the eight of them, and has a responder for each: Twisted closes the connection on a command it has no responder for.</p>
+<div class="scroll"><table class="fields amp"><thead><tr><th>Push</th><th>Arguments</th></tr></thead><tbody>
+<tr id="cmd-opened"><th scope="row"><a href="#about-opened"><code class="key">Opened</code></a></th><td class="sig"><span class="arg">project<span class="kind">:str?</span></span> <span class="arg">settings<span class="kind">:str</span></span> <span class="arg">machine<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-changed"><th scope="row"><a href="#about-changed"><code class="key">Changed</code></a></th><td class="sig"><span class="arg">kind<span class="kind">:str</span></span> <span class="arg">name<span class="kind">:str</span></span> <span class="arg">table<span class="kind">:str</span></span> <span class="arg">state<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-renamed"><th scope="row"><a href="#about-renamed"><code class="key">Renamed</code></a></th><td class="sig"><span class="arg">kind<span class="kind">:str</span></span> <span class="arg">old<span class="kind">:str</span></span> <span class="arg">new<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-removed"><th scope="row"><a href="#about-removed"><code class="key">Removed</code></a></th><td class="sig"><span class="arg">kind<span class="kind">:str</span></span> <span class="arg">name<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-synced"><th scope="row"><a href="#about-synced"><code class="key">Synced</code></a></th><td class="sig"><span class="none">&mdash;</span></td></tr>
+<tr id="cmd-settingschanged"><th scope="row"><a href="#about-settingschanged"><code class="key">SettingsChanged</code></a></th><td class="sig"><span class="arg">settings<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-logged"><th scope="row"><a href="#about-logged"><code class="key">Logged</code></a></th><td class="sig"><span class="arg">message<span class="kind">:str</span></span></td></tr>
+<tr id="cmd-quitting"><th scope="row"><a href="#about-quitting"><code class="key">Quitting</code></a></th><td class="sig"><span class="none">&mdash;</span></td></tr>
+</tbody></table></div>
+<dl class="terms">
+<dt id="about-opened"><code>Opened</code></dt><dd><p>A project is open, and the copy starts over: its name, left out if none is; <code>settings</code>, a JSON object of the settings of Virtualbricks and of the project, by their names in <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>; and <code>machine</code>, a JSON object of what the machine of Virtualbricks has: <code>version</code>, <code>workspace</code>, <code>project_folder</code>, <code>trash</code> (whether what is removed goes to a trash), <code>runtime_dir</code>, <code>workspace_runtime_dir</code>, <code>missing</code> (the programs it lacks), <code>qemu_programs</code> (the names of its QEMU programs), <code>lacks</code> (for each type of brick, <code>null</code> or the programs it lacks, {<code>line</code>, <code>text</code>}) and <code>ksm</code> (whether KSM runs).</p></dd>
+<dt id="about-changed"><code>Changed</code></dt><dd><p>An image, a brick or an event, <em>kind</em> <code>image</code>, <code>brick</code> or <code>event</code>, is new or changed: its <code>table</code>, as the project file writes it, and its <code>state</code>, what the project file doesn&#x27;t write: {<code>file</code>}, the <code>size</code>, <code>mtime</code> and <code>taken</code> of the file of an image, <code>null</code> if it isn&#x27;t there; {<code>pid</code>, <code>copies</code>}, the process of a brick, <code>null</code> if it doesn&#x27;t run, and the private copies of a machine, as <code>file</code>, by device; {<code>left</code>}, the seconds that an event still waits, <code>null</code> if it doesn&#x27;t.</p></dd>
+<dt id="about-renamed"><code>Renamed</code></dt><dd><p>An image, a brick or an event has a new name.</p></dd>
+<dt id="about-removed"><code>Removed</code></dt><dd><p>A brick or an event is deleted, an image removed.</p></dd>
+<dt id="about-synced"><code>Synced</code></dt><dd><p>The whole project has been sent.</p></dd>
+<dt id="about-settingschanged"><code>SettingsChanged</code></dt><dd><p>The settings changed: all of them, as in <code>Opened</code>.</p></dd>
+<dt id="about-logged"><code>Logged</code></dt><dd><p>A message of the log, info and above, as a JSON object: <code>time</code>, in seconds since 1970, <code>level</code>, <code>text</code>, <code>traceback</code> or <code>null</code>, <code>namespace</code>, <code>source</code> and <code>source_type</code>, the brick it is about or <code>null</code>, <code>pid</code>, and <code>stream</code>, <code>stdout</code> or <code>stderr</code> for what the process of a brick printed.</p></dd>
+<dt id="about-quitting"><code>Quitting</code></dt><dd><p>Virtualbricks quits.</p></dd>
+</dl>
+<p><code>Follow</code> sends <code>Opened</code>, a <code>Changed</code> for each image, brick and event, then <code>Synced</code>: the images first, then the bricks, each after those it plugs into, then the events. Then the last 500 messages of the log, and the answer. After that, Virtualbricks gathers what changes and sends it once a turn of its loop, each object once, as it is then: the renames and the deletes first, in the order they came, then what changed, in the order above, the settings, the messages of the log, and <code>Quitting</code>. Before it answers a command of the connection, it sends what waits: once a command is answered, the program has what it changed. When another project opens, the copy starts over, with <code>Opened</code>; <code>Follow</code> again does the same. A push longer than a value carries isn&#x27;t sent, and the log says so.</p>
+<figure class="diagram"><div class="canvas"><svg class="dg" viewBox="0 0 760 740" role="img" aria-label="Follow: Virtualbricks pushes Opened, a Changed for each image, brick and event, Synced and the last 500 messages of the log, then answers. A command of the program gets the pushes of what it changed before its answer. Later changes are pushed once a turn, and Quitting at the end."><defs><marker id="fo-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker><marker id="fo-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker><marker id="fo-warn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-warn"/></marker></defs><rect x="115" y="16" width="110" height="34" rx="6" class="box"/><text x="170" y="38" text-anchor="middle" class="title">program</text><line x1="170" y1="50" x2="170" y2="728" class="life"/><rect x="468" y="16" width="145" height="34" rx="6" class="box"/><text x="540" y="38" text-anchor="middle" class="title">Virtualbricks</text><line x1="540" y1="50" x2="540" y2="728" class="life"/><text x="355" y="91" text-anchor="middle" class="mono">Follow</text><line x1="174" y1="100" x2="536" y2="100" class="ln" marker-end="url(#fo-tip)"/><text x="355" y="131" text-anchor="middle" class="mono">Opened project &quot;lab1&quot;</text><line x1="536" y1="140" x2="174" y2="140" class="ln-accent dash" marker-end="url(#fo-acc)"/><text x="554" y="148" class="small muted">the project</text><text x="355" y="171" text-anchor="middle" class="mono">Changed image debian</text><line x1="536" y1="180" x2="174" y2="180" class="ln-accent dash" marker-end="url(#fo-acc)"/><text x="355" y="211" text-anchor="middle" class="mono">Changed brick sw1</text><line x1="536" y1="220" x2="174" y2="220" class="ln-accent dash" marker-end="url(#fo-acc)"/><text x="355" y="251" text-anchor="middle" class="mono">Changed brick vm1</text><line x1="536" y1="260" x2="174" y2="260" class="ln-accent dash" marker-end="url(#fo-acc)"/><text x="355" y="291" text-anchor="middle" class="mono">Synced</text><line x1="536" y1="300" x2="174" y2="300" class="ln-accent dash" marker-end="url(#fo-acc)"/><text x="355" y="331" text-anchor="middle" class="mono">Logged, the last 500</text><line x1="536" y1="340" x2="174" y2="340" class="ln-accent dash" marker-end="url(#fo-acc)"/><text x="355" y="371" text-anchor="middle" class="mono">project, version</text><line x1="536" y1="380" x2="174" y2="380" class="ln-accent" marker-end="url(#fo-acc)"/><text x="554" y="388" class="small muted">the answer</text><text x="355" y="421" text-anchor="middle" class="mono">BrickStart name [&quot;vm1&quot;]</text><line x1="174" y1="430" x2="536" y2="430" class="ln" marker-end="url(#fo-tip)"/><text x="355" y="461" text-anchor="middle" class="mono">Changed brick vm1</text><line x1="536" y1="470" x2="174" y2="470" class="ln-accent dash" marker-end="url(#fo-acc)"/><text x="554" y="478" class="small muted">what it changed</text><text x="355" y="501" text-anchor="middle" class="mono">Changed image debian</text><line x1="536" y1="510" x2="174" y2="510" class="ln-accent dash" marker-end="url(#fo-acc)"/><text x="355" y="541" text-anchor="middle" class="mono">lines [...]</text><line x1="536" y1="550" x2="174" y2="550" class="ln-accent" marker-end="url(#fo-acc)"/><text x="554" y="558" class="small muted">then the answer</text><text x="355" y="591" text-anchor="middle" class="mono">Changed brick vm1</text><line x1="536" y1="600" x2="174" y2="600" class="ln-accent dash" marker-end="url(#fo-acc)"/><text x="554" y="608" class="small muted">once a turn: the</text><text x="554" y="623" class="small muted">machine stopped</text><text x="355" y="645" text-anchor="middle" class="mono">Logged</text><line x1="536" y1="654" x2="174" y2="654" class="ln-accent dash" marker-end="url(#fo-acc)"/><text x="355" y="695" text-anchor="middle" class="mono">Quitting</text><line x1="536" y1="704" x2="174" y2="704" class="ln-accent dash" marker-end="url(#fo-acc)"/><text x="554" y="712" class="small muted">at the end</text></svg></div><figcaption><code>Follow</code> and its pushes, dashed: they want no answer. What a command changed comes before its answer.</figcaption></figure>
+<h3 id="amp-2-attach">Attach</h3>
+<p><code>Attach</code> joins the program to a console of a running brick: <code>monitor</code>, its control monitor, or <code>serial</code>, the serial socket of a machine. Virtualbricks connects to the console, then answers; from then on, the connection carries the bytes of the console both ways, and nothing else: AMP&#x27;s <code>ProtocolSwitchCommand</code>. When either end closes, so does the other. So a program opens a new connection for each console, proves the token if asked, agrees on protocol 2 with <code>Hello</code>, then calls <code>Attach</code>. <code>NOT_FOUND</code> says there is no such brick, <code>BAD_ARGUMENT</code> that it doesn&#x27;t run or has no such console, <code>COMMAND_FAILED</code> that Virtualbricks can&#x27;t reach the console. The windows of <code>virtualbricks --connect</code> join the connection to a terminal of their own, as <a class="man" href="https://manpages.debian.org/vdeterm.1"><code>vdeterm</code>(1)</a>:</p>
+<figure class="diagram"><div class="canvas"><svg class="dg" viewBox="0 0 760 276" role="img" aria-label="Attach: the program calls Attach with the brick and its console; Virtualbricks connects to the console of the brick, then answers. From then on the connection carries the bytes of the console both ways, and the windows join it to a terminal."><defs><marker id="at-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker><marker id="at-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker><marker id="at-warn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-warn"/></marker></defs><rect x="35" y="16" width="110" height="34" rx="6" class="box"/><text x="90" y="38" text-anchor="middle" class="title">terminal</text><line x1="90" y1="50" x2="90" y2="264" class="life"/><rect x="215" y="16" width="110" height="34" rx="6" class="box"/><text x="270" y="38" text-anchor="middle" class="title">program</text><line x1="270" y1="50" x2="270" y2="264" class="life"/><rect x="408" y="16" width="145" height="34" rx="6" class="box"/><text x="480" y="38" text-anchor="middle" class="title">Virtualbricks</text><line x1="480" y1="50" x2="480" y2="264" class="life"/><rect x="615" y="16" width="110" height="34" rx="6" class="box"/><text x="670" y="38" text-anchor="middle" class="title">console</text><line x1="670" y1="50" x2="670" y2="264" class="life"/><text x="375" y="91" text-anchor="middle" class="mono">Attach brick vm1,</text><text x="375" y="107" text-anchor="middle" class="mono">console monitor</text><line x1="274" y1="116" x2="476" y2="116" class="ln" marker-end="url(#at-tip)"/><text x="575" y="147" text-anchor="middle" class="mono">connects</text><line x1="484" y1="156" x2="666" y2="156" class="ln" marker-end="url(#at-tip)"/><text x="375" y="187" text-anchor="middle" class="mono">answer</text><line x1="476" y1="196" x2="274" y2="196" class="ln-accent" marker-end="url(#at-acc)"/><line x1="96" y1="232" x2="264" y2="232" class="ln-bytes" marker-start="url(#at-acc)" marker-end="url(#at-acc)"/><text x="180" y="224" text-anchor="middle" class="mono small t-accent">bytes</text><line x1="276" y1="232" x2="474" y2="232" class="ln-bytes" marker-start="url(#at-acc)" marker-end="url(#at-acc)"/><text x="375" y="224" text-anchor="middle" class="mono small t-accent">bytes</text><line x1="486" y1="232" x2="664" y2="232" class="ln-bytes" marker-start="url(#at-acc)" marker-end="url(#at-acc)"/><text x="575" y="224" text-anchor="middle" class="mono small t-accent">bytes</text></svg></div><figcaption><code>Attach</code>: once it answers, the connection carries only the bytes of the console.</figcaption></figure>
+</section>
+<section id="versions">
+<h2>Versions</h2>
+<p>The JSON protocol is 1, in the greeting; another would have another number. Over AMP, <code>Hello</code> agrees on the protocol: the highest that both ends speak. 1 is always one of them.</p>
+<p>Protocol 2 keeps its commands as they are. A later Virtualbricks may add commands to it, and optional arguments to its commands, and nothing else: an older one answers a command it doesn&#x27;t have with <code>UNHANDLED</code>, and an argument it doesn&#x27;t know with <code>BAD_ARGUMENT</code>, so a program that sends them knows that they weren&#x27;t done. A change of any other kind makes protocol 3, which would take the place of 2: a program that speaks both calls <code>Hello</code> with <code>protocols</code> [1, 2, 3]. The sources keep the commands of protocol 2 in <em>tests/data/amp-protocol-2.txt</em>, which the tests compare with the modules.</p>
+<p>The windows of <code>virtualbricks --connect</code> also want the same version of Virtualbricks at both ends: the <code>version</code> in the answer of <code>Hello</code>.</p>
+</section>
+<section id="limits">
+<h2>Limits</h2>
+<dl class="terms">
+<dt>A line of the JSON protocol</dt><dd><p>64 KiB, 65536 bytes; a longer one closes the connection.</p></dd>
+<dt>A key of AMP</dt><dd><p>255 bytes.</p></dd>
+<dt>A value of AMP</dt><dd><p>65535 bytes. A longer answer is <code>ANSWER_TOO_LONG</code>, after the command was done; a longer push isn&#x27;t sent.</p></dd>
+<dt>The proof of the token</dt><dd><p>10 seconds from connecting.</p></dd>
+<dt>The last answers, at the end</dt><dd><p>2 seconds for the client to read them.</p></dd>
+<dt>The log, for a program that follows</dt><dd><p>The last 500 messages, then each new one.</p></dd>
+</dl>
+</section>
+<section id="examples">
+<h2>Examples</h2>
+<p>A shell on a JSON socket, with <a class="man" href="https://manpages.debian.org/socat.1"><code>socat</code>(1)</a>; the lines it prints are the greeting and the answers:</p>
+<figure class="code"><pre><code>virtualbricks --no-gui --listen \
+    unix:~/labs/lab1.json:protocol=json &amp;
+socat - UNIX-CONNECT:$HOME/labs/lab1.json
+{"protocol": 1, "version": "3.0.0", "pid": 4200, ...}
+{"line": "brick new switch sw1"}
+{"ok": true, "lines": ["sw1"]}
+{"line": "brick start sw1"}
+{"ok": true, "lines": ["sw1 runs, process 4242"]}</code></pre></figure>
+<p>A client of the JSON protocol in Python, without anything else, for a Virtualbricks started with <code>--listen tcp:8765:protocol=json</code>:</p>
+<figure class="code"><pre><code>import hmac, json, os, secrets, socket, sys
+
+
+def proof(token, side, nonce, mine):
+    text = f"virtualbricks {side} {nonce} {mine}"
+    key = token.encode()
+    return hmac.new(key, text.encode(), "sha256").hexdigest()
+
+
+def send(lines, **message):
+    lines.write(json.dumps(message).encode() + b"\n")
+    lines.flush()
+
+
+def receive(lines):
+    return json.loads(lines.readline())
+
+
+def connect(port, token):
+    sock = socket.create_connection(("127.0.0.1", port))
+    lines = sock.makefile("rwb")
+    first = receive(lines)
+    if first.get("auth") == "token":
+        nonce, mine = first["nonce"], secrets.token_hex(32)
+        send(lines, nonce=mine,
+             proof=proof(token, "client", nonce, mine))
+        first = receive(lines)
+        expected = proof(token, "server", nonce, mine)
+        given = first.get("proof", "")
+        if not hmac.compare_digest(given, expected):
+            sys.exit(first.get("error", "Wrong token"))
+    if first.get("protocol") != 1:
+        sys.exit("It doesn't speak the JSON protocol 1")
+    return lines
+
+
+def ask(lines, line):
+    send(lines, line=line)
+    answer = receive(lines)
+    print("\n".join(answer["lines"]))
+    if not answer["ok"]:
+        sys.exit(answer["error"])
+
+
+path = os.path.expanduser("~/.config/virtualbricks/token")
+with open(path) as file:
+    token = file.read().strip()
+lines = connect(8765, token)
+ask(lines, "status")
+ask(lines, "brick list")</code></pre></figure>
+<p>A program written with Twisted that speaks protocol 2, for a Virtualbricks started with <code>--listen tcp:8765</code>: it starts <code>sw1</code>, and prints what changes until Virtualbricks quits:</p>
+<figure class="code"><pre><code>import json, os
+
+from twisted.internet import defer, endpoints, task
+from twisted.protocols import amp
+
+from virtualbricks.console.ampcommands import BrickStart
+from virtualbricks.console.ampwire import Hello, authenticate
+from virtualbricks.remote import commands
+
+
+class Follower(amp.AMP):
+    """Prints what changes; a responder for each push."""
+
+    def __init__(self):
+        super().__init__()
+        self.lost = defer.Deferred()
+
+    def connectionLost(self, reason):
+        super().connectionLost(reason)
+        self.lost.callback(None)
+
+    @commands.Opened.responder
+    def opened(self, project, settings, machine):
+        print("Project", project)
+        return {}
+
+    @commands.Changed.responder
+    def changed(self, kind, name, table, state):
+        print(kind, name, json.loads(state))
+        return {}
+
+    @commands.Renamed.responder
+    def renamed(self, kind, old, new):
+        print(kind, old, "is now", new)
+        return {}
+
+    @commands.Removed.responder
+    def removed(self, kind, name):
+        print(kind, name, "is gone")
+        return {}
+
+    @commands.Synced.responder
+    def synced(self):
+        return {}
+
+    @commands.SettingsChanged.responder
+    def settings_changed(self, settings):
+        return {}
+
+    @commands.Logged.responder
+    def logged(self, message):
+        print(json.loads(message)["text"])
+        return {}
+
+    @commands.Quitting.responder
+    def quitting(self):
+        print("Virtualbricks quits")
+        return {}
+
+
+async def main(reactor):
+    endpoint = endpoints.TCP4ClientEndpoint(
+        reactor, "127.0.0.1", 8765
+    )
+    vb = await endpoints.connectProtocol(endpoint, Follower())
+    path = os.path.expanduser("~/.config/virtualbricks/token")
+    with open(path) as file:
+        await authenticate(vb, file.read().strip())
+    hello = await vb.callRemote(Hello, protocols=[1, 2])
+    if hello["protocol"] != 2:
+        raise SystemExit("It doesn't speak protocol 2")
+    await vb.callRemote(commands.Follow)
+    await vb.callRemote(BrickStart, name=["sw1"])
+    await vb.lost
+
+
+task.react(lambda reactor: defer.ensureDeferred(main(reactor)))</code></pre></figure>
+</section>
+<section id="files">
+<h2>Files</h2>
+<dl class="terms">
+<dt><em>$XDG_CONFIG_HOME</em>/virtualbricks/token</dt><dd><p>The token of the <code>tcp</code> and <code>ssl</code> sockets, see <a href="#token">The token</a>.</p></dd>
+<dt><em>$XDG_RUNTIME_DIR</em>/virtualbricks/<em>key</em>/.control</dt><dd><p>The socket of <code>--listen</code> alone of the workspace of <em>key</em>, which speaks AMP.</p></dd>
+</dl>
+</section>
+<section id="see-also">
+<h2>See also</h2>
+<p><a class="man" href="command-line.html"><code>virtualbricks</code>(1)</a>, <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>, <a class="man" href="archive-protocol.html"><code>virtualbricks-archive</code>(7)</a>, <a class="man" href="https://manpages.debian.org/socat.1"><code>socat</code>(1)</a>, <a class="man" href="https://manpages.debian.org/openssl.1"><code>openssl</code>(1)</a></p>
+<p>AMP: <a href="https://amp-protocol.net/">https://amp-protocol.net/</a>, and Twisted&#x27;s howto: <a href="https://docs.twisted.org/en/stable/core/howto/amp.html">https://docs.twisted.org/en/stable/core/howto/amp.html</a></p>
+<p>JSON Lines: <a href="https://jsonlines.org/">https://jsonlines.org/</a></p>
+<p>HMAC: RFC 2104, <a href="https://www.rfc-editor.org/rfc/rfc2104">https://www.rfc-editor.org/rfc/rfc2104</a></p>
+</section>
+      <p class="footnote">Written from <code>docs/man/virtualbricks-control.7.md</code>, the source of the man page, so the two say the same; the diagrams are those of the man page, drawn. Its commands are checked against the code by <code>virtualbricks/tests/test_docs.py</code>.</p>
+    </main>
+  </div>
+</div>
+</body>
+</html>
