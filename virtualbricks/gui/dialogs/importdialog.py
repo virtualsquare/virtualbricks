@@ -320,7 +320,7 @@ class ImportDialog(Window):
         box.set_valign(Gtk.Align.CENTER)
         box.pack_start(
             _label(
-                _("Choose an archive of a Virtualbricks project."),
+                _("Choose a Virtualbricks project file."),
                 xalign=0.5,
             ),
             False,
