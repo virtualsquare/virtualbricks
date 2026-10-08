@@ -1,0 +1,522 @@
+<title>Hashes in Archives</title>
+<meta name="description" content="A proposal, with open questions, for hashes in the contents.toml of Virtualbricks archives: of each member, to find one damaged on the way, and of each image, to check the image under a private disk and the image an import reuses. Measured: what a flipped bit does to a packed disk, why the bytes of a file change while its disk doesn&rsquo;t, and what hashing costs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+  .status.dropped { color: var(--muted); background: var(--code-bg); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num, th.num { font-variant-numeric: tabular-nums; text-align: right; }
+  td p { margin: 0 0 6px; }
+  td p:last-child { margin-bottom: 0; }
+  table.wide { min-width: 720px; }
+  .no { color: var(--risk); }
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+</style>
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 26 &middot; Design &middot; revision 2, discarded</div>
+    <h1>Virtualbricks Archive Hashes</h1>
+    <p class="lede">Whether <code>contents.toml</code> should hold a hash of each member and of each image the project uses. They would catch three things that archives miss today: a member damaged on the way, a private disk put on the wrong image, and an image reused only because it has the same name and size. This page measures what they would catch, what gets in the way, and what they cost.</p>
+    <ul class="meta">
+      <li>branch <b>develop</b> at 14229e4</li>
+      <li>revision 2 &middot; 8 October 2026</li>
+      <li><span class="status dropped">discarded</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your question of today: &ldquo;Would it be of any help to save the hash of the images and the private disks in the content.toml?&rdquo;, and, after my answer: &ldquo;write it up in a design page and also add a note in the TODO section. I need more thinking about it&rdquo;. Nothing here is decided or implemented. The measurements of <a href="#damage">&sect;3</a> to <a href="#cost">&sect;7</a> were made today on this computer, with QEMU 10.0.11 of Debian 13. They found that a damaged gzipped archive imports without an error when <code>bsdtar</code> or <code>tarfile</code> reads it, which is the case whenever <code>bsdtar</code> is installed (<a href="#damage">&sect;3</a>). The seven questions, H1 to H7 in <a href="#decisions">&sect;9</a>, are open, each with my recommendation.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 records that you discarded the proposal, the same day. First: &ldquo;I think I don&rsquo;t have real benefits from including the hashes in the contents.toml. What interest me more is to confirm that the base image is the correct one for the disk at import time. This is not reliable&rdquo;. I then measured two checks of the disk&rsquo;s contents on the four private disks of a project on this computer, all on one Debian 13 image. Comparing a private disk&rsquo;s own clusters with a candidate image, block by block, needs nothing stored and takes a second: 23% of the non-zero blocks of node1 matched the right image, and the same in the other copy of the same disk, 0% an empty image, but 25% the image as another node of the project changed it. It tells an unrelated image apart, not a near miss. A fingerprint of what the machine sees, a SHA-256 over each non-zero 64 KiB block with its position, is the same for both copies of the disk (4.5 s and 4.8 s): reliable, but only with a record made when the private disk is made, kept in <code>project.toml</code>, and with QEMU to read a compressed image. Your answer: &ldquo;no, discard proposal of page 26 and update the TODO note. The benefit of this proposal is small and we pay a cost. We can revisit this proposal if there is new interest on the topic&rdquo;. Nothing of it is implemented; the page stays for when the topic comes back. The damaged gzipped archives of <a href="#damage">&sect;3</a> are a finding of their own.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>Today</a></li>
+        <li><a href="#damage"><span>3</span>A damaged byte</a></li>
+        <li><a href="#wrong"><span>4</span>The wrong image</a></li>
+        <li><a href="#bytes"><span>5</span>File or disk</a></li>
+        <li><a href="#contents"><span>6</span>In contents.toml</a></li>
+        <li><a href="#cost"><span>7</span>What it costs</a></li>
+        <li><a href="#import"><span>8</span>What the import does</a></li>
+        <li><a href="#decisions"><span>9</span>Questions</a></li>
+        <li><a href="#later"><span>10</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>The idea</dt><dd><code>contents.toml</code> gives each member the SHA-256 of its bytes, and each image of the project the SHA-256 of its file, whether the archive has the image or not. Readers ignore the keys they don&rsquo;t know, so the format stays 1 (<a href="#contents">&sect;6</a>).</dd></div>
+          <div><dt>Damage</dt><dd>A packed archive isn&rsquo;t gzipped, so nothing checks its bytes. One bit flipped in a packed disk gave wrong data with no error 62 times out of 80. A gzipped archive is checked only when GNU tar reads it: <code>bsdtar</code> and <code>tarfile</code> extracted 30 damaged archives out of 30 without an error (<a href="#damage">&sect;3</a>). A hash per member names the damaged one.</dd></div>
+          <div><dt>Wrong image</dt><dd>The export leaves the images out by default, and the import then picks a file by its path or its name. Nothing checks that it is the image the private disk was made on. A wrong one corrupts the machine&rsquo;s file system without an error (<a href="#wrong">&sect;4</a>).</dd></div>
+          <div><dt>Reuse</dt><dd>An image in the archive is replaced by a file of the shared images with the same name and size. A raw image&rsquo;s size is the size of its disk, so two raw images of 10 GiB always match (<a href="#today">&sect;2</a>).</dd></div>
+          <div><dt>The catch</dt><dd>A hash of a file changes when <code>qemu-img</code> rewrites it, as packing and unpacking do, although the disk stays the same. Two copies of one Debian 13 disk on this computer have different hashes (<a href="#bytes">&sect;5</a>).</dd></div>
+          <div><dt>Cost</dt><dd>SHA-256 runs at 2.1 GB/s here, so reading the disk costs more than hashing it. The export would read the images it leaves out, which it doesn&rsquo;t touch today: once per file, with a cache (<a href="#cost">&sect;7</a>).</dd></div>
+          <div><dt>Not covered</dt><dd>Hashes catch accidents. Whoever changes a member on purpose can change <code>contents.toml</code> too (<a href="#later">&sect;10</a>).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>Today</h2>
+        <p><code>contents.toml</code> lists the members in the order of the archive: the name and size of each, and, for a disk packed by <code>qemu-img</code>, <code>packed</code> and <code>real_size</code>, its size before (<a href="../vbp-format.html">vbp-format.html</a>, <code>virtualbricks-vbp(5)</code>). There is no hash.</p>
+        <h3>What checks the bytes</h3>
+        <div class="scroll">
+        <table>
+          <thead><tr><th>Archive</th><th>When</th><th>Checked by</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">Gzipped</td><td>Without <code>qemu-img</code></td><td>The CRC-32 of the whole stream, at its end, but only GNU tar reads that far. <code>bsdtar</code>, which the import prefers, and Python&rsquo;s <code>tarfile</code> stop at the end of the tar, before the CRC (<a href="#damage">&sect;3</a>).</td></tr>
+            <tr><td class="nowrap">Packed</td><td>With <code>qemu-img</code>, so nearly always</td><td class="no">Nothing. The checksums of tar cover the headers alone. A qcow2 file has no checksum of its data, and its compressed clusters have none that QEMU checks (<a href="#damage">&sect;3</a>).</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>How the import chooses an image</h3>
+        <p><code>plan_image()</code> and <code>_local_default()</code> in <code>config/importing.py</code>:</p>
+        <ul>
+          <li><strong>An image in the archive</strong> is copied to the shared images, unless they have a file of the same name and the same size, the <code>real_size</code> of a packed one. That file is used instead.</li>
+          <li><strong>An image not in the archive</strong> is the file at its path on the computer it comes from, when this computer has one; otherwise a file of the shared images under that file&rsquo;s name or the image&rsquo;s name; otherwise it is left unset. The Export window leaves the images out by default (<a href="04%20-%20projects-redesign.html">page 04</a>), so this is the usual case.</li>
+        </ul>
+        <p>Then <code>rebase</code> points each private disk at the chosen file. The Images tab does the same with <code>qemu-img rebase -u</code> when an image gets another file (<code>relink()</code>, <a href="09%20-%20disk-images-redesign.html">page 09</a>). Neither looks at what the file holds.</p>
+      </section>
+
+      <section id="damage">
+        <h2><span class="num">&sect;3</span>A damaged byte</h2>
+        <h3>Packed disks</h3>
+        <p>Measured today: 8 MiB of random words, packed into qcow2 by <code>qemu-img convert -c</code>, with zstd (3.6 MB) and with zlib (4.3 MB). Forty copies of each, each with one bit flipped at a random offset past the first MiB, where the compressed clusters are. Each copy was read back with <code>qemu-img convert -O raw</code> and compared with the words.</p>
+        <div class="scroll">
+        <table>
+          <thead><tr><th>Packed with</th><th class="num">Read error</th><th class="num">Wrong data, no error</th><th class="num">Unchanged</th></tr></thead>
+          <tbody>
+            <tr><td>zstd</td><td class="num">13</td><td class="num">27</td><td class="num">0</td></tr>
+            <tr><td>zlib</td><td class="num">5</td><td class="num">35</td><td class="num">0</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p><code>qemu-img check</code> found nothing wrong in the first five copies of each.</p>
+        <p>What the import does with them today. A read error makes the unpacking fail: the member stays packed, the import warns <i>left compressed</i>, and the machine gets an I/O error when it reads that cluster. Wrong data is unpacked as it is, and the machine reads it. A member that isn&rsquo;t packed, as a raw image, is read as it is too.</p>
+        <h3>Gzipped archives</h3>
+        <p>The first 4 MiB of the same words, in a tar gzipped by <code>gzip -6</code> (1.6 MB). Thirty copies, each with one bit flipped at a random offset, extracted as the import extracts them: from a pipe, with each of its three tools.</p>
+        <div class="scroll">
+        <table>
+          <thead><tr><th>Extracted by</th><th class="num">Refused</th><th class="num">Wrong data, no error</th></tr></thead>
+          <tbody>
+            <tr><td>GNU tar 1.35, <code>--gzip</code></td><td class="num">30</td><td class="num">0</td></tr>
+            <tr><td><code>bsdtar</code> 3.7.4</td><td class="num">0</td><td class="num">30</td></tr>
+            <tr><td>Python&rsquo;s <code>tarfile</code>, <code>r|*</code></td><td class="num">0</td><td class="num">30</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>GNU tar runs <code>gzip</code>, which reads to the end and says <i>invalid compressed data--crc error</i>. The other two stop at the blocks of zeros that end the tar, before the CRC that follows them. The import prefers <code>bsdtar</code> when it is installed, so the CRC is checked only on a computer that has GNU tar and not <code>bsdtar</code>.</p>
+      </section>
+
+      <section id="wrong">
+        <h2><span class="num">&sect;4</span>The wrong image</h2>
+        <p>A private disk holds only the clusters its machine changed; it reads the rest from its image. Its qcow2 header names the image by path and format, and nothing else: nothing in the file says which image it was. When the import, or the Images tab, points the disk at another file, the machine still starts. It reads its own clusters on top of another disk&rsquo;s, and its file system is a mix of the two. Nothing fails until the file system notices, maybe much later, and the machine&rsquo;s writes make it worse.</p>
+        <p>How it happens:</p>
+        <ul>
+          <li>The image is left out of the archive, as by default, and this computer has another file of that name. Debian publishes its cloud images in <code>latest/</code> under one name, and each new build replaces the file: <code>debian-12-genericcloud-amd64.qcow2</code> downloaded in March may not be the one of January.</li>
+          <li>Two projects name different images with the same file name: <code>disk.qcow2</code>, <code>base.img</code>.</li>
+          <li>The user picks a file with <i>Use a file&hellip;</i> in the Import window, or in the Images tab.</li>
+        </ul>
+        <p>With the hash of the image the disks were made on, the import can compare it with the file it is about to use, and say so before the import (<a href="#import">&sect;8</a>).</p>
+      </section>
+
+      <section id="bytes">
+        <h2><span class="num">&sect;5</span>File bytes or disk contents</h2>
+        <p>The SHA-256 of a file is the hash of its bytes. The same disk can live in files of different bytes, since <code>qemu-img convert</code> lays out the clusters its own way. Measured today:</p>
+        <ul>
+          <li>Packing the same qcow2 twice gave two different files: with <code>-W</code>, <code>qemu-img</code> writes the clusters in the order they are ready.</li>
+          <li>A qcow2 made by <code>qemu-img convert</code> came back from packing and unpacking with the same bytes. A disk written in another order, as a running machine writes it (here by <code>qemu-io</code>, from its end), came back with other bytes. <code>qemu-img compare</code> says both are the same disk as before.</li>
+          <li>On this computer, <code>~/Downloads/debian13.qcow2</code> (25 February, 6&nbsp;758&nbsp;989&nbsp;824 bytes) and <code>~/.virtualbricks/vimages/debian13.qcow2</code> (7 October, 6&nbsp;610&nbsp;354&nbsp;176 bytes) have different SHA-256 hashes. <code>qemu-img compare</code> says they are the same 10 GiB disk.</li>
+        </ul>
+        <p>So an image that went through a packed archive no longer has the hash its disks were made on, and a check by the file&rsquo;s hash would warn about the right image. The ways out:</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th></th><th>The hash of an image</th><th>Wrong warnings</th><th>What it takes</th></tr></thead>
+          <tbody>
+            <tr><td>A</td><td><strong>The file, and the workspace remembers.</strong> When the import copies or unpacks an image, it remembers the hash the archive gives it, with the file&rsquo;s size, time and inode, as <code>InfoCache</code> keys <code>qemu-img info</code>. The export writes the remembered hash while the file is unchanged.</td><td>For an image converted outside Virtualbricks</td><td>A small file of the workspace</td></tr>
+            <tr><td>B</td><td><strong>The disk.</strong> A hash of what the machine sees, the same for every file of the disk, raw or qcow2, packed or not.</td><td>None</td><td><code>qemu-img</code> can&rsquo;t give it: it refuses to write to a pipe (<i>&lsquo;file&rsquo; driver requires &lsquo;/dev/stdout&rsquo; to be a regular file</i>), and <code>qemu-img dd</code> fails too (<i>Could not resize file</i>). It would take <code>qemu-nbd</code> serving the disk on a Unix socket, and an NBD client in Python hashing the blocks and skipping the holes, as the blkhash project does. Not checked on the targets.</td></tr>
+            <tr><td>C</td><td><strong>The file alone.</strong></td><td>After every trip through a packed archive</td><td>Nothing more</td></tr>
+            <tr><td>D</td><td><strong>A raw copy.</strong> Convert to a sparse raw file and hash that.</td><td>None</td><td>Room for the disk&rsquo;s data, 6.3 GiB for the Debian image, and the time to write it</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="contents">
+        <h2><span class="num">&sect;6</span>In contents.toml</h2>
+        <p>The example of <code>virtualbricks-vbp(5)</code>, with the new keys:</p>
+        <figure class="code">
+          <figcaption>contents.toml</figcaption>
+<pre><code><span class="h">format</span> = 1
+
+[[members]]
+<span class="h">name</span> = "project.toml"
+<span class="h">size</span> = 6247
+<span class="h">sha256</span> = "&hellip;"
+
+[[members]]
+<span class="h">name</span> = "vm1_hda.cow"
+<span class="h">size</span> = 328192
+<span class="h">packed</span> = true
+<span class="h">real_size</span> = 851968
+<span class="h">sha256</span> = "&hellip;"        <span class="c"># of the 328192 bytes in the archive</span>
+
+[[members]]
+<span class="h">name</span> = "IMAGES/debian"
+<span class="h">size</span> = 328192
+<span class="h">packed</span> = true
+<span class="h">real_size</span> = 1376256
+<span class="h">sha256</span> = "&hellip;"
+
+[images.debian]
+<span class="h">size</span> = 1376256
+<span class="h">sha256</span> = "&hellip;"        <span class="c"># of the file the disks were made on</span></code></pre>
+        </figure>
+        <ul>
+          <li><strong><code>sha256</code> of a member</strong> is the hash of its bytes as the archive holds them, packed for a packed disk. The import checks it right after extracting, before unpacking.</li>
+          <li><strong><code>[images.<i>name</i>]</code></strong> is there for each image the project uses, in the archive or not: the size and hash of its file on the computer the archive comes from (or the remembered hash, <a class="ref" href="#decisions">H2</a>). A packed image has two hashes, which differ: its member&rsquo;s and its file&rsquo;s.</li>
+          <li><strong>The order.</strong> <code>contents.toml</code> is the first member, so that the import knows what the archive holds from its first blocks (<a href="04%20-%20projects-redesign.html">page 04</a>, P10). The hashes must then be known before the archive is written: the export hashes each member in its staging folder after packing, while the packed files are still in the page cache, and the images before.</li>
+          <li><strong>Compatibility.</strong> A reader of format 1 ignores the keys it doesn&rsquo;t know, so the new keys stay in format 1. A format 2 would make every Virtualbricks that reads format 1 refuse the archive (<i>written by a newer Virtualbricks</i>). An archive without hashes imports as today. The list of members that the archive protocol sends, [<i>name</i>, <i>size</i>, <i>kind</i>, <i>packed</i>, <i>real_size</i>], would get a field (<a href="../archive-protocol.html">archive-protocol.html</a>).</li>
+        </ul>
+      </section>
+
+      <section id="cost">
+        <h2><span class="num">&sect;7</span>What it costs</h2>
+        <div class="scroll">
+        <table>
+          <thead><tr><th>Measured today</th><th class="num">Result</th></tr></thead>
+          <tbody>
+            <tr><td>SHA-256 with <code>hashlib</code>, in memory (this CPU has the SHA extensions)</td><td class="num nowrap">2.11 GB/s</td></tr>
+            <tr><td>BLAKE2b with <code>hashlib</code>, in memory</td><td class="num nowrap">1.01 GB/s</td></tr>
+            <tr><td>CRC-32 with <code>zlib</code>, in memory</td><td class="num nowrap">5.05 GB/s</td></tr>
+            <tr><td><code>sha256sum</code> of both Debian 13 copies of <a href="#bytes">&sect;5</a>, 13.4 GB</td><td class="num nowrap">9.9 s</td></tr>
+            <tr><td><code>qemu-img compare</code> of the two, right after, from the page cache</td><td class="num nowrap">2.6 s</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <ul>
+          <li><strong>The export</strong> reads each member once more after staging. The packed ones are smaller and were just written. An image left out of the archive is read whole, 6.8 GB for the Debian image, at each export, unless its hash is kept by size, time and inode in the workspace.</li>
+          <li><strong>The import</strong> reads each member once more after extracting. For an image not in the archive it reads the file it would use, whole, while the Import window says it is looking. The same cache serves it.</li>
+          <li><strong>Other CPUs.</strong> A CPU without the SHA extensions hashes slower; not measured.</li>
+        </ul>
+      </section>
+
+      <section id="import">
+        <h2><span class="num">&sect;8</span>What the import would do</h2>
+        <ul>
+          <li><strong>Each member with a hash</strong> is hashed after extracting and before unpacking. A member that doesn&rsquo;t match: <a class="ref" href="#decisions">H4</a>.</li>
+          <li><strong>An image not in the archive:</strong> while the import is planned, the file it would use is hashed and compared with <code>[images.<i>name</i>]</code>. Its row in the Import window says when it differs: <i>Not the image its disks were made on</i>. What the import does then: <a class="ref" href="#decisions">H5</a>.</li>
+          <li><strong>An image in the archive</strong> with a file of the same name in the shared images: that file is used only when it holds the same image (<a class="ref" href="#decisions">H6</a>).</li>
+          <li><strong>An image with no hash</strong>, in an older archive, is chosen as today.</li>
+        </ul>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;9</span>Questions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Recommended</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>H1</td>
+              <td>Which checks</td>
+              <td>
+                <p><b>A</b> All three: damaged members, the image under a private disk, and the image an import reuses.</p>
+                <p><b>B</b> Damaged members only: a hash per member, no <code>[images]</code>.</p>
+                <p><b>C</b> The images only.</p>
+                <p><b>D</b> None: archives stay as they are.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>H2</td>
+              <td>What an image&rsquo;s hash is of</td>
+              <td>
+                <p><b>A</b> Its file, and the workspace remembers the hash of each image the import copied or unpacked (&sect;5 A).</p>
+                <p><b>B</b> Its disk, read over NBD (&sect;5 B).</p>
+                <p><b>C</b> Its file alone, with the wrong warnings of &sect;5.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>H3</td>
+              <td>The hash</td>
+              <td>
+                <p><b>A</b> SHA-256: the faster of the two here, and the hash that distributions publish for their images.</p>
+                <p><b>B</b> BLAKE2b: half as fast here; usually the faster on a CPU without the SHA extensions, not measured.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>H4</td>
+              <td>A damaged member</td>
+              <td>
+                <p><b>A</b> The import stops, names the member, and leaves nothing, as it does today when GNU tar finds a bad CRC.</p>
+                <p><b>B</b> The import goes on, and its messages name the member; the disk stays as it came.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>H5</td>
+              <td>The file for an image isn&rsquo;t the one its disks were made on</td>
+              <td>
+                <p><b>A</b> The Import window says so on the image&rsquo;s row, and the image is unset by default; the user can still use the file.</p>
+                <p><b>B</b> The import uses it, and warns after.</p>
+                <p><b>C</b> The import leaves the image unset, and warns after.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>H6</td>
+              <td>An image in the archive, and a file of its name in the shared images</td>
+              <td>
+                <p><b>A</b> Use the file when its hash is the image&rsquo;s.</p>
+                <p><b>B</b> Use the file when <code>qemu-img compare</code> says it is the same disk, after extracting.</p>
+                <p><b>C</b> A, then B when the hashes differ.</p>
+              </td>
+              <td class="rec">C</td>
+            </tr>
+            <tr>
+              <td>H7</td>
+              <td>Where the hash of an image lives after the import</td>
+              <td>
+                <p><b>A</b> Nowhere but the workspace&rsquo;s memory of H2 A: the check happens at import only.</p>
+                <p><b>B</b> Also in <code>project.toml</code>, by the image, so that the Images tab can check a new file too. A change to the project format.</p>
+              </td>
+              <td class="rec">A, B later</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;10</span>Later</h2>
+        <ul>
+          <li>The Images tab checks a new file against the image&rsquo;s hash, once <code>project.toml</code> keeps it (<a class="ref" href="#decisions">H7</a> B).</li>
+          <li>The Images tab shows an image&rsquo;s SHA-256, to compare with the one a distribution publishes.</li>
+          <li>An archive changed on purpose would need <code>contents.toml</code> signed. That is another design.</li>
+          <li>The imports and exports of the console and of a connection, in the TODO list (14 &sect;11, 19 &sect;13), would make the same checks.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>

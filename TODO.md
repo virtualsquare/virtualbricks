@@ -315,6 +315,13 @@
 
 # DONE
 
+- [x] Hashes in contents.toml, thought over and discarded: the benefit is
+  small for its cost; revisit if there is new interest (26 rev 2). Only a
+  fingerprint of the disk's contents, recorded when a private disk is
+  made, would confirm its image reliably at import
+  - found meanwhile: a damaged gzipped archive imports without an error
+    when bsdtar or tarfile reads it: only GNU tar checks the CRC (26 §3)
+
 - [x] Run mypy at each commit: a local hook, with the mypy of `.venv`,
   which has the stubs of GTK 3
 
