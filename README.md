@@ -292,7 +292,9 @@ the command line.
 The files are described in the manual page, which you can read from the
 sources with `man ./docs/man/virtualbricks-config.5`, and in
 [`docs/config-files.html`](docs/config-files.html); the archives that export
-and import projects in `man ./docs/man/virtualbricks-archive.7` and
+and import projects in `man ./docs/man/virtualbricks-vbp.5` and
+[`docs/vbp-format.html`](docs/vbp-format.html), and the process that reads
+and writes them in `man ./docs/man/virtualbricks-archive.7` and
 [`docs/archive-protocol.html`](docs/archive-protocol.html).
 
 ## Development

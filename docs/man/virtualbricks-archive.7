@@ -2,8 +2,8 @@
 .\"
 .TH "VIRTUALBRICKS\-ARCHIVE" "7" "2026\-10\-08" "virtualbricks 3.0.0.dev3" "Virtualbricks Manual"
 .SH NAME
-virtualbricks\-archive \- project archives, and the process that reads
-and writes them
+virtualbricks\-archive \- the process that reads and writes project
+archives
 .SH SYNOPSIS
 \f[I]project\f[R].vbp
 .PP
@@ -41,7 +41,7 @@ any time with SIGTERM.
  +\-\-\-\-\-\-\-\-\-\-\-\-+                      +\-\-\-\-\-\-\-\-\-\-\-\-\-+
 .EE
 .PP
-This page describes the format of the archives (\f[B]THE ARCHIVE\f[R]),
+This page sums up the archives (\f[B]THE ARCHIVE\f[R]), and describes
 the protocol between the application and the process (\f[B]THE
 PROCESS\f[R]), the three jobs (\f[B]JOBS\f[R]), the progress they report
 (\f[B]PROGRESS\f[R]), the tools they run (\f[B]ARCHIVE TOOLS\f[R]) and
@@ -49,189 +49,53 @@ how the application drives them (\f[B]THE APPLICATION\(aqS SIDE\f[R]).
 It\(aqs for whoever works on that code, and for anyone who wants to run
 the process by hand, to look into an archive or to script an export.
 .SH THE ARCHIVE
-.SS Format
-An archive is a tar file in the POSIX.1\-2001 format, \f[I]pax\f[R],
-with the extension \f[I].vbp\f[R].
-When \f[B]qemu\-img\f[R] is found, the archive is not compressed as a
-whole: its disks are compressed one by one inside it (see \f[B]Packed
-disks\f[R]).
-Without \f[B]qemu\-img\f[R], the whole archive is compressed with gzip.
+An archive, a \f[I].vbp\f[R] file, is a tar file in the pax format,
+which \f[B]virtualbricks\-vbp\f[R](5) describes in full.
+This page needs only what follows.
 .PP
-Virtualbricks reads archives that are not compressed or compressed with
-gzip, bzip2 or xz, whatever their extension, so an archive made by hand
-with \f[B]tar\f[R](1) can be imported too.
-The Import window offers the files \f[I]*.vbp\f[R], \f[I]*.tar.gz\f[R],
-\f[I]*.tgz\f[R] and \f[I]*.tar\f[R].
-.SS Members
-Every member is a regular file, named by its path relative to the
-project\(aqs folder.
-A reader drops a leading \f[I]./\f[R] and a trailing \f[I]/\f[R] from
-the names.
-The name gives the kind of the member, the word in italics, which the
-process uses in its messages (see \f[B]inspect\f[R]):
+Each member is a file of the project\(aqs folder, under its path in the
+folder, or an image of the project, under \f[I]IMAGES/\f[R], named after
+the image in the project file.
+The name of a member gives its \f[I]kind\f[R], the word that the
+messages of the process use:
 .TP
-\f[B]contents.toml\f[R]
-\f[I]contents\f[R]: the list of the members; see \f[B]contents.toml\f[R]
-below.
+\f[B]contents\f[R]
+\f[B]contents.toml\f[R], the list of the other members.
 .TP
-\f[B]project.toml\f[R]
-\f[I]project\f[R]: the project file, described in
-\f[B]virtualbricks\-config\f[R](5).
+\f[B]project\f[R], \f[B]legacy project\f[R]
+\f[B]project.toml\f[R], the project file; \f[B].project\f[R] or
+\f[B].project\(ti\f[R], the project file of Virtualbricks 2.1 and older.
 .TP
-\f[B].project\f[R], \f[B].project\(ti\f[R]
-\f[I]legacy project\f[R]: the project file of Virtualbricks 2.1 and
-older.
-It is converted as the migration does.
+\f[B]readme\f[R]
+\f[B]README.md\f[R], or \f[B]README\f[R] before 3.0.
 .TP
-\f[B]README.md\f[R], \f[B]README\f[R]
-\f[I]readme\f[R]: the description of the project, plain text in UTF\-8
-that Virtualbricks reads as Markdown (see \f[B]README\f[R] in
-\f[B]virtualbricks\-config\f[R](5)).
-The archive keeps it as it is.
-Before 3.0 it was \f[B]README\f[R], which the import renames to
-\f[B]README.md\f[R]; in an archive with both, \f[B]README.md\f[R] is the
-README.
+\f[B]disk\f[R]
+\f[I]vm\f[R]_\f[I]device\f[R].cow, the private disk of a virtual
+machine.
 .TP
-\f[I]vm\f[R]_\f[I]device\f[R].cow
-\f[I]disk\f[R]: the private disk of the device \f[I]device\f[R], as
-\f[B]hda\f[R] or \f[B]vdb\f[R], of the virtual machine \f[I]vm\f[R].
-Only at the top of the archive; \f[I]device\f[R] has only lowercase
-letters and digits.
+\f[B]image\f[R]
+IMAGES/\f[I]image\f[R], a disk image; \f[I].images/image\f[R] in older
+archives.
 .TP
-\&.images/\f[I]image\f[R]
-\f[I]image\f[R]: the disk image called \f[I]image\f[R] in the project
-file.
-The member is named after the image, not after its file: an image
-\f[B]debian\f[R] whose file is \f[I]/srv/vm/debian\-12.qcow2\f[R] is
-stored as \f[I].images/debian\f[R].
-.TP
-any other name
-\f[I]other\f[R]: a file of the project\(aqs folder that you chose to
-export.
-The import puts it back where it was.
-.SS Order
-A new archive starts with \f[B]contents.toml\f[R], then the project file
-and the README: together, the \f[I]head\f[R] of the archive.
-The other files, the private disks and the images follow, in this order,
-each group from the smallest file to the largest.
-An inspection reads the head and stops there, without reading the
-gigabytes that follow it.
-.IP
-.EX
-  +\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-+\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-+
-  | contents | project | README | other | disks | .images/  |
-  |   .toml  |  .toml  |  .md   | files |       |           |
-  +\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-+\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-+
-  |<\-\-\-\-\-\-\-\-\-\- head \-\-\-\-\-\-\-\-\-\-\->|<\-\-\- smallest to largest \->|
-         read by inspect               read by import
-.EE
-.SS contents.toml
-The list of the other members, in the order of the archive.
-It is TOML 1.0, as the files described in
-\f[B]virtualbricks\-config\f[R](5):
-.IP
-.EX
-format = 1
-
-[[members]]
-name = \(dqproject.toml\(dq
-size = 255
-
-[[members]]
-name = \(dqREADME.md\(dq
-size = 16
-
-[[members]]
-name = \(dqvm1_hda.cow\(dq
-size = 197120
-packed = true
-real_size = 196616
-
-[[members]]
-name = \(dq.images/debian\(dq
-size = 197120
-packed = true
-real_size = 196616
-.EE
-.TP
-\f[B]format\f[R] = \f[I]integer\f[R]
-The version of the layout, \f[B]1\f[R].
-An archive with a higher \f[B]format\f[R] is not read:
-\(dqcontents.toml: written by a newer Virtualbricks (format 2)\(dq.
-.TP
-\f[B]members\f[R] = \f[I]array of tables\f[R]
-One table for each member but \f[B]contents.toml\f[R] itself:
-.RS
-.TP
-\f[B]name\f[R] = \f[I]string\f[R]
-The name of the member.
-.TP
-\f[B]size\f[R] = \f[I]integer\f[R]
-Its size in the archive, in bytes.
-.TP
-\f[B]packed\f[R] = \f[I]boolean\f[R]
-Present, and \f[B]true\f[R], only when \f[B]qemu\-img\f[R] compressed
-the member.
-.TP
-\f[B]real_size\f[R] = \f[I]integer\f[R]
-Only with \f[B]packed\f[R]: its size before it was compressed, the size
-it has on the computer it comes from.
-.RE
+\f[B]other\f[R]
+Any other file of the folder.
 .PP
-The kind of a member comes from its name and is not written.
-An item of \f[B]members\f[R] that isn\(aqt a table is skipped, a size
-that isn\(aqt an integer is read as 0, and other keys are ignored.
-.SS Packed disks
-When \f[B]qemu\-img\f[R] is found, the export compresses each private
-disk and each image in the qcow2 format:
-.IP
-.EX
-qemu\-img convert \-p \-O qcow2 \-m 8 \-W \(rs
-    \-c \-o compression_type=zstd \(rs
-    [\-B backing \-F backing\-format] disk packed\-disk
-.EE
+A new archive starts with its \f[I]head\f[R]: \f[B]contents.toml\f[R],
+then the project file and the README.
+An inspection reads the head and stops there.
+The archives of older versions have no \f[B]contents.toml\f[R], and an
+inspection reads them to their end.
 .PP
-with zlib, without \f[B]\-o compression_type=zstd\f[R], when QEMU is
-older than 5.1.
-A private disk keeps its backing file, the image, as it is.
-A packed disk is a valid qcow2 file, that QEMU runs as it is.
-The member is marked \f[B]packed\f[R] in \f[B]contents.toml\f[R], with
-its \f[B]real_size\f[R].
-A disk or an image in another format, as raw, is stored as it is; so is
-a disk that \f[B]qemu\-img\f[R] can\(aqt read, as when its image is
-gone, and the export reports it as a warning.
+When \f[B]qemu\-img\f[R] is installed, the export compresses each disk
+and each image in the qcow2 format on its own, and
+\f[B]contents.toml\f[R] marks it \f[I]packed\f[R], with its size before,
+its \f[I]real_size\f[R]; the import turns them back into normal qcow2
+files.
+Without \f[B]qemu\-img\f[R], the export compresses the whole archive
+with gzip instead.
 .PP
-The import converts the packed members back to normal qcow2 files, the
-private disks on top of their new image.
-When \f[B]qemu\-img\f[R] isn\(aqt found, or the image of a private disk
-is left unset, the disk stays compressed and the import reports it: the
-disk works as it is.
-.PP
-The \f[B]real_size\f[R] also lets the import recognize an image that
-this computer already has: a file of the shared images with the same
-name and size is used instead of a copy.
-.SS Holes
-Disks are sparse files: a disk of 20 GB can take 2 GB of space.
-The archive keeps their holes, as GNU sparse 1.0 members, written by
-\f[B]bsdtar\f[R], by GNU \f[B]tar\f[R] with \f[B]\-\-sparse\f[R], or by
-Virtualbricks itself when neither is installed.
-A member larger than 8 GiB written by Virtualbricks has its size in
-base\-256 in its tar header, not in a pax record, which Python\(aqs
-\f[B]tarfile\f[R] would read wrong (see \f[B]BUGS\f[R]).
-.PP
-When the archive is extracted, \f[B]bsdtar\f[R] turns the runs of zeros
-into holes itself, with \f[B]\-S\f[R].
-After GNU \f[B]tar\f[R] or \f[B]tarfile\f[R], the import does it for the
-private disks and the copied images: blocks of 64 KiB of zeros become
-holes if they add up to 1 MiB at least.
-.SS Older archives
-The archives of older versions of Virtualbricks have no
-\f[B]contents.toml\f[R]; most are compressed with gzip, and some hold
-the project file of Virtualbricks 2.1, \f[B].project\f[R].
-They are read as the new ones, but an inspection has to read an archive
-without \f[B]contents.toml\f[R] to its end to know what it holds.
-It sends what it knows, the \f[I]head\f[R], as soon as it has read the
-project file, and the full list of members at the end.
+Disks are sparse files, and the archive keeps their holes: a disk of 20
+GB can take 2 GB.
 .SH THE PROCESS
 .SS Starting
 The application starts the process with its own Python interpreter and
@@ -472,9 +336,11 @@ The Export window always stores \f[B]project.toml\f[R] and the README,
 \f[B]README\f[R], and lets you choose the private disks, the other files
 and the images; it never stores what older versions left in the folder:
 the \f[I].images\f[R] folder and the \f[I].project\f[R] files.
+The export leaves out a folder \f[I]IMAGES\f[R] of the project, as an
+import would take its files for images, and reports it.
 .TP
 \f[B]images\f[R] = \f[I]array\f[R] of [\f[I]name\f[R], \f[I]path\f[R]]
-The images to store, as \f[I].images/name\f[R].
+The images to store, as \f[I]IMAGES/name\f[R].
 .TP
 \f[B]compression\f[R] = \f[B]\(dqgzip\(dq\f[R] | \f[B]\(dqnone\(dq\f[R], default \f[B]\(dqgzip\(dq\f[R]
 Whether to compress the archive with gzip.
@@ -511,7 +377,7 @@ folder.
  lab/vm1_hda.cow   \-\- pack \-\->  |   contents.toml           |
  debian\-12.qcow2   \-\- pack \-\->  |   project.toml  README.md |
                                 |   vm1_hda.cow             |
-                                |   .images/debian          |
+                                |   IMAGES/debian           |
                                 +\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
                                      | tar, in order
                                      v
@@ -551,7 +417,7 @@ path = \(dq/home/user/.virtualbricks/shared_images/debian\-12.qcow2\(dq
 fallback = \(dq\(dq
 
 [settings]
-qemupath = \(dq/usr/bin\(dq
+qemu_path = \(dq/usr/bin\(dq
 .EE
 .TP
 \f[B]archive\f[R] = \f[I]path\f[R]
@@ -599,7 +465,7 @@ image, or \(dq\(dq.
 .TP
 \f[B]settings\f[R] = \f[I]table\f[R]
 The settings of the project to replace with this computer\(aqs:
-\f[B]qemupath\f[R] and \f[B]vdepath\f[R], the folders of QEMU and VDE.
+\f[B]qemu_path\f[R] and \f[B]vde_path\f[R], the folders of QEMU and VDE.
 .TP
 \f[B]qemu_img\f[R] = \f[I]path\f[R]
 The \f[B]qemu\-img\f[R] that unpacks and rebases the disks, or \(dq\(dq.
@@ -623,7 +489,7 @@ The import takes these steps:
  |     contents.toml            2  note what\(aqs packed, remove
  |     project.toml             3  read, or convert .project
  |     README.md
- |     .images/debian  \-\-\-.     4  copy, use or skip images
+ |     IMAGES/debian  \-\-\-\-.     4  copy, use or skip images
  |     vm1_hda.cow        |     5  rewrite project.toml
  |                        |     6  rebase \-u the private
  |                        |        disks on their images
@@ -644,8 +510,9 @@ Rename \f[B]README\f[R], the README of before 3.0, to
 Read the project file and upgrade it, or convert \f[B].project\f[R].
 .IP "4." 3
 Move each copied image to the shared images, sending it with
-\f[B]created\f[R]; then remove the \f[I].images\f[R] folder with the
-images that aren\(aqt copied.
+\f[B]created\f[R]; then remove the \f[I]IMAGES\f[R] folder, or
+\f[I].images\f[R] in an older archive, with the images that aren\(aqt
+copied.
 .IP "5." 3
 Rewrite \f[B]project.toml\f[R] with the path of each image, \(dq\(dq for
 an image left unset, and with \f[B]settings\f[R].
@@ -843,7 +710,7 @@ The result, laid out:
     [\(dqproject.toml\(dq, 255, \(dqproject\(dq, false, 0],
     [\(dqREADME.md\(dq, 16, \(dqreadme\(dq, false, 0],
     [\(dqvm1_hda.cow\(dq, 197120, \(dqdisk\(dq, true, 196616],
-    [\(dq.images/debian\(dq, 197120, \(dqimage\(dq, true, 196616]
+    [\(dqIMAGES/debian\(dq, 197120, \(dqimage\(dq, true, 196616]
   ],
   \(dqcomplete\(dq: true,
   \(dqreport\(dq: [],
@@ -901,8 +768,9 @@ The process then reads the archive with the tool; without
 \f[B]bsdtar\f[R] or GNU \f[B]tar\f[R], it can\(aqt read it, and says
 \(dqinstall bsdtar or GNU tar to read this archive\(dq.
 .SH SEE ALSO
-\f[B]virtualbricks\-config\f[R](5), \f[B]bsdtar\f[R](1),
-\f[B]tar\f[R](1), \f[B]tar\f[R](5), \f[B]qemu\-img\f[R](1)
+\f[B]virtualbricks\-vbp\f[R](5), \f[B]virtualbricks\-config\f[R](5),
+\f[B]bsdtar\f[R](1), \f[B]tar\f[R](1), \f[B]tar\f[R](5),
+\f[B]qemu\-img\f[R](1)
 .PP
 GNU tar, sparse formats: \c
 .UR https://www.gnu.org/software/tar/manual/html_node/Sparse-Formats.html

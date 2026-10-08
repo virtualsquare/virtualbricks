@@ -55,6 +55,7 @@ from virtualbricks.config.archive import (
     DISK,
     IMAGE,
     IMAGES,
+    LEGACY_IMAGES,
     ArchiveContents,
     ArchiveError,
     ArchiveJob,
@@ -351,7 +352,6 @@ class _Import:
         self.emit = emit
         self.tool = tool
         self.staging = str(job["staging"])
-        self.images = os.path.join(self.staging, IMAGES)
         self.qemu_img = str(job.get("qemu_img", ""))
         self.qemu = QemuImg(self.qemu_img) if self.qemu_img else None
         self.report = Report()
@@ -479,7 +479,7 @@ class _Import:
         for image in cast("list[Table]", self.job.get("images", [])):
             name = str(image["name"])
             choice = str(image["choice"])
-            source = os.path.join(self.images, name)
+            source = self.image_file(name)
             if choice == "auto":
                 if os.path.isfile(source):
                     choice = COPY
@@ -509,8 +509,20 @@ class _Import:
                     f"images.{name}",
                 )
                 paths[name] = ""
-        shutil.rmtree(self.images, ignore_errors=True)
+        for folder in (IMAGES, LEGACY_IMAGES):
+            shutil.rmtree(
+                os.path.join(self.staging, folder), ignore_errors=True
+            )
         return paths
+
+    def image_file(self, name: str) -> str:
+        """The file of an image in the archive, in .images in an old one."""
+
+        path = os.path.join(self.staging, IMAGES, name)
+        legacy = os.path.join(self.staging, LEGACY_IMAGES, name)
+        if not os.path.isfile(path) and os.path.isfile(legacy):
+            return legacy
+        return path
 
     def rebase(self, data: Table, paths: dict[str, str]) -> None:
         """Point each private disk at its image, in the image's format."""

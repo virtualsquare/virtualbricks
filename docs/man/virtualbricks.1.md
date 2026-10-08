@@ -1003,6 +1003,6 @@ virtualbricks --workspace ~/labs/b --command status
 
 # SEE ALSO
 
-**virtualbricks-config**(5), **virtualbricks-archive**(7),
-**virtualbricks-control**(7), **qemu**(1), **vde_switch**(1),
-**openssl**(1)
+**virtualbricks-config**(5), **virtualbricks-vbp**(5),
+**virtualbricks-archive**(7), **virtualbricks-control**(7), **qemu**(1),
+**vde_switch**(1), **openssl**(1)

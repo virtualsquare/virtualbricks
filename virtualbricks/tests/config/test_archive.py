@@ -189,12 +189,16 @@ class TestMembers(unittest.TestCase):
         self.assertEqual(kind(".project~"), "legacy project")
         self.assertEqual(kind("README.md"), "readme")
         self.assertEqual(kind("README"), "readme")
+        self.assertEqual(kind("IMAGES/deb"), "image")
+        self.assertEqual(kind("IMAGES/a/b"), "other")
+        # the folder of the images of an older archive
         self.assertEqual(kind(".images/deb"), "image")
         self.assertEqual(kind(".images/a/b"), "other")
+        self.assertEqual(kind("images/deb"), "other")
         self.assertEqual(kind("vm_hda.cow"), "disk")
         self.assertEqual(kind("sub/vm_hda.cow"), "other")
         self.assertEqual(kind("notes.txt"), "other")
-        self.assertEqual(Member(".images/deb", 1, "image").image, "deb")
+        self.assertEqual(Member("IMAGES/deb", 1, "image").image, "deb")
 
     def test_normalize(self):
         self.assertEqual(archive.normalize("././a/"), "a")
@@ -202,7 +206,7 @@ class TestMembers(unittest.TestCase):
     def test_contents_round_trip(self):
         members = [
             Member("project.toml", 10, "project"),
-            Member(".images/deb", 5, "image"),
+            Member("IMAGES/deb", 5, "image"),
         ]
         text = archive.write_contents(members).encode()
         self.assertEqual(archive.read_contents(text), members)
@@ -223,7 +227,7 @@ class TestMembers(unittest.TestCase):
             "/a.vbp",
             {"format": 1},
             "A lab",
-            [Member(".images/deb", 5, "image")],
+            [Member("IMAGES/deb", 5, "image")],
             True,
             report,
             converted=True,
@@ -246,14 +250,14 @@ class TestInspect(ArchiveTestCase):
         members = [
             Member("project.toml", len(PROJECT), "project"),
             Member("README", 5, "readme"),
-            Member(".images/deb", 8 * MiB, "image"),
+            Member("IMAGES/deb", 8 * MiB, "image"),
         ]
         path = make_archive(
             self.path("lab.vbp"),
             {
                 "project.toml": PROJECT,
                 "README": b"A lab",
-                ".images/deb": os.urandom(8 * MiB),
+                "IMAGES/deb": os.urandom(8 * MiB),
             },
             mode="w",
             contents=members,
@@ -275,7 +279,7 @@ class TestInspect(ArchiveTestCase):
                 "project.toml": PROJECT,
                 "vm_hda.cow": b"x" * 100,
                 "README": b"A lab",
-                ".images/deb": b"y" * 50,
+                "IMAGES/deb": b"y" * 50,
             },
         )
         contents = self.inspect(path)
@@ -286,7 +290,7 @@ class TestInspect(ArchiveTestCase):
                 Member("project.toml", len(PROJECT), "project"),
                 Member("vm_hda.cow", 100, "disk"),
                 Member("README", 5, "readme"),
-                Member(".images/deb", 50, "image"),
+                Member("IMAGES/deb", 50, "image"),
             ],
         )
         self.assertEqual(contents.description, "A lab")
@@ -417,7 +421,7 @@ class TestExtract(ArchiveTestCase):
             add(tar, "project.toml", PROJECT)
             # tarfile doesn't record holes: they're zeros in the archive
             tar.add(disk, "vm_hda.cow")
-            add(tar, ".images/deb", b"image")
+            add(tar, "IMAGES/deb", b"image")
         return path
 
     def extract(self, tool_name):
@@ -432,7 +436,7 @@ class TestExtract(ArchiveTestCase):
         self.assertEqual(os.path.getsize(disk), 32 * MiB)
         with open(disk, "rb") as fp:
             self.assertEqual(fp.read(5), b"data\0")
-        with open(os.path.join(destination, ".images", "deb"), "rb") as fp:
+        with open(os.path.join(destination, "IMAGES", "deb"), "rb") as fp:
             self.assertEqual(fp.read(), b"image")
         progress = self.emitted.of("progress")[-1]
         self.assertEqual(progress["step"], "extract")
@@ -845,6 +849,32 @@ class TestWrite(ArchiveTestCase):
         }
         return archive.run_job(job, emit or self.emitted, tool), output
 
+    def test_a_folder_of_the_project_named_as_that_of_the_images(self):
+        project, files, images = self.lab()
+        for name in ("IMAGES/notes.txt", "IMAGES/sub/more", ".images/old"):
+            path = os.path.join(project, name)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as fp:
+                fp.write(b"mine")
+        job = {
+            "job": "export",
+            "project": project,
+            "output": self.path("out.vbp"),
+            "files": files + ["IMAGES/notes.txt", "./IMAGES/sub/more"],
+            "images": [list(image) for image in images],
+        }
+        result = archive.run_job(job, self.emitted, Tool("tarfile"))
+        report = archive.report_from_list(result["report"])
+        self.assertEqual(
+            [(m.where, m.text) for m in report],
+            [("IMAGES", "left out: an archive keeps its images in IMAGES/")],
+        )
+        with tarfile.open(result["output"]) as tar:
+            names = [archive.normalize(info.name) for info in tar]
+        self.assertEqual(
+            [n for n in names if n.split("/")[0] == "IMAGES"], ["IMAGES/deb"]
+        )
+
     def test_the_order_of_a_new_archive(self):
         project, files, images = self.lab()
         names = [
@@ -859,7 +889,7 @@ class TestWrite(ArchiveTestCase):
                 "notes.txt",
                 "vm_hdb.cow",
                 "vm_hda.cow",
-                ".images/deb",
+                "IMAGES/deb",
             ],
         )
 
@@ -868,7 +898,7 @@ class TestWrite(ArchiveTestCase):
         with tarfile.open(output) as tar:
             names = [archive.normalize(info.name) for info in tar.getmembers()]
         self.assertEqual(names[0], "contents.toml")
-        self.assertEqual(names[-1], ".images/deb")
+        self.assertEqual(names[-1], "IMAGES/deb")
         contents = archive.inspect(output, Tool("tarfile"), Emitted())
         self.assertEqual(
             [m.name for m in contents.members][:2], ["project.toml", "README"]
@@ -884,7 +914,7 @@ class TestWrite(ArchiveTestCase):
             disk = os.path.join(destination, "vm_hda.cow")
             self.assertEqual(os.path.getsize(disk), 32 * MiB)
             self.assertLess(os.stat(disk).st_blocks * 512, MiB)
-            with open(os.path.join(destination, ".images", "deb"), "rb") as fp:
+            with open(os.path.join(destination, "IMAGES", "deb"), "rb") as fp:
                 self.assertEqual(fp.read(5), b"image")
             with open(os.path.join(destination, "sub", "small"), "rb") as fp:
                 self.assertEqual(fp.read(), b"y")
@@ -944,7 +974,7 @@ class TestWrite(ArchiveTestCase):
         report = archive.report_from_list(result["report"])
         self.assertEqual(
             sorted(m.where for m in report),
-            [".images/deb", "vm_hda.cow", "vm_hdb.cow"],
+            ["IMAGES/deb", "vm_hda.cow", "vm_hdb.cow"],
         )
         self.assertEqual(
             {m.text for m in report},
@@ -974,7 +1004,7 @@ esac
             {"stored as it is: qemu-img: No space left"},
         )
         with tarfile.open(output) as tar:
-            self.assertEqual(tar.extractfile(".images/deb").read(5), b"image")
+            self.assertEqual(tar.extractfile("IMAGES/deb").read(5), b"image")
             self.assertEqual(tar.extractfile("vm_hda.cow").read(5), b"data\0")
 
     def test_uncompressed(self):

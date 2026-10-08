@@ -975,7 +975,7 @@ task.react(lambda reactor: defer.ensureDeferred(main(reactor)))
 
 # SEE ALSO
 
-**virtualbricks**(1), **virtualbricks-config**(5),
+**virtualbricks**(1), **virtualbricks-config**(5), **virtualbricks-vbp**(5),
 **virtualbricks-archive**(7), **socat**(1), **openssl**(1)
 
 AMP: <https://amp-protocol.net/>, and Twisted's howto:

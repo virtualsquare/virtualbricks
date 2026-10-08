@@ -1,0 +1,781 @@
+<title>Virtualbricks Archive Format</title>
+<meta name="description" content="Reference of the .vbp archives of Virtualbricks projects: the pax tar container, contents.toml, the members and their order, how the images go with the disks, the packed qcow2 disks and the GNU sparse members that keep their holes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --rule-soft: #e3e9e6;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --warn: #7a4800;
+    --warn-soft: #faeed6;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --code-k: #1f5a4a;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --rule-soft: #1e2724;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --warn: #edb45a;
+      --warn-soft: #2a2112;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+      --code-k: #8fd1b8;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --rule-soft: #1e2724;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --warn: #edb45a;
+    --warn-soft: #2a2112;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+    --code-k: #8fd1b8;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.6 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 36px 96px; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.06em 0.3em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  a code { color: inherit; }
+  em { font-style: italic; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid var(--rule); }
+  .eyebrow { font: 500 12px/1.2 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  h1 { font: 600 clamp(2rem, 5vw, 3rem)/1.05 var(--font-head); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+  .lede { font-size: 1.12rem; line-height: 1.55; max-width: 66ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+
+  /* the three files */
+  .files { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0 0 18px; padding: 0; list-style: none; }
+  @media (min-width: 820px) { .files { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .file { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; }
+  .file h2 { font: 600 1.25rem/1.2 var(--font-head); margin: 0; }
+  .file h2 a { color: var(--ink); text-decoration: none; }
+  .file h2 a:hover { color: var(--accent); }
+  .file .path { font: 13px/1.45 var(--font-mono); color: var(--muted); overflow-wrap: anywhere; margin: 0; }
+  .file .path b { color: var(--ink); font-weight: 500; }
+  .file p { margin: 0; font-size: 15px; }
+  .file dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: 14px; }
+  .file dt { color: var(--muted); }
+  .file dd { margin: 0; }
+  .caution { max-width: none; display: flex; gap: 10px; align-items: baseline; background: var(--warn-soft); border-radius: 6px; padding: 12px 16px; margin: 0 0 36px; font-size: 15px; }
+  .caution b { color: var(--warn); font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; flex: none; }
+  .caution span { max-width: 90ch; }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1040px) {
+    .layout { grid-template-columns: 200px minmax(0, 1fr); gap: 52px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+  .toc a { display: block; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  @media (max-width: 1039px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 { font: 600 1.8rem/1.15 var(--font-head); margin: 0 0 16px; text-wrap: balance; }
+  h3 { font: 600 1.25rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; scroll-margin-top: 20px; }
+  h3 code, h2 code { font-size: 0.92em; padding: 0.04em 0.3em; }
+  h4 { font: 600 1.02rem/1.3 var(--font-head); margin: 24px 0 8px; scroll-margin-top: 20px; }
+  h4.group { font: 500 12px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 22px 0 6px; }
+  p, li { max-width: 72ch; }
+  p { margin: 0 0 14px; }
+  ul { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--muted); }
+
+  dl.terms { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px 20px; margin: 4px 0 18px; }
+  @media (min-width: 640px) { dl.terms { grid-template-columns: minmax(9em, max-content) minmax(0, 1fr); } }
+  dl.terms dt { font-weight: 500; padding-top: 8px; }
+  dl.terms dd { margin: 0; padding-top: 8px; border-top: 1px solid var(--rule-soft); }
+  @media (min-width: 640px) { dl.terms dt { border-top: 1px solid var(--rule-soft); } }
+  dl.terms dd p { margin: 0 0 8px; }
+
+  /* field tables */
+  .scroll { overflow-x: auto; margin: 8px 0 20px; }
+  table.fields { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; }
+  table.fields thead th { font: 600 12.5px/1.3 var(--font-head); letter-spacing: 0.03em; text-align: left; color: var(--muted); padding: 9px 12px; border-bottom: 1.5px solid var(--rule); background: var(--ground); }
+  table.fields td, table.fields tbody th { padding: 9px 12px; border-top: 1px solid var(--rule-soft); vertical-align: top; text-align: left; font-weight: 400; }
+  table.fields tbody tr:target { background: var(--accent-soft); }
+  table.fields tbody th { width: 11em; white-space: nowrap; }
+  code.key { background: none; padding: 0; color: var(--accent); font-weight: 500; font-size: 0.92em; }
+  code.key em { font-weight: 400; }
+  td.kind { width: 9.5em; font: 13px/1.5 var(--font-mono); color: var(--muted); white-space: nowrap; }
+  td.kind .range { color: var(--ink); }
+  td.default { width: 10em; }
+  td.default code { white-space: pre; }
+  td.meaning p { margin: 0 0 6px; max-width: none; }
+  td.meaning p:last-child { margin: 0; }
+  .none { color: var(--muted); }
+
+  /* code */
+  figure.code { margin: 14px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  pre { margin: 0; padding: 12px 14px; overflow-x: auto; font: 13px/1.58 var(--font-mono); color: var(--code-ink); tab-size: 4; }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  pre.snippet { background: var(--code-bg); border-radius: 5px; margin: 6px 0; padding: 8px 10px; font-size: 12.5px; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .k { color: var(--code-k); }
+  a.man { text-decoration: none; }
+  a.man:hover code { text-decoration: underline; }
+
+  .footnote { font-size: 13.5px; color: var(--muted); margin-top: 8px; }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+  /* vbp-format.html: diagrams, member tables, transcripts */
+  :root { --line: #71827b; --rule-strong: #a9b7b1; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --line: #83938d; --rule-strong: #43514b; }
+  }
+  :root[data-theme="dark"] { --line: #83938d; --rule-strong: #43514b; }
+
+  .file .job { font: 13px/1.45 var(--font-mono); color: var(--muted); margin: 0; }
+  .file .job b { color: var(--accent); font-weight: 500; }
+
+  figure.diagram { margin: 18px 0 30px; min-width: 0; }
+  figure.diagram .canvas { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 14px; overflow-x: auto; }
+  figure.diagram svg { display: block; width: 100%; min-width: 660px; height: auto; }
+  figure.diagram figcaption { font-size: 14px; line-height: 1.5; color: var(--muted); margin-top: 10px; max-width: 80ch; }
+  figure.hero { margin: 0 0 18px; }
+
+  .dg { color: var(--ink); }
+  .dg text { fill: currentColor; font-family: var(--font-body); font-size: 13px; }
+  .dg .mono { font-family: var(--font-mono); font-size: 12px; }
+  .dg .small { font-size: 11.5px; }
+  .dg .title { font-family: var(--font-head); font-weight: 600; font-size: 15px; }
+  .dg .strong { font-weight: 600; }
+  .dg .muted { fill: var(--muted); }
+  .dg .t-accent { fill: var(--accent); }
+  .dg .t-warn { fill: var(--warn); }
+  .dg .box { fill: var(--ground); stroke: var(--rule-strong); stroke-width: 1.2; }
+  .dg .box-accent { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.2; }
+  .dg .box-ghost { fill: none; stroke: var(--rule-strong); stroke-width: 1.2; stroke-dasharray: 5 4; }
+  .dg .ln { fill: none; stroke: var(--line); stroke-width: 1.5; }
+  .dg .ln-accent { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+  .dg .ln-warn { fill: none; stroke: var(--warn); stroke-width: 1.5; }
+  .dg .dash { stroke-dasharray: 5 4; }
+  .dg .life { fill: none; stroke: var(--rule-strong); stroke-width: 1.2; stroke-dasharray: 3 4; }
+  .dg .tip { fill: var(--line); }
+  .dg .tip-accent { fill: var(--accent); }
+  .dg .tip-warn { fill: var(--warn); }
+  .dg .badge { fill: var(--accent); }
+  .dg .badge-text { fill: var(--surface); font: 600 11px var(--font-mono); }
+
+  table.fields.keys { min-width: 600px; }
+  table.fields.keys tbody th { width: 9em; }
+  table.fields td.value { width: 13em; font: 13px/1.5 var(--font-mono); white-space: normal; }
+  table.fields td.num, table.fields th.num { width: 5.5em; font-variant-numeric: tabular-nums; }
+  table.fields td p { margin: 0 0 6px; max-width: none; }
+  table.fields td p:last-child { margin: 0; }
+  table.fields.outcomes { min-width: 820px; }
+  table.fields.tools { min-width: 820px; }
+  table.fields.tools td { font-size: 13.5px; }
+  table.fields.tools td code { white-space: normal; }
+
+  ol.steps { margin: 0 0 18px; padding-left: 1.6em; }
+  ol.steps li { padding-left: 0.2em; }
+  ol.steps li::marker { color: var(--accent); font: 500 13px var(--font-mono); }
+
+  .grammar { font: 14px/1.5 var(--font-mono); background: var(--accent-soft); color: var(--ink); border-radius: 6px; padding: 10px 14px; margin: 10px 0 16px; overflow-x: auto; }
+  pre .prompt { color: var(--code-c); user-select: none; }
+  pre .cmd { color: var(--code-ink); font-weight: 500; }
+  pre .out { color: var(--code-c); }
+  table.fields.keys td.kind { white-space: normal; width: 10em; }
+  table.fields.outcomes tbody th, table.fields.tools tbody th { white-space: normal; width: 10em; }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Reference &middot; contents.toml format 1</div>
+    <h1>Virtualbricks Archive Format</h1>
+    <p class="lede">What a <code>.vbp</code> file holds, byte by byte: a tar of the project&#39;s folder, with the list of its members first, the disks compressed one by one and their holes kept, and the images stored under the names the project gives them.</p>
+    <ul class="meta">
+      <li><b>virtualbricks</b> 3.0.0.dev3</li>
+      <li>container: <b>pax tar</b></li>
+      <li>disks: <b>qcow2</b>, packed</li>
+      <li>also as <b>man 5 virtualbricks-vbp</b></li>
+    </ul>
+  </header>
+
+  <figure class="diagram hero">
+    <div class="canvas">
+      <svg class="dg" viewBox="0 0 760 150" role="img" aria-label="The blocks of lab.vbp in file order: a pax header before each member; contents.toml, project.toml and README.md form the head; then the private disk vm1_hda.cow, the images IMAGES/debian and IMAGES/scratch, and the blocks of zeros that end the archive.">
+        <text x="16" y="24" class="mono small muted">0</text>
+        <text x="133" y="24" class="mono small muted">2048</text>
+        <text x="244" y="24" class="mono small muted">10240</text>
+        <text x="333" y="24" class="mono small muted">12288</text>
+        <text x="450" y="24" class="mono small muted">281088</text>
+        <text x="577" y="24" class="mono small muted">549888</text>
+        <text x="744" y="24" text-anchor="end" class="mono small muted">563200</text>
+        <rect x="16" y="34" width="13" height="50" class="box"/>
+        <text x="22.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+        <rect x="29" y="34" width="104" height="50" class="box-accent"/>
+        <text x="81" y="63" text-anchor="middle" class="mono small">contents.toml</text>
+        <rect x="133" y="34" width="13" height="50" class="box"/>
+        <text x="139.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+        <rect x="146" y="34" width="98" height="50" class="box-accent"/>
+        <text x="195" y="63" text-anchor="middle" class="mono small">project.toml</text>
+        <rect x="244" y="34" width="13" height="50" class="box"/>
+        <text x="250.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+        <rect x="257" y="34" width="76" height="50" class="box-accent"/>
+        <text x="295" y="63" text-anchor="middle" class="mono small">README.md</text>
+        <rect x="333" y="34" width="13" height="50" class="box"/>
+        <text x="339.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+        <rect x="346" y="34" width="104" height="50" class="box"/>
+        <text x="398" y="56" text-anchor="middle" class="mono small">vm1_hda.cow</text>
+        <text x="398" y="73" text-anchor="middle" class="small muted">packed, sparse</text>
+        <rect x="450" y="34" width="13" height="50" class="box"/>
+        <text x="456.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+        <rect x="463" y="34" width="114" height="50" class="box"/>
+        <text x="520" y="56" text-anchor="middle" class="mono small">IMAGES/debian</text>
+        <text x="520" y="73" text-anchor="middle" class="small muted">packed, sparse</text>
+        <rect x="577" y="34" width="13" height="50" class="box"/>
+        <text x="583.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+        <rect x="590" y="34" width="116" height="50" class="box"/>
+        <text x="648" y="56" text-anchor="middle" class="mono small">IMAGES/scratch</text>
+        <text x="648" y="73" text-anchor="middle" class="small muted">raw, sparse</text>
+        <rect x="706" y="34" width="38" height="50" class="box-ghost"/>
+        <text x="725" y="63" text-anchor="middle" class="small muted">zeros</text>
+        <path d="M16,96 V104 H329 V96" class="ln-accent"/>
+        <text x="172.5" y="126" text-anchor="middle" class="small t-accent">the head: an inspection reads it, then stops</text>
+        <path d="M337,96 V104 H446 V96" class="ln"/>
+        <text x="391.5" y="126" text-anchor="middle" class="small muted">private disks</text>
+        <path d="M454,96 V104 H702 V96" class="ln"/>
+        <text x="578" y="126" text-anchor="middle" class="small muted">images, under IMAGES/</text>
+        <text x="725" y="126" text-anchor="middle" class="small muted">end</text>
+      </svg>
+    </div>
+    <figcaption>The 563200 bytes of the example archive, <code>lab.vbp</code>, in file order, not to scale; the offsets are those of the pax header, <code>x</code>, before each member. The head takes 12 KB; a real disk or image takes gigabytes.</figcaption>
+  </figure>
+
+  <ul class="files" aria-label="The parts of an archive">
+    <li class="file">
+      <h2><a href="#contents">contents.toml</a></h2>
+      <p class="path"><b>first member</b> &middot; TOML 1.0</p>
+      <p>The list of the other members, with their sizes and which disks are packed, so that a reader knows what the archive holds from its first blocks.</p>
+      <dl>
+        <dt>Format</dt><dd><code>format = 1</code></dd>
+        <dt>Optional</dt><dd>older archives have none</dd>
+      </dl>
+    </li>
+    <li class="file">
+      <h2><a href="#images">Images, by name</a></h2>
+      <p class="path"><b>IMAGES/</b><em>name</em></p>
+      <p>A disk names an image of the project; the archive stores the image under that name, and the import chooses where its file goes on this computer.</p>
+      <dl>
+        <dt>Ties</dt><dd><code>image = "debian"</code>, <code>[images.debian]</code>, <code>IMAGES/debian</code></dd>
+      </dl>
+    </li>
+    <li class="file">
+      <h2><a href="#packed">Packed, with holes</a></h2>
+      <p class="path"><b>qcow2</b> &middot; GNU sparse 1.0</p>
+      <p>Each qcow2 disk is compressed on its own, in a file that QEMU runs as it is, and every member keeps its holes.</p>
+      <dl>
+        <dt>Compression</dt><dd>zstd, or zlib before QEMU 5.1</dd>
+        <dt>Otherwise</dt><dd>the whole archive in gzip</dd>
+      </dl>
+    </li>
+  </ul>
+  <p class="caution"><b>Paths</b><span>An archive carries the paths of the computer it comes from: the files of the images in <code>project.toml</code>, and the same paths as the backing files of the private disks. The import replaces them with those of this computer.</span></p>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+<li><a href="#description">Description</a></li>
+<li><a href="#container">The container</a></li>
+<li><a href="#members">Members</a></li>
+<li><a href="#order">Order</a></li>
+<li><a href="#contents">contents.toml</a></li>
+<li><a href="#project-file">The project file</a></li>
+<li><a href="#images">Images and disks</a></li>
+<li><a href="#private-disks">Private disks</a></li>
+<li><a href="#packed">Packed disks</a></li>
+<li><a href="#holes">Holes</a></li>
+<li><a href="#older">Older archives</a></li>
+<li><a href="#reading">Reading an archive</a></li>
+<li><a href="#writing">Writing an archive</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#files">Files</a></li>
+<li><a href="#known-problems">Known problems</a></li>
+<li><a href="#see-also">See also</a></li>
+      </ol>
+    </nav>
+    <main>
+
+<section id="description">
+<h2>Description</h2>
+<p>A <code>.vbp</code> file is a project of Virtualbricks in one file, to move it to another computer, to keep it or to share it. The Export window writes it, and the Import window makes a new project of it; both leave the work to the archive process, described in <a class="man" href="archive-protocol.html"><code>virtualbricks-archive</code>(7)</a>.</p>
+<p>It is a tar archive of the project&#39;s folder: the project file, its README, the private disks of the virtual machines, the other files of the folder that you chose and, if you chose them too, the disk images that the disks use, under <em>IMAGES/</em>. Its first member, <code>contents.toml</code>, lists the others.</p>
+<p>The format follows from four aims:</p>
+<ul>
+<li>Any <code>tar</code> reads and writes it: an archive can be looked into, or made, without Virtualbricks.</li>
+<li>An archive can take gigabytes, but its first kilobytes say what it holds: the list and the project file come first.</li>
+<li>The disks keep their holes, and are compressed one by one, in a format that QEMU runs as it is.</li>
+<li>The project names its images, and the archive stores each one under its name, not under its file: the computer that imports the archive chooses where each image goes.</li>
+</ul>
+<p>The archive of a project with one virtual machine, whose disk <code>hda</code> is a private disk on top of the image <code>debian</code>, and whose disk <code>hdb</code> is the image <code>scratch</code>:</p>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">tar -tvf lab.vbp</span>
+<span class="out">-rw-r--r-- alice/alice     318 2026-10-07 22:57 contents.toml</span>
+<span class="out">-rw------- alice/alice    6247 2026-10-07 21:19 project.toml</span>
+<span class="out">-rw-r--r-- alice/alice      31 2026-10-07 21:19 README.md</span>
+<span class="out">-rw-r--r-- alice/alice  328192 2026-10-07 22:57 vm1_hda.cow</span>
+<span class="out">-rw-r--r-- alice/alice  328192 2026-10-07 22:57 IMAGES/debian</span>
+<span class="out">-rw-r--r-- alice/alice 33554432 2026-10-07 21:19 IMAGES/scratch</span></code></pre></figure>
+<p>The examples of this page come from that archive.</p>
+</section>
+
+<section id="container">
+<h2>The container</h2>
+
+<h3 id="container-tar">Tar</h3>
+<p>An archive is a tar file in the POSIX.1-2001 format, <em>pax</em>: a sequence of 512-byte blocks. Each member is a header block followed by its data, padded with zeros to a whole block. Before a member whose attributes don&#39;t fit its header, as times with fractions of a second or the records of a sparse file, comes a pax extended header: a member of type <code>x</code> whose data are records of the form <em>length</em> <em>key</em>=<em>value</em>, each ending with a newline. Two blocks of zeros end the archive, which is then padded with zeros to a multiple of 10240 bytes, the record of tar.</p>
+<p>The blocks of the example:</p>
+<figure class="code"><pre><code><span class="c"> offset  type  header name                       size</span>
+      0  x     PaxHeader/contents.toml             90
+   1024  0     contents.toml                      318
+   2048  x     PaxHeader/project.toml              90
+   3072  0     project.toml                      6247
+  10240  x     PaxHeader/README.md                 90
+  11264  0     README.md                           31
+  12288  x     PaxHeader/vm1_hda.cow              195
+  13312  0     GNUSparseFile.0/vm1_hda.cow     267264
+ 281088  x     IMAGES/PaxHeader/debian            197
+ 282112  0     IMAGES/GNUSparseFile.0/debian   267264
+ 549888  x     IMAGES/PaxHeader/scratch           200
+ 550912  0     IMAGES/GNUSparseFile.0/scratch    4608
+ 556032        <span class="c">14 blocks of zeros, to 563200</span></code></pre></figure>
+<p>The members with holes are GNU sparse members, whose header name is a placeholder; see <a href="#holes">Holes</a>.</p>
+
+<h3 id="container-compression">Compression</h3>
+<p>When <code>qemu-img</code> is installed, the archive is not compressed as a whole: its disks are compressed one by one inside it (see <a href="#packed">Packed disks</a>), and the rest is a few kilobytes. Without <code>qemu-img</code>, the whole archive is compressed with gzip, whose header then has no time.</p>
+<p>Virtualbricks reads an archive that is not compressed or compressed with gzip, bzip2 or xz, which it recognizes by its first bytes, whatever its extension.</p>
+
+<h3 id="container-name">The name of the file</h3>
+<p>An archive has the extension <em>.vbp</em>, compressed or not. The Import window offers the files <em>*.vbp</em>, <em>*.tar.gz</em>, <em>*.tgz</em> and <em>*.tar</em>. The name of the file suggests the name of the project: without <em>.vbp</em>, <em>.tar.gz</em>, <em>.tgz</em>, <em>.tar.xz</em>, <em>.tar.bz2</em> or its last extension, at most 38 bytes, without leading dots, and the next free name, <em>lab-2</em>, <em>lab-3</em>&hellip; when the workspace has a project with that name. The archive itself doesn&#39;t name the project.</p>
+
+<h3 id="container-names">Names and attributes</h3>
+<p>Every member is a regular file, named by its path relative to the project&#39;s folder, with <code>/</code> between folders. A name has no leading <code>/</code> and no <code>..</code>; a reader drops a leading <code>./</code> and a trailing <code>/</code>, so that an archive made with <code>tar -C <em>folder</em> .</code> works too. The members that aren&#39;t regular files, such as the folders of such an archive, are skipped by an inspection; links and devices are never written, and the import skips them when it extracts the archive with Python&#39;s <code>tarfile</code>.</p>
+<p>The owner, the group, the permissions and the times of the members are those that the writer found; Virtualbricks gives them no meaning. The writers differ in details that a reader mustn&#39;t depend on:</p>
+<div class="scroll"><table class="fields tools"><thead><tr><th>Writer</th><th>Pax headers</th><th>Their records</th><th>Sparse members</th></tr></thead><tbody>
+<tr><th scope="row"><code>bsdtar</code></th><td><code><em>folder</em>/PaxHeader/<em>name</em></code></td><td><code>ctime</code>, <code>atime</code>, <code>mtime</code></td><td><code><em>folder</em>/GNUSparseFile.0/<em>name</em></code></td></tr>
+<tr><th scope="row">GNU <code>tar</code></th><td><code><em>folder</em>/PaxHeaders/<em>name</em></code></td><td><code>mtime</code>, <code>atime</code>, <code>ctime</code></td><td><code><em>folder</em>/GNUSparseFile.<em>pid</em>/<em>name</em></code>, after the process number of <code>tar</code></td></tr>
+<tr><th scope="row">Python&#39;s <code>tarfile</code>, in Virtualbricks</th><td><code>././@PaxHeader</code></td><td><code>mtime</code> only</td><td>as by <code>bsdtar</code>; no owner and group names</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="members">
+<h2>Members</h2>
+<p>The name of a member gives its <em>kind</em>, which the archive process uses in its messages:</p>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Name</th><th>Kind</th><th>Meaning</th></tr></thead><tbody>
+<tr><th scope="row"><code class="key">contents.toml</code></th><td class="kind">contents</td><td class="meaning"><p>The list of the other members; see <a href="#contents">contents.toml</a>.</p></td></tr>
+<tr><th scope="row"><code class="key">project.toml</code></th><td class="kind">project</td><td class="meaning"><p>The project file, described in <a class="man" href="config-files.html#projects"><code>virtualbricks-config</code>(5)</a>; see <a href="#project-file">The project file</a>.</p></td></tr>
+<tr><th scope="row"><code class="key">.project</code>, <code class="key">.project~</code></th><td class="kind">legacy project</td><td class="meaning"><p>The project file of Virtualbricks 2.1 and older; see <a href="#older">Older archives</a>. An archive with both project files is read from <code>project.toml</code>.</p></td></tr>
+<tr><th scope="row"><code class="key">README.md</code>, <code class="key">README</code></th><td class="kind">readme</td><td class="meaning"><p>The description of the project, plain text in UTF-8 that Virtualbricks reads as Markdown (see <a class="man" href="config-files.html#projects-readme">README in <code>virtualbricks-config</code>(5)</a>). Before 3.0 it was <code>README</code>, which the import renames to <code>README.md</code>; in an archive with both, <code>README.md</code> is the README.</p></td></tr>
+<tr><th scope="row"><code class="key"><em>vm</em>_<em>device</em>.cow</code></th><td class="kind">disk</td><td class="meaning"><p>The private disk of the device <em>device</em> of the virtual machine <em>vm</em>, where <em>device</em> is <code>hda</code>, <code>hdb</code>, <code>hdc</code>, <code>hdd</code>, <code>fda</code>, <code>fdb</code> or <code>mtdblock</code>: the part after the last underscore, so <em>router_1_hda.cow</em> is the disk <code>hda</code> of <code>router_1</code>. Only at the top of the archive. See <a href="#private-disks">Private disks</a>.</p></td></tr>
+<tr><th scope="row"><code class="key">IMAGES/<em>image</em></code></th><td class="kind">image</td><td class="meaning"><p>The disk image that the project file calls <em>image</em>, in <code>[images.<em>image</em>]</code>. The member is named after the image, not after its file: the image <code>debian</code> whose file is <em>/srv/vm/debian-12.qcow2</em> is the member <em>IMAGES/debian</em>. See <a href="#images">Images and disks</a>. The archives of Virtualbricks 2.1 and of the development versions of 3.0 have it in <em>.images/</em>, which is read the same way.</p></td></tr>
+<tr><th scope="row"><span class="none">any other name</span></th><td class="kind">other</td><td class="meaning"><p>A file of the project&#39;s folder that you chose to export, as a picture of the README, <em>pictures/map.png</em>. The import puts it back where it was.</p></td></tr>
+</tbody></table></div>
+<p>An archive never holds what older versions left in a project&#39;s folder: its <em>.images</em> folder and its <em>.project</em> files. Nor does it hold a folder <em>IMAGES</em> of the project, whose files an import would take for images: the export leaves it out, and says so.</p>
+</section>
+
+<section id="order">
+<h2>Order</h2>
+<p>A new archive starts with <code>contents.toml</code>, then the project file and the README: together, the <em>head</em> of the archive. The other files, the private disks and the images follow, in this order, each group from the smallest file to the largest.</p>
+<figure class="diagram">
+  <div class="canvas">
+    <svg class="dg" viewBox="0 0 760 152" role="img" aria-label="The members of a new archive in file order: contents.toml, project.toml and README.md form the head, which an inspection reads; then the other files, the private disks and the images, each group from smallest to largest, which only the import reads.">
+      <text x="16" y="22" class="mono small muted">offset 0</text>
+      <text x="744" y="22" text-anchor="end" class="mono small muted">end of the archive</text>
+      <rect x="16" y="32" width="104" height="50" class="box-accent"/>
+      <text x="68" y="61" text-anchor="middle" class="mono small">contents.toml</text>
+      <rect x="120" y="32" width="100" height="50" class="box-accent"/>
+      <text x="170" y="61" text-anchor="middle" class="mono small">project.toml</text>
+      <rect x="220" y="32" width="76" height="50" class="box-accent"/>
+      <text x="258" y="61" text-anchor="middle" class="mono small">README.md</text>
+      <rect x="296" y="32" width="36" height="50" class="box"/>
+      <rect x="332" y="32" width="60" height="50" class="box"/>
+      <rect x="392" y="32" width="34" height="50" class="box"/>
+      <rect x="426" y="32" width="52" height="50" class="box"/>
+      <rect x="478" y="32" width="78" height="50" class="box"/>
+      <rect x="556" y="32" width="76" height="50" class="box"/>
+      <rect x="632" y="32" width="112" height="50" class="box"/>
+      <text x="344" y="100" text-anchor="middle" class="small muted">other files</text>
+      <text x="474" y="100" text-anchor="middle" class="small muted">private disks</text>
+      <text x="650" y="100" text-anchor="middle" class="small muted">images</text>
+      <path d="M16,110 V118 H292 V110" class="ln-accent"/>
+      <text x="154" y="140" text-anchor="middle" class="small t-accent">head: an inspection reads it, then stops</text>
+      <path d="M300,110 V118 H744 V110" class="ln"/>
+      <text x="522" y="140" text-anchor="middle" class="small muted">only the import reads the rest, each group from smallest to largest</text>
+    </svg>
+  </div>
+  <figcaption>A new archive in file order, not to scale.</figcaption>
+</figure>
+<p>The order is the writer&#39;s promise; a reader accepts any order. With <code>contents.toml</code> first, Virtualbricks reads the archive until it has the members of the head that the list names, and stops there, whatever the size of the archive. Without <code>contents.toml</code>, it reads the archive to its end.</p>
+</section>
+
+<section id="contents">
+<h2>contents.toml</h2>
+<p>The list of the other members, in the order of the archive, in TOML 1.0 and UTF-8. The list of the example:</p>
+<figure class="code"><pre><code><span class="k">format</span> = 1
+
+<span class="h">[[members]]</span>
+<span class="k">name</span> = "project.toml"
+<span class="k">size</span> = 6247
+
+<span class="h">[[members]]</span>
+<span class="k">name</span> = "README.md"
+<span class="k">size</span> = 31
+
+<span class="h">[[members]]</span>
+<span class="k">name</span> = "vm1_hda.cow"
+<span class="k">size</span> = 328192
+<span class="k">packed</span> = true
+<span class="k">real_size</span> = 851968
+
+<span class="h">[[members]]</span>
+<span class="k">name</span> = "IMAGES/debian"
+<span class="k">size</span> = 328192
+<span class="k">packed</span> = true
+<span class="k">real_size</span> = 1376256
+
+<span class="h">[[members]]</span>
+<span class="k">name</span> = "IMAGES/scratch"
+<span class="k">size</span> = 33554432</code></pre></figure>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead><tbody>
+<tr><th scope="row"><code class="key">format</code></th><td class="kind">integer</td><td class="meaning"><p>The version of the layout, <code>1</code>. An archive with a higher <code>format</code> is not read: &quot;contents.toml: written by a newer Virtualbricks (format 2)&quot;. The format changes only for what an older reader can&#39;t ignore: keys it doesn&#39;t know are ignored.</p></td></tr>
+<tr><th scope="row"><code class="key">members</code></th><td class="kind">array of tables</td><td class="meaning"><p>One table for each member but <code>contents.toml</code> itself.</p></td></tr>
+<tr><th scope="row"><code class="key">name</code></th><td class="kind">string</td><td class="meaning"><p>The name of the member, as in its header.</p></td></tr>
+<tr><th scope="row"><code class="key">size</code></th><td class="kind">integer</td><td class="meaning"><p>The size of the file that the member holds, holes included: what <code>ls -l</code> says once it&#39;s extracted. A sparse member takes fewer bytes in the archive: <code>IMAGES/scratch</code> takes 4608 bytes for its 32 MiB.</p></td></tr>
+<tr><th scope="row"><code class="key">packed</code></th><td class="kind">boolean</td><td class="meaning"><p>Present, and <code>true</code>, only when <code>qemu-img</code> compressed the member; see <a href="#packed">Packed disks</a>.</p></td></tr>
+<tr><th scope="row"><code class="key">real_size</code></th><td class="kind">integer</td><td class="meaning"><p>Only with <code>packed</code>: the size of the disk before it was compressed, the size it has on the computer it comes from.</p></td></tr>
+</tbody></table></div>
+<p>The kind of a member comes from its name and is not written. An item of <code>members</code> that isn&#39;t a table is skipped, a size that isn&#39;t an integer is read as 0, a <code>packed</code> that isn&#39;t <code>true</code> is false, and other keys are ignored.</p>
+</section>
+
+<section id="project-file">
+<h2>The project file</h2>
+<p>The <code>project.toml</code> of an archive is the project file as the project had it, in the format of the Virtualbricks that exported it: 2 today. The import upgrades an older one, and refuses a newer one: &quot;project.toml: written by a newer Virtualbricks (format 3)&quot;. An archive carries the paths of the computer it comes from, in these keys, which the import changes:</p>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Meaning</th></tr></thead><tbody>
+<tr><th scope="row"><code class="key">[images.<em>name</em>] path</code></th><td class="meaning"><p>The file of the image on the computer it comes from: absolute, or relative to the project&#39;s folder. The import writes the file that the image uses on this computer, or &quot;&quot; for an image left unset.</p></td></tr>
+<tr><th scope="row"><code class="key">[bricks.<em>vm</em>.disks.<em>device</em>] image, private</code></th><td class="meaning"><p>The image of a disk, by name, and whether the disk writes to its private disk, <em>vm</em>_<em>device</em>.cow. The import changes neither.</p></td></tr>
+<tr><th scope="row"><code class="key">[settings] qemu_path, vde_path</code></th><td class="meaning"><p>The folders of QEMU and VDE on the computer it comes from. The import replaces each with this computer&#39;s when the folder doesn&#39;t exist here, unless you choose otherwise.</p></td></tr>
+</tbody></table></div>
+<p>The rest of the file is imported as it is. The private disks carry a path too: see <a href="#private-disks">Private disks</a>.</p>
+</section>
+
+<section id="images">
+<h2>Images and disks</h2>
+<p>A disk doesn&#39;t name a file: it names an image of the project, and the image has the path of its file. The archive stores the image under that name, so the name ties the three together.</p>
+<figure class="diagram">
+  <div class="canvas">
+    <svg class="dg" viewBox="0 0 760 330" role="img" aria-label="In project.toml the disk hda of vm1 names the image debian, whose table has the path /srv/vm/debian-12.qcow2. The archive stores the image as IMAGES/debian, under its name, and the private disk vm1_hda.cow, whose backing file is that path. After the import, the image is the file shared_images/debian-12.qcow2 of the workspace, the table has its path, and the private disk is rebased on it.">
+      <defs>
+        <marker id="i-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+        <marker id="i-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+      </defs>
+      <text x="16" y="22" class="title">project.toml</text>
+      <text x="16" y="40" class="small muted">on the computer it comes from</text>
+      <text x="326" y="22" class="title">the archive</text>
+      <text x="326" y="40" class="small muted">members</text>
+      <text x="536" y="22" class="title">after the import</text>
+      <text x="536" y="40" class="small muted">on this computer</text>
+      <!-- the project file -->
+      <rect x="16" y="54" width="272" height="78" rx="6" class="box"/>
+      <text x="30" y="78" class="mono small">[bricks.vm1.disks.hda]</text>
+      <text x="30" y="98" class="mono small">image = <tspan class="t-accent">"debian"</tspan></text>
+      <text x="30" y="118" class="mono small">private = true</text>
+      <rect x="16" y="168" width="272" height="60" rx="6" class="box"/>
+      <text x="30" y="192" class="mono small">[<tspan class="t-accent">images.debian</tspan>]</text>
+      <text x="30" y="212" class="mono small">path = "/srv/vm/debian-12.qcow2"</text>
+      <path d="M150,104 C 200,110 200,160 150,172" class="ln-accent" marker-end="url(#i-tip-acc)"/>
+      <text x="206" y="146" class="small t-accent">the name</text>
+      <!-- the archive -->
+      <rect x="326" y="168" width="170" height="60" rx="6" class="box-accent"/>
+      <text x="340" y="192" class="mono small">IMAGES/<tspan class="t-accent">debian</tspan></text>
+      <text x="340" y="212" class="small muted">the file, under the name</text>
+      <path d="M288,198 H322" class="ln-accent" marker-end="url(#i-tip-acc)"/>
+      <rect x="326" y="262" width="170" height="54" rx="6" class="box"/>
+      <text x="340" y="284" class="mono small">vm1_hda.cow</text>
+      <text x="340" y="302" class="small muted">backing file: that path</text>
+      <path d="M326,289 H190 V232" class="ln dash" marker-end="url(#i-tip)"/>
+      <!-- after the import -->
+      <rect x="536" y="54" width="208" height="78" rx="6" class="box"/>
+      <text x="550" y="78" class="mono small">[images.debian]</text>
+      <text x="550" y="98" class="mono small">path = "&#8230;/shared_images/</text>
+      <text x="550" y="118" class="mono small">  debian-12.qcow2"</text>
+      <rect x="536" y="168" width="208" height="60" rx="6" class="box"/>
+      <text x="550" y="186" class="mono small">shared_images/</text>
+      <text x="550" y="202" class="mono small">debian-12.qcow2</text>
+      <text x="550" y="219" class="small muted">copied into the shared images</text>
+      <path d="M496,198 H532" class="ln" marker-end="url(#i-tip)"/>
+      <rect x="536" y="262" width="208" height="54" rx="6" class="box"/>
+      <text x="550" y="284" class="mono small">lab/vm1_hda.cow</text>
+      <text x="550" y="302" class="small muted">rebased on it, then unpacked</text>
+      <path d="M496,289 H532" class="ln" marker-end="url(#i-tip)"/>
+      <path d="M640,168 V136" class="ln dash" marker-end="url(#i-tip)"/>
+      <path d="M640,262 V232" class="ln dash" marker-end="url(#i-tip)"/>
+    </svg>
+  </div>
+  <figcaption>The name ties the disk, the table of the image and the member. The path of the image appears twice, in the table and as the backing file of the private disk; the import replaces both with the file of this computer.</figcaption>
+</figure>
+<p>The import plans an image for each table <code>[images.<em>name</em>]</code> of the project file. Its disks are those whose <code>image</code> is <em>name</em>, and its copy in the archive is the member <em>IMAGES/name</em>, if the archive has it. The Import window gives each image a choice, with a default:</p>
+<ul>
+<li>An image that the archive has is copied into the shared images, <em>workspace</em>/shared_images, under the name of its file on the computer it comes from, <em>debian-12.qcow2</em>, or the next free one, <em>debian-12.1.qcow2</em>&hellip; When the shared images have a file with that name and the size of the image, the <code>real_size</code> of a packed one, that file is used instead.</li>
+<li>An image that the archive doesn&#39;t have uses its file if this computer has it at the same path, otherwise a file of the shared images with the name of its file or of the image; otherwise it&#39;s left unset, and its disks get an image later, in their settings.</li>
+</ul>
+<p>Then the import writes the path of each image into <code>[images.<em>name</em>]</code>, points the private disks at it (see <a href="#private-disks">Private disks</a>), and removes the <em>IMAGES</em> folder. A member of <em>IMAGES/</em> that no table of the project file names is dropped. By default, a file of the shared images with the file name and the size of an image is taken for it: nothing compares their contents.</p>
+<p>The Export window stores every image of the project whose file exists, or none; it stores none by default, as images are large and often already on the other computer.</p>
+</section>
+
+<section id="private-disks">
+<h2>Private disks</h2>
+<p>A disk with <code>private = true</code> writes to <em>vm</em>_<em>device</em>.cow in the project&#39;s folder, a qcow2 file on top of the image, which stays unchanged. The private disk names its image by the image&#39;s file, as its <em>backing file</em>: a path of the computer it comes from, kept in the archive, packed or not:</p>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">qemu-img info vm1_hda.cow</span>
+<span class="out">image: vm1_hda.cow
+file format: qcow2
+virtual size: 64 MiB (67108864 bytes)
+disk size: 264 KiB
+cluster_size: 65536</span>
+backing file: /srv/vm/debian-12.qcow2
+backing file format: qcow2
+<span class="out">Format specific information:
+    compat: 1.1</span>
+    compression type: zstd
+<span class="out">...</span></code></pre></figure>
+<p>The import points each private disk at the file that its image uses on this computer, in the format of that file:</p>
+<figure class="code"><pre><code>qemu-img rebase -u -b <em>image</em> -F <em>format</em> <em>disk</em></code></pre></figure>
+<p><code>-u</code>, the unsafe mode, changes only the name of the backing file: the image must hold the same data as the one the disk was made on. A private disk whose image is left unset keeps its backing file as it is, and the import says so. A private disk made by an older version may be in another format than qcow2: it&#39;s stored as it is, and the import points it at its image as the others.</p>
+</section>
+
+<section id="packed">
+<h2>Packed disks</h2>
+<p>When <code>qemu-img</code> is installed, the export compresses each private disk and each image that is in the qcow2 format:</p>
+<figure class="code"><pre><code>qemu-img convert -p -O qcow2 -m 8 -W \
+    -c -o compression_type=zstd \
+    [-B backing -F backing-format] disk packed-disk</code></pre></figure>
+<p>with zlib, without <code>-o compression_type=zstd</code>, when QEMU is older than 5.1. A packed disk is a valid qcow2 file whose clusters are compressed, and QEMU runs it as it is; a private disk keeps its backing file. The member is marked <code>packed</code> in <code>contents.toml</code>, with its <code>real_size</code>. A disk or an image in another format, as raw, is stored as it is; so is one that <code>qemu-img</code> can&#39;t read, as a private disk whose image is gone, and the export says so.</p>
+<p>The import converts the packed members back into normal qcow2 files, with <code>qemu-img convert</code> without <code>-c</code>: the images it copies, and the private disks on top of their new image. The others stay compressed, and work as they are: a private disk whose image is left unset, any packed member when <code>qemu-img</code> isn&#39;t installed. An archive without <code>contents.toml</code> has no packed member.</p>
+</section>
+
+<section id="holes">
+<h2>Holes</h2>
+<p>A disk is a sparse file: a disk of 20 GB can take 2 GB of space. The archive keeps the holes of its members, as GNU sparse 1.0 members, which <code>bsdtar</code>, GNU <code>tar</code> with <code>--sparse</code> and Virtualbricks itself write. A sparse member is:</p>
+<ul>
+<li>a pax extended header with the records <code>GNU.sparse.major=1</code>, <code>GNU.sparse.minor=0</code>, <code>GNU.sparse.name</code>, the name of the member, and <code>GNU.sparse.realsize</code>, the size of the file with its holes;</li>
+<li>a header whose name is a placeholder, <em>GNUSparseFile.0/name</em> or the like, which a reader replaces with <code>GNU.sparse.name</code>, and whose size is that of the data that follow;</li>
+<li>the map of the data: decimal numbers, each ending with a newline, the number of regions, then the offset and the length of each, padded with zeros to a whole block;</li>
+<li>the data of the regions, one after the other.</li>
+</ul>
+<figure class="diagram">
+  <div class="canvas">
+    <svg class="dg" viewBox="0 0 760 246" role="img" aria-label="The member IMAGES/scratch: a pax header with the GNU.sparse records, a header named IMAGES/GNUSparseFile.0/scratch of size 4608, a 512-byte map that says two regions, 4096 bytes at 4194304 and 0 bytes at 33554432, then 4096 bytes of data. Extracted, it is a file of 32 MiB whose only data are those 4096 bytes at 4 MiB.">
+      <defs>
+        <marker id="h-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+      </defs>
+      <text x="598" y="18" text-anchor="middle" class="small t-accent">the size in the header: 4608</text>
+      <path d="M452,34 V26 H744 V34" class="ln-accent"/>
+      <rect x="16" y="40" width="270" height="96" class="box"/>
+      <text x="28" y="60" class="small strong">pax header, type x</text>
+      <text x="28" y="80" class="mono small">GNU.sparse.major=1</text>
+      <text x="28" y="96" class="mono small">GNU.sparse.minor=0</text>
+      <text x="28" y="112" class="mono small">GNU.sparse.name=IMAGES/scratch</text>
+      <text x="28" y="128" class="mono small">GNU.sparse.realsize=33554432</text>
+      <rect x="286" y="40" width="166" height="96" class="box"/>
+      <text x="298" y="60" class="small strong">header, type 0</text>
+      <text x="298" y="80" class="mono small">IMAGES/</text>
+      <text x="298" y="96" class="mono small">GNUSparseFile.0/</text>
+      <text x="298" y="112" class="mono small">scratch</text>
+      <text x="298" y="128" class="mono small">size 4608</text>
+      <rect x="452" y="40" width="138" height="96" class="box-accent"/>
+      <text x="464" y="60" class="small strong">map, 512 bytes</text>
+      <text x="464" y="80" class="mono small">2</text>
+      <text x="464" y="96" class="mono small">4194304 4096</text>
+      <text x="464" y="112" class="mono small">33554432 0</text>
+      <text x="464" y="128" class="small muted">then zeros</text>
+      <rect x="590" y="40" width="154" height="96" class="box-accent"/>
+      <text x="602" y="60" class="small strong">data, 4096 bytes</text>
+      <text x="602" y="80" class="small muted">the regions,</text>
+      <text x="602" y="96" class="small muted">one after the other</text>
+      <!-- the file -->
+      <path d="M667,136 C 667,186 107,166 107,192" class="ln-accent" marker-end="url(#h-tip-acc)"/>
+      <rect x="16" y="196" width="728" height="22" class="box-ghost"/>
+      <rect x="105" y="196" width="4" height="22" class="badge"/>
+      <text x="16" y="238" class="mono small muted">0</text>
+      <text x="107" y="238" text-anchor="middle" class="mono small muted">4 MiB</text>
+      <text x="744" y="238" text-anchor="end" class="mono small muted">32 MiB</text>
+      <text x="420" y="238" text-anchor="middle" class="small muted">the file, extracted: holes but for 4096 bytes</text>
+    </svg>
+  </div>
+  <figcaption>The member <code>IMAGES/scratch</code> of the example, from offset 549888 of the archive: 2048 bytes of headers and map for 4096 bytes of data, which stand for a file of 32 MiB. The last region, 0 bytes at the size of the file, says that it ends with a hole.</figcaption>
+</figure>
+<p>A file that ends with a hole has a last region of length 0, at its size. The member <em>IMAGES/scratch</em> of the example, a file of 32 MiB with 4096 bytes of data at 4 MiB, takes 4608 bytes: one block of map, then the data. Its map:</p>
+<figure class="code"><pre><code>2
+4194304
+4096
+33554432
+0</code></pre></figure>
+<p>A reader that doesn&#39;t know the format extracts <em>IMAGES/GNUSparseFile.0/scratch</em>, a file with the map and the data, which isn&#39;t the image.</p>
+<p>A header holds sizes up to 8 GiB, in octal. <code>bsdtar</code> and GNU <code>tar</code> write a larger size as a <code>size</code> record of the pax header; Virtualbricks, when it writes the archive itself, writes it in the header, in base 256: the first byte 0x80, then the size, big-endian. Python&#39;s <code>tarfile</code> misreads a sparse member with a <code>size</code> record; see <a href="#known-problems">Known problems</a>.</p>
+<p>When the import extracts an archive, <code>bsdtar -S</code> turns runs of zeros into holes, also those that the archive didn&#39;t keep. After GNU <code>tar</code> or <code>tarfile</code>, the import does the same for the private disks and the copied images: blocks of 64 KiB of zeros become holes, if they add up to 1 MiB at least.</p>
+</section>
+
+<section id="older">
+<h2>Older archives</h2>
+<p>Virtualbricks 2.1 exported a project with <code>bsdtar</code> or <code>tar</code>, <code>cfzh</code>: a tar of the project&#39;s folder compressed with gzip, without <code>contents.toml</code>. It holds the files you chose, then the project file, <code>.project</code>, and the <code>README</code>, then the images, under <em>.images/image</em>: the export made a folder of links named after the images, which tar followed. The private disks are <em>vm</em>_<em>device</em>.cow, as today.</p>
+<p>The <code>.project</code> file is the project file of those versions, which the import converts as the migration does (see <a class="man" href="config-files.html#migration">Migration in <code>virtualbricks-config</code>(5)</a>):</p>
+<figure class="code"><pre><code><span class="h">[Image:debian]</span>
+<span class="k">path</span>=/srv/vm/debian-12.qcow2
+
+<span class="h">[Qemu:vm1]</span>
+<span class="k">hda</span>=debian
+<span class="k">privatehda</span>=*</code></pre></figure>
+<p>As the project file comes near the end, an inspection reads such an archive to its end. It sends what it knows as soon as it has read the project file, and the full list of members at the end; the Import window shows its form from the first, and the import starts without waiting for the second.</p>
+<p>The archives of the development versions of 3.0 may have a <code>project.toml</code> of format 1, which the import upgrades.</p>
+</section>
+
+<section id="reading">
+<h2>Reading an archive</h2>
+<p>Virtualbricks reads an archive as a stream, once, from its start:</p>
+<ol class="steps">
+<li>It recognizes the compression from the first bytes: gzip, bzip2, xz, or none.</li>
+<li>It skips the members that aren&#39;t regular files. It takes the name of a sparse member from <code>GNU.sparse.name</code>, drops a leading <code>./</code> and a trailing <code>/</code>, and gets the kind of the member from its name.</li>
+<li>It reads the members of the head: <code>contents.toml</code>, the project file, the README. It refuses a <code>contents.toml</code> of a newer format.</li>
+<li>With <code>contents.toml</code>, it stops when it has every member of the head that the list names. Without it, it reads on to the end, and lists the members from their headers.</li>
+<li>It reads <code>project.toml</code>, or converts <code>.project</code>, and fails when there is neither. <code>README.md</code> comes before <code>README</code>.</li>
+</ol>
+<p>To import an archive, it extracts it whole, into a hidden folder of the workspace, and goes on as <a class="man" href="archive-protocol.html#import"><code>virtualbricks-archive</code>(7)</a> describes.</p>
+</section>
+
+<section id="writing">
+<h2>Writing an archive</h2>
+<p>A file that Virtualbricks imports needs only a project file. An archive that it reads as well as its own:</p>
+<ul>
+<li>is a pax tar file, not compressed when its disks are packed, otherwise compressed with gzip;</li>
+<li>starts with <code>contents.toml</code>, of format 1, listing every other member, then has the project file and the README;</li>
+<li>names the members after their path in the project&#39;s folder, the images <em>IMAGES/name</em> after their name in the project file;</li>
+<li>keeps the holes of the disks;</li>
+<li>packs the qcow2 disks, keeping their backing files, and marks them <code>packed</code>, with their <code>real_size</code>.</li>
+</ul>
+<p>The backing file of a private disk can be any path: the import replaces it, and its format, with the file that the image uses on this computer.</p>
+</section>
+
+<section id="examples">
+<h2>Examples</h2>
+<p>Look into an archive without extracting it:</p>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">tar -xOf lab.vbp contents.toml</span>
+<span class="prompt">$ </span><span class="cmd">tar -xOf lab.vbp README.md</span>
+<span class="prompt">$ </span><span class="cmd">tar -xOf lab.vbp project.toml |</span>
+<span class="prompt">&gt; </span><span class="cmd">    grep -e '^\[images' -e '^path ='</span>
+<span class="out">[images.debian]
+path = "/srv/vm/debian-12.qcow2"
+[images.scratch]
+path = "/srv/vm/scratch.img"</span></code></pre></figure>
+<p>Extract a private disk, and see its image and its compression:</p>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">tar -xf lab.vbp vm1_hda.cow</span>
+<span class="prompt">$ </span><span class="cmd">qemu-img info vm1_hda.cow | grep -e backing -e compression</span>
+<span class="out">backing file: /srv/vm/debian-12.qcow2
+backing file format: qcow2
+    compression type: zstd</span></code></pre></figure>
+<p>Point it at the image of this computer, by hand, as the import does:</p>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">qemu-img rebase -u -F qcow2 \</span>
+<span class="prompt">&gt; </span><span class="cmd">    -b ~/.virtualbricks/shared_images/debian-12.qcow2 \</span>
+<span class="prompt">&gt; </span><span class="cmd">    vm1_hda.cow</span></code></pre></figure>
+<p>Make an archive by hand with GNU <code>tar</code>, keeping the holes, with the image <code>debian</code> under its name. Virtualbricks imports it, after reading it to its end, as it has no <code>contents.toml</code>:</p>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">tar -c --sparse --format=posix -f lab.vbp \</span>
+<span class="prompt">&gt; </span><span class="cmd">    -C ~/.virtualbricks/lab \</span>
+<span class="prompt">&gt; </span><span class="cmd">    project.toml README.md vm1_hda.cow \</span>
+<span class="prompt">&gt; </span><span class="cmd">    -C /srv/vm \</span>
+<span class="prompt">&gt; </span><span class="cmd">    --transform 's,^debian-12\.qcow2$,IMAGES/debian,' \</span>
+<span class="prompt">&gt; </span><span class="cmd">    debian-12.qcow2</span>
+<span class="prompt">$ </span><span class="cmd">tar -tf lab.vbp</span>
+<span class="out">project.toml
+README.md
+vm1_hda.cow
+IMAGES/debian</span></code></pre></figure>
+<p>The archive of the whole folder of a project, compressed with gzip, which doesn&#39;t keep the holes of its disks:</p>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">tar -czf ~/lab.vbp -C ~/.virtualbricks/lab .</span></code></pre></figure>
+</section>
+
+<section id="files">
+<h2>Files</h2>
+<dl class="terms">
+<dt><em>name</em>.vbp</dt><dd><p>An archive.</p></dd>
+<dt><em>workspace</em>/shared_images/</dt><dd><p>The shared images, where the import copies the images.</p></dd>
+<dt><em>workspace</em>/<em>name</em>/</dt><dd><p>The project that the import makes of an archive.</p></dd>
+</dl>
+</section>
+
+<section id="known-problems">
+<h2>Known problems</h2>
+<p>Python&#39;s <code>tarfile</code>, from 3.10 to 3.13, misreads a GNU sparse 1.0 member whose size is in a pax record, as <code>bsdtar</code> and GNU <code>tar</code> write the members larger than 8 GiB, and loses the member after it. Virtualbricks then reads the archive with <code>bsdtar</code> or GNU <code>tar</code>; with neither, it can&#39;t read it.</p>
+</section>
+
+<section id="see-also">
+<h2>See also</h2>
+<p><a class="man" href="archive-protocol.html"><code>virtualbricks-archive</code>(7)</a>, <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>, <a class="man" href="command-line.html"><code>virtualbricks</code>(1)</a>, <a class="man" href="https://manpages.debian.org/tar.5"><code>tar</code>(5)</a>, <a class="man" href="https://manpages.debian.org/tar.1"><code>tar</code>(1)</a>, <a class="man" href="https://manpages.debian.org/bsdtar.1"><code>bsdtar</code>(1)</a>, <a class="man" href="https://manpages.debian.org/qemu-img.1"><code>qemu-img</code>(1)</a></p>
+<p>The pax format, POSIX.1-2024: <a href="https://pubs.opengroup.org/onlinepubs/9799919799/utilities/pax.html">https://pubs.opengroup.org/onlinepubs/9799919799/utilities/pax.html</a></p>
+<p>GNU tar, sparse formats: <a href="https://www.gnu.org/software/tar/manual/html_node/Sparse-Formats.html">https://www.gnu.org/software/tar/manual/html_node/Sparse-Formats.html</a></p>
+<p>The qcow2 format: <a href="https://www.qemu.org/docs/master/interop/qcow2.html">https://www.qemu.org/docs/master/interop/qcow2.html</a></p>
+<p>TOML 1.0: <a href="https://toml.io/en/v1.0.0">https://toml.io/en/v1.0.0</a></p>
+</section>
+      <p class="footnote">Written from <code>docs/man/virtualbricks-vbp.5.md</code>, the source of the man page, so the two say the same. The examples come from an archive that Virtualbricks exported, of a small project.</p>
+    </main>
+  </div>
+</div>

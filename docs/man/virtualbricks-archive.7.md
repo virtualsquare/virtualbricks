@@ -8,8 +8,7 @@ date: DATE
 
 # NAME
 
-virtualbricks-archive - project archives, and the process that reads and
-writes them
+virtualbricks-archive - the process that reads and writes project archives
 
 # SYNOPSIS
 
@@ -47,7 +46,7 @@ stopped at any time with SIGTERM.
  +------------+                      +-------------+
 ```
 
-This page describes the format of the archives (**THE ARCHIVE**), the protocol
+This page sums up the archives (**THE ARCHIVE**), and describes the protocol
 between the application and the process (**THE PROCESS**), the three jobs
 (**JOBS**), the progress they report (**PROGRESS**), the tools they run
 (**ARCHIVE TOOLS**) and how the application drives them (**THE APPLICATION'S
@@ -56,175 +55,47 @@ the process by hand, to look into an archive or to script an export.
 
 # THE ARCHIVE
 
-## Format
+An archive, a *.vbp* file, is a tar file in the pax format, which
+**virtualbricks-vbp**(5) describes in full. This page needs only what
+follows.
 
-An archive is a tar file in the POSIX.1-2001 format, *pax*, with the extension
-*.vbp*. When **qemu-img** is found, the archive is not compressed as a whole:
-its disks are compressed one by one inside it (see **Packed disks**). Without
-**qemu-img**, the whole archive is compressed with gzip.
+Each member is a file of the project's folder, under its path in the folder,
+or an image of the project, under *IMAGES/*, named after the image in the
+project file. The name of a member gives its *kind*, the word that the
+messages of the process use:
 
-Virtualbricks reads archives that are not compressed or compressed with gzip,
-bzip2 or xz, whatever their extension, so an archive made by hand with
-**tar**(1) can be imported too. The Import window offers the files *\*.vbp*,
-*\*.tar.gz*, *\*.tgz* and *\*.tar*.
+**contents**
+:   **contents.toml**, the list of the other members.
 
-## Members
+**project**, **legacy project**
+:   **project.toml**, the project file; **.project** or **.project~**, the
+    project file of Virtualbricks 2.1 and older.
 
-Every member is a regular file, named by its path relative to the project's
-folder. A reader drops a leading *./* and a trailing */* from the names. The
-name gives the kind of the member, the word in italics, which the process uses
-in its messages (see **inspect**):
+**readme**
+:   **README.md**, or **README** before 3.0.
 
-**contents.toml**
-:   *contents*: the list of the members; see **contents.toml** below.
+**disk**
+:   *vm*\_*device*.cow, the private disk of a virtual machine.
 
-**project.toml**
-:   *project*: the project file, described in **virtualbricks-config**(5).
+**image**
+:   IMAGES/*image*, a disk image; *.images/image* in older archives.
 
-**.project**, **.project~**
-:   *legacy project*: the project file of Virtualbricks 2.1 and older. It is
-    converted as the migration does.
+**other**
+:   Any other file of the folder.
 
-**README.md**, **README**
-:   *readme*: the description of the project, plain text in UTF-8 that
-    Virtualbricks reads as Markdown (see **README** in
-    **virtualbricks-config**(5)). The archive keeps it as it is. Before 3.0
-    it was **README**, which the import renames to **README.md**; in an
-    archive with both, **README.md** is the README.
+A new archive starts with its *head*: **contents.toml**, then the project
+file and the README. An inspection reads the head and stops there. The
+archives of older versions have no **contents.toml**, and an inspection
+reads them to their end.
 
-*vm*\_*device*.cow
-:   *disk*: the private disk of the device *device*, as **hda** or **vdb**, of
-    the virtual machine *vm*. Only at the top of the archive; *device* has
-    only lowercase letters and digits.
+When **qemu-img** is installed, the export compresses each disk and each
+image in the qcow2 format on its own, and **contents.toml** marks it
+*packed*, with its size before, its *real_size*; the import turns them back
+into normal qcow2 files. Without **qemu-img**, the export compresses the
+whole archive with gzip instead.
 
-.images/*image*
-:   *image*: the disk image called *image* in the project file. The member is
-    named after the image, not after its file: an image **debian** whose file
-    is */srv/vm/debian-12.qcow2* is stored as *.images/debian*.
-
-any other name
-:   *other*: a file of the project's folder that you chose to export. The
-    import puts it back where it was.
-
-## Order
-
-A new archive starts with **contents.toml**, then the project file and the
-README: together, the *head* of the archive. The other files, the private
-disks and the images follow, in this order, each group from the smallest file
-to the largest. An inspection reads the head and stops there, without reading
-the gigabytes that follow it.
-
-```
-  +----------+---------+--------+-------+-------+-----------+
-  | contents | project | README | other | disks | .images/  |
-  |   .toml  |  .toml  |  .md   | files |       |           |
-  +----------+---------+--------+-------+-------+-----------+
-  |<---------- head ----------->|<--- smallest to largest ->|
-         read by inspect               read by import
-```
-
-## contents.toml
-
-The list of the other members, in the order of the archive. It is TOML 1.0,
-as the files described in **virtualbricks-config**(5):
-
-```
-format = 1
-
-[[members]]
-name = "project.toml"
-size = 255
-
-[[members]]
-name = "README.md"
-size = 16
-
-[[members]]
-name = "vm1_hda.cow"
-size = 197120
-packed = true
-real_size = 196616
-
-[[members]]
-name = ".images/debian"
-size = 197120
-packed = true
-real_size = 196616
-```
-
-**format** = *integer*
-:   The version of the layout, **1**. An archive with a higher **format** is
-    not read: \"contents.toml: written by a newer Virtualbricks (format 2)\".
-
-**members** = *array of tables*
-:   One table for each member but **contents.toml** itself:
-
-    **name** = *string*
-    :   The name of the member.
-
-    **size** = *integer*
-    :   Its size in the archive, in bytes.
-
-    **packed** = *boolean*
-    :   Present, and **true**, only when **qemu-img** compressed the member.
-
-    **real_size** = *integer*
-    :   Only with **packed**: its size before it was compressed, the size it
-        has on the computer it comes from.
-
-The kind of a member comes from its name and is not written. An item of
-**members** that isn't a table is skipped, a size that isn't an integer is
-read as 0, and other keys are ignored.
-
-## Packed disks
-
-When **qemu-img** is found, the export compresses each private disk and each
-image in the qcow2 format:
-
-```
-qemu-img convert -p -O qcow2 -m 8 -W \
-    -c -o compression_type=zstd \
-    [-B backing -F backing-format] disk packed-disk
-```
-
-with zlib, without **-o compression_type=zstd**, when QEMU is older than 5.1.
-A private disk keeps its backing file, the image, as it is. A packed disk is a
-valid qcow2 file, that QEMU runs as it is. The member is marked **packed** in
-**contents.toml**, with its **real_size**. A disk or an image in another
-format, as raw, is stored as it is; so is a disk that **qemu-img** can't read,
-as when its image is gone, and the export reports it as a warning.
-
-The import converts the packed members back to normal qcow2 files, the private
-disks on top of their new image. When **qemu-img** isn't found, or the image
-of a private disk is left unset, the disk stays compressed and the import
-reports it: the disk works as it is.
-
-The **real_size** also lets the import recognize an image that this computer
-already has: a file of the shared images with the same name and size is
-used instead of a copy.
-
-## Holes
-
-Disks are sparse files: a disk of 20 GB can take 2 GB of space. The archive
-keeps their holes, as GNU sparse 1.0 members, written by **bsdtar**, by GNU
-**tar** with **--sparse**, or by Virtualbricks itself when neither is
-installed. A member larger than 8 GiB written by Virtualbricks has its size in
-base-256 in its tar header, not in a pax record, which Python's **tarfile**
-would read wrong (see **BUGS**).
-
-When the archive is extracted, **bsdtar** turns the runs of zeros into holes
-itself, with **-S**. After GNU **tar** or **tarfile**, the import does it for
-the private disks and the copied images: blocks of 64 KiB of zeros become
-holes if they add up to 1 MiB at least.
-
-## Older archives
-
-The archives of older versions of Virtualbricks have no **contents.toml**; most
-are compressed with gzip, and some hold the project file of Virtualbricks 2.1,
-**.project**. They are read as the new ones, but an inspection has to read an
-archive without **contents.toml** to its end to know what it holds. It sends
-what it knows, the *head*, as soon as it has read the project file, and the
-full list of members at the end.
+Disks are sparse files, and the archive keeps their holes: a disk of 20 GB
+can take 2 GB.
 
 # THE PROCESS
 
@@ -465,10 +336,12 @@ qemu_img = "/usr/bin/qemu-img"
     in a project not opened since 3.0, **README**, and lets you choose
     the private disks, the other files and the images; it never stores what
     older versions left in the folder: the *.images* folder and the
-    *.project* files.
+    *.project* files. The export leaves out a folder *IMAGES* of the
+    project, as an import would take its files for images, and reports
+    it.
 
 **images** = *array* of \[*name*, *path*\]
-:   The images to store, as *.images/name*.
+:   The images to store, as *IMAGES/name*.
 
 **compression** = **\"gzip\"** \| **\"none\"**, default **\"gzip\"**
 :   Whether to compress the archive with gzip. The application asks for
@@ -496,7 +369,7 @@ The export takes these steps:
  lab/vm1_hda.cow   -- pack -->  |   contents.toml           |
  debian-12.qcow2   -- pack -->  |   project.toml  README.md |
                                 |   vm1_hda.cow             |
-                                |   .images/debian          |
+                                |   IMAGES/debian           |
                                 +---------------------------+
                                      | tar, in order
                                      v
@@ -537,7 +410,7 @@ path = "/home/user/.virtualbricks/shared_images/debian-12.qcow2"
 fallback = ""
 
 [settings]
-qemupath = "/usr/bin"
+qemu_path = "/usr/bin"
 ```
 
 **archive** = *path*
@@ -578,7 +451,7 @@ qemupath = "/usr/bin"
 
 **settings** = *table*
 :   The settings of the project to replace with this computer's:
-    **qemupath** and **vdepath**, the folders of QEMU and VDE.
+    **qemu_path** and **vde_path**, the folders of QEMU and VDE.
 
 **qemu_img** = *path*
 :   The **qemu-img** that unpacks and rebases the disks, or \"\".
@@ -600,7 +473,7 @@ The import takes these steps:
  |     contents.toml            2  note what's packed, remove
  |     project.toml             3  read, or convert .project
  |     README.md
- |     .images/debian  ---.     4  copy, use or skip images
+ |     IMAGES/debian  ----.     4  copy, use or skip images
  |     vm1_hda.cow        |     5  rewrite project.toml
  |                        |     6  rebase -u the private
  |                        |        disks on their images
@@ -616,8 +489,8 @@ The import takes these steps:
    3.0, to **README.md**, unless there is one.
 3. Read the project file and upgrade it, or convert **.project**.
 4. Move each copied image to the shared images, sending it with
-   **created**; then remove the *.images* folder with the images that
-   aren't copied.
+   **created**; then remove the *IMAGES* folder, or *.images* in an older
+   archive, with the images that aren't copied.
 5. Rewrite **project.toml** with the path of each image, \"\" for an image
    left unset, and with **settings**.
 6. Point each private disk at its image, in the format of the image:
@@ -799,7 +672,7 @@ The result, laid out:
     ["project.toml", 255, "project", false, 0],
     ["README.md", 16, "readme", false, 0],
     ["vm1_hda.cow", 197120, "disk", true, 196616],
-    [".images/debian", 197120, "image", true, 196616]
+    ["IMAGES/debian", 197120, "image", true, 196616]
   ],
   "complete": true,
   "report": [],
@@ -857,8 +730,8 @@ and says \"install bsdtar or GNU tar to read this archive\".
 
 # SEE ALSO
 
-**virtualbricks-config**(5), **bsdtar**(1), **tar**(1), **tar**(5),
-**qemu-img**(1)
+**virtualbricks-vbp**(5), **virtualbricks-config**(5), **bsdtar**(1),
+**tar**(1), **tar**(5), **qemu-img**(1)
 
 GNU tar, sparse formats:
 <https://www.gnu.org/software/tar/manual/html_node/Sparse-Formats.html>

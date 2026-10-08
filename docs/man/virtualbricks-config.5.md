@@ -1069,9 +1069,10 @@ are stored but not applied: the interface gets no address from Virtualbricks.
 
 # SEE ALSO
 
-**virtualbricks**(1), **virtualbricks-archive**(7), **qemu**(1),
-**vde_switch**(1), **vde_plug2tap**(1), **vde_cryptcab**(1), **dpipe**(1),
-**sudo**(8), **sudoers**(5), **sudo.conf**(5), **tmpfiles.d**(5)
+**virtualbricks**(1), **virtualbricks-vbp**(5), **virtualbricks-archive**(7),
+**qemu**(1), **vde_switch**(1), **vde_plug2tap**(1), **vde_cryptcab**(1),
+**dpipe**(1), **sudo**(8), **sudoers**(5), **sudo.conf**(5),
+**tmpfiles.d**(5)
 
 TOML 1.0: <https://toml.io/en/v1.0.0>
 

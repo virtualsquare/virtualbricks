@@ -108,7 +108,7 @@ class ImportingTestCase(unittest.TestCase):
     ):
         members = [ArchiveMember("project.toml", 10, "project")]
         for name, size in (images or {}).items():
-            members.append(ArchiveMember(f".images/{name}", size, "image"))
+            members.append(ArchiveMember(f"IMAGES/{name}", size, "image"))
         return ArchiveContents(
             path or self.path("lab.vbp"), data, description, members, complete
         )
@@ -327,7 +327,7 @@ class TestRunImport(ImportingTestCase):
         )
         files = {"vm_hda.cow": b"cow", "README": b"A lab"}
         for name in images if images is not None else ["deb"]:
-            files[f".images/{name}"] = b"image of " + name.encode()
+            files[f"IMAGES/{name}"] = b"image of " + name.encode()
         return self.archive(data, files)
 
     def plan(self, path):
@@ -432,7 +432,7 @@ class TestRunImport(ImportingTestCase):
         data = project(
             {"deb": "/o/deb", "mine": mine, "gone": "/o/gone"},
         )
-        path = self.archive(data, {".images/deb": b"deb"})
+        path = self.archive(data, {"IMAGES/deb": b"deb"})
         contents = self.contents(data, complete=False, path=path)
         plan = plan_import(contents, self.workspace)
         self.assertEqual([i.known for i in plan.images], [False] * 3)
@@ -449,7 +449,7 @@ class TestRunImport(ImportingTestCase):
 
     def test_a_private_disk_not_in_the_archive(self):
         data = project({"deb": "/other/deb.qcow2"}, {"vm": vm(("hda", "deb"))})
-        path = self.archive(data, {".images/deb": b"image of deb"})
+        path = self.archive(data, {"IMAGES/deb": b"image of deb"})
         result = self.run_import(self.plan(path))
         self.assertEqual(list(result.report), [])
         self.assertEqual(
@@ -457,6 +457,20 @@ class TestRunImport(ImportingTestCase):
             ["project.toml"],
         )
         self.assertFalse(os.path.exists(self.qemu_log))
+
+    def test_the_images_of_an_older_archive(self):
+        data = project({"deb": "/other/deb.qcow2"}, {"vm": vm(("hda", "deb"))})
+        path = self.archive(data, {".images/deb": b"image of deb"})
+        plan = self.plan(path)
+        self.assertEqual(plan.images[0].choice, "copy")
+        result = self.run_import(plan)
+        copy = self.data()["images"]["deb"]["path"]
+        with open(copy, "rb") as fp:
+            self.assertEqual(fp.read(), b"image of deb")
+        self.assertEqual(
+            os.listdir(self.workspace.project_path(result.name)),
+            ["project.toml"],
+        )
 
     def test_copy_what_the_archive_doesnt_have(self):
         plan = self.plan(self.lab(images=[]))
@@ -665,7 +679,7 @@ class TestPackedDisks(ImportingTestCase):
         self.assertEqual(archive.compression_flags(output), [])
         contents = archive.inspect(output, Tool("tarfile"), lambda obj: None)
         members = {m.name: m for m in contents.members}
-        cow, deb = members["vm_hda.cow"], members[".images/deb"]
+        cow, deb = members["vm_hda.cow"], members["IMAGES/deb"]
         self.assertTrue(cow.packed and deb.packed)
         self.assertFalse(members["project.toml"].packed)
         self.assertEqual(deb.real_size, os.path.getsize(image))
@@ -748,7 +762,7 @@ class TestPackedDisks(ImportingTestCase):
         contents = archive.inspect(output, Tool("tarfile"), lambda obj: None)
         members = {m.name: m for m in contents.members}
         self.assertFalse(members["vm_hda.cow"].packed)
-        self.assertTrue(members[".images/deb"].packed)
+        self.assertTrue(members["IMAGES/deb"].packed)
 
     def test_a_disk_whose_image_is_gone(self):
         project, disk, image = self.lab()
@@ -881,7 +895,7 @@ exec sleep 60
         )
         image = self.file(os.path.join(library, "deb"), b"packed")
         running.packed = {
-            ".images/deb": ArchiveMember(".images/deb", 6, "image", True, 9)
+            "IMAGES/deb": ArchiveMember("IMAGES/deb", 6, "image", True, 9)
         }
         running.copied = {"deb": image}
         running.unpack()

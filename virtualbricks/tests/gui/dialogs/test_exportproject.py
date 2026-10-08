@@ -201,10 +201,14 @@ class TestExport(ExportTestCase):
         job.on_progress("write", 1200, 1000)
         self.assertEqual(dialog.progress_bar.get_fraction(), 1.0)
         job.on_progress("write", 0, 0)
-        job.done.callback({"output": output, "size": 2_500_000})
+        report = [["warning", "stored as it is: no qemu-img", "vm_hda.cow"]]
+        job.done.callback(
+            {"output": output, "size": 2_500_000, "report": report}
+        )
         self.assertEqual(dialog.stack.get_visible_child_name(), "done")
         self.assertIn("2.5 MB", dialog.done_label.get_text())
-        self.assertEqual(self.logger.levels(), ["info"])
+        # the report goes to the logs
+        self.assertEqual(self.logger.levels(), ["info", "warn"])
         dialog.close_button.clicked()
         self.assertTrue(dialog.destroyed)
 
@@ -236,7 +240,7 @@ class TestExport(ExportTestCase):
         dialog.window.destroy()
         self.assertFalse(job.cancelled)
         job.on_progress("write", 1, 2)
-        job.done.callback({"output": "/out.vbp", "size": 1})
+        job.done.callback({"output": "/out.vbp", "size": 1, "report": []})
         self.assertEqual(self.logger.levels(), ["info"])
         dialog, job = self.start(self.dialog())
         dialog.window.destroy()

@@ -43,6 +43,7 @@ from virtualbricks.config.archive import (
     ArchiveCancelled,
     ArchiveJob,
     export_project,
+    report_from_list,
 )
 from virtualbricks.config.archive import DISK, find_qemu_img, member_kind
 from virtualbricks.i18n import _
@@ -449,6 +450,7 @@ class ExportProjectDialog:
     def on_exported(self, result: dict[str, Any]) -> None:
         self.job = None
         logger.info(exported, name=self.name, path=result["output"])
+        report_from_list(result["report"]).log(logger)
         if self.destroyed:
             return
         self.done_label.set_text(

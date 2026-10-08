@@ -114,7 +114,7 @@ class ImportTestCase(GuiTestCase):
         images = images or {"deb": "/other/deb.qcow2"}
         members = [ArchiveMember("project.toml", 10, "project")]
         for name in in_archive:
-            members.append(ArchiveMember(f".images/{name}", 2000, "image"))
+            members.append(ArchiveMember(f"IMAGES/{name}", 2000, "image"))
         return ArchiveContents(
             self.archive,
             data(**images),

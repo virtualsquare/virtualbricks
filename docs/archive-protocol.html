@@ -1,5 +1,5 @@
 <title>Virtualbricks Archive Protocol</title>
-<meta name="description" content="Reference of the .vbp project archives of Virtualbricks and of the process that inspects, exports and imports them: the jobs, the messages, the progress and the clean-up.">
+<meta name="description" content="Reference of the process that inspects, exports and imports the .vbp project archives of Virtualbricks: the jobs, the messages, the progress and the clean-up.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
@@ -244,7 +244,7 @@
   <header class="masthead">
     <div class="eyebrow">Reference &middot; contents.toml format 1</div>
     <h1>Virtualbricks Archive Protocol</h1>
-    <p class="lede">How Virtualbricks reads and writes project archives, the <code>.vbp</code> files: what an archive holds and in which order, and the process that inspects, exports and imports it while the application follows along, one JSON line at a time.</p>
+    <p class="lede">How Virtualbricks reads and writes project archives, the <code>.vbp</code> files: the process that inspects, exports and imports them while the application follows along, one JSON line at a time. What an archive holds is in <a class="man" href="vbp-format.html"><code>virtualbricks-vbp</code>(5)</a>.</p>
     <ul class="meta">
       <li><b>virtualbricks</b> 3.0.0.dev3</li>
       <li>job on stdin: <b>TOML</b></li>
@@ -346,7 +346,7 @@
       </dl>
     </li>
   </ul>
-  <p class="caution"><b>Internal</b><span>The process always comes from the same installation as the application, so the protocol has no version: it changes with the code, and this page with it. The format of the archives does have one, the <code>format</code> of <code>contents.toml</code>.</span></p>
+  <p class="caution"><b>Internal</b><span>The process always comes from the same installation as the application, so the protocol has no version: it changes with the code, and this page with it. The format of the archives does have one, the <code>format</code> of <code>contents.toml</code>: see <a class="man" href="vbp-format.html"><code>virtualbricks-vbp</code>(5)</a>.</span></p>
 
   <div class="layout">
     <nav class="toc" aria-label="Contents">
@@ -370,103 +370,19 @@
 
 <section id="archive">
 <h2>The archive</h2>
-
-<h3 id="archive-format">Format</h3>
-<p>An archive is a tar file in the POSIX.1-2001 format, <em>pax</em>, with the extension <code>.vbp</code>. When <code>qemu-img</code> is found, the archive is not compressed as a whole: its disks are compressed one by one inside it (see <a href="#archive-packed">Packed disks</a>). Without <code>qemu-img</code>, the whole archive is compressed with gzip.</p>
-<p>Virtualbricks reads archives that are not compressed or compressed with gzip, bzip2 or xz, whatever their extension, so an archive made by hand with <code>tar</code> can be imported too. The Import window offers the files <em>*.vbp</em>, <em>*.tar.gz</em>, <em>*.tgz</em> and <em>*.tar</em>.</p>
-
-<h3 id="archive-members">Members</h3>
-<p>Every member is a regular file, named by its path relative to the project&#39;s folder. A reader drops a leading <code>./</code> and a trailing <code>/</code> from the names. The name gives the <em>kind</em> of the member, which the process uses in its messages (see <a href="#inspect">inspect</a>):</p>
-<div class="scroll"><table class="fields keys"><thead><tr><th>Name</th><th>Kind</th><th>Meaning</th></tr></thead><tbody>
-<tr><th scope="row"><code class="key">contents.toml</code></th><td class="kind">contents</td><td class="meaning"><p>The list of the members; see <a href="#archive-contents">contents.toml</a> below.</p></td></tr>
-<tr><th scope="row"><code class="key">project.toml</code></th><td class="kind">project</td><td class="meaning"><p>The project file, described in <a class="man" href="config-files.html#projects"><code>virtualbricks-config</code>(5)</a>.</p></td></tr>
-<tr><th scope="row"><code class="key">.project</code>, <code class="key">.project~</code></th><td class="kind">legacy project</td><td class="meaning"><p>The project file of Virtualbricks 2.1 and older. It is converted as the migration does.</p></td></tr>
-<tr><th scope="row"><code class="key">README.md</code>, <code class="key">README</code></th><td class="kind">readme</td><td class="meaning"><p>The description of the project, plain text in UTF-8 that Virtualbricks reads as Markdown (see <a class="man" href="config-files.html#projects-readme">README in <code>virtualbricks-config</code>(5)</a>). The archive keeps it as it is. Before 3.0 it was <code>README</code>, which the import renames to <code>README.md</code>; in an archive with both, <code>README.md</code> is the README.</p></td></tr>
-<tr><th scope="row"><code class="key"><em>vm</em>_<em>device</em>.cow</code></th><td class="kind">disk</td><td class="meaning"><p>The private disk of the device <em>device</em>, as <code>hda</code> or <code>vdb</code>, of the virtual machine <em>vm</em>. Only at the top of the archive; <em>device</em> has only lowercase letters and digits.</p></td></tr>
-<tr><th scope="row"><code class="key">.images/<em>image</em></code></th><td class="kind">image</td><td class="meaning"><p>The disk image called <em>image</em> in the project file. The member is named after the image, not after its file: an image <code>debian</code> whose file is <em>/srv/vm/debian-12.qcow2</em> is stored as <em>.images/debian</em>.</p></td></tr>
-<tr><th scope="row"><span class="none">any other name</span></th><td class="kind">other</td><td class="meaning"><p>A file of the project&#39;s folder that you chose to export. The import puts it back where it was.</p></td></tr>
+<p>An archive, a <code>.vbp</code> file, is a tar file in the pax format, which <a class="man" href="vbp-format.html"><code>virtualbricks-vbp</code>(5)</a> describes in full. This page needs only what follows.</p>
+<p>Each member is a file of the project&#39;s folder, under its path in the folder, or an image of the project, under <em>IMAGES/</em>, named after the image in the project file. The name of a member gives its <em>kind</em>, the word that the messages of the process use:</p>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Kind</th><th>Members</th></tr></thead><tbody>
+<tr><th scope="row"><code class="key">contents</code></th><td class="meaning"><p><code>contents.toml</code>, the list of the other members.</p></td></tr>
+<tr><th scope="row"><code class="key">project</code>, <code class="key">legacy project</code></th><td class="meaning"><p><code>project.toml</code>, the project file; <code>.project</code> or <code>.project~</code>, the project file of Virtualbricks 2.1 and older.</p></td></tr>
+<tr><th scope="row"><code class="key">readme</code></th><td class="meaning"><p><code>README.md</code>, or <code>README</code> before 3.0.</p></td></tr>
+<tr><th scope="row"><code class="key">disk</code></th><td class="meaning"><p><em>vm</em>_<em>device</em>.cow, the private disk of a virtual machine.</p></td></tr>
+<tr><th scope="row"><code class="key">image</code></th><td class="meaning"><p>IMAGES/<em>image</em>, a disk image; <em>.images/image</em> in older archives.</p></td></tr>
+<tr><th scope="row"><code class="key">other</code></th><td class="meaning"><p>Any other file of the folder.</p></td></tr>
 </tbody></table></div>
-
-<h3 id="archive-order">Order</h3>
-<p>A new archive starts with <code>contents.toml</code>, then the project file and the README: together, the <em>head</em> of the archive. The other files, the private disks and the images follow, in this order, each group from the smallest file to the largest. An inspection reads the head and stops there, without reading the gigabytes that follow it.</p>
-<figure class="diagram">
-  <div class="canvas">
-    <svg class="dg" viewBox="0 0 760 152" role="img" aria-label="The members of a new archive in file order: contents.toml, project.toml and README.md form the head, which an inspection reads; then the other files, the private disks and the images, each group from smallest to largest, which only an import reads.">
-      <text x="16" y="22" class="mono small muted">offset 0</text>
-      <text x="744" y="22" text-anchor="end" class="mono small muted">end of the archive</text>
-      <rect x="16" y="32" width="104" height="50" class="box-accent"/>
-      <text x="68" y="61" text-anchor="middle" class="mono small">contents.toml</text>
-      <rect x="120" y="32" width="100" height="50" class="box-accent"/>
-      <text x="170" y="61" text-anchor="middle" class="mono small">project.toml</text>
-      <rect x="220" y="32" width="76" height="50" class="box-accent"/>
-      <text x="258" y="61" text-anchor="middle" class="mono small">README.md</text>
-      <rect x="296" y="32" width="36" height="50" class="box"/>
-      <rect x="332" y="32" width="60" height="50" class="box"/>
-      <rect x="392" y="32" width="34" height="50" class="box"/>
-      <rect x="426" y="32" width="52" height="50" class="box"/>
-      <rect x="478" y="32" width="78" height="50" class="box"/>
-      <rect x="556" y="32" width="76" height="50" class="box"/>
-      <rect x="632" y="32" width="112" height="50" class="box"/>
-      <text x="344" y="100" text-anchor="middle" class="small muted">other files</text>
-      <text x="474" y="100" text-anchor="middle" class="small muted">private disks</text>
-      <text x="650" y="100" text-anchor="middle" class="small muted">images</text>
-      <path d="M16,110 V118 H292 V110" class="ln-accent"/>
-      <text x="154" y="140" text-anchor="middle" class="small t-accent">head: inspect reads it, then stops</text>
-      <path d="M300,110 V118 H744 V110" class="ln"/>
-      <text x="522" y="140" text-anchor="middle" class="small muted">only import reads the rest, each group from smallest to largest</text>
-    </svg>
-  </div>
-  <figcaption>A new archive in file order, not to scale: the head is a few kilobytes, the disks and images can be gigabytes. <code>contents.toml</code> comes first, so an inspection knows every member after reading a few blocks.</figcaption>
-</figure>
-
-<h3 id="archive-contents">contents.toml</h3>
-<p>The list of the other members, in the order of the archive. It is TOML 1.0, as the <a href="config-files.html">configuration files</a>:</p>
-<figure class="code"><pre><code><span class="k">format</span> = 1
-
-<span class="h">[[members]]</span>
-<span class="k">name</span> = "project.toml"
-<span class="k">size</span> = 255
-
-<span class="h">[[members]]</span>
-<span class="k">name</span> = "README.md"
-<span class="k">size</span> = 16
-
-<span class="h">[[members]]</span>
-<span class="k">name</span> = "vm1_hda.cow"
-<span class="k">size</span> = 197120
-<span class="k">packed</span> = true
-<span class="k">real_size</span> = 196616
-
-<span class="h">[[members]]</span>
-<span class="k">name</span> = ".images/debian"
-<span class="k">size</span> = 197120
-<span class="k">packed</span> = true
-<span class="k">real_size</span> = 196616</code></pre></figure>
-<div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead><tbody>
-<tr><th scope="row"><code class="key">format</code></th><td class="kind">integer</td><td class="meaning"><p>The version of the layout, <code>1</code>. An archive with a higher <code>format</code> is not read: &quot;contents.toml: written by a newer Virtualbricks (format 2)&quot;.</p></td></tr>
-<tr><th scope="row"><code class="key">members</code></th><td class="kind">array of tables</td><td class="meaning"><p>One table for each member but <code>contents.toml</code> itself.</p></td></tr>
-<tr><th scope="row"><code class="key">name</code></th><td class="kind">string</td><td class="meaning"><p>The name of the member.</p></td></tr>
-<tr><th scope="row"><code class="key">size</code></th><td class="kind">integer</td><td class="meaning"><p>Its size in the archive, in bytes.</p></td></tr>
-<tr><th scope="row"><code class="key">packed</code></th><td class="kind">boolean</td><td class="meaning"><p>Present, and <code>true</code>, only when <code>qemu-img</code> compressed the member.</p></td></tr>
-<tr><th scope="row"><code class="key">real_size</code></th><td class="kind">integer</td><td class="meaning"><p>Only with <code>packed</code>: its size before it was compressed, the size it has on the computer it comes from.</p></td></tr>
-</tbody></table></div>
-<p>The kind of a member comes from its name and is not written. An item of <code>members</code> that isn&#39;t a table is skipped, a size that isn&#39;t an integer is read as 0, and other keys are ignored.</p>
-
-<h3 id="archive-packed">Packed disks</h3>
-<p>When <code>qemu-img</code> is found, the export compresses each private disk and each image in the qcow2 format:</p>
-<figure class="code"><pre><code>qemu-img convert -p -O qcow2 -m 8 -W \
-    -c -o compression_type=zstd \
-    [-B backing -F backing-format] disk packed-disk</code></pre></figure>
-<p>with zlib, without <code>-o compression_type=zstd</code>, when QEMU is older than 5.1. A private disk keeps its backing file, the image, as it is. A packed disk is a valid qcow2 file, that QEMU runs as it is. The member is marked <code>packed</code> in <code>contents.toml</code>, with its <code>real_size</code>. A disk or an image in another format, as raw, is stored as it is; so is a disk that <code>qemu-img</code> can&#39;t read, as when its image is gone, and the export reports it as a warning.</p>
-<p>The import converts the packed members back to normal qcow2 files, the private disks on top of their new image. When <code>qemu-img</code> isn&#39;t found, or the image of a private disk is left unset, the disk stays compressed and the import reports it: the disk works as it is.</p>
-<p>The <code>real_size</code> also lets the import recognize an image that this computer already has: a file of the shared images with the same name and size is used instead of a copy.</p>
-
-<h3 id="archive-holes">Holes</h3>
-<p>Disks are sparse files: a disk of 20 GB can take 2 GB of space. The archive keeps their holes, as GNU sparse 1.0 members, written by <code>bsdtar</code>, by GNU <code>tar</code> with <code>--sparse</code>, or by Virtualbricks itself when neither is installed. A member larger than 8 GiB written by Virtualbricks has its size in base-256 in its tar header, not in a pax record, which Python&#39;s <code>tarfile</code> would read wrong (see <a href="#known-problems">Known problems</a>).</p>
-<p>When the archive is extracted, <code>bsdtar</code> turns the runs of zeros into holes itself, with <code>-S</code>. After GNU <code>tar</code> or <code>tarfile</code>, the import does it for the private disks and the copied images: blocks of 64 KiB of zeros become holes if they add up to 1 MiB at least.</p>
-
-<h3 id="archive-older">Older archives</h3>
-<p>The archives of older versions of Virtualbricks have no <code>contents.toml</code>; most are compressed with gzip, and some hold the project file of Virtualbricks 2.1, <code>.project</code>. They are read as the new ones, but an inspection has to read an archive without <code>contents.toml</code> to its end to know what it holds. It sends what it knows, the <em>head</em>, as soon as it has read the project file, and the full list of members at the end.</p>
+<p>A new archive starts with its <em>head</em>: <code>contents.toml</code>, then the project file and the README. An inspection reads the head and stops there. The archives of older versions have no <code>contents.toml</code>, and an inspection reads them to their end.</p>
+<p>When <code>qemu-img</code> is installed, the export compresses each disk and each image in the qcow2 format on its own, and <code>contents.toml</code> marks it <em>packed</em>, with its size before, its <em>real_size</em>; the import turns them back into normal qcow2 files. Without <code>qemu-img</code>, the export compresses the whole archive with gzip instead.</p>
+<p>Disks are sparse files, and the archive keeps their holes: a disk of 20 GB can take 2 GB.</p>
 </section>
 
 <section id="process">
@@ -637,8 +553,8 @@
 <div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead><tbody>
 <tr><th scope="row"><code class="key">project</code></th><td class="kind">path</td><td class="meaning"><p>The folder of the project.</p></td></tr>
 <tr><th scope="row"><code class="key">output</code></th><td class="kind">path</td><td class="meaning"><p>The archive to write. A file with that name is replaced when the export ends.</p></td></tr>
-<tr><th scope="row"><code class="key">files</code></th><td class="kind">array of strings</td><td class="meaning"><p>The files of the project to store, relative to its folder. The Export window always stores <code>project.toml</code> and the README, <code>README.md</code> or, in a project not opened since 3.0, <code>README</code>, and lets you choose the private disks, the other files and the images; it never stores what older versions left in the folder: the <em>.images</em> folder and the <em>.project</em> files.</p></td></tr>
-<tr><th scope="row"><code class="key">images</code></th><td class="kind">array of [<em>name</em>, <em>path</em>]</td><td class="meaning"><p>The images to store, as <em>.images/name</em>.</p></td></tr>
+<tr><th scope="row"><code class="key">files</code></th><td class="kind">array of strings</td><td class="meaning"><p>The files of the project to store, relative to its folder. The Export window always stores <code>project.toml</code> and the README, <code>README.md</code> or, in a project not opened since 3.0, <code>README</code>, and lets you choose the private disks, the other files and the images; it never stores what older versions left in the folder: the <em>.images</em> folder and the <em>.project</em> files. The export leaves out a folder <em>IMAGES</em> of the project, as an import would take its files for images, and reports it.</p></td></tr>
+<tr><th scope="row"><code class="key">images</code></th><td class="kind">array of [<em>name</em>, <em>path</em>]</td><td class="meaning"><p>The images to store, as <em>IMAGES/name</em>.</p></td></tr>
 <tr><th scope="row"><code class="key">compression</code></th><td class="kind">"gzip" | "none"</td><td class="meaning"><p>Whether to compress the archive with gzip, <code>"gzip"</code> by default. The application asks for <code>"none"</code> when it gives <code>qemu_img</code>.</p></td></tr>
 <tr><th scope="row"><code class="key">qemu_img</code></th><td class="kind">path</td><td class="meaning"><p>The <code>qemu-img</code> that packs the disks, or &quot;&quot;, the default, not to pack them.</p></td></tr>
 </tbody></table></div>
@@ -683,7 +599,7 @@
       <text x="292" y="100" class="mono small">project.toml</text>
       <text x="292" y="130" class="mono small">README.md</text>
       <text x="292" y="160" class="mono small">vm1_hda.cow</text>
-      <text x="292" y="190" class="mono small">.images/debian</text>
+      <text x="292" y="190" class="mono small">IMAGES/debian</text>
 
       <line x1="482" y1="91" x2="552" y2="91" class="ln-accent" marker-end="url(#e-tip-acc)"/>
       <text x="517" y="84" text-anchor="middle" class="mono small t-accent">write</text>
@@ -721,7 +637,7 @@
 <span class="k">fallback</span> = ""
 
 <span class="h">[settings]</span>
-<span class="k">qemupath</span> = "/usr/bin"</code></pre></figure>
+<span class="k">qemu_path</span> = "/usr/bin"</code></pre></figure>
 <div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead><tbody>
 <tr><th scope="row"><code class="key">archive</code></th><td class="kind">path</td><td class="meaning"><p>The archive to import.</p></td></tr>
 <tr><th scope="row"><code class="key">staging</code></th><td class="kind">path</td><td class="meaning"><p>An empty folder of the workspace, .importing-<em>name</em>-<em>XXXXXXXX</em>, that the application creates and the list of projects ignores. The archive is extracted there.</p></td></tr>
@@ -731,7 +647,7 @@
 <tr><th scope="row"><code class="key">choice</code></th><td class="kind">"copy" | "use" | "skip" | "auto"</td><td class="meaning"><p><code>copy</code> moves the image from the archive to <code>path</code>, or to the next free name, <em>debian-12.1.qcow2</em>, <em>debian-12.2.qcow2</em>&#8230; <code>use</code> uses the file <code>path</code> of this computer. <code>skip</code> leaves the image unset: its disks get one in their settings later.</p><p><code>auto</code> copies the image if the archive has it, otherwise uses <code>fallback</code>, otherwise skips it; the application sends it for the images of an older archive that the inspection hadn&#39;t seen yet when the import started.</p></td></tr>
 <tr><th scope="row"><code class="key">path</code></th><td class="kind">path</td><td class="meaning"><p>Where the copy goes, or the file used.</p></td></tr>
 <tr><th scope="row"><code class="key">fallback</code></th><td class="kind">path</td><td class="meaning"><p>For <code>auto</code>: the file to use if the archive doesn&#39;t have the image, or &quot;&quot;.</p></td></tr>
-<tr><th scope="row"><code class="key">settings</code></th><td class="kind">table</td><td class="meaning"><p>The settings of the project to replace with this computer&#39;s: <code>qemupath</code> and <code>vdepath</code>, the folders of QEMU and VDE.</p></td></tr>
+<tr><th scope="row"><code class="key">settings</code></th><td class="kind">table</td><td class="meaning"><p>The settings of the project to replace with this computer&#39;s: <code>qemu_path</code> and <code>vde_path</code>, the folders of QEMU and VDE.</p></td></tr>
 <tr><th scope="row"><code class="key">qemu_img</code></th><td class="kind">path</td><td class="meaning"><p>The <code>qemu-img</code> that unpacks and rebases the disks, or &quot;&quot;.</p></td></tr>
 </tbody></table></div>
 <p>The application gives every image a default:</p>
@@ -764,7 +680,7 @@
       <circle cx="268" cy="168" r="9" class="badge"/><text x="268" y="172" text-anchor="middle" class="badge-text">6</text>
       <circle cx="290" cy="168" r="9" class="badge"/><text x="290" y="172" text-anchor="middle" class="badge-text">7</text>
       <circle cx="312" cy="168" r="9" class="badge"/><text x="312" y="172" text-anchor="middle" class="badge-text">8</text>
-      <text x="36" y="204" class="mono small">.images/debian</text>
+      <text x="36" y="204" class="mono small">IMAGES/debian</text>
       <circle cx="312" cy="200" r="9" class="badge"/><text x="312" y="204" text-anchor="middle" class="badge-text">4</text>
 
       <line x1="332" y1="86" x2="456" y2="86" class="ln-accent" marker-end="url(#m-tip-acc)"/>
@@ -790,7 +706,7 @@
 <li>Extract the archive into <code>staging</code>, in the step <code>extract</code>.</li>
 <li>Read which members are packed from <code>contents.toml</code>, and remove it: it isn&#39;t a file of the project. Rename <code>README</code>, the README of before 3.0, to <code>README.md</code>, unless there is one.</li>
 <li>Read the project file and upgrade it, or convert <code>.project</code>.</li>
-<li>Move each copied image to the shared images, sending it with <code>created</code>; then remove the <em>.images</em> folder with the images that aren&#39;t copied.</li>
+<li>Move each copied image to the shared images, sending it with <code>created</code>; then remove the <em>IMAGES</em> folder, or <em>.images</em> in an older archive, with the images that aren&#39;t copied.</li>
 <li>Rewrite <code>project.toml</code> with the path of each image, &quot;&quot; for an image left unset, and with <code>settings</code>.</li>
 <li>Point each private disk at its image, in the format of the image: <code>qemu-img rebase -u -b</code> <em>image</em> <code>-F</code> <em>format</em> <em>disk</em>.</li>
 <li>Unpack the packed disks and images, in the step <code>unpack</code>.</li>
@@ -894,7 +810,7 @@ job.done.addCallback(show)</code></pre></figure>
     ["project.toml", 255, "project", false, 0],
     ["README.md", 16, "readme", false, 0],
     ["vm1_hda.cow", 197120, "disk", true, 196616],
-    [".images/debian", 197120, "image", true, 196616]
+    ["IMAGES/debian", 197120, "image", true, 196616]
   ],
   <span class="k">"complete"</span>: true,
   <span class="k">"report"</span>: [],
@@ -935,7 +851,7 @@ job.done.addCallback(show)</code></pre></figure>
 
 <section id="see-also">
 <h2>See also</h2>
-<p><a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>, <a class="man" href="https://manpages.debian.org/bsdtar.1"><code>bsdtar</code>(1)</a>, <a class="man" href="https://manpages.debian.org/tar.1"><code>tar</code>(1)</a>, <a class="man" href="https://manpages.debian.org/tar.5"><code>tar</code>(5)</a>, <a class="man" href="https://manpages.debian.org/qemu-img.1"><code>qemu-img</code>(1)</a></p>
+<p><a class="man" href="vbp-format.html"><code>virtualbricks-vbp</code>(5)</a>, <a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>, <a class="man" href="https://manpages.debian.org/bsdtar.1"><code>bsdtar</code>(1)</a>, <a class="man" href="https://manpages.debian.org/tar.1"><code>tar</code>(1)</a>, <a class="man" href="https://manpages.debian.org/tar.5"><code>tar</code>(5)</a>, <a class="man" href="https://manpages.debian.org/qemu-img.1"><code>qemu-img</code>(1)</a></p>
 <p>GNU tar, sparse formats: <a href="https://www.gnu.org/software/tar/manual/html_node/Sparse-Formats.html">https://www.gnu.org/software/tar/manual/html_node/Sparse-Formats.html</a></p>
 <p>TOML 1.0: <a href="https://toml.io/en/v1.0.0">https://toml.io/en/v1.0.0</a></p>
 </section>

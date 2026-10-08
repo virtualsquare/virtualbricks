@@ -90,7 +90,10 @@ from virtualbricks.config.tomlfile import (
 # The format of contents.toml.
 FORMAT = 1
 CONTENTS = "contents.toml"
-IMAGES = ".images"
+# The folder of the images; .images in the archives of Virtualbricks 2.1 and
+# of the development versions of 3.0, which are still read.
+IMAGES = "IMAGES"
+LEGACY_IMAGES = ".images"
 # The largest size the octal field of a tar header holds.
 OCTAL_SIZE_MAX = 8**11 - 1
 CHUNK = 1 << 20
@@ -188,7 +191,7 @@ def member_kind(name: str) -> str:
         return LEGACY_PROJECT
     if name in (locations.README, locations.LEGACY_README):
         return README_KIND
-    if name.startswith(IMAGES + "/") and name.count("/") == 1:
+    if name.split("/")[0] in (IMAGES, LEGACY_IMAGES) and name.count("/") == 1:
         return IMAGE
     if PRIVATE_DISK.match(name):
         return DISK
@@ -213,7 +216,7 @@ class Member:
 
     @property
     def image(self) -> str:
-        """The name of the image, for a member of .images/."""
+        """The name of the image, for a member of IMAGES/."""
 
         return posixpath.basename(self.name)
 
@@ -977,6 +980,27 @@ def add_sparse(tar: tarfile.TarFile, path: str, arcname: str) -> None:
         os.close(fd)
 
 
+def outside_images(files: Iterable[str], report: Report) -> list[str]:
+    """
+    The files but those in a folder of the images, which an import would
+    take for images; each folder left out is reported.
+    """
+
+    kept = []
+    left_out = set()
+    for name in files:
+        folder, sep, _rest = normalize(name).partition("/")
+        if sep and folder in (IMAGES, LEGACY_IMAGES):
+            left_out.add(folder)
+        else:
+            kept.append(name)
+    for folder in sorted(left_out):
+        report.warning(
+            f"left out: an archive keeps its images in {folder}/", folder
+        )
+    return kept
+
+
 def order_members(
     project: str, files: Iterable[str], images: Iterable[Sequence[str]]
 ) -> list[Entry]:
@@ -1036,7 +1060,7 @@ def write_archive(job: Table, emit: Emit, tool: Tool) -> dict[str, Any]:
     qemu_img = QemuImg(str(job["qemu_img"])) if job.get("qemu_img") else None
     report = Report()
     # as export_project() writes them
-    files = cast("list[str]", job.get("files", []))
+    files = outside_images(cast("list[str]", job.get("files", [])), report)
     images = cast("list[list[str]]", job.get("images", []))
     entries = order_members(project, files, images)
     fd, part = tempfile.mkstemp(
