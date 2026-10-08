@@ -206,7 +206,7 @@ once. `--command` talks to either: `--connect
 unix:~/labs/lab1.json:protocol=json --command status`.
 
 `--listen tcp:8765` listens on a port of this machine, and
-`--listen ssl:8765:interface=0.0.0.0:privateKey=lab.pem` on a port open to
+`--listen ssl:8765:interface=0.0.0.0:privateKey=lab.key` on a port open to
 the network, with TLS. A client proves first that it knows the token of
 `~/.config/virtualbricks/token`, which Virtualbricks makes; neither end
 sends it. With `caCertsDir=FOLDER`, an ssl socket asks each client for a
@@ -235,7 +235,7 @@ version of Virtualbricks:
 
 ```
 virtualbricks --no-gui --noterm --listen \
-    'ssl:8765:interface=0.0.0.0:privateKey=lab.pem'
+    'ssl:8765:interface=0.0.0.0:privateKey=lab.key'
 virtualbricks --connect ssl:lab.example:8765:caCertsDir=FOLDER
 ```
 
