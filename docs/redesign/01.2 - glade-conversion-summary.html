@@ -235,17 +235,17 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 1.2 &middot; Report &middot; revision 6, implemented</div>
+    <div class="eyebrow">Step 1.2 &middot; Report &middot; revision 7, implemented</div>
     <h1>Glade Conversion Summary</h1>
     <p class="lede">All 36 Glade files of Virtualbricks became Python modules that build the same widgets in code, one module per file, each with the class that used the file, its name and its code. What was converted and how, how it was checked, and where each module is now.</p>
     <ul class="meta">
       <li>branch <b>mg/abandon-glade</b> at a51b6d4</li>
-      <li>revision 6 &middot; 5 October 2026</li>
+      <li>revision 7 &middot; 9 October 2026</li>
       <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What changed:</strong> revision 1, of 23 September, was <code>CONVERSION_SUMMARY.md</code> at the root of the sources, written as the conversion ended. Revision 2 adds where each module is today (<a href="#files">&sect;4</a>, <a href="#structure">&sect;2</a>) and what became of the issues it listed (<a href="#notes">&sect;7</a>). The rules it followed are in <a href="01.1%20-%20glade-conversion-strategy.html">step 1.1</a>.</p>
     <p class="revision"><strong>Implemented</strong> in one commit, 9ae3919, on 23 September 2026, with the wiring of <code>gui.py</code> (<a href="#notes">&sect;7</a>).</p>
-    <p class="revision"><strong>Since then:</strong> <code>gui/windows/</code> went on 27 September (678ef50): the panels of the bricks, with the disks and the image picker of a virtual machine, are in <code>gui/mainwindow/bricks/config/</code>, every other window in <code>gui/dialogs/</code>, and <code>windows/base.py</code> was split between the two. The main window is <code>gui/mainwindow/window.py</code>, with a class per tab (6cd66cf to 24161e0). The redesigns replaced 13 of the 36 modules and rewrote others, as <a href="#files">&sect;4</a> says. The tests of the windows came back with the configuration redesign (<a href="02%20-%20config-redesign.html">step 2</a>), in <code>virtualbricks/tests/gui/</code>. The panels redesign (<a href="11%20-%20panels-redesign.html">step 11</a>) rewrote the panels of the bricks on drafts, and removed <code>qemuconfig.py</code>, <code>networkcards.py</code>, <code>ethernetdialog.py</code>, <code>usbdev.py</code> and <code>widgets.py</code> (a8ed7f3 to ba4508c). <code>progressbardialog.py</code>, which nothing used, went on 29 September (4a1bf45), and <code>userwait.py</code> after it: its <code>Freezer</code>, the wait window of a machine&rsquo;s Resume and Suspend, is in <code>mainwindow/window.py</code>. <code>newbrick.py</code> went too (9d35fb0): New Brick is a popover of the kinds, in <code>mainwindow/bricks/newbrick.py</code> (<a href="12%20-%20new-brick-redesign.html">step 12</a>). <code>confirmdialog.py</code> went on 5 October (32a9ef3): one Delete dialog for a brick and an event, <code>dialogs/deletedialog.py</code>, says what goes with it; <code>renamedialog.py</code> was rewritten as Rename Project&rsquo;s dialog (08e07e5, <a href="24%20-%20rename-delete-dialogs.html">step 24</a>).</p>
+    <p class="revision"><strong>Since then:</strong> <code>gui/windows/</code> went on 27 September (678ef50): the panels of the bricks, with the disks and the image picker of a virtual machine, are in <code>gui/mainwindow/bricks/config/</code>, every other window in <code>gui/dialogs/</code>, and <code>windows/base.py</code> was split between the two. The main window is <code>gui/mainwindow/window.py</code>, with a class per tab (6cd66cf to 24161e0). The redesigns replaced 13 of the 36 modules and rewrote others, as <a href="#files">&sect;4</a> says. The tests of the windows came back with the configuration redesign (<a href="02%20-%20config-redesign.html">step 2</a>), in <code>virtualbricks/tests/gui/</code>. The panels redesign (<a href="11%20-%20panels-redesign.html">step 11</a>) rewrote the panels of the bricks on drafts, and removed <code>qemuconfig.py</code>, <code>networkcards.py</code>, <code>ethernetdialog.py</code>, <code>usbdev.py</code> and <code>widgets.py</code> (a8ed7f3 to ba4508c). <code>progressbardialog.py</code>, which nothing used, went on 29 September (4a1bf45), and <code>userwait.py</code> after it: its <code>Freezer</code>, the wait window of a machine&rsquo;s Resume and Suspend, moved into <code>mainwindow/window.py</code>, and gave way on 9 October (df7fa44) to <code>WaitWindow</code>, in <code>dialogs/wait.py</code>, which says what it waits for. <code>newbrick.py</code> went too (9d35fb0): New Brick is a popover of the kinds, in <code>mainwindow/bricks/newbrick.py</code> (<a href="12%20-%20new-brick-redesign.html">step 12</a>). <code>confirmdialog.py</code> went on 5 October (32a9ef3): one Delete dialog for a brick and an event, <code>dialogs/deletedialog.py</code>, says what goes with it; <code>renamedialog.py</code> was rewritten as Rename Project&rsquo;s dialog (08e07e5, <a href="24%20-%20rename-delete-dialogs.html">step 24</a>).</p>
   </header>
 
   <div class="layout">
@@ -724,7 +724,7 @@ it to know the brick type).</li>
 <td><code>Freezer</code>, <code>ProgressBar</code> (dialogs)</td>
 <td><code>UserWaitWindow</code></td>
 <td>See translations below.</td>
-<td><code>Freezer</code> moved into <code>mainwindow/window.py</code>, beside the <code>ProgressBar</code> that uses it; the module&rsquo;s own <code>ProgressBar</code>, which nothing used, went with it</td>
+<td><code>Freezer</code> moved into <code>mainwindow/window.py</code>, beside the <code>ProgressBar</code> that uses it; the module&rsquo;s own <code>ProgressBar</code>, which nothing used, went with it. Both replaced in df7fa44 by <code>WaitWindow</code>, <code>dialogs/wait.py</code></td>
 </tr>
 <tr>
 <td>virtualbricks.ui</td>
