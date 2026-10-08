@@ -1,8 +1,7 @@
 Virtualbricks 3.0: the console and the control protocols
 ########################################################
 
-:date: 2026-10-06 12:00
-:status: draft
+:date: 2026-10-08 12:00
 :category: News
 :tags: release, develop, console, control socket, amp, tls
 :slug: the-console-and-the-control-protocols-of-virtualbricks-3-0
