@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="https://www.virtualbricks.it/theme/css/elegant.prod.9e9d5ce754.css" media="screen">
+        <link rel="stylesheet" type="text/css" href="https://www.virtualbricks.it/theme/css/custom.css" media="screen">
+
+        <link rel="dns-prefetch" href="//fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+
+        <meta name="author" content="Marco Giusti" />
+
+        <meta name="description" content="How to drive Virtualbricks 3.0 without its windows: the console, the control sockets of --listen and --connect, on this machine or across the network, with a token or with certificates, and the three protocols they speak: lines of JSON, AMP 1 and AMP 2.
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="release, develop, console, control socket, amp, tls, News, " />
+
+<meta property="og:title" content="Virtualbricks 3.0: the console and the control protocols "/>
+<meta property="og:url" content="https://www.virtualbricks.it/the-console-and-the-control-protocols-of-virtualbricks-3-0.html" />
+<meta property="og:description" content="How to drive Virtualbricks 3.0 without its windows: the console, the control sockets of --listen and --connect, on this machine or across the network, with a token or with certificates, and the three protocols they speak: lines of JSON, AMP 1 and AMP 2." />
+<meta property="og:site_name" content="Virtualbricks" />
+<meta property="og:article:author" content="Marco Giusti" />
+<meta property="og:article:published_time" content="2026-10-06T12:00:00+02:00" />
+<meta name="twitter:title" content="Virtualbricks 3.0: the console and the control protocols ">
+<meta name="twitter:description" content="How to drive Virtualbricks 3.0 without its windows: the console, the control sockets of --listen and --connect, on this machine or across the network, with a token or with certificates, and the three protocols they speak: lines of JSON, AMP 1 and AMP 2.">
+
+        <title>Virtualbricks 3.0: the console and the control protocols  · Virtualbricks
+</title>
+        <link href="https://www.virtualbricks.it/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Virtualbricks - Full Atom Feed" />
+
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://www.virtualbricks.it/"><span class=site-name>Virtualbricks</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://www.virtualbricks.it
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://www.virtualbricks.it/pages/authors.html">Authors</a></li>
+                                <li  class="active"><a href="https://www.virtualbricks.it/category/news.html">News</a></li>
+                                <li ><a href="https://www.virtualbricks.it/category/documentation.html">Documentation</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://www.virtualbricks.it/the-console-and-the-control-protocols-of-virtualbricks-3-0.html">
+                Virtualbricks 3.0: the console and the control protocols
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+        <div class="span8 offset2 article-content">
+            
+            <p>The <a class="reference external" href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html">first post</a>
+of this series was a map of what changed in the <tt class="docutils literal">develop</tt> branch. This one
+is about how to drive Virtualbricks without its windows: from its console,
+from a script, from another terminal, from a program in any language, and
+from another machine. It starts with the console, then the control sockets
+and how to describe them to <tt class="docutils literal"><span class="pre">--listen</span></tt> and <tt class="docutils literal"><span class="pre">--connect</span></tt>, then each kind
+of socket and how it keeps strangers out, and last the three protocols the
+sockets speak, for whoever writes a client.</p>
+<p>The examples are real: we ran each of them on Virtualbricks 3.0.0.dev3.
+Only the names, the process numbers and the paths will differ on your
+machine.</p>
+<div class="section" id="the-console">
+<h2>The console</h2>
+<p>Virtualbricks 2.1 had a console too, with commands of its own, as
+<tt class="docutils literal">sw1 on</tt> or <tt class="docutils literal">sw1 config numports=16</tt>. In 3.0 a command is a noun, a
+verb, then its arguments. The nouns are <tt class="docutils literal">brick</tt>, <tt class="docutils literal">event</tt>, <tt class="docutils literal">image</tt>,
+<tt class="docutils literal">setting</tt> and <tt class="docutils literal">project</tt>, and a few words stand alone: <tt class="docutils literal">help</tt>,
+<tt class="docutils literal">status</tt>, <tt class="docutils literal">source</tt>, <tt class="docutils literal">python</tt> and <tt class="docutils literal">quit</tt>:</p>
+<div class="highlight"><pre><span></span>brick new switch
+brick new vm router
+brick set router memory=512 use_kvm=true
+brick card add router plug sw1 model=virtio-net-pci
+brick start router
+event new up
+event action add up start router
+event action add up shell &quot;logger the lab is up&quot;
+help brick set
+</pre></div>
+<ul class="simple">
+<li><strong>Words as in a shell.</strong> Quotes keep spaces, a backslash escapes, and
+<tt class="docutils literal">#</tt> starts a comment. A name is always an argument, never a command, so
+a brick can be called <tt class="docutils literal">list</tt>.</li>
+<li><strong>Keys as in the project file.</strong> <tt class="docutils literal">KEY=VALUE</tt>, as many as needed in one
+command, with the keys of <tt class="docutils literal">project.toml</tt>. They are all checked before
+any is set, so a command changes all of them or none. The disks of a
+machine are <tt class="docutils literal">hda_image</tt> and <tt class="docutils literal">hda_private</tt>, and its network cards have
+commands of their own, <tt class="docutils literal">brick card add</tt>, <tt class="docutils literal">set</tt> and <tt class="docutils literal">remove</tt>.
+<tt class="docutils literal">brick keys switch</tt> lists the keys of a kind of brick, with their
+ranges and their defaults.</li>
+<li><strong>Answers.</strong> A command prints something when there is something to say:
+the name given to a new brick, the process of a started one, a table.
+When it can't be done, it says why in one line that starts with
+<tt class="docutils literal">Error:</tt>, and changes nothing. <tt class="docutils literal">start</tt>, <tt class="docutils literal">stop</tt>, <tt class="docutils literal">restart</tt> and
+<tt class="docutils literal">suspend</tt> wait until they are done, or fail.</li>
+<li><strong>Typing.</strong> On a terminal, Tab completes the nouns, the verbs, the names
+of the bricks, events, images and projects, the kinds of brick, the keys,
+and the values of a key that has a few. The prompt is the name of the
+open project. The history is kept between runs, the last 500 lines, in
+<tt class="docutils literal"><span class="pre">~/.local/state/virtualbricks/history</span></tt>. The keys are those of readline:
+Up and Down, Ctrl+R and Ctrl+S to search, Ctrl+A and Ctrl+E, Alt+B and
+Alt+F, Ctrl+W, Ctrl+U, Ctrl+K and Ctrl+Y, Ctrl+T, Ctrl+L. Ctrl+C clears
+the line; while a command runs, it stops waiting for it, but not what it
+does. Ctrl+D on an empty line quits.</li>
+<li><strong>python</strong> opens a Python shell, where <tt class="docutils literal">factory</tt> is the factory of the
+bricks; Ctrl+D comes back to the console.</li>
+<li><strong>Pipes and scripts.</strong> When the input isn't a terminal, each line is a
+command, and the end of the input quits. A file of commands runs with
+<tt class="docutils literal">source FILE</tt> in the console, or with <tt class="docutils literal"><span class="pre">--run</span> FILE</tt> at start. Empty
+lines and comments are skipped, and the first error stops the file,
+saying where, as <tt class="docutils literal">lab.vb:4</tt>.</li>
+<li><strong>Events.</strong> The action of an event can be a command of the console, any
+of them; one that fails is logged with the event and the number of the
+action.</li>
+</ul>
+<p>The console reads the terminal where Virtualbricks started, beside the
+windows. <tt class="docutils literal"><span class="pre">--no-gui</span></tt> runs Virtualbricks without the windows, and without
+loading GTK: the console is then the way in, and a lab can run on a server
+without a display. <tt class="docutils literal"><span class="pre">--noterm</span></tt> doesn't read the terminal. With both,
+nothing is read, and the lab runs until Virtualbricks gets <tt class="docutils literal">SIGTERM</tt> or
+<tt class="docutils literal">SIGINT</tt>:</p>
+<div class="highlight"><pre><span></span>virtualbricks<span class="w"> </span>--no-gui<span class="w"> </span>--noterm<span class="w"> </span>--listen<span class="w"> </span>--run<span class="w"> </span>~/labs/ospf.vb
+</pre></div>
+<p>The <tt class="docutils literal"><span class="pre">--listen</span></tt> of that line is what lets you reach that lab afterwards.</p>
+</div>
+<div class="section" id="the-control-socket">
+<h2>The control socket</h2>
+<p>A Virtualbricks started with <tt class="docutils literal"><span class="pre">--listen</span></tt>, with its windows or without,
+listens on control sockets once its project is open. Without
+<tt class="docutils literal"><span class="pre">--listen</span></tt>, it listens on none. Then, from any terminal or script:</p>
+<div class="highlight"><pre><span></span>virtualbricks<span class="w"> </span>--command<span class="w"> </span>brick<span class="w"> </span>start<span class="w"> </span>sw1<span class="w"> </span>vm1
+virtualbricks<span class="w"> </span>--command<span class="w"> </span>brick<span class="w"> </span><span class="nb">set</span><span class="w"> </span>vm1<span class="w"> </span><span class="nv">memory</span><span class="o">=</span><span class="m">1024</span>
+virtualbricks<span class="w"> </span>--command<span class="w"> </span>status
+virtualbricks<span class="w"> </span>--connect<span class="w"> </span>--run<span class="w"> </span>~/labs/traffic.vb
+</pre></div>
+<p><tt class="docutils literal"><span class="pre">--command</span></tt> sends the command of the words that follow and prints its
+answer. The words reach the console quoted again, so a value with spaces is
+quoted once, as in the console; the options of <tt class="docutils literal">virtualbricks</tt> end at the
+first word. Without words, <tt class="docutils literal"><span class="pre">--command</span></tt> sends the lines of its standard
+input, each after the answer to the one before, up to the first error,
+which names its line:</p>
+<div class="highlight"><pre><span></span>$ printf &#39;brick new switch sw2\nbrick set sw2 ports=16 stp=true\n&#39; |
+&gt;     virtualbricks --command
+sw2
+Error: line 2: sw2 has no key stp: brick keys sw2 lists them
+</pre></div>
+<p><tt class="docutils literal"><span class="pre">--connect</span> <span class="pre">--run</span> FILE</tt> sends the lines of a file in the same way, and the
+first error names the file and its line, as <tt class="docutils literal">source</tt> does. Empty lines
+aren't sent; comments are, and do nothing.</p>
+<p><tt class="docutils literal"><span class="pre">--command</span></tt> loads neither GTK nor Twisted's reactor, opens no project and
+takes no lock: it only talks to the socket. It takes no other option but
+<tt class="docutils literal"><span class="pre">--connect</span></tt> and <tt class="docutils literal"><span class="pre">--workspace</span></tt>. The answer goes to the standard output,
+an error to the standard error, and the exit status says how it went:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal">0</tt></dt>
+<dd>The command was done, or every command of the file.</dd>
+<dt><tt class="docutils literal">1</tt></dt>
+<dd>The command failed, its answer was too long for AMP, an option is wrong,
+or the file of <tt class="docutils literal"><span class="pre">--run</span></tt> can't be read.</dd>
+<dt><tt class="docutils literal">2</tt></dt>
+<dd>No Virtualbricks answered: none listens there, several listen and none
+is named, it ended before it answered, it speaks another protocol, or it
+refused the token or the certificate. The message says which.</dd>
+<dt><tt class="docutils literal">130</tt></dt>
+<dd>Ctrl+C stopped the wait. The command goes on, there.</dd>
+</dl>
+<p>A relative path in a command, as that of <tt class="docutils literal">source FILE</tt>, is read from the
+folder where you run <tt class="docutils literal">virtualbricks <span class="pre">--command</span></tt>, on the same machine. To
+another machine, <tt class="docutils literal"><span class="pre">--command</span></tt> doesn't send its folder, and the path is
+read from the folder of that Virtualbricks.</p>
+<p>Virtualbricks logs each command it gets, with the client that sent it, and
+answers in its own language.</p>
+</div>
+<div class="section" id="describing-a-socket">
+<h2>Describing a socket</h2>
+<p><tt class="docutils literal"><span class="pre">--listen</span></tt> alone is the socket of the workspace. <tt class="docutils literal"><span class="pre">--listen</span></tt> followed by
+a description is another socket, and <tt class="docutils literal"><span class="pre">--connect</span></tt> takes a description in
+the same way. A description is written as Twisted's endpoints are: the type
+of the socket, then its parts, separated by colons. A part is a value, or a
+keyword and its value, <tt class="docutils literal">key=value</tt>, and a backslash makes the next
+character plain, as the colons of an IPv6 address:</p>
+<div class="highlight"><pre><span></span>unix:~/labs/lab1.sock
+unix:address=~/labs/lab1.sock:protocol=json
+tcp:8765
+tcp:port=8765:interface=\:\:1
+ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem
+tcp:lab.example:8765                      (for --connect)
+ssl:host=lab.example:port=8765:caCertsDir=~/vb/lab
+</pre></div>
+<p>The three types are <tt class="docutils literal">unix</tt>, <tt class="docutils literal">tcp</tt> and <tt class="docutils literal">ssl</tt>. Each takes
+<tt class="docutils literal">protocol=amp</tt>, the default, or <tt class="docutils literal">protocol=json</tt>. The keywords of each
+type, for a socket that <tt class="docutils literal"><span class="pre">--listen</span></tt> opens and one that <tt class="docutils literal"><span class="pre">--connect</span></tt>
+reaches:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="58%" />
+<col width="14%" />
+<col width="14%" />
+<col width="14%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Keyword</th>
+<th class="head">unix</th>
+<th class="head">tcp</th>
+<th class="head">ssl</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td><em>PATH</em>, address=</td>
+<td>both</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td><em>PORT</em>, port=</td>
+<td>&nbsp;</td>
+<td>listen</td>
+<td>listen</td>
+</tr>
+<tr><td>interface=</td>
+<td>&nbsp;</td>
+<td>listen</td>
+<td>listen</td>
+</tr>
+<tr><td><em>HOST</em>:<em>PORT</em>, host=, port=</td>
+<td>&nbsp;</td>
+<td>connect</td>
+<td>connect</td>
+</tr>
+<tr><td>protocol=</td>
+<td>both</td>
+<td>both</td>
+<td>both</td>
+</tr>
+<tr><td>tokenFile=</td>
+<td>&nbsp;</td>
+<td>both</td>
+<td>both</td>
+</tr>
+<tr><td>privateKey=</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>both</td>
+</tr>
+<tr><td>certKey=</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>both</td>
+</tr>
+<tr><td>extraCertChain=</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>listen</td>
+</tr>
+<tr><td>caCertsDir=</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>both</td>
+</tr>
+</tbody>
+</table>
+<p><em>listen</em> is for <tt class="docutils literal"><span class="pre">--listen</span></tt>, <em>connect</em> for <tt class="docutils literal"><span class="pre">--connect</span></tt>, and <em>both</em> for
+either; a keyword can mean something else on each side, as <tt class="docutils literal">caCertsDir=</tt>
+below. Each is described with its type. The file of a keyword can start
+with <tt class="docutils literal">~</tt>, and a relative path is relative to the folder where you start
+Virtualbricks.</p>
+<p><strong>On the command line.</strong> Both options take an optional value, which getopt
+doesn't have, so the rule is this: the next word is the description when
+it starts with a type and a colon, as <tt class="docutils literal">unix:</tt>, and the value after <tt class="docutils literal">=</tt>
+always is, as <tt class="docutils literal"><span class="pre">--listen=tcp:8765</span></tt>. A path alone is refused, so that it
+isn't taken for a command:</p>
+<div class="highlight"><pre><span></span>$ virtualbricks --no-gui --listen ~/lab.sock
+--listen: /home/alice/lab.sock needs its type: unix:/home/alice/lab.sock
+</pre></div>
+<p>Quote a description that has a backslash, so that the shell leaves it.
+<tt class="docutils literal"><span class="pre">--listen</span></tt> can be given more than once, and Virtualbricks listens on each
+socket, each with its protocol:</p>
+<div class="highlight"><pre><span></span>virtualbricks<span class="w"> </span>--no-gui<span class="w"> </span>--noterm<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--listen<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--listen<span class="w"> </span>unix:~/labs/lab1.json:protocol<span class="o">=</span>json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--listen<span class="w"> </span>tcp:8765<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--listen<span class="w"> </span><span class="s1">&#39;ssl:8768:privateKey=~/vb/lab-key.pem:caCertsDir=~/vb/clients&#39;</span>
+</pre></div>
+<p>A description is checked before anything starts: an unknown keyword, which
+the message lists with those of the type; a keyword given twice; a port out
+of 1–65535; a folder that isn't there; a tcp socket on the network; an ssl
+socket without its key, or with a key that isn't that of its certificate;
+a token file that others can read. Virtualbricks then exits with status 1
+and says why.</p>
+</div>
+<div class="section" id="unix-sockets">
+<h2>Unix sockets</h2>
+<p>A unix socket is a file. Only you can connect to it: Virtualbricks makes it
+with mode 0600, with a umask that leaves no moment between the bind and the
+change of mode. So a unix socket asks for no token: the system knows who
+connects.</p>
+<p><strong>The socket of the workspace.</strong> <tt class="docutils literal"><span class="pre">--listen</span></tt> alone listens on
+<tt class="docutils literal">.control</tt>, in a folder of the runtime folder that belongs to the
+workspace:</p>
+<div class="highlight"><pre><span></span>/run/user/1000/virtualbricks/        $XDG_RUNTIME_DIR/virtualbricks
+└── qhz36ozg/                        the key of the workspace
+    ├── .control                     the socket of --listen alone
+    ├── .control.lock                its lock
+    ├── .workspace -&gt; ~/labs/a       the workspace
+    └── lab/                         the sockets of the bricks of lab
+</pre></div>
+<p>The key is made from the path of the workspace, its first eight characters
+of the SHA-256, in base32: the same folder has the same key, whatever path
+names it. <tt class="docutils literal">.workspace</tt> links back to the workspace, so <tt class="docutils literal"><span class="pre">--command</span></tt> can
+say which Virtualbricks it found. Without <tt class="docutils literal">XDG_RUNTIME_DIR</tt>, the runtime
+folder is <tt class="docutils literal"><span class="pre">/tmp/virtualbricks-UID</span></tt>. Virtualbricks doesn't listen in a
+runtime folder that isn't yours, or that others can write in.</p>
+<p><strong>A socket of your own.</strong> <tt class="docutils literal">unix:PATH</tt>, or <tt class="docutils literal">unix:address=PATH</tt>. The
+folder must be there, and the path must fit in the 107 bytes that Linux
+allows to the path of a socket; a deep scratch folder can be too long, and
+Virtualbricks says so.</p>
+<p><strong>One Virtualbricks for each socket.</strong> The first to start takes the lock
+<em>PATH</em>.lock, beside the socket, and listens; another one with the same
+<tt class="docutils literal"><span class="pre">--listen</span></tt>, as with <tt class="docutils literal"><span class="pre">--lock</span> none</tt>, runs without that socket and says
+who holds it. A socket left by a crash is removed at the next start, by
+whoever takes the lock. Anything else at that path, a file or the socket of
+another user, is left alone, and Virtualbricks listens without it.</p>
+</div>
+<div class="section" id="workspaces">
+<h2>Workspaces</h2>
+<p>Each workspace has its own <tt class="docutils literal">.control</tt>, so two Virtualbricks that run side
+by side, each in its workspace, both listen with <tt class="docutils literal"><span class="pre">--listen</span></tt> alone. On the
+other end, <tt class="docutils literal"><span class="pre">--command</span></tt>, <tt class="docutils literal"><span class="pre">--connect</span> <span class="pre">--run</span></tt> and <tt class="docutils literal"><span class="pre">--connect</span></tt> without a
+description look for the Virtualbricks to talk to:</p>
+<ul class="simple">
+<li>with <tt class="docutils literal"><span class="pre">--workspace</span> FOLDER</tt>, the one that listens on the <tt class="docutils literal">.control</tt> of
+that workspace;</li>
+<li>without it, the only Virtualbricks of yours that listens on the
+<tt class="docutils literal">.control</tt> of its workspace; the locks, held, say which ones do;</li>
+<li>when several listen, none: it names them and sends nothing.</li>
+</ul>
+<div class="highlight"><pre><span></span>$ virtualbricks --no-gui --noterm --listen --workspace ~/labs/a &amp;
+$ virtualbricks --no-gui --noterm --listen --workspace ~/labs/b &amp;
+$ virtualbricks --command status
+Virtualbricks of yours listen in 2 workspaces: /home/alice/labs/b
+(process 430506) and /home/alice/labs/a (process 430482). Name one with
+--workspace, as virtualbricks --workspace /home/alice/labs/b --command
+status
+$ virtualbricks --workspace ~/labs/a --command status
+Nothing runs
+</pre></div>
+<p><tt class="docutils literal"><span class="pre">--connect</span></tt> with a description and <tt class="docutils literal"><span class="pre">--workspace</span></tt> are refused together:
+each names a Virtualbricks, so give one of them.</p>
+<p>When nobody listens, <tt class="docutils literal"><span class="pre">--command</span></tt> tells you whether a Virtualbricks of
+yours runs without <tt class="docutils literal"><span class="pre">--listen</span></tt>, or with another one, and how to start one
+that listens.</p>
+</div>
+<div class="section" id="tcp-sockets">
+<h2>TCP sockets</h2>
+<p><tt class="docutils literal">tcp:PORT</tt>, or <tt class="docutils literal">tcp:port=PORT</tt>, listens on a port of this machine: on
+<tt class="docutils literal">127.0.0.1</tt>, or on another loopback address with <tt class="docutils literal">interface=</tt>, as
+<tt class="docutils literal"><span class="pre">'tcp:8765:interface=\:\:1'</span></tt>, whose colons are escaped. What passes on
+plain TCP can be read on the way, so a tcp socket refuses any address of the
+network:</p>
+<div class="highlight"><pre><span></span>$ virtualbricks --no-gui --listen tcp:8765:interface=0.0.0.0
+--listen: tcp:8765:interface=0.0.0.0: tcp listens on this machine only,
+as interface=127.0.0.1 or ::1; across the network, ssl
+</pre></div>
+<p>A port is open to anyone on the machine, unlike a unix socket, and a
+connection can do all that the console does, the shell commands in the
+actions of an event included. So each client of a tcp socket proves first
+that it knows the token, see below.</p>
+<p>A port has no lock: the first Virtualbricks takes it, and another one logs
+<tt class="docutils literal">Address already in use: no control socket</tt> and runs without it.</p>
+<p><tt class="docutils literal"><span class="pre">--connect</span> tcp:PORT</tt> reaches this machine; <tt class="docutils literal">tcp:HOST:PORT</tt>, or
+<tt class="docutils literal">host=</tt> and <tt class="docutils literal">port=</tt>, another one, as an SSH tunnel would bring it
+here. <tt class="docutils literal">interface=</tt> is refused there, since it's where Virtualbricks
+listens, not where to find it.</p>
+<p>The log names each client by its address:</p>
+<div class="highlight"><pre><span></span>[virtualbricks.console.control#info] Listening on tcp 127.0.0.1 port
+8765, protocol amp, with the token of ~/.config/virtualbricks/token
+[virtualbricks.console.control#info] Command from 127.0.0.1 port 54560:
+status
+</pre></div>
+</div>
+<div class="section" id="the-token">
+<h2>The token</h2>
+<p>The token is a line of text of at least 16 characters, in a file:
+<tt class="docutils literal"><span class="pre">~/.config/virtualbricks/token</span></tt>, or the file of <tt class="docutils literal">tokenFile=</tt>. The first
+socket that needs it makes it, with 43 random characters, and says so in
+the log. You can also write your own:</p>
+<div class="highlight"><pre><span></span>openssl<span class="w"> </span>rand<span class="w"> </span>-base64<span class="w"> </span><span class="m">32</span><span class="w"> </span>&gt;<span class="w"> </span>~/.config/virtualbricks/token
+chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>~/.config/virtualbricks/token
+</pre></div>
+<p>The file must be a regular file of yours that nobody else can read or
+change, mode 0600; the spaces around the line don't count. Virtualbricks
+refuses to listen with another file, and <tt class="docutils literal"><span class="pre">--command</span></tt> refuses to use it:</p>
+<div class="highlight"><pre><span></span>Others can read or change /home/alice/vb/lab.token: chmod 600
+/home/alice/vb/lab.token: no command sent
+The token of /home/alice/vb/short.token has 5 characters; a token has
+at least 16: no command sent
+</pre></div>
+<p>A client reads the same token: copy the file to its machine, in the same
+place, or name it with <tt class="docutils literal">tokenFile=</tt> in the description of
+<tt class="docutils literal"><span class="pre">--connect</span></tt>. Virtualbricks reads its token when it starts listening: a
+new token counts from the next start.</p>
+<p><strong>Neither end sends the token.</strong> Each proves that it knows it, over two
+nonces, a random number from each end: Virtualbricks sends one of 64 hex
+digits, and the client chooses one of 32 to 128. The proof of a side,
+<tt class="docutils literal">client</tt> or <tt class="docutils literal">server</tt>, is the HMAC-SHA256, under the token, of the text
+<tt class="docutils literal">virtualbricks SIDE S C</tt>, where <tt class="docutils literal">S</tt> is the nonce of Virtualbricks and
+<tt class="docutils literal">C</tt> that of the client, in lowercase hex digits:</p>
+<div class="highlight"><pre><span></span>client                               Virtualbricks
+  |                                        |
+  |&lt;-- nonce S ----------------------------|
+  |                                        |
+  |    nonce C, HMAC(token,                |
+  |    &quot;virtualbricks client S C&quot;)         |
+  |---------------------------------------&gt;|  checks it: if
+  |                                        |  wrong, closes
+  |                                        |  the connection
+  |&lt;---------------------------------------|
+  |    HMAC(token,                         |
+  |    &quot;virtualbricks server S C&quot;)         |
+checks it: if wrong,
+closes the connection
+</pre></div>
+<p>The client proves first, and Virtualbricks then proves it back. A program
+that took the port before Virtualbricks doesn't know the token, so it
+can't, and the client sends it no command. With new nonces each time, a
+proof is good for one connection only, and nobody who reads it learns the
+token. A client has 10 seconds from connecting to give a right proof; then
+the connection is closed.</p>
+<p>When the tokens differ, both ends say so:</p>
+<div class="highlight"><pre><span></span>$ virtualbricks --connect tcp:8765:tokenFile=~/vb/old.token --command status
+The Virtualbricks on 127.0.0.1 port 8765 has another token
+[virtualbricks.console.control#warn] 127.0.0.1 port 58750 on tcp port
+8765: wrong token
+</pre></div>
+<p>In a shell, <tt class="docutils literal">openssl</tt> computes the proof of a client:</p>
+<div class="highlight"><pre><span></span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;virtualbricks client %s %s&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$nonce</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$mine</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span>
+<span class="w">    </span>openssl<span class="w"> </span>dgst<span class="w"> </span>-sha256<span class="w"> </span>-hmac<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$token</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+<div class="section" id="ssl-sockets">
+<h2>SSL sockets</h2>
+<p><tt class="docutils literal">ssl:PORT</tt> listens inside TLS, so it can listen on the network: on
+<tt class="docutils literal">127.0.0.1</tt> too, unless <tt class="docutils literal">interface=</tt> names another address, as
+<tt class="docutils literal">0.0.0.0</tt> for every IPv4 address of the machine. It needs the
+certificate of Virtualbricks, in PEM:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal">privateKey=FILE</tt></dt>
+<dd>The private key, which is required. The file can hold the certificate
+too.</dd>
+<dt><tt class="docutils literal">certKey=FILE</tt></dt>
+<dd>The certificate, when it's in a file of its own.</dd>
+<dt><tt class="docutils literal">extraCertChain=FILE</tt></dt>
+<dd>The certificates between it and the authority that issued it, when there
+are some.</dd>
+</dl>
+<p>The files are read, and checked, when Virtualbricks starts: a key that
+isn't that of its certificate stops the start, with a message. An ssl
+socket needs pyOpenSSL, <tt class="docutils literal"><span class="pre">python3-openssl</span></tt>; a Virtualbricks without an
+ssl socket doesn't load it.</p>
+<p>A certificate for the lab machine, for its name and its address, made with
+<tt class="docutils literal">openssl</tt> in <tt class="docutils literal">~/vb</tt>. <tt class="docutils literal"><span class="pre">lab-key.pem</span></tt>, the key with the certificate,
+stays there, for Virtualbricks; <tt class="docutils literal">lab.pem</tt>, the certificate alone, is for
+the clients:</p>
+<div class="highlight"><pre><span></span>openssl<span class="w"> </span>req<span class="w"> </span>-x509<span class="w"> </span>-newkey<span class="w"> </span>ec<span class="w"> </span>-pkeyopt<span class="w"> </span>ec_paramgen_curve:P-256<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-nodes<span class="w"> </span>-days<span class="w"> </span><span class="m">3650</span><span class="w"> </span>-subj<span class="w"> </span>/CN<span class="o">=</span>lab.example<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-addext<span class="w"> </span><span class="nv">subjectAltName</span><span class="o">=</span>DNS:lab.example,IP:192.0.2.7<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-keyout<span class="w"> </span>lab.key<span class="w"> </span>-out<span class="w"> </span>lab.pem
+cat<span class="w"> </span>lab.key<span class="w"> </span>lab.pem<span class="w"> </span>&gt;<span class="w"> </span>lab-key.pem
+chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>lab.key<span class="w"> </span>lab-key.pem
+</pre></div>
+<p>Then, on the lab machine, and from a desktop that has a copy of <tt class="docutils literal">lab.pem</tt>
+in <tt class="docutils literal">~/vb/lab</tt>:</p>
+<div class="highlight"><pre><span></span>virtualbricks<span class="w"> </span>--no-gui<span class="w"> </span>--noterm<span class="w"> </span>--listen<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="s1">&#39;ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem&#39;</span>
+virtualbricks<span class="w"> </span>--connect<span class="w"> </span><span class="s1">&#39;ssl:lab.example:8765:caCertsDir=~/vb/lab&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--command<span class="w"> </span>status
+</pre></div>
+<p><strong>The client checks Virtualbricks.</strong> <tt class="docutils literal">caCertsDir=DIR</tt>, in the
+description of <tt class="docutils literal"><span class="pre">--connect</span></tt>, is a folder of <tt class="docutils literal">.pem</tt> files: the
+certificate of Virtualbricks itself, as <tt class="docutils literal">lab.pem</tt> above, or that of the
+authority that issued it. Without it, the authorities of the system are
+trusted, as for a certificate of Let's Encrypt. The name in the
+description must be one of the names of the certificate. Otherwise nothing
+is sent:</p>
+<div class="highlight"><pre><span></span>The certificate of lab.example isn&#39;t one you trust: self-signed
+certificate. Name the folder of its certificate with caCertsDir=
+</pre></div>
+<p><strong>Virtualbricks checks the client</strong> with the token, as on a tcp socket,
+inside TLS: TLS hides the proof, and the token keeps strangers out. The log
+says <tt class="docutils literal">connected to ssl port 8765 with the token</tt>.</p>
+</div>
+<div class="section" id="client-certificates">
+<h2>Client certificates</h2>
+<p>With <tt class="docutils literal">caCertsDir=DIR</tt> in the description of <tt class="docutils literal"><span class="pre">--listen</span></tt>, an ssl socket
+asks each client for a certificate in place of the token: one that a
+<tt class="docutils literal">.pem</tt> file of the folder issued, or is. So each client can have a
+certificate of its own, self-signed, whose <tt class="docutils literal">.pem</tt> goes in the folder:</p>
+<div class="highlight"><pre><span></span><span class="c1"># on Alice&#39;s laptop, in ~/vb</span>
+openssl<span class="w"> </span>req<span class="w"> </span>-x509<span class="w"> </span>-newkey<span class="w"> </span>ec<span class="w"> </span>-pkeyopt<span class="w"> </span>ec_paramgen_curve:P-256<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-nodes<span class="w"> </span>-days<span class="w"> </span><span class="m">3650</span><span class="w"> </span>-subj<span class="w"> </span>/CN<span class="o">=</span>alice-laptop<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-keyout<span class="w"> </span>alice.key<span class="w"> </span>-out<span class="w"> </span>alice.pem
+cat<span class="w"> </span>alice.key<span class="w"> </span>alice.pem<span class="w"> </span>&gt;<span class="w"> </span>alice-key.pem
+chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>alice.key<span class="w"> </span>alice-key.pem
+<span class="c1"># on the lab machine, with a copy of alice.pem, and only it, in ~/vb/clients</span>
+virtualbricks<span class="w"> </span>--no-gui<span class="w"> </span>--noterm<span class="w"> </span>--listen<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="s1">&#39;ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem:caCertsDir=~/vb/clients&#39;</span>
+</pre></div>
+<p>The client shows its certificate with <tt class="docutils literal">privateKey=</tt>, a file with the key
+and the certificate, or with <tt class="docutils literal">privateKey=</tt> and <tt class="docutils literal">certKey=</tt>, a file for
+each:</p>
+<div class="highlight"><pre><span></span>virtualbricks<span class="w"> </span>--connect<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="s1">&#39;ssl:lab.example:8765:caCertsDir=~/vb/lab:privateKey=~/vb/alice-key.pem&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--command<span class="w"> </span>status
+</pre></div>
+<p>The log names the client by the name of its certificate, and so does each
+of its commands:</p>
+<div class="highlight"><pre><span></span>127.0.0.1 port 48142 connected to ssl port 8765 as alice-laptop
+Command from alice-laptop at 127.0.0.1: status
+</pre></div>
+<p>A client without a certificate, or with one that the folder doesn't trust,
+is refused by TLS, before any command, and both ends say why:</p>
+<div class="highlight"><pre><span></span>lab.example asks for your certificate: privateKey= and certKey=
+lab.example refused your certificate
+[...#warn] 127.0.0.1 port 48158 on ssl port 8765: the TLS handshake
+failed: peer did not return a certificate
+[...#warn] 127.0.0.1 port 48156 on ssl port 8765: the TLS handshake
+failed: certificate verify failed
+</pre></div>
+<p>The folder is read at start: to let a new client in, or to shut one out,
+add or remove its <tt class="docutils literal">.pem</tt> and start Virtualbricks again.</p>
+</div>
+<div class="section" id="three-protocols">
+<h2>Three protocols</h2>
+<p>A socket carries lines of JSON, with <tt class="docutils literal">protocol=json</tt>, or the boxes of
+AMP, Twisted's Asynchronous Messaging Protocol, the default. On them,
+Virtualbricks speaks three protocols:</p>
+<div class="highlight"><pre><span></span>+--------------+  +-------------+---------------------------+
+|     JSON     |  |    AMP 1    |           AMP 2           |
+|  line, cwd   |  | Hello, Run  | typed commands, Follow    |
+|  -&gt; lines    |  |             | and its pushes, Attach    |
++--------------+  +-------------+---------------------------+
+|  the token,  |  |  the token, if asked: Challenge and     |
+|  if asked    |  |  Authenticate                           |
++--------------+  +-----------------------------------------+
+|  JSON lines  |  |  AMP boxes                              |
++--------------+--+-----------------------------------------+
+|  a unix, tcp or ssl socket of --listen                    |
++-----------------------------------------------------------+
+   protocol=json      protocol=amp, the default
+</pre></div>
+<dl class="docutils">
+<dt><strong>JSON</strong></dt>
+<dd>A line of the console in each request, the lines it prints in each
+answer. Any language that reads and writes JSON speaks it, and so does a
+shell with <tt class="docutils literal">socat</tt>.</dd>
+<dt><strong>AMP 1</strong></dt>
+<dd><tt class="docutils literal">Hello</tt>, who answers, and <tt class="docutils literal">Run</tt>, a line of the console and its
+lines. <tt class="docutils literal">virtualbricks <span class="pre">--command</span></tt> speaks it, and so can a program
+written with Twisted.</dd>
+<dt><strong>AMP 2</strong></dt>
+<dd>On the same connection, once <tt class="docutils literal">Hello</tt> agrees on it: a typed command for
+each command of the console, and the commands of the windows of
+<tt class="docutils literal">virtualbricks <span class="pre">--connect</span></tt>, as <tt class="docutils literal">Follow</tt>, which sends the project and
+then each change.</dd>
+</dl>
+<p>What they share:</p>
+<ul class="simple">
+<li><strong>One request after the other.</strong> Each connection runs its requests in the
+order they came. A client may send the next request before the answer to
+the one before, and the answers come in the same order. Connections don't
+wait for each other, nor for the terminal or the events of Virtualbricks.</li>
+<li><strong>The folder of the paths.</strong> The paths of a command, as that of
+<tt class="docutils literal">source FILE</tt>, are read from <tt class="docutils literal">cwd</tt>, an absolute path that a request
+may give, or else from the folder where Virtualbricks runs. A client on
+another machine leaves <tt class="docutils literal">cwd</tt> out: its folders aren't those of
+Virtualbricks.</li>
+<li><strong>The end.</strong> When Virtualbricks quits, it closes each connection once the
+answers it owes are written, <tt class="docutils literal">quit</tt> included; a client that doesn't
+read them within 2 seconds is cut off.</li>
+</ul>
+</div>
+<div class="section" id="the-json-protocol">
+<h2>The JSON protocol</h2>
+<p>Each message is a JSON object on a line of its own, in UTF-8, ended by a
+newline. Virtualbricks writes the first line, the greeting, as soon as a
+client connects: the <tt class="docutils literal">protocol</tt>, 1; its <tt class="docutils literal">version</tt>; its process,
+<tt class="docutils literal">pid</tt>; and the open <tt class="docutils literal">project</tt>, or <tt class="docutils literal">null</tt>. A client that doesn't know
+the protocol sends nothing and closes the connection.</p>
+<p>A request has <tt class="docutils literal">line</tt>, a line of the console as it is typed, and
+<tt class="docutils literal">cwd</tt>, optional. Its answer has <tt class="docutils literal">ok</tt>, whether the command was done,
+<tt class="docutils literal">lines</tt>, what it printed, and <tt class="docutils literal">error</tt>, why it failed, when <tt class="docutils literal">ok</tt> is
+<tt class="docutils literal">false</tt>; <tt class="docutils literal">lines</tt> is then what it printed before it failed. A line that
+isn't a request gets an answer with <tt class="docutils literal">ok</tt> <tt class="docutils literal">false</tt> and why, and the
+connection goes on. With <tt class="docutils literal">socat</tt>, on a JSON socket:</p>
+<div class="highlight"><pre><span></span>$ virtualbricks --no-gui --listen unix:~/labs/lab1.json:protocol=json &amp;
+$ socat - UNIX-CONNECT:$HOME/labs/lab1.json
+{&quot;protocol&quot;: 1, &quot;version&quot;: &quot;3.0.0.dev3&quot;, &quot;pid&quot;: 430482, &quot;project&quot;: &quot;lab1&quot;}
+{&quot;line&quot;: &quot;brick start sw2&quot;, &quot;cwd&quot;: &quot;/home/alice/labs&quot;}
+{&quot;ok&quot;: true, &quot;lines&quot;: [&quot;sw2 runs, process 430557&quot;]}
+{&quot;line&quot;: &quot;status&quot;}
+{&quot;ok&quot;: true, &quot;lines&quot;: [&quot;BRICK  KIND    PROCESS&quot;, &quot;sw1    Switch  430548&quot;, &quot;sw2    Switch  430557&quot;]}
+{&quot;line&quot;: &quot;brick start vm9&quot;}
+{&quot;ok&quot;: false, &quot;lines&quot;: [], &quot;error&quot;: &quot;No brick named vm9&quot;}
+{&quot;cwd&quot;: &quot;labs&quot;, &quot;line&quot;: &quot;status&quot;}
+{&quot;ok&quot;: false, &quot;lines&quot;: [], &quot;error&quot;: &quot;Not a request: \&quot;cwd\&quot; is not an absolute path&quot;}
+hello
+{&quot;ok&quot;: false, &quot;lines&quot;: [], &quot;error&quot;: &quot;Not a request: a line of JSON, as {\&quot;line\&quot;: \&quot;brick list\&quot;}&quot;}
+</pre></div>
+<p>Virtualbricks skips the empty lines, and closes the connection on a line
+longer than 64 KiB. A key that a message doesn't need is ignored, and a
+client should ignore the keys it doesn't know, so that a later version can
+add some. Over JSON, an answer can be as long as it needs, and what a
+command printed before it failed comes with its error:
+<tt class="docutils literal">virtualbricks <span class="pre">--command</span></tt> prints it, on a JSON socket, before the error.</p>
+<p><strong>With the token.</strong> On a tcp or ssl socket that asks for the token, the
+first line asks for the proof, with the nonce of Virtualbricks; the client
+answers with its own nonce and its proof, and the greeting follows, with
+the proof of Virtualbricks:</p>
+<div class="highlight"><pre><span></span>{&quot;protocol&quot;: 1, &quot;auth&quot;: &quot;token&quot;, &quot;nonce&quot;: &quot;a12ba50c...0080720&quot;}
+{&quot;nonce&quot;: &quot;c41d...&quot;, &quot;proof&quot;: &quot;8e02...&quot;}
+{&quot;protocol&quot;: 1, &quot;version&quot;: &quot;3.0.0.dev3&quot;, &quot;pid&quot;: 4200, &quot;project&quot;: &quot;lab1&quot;, &quot;proof&quot;: &quot;51b7...&quot;}
+</pre></div>
+<p>A wrong proof, a line that isn't one, or none in 10 seconds gets an answer
+with <tt class="docutils literal">ok</tt> <tt class="docutils literal">false</tt> and why, as <tt class="docutils literal">Wrong token</tt>, and the connection
+closes. A whole client, in Python and nothing else, for a Virtualbricks
+started with <tt class="docutils literal"><span class="pre">--listen</span> tcp:8766:protocol=json</tt>:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">hmac</span><span class="o">,</span><span class="w"> </span><span class="nn">json</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">secrets</span><span class="o">,</span><span class="w"> </span><span class="nn">socket</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">proof</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">side</span><span class="p">,</span> <span class="n">nonce</span><span class="p">,</span> <span class="n">mine</span><span class="p">):</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;virtualbricks </span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">nonce</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">mine</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">return</span> <span class="n">hmac</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="s2">&quot;sha256&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="o">**</span><span class="n">message</span><span class="p">):</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">message</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span> <span class="o">+</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">receive</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">lines</span><span class="o">.</span><span class="n">readline</span><span class="p">())</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="n">port</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+    <span class="n">sock</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">create_connection</span><span class="p">((</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="p">))</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">sock</span><span class="o">.</span><span class="n">makefile</span><span class="p">(</span><span class="s2">&quot;rwb&quot;</span><span class="p">)</span>
+    <span class="n">first</span> <span class="o">=</span> <span class="n">receive</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">first</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;auth&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;token&quot;</span><span class="p">:</span>
+        <span class="n">nonce</span><span class="p">,</span> <span class="n">mine</span> <span class="o">=</span> <span class="n">first</span><span class="p">[</span><span class="s2">&quot;nonce&quot;</span><span class="p">],</span> <span class="n">secrets</span><span class="o">.</span><span class="n">token_hex</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
+        <span class="n">send</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">nonce</span><span class="o">=</span><span class="n">mine</span><span class="p">,</span> <span class="n">proof</span><span class="o">=</span><span class="n">proof</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="s2">&quot;client&quot;</span><span class="p">,</span> <span class="n">nonce</span><span class="p">,</span> <span class="n">mine</span><span class="p">))</span>
+        <span class="n">first</span> <span class="o">=</span> <span class="n">receive</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="n">proof</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="n">nonce</span><span class="p">,</span> <span class="n">mine</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">hmac</span><span class="o">.</span><span class="n">compare_digest</span><span class="p">(</span><span class="n">first</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;proof&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span> <span class="n">expected</span><span class="p">):</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">first</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;Wrong token&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">first</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;protocol&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s2">&quot;It doesn&#39;t speak the JSON protocol 1&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">lines</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">ask</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+    <span class="n">send</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="n">line</span><span class="p">)</span>
+    <span class="n">answer</span> <span class="o">=</span> <span class="n">receive</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">answer</span><span class="p">[</span><span class="s2">&quot;lines&quot;</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">answer</span><span class="p">[</span><span class="s2">&quot;ok&quot;</span><span class="p">]:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">answer</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">])</span>
+
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s2">&quot;~/.config&quot;</span><span class="p">)</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;XDG_CONFIG_HOME&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">config</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;virtualbricks&quot;</span><span class="p">,</span> <span class="s2">&quot;token&quot;</span><span class="p">))</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+    <span class="n">token</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+<span class="n">lines</span> <span class="o">=</span> <span class="n">connect</span><span class="p">(</span><span class="mi">8766</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
+<span class="n">ask</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">)</span>
+<span class="n">ask</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="s2">&quot;brick list&quot;</span><span class="p">)</span>
+</pre></div>
+<p>It prints:</p>
+<div class="highlight"><pre><span></span>BRICK  KIND    PROCESS
+sw1    Switch  430548
+sw2    Switch  430557
+NAME  KIND    STATE    SUMMARY
+sw1   Switch  Running  32 ports
+sw2   Switch  Running  32 ports
+</pre></div>
+</div>
+<div class="section" id="amp">
+<h2>AMP</h2>
+<p>AMP carries boxes: a key and its value, then another, and so on, up to a
+key of no bytes. Each key and each value has its length first, in two
+bytes: a key has from 1 to 255 bytes, a value from 0 to 65535. A request of
+<tt class="docutils literal">Hello</tt>, and its answer:</p>
+<div class="highlight"><pre><span></span> length  key         length  value
++-------+-----------+-------+-----------------------+
+| 00 04 | _ask      | 00 01 | 1                     |
+| 00 08 | _command  | 00 05 | Hello                 |
+| 00 09 | protocols | 00 06 | 00 01 &quot;1&quot; 00 01 &quot;2&quot;   |
+| 00 00 |              the end of the box           |
++-------+-----------+-------+-----------------------+
+| 00 07 | _answer   | 00 01 | 1                     |
+| 00 08 | protocol  | 00 01 | 2                     |
+| 00 07 | version   | 00 0a | 3.0.0.dev3            |
+| 00 03 | pid       | 00 06 | 430482                |
+| 00 07 | project   | 00 04 | lab1                  |
+| 00 00 |              the end of the box           |
++-------+-----------+-------+-----------------------+
+</pre></div>
+<p>A request has <tt class="docutils literal">_ask</tt>, a tag that the client chooses, and <tt class="docutils literal">_command</tt>,
+the name of the command, then its arguments. Its answer has <tt class="docutils literal">_answer</tt>,
+the same tag, and the values; or, if the command failed, <tt class="docutils literal">_error</tt>, the
+tag, <tt class="docutils literal">_error_code</tt> and <tt class="docutils literal">_error_description</tt>. A request without
+<tt class="docutils literal">_ask</tt> wants no answer. A value is text in UTF-8, an integer in decimal
+digits, <tt class="docutils literal">True</tt> or <tt class="docutils literal">False</tt>, bytes, or a list, each item with its length
+first. An optional argument is left out of the box when it has no value.</p>
+<p>Twisted adds two error codes to those of each command: <tt class="docutils literal">UNHANDLED</tt>, there
+is no command of that name, and <tt class="docutils literal">UNKNOWN</tt>, a failure that Virtualbricks
+didn't expect, after which the connection closes. A box that isn't one
+closes the connection too.</p>
+<p>A program written with Twisted has all this in
+<tt class="docutils literal">twisted.protocols.amp</tt>. In Python without Twisted,
+<tt class="docutils literal">virtualbricks.console.ampbox</tt> reads and writes the boxes: it's what
+<tt class="docutils literal">virtualbricks <span class="pre">--command</span></tt> uses, so that it starts without the reactor. In
+another language, a box is a few lines of code.</p>
+</div>
+<div class="section" id="amp-protocol-1">
+<h2>AMP protocol 1</h2>
+<p>Four commands, in the module <tt class="docutils literal">virtualbricks.console.ampwire</tt>, which loads
+nothing but Twisted's <tt class="docutils literal">amp</tt>. A program imports it, or copies it: the
+manual page <tt class="docutils literal">virtualbricks(1)</tt> has them as a program declares them.</p>
+<div class="highlight"><pre><span></span>Hello         protocols:[int]?
+              -&gt; protocol:int version:str pid:int project:str?
+Run           line:str cwd:str? -&gt; lines:[str]
+Challenge     -&gt; nonce:str
+Authenticate  nonce:str proof:str -&gt; proof:str
+</pre></div>
+<dl class="docutils">
+<dt><tt class="docutils literal">Hello</tt></dt>
+<dd>Who answers, and the protocol of the connection from then on.
+<tt class="docutils literal">protocols</tt> are those the program speaks; <tt class="docutils literal">protocol</tt> is the highest
+that Virtualbricks speaks too, 1 without them. A connection that doesn't
+call <tt class="docutils literal">Hello</tt> speaks protocol 1.</dd>
+<dt><tt class="docutils literal">Run</tt></dt>
+<dd>A line of the console and its <tt class="docutils literal">cwd</tt>; the answer is the lines it
+printed. If the command fails, the error says why, and what it printed
+before is lost.</dd>
+<dt><tt class="docutils literal">Challenge</tt>, <tt class="docutils literal">Authenticate</tt></dt>
+<dd>The proof of the token: <tt class="docutils literal">Challenge</tt> answers the nonce of
+Virtualbricks, <tt class="docutils literal">Authenticate</tt> takes the nonce of the program and its
+proof, and answers the proof of Virtualbricks, which the program checks.
+<tt class="docutils literal">authenticate(vb, token)</tt>, in <tt class="docutils literal">ampwire</tt>, does both and the check.</dd>
+</dl>
+<p>Their errors:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal">COMMAND_FAILED</tt></dt>
+<dd><tt class="docutils literal">Run</tt>: the command failed, or its <tt class="docutils literal">cwd</tt> isn't an absolute path.</dd>
+<dt><tt class="docutils literal">ANSWER_TOO_LONG</tt></dt>
+<dd><tt class="docutils literal">Run</tt>: the command was done, but its lines are longer than the 65535
+bytes of a value. A JSON socket carries them.</dd>
+<dt><tt class="docutils literal">TOKEN_NEEDED</tt></dt>
+<dd>On a socket that asks for the token, every command but <tt class="docutils literal">Challenge</tt> and
+<tt class="docutils literal">Authenticate</tt> fails until the program proves that it knows it.</dd>
+<dt><tt class="docutils literal">WRONG_TOKEN</tt></dt>
+<dd>The socket takes no token, and the connection goes on; or the proof is
+wrong, or <tt class="docutils literal">Authenticate</tt> came without a <tt class="docutils literal">Challenge</tt>, and the
+connection closes.</dd>
+</dl>
+<p><tt class="docutils literal">virtualbricks <span class="pre">--command</span></tt> calls <tt class="docutils literal">Hello</tt>, proves the token if the answer
+is <tt class="docutils literal">TOKEN_NEEDED</tt>, then sends each line with <tt class="docutils literal">Run</tt>. A program with
+Twisted, on a unix socket:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">twisted.internet</span><span class="w"> </span><span class="kn">import</span> <span class="n">endpoints</span><span class="p">,</span> <span class="n">task</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">twisted.internet.defer</span><span class="w"> </span><span class="kn">import</span> <span class="n">ensureDeferred</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">twisted.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">amp</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">virtualbricks.console.ampwire</span><span class="w"> </span><span class="kn">import</span> <span class="n">Run</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">reactor</span><span class="p">):</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s2">&quot;~/labs/lab1.sock&quot;</span><span class="p">)</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">UNIXClientEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    <span class="n">vb</span> <span class="o">=</span> <span class="k">await</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">connectProtocol</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">amp</span><span class="o">.</span><span class="n">AMP</span><span class="p">())</span>
+    <span class="n">answer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">vb</span><span class="o">.</span><span class="n">callRemote</span><span class="p">(</span><span class="n">Run</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="s2">&quot;brick start sw1&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">answer</span><span class="p">[</span><span class="s2">&quot;lines&quot;</span><span class="p">]))</span>
+
+
+<span class="n">task</span><span class="o">.</span><span class="n">react</span><span class="p">(</span><span class="k">lambda</span> <span class="n">reactor</span><span class="p">:</span> <span class="n">ensureDeferred</span><span class="p">(</span><span class="n">main</span><span class="p">(</span><span class="n">reactor</span><span class="p">)))</span>
+</pre></div>
+<p>Over tcp, the endpoint is <tt class="docutils literal">TCP4ClientEndpoint(reactor, &quot;127.0.0.1&quot;,
+PORT)</tt>, and the program awaits <tt class="docutils literal">authenticate(vb, token)</tt> before the
+other commands. Over ssl, Twisted's <tt class="docutils literal">tls:HOST:PORT:trustRoots=DIR</tt>
+checks the certificate of Virtualbricks and its name, and
+<tt class="docutils literal">certificate=</tt> and <tt class="docutils literal">privateKey=</tt> add the program's own.</p>
+</div>
+<div class="section" id="amp-protocol-2">
+<h2>AMP protocol 2</h2>
+<p>A connection speaks protocol 2 once <tt class="docutils literal">Hello</tt> has agreed on it: the
+program calls <tt class="docutils literal">Hello</tt> with <tt class="docutils literal"><span class="pre">protocols=[1,</span> 2]</tt>, and the answer has
+<tt class="docutils literal">protocol</tt> 2. From then on, it speaks the commands of both protocols;
+before, those of protocol 2 fail with <tt class="docutils literal">PROTOCOL_NEEDED</tt>.</p>
+<div class="section" id="the-typed-commands">
+<h3>The typed commands</h3>
+<p>A typed command for each command of the console, in the module
+<tt class="docutils literal">virtualbricks.console.ampcommands</tt>, which loads nothing else of
+Virtualbricks but <tt class="docutils literal">ampwire</tt>. The name is the words of the command, each
+with a capital letter: <tt class="docutils literal">brick card add</tt> is <tt class="docutils literal">BrickCardAdd</tt>, <tt class="docutils literal">status</tt>
+is <tt class="docutils literal">Status</tt>. The arguments are named after those of the console, in lower
+case, with <tt class="docutils literal">_</tt> for what isn't a letter or a digit: <tt class="docutils literal">NAME</tt> is <tt class="docutils literal">name</tt>,
+<tt class="docutils literal">KEY=VALUE</tt> is <tt class="docutils literal">key_value</tt>, <tt class="docutils literal"><span class="pre">--at</span></tt> is <tt class="docutils literal">at</tt>. A number is an
+integer; an argument that repeats, a list; <tt class="docutils literal"><span class="pre">KEY=VALUE...</span></tt>, a list of
+records of <tt class="docutils literal">key</tt> and <tt class="docutils literal">value</tt>; an option without a value, a boolean;
+the rest, text; and what is optional in the console is optional here. Each
+takes <tt class="docutils literal">cwd</tt> too, as <tt class="docutils literal">Run</tt> does, and answers <tt class="docutils literal">lines</tt>, what the console
+prints:</p>
+<div class="highlight"><pre><span></span>BrickTypes
+BrickList
+BrickNew           kind:str name:str?
+BrickShow          name:str
+BrickKeys          kind_name:str key:str?
+BrickSet           name:str key_value:pairs
+BrickUnset         name:str key:[str]
+BrickStart         name:[str]
+BrickStop          name:[str]
+BrickKill          name:[str]
+BrickRestart       name:[str]
+BrickPause         name:[str]
+BrickContinue      name:[str]
+BrickSuspend       vm:str
+BrickResume        vm:str
+BrickReset         vm:str
+BrickMonitor       name:str
+BrickConnect       name:str target:[str]
+BrickDisconnect    name:str end:str?
+BrickCardAdd       vm:str kind:str options:[str]?
+BrickCardSet       vm:str card:str key_value:pairs
+BrickCardRemove    vm:str card:[str]
+BrickRename        name:str new:str
+BrickDuplicate     name:str new:str?
+BrickDelete        name:[str]
+EventList
+EventNew           name:str?
+EventShow          name:str
+EventSet           name:str key_value:pairs
+EventActionAdd     name:str what:str subject:str? at:int?
+EventActionRemove  name:str n:[int]
+EventActionMove    name:str n:int to:int
+EventStart         name:[str]
+EventStop          name:[str]
+EventRun           name:[str]
+EventRename        name:str new:str
+EventDuplicate     name:str new:str?
+EventDelete        name:[str]
+ImageList
+ImageAdd           name:str path:str key_value:pairs?
+ImageShow          name:str
+ImageSet           name:str key_value:pairs
+ImageRename        name:str new:str
+ImageDelete        name:str
+SettingShow        key:str?
+SettingSet         key_value:pairs
+SettingUnset       key:[str]
+ProjectList
+ProjectShow
+ProjectOpen        name:str
+ProjectNew         name:str
+ProjectSave
+ProjectRename      name:str new:str
+ProjectDuplicate   name:str new:str
+ProjectDelete      name:str force:bool?
+Help               topic:[str]?
+Status
+Quit
+Source             file:str
+</pre></div>
+<p><tt class="docutils literal"><span class="pre">BrickSet(name=&quot;vm1&quot;,</span> <span class="pre">key_value=[{&quot;key&quot;:</span> &quot;memory&quot;, &quot;value&quot;: <span class="pre">&quot;1024&quot;}])</span></tt> is
+<tt class="docutils literal">brick set vm1 memory=1024</tt>, and <tt class="docutils literal"><span class="pre">BrickStart(name=[&quot;sw1&quot;,</span> <span class="pre">&quot;vm1&quot;])</span></tt> is
+<tt class="docutils literal">brick start sw1 vm1</tt>. Where <tt class="docutils literal">Run</tt> fails with <tt class="docutils literal">COMMAND_FAILED</tt>
+whatever went wrong, the typed commands say what it was:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal">NOT_FOUND</tt></dt>
+<dd>A name of the command names nothing there: a brick, an event, an image,
+a project, a program or a file. Nothing was done.</dd>
+<dt><tt class="docutils literal">BAD_ARGUMENT</tt></dt>
+<dd>An argument isn't one the command takes; or the box has a key that the
+command doesn't have, or lacks one it needs, which Twisted would drop or
+close the connection on. Nothing was done.</dd>
+<dt><tt class="docutils literal">COMMAND_FAILED</tt></dt>
+<dd>The command failed on the way: a program or a file said no. Part of it
+may be done.</dd>
+<dt><tt class="docutils literal">PROTOCOL_NEEDED</tt>, <tt class="docutils literal">ANSWER_TOO_LONG</tt>, <tt class="docutils literal">TOKEN_NEEDED</tt></dt>
+<dd>As above.</dd>
+</dl>
+<p>In the modules, <tt class="docutils literal">NotFound</tt> and <tt class="docutils literal">BadArgument</tt> are subclasses of
+<tt class="docutils literal">CommandFailed</tt>: a program that catches <tt class="docutils literal">CommandFailed</tt> catches the
+three.</p>
+</div>
+<div class="section" id="the-commands-of-the-windows">
+<h3>The commands of the windows</h3>
+<p>What the windows of <tt class="docutils literal">virtualbricks <span class="pre">--connect</span></tt> need that the console has
+no command for, in the module <tt class="docutils literal">virtualbricks.remote.commands</tt>. A table, a
+state and the other structured values are JSON in a text, since AMP has no
+tables:</p>
+<div class="highlight"><pre><span></span>Follow             -&gt; project:str? version:str
+Apply              kind:str name:str changes:str links:str
+                   extras:str -&gt;
+Connect            source:str target:str -&gt; connected:bool
+QemuFacts          program:str -&gt; path:str version:str
+                   options:str machines:str cpus:str devices:str
+                   displays:str audio_drivers:str netdevs:str
+                   accelerators:str
+MachineProperties  program:str machine:str -&gt; text:str
+UsbDevices         -&gt; devices:str
+ImageFacts         path:str -&gt; file:str info:str others:str
+MakeImage          path:str format:str size:int -&gt;
+StartOver          vm:str device:str -&gt; trashed:bool
+TrashFile          path:str -&gt; trashed:bool
+Relink             name:str path:str -&gt;
+ProjectNames       -&gt; names:[str]
+ProjectSummary     name:str -&gt; summary:str
+DiskUsage          name:str -&gt; private_disks:int other_files:int
+Readme             -&gt; text:str
+SetReadme          text:str -&gt;
+ReadmePicture      name:str path:str offset:int
+                   -&gt; data:bytes size:int
+SetKsm             enable:bool -&gt; enabled:bool
+Folder             path:str -&gt; entries:[str] more:bool
+ProgramsFound      vde_path:str qemu_path:str
+                   -&gt; vde:str qemu:str
+Attach             brick:str console:str -&gt;
+</pre></div>
+<ul class="simple">
+<li><tt class="docutils literal">Apply</tt> is the OK of the panel of a brick, an event or an image: the
+settings it changed, the plugs it moved, and, when they changed, the cards
+of a machine or the states of a Netemu. Only the keys given change, so
+two windows that change different keys of a brick keep both.</li>
+<li><tt class="docutils literal">Connect</tt> is a drop in the Topology: a free plug, or a new card of a
+machine.</li>
+<li><tt class="docutils literal">MakeImage</tt>, <tt class="docutils literal">StartOver</tt>, <tt class="docutils literal">TrashFile</tt> and <tt class="docutils literal">Relink</tt> work on the
+files of the images and of the private copies.</li>
+<li><tt class="docutils literal">ProjectNames</tt>, <tt class="docutils literal">ProjectSummary</tt>, <tt class="docutils literal">DiskUsage</tt>, <tt class="docutils literal">Readme</tt> and
+<tt class="docutils literal">SetReadme</tt> fill the Projects window and the Readme tab.
+<tt class="docutils literal">ReadmePicture</tt> sends a picture of a README in pieces, from
+<tt class="docutils literal">offset</tt>, until the program has <tt class="docutils literal">size</tt> bytes, up to 10 MB.</li>
+<li><tt class="docutils literal">QemuFacts</tt>, <tt class="docutils literal">MachineProperties</tt> and <tt class="docutils literal">UsbDevices</tt> are what the QEMU
+and the USB devices of the lab machine have, for the panel of a virtual
+machine; <tt class="docutils literal">ImageFacts</tt> is what a disk image is; <tt class="docutils literal">Folder</tt> completes a
+path as it is typed, at most 200 entries; <tt class="docutils literal">ProgramsFound</tt> says what the
+folders of QEMU and VDE hold, for the Settings window.</li>
+</ul>
+<p>The commands that only read the machine, <tt class="docutils literal">QemuFacts</tt>,
+<tt class="docutils literal">MachineProperties</tt>, <tt class="docutils literal">UsbDevices</tt>, <tt class="docutils literal">ImageFacts</tt>, <tt class="docutils literal">DiskUsage</tt>,
+<tt class="docutils literal">ReadmePicture</tt>, <tt class="docutils literal">Folder</tt> and <tt class="docutils literal">ProgramsFound</tt>, answer as soon as they
+can, beside the requests that wait. The others wait for their turn, as the
+typed commands do, and Virtualbricks logs them.</p>
+</div>
+<div class="section" id="follow-and-the-pushes">
+<h3>Follow and the pushes</h3>
+<p><tt class="docutils literal">Follow</tt> asks for the project and for its changes. Virtualbricks sends
+them as pushes, commands that it calls on the program without <tt class="docutils literal">_ask</tt>,
+which want no answer:</p>
+<div class="highlight"><pre><span></span>Opened             project:str? settings:str machine:str
+Changed            kind:str name:str table:str state:str
+Renamed            kind:str old:str new:str
+Removed            kind:str name:str
+Synced
+SettingsChanged    settings:str
+Logged             message:str
+Quitting
+</pre></div>
+<p>First <tt class="docutils literal">Opened</tt>, with the settings and what the lab machine has: its
+version, its workspace, its folders, whether it has a trash, its QEMU
+programs, the programs it lacks for each kind of brick, and whether KSM
+runs. Then a <tt class="docutils literal">Changed</tt> for each image, brick and event, each brick after
+those it plugs into, with its <tt class="docutils literal">table</tt>, as the project file writes it, and
+its <tt class="docutils literal">state</tt>, what the file doesn't: the process of a brick, the private
+copies of a machine, the file of an image, the seconds an event still
+waits. Then <tt class="docutils literal">Synced</tt>, the last 500 messages of the log, and the answer.
+From then on, Virtualbricks gathers what changes and sends it once a turn
+of its loop, each object once, as it is then. When another project opens,
+the copy starts over with <tt class="docutils literal">Opened</tt>.</p>
+<p>A program that follows declares the eight pushes, and has a responder for
+each: Twisted closes the connection on a command it has no responder for.
+A program that follows the project and drives it with typed commands:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">twisted.internet</span><span class="w"> </span><span class="kn">import</span> <span class="n">defer</span><span class="p">,</span> <span class="n">endpoints</span><span class="p">,</span> <span class="n">task</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">twisted.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">amp</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">virtualbricks.console.ampcommands</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrickSet</span><span class="p">,</span> <span class="n">BrickStop</span><span class="p">,</span> <span class="n">NotFound</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">virtualbricks.console.ampwire</span><span class="w"> </span><span class="kn">import</span> <span class="n">Hello</span><span class="p">,</span> <span class="n">authenticate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">virtualbricks.remote</span><span class="w"> </span><span class="kn">import</span> <span class="n">commands</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Follower</span><span class="p">(</span><span class="n">amp</span><span class="o">.</span><span class="n">AMP</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prints what changes: a responder for each of the eight pushes.&quot;&quot;&quot;</span>
+
+    <span class="nd">@commands</span><span class="o">.</span><span class="n">Opened</span><span class="o">.</span><span class="n">responder</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">opened</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">machine</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Opened&quot;</span><span class="p">,</span> <span class="n">project</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="nd">@commands</span><span class="o">.</span><span class="n">Changed</span><span class="o">.</span><span class="n">responder</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Changed&quot;</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">state</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="nd">@commands</span><span class="o">.</span><span class="n">Renamed</span><span class="o">.</span><span class="n">responder</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">renamed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="nd">@commands</span><span class="o">.</span><span class="n">Removed</span><span class="o">.</span><span class="n">responder</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">removed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="nd">@commands</span><span class="o">.</span><span class="n">Synced</span><span class="o">.</span><span class="n">responder</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">synced</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Synced&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="nd">@commands</span><span class="o">.</span><span class="n">SettingsChanged</span><span class="o">.</span><span class="n">responder</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="nd">@commands</span><span class="o">.</span><span class="n">Logged</span><span class="o">.</span><span class="n">responder</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="nd">@commands</span><span class="o">.</span><span class="n">Quitting</span><span class="o">.</span><span class="n">responder</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">quitting</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">reactor</span><span class="p">):</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">TCP4ClientEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="mi">8765</span><span class="p">)</span>
+    <span class="n">vb</span> <span class="o">=</span> <span class="k">await</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">connectProtocol</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">Follower</span><span class="p">())</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s2">&quot;~/.config&quot;</span><span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;XDG_CONFIG_HOME&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">config</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;virtualbricks&quot;</span><span class="p">,</span> <span class="s2">&quot;token&quot;</span><span class="p">))</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">authenticate</span><span class="p">(</span><span class="n">vb</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+    <span class="n">hello</span> <span class="o">=</span> <span class="k">await</span> <span class="n">vb</span><span class="o">.</span><span class="n">callRemote</span><span class="p">(</span><span class="n">Hello</span><span class="p">,</span> <span class="n">protocols</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">hello</span><span class="p">[</span><span class="s2">&quot;protocol&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s2">&quot;It doesn&#39;t speak protocol 2&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">vb</span><span class="o">.</span><span class="n">callRemote</span><span class="p">(</span><span class="n">commands</span><span class="o">.</span><span class="n">Follow</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">vb</span><span class="o">.</span><span class="n">callRemote</span><span class="p">(</span><span class="n">BrickStop</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sw2&quot;</span><span class="p">]))</span>
+    <span class="n">ports</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;ports&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;16&quot;</span><span class="p">}</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">vb</span><span class="o">.</span><span class="n">callRemote</span><span class="p">(</span><span class="n">BrickSet</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sw2&quot;</span><span class="p">,</span> <span class="n">key_value</span><span class="o">=</span><span class="p">[</span><span class="n">ports</span><span class="p">]))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">vb</span><span class="o">.</span><span class="n">callRemote</span><span class="p">(</span><span class="n">BrickStop</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sw9&quot;</span><span class="p">])</span>
+    <span class="k">except</span> <span class="n">NotFound</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;NotFound:&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+
+
+<span class="n">task</span><span class="o">.</span><span class="n">react</span><span class="p">(</span><span class="k">lambda</span> <span class="n">reactor</span><span class="p">:</span> <span class="n">defer</span><span class="o">.</span><span class="n">ensureDeferred</span><span class="p">(</span><span class="n">main</span><span class="p">(</span><span class="n">reactor</span><span class="p">)))</span>
+</pre></div>
+<p>It prints:</p>
+<div class="highlight"><pre><span></span>Opened lab1
+Changed brick sw1 {&#39;pid&#39;: 430548}
+Changed brick sw2 {&#39;pid&#39;: 430557}
+Synced
+{&#39;lines&#39;: [&#39;sw2 stopped&#39;]}
+Changed brick sw2 {&#39;pid&#39;: None}
+Changed brick sw2 {&#39;pid&#39;: None}
+{&#39;lines&#39;: []}
+NotFound: No brick named sw9
+</pre></div>
+</div>
+<div class="section" id="attach">
+<h3>Attach</h3>
+<p><tt class="docutils literal">Attach</tt> joins the program to a console of a running brick: <tt class="docutils literal">monitor</tt>,
+its control monitor, or <tt class="docutils literal">serial</tt>, the serial socket of a machine.
+Virtualbricks connects to the console, then answers, and from then on the
+connection carries the bytes of the console both ways, and nothing else:
+it's AMP's <tt class="docutils literal">ProtocolSwitchCommand</tt>. When either end closes, so does the
+other. So a program opens a new connection for each console, proves the
+token if asked, agrees on protocol 2, then calls <tt class="docutils literal">Attach</tt>. The windows of
+<tt class="docutils literal">virtualbricks <span class="pre">--connect</span></tt> join that connection to a terminal of their
+own, with <tt class="docutils literal">vdeterm</tt> or <tt class="docutils literal">unixterm</tt>.</p>
+<div class="highlight"><pre><span></span>terminal     program            Virtualbricks     console
+   |            |                     |              |
+   |            |-- Attach brick vm1, |              |
+   |            |   console monitor -&gt;|-- connects -&gt;|
+   |            |&lt;----------- answer -|              |
+   |&lt;= bytes ==&gt;|&lt;====== bytes ======&gt;|&lt;== bytes ===&gt;|
+</pre></div>
+</div>
+<div class="section" id="versions">
+<h3>Versions</h3>
+<p>Protocol 2 keeps its commands as they are. A later Virtualbricks may add
+commands to it, and optional arguments to its commands, and nothing else:
+an older one answers a command it doesn't have with <tt class="docutils literal">UNHANDLED</tt>, and an
+argument it doesn't know with <tt class="docutils literal">BAD_ARGUMENT</tt>, so a program knows that
+they weren't done. A change of any other kind makes protocol 3, which would
+take the place of 2: a program that speaks both calls <tt class="docutils literal">Hello</tt> with
+<tt class="docutils literal"><span class="pre">protocols=[1,</span> 2, 3]</tt>. The sources keep the commands of protocol 2 in
+<tt class="docutils literal"><span class="pre">tests/data/amp-protocol-2.txt</span></tt>, and the tests compare it with the
+modules, so that no change slips in.</p>
+</div>
+</div>
+<div class="section" id="the-windows-of-another-virtualbricks">
+<h2>The windows of another Virtualbricks</h2>
+<p><tt class="docutils literal"><span class="pre">--connect</span></tt> without <tt class="docutils literal"><span class="pre">--command</span></tt> or <tt class="docutils literal"><span class="pre">--run</span></tt> opens the windows of the
+Virtualbricks it names: the bricks run there, on the lab machine, and the
+windows here. That Virtualbricks listens on an AMP socket, with its own
+windows or with <tt class="docutils literal"><span class="pre">--no-gui</span></tt>, and both ends run the same version:</p>
+<div class="highlight"><pre><span></span><span class="c1"># on the lab machine</span>
+virtualbricks<span class="w"> </span>--no-gui<span class="w"> </span>--noterm<span class="w"> </span>--listen<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="s1">&#39;ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem&#39;</span>
+<span class="c1"># on your desktop</span>
+virtualbricks<span class="w"> </span>--connect<span class="w"> </span><span class="s1">&#39;ssl:lab.example:8765:caCertsDir=~/vb/lab&#39;</span>
+</pre></div>
+<p><tt class="docutils literal">virtualbricks <span class="pre">--connect</span></tt> alone opens the windows of a Virtualbricks of
+yours on this machine, found as <tt class="docutils literal"><span class="pre">--command</span></tt> finds it: that of
+<tt class="docutils literal"><span class="pre">--workspace</span></tt>, or the only one that listens. The windows call it <em>this
+computer</em>.</p>
+<p>The windows speak protocol 2, so <tt class="docutils literal"><span class="pre">--connect</span></tt> takes no <tt class="docutils literal">protocol=json</tt>
+here; nor <tt class="docutils literal"><span class="pre">--no-gui</span></tt>, <tt class="docutils literal"><span class="pre">--lock</span></tt> or <tt class="docutils literal"><span class="pre">--listen</span></tt>, which are for the
+Virtualbricks that runs the bricks. They prove the token, or show their
+certificate, as <tt class="docutils literal"><span class="pre">--command</span></tt> does.</p>
+<ul class="simple">
+<li><strong>They follow the project there</strong>: its bricks, events and images, their
+processes, the settings and the log. What the console or other windows
+change there shows at once, and the title names the project and where it
+runs.</li>
+<li><strong>What they do goes there</strong>: a start, a new brick, the OK of a panel,
+which sends only the keys it changed.</li>
+<li><strong>What they show is the lab machine's</strong>: its QEMU programs and what they
+can do, its USB devices, the files of its images, its projects. A path is
+a path there, typed in an entry that completes from the folders there.
+Settings has three pages: this computer, as the terminal; the lab
+machine, its KSM and the audio driver of QEMU; and the project.</li>
+<li><strong>Consoles open here.</strong> <em>Open Control Monitor</em> starts a terminal on this
+computer, joined to the console there with <tt class="docutils literal">Attach</tt>.</li>
+<li><strong>When the connection is lost</strong>, a bar says why, and <em>Reconnect</em> starts
+the copy over. <em>Quit</em> closes the windows; the Virtualbricks there goes
+on.</li>
+</ul>
+<p>Some items wait for a later version, greyed: Import and Export, saving or
+merging the private copy of a disk, copying an image to the image folder,
+<em>Show in Files</em>, and <em>Terminate</em>.</p>
+</div>
+<div class="section" id="limits">
+<h2>Limits</h2>
+<dl class="docutils">
+<dt>A line of the JSON protocol</dt>
+<dd>64 KiB; a longer one closes the connection.</dd>
+<dt>A key of AMP</dt>
+<dd>255 bytes.</dd>
+<dt>A value of AMP</dt>
+<dd>65535 bytes. A longer answer is <tt class="docutils literal">ANSWER_TOO_LONG</tt>, after the command
+was done; a longer push isn't sent, and the log says so.</dd>
+<dt>The path of a unix socket</dt>
+<dd>107 bytes.</dd>
+<dt>The token</dt>
+<dd>At least 16 characters; Virtualbricks makes them of 43.</dd>
+<dt>The proof of the token</dt>
+<dd>10 seconds from connecting.</dd>
+<dt>The last answers, at the end</dt>
+<dd>2 seconds for the client to read them.</dd>
+<dt>The log, for a program that follows</dt>
+<dd>The last 500 messages, then each new one.</dd>
+</dl>
+</div>
+<div class="section" id="try-it">
+<h2>Try it</h2>
+<p>All of this is in the <tt class="docutils literal">develop</tt> branch: the <a class="reference external" href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html">first post</a> says how to
+install it. The manual pages go further: <tt class="docutils literal">virtualbricks(1)</tt> for the
+options, the console and its commands, and <tt class="docutils literal"><span class="pre">virtualbricks-control(7)</span></tt> for
+the protocols, for whoever writes a client. Start a lab with <tt class="docutils literal"><span class="pre">--listen</span></tt>,
+drive it from another terminal, write a client in your language, and tell
+us what breaks on <a class="reference external" href="https://github.com/virtualsquare/virtualbricks/issues">GitHub</a>.</p>
+</div>
+
+
+
+             
+ 
+            
+            
+            
+
+
+
+
+
+
+
+            <hr/>
+        </div>
+        <section id="article-sidebar" class="span2">
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2026-10-06T12:00:00+02:00">Tue 06 October 2026</time>
+            <h4>Category</h4>
+            <a class="category-link" href="https://www.virtualbricks.it/categories.html#news-ref">News</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://www.virtualbricks.it/tags.html#amp-ref">amp
+                    <span class="superscript">1</span>
+</a></li>
+                <li><a href="https://www.virtualbricks.it/tags.html#console-ref">console
+                    <span class="superscript">1</span>
+</a></li>
+                <li><a href="https://www.virtualbricks.it/tags.html#control-socket-ref">control socket
+                    <span class="superscript">1</span>
+</a></li>
+                <li><a href="https://www.virtualbricks.it/tags.html#develop-ref">develop
+                    <span class="superscript">4</span>
+</a></li>
+                <li><a href="https://www.virtualbricks.it/tags.html#release-ref">release
+                    <span class="superscript">4</span>
+</a></li>
+                <li><a href="https://www.virtualbricks.it/tags.html#tls-ref">tls
+                    <span class="superscript">1</span>
+</a></li>
+            </ul>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe.
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides.
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo https://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script src="https://www.virtualbricks.it/theme/js/elegant.prod.9e9d5ce754.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>

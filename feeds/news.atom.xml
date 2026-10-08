@@ -1,5 +1,1126 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Virtualbricks - News</title><link href="https://www.virtualbricks.it/" rel="alternate"/><link href="https://www.virtualbricks.it/feeds/news.atom.xml" rel="self"/><id>https://www.virtualbricks.it/</id><updated>2026-10-05T12:00:00+02:00</updated><entry><title>Virtualbricks 3.0: a tour of the new interface</title><link href="https://www.virtualbricks.it/the-new-interface-of-virtualbricks-3-0.html" rel="alternate"/><published>2026-10-05T12:00:00+02:00</published><updated>2026-10-05T12:00:00+02:00</updated><author><name>Marco Giusti</name></author><id>tag:www.virtualbricks.it,2026-10-05:/the-new-interface-of-virtualbricks-3-0.html</id><summary type="html">&lt;p class="first last"&gt;The tabs of the main window, one by one: the Bricks tab that took
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Virtualbricks - News</title><link href="https://www.virtualbricks.it/" rel="alternate"/><link href="https://www.virtualbricks.it/feeds/news.atom.xml" rel="self"/><id>https://www.virtualbricks.it/</id><updated>2026-10-06T12:00:00+02:00</updated><entry><title>Virtualbricks 3.0: the console and the control protocols</title><link href="https://www.virtualbricks.it/the-console-and-the-control-protocols-of-virtualbricks-3-0.html" rel="alternate"/><published>2026-10-06T12:00:00+02:00</published><updated>2026-10-06T12:00:00+02:00</updated><author><name>Marco Giusti</name></author><id>tag:www.virtualbricks.it,2026-10-06:/the-console-and-the-control-protocols-of-virtualbricks-3-0.html</id><summary type="html">&lt;p class="first last"&gt;How to drive Virtualbricks 3.0 without its windows: the console,
+the control sockets of --listen and --connect, on this machine or
+across the network, with a token or with certificates, and the
+three protocols they speak: lines of JSON, AMP 1 and AMP 2.&lt;/p&gt;
+</summary><content type="html">&lt;p&gt;The &lt;a class="reference external" href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html"&gt;first post&lt;/a&gt;
+of this series was a map of what changed in the &lt;tt class="docutils literal"&gt;develop&lt;/tt&gt; branch. This one
+is about how to drive Virtualbricks without its windows: from its console,
+from a script, from another terminal, from a program in any language, and
+from another machine. It starts with the console, then the control sockets
+and how to describe them to &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt;, then each kind
+of socket and how it keeps strangers out, and last the three protocols the
+sockets speak, for whoever writes a client.&lt;/p&gt;
+&lt;p&gt;The examples are real: we ran each of them on Virtualbricks 3.0.0.dev3.
+Only the names, the process numbers and the paths will differ on your
+machine.&lt;/p&gt;
+&lt;div class="section" id="the-console"&gt;
+&lt;h2&gt;The console&lt;/h2&gt;
+&lt;p&gt;Virtualbricks 2.1 had a console too, with commands of its own, as
+&lt;tt class="docutils literal"&gt;sw1 on&lt;/tt&gt; or &lt;tt class="docutils literal"&gt;sw1 config numports=16&lt;/tt&gt;. In 3.0 a command is a noun, a
+verb, then its arguments. The nouns are &lt;tt class="docutils literal"&gt;brick&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;event&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;image&lt;/tt&gt;,
+&lt;tt class="docutils literal"&gt;setting&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;project&lt;/tt&gt;, and a few words stand alone: &lt;tt class="docutils literal"&gt;help&lt;/tt&gt;,
+&lt;tt class="docutils literal"&gt;status&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;source&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;python&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;quit&lt;/tt&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;brick new switch
+brick new vm router
+brick set router memory=512 use_kvm=true
+brick card add router plug sw1 model=virtio-net-pci
+brick start router
+event new up
+event action add up start router
+event action add up shell &amp;quot;logger the lab is up&amp;quot;
+help brick set
+&lt;/pre&gt;&lt;/div&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;Words as in a shell.&lt;/strong&gt; Quotes keep spaces, a backslash escapes, and
+&lt;tt class="docutils literal"&gt;#&lt;/tt&gt; starts a comment. A name is always an argument, never a command, so
+a brick can be called &lt;tt class="docutils literal"&gt;list&lt;/tt&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Keys as in the project file.&lt;/strong&gt; &lt;tt class="docutils literal"&gt;KEY=VALUE&lt;/tt&gt;, as many as needed in one
+command, with the keys of &lt;tt class="docutils literal"&gt;project.toml&lt;/tt&gt;. They are all checked before
+any is set, so a command changes all of them or none. The disks of a
+machine are &lt;tt class="docutils literal"&gt;hda_image&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;hda_private&lt;/tt&gt;, and its network cards have
+commands of their own, &lt;tt class="docutils literal"&gt;brick card add&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;set&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;remove&lt;/tt&gt;.
+&lt;tt class="docutils literal"&gt;brick keys switch&lt;/tt&gt; lists the keys of a kind of brick, with their
+ranges and their defaults.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Answers.&lt;/strong&gt; A command prints something when there is something to say:
+the name given to a new brick, the process of a started one, a table.
+When it can't be done, it says why in one line that starts with
+&lt;tt class="docutils literal"&gt;Error:&lt;/tt&gt;, and changes nothing. &lt;tt class="docutils literal"&gt;start&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;stop&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;restart&lt;/tt&gt; and
+&lt;tt class="docutils literal"&gt;suspend&lt;/tt&gt; wait until they are done, or fail.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Typing.&lt;/strong&gt; On a terminal, Tab completes the nouns, the verbs, the names
+of the bricks, events, images and projects, the kinds of brick, the keys,
+and the values of a key that has a few. The prompt is the name of the
+open project. The history is kept between runs, the last 500 lines, in
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;~/.local/state/virtualbricks/history&lt;/span&gt;&lt;/tt&gt;. The keys are those of readline:
+Up and Down, Ctrl+R and Ctrl+S to search, Ctrl+A and Ctrl+E, Alt+B and
+Alt+F, Ctrl+W, Ctrl+U, Ctrl+K and Ctrl+Y, Ctrl+T, Ctrl+L. Ctrl+C clears
+the line; while a command runs, it stops waiting for it, but not what it
+does. Ctrl+D on an empty line quits.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;python&lt;/strong&gt; opens a Python shell, where &lt;tt class="docutils literal"&gt;factory&lt;/tt&gt; is the factory of the
+bricks; Ctrl+D comes back to the console.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Pipes and scripts.&lt;/strong&gt; When the input isn't a terminal, each line is a
+command, and the end of the input quits. A file of commands runs with
+&lt;tt class="docutils literal"&gt;source FILE&lt;/tt&gt; in the console, or with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--run&lt;/span&gt; FILE&lt;/tt&gt; at start. Empty
+lines and comments are skipped, and the first error stops the file,
+saying where, as &lt;tt class="docutils literal"&gt;lab.vb:4&lt;/tt&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Events.&lt;/strong&gt; The action of an event can be a command of the console, any
+of them; one that fails is logged with the event and the number of the
+action.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The console reads the terminal where Virtualbricks started, beside the
+windows. &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--no-gui&lt;/span&gt;&lt;/tt&gt; runs Virtualbricks without the windows, and without
+loading GTK: the console is then the way in, and a lab can run on a server
+without a display. &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--noterm&lt;/span&gt;&lt;/tt&gt; doesn't read the terminal. With both,
+nothing is read, and the lab runs until Virtualbricks gets &lt;tt class="docutils literal"&gt;SIGTERM&lt;/tt&gt; or
+&lt;tt class="docutils literal"&gt;SIGINT&lt;/tt&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;--run&lt;span class="w"&gt; &lt;/span&gt;~/labs/ospf.vb
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt; of that line is what lets you reach that lab afterwards.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-control-socket"&gt;
+&lt;h2&gt;The control socket&lt;/h2&gt;
+&lt;p&gt;A Virtualbricks started with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt;, with its windows or without,
+listens on control sockets once its project is open. Without
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt;, it listens on none. Then, from any terminal or script:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--command&lt;span class="w"&gt; &lt;/span&gt;brick&lt;span class="w"&gt; &lt;/span&gt;start&lt;span class="w"&gt; &lt;/span&gt;sw1&lt;span class="w"&gt; &lt;/span&gt;vm1
+virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--command&lt;span class="w"&gt; &lt;/span&gt;brick&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nb"&gt;set&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;vm1&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nv"&gt;memory&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;1024&lt;/span&gt;
+virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--command&lt;span class="w"&gt; &lt;/span&gt;status
+virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--connect&lt;span class="w"&gt; &lt;/span&gt;--run&lt;span class="w"&gt; &lt;/span&gt;~/labs/traffic.vb
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; sends the command of the words that follow and prints its
+answer. The words reach the console quoted again, so a value with spaces is
+quoted once, as in the console; the options of &lt;tt class="docutils literal"&gt;virtualbricks&lt;/tt&gt; end at the
+first word. Without words, &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; sends the lines of its standard
+input, each after the answer to the one before, up to the first error,
+which names its line:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ printf &amp;#39;brick new switch sw2\nbrick set sw2 ports=16 stp=true\n&amp;#39; |
+&amp;gt;     virtualbricks --command
+sw2
+Error: line 2: sw2 has no key stp: brick keys sw2 lists them
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt; &lt;span class="pre"&gt;--run&lt;/span&gt; FILE&lt;/tt&gt; sends the lines of a file in the same way, and the
+first error names the file and its line, as &lt;tt class="docutils literal"&gt;source&lt;/tt&gt; does. Empty lines
+aren't sent; comments are, and do nothing.&lt;/p&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; loads neither GTK nor Twisted's reactor, opens no project and
+takes no lock: it only talks to the socket. It takes no other option but
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--workspace&lt;/span&gt;&lt;/tt&gt;. The answer goes to the standard output,
+an error to the standard error, and the exit status says how it went:&lt;/p&gt;
+&lt;dl class="docutils"&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;0&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;The command was done, or every command of the file.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;1&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;The command failed, its answer was too long for AMP, an option is wrong,
+or the file of &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--run&lt;/span&gt;&lt;/tt&gt; can't be read.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;2&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;No Virtualbricks answered: none listens there, several listen and none
+is named, it ended before it answered, it speaks another protocol, or it
+refused the token or the certificate. The message says which.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;130&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;Ctrl+C stopped the wait. The command goes on, there.&lt;/dd&gt;
+&lt;/dl&gt;
+&lt;p&gt;A relative path in a command, as that of &lt;tt class="docutils literal"&gt;source FILE&lt;/tt&gt;, is read from the
+folder where you run &lt;tt class="docutils literal"&gt;virtualbricks &lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt;, on the same machine. To
+another machine, &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; doesn't send its folder, and the path is
+read from the folder of that Virtualbricks.&lt;/p&gt;
+&lt;p&gt;Virtualbricks logs each command it gets, with the client that sent it, and
+answers in its own language.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="describing-a-socket"&gt;
+&lt;h2&gt;Describing a socket&lt;/h2&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt; alone is the socket of the workspace. &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt; followed by
+a description is another socket, and &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt; takes a description in
+the same way. A description is written as Twisted's endpoints are: the type
+of the socket, then its parts, separated by colons. A part is a value, or a
+keyword and its value, &lt;tt class="docutils literal"&gt;key=value&lt;/tt&gt;, and a backslash makes the next
+character plain, as the colons of an IPv6 address:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;unix:~/labs/lab1.sock
+unix:address=~/labs/lab1.sock:protocol=json
+tcp:8765
+tcp:port=8765:interface=\:\:1
+ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem
+tcp:lab.example:8765                      (for --connect)
+ssl:host=lab.example:port=8765:caCertsDir=~/vb/lab
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The three types are &lt;tt class="docutils literal"&gt;unix&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;tcp&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;ssl&lt;/tt&gt;. Each takes
+&lt;tt class="docutils literal"&gt;protocol=amp&lt;/tt&gt;, the default, or &lt;tt class="docutils literal"&gt;protocol=json&lt;/tt&gt;. The keywords of each
+type, for a socket that &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt; opens and one that &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt;
+reaches:&lt;/p&gt;
+&lt;table border="1" class="docutils"&gt;
+&lt;colgroup&gt;
+&lt;col width="58%" /&gt;
+&lt;col width="14%" /&gt;
+&lt;col width="14%" /&gt;
+&lt;col width="14%" /&gt;
+&lt;/colgroup&gt;
+&lt;thead valign="bottom"&gt;
+&lt;tr&gt;&lt;th class="head"&gt;Keyword&lt;/th&gt;
+&lt;th class="head"&gt;unix&lt;/th&gt;
+&lt;th class="head"&gt;tcp&lt;/th&gt;
+&lt;th class="head"&gt;ssl&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody valign="top"&gt;
+&lt;tr&gt;&lt;td&gt;&lt;em&gt;PATH&lt;/em&gt;, address=&lt;/td&gt;
+&lt;td&gt;both&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;em&gt;PORT&lt;/em&gt;, port=&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;listen&lt;/td&gt;
+&lt;td&gt;listen&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;interface=&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;listen&lt;/td&gt;
+&lt;td&gt;listen&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;em&gt;HOST&lt;/em&gt;:&lt;em&gt;PORT&lt;/em&gt;, host=, port=&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;connect&lt;/td&gt;
+&lt;td&gt;connect&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;protocol=&lt;/td&gt;
+&lt;td&gt;both&lt;/td&gt;
+&lt;td&gt;both&lt;/td&gt;
+&lt;td&gt;both&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;tokenFile=&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;both&lt;/td&gt;
+&lt;td&gt;both&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;privateKey=&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;both&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;certKey=&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;both&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;extraCertChain=&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;listen&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;caCertsDir=&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;both&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;em&gt;listen&lt;/em&gt; is for &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt;, &lt;em&gt;connect&lt;/em&gt; for &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt;, and &lt;em&gt;both&lt;/em&gt; for
+either; a keyword can mean something else on each side, as &lt;tt class="docutils literal"&gt;caCertsDir=&lt;/tt&gt;
+below. Each is described with its type. The file of a keyword can start
+with &lt;tt class="docutils literal"&gt;~&lt;/tt&gt;, and a relative path is relative to the folder where you start
+Virtualbricks.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;On the command line.&lt;/strong&gt; Both options take an optional value, which getopt
+doesn't have, so the rule is this: the next word is the description when
+it starts with a type and a colon, as &lt;tt class="docutils literal"&gt;unix:&lt;/tt&gt;, and the value after &lt;tt class="docutils literal"&gt;=&lt;/tt&gt;
+always is, as &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen=tcp:8765&lt;/span&gt;&lt;/tt&gt;. A path alone is refused, so that it
+isn't taken for a command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ virtualbricks --no-gui --listen ~/lab.sock
+--listen: /home/alice/lab.sock needs its type: unix:/home/alice/lab.sock
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Quote a description that has a backslash, so that the shell leaves it.
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt; can be given more than once, and Virtualbricks listens on each
+socket, each with its protocol:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;unix:~/labs/lab1.json:protocol&lt;span class="o"&gt;=&lt;/span&gt;json&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;tcp:8765&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ssl:8768:privateKey=~/vb/lab-key.pem:caCertsDir=~/vb/clients&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;A description is checked before anything starts: an unknown keyword, which
+the message lists with those of the type; a keyword given twice; a port out
+of 1–65535; a folder that isn't there; a tcp socket on the network; an ssl
+socket without its key, or with a key that isn't that of its certificate;
+a token file that others can read. Virtualbricks then exits with status 1
+and says why.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="unix-sockets"&gt;
+&lt;h2&gt;Unix sockets&lt;/h2&gt;
+&lt;p&gt;A unix socket is a file. Only you can connect to it: Virtualbricks makes it
+with mode 0600, with a umask that leaves no moment between the bind and the
+change of mode. So a unix socket asks for no token: the system knows who
+connects.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;The socket of the workspace.&lt;/strong&gt; &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt; alone listens on
+&lt;tt class="docutils literal"&gt;.control&lt;/tt&gt;, in a folder of the runtime folder that belongs to the
+workspace:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;/run/user/1000/virtualbricks/        $XDG_RUNTIME_DIR/virtualbricks
+└── qhz36ozg/                        the key of the workspace
+    ├── .control                     the socket of --listen alone
+    ├── .control.lock                its lock
+    ├── .workspace -&amp;gt; ~/labs/a       the workspace
+    └── lab/                         the sockets of the bricks of lab
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The key is made from the path of the workspace, its first eight characters
+of the SHA-256, in base32: the same folder has the same key, whatever path
+names it. &lt;tt class="docutils literal"&gt;.workspace&lt;/tt&gt; links back to the workspace, so &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; can
+say which Virtualbricks it found. Without &lt;tt class="docutils literal"&gt;XDG_RUNTIME_DIR&lt;/tt&gt;, the runtime
+folder is &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;/tmp/virtualbricks-UID&lt;/span&gt;&lt;/tt&gt;. Virtualbricks doesn't listen in a
+runtime folder that isn't yours, or that others can write in.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;A socket of your own.&lt;/strong&gt; &lt;tt class="docutils literal"&gt;unix:PATH&lt;/tt&gt;, or &lt;tt class="docutils literal"&gt;unix:address=PATH&lt;/tt&gt;. The
+folder must be there, and the path must fit in the 107 bytes that Linux
+allows to the path of a socket; a deep scratch folder can be too long, and
+Virtualbricks says so.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;One Virtualbricks for each socket.&lt;/strong&gt; The first to start takes the lock
+&lt;em&gt;PATH&lt;/em&gt;.lock, beside the socket, and listens; another one with the same
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt;, as with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--lock&lt;/span&gt; none&lt;/tt&gt;, runs without that socket and says
+who holds it. A socket left by a crash is removed at the next start, by
+whoever takes the lock. Anything else at that path, a file or the socket of
+another user, is left alone, and Virtualbricks listens without it.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="workspaces"&gt;
+&lt;h2&gt;Workspaces&lt;/h2&gt;
+&lt;p&gt;Each workspace has its own &lt;tt class="docutils literal"&gt;.control&lt;/tt&gt;, so two Virtualbricks that run side
+by side, each in its workspace, both listen with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt; alone. On the
+other end, &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt; &lt;span class="pre"&gt;--run&lt;/span&gt;&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt; without a
+description look for the Virtualbricks to talk to:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--workspace&lt;/span&gt; FOLDER&lt;/tt&gt;, the one that listens on the &lt;tt class="docutils literal"&gt;.control&lt;/tt&gt; of
+that workspace;&lt;/li&gt;
+&lt;li&gt;without it, the only Virtualbricks of yours that listens on the
+&lt;tt class="docutils literal"&gt;.control&lt;/tt&gt; of its workspace; the locks, held, say which ones do;&lt;/li&gt;
+&lt;li&gt;when several listen, none: it names them and sends nothing.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ virtualbricks --no-gui --noterm --listen --workspace ~/labs/a &amp;amp;
+$ virtualbricks --no-gui --noterm --listen --workspace ~/labs/b &amp;amp;
+$ virtualbricks --command status
+Virtualbricks of yours listen in 2 workspaces: /home/alice/labs/b
+(process 430506) and /home/alice/labs/a (process 430482). Name one with
+--workspace, as virtualbricks --workspace /home/alice/labs/b --command
+status
+$ virtualbricks --workspace ~/labs/a --command status
+Nothing runs
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt; with a description and &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--workspace&lt;/span&gt;&lt;/tt&gt; are refused together:
+each names a Virtualbricks, so give one of them.&lt;/p&gt;
+&lt;p&gt;When nobody listens, &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; tells you whether a Virtualbricks of
+yours runs without &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt;, or with another one, and how to start one
+that listens.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="tcp-sockets"&gt;
+&lt;h2&gt;TCP sockets&lt;/h2&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;tcp:PORT&lt;/tt&gt;, or &lt;tt class="docutils literal"&gt;tcp:port=PORT&lt;/tt&gt;, listens on a port of this machine: on
+&lt;tt class="docutils literal"&gt;127.0.0.1&lt;/tt&gt;, or on another loopback address with &lt;tt class="docutils literal"&gt;interface=&lt;/tt&gt;, as
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;'tcp:8765:interface=\:\:1'&lt;/span&gt;&lt;/tt&gt;, whose colons are escaped. What passes on
+plain TCP can be read on the way, so a tcp socket refuses any address of the
+network:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ virtualbricks --no-gui --listen tcp:8765:interface=0.0.0.0
+--listen: tcp:8765:interface=0.0.0.0: tcp listens on this machine only,
+as interface=127.0.0.1 or ::1; across the network, ssl
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;A port is open to anyone on the machine, unlike a unix socket, and a
+connection can do all that the console does, the shell commands in the
+actions of an event included. So each client of a tcp socket proves first
+that it knows the token, see below.&lt;/p&gt;
+&lt;p&gt;A port has no lock: the first Virtualbricks takes it, and another one logs
+&lt;tt class="docutils literal"&gt;Address already in use: no control socket&lt;/tt&gt; and runs without it.&lt;/p&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt; tcp:PORT&lt;/tt&gt; reaches this machine; &lt;tt class="docutils literal"&gt;tcp:HOST:PORT&lt;/tt&gt;, or
+&lt;tt class="docutils literal"&gt;host=&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;port=&lt;/tt&gt;, another one, as an SSH tunnel would bring it
+here. &lt;tt class="docutils literal"&gt;interface=&lt;/tt&gt; is refused there, since it's where Virtualbricks
+listens, not where to find it.&lt;/p&gt;
+&lt;p&gt;The log names each client by its address:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;[virtualbricks.console.control#info] Listening on tcp 127.0.0.1 port
+8765, protocol amp, with the token of ~/.config/virtualbricks/token
+[virtualbricks.console.control#info] Command from 127.0.0.1 port 54560:
+status
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-token"&gt;
+&lt;h2&gt;The token&lt;/h2&gt;
+&lt;p&gt;The token is a line of text of at least 16 characters, in a file:
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;~/.config/virtualbricks/token&lt;/span&gt;&lt;/tt&gt;, or the file of &lt;tt class="docutils literal"&gt;tokenFile=&lt;/tt&gt;. The first
+socket that needs it makes it, with 43 random characters, and says so in
+the log. You can also write your own:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;openssl&lt;span class="w"&gt; &lt;/span&gt;rand&lt;span class="w"&gt; &lt;/span&gt;-base64&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;32&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&amp;gt;&lt;span class="w"&gt; &lt;/span&gt;~/.config/virtualbricks/token
+chmod&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;600&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;~/.config/virtualbricks/token
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The file must be a regular file of yours that nobody else can read or
+change, mode 0600; the spaces around the line don't count. Virtualbricks
+refuses to listen with another file, and &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; refuses to use it:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Others can read or change /home/alice/vb/lab.token: chmod 600
+/home/alice/vb/lab.token: no command sent
+The token of /home/alice/vb/short.token has 5 characters; a token has
+at least 16: no command sent
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;A client reads the same token: copy the file to its machine, in the same
+place, or name it with &lt;tt class="docutils literal"&gt;tokenFile=&lt;/tt&gt; in the description of
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt;. Virtualbricks reads its token when it starts listening: a
+new token counts from the next start.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Neither end sends the token.&lt;/strong&gt; Each proves that it knows it, over two
+nonces, a random number from each end: Virtualbricks sends one of 64 hex
+digits, and the client chooses one of 32 to 128. The proof of a side,
+&lt;tt class="docutils literal"&gt;client&lt;/tt&gt; or &lt;tt class="docutils literal"&gt;server&lt;/tt&gt;, is the HMAC-SHA256, under the token, of the text
+&lt;tt class="docutils literal"&gt;virtualbricks SIDE S C&lt;/tt&gt;, where &lt;tt class="docutils literal"&gt;S&lt;/tt&gt; is the nonce of Virtualbricks and
+&lt;tt class="docutils literal"&gt;C&lt;/tt&gt; that of the client, in lowercase hex digits:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;client                               Virtualbricks
+  |                                        |
+  |&amp;lt;-- nonce S ----------------------------|
+  |                                        |
+  |    nonce C, HMAC(token,                |
+  |    &amp;quot;virtualbricks client S C&amp;quot;)         |
+  |---------------------------------------&amp;gt;|  checks it: if
+  |                                        |  wrong, closes
+  |                                        |  the connection
+  |&amp;lt;---------------------------------------|
+  |    HMAC(token,                         |
+  |    &amp;quot;virtualbricks server S C&amp;quot;)         |
+checks it: if wrong,
+closes the connection
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The client proves first, and Virtualbricks then proves it back. A program
+that took the port before Virtualbricks doesn't know the token, so it
+can't, and the client sends it no command. With new nonces each time, a
+proof is good for one connection only, and nobody who reads it learns the
+token. A client has 10 seconds from connecting to give a right proof; then
+the connection is closed.&lt;/p&gt;
+&lt;p&gt;When the tokens differ, both ends say so:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ virtualbricks --connect tcp:8765:tokenFile=~/vb/old.token --command status
+The Virtualbricks on 127.0.0.1 port 8765 has another token
+[virtualbricks.console.control#warn] 127.0.0.1 port 58750 on tcp port
+8765: wrong token
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In a shell, &lt;tt class="docutils literal"&gt;openssl&lt;/tt&gt; computes the proof of a client:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nb"&gt;printf&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;virtualbricks client %s %s&amp;#39;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="nv"&gt;$nonce&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="nv"&gt;$mine&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;|&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;openssl&lt;span class="w"&gt; &lt;/span&gt;dgst&lt;span class="w"&gt; &lt;/span&gt;-sha256&lt;span class="w"&gt; &lt;/span&gt;-hmac&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="nv"&gt;$token&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="section" id="ssl-sockets"&gt;
+&lt;h2&gt;SSL sockets&lt;/h2&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;ssl:PORT&lt;/tt&gt; listens inside TLS, so it can listen on the network: on
+&lt;tt class="docutils literal"&gt;127.0.0.1&lt;/tt&gt; too, unless &lt;tt class="docutils literal"&gt;interface=&lt;/tt&gt; names another address, as
+&lt;tt class="docutils literal"&gt;0.0.0.0&lt;/tt&gt; for every IPv4 address of the machine. It needs the
+certificate of Virtualbricks, in PEM:&lt;/p&gt;
+&lt;dl class="docutils"&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;privateKey=FILE&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;The private key, which is required. The file can hold the certificate
+too.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;certKey=FILE&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;The certificate, when it's in a file of its own.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;extraCertChain=FILE&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;The certificates between it and the authority that issued it, when there
+are some.&lt;/dd&gt;
+&lt;/dl&gt;
+&lt;p&gt;The files are read, and checked, when Virtualbricks starts: a key that
+isn't that of its certificate stops the start, with a message. An ssl
+socket needs pyOpenSSL, &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;python3-openssl&lt;/span&gt;&lt;/tt&gt;; a Virtualbricks without an
+ssl socket doesn't load it.&lt;/p&gt;
+&lt;p&gt;A certificate for the lab machine, for its name and its address, made with
+&lt;tt class="docutils literal"&gt;openssl&lt;/tt&gt; in &lt;tt class="docutils literal"&gt;~/vb&lt;/tt&gt;. &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;lab-key.pem&lt;/span&gt;&lt;/tt&gt;, the key with the certificate,
+stays there, for Virtualbricks; &lt;tt class="docutils literal"&gt;lab.pem&lt;/tt&gt;, the certificate alone, is for
+the clients:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;openssl&lt;span class="w"&gt; &lt;/span&gt;req&lt;span class="w"&gt; &lt;/span&gt;-x509&lt;span class="w"&gt; &lt;/span&gt;-newkey&lt;span class="w"&gt; &lt;/span&gt;ec&lt;span class="w"&gt; &lt;/span&gt;-pkeyopt&lt;span class="w"&gt; &lt;/span&gt;ec_paramgen_curve:P-256&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;-nodes&lt;span class="w"&gt; &lt;/span&gt;-days&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;3650&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;-subj&lt;span class="w"&gt; &lt;/span&gt;/CN&lt;span class="o"&gt;=&lt;/span&gt;lab.example&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;-addext&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nv"&gt;subjectAltName&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;DNS:lab.example,IP:192.0.2.7&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;-keyout&lt;span class="w"&gt; &lt;/span&gt;lab.key&lt;span class="w"&gt; &lt;/span&gt;-out&lt;span class="w"&gt; &lt;/span&gt;lab.pem
+cat&lt;span class="w"&gt; &lt;/span&gt;lab.key&lt;span class="w"&gt; &lt;/span&gt;lab.pem&lt;span class="w"&gt; &lt;/span&gt;&amp;gt;&lt;span class="w"&gt; &lt;/span&gt;lab-key.pem
+chmod&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;600&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;lab.key&lt;span class="w"&gt; &lt;/span&gt;lab-key.pem
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Then, on the lab machine, and from a desktop that has a copy of &lt;tt class="docutils literal"&gt;lab.pem&lt;/tt&gt;
+in &lt;tt class="docutils literal"&gt;~/vb/lab&lt;/tt&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem&amp;#39;&lt;/span&gt;
+virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--connect&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ssl:lab.example:8765:caCertsDir=~/vb/lab&amp;#39;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;--command&lt;span class="w"&gt; &lt;/span&gt;status
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;The client checks Virtualbricks.&lt;/strong&gt; &lt;tt class="docutils literal"&gt;caCertsDir=DIR&lt;/tt&gt;, in the
+description of &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt;, is a folder of &lt;tt class="docutils literal"&gt;.pem&lt;/tt&gt; files: the
+certificate of Virtualbricks itself, as &lt;tt class="docutils literal"&gt;lab.pem&lt;/tt&gt; above, or that of the
+authority that issued it. Without it, the authorities of the system are
+trusted, as for a certificate of Let's Encrypt. The name in the
+description must be one of the names of the certificate. Otherwise nothing
+is sent:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;The certificate of lab.example isn&amp;#39;t one you trust: self-signed
+certificate. Name the folder of its certificate with caCertsDir=
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Virtualbricks checks the client&lt;/strong&gt; with the token, as on a tcp socket,
+inside TLS: TLS hides the proof, and the token keeps strangers out. The log
+says &lt;tt class="docutils literal"&gt;connected to ssl port 8765 with the token&lt;/tt&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="client-certificates"&gt;
+&lt;h2&gt;Client certificates&lt;/h2&gt;
+&lt;p&gt;With &lt;tt class="docutils literal"&gt;caCertsDir=DIR&lt;/tt&gt; in the description of &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt;, an ssl socket
+asks each client for a certificate in place of the token: one that a
+&lt;tt class="docutils literal"&gt;.pem&lt;/tt&gt; file of the folder issued, or is. So each client can have a
+certificate of its own, self-signed, whose &lt;tt class="docutils literal"&gt;.pem&lt;/tt&gt; goes in the folder:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# on Alice&amp;#39;s laptop, in ~/vb&lt;/span&gt;
+openssl&lt;span class="w"&gt; &lt;/span&gt;req&lt;span class="w"&gt; &lt;/span&gt;-x509&lt;span class="w"&gt; &lt;/span&gt;-newkey&lt;span class="w"&gt; &lt;/span&gt;ec&lt;span class="w"&gt; &lt;/span&gt;-pkeyopt&lt;span class="w"&gt; &lt;/span&gt;ec_paramgen_curve:P-256&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;-nodes&lt;span class="w"&gt; &lt;/span&gt;-days&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;3650&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;-subj&lt;span class="w"&gt; &lt;/span&gt;/CN&lt;span class="o"&gt;=&lt;/span&gt;alice-laptop&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;-keyout&lt;span class="w"&gt; &lt;/span&gt;alice.key&lt;span class="w"&gt; &lt;/span&gt;-out&lt;span class="w"&gt; &lt;/span&gt;alice.pem
+cat&lt;span class="w"&gt; &lt;/span&gt;alice.key&lt;span class="w"&gt; &lt;/span&gt;alice.pem&lt;span class="w"&gt; &lt;/span&gt;&amp;gt;&lt;span class="w"&gt; &lt;/span&gt;alice-key.pem
+chmod&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;600&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;alice.key&lt;span class="w"&gt; &lt;/span&gt;alice-key.pem
+&lt;span class="c1"&gt;# on the lab machine, with a copy of alice.pem, and only it, in ~/vb/clients&lt;/span&gt;
+virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem:caCertsDir=~/vb/clients&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The client shows its certificate with &lt;tt class="docutils literal"&gt;privateKey=&lt;/tt&gt;, a file with the key
+and the certificate, or with &lt;tt class="docutils literal"&gt;privateKey=&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;certKey=&lt;/tt&gt;, a file for
+each:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--connect&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ssl:lab.example:8765:caCertsDir=~/vb/lab:privateKey=~/vb/alice-key.pem&amp;#39;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;--command&lt;span class="w"&gt; &lt;/span&gt;status
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The log names the client by the name of its certificate, and so does each
+of its commands:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;127.0.0.1 port 48142 connected to ssl port 8765 as alice-laptop
+Command from alice-laptop at 127.0.0.1: status
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;A client without a certificate, or with one that the folder doesn't trust,
+is refused by TLS, before any command, and both ends say why:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;lab.example asks for your certificate: privateKey= and certKey=
+lab.example refused your certificate
+[...#warn] 127.0.0.1 port 48158 on ssl port 8765: the TLS handshake
+failed: peer did not return a certificate
+[...#warn] 127.0.0.1 port 48156 on ssl port 8765: the TLS handshake
+failed: certificate verify failed
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The folder is read at start: to let a new client in, or to shut one out,
+add or remove its &lt;tt class="docutils literal"&gt;.pem&lt;/tt&gt; and start Virtualbricks again.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="three-protocols"&gt;
+&lt;h2&gt;Three protocols&lt;/h2&gt;
+&lt;p&gt;A socket carries lines of JSON, with &lt;tt class="docutils literal"&gt;protocol=json&lt;/tt&gt;, or the boxes of
+AMP, Twisted's Asynchronous Messaging Protocol, the default. On them,
+Virtualbricks speaks three protocols:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;+--------------+  +-------------+---------------------------+
+|     JSON     |  |    AMP 1    |           AMP 2           |
+|  line, cwd   |  | Hello, Run  | typed commands, Follow    |
+|  -&amp;gt; lines    |  |             | and its pushes, Attach    |
++--------------+  +-------------+---------------------------+
+|  the token,  |  |  the token, if asked: Challenge and     |
+|  if asked    |  |  Authenticate                           |
++--------------+  +-----------------------------------------+
+|  JSON lines  |  |  AMP boxes                              |
++--------------+--+-----------------------------------------+
+|  a unix, tcp or ssl socket of --listen                    |
++-----------------------------------------------------------+
+   protocol=json      protocol=amp, the default
+&lt;/pre&gt;&lt;/div&gt;
+&lt;dl class="docutils"&gt;
+&lt;dt&gt;&lt;strong&gt;JSON&lt;/strong&gt;&lt;/dt&gt;
+&lt;dd&gt;A line of the console in each request, the lines it prints in each
+answer. Any language that reads and writes JSON speaks it, and so does a
+shell with &lt;tt class="docutils literal"&gt;socat&lt;/tt&gt;.&lt;/dd&gt;
+&lt;dt&gt;&lt;strong&gt;AMP 1&lt;/strong&gt;&lt;/dt&gt;
+&lt;dd&gt;&lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt;, who answers, and &lt;tt class="docutils literal"&gt;Run&lt;/tt&gt;, a line of the console and its
+lines. &lt;tt class="docutils literal"&gt;virtualbricks &lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; speaks it, and so can a program
+written with Twisted.&lt;/dd&gt;
+&lt;dt&gt;&lt;strong&gt;AMP 2&lt;/strong&gt;&lt;/dt&gt;
+&lt;dd&gt;On the same connection, once &lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt; agrees on it: a typed command for
+each command of the console, and the commands of the windows of
+&lt;tt class="docutils literal"&gt;virtualbricks &lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt;, as &lt;tt class="docutils literal"&gt;Follow&lt;/tt&gt;, which sends the project and
+then each change.&lt;/dd&gt;
+&lt;/dl&gt;
+&lt;p&gt;What they share:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;One request after the other.&lt;/strong&gt; Each connection runs its requests in the
+order they came. A client may send the next request before the answer to
+the one before, and the answers come in the same order. Connections don't
+wait for each other, nor for the terminal or the events of Virtualbricks.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The folder of the paths.&lt;/strong&gt; The paths of a command, as that of
+&lt;tt class="docutils literal"&gt;source FILE&lt;/tt&gt;, are read from &lt;tt class="docutils literal"&gt;cwd&lt;/tt&gt;, an absolute path that a request
+may give, or else from the folder where Virtualbricks runs. A client on
+another machine leaves &lt;tt class="docutils literal"&gt;cwd&lt;/tt&gt; out: its folders aren't those of
+Virtualbricks.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The end.&lt;/strong&gt; When Virtualbricks quits, it closes each connection once the
+answers it owes are written, &lt;tt class="docutils literal"&gt;quit&lt;/tt&gt; included; a client that doesn't
+read them within 2 seconds is cut off.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-json-protocol"&gt;
+&lt;h2&gt;The JSON protocol&lt;/h2&gt;
+&lt;p&gt;Each message is a JSON object on a line of its own, in UTF-8, ended by a
+newline. Virtualbricks writes the first line, the greeting, as soon as a
+client connects: the &lt;tt class="docutils literal"&gt;protocol&lt;/tt&gt;, 1; its &lt;tt class="docutils literal"&gt;version&lt;/tt&gt;; its process,
+&lt;tt class="docutils literal"&gt;pid&lt;/tt&gt;; and the open &lt;tt class="docutils literal"&gt;project&lt;/tt&gt;, or &lt;tt class="docutils literal"&gt;null&lt;/tt&gt;. A client that doesn't know
+the protocol sends nothing and closes the connection.&lt;/p&gt;
+&lt;p&gt;A request has &lt;tt class="docutils literal"&gt;line&lt;/tt&gt;, a line of the console as it is typed, and
+&lt;tt class="docutils literal"&gt;cwd&lt;/tt&gt;, optional. Its answer has &lt;tt class="docutils literal"&gt;ok&lt;/tt&gt;, whether the command was done,
+&lt;tt class="docutils literal"&gt;lines&lt;/tt&gt;, what it printed, and &lt;tt class="docutils literal"&gt;error&lt;/tt&gt;, why it failed, when &lt;tt class="docutils literal"&gt;ok&lt;/tt&gt; is
+&lt;tt class="docutils literal"&gt;false&lt;/tt&gt;; &lt;tt class="docutils literal"&gt;lines&lt;/tt&gt; is then what it printed before it failed. A line that
+isn't a request gets an answer with &lt;tt class="docutils literal"&gt;ok&lt;/tt&gt; &lt;tt class="docutils literal"&gt;false&lt;/tt&gt; and why, and the
+connection goes on. With &lt;tt class="docutils literal"&gt;socat&lt;/tt&gt;, on a JSON socket:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ virtualbricks --no-gui --listen unix:~/labs/lab1.json:protocol=json &amp;amp;
+$ socat - UNIX-CONNECT:$HOME/labs/lab1.json
+{&amp;quot;protocol&amp;quot;: 1, &amp;quot;version&amp;quot;: &amp;quot;3.0.0.dev3&amp;quot;, &amp;quot;pid&amp;quot;: 430482, &amp;quot;project&amp;quot;: &amp;quot;lab1&amp;quot;}
+{&amp;quot;line&amp;quot;: &amp;quot;brick start sw2&amp;quot;, &amp;quot;cwd&amp;quot;: &amp;quot;/home/alice/labs&amp;quot;}
+{&amp;quot;ok&amp;quot;: true, &amp;quot;lines&amp;quot;: [&amp;quot;sw2 runs, process 430557&amp;quot;]}
+{&amp;quot;line&amp;quot;: &amp;quot;status&amp;quot;}
+{&amp;quot;ok&amp;quot;: true, &amp;quot;lines&amp;quot;: [&amp;quot;BRICK  KIND    PROCESS&amp;quot;, &amp;quot;sw1    Switch  430548&amp;quot;, &amp;quot;sw2    Switch  430557&amp;quot;]}
+{&amp;quot;line&amp;quot;: &amp;quot;brick start vm9&amp;quot;}
+{&amp;quot;ok&amp;quot;: false, &amp;quot;lines&amp;quot;: [], &amp;quot;error&amp;quot;: &amp;quot;No brick named vm9&amp;quot;}
+{&amp;quot;cwd&amp;quot;: &amp;quot;labs&amp;quot;, &amp;quot;line&amp;quot;: &amp;quot;status&amp;quot;}
+{&amp;quot;ok&amp;quot;: false, &amp;quot;lines&amp;quot;: [], &amp;quot;error&amp;quot;: &amp;quot;Not a request: \&amp;quot;cwd\&amp;quot; is not an absolute path&amp;quot;}
+hello
+{&amp;quot;ok&amp;quot;: false, &amp;quot;lines&amp;quot;: [], &amp;quot;error&amp;quot;: &amp;quot;Not a request: a line of JSON, as {\&amp;quot;line\&amp;quot;: \&amp;quot;brick list\&amp;quot;}&amp;quot;}
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Virtualbricks skips the empty lines, and closes the connection on a line
+longer than 64 KiB. A key that a message doesn't need is ignored, and a
+client should ignore the keys it doesn't know, so that a later version can
+add some. Over JSON, an answer can be as long as it needs, and what a
+command printed before it failed comes with its error:
+&lt;tt class="docutils literal"&gt;virtualbricks &lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; prints it, on a JSON socket, before the error.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;With the token.&lt;/strong&gt; On a tcp or ssl socket that asks for the token, the
+first line asks for the proof, with the nonce of Virtualbricks; the client
+answers with its own nonce and its proof, and the greeting follows, with
+the proof of Virtualbricks:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;{&amp;quot;protocol&amp;quot;: 1, &amp;quot;auth&amp;quot;: &amp;quot;token&amp;quot;, &amp;quot;nonce&amp;quot;: &amp;quot;a12ba50c...0080720&amp;quot;}
+{&amp;quot;nonce&amp;quot;: &amp;quot;c41d...&amp;quot;, &amp;quot;proof&amp;quot;: &amp;quot;8e02...&amp;quot;}
+{&amp;quot;protocol&amp;quot;: 1, &amp;quot;version&amp;quot;: &amp;quot;3.0.0.dev3&amp;quot;, &amp;quot;pid&amp;quot;: 4200, &amp;quot;project&amp;quot;: &amp;quot;lab1&amp;quot;, &amp;quot;proof&amp;quot;: &amp;quot;51b7...&amp;quot;}
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;A wrong proof, a line that isn't one, or none in 10 seconds gets an answer
+with &lt;tt class="docutils literal"&gt;ok&lt;/tt&gt; &lt;tt class="docutils literal"&gt;false&lt;/tt&gt; and why, as &lt;tt class="docutils literal"&gt;Wrong token&lt;/tt&gt;, and the connection
+closes. A whole client, in Python and nothing else, for a Virtualbricks
+started with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt; tcp:8766:protocol=json&lt;/tt&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;hmac&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;json&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;os&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;secrets&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;socket&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;sys&lt;/span&gt;
+
+
+&lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;proof&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;side&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;nonce&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;mine&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="sa"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;virtualbricks &lt;/span&gt;&lt;span class="si"&gt;{&lt;/span&gt;&lt;span class="n"&gt;side&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt; &lt;/span&gt;&lt;span class="si"&gt;{&lt;/span&gt;&lt;span class="n"&gt;nonce&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt; &lt;/span&gt;&lt;span class="si"&gt;{&lt;/span&gt;&lt;span class="n"&gt;mine&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;hmac&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;new&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;encode&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;encode&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;sha256&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;hexdigest&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+
+&lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;send&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;write&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dumps&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;encode&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="sa"&gt;b&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;flush&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+
+&lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;receive&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;loads&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;readline&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+
+
+&lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;connect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;port&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;sock&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;socket&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;create_connection&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;127.0.0.1&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;port&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+    &lt;span class="n"&gt;lines&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sock&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;makefile&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;rwb&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;first&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;receive&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;first&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;auth&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;token&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;nonce&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;mine&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;first&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;nonce&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;secrets&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_hex&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;32&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;send&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;nonce&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;mine&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;proof&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;proof&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;client&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;nonce&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;mine&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+        &lt;span class="n"&gt;first&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;receive&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;expected&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;proof&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;server&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;nonce&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;mine&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;hmac&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;compare_digest&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;first&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;proof&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;expected&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;first&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Wrong token&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;first&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;protocol&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;It doesn&amp;#39;t speak the JSON protocol 1&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;lines&lt;/span&gt;
+
+
+&lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;ask&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;send&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;answer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;receive&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;answer&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;lines&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]))&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;answer&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;ok&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]:&lt;/span&gt;
+        &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;answer&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+
+
+&lt;span class="n"&gt;config&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;expanduser&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;~/.config&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;config&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;environ&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;XDG_CONFIG_HOME&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;config&lt;/span&gt;
+&lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nb"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;config&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;virtualbricks&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;token&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;file&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;file&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;strip&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;lines&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;connect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;8766&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;ask&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;status&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;ask&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;brick list&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It prints:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;BRICK  KIND    PROCESS
+sw1    Switch  430548
+sw2    Switch  430557
+NAME  KIND    STATE    SUMMARY
+sw1   Switch  Running  32 ports
+sw2   Switch  Running  32 ports
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="section" id="amp"&gt;
+&lt;h2&gt;AMP&lt;/h2&gt;
+&lt;p&gt;AMP carries boxes: a key and its value, then another, and so on, up to a
+key of no bytes. Each key and each value has its length first, in two
+bytes: a key has from 1 to 255 bytes, a value from 0 to 65535. A request of
+&lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt;, and its answer:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt; length  key         length  value
++-------+-----------+-------+-----------------------+
+| 00 04 | _ask      | 00 01 | 1                     |
+| 00 08 | _command  | 00 05 | Hello                 |
+| 00 09 | protocols | 00 06 | 00 01 &amp;quot;1&amp;quot; 00 01 &amp;quot;2&amp;quot;   |
+| 00 00 |              the end of the box           |
++-------+-----------+-------+-----------------------+
+| 00 07 | _answer   | 00 01 | 1                     |
+| 00 08 | protocol  | 00 01 | 2                     |
+| 00 07 | version   | 00 0a | 3.0.0.dev3            |
+| 00 03 | pid       | 00 06 | 430482                |
+| 00 07 | project   | 00 04 | lab1                  |
+| 00 00 |              the end of the box           |
++-------+-----------+-------+-----------------------+
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;A request has &lt;tt class="docutils literal"&gt;_ask&lt;/tt&gt;, a tag that the client chooses, and &lt;tt class="docutils literal"&gt;_command&lt;/tt&gt;,
+the name of the command, then its arguments. Its answer has &lt;tt class="docutils literal"&gt;_answer&lt;/tt&gt;,
+the same tag, and the values; or, if the command failed, &lt;tt class="docutils literal"&gt;_error&lt;/tt&gt;, the
+tag, &lt;tt class="docutils literal"&gt;_error_code&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;_error_description&lt;/tt&gt;. A request without
+&lt;tt class="docutils literal"&gt;_ask&lt;/tt&gt; wants no answer. A value is text in UTF-8, an integer in decimal
+digits, &lt;tt class="docutils literal"&gt;True&lt;/tt&gt; or &lt;tt class="docutils literal"&gt;False&lt;/tt&gt;, bytes, or a list, each item with its length
+first. An optional argument is left out of the box when it has no value.&lt;/p&gt;
+&lt;p&gt;Twisted adds two error codes to those of each command: &lt;tt class="docutils literal"&gt;UNHANDLED&lt;/tt&gt;, there
+is no command of that name, and &lt;tt class="docutils literal"&gt;UNKNOWN&lt;/tt&gt;, a failure that Virtualbricks
+didn't expect, after which the connection closes. A box that isn't one
+closes the connection too.&lt;/p&gt;
+&lt;p&gt;A program written with Twisted has all this in
+&lt;tt class="docutils literal"&gt;twisted.protocols.amp&lt;/tt&gt;. In Python without Twisted,
+&lt;tt class="docutils literal"&gt;virtualbricks.console.ampbox&lt;/tt&gt; reads and writes the boxes: it's what
+&lt;tt class="docutils literal"&gt;virtualbricks &lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; uses, so that it starts without the reactor. In
+another language, a box is a few lines of code.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="amp-protocol-1"&gt;
+&lt;h2&gt;AMP protocol 1&lt;/h2&gt;
+&lt;p&gt;Four commands, in the module &lt;tt class="docutils literal"&gt;virtualbricks.console.ampwire&lt;/tt&gt;, which loads
+nothing but Twisted's &lt;tt class="docutils literal"&gt;amp&lt;/tt&gt;. A program imports it, or copies it: the
+manual page &lt;tt class="docutils literal"&gt;virtualbricks(1)&lt;/tt&gt; has them as a program declares them.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Hello         protocols:[int]?
+              -&amp;gt; protocol:int version:str pid:int project:str?
+Run           line:str cwd:str? -&amp;gt; lines:[str]
+Challenge     -&amp;gt; nonce:str
+Authenticate  nonce:str proof:str -&amp;gt; proof:str
+&lt;/pre&gt;&lt;/div&gt;
+&lt;dl class="docutils"&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;Who answers, and the protocol of the connection from then on.
+&lt;tt class="docutils literal"&gt;protocols&lt;/tt&gt; are those the program speaks; &lt;tt class="docutils literal"&gt;protocol&lt;/tt&gt; is the highest
+that Virtualbricks speaks too, 1 without them. A connection that doesn't
+call &lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt; speaks protocol 1.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;Run&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;A line of the console and its &lt;tt class="docutils literal"&gt;cwd&lt;/tt&gt;; the answer is the lines it
+printed. If the command fails, the error says why, and what it printed
+before is lost.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;Challenge&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;Authenticate&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;The proof of the token: &lt;tt class="docutils literal"&gt;Challenge&lt;/tt&gt; answers the nonce of
+Virtualbricks, &lt;tt class="docutils literal"&gt;Authenticate&lt;/tt&gt; takes the nonce of the program and its
+proof, and answers the proof of Virtualbricks, which the program checks.
+&lt;tt class="docutils literal"&gt;authenticate(vb, token)&lt;/tt&gt;, in &lt;tt class="docutils literal"&gt;ampwire&lt;/tt&gt;, does both and the check.&lt;/dd&gt;
+&lt;/dl&gt;
+&lt;p&gt;Their errors:&lt;/p&gt;
+&lt;dl class="docutils"&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;COMMAND_FAILED&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;&lt;tt class="docutils literal"&gt;Run&lt;/tt&gt;: the command failed, or its &lt;tt class="docutils literal"&gt;cwd&lt;/tt&gt; isn't an absolute path.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;ANSWER_TOO_LONG&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;&lt;tt class="docutils literal"&gt;Run&lt;/tt&gt;: the command was done, but its lines are longer than the 65535
+bytes of a value. A JSON socket carries them.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;TOKEN_NEEDED&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;On a socket that asks for the token, every command but &lt;tt class="docutils literal"&gt;Challenge&lt;/tt&gt; and
+&lt;tt class="docutils literal"&gt;Authenticate&lt;/tt&gt; fails until the program proves that it knows it.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;WRONG_TOKEN&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;The socket takes no token, and the connection goes on; or the proof is
+wrong, or &lt;tt class="docutils literal"&gt;Authenticate&lt;/tt&gt; came without a &lt;tt class="docutils literal"&gt;Challenge&lt;/tt&gt;, and the
+connection closes.&lt;/dd&gt;
+&lt;/dl&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;virtualbricks &lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; calls &lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt;, proves the token if the answer
+is &lt;tt class="docutils literal"&gt;TOKEN_NEEDED&lt;/tt&gt;, then sends each line with &lt;tt class="docutils literal"&gt;Run&lt;/tt&gt;. A program with
+Twisted, on a unix socket:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;os&lt;/span&gt;
+
+&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;twisted.internet&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;task&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;twisted.internet.defer&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;ensureDeferred&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;twisted.protocols&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;amp&lt;/span&gt;
+
+&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;virtualbricks.console.ampwire&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Run&lt;/span&gt;
+
+
+&lt;span class="k"&gt;async&lt;/span&gt; &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;expanduser&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;~/labs/lab1.sock&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;endpoint&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;UNIXClientEndpoint&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;vb&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;await&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;connectProtocol&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;endpoint&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;amp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;AMP&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+    &lt;span class="n"&gt;answer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;await&lt;/span&gt; &lt;span class="n"&gt;vb&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;callRemote&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Run&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;brick start sw1&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;answer&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;lines&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]))&lt;/span&gt;
+
+
+&lt;span class="n"&gt;task&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;react&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;lambda&lt;/span&gt; &lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;ensureDeferred&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Over tcp, the endpoint is &lt;tt class="docutils literal"&gt;TCP4ClientEndpoint(reactor, &amp;quot;127.0.0.1&amp;quot;,
+PORT)&lt;/tt&gt;, and the program awaits &lt;tt class="docutils literal"&gt;authenticate(vb, token)&lt;/tt&gt; before the
+other commands. Over ssl, Twisted's &lt;tt class="docutils literal"&gt;tls:HOST:PORT:trustRoots=DIR&lt;/tt&gt;
+checks the certificate of Virtualbricks and its name, and
+&lt;tt class="docutils literal"&gt;certificate=&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;privateKey=&lt;/tt&gt; add the program's own.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="amp-protocol-2"&gt;
+&lt;h2&gt;AMP protocol 2&lt;/h2&gt;
+&lt;p&gt;A connection speaks protocol 2 once &lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt; has agreed on it: the
+program calls &lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt; with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;protocols=[1,&lt;/span&gt; 2]&lt;/tt&gt;, and the answer has
+&lt;tt class="docutils literal"&gt;protocol&lt;/tt&gt; 2. From then on, it speaks the commands of both protocols;
+before, those of protocol 2 fail with &lt;tt class="docutils literal"&gt;PROTOCOL_NEEDED&lt;/tt&gt;.&lt;/p&gt;
+&lt;div class="section" id="the-typed-commands"&gt;
+&lt;h3&gt;The typed commands&lt;/h3&gt;
+&lt;p&gt;A typed command for each command of the console, in the module
+&lt;tt class="docutils literal"&gt;virtualbricks.console.ampcommands&lt;/tt&gt;, which loads nothing else of
+Virtualbricks but &lt;tt class="docutils literal"&gt;ampwire&lt;/tt&gt;. The name is the words of the command, each
+with a capital letter: &lt;tt class="docutils literal"&gt;brick card add&lt;/tt&gt; is &lt;tt class="docutils literal"&gt;BrickCardAdd&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;status&lt;/tt&gt;
+is &lt;tt class="docutils literal"&gt;Status&lt;/tt&gt;. The arguments are named after those of the console, in lower
+case, with &lt;tt class="docutils literal"&gt;_&lt;/tt&gt; for what isn't a letter or a digit: &lt;tt class="docutils literal"&gt;NAME&lt;/tt&gt; is &lt;tt class="docutils literal"&gt;name&lt;/tt&gt;,
+&lt;tt class="docutils literal"&gt;KEY=VALUE&lt;/tt&gt; is &lt;tt class="docutils literal"&gt;key_value&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--at&lt;/span&gt;&lt;/tt&gt; is &lt;tt class="docutils literal"&gt;at&lt;/tt&gt;. A number is an
+integer; an argument that repeats, a list; &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;KEY=VALUE...&lt;/span&gt;&lt;/tt&gt;, a list of
+records of &lt;tt class="docutils literal"&gt;key&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;value&lt;/tt&gt;; an option without a value, a boolean;
+the rest, text; and what is optional in the console is optional here. Each
+takes &lt;tt class="docutils literal"&gt;cwd&lt;/tt&gt; too, as &lt;tt class="docutils literal"&gt;Run&lt;/tt&gt; does, and answers &lt;tt class="docutils literal"&gt;lines&lt;/tt&gt;, what the console
+prints:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;BrickTypes
+BrickList
+BrickNew           kind:str name:str?
+BrickShow          name:str
+BrickKeys          kind_name:str key:str?
+BrickSet           name:str key_value:pairs
+BrickUnset         name:str key:[str]
+BrickStart         name:[str]
+BrickStop          name:[str]
+BrickKill          name:[str]
+BrickRestart       name:[str]
+BrickPause         name:[str]
+BrickContinue      name:[str]
+BrickSuspend       vm:str
+BrickResume        vm:str
+BrickReset         vm:str
+BrickMonitor       name:str
+BrickConnect       name:str target:[str]
+BrickDisconnect    name:str end:str?
+BrickCardAdd       vm:str kind:str options:[str]?
+BrickCardSet       vm:str card:str key_value:pairs
+BrickCardRemove    vm:str card:[str]
+BrickRename        name:str new:str
+BrickDuplicate     name:str new:str?
+BrickDelete        name:[str]
+EventList
+EventNew           name:str?
+EventShow          name:str
+EventSet           name:str key_value:pairs
+EventActionAdd     name:str what:str subject:str? at:int?
+EventActionRemove  name:str n:[int]
+EventActionMove    name:str n:int to:int
+EventStart         name:[str]
+EventStop          name:[str]
+EventRun           name:[str]
+EventRename        name:str new:str
+EventDuplicate     name:str new:str?
+EventDelete        name:[str]
+ImageList
+ImageAdd           name:str path:str key_value:pairs?
+ImageShow          name:str
+ImageSet           name:str key_value:pairs
+ImageRename        name:str new:str
+ImageDelete        name:str
+SettingShow        key:str?
+SettingSet         key_value:pairs
+SettingUnset       key:[str]
+ProjectList
+ProjectShow
+ProjectOpen        name:str
+ProjectNew         name:str
+ProjectSave
+ProjectRename      name:str new:str
+ProjectDuplicate   name:str new:str
+ProjectDelete      name:str force:bool?
+Help               topic:[str]?
+Status
+Quit
+Source             file:str
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;BrickSet(name=&amp;quot;vm1&amp;quot;,&lt;/span&gt; &lt;span class="pre"&gt;key_value=[{&amp;quot;key&amp;quot;:&lt;/span&gt; &amp;quot;memory&amp;quot;, &amp;quot;value&amp;quot;: &lt;span class="pre"&gt;&amp;quot;1024&amp;quot;}])&lt;/span&gt;&lt;/tt&gt; is
+&lt;tt class="docutils literal"&gt;brick set vm1 memory=1024&lt;/tt&gt;, and &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;BrickStart(name=[&amp;quot;sw1&amp;quot;,&lt;/span&gt; &lt;span class="pre"&gt;&amp;quot;vm1&amp;quot;])&lt;/span&gt;&lt;/tt&gt; is
+&lt;tt class="docutils literal"&gt;brick start sw1 vm1&lt;/tt&gt;. Where &lt;tt class="docutils literal"&gt;Run&lt;/tt&gt; fails with &lt;tt class="docutils literal"&gt;COMMAND_FAILED&lt;/tt&gt;
+whatever went wrong, the typed commands say what it was:&lt;/p&gt;
+&lt;dl class="docutils"&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;NOT_FOUND&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;A name of the command names nothing there: a brick, an event, an image,
+a project, a program or a file. Nothing was done.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;BAD_ARGUMENT&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;An argument isn't one the command takes; or the box has a key that the
+command doesn't have, or lacks one it needs, which Twisted would drop or
+close the connection on. Nothing was done.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;COMMAND_FAILED&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;The command failed on the way: a program or a file said no. Part of it
+may be done.&lt;/dd&gt;
+&lt;dt&gt;&lt;tt class="docutils literal"&gt;PROTOCOL_NEEDED&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;ANSWER_TOO_LONG&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;TOKEN_NEEDED&lt;/tt&gt;&lt;/dt&gt;
+&lt;dd&gt;As above.&lt;/dd&gt;
+&lt;/dl&gt;
+&lt;p&gt;In the modules, &lt;tt class="docutils literal"&gt;NotFound&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;BadArgument&lt;/tt&gt; are subclasses of
+&lt;tt class="docutils literal"&gt;CommandFailed&lt;/tt&gt;: a program that catches &lt;tt class="docutils literal"&gt;CommandFailed&lt;/tt&gt; catches the
+three.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-commands-of-the-windows"&gt;
+&lt;h3&gt;The commands of the windows&lt;/h3&gt;
+&lt;p&gt;What the windows of &lt;tt class="docutils literal"&gt;virtualbricks &lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt; need that the console has
+no command for, in the module &lt;tt class="docutils literal"&gt;virtualbricks.remote.commands&lt;/tt&gt;. A table, a
+state and the other structured values are JSON in a text, since AMP has no
+tables:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Follow             -&amp;gt; project:str? version:str
+Apply              kind:str name:str changes:str links:str
+                   extras:str -&amp;gt;
+Connect            source:str target:str -&amp;gt; connected:bool
+QemuFacts          program:str -&amp;gt; path:str version:str
+                   options:str machines:str cpus:str devices:str
+                   displays:str audio_drivers:str netdevs:str
+                   accelerators:str
+MachineProperties  program:str machine:str -&amp;gt; text:str
+UsbDevices         -&amp;gt; devices:str
+ImageFacts         path:str -&amp;gt; file:str info:str others:str
+MakeImage          path:str format:str size:int -&amp;gt;
+StartOver          vm:str device:str -&amp;gt; trashed:bool
+TrashFile          path:str -&amp;gt; trashed:bool
+Relink             name:str path:str -&amp;gt;
+ProjectNames       -&amp;gt; names:[str]
+ProjectSummary     name:str -&amp;gt; summary:str
+DiskUsage          name:str -&amp;gt; private_disks:int other_files:int
+Readme             -&amp;gt; text:str
+SetReadme          text:str -&amp;gt;
+ReadmePicture      name:str path:str offset:int
+                   -&amp;gt; data:bytes size:int
+SetKsm             enable:bool -&amp;gt; enabled:bool
+Folder             path:str -&amp;gt; entries:[str] more:bool
+ProgramsFound      vde_path:str qemu_path:str
+                   -&amp;gt; vde:str qemu:str
+Attach             brick:str console:str -&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;Apply&lt;/tt&gt; is the OK of the panel of a brick, an event or an image: the
+settings it changed, the plugs it moved, and, when they changed, the cards
+of a machine or the states of a Netemu. Only the keys given change, so
+two windows that change different keys of a brick keep both.&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;Connect&lt;/tt&gt; is a drop in the Topology: a free plug, or a new card of a
+machine.&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;MakeImage&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;StartOver&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;TrashFile&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;Relink&lt;/tt&gt; work on the
+files of the images and of the private copies.&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;ProjectNames&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;ProjectSummary&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;DiskUsage&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;Readme&lt;/tt&gt; and
+&lt;tt class="docutils literal"&gt;SetReadme&lt;/tt&gt; fill the Projects window and the Readme tab.
+&lt;tt class="docutils literal"&gt;ReadmePicture&lt;/tt&gt; sends a picture of a README in pieces, from
+&lt;tt class="docutils literal"&gt;offset&lt;/tt&gt;, until the program has &lt;tt class="docutils literal"&gt;size&lt;/tt&gt; bytes, up to 10 MB.&lt;/li&gt;
+&lt;li&gt;&lt;tt class="docutils literal"&gt;QemuFacts&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;MachineProperties&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;UsbDevices&lt;/tt&gt; are what the QEMU
+and the USB devices of the lab machine have, for the panel of a virtual
+machine; &lt;tt class="docutils literal"&gt;ImageFacts&lt;/tt&gt; is what a disk image is; &lt;tt class="docutils literal"&gt;Folder&lt;/tt&gt; completes a
+path as it is typed, at most 200 entries; &lt;tt class="docutils literal"&gt;ProgramsFound&lt;/tt&gt; says what the
+folders of QEMU and VDE hold, for the Settings window.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The commands that only read the machine, &lt;tt class="docutils literal"&gt;QemuFacts&lt;/tt&gt;,
+&lt;tt class="docutils literal"&gt;MachineProperties&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;UsbDevices&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;ImageFacts&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;DiskUsage&lt;/tt&gt;,
+&lt;tt class="docutils literal"&gt;ReadmePicture&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;Folder&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;ProgramsFound&lt;/tt&gt;, answer as soon as they
+can, beside the requests that wait. The others wait for their turn, as the
+typed commands do, and Virtualbricks logs them.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="follow-and-the-pushes"&gt;
+&lt;h3&gt;Follow and the pushes&lt;/h3&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;Follow&lt;/tt&gt; asks for the project and for its changes. Virtualbricks sends
+them as pushes, commands that it calls on the program without &lt;tt class="docutils literal"&gt;_ask&lt;/tt&gt;,
+which want no answer:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Opened             project:str? settings:str machine:str
+Changed            kind:str name:str table:str state:str
+Renamed            kind:str old:str new:str
+Removed            kind:str name:str
+Synced
+SettingsChanged    settings:str
+Logged             message:str
+Quitting
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;First &lt;tt class="docutils literal"&gt;Opened&lt;/tt&gt;, with the settings and what the lab machine has: its
+version, its workspace, its folders, whether it has a trash, its QEMU
+programs, the programs it lacks for each kind of brick, and whether KSM
+runs. Then a &lt;tt class="docutils literal"&gt;Changed&lt;/tt&gt; for each image, brick and event, each brick after
+those it plugs into, with its &lt;tt class="docutils literal"&gt;table&lt;/tt&gt;, as the project file writes it, and
+its &lt;tt class="docutils literal"&gt;state&lt;/tt&gt;, what the file doesn't: the process of a brick, the private
+copies of a machine, the file of an image, the seconds an event still
+waits. Then &lt;tt class="docutils literal"&gt;Synced&lt;/tt&gt;, the last 500 messages of the log, and the answer.
+From then on, Virtualbricks gathers what changes and sends it once a turn
+of its loop, each object once, as it is then. When another project opens,
+the copy starts over with &lt;tt class="docutils literal"&gt;Opened&lt;/tt&gt;.&lt;/p&gt;
+&lt;p&gt;A program that follows declares the eight pushes, and has a responder for
+each: Twisted closes the connection on a command it has no responder for.
+A program that follows the project and drives it with typed commands:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;json&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;os&lt;/span&gt;
+
+&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;twisted.internet&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;defer&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;task&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;twisted.protocols&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;amp&lt;/span&gt;
+
+&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;virtualbricks.console.ampcommands&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;BrickSet&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;BrickStop&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;NotFound&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;virtualbricks.console.ampwire&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Hello&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;authenticate&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;virtualbricks.remote&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;commands&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nc"&gt;Follower&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;amp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;AMP&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot;Prints what changes: a responder for each of the eight pushes.&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Opened&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;opened&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;project&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;settings&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;machine&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Opened&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;project&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Changed&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;changed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;table&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;state&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Changed&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;loads&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;state&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Renamed&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;renamed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;old&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;new&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Removed&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;removed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Synced&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;synced&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Synced&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;SettingsChanged&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;settings_changed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;settings&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Logged&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;logged&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Quitting&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;quitting&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+
+
+&lt;span class="k"&gt;async&lt;/span&gt; &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;endpoint&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;TCP4ClientEndpoint&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;127.0.0.1&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;8765&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;vb&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;await&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;connectProtocol&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;endpoint&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Follower&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+    &lt;span class="n"&gt;config&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;expanduser&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;~/.config&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;config&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;environ&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;XDG_CONFIG_HOME&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;config&lt;/span&gt;
+    &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nb"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;config&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;virtualbricks&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;token&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;file&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;await&lt;/span&gt; &lt;span class="n"&gt;authenticate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;vb&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;file&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;strip&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+    &lt;span class="n"&gt;hello&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;await&lt;/span&gt; &lt;span class="n"&gt;vb&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;callRemote&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Hello&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;protocols&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;hello&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;protocol&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="ne"&gt;SystemExit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;It doesn&amp;#39;t speak protocol 2&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;await&lt;/span&gt; &lt;span class="n"&gt;vb&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;callRemote&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Follow&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;await&lt;/span&gt; &lt;span class="n"&gt;vb&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;callRemote&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;BrickStop&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;sw2&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]))&lt;/span&gt;
+    &lt;span class="n"&gt;ports&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;key&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;ports&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;value&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;16&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;await&lt;/span&gt; &lt;span class="n"&gt;vb&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;callRemote&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;BrickSet&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;sw2&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;key_value&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;ports&lt;/span&gt;&lt;span class="p"&gt;]))&lt;/span&gt;
+    &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;await&lt;/span&gt; &lt;span class="n"&gt;vb&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;callRemote&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;BrickStop&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;sw9&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+    &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="n"&gt;NotFound&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;exc&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;NotFound:&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;exc&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+
+&lt;span class="n"&gt;task&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;react&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;lambda&lt;/span&gt; &lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;defer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ensureDeferred&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It prints:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Opened lab1
+Changed brick sw1 {&amp;#39;pid&amp;#39;: 430548}
+Changed brick sw2 {&amp;#39;pid&amp;#39;: 430557}
+Synced
+{&amp;#39;lines&amp;#39;: [&amp;#39;sw2 stopped&amp;#39;]}
+Changed brick sw2 {&amp;#39;pid&amp;#39;: None}
+Changed brick sw2 {&amp;#39;pid&amp;#39;: None}
+{&amp;#39;lines&amp;#39;: []}
+NotFound: No brick named sw9
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="section" id="attach"&gt;
+&lt;h3&gt;Attach&lt;/h3&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;Attach&lt;/tt&gt; joins the program to a console of a running brick: &lt;tt class="docutils literal"&gt;monitor&lt;/tt&gt;,
+its control monitor, or &lt;tt class="docutils literal"&gt;serial&lt;/tt&gt;, the serial socket of a machine.
+Virtualbricks connects to the console, then answers, and from then on the
+connection carries the bytes of the console both ways, and nothing else:
+it's AMP's &lt;tt class="docutils literal"&gt;ProtocolSwitchCommand&lt;/tt&gt;. When either end closes, so does the
+other. So a program opens a new connection for each console, proves the
+token if asked, agrees on protocol 2, then calls &lt;tt class="docutils literal"&gt;Attach&lt;/tt&gt;. The windows of
+&lt;tt class="docutils literal"&gt;virtualbricks &lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt; join that connection to a terminal of their
+own, with &lt;tt class="docutils literal"&gt;vdeterm&lt;/tt&gt; or &lt;tt class="docutils literal"&gt;unixterm&lt;/tt&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;terminal     program            Virtualbricks     console
+   |            |                     |              |
+   |            |-- Attach brick vm1, |              |
+   |            |   console monitor -&amp;gt;|-- connects -&amp;gt;|
+   |            |&amp;lt;----------- answer -|              |
+   |&amp;lt;= bytes ==&amp;gt;|&amp;lt;====== bytes ======&amp;gt;|&amp;lt;== bytes ===&amp;gt;|
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="section" id="versions"&gt;
+&lt;h3&gt;Versions&lt;/h3&gt;
+&lt;p&gt;Protocol 2 keeps its commands as they are. A later Virtualbricks may add
+commands to it, and optional arguments to its commands, and nothing else:
+an older one answers a command it doesn't have with &lt;tt class="docutils literal"&gt;UNHANDLED&lt;/tt&gt;, and an
+argument it doesn't know with &lt;tt class="docutils literal"&gt;BAD_ARGUMENT&lt;/tt&gt;, so a program knows that
+they weren't done. A change of any other kind makes protocol 3, which would
+take the place of 2: a program that speaks both calls &lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt; with
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;protocols=[1,&lt;/span&gt; 2, 3]&lt;/tt&gt;. The sources keep the commands of protocol 2 in
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;tests/data/amp-protocol-2.txt&lt;/span&gt;&lt;/tt&gt;, and the tests compare it with the
+modules, so that no change slips in.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="section" id="the-windows-of-another-virtualbricks"&gt;
+&lt;h2&gt;The windows of another Virtualbricks&lt;/h2&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt; without &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; or &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--run&lt;/span&gt;&lt;/tt&gt; opens the windows of the
+Virtualbricks it names: the bricks run there, on the lab machine, and the
+windows here. That Virtualbricks listens on an AMP socket, with its own
+windows or with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--no-gui&lt;/span&gt;&lt;/tt&gt;, and both ends run the same version:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# on the lab machine&lt;/span&gt;
+virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem&amp;#39;&lt;/span&gt;
+&lt;span class="c1"&gt;# on your desktop&lt;/span&gt;
+virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--connect&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ssl:lab.example:8765:caCertsDir=~/vb/lab&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;tt class="docutils literal"&gt;virtualbricks &lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt; alone opens the windows of a Virtualbricks of
+yours on this machine, found as &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; finds it: that of
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--workspace&lt;/span&gt;&lt;/tt&gt;, or the only one that listens. The windows call it &lt;em&gt;this
+computer&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;The windows speak protocol 2, so &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt; takes no &lt;tt class="docutils literal"&gt;protocol=json&lt;/tt&gt;
+here; nor &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--no-gui&lt;/span&gt;&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--lock&lt;/span&gt;&lt;/tt&gt; or &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt;, which are for the
+Virtualbricks that runs the bricks. They prove the token, or show their
+certificate, as &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; does.&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;&lt;strong&gt;They follow the project there&lt;/strong&gt;: its bricks, events and images, their
+processes, the settings and the log. What the console or other windows
+change there shows at once, and the title names the project and where it
+runs.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;What they do goes there&lt;/strong&gt;: a start, a new brick, the OK of a panel,
+which sends only the keys it changed.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;What they show is the lab machine's&lt;/strong&gt;: its QEMU programs and what they
+can do, its USB devices, the files of its images, its projects. A path is
+a path there, typed in an entry that completes from the folders there.
+Settings has three pages: this computer, as the terminal; the lab
+machine, its KSM and the audio driver of QEMU; and the project.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Consoles open here.&lt;/strong&gt; &lt;em&gt;Open Control Monitor&lt;/em&gt; starts a terminal on this
+computer, joined to the console there with &lt;tt class="docutils literal"&gt;Attach&lt;/tt&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;When the connection is lost&lt;/strong&gt;, a bar says why, and &lt;em&gt;Reconnect&lt;/em&gt; starts
+the copy over. &lt;em&gt;Quit&lt;/em&gt; closes the windows; the Virtualbricks there goes
+on.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Some items wait for a later version, greyed: Import and Export, saving or
+merging the private copy of a disk, copying an image to the image folder,
+&lt;em&gt;Show in Files&lt;/em&gt;, and &lt;em&gt;Terminate&lt;/em&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="section" id="limits"&gt;
+&lt;h2&gt;Limits&lt;/h2&gt;
+&lt;dl class="docutils"&gt;
+&lt;dt&gt;A line of the JSON protocol&lt;/dt&gt;
+&lt;dd&gt;64 KiB; a longer one closes the connection.&lt;/dd&gt;
+&lt;dt&gt;A key of AMP&lt;/dt&gt;
+&lt;dd&gt;255 bytes.&lt;/dd&gt;
+&lt;dt&gt;A value of AMP&lt;/dt&gt;
+&lt;dd&gt;65535 bytes. A longer answer is &lt;tt class="docutils literal"&gt;ANSWER_TOO_LONG&lt;/tt&gt;, after the command
+was done; a longer push isn't sent, and the log says so.&lt;/dd&gt;
+&lt;dt&gt;The path of a unix socket&lt;/dt&gt;
+&lt;dd&gt;107 bytes.&lt;/dd&gt;
+&lt;dt&gt;The token&lt;/dt&gt;
+&lt;dd&gt;At least 16 characters; Virtualbricks makes them of 43.&lt;/dd&gt;
+&lt;dt&gt;The proof of the token&lt;/dt&gt;
+&lt;dd&gt;10 seconds from connecting.&lt;/dd&gt;
+&lt;dt&gt;The last answers, at the end&lt;/dt&gt;
+&lt;dd&gt;2 seconds for the client to read them.&lt;/dd&gt;
+&lt;dt&gt;The log, for a program that follows&lt;/dt&gt;
+&lt;dd&gt;The last 500 messages, then each new one.&lt;/dd&gt;
+&lt;/dl&gt;
+&lt;/div&gt;
+&lt;div class="section" id="try-it"&gt;
+&lt;h2&gt;Try it&lt;/h2&gt;
+&lt;p&gt;All of this is in the &lt;tt class="docutils literal"&gt;develop&lt;/tt&gt; branch: the &lt;a class="reference external" href="https://www.virtualbricks.it/whats-coming-in-virtualbricks-3-0.html"&gt;first post&lt;/a&gt; says how to
+install it. The manual pages go further: &lt;tt class="docutils literal"&gt;virtualbricks(1)&lt;/tt&gt; for the
+options, the console and its commands, and &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbricks-control(7)&lt;/span&gt;&lt;/tt&gt; for
+the protocols, for whoever writes a client. Start a lab with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt;,
+drive it from another terminal, write a client in your language, and tell
+us what breaks on &lt;a class="reference external" href="https://github.com/virtualsquare/virtualbricks/issues"&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+</content><category term="News"/><category term="release"/><category term="develop"/><category term="console"/><category term="control socket"/><category term="amp"/><category term="tls"/></entry><entry><title>Virtualbricks 3.0: a tour of the new interface</title><link href="https://www.virtualbricks.it/the-new-interface-of-virtualbricks-3-0.html" rel="alternate"/><published>2026-10-05T12:00:00+02:00</published><updated>2026-10-05T12:00:00+02:00</updated><author><name>Marco Giusti</name></author><id>tag:www.virtualbricks.it,2026-10-05:/the-new-interface-of-virtualbricks-3-0.html</id><summary type="html">&lt;p class="first last"&gt;The tabs of the main window, one by one: the Bricks tab that took
 in the Running tab, the new Images tab, a Topology tab that zooms,
 a README in Markdown, a messages window that reads like a
 console, and a Settings window that says what your folders hold.&lt;/p&gt;
@@ -845,7 +1966,7 @@ virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--connect&lt;span class="w"&gt;
 &lt;/pre&gt;&lt;/div&gt;
 &lt;/li&gt;
 &lt;li&gt;&lt;p class="first"&gt;&lt;strong&gt;For programs.&lt;/strong&gt; The socket speaks Twisted's AMP, with a typed command
-for each command of the console, or JSON lines with &lt;tt class="docutils literal"&gt;protocol=text&lt;/tt&gt;, for
+for each command of the console, or JSON lines with &lt;tt class="docutils literal"&gt;protocol=json&lt;/tt&gt;, for
 programs in any language.&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;&lt;p class="first"&gt;&lt;strong&gt;Across the network.&lt;/strong&gt; &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt; tcp:PORT&lt;/tt&gt; listens on a port of this
