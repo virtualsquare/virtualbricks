@@ -780,7 +780,7 @@ class TestEditing(unittest.TestCase):
 
 
 class TestTheOldCommands(ProjectFileTestCase):
-    """Format 1 to 2: the commands of the old console in the events."""
+    """The commands of the old console in the events of 2.1."""
 
     def test_each_form(self):
         bricks, events = {"sw1", "vm1"}, {"boot"}
@@ -842,49 +842,3 @@ class TestTheOldCommands(ProjectFileTestCase):
                 projectfile.old_action(text, {"sw1"}, set()),
                 ({"kind": "console", "command": text}, False),
             )
-
-    def test_a_project(self):
-        data = {
-            "format": 1,
-            "bricks": {"sw1": {"type": "switch"}},
-            "events": {
-                "boot": {
-                    "delay": 5,
-                    "actions": [
-                        {"kind": "vb", "command": "sw1 on"},
-                        {"kind": "shell", "command": "logger up"},
-                        {"kind": "vb", "command": "reset"},
-                    ],
-                }
-            },
-        }
-        upgraded = upgrade_project(data, self.report)
-        self.assertEqual(upgraded["format"], 2)
-        self.assertEqual(
-            upgraded["events"]["boot"]["actions"],
-            [
-                {"kind": "start", "target": "sw1"},
-                {"kind": "shell", "command": "logger up"},
-                {"kind": "console", "command": "reset"},
-            ],
-        )
-        self.assertEqual(
-            self.messages(),
-            [
-                "events.boot.actions: the command 'sw1 on' is now start sw1",
-                "events.boot.actions: 'reset' is a command of the old console,"
-                " which the console may not read",
-            ],
-        )
-
-    def test_what_isnt_an_action_stays(self):
-        # the loader reports it, as for any other file
-        data = {
-            "format": 1,
-            "events": {"boot": {"actions": [1, {"kind": "vb"}]}},
-        }
-        self.assertEqual(
-            upgrade_project(data, self.report)["events"]["boot"]["actions"],
-            [1, {"kind": "vb"}],
-        )
-        self.assertEqual(self.messages(), [])

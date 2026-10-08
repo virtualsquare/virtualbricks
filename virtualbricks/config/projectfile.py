@@ -81,7 +81,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.bricks.sock import Sock
     from virtualbricks.bricks.virtualmachine import HostonlySock
 
-FORMAT = 2
+FORMAT = 1
 TOP_KEYS = frozenset(("format", "settings", "images", "events", "bricks"))
 HOSTONLY = "_hostonly"
 CONNECTION_KEYS = {
@@ -138,9 +138,9 @@ def old_action(
     text: str, bricks: Collection[str], events: Collection[str]
 ) -> tuple[Table, bool]:
     """
-    The action of format 2 of a command of the console of format 1, as
-    "sw1 on"; and whether the new console reads it: a command of the old
-    console that the new one lacks stays as it is.
+    The action of a command of the console of 2.1, as "sw1 on"; and whether
+    the new console reads it: a command of the old console that the new one
+    lacks stays as it is.
 
     bricks and events are the names of the project, which say whether a
     name is a brick or an event.
@@ -191,44 +191,6 @@ def old_action(
     return {"kind": "console", "command": text}, False
 
 
-def _upgrade_actions(data: Table, report: Report) -> Table:
-    """
-    Format 1 to 2: the events start and stop with actions of their own, and
-    their console commands are those of the new console.
-    """
-
-    events = data.get("events")
-    bricks = data.get("bricks")
-    brick_names = set(bricks) if isinstance(bricks, dict) else set()
-    event_names = set(events) if isinstance(events, dict) else set()
-    for name, table in (events.items() if isinstance(events, dict) else ()):
-        actions = table.get("actions") if isinstance(table, dict) else None
-        if not isinstance(actions, list):
-            continue
-        for index, action in enumerate(actions):
-            if not isinstance(action, dict) or action.get("kind") != "vb":
-                continue
-            text = action.get("command")
-            if not isinstance(text, str):
-                continue
-            new, read = old_action(text, brick_names, event_names)
-            where = f"events.{name}.actions"
-            if read:
-                report.info(
-                    f"the command {text!r} is now {describe_action(new)}",
-                    where,
-                )
-            else:
-                report.warning(
-                    f"{text!r} is a command of the old console, which the"
-                    " console may not read",
-                    where,
-                )
-            actions[index] = new
-    data["format"] = 2
-    return data
-
-
 def describe_action(table: Table) -> str:
     """An action of the project file in words: start sw1, console "…"."""
 
@@ -239,7 +201,7 @@ def describe_action(table: Table) -> str:
 
 
 # Steps that rewrite the data of format N into the data of format N + 1.
-UPGRADES: dict[int, Callable[[Table, Report], Table]] = {1: _upgrade_actions}
+UPGRADES: dict[int, Callable[[Table, Report], Table]] = {}
 
 
 class ProjectFormatError(Exception):

@@ -46,13 +46,11 @@ The files of Virtualbricks 2.1 and older, *~/.virtualbricks.conf* and the
 
 ## Format version
 
-Every file starts with a **format** key, the version of its layout: **2**
-for a project, **1** for the settings and the state. A project of format
-**1** is read, and saved in format **2**: the commands of its events become
-actions, see **Events**. A file written by a newer Virtualbricks, with a
-higher **format**, is not read: its settings are not used and the file is never overwritten, and a
-project in that format doesn't open. A missing or invalid **format** is
-reported, and the file is read as the current version.
+Every file starts with a **format** key, the version of its layout, now
+**1** for each of them. A file written by a newer Virtualbricks, with a
+higher **format**, is not read: its settings are not used and the file is
+never overwritten, and a project in that format doesn't open. A missing or
+invalid **format** is reported, and the file is read as the current version.
 
 ## Every value is written
 
@@ -307,12 +305,6 @@ and dropped at the next save.
         {kind = "shell", command = "logger lab started"},
     ]
     ```
-
-    A project of format **1** had only **"vb"**, a command of the old
-    console, and **"shell"**. Its commands are read as those of the new
-    console, as **sw1 on** becomes **{kind = "start", target = "sw1"}** and
-    **vm1 config memory=512** becomes **brick set vm1 memory=512**. A command
-    the new console lacks stays as it was, and is reported.
 
 ## Bricks
 
@@ -937,7 +929,7 @@ The virtual machine is shortened: Virtualbricks writes all of its keys, and
 the six empty disks.
 
 ```
-format = 2
+format = 1
 
 [settings]
 log_link_loops = false

@@ -3096,7 +3096,7 @@ def project_readme(virtualbricks, name, docstring):
     path = os.path.join(project, "project.toml")
     if not os.path.exists(path):
         with open(path, "w") as file:
-            file.write("format = 2\n")
+            file.write("format = 1\n")
     with open(os.path.join(project, "README.md"), "w") as file:
         file.write(docstring + "\n")
 
@@ -3493,7 +3493,7 @@ def fake_switch(virtualbricks, lines, status):
     project = os.path.join(virtualbricks.workspace, "new_project")
     os.makedirs(project)
     with open(os.path.join(project, "project.toml"), "w") as file:
-        file.write(f"format = 2\n\n[settings]\nvde_path = {folder!r}\n")
+        file.write(f"format = 1\n\n[settings]\nvde_path = {folder!r}\n")
 
 
 @then(words('an error says "{text}"'))

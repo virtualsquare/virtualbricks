@@ -44,11 +44,7 @@ Virtualbricks doesn\(aqt read them any more.
 .SH COMMON RULES
 .SS Format version
 Every file starts with a \f[B]format\f[R] key, the version of its
-layout: \f[B]2\f[R] for a project, \f[B]1\f[R] for the settings and the
-state.
-A project of format \f[B]1\f[R] is read, and saved in format
-\f[B]2\f[R]: the commands of its events become actions, see
-\f[B]Events\f[R].
+layout, now \f[B]1\f[R] for each of them.
 A file written by a newer Virtualbricks, with a higher \f[B]format\f[R],
 is not read: its settings are not used and the file is never
 overwritten, and a project in that format doesn\(aqt open.
@@ -323,13 +319,6 @@ actions = [
     {kind = \(dqshell\(dq, command = \(dqlogger lab started\(dq},
 ]
 .EE
-A project of format \f[B]1\f[R] had only \f[B]\(dqvb\(dq\f[R], a command
-of the old console, and \f[B]\(dqshell\(dq\f[R].
-Its commands are read as those of the new console, as \f[B]sw1 on\f[R]
-becomes \f[B]{kind = \(dqstart\(dq, target = \(dqsw1\(dq}\f[R] and
-\f[B]vm1 config memory=512\f[R] becomes \f[B]brick set vm1
-memory=512\f[R].
-A command the new console lacks stays as it was, and is reported.
 .RE
 .SS Bricks
 Every brick table has a \f[B]type\f[R], which is one of \f[B]qemu\f[R],
@@ -979,7 +968,7 @@ The virtual machine is shortened: Virtualbricks writes all of its keys,
 and the six empty disks.
 .IP
 .EX
-format = 2
+format = 1
 
 [settings]
 log_link_loops = false

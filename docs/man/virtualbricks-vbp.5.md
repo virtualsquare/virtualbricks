@@ -482,9 +482,6 @@ to its end. It sends what it knows as soon as it has read the project file,
 and the full list of members at the end; the Import window shows its form
 from the first, and the import starts without waiting for the second.
 
-The archives of the development versions of 3.0 may have a **project.toml**
-of format 1, which the import upgrades.
-
 # READING AN ARCHIVE
 
 Virtualbricks reads an archive as a stream, once, from its start:
