@@ -129,6 +129,9 @@ class FakeVirtualbricks:
 
         if isinstance(self.greeting, bytes):
             conn.sendall(self.greeting)
+            # as a JSON socket, it waits for a line until the client goes:
+            # closed now, it could refuse the Hello that comes after
+            reader.read()
             return
         while self.answers:
             try:
