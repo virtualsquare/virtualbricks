@@ -44,6 +44,35 @@ one leaves the list.
   `sigInt()` logs the same way, so two Ctrl+C might hang it too (not
   tried).
 
+## Archives
+
+- [ ] **An exported archive is readable only by its owner.** The export
+  writes the archive to a temporary file made by `tempfile.mkstemp()`,
+  which creates it with mode 0600 whatever the umask, and renames it to the
+  `.vbp` at the end, so the archive keeps 0600 (`write_archive()` in
+  `virtualbricks/config/archive.py`). The import, instead, gives the folder
+  it makes the permissions of a normal folder ("mkdtemp made the folder
+  private; a project folder isn't", in `move_into_place()` of
+  `virtualbricks/config/importing.py`). Seen on 3.0.0.dev3, on 7 October
+  2026, writing `virtualbricks-vbp`(5): an export with the umask 022 gave
+  `-rw-------` for the archive, also with `compression = "gzip"`, as the
+  same file is written either way.
+- [ ] **A gzip archive names the temporary file in its header.** Without
+  `qemu-img`, the export compresses the archive with
+  `gzip.GzipFile(fileobj=..., mtime=0)` (`_Output` in
+  `virtualbricks/config/archive.py`), which takes the name of the file
+  from `fileobj.name`: the header of the archive holds the name of the
+  unfinished archive, `.lab.vbp.XXXXXXXX.part`, with the flag FNAME.
+  `gunzip -N` restores the tar under that hidden name, and `gzip -lN`
+  lists it. Seen on 3.0.0.dev3, on 7 October 2026, writing
+  `virtualbricks-vbp`(5):
+
+  ```
+  $ gzip -lN < lab.vbp
+           compressed        uncompressed  ratio uncompressed_name
+                  617               10240  94.4% .gz.vbp.2or1v0ic.part
+  ```
+
 ## Manual pages
 
 - [ ] **virtualbricks(1): the ssl examples pass the certificate as the
