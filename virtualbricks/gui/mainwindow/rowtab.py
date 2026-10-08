@@ -110,6 +110,8 @@ _css.load_from_data(b"""
     .state-dot.running { background-color: #33d17a; }
     .state-dot.waiting { background-color: #3584e4; }
     .state-warning { color: #e5a50a; }
+    .start-all:not(:disabled) { color: #33d17a; }
+    .stop-all:not(:disabled) { color: #e01b24; }
     """)
 
 
@@ -129,11 +131,14 @@ def styled(widget: W, *classes: str) -> W:
     return widget
 
 
-def _icon_button(label: str, icon: str) -> Gtk.Button:
+def _icon_button(label: str, icon: str, *classes: str) -> Gtk.Button:
+    """A button with label and icon, the icon of these style classes."""
+
+    image = Gtk.Image.new_from_icon_name(icon, Gtk.IconSize.BUTTON)
     return Gtk.Button(
         visible=True,
         label=label,
-        image=Gtk.Image.new_from_icon_name(icon, Gtk.IconSize.BUTTON),
+        image=styled(image, *classes),
         always_show_image=True,
     )
 
@@ -610,11 +615,12 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
         filters.pack_start(self.running_button, False, False, 0)
         self.count = Gtk.Label(visible=True)
         self.count.get_style_context().add_class("dim-label")
+        # their icons green and red, grey as the label while they can't
         self.start_button = _icon_button(
-            _("Start All"), "media-playback-start-symbolic"
+            _("Start All"), "media-playback-start-symbolic", "start-all"
         )
         self.stop_button = _icon_button(
-            _("Stop All"), "media-playback-stop-symbolic"
+            _("Stop All"), "media-playback-stop-symbolic", "stop-all"
         )
         all_items = Gtk.Box(visible=True)
         all_items.get_style_context().add_class("linked")
