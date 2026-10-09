@@ -329,15 +329,16 @@
 </style>
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 27 &middot; Design &middot; revision 1, analysis</div>
+    <div class="eyebrow">Step 27 &middot; Design &middot; revision 2, analysis</div>
     <h1>Virtualbricks Start-up Sequence</h1>
     <p class="lede">What each way of running Virtualbricks does from <code>virtualbricks</code> to its main loop: with the windows, with <code>--no-gui</code>, as the windows of another Virtualbricks, and with <code>--command</code>. In order, side by side, with the reactor each one installs and what has to come before what.</p>
     <ul class="meta">
-      <li>branch <b>develop</b> at eeaf42a</li>
-      <li>revision 1 &middot; 9 October 2026</li>
+      <li>branch <b>develop</b> at 13b3cc6</li>
+      <li>revision 2 &middot; 9 October 2026</li>
       <li><span class="status analysis">analysis</span></li>
     </ul>
-    <p class="revision"><strong>What this covers:</strong> your request of today: &ldquo;make a diagram / table of the initialization actions that happens for every virtualbricks application: cli application, gui application, remote application, command mode. Right now it is very confusing and I want to refactor that code. Also highlight the dependencies with a special attention to the reactor installation&rdquo;. It describes the code as it is, read in <code>cli.py</code>, <code>app.py</code>, <code>gui/app.py</code>, <code>console/client.py</code> and <code>migrate/</code>. The import chains of <a href="#reactor">&sect;5</a> were measured today in the project&rsquo;s virtualenv (Python 3.10, Twisted of the venv), one fresh interpreter per module. Two things found while reading are bugs, checked today and added to <code>BUGS.md</code> (<a href="#confusing">&sect;7</a>, item 8). Nothing here is decided: <a href="#seams">&sect;8</a> lists where the refactor could cut, with my recommendation, for revision 2.</p>
+    <p class="revision"><strong>What this covers:</strong> your request of today: &ldquo;make a diagram / table of the initialization actions that happens for every virtualbricks application: cli application, gui application, remote application, command mode. Right now it is very confusing and I want to refactor that code. Also highlight the dependencies with a special attention to the reactor installation&rdquo;. It describes the code as it is, read in <code>cli.py</code>, <code>app.py</code>, <code>gui/app.py</code>, <code>console/client.py</code> and <code>migrate/</code>. The import chains of <a href="#reactor">&sect;5</a> were measured today in the project&rsquo;s virtualenv (Python 3.10, Twisted of the venv), one fresh interpreter per module. Two things found while reading are bugs, checked today and added to <code>BUGS.md</code> (<a href="#confusing">&sect;7</a>, item 8). Nothing here is decided: <a href="#seams">&sect;8</a> lists where the refactor could cut, with my recommendation.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 adds <a href="#parser">&sect;9</a>, for your question of today: &ldquo;If I want to rework on the cli interface, would it be better to parse the command line with argparse or twisted.python.usage.Options as it is now?&rdquo;, and, after my answer: &ldquo;add it to page 27 rev 2&rdquo;. It compares the two on this command line, with start-up times measured today in the venv (medians of 9 runs of each process and of 5 runs of each import), and recommends argparse; <a href="#seams">&sect;8</a> gains it as its sixth item. Still nothing decided. Written against 13b3cc6, whose start-up code is that of eeaf42a, which revision 1 read.</p>
   </header>
 
   <div class="layout">
@@ -352,6 +353,7 @@
         <li><a href="#deps"><span>6</span>What needs what</a></li>
         <li><a href="#confusing"><span>7</span>What makes it confusing</a></li>
         <li><a href="#seams"><span>8</span>Where to cut</a></li>
+        <li><a href="#parser"><span>9</span>The parser</a></li>
       </ol>
     </nav>
 
@@ -365,6 +367,7 @@
           <div><dt>Two timings</dt><dd><code>task.react</code> calls <code>run(reactor)</code> before <code>reactor.run()</code>. So the whole start, windows included, runs before the loop, except in the GUI when a migration is pending: then the loop starts under the migration window, and the rest runs when it closes (<a href="#time">&sect;4</a>).</dd></div>
           <div><dt>Settings</dt><dd>Read three times before the app holds them: by <code>startup_workspace()</code> for the lock, by <code>startup_migration()</code>, then by <code>load_settings()</code> (<a href="#deps">&sect;6</a>).</dd></div>
           <div><dt>Confusing</dt><dd>Ten things, in <a href="#confusing">&sect;7</a>. The main ones: the reactor depends on import order, the remote app repeats the start of the others by hand, and logging and the locale start at different points in each mode.</dd></div>
+          <div><dt>Parser</dt><dd>argparse would replace the 70 lines that read <code>--listen</code> and <code>--connect</code> around getopt, and would let <code>--command</code> start in about 55 ms instead of 169, with no Twisted (<a href="#parser">&sect;9</a>).</dd></div>
         </dl>
       </section>
 
@@ -997,14 +1000,66 @@
 
       <section id="seams">
         <h2><span class="num">&sect;8</span>Where to cut</h2>
-        <p>Not decided; my recommendation, for revision 2.</p>
+        <p>Not decided; my recommendation.</p>
         <ul>
           <li><strong>One function picks the mode and installs its reactor, before any import of the application.</strong> <code>gireactor</code> for GUI and remote, <code>twisted.internet.default.install()</code> named for the CLI, none for command mode. A test per mode, in a subprocess, checks the reactor type after the start and that <code>cli.py</code> plus parsing loads no reactor. The migration window calls the same function.</li>
           <li><strong>Read the settings once, at the start of <code>run()</code>.</strong> A startup record (workspace, 2.1 file to convert, app settings) that the locks, the migration and <code>load_settings</code> take, so the locked workspace and <code>projects.path</code> are the same value.</li>
           <li><strong>Start the log and the locale first</strong>, right after parsing, in every mode that has a reactor. The order of the log is then the order of the start.</li>
           <li><strong>A base class for the steps that every app shares</strong> (locale, settings, logger, quit triggers), with <code>Application</code>, <code>GuiApplication</code> and <code>RemoteApplication</code> on it, and <code>RemoteApplication</code> in a module of its own that imports neither <code>app</code> nor <code>bricks</code>. Remote skips <code>set_ksm</code>.</li>
           <li><strong><code>_start</code> as a list of named steps</strong>, each a method, the GUI adding its own at named places instead of around <code>super()</code>. One place registers the quit triggers, in their order.</li>
+          <li><strong>Parse with argparse</strong> (<a href="#parser">&sect;9</a>), with Twisted imported only by the modes that run a reactor, so that <code>cli.py</code> and <code>--command</code> load none.</li>
         </ul>
+      </section>
+
+      <section id="parser">
+        <h2><span class="num">&sect;9</span>The parser</h2>
+        <p><code>cli.py</code> reads the command line with Twisted&rsquo;s <code>usage.Options</code>, which runs <code>getopt</code>; <code>migrate/cli.py:62</code> uses <code>argparse</code>. For a rework of the command line, my recommendation is <code>argparse</code>: most of the special code of <code>cli.py</code> is there to get around <code>usage.Options</code>, and <code>--command</code> would start three times faster. Not decided.</p>
+        <h3>What <code>usage.Options</code> costs today</h3>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>What</th><th>Where</th><th>Why it is there</th><th>With argparse</th></tr></thead>
+          <tbody>
+            <tr><td>The optional value of <code>--listen</code> and <code>--connect</code></td><td><code>take_sockets()</code>, <code>_long_option()</code>, <code>_takes_value()</code>, <code>cli.py:174&ndash;242</code></td><td><code>getopt</code> has no optional argument. A pass before it takes them out, and to know where they are it repeats what <code>getopt</code> does: unique prefixes, and <code>-vl FILE</code>, where <code>-l</code> takes the next word.</td><td><code>nargs="?"</code> with <code>action="append"</code>, and a <code>type=</code> function that reads the description.</td></tr>
+            <tr><td>Given or by default</td><td><code>self.given</code>, <code>RUN_OPTIONS</code>, <code>check_client()</code>, <code>check_windows()</code>, <code>cli.py:138&ndash;163</code>, <code>398&ndash;476</code></td><td>An option with a default can&rsquo;t tell <code>--lock system</code> from no <code>--lock</code>; <code>opt_lock</code> and <code>opt_logfile</code> note it themselves.</td><td><code>default=None</code>; the defaults are set after parsing, where <code>--workspace</code> already sets <code>--lock workspace</code>.</td></tr>
+            <tr><td>Acting while parsing</td><td><code>opt_logfile</code> opens the file (<code>cli.py:52</code>, <code>344</code>); <code>opt_run</code>, <code>opt_workspace</code> look at paths; <code>socket()</code> reads the ssl key and the token</td><td>Each <code>opt_*</code> method runs as its option is read, before the mode is known: <code>--command --logfile F</code> makes <code>F</code>, then is refused.</td><td><code>parse_args()</code> only parses; a step after it checks and opens what the mode needs.</td></tr>
+            <tr><td>Twisted for <code>--command</code></td><td><code>cli.py:29&ndash;31</code>: <code>twisted.python.usage</code>, <code>reflect</code>, <code>twisted.internet.defer</code>, <code>task</code>, <code>twisted.logger</code></td><td>The parser is Twisted&rsquo;s; the others are for the modes with a reactor.</td><td><code>argparse</code> is in the standard library, and <code>console.client</code> loads no Twisted: imported only by the modes that run a reactor, Twisted stays out of <code>--command</code>.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>Measured</h3>
+        <p>In the project&rsquo;s virtualenv, on this computer. A process is the median of 9 runs; an import, of 5, each in a fresh interpreter.</p>
+        <div class="scroll">
+        <table>
+          <thead><tr><th>What</th><th class="num">Time</th><th class="num">Twisted modules</th></tr></thead>
+          <tbody>
+            <tr><td>Process: <code>virtualbricks --version</code>, which imports <code>cli.py</code>, parses and exits</td><td class="num">169 ms</td><td class="num">60</td></tr>
+            <tr><td>Process: <code>python -c "import argparse, &hellip;console.client, &hellip;locks, &hellip;locations"</code>, what <code>--command</code> would need</td><td class="num">55 ms</td><td class="num">0</td></tr>
+            <tr><td>Process: <code>python -c pass</code></td><td class="num">23 ms</td><td class="num">0</td></tr>
+            <tr><td>Import <code>argparse</code></td><td class="num">1.9 ms</td><td class="num">0</td></tr>
+            <tr><td>Import <code>twisted.python.usage</code></td><td class="num">55.9 ms</td><td class="num">9</td></tr>
+            <tr><td>Import <code>virtualbricks.console.client</code></td><td class="num">26.4 ms</td><td class="num">0</td></tr>
+            <tr><td>Import <code>virtualbricks.cli</code></td><td class="num">120.3 ms</td><td class="num">60</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>The difference counts where <code>--command</code> runs in a loop, as a script that asks for the state of each brick does.</p>
+        <h3>What to watch for</h3>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Point</th><th>Today</th><th>argparse by default</th><th>To do</th></tr></thead>
+          <tbody>
+            <tr><td>Exit status of a wrong option</td><td>1: virtualbricks(1), EXIT STATUS, &ldquo;an option is wrong&rdquo;</td><td class="no">2, which for <code>--command</code> means &ldquo;No Virtualbricks answered&rdquo;</td><td>Override <code>ArgumentParser.error()</code>: print the usage and the error, exit with 1.</td></tr>
+            <tr><td>The word after <code>--connect</code></td><td>Taken only when it starts with a type (<code>DESCRIPTION</code>, <code>cli.py:45</code>): <code>--command --connect brick list</code> sends <code>brick list</code></td><td><code>nargs="?"</code> takes <code>brick</code> as the description</td><td>The <code>type=</code> function refuses a word without a type, and says to write <code>--connect</code> before <code>--command</code> or to use <code>--</code>. The man page and the README always write <code>--connect DESC</code> first. Or keep a small pass for this one case.</td></tr>
+            <tr><td>The words of the command</td><td><code>getopt</code> stops at the first word: the rest is the command&rsquo;s, dashes included</td><td>Options and words mix</td><td>The words as <code>nargs=argparse.REMAINDER</code>; tests with dashes among them.</td></tr>
+            <tr><td>Abbreviations</td><td><code>getopt</code> takes a unique prefix, as <code>--work</code></td><td>The same, <code>allow_abbrev=True</code></td><td>Keep or drop them on purpose; the docs promise neither.</td></tr>
+            <tr><td>The test of the man page</td><td><code>test_docs.py:383&ndash;393</code> reads <code>longOpt</code>, <code>shortOpt</code> and <code>synonyms</code> of <code>Options</code></td><td>&ndash;</td><td>Read the parser&rsquo;s actions, their <code>option_strings</code>.</td></tr>
+            <tr><td>What the modes get</td><td>A dict subclass, read as a <code>Mapping</code> by <code>app.py</code> and <code>gui/app.py</code>; untyped for mypy</td><td>A <code>Namespace</code>, as untyped</td><td>A frozen dataclass made from the namespace, in the same change: the types come from it, not from the parser.</td></tr>
+            <tr><td>Tests</td><td>45 in <code>test_cli.py</code></td><td>&ndash;</td><td>Most check what a line parses to, or its error; their helpers change, the cases stay.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>What <code>usage.Options</code> has that this program uses</h3>
+        <p>Nothing that <code>argparse</code> lacks. Its shell completion (<code>compData</code>) and its sub-commands aren&rsquo;t used, and <code>postOptions</code> becomes the code after <code>parse_args()</code>. <code>argparse</code> has sub-commands too, should the rework turn the modes into them, and its help and errors would match those of <code>python -m virtualbricks.migrate</code>.</p>
       </section>
     </main>
   </div>
