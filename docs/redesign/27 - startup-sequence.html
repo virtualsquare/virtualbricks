@@ -1,0 +1,1011 @@
+<title>Virtualbricks Start-up Sequence</title>
+<meta name="description" content="What each way of running Virtualbricks does at start, in order: the windows, --no-gui, the windows of another Virtualbricks with --connect, and --command. Which reactor each installs and where, what has to come before what, and which orders are only those of the code. For the refactor of the start-up code.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+  .status.dropped { color: var(--muted); background: var(--code-bg); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num, th.num { font-variant-numeric: tabular-nums; text-align: right; }
+  td p { margin: 0 0 6px; }
+  td p:last-child { margin-bottom: 0; }
+  table.wide { min-width: 720px; }
+  .no { color: var(--risk); }
+  .footnote { font-size: 13.5px; color: var(--muted); }
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+
+  /* step 27: modes, chips, diagrams */
+  .status.analysis { color: var(--accent); background: var(--accent-soft); }
+  .mode { font: 600 13px/1.3 var(--font-head); letter-spacing: 0.02em; }
+  table.modes { min-width: 820px; font-size: 13.8px; }
+  table.modes th.mode { width: 17.5%; }
+  table.modes th:first-child { width: 30%; }
+  table.modes .where { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+  table.modes .where code { font-size: 0.95em; }
+  table.modes tr.phase td {
+    font: 500 11.5px/1.2 var(--font-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding-top: 20px;
+    border-bottom: 1.5px solid var(--rule);
+  }
+  .n {
+    display: inline-block;
+    min-width: 1.9em;
+    font: 500 11.5px/1.5 var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    color: var(--ink);
+    background: var(--code-bg);
+    border-radius: 3px;
+    margin-right: 6px;
+    padding: 0 3px;
+  }
+  .n.reactor { color: var(--risk); background: var(--risk-soft); }
+  .none { color: var(--muted); }
+  tr.reactor-row > td:first-child { box-shadow: inset 3px 0 0 var(--risk); padding-left: 10px; }
+  .hot { color: var(--risk); font-weight: 500; }
+
+  /* lanes */
+  .lanes { display: grid; gap: 18px; margin: 16px 0 22px; }
+  .lane { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  @media (min-width: 760px) { .lane { grid-template-columns: 9.5em minmax(0, 1fr); gap: 16px; } }
+  .lane-name { font: 600 1rem/1.3 var(--font-head); padding-top: 4px; }
+  .lane-name small { display: block; font: 400 12px/1.4 var(--font-mono); color: var(--muted); }
+  .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 4px; align-items: center; }
+  .steps li {
+    margin: 0;
+    font: 400 12.5px/1.3 var(--font-mono);
+    padding: 5px 8px;
+    border-radius: 4px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    max-width: none;
+  }
+  .steps li + li::before { content: none; }
+  .steps .arrow { border: 0; background: none; padding: 0 1px; color: var(--muted); }
+  .steps .k-reactor { background: var(--risk-soft); border-color: transparent; color: var(--risk); font-weight: 500; }
+  .steps .k-lock { background: var(--decide-soft); border-color: transparent; color: var(--decide); }
+  .steps .k-files { background: var(--accent-soft); border-color: transparent; color: var(--ink); }
+  .steps .k-win { background: var(--ok-soft); border-color: transparent; color: var(--ok); }
+  .steps .k-loop { background: var(--ink); color: var(--ground); border-color: var(--ink); font-weight: 500; }
+  .steps .k-loop.alt { background: transparent; color: var(--ink); border: 1.5px dashed var(--ink); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0 14px; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
+  .legend li { margin: 0; display: flex; align-items: center; gap: 6px; }
+  .swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--rule); flex: none; }
+  .swatch.k-reactor { background: var(--risk-soft); border-color: var(--risk); }
+  .swatch.k-lock { background: var(--decide-soft); border-color: var(--decide); }
+  .swatch.k-files { background: var(--accent-soft); border-color: var(--accent); }
+  .swatch.k-win { background: var(--ok-soft); border-color: var(--ok); }
+  .swatch.k-loop { background: var(--ink); border-color: var(--ink); }
+  .swatch.k-proc { background: var(--surface); }
+
+  /* diagrams */
+  figure.diagram { margin: 16px 0 22px; overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; }
+  figure.diagram figcaption { font-size: 13.5px; color: var(--muted); margin-top: 10px; max-width: 80ch; }
+  figure.diagram svg { display: block; min-width: 860px; width: 100%; height: auto; }
+  svg .box { fill: var(--surface); stroke: var(--rule); stroke-width: 1.2; }
+  svg .box.decision { fill: var(--ground); stroke: var(--muted); stroke-dasharray: 5 3; }
+  svg .box.reactor { fill: var(--risk-soft); stroke: var(--risk); stroke-width: 1.6; }
+  svg .box.lock { fill: var(--decide-soft); stroke: var(--decide); }
+  svg .box.files { fill: var(--accent-soft); stroke: var(--accent); }
+  svg .box.win { fill: var(--ok-soft); stroke: var(--ok); }
+  svg .box.end { fill: var(--code-bg); stroke: var(--rule); }
+  svg .t { font: 600 14px var(--font-head); fill: var(--ink); }
+  svg .s { font: 400 11px var(--font-mono); fill: var(--muted); }
+  svg .t.reactor { fill: var(--risk); }
+  svg .lbl { font: 500 11px var(--font-mono); fill: var(--muted); }
+  svg .lbl.hot { fill: var(--risk); }
+  svg .cap { font: 500 10.5px var(--font-mono); fill: var(--accent); letter-spacing: 0.08em; }
+  svg .e { fill: none; stroke: var(--ink); stroke-width: 1.3; }
+  svg .e.hot { stroke: var(--risk); stroke-width: 2.2; }
+  svg .e.order { stroke: var(--muted); stroke-dasharray: 5 4; }
+  svg .e.purpose { stroke: var(--accent); stroke-dasharray: 2 3; stroke-width: 1.6; }
+  svg .ah { fill: var(--ink); }
+  svg .ah.hot { fill: var(--risk); }
+  svg .ah.order { fill: var(--muted); }
+  svg .ah.purpose { fill: var(--accent); }
+  .kind { font: 500 11.5px/1 var(--font-mono); padding: 3px 6px; border-radius: 3px; white-space: nowrap; }
+  .kind.real { color: var(--ink); background: var(--code-bg); }
+  .kind.hard { color: var(--risk); background: var(--risk-soft); }
+  .kind.order { color: var(--muted); background: transparent; border: 1px dashed var(--rule); }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 27 &middot; Design &middot; revision 1, analysis</div>
+    <h1>Virtualbricks Start-up Sequence</h1>
+    <p class="lede">What each way of running Virtualbricks does from <code>virtualbricks</code> to its main loop: with the windows, with <code>--no-gui</code>, as the windows of another Virtualbricks, and with <code>--command</code>. In order, side by side, with the reactor each one installs and what has to come before what.</p>
+    <ul class="meta">
+      <li>branch <b>develop</b> at eeaf42a</li>
+      <li>revision 1 &middot; 9 October 2026</li>
+      <li><span class="status analysis">analysis</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your request of today: &ldquo;make a diagram / table of the initialization actions that happens for every virtualbricks application: cli application, gui application, remote application, command mode. Right now it is very confusing and I want to refactor that code. Also highlight the dependencies with a special attention to the reactor installation&rdquo;. It describes the code as it is, read in <code>cli.py</code>, <code>app.py</code>, <code>gui/app.py</code>, <code>console/client.py</code> and <code>migrate/</code>. The import chains of <a href="#reactor">&sect;5</a> were measured today in the project&rsquo;s virtualenv (Python 3.10, Twisted of the venv), one fresh interpreter per module. Two things found while reading are bugs, checked today and added to <code>BUGS.md</code> (<a href="#confusing">&sect;7</a>, item 8). Nothing here is decided: <a href="#seams">&sect;8</a> lists where the refactor could cut, with my recommendation, for revision 2.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#branch"><span>2</span>Where the modes split</a></li>
+        <li><a href="#table"><span>3</span>Every action, by mode</a></li>
+        <li><a href="#time"><span>4</span>In time</a></li>
+        <li><a href="#reactor"><span>5</span>The reactor</a></li>
+        <li><a href="#deps"><span>6</span>What needs what</a></li>
+        <li><a href="#confusing"><span>7</span>What makes it confusing</a></li>
+        <li><a href="#seams"><span>8</span>Where to cut</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Four modes</dt><dd><strong>CLI</strong>, <code>--no-gui</code>: <code>app.Application</code>. <strong>GUI</strong>, the default: <code>gui.app.GuiApplication</code>, a subclass. <strong>Remote</strong>, <code>--connect</code> alone: <code>gui.app.RemoteApplication</code>, a class of its own. <strong>Command</strong>, <code>--command</code> or <code>--connect --run</code>: the function <code>console.client.main</code>.</dd></div>
+          <div><dt>One fork</dt><dd><code>cli.main()</code> (<code>cli.py:569</code>) parses the options, then picks the mode with three <code>if</code>s. Each mode imports its own module only after that, and the order of those imports is what decides the reactor (<a href="#branch">&sect;2</a>).</dd></div>
+          <div><dt>Reactor</dt><dd>GUI and remote install <code>GIReactor</code> explicitly, in <code>install_gtk_reactor()</code>. The CLI gets <code>EPollReactor</code> as a side effect of <code>from virtualbricks import app</code>, which reaches <code>bricks/__init__.py:41</code>. Command mode has none, and a test checks it. The migration window installs its own, elsewhere (<a href="#reactor">&sect;5</a>).</dd></div>
+          <div><dt>Two timings</dt><dd><code>task.react</code> calls <code>run(reactor)</code> before <code>reactor.run()</code>. So the whole start, windows included, runs before the loop, except in the GUI when a migration is pending: then the loop starts under the migration window, and the rest runs when it closes (<a href="#time">&sect;4</a>).</dd></div>
+          <div><dt>Settings</dt><dd>Read three times before the app holds them: by <code>startup_workspace()</code> for the lock, by <code>startup_migration()</code>, then by <code>load_settings()</code> (<a href="#deps">&sect;6</a>).</dd></div>
+          <div><dt>Confusing</dt><dd>Ten things, in <a href="#confusing">&sect;7</a>. The main ones: the reactor depends on import order, the remote app repeats the start of the others by hand, and logging and the locale start at different points in each mode.</dd></div>
+        </dl>
+      </section>
+
+      <section id="branch">
+        <h2><span class="num">&sect;2</span>Where the modes split</h2>
+        <p><code>cli.main()</code> after parsing. Red boxes install a reactor. Every <code>import</code> of the application classes is inside a factory function (<code>make_application</code>, <code>make_remote_application</code>, <code>make_plain_application</code>, <code>cli.py:537&ndash;556</code>), so <code>cli.py</code> itself loads seven modules of the package and no reactor.</p>
+        <figure class="diagram">
+          <svg viewBox="0 0 900 436" role="img" aria-label="Decision tree of cli.main: after parsing the options, --connect alone leads to the remote windows, --command or --connect --run to the command client, --no-gui to the CLI application, and otherwise to the GUI application. Remote and GUI install the GI reactor explicitly, the CLI gets the epoll reactor by importing app, the command client has no reactor.">
+            <defs>
+              <marker id="a1" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+            </defs>
+            <rect class="box" x="15" y="14" width="250" height="48" rx="5"/>
+            <text class="t" x="27" y="35">Options().parseOptions()</text>
+            <text class="s" x="27" y="52">cli.py:514, every mode</text>
+
+            <rect class="box decision" x="15" y="104" width="250" height="48" rx="5"/>
+            <text class="t" x="27" y="125">--connect alone?</text>
+            <text class="s" x="27" y="142">config["windows"]</text>
+
+            <rect class="box decision" x="15" y="194" width="250" height="48" rx="5"/>
+            <text class="t" x="27" y="215">--command, --connect --run?</text>
+            <text class="s" x="27" y="232">config["command"] or ["connect"]</text>
+
+            <rect class="box decision" x="15" y="284" width="250" height="48" rx="5"/>
+            <text class="t" x="27" y="305">--no-gui?</text>
+            <text class="s" x="27" y="322">config["no-gui"]</text>
+
+            <path class="e" d="M140,62 V102" marker-end="url(#a1)"/>
+            <path class="e" d="M140,152 V192" marker-end="url(#a1)"/>
+            <text class="lbl" x="148" y="177">no</text>
+            <path class="e" d="M140,242 V282" marker-end="url(#a1)"/>
+            <text class="lbl" x="148" y="267">no</text>
+            <path class="e" d="M140,332 V398 H298" marker-end="url(#a1)"/>
+            <text class="lbl" x="148" y="362">no</text>
+
+            <path class="e" d="M265,128 H298" marker-end="url(#a1)"/>
+            <text class="lbl" x="269" y="121">yes</text>
+            <path class="e" d="M265,218 H298" marker-end="url(#a1)"/>
+            <text class="lbl" x="269" y="211">yes</text>
+            <path class="e" d="M265,308 H298" marker-end="url(#a1)"/>
+            <text class="lbl" x="269" y="301">yes</text>
+
+            <!-- remote -->
+            <text class="cap" x="300" y="96">REMOTE &middot; make_remote_application</text>
+            <rect class="box reactor" x="300" y="104" width="185" height="48" rx="5"/>
+            <text class="t reactor" x="312" y="125">install_gtk_reactor()</text>
+            <text class="s" x="312" y="142">GIReactor, cli.py:559</text>
+            <path class="e" d="M485,128 H513" marker-end="url(#a1)"/>
+            <rect class="box win" x="515" y="104" width="185" height="48" rx="5"/>
+            <text class="t" x="527" y="125">RemoteApplication</text>
+            <text class="s" x="527" y="142">imports app, bricks too</text>
+            <path class="e" d="M700,128 H728" marker-end="url(#a1)"/>
+            <rect class="box end" x="730" y="104" width="160" height="48" rx="5"/>
+            <text class="t" x="742" y="125">task.react(run)</text>
+            <text class="s" x="742" y="142">run() before the loop</text>
+
+            <!-- command -->
+            <text class="cap" x="300" y="186">COMMAND &middot; console.client</text>
+            <rect class="box" x="300" y="194" width="185" height="48" rx="5"/>
+            <text class="t" x="312" y="215">import console.client</text>
+            <text class="s" x="312" y="232">then i18n.install()</text>
+            <path class="e" d="M485,218 H513" marker-end="url(#a1)"/>
+            <rect class="box" x="515" y="194" width="185" height="48" rx="5"/>
+            <text class="t" x="527" y="215">client.main()</text>
+            <text class="s" x="527" y="232">blocking sockets</text>
+            <path class="e" d="M700,218 H728" marker-end="url(#a1)"/>
+            <rect class="box end" x="730" y="194" width="160" height="48" rx="5"/>
+            <text class="t" x="742" y="215">sys.exit(status)</text>
+            <text class="s" x="742" y="232">no reactor at all</text>
+
+            <!-- cli -->
+            <text class="cap" x="300" y="276">CLI &middot; make_plain_application</text>
+            <rect class="box reactor" x="300" y="284" width="185" height="48" rx="5"/>
+            <text class="t reactor" x="312" y="305">import app</text>
+            <text class="s" x="312" y="322">EPollReactor, by import</text>
+            <path class="e" d="M485,308 H513" marker-end="url(#a1)"/>
+            <rect class="box" x="515" y="284" width="185" height="48" rx="5"/>
+            <text class="t" x="527" y="305">app.Application</text>
+            <text class="s" x="527" y="322">no GTK loaded</text>
+            <path class="e" d="M700,308 H728" marker-end="url(#a1)"/>
+            <rect class="box end" x="730" y="284" width="160" height="48" rx="5"/>
+            <text class="t" x="742" y="305">task.react(run)</text>
+            <text class="s" x="742" y="322">run() before the loop</text>
+
+            <!-- gui -->
+            <text class="cap" x="300" y="366">GUI &middot; make_application</text>
+            <rect class="box reactor" x="300" y="374" width="185" height="48" rx="5"/>
+            <text class="t reactor" x="312" y="395">install_gtk_reactor()</text>
+            <text class="s" x="312" y="412">GIReactor, cli.py:559</text>
+            <path class="e" d="M485,398 H513" marker-end="url(#a1)"/>
+            <rect class="box win" x="515" y="374" width="185" height="48" rx="5"/>
+            <text class="t" x="527" y="395">GuiApplication</text>
+            <text class="s" x="527" y="412">import gui.app after it</text>
+            <path class="e" d="M700,398 H728" marker-end="url(#a1)"/>
+            <rect class="box end" x="730" y="374" width="160" height="48" rx="5"/>
+            <text class="t" x="742" y="395">task.react(run)</text>
+            <text class="s" x="742" y="412">run() before the loop</text>
+          </svg>
+          <figcaption>The fork of <code>cli.main()</code>. In the CLI row the import is the reactor installation: nothing in the code names <code>EPollReactor</code>.</figcaption>
+        </figure>
+        <h3>Parsing has side effects too</h3>
+        <p>Every mode parses the same <code>Options</code>, and some options act while they are read, before the mode is known:</p>
+        <ul>
+          <li><code>--logfile</code> opens the log file at once (<code>_file_logger</code>, <code>cli.py:52</code>), even when <code>check_client()</code> refuses it next because <code>--command</code> takes no <code>--logfile</code>.</li>
+          <li><code>--listen ssl:&hellip;</code> imports <code>console.tls</code> (pyOpenSSL) and reads the key and the certificates; a socket with a token reads the token file (<code>cli.py:286&ndash;342</code>).</li>
+          <li><code>--logger</code> imports the named module (<code>reflect.namedAny</code>, <code>cli.py:502</code>); <code>--version</code> prints and exits.</li>
+          <li><code>--workspace</code> sets <code>--lock workspace</code> unless <code>--lock</code> is given; <code>--connect</code> alone forces <code>noterm</code> (<code>cli.py:483&ndash;499</code>).</li>
+        </ul>
+      </section>
+
+      <section id="table">
+        <h2><span class="num">&sect;3</span>Every action, by mode</h2>
+        <p>One row per action, in the order of the GUI. Each cell gives the action&rsquo;s position in that mode&rsquo;s own sequence, so a column read top to bottom is that mode&rsquo;s start. A dash means the mode doesn&rsquo;t do it. Rows with a red edge are about the reactor or GTK.</p>
+        <div class="scroll">
+        <table class="modes">
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th class="mode">CLI<br><code>--no-gui</code></th>
+              <th class="mode">GUI<br>default</th>
+              <th class="mode">Remote<br><code>--connect</code> alone</th>
+              <th class="mode">Command<br><code>--command</code>, <code>--connect --run</code></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="phase"><td colspan="5">Process</td></tr>
+            <tr>
+              <td>Import <code>cli.py</code>: Twisted&rsquo;s <code>usage</code>, <code>defer</code>, <code>task</code>, <code>logger</code>; <code>locations</code>, <code>locks</code>, <code>console.wire</code>, <code>i18n</code>, whose import puts <code>_</code> in the builtins, without <code>setlocale</code><span class="where"><code>cli.py:29&ndash;34</code>, <code>i18n.py:93</code></span></td>
+              <td><span class="n">1</span></td><td><span class="n">1</span></td><td><span class="n">1</span></td><td><span class="n">1</span></td>
+            </tr>
+            <tr>
+              <td>Parse the options (side effects in <a href="#branch">&sect;2</a>), then pick the mode<span class="where"><code>cli.py:514</code>, <code>569</code></span></td>
+              <td><span class="n">2</span></td><td><span class="n">2</span></td><td><span class="n">2</span> <code>noterm</code> forced</td><td><span class="n">2</span> run options refused</td>
+            </tr>
+
+            <tr class="phase"><td colspan="5">Reactor and GTK</td></tr>
+            <tr class="reactor-row">
+              <td><code>gi.require_version</code> Gtk 3.0, Gdk 3.0<span class="where"><code>cli.py:562</code></span></td>
+              <td><span class="none">&ndash;</span></td>
+              <td><span class="n reactor">3</span></td>
+              <td><span class="n reactor">3</span></td>
+              <td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr class="reactor-row">
+              <td>Install the reactor<span class="where"><code>cli.py:566</code></span></td>
+              <td><span class="n reactor">3</span> <span class="hot">EPoll, implicitly:</span> the import of the next row reaches <code>bricks/__init__.py:41</code></td>
+              <td><span class="n reactor">3</span> <code>gireactor.install()</code></td>
+              <td><span class="n reactor">3</span> <code>gireactor.install()</code></td>
+              <td><span class="none">&ndash; never;</span> <code>test_client.py:884</code> checks it</td>
+            </tr>
+            <tr class="reactor-row">
+              <td>Import the application&rsquo;s module<span class="where"><code>cli.py:537&ndash;556</code>, <code>580&ndash;581</code></span></td>
+              <td><span class="n reactor">3</span> <code>app</code>: 43 modules of the package, no GTK</td>
+              <td><span class="n">4</span> <code>gui.app</code>: 129 modules, Gtk first (<code>:27</code>), then <code>app</code> (<code>:45</code>)</td>
+              <td><span class="n">4</span> <code>gui.app</code>, the same 129: <code>app</code>, <code>BrickFactory</code>, <code>LocalEngine</code> come along unused</td>
+              <td><span class="n">3</span> <code>console.client</code>: 8 modules</td>
+            </tr>
+            <tr>
+              <td>Make the application object<span class="where"><code>app.py:142</code>, <code>gui/app.py:172</code>, <code>245</code></span></td>
+              <td><span class="n">4</span> <code>AppLogger</code></td>
+              <td><span class="n">5</span> <code>MessageLog</code>, <code>MessagesLogger</code></td>
+              <td><span class="n">5</span> <code>MessageLog</code>, <code>MessagesLogger</code></td>
+              <td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td><code>task.react(app.run)</code>: picks up the installed reactor, calls <code>run(reactor)</code>, then <code>reactor.run()</code><span class="where"><code>cli.py:534</code>, <code>586</code></span></td>
+              <td><span class="n">5</span></td><td><span class="n">6</span></td><td><span class="n">6</span></td>
+              <td><span class="n">5</span> <code>client.main()</code> instead, then <code>sys.exit</code></td>
+            </tr>
+
+            <tr class="phase"><td colspan="5">Locks and migration: Application.run</td></tr>
+            <tr>
+              <td><code>settings_to_convert()</code>: is there a 2.1 settings file and no new one? With <code>--lock workspace</code>, the user lock is then taken alone<span class="where"><code>app.py:218</code></span></td>
+              <td><span class="n">6</span></td><td><span class="n">7</span></td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td><code>startup_workspace()</code>: <code>--workspace</code>, else the setting, <strong>settings read 1</strong> (2.1 file if it is to convert)<span class="where"><code>app.py:219</code>, <code>migrate/engine.py:511</code></span></td>
+              <td><span class="n">7</span></td><td><span class="n">8</span></td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td><code>take_locks()</code>: system or user lock, make the workspace folder, workspace lock. <code>Held</code> or <code>OSError</code> &rarr; <code>SystemExit</code><span class="where"><code>app.py:223&ndash;253</code></span></td>
+              <td><span class="n">8</span></td><td><span class="n">9</span></td><td><span class="none">&ndash; none</span></td><td><span class="none">&ndash; none;</span> reads the lock holders to find the socket</td>
+            </tr>
+            <tr>
+              <td>After shutdown: <code>lock.unlock</code><span class="where"><code>app.py:232</code></span></td>
+              <td><span class="n">9</span></td><td><span class="n">10</span></td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td><code>i18n.install()</code>: <code>setlocale</code>, <code>bindtextdomain</code> for GTK&rsquo;s own texts, the builtins again<span class="where"><code>app.py:233</code>, <code>gui/app.py:274</code>, <code>cli.py:583</code></span></td>
+              <td><span class="n">10</span></td><td><span class="n">11</span></td><td><span class="n">7</span> first thing in <code>run</code></td><td><span class="n">4</span> before <code>client.main</code></td>
+            </tr>
+            <tr>
+              <td><code>migrate()</code>: <code>startup_migration()</code>, <strong>settings read 2</strong>; may write <code>settings.toml</code><span class="where"><code>app.py:195</code>, <code>gui/app.py:190</code></span></td>
+              <td><span class="n">11</span> runs at once, logs into the buffer</td>
+              <td><span class="n">12</span> <code>MigrationWindow</code>; the rest waits for <code>window.closed</code>, <strong>the loop starts here</strong></td>
+              <td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td><code>share_user_lock()</code>, after converting 2.1 under <code>--lock workspace</code><span class="where"><code>app.py:235&ndash;237</code></span></td>
+              <td><span class="n">12</span></td><td><span class="n">13</span></td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td>
+            </tr>
+
+            <tr class="phase"><td colspan="5">Settings, log, folders: Application._start</td></tr>
+            <tr class="reactor-row">
+              <td><code>load_settings()</code>, <strong>settings read 3</strong>: no file &rarr; defaults written; <code>kernel_samepage_merging</code> on &rarr; <code>set_ksm</code> spawns <code>sudo tee</code> through the reactor. <code>load_state()</code><span class="where"><code>app.py:149</code>, <code>config/settings.py:302&ndash;332</code>, <code>ksm.py:119</code></span></td>
+              <td><span class="n">13</span></td><td><span class="n">14</span></td>
+              <td><span class="n">8</span> <code>load_settings</code> only, and <span class="hot">KSM of this computer</span></td>
+              <td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td><code>projects.path</code> = <code>--workspace</code>, else <code>get_setting("workspace")</code><span class="where"><code>app.py:154</code></span></td>
+              <td><span class="n">14</span></td><td><span class="n">15</span></td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td><code>logger.start(reactor)</code>: <code>beginLoggingTo</code>, then the &ldquo;starts&rdquo; line. Events before it wait in Twisted&rsquo;s buffer<span class="where"><code>app.py:110</code>, <code>266</code>, <code>gui/app.py:276</code></span></td>
+              <td><span class="n">15</span></td><td><span class="n">16</span> + messages window</td><td><span class="n">9</span> + messages window</td><td><span class="none">&ndash; no log</span></td>
+            </tr>
+            <tr>
+              <td><code>make_runtime_dir()</code>: runtime folder of the workspace, its link<span class="where"><code>app.py:188</code>, <code>config/workspace.py:401</code></span></td>
+              <td><span class="n">16</span></td><td><span class="n">17</span></td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td>The engine&rsquo;s factory<span class="where"><code>app.py:269</code>, <code>gui/app.py:280&ndash;281</code></span></td>
+              <td><span class="n">17</span> <code>BrickFactory(quit)</code></td><td><span class="n">18</span> <code>BrickFactory(quit)</code></td><td><span class="n">11</span> <code>MirrorFactory(reactor)</code>, the copy; <code>client.where()</code></td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td>The windows: <code>show_errors()</code>, <code>MainWindow</code> (shown at once, tray icon), <code>DesktopTrash</code>, <code>use_frontend(WindowFrontend)</code><span class="where"><code>gui/app.py:181</code>, <code>306</code></span></td>
+              <td><span class="none">&ndash;</span> <code>_run()</code> is empty</td>
+              <td><span class="n">19</span> in <code>_run()</code></td>
+              <td><span class="n">14</span> in <code>show()</code>, once connected: <code>Consoles</code>, <code>RemoteEngine</code>, <code>MainWindow</code>; no trash, no frontend</td>
+              <td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td><code>pdb</code> on SIGUSR2 and SIGINT, with <code>-b</code> and a terminal<span class="where"><code>app.py:271&ndash;279</code></span></td>
+              <td><span class="n">18</span></td><td><span class="n">20</span></td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td>Before shutdown: <code>store_settings</code><span class="where"><code>app.py:280</code>, <code>gui/app.py:277</code></span></td>
+              <td><span class="n">19</span></td><td><span class="n">21</span></td><td><span class="n">10</span> without a lock</td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td>Open the last project<span class="where"><code>app.py:343</code>, <code>gui/app.py:201</code></span></td>
+              <td><span class="n">20</span> <code>restore_last</code>: else a new one</td>
+              <td><span class="n">22</span> <code>open_last</code>: else the Projects window</td>
+              <td><span class="none">&ndash;</span> the one there, on <code>synced</code></td>
+              <td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td><code>listen()</code>: the sockets of <code>--listen</code><span class="where"><code>app.py:310</code>, <code>console/control.py</code></span></td>
+              <td><span class="n">21</span></td><td><span class="n">23</span></td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td>Before shutdown: <code>projects.save</code>, then <code>logger.stop</code><span class="where"><code>app.py:283&ndash;286</code></span></td>
+              <td><span class="n">22</span></td><td><span class="n">24</span></td><td><span class="n">10</span> <code>logger.stop</code> only</td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td>Timers: autosave every 180 s, switch wrappers<span class="where"><code>app.py:287&ndash;288</code></span></td>
+              <td><span class="n">23</span></td><td><span class="n">25</span></td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td><code>--run FILE</code>: <code>source FILE</code> on the project<span class="where"><code>app.py:321</code>, <code>console/client.py:806</code></span></td>
+              <td><span class="n">24</span></td><td><span class="n">26</span></td><td><span class="none">&ndash;</span></td><td><span class="n">5</span> <code>--connect --run</code>: its lines, sent</td>
+            </tr>
+            <tr>
+              <td>Console in the terminal, after the script, unless <code>--noterm</code><span class="where"><code>app.py:303</code>, <code>console/terminal.py</code></span></td>
+              <td><span class="n">25</span></td><td><span class="n">27</span></td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td><code>sys.excepthook</code>, <code>threading.excepthook</code>, last on purpose<span class="where"><code>app.py:294&ndash;297</code></span></td>
+              <td><span class="n">26</span></td><td><span class="n">28</span></td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td>After the start: window title, missing programs<span class="where"><code>gui/app.py:228&ndash;233</code>, <code>329&ndash;330</code></span></td>
+              <td><span class="none">&ndash;</span></td>
+              <td><span class="n">29</span> <code>set_title</code>, <code>check_prerequisites</code></td>
+              <td><span class="n">14</span> <code>set_title</code>, <code>warn(machine)</code></td>
+              <td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td>Find and reach the other Virtualbricks: <code>resolve()</code> (blocking scan of the runtime folder), then <code>connect()</code><span class="where"><code>gui/app.py:287</code>, <code>remote/client.py:140</code></span></td>
+              <td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td>
+              <td><span class="n">12</span> resolve now, connect in the loop; <code>Refused</code> &rarr; <code>SystemExit</code></td>
+              <td><span class="n">5</span> the same search, blocking</td>
+            </tr>
+
+            <tr class="phase"><td colspan="5">Loop and exit</td></tr>
+            <tr>
+              <td><code>reactor.run()</code><span class="where">Twisted&rsquo;s <code>task.react</code></span></td>
+              <td><span class="n">27</span></td><td><span class="n">30</span>, or <span class="n">12</span> with a migration</td><td><span class="n">13</span></td><td><span class="none">&ndash;</span></td>
+            </tr>
+            <tr>
+              <td>Exit status<span class="where"><code>console/client.py:58&ndash;64</code></span></td>
+              <td colspan="3">From <code>task.react</code>: 0; the text of a <code>SystemExit</code> (lock held, refused connection), status 1; 1 for any other failure</td>
+              <td>0 done, 1 failed, 2 unanswered, 130 interrupted</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>At quit</h3>
+        <p>The shutdown triggers are added along the way, so their order is that of the start:</p>
+        <div class="scroll">
+        <table>
+          <thead><tr><th>Phase</th><th>Trigger, in order</th><th>Modes</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">before</td><td><code>store_settings</code>, <code>projects.save</code>, <code>logger.stop</code>, then the console&rsquo;s <code>switcher.close</code>, added when the console starts, so after the log has stopped; <code>task.react</code>&rsquo;s own trigger comes once <code>run()</code> has returned</td><td>CLI, GUI; remote has <code>store_settings</code> and <code>logger.stop</code></td></tr>
+            <tr><td class="nowrap">after</td><td><code>lock.unlock</code>, then the raw terminal&rsquo;s <code>stop</code></td><td>CLI, GUI</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="time">
+        <h2><span class="num">&sect;4</span>In time</h2>
+        <p>The same sequences as lanes, read left to right. The black chip is where <code>reactor.run()</code> starts the loop: everything before it runs inside <code>task.react</code>, before any event is handled.</p>
+        <ul class="legend">
+          <li><span class="swatch k-proc"></span>process, objects</li>
+          <li><span class="swatch k-reactor"></span>reactor, GTK</li>
+          <li><span class="swatch k-lock"></span>locks</li>
+          <li><span class="swatch k-files"></span>files: settings, migration, folders, project</li>
+          <li><span class="swatch k-win"></span>windows</li>
+          <li><span class="swatch k-loop"></span>the loop starts</li>
+        </ul>
+        <div class="lanes">
+          <div class="lane">
+            <div class="lane-name">CLI<small>--no-gui</small></div>
+            <ol class="steps">
+              <li>parse</li>
+              <li class="k-reactor">import app &rarr; EPoll</li>
+              <li>Application</li>
+              <li>run()</li>
+              <li class="k-files">settings_to_convert</li>
+              <li class="k-files">startup_workspace</li>
+              <li class="k-lock">take_locks</li>
+              <li>i18n</li>
+              <li class="k-files">migrate, at once</li>
+              <li class="k-lock">share_user_lock</li>
+              <li class="k-files">load_settings</li>
+              <li class="k-files">projects.path</li>
+              <li>logger.start</li>
+              <li class="k-files">runtime dir</li>
+              <li>BrickFactory</li>
+              <li class="k-files">restore_last</li>
+              <li>listen</li>
+              <li>timers</li>
+              <li>--run</li>
+              <li>console</li>
+              <li>sys hooks</li>
+              <li class="k-loop">reactor.run()</li>
+            </ol>
+          </div>
+          <div class="lane">
+            <div class="lane-name">GUI<small>default</small></div>
+            <ol class="steps">
+              <li>parse</li>
+              <li class="k-reactor">require Gtk 3.0</li>
+              <li class="k-reactor">gireactor.install()</li>
+              <li class="k-reactor">import gui.app</li>
+              <li>GuiApplication</li>
+              <li>run()</li>
+              <li class="k-files">settings_to_convert</li>
+              <li class="k-files">startup_workspace</li>
+              <li class="k-lock">take_locks</li>
+              <li>i18n</li>
+              <li class="k-win">migration window</li>
+              <li class="k-loop alt">reactor.run() if a migration is pending</li>
+              <li class="k-lock">share_user_lock</li>
+              <li class="k-files">load_settings</li>
+              <li class="k-files">projects.path</li>
+              <li>logger.start</li>
+              <li class="k-files">runtime dir</li>
+              <li>BrickFactory</li>
+              <li class="k-win">MainWindow</li>
+              <li class="k-files">open_last</li>
+              <li>listen</li>
+              <li>timers</li>
+              <li>--run</li>
+              <li>console</li>
+              <li>sys hooks</li>
+              <li class="k-win">title, prerequisites</li>
+              <li class="k-loop">reactor.run() otherwise</li>
+            </ol>
+          </div>
+          <div class="lane">
+            <div class="lane-name">Remote<small>--connect alone</small></div>
+            <ol class="steps">
+              <li>parse</li>
+              <li class="k-reactor">require Gtk 3.0</li>
+              <li class="k-reactor">gireactor.install()</li>
+              <li class="k-reactor">import gui.app</li>
+              <li>RemoteApplication</li>
+              <li>run()</li>
+              <li>i18n</li>
+              <li class="k-files">load_settings</li>
+              <li>logger.start</li>
+              <li>MirrorFactory</li>
+              <li class="k-files">resolve socket</li>
+              <li>connect&hellip;</li>
+              <li class="k-loop">reactor.run()</li>
+              <li class="k-win">connected: MainWindow</li>
+              <li class="k-win">title, warn</li>
+            </ol>
+          </div>
+          <div class="lane">
+            <div class="lane-name">Command<small>--command</small></div>
+            <ol class="steps">
+              <li>parse</li>
+              <li>import console.client</li>
+              <li>i18n</li>
+              <li class="k-files">find the socket</li>
+              <li>connect, ask, print</li>
+              <li>sys.exit</li>
+            </ol>
+          </div>
+        </div>
+        <p>So the GUI has two orders in time. Without a migration, <code>MainWindow</code> is built and shown, the project opened and the console started, all before the loop; the window appears when the loop starts. With a migration, the loop runs the migration window, and <code>_start</code> runs later in a GLib callback, when <code>window.closed</code> fires. The remote windows are always built inside the loop, on the connection.</p>
+      </section>
+
+      <section id="reactor">
+        <h2><span class="num">&sect;5</span>The reactor</h2>
+        <p>Twisted has one global reactor. The first <code>from twisted.internet import reactor</code> installs the default one, <code>EPollReactor</code> on Linux, unless another was installed before. <code>gireactor.install()</code> after that raises <code>ReactorAlreadyInstalledError</code>; tried today: <code>import virtualbricks.bricks</code>, then <code>gireactor.install()</code>, fails with it.</p>
+        <h3>Who installs which</h3>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Mode</th><th>Reactor</th><th>Installed by</th><th>If the order slips</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">GUI, remote</td><td><code>GIReactor</code></td><td><code>install_gtk_reactor()</code>, <code>cli.py:559</code>: <code>gi.require_version</code> Gtk and Gdk 3.0, then <code>gireactor.install()</code>. Called in <code>main()</code> before the factory imports <code>gui.app</code>.</td><td>Import <code>gui.app</code> first and its import of <code>app</code> installs EPoll: <code>install_gtk_reactor()</code> then raises. Forget the call and EPoll runs with nothing to iterate GTK&rsquo;s main loop, with no error.</td></tr>
+            <tr><td class="nowrap">CLI</td><td><code>EPollReactor</code></td><td>Nobody by name. <code>make_plain_application</code> imports <code>app</code>; <code>app.py:45</code> &rarr; <code>brickfactory.py:33</code> &rarr; <code>bricks/__init__.py:41</code>, <code>from twisted.internet import protocol, reactor, error, defer</code>.</td><td>Whichever module is first to import the reactor chooses it. If something installed GIReactor before, the CLI would run on it without saying so.</td></tr>
+            <tr><td class="nowrap">Command</td><td>none</td><td>&ndash;</td><td><code>console/client.py</code> uses blocking sockets. <code>test_client.py:884</code> and <code>914</code> run it in a subprocess and check that neither <code>twisted.internet.reactor</code> nor <code>gi</code> is in <code>sys.modules</code>. This test also catches a top-level import in <code>cli.py</code> that would install a reactor.</td></tr>
+            <tr><td class="nowrap">Migration window</td><td><code>GIReactor</code></td><td><code>migrate/gui.py:521&ndash;523</code>, its own call, for <code>virtualbricks-migrate</code>. Its module asked for Gtk 3.0 and imported Gtk at <code>:39&ndash;40</code>. Then <code>reactor.run()</code> directly (<code>:513</code>), not <code>task.react</code>, and no logging begins.</td><td>The GUI shows the same window inside its own reactor (<code>gui/app.py:192</code>) and never calls this <code>main()</code>.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>What installs the reactor on import</h3>
+        <p>Each module imported alone in a fresh interpreter: whether the reactor and Gtk are loaded afterwards, and the chain to the first import of the reactor.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Module imported</th><th>Reactor after</th><th>Gtk after</th><th class="num">Modules of the package</th><th>Chain to the reactor</th></tr></thead>
+          <tbody>
+            <tr><td><code>virtualbricks.cli</code></td><td>no</td><td>no</td><td class="num">7</td><td>&ndash;</td></tr>
+            <tr><td><code>console.client</code></td><td>no</td><td>no</td><td class="num">8</td><td>&ndash;</td></tr>
+            <tr><td><code>config.settings</code>, <code>config.workspace</code></td><td>no</td><td>no</td><td class="num">10, 13</td><td>&ndash;</td></tr>
+            <tr><td><code>migrate</code>, <code>migrate.engine</code>, <code>migrate.cli</code></td><td>no</td><td>no</td><td class="num">17&ndash;18</td><td>&ndash;</td></tr>
+            <tr><td><code>migrate.gui</code></td><td>no</td><td>yes</td><td class="num">18</td><td>&ndash;</td></tr>
+            <tr><td><code>bricks</code></td><td class="no">EPoll</td><td>no</td><td class="num">19</td><td><code>bricks/__init__.py:41</code></td></tr>
+            <tr><td><code>brickfactory</code></td><td class="no">EPoll</td><td>no</td><td class="num">41</td><td><code>brickfactory.py:33</code> &rarr; <code>bricks/__init__.py:41</code></td></tr>
+            <tr><td><code>app</code></td><td class="no">EPoll</td><td>no</td><td class="num">43</td><td><code>app.py:45</code> &rarr; <code>brickfactory.py:33</code> &rarr; <code>bricks/__init__.py:41</code></td></tr>
+            <tr><td><code>engine</code></td><td class="no">EPoll</td><td>no</td><td class="num">44</td><td>through <code>bricks</code>; also its own at <code>engine.py:45</code></td></tr>
+            <tr><td><code>remote.client</code></td><td class="no">EPoll</td><td>no</td><td class="num">55</td><td><code>remote/client.py:54</code>, for <code>normalize_name</code> &rarr; <code>brickfactory.py:33</code> &rarr; <code>bricks</code></td></tr>
+            <tr><td><code>console.control</code></td><td class="no">EPoll</td><td>no</td><td class="num">67</td><td><code>console/control.py:67</code> &rarr; <code>brickfactory</code></td></tr>
+            <tr><td><code>console.terminal</code></td><td class="no">EPoll</td><td>no</td><td class="num">54</td><td><code>console/terminal.py:48</code> &rarr; <code>twisted.conch.manhole</code> &rarr; <code>recvline</code> &rarr; <code>insults/helper.py:20</code></td></tr>
+            <tr><td><code>gui.app</code></td><td class="no">EPoll</td><td>yes</td><td class="num">129</td><td><code>gui/app.py:45</code> &rarr; <code>app.py:45</code> &rarr; &hellip;; Gtk at <code>:27</code> without a version: <code>PyGIWarning</code> when imported alone</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>The package imports the reactor at module level in five places: <code>bricks/__init__.py:41</code>, <code>bricks/event.py:26</code>, <code>engine.py:45</code>, <code>gui/mainwindow/readme.py:45</code>, <code>gui/mainwindow/events/tab.py:44</code>. Nine more import it inside a function, as the default of a <code>reactor</code> argument: <code>ksm.py:119</code>, <code>console/dispatch.py:126</code>, <code>console/terminal.py:476</code>, <code>console/control.py:855</code>, <code>config/archive.py:1389</code>, <code>remote/mirror.py:135</code>, <code>remote/follower.py:187</code>, <code>gui/dialogs/settings.py:153</code>, <code>migrate/gui.py:524</code>.</p>
+        <div class="callout risk">
+          <span class="label">The hidden one</span>
+          <p><code>ksm.py:119</code> is reached from <code>load_settings()</code>: with <code>kernel_samepage_merging</code> on and KSM off, <code>set_ksm()</code> spawns <code>sudo tee</code> through the reactor (<code>config/settings.py:332</code>). Settings read before <code>install_gtk_reactor()</code>, for instance to choose the mode from a setting, would install EPoll on such a computer and only there.</p>
+        </div>
+        <h3>GTK&rsquo;s version</h3>
+        <p><code>gi.require_version("Gtk", "3.0")</code> is in <code>cli.py:562</code> and again at the top of 44 modules of <code>gui/</code> and <code>migrate/gui.py:39</code>. <code>gui/app.py:27</code> imports Gtk without it and relies on <code>cli.py</code> having asked first.</p>
+        <h3>Before the loop</h3>
+        <p><code>task.react(main)</code> calls <code>main(reactor)</code>, then <code>reactor.run()</code>. Whatever <code>run()</code> does up to the first Deferred that hasn&rsquo;t fired happens before the loop: the locks, the settings, the KSM process, the windows, the project, the sockets, the console. It works because Twisted queues what is scheduled before <code>run()</code>, but a step that waits on the loop (a Deferred from a process or a socket) silently moves everything after it into the loop, as the migration window does.</p>
+      </section>
+
+      <section id="deps">
+        <h2><span class="num">&sect;6</span>What needs what</h2>
+        <p>The start of CLI and GUI, as a graph. A solid arrow is a real need, red where the reactor or GTK is involved. A dashed arrow is only the order of the code: the two steps could swap. Steps without an arrow between them are in their order by position in <code>_start</code> alone.</p>
+        <figure class="diagram">
+          <svg viewBox="0 0 900 932" role="img" aria-label="Dependency graph of the start of the CLI and the GUI: options, GTK version and reactor installation before importing the application class; startup_workspace and settings_to_convert before take_locks; take_locks before migrate; migrate before load_settings and share_user_lock; the reactor before load_settings because of KSM; load_settings before projects.path, runtime folder and listen; BrickFactory, MainWindow, open the last project, then listen and the script, then the console, and the exception hooks last.">
+            <defs>
+              <marker id="d1" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+              <marker id="d2" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="ah hot" d="M0,0 L10,5 L0,10 z"/></marker>
+              <marker id="d3" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah order" d="M0,0 L10,5 L0,10 z"/></marker>
+              <marker id="d4" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah purpose" d="M0,0 L10,5 L0,10 z"/></marker>
+            </defs>
+
+            <!-- edges first, under the boxes -->
+            <path class="e" d="M450,60 V82" marker-end="url(#d1)"/>
+            <path class="e hot" d="M150,126 V170 H315" marker-end="url(#d2)"/>
+            <path class="e hot" d="M450,126 V148" marker-end="url(#d2)"/>
+            <text class="lbl hot" x="440" y="141" text-anchor="end">before any import of the reactor</text>
+            <path class="e" d="M450,192 V280" marker-end="url(#d1)"/>
+            <text class="lbl" x="440" y="240" text-anchor="end">task.react &rarr; run(reactor)</text>
+            <path class="e" d="M150,258 V302 H315" marker-end="url(#d1)"/>
+            <path class="e" d="M750,258 V302 H585" marker-end="url(#d1)"/>
+            <path class="e" d="M450,324 V346" marker-end="url(#d1)"/>
+            <path class="e order" d="M380,324 V335 H150 V346" marker-end="url(#d3)"/>
+            <path class="e" d="M285,368 H315" marker-end="url(#d1)"/>
+            <path class="e" d="M450,390 V412" marker-end="url(#d1)"/>
+            <path class="e" d="M585,368 H750 V412" marker-end="url(#d1)"/>
+            <path class="e hot" d="M585,104 H600 V434 H585" marker-end="url(#d2)"/>
+            <text class="lbl hot" x="606" y="200">KSM: spawnProcess</text>
+            <path class="e" d="M450,456 V467 H150 V478" marker-end="url(#d1)"/>
+            <path class="e order" d="M560,456 V467 H750 V478" marker-end="url(#d3)"/>
+            <path class="e" d="M150,522 V544" marker-end="url(#d1)"/>
+            <path class="e order" d="M285,566 H315" marker-end="url(#d3)"/>
+            <path class="e" d="M450,588 V610" marker-end="url(#d1)"/>
+            <path class="e" d="M450,654 V676" marker-end="url(#d1)"/>
+            <path class="e" d="M100,588 V742" marker-end="url(#d1)"/>
+            <path class="e" d="M380,720 V731 H150 V742" marker-end="url(#d1)"/>
+            <path class="e" d="M450,720 V742" marker-end="url(#d1)"/>
+            <path class="e" d="M450,786 V808" marker-end="url(#d1)"/>
+            <path class="e purpose" d="M450,852 V874" marker-end="url(#d4)"/>
+
+            <!-- row 0 -->
+            <rect class="box" x="315" y="16" width="270" height="44" rx="5"/>
+            <text class="t" x="327" y="35">Options parsed</text>
+            <text class="s" x="327" y="51">cli.py:514</text>
+            <!-- row 1 -->
+            <rect class="box reactor" x="15" y="82" width="270" height="44" rx="5"/>
+            <text class="t reactor" x="27" y="101">Gtk 3.0 required</text>
+            <text class="s" x="27" y="117">GUI: cli.py:562</text>
+            <rect class="box reactor" x="315" y="82" width="270" height="44" rx="5"/>
+            <text class="t reactor" x="327" y="101">Reactor installed</text>
+            <text class="s" x="327" y="117">gireactor, or EPoll by import</text>
+            <!-- row 2 -->
+            <rect class="box" x="315" y="148" width="270" height="44" rx="5"/>
+            <text class="t" x="327" y="167">Application class imported</text>
+            <text class="s" x="327" y="183">brings bricks/__init__.py:41</text>
+            <!-- row 3 -->
+            <rect class="box files" x="15" y="214" width="270" height="44" rx="5"/>
+            <text class="t" x="27" y="233">startup_workspace()</text>
+            <text class="s" x="27" y="249">settings read 1</text>
+            <rect class="box files" x="615" y="214" width="270" height="44" rx="5"/>
+            <text class="t" x="627" y="233">settings_to_convert()</text>
+            <text class="s" x="627" y="249">is there a 2.1 settings file?</text>
+            <!-- row 4 -->
+            <rect class="box lock" x="315" y="280" width="270" height="44" rx="5"/>
+            <text class="t" x="327" y="299">take_locks()</text>
+            <text class="s" x="327" y="315">system, user, workspace</text>
+            <!-- row 5 -->
+            <rect class="box" x="15" y="346" width="270" height="44" rx="5"/>
+            <text class="t" x="27" y="365">i18n.install()</text>
+            <text class="s" x="27" y="381">before the first window</text>
+            <rect class="box files" x="315" y="346" width="270" height="44" rx="5"/>
+            <text class="t" x="327" y="365">migrate()</text>
+            <text class="s" x="327" y="381">settings read 2; may write them</text>
+            <!-- row 6 -->
+            <rect class="box files" x="315" y="412" width="270" height="44" rx="5"/>
+            <text class="t" x="327" y="431">load_settings(), load_state()</text>
+            <text class="s" x="327" y="447">settings read 3; KSM via sudo</text>
+            <rect class="box lock" x="615" y="412" width="270" height="44" rx="5"/>
+            <text class="t" x="627" y="431">share_user_lock()</text>
+            <text class="s" x="627" y="447">only after converting 2.1</text>
+            <!-- row 7 -->
+            <rect class="box files" x="15" y="478" width="270" height="44" rx="5"/>
+            <text class="t" x="27" y="497">projects.path</text>
+            <text class="s" x="27" y="513">--workspace, else the setting</text>
+            <rect class="box" x="615" y="478" width="270" height="44" rx="5"/>
+            <text class="t" x="627" y="497">logger.start()</text>
+            <text class="s" x="627" y="513">events buffered until now</text>
+            <!-- row 8 -->
+            <rect class="box files" x="15" y="544" width="270" height="44" rx="5"/>
+            <text class="t" x="27" y="563">make_runtime_dir()</text>
+            <text class="s" x="27" y="579">runtime folder, workspace link</text>
+            <rect class="box" x="315" y="544" width="270" height="44" rx="5"/>
+            <text class="t" x="327" y="563">BrickFactory(quit)</text>
+            <text class="s" x="327" y="579">app.py:269</text>
+            <!-- row 9 -->
+            <rect class="box win" x="315" y="610" width="270" height="44" rx="5"/>
+            <text class="t" x="327" y="629">MainWindow, WindowFrontend</text>
+            <text class="s" x="327" y="645">GUI only: _run()</text>
+            <!-- row 10 -->
+            <rect class="box files" x="315" y="676" width="270" height="44" rx="5"/>
+            <text class="t" x="327" y="695">Open the last project</text>
+            <text class="s" x="327" y="711">restore_last, open_last</text>
+            <!-- row 11 -->
+            <rect class="box" x="15" y="742" width="270" height="44" rx="5"/>
+            <text class="t" x="27" y="761">listen()</text>
+            <text class="s" x="27" y="777">the sockets of --listen</text>
+            <rect class="box" x="315" y="742" width="270" height="44" rx="5"/>
+            <text class="t" x="327" y="761">--run FILE</text>
+            <text class="s" x="327" y="777">source FILE</text>
+            <!-- row 12 -->
+            <rect class="box" x="315" y="808" width="270" height="44" rx="5"/>
+            <text class="t" x="327" y="827">Console in the terminal</text>
+            <text class="s" x="327" y="843">unless --noterm</text>
+            <!-- row 13 -->
+            <rect class="box" x="315" y="874" width="270" height="44" rx="5"/>
+            <text class="t" x="327" y="893">sys.excepthook</text>
+            <text class="s" x="327" y="909">last, on purpose</text>
+          </svg>
+          <figcaption>Solid: needs. Red: the reactor or GTK. Dashed grey: the order of the code only. Dotted blue: last on purpose. The remote windows need only the first three boxes, then <code>i18n</code>, <code>load_settings</code> and the connection.</figcaption>
+        </figure>
+        <h3>Each need, and why</h3>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Before</th><th>After</th><th>Why</th><th>Kind</th></tr></thead>
+          <tbody>
+            <tr><td><code>gi.require_version</code></td><td>any import of Gtk</td><td>Without it, <code>gi</code> loads the newest Gtk installed, 4 where it sits beside 3. <code>gui/app.py:27</code> doesn&rsquo;t ask for a version itself.</td><td><span class="kind hard">reactor, GTK</span></td></tr>
+            <tr><td><code>gireactor.install()</code></td><td>the first import of the reactor</td><td>Today that is <code>bricks/__init__.py:41</code>, reached by importing <code>app</code>, <code>gui.app</code>, <code>remote.client</code>, <code>console.control</code>, <code>console.terminal</code> and more (<a href="#reactor">&sect;5</a>).</td><td><span class="kind hard">reactor, GTK</span></td></tr>
+            <tr><td>reactor chosen</td><td><code>load_settings()</code></td><td>KSM: <code>set_ksm()</code> imports the reactor to spawn <code>sudo tee</code> (<code>ksm.py:119</code>).</td><td><span class="kind hard">reactor, GTK</span></td></tr>
+            <tr><td><code>settings_to_convert()</code>, <code>startup_workspace()</code></td><td><code>take_locks()</code></td><td>Under <code>--lock workspace</code>, converting 2.1 settings takes the user lock alone. The workspace lock needs the folder, made when the locks are held.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td><code>take_locks()</code></td><td><code>migrate()</code>, every write</td><td>The migration in place and the projects are written under the locks.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td><code>i18n.install()</code></td><td>the first window</td><td><code>setlocale</code> and <code>bindtextdomain</code> translate GTK&rsquo;s own texts. The Python texts were translated already, by the builtins of <code>i18n.py:93</code>.</td><td><span class="kind real">need, GUI</span></td></tr>
+            <tr><td><code>migrate()</code></td><td><code>load_settings()</code></td><td>The migration may write <code>settings.toml</code> from the 2.1 file. Read before, <code>load_settings</code> would find no file and write the defaults.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td><code>migrate()</code></td><td><code>share_user_lock()</code></td><td>Other workspaces may start once the user&rsquo;s files are converted.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td><code>load_settings()</code></td><td><code>projects.path</code>, <code>MainWindow</code></td><td>The workspace setting; <code>tray_icon</code>, <code>warn_missing_programs</code> and the other settings the windows read.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td><code>projects.path</code></td><td><code>make_runtime_dir()</code>, <code>listen()</code>, opening a project</td><td>The runtime folder of the workspace holds <code>.control</code>, the default socket.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td><code>BrickFactory</code></td><td><code>MainWindow</code>, open, listen, script, console</td><td>All of them work on the factory.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td><code>MainWindow</code>, <code>use_frontend</code></td><td>open the last project, <code>--run</code>, console, sockets</td><td>A problem opening the last project goes to the Projects window (<code>gui/app.py:226</code>). The console&rsquo;s open, new and save go through the windows.</td><td><span class="kind real">need, GUI</span></td></tr>
+            <tr><td>open the last project</td><td><code>listen()</code>, <code>--run</code></td><td>A client finds the project open; the e2e tests wait for the socket as the sign that it is.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td><code>--run</code></td><td>console</td><td>The console starts after the script&rsquo;s output.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td>everything</td><td><code>install_sys_hooks()</code></td><td>The comment at <code>app.py:294</code>: an early exception hook hides errors of the start.</td><td><span class="kind real">on purpose</span></td></tr>
+            <tr><td><code>take_locks()</code></td><td><code>i18n.install()</code></td><td>The messages of <code>Held</code> are English (<code>locks.py:90</code>); nothing needs the locale after the locks.</td><td><span class="kind order">order only</span></td></tr>
+            <tr><td><code>load_settings()</code></td><td><code>logger.start()</code></td><td><code>AppLogger</code> reads only the options. What is logged earlier waits in Twisted&rsquo;s buffer of 200 events and comes out before the &ldquo;starts&rdquo; line.</td><td><span class="kind order">order only</span></td></tr>
+            <tr><td><code>make_runtime_dir()</code></td><td><code>BrickFactory</code></td><td>The factory takes <code>locations.runtime_dir()</code>, not the workspace&rsquo;s folder.</td><td><span class="kind order">order only</span></td></tr>
+            <tr><td><code>store_settings</code> trigger, timers</td><td>open, listen</td><td>Where they sit in <code>_start</code> doesn&rsquo;t matter.</td><td><span class="kind order">order only</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="confusing">
+        <h2><span class="num">&sect;7</span>What makes it confusing</h2>
+        <ol>
+          <li><strong>The reactor is chosen by import order.</strong> Three places install one (<code>cli.py:566</code>, <code>migrate/gui.py:523</code>, and the import of <code>bricks</code> for the CLI), in two ways. GUI and remote work because <code>cli.py</code> imports nothing of the application at the top and each factory imports its module after <code>install_gtk_reactor()</code>. No comment states that order. The test of command mode catches a top-level import in <code>cli.py</code>; nothing checks that the factories import after the reactor is installed.</li>
+          <li><strong>Remote is not an Application.</strong> <code>RemoteApplication</code> repeats <code>install_locale</code>, <code>install_settings</code>, the logger and its triggers by hand (<code>gui/app.py:256&ndash;278</code>). It lives in <code>gui/app.py</code> beside <code>GuiApplication</code>, so importing it imports <code>app</code>, <code>BrickFactory</code>, <code>bricks</code> and <code>LocalEngine</code>, none of which it uses. <code>remote/client.py:54</code> imports <code>brickfactory</code> for <code>normalize_name</code> alone.</li>
+          <li><strong>The settings are read three times.</strong> <code>startup_workspace()</code> and <code>startup_migration()</code> each call <code>_startup_settings()</code>, then <code>load_settings()</code> reads the file again; <code>settings_to_convert()</code> runs twice. The workspace that is locked and <code>projects.path</code> come from two different readers of the same setting.</li>
+          <li><strong>The locale comes at three different points.</strong> After the locks in CLI and GUI, first in remote, before <code>client.main</code> in command mode. Everything imported before it, all of <code>gui/</code> in the GUI, is translated by the builtins that <code>i18n.py:93</code> installs on import, without <code>setlocale</code>.</li>
+          <li><strong>Logging starts late.</strong> In <code>_start</code>, after the locks, the migration and the settings. Their messages are buffered and replayed before the &ldquo;starts&rdquo; line, so the log reads out of order. Command mode never starts the log, and neither does the migration window.</li>
+          <li><strong>Two timings in the GUI</strong> (<a href="#time">&sect;4</a>): <code>_start</code> runs before the loop, or inside it when a migration is pending. A step that becomes asynchronous changes which.</li>
+          <li><strong><code>_start</code> is one long method with hooks.</strong> <code>migrate</code>, <code>_run</code>, <code>open_last_project</code>, <code>get_namespace</code> are overridden by <code>GuiApplication</code>, which then adds steps after <code>super()._start()</code>. The <code>pdb</code> set-up sits in the middle. The quit order lives in <code>addSystemEventTrigger</code> calls spread over <code>run</code>, <code>_start</code> and the console.</li>
+          <li><strong>Two bugs, in <code>BUGS.md</code>.</strong> The remote windows&rsquo; <code>load_settings()</code> turns KSM on in this computer when the local setting says so (<code>config/settings.py:332</code>), though the bricks run on the other one: checked by calling <code>install_settings()</code> with <code>set_ksm</code> replaced. And each process writes all of <code>settings.toml</code> from its own copy, at each change and at quit, so the remote windows and the Virtualbricks they show on the same computer, or two side by side with <code>--lock workspace</code>, undo each other&rsquo;s changes: checked with two processes on one file.</li>
+          <li><strong>Parsing acts.</strong> <code>--logfile</code> opens its file while it is parsed, even when <code>check_client()</code> refuses it next; <code>--listen ssl:</code> reads keys; <code>--logger</code> imports a module (<a href="#branch">&sect;2</a>).</li>
+          <li><strong>The names don&rsquo;t say the shape.</strong> <code>make_application</code> makes the GUI and <code>make_plain_application</code> the CLI; <code>run_app</code> is used by three modes and command mode doesn&rsquo;t go through it; the migration window has a <code>main()</code> of its own with its own reactor and loop.</li>
+        </ol>
+      </section>
+
+      <section id="seams">
+        <h2><span class="num">&sect;8</span>Where to cut</h2>
+        <p>Not decided; my recommendation, for revision 2.</p>
+        <ul>
+          <li><strong>One function picks the mode and installs its reactor, before any import of the application.</strong> <code>gireactor</code> for GUI and remote, <code>twisted.internet.default.install()</code> named for the CLI, none for command mode. A test per mode, in a subprocess, checks the reactor type after the start and that <code>cli.py</code> plus parsing loads no reactor. The migration window calls the same function.</li>
+          <li><strong>Read the settings once, at the start of <code>run()</code>.</strong> A startup record (workspace, 2.1 file to convert, app settings) that the locks, the migration and <code>load_settings</code> take, so the locked workspace and <code>projects.path</code> are the same value.</li>
+          <li><strong>Start the log and the locale first</strong>, right after parsing, in every mode that has a reactor. The order of the log is then the order of the start.</li>
+          <li><strong>A base class for the steps that every app shares</strong> (locale, settings, logger, quit triggers), with <code>Application</code>, <code>GuiApplication</code> and <code>RemoteApplication</code> on it, and <code>RemoteApplication</code> in a module of its own that imports neither <code>app</code> nor <code>bricks</code>. Remote skips <code>set_ksm</code>.</li>
+          <li><strong><code>_start</code> as a list of named steps</strong>, each a method, the GUI adding its own at named places instead of around <code>super()</code>. One place registers the quit triggers, in their order.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
