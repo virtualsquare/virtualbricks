@@ -22,9 +22,11 @@ mode they ask for, and the checks that need only them and the names of the
 files they give (page 27, section 9).
 
 It imports as little as it can, so that ``--command`` starts fast: the
-standard library's ``argparse``, ``os``, ``sys`` and ``typing``, and
+standard library's ``argparse``, ``os``, ``sys`` and ``typing``,
 :mod:`virtualbricks.sockets`, which reads the descriptions of ``--listen``
-and ``--connect``; no Twisted. It opens no file and makes none. What needs
+and ``--connect``, and :mod:`virtualbricks.locks` for the policies of
+``--lock``, which ``--command`` loads anyway; no Twisted. It opens no file
+and makes none. What needs
 more is left to the mode that runs: the folder and the length of a socket's
 path, a socket given twice, the ssl keys and the token, opening the file of
 ``--logfile`` and importing the factory of ``--logger``.
@@ -37,7 +39,7 @@ import os
 import sys
 from typing import TYPE_CHECKING, NamedTuple
 
-from virtualbricks import __version__, sockets
+from virtualbricks import __version__, locks, sockets
 
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Callable, Sequence
@@ -49,9 +51,6 @@ GUI = "gui"
 NO_GUI = "no-gui"
 REMOTE = "remote"
 COMMAND = "command"
-# The single-instance modes, as virtualbricks.locks.POLICIES, which this
-# module doesn't import.
-LOCK_POLICIES = ("system", "user", "workspace", "none")
 # --listen and --connect alone: .control in the runtime folder of the
 # workspace, known once the settings are read.
 DEFAULT_SOCKET = sockets.Socket(None)
@@ -84,7 +83,7 @@ class CommandLine(NamedTuple):
     # absolute paths
     run: str | None = None
     workspace: str | None = None
-    lock: str = "system"
+    lock: str = locks.SYSTEM
     # as given: "-" is the standard output
     logfile: str | None = None
     # the fully-qualified name of a log observer factory
@@ -185,7 +184,7 @@ def parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--lock",
-        choices=LOCK_POLICIES,
+        choices=locks.POLICIES,
         help="The single-instance mode: system, one Virtualbricks on the"
         " machine; user, one for each user; workspace, one for each"
         " workspace, the default with --workspace; none, no limit."
@@ -276,7 +275,7 @@ def parse(
     lock = options.lock
     if lock is None:
         # one Virtualbricks for each workspace, side by side
-        lock = "workspace" if workspace else "system"
+        lock = locks.WORKSPACE if workspace else locks.SYSTEM
     return CommandLine(
         mode=mode,
         words=tuple(words),

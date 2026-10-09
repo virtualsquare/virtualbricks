@@ -29,7 +29,6 @@ from virtualbricks.cli_new import (
     COMMAND,
     DEFAULT_SOCKET,
     GUI,
-    LOCK_POLICIES,
     NO_GUI,
     REMOTE,
     UNSET,
@@ -105,14 +104,11 @@ class TestModes(Base):
 
 class TestLock(Base):
 
-    def test_the_policies(self):
-        self.assertEqual(LOCK_POLICIES, locks.POLICIES)
-
     def test_the_default(self):
         self.assertEqual(self.parse().lock, locks.SYSTEM)
 
     def test_given(self):
-        for policy in LOCK_POLICIES:
+        for policy in locks.POLICIES:
             self.assertEqual(self.parse("--lock", policy).lock, policy)
         self.assertEqual(self.parse("--lock=user").lock, locks.USER)
 
@@ -494,7 +490,8 @@ class TestOptions(unittest.TestCase):
         )
 
     def test_imports(self):
-        # no Twisted, and of Virtualbricks only sockets, even to parse
+        # no Twisted, and of Virtualbricks only sockets and locks, even to
+        # parse
         code = (
             "import sys\n"
             "from virtualbricks import cli_new\n"
@@ -511,5 +508,6 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(
             output,
             "['virtualbricks', 'virtualbricks.cli_new',"
+            " 'virtualbricks.locations', 'virtualbricks.locks',"
             " 'virtualbricks.sockets']\n",
         )
