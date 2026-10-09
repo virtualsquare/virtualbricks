@@ -27,7 +27,7 @@ import sys
 from twisted.internet import defer, task
 from twisted.trial import unittest
 
-from virtualbricks import app, locations, locks
+from virtualbricks import app, locations, locks, sockets
 from virtualbricks.bricks import switchwrapper
 from virtualbricks.config import settings, workspace
 from virtualbricks.config.settings import (
@@ -39,7 +39,7 @@ from virtualbricks.config.settings import (
 )
 from virtualbricks.config.tomlfile import load_toml
 from virtualbricks.config.workspace import projects
-from virtualbricks.console import control, wire
+from virtualbricks.console import control
 from virtualbricks.tests import (
     BrickTestCase,
     FakeLogger,
@@ -302,9 +302,12 @@ class TestTheConsole(AppTestCase):
         # none without --listen
         self.application().run(FakeReactor())
         self.assertEqual(self.listened, [])
-        sockets = [wire.Socket("/srv/lab.sock"), wire.Socket("/srv/lab2.sock")]
-        self.application(sockets=sockets).run(FakeReactor())
-        self.assertEqual(self.listened, sockets)
+        given = [
+            sockets.Socket("/srv/lab.sock"),
+            sockets.Socket("/srv/lab2.sock"),
+        ]
+        self.application(sockets=given).run(FakeReactor())
+        self.assertEqual(self.listened, given)
 
     def test_a_script_first(self):
         path = self.script("brick new switch\n# a comment\n\nbrick new tap\n")

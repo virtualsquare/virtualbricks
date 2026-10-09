@@ -474,14 +474,16 @@ To add a language, see the top of `l10n.sh`.
 
 ### Source layout
 
-- `virtualbricks/`: `app.py` and `scripts/` start the application and read its
-  command line; `brickfactory.py` is the model in memory, the bricks, the
-  events and the images of the open project; `programs.py` finds the
-  installed QEMU and VDE programs and asks them what they have; `vde.py`
-  finds the VDE programs of the settings; `sudo.py` writes the `sudo`
-  command of what needs root, and `ksm.py` turns Kernel Samepage Merging on
-  and off; `markdown.py` reads the README of a project, and `topology.py`
-  lays the lab out with Graphviz; `locations.py` has the paths of the files.
+- `virtualbricks/`: `cli.py` reads the command line and `app.py` starts the
+  application; `sockets.py` reads the descriptions of the sockets of
+  `--listen` and `--connect`; `brickfactory.py` is the model in memory, the
+  bricks, the events and the images of the open project; `programs.py`
+  finds the installed QEMU and VDE programs and asks them what they have;
+  `vde.py` finds the VDE programs of the settings; `sudo.py` writes the
+  `sudo` command of what needs root, and `ksm.py` turns Kernel Samepage
+  Merging on and off; `markdown.py` reads the README of a project, and
+  `topology.py` lays the lab out with Graphviz; `locations.py` has the paths
+  of the files.
 - `virtualbricks/bricks/`: `__init__.py` has what bricks and events share,
   and the base class of the bricks; a module for each kind of brick:
   virtual machine, switch, tap, wire, and so on; each writes its command
@@ -502,10 +504,9 @@ To add a language, see the top of `l10n.sh`.
   `lineedit.py` has the keys of readline for its line. `control.py` listens
   on the control sockets, `client.py` is `--command` and `--connect --run`,
   with `ampbox.py`, the boxes of AMP read and written without Twisted, and
-  `wire.py` has what both share: the JSON protocol, the descriptions of
-  `--listen` and `--connect`, the checks of a socket's path, the token and
-  its proof. `tls.py` has the certificates of the ssl sockets, and is the
-  only module that needs pyOpenSSL.
+  `wire.py` has what both share: the JSON protocol, the checks of a
+  socket's path, the token and its proof. `tls.py` has the certificates of
+  the ssl sockets, and is the only module that needs pyOpenSSL.
   `ampwire.py` has the commands of the AMP socket, for the programs that use
   it. It imports no GTK, so that `--no-gui`
   doesn't load it, and `client.py` doesn't load Twisted's reactor either.

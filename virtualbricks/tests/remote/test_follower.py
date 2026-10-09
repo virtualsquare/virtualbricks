@@ -29,11 +29,11 @@ from twisted.protocols import amp
 from twisted.python.failure import Failure
 from twisted.test import iosim
 
-from virtualbricks import __version__, locations
+from virtualbricks import __version__, locations, sockets
 from virtualbricks.bricks import FakeProcess
 from virtualbricks.bricks.eventaction import ShellAction
 from virtualbricks.config import settings
-from virtualbricks.console import ampcommands, ampwire, control, wire
+from virtualbricks.console import ampcommands, ampwire, control
 from virtualbricks.programs import qemu_programs
 from virtualbricks.remote import commands, follower
 from virtualbricks.remote.follower import (
@@ -587,18 +587,18 @@ class TestListening(ConsoleTestCase):
 
         server = control.ControlFactory(self.factory, self.clock())
         return control.Control(
-            wire.Socket("/run/vb.amp", protocol), Port(), None, server
+            sockets.Socket("/run/vb.amp", protocol), Port(), None, server
         )
 
     def test_amp(self):
-        found = self.control(wire.AMP)
+        found = self.control(sockets.AMP)
         self.assertEqual(self.started, [True])
         self.successResultOf(found.close())
         self.successResultOf(found.close())
         self.assertEqual(self.started, [])
 
     def test_text(self):
-        found = self.control(wire.JSON)
+        found = self.control(sockets.JSON)
         self.assertEqual(self.started, [])
         self.successResultOf(found.close())
 

@@ -28,7 +28,7 @@ import threading
 from twisted.protocols import amp
 from twisted.trial import unittest
 
-from virtualbricks import locations, locks
+from virtualbricks import locations, locks, sockets
 from virtualbricks.config.workspace import Workspace
 from virtualbricks.console import ampbox, client, wire
 from virtualbricks.tests import (
@@ -68,7 +68,7 @@ class FakeVirtualbricks:
         greeting=GREETING,
         token=None,
         lie=False,
-        protocol=wire.AMP,
+        protocol=sockets.AMP,
     ):
         self.answers = list(answers)
         self.greeting = greeting
@@ -80,13 +80,13 @@ class FakeVirtualbricks:
             self.server = socket.socket(socket.AF_INET)
             self.server.bind(("127.0.0.1", 0))
             self.port = self.server.getsockname()[1]
-            self.target = wire.Socket(
+            self.target = sockets.Socket(
                 None, protocol, "tcp", "127.0.0.1", self.port
             )
         else:
             self.server = socket.socket(socket.AF_UNIX)
             self.server.bind(path)
-            self.target = wire.Socket(path, protocol)
+            self.target = sockets.Socket(path, protocol)
             # as a Virtualbricks that listens: the lock of the socket
             self.lock = locks.hold(locations.control_lock_file(path))
             test.addCleanup(release, self.lock)
@@ -102,7 +102,7 @@ class FakeVirtualbricks:
             # stopped before anyone connected
             return
         with conn, conn.makefile("rb") as reader:
-            if self.protocol == wire.AMP:
+            if self.protocol == sockets.AMP:
                 self.serve_amp(conn, reader)
             else:
                 self.serve_text(conn, reader)
@@ -210,7 +210,7 @@ class ClientTestCase(unittest.TestCase):
 
     def main(self, *words, stdin="", path=None, target=None, workspace=None):
         if path is not None:
-            target = wire.Socket(path)
+            target = sockets.Socket(path)
         return client.main(
             list(words),
             target,
@@ -259,7 +259,7 @@ class TestCommands(ClientTestCase):
             self,
             self.path,
             wire.refusal("vm2: no image", ["vm1 runs"]),
-            protocol=wire.JSON,
+            protocol=sockets.JSON,
         )
         status = self.main(
             "brick", "start", "vm1", "vm2", target=server.target
@@ -482,7 +482,10 @@ class TestUnanswered(ClientTestCase):
 
     def test_not_the_text_protocol(self):
         server = FakeVirtualbricks(
-            self, self.path, greeting=b"SSH-2.0-OpenSSH\n", protocol=wire.JSON
+            self,
+            self.path,
+            greeting=b"SSH-2.0-OpenSSH\n",
+            protocol=sockets.JSON,
         )
         status = self.main("status", target=server.target)
         self.assertEqual(status, client.UNANSWERED)
@@ -676,7 +679,7 @@ class TestTcp(ClientTestCase):
 
     def fake(self, *answers, **kwargs):
         return FakeVirtualbricks(
-            self, None, *answers, protocol=wire.JSON, **kwargs
+            self, None, *answers, protocol=sockets.JSON, **kwargs
         )
 
     def unanswered(self, target, *words):
@@ -751,7 +754,7 @@ class TestTcp(ClientTestCase):
         free.bind(("127.0.0.1", 0))
         port = free.getsockname()[1]
         free.close()
-        target = wire.parse_socket(f"tcp:{port}", client=True)
+        target = sockets.parse_socket(f"tcp:{port}", client=True)
         self.assertEqual(
             self.unanswered(target),
             f"Nothing listens on 127.0.0.1 port {port}. Start Virtualbricks"
@@ -766,7 +769,7 @@ class TestTcp(ClientTestCase):
         self.patch(socket, "create_connection", create_connection)
 
     def test_another_machine(self):
-        target = wire.parse_socket("tcp:lab.example:8765", client=True)
+        target = sockets.parse_socket("tcp:lab.example:8765", client=True)
         self.refuse(ConnectionRefusedError(111, "Connection refused"))
         self.assertEqual(
             self.unanswered(target),
@@ -795,14 +798,14 @@ class TestTcp(ClientTestCase):
         server.bind(("127.0.0.1", 0))
         server.listen(2)
         port = server.getsockname()[1]
-        target = wire.parse_socket(f"tcp:{port}", client=True)
+        target = sockets.parse_socket(f"tcp:{port}", client=True)
         self.assertEqual(
             self.unanswered(target),
             f"127.0.0.1 port {port} didn't answer in 0.1 seconds\n",
         )
         # an AMP socket waits for the first box
         self.stderr = io.StringIO()
-        target = target._replace(protocol=wire.JSON)
+        target = target._replace(protocol=sockets.JSON)
         self.assertEqual(
             self.unanswered(target),
             f"127.0.0.1 port {port} didn't greet in 0.1 seconds: if it speaks"
@@ -821,7 +824,7 @@ class TestSslFiles(ClientTestCase):
     """The files of --command over ssl, read before it connects."""
 
     def unanswered(self, **fields):
-        target = wire.parse_socket("ssl:127.0.0.1:1", client=True)
+        target = sockets.parse_socket("ssl:127.0.0.1:1", client=True)
         status = self.main("status", target=target._replace(**fields))
         self.assertEqual(status, client.UNANSWERED)
         return self.stderr.getvalue()

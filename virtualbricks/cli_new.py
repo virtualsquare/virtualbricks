@@ -22,9 +22,8 @@ files they give (page 27, section 9).
 
 It imports as little as it can, so that ``--command`` starts fast: the
 standard library's ``argparse``, ``os``, ``sys`` and ``typing``, and
-``console.wire``, which reads the descriptions of ``--listen`` and
-``--connect`` and which ``--command`` loads anyway; no Twisted. It opens no
-file and makes none. What needs more is left to the mode that runs: the
+:mod:`virtualbricks.sockets`, which reads the descriptions of ``--listen``
+and ``--connect``; no Twisted. It opens no file and makes none. What needs more is left to the mode that runs: the
 folder and the length of a socket's path, a socket given twice, the ssl
 keys and the token, opening the file of ``--logfile`` and importing the
 factory of ``--logger``.
@@ -37,8 +36,7 @@ import os
 import sys
 from typing import TYPE_CHECKING, NamedTuple
 
-from virtualbricks import __version__
-from virtualbricks.console import wire
+from virtualbricks import __version__, sockets
 
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Callable, Sequence
@@ -55,7 +53,7 @@ COMMAND = "command"
 LOCK_POLICIES = ("system", "user", "workspace", "none")
 # --listen and --connect alone: .control in the runtime folder of the
 # workspace, known once the settings are read.
-DEFAULT_SOCKET = wire.Socket(None)
+DEFAULT_SOCKET = sockets.Socket(None)
 # The options of a run, which a command sent to the Virtualbricks that runs
 # has no use for, in the order they are refused.
 RUN_OPTIONS = ("no-gui", "no-term", "run", "lock", "logfile", "logger")
@@ -77,9 +75,9 @@ class CommandLine(NamedTuple):
     # the words of the command of --command, without the options before
     words: tuple[str, ...] = ()
     # the sockets of --listen, DEFAULT_SOCKET for --listen alone
-    listen: tuple[wire.Socket, ...] = ()
+    listen: tuple[sockets.Socket, ...] = ()
     # the socket of --connect, DEFAULT_SOCKET alone, None without it
-    target: wire.Socket | None = None
+    target: sockets.Socket | None = None
     # absolute paths
     run: str | None = None
     workspace: str | None = None
@@ -298,15 +296,15 @@ def parse_or_exit(args: Sequence[str] | None = None) -> CommandLine:
         raise SystemExit(f"virtualbricks: {error}") from None
 
 
-def _socket(option: str) -> Callable[[str], wire.Socket]:
+def _socket(option: str) -> Callable[[str], sockets.Socket]:
     """The socket of the description after --listen or --connect."""
 
-    def socket(description: str) -> wire.Socket:
+    def socket(description: str) -> sockets.Socket:
         try:
-            return wire.parse_socket(description, option == "connect")
+            return sockets.parse_socket(description, option == "connect")
         except ValueError as exc:
             message = str(exc)
-        if option == "connect" and wire.TYPE.fullmatch(description):
+        if option == "connect" and sockets.TYPE.fullmatch(description):
             # argparse takes the next word, which may be the command's
             message += (
                 ". For --connect alone before the words of --command, end the"
@@ -368,8 +366,8 @@ def _unexpected(words: list[str]) -> str:
 def _check_client(
     options: argparse.Namespace,
     given: list[str],
-    listen: list[wire.Socket],
-    targets: list[wire.Socket],
+    listen: list[sockets.Socket],
+    targets: list[sockets.Socket],
     words: list[str],
     stdin: IO[str] | None,
 ) -> None:
@@ -403,8 +401,8 @@ def _check_client(
 def _check_windows(
     options: argparse.Namespace,
     given: list[str],
-    listen: list[wire.Socket],
-    targets: list[wire.Socket],
+    listen: list[sockets.Socket],
+    targets: list[sockets.Socket],
 ) -> None:
     """
     Refuse, with the windows of another Virtualbricks, what is for the
@@ -420,7 +418,7 @@ def _check_windows(
             "--connect opens the windows of another Virtualbricks:"
             f" --{refused[0]} is for the one that runs the bricks"
         )
-    if targets[0].protocol != wire.AMP:
+    if targets[0].protocol != sockets.AMP:
         raise UsageError(
             "--connect opens the windows, which speak AMP: protocol=json is"
             " for --command"
@@ -428,7 +426,7 @@ def _check_windows(
 
 
 def _check_target(
-    options: argparse.Namespace, targets: list[wire.Socket]
+    options: argparse.Namespace, targets: list[sockets.Socket]
 ) -> None:
     """Refuse two --connect, or one with a description and --workspace."""
 

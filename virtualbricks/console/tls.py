@@ -37,6 +37,7 @@ from twisted.internet import error, ssl
 from twisted.internet.interfaces import IOpenSSLClientConnectionCreator
 from twisted.python.failure import Failure
 
+from virtualbricks import sockets
 from virtualbricks.console import wire
 from virtualbricks.i18n import _
 
@@ -136,9 +137,9 @@ def trusted(folder: str) -> list[ssl.Certificate]:
     return certificates
 
 
-def server_options(socket: wire.Socket) -> ssl.CertificateOptions:
+def server_options(socket: sockets.Socket) -> ssl.CertificateOptions:
     """
-    The TLS options of socket, a wire.Socket of type ssl: its certificate,
+    The TLS options of socket, a sockets.Socket of type ssl: its certificate,
     and the certificates that its clients show when it has ca_dir. Raise
     wire.Unusable if one of its files can't be used.
     """
@@ -158,9 +159,9 @@ def server_options(socket: wire.Socket) -> ssl.CertificateOptions:
     )
 
 
-def client_options(socket: wire.Socket) -> IOpenSSLClientConnectionCreator:
+def client_options(socket: sockets.Socket) -> IOpenSSLClientConnectionCreator:
     """
-    The TLS options of the windows for socket, a wire.Socket of --connect
+    The TLS options of the windows for socket, a sockets.Socket of --connect
     of type ssl: the certificates they trust for Virtualbricks, those of
     ca_dir or else of the system, and their own certificate, if any. Raise
     wire.Unusable if one of its files can't be used.

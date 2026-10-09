@@ -30,7 +30,7 @@ from twisted.python import usage, reflect
 from twisted.internet import defer, task
 from twisted.logger import ILogObserver, textFileLogObserver
 
-from virtualbricks import locations, locks
+from virtualbricks import locations, locks, sockets
 from virtualbricks.console import wire
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -148,10 +148,10 @@ class Options(usage.Options):
         usage.Options.__init__(self)
         self["verbosity"] = 0
         self["words"] = []
-        # the sockets of --listen, a wire.Socket each; the flag is never set
+        # the sockets of --listen, a sockets.Socket each; the flag is never set
         del self["listen"]
         self["sockets"] = []
-        # the socket of --connect, a wire.Socket; the flag says it's given
+        # the socket of --connect, a sockets.Socket; the flag says it's given
         self["target"] = None
         # --connect without --command or --run: the windows of the target
         self["windows"] = False
@@ -241,7 +241,7 @@ class Options(usage.Options):
                 return position == len(arg) - 1
         return False
 
-    def socket(self, description: str | None, option: str) -> wire.Socket:
+    def socket(self, description: str | None, option: str) -> sockets.Socket:
         """
         The socket of description, or the default one if None: one to
         listen on for --listen, the one to talk to for --connect. A
@@ -251,20 +251,22 @@ class Options(usage.Options):
         client = option == "connect"
         if description is None:
             # .control of the workspace, known once the settings are read
-            socket = wire.Socket(None)
-            if client or wire.Socket(None) not in self["sockets"]:
+            socket = sockets.Socket(None)
+            if client or sockets.Socket(None) not in self["sockets"]:
                 return socket
             raise usage.UsageError("--listen alone is given twice")
         else:
             try:
-                socket = wire.parse_socket(description, client)
+                socket = sockets.parse_socket(description, client)
             except ValueError as exc:
                 raise usage.UsageError(f"--{option}: {exc}") from None
         if socket.kind == "unix":
             return self._unix_socket(socket, option)
         return self._network_socket(socket, client)
 
-    def _unix_socket(self, socket: wire.Socket, option: str) -> wire.Socket:
+    def _unix_socket(
+        self, socket: sockets.Socket, option: str
+    ) -> sockets.Socket:
         assert socket.path is not None, "a unix socket described has a path"
         path = os.path.abspath(os.path.expanduser(socket.path))
         folder = os.path.dirname(path)
@@ -284,11 +286,11 @@ class Options(usage.Options):
         return socket._replace(path=path)
 
     def _network_socket(
-        self, socket: wire.Socket, client: bool
-    ) -> wire.Socket:
+        self, socket: sockets.Socket, client: bool
+    ) -> sockets.Socket:
         # the files of the description, as absolute paths
         files: dict[str, Any] = {
-            wire.FILES[key]: os.path.abspath(os.path.expanduser(path))
+            sockets.FILES[key]: os.path.abspath(os.path.expanduser(path))
             for key, path in socket.files().items()
         }
         socket = socket._replace(**files)
@@ -487,7 +489,7 @@ class Options(usage.Options):
             self["sockets"].append(self.socket(description, "listen"))
         for description in self.targets:
             self["target"] = self.socket(description, "connect")
-        if windows and self["target"].protocol != wire.AMP:
+        if windows and self["target"].protocol != sockets.AMP:
             raise usage.UsageError(
                 "--connect opens the windows, which speak AMP:"
                 " protocol=json is for --command"

@@ -27,11 +27,11 @@ from twisted.logger import LogLevel
 from twisted.protocols import amp
 from twisted.test import iosim
 
-from virtualbricks import cli
+from virtualbricks import cli, sockets
 from virtualbricks.bricks import FakeProcess
 from virtualbricks.config import images, settings
 from virtualbricks.config.workspace import OpenProject, projects
-from virtualbricks.console import control, wire
+from virtualbricks.console import control
 from virtualbricks.engine import LocalMachine
 from virtualbricks.remote import client, follower, mirror
 from virtualbricks.remote.client import Refused, RemoteEngine, Windows, start
@@ -233,7 +233,7 @@ class TestRemoteApplication(RemoteTestCase):
         self.patch(client, "resolve", resolve)
         self.launch(args=["--connect", "--workspace", "/labs"])
         [windows] = self.shown
-        self.assertEqual(found, [(wire.Socket(None), "/labs")])
+        self.assertEqual(found, [(sockets.Socket(None), "/labs")])
         self.assertEqual(
             windows.calls,
             [("title", "Virtualbricks (project: lab1 on this computer)")],
@@ -243,7 +243,7 @@ class TestRemoteApplication(RemoteTestCase):
         windows.reconnect()
         self.assertEqual(len(found), 1)
         self.assertEqual(
-            self.targets, [wire.Socket("/run/vb/labs/.control")] * 2
+            self.targets, [sockets.Socket("/run/vb/labs/.control")] * 2
         )
 
     def test_nobody_listens(self):

@@ -27,12 +27,12 @@ from twisted.protocols import amp
 from twisted.test import iosim
 from twisted.trial import unittest
 
-from virtualbricks import __version__, locations, locks
+from virtualbricks import __version__, locations, locks, sockets
 from virtualbricks.bricks import FakeProcess
 from virtualbricks.bricks.brickinfo import NEW_KINDS
 from virtualbricks.bricks.eventaction import ShellAction
 from virtualbricks.config import settings
-from virtualbricks.console import ampcommands, ampwire, control, wire
+from virtualbricks.console import ampcommands, ampwire, control
 from virtualbricks.bricks.virtualmachine import UsbDevice
 from virtualbricks.config import images
 from virtualbricks.config.workspace import Workspace
@@ -85,7 +85,7 @@ from virtualbricks.tests.config.test_images import (
 from virtualbricks.tests.remote.test_mirror import Project
 from virtualbricks.tests.test_programs import FakeRun, executable
 
-TARGET = wire.Socket("/run/lab.amp", wire.AMP)
+TARGET = sockets.Socket("/run/lab.amp", sockets.AMP)
 
 
 def started(brick):
@@ -123,7 +123,7 @@ class ClientTestCase(ConsoleTestCase):
             self.clock(),
             control.AMPControl,
             # a token is for a network socket
-            wire.Socket(None, wire.AMP, "tcp", "127.0.0.1", 8765),
+            sockets.Socket(None, sockets.AMP, "tcp", "127.0.0.1", 8765),
             token=self.token,
         )
         self.copy = MirrorFactory(self.clock())
@@ -213,13 +213,13 @@ class TestStart(ClientTestCase):
 
     def test_where(self):
         self.assertEqual(
-            client.where(wire.Socket(os.path.expanduser("~/lab.amp"))),
+            client.where(sockets.Socket(os.path.expanduser("~/lab.amp"))),
             "~/lab.amp",
         )
-        target = wire.parse_socket("tcp:lab.example:8765", client=True)
+        target = sockets.parse_socket("tcp:lab.example:8765", client=True)
         self.assertEqual(client.where(target), "lab.example")
         # --connect alone
-        self.assertEqual(client.where(wire.Socket(None)), "this computer")
+        self.assertEqual(client.where(sockets.Socket(None)), "this computer")
 
 
 class TestToken(ClientTestCase):
@@ -232,7 +232,9 @@ class TestToken(ClientTestCase):
             with open(path, "w") as file:
                 file.write(token + "\n")
             os.chmod(path, 0o600)
-        return wire.Socket(None, wire.AMP, "tcp", "lab", 8765, token_file=path)
+        return sockets.Socket(
+            None, sockets.AMP, "tcp", "lab", 8765, token_file=path
+        )
 
     def test_the_token(self):
         self.done(self.start(self.target(TOKEN)))
@@ -1149,12 +1151,12 @@ class TestEndpoints(ConsoleTestCase):
         self.assertIsInstance(endpoint, endpoints.UNIXClientEndpoint)
 
     def test_tcp(self):
-        target = wire.parse_socket("tcp:lab:8765", client=True)
+        target = sockets.parse_socket("tcp:lab:8765", client=True)
         endpoint = endpoint_of(target, reactor)
         self.assertIsInstance(endpoint, endpoints.HostnameEndpoint)
 
     def test_ssl_with_a_folder_it_cant_read(self):
-        target = wire.parse_socket(
+        target = sockets.parse_socket(
             "ssl:lab:8765:caCertsDir=/nowhere", client=True
         )
         with self.assertRaises(Refused) as cm:
@@ -1182,21 +1184,21 @@ class TestResolve(unittest.TestCase):
         )
 
     def test_a_description(self):
-        target = wire.parse_socket("tcp:lab.example:8765", client=True)
+        target = sockets.parse_socket("tcp:lab.example:8765", client=True)
         self.assertIs(client.resolve(target), target)
         self.assertIs(client.resolve(TARGET, self.workspace), TARGET)
 
     def test_alone(self):
         self.listen()
-        target = wire.Socket(None)
-        self.assertEqual(client.resolve(target), wire.Socket(self.path))
+        target = sockets.Socket(None)
+        self.assertEqual(client.resolve(target), sockets.Socket(self.path))
         self.assertEqual(
-            client.resolve(target, self.workspace), wire.Socket(self.path)
+            client.resolve(target, self.workspace), sockets.Socket(self.path)
         )
 
     def test_nobody(self):
         with self.assertRaises(Refused) as cm:
-            client.resolve(wire.Socket(None), self.workspace)
+            client.resolve(sockets.Socket(None), self.workspace)
         self.assertEqual(
             str(cm.exception),
             "No Virtualbricks runs in ~/labs. Start one with a socket, as"
@@ -1234,9 +1236,9 @@ class TestConnect(ConsoleTestCase):
     def test_a_certificate_of_the_windows(self):
         # the Virtualbricks there asks for alice's, and no token
         found = self.listen(
-            wire.Socket(
+            sockets.Socket(
                 None,
-                wire.AMP,
+                sockets.AMP,
                 "ssl",
                 "127.0.0.1",
                 0,
@@ -1245,7 +1247,7 @@ class TestConnect(ConsoleTestCase):
                 ca_dir=self.folder("alice"),
             )
         )
-        target = wire.parse_socket(
+        target = sockets.parse_socket(
             f"ssl:127.0.0.1:{found.socket.port}"
             f":caCertsDir={self.folder('server')}"
             f":privateKey={tls_file('alice.key')}"
@@ -1268,9 +1270,9 @@ class TestConnect(ConsoleTestCase):
             file.write(TOKEN + "\n")
         os.chmod(token_file, 0o600)
         found = self.listen(
-            wire.Socket(
+            sockets.Socket(
                 None,
-                wire.AMP,
+                sockets.AMP,
                 "ssl",
                 "127.0.0.1",
                 0,
@@ -1278,7 +1280,7 @@ class TestConnect(ConsoleTestCase):
                 cert=tls_file("server.pem"),
             )
         )
-        target = wire.parse_socket(
+        target = sockets.parse_socket(
             f"ssl:127.0.0.1:{found.socket.port}:caCertsDir={folder}"
             ":protocol=amp",
             client=True,
@@ -1298,8 +1300,10 @@ class TestConnect(ConsoleTestCase):
         with open(token_file, "w") as file:
             file.write(TOKEN + "\n")
         os.chmod(token_file, 0o600)
-        found = self.listen(wire.Socket(None, wire.AMP, "tcp", "127.0.0.1", 0))
-        target = wire.parse_socket(
+        found = self.listen(
+            sockets.Socket(None, sockets.AMP, "tcp", "127.0.0.1", 0)
+        )
+        target = sockets.parse_socket(
             f"tcp:127.0.0.1:{found.socket.port}:protocol=amp", client=True
         )
         connection = yield defer.ensureDeferred(
@@ -1317,8 +1321,10 @@ class TestConnect(ConsoleTestCase):
         with open(token_file, "w") as file:
             file.write(TOKEN + "\n")
         os.chmod(token_file, 0o600)
-        found = self.listen(wire.Socket(None, wire.AMP, "tcp", "127.0.0.1", 0))
-        target = wire.parse_socket(
+        found = self.listen(
+            sockets.Socket(None, sockets.AMP, "tcp", "127.0.0.1", 0)
+        )
+        target = sockets.parse_socket(
             f"tcp:127.0.0.1:{found.socket.port}:protocol=amp", client=True
         )
         copy = MirrorFactory()
@@ -1337,7 +1343,9 @@ class TestConnect(ConsoleTestCase):
 
     @defer.inlineCallbacks
     def test_nothing_there(self):
-        target = wire.parse_socket("tcp:127.0.0.1:1:protocol=amp", client=True)
+        target = sockets.parse_socket(
+            "tcp:127.0.0.1:1:protocol=amp", client=True
+        )
         with self.assertRaises(Refused) as cm:
             yield defer.ensureDeferred(
                 client.connect(target, MirrorFactory(), reactor)

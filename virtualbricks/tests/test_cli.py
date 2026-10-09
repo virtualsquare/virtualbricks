@@ -24,8 +24,7 @@ import sys
 from twisted.python import usage
 from twisted.trial import unittest
 
-from virtualbricks import app, cli, locations, locks
-from virtualbricks.console import wire
+from virtualbricks import app, cli, locations, locks, sockets
 from virtualbricks.tests import DATA, isolate, short_folder
 
 
@@ -125,42 +124,45 @@ class TestSocket(unittest.TestCase):
         self.assertNotIn("listen", self.parse())
 
     def test_alone(self):
-        self.assertEqual(self.sockets("--listen"), [wire.Socket(None)])
+        self.assertEqual(self.sockets("--listen"), [sockets.Socket(None)])
 
     def test_a_description(self):
         self.assertEqual(
             self.sockets("--listen", "unix:/tmp/lab.sock"),
-            [wire.Socket("/tmp/lab.sock")],
+            [sockets.Socket("/tmp/lab.sock")],
         )
         self.assertEqual(
             self.sockets("--listen=unix:/tmp/lab.sock:protocol=JSON"),
-            [wire.Socket("/tmp/lab.sock", wire.JSON)],
+            [sockets.Socket("/tmp/lab.sock", sockets.JSON)],
         )
         self.assertEqual(
             self.sockets(
                 "--listen", "--listen", "unix:/tmp/lab.amp:protocol=amp"
             ),
-            [wire.Socket(self.default), wire.Socket("/tmp/lab.amp", "amp")],
+            [
+                sockets.Socket(self.default),
+                sockets.Socket("/tmp/lab.amp", "amp"),
+            ],
         )
         # a home short enough for a socket's path
         home = short_folder(self)
         os.environ["HOME"] = home
         self.assertEqual(
             self.sockets("--listen", "unix:~/lab.sock"),
-            [wire.Socket(os.path.join(home, "lab.sock"))],
+            [sockets.Socket(os.path.join(home, "lab.sock"))],
         )
         self.assertEqual(
             self.sockets("--listen", "unix:address=lab.sock"),
-            [wire.Socket(os.path.join(os.getcwd(), "lab.sock"))],
+            [sockets.Socket(os.path.join(os.getcwd(), "lab.sock"))],
         )
 
     def test_the_next_word(self):
         # taken when it starts with a type, as unix:
         options = self.parse("--listen", "--no-gui")
-        self.assertEqual(options["sockets"], [wire.Socket(self.default)])
+        self.assertEqual(options["sockets"], [sockets.Socket(self.default)])
         self.assertTrue(options["no-gui"])
         options = self.parse("--command", "--connect", "brick", "list")
-        self.assertEqual(options["target"], wire.Socket(self.default))
+        self.assertEqual(options["target"], sockets.Socket(self.default))
         self.assertEqual(options["words"], ["brick", "list"])
         # the value of another option isn't one
         options = self.parse("--workspace", "--listen")
@@ -169,7 +171,7 @@ class TestSocket(unittest.TestCase):
             options["workspace"], os.path.join(os.getcwd(), "--listen")
         )
         options = self.parse("--workspace=labs", "--listen")
-        self.assertEqual(options["sockets"], [wire.Socket(self.default)])
+        self.assertEqual(options["sockets"], [sockets.Socket(self.default)])
         # the options end at the first word, and at --
         self.assertEqual(
             self.parse("--command", "status", "--listen")["words"],
@@ -181,13 +183,13 @@ class TestSocket(unittest.TestCase):
         # getopt reads a prefix of one option as the option
         self.assertEqual(
             self.sockets("--lis", "unix:/tmp/lab.sock"),
-            [wire.Socket("/tmp/lab.sock")],
+            [sockets.Socket("/tmp/lab.sock")],
         )
 
     def test_more_than_one(self):
         self.assertEqual(
             self.sockets("--listen", "--listen", "unix:/tmp/lab.sock"),
-            [wire.Socket(self.default), wire.Socket("/tmp/lab.sock")],
+            [sockets.Socket(self.default), sockets.Socket("/tmp/lab.sock")],
         )
         self.assertEqual(
             self.refused("--listen", "--listen"),
@@ -253,7 +255,7 @@ class TestTcpSocket(unittest.TestCase):
         return str(self.assertRaises(usage.UsageError, self.parse, *args))
 
     def tcp(self, port, host="127.0.0.1", protocol="amp", token_file=None):
-        return wire.Socket(None, protocol, "tcp", host, port, token_file)
+        return sockets.Socket(None, protocol, "tcp", host, port, token_file)
 
     def write_token(self, path, mode=0o600):
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -276,7 +278,7 @@ class TestTcpSocket(unittest.TestCase):
                 r"--listen=tcp:8765:interface=\:\:1",
             ),
             [
-                wire.Socket(None),
+                sockets.Socket(None),
                 self.tcp(8766, protocol="json"),
                 self.tcp(8765, "::1"),
             ],
@@ -389,7 +391,7 @@ class TestSslSocket(unittest.TestCase):
         folder = os.path.join(self.root, "vb")
         self.assertEqual(
             socket,
-            wire.Socket(
+            sockets.Socket(
                 None,
                 "amp",
                 "ssl",
@@ -462,7 +464,7 @@ class TestSslSocket(unittest.TestCase):
         )["target"]
         self.assertEqual(
             socket,
-            wire.Socket(
+            sockets.Socket(
                 None,
                 "amp",
                 "ssl",
@@ -506,7 +508,7 @@ class TestCommand(unittest.TestCase):
         options = self.parse(
             "--connect", "unix:/tmp/lab.sock", "--command", "status"
         )
-        self.assertEqual(options["target"], wire.Socket("/tmp/lab.sock"))
+        self.assertEqual(options["target"], sockets.Socket("/tmp/lab.sock"))
         self.assertTrue(options["connect"])
         # without --connect, the default socket
         options = self.parse("--command", "status")
@@ -534,7 +536,7 @@ class TestCommand(unittest.TestCase):
                 "--command",
                 "status",
             )["target"],
-            wire.Socket("/tmp/a.sock", wire.JSON),
+            sockets.Socket("/tmp/a.sock", sockets.JSON),
         )
 
     def test_no_listen(self):
@@ -616,11 +618,11 @@ class TestConnect(unittest.TestCase):
         self.assertTrue(options["connect"])
         self.assertFalse(options["command"])
         self.assertEqual(options["run"], self.script)
-        self.assertEqual(options["target"], wire.Socket(None))
+        self.assertEqual(options["target"], sockets.Socket(None))
         options = self.parse(
             "--connect", "unix:/tmp/lab.sock", "--run", self.script
         )
-        self.assertEqual(options["target"], wire.Socket("/tmp/lab.sock"))
+        self.assertEqual(options["target"], sockets.Socket("/tmp/lab.sock"))
         # without it, those of the Virtualbricks that starts
         options = self.parse("--run", self.script)
         self.assertFalse(options["connect"])
@@ -631,7 +633,7 @@ class TestConnect(unittest.TestCase):
         # of the one of --workspace
         options = self.parse("--connect")
         self.assertTrue(options["windows"])
-        self.assertEqual(options["target"], wire.Socket(None))
+        self.assertEqual(options["target"], sockets.Socket(None))
         options = self.parse("--connect", "--workspace", self.root)
         self.assertTrue(options["windows"])
         self.assertEqual(options["workspace"], self.root)
@@ -645,12 +647,12 @@ class TestWindows(TestConnect):
         self.assertTrue(options["windows"])
         self.assertTrue(options["connect"])
         # AMP, which the description leaves out
-        self.assertEqual(options["target"].protocol, wire.AMP)
+        self.assertEqual(options["target"].protocol, sockets.AMP)
         self.assertEqual(options["target"].host, "lab.example")
         self.assertTrue(options["noterm"])
         options = self.parse("--connect", "unix:/tmp/lab.amp:protocol=amp")
         self.assertEqual(
-            options["target"], wire.Socket("/tmp/lab.amp", wire.AMP)
+            options["target"], sockets.Socket("/tmp/lab.amp", sockets.AMP)
         )
 
     def test_not_for_the_clients(self):
@@ -661,7 +663,7 @@ class TestWindows(TestConnect):
         ):
             options = self.parse("--connect", "tcp:lab:8765", *args)
             self.assertFalse(options["windows"])
-            self.assertEqual(options["target"].protocol, wire.AMP)
+            self.assertEqual(options["target"].protocol, sockets.AMP)
         self.assertFalse(self.parse()["windows"])
 
     def test_text(self):
@@ -722,7 +724,7 @@ class TestWindows(TestConnect):
             "--workspace", self.root, "--connect", "--run", self.script
         )
         self.assertEqual(options["workspace"], self.root)
-        self.assertEqual(options["target"], wire.Socket(None))
+        self.assertEqual(options["target"], sockets.Socket(None))
         self.assertEqual(
             self.refused(
                 "--workspace",
