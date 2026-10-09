@@ -56,7 +56,7 @@ LOCK_POLICIES = ("system", "user", "workspace", "none")
 DESCRIPTION = re.compile(r"[a-z][a-z0-9]*:", re.IGNORECASE)
 # The options of a run, which a command sent to the Virtualbricks that runs
 # has no use for, in the order they are refused.
-RUN_OPTIONS = ("no-gui", "noterm", "run", "lock", "logfile", "logger")
+RUN_OPTIONS = ("no-gui", "no-term", "run", "lock", "logfile", "logger")
 
 DESCRIPTION_TEXT = """\
 Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
@@ -88,7 +88,7 @@ class CommandLine(NamedTuple):
     # the fully-qualified name of a log observer factory
     logger: str | None = None
     verbosity: int = 0
-    noterm: bool = False
+    no_term: bool = False
 
 
 class _Parser(argparse.ArgumentParser):
@@ -121,7 +121,7 @@ def parser() -> argparse.ArgumentParser:
     )
     parser.set_defaults(verbosity=0)
     parser.add_argument(
-        "--noterm",
+        "--no-term",
         action="store_true",
         help="Don't read the console in the terminal.",
     )
@@ -283,7 +283,7 @@ def parse(
         logger=options.logger,
         verbosity=options.verbosity,
         # the windows of another Virtualbricks read no console
-        noterm=options.noterm or mode == REMOTE,
+        no_term=options.no_term or mode == REMOTE,
     )
 
 
@@ -358,7 +358,7 @@ def _given(options: argparse.Namespace, run: str | None) -> list[str]:
 
     values = {
         "no-gui": options.no_gui,
-        "noterm": options.noterm,
+        "no-term": options.no_term,
         "run": run,
         "lock": options.lock,
         "logfile": options.logfile,
