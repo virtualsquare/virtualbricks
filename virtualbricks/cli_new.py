@@ -252,7 +252,7 @@ def parse(
     options = parser().parse_args(args)
     words = list(options.words)
     # as getopt, the first -- ends the options and isn't a word
-    if words[:1] == ["--"]:
+    if words and words[0] == "--":
         del words[0]
     listen = options.listen or []
     connect = options.target is not UNSET
