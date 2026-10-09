@@ -72,3 +72,32 @@ one leaves the list.
            compressed        uncompressed  ratio uncompressed_name
                   617               10240  94.4% .gz.vbp.2or1v0ic.part
   ```
+
+## Remote windows
+
+- [ ] **The windows of `--connect` turn KSM on in this computer.**
+  `RemoteApplication.install_settings()` calls `load_settings()`
+  (`virtualbricks/gui/app.py`), which runs `set_ksm(enable=True)`, so
+  `sudo tee /sys/kernel/mm/ksm/run`, when the `settings.toml` of this
+  computer has `kernel_samepage_merging = true` and KSM is off
+  (`load_settings()` in `virtualbricks/config/settings.py`). The bricks
+  run on the computer of `--connect`, whose KSM is a setting of its own.
+  Seen on 3.0.0.dev3, on 9 October 2026, reading the start-up code for
+  page 27; checked by calling `install_settings()` with that setting and
+  `set_ksm` replaced: it was called with `True`.
+
+## Settings
+
+- [ ] **Two Virtualbricks on one computer undo each other's settings.**
+  Each process reads all of `settings.toml` at its start and writes all
+  of its own copy back: at each change, from the Settings window or the
+  console, and at quit (`store_settings` before shutdown, in
+  `virtualbricks/app.py` and `virtualbricks/gui/app.py`). A change made in
+  one is lost when the other writes next. Two processes share the file
+  when the windows of `--connect` show a Virtualbricks of the same
+  computer, which take no lock, and when two run side by side with
+  `--lock workspace`. Seen on 3.0.0.dev3, on 9 October 2026, reading the
+  start-up code for page 27; checked with two Python processes on one
+  `settings.toml`: the first loaded it, the second set `terminal` and
+  wrote it, the first wrote its copy as at quit, and `terminal` had its
+  old value again.
