@@ -177,6 +177,7 @@ def parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--workspace",
+        type=_workspace,
         metavar="FOLDER",
         help="The folder of the projects for this run, instead of the"
         " setting; with --command or --connect, the Virtualbricks that runs"
@@ -255,7 +256,7 @@ def parse(
         del words[0]
     listen = options.listen or []
     connect = options.target is not UNSET
-    workspace = _workspace(options.workspace)
+    workspace = options.workspace
     run = _run(options.run)
     given = _given(options, run)
     if not options.command and words:
@@ -320,16 +321,14 @@ def _socket(option: str) -> Callable[[str], sockets.Socket]:
     return socket
 
 
-def _workspace(folder: str | None) -> str | None:
+def _workspace(folder: str) -> str:
     """The absolute path of --workspace; a folder that isn't there is made."""
 
-    if folder is None:
-        return None
     if not folder:
-        raise UsageError("--workspace needs a folder")
+        raise argparse.ArgumentTypeError("needs a folder, as ~/labs")
     path = os.path.abspath(os.path.expanduser(folder))
     if os.path.exists(path) and not os.path.isdir(path):
-        raise UsageError(f"--workspace: {path} is not a folder")
+        raise argparse.ArgumentTypeError(f"{path} is not a folder")
     return path
 
 

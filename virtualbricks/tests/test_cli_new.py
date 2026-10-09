@@ -153,11 +153,12 @@ class TestPaths(Base):
 
     def test_workspace_refused(self):
         self.assertEqual(
-            self.refused("--workspace", ""), "--workspace needs a folder"
+            self.refused("--workspace", ""),
+            "argument --workspace: needs a folder, as ~/labs",
         )
         self.assertEqual(
             self.refused("--workspace", self.script),
-            f"--workspace: {self.script} is not a folder",
+            f"argument --workspace: {self.script} is not a folder",
         )
 
     def test_run(self):
