@@ -176,7 +176,7 @@ def parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--lock",
-        metavar="POLICY",
+        choices=LOCK_POLICIES,
         help="The single-instance mode: system, one Virtualbricks on the"
         " machine; user, one for each user; workspace, one for each"
         " workspace, the default with --workspace; none, no limit."
@@ -251,10 +251,6 @@ def parse(
         _check_description(description, "listen")
     for description in targets:
         _check_description(description, "connect")
-    if options.lock is not None and options.lock not in LOCK_POLICIES:
-        raise UsageError(
-            f"--lock: {options.lock!r} is not one of {', '.join(LOCK_POLICIES)}"
-        )
     workspace = _workspace(options.workspace)
     run = _run(options.run)
     given = _given(options, run)
