@@ -161,7 +161,8 @@ class TestPaths(Base):
         self.assertEqual(self.parse("--run", "~/lab.vb").run, self.script)
         missing = os.path.join(self.root, "nope.vb")
         self.assertEqual(
-            self.refused("--run", missing), f"--run: {missing} is not a file"
+            self.refused("--run", missing),
+            f"argument --run: {missing} is not a file",
         )
 
     def test_nothing_opened(self):

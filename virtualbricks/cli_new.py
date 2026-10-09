@@ -170,6 +170,7 @@ def parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--run",
+        type=_run,
         metavar="FILE",
         help="Run the commands of a file once the project is open; with"
         " --connect, send them to the Virtualbricks that runs, and exit.",
@@ -256,11 +257,10 @@ def parse(
     listen = options.listen or []
     connect = options.target is not UNSET
     workspace = options.workspace
-    run = _run(options.run)
-    given = _given(options, run)
+    given = _given(options)
     if not options.command and words:
         raise UsageError(_unexpected(words))
-    if options.command or (connect and run):
+    if options.command or (connect and options.run):
         mode = COMMAND
         _check_client(options, given, listen, words, stdin)
     elif connect:
@@ -281,7 +281,7 @@ def parse(
         words=tuple(words),
         listen=tuple(listen),
         target=options.target if connect else None,
-        run=run,
+        run=options.run,
         workspace=workspace,
         lock=lock,
         logfile=options.logfile,
@@ -331,24 +331,22 @@ def _workspace(folder: str) -> str:
     return path
 
 
-def _run(file: str | None) -> str | None:
+def _run(file: str) -> str:
     """The absolute path of --run, a file."""
 
-    if file is None:
-        return None
     path = os.path.abspath(os.path.expanduser(file))
     if not os.path.isfile(path):
-        raise UsageError(f"--run: {path} is not a file")
+        raise argparse.ArgumentTypeError(f"{path} is not a file")
     return path
 
 
-def _given(options: argparse.Namespace, run: str | None) -> list[str]:
+def _given(options: argparse.Namespace) -> list[str]:
     """The options of a run that the command line gives, in RUN_OPTIONS."""
 
     values = {
         "no-gui": options.no_gui,
         "no-term": options.no_term,
-        "run": run,
+        "run": options.run,
         "lock": options.lock,
         "logfile": options.logfile,
         "logger": options.logger,
