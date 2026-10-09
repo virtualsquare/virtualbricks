@@ -108,7 +108,8 @@ class BricksTab(RowsTab[Brick]):
         return count(items)
 
     def can_start(self, item: Brick) -> bool:
-        return brickinfo.state(item) is State.STOPPED
+        # not a switch wrapper, whose switch another program starts
+        return item.runs_program and brickinfo.state(item) is State.STOPPED
 
     def can_stop(self, item: Brick) -> bool:
         # not a switch wrapper, whose switch another program runs

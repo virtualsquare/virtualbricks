@@ -116,8 +116,8 @@ class BrickRow(Row[Brick]):
             state in WARNINGS,
             state_tooltip(brick, state),
         )
-        if running and not brick.runs_program:
-            # a switch wrapper: another program stops its switch
+        if not brick.runs_program:
+            # a switch wrapper: another program starts and stops its switch
             self.startstop.set_sensitive(False)
 
     def on_startstop_clicked(self, button: Gtk.Button) -> None:

@@ -266,7 +266,8 @@ class BrickActions(MenuActions):
         # program here
         local = self.engine.local
         enabled = {
-            "startstop": state is State.STOPPED or program,
+            "startstop": self.brick.runs_program
+            and state in (State.STOPPED, State.RUNNING),
             "configure": self.brick.get_type() not in NO_PANEL,
             "rename": not program,
             "delete": not program,

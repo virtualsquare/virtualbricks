@@ -587,10 +587,11 @@ A VDE switch that Virtualbricks doesn't start, run by another program. Plugs
 connect to it by its name. It runs while a switch listens in its control
 directory, on the socket **ctl** there: Virtualbricks looks every second.
 Its **on_start** and **on_stop** run when the switch comes and goes, not
-for the switch already there when the project opens. Start only looks, and
-fails without a switch there; Stop is refused, as the other program stops
-its switch. A switch wrapper that runs keeps neither Virtualbricks from
-quitting, nor its project from closing, nor itself from being deleted.
+for the switch already there when the project opens. Start and Stop are
+refused, as the other program starts and stops its switch; a brick that
+plugs into it starts only while that switch is there. A switch wrapper that
+runs keeps neither Virtualbricks from quitting, nor its project from
+closing, nor itself from being deleted.
 
 **socket_path** = *path*, default `""`
 :   The control directory of the switch; without one, the switch wrapper

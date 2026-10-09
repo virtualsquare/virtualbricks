@@ -181,8 +181,9 @@ class SwitchWrapper(bricks.Brick):
 
     def start(self, resume: str = "") -> defer.Deferred[bricks.Brick]:
         """
-        Look at the control folder now: the brick runs if a switch listens
-        there, else it can't start.
+        Look at the control folder now, for a brick that plugs into it: the
+        brick runs if a switch listens there, else it can't start. Users
+        can't start it: another program starts its switch.
         """
 
         if not self.configured():

@@ -48,6 +48,7 @@ from virtualbricks.bricks.brickinfo import (
 from virtualbricks.bricks.draft import Draft, Problem, apply
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.sock import Sock
+from virtualbricks.bricks.switchwrapper import is_switchwrapper, not_ours
 from virtualbricks.bricks.virtualmachine import (
     HostonlySock,
     VirtualMachine,
@@ -532,6 +533,10 @@ def _runs(brick: Brick) -> str:
 def start(
     context: Context, name: list[Brick]
 ) -> Generator[defer.Deferred[Any], Any, list[str]]:
+    for brick in name:
+        if is_switchwrapper(brick):
+            # another program starts its switch
+            raise CommandError(not_ours(brick))
     factory = context.factory
     before = {b for b in factory.bricks if is_running(b)}
     lines = [
