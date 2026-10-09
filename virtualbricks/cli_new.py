@@ -23,10 +23,10 @@ files they give (page 27, section 9).
 It imports as little as it can, so that ``--command`` starts fast: the
 standard library's ``argparse``, ``os``, ``sys`` and ``typing``, and
 :mod:`virtualbricks.sockets`, which reads the descriptions of ``--listen``
-and ``--connect``; no Twisted. It opens no file and makes none. What needs more is left to the mode that runs: the
-folder and the length of a socket's path, a socket given twice, the ssl
-keys and the token, opening the file of ``--logfile`` and importing the
-factory of ``--logger``.
+and ``--connect``; no Twisted. It opens no file and makes none. What needs
+more is left to the mode that runs: the folder and the length of a socket's
+path, a socket given twice, the ssl keys and the token, opening the file of
+``--logfile`` and importing the factory of ``--logger``.
 """
 
 from __future__ import annotations
@@ -54,6 +54,8 @@ LOCK_POLICIES = ("system", "user", "workspace", "none")
 # --listen and --connect alone: .control in the runtime folder of the
 # workspace, known once the settings are read.
 DEFAULT_SOCKET = sockets.Socket(None)
+# The default of an option whose absence tells: not on the command line.
+UNSET = object()
 # The options of a run, which a command sent to the Virtualbricks that runs
 # has no use for, in the order they are refused.
 RUN_OPTIONS = ("no-gui", "no-term", "run", "lock", "logfile", "logger")
@@ -136,7 +138,7 @@ def parser() -> argparse.ArgumentParser:
         " that runs, the one of --connect or of --workspace, and print its"
         " answer; without words, the lines of the standard input.",
     )
-    # append, as --connect: given alone, the option is its const
+    # given alone, the option is its const
     parser.add_argument(
         "--listen",
         nargs="?",
@@ -150,11 +152,11 @@ def parser() -> argparse.ArgumentParser:
         " the JSON protocol with protocol=json. Give it again for more"
         " sockets.",
     )
-    # append, to refuse a second one: argparse keeps the last
     parser.add_argument(
         "--connect",
+        dest="target",
         nargs="?",
-        action="append",
+        default=UNSET,
         const=DEFAULT_SOCKET,
         type=_socket("connect"),
         metavar="DESCRIPTION",
@@ -251,20 +253,22 @@ def parse(
     if words[:1] == ["--"]:
         del words[0]
     listen = options.listen or []
-    targets = options.connect or []
+    connect = options.target is not UNSET
     workspace = _workspace(options.workspace)
     run = _run(options.run)
     given = _given(options, run)
     if not options.command and words:
         raise UsageError(_unexpected(words))
-    if options.command or (targets and run):
+    if options.command or (connect and run):
         mode = COMMAND
-        _check_client(options, given, listen, targets, words, stdin)
-    elif targets:
+        _check_client(options, given, listen, words, stdin)
+    elif connect:
         mode = REMOTE
-        _check_windows(options, given, listen, targets)
+        _check_windows(options, given, listen)
+    elif options.no_gui:
+        mode = NO_GUI
     else:
-        mode = NO_GUI if options.no_gui else GUI
+        mode = GUI
     if listen.count(DEFAULT_SOCKET) > 1:
         raise UsageError("--listen alone is given twice")
     lock = options.lock
@@ -275,7 +279,7 @@ def parse(
         mode=mode,
         words=tuple(words),
         listen=tuple(listen),
-        target=targets[0] if targets else None,
+        target=options.target if connect else None,
         run=run,
         workspace=workspace,
         lock=lock,
@@ -367,7 +371,6 @@ def _check_client(
     options: argparse.Namespace,
     given: list[str],
     listen: list[sockets.Socket],
-    targets: list[sockets.Socket],
     words: list[str],
     stdin: IO[str] | None,
 ) -> None:
@@ -390,7 +393,7 @@ def _check_client(
             f"{client} takes no --listen: --connect names the Virtualbricks"
             " to talk to"
         )
-    _check_target(options, targets)
+    _check_target(options)
     if options.command and not words and stdin is not None and stdin.isatty():
         raise UsageError(
             "--command needs a command, as virtualbricks --command brick list,"
@@ -402,14 +405,13 @@ def _check_windows(
     options: argparse.Namespace,
     given: list[str],
     listen: list[sockets.Socket],
-    targets: list[sockets.Socket],
 ) -> None:
     """
     Refuse, with the windows of another Virtualbricks, what is for the
     Virtualbricks that runs the bricks, and another protocol than AMP.
     """
 
-    _check_target(options, targets)
+    _check_target(options)
     refused = [name for name in given if name in ("no-gui", "lock")]
     if listen:
         refused.append("listen")
@@ -418,23 +420,17 @@ def _check_windows(
             "--connect opens the windows of another Virtualbricks:"
             f" --{refused[0]} is for the one that runs the bricks"
         )
-    if targets[0].protocol != sockets.AMP:
+    if options.target.protocol != sockets.AMP:
         raise UsageError(
             "--connect opens the windows, which speak AMP: protocol=json is"
             " for --command"
         )
 
 
-def _check_target(
-    options: argparse.Namespace, targets: list[sockets.Socket]
-) -> None:
-    """Refuse two --connect, or one with a description and --workspace."""
+def _check_target(options: argparse.Namespace) -> None:
+    """Refuse --connect with a description, and --workspace."""
 
-    if len(targets) > 1:
-        raise UsageError("--connect names one Virtualbricks")
-    if options.workspace and any(
-        target != DEFAULT_SOCKET for target in targets
-    ):
+    if options.workspace and options.target not in (UNSET, DEFAULT_SOCKET):
         raise UsageError(
             "--connect and --workspace each name a Virtualbricks: give one"
             " of them"
