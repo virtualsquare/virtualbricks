@@ -317,7 +317,7 @@ virtualbricks --connect [description] [--workspace directory] --run file</code><
 <dt><code>-q</code>, <code>--quiet</code></dt><dd><p>Log less; it can be repeated.</p></dd>
 <dt><code>-b</code>, <code>--debug</code></dt><dd><p>Log everything. With it, and with <code>-vv</code>, Ctrl+C and the <code>SIGUSR2</code> signal drop into the <code>pdb</code> debugger, unless <code>--noterm</code> is given.</p></dd>
 <dt><code>-l</code> <em>file</em>, <code>--logfile</code> <em>file</em></dt><dd><p>Write the log messages to <em>file</em>; <code>-</code> for the standard output.</p></dd>
-<dt><code>--logger</code> <em>name</em></dt><dd><p>The fully qualified name of a factory of the log observer, instead of <code>--logfile</code>.</p></dd>
+<dt><code>--logger</code> <em>name</em></dt><dd><p>The fully qualified name of a log observer, instead of <code>--logfile</code>.</p></dd>
 <dt><code>--noterm</code></dt><dd><p>Don&#x27;t read the console in the terminal.</p></dd>
 <dt><code>--no-gui</code></dt><dd><p>Run without the windows: no GTK is loaded, and the console is the way in. With <code>--noterm</code> too, nothing is read: the lab runs until Virtualbricks gets <code>SIGTERM</code> or <code>SIGINT</code>.</p></dd>
 <dt><code>--run</code> <em>file</em></dt><dd><p>Run the commands of <em>file</em> once the project is open, as <code>source</code> does, then read the console. With <code>--connect</code>, send them to the Virtualbricks that runs instead, up to the first error, and exit. See <a href="#control-socket">The control socket</a>.</p></dd>

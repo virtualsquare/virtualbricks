@@ -66,8 +66,7 @@ Virtualbricks of yours here. The bricks run there, the windows here. See
 :   Write the log messages to *file*; **-** for the standard output.
 
 **--logger** *name*
-:   The fully qualified name of a factory of the log observer, instead of
-    **--logfile**.
+:   The fully qualified name of a log observer, instead of **--logfile**.
 
 **--noterm**
 :   Don't read the console in the terminal.

@@ -84,7 +84,7 @@ class CommandLineOptions(NamedTuple):
     lock: locks.Policy = locks.SYSTEM
     # as given: "-" is the standard output
     logfile: str | None = None
-    # the fully-qualified name of a log observer factory
+    # the fully-qualified name of a log observer
     logger: str | None = None
     verbosity: int = 0
     no_term: bool = False
@@ -192,8 +192,8 @@ def parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--logger",
         metavar="NAME",
-        help="A fully-qualified name to a log observer factory to use for"
-        " the initial log observer. Takes precedence over --logfile.",
+        help="The fully qualified name of a log observer, instead of"
+        " --logfile.",
     )
     parser.add_argument(
         "-v",
