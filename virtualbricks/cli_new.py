@@ -37,7 +37,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Literal, NamedTuple, get_args
 
 from virtualbricks import __version__, locks, sockets
 
@@ -47,10 +47,8 @@ if TYPE_CHECKING:  # pragma: no cover
 
 # The modes: the windows, without them, the windows of another
 # Virtualbricks, and a command sent to one that runs.
-GUI = "gui"
-NO_GUI = "no-gui"
-REMOTE = "remote"
-COMMAND = "command"
+Mode = Literal["gui", "no-gui", "remote", "command"]
+GUI, NO_GUI, REMOTE, COMMAND = get_args(Mode)
 # --listen and --connect alone: .control in the runtime folder of the
 # workspace, known once the settings are read.
 DEFAULT_SOCKET = sockets.Socket(None)
@@ -70,10 +68,10 @@ class UsageError(Exception):
     """The command line is wrong; str() says why, to the user."""
 
 
-class CommandLine(NamedTuple):
+class CommandLineOptions(NamedTuple):
     """What the command line asks for."""
 
-    mode: str
+    mode: Mode
     # the words of the command of --command, without the options before
     words: tuple[str, ...] = ()
     # the sockets of --listen, DEFAULT_SOCKET for --listen alone
@@ -83,7 +81,7 @@ class CommandLine(NamedTuple):
     # absolute paths
     run: str | None = None
     workspace: str | None = None
-    lock: str = locks.SYSTEM
+    lock: locks.Policy = locks.SYSTEM
     # as given: "-" is the standard output
     logfile: str | None = None
     # the fully-qualified name of a log observer factory
@@ -238,7 +236,7 @@ def parser() -> argparse.ArgumentParser:
 
 def parse(
     args: Sequence[str] | None = None, stdin: IO[str] | None = None
-) -> CommandLine:
+) -> CommandLineOptions:
     """
     Read args, sys.argv[1:] if None, and return what they ask for; raise
     UsageError if they are wrong. stdin, sys.stdin if None, tells whether
@@ -276,7 +274,7 @@ def parse(
     if lock is None:
         # one Virtualbricks for each workspace, side by side
         lock = locks.WORKSPACE if workspace else locks.SYSTEM
-    return CommandLine(
+    return CommandLineOptions(
         mode=mode,
         words=tuple(words),
         listen=tuple(listen),
@@ -292,7 +290,9 @@ def parse(
     )
 
 
-def parse_or_exit(args: Sequence[str] | None = None) -> CommandLine:
+def parse_or_exit(
+    args: Sequence[str] | None = None, stdin: IO[str] | None = None
+) -> CommandLineOptions:
     """parse(args), or exit with the error, and the status 1."""
 
     try:

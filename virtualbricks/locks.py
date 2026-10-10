@@ -48,14 +48,13 @@ status which user runs them.
 import fcntl
 import os
 import pwd
+from typing import Literal, get_args
 
 from virtualbricks import locations
 
-SYSTEM = "system"
-USER = "user"
-WORKSPACE = "workspace"
-NONE = "none"
-POLICIES = (SYSTEM, USER, WORKSPACE, NONE)
+Policy = Literal["system", "user", "workspace", "none"]
+POLICIES = get_args(Policy)
+SYSTEM, USER, WORKSPACE, NONE = POLICIES
 PROC = "/proc"
 
 # A process that holds a lock, and the name of its user, None if hidden.
@@ -74,7 +73,7 @@ class Held(Exception):
 
     def __init__(
         self,
-        policy: str,
+        policy: Policy,
         holder: str,
         path: str,
         holders: tuple[Holder, ...] = (),
@@ -150,7 +149,7 @@ class Held(Exception):
 class Lock:
     """The locks that a Virtualbricks holds, released together."""
 
-    def __init__(self, policy: str):
+    def __init__(self, policy: Policy):
         self.policy = policy
         self._fds: list[int] = []
         # the descriptor of the user lock, if held
@@ -166,6 +165,8 @@ class Lock:
         self._user = None
         while self._fds:
             os.close(self._fds.pop())
+
+    release = unlock
 
     def take_workspace(self, workspace: str) -> None:
         """
@@ -350,7 +351,7 @@ def hold(path: str) -> Lock | None:
     return lock
 
 
-def acquire(policy: str = SYSTEM, user_alone: bool = False) -> Lock:
+def acquire(policy: Policy = SYSTEM, user_alone: bool = False) -> Lock:
     """
     Take the locks of policy and return them; with user_alone, the workspace
     policy holds the user lock alone, until Lock.share_user().

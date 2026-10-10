@@ -213,7 +213,7 @@ class Application:
         from virtualbricks.migrate import settings_to_convert
         from virtualbricks.migrate import startup_workspace
 
-        policy = self.config.get("lock", locks.SYSTEM)
+        policy: locks.Policy = self.config.get("lock", locks.SYSTEM)
         # the settings of 2.1 are the user's: converted by one alone
         user_alone = policy == locks.WORKSPACE and bool(settings_to_convert())
         workspace = os.path.abspath(
@@ -238,7 +238,7 @@ class Application:
         return d.addCallback(lambda _: self._start(reactor))
 
     def take_locks(
-        self, policy: str, user_alone: bool, workspace: str
+        self, policy: locks.Policy, user_alone: bool, workspace: str
     ) -> locks.Lock:
         """The locks of policy, and that of workspace, made if missing."""
 

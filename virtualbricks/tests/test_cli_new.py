@@ -32,7 +32,7 @@ from virtualbricks.cli_new import (
     NO_GUI,
     REMOTE,
     UNSET,
-    CommandLine,
+    CommandLineOptions,
     UsageError,
     parse,
     parse_or_exit,
@@ -69,10 +69,10 @@ class Base(unittest.TestCase):
 class TestModes(Base):
 
     def test_the_windows(self):
-        self.assertEqual(self.parse(), CommandLine(GUI))
+        self.assertEqual(self.parse(), CommandLineOptions(GUI))
 
     def test_no_gui(self):
-        self.assertEqual(self.parse("--no-gui"), CommandLine(NO_GUI))
+        self.assertEqual(self.parse("--no-gui"), CommandLineOptions(NO_GUI))
 
     def test_remote(self):
         line = self.parse("--connect")
