@@ -153,19 +153,17 @@ def migrate(options: cli.CommandLineOptions) -> defer.Deferred[Any] | None:
         raise RuntimeError(f"unknown mode: {options.mode}")
 
 
-def share_user_lock(options: cli.CommandLineOptions, lock: locks.Lock) -> None:
-    """Share the user lock, taken alone, with the other workspaces."""
-    from virtualbricks.migrate import settings_to_convert
+def share_user_lock(lock: locks.Lock) -> None:
+    """
+    Share the user lock, taken alone for the settings of 2.1, with the other
+    workspaces; nothing if take_locks() didn't take it alone.
+    """
 
-    user_alone = options.lock == locks.WORKSPACE and bool(
-        settings_to_convert()
-    )
-    if user_alone:
-        # this run migrated: the other workspaces start from now on
-        try:
-            lock.share_user()
-        except Exception as exc:
-            raise SystemExit(str(exc)) from None
+    # this run migrated: the other workspaces start from now on
+    try:
+        lock.share_user()
+    except Exception as exc:
+        raise SystemExit(str(exc)) from None
 
 
 def install_settings() -> None:
@@ -324,7 +322,7 @@ async def main_no_gui(
     from virtualbricks.config.workspace import projects
 
     await defer.maybeDeferred(migrate, options)
-    share_user_lock(options, lock)
+    share_user_lock(lock)
     install_settings()
     reactor.addSystemEventTrigger("before", "shutdown", store_settings)
     install_workspace(options)
@@ -355,7 +353,7 @@ async def main_gui(
 
     reactor.addSystemEventTrigger("before", "shutdown", store_settings)
     await defer.maybeDeferred(migrate, options)
-    share_user_lock(options, lock)
+    share_user_lock(lock)
     install_settings()
     install_workspace(options)
     quit_deferred: defer.Deferred[None] = defer.Deferred()
@@ -412,6 +410,11 @@ def main() -> NoReturn:
     options = cli.parse_or_exit()
     try:
         lock = take_locks(options)
+    except OSError as exc:
+        raise SystemExit(
+            f"Cannot take the lock {exc.filename}: {exc.strerror}. With"
+            " --lock none, Virtualbricks runs without locks."
+        ) from None
     except Exception as exc:
         raise SystemExit(str(exc))
 

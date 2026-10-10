@@ -154,6 +154,9 @@ class Lock:
         self._fds: list[int] = []
         # the descriptor of the user lock, if held
         self._user: int | None = None
+        # the user lock is held alone until the settings of 2.1 are
+        # converted: Lock.share_user() shares it then
+        self.share_pending = False
 
     @property
     def locked(self) -> bool:
@@ -163,6 +166,7 @@ class Lock:
         """Release the locks; nothing if they are released already."""
 
         self._user = None
+        self.share_pending = False
         while self._fds:
             os.close(self._fds.pop())
 
@@ -186,18 +190,22 @@ class Lock:
     def share_user(self) -> None:
         """
         Share the user lock taken alone, as the workspace policy does once
-        the settings of 2.1 are converted.
+        the settings of 2.1 are converted; nothing if it wasn't taken alone
+        for them.
 
         Raise Held if another Virtualbricks took it in between: the change
         isn't atomic, and this lock then holds none of it.
         """
 
+        if not self.share_pending:
+            return
         assert self._user is not None, "the user lock is not held"
         try:
             fcntl.flock(self._user, fcntl.LOCK_SH | fcntl.LOCK_NB)
         except BlockingIOError:
             path = locations.user_lock_file()
             raise Held(self.policy, USER, path, holders(path)) from None
+        self.share_pending = False
 
     def _take(self, path: str, operation: int, write: bool = False) -> bool:
         """Lock the file at path; False if another Virtualbricks holds it."""
@@ -382,6 +390,7 @@ def acquire(policy: Policy = SYSTEM, user_alone: bool = False) -> Lock:
                 holder = _holder(path, USER, WORKSPACE) if alone else USER
                 raise Held(policy, holder, path, holders(path))
             lock._user = lock._fds[-1]
+            lock.share_pending = policy == WORKSPACE and user_alone
     except BaseException:
         lock.unlock()
         raise
