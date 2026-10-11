@@ -15,37 +15,32 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-
-"""The start of Virtualbricks: the locks, the migration, the project."""
+"""The steps of a Virtualbricks without the windows: app.Application."""
 
 import io
 import os
-import pwd
 import stat
 import sys
+import threading
 
 from twisted.internet import defer, task
+from twisted.logger import LogLevel
 from twisted.trial import unittest
 
 from virtualbricks import app, locations, locks, sockets
-from virtualbricks.bricks import switchwrapper
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.cli import GUI, NO_GUI, CommandLineOptions
 from virtualbricks.config import settings, workspace
 from virtualbricks.config.settings import (
-    AppSettings,
     current_project,
     get_setting,
     set_setting,
-    store_settings,
 )
 from virtualbricks.config.tomlfile import load_toml
-from virtualbricks.config.workspace import projects
-from virtualbricks.console import control
 from virtualbricks.tests import (
-    BrickTestCase,
     FakeLogger,
-    hold_lock,
     isolate,
-    lock_is_free,
+    make_factory,
     reset_settings,
     use_workspace,
 )
@@ -55,43 +50,21 @@ from virtualbricks.tests.migrate.fixtures import (
     write_settings,
 )
 
-ME = pwd.getpwuid(os.getuid()).pw_name
-# the tests of the locks take them; the others take none
-CONFIG = {"verbosity": 0, "noterm": True, "lock": locks.NONE}
+# what the observer of --logger, named by test_a_logger, was given
+OBSERVED = []
 
 
-class FakeAppLogger:
-
-    def __init__(self, config):
-        self.events = []
-
-    def start(self, reactor):
-        self.events.append("start")
-
-    def stop(self):
-        self.events.append("stop")
+def observer(event):
+    OBSERVED.append(event)
 
 
-class FakeReactor:
-
-    def __init__(self):
-        self.triggers = []
-
-    def addSystemEventTrigger(self, phase, event, callable, *args):
-        self.triggers.append((phase, event, callable, args))
-
-    def shutdown(self):
-        for phase, event, callable, args in self.triggers:
-            callable(*args)
-
-
-class Application(app.Application):
-
-    logger_factory = FakeAppLogger
-
-    def install_sys_hooks(self):
-        # the tests keep the hooks of the test runner
-        pass
+def event(text, level=LogLevel.info):
+    return {
+        "log_format": text,
+        "log_level": level,
+        "log_namespace": "virtualbricks.tests",
+        "log_time": 0.0,
+    }
 
 
 class AppTestCase(unittest.TestCase):
@@ -103,24 +76,217 @@ class AppTestCase(unittest.TestCase):
         self.patch(app, "logger", self.logger)
         self.patch(workspace, "logger", FakeLogger())
         self.manager = use_workspace(self)
-        self.patch(app, "AutosaveTimer", lambda factory: None)
-        self.patch(app, "WrapperTimer", lambda factory: None)
-        # the socket where the Virtualbricks would listen, not a real one
-        self.listened = []
-        self.patch(
-            control,
-            "listen",
-            lambda factory, socket, reactor: self.listened.append(socket),
+
+    def application(self, mode=NO_GUI, **options):
+        return app.Application(CommandLineOptions(mode, **options))
+
+
+class TestLogLevel(unittest.TestCase):
+
+    def test_the_verbosity(self):
+        self.assertEqual(app.log_level(2), LogLevel.debug)
+        self.assertEqual(app.log_level(1), LogLevel.debug)
+        self.assertEqual(app.log_level(0), LogLevel.info)
+        self.assertEqual(app.log_level(-1), LogLevel.warn)
+        self.assertEqual(app.log_level(-2), LogLevel.error)
+
+
+class TestLogging(AppTestCase):
+
+    def test_none(self):
+        # without --logfile and --logger, nothing is written
+        self.assertEqual(self.application().get_log_observers(), [])
+
+    def test_a_logger(self):
+        # the observer itself, as --logger names it, which gets everything
+        self.patch(sys.modules[__name__], "OBSERVED", [])
+        name = f"{__name__}.observer"
+        [found] = self.application(logger=name).get_log_observers()
+        self.assertIs(found, observer)
+
+    def test_a_logger_that_isnt_there(self):
+        error = self.assertRaises(
+            SystemExit,
+            self.application(logger="no.such.thing").get_log_observers,
         )
-        self.app = Application(CONFIG)
-        self.app.install_locale = lambda: None
+        self.assertTrue(
+            str(error).startswith(
+                "Logger 'no.such.thing' could not be imported: "
+            ),
+            str(error),
+        )
+
+    def test_the_standard_output(self):
+        out = io.StringIO()
+        self.patch(sys, "stdout", out)
+        [found] = self.application(logfile="-").get_log_observers()
+        found(event("seen"))
+        found(event("not seen", LogLevel.debug))
+        self.assertIn("seen", out.getvalue())
+        self.assertNotIn("not seen", out.getvalue())
+
+    def test_a_file(self):
+        path = os.path.join(self.root, "vb.log")
+        [found] = self.application(
+            logfile=path, verbosity=1
+        ).get_log_observers()
+        found(event("a detail", LogLevel.debug))
+        with open(path) as fp:
+            self.assertIn("a detail", fp.read())
+
+    def test_quieter(self):
+        out = io.StringIO()
+        self.patch(sys, "stdout", out)
+        [found] = self.application(
+            logfile="-", verbosity=-1
+        ).get_log_observers()
+        found(event("info"))
+        found(event("a warning", LogLevel.warn))
+        self.assertEqual(out.getvalue().count("\n"), 1)
+        self.assertIn("a warning", out.getvalue())
+
+    def test_install_logging(self):
+        begun = []
+
+        class Beginner:
+            def beginLoggingTo(self, observers, redirectStandardIO=True):
+                begun.append((observers, redirectStandardIO))
+
+        self.patch(app, "globalLogBeginner", Beginner())
+        self.application(logger=f"{__name__}.observer").install_logging()
+        # the console uses the standard streams
+        self.assertEqual(begun, [([observer], False)])
+
+    def test_stop_logger(self):
+        self.application().stop_logger()
+        self.assertEqual(self.logger.formatted(), [app.shut_down])
 
 
-class TestInstall(AppTestCase):
+class TestHooks(AppTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.patch(sys, "excepthook", sys.excepthook)
+        self.patch(threading, "excepthook", threading.excepthook)
+        self.default = []
+        self.patch(
+            sys,
+            "__excepthook__",
+            lambda *args: self.default.append(args[0]),
+        )
+
+    def uncaught(self):
+        """What the error logged says: its failure, and its message."""
+
+        [(level, text, fields)] = self.logger.events
+        self.assertEqual((level, text), ("error", app.uncaught_exception))
+        return fields["log_failure"].type, fields["error"]()
+
+    def test_install_sys_hooks(self):
+        self.application().install_sys_hooks()
+        self.assertIs(sys.excepthook, app.excepthook)
+        self.assertIs(threading.excepthook, app.thread_excepthook)
+
+    def test_an_uncaught_exception(self):
+        try:
+            raise ValueError("boom")
+        except ValueError:
+            app.excepthook(*sys.exc_info())
+        self.assertEqual(self.uncaught(), (ValueError, "boom"))
+        self.assertEqual(self.default, [])
+
+    def test_exit_and_interrupt(self):
+        # as Python says them
+        app.excepthook(SystemExit, SystemExit(2), None)
+        app.excepthook(KeyboardInterrupt, KeyboardInterrupt(), None)
+        self.assertEqual(self.default, [SystemExit, KeyboardInterrupt])
+        self.assertEqual(self.logger.events, [])
+
+    def test_a_thread(self):
+        # a thread may exit silently, as with threading's own hook
+        app.thread_excepthook(
+            threading.ExceptHookArgs([SystemExit, SystemExit(), None, None])
+        )
+        self.assertEqual(self.logger.events, [])
+        self.assertEqual(self.default, [])
+        app.thread_excepthook(
+            threading.ExceptHookArgs(
+                [ValueError, ValueError("in a thread"), None, None]
+            )
+        )
+        self.assertEqual(self.uncaught(), (ValueError, "in a thread"))
+
+
+class TestMigrate(AppTestCase):
+
+    def test_nothing_to_migrate(self):
+        self.assertIsNone(self.application().migrate())
+        self.assertEqual(self.logger.events, [])
+
+    def test_migrate_in_place(self):
+        folder = os.path.join(self.root, ".virtualbricks")
+        write_settings(locations.legacy_settings_file(), folder, "lab")
+        write_project(folder, "lab", CONFIG1)
+        self.assertIsNone(self.application().migrate())
+        self.assertTrue(
+            os.path.isfile(os.path.join(folder, "lab", locations.PROJECT_FILE))
+        )
+        self.assertEqual(
+            load_toml(locations.state_file())["workspaces"],
+            [{"path": folder, "current_project": "lab"}],
+        )
+        self.assertEqual(
+            self.logger.formatted()[-1], "Migration: 1 of 1 projects migrated."
+        )
+
+    def test_left_to_the_windows(self):
+        # the migration window of the GUI runs it
+        folder = os.path.join(self.root, ".virtualbricks")
+        write_project(folder, "lab", CONFIG1)
+        self.assertIsNone(self.application(GUI).migrate())
+        self.assertFalse(
+            os.path.exists(os.path.join(folder, "lab", locations.PROJECT_FILE))
+        )
+
+
+class FakeLock:
+
+    def __init__(self, error=None):
+        self.error = error
+        self.shared = 0
+
+    def share_user(self):
+        if self.error is not None:
+            raise self.error
+        self.shared += 1
+
+
+class TestShareUserLock(AppTestCase):
+
+    def test_no_lock(self):
+        # the windows of another Virtualbricks take none
+        self.application().share_user_lock(None)
+
+    def test_shared(self):
+        lock = FakeLock()
+        self.application().share_user_lock(lock)
+        self.assertEqual(lock.shared, 1)
+
+    def test_taken_in_between(self):
+        held = locks.Held(locks.WORKSPACE, locks.USER, "/run/vb/user.lock")
+        error = self.assertRaises(
+            SystemExit,
+            self.application().share_user_lock,
+            FakeLock(held),
+        )
+        self.assertEqual(str(error), str(held))
+
+
+class TestSettings(AppTestCase):
 
     def test_install_settings(self):
         write_settings(locations.legacy_settings_file(), "/srv/vb")
-        self.app.install_settings()
+        self.application().install_settings()
         # the old settings are not read: that's the migration's job
         self.assertEqual(
             get_setting("workspace"),
@@ -132,13 +298,22 @@ class TestInstall(AppTestCase):
             locations.DEFAULT_PROJECT,
         )
 
+    def test_store_settings(self):
+        application = self.application()
+        application.install_settings()
+        set_setting("terminal", "xterm")
+        application.store_settings()
+        self.assertEqual(
+            load_toml(locations.settings_file())["terminal"], "xterm"
+        )
+
     def test_install_workspace(self):
-        self.app.install_workspace()
+        self.application().install_workspace()
         # the setting's, without one on the command line
         self.assertEqual(self.manager.path, get_setting("workspace"))
-        application = Application({**CONFIG, "workspace": "/srv/labs"})
-        application.install_workspace()
-        self.assertEqual(self.manager.path, "/srv/labs")
+        other = os.path.join(self.root, "labs")
+        self.application(workspace=other).install_workspace()
+        self.assertEqual(self.manager.path, other)
         # the setting doesn't change
         self.assertEqual(
             get_setting("workspace"), os.path.join(self.root, ".virtualbricks")
@@ -147,144 +322,125 @@ class TestInstall(AppTestCase):
     def test_the_workspace_stays_for_the_run(self):
         # whose lock is that of its folder: a new setting is for the next
         # start
-        self.app.install_workspace()
+        self.application().install_workspace()
         set_setting("workspace", "/srv/labs")
         self.assertEqual(
             self.manager.path, os.path.join(self.root, ".virtualbricks")
         )
 
-    def test_install_home(self):
-        self.app.install_home()
+    def test_the_runtime_folder(self):
+        self.application().install_workspace()
         mode = os.stat(locations.runtime_dir()).st_mode
         self.assertTrue(stat.S_ISDIR(mode))
         self.assertEqual(stat.S_IMODE(mode), 0o700)
         # and the folder of the workspace, with its link, for its socket
-        self.app.install_workspace()
-        self.app.install_home()
         folder = locations.workspace_runtime_dir(self.manager.path)
         link = os.path.join(folder, locations.WORKSPACE_LINK)
         self.assertEqual(os.readlink(link), self.manager.path)
 
 
-class TestMigrate(AppTestCase):
+class TestFactory(AppTestCase):
 
-    def test_nothing_to_migrate(self):
-        self.assertIsNone(self.app.migrate())
-        self.assertEqual(self.logger.events, [])
-
-    def test_migrate_in_place(self):
-        workspace = os.path.join(self.root, ".virtualbricks")
-        write_settings(locations.legacy_settings_file(), workspace, "lab")
-        write_project(workspace, "lab", CONFIG1)
-        self.app.migrate()
-        self.assertTrue(
-            os.path.isfile(
-                os.path.join(workspace, "lab", locations.PROJECT_FILE)
-            )
-        )
-        self.assertEqual(
-            load_toml(locations.state_file())["workspaces"],
-            [{"path": workspace, "current_project": "lab"}],
-        )
-        self.assertEqual(
-            self.logger.formatted()[-1], "Migration: 1 of 1 projects migrated."
-        )
+    def test_install_factory(self):
+        # the bricks of this process, whose quit ends the run
+        factory = self.application().install_factory("reactor")
+        self.assertIsInstance(factory, BrickFactory)
+        self.assertNoResult(factory.quit_d)
+        factory.quit()
+        self.assertIsNone(self.successResultOf(factory.quit_d))
 
 
-class TestRun(AppTestCase):
+class TestProject(AppTestCase):
 
-    def test_the_migration_comes_first(self):
-        calls = []
-        migrated = defer.Deferred()
+    def setUp(self):
+        super().setUp()
+        self.app = self.application()
+        self.app.install_settings()
+        self.app.install_workspace()
+        self.factory = make_factory(self)
 
-        def migrate():
-            calls.append("migrate")
-            return migrated
-
-        def start(reactor):
-            calls.append(("start", reactor))
-            return "quit"
-
-        self.app.migrate = migrate
-        self.app._start = start
-        reactor = FakeReactor()
-        d = self.app.run(reactor)
-        self.assertEqual(calls, ["migrate"])
-        migrated.callback(None)
-        self.assertEqual(calls, ["migrate", ("start", reactor)])
-        self.assertEqual(self.successResultOf(d), "quit")
-
-    def test_start_after_a_migration(self):
-        workspace = os.path.join(self.root, ".virtualbricks")
-        write_settings(locations.legacy_settings_file(), workspace, "lab")
-        write_project(workspace, "lab", CONFIG1)
-        reactor = FakeReactor()
-        d = self.app.run(reactor)
-        # it fires when the application quits
-        self.assertNoResult(d)
-        # the migrated settings and project are the ones in use
-        self.assertEqual(get_setting("workspace"), workspace)
-        self.assertEqual(self.manager.current.name, "lab")
-        self.assertIsNotNone(self.manager.current.settings)
-        self.assertEqual(self.app.logger.events, ["start"])
-        # those before the shutdown; the locks go after
-        callables = [
-            trigger[2]
-            for trigger in reactor.triggers
-            if trigger[0] == "before"
-        ]
-        self.assertEqual(
-            callables,
-            [store_settings, self.manager.save, self.app.logger.stop],
-        )
-        self.assertTrue(os.path.isdir(locations.runtime_dir()))
-
-    def test_fresh_start(self):
-        d = self.app.run(FakeReactor())
-        self.assertNoResult(d)
+    def test_open_last_project(self):
+        self.app.open_last_project(self.factory)
         self.assertEqual(self.manager.current.name, locations.DEFAULT_PROJECT)
-        self.assertTrue(os.path.isfile(locations.settings_file()))
-        self.assertEqual(self.logger.events, [])
 
-    def test_start_in_the_workspace_of_the_command_line(self):
-        other = os.path.join(self.root, "labs")
-        # its old projects are migrated first, as the setting's would be
-        write_project(other, "lab", CONFIG1)
-        application = Application({**CONFIG, "workspace": other})
-        application.install_locale = lambda: None
-        self.assertNoResult(application.run(FakeReactor()))
-        self.assertEqual(self.manager.path, other)
-        self.assertEqual(
-            self.manager.current.path, os.path.join(other, "new_project")
+    def test_save_project(self):
+        self.app.open_last_project(self.factory)
+        self.factory.new_brick("switch", "sw1")
+        self.app.save_project(self.factory)
+        with open(self.manager.current.project_file) as fp:
+            self.assertIn("sw1", fp.read())
+
+
+class TestListen(AppTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.listened = []
+        self.patch(
+            app,
+            "listen",
+            lambda factory, socket, reactor: self.listened.append(
+                (factory, socket, reactor)
+            ),
         )
-        self.assertEqual(self.manager.names(), ["lab", "new_project"])
-        self.assertEqual(current_project(other), "new_project")
-        # the setting stays, in the file too
-        default = os.path.join(self.root, ".virtualbricks")
-        self.assertEqual(get_setting("workspace"), default)
-        self.assertEqual(
-            load_toml(locations.settings_file())["workspace"], default
+
+    def test_none_without_it(self):
+        self.application().start_listening("factory", "reactor")
+        self.assertEqual(self.listened, [])
+
+    def test_each_socket(self):
+        given = (
+            sockets.Socket("/srv/lab.sock"),
+            sockets.Socket("/srv/lab2.sock"),
         )
-        self.assertFalse(os.path.exists(default))
+        self.application(listen=given).start_listening("factory", "reactor")
+        self.assertEqual(
+            self.listened,
+            [("factory", socket, "reactor") for socket in given],
+        )
+
+
+class TestTimers(AppTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.clock = clock = task.Clock()
+
+        class LoopingCall(task.LoopingCall):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.clock = clock
+
+        self.patch(task, "LoopingCall", LoopingCall)
+        self.calls = []
+
+    def test_autosave(self):
+        self.patch(app.projects, "autosave", lambda f: self.calls.append(f))
+        self.application().install_autosave_timer("factory", 10)
+        self.assertEqual(self.calls, [])
+        self.clock.advance(10)
+        self.assertEqual(self.calls, ["factory"])
+
+    def test_the_switch_wrappers(self):
+        self.patch(app, "look_all", lambda f: self.calls.append(f))
+        self.application().install_switch_wrapper_timer("factory")
+        self.assertEqual(self.calls, [])
+        self.clock.advance(app.LOOK_EVERY)
+        self.clock.advance(app.LOOK_EVERY)
+        self.assertEqual(self.calls, ["factory", "factory"])
 
 
 class TestTheConsole(AppTestCase):
 
     def setUp(self):
         super().setUp()
-        self.started = []
+        # the bricks are those of an open project, with its settings
+        settings.use_project(settings.ProjectSettings())
+        self.factory = make_factory(self)
         self.out = io.StringIO()
         self.err = io.StringIO()
         self.patch(sys, "stdout", self.out)
         self.patch(sys, "stderr", self.err)
-
-    def application(self, **config):
-        application = Application({**CONFIG, **config})
-        application.install_locale = lambda: None
-        application.start_console = lambda factory: self.started.append(
-            factory
-        )
-        return application
 
     def script(self, text):
         path = os.path.join(self.root, "lab.vb")
@@ -292,34 +448,25 @@ class TestTheConsole(AppTestCase):
             fp.write(text)
         return path
 
-    def test_the_console_starts(self):
-        self.application(noterm=False).run(FakeReactor())
-        self.assertEqual(len(self.started), 1)
-        self.application(noterm=True).run(FakeReactor())
-        self.assertEqual(len(self.started), 1)
+    def test_no_window(self):
+        created = self.application().create_main_window(self.factory, None)
+        self.assertIsNone(self.successResultOf(defer.ensureDeferred(created)))
 
-    def test_the_control_sockets(self):
-        # none without --listen
-        self.application().run(FakeReactor())
-        self.assertEqual(self.listened, [])
-        given = [
-            sockets.Socket("/srv/lab.sock"),
-            sockets.Socket("/srv/lab2.sock"),
-        ]
-        self.application(sockets=given).run(FakeReactor())
-        self.assertEqual(self.listened, given)
-
-    def test_a_script_first(self):
+    def test_a_script(self):
         path = self.script("brick new switch\n# a comment\n\nbrick new tap\n")
-        self.application(noterm=False, run=path).run(FakeReactor())
+        self.successResultOf(
+            self.application(run=path).run_script(self.factory)
+        )
         self.assertEqual(self.out.getvalue(), "sw1\ntap1\n")
         self.assertEqual(
-            [brick.name for brick in self.started[0].bricks], ["sw1", "tap1"]
+            [brick.name for brick in self.factory.bricks], ["sw1", "tap1"]
         )
 
     def test_a_script_that_fails(self):
         path = self.script("brick new switch\nbrick nope\nbrick new tap\n")
-        self.application(noterm=False, run=path).run(FakeReactor())
+        self.successResultOf(
+            self.application(run=path).run_script(self.factory)
+        )
         self.assertEqual(self.out.getvalue(), "")
         self.assertEqual(
             self.err.getvalue().splitlines()[:2],
@@ -332,202 +479,13 @@ class TestTheConsole(AppTestCase):
                 " delete",
             ],
         )
-        # the console starts all the same
-        self.assertEqual(len(self.started), 1)
 
-
-class Started(Application):
-    """It takes the locks and migrates; its start says the policy."""
-
-    def __init__(self, started, config):
-        super().__init__(config)
-        self.started = started
-        # called by migrate, as the startup migration runs
-        self.migrating = None
-
-    def install_locale(self):
-        pass
-
-    def migrate(self):
-        if self.migrating is not None:
-            self.migrating()
-
-    def _start(self, reactor):
-        self.started.append(self.config.get("lock", locks.SYSTEM))
-        return defer.succeed(None)
-
-
-class TestLock(unittest.TestCase):
-
-    def setUp(self):
-        self.root = isolate(self)
-        self.reactor = FakeReactor()
-        self.started = []
-        # the workspace of the settings
-        self.workspace = os.path.join(self.root, ".virtualbricks")
-
-    def application(self, **config):
-        return Started(self.started, config)
-
-    def run_app(self, **config):
-        return self.application(**config).run(self.reactor)
-
-    def in_workspace(self, folder):
-        # as --workspace runs it
-        return self.run_app(workspace=folder, lock=locks.WORKSPACE)
-
-    def test_held_until_shutdown(self):
-        self.successResultOf(self.run_app(lock=locks.USER))
-        self.assertEqual(self.started, [locks.USER])
-        self.assertFalse(lock_is_free())
-        self.reactor.shutdown()
-        self.assertTrue(lock_is_free())
-
-    def test_refused(self):
-        hold_lock(self, locks.USER, "bob")
-        failure = self.failureResultOf(self.run_app(), SystemExit)
-        self.assertEqual(
-            str(failure.value),
-            "Virtualbricks is running on this machine with --lock user or "
-            "--lock workspace, which let others run beside it: start this "
-            f"one with one of them as well. Held by process {os.getpid()} of "
-            f"{ME}.",
+    def test_start_console(self):
+        started = []
+        self.patch(
+            app,
+            "start",
+            lambda factory, namespace: started.append((factory, namespace)),
         )
-        self.assertEqual(self.started, [])
-        self.successResultOf(self.run_app(lock=locks.USER))
-        self.assertEqual(self.started, [locks.USER])
-        self.reactor.shutdown()
-
-    def test_none_starts_anyway(self):
-        hold_lock(self)
-        self.successResultOf(self.run_app(lock=locks.NONE))
-        self.assertEqual(self.started, [locks.NONE])
-        # no lock in the workspace, not even the folder
-        self.assertFalse(os.path.exists(self.workspace))
-
-    def test_the_workspace_of_the_settings(self):
-        self.successResultOf(self.run_app())
-        path = locations.workspace_lock_file(self.workspace)
-        self.assertEqual(locks.holders(path), ((os.getpid(), ME),))
-        self.reactor.shutdown()
-        self.assertEqual(locks.holders(path), ())
-
-    def test_the_workspace_of_the_settings_file(self):
-        labs = os.path.join(self.root, "labs")
-        settings.write_settings(
-            AppSettings(workspace=labs), locations.settings_file()
-        )
-        self.successResultOf(self.run_app(lock=locks.USER))
-        path = locations.workspace_lock_file(labs)
-        self.assertEqual(locks.holders(path), ((os.getpid(), ME),))
-        self.reactor.shutdown()
-
-    def test_side_by_side(self):
-        a = os.path.join(self.root, "labs", "a")
-        b = os.path.join(self.root, "labs", "b")
-        self.successResultOf(self.in_workspace(a))
-        # the folder is made for its lock
-        self.assertTrue(os.path.isfile(locations.workspace_lock_file(a)))
-        self.successResultOf(self.in_workspace(b))
-        self.assertEqual(self.started, [locks.WORKSPACE, locks.WORKSPACE])
-        failure = self.failureResultOf(self.in_workspace(a), SystemExit)
-        self.assertEqual(
-            str(failure.value),
-            "Another Virtualbricks is running in the workspace ~/labs/a: "
-            "start this one in another, with --workspace. Held by process "
-            f"{os.getpid()} of {ME}.",
-        )
-        # nor the one of the settings, in the system mode
-        failure = self.failureResultOf(self.run_app(), SystemExit)
-        self.assertIn("--lock user or --lock workspace", str(failure.value))
-        self.successResultOf(self.run_app(lock=locks.WORKSPACE))
-        self.assertEqual(len(self.started), 3)
-        self.reactor.shutdown()
-
-    def test_the_settings_of_2_1_are_converted_alone(self):
-        with open(locations.legacy_settings_file(), "w"):
-            pass
-        refused = []
-
-        def migrating():
-            # the user lock alone: no other workspace starts meanwhile
-            refused.append(self.in_workspace(os.path.join(self.root, "other")))
-            settings.write_settings(AppSettings(), locations.settings_file())
-
-        application = self.application(
-            workspace=os.path.join(self.root, "a"), lock=locks.WORKSPACE
-        )
-        application.migrating = migrating
-        self.successResultOf(application.run(self.reactor))
-        [d] = refused
-        failure = self.failureResultOf(d, SystemExit)
-        self.assertIn("--lock user", str(failure.value))
-        # then shared: another workspace starts
-        self.successResultOf(self.in_workspace(os.path.join(self.root, "b")))
-        self.assertEqual(self.started, [locks.WORKSPACE, locks.WORKSPACE])
-        self.reactor.shutdown()
-
-    def test_a_workspace_lock_that_cannot_be_opened(self):
-        os.makedirs(self.workspace)
-        path = locations.workspace_lock_file(self.workspace)
-        os.symlink("elsewhere", path)
-        failure = self.failureResultOf(self.run_app(), SystemExit)
-        self.assertEqual(
-            str(failure.value),
-            f"Cannot take the lock {path}: Too many levels of symbolic links."
-            " With --lock none, Virtualbricks runs without locks.",
-        )
-        self.assertEqual(self.started, [])
-
-    def test_a_lock_that_cannot_be_opened(self):
-        os.symlink("elsewhere", locations.SYSTEM_LOCK_FILE)
-        self.addCleanup(os.remove, locations.SYSTEM_LOCK_FILE)
-        failure = self.failureResultOf(self.run_app(), SystemExit)
-        self.assertEqual(
-            str(failure.value),
-            f"Cannot take the lock {locations.SYSTEM_LOCK_FILE}: Too many "
-            "levels of symbolic links. With --lock none, Virtualbricks runs "
-            "without locks.",
-        )
-        self.assertEqual(self.started, [])
-
-
-class TestAutosave(BrickTestCase):
-
-    def test_autosave_timer(self):
-        calls = []
-        self.patch(projects, "autosave", calls.append)
-        clock = task.Clock()
-
-        class LoopingCall(task.LoopingCall):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self.clock = clock
-
-        self.patch(task, "LoopingCall", LoopingCall)
-        timer = app.AutosaveTimer(self.factory, 10)
-        clock.advance(10)
-        self.assertEqual(calls, [self.factory])
-        timer.stop()
-
-
-class TestWrapperTimer(BrickTestCase):
-
-    def test_it_looks_at_each_interval(self):
-        calls = []
-        self.patch(switchwrapper, "look_all", calls.append)
-        clock = task.Clock()
-
-        class LoopingCall(task.LoopingCall):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self.clock = clock
-
-        self.patch(task, "LoopingCall", LoopingCall)
-        timer = app.WrapperTimer(self.factory)
-        self.assertEqual(calls, [])
-        clock.advance(switchwrapper.LOOK_EVERY)
-        self.assertEqual(calls, [self.factory])
-        clock.advance(switchwrapper.LOOK_EVERY)
-        self.assertEqual(calls, [self.factory, self.factory])
-        timer.stop()
+        self.application().start_console(self.factory)
+        self.assertEqual(started, [(self.factory, {})])

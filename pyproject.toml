@@ -15,6 +15,9 @@ dependencies = [
     "pygraphviz>=1.7",
     # tls: pyOpenSSL and service-identity, for the ssl sockets
     "Twisted[tls]>=22.1",
+    # the certificates of the ssl sockets, and of their clients: 21.0 is the
+    # python3-openssl of Ubuntu 22.04, the oldest of Debian and Ubuntu
+    "pyOpenSSL>=21.0",
     "attrs>=20.1",
     "markdown-it-py>=1.1",
     "zope.interface>=5.4",
@@ -66,7 +69,7 @@ website = [
 Homepage = "https://github.com/virtualsquare/virtualbricks"
 
 [project.scripts]
-virtualbricks = "virtualbricks.cli:main"
+virtualbricks = "virtualbricks.main:main"
 
 [project.gui-scripts]
 virtualbricks-migrate = "virtualbricks.migrate.cli:gui_main"
@@ -127,9 +130,13 @@ extend-exclude = ["_trial_temp"]
 
 [tool.ruff.lint]
 # ruff's defaults (E4, E7, E9, F); formatting and line length are left to black
-select = ["E4", "E7", "E9", "F"]
+select = ["E4", "E7", "E9", "F", "I"]
 # gi.require_version() has to run before the gi.repository imports
 ignore = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["virtualbricks"]
+# combine-as-imports = true
 
 [tool.mypy]
 # mypy alone checks these; the tests are left out

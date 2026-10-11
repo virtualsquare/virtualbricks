@@ -273,6 +273,14 @@
 - [ ] Run the tests of the AMP socket on Twisted 22.1 too: they patch
   `amp._log`, which 22.1 doesn't have (17)
 
+## Start-up
+
+- [ ] Bring back the pdb debugger, maybe: with `-vv` or `-b` and a terminal,
+  Ctrl+C and `SIGUSR2` dropped into `pdb` (the `app.py` of before `main.py`,
+  with Twisted's `fixPdb()`); `main.py` has none. With the hooks, last (27 §3
+  step 20, O3), and its sentence back in virtualbricks(1) and
+  `command-line.html`
+
 ## Remote windows
 
 - [ ] A Connect… item in the File menu, with the lab machines used before,

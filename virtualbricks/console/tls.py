@@ -18,9 +18,8 @@
 
 """
 The TLS of an ssl socket: the certificate of Virtualbricks, and the
-certificates that its clients show. It is the only module of Virtualbricks
-that needs pyOpenSSL, and it is imported only for an ssl socket, so that a
-Virtualbricks without one runs without pyOpenSSL.
+certificates that its clients show, read with pyOpenSSL. It is imported only
+for an ssl socket.
 
 Twisted's own ``ssl:`` has no way to ask the clients for certificates:
 ``caCertsDir`` is a keyword of its clients only. So the options are built

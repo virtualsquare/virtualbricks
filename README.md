@@ -83,7 +83,7 @@ virtualbricks
 
 or `python -m virtualbricks`. The window opens with the project that was open
 last in the workspace, and the terminal that started Virtualbricks reads the
-commands of its console, unless you give `--noterm`; see
+commands of its console, unless you give `--no-term`; see
 [The console](#the-console).
 
 
@@ -91,10 +91,9 @@ The options are:
 
 - `-v`, `--verbose`, `-q`, `--quiet`: increase or decrease the log verbosity;
   they can be repeated.
-- `--debug`: the most verbose output. With it, and with `-vv`, Ctrl+C and the
-  `SIGUSR2` signal drop into the `pdb` debugger.
+- `--debug`: the most verbose output.
 - `-l FILE`, `--logfile FILE`: write the log messages to a file.
-- `--noterm`: don't read the console in the terminal.
+- `--no-term`: don't read the console in the terminal.
 - `--no-gui`: run without the windows, and without GTK: the console is the
   way in.
 - `--run FILE`: run the commands of a file once the project is open, then
@@ -170,7 +169,7 @@ Alt+F go by words, Ctrl+W, Ctrl+K and the others delete, Ctrl+Y puts back.
 `python` opens a Python shell with the brick factory in it.
 
 The same commands run from a file, with `source FILE` or `--run FILE`, from a
-pipe, and in an event, as its actions. With `--no-gui --noterm --run FILE`,
+pipe, and in an event, as its actions. With `--no-gui --no-term --run FILE`,
 Virtualbricks sets a lab up and runs it on a machine without a display.
 
 A Virtualbricks started with `--listen`, with the windows or without,
@@ -234,7 +233,7 @@ page for this computer and one for that machine. Both run the same
 version of Virtualbricks:
 
 ```
-virtualbricks --no-gui --noterm --listen \
+virtualbricks --no-gui --no-term --listen \
     'ssl:8765:interface=0.0.0.0:privateKey=lab.key'
 virtualbricks --connect ssl:lab.example:8765:caCertsDir=FOLDER
 ```
@@ -474,8 +473,9 @@ To add a language, see the top of `l10n.sh`.
 
 ### Source layout
 
-- `virtualbricks/`: `cli.py` reads the command line and `app.py` starts the
-  application; `sockets.py` reads the descriptions of the sockets of
+- `virtualbricks/`: `cli.py` reads the command line, and `main.py` starts
+  Virtualbricks in the mode it asks for: `app.py` runs the bricks without
+  the windows; `sockets.py` reads the descriptions of the sockets of
   `--listen` and `--connect`; `brickfactory.py` is the model in memory, the
   bricks, the events and the images of the open project; `programs.py`
   finds the installed QEMU and VDE programs and asks them what they have;
@@ -506,7 +506,7 @@ To add a language, see the top of `l10n.sh`.
   with `ampbox.py`, the boxes of AMP read and written without Twisted, and
   `wire.py` has what both share: the JSON protocol, the checks of a
   socket's path, the token and its proof. `tls.py` has the certificates of
-  the ssl sockets, and is the only module that needs pyOpenSSL.
+  the ssl sockets, which it reads with pyOpenSSL.
   `ampwire.py` has the commands of the AMP socket, for the programs that use
   it. It imports no GTK, so that `--no-gui`
   doesn't load it, and `client.py` doesn't load Twisted's reactor either.
@@ -529,15 +529,16 @@ To add a language, see the top of `l10n.sh`.
   needs the desktop, as the trash, is given to it by the GUI.
 - `virtualbricks/migrate/`: the only code that reads the files of Virtualbricks
   2.1 and older.
-- `virtualbricks/gui/`: the windows, built in Python code. `mainwindow/` is
-  the main window, with a module or a package for each tab: `bricks/`,
-  `events/`, `images/`, `topology.py` and `readme.py`. The settings panel of
-  each kind of brick is in `bricks/config/`: rows made by `form.py` from the
-  schema, on the brick's draft, and the virtual machine's in `vm/`, a module
-  for each section of its sidebar. The settings of an event and the details
-  of an image are panels on drafts too, in `events/` and `images/`.
-  `dialogs/` has the other windows and dialogs, and `messages.py` the
-  messages of the Logs window.
+- `virtualbricks/gui/`: the windows, built in Python code. `app.py` runs the
+  bricks with the windows, or shows the windows of another Virtualbricks, the
+  one of `--connect`. `mainwindow/` is the main window, with a module or a
+  package for each tab: `bricks/`, `events/`, `images/`, `topology.py` and
+  `readme.py`. The settings panel of each kind of brick is in `bricks/config/`:
+  rows made by `form.py` from the schema, on the brick's draft, and the virtual
+  machine's in `vm/`, a module for each section of its sidebar. The settings of
+  an event and the details of an image are panels on drafts too, in `events/`
+  and `images/`. `dialogs/` has the other windows and dialogs, and
+  `messages.py` the messages of the Logs window.
 - `virtualbricks/tests/`: the tests, in the layout of the package.
 - `docs/`: the manual pages, in `man/`, and their web pages,
   `command-line.html`, `config-files.html`, `archive-protocol.html` and

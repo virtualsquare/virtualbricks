@@ -59,8 +59,7 @@ Virtualbricks of yours here. The bricks run there, the windows here. See
 :   Log less; it can be repeated.
 
 **-b**, **--debug**
-:   Log everything. With it, and with **-vv**, Ctrl+C and the **SIGUSR2**
-    signal drop into the **pdb** debugger, unless **--noterm** is given.
+:   Log everything.
 
 **-l** *file*, **--logfile** *file*
 :   Write the log messages to *file*; **-** for the standard output.
@@ -68,12 +67,12 @@ Virtualbricks of yours here. The bricks run there, the windows here. See
 **--logger** *name*
 :   The fully qualified name of a log observer, instead of **--logfile**.
 
-**--noterm**
+**--no-term**
 :   Don't read the console in the terminal.
 
 **--no-gui**
 :   Run without the windows: no GTK is loaded, and the console is the way
-    in. With **--noterm** too, nothing is read: the lab runs until
+    in. With **--no-term** too, nothing is read: the lab runs until
     Virtualbricks gets **SIGTERM** or **SIGINT**.
 
 **--run** *file*
@@ -130,7 +129,7 @@ Virtualbricks of yours here. The bricks run there, the windows here. See
 **--version**
 :   Print the version and exit.
 
-**--help**
+**-h**, **--help**
 :   Print the options and exit.
 
 # THE CONSOLE
@@ -609,7 +608,7 @@ speaks AMP, as one does without **protocol=json**, with its own windows
 or with **--no-gui**, and both run the same version:
 
 ```
-virtualbricks --no-gui --noterm --listen \
+virtualbricks --no-gui --no-term --listen \
     'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.key'
 virtualbricks --connect \
     'ssl:lab.example:8765:caCertsDir=~/vb/lab'
@@ -622,7 +621,7 @@ only one that listens; when several do, it names them and opens nothing.
 The windows call it *this computer*:
 
 ```
-virtualbricks --no-gui --noterm --listen --workspace ~/labs/a &
+virtualbricks --no-gui --no-term --listen --workspace ~/labs/a &
 virtualbricks --connect
 virtualbricks --connect --workspace ~/labs/a
 ```
@@ -958,7 +957,7 @@ A lab on a server, from a file, without windows or console, with the
 socket of its workspace:
 
 ```
-virtualbricks --no-gui --noterm --listen --run ~/labs/ospf.vb
+virtualbricks --no-gui --no-term --listen --run ~/labs/ospf.vb
 ```
 
 The machine of that lab, from another terminal, and the commands of a
@@ -980,7 +979,7 @@ from a laptop that has a copy of the token and of **lab.pem**, in
 *~/vb/lab*:
 
 ```
-virtualbricks --no-gui --noterm --run ~/labs/ospf.vb --listen \
+virtualbricks --no-gui --no-term --run ~/labs/ospf.vb --listen \
     'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.key'
 virtualbricks \
     --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
@@ -998,8 +997,8 @@ Two labs side by side, each in its workspace, both listening, and a
 command to one of them:
 
 ```
-virtualbricks --no-gui --noterm --listen --workspace ~/labs/a &
-virtualbricks --no-gui --noterm --listen --workspace ~/labs/b &
+virtualbricks --no-gui --no-term --listen --workspace ~/labs/a &
+virtualbricks --no-gui --no-term --listen --workspace ~/labs/b &
 virtualbricks --workspace ~/labs/b --command status
 ```
 

@@ -114,7 +114,9 @@ Feature: Migration
         | Project              | Bricks | Status      |
         | DTN2hops_26_Feb_2026 | 13     | ⚠ 1 warning |
         | lab                  | —      | ✗ Failed    |
-      When I select lab in the migration window
+      And an error says "lab: .project:4 [Switch:sw1] defined twice (first at line 1); project not migrated"
+      When I close the error
+      And I select lab in the migration window
       Then the migration window shows the error of lab: ".project:4 [Switch:sw1] defined twice (first at line 1); project not migrated"
       And lab isn't migrated
       And the old file lab/.project of the workspace stays as it was

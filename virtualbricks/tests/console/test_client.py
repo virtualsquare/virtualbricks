@@ -877,12 +877,12 @@ class TestTheProcess(unittest.TestCase):
         path = os.path.join(short_folder(self), "lab.sock")
         code = (
             "import sys\n"
-            "from virtualbricks import cli\n"
+            "from virtualbricks import main\n"
             f"sys.argv = ['virtualbricks', '--connect', 'unix:{path}',"
             " '--command',"
             " 'status']\n"
             "try:\n"
-            "    cli.main()\n"
+            "    main.main()\n"
             "except SystemExit as exc:\n"
             "    print(exc.code, 'twisted.internet.reactor' in sys.modules,"
             " 'gi' in sys.modules)\n"
@@ -908,11 +908,11 @@ class TestTheProcess(unittest.TestCase):
             fp.write("status\n")
         code = (
             "import sys\n"
-            "from virtualbricks import cli\n"
+            "from virtualbricks import main\n"
             f"sys.argv = ['virtualbricks', '--connect', 'unix:{path}',"
             f" '--run', '{script}']\n"
             "try:\n"
-            "    cli.main()\n"
+            "    main.main()\n"
             "except SystemExit as exc:\n"
             "    print(exc.code, 'twisted.internet.reactor' in sys.modules,"
             " 'gi' in sys.modules)\n"

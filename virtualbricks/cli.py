@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_cli -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2026 Virtualbricks team
 
@@ -15,588 +16,523 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+"""
+The command line of ``virtualbricks``, read with argparse: the options, the
+mode they ask for, and the checks that need only them and the names of the
+files they give (page 27, section 9).
+
+It imports as little as it can, so that ``--command`` starts fast: the
+standard library's ``argparse``, ``os``, ``sys`` and ``typing``,
+:mod:`virtualbricks.sockets`, which reads the descriptions of ``--listen``
+and ``--connect``, :mod:`virtualbricks.locks` for the policies of
+``--lock``, and :mod:`virtualbricks.console.wire` for the checks of the
+sockets, which ``--command`` loads anyway; no Twisted.
+
+The sockets are checked as the old parser did: their paths made absolute,
+a folder that isn't there, a path too long for a socket, one given twice;
+and for those of ``--listen``, the token and the ssl keys, which it reads.
+The keys need :mod:`virtualbricks.console.tls`, imported for them only,
+which loads pyOpenSSL and Twisted. It makes no file. Opening the file of
+``--logfile`` and importing the observer of ``--logger`` are left to the
+mode that runs.
+"""
+
 from __future__ import annotations
 
-import importlib
+import argparse
 import os
-import re
-import shlex
 import sys
-from collections.abc import Callable, Iterable
-from types import ModuleType
-from typing import IO, TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Literal, NamedTuple, get_args
 
-from twisted.python import usage, reflect
-from twisted.internet import defer, task
-from twisted.logger import ILogObserver, textFileLogObserver
-
-from virtualbricks import locations, locks, sockets
+from virtualbricks import __version__, locations, locks, sockets
 from virtualbricks.console import wire
 
 if TYPE_CHECKING:  # pragma: no cover
-    # posixbase loads TCP and TLS, which --command goes without
-    from twisted.internet.posixbase import PosixReactorBase
+    from collections.abc import Callable, Sequence
+    from typing import IO, Any, NoReturn
 
-    from virtualbricks.app import Application
-    from virtualbricks.gui.app import GuiApplication, RemoteApplication
+# The modes: the windows, without them, the windows of another
+# Virtualbricks, and a command sent to one that runs.
+Mode = Literal["gui", "no-gui", "remote", "command"]
+GUI, NO_GUI, REMOTE, COMMAND = get_args(Mode)
+# --listen and --connect alone: .control in the runtime folder of the
+# workspace, known once the settings are read.
+DEFAULT_SOCKET = sockets.Socket(None)
+# The default of an option whose absence tells: not on the command line.
+UNSET = object()
+# The options of a run, which a command sent to the Virtualbricks that runs
+# has no use for, in the order they are refused.
+RUN_OPTIONS = ("no-gui", "no-term", "run", "lock", "logfile", "logger")
 
-_log_file: IO[str] = sys.stdout
-# The word after --listen is its description when it starts with a type.
-DESCRIPTION = re.compile(r"[a-z][a-z0-9]*:", re.IGNORECASE)
+DESCRIPTION_TEXT = """\
+Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 
-
-def file_logger() -> ILogObserver:
-    return textFileLogObserver(_log_file)
-
-
-def _file_logger(filename: str) -> str:
-    if filename != "-":
-        from twisted.python import logfile
-
-        global _log_file
-        _log_file = logfile.LogFile.fromFullPath(filename)
-    return "virtualbricks.cli.file_logger"
+Copyright (C) 2026 Virtualbricks team"""
 
 
-class Options(usage.Options):
+class UsageError(Exception):
+    """The command line is wrong; str() says why, to the user."""
 
-    longdesc = """Virtualbricks - a vde/qemu gui written in python and
-    GTK/Glade.
 
-    Copyright (C) 2026 Virtualbricks team"""
+class CommandLineOptions(NamedTuple):
+    """What the command line asks for."""
 
-    optFlags = [
-        ["noterm", None, "Don't read the console in the terminal."],
-        [
-            "no-gui",
-            None,
-            "Run without the windows: the console is the way in.",
-        ],
-        [
-            "command",
-            None,
-            "Send the command of the words that follow to the Virtualbricks "
-            "that runs, the one of --connect or of --workspace, and print "
-            "its answer; without words, the lines of the standard input.",
-        ],
-        # read before getopt, which has no optional arguments
-        [
-            "listen",
-            None,
-            "Listen on a control socket: .control in the runtime folder of "
-            "the workspace, or the one of the description after it, as "
-            "unix:PATH, tcp:PORT or ssl:PORT:privateKey=FILE. It speaks AMP, "
-            "or the JSON protocol with protocol=json. Give it again for more "
-            "sockets.",
-        ],
-        [
-            "connect",
-            None,
-            "The Virtualbricks that runs that --command and --run talk to: "
-            "the one of .control in the runtime folder of its workspace, or "
-            "the one of the socket of the description after it, as "
-            "tcp:HOST:PORT. Without them, its windows open.",
-        ],
-    ]
-    optParameters = [
-        ["logfile", "l", None, "Write log messages to file."],
-        [
-            "run",
-            None,
-            None,
-            "Run the commands of a file once the project is open; with "
-            "--connect, send them to the Virtualbricks that runs, and exit.",
-        ],
-        [
-            "workspace",
-            None,
-            None,
-            "The folder of the projects for this run, instead of the "
-            "setting; with --command or --connect, the Virtualbricks that "
-            "runs there.",
-        ],
-        [
-            "lock",
-            None,
-            locks.SYSTEM,
-            "The single-instance mode: system, one Virtualbricks on the "
-            "machine; user, one for each user; workspace, one for each "
-            "workspace, the default with --workspace; none, no limit.",
-        ],
-        [
-            "logger",
-            None,
-            None,
-            "A fully-qualified name to a log observer factory to use for the "
-            "initial log observer. Takes precedence over --logfile and --syslog "
-            "(when available).",
-        ],
-    ]
+    mode: Mode
+    # the words of the command of --command, without the options before
+    words: tuple[str, ...] = ()
+    # the sockets of --listen, DEFAULT_SOCKET for --listen alone
+    listen: tuple[sockets.Socket, ...] = ()
+    # the socket of --connect, DEFAULT_SOCKET alone, None without it
+    target: sockets.Socket | None = None
+    # absolute paths
+    run: str | None = None
+    workspace: str | None = None
+    lock: locks.Policy = locks.SYSTEM
+    # as given: "-" is the standard output
+    logfile: str | None = None
+    # the fully-qualified name of a log observer
+    logger: str | None = None
+    verbosity: int = 0
+    no_term: bool = False
 
-    # The options of a run, which a command sent to the Virtualbricks that
-    # runs has no use for.
-    RUN_OPTIONS = (
-        "no-gui",
-        "noterm",
-        "run",
-        "lock",
-        "logfile",
-        "logger",
+
+class _Parser(argparse.ArgumentParser):
+    """A parser whose errors are raised, not printed."""
+
+    def error(self, message: str) -> NoReturn:
+        raise UsageError(message)
+
+
+class _Quieter(argparse.Action):
+    """-q: one step less of verbosity, as -v is one more."""
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: object,
+        option_string: str | None = None,
+    ) -> None:
+        namespace.verbosity -= 1
+
+
+def parser() -> argparse.ArgumentParser:
+    """The options of ``virtualbricks``, as virtualbricks(1) describes them."""
+
+    parser = _Parser(
+        prog="virtualbricks",
+        description=DESCRIPTION_TEXT,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.set_defaults(verbosity=0)
+    parser.add_argument(
+        "--no-term",
+        action="store_true",
+        help="Don't read the console in the terminal.",
+    )
+    parser.add_argument(
+        "--no-gui",
+        action="store_true",
+        help="Run without the windows: the console is the way in.",
+    )
+    parser.add_argument(
+        "--command",
+        action="store_true",
+        help="Send the command of the words that follow to the Virtualbricks"
+        " that runs, the one of --connect or of --workspace, and print its"
+        " answer; without words, the lines of the standard input.",
+    )
+    # given alone, the option is its const
+    parser.add_argument(
+        "--listen",
+        nargs="?",
+        action="append",
+        const=DEFAULT_SOCKET,
+        type=_socket("listen"),
+        metavar="DESCRIPTION",
+        help="Listen on a control socket: .control in the runtime folder of"
+        " the workspace, or the one of the description after it, as"
+        " unix:PATH, tcp:PORT or ssl:PORT:privateKey=FILE. It speaks AMP, or"
+        " the JSON protocol with protocol=json. Give it again for more"
+        " sockets.",
+    )
+    parser.add_argument(
+        "--connect",
+        dest="target",
+        nargs="?",
+        default=UNSET,
+        const=DEFAULT_SOCKET,
+        type=_socket("connect"),
+        metavar="DESCRIPTION",
+        help="The Virtualbricks that runs that --command and --run talk to:"
+        " the one of .control in the runtime folder of its workspace, or the"
+        " one of the socket of the description after it, as tcp:HOST:PORT."
+        " Without them, its windows open.",
+    )
+    parser.add_argument(
+        "-l", "--logfile", metavar="FILE", help="Write log messages to file."
+    )
+    parser.add_argument(
+        "--run",
+        type=_run,
+        metavar="FILE",
+        help="Run the commands of a file once the project is open; with"
+        " --connect, send them to the Virtualbricks that runs, and exit.",
+    )
+    parser.add_argument(
+        "--workspace",
+        type=_workspace,
+        metavar="FOLDER",
+        help="The folder of the projects for this run, instead of the"
+        " setting; with --command or --connect, the Virtualbricks that runs"
+        " there.",
+    )
+    parser.add_argument(
+        "--lock",
+        choices=locks.POLICIES,
+        help="The single-instance mode: system, one Virtualbricks on the"
+        " machine; user, one for each user; workspace, one for each"
+        " workspace, the default with --workspace; none, no limit."
+        " Default: system.",
+    )
+    parser.add_argument(
+        "--logger",
+        metavar="NAME",
+        help="The fully qualified name of a log observer, instead of"
+        " --logfile.",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbosity",
+        action="count",
+        help="Increase log verbosity.",
+    )
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        dest="verbosity",
+        nargs=0,
+        action=_Quieter,
+        help="Decrease log verbosity.",
+    )
+    parser.add_argument(
+        "-b",
+        "--debug",
+        dest="verbosity",
+        action="store_const",
+        const=2,
+        help="Verbose debug output.",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"Virtualbricks {__version__}",
+        help="Print version and exit.",
+    )
+    # the options end at the first word: the command's own come after
+    parser.add_argument(
+        "words",
+        nargs=argparse.REMAINDER,
+        metavar="COMMAND",
+        help="With --command, the command to send, as brick list.",
+    )
+    return parser
+
+
+def parse(
+    args: Sequence[str] | None = None, stdin: IO[str] | None = None
+) -> CommandLineOptions:
+    """
+    Read args, sys.argv[1:] if None, and return what they ask for; raise
+    UsageError if they are wrong. stdin, sys.stdin if None, tells whether
+    --command alone has lines to read.
+    """
+
+    if args is None:
+        args = sys.argv[1:]
+    if stdin is None:
+        stdin = sys.stdin
+    options = parser().parse_args(args)
+    words = list(options.words)
+    # as getopt, the first -- ends the options and isn't a word
+    if words and words[0] == "--":
+        del words[0]
+    listen = options.listen or []
+    connect = options.target is not UNSET
+    workspace = options.workspace
+    given = _given(options)
+    if not options.command and words:
+        raise UsageError(_unexpected(words))
+    if options.command or (connect and options.run):
+        mode = COMMAND
+        _check_client(options, given, listen, words, stdin)
+    elif connect:
+        mode = REMOTE
+        _check_windows(options, given, listen)
+    elif options.no_gui:
+        mode = NO_GUI
+    else:
+        mode = GUI
+    checked: list[sockets.Socket] = []
+    for socket in listen:
+        checked.append(_checked_socket(socket, "listen", checked))
+    target = options.target if connect else None
+    if target is not None:
+        target = _checked_socket(target, "connect", [])
+    lock = options.lock
+    if lock is None:
+        # one Virtualbricks for each workspace, side by side
+        lock = locks.WORKSPACE if workspace else locks.SYSTEM
+    return CommandLineOptions(
+        mode=mode,
+        words=tuple(words),
+        listen=tuple(checked),
+        target=target,
+        run=options.run,
+        workspace=workspace,
+        lock=lock,
+        logfile=options.logfile,
+        logger=options.logger,
+        verbosity=options.verbosity,
+        # the windows of another Virtualbricks read no console
+        no_term=options.no_term or mode == REMOTE,
     )
 
-    def __init__(self) -> None:
-        usage.Options.__init__(self)
-        self["verbosity"] = 0
-        self["words"] = []
-        # the sockets of --listen, a sockets.Socket each; the flag is never set
-        del self["listen"]
-        self["sockets"] = []
-        # the socket of --connect, a sockets.Socket; the flag says it's given
-        self["target"] = None
-        # --connect without --command or --run: the windows of the target
-        self["windows"] = False
-        # the descriptions of --listen and of --connect, None for the option
-        # alone, read once the options are known to go together
-        self.descriptions: list[str | None] = []
-        self.targets: list[str | None] = []
-        # the options given whose value doesn't tell
-        self.given: set[str] = set()
 
-    def parseOptions(self, options: Iterable[str] | None = None) -> None:
-        if options is None:
-            options = sys.argv[1:]
-        usage.Options.parseOptions(self, self.take_sockets(options))
-
-    def parseArgs(self, *words: str) -> None:
-        # the options end at the first word: the command's own come after
-        self["words"] = list(words)
-
-    def take_sockets(self, args: Iterable[str]) -> list[str]:
-        """
-        Read each --listen and --connect of args, and return the other
-        arguments.
-
-        getopt has no optional arguments: --listen and --connect take the
-        next word when it starts with a type, as unix:, or the description
-        after =. It stops where getopt does, at the first word or at --.
-        """
-
-        args = list(args)
-        rest = []
-        while args:
-            arg = args.pop(0)
-            if arg == "--" or arg == "-" or not arg.startswith("-"):
-                rest.append(arg)
-                rest.extend(args)
-                break
-            name, equals, description = arg.partition("=")
-            option = self._long_option(name)
-            if option in ("listen", "connect"):
-                found = (
-                    self.descriptions if option == "listen" else self.targets
-                )
-                if equals:
-                    found.append(description)
-                elif args and DESCRIPTION.match(args[0]):
-                    found.append(args.pop(0))
-                elif args and args[0].startswith(("/", "~", ".")):
-                    raise usage.UsageError(
-                        f"--{option}: {args[0]} needs its type:"
-                        f" unix:{args[0]}"
-                    )
-                else:
-                    found.append(None)
-                continue
-            rest.append(arg)
-            if args and self._takes_value(arg):
-                rest.append(args.pop(0))
-        return rest
-
-    def _long_option(self, name: str) -> str | None:
-        """The long option that name is, as getopt reads it, or None."""
-
-        if not name.startswith("--"):
-            return None
-        name = name[2:]
-        options = [option.rstrip("=") for option in self.longOpt]
-        if name in options:
-            return name
-        # getopt takes a prefix of one option only
-        found = [option for option in options if option.startswith(name)]
-        return found[0] if len(found) == 1 else None
-
-    def _takes_value(self, arg: str) -> bool:
-        """Whether the option arg takes the next word as its value."""
-
-        if arg.startswith("--"):
-            option = self._long_option(arg)
-            return "=" not in arg and f"{option}=" in self.longOpt
-        # -vl FILE: the first short option that takes a value takes the
-        # rest of the word, or the next word
-        for position, char in enumerate(arg[1:], start=1):
-            index = self.shortOpt.find(char)
-            if index < 0 or char == ":":
-                continue
-            if self.shortOpt[index + 1 : index + 2] == ":":
-                return position == len(arg) - 1
-        return False
-
-    def socket(self, description: str | None, option: str) -> sockets.Socket:
-        """
-        The socket of description, or the default one if None: one to
-        listen on for --listen, the one to talk to for --connect. A
-        description that names no protocol speaks AMP.
-        """
-
-        client = option == "connect"
-        if description is None:
-            # .control of the workspace, known once the settings are read
-            socket = sockets.Socket(None)
-            if client or sockets.Socket(None) not in self["sockets"]:
-                return socket
-            raise usage.UsageError("--listen alone is given twice")
-        else:
-            try:
-                socket = sockets.parse_socket(description, client)
-            except ValueError as exc:
-                raise usage.UsageError(f"--{option}: {exc}") from None
-        if socket.kind == "unix":
-            return self._unix_socket(socket, option)
-        return self._network_socket(socket, client)
-
-    def _unix_socket(
-        self, socket: sockets.Socket, option: str
-    ) -> sockets.Socket:
-        assert socket.path is not None, "a unix socket described has a path"
-        path = os.path.abspath(os.path.expanduser(socket.path))
-        folder = os.path.dirname(path)
-        # Virtualbricks makes the runtime folder at start
-        if not os.path.isdir(folder) and not wire.in_runtime_dir(path):
-            raise usage.UsageError(f"--{option}: {folder} doesn't exist")
-        if os.path.isdir(path):
-            raise usage.UsageError(f"--{option}: {path} is a folder")
-        if len(os.fsencode(path)) > locations.SOCKET_PATH_MAX:
-            raise usage.UsageError(
-                f"--{option}: {path} is longer than"
-                f" {locations.SOCKET_PATH_MAX} bytes, the most a socket's"
-                " path can have"
-            )
-        if any(other.path == path for other in self["sockets"]):
-            raise usage.UsageError(f"--listen: {path} is given twice")
-        return socket._replace(path=path)
-
-    def _network_socket(
-        self, socket: sockets.Socket, client: bool
-    ) -> sockets.Socket:
-        # the files of the description, as absolute paths
-        files: dict[str, Any] = {
-            sockets.FILES[key]: os.path.abspath(os.path.expanduser(path))
-            for key, path in socket.files().items()
-        }
-        socket = socket._replace(**files)
-        if client:
-            # the client reads its files, and says what is wrong with them
-            return socket
-        address = (socket.host, socket.port)
-        if any(
-            other.kind != "unix" and (other.host, other.port) == address
-            for other in self["sockets"]
-        ):
-            raise usage.UsageError(
-                f"--listen: {socket.where()} is given twice"
-            )
-        if socket.kind == "ssl":
-            try:
-                self._tls().server_options(socket)
-            except wire.Unusable as exc:
-                raise usage.UsageError(f"--listen: {exc}") from None
-        if socket.uses_token():
-            self._check_token(socket.token_file)
-        return socket
-
-    def _tls(self) -> ModuleType:
-        """The module of the ssl sockets, which needs pyOpenSSL."""
-
-        try:
-            return importlib.import_module("virtualbricks.console.tls")
-        except ImportError:
-            raise usage.UsageError(
-                "--listen: ssl needs pyOpenSSL: the package python3-openssl"
-            ) from None
-
-    def _check_token(self, path: str | None) -> None:
-        """
-        Refuse a token file that can't be used; one that isn't there is made
-        when the socket opens, in the config folder or in its own.
-        """
-
-        if path is None:
-            path = locations.token_file()
-        elif not os.path.isdir(os.path.dirname(path)):
-            raise usage.UsageError(
-                f"--listen: {os.path.dirname(path)} doesn't exist"
-            )
-        try:
-            wire.read_token(path)
-        except wire.NoToken:
-            pass
-        except wire.Unusable as exc:
-            raise usage.UsageError(f"--listen: {exc}") from None
-
-    def opt_logfile(self, arg: str) -> None:
-        """Write log messages to file."""
-
-        self.given.add("logfile")
-        self["logger"] = _file_logger(arg)
-
-    def opt_workspace(self, arg: str) -> None:
-        """
-        The folder of the projects for this run, instead of the setting;
-        with --command or --connect, the Virtualbricks that runs there.
-        """
-
-        # a folder that isn't there is made, as the workspace of the setting
-        if not arg:
-            raise usage.UsageError("--workspace needs a folder")
-        path = os.path.abspath(os.path.expanduser(arg))
-        if os.path.exists(path) and not os.path.isdir(path):
-            raise usage.UsageError(f"--workspace: {path} is not a folder")
-        self["workspace"] = path
-
-    def opt_run(self, arg: str) -> None:
-        # the help is the text of optParameters
-        path = os.path.abspath(os.path.expanduser(arg))
-        if not os.path.isfile(path):
-            raise usage.UsageError(f"--run: {path} is not a file")
-        self["run"] = path
-
-    def opt_lock(self, arg: str) -> None:
-        # the help is the text of optParameters
-        if arg not in locks.POLICIES:
-            choices = ", ".join(locks.POLICIES)
-            raise usage.UsageError(f"--lock: {arg!r} is not one of {choices}")
-        self.given.add("lock")
-        self["lock"] = arg
-
-    def opt_verbose(self) -> None:
-        """Increase log verbosity."""
-        self["verbosity"] += 1
-
-    def opt_quiet(self) -> None:
-        """Decrease log verbosity."""
-        self["verbosity"] -= 1
-
-    def opt_debug(self) -> None:
-        """Verbose debug output"""
-        self["verbosity"] = 2
-
-    def opt_version(self) -> None:
-        """Print version and exit."""
-        from virtualbricks import __version__
-
-        print("Virtualbricks", __version__)
-        sys.exit(0)
-
-    def check_client(self) -> None:
-        """
-        Refuse words without --command, --connect without --command or
-        --run, and with either the options of a run and --listen.
-        """
-
-        words = self["words"]
-        if not self["command"]:
-            if words:
-                raise usage.UsageError(
-                    f"unexpected words: {' '.join(words)}. To send them to"
-                    " the Virtualbricks that runs: virtualbricks --command"
-                    f" {shlex.join(words)}"
-                )
-            if not self.targets:
-                return
-            if not self["run"]:
-                self.check_windows()
-                return
-        client = "--command" if self["command"] else "--connect"
-        for name in self.RUN_OPTIONS:
-            # --connect sends the commands of --run
-            if name == "run" and not self["command"]:
-                continue
-            if name in self.given or (
-                name not in ("lock", "logfile") and self[name]
-            ):
-                raise usage.UsageError(
-                    f"{client} takes no --{name}: it talks to a Virtualbricks"
-                    " that runs"
-                )
-        if self.descriptions:
-            raise usage.UsageError(
-                f"{client} takes no --listen: --connect names the"
-                " Virtualbricks to talk to"
-            )
-        self.check_target()
-        if (
-            self["command"]
-            and not words
-            and sys.stdin is not None
-            and sys.stdin.isatty()
-        ):
-            raise usage.UsageError(
-                "--command needs a command, as virtualbricks --command brick"
-                " list, or lines on its standard input"
-            )
-
-    def check_target(self) -> None:
-        """Refuse two --connect, or one with a description and --workspace."""
-
-        if len(self.targets) > 1:
-            raise usage.UsageError("--connect names one Virtualbricks")
-        if self["workspace"] and any(self.targets):
-            raise usage.UsageError(
-                "--connect and --workspace each name a Virtualbricks: give"
-                " one of them"
-            )
-
-    def check_windows(self) -> None:
-        """
-        Refuse, with the windows of another Virtualbricks, what is for the
-        Virtualbricks that runs the bricks; --workspace names the one whose
-        windows --connect alone opens.
-        """
-
-        self.check_target()
-        given = [
-            name
-            for name in ("no-gui", "lock")
-            if name in self.given or (name != "lock" and self[name])
-        ]
-        if self.descriptions:
-            given.append("listen")
-        if given:
-            raise usage.UsageError(
-                "--connect opens the windows of another Virtualbricks:"
-                f" --{given[0]} is for the one that runs the bricks"
-            )
-
-    def postOptions(self) -> None:
-        self.check_client()
-        # the windows of another Virtualbricks, which speak AMP
-        windows = bool(self.targets) and not self["command"]
-        windows = windows and not self["run"]
-        if self["workspace"] and "lock" not in self.given:
-            # one Virtualbricks for each workspace, side by side
-            self["lock"] = locks.WORKSPACE
-        for description in self.descriptions:
-            self["sockets"].append(self.socket(description, "listen"))
-        for description in self.targets:
-            self["target"] = self.socket(description, "connect")
-        if windows and self["target"].protocol != sockets.AMP:
-            raise usage.UsageError(
-                "--connect opens the windows, which speak AMP:"
-                " protocol=json is for --command"
-            )
-        self["connect"] = bool(self.targets)
-        self["windows"] = windows
-        if windows:
-            # their terminal reads no console
-            self["noterm"] = True
-        if self["logger"]:
-            try:
-                self["logger"] = reflect.namedAny(self["logger"])
-            except Exception as err:
-                raise usage.UsageError(
-                    "Logger '%s' could not be imported: %s"
-                    % (self["logger"], err)
-                )
-
-    opt_v = opt_verbose
-    opt_q = opt_quiet
-    opt_b = opt_debug
-
-
-def parse_options(config: Options) -> None:
-    """Read the command line into config, or exit with the error."""
+def parse_or_exit(
+    args: Sequence[str] | None = None, stdin: IO[str] | None = None
+) -> CommandLineOptions:
+    """parse(args), or exit with the error, and the status 1."""
 
     try:
-        config.parseOptions()
-    except usage.error as ue:
-        raise SystemExit("%s: %s" % (sys.argv[0], ue))
+        return parse(args)
+    except UsageError as error:
+        raise SystemExit(f"virtualbricks: {error}") from None
 
 
-class Runnable(Protocol):
-    """What runs on the reactor, until its Deferred fires."""
+def _socket(option: str) -> Callable[[str], sockets.Socket]:
+    """The socket of the description after --listen or --connect."""
 
-    def run(self, reactor: PosixReactorBase) -> defer.Deferred[Any]: ...
-
-
-def run_app(
-    Application: Callable[[Options], Runnable], config: Options
-) -> None:
-    """Run Application with config, whose options are read already."""
-
-    task.react(Application(config).run, ())
-
-
-def make_application(config: Options) -> GuiApplication:
-    from virtualbricks.gui.app import GuiApplication
-
-    return GuiApplication(config)
-
-
-def make_remote_application(config: Options) -> RemoteApplication:
-    """The windows of another Virtualbricks: no lock, no project here."""
-
-    from virtualbricks.gui.app import RemoteApplication
-
-    return RemoteApplication(config)
-
-
-def make_plain_application(config: Options) -> Application:
-    """The application without the windows: no GTK is loaded."""
-
-    from virtualbricks import app
-
-    return app.Application(config)
-
-
-def install_gtk_reactor() -> None:
-    import gi
-
-    gi.require_version("Gtk", "3.0")
-    gi.require_version("Gdk", "3.0")
-    from twisted.internet import gireactor
-
-    gireactor.install()
-
-
-def main() -> None:
-    """The virtualbricks command: with the windows, or without."""
-
-    config = Options()
-    parse_options(config)
-    if config["windows"]:
-        install_gtk_reactor()
-        run_app(make_remote_application, config)
-        return
-    if config["command"] or config["connect"]:
-        # no lock, no reactor, no GTK: the Virtualbricks that runs has them
-        from virtualbricks import i18n
-        from virtualbricks.console import client
-
-        i18n.install()
-        # --connect alone sends the commands of --run
-        script = None if config["command"] else config["run"]
-        sys.exit(
-            client.main(
-                config["words"],
-                config["target"],
-                script=script,
-                workspace=config["workspace"],
+    def socket(description: str) -> sockets.Socket:
+        try:
+            return sockets.parse_socket(description, option == "connect")
+        except ValueError as exc:
+            message = str(exc)
+        if option == "connect" and sockets.TYPE.fullmatch(description):
+            # argparse takes the next word, which may be the command's
+            message += (
+                ". For --connect alone before the words of --command, end the"
+                f" options with --: --connect -- {description}"
             )
+        raise argparse.ArgumentTypeError(message)
+
+    return socket
+
+
+def _checked_socket(
+    socket: sockets.Socket, option: str, others: Sequence[sockets.Socket]
+) -> sockets.Socket:
+    """
+    socket, of --listen or --connect, with its paths absolute; raise
+    UsageError if it can't be used. others are the sockets of --listen
+    before it.
+    """
+
+    if socket == DEFAULT_SOCKET:
+        if option == "listen" and socket in others:
+            raise UsageError("--listen alone is given twice")
+        return socket
+    if socket.kind == "unix":
+        return _unix_socket(socket, option, others)
+    return _network_socket(socket, option == "connect", others)
+
+
+def _unix_socket(
+    socket: sockets.Socket, option: str, others: Sequence[sockets.Socket]
+) -> sockets.Socket:
+    assert socket.path is not None, "a unix socket described has a path"
+    path = os.path.abspath(os.path.expanduser(socket.path))
+    folder = os.path.dirname(path)
+    if not os.path.isdir(folder):
+        # Virtualbricks makes the runtime folder at start
+        if not wire.in_runtime_dir(path):
+            raise UsageError(f"--{option}: {folder} doesn't exist")
+    if os.path.isdir(path):
+        raise UsageError(f"--{option}: {path} is a folder")
+    if len(os.fsencode(path)) > locations.SOCKET_PATH_MAX:
+        raise UsageError(
+            f"--{option}: {path} is longer than {locations.SOCKET_PATH_MAX}"
+            " bytes, the most a socket's path can have"
         )
-    factory: Callable[[Options], Application]
-    if config["no-gui"]:
-        factory = make_plain_application
-    else:
-        install_gtk_reactor()
-        factory = make_application
-    run_app(factory, config)
+    if any(other.path == path for other in others):
+        raise UsageError(f"--listen: {path} is given twice")
+    return socket._replace(path=path)
+
+
+def _network_socket(
+    socket: sockets.Socket, client: bool, others: Sequence[sockets.Socket]
+) -> sockets.Socket:
+    # the files of the description, as absolute paths
+    files: dict[str, Any] = {
+        sockets.FILES[key]: os.path.abspath(os.path.expanduser(path))
+        for key, path in socket.files().items()
+    }
+    socket = socket._replace(**files)
+    if client:
+        # the client reads its files, and says what is wrong with them
+        return socket
+    address = (socket.host, socket.port)
+    if any(
+        other.kind != "unix" and (other.host, other.port) == address
+        for other in others
+    ):
+        raise UsageError(f"--listen: {socket.where()} is given twice")
+    if socket.kind == "ssl":
+        _check_keys(socket)
+    if socket.uses_token():
+        _check_token(socket.token_file)
+    return socket
+
+
+def _check_keys(socket: sockets.Socket) -> None:
+    """Refuse the files of an ssl socket of --listen that can't be used."""
+
+    from virtualbricks.console import tls
+
+    try:
+        tls.server_options(socket)
+    except wire.Unusable as exc:
+        raise UsageError(f"--listen: {exc}") from None
+
+
+def _check_token(path: str | None) -> None:
+    """
+    Refuse a token file that can't be used; one that isn't there is made
+    when the socket opens, in the config folder or in its own.
+    """
+
+    if path is None:
+        path = locations.token_file()
+    elif not os.path.isdir(os.path.dirname(path)):
+        raise UsageError(f"--listen: {os.path.dirname(path)} doesn't exist")
+    try:
+        wire.read_token(path)
+    except wire.NoToken:
+        pass
+    except wire.Unusable as exc:
+        raise UsageError(f"--listen: {exc}") from None
+
+
+def _workspace(folder: str) -> str:
+    """The absolute path of --workspace; a folder that isn't there is made."""
+
+    if not folder:
+        raise argparse.ArgumentTypeError("needs a folder, as ~/labs")
+    path = os.path.abspath(os.path.expanduser(folder))
+    if os.path.exists(path) and not os.path.isdir(path):
+        raise argparse.ArgumentTypeError(f"{path} is not a folder")
+    return path
+
+
+def _run(file: str) -> str:
+    """The absolute path of --run, a file."""
+
+    path = os.path.abspath(os.path.expanduser(file))
+    if not os.path.isfile(path):
+        raise argparse.ArgumentTypeError(f"{path} is not a file")
+    return path
+
+
+def _given(options: argparse.Namespace) -> list[str]:
+    """The options of a run that the command line gives, in RUN_OPTIONS."""
+
+    values = {
+        "no-gui": options.no_gui,
+        "no-term": options.no_term,
+        "run": options.run,
+        "lock": options.lock,
+        "logfile": options.logfile,
+        "logger": options.logger,
+    }
+    return [name for name in RUN_OPTIONS if values[name] not in (None, False)]
+
+
+def _unexpected(words: list[str]) -> str:
+    import shlex
+
+    return (
+        f"unexpected words: {' '.join(words)}. To send them to the"
+        f" Virtualbricks that runs: virtualbricks --command"
+        f" {shlex.join(words)}"
+    )
+
+
+def _check_client(
+    options: argparse.Namespace,
+    given: list[str],
+    listen: list[sockets.Socket],
+    words: list[str],
+    stdin: IO[str] | None,
+) -> None:
+    """
+    Refuse, with --command or --connect --run, the options of a run and
+    --listen; refuse --command without words or lines to read.
+    """
+
+    client = "--command" if options.command else "--connect"
+    for name in given:
+        # --connect sends the commands of --run
+        if name == "run" and not options.command:
+            continue
+        raise UsageError(
+            f"{client} takes no --{name}: it talks to a Virtualbricks that"
+            " runs"
+        )
+    if listen:
+        raise UsageError(
+            f"{client} takes no --listen: --connect names the Virtualbricks"
+            " to talk to"
+        )
+    _check_target(options)
+    if options.command and not words and stdin is not None and stdin.isatty():
+        raise UsageError(
+            "--command needs a command, as virtualbricks --command brick list,"
+            " or lines on its standard input"
+        )
+
+
+def _check_windows(
+    options: argparse.Namespace,
+    given: list[str],
+    listen: list[sockets.Socket],
+) -> None:
+    """
+    Refuse, with the windows of another Virtualbricks, what is for the
+    Virtualbricks that runs the bricks, and another protocol than AMP.
+    """
+
+    _check_target(options)
+    refused = [name for name in given if name in ("no-gui", "lock")]
+    if listen:
+        refused.append("listen")
+    if refused:
+        raise UsageError(
+            "--connect opens the windows of another Virtualbricks:"
+            f" --{refused[0]} is for the one that runs the bricks"
+        )
+    if options.target.protocol != sockets.AMP:
+        raise UsageError(
+            "--connect opens the windows, which speak AMP: protocol=json is"
+            " for --command"
+        )
+
+
+def _check_target(options: argparse.Namespace) -> None:
+    """Refuse --connect with a description, and --workspace."""
+
+    if options.workspace and options.target not in (UNSET, DEFAULT_SOCKET):
+        raise UsageError(
+            "--connect and --workspace each name a Virtualbricks: give one"
+            " of them"
+        )

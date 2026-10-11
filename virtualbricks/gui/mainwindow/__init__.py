@@ -22,6 +22,6 @@ Only the classes that code outside this package imports from it are exported;
 the tests import the others from their modules.
 """
 
-from .window import MainWindow
+from .window import MAIN_ROLE, MainWindow
 
-__all__ = ["MainWindow"]
+__all__ = ["MAIN_ROLE", "MainWindow"]
