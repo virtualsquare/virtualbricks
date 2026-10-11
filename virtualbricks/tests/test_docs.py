@@ -42,11 +42,16 @@ import tomlkit
 from twisted.trial import unittest
 
 from virtualbricks import locations
-from virtualbricks.cli import Options
-from virtualbricks.console import ampcommands, ampgen, ampwire, dispatch
-from virtualbricks.console.command import COMMANDS
-from virtualbricks.config.projectfile import DEFAULT_MODEL
-from virtualbricks.config.settings import AppSettings, ProjectSettings
+from virtualbricks.bricks.event import EventConfig
+from virtualbricks.bricks.netemu import BRICK_KEYS, STATE_KEYS, NetemuConfig
+from virtualbricks.bricks.virtualmachine import DISK_DEVICES
+from virtualbricks.cli import parser
+from virtualbricks.config.projectfile import (
+    DEFAULT_MODEL,
+    NIC_KEYS,
+    ImageTable,
+    brick_table,
+)
 from virtualbricks.config.schema import (
     Bool,
     Choice,
@@ -57,16 +62,20 @@ from virtualbricks.config.schema import (
     Path,
     Ref,
     dump_record,
+    field_info,
     field_names,
+    fields,
 )
-from virtualbricks.config.projectfile import NIC_KEYS, ImageTable, brick_table
-from virtualbricks.config.settings import AppState, WorkspaceState
-from virtualbricks.config.schema import field_info, fields
-from virtualbricks.bricks.event import EventConfig
-from virtualbricks.tests import isolate, make_factory, reset_settings
-from virtualbricks.bricks.virtualmachine import DISK_DEVICES
-from virtualbricks.bricks.netemu import BRICK_KEYS, STATE_KEYS, NetemuConfig
+from virtualbricks.config.settings import (
+    AppSettings,
+    AppState,
+    ProjectSettings,
+    WorkspaceState,
+)
+from virtualbricks.console import ampcommands, ampgen, ampwire, dispatch
+from virtualbricks.console.command import COMMANDS
 from virtualbricks.remote import commands as windows
+from virtualbricks.tests import isolate, make_factory, reset_settings
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 MAN = os.path.join(ROOT, "docs", "man")
@@ -382,15 +391,16 @@ class TestTheConsolePage(unittest.TestCase):
 
     def test_every_option(self):
         text = section(PROGRAM, "OPTIONS")
-        options = Options()
-        for name in {option.rstrip("=") for option in options.longOpt}:
-            self.assertIn(f"**--{name}**", text)
-        # a letter, on the line of its option: **-l** *file*, **--logfile**
-        for letter in options.shortOpt.replace(":", ""):
-            long_name = options.synonyms[letter]
-            self.assertRegex(
-                text, rf"\n\*\*-{letter}\*\*[^\n]*\*\*--{long_name}\*\*"
-            )
+        for action in parser()._actions:
+            names = action.option_strings
+            long_names = [name for name in names if name.startswith("--")]
+            for name in long_names:
+                self.assertIn(f"**{name}**", text)
+            # a letter, on the line of its option: **-l** *file*, **--logfile**
+            for letter in set(names) - set(long_names):
+                self.assertRegex(
+                    text, rf"\n\*\*{letter}\*\*[^\n]*\*\*{long_names[0]}\*\*"
+                )
 
 
 def signatures(text):

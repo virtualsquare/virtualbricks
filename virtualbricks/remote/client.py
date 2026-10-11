@@ -50,7 +50,7 @@ from twisted.internet.protocol import connectionDone
 from twisted.protocols import amp
 from twisted.python.failure import Failure
 
-from virtualbricks import __version__, locations
+from virtualbricks import __version__, locations, sockets
 from virtualbricks.brickfactory import normalize_name
 from virtualbricks.bricks import Brick
 from virtualbricks.bricks.brickinfo import NEW_KINDS, Issue, Kind
@@ -123,7 +123,7 @@ class NotYet(Exception):
         self.what = what
 
 
-def where(target: wire.Socket) -> str:
+def where(target: sockets.Socket) -> str:
     """
     The Virtualbricks of target, as the windows name it: host or path, or
     this computer for --connect alone, before resolve() finds its path.
@@ -137,7 +137,9 @@ def where(target: wire.Socket) -> str:
     return target.host
 
 
-def resolve(target: wire.Socket, workspace: str | None = None) -> wire.Socket:
+def resolve(
+    target: sockets.Socket, workspace: str | None = None
+) -> sockets.Socket:
     """
     target, with a path if it is --connect alone: the socket of --listen
     alone of workspace, or else of the only Virtualbricks of yours that
@@ -189,9 +191,9 @@ class Windows(Mirroring, amp.AMP):
 
 
 def endpoint_of(
-    target: wire.Socket, reactor: PosixReactorBase
+    target: sockets.Socket, reactor: PosixReactorBase
 ) -> IStreamClientEndpoint:
-    """The endpoint of target, a wire.Socket of --connect."""
+    """The endpoint of target, a sockets.Socket of --connect."""
 
     if target.kind == "unix":
         assert target.path is not None, "resolve() gives it"
@@ -212,7 +214,7 @@ def endpoint_of(
     return endpoint
 
 
-def _token(target: wire.Socket) -> str:
+def _token(target: sockets.Socket) -> str:
     path = target.token_file or locations.token_file()
     try:
         return wire.read_token(path)
@@ -227,7 +229,7 @@ def _token(target: wire.Socket) -> str:
         raise Refused(str(exc)) from None
 
 
-async def start(windows: Windows, target: wire.Socket) -> Json:
+async def start(windows: Windows, target: sockets.Socket) -> Json:
     """
     Prove the token if asked, agree on protocol 2, check the version and
     follow: the answer of Follow, once the copy is whole.
@@ -245,7 +247,7 @@ async def start(windows: Windows, target: wire.Socket) -> Json:
         ) from None
 
 
-async def agree(windows: amp.AMP, target: wire.Socket) -> None:
+async def agree(windows: amp.AMP, target: sockets.Socket) -> None:
     """
     Prove the token if asked, agree on protocol 2 and check the version:
     Refused says why it can't.
@@ -283,7 +285,7 @@ async def agree(windows: amp.AMP, target: wire.Socket) -> None:
 
 
 async def _reach(
-    target: wire.Socket, reactor: PosixReactorBase, connection: _P
+    target: sockets.Socket, reactor: PosixReactorBase, connection: _P
 ) -> _P:
     try:
         return await endpoints.connectProtocol(
@@ -300,7 +302,7 @@ async def _reach(
 
 
 async def connect(
-    target: wire.Socket,
+    target: sockets.Socket,
     mirror: MirrorFactory,
     reactor: PosixReactorBase,
     made: Callable[[Windows], object] | None = None,
@@ -324,7 +326,7 @@ async def connect(
 
 
 async def connect_again(
-    target: wire.Socket, reactor: PosixReactorBase
+    target: sockets.Socket, reactor: PosixReactorBase
 ) -> amp.AMP:
     """
     Another connection to target, which agreed on protocol 2 and follows

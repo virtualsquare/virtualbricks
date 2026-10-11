@@ -75,24 +75,55 @@ one leaves the list.
 
 ## Remote windows
 
-- [ ] **The windows of `--connect` turn KSM on in this computer.**
-  `RemoteApplication.install_settings()` calls `load_settings()`
-  (`virtualbricks/gui/app.py`), which runs `set_ksm(enable=True)`, so
-  `sudo tee /sys/kernel/mm/ksm/run`, when the `settings.toml` of this
-  computer has `kernel_samepage_merging = true` and KSM is off
-  (`load_settings()` in `virtualbricks/config/settings.py`). The bricks
-  run on the computer of `--connect`, whose KSM is a setting of its own.
-  Seen on 3.0.0.dev3, on 9 October 2026, reading the start-up code for
-  page 27; checked by calling `install_settings()` with that setting and
-  `set_ksm` replaced: it was called with `True`.
+- [ ] **The windows of `--connect` turn KSM on in this computer.** At
+  their start, `RemoteApplication.install_settings()`
+  (`virtualbricks/gui/app.py`) calls `load_settings()`
+  (`virtualbricks/config/settings.py`), which ends with
+  `set_ksm(enable=True)` when the `settings.toml` of this computer has
+  `kernel_samepage_merging = true`. With KSM off, that runs
+  `sudo tee /sys/kernel/mm/ksm/run`: with an askpass helper, a window
+  asks for the password of root; without one, `sudo -n` turns KSM on
+  where no password is asked, and fails at once elsewhere. Nothing of the
+  windows needs it. The bricks run on the computer of `--connect`, and
+  KSM is a setting of that computer: the Settings window shows it on the
+  page of that computer (`BRICKS` in
+  `virtualbricks/gui/dialogs/settings.py`). Of the settings of this
+  computer, the windows read only `terminal`, `tray_icon` and
+  `warn_missing_programs` (`WINDOWS` there). Nor does anything wait for
+  it: the warning at start of the windows reads the KSM of the computer
+  there (`warn()` in `virtualbricks/gui/app.py`), not
+  `ksm_started()`. Page 27 has the remote windows load "those of this
+  computer, without KSM" (§3, step 8). Seen on 3.0.0.dev3, on 9 October
+  2026, reading the start-up code for page 27, then in the old
+  `virtualbricks/gui/app.py`; checked again on 12 October 2026 with the
+  new start-up: `install_settings()`, with that setting in an isolated
+  home and `set_ksm` replaced, called it with `True`.
+- [ ] **The windows of `--connect` write all the settings of this
+  computer at quit.** `run()` (`virtualbricks/main.py`) registers
+  `store_settings` before the shutdown in every mode, and
+  `RemoteApplication` keeps the one of `app.Application`, which
+  writes the whole `settings.toml` from the copy it read at the start.
+  The windows have nothing left to write by then: the three settings of
+  this computer that they change, on the page This computer of the
+  Settings window, are written as they change (`_write_here()` in
+  `virtualbricks/gui/dialogs/settings.py`, which writes the whole file
+  too). So the write at quit can only undo what another Virtualbricks of
+  this computer changed while the windows were open: the one whose
+  windows they are, when `--connect` names a socket of this computer, or
+  any other of yours. It is the case of the windows in "Two Virtualbricks
+  on one computer undo each other's settings", under Settings. Seen on
+  3.0.0.dev3, on 12 October 2026, reviewing the start-up against page
+  27: in an isolated home, the windows read a `settings.toml` with
+  `terminal = "xterm"`, another process wrote `"kitty"`, and the
+  `store_settings()` of the quit wrote `"xterm"` back.
 
 ## Settings
 
 - [ ] **Two Virtualbricks on one computer undo each other's settings.**
   Each process reads all of `settings.toml` at its start and writes all
   of its own copy back: at each change, from the Settings window or the
-  console, and at quit (`store_settings` before shutdown, in
-  `virtualbricks/app.py` and `virtualbricks/gui/app.py`). A change made in
+  console, and at quit (`store_settings` before shutdown, registered by
+  `run()` in `virtualbricks/main.py`). A change made in
   one is lost when the other writes next. Two processes share the file
   when the windows of `--connect` show a Virtualbricks of the same
   computer, which take no lock, and when two run side by side with
@@ -101,3 +132,55 @@ one leaves the list.
   `settings.toml`: the first loaded it, the second set `terminal` and
   wrote it, the first wrote its copy as at quit, and `terminal` had its
   old value again.
+
+## Workspaces
+
+- [ ] **A `workspace` setting with `~` is a folder named `~` in the current
+  folder.** The setting is kept as it is written (`Path` in
+  `virtualbricks/config/schema.py` is a string), and nothing expands `~` or
+  makes a relative path absolute. The locks take `os.path.abspath()` of it,
+  which keeps the `~` (`take_locks()` in `virtualbricks/main.py`, through
+  `startup_workspace()` in `virtualbricks/migrate/engine.py`); the migration
+  and the run take it as it is (`startup_migration()` there;
+  `install_workspace()` in `virtualbricks/app.py`, then `Workspace.path` in
+  `virtualbricks/config/workspace.py`). The workspace then depends on the
+  folder Virtualbricks starts in, where it makes a folder named `~`, and the
+  projects of `~/labs` never show. `virtualbricks-config`(5) gives the default
+  as `"~/.virtualbricks"`, so a `~` is what a setting written by hand would
+  have; a relative path goes the same way. `--workspace` is not affected:
+  `cli.py` expands it. The start-up before `main.py` did the same. Seen on
+  3.0.0.dev3, on 12 October 2026, reviewing the start-up against page 27: with
+  `workspace = "~/labs"` in the `settings.toml` of an isolated home, started
+  from a scratch folder, the lock made `~/labs/.virtualbricks.lock` in that
+  folder, the run's workspace was `~/labs`, and `labs` in the home wasn't made.
+- [ ] **The workspace is read three times at start, and the run may not
+  use the folder it locked.** Without `--workspace`, the start reads the
+  `workspace` setting from the files three times:
+  - for the locks (step 2 of page 27): `take_locks()` in
+    `virtualbricks/main.py`, through `startup_workspace()` in
+    `virtualbricks/migrate/engine.py`, which reads the settings of 2.1 if
+    they are to be converted, else `settings.toml`, with the migration's
+    own reader (`_startup_settings()`), and makes the path absolute;
+  - for the migration (step 6): `startup_migration()`, the same files
+    again, the value as written;
+  - for the run (step 9): `install_workspace()` in
+    `virtualbricks/app.py`, `get_setting("workspace")` after
+    `load_settings()`, the value as written.
+
+  Another Virtualbricks of yours may write `settings.toml` between the
+  first reading and the last: one that runs beside it with
+  `--lock workspace` writes the whole file at each change of a setting
+  and at quit (see "Two Virtualbricks on one computer undo each other's
+  settings", under Settings), and its Settings window changes the
+  workspace for the next start. The run then works in a folder whose lock
+  it doesn't hold, and holds the lock of a folder it doesn't use: another
+  Virtualbricks can start in the same workspace, with `--workspace`. The
+  gap is short, but the GUI keeps it open as long as its migration window
+  is. The readings differ in form too: the locks make the path absolute,
+  the run keeps a relative one as it is. Page 27 recommends reading it
+  once, at step 2 (O6, open). Seen on 3.0.0.dev3, on 12 October 2026,
+  reviewing the start-up against page 27: in an isolated home, with
+  `--lock workspace`, `take_locks()` locked the folder `w1` of the
+  setting; the setting was then written as `w2`, and
+  `install_workspace()` gave the run `w2`; a `take_locks()` with
+  `--workspace w2` after it wasn't refused.

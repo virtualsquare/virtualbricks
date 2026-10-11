@@ -68,7 +68,7 @@ LAUNCH = (
     "runpy.run_module('virtualbricks', run_name='__main__', alter_sys=True)\n"
 )
 # The options of Virtualbricks that talk to another one, which runs: they
-# take none of those of a run, as --lock and --noterm.
+# take none of those of a run, as --lock and --no-term.
 CLIENT = ("--command", "--connect")
 # Out of the environment of the tests and of Virtualbricks: the screen and
 # the buses of the desktop.
@@ -298,7 +298,7 @@ class Virtualbricks:
 
         words = [sys.executable, "-c", LAUNCH]
         if not any(option in CLIENT for option in options):
-            words.append("--noterm")
+            words.append("--no-term")
             if not any(option.startswith("--lock") for option in options):
                 words += ["--lock", "none"]
         # the words of --command come last

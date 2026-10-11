@@ -27,16 +27,17 @@ from twisted.logger import LogLevel
 from twisted.protocols import amp
 from twisted.test import iosim
 
-from virtualbricks import cli
+from virtualbricks import locations, sockets
 from virtualbricks.bricks import FakeProcess
+from virtualbricks.cli import parse
 from virtualbricks.config import images, settings
 from virtualbricks.config.workspace import OpenProject, projects
-from virtualbricks.console import control, wire
+from virtualbricks.console import control
 from virtualbricks.engine import LocalMachine
 from virtualbricks.remote import client, follower, mirror
 from virtualbricks.remote.client import Refused, RemoteEngine, Windows, start
 from virtualbricks.remote.follower import LogKeeper
-from virtualbricks.remote.mirror import MirrorFactory
+from virtualbricks.remote.mirror import MirrorFactory, StandIn
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.config.test_images import INFO, FakeQemuImg
 from virtualbricks.tests.gui import (
@@ -72,23 +73,17 @@ class Reactor(task.Clock):
         self.triggers.append(args)
 
 
-class Publisher:
-    def __init__(self):
-        self.observers = []
-
-    def addObserver(self, observer):
-        self.observers.append(observer)
-
-
 class FakeGtkWindow:
     def __init__(self):
         self.destroyed = False
+        self.destroys = 0
 
     def in_destruction(self):
         return self.destroyed
 
     def destroy(self):
         self.destroyed = True
+        self.destroys += 1
 
 
 class FakeWindows:
@@ -134,7 +129,6 @@ class RemoteTestCase(GuiTestCase):
         self.patch(amp, "_log", FakeLogger())
         self.logger = FakeLogger()
         self.patch(gui_app, "logger", self.logger)
-        self.patch(gui_app, "globalLogPublisher", Publisher())
         self.manager.current = Project(self.folder("lab1"))
         settings.set_setting("workspace", self.manager.path)
         self.keeper = LogKeeper()
@@ -182,17 +176,23 @@ class RemoteTestCase(GuiTestCase):
             pump.flush()
 
     def launch(self, install_settings=None, args=None):
-        """The windows of the Virtualbricks at /run/lab.amp, started."""
+        """
+        The windows of the Virtualbricks at /run/lab.amp, as main.run starts
+        them: copy is the factory of step 11, whose quit_d ends the run once
+        the windows close; created is the Deferred of their start.
+        """
 
-        config = cli.Options()
-        config.parseOptions(args or ["--connect", "unix:/run/lab.amp"])
-        application = gui_app.RemoteApplication(config)
-        application.install_locale = lambda: None
+        options = parse(args or ["--connect", "unix:/run/lab.amp"])
+        application = gui_app.RemoteApplication(options)
+        application.get_log_observers()
         # the settings of the test, which both sides share
-        application.install_settings = install_settings or (lambda: None)
-        self.patch(application.logger, "start", lambda reactor: None)
+        if install_settings is not None:
+            install_settings()
         self.reactor = Reactor()
-        self.done = application.run(self.reactor)
+        self.copy = application.install_factory(self.reactor)
+        self.created = defer.ensureDeferred(
+            application.create_main_window(self.copy, self.reactor)
+        )
         return application
 
 
@@ -203,22 +203,20 @@ class TestRemoteApplication(RemoteTestCase):
         [windows] = self.shown
         self.assertIsInstance(windows.engine, RemoteEngine)
         self.assertIs(windows.engine, application.engine)
-        self.assertIs(windows.messages, application.messages)
+        self.assertIs(windows.messages, application.gui_message_log)
+        self.assertIs(application.main_window, windows)
         copy = windows.engine.factory
         self.assertIsInstance(copy, MirrorFactory)
+        self.assertIs(copy, self.copy)
+        self.assertIs(copy.clock, self.reactor)
         self.assertIsNotNone(copy.get_brick("sw1"))
         self.assertEqual(
             windows.calls,
             [("title", "Virtualbricks (project: lab1 on /run/lab.amp)")],
         )
-        self.assertNoResult(self.done)
-        self.assertEqual(
-            self.reactor.triggers,
-            [
-                ("before", "shutdown", gui_app.store_settings),
-                ("before", "shutdown", application.logger.stop),
-            ],
-        )
+        self.assertIsNone(self.successResultOf(self.created))
+        # the run goes on until the windows close
+        self.assertNoResult(self.copy.quit_d)
         self.assertEqual(self.logger.events, [])
 
     def test_this_computer(self):
@@ -233,7 +231,7 @@ class TestRemoteApplication(RemoteTestCase):
         self.patch(client, "resolve", resolve)
         self.launch(args=["--connect", "--workspace", "/labs"])
         [windows] = self.shown
-        self.assertEqual(found, [(wire.Socket(None), "/labs")])
+        self.assertEqual(found, [(sockets.Socket(None), "/labs")])
         self.assertEqual(
             windows.calls,
             [("title", "Virtualbricks (project: lab1 on this computer)")],
@@ -243,7 +241,7 @@ class TestRemoteApplication(RemoteTestCase):
         windows.reconnect()
         self.assertEqual(len(found), 1)
         self.assertEqual(
-            self.targets, [wire.Socket("/run/vb/labs/.control")] * 2
+            self.targets, [sockets.Socket("/run/vb/labs/.control")] * 2
         )
 
     def test_nobody_listens(self):
@@ -254,14 +252,14 @@ class TestRemoteApplication(RemoteTestCase):
         self.launch(args=["--connect"])
         self.assertEqual(self.shown, [])
         self.assertEqual(self.targets, [])
-        failure = self.failureResultOf(self.done, SystemExit)
+        failure = self.failureResultOf(self.created, SystemExit)
         self.assertEqual(str(failure.value), "No Virtualbricks of yours runs")
 
     def test_it_cant_connect(self):
         self.refusal = "Can't reach /run/lab.amp: Connection refused"
         self.launch()
         self.assertEqual(self.shown, [])
-        failure = self.failureResultOf(self.done, SystemExit)
+        failure = self.failureResultOf(self.created, SystemExit)
         self.assertEqual(
             str(failure.value), "Can't reach /run/lab.amp: Connection refused"
         )
@@ -281,7 +279,7 @@ class TestRemoteApplication(RemoteTestCase):
     def warning(self):
         self.assertEqual(self.logger.levels(), ["error"])
         [(_level, text, fields)] = self.logger.events
-        self.assertEqual(text, window.components_not_found)
+        self.assertEqual(text, gui_app.components_not_found)
         return fields["text"]
 
     def test_the_warning_at_start(self):
@@ -289,15 +287,15 @@ class TestRemoteApplication(RemoteTestCase):
         self.launch(self.wanting_ksm)
         self.assertEqual(
             self.warning(),
-            window.ksm_not_found
+            gui_app.ksm_not_found
             + "\n"
-            + window.programs_not_found.format(programs="vde_switch"),
+            + gui_app.programs_not_found.format(programs="vde_switch"),
         )
 
     def test_ksm_still_off_there(self):
         self.lacking(available=True)
         self.launch(self.wanting_ksm)
-        self.assertEqual(self.warning().splitlines()[0], window.ksm_still_off)
+        self.assertEqual(self.warning().splitlines()[0], gui_app.ksm_still_off)
 
     def test_ksm_not_asked_for(self):
         # off, as the settings there want it
@@ -305,7 +303,7 @@ class TestRemoteApplication(RemoteTestCase):
         self.launch()
         self.assertEqual(
             self.warning(),
-            window.programs_not_found.format(programs="vde_switch"),
+            gui_app.programs_not_found.format(programs="vde_switch"),
         )
 
     def test_no_warning(self):
@@ -319,7 +317,7 @@ class TestRemoteApplication(RemoteTestCase):
         application = self.launch()
         self.keeper(event("sw1 started", LogLevel.warn))
         self.turn()
-        [entry] = list(application.messages.entries)
+        [entry] = list(application.gui_message_log.entries)
         self.assertEqual(entry.source, "Project on /run/lab.amp")
         self.assertEqual(entry.level, "warn")
         self.assertEqual(entry.lines, ["sw1 started"])
@@ -328,7 +326,7 @@ class TestRemoteApplication(RemoteTestCase):
         # those the Virtualbricks there had, which come with the project
         self.keeper(event("sw1 started", LogLevel.warn))
         application = self.launch()
-        [entry] = list(application.messages.entries)
+        [entry] = list(application.gui_message_log.entries)
         self.assertEqual(entry.lines, ["sw1 started"])
 
     def test_a_project_opened_there(self):
@@ -361,7 +359,7 @@ class TestRemoteApplication(RemoteTestCase):
         # the new connection, watched as the first
         self.keeper(event("sw2 started"))
         self.turn()
-        self.assertEqual(len(application.messages.entries), 1)
+        self.assertEqual(len(application.gui_message_log.entries), 1)
         self.connections[1][1].transport.loseConnection()
         self.turn()
         self.assertEqual(windows.calls[-1][0], "lost")
@@ -411,13 +409,70 @@ class TestRemoteApplication(RemoteTestCase):
         self.turn()
         self.assertEqual(windows.calls[-1], ("quit",))
         self.assertTrue(windows.window.destroyed)
-        self.assertIsNone(self.successResultOf(self.done))
+        # the run ends
+        self.assertIsNone(self.successResultOf(self.copy.quit_d))
         # the connection closes; the Virtualbricks there goes on
         self.assertFalse(application.engine.windows.connected)
         self.assertFalse(self.factory.quit_d.called)
         # quit again: nothing more
         application.quit()
         self.assertEqual(windows.calls.count(("quit",)), 1)
+
+    def test_quit_while_a_brick_runs_there(self):
+        # it goes on there: the windows close, and the run ends
+        application = self.launch()
+        [windows] = self.shown
+        sw1 = application.copy.get_brick("sw1")
+        sw1.proc = StandIn(sw1, 4242)
+        self.successResultOf(application.engine.quit())
+        self.assertEqual(windows.calls[-1], ("quit",))
+        self.assertIsNone(self.successResultOf(self.copy.quit_d))
+
+    def test_the_window_closed(self):
+        # closing the window quits: it isn't destroyed twice
+        application = self.launch()
+        [windows] = self.shown
+        windows.window.destroy()
+        application.quit()
+        self.assertEqual(windows.window.destroys, 1)
+        self.assertIsNone(self.successResultOf(self.copy.quit_d))
+
+    def test_quit_without_a_connection(self):
+        application = self.launch()
+        application.engine.windows = None
+        application.quit()
+        self.assertIsNone(self.successResultOf(self.copy.quit_d))
+
+
+class TestTheStepsItSkips(RemoteTestCase):
+    """No migration, workspace, project, socket or timer of its own."""
+
+    def test_nothing_of_its_own(self):
+        application = gui_app.RemoteApplication(
+            parse(["--connect", "unix:/run/lab.amp"])
+        )
+        path = self.manager.path
+        current = self.manager.current
+        self.assertIsNone(application.migrate())
+        application.install_workspace()
+        application.open_last_project(self.factory)
+        application.save_project(self.factory)
+        application.start_listening(self.factory, self.clock)
+        application.install_autosave_timer(self.factory)
+        application.install_switch_wrapper_timer(self.factory)
+        self.assertEqual(self.manager.path, path)
+        self.assertIs(self.manager.current, current)
+        self.assertFalse(os.path.exists(locations.runtime_dir()))
+        self.assertEqual(self.clock.getDelayedCalls(), [])
+
+    def test_the_settings_of_this_computer(self):
+        # those of the program, not the state of the workspaces
+        state = settings._state
+        gui_app.RemoteApplication(
+            parse(["--connect", "unix:/run/lab.amp"])
+        ).install_settings()
+        self.assertTrue(os.path.isfile(locations.settings_file()))
+        self.assertIs(settings._state, state)
 
 
 class TestTheTitle(GuiTestCase):

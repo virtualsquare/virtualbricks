@@ -50,7 +50,7 @@ import sys
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from typing import IO
 
-from virtualbricks import locations, locks
+from virtualbricks import locations, locks, sockets
 from virtualbricks.console import ampbox, wire
 from virtualbricks.i18n import _, ngettext
 
@@ -86,11 +86,13 @@ def _another_protocol(version: object) -> str:
 
 class Connection:
     """
-    A connection to a JSON socket, a wire.Socket: requests and their
+    A connection to a JSON socket, a sockets.Socket: requests and their
     answers. A socket that asks for the proof of the token gets it first.
     """
 
-    def __init__(self, sock: socket.socket, target: wire.Socket | None = None):
+    def __init__(
+        self, sock: socket.socket, target: sockets.Socket | None = None
+    ):
         self.sock = sock
         self.target = target
         self.reader = sock.makefile("rb")
@@ -569,17 +571,17 @@ def _check_there(path: str, workspace: str | None) -> None:
 
 
 def connect(
-    target: wire.Socket | None = None, workspace: str | None = None
+    target: sockets.Socket | None = None, workspace: str | None = None
 ) -> Connection:
     """
-    Connect to the Virtualbricks that listens on target, a wire.Socket; if
+    Connect to the Virtualbricks that listens on target, a sockets.Socket; if
     None or a unix socket without a path, on the socket of --listen alone of
     workspace, or else of the only Virtualbricks of yours that listens on
     one. Raise Unanswered if none can be reached.
     """
 
     if target is None:
-        target = wire.Socket(None)
+        target = sockets.Socket(None)
     if target.kind != "unix":
         return _connect_network(target)
     path = target.path
@@ -643,7 +645,7 @@ def _pem_files(folder: str) -> list[str]:
     return paths
 
 
-def _tls(target: wire.Socket) -> ssl.SSLContext:
+def _tls(target: sockets.Socket) -> ssl.SSLContext:
     """
     The TLS of --command: the certificates it trusts for Virtualbricks,
     those of ca_dir or of the system, and its own certificate, if any.
@@ -681,7 +683,7 @@ def _tls(target: wire.Socket) -> ssl.SSLContext:
     return context
 
 
-def _refused_by(target: wire.Socket | None, exc: ssl.SSLError) -> str:
+def _refused_by(target: sockets.Socket | None, exc: ssl.SSLError) -> str:
     """Why the TLS of target refused this end, from the error."""
 
     host = target.host if target is not None else _("the socket")
@@ -698,7 +700,7 @@ def _refused_by(target: wire.Socket | None, exc: ssl.SSLError) -> str:
     return f"{host}: {reason}"
 
 
-def _connect_network(target: wire.Socket) -> Connection:
+def _connect_network(target: sockets.Socket) -> Connection:
     where = target.where()
     host, port = target.host, target.port
     assert host is not None and port is not None, "parse_socket() sets them"
@@ -732,10 +734,10 @@ def _connect_network(target: wire.Socket) -> Connection:
         raise
 
 
-def _open(sock: socket.socket, target: wire.Socket) -> Connection:
+def _open(sock: socket.socket, target: sockets.Socket) -> Connection:
     """The connection on sock, in the protocol of target, once it's open."""
 
-    if target.protocol == wire.AMP:
+    if target.protocol == sockets.AMP:
         connection: Connection = AMPConnection(sock, target)
     else:
         connection = Connection(sock, target)
@@ -745,7 +747,7 @@ def _open(sock: socket.socket, target: wire.Socket) -> Connection:
 
 
 def _handshake(
-    context: ssl.SSLContext, sock: socket.socket, target: wire.Socket
+    context: ssl.SSLContext, sock: socket.socket, target: sockets.Socket
 ) -> ssl.SSLSocket:
     """The TLS of sock, once the certificate of target is checked."""
 
@@ -786,7 +788,7 @@ def _commands(
 
 def main(
     words: Sequence[str],
-    target: wire.Socket | None = None,
+    target: sockets.Socket | None = None,
     stdin: Iterable[str] | None = None,
     stdout: IO[str] | None = None,
     stderr: IO[str] | None = None,
@@ -796,7 +798,7 @@ def main(
     """
     Send the command of words, the lines of the file script, or else the
     lines of stdin, to the Virtualbricks that listens on target, a
-    wire.Socket, the default socket of workspace if None, as connect()
+    sockets.Socket, the default socket of workspace if None, as connect()
     finds it; write the answers and return the exit status.
     """
 

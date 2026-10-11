@@ -47,33 +47,33 @@ from twisted.python.failure import Failure
 from virtualbricks import errors, ksm
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks import Brick
-from virtualbricks.config.report import Report
-from virtualbricks.engine import Engine
-from virtualbricks.locations import short_path
 from virtualbricks.bricks.event import Event, is_event
 from virtualbricks.bricks.virtualmachine import Image, is_disk_image
+from virtualbricks.config.report import Report
 from virtualbricks.config.settings import get_setting, ksm_started
 from virtualbricks.config.workspace import ProjectSummary, projects
-from virtualbricks.programs import missing_programs
-from virtualbricks.i18n import _
-from virtualbricks.gui.graphics import load_pixbuf
+from virtualbricks.engine import Engine
+from virtualbricks.gui.dialogs import projectname
 from virtualbricks.gui.dialogs.about import AboutDialog
 from virtualbricks.gui.dialogs.deletedialog import DeleteDialog
 from virtualbricks.gui.dialogs.exportproject import ExportProjectDialog
 from virtualbricks.gui.dialogs.imagedialogs import RemoveImageDialog
 from virtualbricks.gui.dialogs.importdialog import ImportDialog
-from virtualbricks.gui.messages import MessageLog
+from virtualbricks.gui.dialogs.logging import LoggingWindow
+from virtualbricks.gui.dialogs.projects import ProjectsWindow
+from virtualbricks.gui.dialogs.settings import SettingsWindow
+from virtualbricks.gui.dialogs.wait import WaitWindow
+from virtualbricks.gui.graphics import load_pixbuf
 from virtualbricks.gui.mainwindow.bricks import BricksTab
 from virtualbricks.gui.mainwindow.events import EventsTab
 from virtualbricks.gui.mainwindow.images import ImagesTab
 from virtualbricks.gui.mainwindow.readme import ReadmeTab
 from virtualbricks.gui.mainwindow.tab import Tab, switch, tabs
 from virtualbricks.gui.mainwindow.topology import TopologyTab
-from virtualbricks.gui.dialogs.logging import LoggingWindow
-from virtualbricks.gui.dialogs import projectname
-from virtualbricks.gui.dialogs.projects import ProjectsWindow
-from virtualbricks.gui.dialogs.settings import SettingsWindow
-from virtualbricks.gui.dialogs.wait import WaitWindow
+from virtualbricks.gui.messages import MessageLog
+from virtualbricks.i18n import _
+from virtualbricks.locations import short_path
+from virtualbricks.programs import missing_programs
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.rowtab import RowsTab
@@ -87,6 +87,8 @@ logger = Logger()
 cannot_open_project = 'Cannot open the project "{name}": {error}'
 # The projects in Open Recent.
 RECENT = 8
+# Main window role
+MAIN_ROLE = "virtualbricks-main"
 
 start_virtualbricks = "Starting VirtualBricks"
 components_not_found = (
@@ -187,6 +189,7 @@ class MainWindow:
             default_width=850,
             default_height=600,
             icon=load_pixbuf("virtualbricks.png"),
+            role=MAIN_ROLE,
         )
         vbox1 = Gtk.Box(
             visible=True,

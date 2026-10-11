@@ -26,7 +26,7 @@ from twisted.internet.testing import StringTransport
 from twisted.protocols import amp, basic
 from twisted.test import iosim
 
-from virtualbricks import __version__, locations, locks
+from virtualbricks import __version__, locations, locks, sockets
 from virtualbricks.console import ampcommands, ampwire, client, control, wire
 from virtualbricks.console.command import Arg, CommandError, command
 from virtualbricks.tests import (
@@ -222,7 +222,7 @@ class TestProtocol(ConsoleTestCase):
 
 
 TOKEN = "0123456789abcdef"
-TCP = wire.parse_socket("tcp:8765")
+TCP = sockets.parse_socket("tcp:8765")
 
 
 def prove(challenge, token=TOKEN):
@@ -852,7 +852,7 @@ class TestAMPToken(ConsoleTestCase):
             self.factory,
             self.clock(),
             control.AMPControl,
-            wire.parse_socket("tcp:8766:protocol=amp"),
+            sockets.parse_socket("tcp:8766:protocol=amp"),
             TOKEN,
         )
         self.program, self.connection, self.pump = self.connect()
@@ -1022,7 +1022,7 @@ def tls_file(name):
 
 def command_in_thread(target, *words, stdin="", **fields):
     """
-    --command to target, a wire.Socket or the Control of a socket, in a
+    --command to target, a sockets.Socket or the Control of a socket, in a
     thread: its status, output and errors.
     """
 
@@ -1110,8 +1110,8 @@ class TestListen(ConsoleTestCase):
         self.lock_file = locations.control_lock_file(self.path)
         self.reactor = Reactor()
 
-    def listen(self, path=None, protocol=wire.AMP):
-        socket = None if path is None else wire.Socket(path, protocol)
+    def listen(self, path=None, protocol=sockets.AMP):
+        socket = None if path is None else sockets.Socket(path, protocol)
         found = control.listen(self.factory, socket, self.reactor)
         if found is not None:
             self.addCleanup(found.close)
@@ -1157,7 +1157,7 @@ class TestListen(ConsoleTestCase):
     @defer.inlineCallbacks
     def test_text(self):
         path = os.path.join(os.path.dirname(self.path), ".control.text")
-        found = self.listen(path, wire.JSON)
+        found = self.listen(path, sockets.JSON)
         self.assertListening(found, path)
         self.assertEqual(
             self.logger.formatted(), [f"Listening on {path}, protocol json"]
@@ -1179,10 +1179,10 @@ class TestListen(ConsoleTestCase):
         path = os.path.join(short_folder(self), "lab.sock")
         make_socket(path)
         self.assertListening(self.listen(), self.path)
-        self.assertListening(self.listen(path, wire.JSON), path)
+        self.assertListening(self.listen(path, sockets.JSON), path)
         # another Virtualbricks goes without both
         self.assertIsNone(self.listen())
-        self.assertIsNone(self.listen(path, wire.JSON))
+        self.assertIsNone(self.listen(path, sockets.JSON))
         self.assertEqual(
             self.logger.formatted()[2:],
             [
@@ -1248,7 +1248,7 @@ class TestListen(ConsoleTestCase):
 
     @defer.inlineCallbacks
     def test_command_over_amp(self):
-        found = self.listen(self.path + ".amp", wire.AMP)
+        found = self.listen(self.path + ".amp", sockets.AMP)
         result = yield command_in_thread(found, "brick", "new", "switch")
         self.assertEqual(result, (client.DONE, "sw1\n", ""))
         # the lines of standard input, up to the first that fails
@@ -1276,7 +1276,7 @@ class TestListen(ConsoleTestCase):
         def long(context):
             return ["x" * 1000] * 70
 
-        found = self.listen(self.path + ".amp", wire.AMP)
+        found = self.listen(self.path + ".amp", sockets.AMP)
         result = yield command_in_thread(found, "cwd")
         self.assertEqual(result, (client.DONE, f"{os.getcwd()}\n", ""))
         status, stdout, stderr = yield command_in_thread(found, "long")
@@ -1290,9 +1290,9 @@ class TestListen(ConsoleTestCase):
 
     @defer.inlineCallbacks
     def test_the_wrong_protocol(self):
-        text = self.listen(self.path + ".text", wire.JSON)
+        text = self.listen(self.path + ".text", sockets.JSON)
         amp_socket = self.listen()
-        result = yield command_in_thread(text, "status", protocol=wire.AMP)
+        result = yield command_in_thread(text, "status", protocol=sockets.AMP)
         self.assertEqual(
             result,
             (
@@ -1305,7 +1305,7 @@ class TestListen(ConsoleTestCase):
         # an AMP socket waits for the first box
         self.patch(client, "CONNECT_TIMEOUT", 0.2)
         result = yield command_in_thread(
-            amp_socket, "status", protocol=wire.JSON
+            amp_socket, "status", protocol=sockets.JSON
         )
         self.assertEqual(
             result,
@@ -1320,7 +1320,7 @@ class TestListen(ConsoleTestCase):
     @defer.inlineCallbacks
     def test_another_amp_protocol(self):
         self.patch(ampwire, "PROTOCOLS", (5,))
-        found = self.listen(self.path + ".amp", wire.AMP)
+        found = self.listen(self.path + ".amp", sockets.AMP)
         result = yield command_in_thread(found, "status")
         self.assertEqual(
             result,
@@ -1346,7 +1346,7 @@ class ListenTestCase(ConsoleTestCase):
         self.token_file = locations.token_file()
 
     def listen(self, port=0, **fields):
-        socket = wire.Socket(None, wire.JSON, "tcp", "127.0.0.1", port)
+        socket = sockets.Socket(None, sockets.JSON, "tcp", "127.0.0.1", port)
         found = control.listen(
             self.factory, socket._replace(**fields), self.reactor
         )
@@ -1437,7 +1437,7 @@ class TestListenTcp(ListenTestCase):
 
     @defer.inlineCallbacks
     def test_amp(self):
-        found = self.listen(protocol=wire.AMP)
+        found = self.listen(protocol=sockets.AMP)
         endpoint = endpoints.TCP4ClientEndpoint(
             reactor, "127.0.0.1", found.socket.port
         )
@@ -1451,7 +1451,7 @@ class TestListenTcp(ListenTestCase):
 
     @defer.inlineCallbacks
     def test_command_over_amp(self):
-        found = self.listen(protocol=wire.AMP)
+        found = self.listen(protocol=sockets.AMP)
         result = yield self.command(found, "brick", "new", "switch")
         self.assertEqual(result, (client.DONE, "sw1\n", ""))
         other = os.path.join(self.mktemp(), "token")
@@ -1504,9 +1504,9 @@ class TestListenSsl(ListenTestCase):
     """An ssl socket, with the certificates of tests/data/tls."""
 
     def listen(self, port=0, **fields):
-        socket = wire.Socket(
+        socket = sockets.Socket(
             None,
-            wire.JSON,
+            sockets.JSON,
             "ssl",
             "127.0.0.1",
             port,
@@ -1537,7 +1537,7 @@ class TestListenSsl(ListenTestCase):
         mine, its own.
         """
 
-        target = wire.parse_socket(
+        target = sockets.parse_socket(
             f"ssl:127.0.0.1:{found.socket.port}", client=True
         )
         if mine:
@@ -1657,7 +1657,9 @@ class TestListenSsl(ListenTestCase):
     @defer.inlineCallbacks
     def test_amp(self):
         # a program with Twisted's tls: client and a certificate
-        found = self.listen(protocol=wire.AMP, ca_dir=self.folder("alice.pem"))
+        found = self.listen(
+            protocol=sockets.AMP, ca_dir=self.folder("alice.pem")
+        )
         description = (
             f"tls:127.0.0.1:{found.socket.port}"
             f":trustRoots={self.folder('server.pem')}"
@@ -1673,7 +1675,9 @@ class TestListenSsl(ListenTestCase):
 
     @defer.inlineCallbacks
     def test_command_over_amp(self):
-        found = self.listen(protocol=wire.AMP, ca_dir=self.folder("alice.pem"))
+        found = self.listen(
+            protocol=sockets.AMP, ca_dir=self.folder("alice.pem")
+        )
         target = self.target(found, "alice")
         result = yield self.command(target, "brick", "new", "switch")
         self.assertEqual(result, (client.DONE, "sw1\n", ""))

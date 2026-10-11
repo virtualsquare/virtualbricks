@@ -25,6 +25,7 @@ from twisted.internet import ssl
 from twisted.python import failure
 from twisted.trial import unittest
 
+from virtualbricks import sockets
 from virtualbricks.console import tls, wire
 from virtualbricks.tests import DATA
 
@@ -139,7 +140,7 @@ class TestTrusted(unittest.TestCase):
 class TestOptions(unittest.TestCase):
 
     def socket(self, **fields):
-        socket = wire.parse_socket(
+        socket = sockets.parse_socket(
             f"ssl:8765:privateKey={data('server.key')}"
             f":certKey={data('server.pem')}"
         )

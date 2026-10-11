@@ -63,7 +63,7 @@ from twisted.protocols import amp, basic
 from twisted.python.failure import Failure
 from zope.interface import implementer
 
-from virtualbricks import __version__, locations, locks
+from virtualbricks import __version__, locations, locks, sockets
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.config.workspace import projects
 from virtualbricks.console import ampcommands, ampgen, ampwire, wire
@@ -679,7 +679,7 @@ Connection: TypeAlias = ControlProtocol | AMPControl
 # Any: Twisted's wants protocols whose factory is a Factory[Self]
 class ControlFactory(protocol.Factory[Any]):
     """
-    The connections of a control socket, a wire.Socket, of the protocol it
+    The connections of a control socket, a sockets.Socket, of the protocol it
     speaks; with a token, each client proves first that it knows it.
     """
 
@@ -693,7 +693,7 @@ class ControlFactory(protocol.Factory[Any]):
         brickfactory: BrickFactory,
         reactor: PosixReactorBase,
         protocol: Callable[..., Connection] = ControlProtocol,
-        socket: wire.Socket | None = None,
+        socket: sockets.Socket | None = None,
         token: str | None = None,
     ) -> None:
         self.brickfactory = brickfactory
@@ -761,13 +761,13 @@ class ControlFactory(protocol.Factory[Any]):
 
 class Control:
     """
-    The socket that this Virtualbricks listens on, a wire.Socket, and the
+    The socket that this Virtualbricks listens on, a sockets.Socket, and the
     lock of a unix one.
     """
 
     def __init__(
         self,
-        socket: wire.Socket,
+        socket: sockets.Socket,
         port: IListeningPort,
         lock: locks.Lock | None,
         factory: ControlFactory,
@@ -777,7 +777,7 @@ class Control:
         self.lock = lock
         self.factory = factory
         self.closed = False
-        if socket.protocol == wire.AMP:
+        if socket.protocol == sockets.AMP:
             # the log, for the programs that follow, while it listens
             follower.keeper.start()
 
@@ -791,7 +791,7 @@ class Control:
         if self.closed:
             return defer.succeed(None)
         self.closed = True
-        if self.socket.protocol == wire.AMP:
+        if self.socket.protocol == sockets.AMP:
             follower.keeper.stop()
         # Twisted removes the socket as it stops listening
         done: defer.Deferred[Any]
@@ -831,18 +831,18 @@ def _listen_unix(
 
 # The protocol of the connections of a socket, by the protocol it speaks.
 PROTOCOLS: dict[str, Callable[..., Connection]] = {
-    wire.JSON: ControlProtocol,
-    wire.AMP: AMPControl,
+    sockets.JSON: ControlProtocol,
+    sockets.AMP: AMPControl,
 }
 
 
 def listen(
     brickfactory: BrickFactory,
-    socket: wire.Socket | None = None,
+    socket: sockets.Socket | None = None,
     reactor: PosixReactorBase | None = None,
 ) -> Control | None:
     """
-    Answer the commands of socket, a wire.Socket of --listen: the AMP
+    Answer the commands of socket, a sockets.Socket of --listen: the AMP
     socket at ``.control`` in the runtime folder of the workspace if None,
     or if a unix socket without a path, as --listen alone.
 
@@ -856,7 +856,7 @@ def listen(
 
         reactor = cast("PosixReactorBase", default)
     if socket is None:
-        socket = wire.Socket(None)
+        socket = sockets.Socket(None)
     if socket.kind != "unix":
         return _listen_network(brickfactory, socket, reactor)
     path = socket.path
@@ -925,7 +925,9 @@ def _strerror(exc: object) -> str:
 
 
 def _listen_network(
-    brickfactory: BrickFactory, socket: wire.Socket, reactor: PosixReactorBase
+    brickfactory: BrickFactory,
+    socket: sockets.Socket,
+    reactor: PosixReactorBase,
 ) -> Control | None:
     """
     listen() on the port of a tcp or ssl socket, with its token, or with

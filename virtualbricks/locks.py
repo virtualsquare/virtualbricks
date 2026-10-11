@@ -48,14 +48,13 @@ status which user runs them.
 import fcntl
 import os
 import pwd
+from typing import Literal, get_args
 
 from virtualbricks import locations
 
-SYSTEM = "system"
-USER = "user"
-WORKSPACE = "workspace"
-NONE = "none"
-POLICIES = (SYSTEM, USER, WORKSPACE, NONE)
+Policy = Literal["system", "user", "workspace", "none"]
+POLICIES = get_args(Policy)
+SYSTEM, USER, WORKSPACE, NONE = POLICIES
 PROC = "/proc"
 
 # A process that holds a lock, and the name of its user, None if hidden.
@@ -74,7 +73,7 @@ class Held(Exception):
 
     def __init__(
         self,
-        policy: str,
+        policy: Policy,
         holder: str,
         path: str,
         holders: tuple[Holder, ...] = (),
@@ -150,11 +149,14 @@ class Held(Exception):
 class Lock:
     """The locks that a Virtualbricks holds, released together."""
 
-    def __init__(self, policy: str):
+    def __init__(self, policy: Policy):
         self.policy = policy
         self._fds: list[int] = []
         # the descriptor of the user lock, if held
         self._user: int | None = None
+        # the user lock is held alone until the settings of 2.1 are
+        # converted: Lock.share_user() shares it then
+        self.share_pending = False
 
     @property
     def locked(self) -> bool:
@@ -164,8 +166,11 @@ class Lock:
         """Release the locks; nothing if they are released already."""
 
         self._user = None
+        self.share_pending = False
         while self._fds:
             os.close(self._fds.pop())
+
+    release = unlock
 
     def take_workspace(self, workspace: str) -> None:
         """
@@ -185,18 +190,22 @@ class Lock:
     def share_user(self) -> None:
         """
         Share the user lock taken alone, as the workspace policy does once
-        the settings of 2.1 are converted.
+        the settings of 2.1 are converted; nothing if it wasn't taken alone
+        for them.
 
         Raise Held if another Virtualbricks took it in between: the change
         isn't atomic, and this lock then holds none of it.
         """
 
+        if not self.share_pending:
+            return
         assert self._user is not None, "the user lock is not held"
         try:
             fcntl.flock(self._user, fcntl.LOCK_SH | fcntl.LOCK_NB)
         except BlockingIOError:
             path = locations.user_lock_file()
             raise Held(self.policy, USER, path, holders(path)) from None
+        self.share_pending = False
 
     def _take(self, path: str, operation: int, write: bool = False) -> bool:
         """Lock the file at path; False if another Virtualbricks holds it."""
@@ -350,7 +359,7 @@ def hold(path: str) -> Lock | None:
     return lock
 
 
-def acquire(policy: str = SYSTEM, user_alone: bool = False) -> Lock:
+def acquire(policy: Policy = SYSTEM, user_alone: bool = False) -> Lock:
     """
     Take the locks of policy and return them; with user_alone, the workspace
     policy holds the user lock alone, until Lock.share_user().
@@ -381,6 +390,7 @@ def acquire(policy: str = SYSTEM, user_alone: bool = False) -> Lock:
                 holder = _holder(path, USER, WORKSPACE) if alone else USER
                 raise Held(policy, holder, path, holders(path))
             lock._user = lock._fds[-1]
+            lock.share_pending = policy == WORKSPACE and user_alone
     except BaseException:
         lock.unlock()
         raise

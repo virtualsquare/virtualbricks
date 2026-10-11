@@ -326,18 +326,25 @@
   .kind.hard { color: var(--risk); background: var(--risk-soft); }
   .kind.order { color: var(--muted); background: transparent; border: 1px dashed var(--rule); }
   @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+  .part { font: 500 12px/1.2 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 8px 0 6px; padding-top: 20px; border-top: 3px double var(--rule); }
+  .part-note { color: var(--muted); font-size: 14.5px; margin-bottom: 30px; }
+  .toc li.part-label { font: 500 11px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 12px 0 4px; }
 </style>
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 27 &middot; Design &middot; revision 1, analysis</div>
+    <div class="eyebrow">Step 27 &middot; Design &middot; revision 5, proposal</div>
     <h1>Virtualbricks Start-up Sequence</h1>
-    <p class="lede">What each way of running Virtualbricks does from <code>virtualbricks</code> to its main loop: with the windows, with <code>--no-gui</code>, as the windows of another Virtualbricks, and with <code>--command</code>. In order, side by side, with the reactor each one installs and what has to come before what.</p>
+    <p class="lede">The order in which Virtualbricks should start, mode by mode: the command line, then the locale, the locks, the reactor and the log, and so on to the exception hooks, last. Below it, the analysis of how <code>develop</code> starts today.</p>
     <ul class="meta">
-      <li>branch <b>develop</b> at eeaf42a</li>
-      <li>revision 1 &middot; 9 October 2026</li>
-      <li><span class="status analysis">analysis</span></li>
+      <li>branch <b>mg/cli-argparse</b> at 7eed41f</li>
+      <li>revision 5 &middot; 9 October 2026</li>
+      <li><span class="status">proposal</span></li>
     </ul>
-    <p class="revision"><strong>What this covers:</strong> your request of today: &ldquo;make a diagram / table of the initialization actions that happens for every virtualbricks application: cli application, gui application, remote application, command mode. Right now it is very confusing and I want to refactor that code. Also highlight the dependencies with a special attention to the reactor installation&rdquo;. It describes the code as it is, read in <code>cli.py</code>, <code>app.py</code>, <code>gui/app.py</code>, <code>console/client.py</code> and <code>migrate/</code>. The import chains of <a href="#reactor">&sect;5</a> were measured today in the project&rsquo;s virtualenv (Python 3.10, Twisted of the venv), one fresh interpreter per module. Two things found while reading are bugs, checked today and added to <code>BUGS.md</code> (<a href="#confusing">&sect;7</a>, item 8). Nothing here is decided: <a href="#seams">&sect;8</a> lists where the refactor could cut, with my recommendation, for revision 2.</p>
+    <p class="revision"><strong>What this covers:</strong> your request of today: &ldquo;make a diagram / table of the initialization actions that happens for every virtualbricks application: cli application, gui application, remote application, command mode. Right now it is very confusing and I want to refactor that code. Also highlight the dependencies with a special attention to the reactor installation&rdquo;. It describes the code as it is, read in <code>cli.py</code>, <code>app.py</code>, <code>gui/app.py</code>, <code>console/client.py</code> and <code>migrate/</code>. The import chains of <a href="#reactor">&sect;12</a> were measured today in the project&rsquo;s virtualenv (Python 3.10, Twisted of the venv), one fresh interpreter per module. Two things found while reading are bugs, checked today and added to <code>BUGS.md</code> (<a href="#confusing">&sect;14</a>, item 8). Nothing here was decided: its section 8 listed where the refactor could cut, with my recommendation; revision 3 folds it into &sect;2&ndash;&sect;9.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 adds <a href="#parser">&sect;15</a>, for your question of today: &ldquo;If I want to rework on the cli interface, would it be better to parse the command line with argparse or twisted.python.usage.Options as it is now?&rdquo;, and, after my answer: &ldquo;add it to page 27 rev 2&rdquo;. It compares the two on this command line, with start-up times measured today in the venv (medians of 9 runs of each process and of 5 runs of each import), and recommends argparse; section 8 gained it as its sixth item. Still nothing decided. Written against 13b3cc6, whose start-up code is that of eeaf42a, which revision 1 read.</p>
+    <p class="revision"><strong>What changed:</strong> revision 3 turns the page into the design of the new start, for your request of today: &ldquo;Rework the start-up sequence document. There is now the cli_new.py (it will be renamed once old code is deprecated) that is able to parse the command line parameters with little overhead. There is also a draft of a main function. What I want is: parse the command line early without any imports, so that the CLI is fast (--help and --version) do not have to import anything; the main function setup the basic functionality: i18n, install the reactor if needed, setup the logs, etc. it then calls the specific main function for the selected mode; each main_&lt;mode&gt; now setup the whatever is needed for the selected mode. Use lazy imports as much as possible&rdquo;. &sect;1&ndash;&sect;9 are new: the three stages, what each imports, notes on the draft of <code>main.py</code>, six steps and eight questions, each with my recommendation; nothing is decided. &sect;9&ndash;&sect;15 are the analysis of revisions 1 and 2, renumbered, and the parser of &sect;16 is now <code>cli_new.py</code>. Written against <code>mg/cli-argparse</code> at 7eed41f, with your uncommitted <code>main.py</code> and the rename of <code>CommandLine</code> to <code>CommandLineOptions</code>; the times of &sect;3 were measured today in the venv, medians of 21 runs. Its section numbers, and those of revision 4, are of their revision.</p>
+    <p class="revision"><strong>What changed:</strong> revision 4 records your answer of today: &ldquo;keep the imports in sockets.py and locations.py at the top level&rdquo;. I read it as Q1 C and Q2 B: <code>cli_new.py</code> keeps importing <code>sockets</code> and <code>locks</code> at its top, and <code>locations.py</code> keeps <code>tempfile</code>, <code>hashlib</code> and <code>base64</code> at its. Stage 1 loads the package, the parser, <code>sockets</code>, <code>locks</code> and <code>locations</code>: <code>--version</code> in 45 ms and <code>--help</code> in 59 ms, against 172 and 174 ms today. The step that made stage 1 import nothing goes, so there are five; &sect;3, &sect;6, &sect;8 and &sect;9 follow. Q3&ndash;Q8 are open.</p>
+    <p class="revision"><strong>What changed:</strong> revision 5 lays out the order of the steps of each mode, for your request of today: &ldquo;Do not start thinking how to implement the code yet. I want to know all the initialisation steps and the order they should happen for each mode. i18n come first, then locking, logs. Hooks should be installed last&rdquo;. <a href="#glance">&sect;1</a>&ndash;<a href="#questions">&sect;8</a> are new: the order of each mode, its 21 steps, what needs what, the quit, what moves from today, the command line with Q1 and Q2, and six questions on the order, O1&ndash;O6, each with my recommendation. What revisions 3 and 4 said of the code waits until the order is settled: <code>main()</code> and <code>main_&lt;mode&gt;()</code>, the rules of the lazy imports, the notes on your draft of <code>main.py</code>, the steps of the work, and Q3&ndash;Q8. The analysis of today is <a href="#branch">&sect;9</a>&ndash;<a href="#parser">&sect;15</a>.</p>
   </header>
 
   <div class="layout">
@@ -345,13 +352,21 @@
       <p class="toc-label">Contents</p>
       <ol>
         <li><a href="#glance"><span>1</span>At a glance</a></li>
-        <li><a href="#branch"><span>2</span>Where the modes split</a></li>
-        <li><a href="#table"><span>3</span>Every action, by mode</a></li>
-        <li><a href="#time"><span>4</span>In time</a></li>
-        <li><a href="#reactor"><span>5</span>The reactor</a></li>
-        <li><a href="#deps"><span>6</span>What needs what</a></li>
-        <li><a href="#confusing"><span>7</span>What makes it confusing</a></li>
-        <li><a href="#seams"><span>8</span>Where to cut</a></li>
+        <li><a href="#order"><span>2</span>The order</a></li>
+        <li><a href="#every"><span>3</span>Every step</a></li>
+        <li><a href="#needs"><span>4</span>What needs what</a></li>
+        <li><a href="#quit"><span>5</span>At quit</a></li>
+        <li><a href="#moves"><span>6</span>What moves from today</a></li>
+        <li><a href="#parse"><span>7</span>The command line</a></li>
+        <li><a href="#questions"><span>8</span>Questions</a></li>
+        <li class="part-label">Today</li>
+        <li><a href="#branch"><span>9</span>Where the modes split</a></li>
+        <li><a href="#table"><span>10</span>Every action, by mode</a></li>
+        <li><a href="#time"><span>11</span>In time</a></li>
+        <li><a href="#reactor"><span>12</span>The reactor</a></li>
+        <li><a href="#deps"><span>13</span>What needs what</a></li>
+        <li><a href="#confusing"><span>14</span>What makes it confusing</a></li>
+        <li><a href="#parser"><span>15</span>The parser</a></li>
       </ol>
     </nav>
 
@@ -359,17 +374,299 @@
       <section id="glance">
         <h2><span class="num">&sect;1</span>At a glance</h2>
         <dl class="glance">
-          <div><dt>Four modes</dt><dd><strong>CLI</strong>, <code>--no-gui</code>: <code>app.Application</code>. <strong>GUI</strong>, the default: <code>gui.app.GuiApplication</code>, a subclass. <strong>Remote</strong>, <code>--connect</code> alone: <code>gui.app.RemoteApplication</code>, a class of its own. <strong>Command</strong>, <code>--command</code> or <code>--connect --run</code>: the function <code>console.client.main</code>.</dd></div>
-          <div><dt>One fork</dt><dd><code>cli.main()</code> (<code>cli.py:569</code>) parses the options, then picks the mode with three <code>if</code>s. Each mode imports its own module only after that, and the order of those imports is what decides the reactor (<a href="#branch">&sect;2</a>).</dd></div>
-          <div><dt>Reactor</dt><dd>GUI and remote install <code>GIReactor</code> explicitly, in <code>install_gtk_reactor()</code>. The CLI gets <code>EPollReactor</code> as a side effect of <code>from virtualbricks import app</code>, which reaches <code>bricks/__init__.py:41</code>. Command mode has none, and a test checks it. The migration window installs its own, elsewhere (<a href="#reactor">&sect;5</a>).</dd></div>
-          <div><dt>Two timings</dt><dd><code>task.react</code> calls <code>run(reactor)</code> before <code>reactor.run()</code>. So the whole start, windows included, runs before the loop, except in the GUI when a migration is pending: then the loop starts under the migration window, and the rest runs when it closes (<a href="#time">&sect;4</a>).</dd></div>
-          <div><dt>Settings</dt><dd>Read three times before the app holds them: by <code>startup_workspace()</code> for the lock, by <code>startup_migration()</code>, then by <code>load_settings()</code> (<a href="#deps">&sect;6</a>).</dd></div>
-          <div><dt>Confusing</dt><dd>Ten things, in <a href="#confusing">&sect;7</a>. The main ones: the reactor depends on import order, the remote app repeats the start of the others by hand, and logging and the locale start at different points in each mode.</dd></div>
+          <div><dt>Your rules</dt><dd>The locale first, then the locks, then the log; the exception hooks last. The command line comes before all of them, so that <code>--help</code> and <code>--version</code> load nothing (revision 3).</dd></div>
+          <div><dt>GUI</dt><dd>Command line, locale, locks, reactor, log, migration, settings, workspace, engine, windows, last project, sockets, timers, script, console, hooks, loop.</dd></div>
+          <div><dt>No GUI</dt><dd>The same without the windows.</dd></div>
+          <div><dt>Remote</dt><dd>Command line, locale, reactor, log, settings, the copy, the connection, loop; the windows once connected, then the hooks. No locks.</dd></div>
+          <div><dt>Command</dt><dd>Command line, locale, the client. No locks, reactor, log or hooks.</dd></div>
+          <div><dt>The reactor</dt><dd>After the locks, so that a refused lock exits without loading GTK or Twisted; before the log, whose first line names it (<a class="ref" href="#questions">O1</a>).</dd></div>
+          <div><dt>Steps</dt><dd>21, numbered in <a href="#order">&sect;2</a> and <a href="#every">&sect;3</a>; why each comes where it does in <a href="#needs">&sect;4</a>; the quit in <a href="#quit">&sect;5</a>; what moves from today in <a href="#moves">&sect;6</a>.</dd></div>
+          <div><dt>Open</dt><dd>Six questions on the order, O1&ndash;O6, each with my recommendation (<a href="#questions">&sect;8</a>).</dd></div>
         </dl>
       </section>
 
+      <section id="order">
+        <h2><span class="num">&sect;2</span>The order</h2>
+        <p>Each mode&rsquo;s steps, left to right, with the numbers of <a href="#every">&sect;3</a>. The black chip is where the loop starts: what comes before it runs before any event is handled.</p>
+        <ul class="legend">
+          <li><span class="swatch k-proc"></span>process, objects</li>
+          <li><span class="swatch k-reactor"></span>reactor</li>
+          <li><span class="swatch k-lock"></span>locks</li>
+          <li><span class="swatch k-files"></span>files: settings, migration, folders, project</li>
+          <li><span class="swatch k-win"></span>windows</li>
+          <li><span class="swatch k-loop"></span>the loop starts</li>
+        </ul>
+        <div class="lanes">
+          <div class="lane">
+            <div class="lane-name">GUI<small>default</small></div>
+            <ol class="steps">
+              <li>0 command line</li>
+              <li>1 locale</li>
+              <li class="k-files">2 where to lock</li>
+              <li class="k-lock">3 locks</li>
+              <li class="k-reactor">4 GIReactor</li>
+              <li>5 log</li>
+              <li class="k-win">6 migration window</li>
+              <li class="k-loop alt">loop, if a migration is pending</li>
+              <li class="k-lock">7 share the user lock</li>
+              <li class="k-files">8 settings</li>
+              <li class="k-files">9 workspace</li>
+              <li class="k-files">10 runtime folder</li>
+              <li>11 engine</li>
+              <li class="k-win">12 windows</li>
+              <li class="k-files">13 last project</li>
+              <li class="k-win">14 title, programs</li>
+              <li>16 sockets</li>
+              <li>17 timers</li>
+              <li>18 script</li>
+              <li>19 console</li>
+              <li>20 hooks</li>
+              <li class="k-loop">21 loop</li>
+            </ol>
+          </div>
+          <div class="lane">
+            <div class="lane-name">No GUI<small>--no-gui</small></div>
+            <ol class="steps">
+              <li>0 command line</li>
+              <li>1 locale</li>
+              <li class="k-files">2 where to lock</li>
+              <li class="k-lock">3 locks</li>
+              <li class="k-reactor">4 default reactor</li>
+              <li>5 log</li>
+              <li class="k-files">6 migration, at once</li>
+              <li class="k-lock">7 share the user lock</li>
+              <li class="k-files">8 settings</li>
+              <li class="k-files">9 workspace</li>
+              <li class="k-files">10 runtime folder</li>
+              <li>11 engine</li>
+              <li class="k-files">13 last project</li>
+              <li>16 sockets</li>
+              <li>17 timers</li>
+              <li>18 script</li>
+              <li>19 console</li>
+              <li>20 hooks</li>
+              <li class="k-loop">21 loop</li>
+            </ol>
+          </div>
+          <div class="lane">
+            <div class="lane-name">Remote<small>--connect alone</small></div>
+            <ol class="steps">
+              <li>0 command line</li>
+              <li>1 locale</li>
+              <li class="k-reactor">4 GIReactor</li>
+              <li>5 log</li>
+              <li class="k-files">8 settings, no KSM</li>
+              <li>11 the copy</li>
+              <li class="k-files">15 find the socket</li>
+              <li>15 connect&hellip;</li>
+              <li class="k-loop">21 loop</li>
+              <li class="k-win">15 windows, once connected</li>
+              <li>20 hooks</li>
+            </ol>
+          </div>
+          <div class="lane">
+            <div class="lane-name">Command<small>--command</small></div>
+            <ol class="steps">
+              <li>0 command line</li>
+              <li>1 locale</li>
+              <li class="k-files">C find the socket</li>
+              <li>C connect, ask, print</li>
+              <li>C exit with its status</li>
+            </ol>
+          </div>
+        </div>
+        <p>With a pending migration the GUI&rsquo;s loop starts under the migration window, and steps 7 to 20 run once it closes, in the same order. The remote windows can only come once the connection is made, in the loop, so their hooks come after them (<a class="ref" href="#questions">O2</a>).</p>
+      </section>
+
+      <section id="every">
+        <h2><span class="num">&sect;3</span>Every step</h2>
+        <p>In order. A dash: the mode doesn&rsquo;t take that step. Rows with a red edge install or need the reactor.</p>
+        <div class="scroll">
+        <table class="modes">
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th class="mode">GUI</th>
+              <th class="mode">No GUI</th>
+              <th class="mode">Remote</th>
+              <th class="mode">Command</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="phase"><td colspan="5">Before anything</td></tr>
+            <tr><td><span class="n">0</span><strong>Command line.</strong> The options, checked, and the mode; <code>--help</code>, <code>--version</code> and an error end here (<a href="#parse">&sect;7</a>).</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td></tr>
+            <tr><td><span class="n">1</span><strong>Locale.</strong> <code>setlocale</code>, <code>bindtextdomain</code> for the texts of GTK, the gettext builtins again with the user&rsquo;s language.</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td></tr>
+            <tr><td><span class="n">C</span><strong>The client.</strong> Reads the file of <code>--connect --run</code>; finds the socket, by the runtime folder and the holders of the locks; connects, with the token or the certificates; sends each line and prints its answer; exits with 0, 1, 2 or 130.</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td><td>&#10003;, the last step</td></tr>
+
+            <tr class="phase"><td colspan="5">The locks</td></tr>
+            <tr><td><span class="n">2</span><strong>Where to lock.</strong> Whether a settings file of 2.1 is to be converted, which under <code>--lock workspace</code> takes the user lock alone; the workspace: <code>--workspace</code>, or the setting, read from <code>settings.toml</code> or from the file of 2.1.</td><td>&#10003;</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
+            <tr><td><span class="n">3</span><strong>Locks.</strong> The system or the user lock of <code>--lock</code>; the workspace folder, made if missing; the workspace lock. Refused: the message, and exit with 1.</td><td>&#10003;</td><td>&#10003;</td><td><span class="none">&ndash; none</span></td><td><span class="none">&ndash; none</span></td></tr>
+
+            <tr class="phase"><td colspan="5">The reactor and the log</td></tr>
+            <tr class="reactor-row"><td><span class="n reactor">4</span><strong>Reactor.</strong> Installed; then the release of the locks after shutdown.</td><td>Gtk 3.0, GIReactor</td><td>the default, epoll</td><td>Gtk 3.0, GIReactor; no locks to release</td><td><span class="none">&ndash; none</span></td></tr>
+            <tr><td><span class="n">5</span><strong>Log.</strong> The observers of <code>--logger</code> or <code>--logfile</code>, at the level of <code>-v</code>, <code>-q</code> and <code>-b</code>; the line &ldquo;Virtualbricks X starts&rdquo;, with the reactor; its end after shutdown (<a class="ref" href="#questions">O4</a>).</td><td>&#10003;, and the history of the run for the messages window</td><td>&#10003;</td><td>&#10003;, and the history</td><td><span class="none">&ndash; no log</span></td></tr>
+
+            <tr class="phase"><td colspan="5">The files</td></tr>
+            <tr><td><span class="n">6</span><strong>Migration.</strong> The settings and the projects of 2.1, converted in place.</td><td>in the migration window: the loop starts here, and the start goes on when it closes</td><td>at once, into the log</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
+            <tr><td><span class="n">7</span><strong>Share the user lock</strong>, after converting the settings of 2.1 under <code>--lock workspace</code>.</td><td>&#10003;</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
+            <tr class="reactor-row"><td><span class="n">8</span><strong>Settings.</strong> <code>settings.toml</code>, the defaults written if there is none; KSM turned on, through <code>sudo</code> and the reactor, if the settings ask for it; their writing at quit.</td><td>&#10003;, and <code>state.toml</code></td><td>&#10003;, and <code>state.toml</code></td><td>those of this computer, without KSM</td><td><span class="none">&ndash;</span></td></tr>
+            <tr><td><span class="n">9</span><strong>Workspace.</strong> The folder of the projects: <code>--workspace</code>, or the setting (<a class="ref" href="#questions">O6</a>).</td><td>&#10003;</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
+            <tr><td><span class="n">10</span><strong>Runtime folder</strong> of the workspace, and its link to it.</td><td>&#10003;</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
+
+            <tr class="phase"><td colspan="5">The engine and the windows</td></tr>
+            <tr><td><span class="n">11</span><strong>Engine.</strong> What runs the bricks, and the end of the run.</td><td>the factory</td><td>the factory</td><td>the copy of the bricks there</td><td><span class="none">&ndash;</span></td></tr>
+            <tr><td><span class="n">12</span><strong>Windows.</strong> The error dialogs; the main window, with the tray icon if set; the messages window, from the history; the trash; the console through the windows.</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td>at 15</td><td><span class="none">&ndash;</span></td></tr>
+            <tr><td><span class="n">13</span><strong>Last project</strong>, opened; its saving at quit.</td><td>&#10003;; a problem goes to the Projects window</td><td>&#10003;; else a new one</td><td><span class="none">&ndash;</span> the one there</td><td><span class="none">&ndash;</span></td></tr>
+            <tr><td><span class="n">14</span><strong>Title and programs.</strong> The window&rsquo;s title; the QEMU and VDE programs missing from the folders of the project, and KSM if it didn&rsquo;t start (<a class="ref" href="#questions">O5</a>).</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td>at 15</td><td><span class="none">&ndash;</span></td></tr>
+            <tr><td><span class="n">15</span><strong>Connection.</strong> The socket, found before the loop; the connection, in it. Once connected: the error dialogs, the consoles of the bricks there, the main window with the messages of the history and of the other Virtualbricks, the title, and what the machine there lacks. Refused: exit with 1.</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td><td>&#10003;</td><td><span class="none">&ndash;</span></td></tr>
+
+            <tr class="phase"><td colspan="5">The ways in</td></tr>
+            <tr><td><span class="n">16</span><strong>Sockets</strong> of <code>--listen</code>.</td><td>&#10003;</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
+            <tr><td><span class="n">17</span><strong>Timers.</strong> The autosave, every 180 s; the switch wrappers, which follow their folders.</td><td>&#10003;</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
+            <tr><td><span class="n">18</span><strong>Script</strong> of <code>--run</code>, on the project.</td><td>&#10003;</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
+            <tr><td><span class="n">19</span><strong>Console</strong> in the terminal, after the script&rsquo;s output, unless <code>--no-term</code>; its closing at quit.</td><td>&#10003;</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
+
+            <tr class="phase"><td colspan="5">Last</td></tr>
+            <tr><td><span class="n">20</span><strong>Hooks.</strong> <code>sys.excepthook</code> and <code>threading.excepthook</code>; with <code>-b</code> and a terminal, <code>pdb</code> on SIGUSR2 and SIGINT (<a class="ref" href="#questions">O3</a>).</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;, after the windows (<a class="ref" href="#questions">O2</a>)</td><td><span class="none">&ndash;</span></td></tr>
+            <tr><td><span class="n">21</span><strong>Loop.</strong> The reactor runs.</td><td>&#10003;, or at 6</td><td>&#10003;</td><td>&#10003;, before the windows</td><td><span class="none">&ndash;</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="needs">
+        <h2><span class="num">&sect;4</span>What needs what</h2>
+        <p>Why each step is where it is: one of your rules, or a step that needs another.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Before</th><th>After</th><th>Why</th><th>Kind</th></tr></thead>
+          <tbody>
+            <tr><td>0 command line</td><td>everything</td><td>It says the mode; <code>--help</code> and <code>--version</code> load nothing else.</td><td><span class="kind real">your request</span></td></tr>
+            <tr><td>1 locale</td><td>the rest</td><td>Every text after it, and every module loaded after it, is in the user&rsquo;s language.</td><td><span class="kind hard">your rule</span></td></tr>
+            <tr><td>2 where to lock</td><td>3 locks</td><td>The workspace lock needs the folder; the user lock is taken alone while the settings of 2.1 are converted.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td>3 locks</td><td>4 reactor, 5 log</td><td>Your rule, and a refused lock exits before GTK and Twisted are loaded.</td><td><span class="kind hard">your rule</span></td></tr>
+            <tr><td>3 locks</td><td>6 migration, every write</td><td>The files are written under the locks.</td><td><span class="kind real">need</span></td></tr>
+            <tr class="reactor-row"><td>4 reactor</td><td>5 log</td><td>The log&rsquo;s first line names the reactor (<a class="ref" href="#questions">O1</a>).</td><td><span class="kind order">choice</span></td></tr>
+            <tr class="reactor-row"><td>4 reactor</td><td>6 migration window, 8 settings, every module that imports the reactor</td><td>The migration window needs GTK and the loop; KSM spawns <code>sudo</code> through the reactor; a module that imports it first would install the default (<a href="#reactor">&sect;12</a>).</td><td><span class="kind hard">reactor</span></td></tr>
+            <tr><td>4 reactor</td><td>the release of the locks</td><td>It runs after the reactor&rsquo;s shutdown.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td>5 log</td><td>6 migration and the rest</td><td>Your rule; what they log goes out as it happens, not from a buffer, and after the line that the run starts.</td><td><span class="kind hard">your rule</span></td></tr>
+            <tr><td>6 migration</td><td>7 share, 8 settings</td><td>The migration may write <code>settings.toml</code>; the other workspaces may start once the user&rsquo;s files are converted.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td>8 settings</td><td>9 workspace, 12 windows, 14 programs</td><td>The workspace setting; the tray icon and the other settings of the windows; the folders of QEMU and VDE, and whether KSM was asked for.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td>9 workspace</td><td>10 runtime folder, 13 last project</td><td>The folder of the projects and its runtime folder.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td>10 runtime folder</td><td>16 sockets</td><td><code>.control</code> is there.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td>11 engine</td><td>12 windows, 13 project</td><td>The windows show it; the project is loaded into it.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td>12 windows</td><td>13 last project, 18 script, 19 console</td><td>A problem with the last project goes to the Projects window; the console and the script open, make and save projects through the windows.</td><td><span class="kind real">need, GUI</span></td></tr>
+            <tr><td>13 last project</td><td>14 programs, 16 sockets, 18 script</td><td>The programs are those of the project&rsquo;s folders; a client finds the project open; the script runs on it.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td>18 script</td><td>19 console</td><td>The console starts after the script&rsquo;s output.</td><td><span class="kind real">need</span></td></tr>
+            <tr><td>everything</td><td>20 hooks</td><td>Your rule: an exception hook installed early hides the errors of the start (<code>app.py:294</code>).</td><td><span class="kind hard">your rule</span></td></tr>
+            <tr><td>20 hooks</td><td>21 loop</td><td>What runs before the loop is the start; the loop handles events. Not for the remote windows, which start in the loop (<a class="ref" href="#questions">O2</a>).</td><td><span class="kind real">need</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Steps 16 and 17 have no need between them, nor 14 with 16 to 19: their order is a choice. Steps 2 and 9 read the same setting, the workspace, once for the lock and once for the run (<a class="ref" href="#questions">O6</a>).</p>
+      </section>
+
+      <section id="quit">
+        <h2><span class="num">&sect;5</span>At quit</h2>
+        <p>The steps register what they undo at quit, so the order of the quit follows that of the start.</p>
+        <div class="scroll">
+        <table>
+          <thead><tr><th>When</th><th>GUI, no GUI</th><th>Remote</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">Before shutdown</td><td>Write the settings (8); save the project (13); close the console (19).</td><td>Write the settings (8), the open bug of <code>BUGS.md</code>; close the connection and the consoles.</td></tr>
+            <tr><td class="nowrap">After shutdown</td><td>Release the locks (4); end the log (5); give the terminal back (19).</td><td>End the log (5).</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>The log ends after the project is saved, so a failed save is logged (<a class="ref" href="#questions">O4</a>). <code>--command</code> has nothing to undo.</p>
+      </section>
+
+      <section id="moves">
+        <h2><span class="num">&sect;6</span>What moves from today</h2>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>Today (<a href="#table">&sect;10</a>)</th><th>In this order</th></tr></thead>
+          <tbody>
+            <tr><td>1 locale</td><td>After the locks, in GUI and no GUI; all of <code>gui/</code> imported before it.</td><td>First, in every mode; every module after it.</td></tr>
+            <tr><td>4 reactor</td><td>GUI and remote: before anything; in the GUI, a refused lock has loaded GTK first. No GUI: the epoll reactor, installed by importing <code>bricks</code>.</td><td>After the locks; named for each mode.</td></tr>
+            <tr><td>5 log</td><td>After the migration and the settings: their messages wait in a buffer and come out before the line that the run starts.</td><td>Before the migration; the first line is the start.</td></tr>
+            <tr><td>8 settings</td><td>The remote windows turn KSM on in this computer.</td><td>Not in the remote windows.</td></tr>
+            <tr><td>14 title, programs</td><td>After everything else, the console included.</td><td>Right after the last project (<a class="ref" href="#questions">O5</a>).</td></tr>
+            <tr><td>20 hooks</td><td>Last, but <code>pdb</code>&rsquo;s signals in the middle, after the engine; none in the remote windows.</td><td>All last, <code>pdb</code> too (<a class="ref" href="#questions">O3</a>), and in the remote windows (<a class="ref" href="#questions">O2</a>).</td></tr>
+            <tr><td>The writing of the settings at quit</td><td>Registered after the engine.</td><td>With the settings, at 8.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>The rest keeps today&rsquo;s order: the migration before the settings, the windows before the last project, the project before the sockets and the script, the script before the console.</p>
+      </section>
+
+      <section id="parse">
+        <h2><span class="num">&sect;7</span>The command line</h2>
+        <p>Step 0. <code>cli_new.parse_or_exit()</code> reads <code>sys.argv</code> into a <code>CommandLineOptions</code>, the mode and the options, or exits: with 0 after <code>--help</code> and <code>--version</code>, with 1 and <code>virtualbricks: &hellip;</code> after an error. Its checks need only the options and the names of the files they give. <code>cli_new.py</code> becomes <code>cli.py</code> once the old code goes.</p>
+        <h3>What it imports at its top</h3>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Module</th><th>Now</th><th>Decided</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td><code>argparse</code>, <code>os</code>, <code>sys</code>, <code>typing</code></td><td>top</td><td>top</td><td>The parser.</td></tr>
+            <tr><td><code>virtualbricks</code>, for <code>__version__</code></td><td>top</td><td>top</td><td><code>__init__.py</code> holds the version alone, and <code>cli_new.py</code> is in the package anyway.</td></tr>
+            <tr><td><code>virtualbricks.sockets</code>, with <code>ipaddress</code></td><td>top, for <code>type=</code> and <code>DEFAULT_SOCKET</code></td><td>top</td><td>As it is: <code>Socket(None)</code> for <code>--listen</code> and <code>--connect</code> alone, and 3.4 ms with <code>ipaddress</code> (<a class="ref done" href="#questions">Q2</a>).</td></tr>
+            <tr><td><code>virtualbricks.locks</code>, with <code>locations</code>: <code>tempfile</code>, <code>hashlib</code>, <code>base64</code>, <code>shutil</code>&hellip;</td><td>top, for <code>choices=locks.POLICIES</code></td><td>top, and <code>locations</code> with its imports at its top</td><td>The parser lists the policies, so it needs them to be built; <code>locations</code> costs about 8 ms (<a class="ref done" href="#questions">Q1</a>).</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>Measured</h3>
+        <p>On 9 October in the venv: each command 21 times, the median. &ldquo;Lazy&rdquo; is a copy of <code>cli_new.py</code> with <code>sockets</code> imported inside <code>_socket()</code> and the policies written out, which stood for Q1 A and Q2 A together; both were left aside.</p>
+        <div class="scroll">
+        <table>
+          <thead><tr><th>Command</th><th class="num">Time</th><th>Modules of Virtualbricks loaded</th></tr></thead>
+          <tbody>
+            <tr><td><code>virtualbricks --version</code>, <code>cli.py</code> today</td><td class="num">172 ms</td><td>7, and 60 of Twisted</td></tr>
+            <tr><td><code>virtualbricks --help</code>, <code>cli.py</code> today</td><td class="num">174 ms</td><td>7, and 60 of Twisted</td></tr>
+            <tr><td><code>--version</code>, <code>cli_new.py</code></td><td class="num">45 ms</td><td>5: the package, <code>cli_new</code>, <code>sockets</code>, <code>locks</code>, <code>locations</code></td></tr>
+            <tr><td><code>--help</code>, <code>cli_new.py</code></td><td class="num">59 ms</td><td>the same</td></tr>
+            <tr><td><code>--version</code>, lazy</td><td class="num">34 ms</td><td>the package and the parser</td></tr>
+            <tr><td><code>--help</code>, lazy</td><td class="num">38 ms</td><td>the same</td></tr>
+            <tr><td><code>python -c pass</code></td><td class="num">26 ms</td><td>&ndash;</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p class="footnote"><code>--help</code> takes longer than <code>--version</code> because argparse formats the help. In the venv, every start also pays the finder of the editable install; an installed Virtualbricks has none.</p>
+      </section>
+
+      <section id="questions">
+        <h2><span class="num">&sect;8</span>Questions</h2>
+        <h3>The order</h3>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th>#</th><th>Question and options</th><th>Recommended</th></tr></thead>
+          <tbody>
+            <tr><td>O1</td><td><p>Is the reactor installed before or after the log starts?</p><p><strong>A.</strong> Before: the first line of the log names it, and the release of the locks is registered with it. <strong>B.</strong> After: a reactor that can&rsquo;t be installed, as GTK without a display, is logged to <code>--logfile</code> and not only to the standard error.</p></td><td class="rec">A</td></tr>
+            <tr><td>O2</td><td><p>When do the remote windows get their hooks, since they start in the loop?</p><p><strong>A.</strong> Once the windows show, the last step of their start. <strong>B.</strong> Before the loop, as the other modes; the connection and the windows then come under the hooks.</p></td><td class="rec">A: last, as your rule says</td></tr>
+            <tr><td>O3</td><td><p>Where do the signals of <code>pdb</code> go, with <code>-b</code> and a terminal?</p><p><strong>A.</strong> With the hooks, last. <strong>B.</strong> After the engine, as today, so that <code>pdb</code> can stop the start.</p></td><td class="rec">A</td></tr>
+            <tr><td>O4</td><td><p>When does the log end?</p><p><strong>A.</strong> After shutdown, after the locks are released. <strong>B.</strong> Before shutdown, after the project is saved, as today.</p></td><td class="rec">A: the log covers the whole quit</td></tr>
+            <tr><td>O5</td><td><p>When does the GUI set its title and say which programs are missing?</p><p><strong>A.</strong> Right after the last project, which they read. <strong>B.</strong> After everything, the console included, as today.</p></td><td class="rec">A</td></tr>
+            <tr><td>O6</td><td><p>The workspace is read for the locks (2) and for the run (9). Once or twice?</p><p><strong>A.</strong> Once, at 2: the run uses what the locks used. <strong>B.</strong> Twice, as today, from two readers of the same setting.</p></td><td class="rec">A: the locked folder and the run&rsquo;s are the same by construction</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>The command line, decided</h3>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th>#</th><th>Question and options</th><th>Decided</th></tr></thead>
+          <tbody>
+            <tr><td>Q1</td><td><p>How does the parser get the policies of <code>--lock</code> without the 22 modules of <code>locations.py</code>?</p><p><strong>A.</strong> <code>locations.py</code> imports <code>tempfile</code>, <code>hashlib</code> and <code>base64</code> in the two functions that use them. <strong>B.</strong> <code>locks.py</code> imports <code>locations</code> in its functions. <strong>C.</strong> As it is: 8 ms more for <code>--help</code>.</p></td><td class="rec decided">C, 9 October: the imports of <code>locations.py</code> stay at its top. I had recommended A.</td></tr>
+            <tr><td>Q2</td><td><p>Where is <code>sockets.py</code> imported?</p><p><strong>A.</strong> Inside <code>_socket()</code>; <code>--listen</code> and <code>--connect</code> alone store a sentinel, which <code>parse()</code> turns into <code>Socket(None)</code>. <strong>B.</strong> At the top, as now: 3.4 ms with <code>ipaddress</code>.</p></td><td class="rec decided">B, 9 October. I had recommended A.</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <p class="part">Today, on develop</p>
+      <p class="part-note">The analysis of revisions 1 and 2, renumbered: how <code>develop</code> starts at eeaf42a. The branch has changed only the parser so far.</p>
+
       <section id="branch">
-        <h2><span class="num">&sect;2</span>Where the modes split</h2>
+        <h2><span class="num">&sect;9</span>Where the modes split</h2>
         <p><code>cli.main()</code> after parsing. Red boxes install a reactor. Every <code>import</code> of the application classes is inside a factory function (<code>make_application</code>, <code>make_remote_application</code>, <code>make_plain_application</code>, <code>cli.py:537&ndash;556</code>), so <code>cli.py</code> itself loads seven modules of the package and no reactor.</p>
         <figure class="diagram">
           <svg viewBox="0 0 900 436" role="img" aria-label="Decision tree of cli.main: after parsing the options, --connect alone leads to the remote windows, --command or --connect --run to the command client, --no-gui to the CLI application, and otherwise to the GUI application. Remote and GUI install the GI reactor explicitly, the CLI gets the epoll reactor by importing app, the command client has no reactor.">
@@ -476,7 +773,7 @@
       </section>
 
       <section id="table">
-        <h2><span class="num">&sect;3</span>Every action, by mode</h2>
+        <h2><span class="num">&sect;10</span>Every action, by mode</h2>
         <p>One row per action, in the order of the GUI. Each cell gives the action&rsquo;s position in that mode&rsquo;s own sequence, so a column read top to bottom is that mode&rsquo;s start. A dash means the mode doesn&rsquo;t do it. Rows with a red edge are about the reactor or GTK.</p>
         <div class="scroll">
         <table class="modes">
@@ -496,7 +793,7 @@
               <td><span class="n">1</span></td><td><span class="n">1</span></td><td><span class="n">1</span></td><td><span class="n">1</span></td>
             </tr>
             <tr>
-              <td>Parse the options (side effects in <a href="#branch">&sect;2</a>), then pick the mode<span class="where"><code>cli.py:514</code>, <code>569</code></span></td>
+              <td>Parse the options (side effects in <a href="#branch">&sect;9</a>), then pick the mode<span class="where"><code>cli.py:514</code>, <code>569</code></span></td>
               <td><span class="n">2</span></td><td><span class="n">2</span></td><td><span class="n">2</span> <code>noterm</code> forced</td><td><span class="n">2</span> run options refused</td>
             </tr>
 
@@ -677,7 +974,7 @@
       </section>
 
       <section id="time">
-        <h2><span class="num">&sect;4</span>In time</h2>
+        <h2><span class="num">&sect;11</span>In time</h2>
         <p>The same sequences as lanes, read left to right. The black chip is where <code>reactor.run()</code> starts the loop: everything before it runs inside <code>task.react</code>, before any event is handled.</p>
         <ul class="legend">
           <li><span class="swatch k-proc"></span>process, objects</li>
@@ -783,7 +1080,7 @@
       </section>
 
       <section id="reactor">
-        <h2><span class="num">&sect;5</span>The reactor</h2>
+        <h2><span class="num">&sect;12</span>The reactor</h2>
         <p>Twisted has one global reactor. The first <code>from twisted.internet import reactor</code> installs the default one, <code>EPollReactor</code> on Linux, unless another was installed before. <code>gireactor.install()</code> after that raises <code>ReactorAlreadyInstalledError</code>; tried today: <code>import virtualbricks.bricks</code>, then <code>gireactor.install()</code>, fails with it.</p>
         <h3>Who installs which</h3>
         <div class="scroll">
@@ -831,7 +1128,7 @@
       </section>
 
       <section id="deps">
-        <h2><span class="num">&sect;6</span>What needs what</h2>
+        <h2><span class="num">&sect;13</span>What needs what</h2>
         <p>The start of CLI and GUI, as a graph. A solid arrow is a real need, red where the reactor or GTK is involved. A dashed arrow is only the order of the code: the two steps could swap. Steps without an arrow between them are in their order by position in <code>_start</code> alone.</p>
         <figure class="diagram">
           <svg viewBox="0 0 900 932" role="img" aria-label="Dependency graph of the start of the CLI and the GUI: options, GTK version and reactor installation before importing the application class; startup_workspace and settings_to_convert before take_locks; take_locks before migrate; migrate before load_settings and share_user_lock; the reactor before load_settings because of KSM; load_settings before projects.path, runtime folder and listen; BrickFactory, MainWindow, open the last project, then listen and the script, then the console, and the exception hooks last.">
@@ -956,7 +1253,7 @@
           <thead><tr><th>Before</th><th>After</th><th>Why</th><th>Kind</th></tr></thead>
           <tbody>
             <tr><td><code>gi.require_version</code></td><td>any import of Gtk</td><td>Without it, <code>gi</code> loads the newest Gtk installed, 4 where it sits beside 3. <code>gui/app.py:27</code> doesn&rsquo;t ask for a version itself.</td><td><span class="kind hard">reactor, GTK</span></td></tr>
-            <tr><td><code>gireactor.install()</code></td><td>the first import of the reactor</td><td>Today that is <code>bricks/__init__.py:41</code>, reached by importing <code>app</code>, <code>gui.app</code>, <code>remote.client</code>, <code>console.control</code>, <code>console.terminal</code> and more (<a href="#reactor">&sect;5</a>).</td><td><span class="kind hard">reactor, GTK</span></td></tr>
+            <tr><td><code>gireactor.install()</code></td><td>the first import of the reactor</td><td>Today that is <code>bricks/__init__.py:41</code>, reached by importing <code>app</code>, <code>gui.app</code>, <code>remote.client</code>, <code>console.control</code>, <code>console.terminal</code> and more (<a href="#reactor">&sect;12</a>).</td><td><span class="kind hard">reactor, GTK</span></td></tr>
             <tr><td>reactor chosen</td><td><code>load_settings()</code></td><td>KSM: <code>set_ksm()</code> imports the reactor to spawn <code>sudo tee</code> (<code>ksm.py:119</code>).</td><td><span class="kind hard">reactor, GTK</span></td></tr>
             <tr><td><code>settings_to_convert()</code>, <code>startup_workspace()</code></td><td><code>take_locks()</code></td><td>Under <code>--lock workspace</code>, converting 2.1 settings takes the user lock alone. The workspace lock needs the folder, made when the locks are held.</td><td><span class="kind real">need</span></td></tr>
             <tr><td><code>take_locks()</code></td><td><code>migrate()</code>, every write</td><td>The migration in place and the projects are written under the locks.</td><td><span class="kind real">need</span></td></tr>
@@ -980,31 +1277,72 @@
       </section>
 
       <section id="confusing">
-        <h2><span class="num">&sect;7</span>What makes it confusing</h2>
+        <h2><span class="num">&sect;14</span>What makes it confusing</h2>
+        <p>The order of <a href="#order">&sect;2</a> answers items 1, 4 and 5, and the first bug of item 8; <code>cli_new.py</code> answers item 9. Item 3 is <a class="ref" href="#questions">O6</a>; item 6 stays; items 2, 7 and 10 are about the code, for later.</p>
         <ol>
           <li><strong>The reactor is chosen by import order.</strong> Three places install one (<code>cli.py:566</code>, <code>migrate/gui.py:523</code>, and the import of <code>bricks</code> for the CLI), in two ways. GUI and remote work because <code>cli.py</code> imports nothing of the application at the top and each factory imports its module after <code>install_gtk_reactor()</code>. No comment states that order. The test of command mode catches a top-level import in <code>cli.py</code>; nothing checks that the factories import after the reactor is installed.</li>
           <li><strong>Remote is not an Application.</strong> <code>RemoteApplication</code> repeats <code>install_locale</code>, <code>install_settings</code>, the logger and its triggers by hand (<code>gui/app.py:256&ndash;278</code>). It lives in <code>gui/app.py</code> beside <code>GuiApplication</code>, so importing it imports <code>app</code>, <code>BrickFactory</code>, <code>bricks</code> and <code>LocalEngine</code>, none of which it uses. <code>remote/client.py:54</code> imports <code>brickfactory</code> for <code>normalize_name</code> alone.</li>
           <li><strong>The settings are read three times.</strong> <code>startup_workspace()</code> and <code>startup_migration()</code> each call <code>_startup_settings()</code>, then <code>load_settings()</code> reads the file again; <code>settings_to_convert()</code> runs twice. The workspace that is locked and <code>projects.path</code> come from two different readers of the same setting.</li>
           <li><strong>The locale comes at three different points.</strong> After the locks in CLI and GUI, first in remote, before <code>client.main</code> in command mode. Everything imported before it, all of <code>gui/</code> in the GUI, is translated by the builtins that <code>i18n.py:93</code> installs on import, without <code>setlocale</code>.</li>
           <li><strong>Logging starts late.</strong> In <code>_start</code>, after the locks, the migration and the settings. Their messages are buffered and replayed before the &ldquo;starts&rdquo; line, so the log reads out of order. Command mode never starts the log, and neither does the migration window.</li>
-          <li><strong>Two timings in the GUI</strong> (<a href="#time">&sect;4</a>): <code>_start</code> runs before the loop, or inside it when a migration is pending. A step that becomes asynchronous changes which.</li>
+          <li><strong>Two timings in the GUI</strong> (<a href="#time">&sect;11</a>): <code>_start</code> runs before the loop, or inside it when a migration is pending. A step that becomes asynchronous changes which.</li>
           <li><strong><code>_start</code> is one long method with hooks.</strong> <code>migrate</code>, <code>_run</code>, <code>open_last_project</code>, <code>get_namespace</code> are overridden by <code>GuiApplication</code>, which then adds steps after <code>super()._start()</code>. The <code>pdb</code> set-up sits in the middle. The quit order lives in <code>addSystemEventTrigger</code> calls spread over <code>run</code>, <code>_start</code> and the console.</li>
           <li><strong>Two bugs, in <code>BUGS.md</code>.</strong> The remote windows&rsquo; <code>load_settings()</code> turns KSM on in this computer when the local setting says so (<code>config/settings.py:332</code>), though the bricks run on the other one: checked by calling <code>install_settings()</code> with <code>set_ksm</code> replaced. And each process writes all of <code>settings.toml</code> from its own copy, at each change and at quit, so the remote windows and the Virtualbricks they show on the same computer, or two side by side with <code>--lock workspace</code>, undo each other&rsquo;s changes: checked with two processes on one file.</li>
-          <li><strong>Parsing acts.</strong> <code>--logfile</code> opens its file while it is parsed, even when <code>check_client()</code> refuses it next; <code>--listen ssl:</code> reads keys; <code>--logger</code> imports a module (<a href="#branch">&sect;2</a>).</li>
+          <li><strong>Parsing acts.</strong> <code>--logfile</code> opens its file while it is parsed, even when <code>check_client()</code> refuses it next; <code>--listen ssl:</code> reads keys; <code>--logger</code> imports a module (<a href="#branch">&sect;9</a>).</li>
           <li><strong>The names don&rsquo;t say the shape.</strong> <code>make_application</code> makes the GUI and <code>make_plain_application</code> the CLI; <code>run_app</code> is used by three modes and command mode doesn&rsquo;t go through it; the migration window has a <code>main()</code> of its own with its own reactor and loop.</li>
         </ol>
       </section>
 
-      <section id="seams">
-        <h2><span class="num">&sect;8</span>Where to cut</h2>
-        <p>Not decided; my recommendation, for revision 2.</p>
-        <ul>
-          <li><strong>One function picks the mode and installs its reactor, before any import of the application.</strong> <code>gireactor</code> for GUI and remote, <code>twisted.internet.default.install()</code> named for the CLI, none for command mode. A test per mode, in a subprocess, checks the reactor type after the start and that <code>cli.py</code> plus parsing loads no reactor. The migration window calls the same function.</li>
-          <li><strong>Read the settings once, at the start of <code>run()</code>.</strong> A startup record (workspace, 2.1 file to convert, app settings) that the locks, the migration and <code>load_settings</code> take, so the locked workspace and <code>projects.path</code> are the same value.</li>
-          <li><strong>Start the log and the locale first</strong>, right after parsing, in every mode that has a reactor. The order of the log is then the order of the start.</li>
-          <li><strong>A base class for the steps that every app shares</strong> (locale, settings, logger, quit triggers), with <code>Application</code>, <code>GuiApplication</code> and <code>RemoteApplication</code> on it, and <code>RemoteApplication</code> in a module of its own that imports neither <code>app</code> nor <code>bricks</code>. Remote skips <code>set_ksm</code>.</li>
-          <li><strong><code>_start</code> as a list of named steps</strong>, each a method, the GUI adding its own at named places instead of around <code>super()</code>. One place registers the quit triggers, in their order.</li>
-        </ul>
+      <section id="parser">
+        <h2><span class="num">&sect;15</span>The parser</h2>
+        <p><strong>Since then:</strong> done, as <code>cli_new.py</code> on <code>mg/cli-argparse</code>, with tests; <a href="#parse">&sect;7</a> is where it stands.</p>
+        <p><code>cli.py</code> reads the command line with Twisted&rsquo;s <code>usage.Options</code>, which runs <code>getopt</code>; <code>migrate/cli.py:62</code> uses <code>argparse</code>. For a rework of the command line, my recommendation is <code>argparse</code>: most of the special code of <code>cli.py</code> is there to get around <code>usage.Options</code>, and <code>--command</code> would start three times faster. Not decided.</p>
+        <h3>What <code>usage.Options</code> costs today</h3>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>What</th><th>Where</th><th>Why it is there</th><th>With argparse</th></tr></thead>
+          <tbody>
+            <tr><td>The optional value of <code>--listen</code> and <code>--connect</code></td><td><code>take_sockets()</code>, <code>_long_option()</code>, <code>_takes_value()</code>, <code>cli.py:174&ndash;242</code></td><td><code>getopt</code> has no optional argument. A pass before it takes them out, and to know where they are it repeats what <code>getopt</code> does: unique prefixes, and <code>-vl FILE</code>, where <code>-l</code> takes the next word.</td><td><code>nargs="?"</code> with <code>action="append"</code>, and a <code>type=</code> function that reads the description.</td></tr>
+            <tr><td>Given or by default</td><td><code>self.given</code>, <code>RUN_OPTIONS</code>, <code>check_client()</code>, <code>check_windows()</code>, <code>cli.py:138&ndash;163</code>, <code>398&ndash;476</code></td><td>An option with a default can&rsquo;t tell <code>--lock system</code> from no <code>--lock</code>; <code>opt_lock</code> and <code>opt_logfile</code> note it themselves.</td><td><code>default=None</code>; the defaults are set after parsing, where <code>--workspace</code> already sets <code>--lock workspace</code>.</td></tr>
+            <tr><td>Acting while parsing</td><td><code>opt_logfile</code> opens the file (<code>cli.py:52</code>, <code>344</code>); <code>opt_run</code>, <code>opt_workspace</code> look at paths; <code>socket()</code> reads the ssl key and the token</td><td>Each <code>opt_*</code> method runs as its option is read, before the mode is known: <code>--command --logfile F</code> makes <code>F</code>, then is refused.</td><td><code>parse_args()</code> only parses; a step after it checks and opens what the mode needs.</td></tr>
+            <tr><td>Twisted for <code>--command</code></td><td><code>cli.py:29&ndash;31</code>: <code>twisted.python.usage</code>, <code>reflect</code>, <code>twisted.internet.defer</code>, <code>task</code>, <code>twisted.logger</code></td><td>The parser is Twisted&rsquo;s; the others are for the modes with a reactor.</td><td><code>argparse</code> is in the standard library, and <code>console.client</code> loads no Twisted: imported only by the modes that run a reactor, Twisted stays out of <code>--command</code>.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>Measured</h3>
+        <p>In the project&rsquo;s virtualenv, on this computer. A process is the median of 9 runs; an import, of 5, each in a fresh interpreter.</p>
+        <div class="scroll">
+        <table>
+          <thead><tr><th>What</th><th class="num">Time</th><th class="num">Twisted modules</th></tr></thead>
+          <tbody>
+            <tr><td>Process: <code>virtualbricks --version</code>, which imports <code>cli.py</code>, parses and exits</td><td class="num">169 ms</td><td class="num">60</td></tr>
+            <tr><td>Process: <code>python -c "import argparse, &hellip;console.client, &hellip;locks, &hellip;locations"</code>, what <code>--command</code> would need</td><td class="num">55 ms</td><td class="num">0</td></tr>
+            <tr><td>Process: <code>python -c pass</code></td><td class="num">23 ms</td><td class="num">0</td></tr>
+            <tr><td>Import <code>argparse</code></td><td class="num">1.9 ms</td><td class="num">0</td></tr>
+            <tr><td>Import <code>twisted.python.usage</code></td><td class="num">55.9 ms</td><td class="num">9</td></tr>
+            <tr><td>Import <code>virtualbricks.console.client</code></td><td class="num">26.4 ms</td><td class="num">0</td></tr>
+            <tr><td>Import <code>virtualbricks.cli</code></td><td class="num">120.3 ms</td><td class="num">60</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>The difference counts where <code>--command</code> runs in a loop, as a script that asks for the state of each brick does.</p>
+        <h3>What to watch for</h3>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Point</th><th>Today</th><th>argparse by default</th><th>To do</th></tr></thead>
+          <tbody>
+            <tr><td>Exit status of a wrong option</td><td>1: virtualbricks(1), EXIT STATUS, &ldquo;an option is wrong&rdquo;</td><td class="no">2, which for <code>--command</code> means &ldquo;No Virtualbricks answered&rdquo;</td><td>Override <code>ArgumentParser.error()</code>: print the usage and the error, exit with 1.</td></tr>
+            <tr><td>The word after <code>--connect</code></td><td>Taken only when it starts with a type (<code>DESCRIPTION</code>, <code>cli.py:45</code>): <code>--command --connect brick list</code> sends <code>brick list</code></td><td><code>nargs="?"</code> takes <code>brick</code> as the description</td><td>The <code>type=</code> function refuses a word without a type, and says to write <code>--connect</code> before <code>--command</code> or to use <code>--</code>. The man page and the README always write <code>--connect DESC</code> first. Or keep a small pass for this one case.</td></tr>
+            <tr><td>The words of the command</td><td><code>getopt</code> stops at the first word: the rest is the command&rsquo;s, dashes included</td><td>Options and words mix</td><td>The words as <code>nargs=argparse.REMAINDER</code>; tests with dashes among them.</td></tr>
+            <tr><td>Abbreviations</td><td><code>getopt</code> takes a unique prefix, as <code>--work</code></td><td>The same, <code>allow_abbrev=True</code></td><td>Keep or drop them on purpose; the docs promise neither.</td></tr>
+            <tr><td>The test of the man page</td><td><code>test_docs.py:383&ndash;393</code> reads <code>longOpt</code>, <code>shortOpt</code> and <code>synonyms</code> of <code>Options</code></td><td>&ndash;</td><td>Read the parser&rsquo;s actions, their <code>option_strings</code>.</td></tr>
+            <tr><td>What the modes get</td><td>A dict subclass, read as a <code>Mapping</code> by <code>app.py</code> and <code>gui/app.py</code>; untyped for mypy</td><td>A <code>Namespace</code>, as untyped</td><td>A frozen dataclass made from the namespace, in the same change: the types come from it, not from the parser.</td></tr>
+            <tr><td>Tests</td><td>45 in <code>test_cli.py</code></td><td>&ndash;</td><td>Most check what a line parses to, or its error; their helpers change, the cases stay.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>What <code>usage.Options</code> has that this program uses</h3>
+        <p>Nothing that <code>argparse</code> lacks. Its shell completion (<code>compData</code>) and its sub-commands aren&rsquo;t used, and <code>postOptions</code> becomes the code after <code>parse_args()</code>. <code>argparse</code> has sub-commands too, should the rework turn the modes into them, and its help and errors would match those of <code>python -m virtualbricks.migrate</code>.</p>
       </section>
     </main>
   </div>

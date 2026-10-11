@@ -103,6 +103,7 @@ With it gone, raise them to those of Debian 12:
 | `pyproject.toml`, `requires-python` | `>=3.10` | `>=3.11` |
 | `pyproject.toml`, `[tool.black]` and `[tool.ruff]` | `py310` | `py311` |
 | `pyproject.toml`, `Twisted[tls]` | `>=22.1` | `>=22.4` |
+| `pyproject.toml`, `pyOpenSSL` | `>=21.0` | `>=23.0` |
 | `pyproject.toml`, `attrs` | `>=20.1` | `>=22.2` |
 | `pyproject.toml`, `markdown-it-py` | `>=1.1` | `>=2.1` |
 | `pyproject.toml`, `zope.interface` | `>=5.4` | `>=5.5` |

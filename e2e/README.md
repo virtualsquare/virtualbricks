@@ -390,7 +390,7 @@ chose. Read the scenario as you would one of a contributor: it is the test.
   environment of the tests and of Virtualbricks.
 - `virtualbricks`, for each scenario, makes a home with `settings.toml` and
   a workspace; `Given Virtualbricks is running` starts a `broadwayd`, then
-  `python -m virtualbricks --noterm --lock none --workspace …` on this
+  `python -m virtualbricks --no-term --lock none --workspace …` on this
   checkout, in English, on it, and waits for its main window; the step
   `… with OPTIONS` gives it those of the scenario. It starts through a few
   lines of Python, `LAUNCH` in `harness.py`, which put its system lock in

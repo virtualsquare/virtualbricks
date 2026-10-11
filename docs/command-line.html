@@ -315,11 +315,11 @@ virtualbricks --connect [description] [--workspace directory] --run file</code><
 <dl class="terms">
 <dt><code>-v</code>, <code>--verbose</code></dt><dd><p>Log more; it can be repeated.</p></dd>
 <dt><code>-q</code>, <code>--quiet</code></dt><dd><p>Log less; it can be repeated.</p></dd>
-<dt><code>-b</code>, <code>--debug</code></dt><dd><p>Log everything. With it, and with <code>-vv</code>, Ctrl+C and the <code>SIGUSR2</code> signal drop into the <code>pdb</code> debugger, unless <code>--noterm</code> is given.</p></dd>
+<dt><code>-b</code>, <code>--debug</code></dt><dd><p>Log everything.</p></dd>
 <dt><code>-l</code> <em>file</em>, <code>--logfile</code> <em>file</em></dt><dd><p>Write the log messages to <em>file</em>; <code>-</code> for the standard output.</p></dd>
-<dt><code>--logger</code> <em>name</em></dt><dd><p>The fully qualified name of a factory of the log observer, instead of <code>--logfile</code>.</p></dd>
-<dt><code>--noterm</code></dt><dd><p>Don&#x27;t read the console in the terminal.</p></dd>
-<dt><code>--no-gui</code></dt><dd><p>Run without the windows: no GTK is loaded, and the console is the way in. With <code>--noterm</code> too, nothing is read: the lab runs until Virtualbricks gets <code>SIGTERM</code> or <code>SIGINT</code>.</p></dd>
+<dt><code>--logger</code> <em>name</em></dt><dd><p>The fully qualified name of a log observer, instead of <code>--logfile</code>.</p></dd>
+<dt><code>--no-term</code></dt><dd><p>Don&#x27;t read the console in the terminal.</p></dd>
+<dt><code>--no-gui</code></dt><dd><p>Run without the windows: no GTK is loaded, and the console is the way in. With <code>--no-term</code> too, nothing is read: the lab runs until Virtualbricks gets <code>SIGTERM</code> or <code>SIGINT</code>.</p></dd>
 <dt><code>--run</code> <em>file</em></dt><dd><p>Run the commands of <em>file</em> once the project is open, as <code>source</code> does, then read the console. With <code>--connect</code>, send them to the Virtualbricks that runs instead, up to the first error, and exit. See <a href="#control-socket">The control socket</a>.</p></dd>
 <dt><code>--workspace</code> <em>directory</em></dt><dd><p>Use the projects of <em>directory</em> for this run, instead of the <code>workspace</code> setting; it&#x27;s made if it isn&#x27;t there. Without <code>--lock</code>, the single-instance mode is then <code>workspace</code>. With <code>--command</code> or <code>--connect</code>, the Virtualbricks that runs in <em>directory</em>.</p></dd>
 <dt><code>--lock</code> <em>mode</em></dt><dd><p>The single-instance mode: <code>system</code>, one Virtualbricks on the machine, the default without <code>--workspace</code>; <code>user</code>, one for each user; <code>workspace</code>, one for each workspace, the default with <code>--workspace</code>; <code>none</code>, no limit. Each mode but <code>none</code> holds the lock of its workspace too, so two never share one. See <a href="#files">Files</a>.</p></dd>
@@ -327,7 +327,7 @@ virtualbricks --connect [description] [--workspace directory] --run file</code><
 <dt><code>--listen</code> [<em>description</em>]</dt><dd><p>Listen on a control socket: alone, the socket <em>.control</em> in the runtime folder of the workspace; with a <em>description</em>, as <code>unix:~/labs/lab1.sock</code> or <code>tcp:8765</code>, the socket it describes. It speaks AMP, or the JSON protocol with <code>protocol=json</code>. It can be given more than once. The next word is the description when it starts with a type and a colon, as <code>unix:</code>; after <code>=</code> it is too. See <a href="#control-socket">The control socket</a>.</p></dd>
 <dt><code>--connect</code> [<em>description</em>]</dt><dd><p>The Virtualbricks that runs that <code>--command</code> and <code>--run</code> talk to: alone, the one of the socket <em>.control</em> of its workspace, that of <code>--workspace</code> or the only one that listens; with a <em>description</em>, the one of the socket it describes, as <code>unix:~/labs/lab1.sock</code> or <code>tcp:lab.example:8765</code>. It speaks AMP, or the JSON protocol with <code>protocol=json</code>. The next word is its description as for <code>--listen</code>. With <code>--command</code> or <code>--run</code>, it takes no <code>--listen</code>, no other option of a start, and no <code>--workspace</code> with a description. See <a href="#control-socket">The control socket</a>.</p><p>Without them, it opens the windows of that Virtualbricks, which speak AMP, so it takes no <code>protocol=json</code>; nor <code>--no-gui</code>, <code>--lock</code> or <code>--listen</code>, which are for the Virtualbricks that runs the bricks, nor <code>--workspace</code> with a description. See <a href="#windows">The windows of another Virtualbricks</a>.</p></dd>
 <dt><code>--version</code></dt><dd><p>Print the version and exit.</p></dd>
-<dt><code>--help</code></dt><dd><p>Print the options and exit.</p></dd>
+<dt><code>-h</code>, <code>--help</code></dt><dd><p>Print the options and exit.</p></dd>
 </dl>
 </section>
 <section id="console">
@@ -523,12 +523,12 @@ task.react(lambda reactor: ensureDeferred(main(reactor)))</code></pre></figure>
 <section id="windows">
 <h2>The windows of another Virtualbricks</h2>
 <p><code>virtualbricks --connect</code> <em>description</em> opens the windows of the Virtualbricks of the socket of <em>description</em>: the lab machine, which runs the bricks, this machine or another, and the desktop, which shows them. The Virtualbricks there listens with <code>--listen</code>, on a socket that speaks AMP, as one does without <code>protocol=json</code>, with its own windows or with <code>--no-gui</code>, and both run the same version:</p>
-<figure class="code"><pre><code>virtualbricks --no-gui --noterm --listen \
+<figure class="code"><pre><code>virtualbricks --no-gui --no-term --listen \
     'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.key'
 virtualbricks --connect \
     'ssl:lab.example:8765:caCertsDir=~/vb/lab'</code></pre></figure>
 <p><code>virtualbricks --connect</code> alone opens the windows of a Virtualbricks of yours on this machine, the one that listens on the socket of <code>--listen</code> alone of its workspace: that of <code>--workspace</code>, or else the only one that listens; when several do, it names them and opens nothing. The windows call it <em>this computer</em>:</p>
-<figure class="code"><pre><code>virtualbricks --no-gui --noterm --listen --workspace ~/labs/a &amp;
+<figure class="code"><pre><code>virtualbricks --no-gui --no-term --listen --workspace ~/labs/a &amp;
 virtualbricks --connect
 virtualbricks --connect --workspace ~/labs/a</code></pre></figure>
 <p>The windows follow the project open there: its bricks, events and images, their processes, the settings and the messages of its log; what the console or other windows change there shows at once. What the windows do goes there: a start, a new brick, the OK of a panel, which sends only the keys that the panel changed, so that two windows that change different keys of a brick keep both. The title names the project and where it runs.</p>
@@ -661,14 +661,14 @@ event set down delay=600
 event action add down stop router
 event start up down</code></pre></figure>
 <p>A lab on a server, from a file, without windows or console, with the socket of its workspace:</p>
-<figure class="code"><pre><code>virtualbricks --no-gui --noterm --listen --run ~/labs/ospf.vb</code></pre></figure>
+<figure class="code"><pre><code>virtualbricks --no-gui --no-term --listen --run ~/labs/ospf.vb</code></pre></figure>
 <p>The machine of that lab, from another terminal, and the commands of a file, sent to it one after the other:</p>
 <figure class="code"><pre><code>virtualbricks --command brick start router
 virtualbricks --connect --run ~/labs/traffic.vb</code></pre></figure>
 <p>Its windows, on the same machine:</p>
 <figure class="code"><pre><code>virtualbricks --connect</code></pre></figure>
 <p>The same lab, open to the network over <code>ssl</code>, and its machine, started from a laptop that has a copy of the token and of <code>lab.pem</code>, in <em>~/vb/lab</em>:</p>
-<figure class="code"><pre><code>virtualbricks --no-gui --noterm --run ~/labs/ospf.vb --listen \
+<figure class="code"><pre><code>virtualbricks --no-gui --no-term --run ~/labs/ospf.vb --listen \
     'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.key'
 virtualbricks \
     --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
@@ -677,8 +677,8 @@ virtualbricks \
 <figure class="code"><pre><code>virtualbricks --connect \
     'ssl:lab.example:8765:caCertsDir=~/vb/lab'</code></pre></figure>
 <p>Two labs side by side, each in its workspace, both listening, and a command to one of them:</p>
-<figure class="code"><pre><code>virtualbricks --no-gui --noterm --listen --workspace ~/labs/a &amp;
-virtualbricks --no-gui --noterm --listen --workspace ~/labs/b &amp;
+<figure class="code"><pre><code>virtualbricks --no-gui --no-term --listen --workspace ~/labs/a &amp;
+virtualbricks --no-gui --no-term --listen --workspace ~/labs/b &amp;
 virtualbricks --workspace ~/labs/b --command status</code></pre></figure>
 </section>
 <section id="see-also">
