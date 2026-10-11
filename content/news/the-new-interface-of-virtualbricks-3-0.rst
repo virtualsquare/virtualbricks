@@ -177,6 +177,8 @@ Bricks and the Events, in the same shape:
 
    The details of an image, in the tab: what qemu-img says of it, and each
    disk that uses it.
+   The picture was taken before the folder of the shared images was
+   renamed: its paths say ``vimages``, now ``shared_images``.
 
 The details show in the tab, as the settings of a brick do: the name and the
 description, which you can change, then the file, its format and backing

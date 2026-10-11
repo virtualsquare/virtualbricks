@@ -246,6 +246,8 @@ space taken by the private disks and by the other files.
 
    The image of firewall-2025 isn't on this computer: the list says so, and
    the details say which one.
+   The picture was taken before the folder of the shared images was
+   renamed: its paths say ``vimages``, now ``shared_images``.
 
 - **Open**, **New…** and **Rename…**, with the name checked as you type: a
   name that is taken or not valid is refused before you press the button, not
@@ -358,6 +360,8 @@ Since every choice has a default, the Import button works from the start.
    shared images; frr-debian isn't, and the file of the shared images with
    that name is used. The folders of QEMU and VDE of the other computer
    aren't here, and this computer's take their place.
+   The picture was taken before the folder of the shared images was
+   renamed: its paths say ``vimages``, now ``shared_images``.
 
 Choosing an archive reads only its head, the list of its contents, the
 project file and the README, a few kilobytes, and stops there, however
