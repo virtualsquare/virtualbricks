@@ -124,12 +124,9 @@ class Application:
         migration = startup_migration(self.options.workspace)
         if migration is None:
             return None
-        if self.options.mode == cli.NO_GUI:
-            migration.run()
-            migration.log(logger)
-            return None
-        else:
-            return None
+        migration.run()
+        migration.log(logger)
+        return None
 
     def share_user_lock(self, lock: locks.Lock | None) -> None:
         """

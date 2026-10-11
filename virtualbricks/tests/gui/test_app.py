@@ -28,7 +28,7 @@ from twisted.logger import LogLevel
 from twisted.trial import unittest
 
 from virtualbricks import ksm, locations
-from virtualbricks.cli import GUI, NO_GUI, CommandLineOptions
+from virtualbricks.cli import GUI, CommandLineOptions
 from virtualbricks.config import settings
 from virtualbricks.config.settings import set_current_project, set_setting
 from virtualbricks.console import projects as console_projects
@@ -313,11 +313,6 @@ class TestMigrate(GuiTestCase):
             [item.name for item in window.migration.items],
             [locations.LEGACY_SETTINGS_FILE, "lab"],
         )
-
-    def test_only_with_the_windows(self):
-        self.old_files()
-        self.assertIsNone(application(NO_GUI).migrate())
-        self.assertEqual(self.shown, [])
 
 
 class TestOpenLastProject(GuiTestCase):

@@ -29,7 +29,7 @@ from twisted.trial import unittest
 
 from virtualbricks import app, locations, locks, sockets
 from virtualbricks.brickfactory import BrickFactory
-from virtualbricks.cli import GUI, NO_GUI, CommandLineOptions
+from virtualbricks.cli import NO_GUI, CommandLineOptions
 from virtualbricks.config import settings, workspace
 from virtualbricks.config.settings import (
     current_project,
@@ -237,15 +237,6 @@ class TestMigrate(AppTestCase):
         )
         self.assertEqual(
             self.logger.formatted()[-1], "Migration: 1 of 1 projects migrated."
-        )
-
-    def test_left_to_the_windows(self):
-        # the migration window of the GUI runs it
-        folder = os.path.join(self.root, ".virtualbricks")
-        write_project(folder, "lab", CONFIG1)
-        self.assertIsNone(self.application(GUI).migrate())
-        self.assertFalse(
-            os.path.exists(os.path.join(folder, "lab", locations.PROJECT_FILE))
         )
 
 

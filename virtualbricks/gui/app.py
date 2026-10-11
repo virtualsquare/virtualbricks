@@ -168,12 +168,9 @@ class Application(CliApplication):
         migration = startup_migration(self.options.workspace)
         if migration is None:
             return None
-        if self.options.mode == cli.GUI:
-            window = MigrationWindow(migration=migration)
-            window.show()
-            return window.closed
-        else:
-            return None
+        window = MigrationWindow(migration=migration)
+        window.show()
+        return window.closed
 
     def open_last_project(self, factory: BrickFactory) -> None:
         """
