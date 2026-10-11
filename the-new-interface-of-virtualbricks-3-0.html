@@ -195,13 +195,14 @@ machine reads it, <em>Not in use</em>, <em>No disk</em> when no disk uses it, or
 missing</em>. The facts come from <tt class="docutils literal"><span class="pre">qemu-img</span> info</tt>, read in the background,
 so the list fills in as each file is read.</li>
 <li><strong>Add Image</strong> adds an <em>Existing Image…</em>, read with <tt class="docutils literal"><span class="pre">qemu-img</span> info</tt> as
-soon as you choose it and copied to the image folder unless you say
-otherwise, or a <em>New Empty Disk…</em>, qcow2 or raw, which is added to the
-project at once. In 2.1, a new image had to be added again, from its file.</li>
+soon as you choose it and copied to the shared images of the workspace
+unless you say otherwise, or a <em>New Empty Disk…</em>, qcow2 or raw, which is
+added to the project at once. In 2.1, a new image had to be added again,
+from its file.</li>
 <li><strong>The menu</strong> of an image has Details…, Rename…, Show in Files and
 Remove…. Remove says which disks lose their image, and offers to move the
-file to the trash only when it is in the image folder and no other project
-uses it.</li>
+file to the trash only when it is in the shared images and no other
+project uses it.</li>
 <li><strong>Find the File…</strong> comes first in the menu of an image whose file is
 missing. It points the private copies at the new file before the path
 changes. In 2.1, changing the path of an image made the next start of each
@@ -210,7 +211,9 @@ machine put its private copy aside and begin from an empty one.</li>
 <div class="figure">
 <img alt="The details of the image frr-debian: its name, description, file, format, size, and the two disks that use it" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/images-details.png" />
 <p class="caption">The details of an image, in the tab: what qemu-img says of it, and each
-disk that uses it.</p>
+disk that uses it.
+The picture was taken before the folder of the shared images was
+renamed: its paths say <tt class="docutils literal">vimages</tt>, now <tt class="docutils literal">shared_images</tt>.</p>
 </div>
 <p>The details show in the tab, as the settings of a brick do: the name and the
 description, which you can change, then the file, its format and backing

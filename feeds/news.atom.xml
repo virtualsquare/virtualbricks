@@ -70,10 +70,10 @@ action.&lt;/li&gt;
 &lt;p&gt;The console reads the terminal where Virtualbricks started, beside the
 windows. &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--no-gui&lt;/span&gt;&lt;/tt&gt; runs Virtualbricks without the windows, and without
 loading GTK: the console is then the way in, and a lab can run on a server
-without a display. &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--noterm&lt;/span&gt;&lt;/tt&gt; doesn't read the terminal. With both,
+without a display. &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--no-term&lt;/span&gt;&lt;/tt&gt; doesn't read the terminal. With both,
 nothing is read, and the lab runs until Virtualbricks gets &lt;tt class="docutils literal"&gt;SIGTERM&lt;/tt&gt; or
 &lt;tt class="docutils literal"&gt;SIGINT&lt;/tt&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;--run&lt;span class="w"&gt; &lt;/span&gt;~/labs/ospf.vb
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--no-term&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;--run&lt;span class="w"&gt; &lt;/span&gt;~/labs/ospf.vb
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;The &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt; of that line is what lets you reach that lab afterwards.&lt;/p&gt;
 &lt;/div&gt;
@@ -217,18 +217,22 @@ either; a keyword can mean something else on each side, as &lt;tt class="docutil
 below. Each is described with its type. The file of a keyword can start
 with &lt;tt class="docutils literal"&gt;~&lt;/tt&gt;, and a relative path is relative to the folder where you start
 Virtualbricks.&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;On the command line.&lt;/strong&gt; Both options take an optional value, which getopt
-doesn't have, so the rule is this: the next word is the description when
-it starts with a type and a colon, as &lt;tt class="docutils literal"&gt;unix:&lt;/tt&gt;, and the value after &lt;tt class="docutils literal"&gt;=&lt;/tt&gt;
-always is, as &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen=tcp:8765&lt;/span&gt;&lt;/tt&gt;. A path alone is refused, so that it
-isn't taken for a command:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;On the command line.&lt;/strong&gt; Both options take an optional value: the next
+word is the description unless it starts with &lt;tt class="docutils literal"&gt;-&lt;/tt&gt;, and the value after
+&lt;tt class="docutils literal"&gt;=&lt;/tt&gt; always is, as &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen=tcp:8765&lt;/span&gt;&lt;/tt&gt;. A word that isn't a description
+is refused, a path alone or the first word of a command:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ virtualbricks --no-gui --listen ~/lab.sock
---listen: /home/alice/lab.sock needs its type: unix:/home/alice/lab.sock
+virtualbricks: argument --listen: /home/alice/lab.sock needs its type:
+unix:/home/alice/lab.sock
+$ virtualbricks --command --connect status
+virtualbricks: argument --connect: status: the types are unix, tcp and
+ssl, as unix:PATH or tcp:PORT. For --connect alone before the words of
+--command, end the options with --: --connect -- status
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Quote a description that has a backslash, so that the shell leaves it.
 &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt;&lt;/tt&gt; can be given more than once, and Virtualbricks listens on each
 socket, each with its protocol:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--no-term&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
 &lt;span class="w"&gt;    &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
 &lt;span class="w"&gt;    &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;unix:~/labs/lab1.json:protocol&lt;span class="o"&gt;=&lt;/span&gt;json&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
 &lt;span class="w"&gt;    &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;tcp:8765&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
@@ -287,8 +291,8 @@ that workspace;&lt;/li&gt;
 &lt;tt class="docutils literal"&gt;.control&lt;/tt&gt; of its workspace; the locks, held, say which ones do;&lt;/li&gt;
 &lt;li&gt;when several listen, none: it names them and sends nothing.&lt;/li&gt;
 &lt;/ul&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ virtualbricks --no-gui --noterm --listen --workspace ~/labs/a &amp;amp;
-$ virtualbricks --no-gui --noterm --listen --workspace ~/labs/b &amp;amp;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ virtualbricks --no-gui --no-term --listen --workspace ~/labs/a &amp;amp;
+$ virtualbricks --no-gui --no-term --listen --workspace ~/labs/b &amp;amp;
 $ virtualbricks --command status
 Virtualbricks of yours listen in 2 workspaces: /home/alice/labs/b
 (process 430506) and /home/alice/labs/a (process 430482). Name one with
@@ -311,8 +315,9 @@ that listens.&lt;/p&gt;
 plain TCP can be read on the way, so a tcp socket refuses any address of the
 network:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ virtualbricks --no-gui --listen tcp:8765:interface=0.0.0.0
---listen: tcp:8765:interface=0.0.0.0: tcp listens on this machine only,
-as interface=127.0.0.1 or ::1; across the network, ssl
+virtualbricks: argument --listen: tcp:8765:interface=0.0.0.0: tcp
+listens on this machine only, as interface=127.0.0.1 or ::1; across the
+network, ssl
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;A port is open to anyone on the machine, unlike a unix socket, and a
 connection can do all that the console does, the shell commands in the
@@ -423,7 +428,7 @@ chmod&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;600&lt;/span&gt;&
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Then, on the lab machine, and from a desktop that has a copy of &lt;tt class="docutils literal"&gt;lab.pem&lt;/tt&gt;
 in &lt;tt class="docutils literal"&gt;~/vb/lab&lt;/tt&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--no-term&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
 &lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem&amp;#39;&lt;/span&gt;
 virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--connect&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ssl:lab.example:8765:caCertsDir=~/vb/lab&amp;#39;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
 &lt;span class="w"&gt;    &lt;/span&gt;--command&lt;span class="w"&gt; &lt;/span&gt;status
@@ -455,7 +460,7 @@ openssl&lt;span class="w"&gt; &lt;/span&gt;req&lt;span class="w"&gt; &lt;/span&g
 cat&lt;span class="w"&gt; &lt;/span&gt;alice.key&lt;span class="w"&gt; &lt;/span&gt;alice.pem&lt;span class="w"&gt; &lt;/span&gt;&amp;gt;&lt;span class="w"&gt; &lt;/span&gt;alice-key.pem
 chmod&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;600&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;alice.key&lt;span class="w"&gt; &lt;/span&gt;alice-key.pem
 &lt;span class="c1"&gt;# on the lab machine, with a copy of alice.pem, and only it, in ~/vb/clients&lt;/span&gt;
-virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--no-term&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
 &lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem:caCertsDir=~/vb/clients&amp;#39;&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;The client shows its certificate with &lt;tt class="docutils literal"&gt;privateKey=&lt;/tt&gt;, a file with the key
@@ -577,24 +582,24 @@ the proof of Virtualbricks:&lt;/p&gt;
 with &lt;tt class="docutils literal"&gt;ok&lt;/tt&gt; &lt;tt class="docutils literal"&gt;false&lt;/tt&gt; and why, as &lt;tt class="docutils literal"&gt;Wrong token&lt;/tt&gt;, and the connection
 closes. A whole client, in Python and nothing else, for a Virtualbricks
 started with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen&lt;/span&gt; tcp:8766:protocol=json&lt;/tt&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;hmac&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;json&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;os&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;secrets&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;socket&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;sys&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;hmac&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nn"&gt;json&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nn"&gt;os&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nn"&gt;secrets&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nn"&gt;socket&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nn"&gt;sys&lt;/span&gt;
 
 
-&lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;proof&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;side&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;nonce&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;mine&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;proof&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;side&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;nonce&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;mine&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
     &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="sa"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;virtualbricks &lt;/span&gt;&lt;span class="si"&gt;{&lt;/span&gt;&lt;span class="n"&gt;side&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt; &lt;/span&gt;&lt;span class="si"&gt;{&lt;/span&gt;&lt;span class="n"&gt;nonce&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt; &lt;/span&gt;&lt;span class="si"&gt;{&lt;/span&gt;&lt;span class="n"&gt;mine&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;
     &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;hmac&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;new&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;encode&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;encode&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;sha256&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;hexdigest&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
 
 
-&lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;send&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;send&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
     &lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;write&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dumps&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;encode&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="sa"&gt;b&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
     &lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;flush&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
 
 
-&lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;receive&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;receive&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
     &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;loads&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;readline&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
 
 
-&lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;connect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;port&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;connect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;port&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
     &lt;span class="n"&gt;sock&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;socket&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;create_connection&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;127.0.0.1&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;port&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
     &lt;span class="n"&gt;lines&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sock&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;makefile&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;rwb&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
     &lt;span class="n"&gt;first&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;receive&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
@@ -610,7 +615,7 @@ started with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--listen
     &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;lines&lt;/span&gt;
 
 
-&lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;ask&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;ask&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
     &lt;span class="n"&gt;send&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
     &lt;span class="n"&gt;answer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;receive&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lines&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
     &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;answer&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;lines&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]))&lt;/span&gt;
@@ -718,16 +723,16 @@ connection closes.&lt;/dd&gt;
 &lt;p&gt;&lt;tt class="docutils literal"&gt;virtualbricks &lt;span class="pre"&gt;--command&lt;/span&gt;&lt;/tt&gt; calls &lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt;, proves the token if the answer
 is &lt;tt class="docutils literal"&gt;TOKEN_NEEDED&lt;/tt&gt;, then sends each line with &lt;tt class="docutils literal"&gt;Run&lt;/tt&gt;. A program with
 Twisted, on a unix socket:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;os&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;os&lt;/span&gt;
 
-&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;twisted.internet&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;task&lt;/span&gt;
-&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;twisted.internet.defer&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;ensureDeferred&lt;/span&gt;
-&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;twisted.protocols&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;amp&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;twisted.internet&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;task&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;twisted.internet.defer&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;ensureDeferred&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;twisted.protocols&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;amp&lt;/span&gt;
 
-&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;virtualbricks.console.ampwire&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Run&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;virtualbricks.console.ampwire&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Run&lt;/span&gt;
 
 
-&lt;span class="k"&gt;async&lt;/span&gt; &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+&lt;span class="k"&gt;async&lt;/span&gt; &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
     &lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;expanduser&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;~/labs/lab1.sock&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
     &lt;span class="n"&gt;endpoint&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;UNIXClientEndpoint&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
     &lt;span class="n"&gt;vb&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;await&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;connectProtocol&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;endpoint&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;amp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;AMP&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
@@ -923,65 +928,65 @@ version, its workspace, its folders, whether it has a trash, its QEMU
 programs, the programs it lacks for each kind of brick, and whether KSM
 runs. Then a &lt;tt class="docutils literal"&gt;Changed&lt;/tt&gt; for each image, brick and event, each brick after
 those it plugs into, with its &lt;tt class="docutils literal"&gt;table&lt;/tt&gt;, as the project file writes it, and
-its &lt;tt class="docutils literal"&gt;state&lt;/tt&gt;, what the file doesn't: the process of a brick, the private
-copies of a machine, the file of an image, the seconds an event still
-waits. Then &lt;tt class="docutils literal"&gt;Synced&lt;/tt&gt;, the last 500 messages of the log, and the answer.
-From then on, Virtualbricks gathers what changes and sends it once a turn
-of its loop, each object once, as it is then. When another project opens,
-the copy starts over with &lt;tt class="docutils literal"&gt;Opened&lt;/tt&gt;.&lt;/p&gt;
+its &lt;tt class="docutils literal"&gt;state&lt;/tt&gt;, what the file doesn't: whether a brick runs and its
+process, the private copies of a machine, the file of an image, the seconds
+an event still waits. Then &lt;tt class="docutils literal"&gt;Synced&lt;/tt&gt;, the last 500 messages of the log,
+and the answer. From then on, Virtualbricks gathers what changes and sends
+it once a turn of its loop, each object once, as it is then. When another
+project opens, the copy starts over with &lt;tt class="docutils literal"&gt;Opened&lt;/tt&gt;.&lt;/p&gt;
 &lt;p&gt;A program that follows declares the eight pushes, and has a responder for
 each: Twisted closes the connection on a command it has no responder for.
 A program that follows the project and drives it with typed commands:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;json&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;os&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;json&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nn"&gt;os&lt;/span&gt;
 
-&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;twisted.internet&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;defer&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;task&lt;/span&gt;
-&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;twisted.protocols&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;amp&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;twisted.internet&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;defer&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;task&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;twisted.protocols&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;amp&lt;/span&gt;
 
-&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;virtualbricks.console.ampcommands&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;BrickSet&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;BrickStop&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;NotFound&lt;/span&gt;
-&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;virtualbricks.console.ampwire&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Hello&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;authenticate&lt;/span&gt;
-&lt;span class="kn"&gt;from&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;virtualbricks.remote&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;commands&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;virtualbricks.console.ampcommands&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;BrickSet&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;BrickStop&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;NotFound&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;virtualbricks.console.ampwire&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Hello&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;authenticate&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;virtualbricks.remote&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;commands&lt;/span&gt;
 
 
-&lt;span class="k"&gt;class&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nc"&gt;Follower&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;amp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;AMP&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;Follower&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;amp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;AMP&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
 &lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot;Prints what changes: a responder for each of the eight pushes.&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
 
     &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Opened&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;opened&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;project&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;settings&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;machine&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;opened&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;project&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;settings&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;machine&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
         &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Opened&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;project&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
         &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
 
     &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Changed&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;changed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;table&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;state&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;changed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;table&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;state&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
         &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Changed&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;loads&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;state&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
         &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
 
     &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Renamed&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;renamed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;old&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;new&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;renamed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;old&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;new&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
         &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
 
     &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Removed&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;removed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;removed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
         &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
 
     &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Synced&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;synced&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;synced&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
         &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Synced&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
         &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
 
     &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;SettingsChanged&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;settings_changed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;settings&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;settings_changed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;settings&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
         &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
 
     &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Logged&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;logged&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;logged&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
         &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
 
     &lt;span class="nd"&gt;@commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Quitting&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;responder&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;quitting&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;quitting&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
         &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
 
 
-&lt;span class="k"&gt;async&lt;/span&gt; &lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+&lt;span class="k"&gt;async&lt;/span&gt; &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
     &lt;span class="n"&gt;endpoint&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;TCP4ClientEndpoint&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reactor&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;127.0.0.1&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;8765&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
     &lt;span class="n"&gt;vb&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;await&lt;/span&gt; &lt;span class="n"&gt;endpoints&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;connectProtocol&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;endpoint&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Follower&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
     &lt;span class="n"&gt;config&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;expanduser&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;~/.config&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
@@ -1005,12 +1010,12 @@ A program that follows the project and drives it with typed commands:&lt;/p&gt;
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;It prints:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Opened lab1
-Changed brick sw1 {&amp;#39;pid&amp;#39;: 430548}
-Changed brick sw2 {&amp;#39;pid&amp;#39;: 430557}
+Changed brick sw1 {&amp;#39;running&amp;#39;: True, &amp;#39;pid&amp;#39;: 430548}
+Changed brick sw2 {&amp;#39;running&amp;#39;: True, &amp;#39;pid&amp;#39;: 430557}
 Synced
 {&amp;#39;lines&amp;#39;: [&amp;#39;sw2 stopped&amp;#39;]}
-Changed brick sw2 {&amp;#39;pid&amp;#39;: None}
-Changed brick sw2 {&amp;#39;pid&amp;#39;: None}
+Changed brick sw2 {&amp;#39;running&amp;#39;: False, &amp;#39;pid&amp;#39;: None}
+Changed brick sw2 {&amp;#39;running&amp;#39;: False, &amp;#39;pid&amp;#39;: None}
 {&amp;#39;lines&amp;#39;: []}
 NotFound: No brick named sw9
 &lt;/pre&gt;&lt;/div&gt;
@@ -1054,7 +1059,7 @@ Virtualbricks it names: the bricks run there, on the lab machine, and the
 windows here. That Virtualbricks listens on an AMP socket, with its own
 windows or with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--no-gui&lt;/span&gt;&lt;/tt&gt;, and both ends run the same version:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# on the lab machine&lt;/span&gt;
-virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--no-term&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
 &lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem&amp;#39;&lt;/span&gt;
 &lt;span class="c1"&gt;# on your desktop&lt;/span&gt;
 virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--connect&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ssl:lab.example:8765:caCertsDir=~/vb/lab&amp;#39;&lt;/span&gt;
@@ -1086,7 +1091,7 @@ the copy over. &lt;em&gt;Quit&lt;/em&gt; closes the windows; the Virtualbricks t
 on.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;Some items wait for a later version, greyed: Import and Export, saving or
-merging the private copy of a disk, copying an image to the image folder,
+merging the private copy of a disk, copying an image to the shared images,
 &lt;em&gt;Show in Files&lt;/em&gt;, and &lt;em&gt;Terminate&lt;/em&gt;.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class="section" id="limits"&gt;
@@ -1240,13 +1245,14 @@ machine reads it, &lt;em&gt;Not in use&lt;/em&gt;, &lt;em&gt;No disk&lt;/em&gt; 
 missing&lt;/em&gt;. The facts come from &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;qemu-img&lt;/span&gt; info&lt;/tt&gt;, read in the background,
 so the list fills in as each file is read.&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;Add Image&lt;/strong&gt; adds an &lt;em&gt;Existing Image…&lt;/em&gt;, read with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;qemu-img&lt;/span&gt; info&lt;/tt&gt; as
-soon as you choose it and copied to the image folder unless you say
-otherwise, or a &lt;em&gt;New Empty Disk…&lt;/em&gt;, qcow2 or raw, which is added to the
-project at once. In 2.1, a new image had to be added again, from its file.&lt;/li&gt;
+soon as you choose it and copied to the shared images of the workspace
+unless you say otherwise, or a &lt;em&gt;New Empty Disk…&lt;/em&gt;, qcow2 or raw, which is
+added to the project at once. In 2.1, a new image had to be added again,
+from its file.&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;The menu&lt;/strong&gt; of an image has Details…, Rename…, Show in Files and
 Remove…. Remove says which disks lose their image, and offers to move the
-file to the trash only when it is in the image folder and no other project
-uses it.&lt;/li&gt;
+file to the trash only when it is in the shared images and no other
+project uses it.&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;Find the File…&lt;/strong&gt; comes first in the menu of an image whose file is
 missing. It points the private copies at the new file before the path
 changes. In 2.1, changing the path of an image made the next start of each
@@ -1255,7 +1261,9 @@ machine put its private copy aside and begin from an empty one.&lt;/li&gt;
 &lt;div class="figure"&gt;
 &lt;img alt="The details of the image frr-debian: its name, description, file, format, size, and the two disks that use it" src="https://www.virtualbricks.it/images/the-new-interface-of-virtualbricks-3-0/images-details.png" /&gt;
 &lt;p class="caption"&gt;The details of an image, in the tab: what qemu-img says of it, and each
-disk that uses it.&lt;/p&gt;
+disk that uses it.
+The picture was taken before the folder of the shared images was
+renamed: its paths say &lt;tt class="docutils literal"&gt;vimages&lt;/tt&gt;, now &lt;tt class="docutils literal"&gt;shared_images&lt;/tt&gt;.&lt;/p&gt;
 &lt;/div&gt;
 &lt;p&gt;The details show in the tab, as the settings of a brick do: the name and the
 description, which you can change, then the file, its format and backing
@@ -1500,10 +1508,10 @@ in the folders of the XDG specification:&lt;/p&gt;
 ~/.local/state/virtualbricks/state.toml   what it remembers
 ~/.virtualbricks/                         the workspace, where it was
 ├── .virtualbricks.lock
-├── vimages/                              the image library
+├── shared_images/                        the images its projects share
 └── lab/
     ├── project.toml                      the project
-    ├── README                            now read as Markdown
+    ├── README.md                         now Markdown
     └── vm1_hda.cow                       a private disk
 /run/user/1000/virtualbricks/KEY/lab/     the sockets, gone at logout
 &lt;/pre&gt;&lt;/div&gt;
@@ -1545,12 +1553,12 @@ link|sender|sw1_port|rtl8139|00:aa:79:71:be:61
 &lt;p&gt;Now every file is &lt;a class="reference external" href="https://toml.io/en/v1.0.0"&gt;TOML 1.0&lt;/a&gt;. The same lab,
 shortened, as Virtualbricks 3.0 writes it:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# The version of the layout of this file&lt;/span&gt;
-&lt;span class="n"&gt;format&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;
+&lt;span class="n"&gt;format&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;
 
 &lt;span class="k"&gt;[images.martin]&lt;/span&gt;
 &lt;span class="c1"&gt;# The image file; a relative path is relative to the project folder&lt;/span&gt;
 &lt;span class="c1"&gt;# (default empty)&lt;/span&gt;
-&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;/home/alice/.virtualbricks/vimages/vtatpa.martin.qcow2&amp;quot;&lt;/span&gt;
+&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;/home/alice/.virtualbricks/shared_images/vtatpa.martin.qcow2&amp;quot;&lt;/span&gt;
 
 &lt;span class="k"&gt;[bricks.sender]&lt;/span&gt;
 &lt;span class="c1"&gt;# A virtual machine, run by QEMU&lt;/span&gt;
@@ -1622,9 +1630,10 @@ manual page &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbr
 &lt;/div&gt;
 &lt;div class="section" id="workspaces"&gt;
 &lt;h2&gt;Workspaces&lt;/h2&gt;
-&lt;p&gt;A workspace is a folder of projects. It has its own image library,
-&lt;tt class="docutils literal"&gt;vimages&lt;/tt&gt;, and its own lock. It's &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;~/.virtualbricks&lt;/span&gt;&lt;/tt&gt; unless you choose
-another in the settings, or for a single run:&lt;/p&gt;
+&lt;p&gt;A workspace is a folder of projects. It has its own shared images, the
+images its projects share, in &lt;tt class="docutils literal"&gt;shared_images&lt;/tt&gt;, and its own lock. It's
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;~/.virtualbricks&lt;/span&gt;&lt;/tt&gt; unless you choose another in the settings, or for a
+single run:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--workspace&lt;span class="w"&gt; &lt;/span&gt;~/courses/net101
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;The folder is made if it isn't there, and the &lt;tt class="docutils literal"&gt;workspace&lt;/tt&gt; setting stays as
@@ -1634,8 +1643,8 @@ images, apart from the others.&lt;/p&gt;
 &lt;p&gt;Two Virtualbricks can run side by side, each in its workspace. Each has its
 lock, its runtime folder and its control socket, so two projects with the
 same name in two workspaces don't get in each other's way:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;--workspace&lt;span class="w"&gt; &lt;/span&gt;~/labs/a&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
-virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;--workspace&lt;span class="w"&gt; &lt;/span&gt;~/labs/b&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--no-term&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;--workspace&lt;span class="w"&gt; &lt;/span&gt;~/labs/a&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
+virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--no-term&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;--workspace&lt;span class="w"&gt; &lt;/span&gt;~/labs/b&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;&amp;amp;&lt;/span&gt;
 virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--workspace&lt;span class="w"&gt; &lt;/span&gt;~/labs/b&lt;span class="w"&gt; &lt;/span&gt;--command&lt;span class="w"&gt; &lt;/span&gt;status
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;How many may run at once is chosen with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;--lock&lt;/span&gt;&lt;/tt&gt;:&lt;/p&gt;
@@ -1667,7 +1676,9 @@ space taken by the private disks and by the other files.&lt;/p&gt;
 &lt;div class="figure"&gt;
 &lt;img alt="The Projects window: four projects on the left, the most recently used first; on the right, the details of firewall-2025, with its README, its bricks, its images and the space it takes" src="https://www.virtualbricks.it/images/projects-workspaces-and-files-in-virtualbricks-3-0/projects.png" /&gt;
 &lt;p class="caption"&gt;The image of firewall-2025 isn't on this computer: the list says so, and
-the details say which one.&lt;/p&gt;
+the details say which one.
+The picture was taken before the folder of the shared images was
+renamed: its paths say &lt;tt class="docutils literal"&gt;vimages&lt;/tt&gt;, now &lt;tt class="docutils literal"&gt;shared_images&lt;/tt&gt;.&lt;/p&gt;
 &lt;/div&gt;
 &lt;ul class="simple"&gt;
 &lt;li&gt;&lt;strong&gt;Open&lt;/strong&gt;, &lt;strong&gt;New…&lt;/strong&gt; and &lt;strong&gt;Rename…&lt;/strong&gt;, with the name checked as you type: a
@@ -1677,8 +1688,9 @@ after.&lt;/li&gt;
 disks, but not the images, and opens the copy unless you say otherwise.&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;Remove…&lt;/strong&gt; says what goes with the project, the folder and how much its
 private disks take, and offers to move it to the trash of your desktop,
-where you can restore it, or to delete it for good. The images of the
-library stay. The open project can't be removed: open another one first.&lt;/li&gt;
+where you can restore it, or to delete it for good. The images it uses
+stay where they are. The open project can't be removed: open another one
+first.&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;Show in Files&lt;/strong&gt; opens the folder of the project.&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;Export…&lt;/strong&gt; and &lt;strong&gt;Import…&lt;/strong&gt;, below.&lt;/li&gt;
 &lt;/ul&gt;
@@ -1737,12 +1749,12 @@ one, &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;lab-2&lt;/span&g
 &lt;li&gt;&lt;strong&gt;The README and the bricks&lt;/strong&gt; of the project, so you know what you are
 importing.&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;Each image&lt;/strong&gt; the project uses, with a choice: &lt;em&gt;Copy&lt;/em&gt; it from the archive
-to your image library, &lt;em&gt;Use a file…&lt;/em&gt; of this computer, or &lt;em&gt;Leave unset&lt;/em&gt;,
-for the disks to get an image later, in their settings. Every image has a
-default: one in the archive is copied, or found in your library when it
-already has a file with the same name and size; one that isn't in the
-archive uses the file at the same path, or the image of the library with
-that name.&lt;/li&gt;
+to the shared images of the workspace, &lt;em&gt;Use a file…&lt;/em&gt; of this computer, or
+&lt;em&gt;Leave unset&lt;/em&gt;, for the disks to get an image later, in their settings.
+Every image has a default: one in the archive is copied, or found in the
+shared images when they already have a file with the same name and size;
+one that isn't in the archive uses the file at the same path, or the file
+of the shared images with that name.&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;This computer's paths&lt;/strong&gt;: the folders of QEMU and VDE of the project are
 replaced with yours when they don't exist on this computer.&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;Open the project after the import&lt;/strong&gt;, on by default.&lt;/li&gt;
@@ -1751,18 +1763,22 @@ replaced with yours when they don't exist on this computer.&lt;/li&gt;
 &lt;div class="figure"&gt;
 &lt;img alt="The Import Project window: the archive, the name bgp-two-as, its README and its bricks, its two images, each with Copy, Use a file… and Leave unset, this computer's paths, and Open the project after the import" src="https://www.virtualbricks.it/images/projects-workspaces-and-files-in-virtualbricks-3-0/import.png" /&gt;
 &lt;p class="caption"&gt;An archive from another computer. tinycore is in it, and is copied to the
-library; frr-debian isn't, and the image of the library with that name is
-used. The folders of QEMU and VDE of the other computer aren't here, and
-this computer's take their place.&lt;/p&gt;
+shared images; frr-debian isn't, and the file of the shared images with
+that name is used. The folders of QEMU and VDE of the other computer
+aren't here, and this computer's take their place.
+The picture was taken before the folder of the shared images was
+renamed: its paths say &lt;tt class="docutils literal"&gt;vimages&lt;/tt&gt;, now &lt;tt class="docutils literal"&gt;shared_images&lt;/tt&gt;.&lt;/p&gt;
 &lt;/div&gt;
 &lt;p&gt;Choosing an archive reads only its head, the list of its contents, the
 project file and the README, a few kilobytes, and stops there, however
 large the archive is. Then the import extracts the archive into a hidden
-folder of the workspace, copies the images to the library, points each
-private disk at its new image, unpacks the packed disks, and renames the
-folder into place. If you stop it, or if it fails, it removes what it wrote,
-the copied images included. At the end, a &lt;em&gt;To check&lt;/em&gt; list says what needs
-your attention: an image left unset, a disk that couldn't be rebased.&lt;/p&gt;
+folder of the workspace, copies the images to the shared images, points
+each private disk at its new image, unpacks the packed disks, and renames
+the folder into place. If you stop it, or if it fails, it removes what it
+wrote, the copied images included. At the end, the Logs window says what
+needs your attention: an image left unset, a disk that couldn't be rebased.
+The Import window closes once the project opens; for a project imported
+without opening it, it shows the same in a &lt;em&gt;To check&lt;/em&gt; list.&lt;/p&gt;
 &lt;p&gt;The archives of 2.1 import too: their project file is converted on the fly,
 with the same code as the migration. Since they have no list of their
 contents, the page opens as soon as the project file is read, and the rest
@@ -1781,10 +1797,10 @@ or extract it:&lt;/p&gt;
 largest:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;contents.toml        the list of the other members
 project.toml         the project
-README
+README.md
 ...                  the other files you chose
 vm1_hda.cow          the private disks
-.images/debian       the images, by their name in the project
+IMAGES/debian        the images, by their name in the project
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;&lt;tt class="docutils literal"&gt;contents.toml&lt;/tt&gt; says what the archive holds, the size of each member and
 whether it's packed:&lt;/p&gt;
@@ -1795,7 +1811,7 @@ whether it's packed:&lt;/p&gt;
 &lt;span class="n"&gt;size&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;255&lt;/span&gt;
 
 &lt;span class="k"&gt;[[members]]&lt;/span&gt;
-&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;README&amp;quot;&lt;/span&gt;
+&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;README.md&amp;quot;&lt;/span&gt;
 &lt;span class="n"&gt;size&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;16&lt;/span&gt;
 
 &lt;span class="k"&gt;[[members]]&lt;/span&gt;
@@ -1810,8 +1826,8 @@ with one line of JSON for each step.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nb"&gt;printf&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;job = &amp;quot;inspect&amp;quot;\narchive = &amp;quot;lab.vbp&amp;quot;\n&amp;#39;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;|&lt;/span&gt;
 &lt;span class="w"&gt;    &lt;/span&gt;python&lt;span class="w"&gt; &lt;/span&gt;-m&lt;span class="w"&gt; &lt;/span&gt;virtualbricks.config.archive
 &lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The manual page &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbricks-archive(7)&lt;/span&gt;&lt;/tt&gt; describes the format and the
-jobs.&lt;/p&gt;
+&lt;p&gt;The manual page &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbricks-vbp(5)&lt;/span&gt;&lt;/tt&gt; describes the format, and
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbricks-archive(7)&lt;/span&gt;&lt;/tt&gt; the process and its jobs.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class="section" id="coming-from-2-1"&gt;
 &lt;h2&gt;Coming from 2.1&lt;/h2&gt;
@@ -1980,7 +1996,7 @@ windows are here, and they follow the project as it changes, whoever
 changes it. The consoles of the bricks open in a terminal here, and the
 paths are those of the other machine, completed as you type.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# on the lab machine&lt;/span&gt;
-virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--noterm&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--no-gui&lt;span class="w"&gt; &lt;/span&gt;--no-term&lt;span class="w"&gt; &lt;/span&gt;--listen&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
 &lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ssl:8765:interface=0.0.0.0:privateKey=lab.pem&amp;#39;&lt;/span&gt;
 &lt;span class="c1"&gt;# on your desktop&lt;/span&gt;
 virtualbricks&lt;span class="w"&gt; &lt;/span&gt;--connect&lt;span class="w"&gt; &lt;/span&gt;ssl:lab.example:8765:caCertsDir&lt;span class="o"&gt;=&lt;/span&gt;FOLDER
@@ -1999,7 +2015,8 @@ with a warning, a setting that this QEMU lacks.&lt;/li&gt;
 &lt;li&gt;It is checked against the QEMU and VDE of Debian 12, 13 and testing, and
 of Ubuntu 22.04 to 26.04.&lt;/li&gt;
 &lt;li&gt;New manual pages: &lt;tt class="docutils literal"&gt;virtualbricks(1)&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbricks-config(5)&lt;/span&gt;&lt;/tt&gt;,
-&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbricks-archive(7)&lt;/span&gt;&lt;/tt&gt; and &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbricks-control(7)&lt;/span&gt;&lt;/tt&gt;.&lt;/li&gt;
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbricks-vbp(5)&lt;/span&gt;&lt;/tt&gt;, &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbricks-archive(7)&lt;/span&gt;&lt;/tt&gt; and
+&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;virtualbricks-control(7)&lt;/span&gt;&lt;/tt&gt;.&lt;/li&gt;
 &lt;li&gt;End-to-end tests: scenarios written in words and played on the real
 application.&lt;/li&gt;
 &lt;/ul&gt;

@@ -106,10 +106,10 @@ in the folders of the XDG specification:</p>
 ~/.local/state/virtualbricks/state.toml   what it remembers
 ~/.virtualbricks/                         the workspace, where it was
 ├── .virtualbricks.lock
-├── vimages/                              the image library
+├── shared_images/                        the images its projects share
 └── lab/
     ├── project.toml                      the project
-    ├── README                            now read as Markdown
+    ├── README.md                         now Markdown
     └── vm1_hda.cow                       a private disk
 /run/user/1000/virtualbricks/KEY/lab/     the sockets, gone at logout
 </pre></div>
@@ -151,12 +151,12 @@ link|sender|sw1_port|rtl8139|00:aa:79:71:be:61
 <p>Now every file is <a class="reference external" href="https://toml.io/en/v1.0.0">TOML 1.0</a>. The same lab,
 shortened, as Virtualbricks 3.0 writes it:</p>
 <div class="highlight"><pre><span></span><span class="c1"># The version of the layout of this file</span>
-<span class="n">format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<span class="n">format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
 
 <span class="k">[images.martin]</span>
 <span class="c1"># The image file; a relative path is relative to the project folder</span>
 <span class="c1"># (default empty)</span>
-<span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/home/alice/.virtualbricks/vimages/vtatpa.martin.qcow2&quot;</span>
+<span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/home/alice/.virtualbricks/shared_images/vtatpa.martin.qcow2&quot;</span>
 
 <span class="k">[bricks.sender]</span>
 <span class="c1"># A virtual machine, run by QEMU</span>
@@ -228,9 +228,10 @@ manual page <tt class="docutils literal"><span class="pre">virtualbricks-config(
 </div>
 <div class="section" id="workspaces">
 <h2>Workspaces</h2>
-<p>A workspace is a folder of projects. It has its own image library,
-<tt class="docutils literal">vimages</tt>, and its own lock. It's <tt class="docutils literal"><span class="pre">~/.virtualbricks</span></tt> unless you choose
-another in the settings, or for a single run:</p>
+<p>A workspace is a folder of projects. It has its own shared images, the
+images its projects share, in <tt class="docutils literal">shared_images</tt>, and its own lock. It's
+<tt class="docutils literal"><span class="pre">~/.virtualbricks</span></tt> unless you choose another in the settings, or for a
+single run:</p>
 <div class="highlight"><pre><span></span>virtualbricks<span class="w"> </span>--workspace<span class="w"> </span>~/courses/net101
 </pre></div>
 <p>The folder is made if it isn't there, and the <tt class="docutils literal">workspace</tt> setting stays as
@@ -240,8 +241,8 @@ images, apart from the others.</p>
 <p>Two Virtualbricks can run side by side, each in its workspace. Each has its
 lock, its runtime folder and its control socket, so two projects with the
 same name in two workspaces don't get in each other's way:</p>
-<div class="highlight"><pre><span></span>virtualbricks<span class="w"> </span>--no-gui<span class="w"> </span>--noterm<span class="w"> </span>--listen<span class="w"> </span>--workspace<span class="w"> </span>~/labs/a<span class="w"> </span><span class="p">&amp;</span>
-virtualbricks<span class="w"> </span>--no-gui<span class="w"> </span>--noterm<span class="w"> </span>--listen<span class="w"> </span>--workspace<span class="w"> </span>~/labs/b<span class="w"> </span><span class="p">&amp;</span>
+<div class="highlight"><pre><span></span>virtualbricks<span class="w"> </span>--no-gui<span class="w"> </span>--no-term<span class="w"> </span>--listen<span class="w"> </span>--workspace<span class="w"> </span>~/labs/a<span class="w"> </span><span class="p">&amp;</span>
+virtualbricks<span class="w"> </span>--no-gui<span class="w"> </span>--no-term<span class="w"> </span>--listen<span class="w"> </span>--workspace<span class="w"> </span>~/labs/b<span class="w"> </span><span class="p">&amp;</span>
 virtualbricks<span class="w"> </span>--workspace<span class="w"> </span>~/labs/b<span class="w"> </span>--command<span class="w"> </span>status
 </pre></div>
 <p>How many may run at once is chosen with <tt class="docutils literal"><span class="pre">--lock</span></tt>:</p>
@@ -273,7 +274,9 @@ space taken by the private disks and by the other files.</p>
 <div class="figure">
 <img alt="The Projects window: four projects on the left, the most recently used first; on the right, the details of firewall-2025, with its README, its bricks, its images and the space it takes" src="https://www.virtualbricks.it/images/projects-workspaces-and-files-in-virtualbricks-3-0/projects.png" />
 <p class="caption">The image of firewall-2025 isn't on this computer: the list says so, and
-the details say which one.</p>
+the details say which one.
+The picture was taken before the folder of the shared images was
+renamed: its paths say <tt class="docutils literal">vimages</tt>, now <tt class="docutils literal">shared_images</tt>.</p>
 </div>
 <ul class="simple">
 <li><strong>Open</strong>, <strong>New…</strong> and <strong>Rename…</strong>, with the name checked as you type: a
@@ -283,8 +286,9 @@ after.</li>
 disks, but not the images, and opens the copy unless you say otherwise.</li>
 <li><strong>Remove…</strong> says what goes with the project, the folder and how much its
 private disks take, and offers to move it to the trash of your desktop,
-where you can restore it, or to delete it for good. The images of the
-library stay. The open project can't be removed: open another one first.</li>
+where you can restore it, or to delete it for good. The images it uses
+stay where they are. The open project can't be removed: open another one
+first.</li>
 <li><strong>Show in Files</strong> opens the folder of the project.</li>
 <li><strong>Export…</strong> and <strong>Import…</strong>, below.</li>
 </ul>
@@ -343,12 +347,12 @@ one, <tt class="docutils literal"><span class="pre">lab-2</span></tt>, if it's t
 <li><strong>The README and the bricks</strong> of the project, so you know what you are
 importing.</li>
 <li><strong>Each image</strong> the project uses, with a choice: <em>Copy</em> it from the archive
-to your image library, <em>Use a file…</em> of this computer, or <em>Leave unset</em>,
-for the disks to get an image later, in their settings. Every image has a
-default: one in the archive is copied, or found in your library when it
-already has a file with the same name and size; one that isn't in the
-archive uses the file at the same path, or the image of the library with
-that name.</li>
+to the shared images of the workspace, <em>Use a file…</em> of this computer, or
+<em>Leave unset</em>, for the disks to get an image later, in their settings.
+Every image has a default: one in the archive is copied, or found in the
+shared images when they already have a file with the same name and size;
+one that isn't in the archive uses the file at the same path, or the file
+of the shared images with that name.</li>
 <li><strong>This computer's paths</strong>: the folders of QEMU and VDE of the project are
 replaced with yours when they don't exist on this computer.</li>
 <li><strong>Open the project after the import</strong>, on by default.</li>
@@ -357,18 +361,22 @@ replaced with yours when they don't exist on this computer.</li>
 <div class="figure">
 <img alt="The Import Project window: the archive, the name bgp-two-as, its README and its bricks, its two images, each with Copy, Use a file… and Leave unset, this computer's paths, and Open the project after the import" src="https://www.virtualbricks.it/images/projects-workspaces-and-files-in-virtualbricks-3-0/import.png" />
 <p class="caption">An archive from another computer. tinycore is in it, and is copied to the
-library; frr-debian isn't, and the image of the library with that name is
-used. The folders of QEMU and VDE of the other computer aren't here, and
-this computer's take their place.</p>
+shared images; frr-debian isn't, and the file of the shared images with
+that name is used. The folders of QEMU and VDE of the other computer
+aren't here, and this computer's take their place.
+The picture was taken before the folder of the shared images was
+renamed: its paths say <tt class="docutils literal">vimages</tt>, now <tt class="docutils literal">shared_images</tt>.</p>
 </div>
 <p>Choosing an archive reads only its head, the list of its contents, the
 project file and the README, a few kilobytes, and stops there, however
 large the archive is. Then the import extracts the archive into a hidden
-folder of the workspace, copies the images to the library, points each
-private disk at its new image, unpacks the packed disks, and renames the
-folder into place. If you stop it, or if it fails, it removes what it wrote,
-the copied images included. At the end, a <em>To check</em> list says what needs
-your attention: an image left unset, a disk that couldn't be rebased.</p>
+folder of the workspace, copies the images to the shared images, points
+each private disk at its new image, unpacks the packed disks, and renames
+the folder into place. If you stop it, or if it fails, it removes what it
+wrote, the copied images included. At the end, the Logs window says what
+needs your attention: an image left unset, a disk that couldn't be rebased.
+The Import window closes once the project opens; for a project imported
+without opening it, it shows the same in a <em>To check</em> list.</p>
 <p>The archives of 2.1 import too: their project file is converted on the fly,
 with the same code as the migration. Since they have no list of their
 contents, the page opens as soon as the project file is read, and the rest
@@ -387,10 +395,10 @@ or extract it:</p>
 largest:</p>
 <div class="highlight"><pre><span></span>contents.toml        the list of the other members
 project.toml         the project
-README
+README.md
 ...                  the other files you chose
 vm1_hda.cow          the private disks
-.images/debian       the images, by their name in the project
+IMAGES/debian        the images, by their name in the project
 </pre></div>
 <p><tt class="docutils literal">contents.toml</tt> says what the archive holds, the size of each member and
 whether it's packed:</p>
@@ -401,7 +409,7 @@ whether it's packed:</p>
 <span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">255</span>
 
 <span class="k">[[members]]</span>
-<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;README&quot;</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;README.md&quot;</span>
 <span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">16</span>
 
 <span class="k">[[members]]</span>
@@ -416,8 +424,8 @@ with one line of JSON for each step.</p>
 <div class="highlight"><pre><span></span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;job = &quot;inspect&quot;\narchive = &quot;lab.vbp&quot;\n&#39;</span><span class="w"> </span><span class="p">|</span>
 <span class="w">    </span>python<span class="w"> </span>-m<span class="w"> </span>virtualbricks.config.archive
 </pre></div>
-<p>The manual page <tt class="docutils literal"><span class="pre">virtualbricks-archive(7)</span></tt> describes the format and the
-jobs.</p>
+<p>The manual page <tt class="docutils literal"><span class="pre">virtualbricks-vbp(5)</span></tt> describes the format, and
+<tt class="docutils literal"><span class="pre">virtualbricks-archive(7)</span></tt> the process and its jobs.</p>
 </div>
 <div class="section" id="coming-from-2-1">
 <h2>Coming from 2.1</h2>

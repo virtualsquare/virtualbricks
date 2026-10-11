@@ -208,7 +208,7 @@ windows are here, and they follow the project as it changes, whoever
 changes it. The consoles of the bricks open in a terminal here, and the
 paths are those of the other machine, completed as you type.</p>
 <div class="highlight"><pre><span></span><span class="c1"># on the lab machine</span>
-virtualbricks<span class="w"> </span>--no-gui<span class="w"> </span>--noterm<span class="w"> </span>--listen<span class="w"> </span><span class="se">\</span>
+virtualbricks<span class="w"> </span>--no-gui<span class="w"> </span>--no-term<span class="w"> </span>--listen<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="s1">&#39;ssl:8765:interface=0.0.0.0:privateKey=lab.pem&#39;</span>
 <span class="c1"># on your desktop</span>
 virtualbricks<span class="w"> </span>--connect<span class="w"> </span>ssl:lab.example:8765:caCertsDir<span class="o">=</span>FOLDER
@@ -227,7 +227,8 @@ with a warning, a setting that this QEMU lacks.</li>
 <li>It is checked against the QEMU and VDE of Debian 12, 13 and testing, and
 of Ubuntu 22.04 to 26.04.</li>
 <li>New manual pages: <tt class="docutils literal">virtualbricks(1)</tt>, <tt class="docutils literal"><span class="pre">virtualbricks-config(5)</span></tt>,
-<tt class="docutils literal"><span class="pre">virtualbricks-archive(7)</span></tt> and <tt class="docutils literal"><span class="pre">virtualbricks-control(7)</span></tt>.</li>
+<tt class="docutils literal"><span class="pre">virtualbricks-vbp(5)</span></tt>, <tt class="docutils literal"><span class="pre">virtualbricks-archive(7)</span></tt> and
+<tt class="docutils literal"><span class="pre">virtualbricks-control(7)</span></tt>.</li>
 <li>End-to-end tests: scenarios written in words and played on the real
 application.</li>
 </ul>
