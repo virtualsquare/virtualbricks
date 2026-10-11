@@ -168,7 +168,7 @@ Remote control
   .. code-block:: sh
 
      # on the lab machine
-     virtualbricks --no-gui --noterm --listen \
+     virtualbricks --no-gui --no-term --listen \
          'ssl:8765:interface=0.0.0.0:privateKey=lab.pem'
      # on your desktop
      virtualbricks --connect ssl:lab.example:8765:caCertsDir=FOLDER
@@ -185,7 +185,8 @@ Under the hood
 - It is checked against the QEMU and VDE of Debian 12, 13 and testing, and
   of Ubuntu 22.04 to 26.04.
 - New manual pages: ``virtualbricks(1)``, ``virtualbricks-config(5)``,
-  ``virtualbricks-archive(7)`` and ``virtualbricks-control(7)``.
+  ``virtualbricks-vbp(5)``, ``virtualbricks-archive(7)`` and
+  ``virtualbricks-control(7)``.
 - End-to-end tests: scenarios written in words and played on the real
   application.
 

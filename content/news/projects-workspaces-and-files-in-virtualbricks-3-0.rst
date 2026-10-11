@@ -48,10 +48,10 @@ in the folders of the XDG specification:
    ~/.local/state/virtualbricks/state.toml   what it remembers
    ~/.virtualbricks/                         the workspace, where it was
    ├── .virtualbricks.lock
-   ├── vimages/                              the image library
+   ├── shared_images/                        the images its projects share
    └── lab/
        ├── project.toml                      the project
-       ├── README                            now read as Markdown
+       ├── README.md                         now Markdown
        └── vm1_hda.cow                       a private disk
    /run/user/1000/virtualbricks/KEY/lab/     the sockets, gone at logout
 
@@ -102,12 +102,12 @@ shortened, as Virtualbricks 3.0 writes it:
 .. code-block:: toml
 
    # The version of the layout of this file
-   format = 2
+   format = 1
 
    [images.martin]
    # The image file; a relative path is relative to the project folder
    # (default empty)
-   path = "/home/alice/.virtualbricks/vimages/vtatpa.martin.qcow2"
+   path = "/home/alice/.virtualbricks/shared_images/vtatpa.martin.qcow2"
 
    [bricks.sender]
    # A virtual machine, run by QEMU
@@ -182,9 +182,10 @@ manual page ``virtualbricks-config(5)`` describes every key of every file.
 Workspaces
 ==========
 
-A workspace is a folder of projects. It has its own image library,
-``vimages``, and its own lock. It's ``~/.virtualbricks`` unless you choose
-another in the settings, or for a single run:
+A workspace is a folder of projects. It has its own shared images, the
+images its projects share, in ``shared_images``, and its own lock. It's
+``~/.virtualbricks`` unless you choose another in the settings, or for a
+single run:
 
 .. code-block:: sh
 
@@ -201,8 +202,8 @@ same name in two workspaces don't get in each other's way:
 
 .. code-block:: sh
 
-   virtualbricks --no-gui --noterm --listen --workspace ~/labs/a &
-   virtualbricks --no-gui --noterm --listen --workspace ~/labs/b &
+   virtualbricks --no-gui --no-term --listen --workspace ~/labs/a &
+   virtualbricks --no-gui --no-term --listen --workspace ~/labs/b &
    virtualbricks --workspace ~/labs/b --command status
 
 How many may run at once is chosen with ``--lock``:
@@ -255,8 +256,9 @@ space taken by the private disks and by the other files.
 
 - **Remove…** says what goes with the project, the folder and how much its
   private disks take, and offers to move it to the trash of your desktop,
-  where you can restore it, or to delete it for good. The images of the
-  library stay. The open project can't be removed: open another one first.
+  where you can restore it, or to delete it for good. The images it uses
+  stay where they are. The open project can't be removed: open another one
+  first.
 
 - **Show in Files** opens the folder of the project.
 
@@ -332,12 +334,12 @@ archive and shows everything on one page:
   importing.
 
 - **Each image** the project uses, with a choice: *Copy* it from the archive
-  to your image library, *Use a file…* of this computer, or *Leave unset*,
-  for the disks to get an image later, in their settings. Every image has a
-  default: one in the archive is copied, or found in your library when it
-  already has a file with the same name and size; one that isn't in the
-  archive uses the file at the same path, or the image of the library with
-  that name.
+  to the shared images of the workspace, *Use a file…* of this computer, or
+  *Leave unset*, for the disks to get an image later, in their settings.
+  Every image has a default: one in the archive is copied, or found in the
+  shared images when they already have a file with the same name and size;
+  one that isn't in the archive uses the file at the same path, or the file
+  of the shared images with that name.
 
 - **This computer's paths**: the folders of QEMU and VDE of the project are
   replaced with yours when they don't exist on this computer.
@@ -353,18 +355,20 @@ Since every choice has a default, the Import button works from the start.
          the import
 
    An archive from another computer. tinycore is in it, and is copied to the
-   library; frr-debian isn't, and the image of the library with that name is
-   used. The folders of QEMU and VDE of the other computer aren't here, and
-   this computer's take their place.
+   shared images; frr-debian isn't, and the file of the shared images with
+   that name is used. The folders of QEMU and VDE of the other computer
+   aren't here, and this computer's take their place.
 
 Choosing an archive reads only its head, the list of its contents, the
 project file and the README, a few kilobytes, and stops there, however
 large the archive is. Then the import extracts the archive into a hidden
-folder of the workspace, copies the images to the library, points each
-private disk at its new image, unpacks the packed disks, and renames the
-folder into place. If you stop it, or if it fails, it removes what it wrote,
-the copied images included. At the end, a *To check* list says what needs
-your attention: an image left unset, a disk that couldn't be rebased.
+folder of the workspace, copies the images to the shared images, points
+each private disk at its new image, unpacks the packed disks, and renames
+the folder into place. If you stop it, or if it fails, it removes what it
+wrote, the copied images included. At the end, the Logs window says what
+needs your attention: an image left unset, a disk that couldn't be rebased.
+The Import window closes once the project opens; for a project imported
+without opening it, it shows the same in a *To check* list.
 
 The archives of 2.1 import too: their project file is converted on the fly,
 with the same code as the migration. Since they have no list of their
@@ -393,10 +397,10 @@ largest:
 
    contents.toml        the list of the other members
    project.toml         the project
-   README
+   README.md
    ...                  the other files you chose
    vm1_hda.cow          the private disks
-   .images/debian       the images, by their name in the project
+   IMAGES/debian        the images, by their name in the project
 
 ``contents.toml`` says what the archive holds, the size of each member and
 whether it's packed:
@@ -410,7 +414,7 @@ whether it's packed:
    size = 255
 
    [[members]]
-   name = "README"
+   name = "README.md"
    size = 16
 
    [[members]]
@@ -428,8 +432,8 @@ with one line of JSON for each step.
    printf 'job = "inspect"\narchive = "lab.vbp"\n' |
        python -m virtualbricks.config.archive
 
-The manual page ``virtualbricks-archive(7)`` describes the format and the
-jobs.
+The manual page ``virtualbricks-vbp(5)`` describes the format, and
+``virtualbricks-archive(7)`` the process and its jobs.
 
 
 Coming from 2.1

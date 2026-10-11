@@ -91,13 +91,13 @@ verb, then its arguments. The nouns are ``brick``, ``event``, ``image``,
 The console reads the terminal where Virtualbricks started, beside the
 windows. ``--no-gui`` runs Virtualbricks without the windows, and without
 loading GTK: the console is then the way in, and a lab can run on a server
-without a display. ``--noterm`` doesn't read the terminal. With both,
+without a display. ``--no-term`` doesn't read the terminal. With both,
 nothing is read, and the lab runs until Virtualbricks gets ``SIGTERM`` or
 ``SIGINT``:
 
 .. code-block:: sh
 
-   virtualbricks --no-gui --noterm --listen --run ~/labs/ospf.vb
+   virtualbricks --no-gui --no-term --listen --run ~/labs/ospf.vb
 
 The ``--listen`` of that line is what lets you reach that lab afterwards.
 
@@ -209,16 +209,20 @@ below. Each is described with its type. The file of a keyword can start
 with ``~``, and a relative path is relative to the folder where you start
 Virtualbricks.
 
-**On the command line.** Both options take an optional value, which getopt
-doesn't have, so the rule is this: the next word is the description when
-it starts with a type and a colon, as ``unix:``, and the value after ``=``
-always is, as ``--listen=tcp:8765``. A path alone is refused, so that it
-isn't taken for a command:
+**On the command line.** Both options take an optional value: the next
+word is the description unless it starts with ``-``, and the value after
+``=`` always is, as ``--listen=tcp:8765``. A word that isn't a description
+is refused, a path alone or the first word of a command:
 
 .. code-block:: text
 
    $ virtualbricks --no-gui --listen ~/lab.sock
-   --listen: /home/alice/lab.sock needs its type: unix:/home/alice/lab.sock
+   virtualbricks: argument --listen: /home/alice/lab.sock needs its type:
+   unix:/home/alice/lab.sock
+   $ virtualbricks --command --connect status
+   virtualbricks: argument --connect: status: the types are unix, tcp and
+   ssl, as unix:PATH or tcp:PORT. For --connect alone before the words of
+   --command, end the options with --: --connect -- status
 
 Quote a description that has a backslash, so that the shell leaves it.
 ``--listen`` can be given more than once, and Virtualbricks listens on each
@@ -226,7 +230,7 @@ socket, each with its protocol:
 
 .. code-block:: sh
 
-   virtualbricks --no-gui --noterm \
+   virtualbricks --no-gui --no-term \
        --listen \
        --listen unix:~/labs/lab1.json:protocol=json \
        --listen tcp:8765 \
@@ -297,8 +301,8 @@ description look for the Virtualbricks to talk to:
 
 .. code-block:: text
 
-   $ virtualbricks --no-gui --noterm --listen --workspace ~/labs/a &
-   $ virtualbricks --no-gui --noterm --listen --workspace ~/labs/b &
+   $ virtualbricks --no-gui --no-term --listen --workspace ~/labs/a &
+   $ virtualbricks --no-gui --no-term --listen --workspace ~/labs/b &
    $ virtualbricks --command status
    Virtualbricks of yours listen in 2 workspaces: /home/alice/labs/b
    (process 430506) and /home/alice/labs/a (process 430482). Name one with
@@ -327,8 +331,9 @@ network:
 .. code-block:: text
 
    $ virtualbricks --no-gui --listen tcp:8765:interface=0.0.0.0
-   --listen: tcp:8765:interface=0.0.0.0: tcp listens on this machine only,
-   as interface=127.0.0.1 or ::1; across the network, ssl
+   virtualbricks: argument --listen: tcp:8765:interface=0.0.0.0: tcp
+   listens on this machine only, as interface=127.0.0.1 or ::1; across the
+   network, ssl
 
 A port is open to anyone on the machine, unlike a unix socket, and a
 connection can do all that the console does, the shell commands in the
@@ -473,7 +478,7 @@ in ``~/vb/lab``:
 
 .. code-block:: sh
 
-   virtualbricks --no-gui --noterm --listen \
+   virtualbricks --no-gui --no-term --listen \
        'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem'
    virtualbricks --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
        --command status
@@ -513,7 +518,7 @@ certificate of its own, self-signed, whose ``.pem`` goes in the folder:
    cat alice.key alice.pem > alice-key.pem
    chmod 600 alice.key alice-key.pem
    # on the lab machine, with a copy of alice.pem, and only it, in ~/vb/clients
-   virtualbricks --no-gui --noterm --listen \
+   virtualbricks --no-gui --no-term --listen \
        'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem:caCertsDir=~/vb/clients'
 
 The client shows its certificate with ``privateKey=``, a file with the key
@@ -1048,12 +1053,12 @@ version, its workspace, its folders, whether it has a trash, its QEMU
 programs, the programs it lacks for each kind of brick, and whether KSM
 runs. Then a ``Changed`` for each image, brick and event, each brick after
 those it plugs into, with its ``table``, as the project file writes it, and
-its ``state``, what the file doesn't: the process of a brick, the private
-copies of a machine, the file of an image, the seconds an event still
-waits. Then ``Synced``, the last 500 messages of the log, and the answer.
-From then on, Virtualbricks gathers what changes and sends it once a turn
-of its loop, each object once, as it is then. When another project opens,
-the copy starts over with ``Opened``.
+its ``state``, what the file doesn't: whether a brick runs and its
+process, the private copies of a machine, the file of an image, the seconds
+an event still waits. Then ``Synced``, the last 500 messages of the log,
+and the answer. From then on, Virtualbricks gathers what changes and sends
+it once a turn of its loop, each object once, as it is then. When another
+project opens, the copy starts over with ``Opened``.
 
 A program that follows declares the eight pushes, and has a responder for
 each: Twisted closes the connection on a command it has no responder for.
@@ -1137,12 +1142,12 @@ It prints:
 .. code-block:: text
 
    Opened lab1
-   Changed brick sw1 {'pid': 430548}
-   Changed brick sw2 {'pid': 430557}
+   Changed brick sw1 {'running': True, 'pid': 430548}
+   Changed brick sw2 {'running': True, 'pid': 430557}
    Synced
    {'lines': ['sw2 stopped']}
-   Changed brick sw2 {'pid': None}
-   Changed brick sw2 {'pid': None}
+   Changed brick sw2 {'running': False, 'pid': None}
+   Changed brick sw2 {'running': False, 'pid': None}
    {'lines': []}
    NotFound: No brick named sw9
 
@@ -1193,7 +1198,7 @@ windows or with ``--no-gui``, and both ends run the same version:
 .. code-block:: sh
 
    # on the lab machine
-   virtualbricks --no-gui --noterm --listen \
+   virtualbricks --no-gui --no-term --listen \
        'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab-key.pem'
    # on your desktop
    virtualbricks --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab'
@@ -1226,7 +1231,7 @@ certificate, as ``--command`` does.
   on.
 
 Some items wait for a later version, greyed: Import and Export, saving or
-merging the private copy of a disk, copying an image to the image folder,
+merging the private copy of a disk, copying an image to the shared images,
 *Show in Files*, and *Terminate*.
 
 

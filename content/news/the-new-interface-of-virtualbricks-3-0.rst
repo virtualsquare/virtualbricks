@@ -156,14 +156,15 @@ Bricks and the Events, in the same shape:
   so the list fills in as each file is read.
 
 - **Add Image** adds an *Existing Image…*, read with ``qemu-img info`` as
-  soon as you choose it and copied to the image folder unless you say
-  otherwise, or a *New Empty Disk…*, qcow2 or raw, which is added to the
-  project at once. In 2.1, a new image had to be added again, from its file.
+  soon as you choose it and copied to the shared images of the workspace
+  unless you say otherwise, or a *New Empty Disk…*, qcow2 or raw, which is
+  added to the project at once. In 2.1, a new image had to be added again,
+  from its file.
 
 - **The menu** of an image has Details…, Rename…, Show in Files and
   Remove…. Remove says which disks lose their image, and offers to move the
-  file to the trash only when it is in the image folder and no other project
-  uses it.
+  file to the trash only when it is in the shared images and no other
+  project uses it.
 
 - **Find the File…** comes first in the menu of an image whose file is
   missing. It points the private copies at the new file before the path
