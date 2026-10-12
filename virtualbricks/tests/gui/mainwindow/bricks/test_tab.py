@@ -496,7 +496,8 @@ class TestTheKeys(BricksTestCase):
                 (
                     row.menu_button,
                     None,
-                    self.gui,
+                    self.gui.engine,
+                    self.gui.window,
                     self.sw,
                     self.tab.configure,
                     True,
@@ -598,12 +599,18 @@ class TestTheMouse(BricksTestCase):
             self.tab.get_toplevel().get_focus(),
             self.tab.list.row_of(list(self.factory.bricks)[1]),
         )
-        [(widget, event, gui, brick, configure, keys)] = shown
+        [(widget, event, engine, window, brick, configure, keys)] = shown
         self.assertIs(widget, self.tab.list)
         self.assertEqual(event.button, 3)
         self.assertEqual(
-            (gui, brick, configure, keys),
-            (self.gui, list(self.factory.bricks)[1], self.tab.configure, True),
+            (engine, window, brick, configure, keys),
+            (
+                self.gui.engine,
+                self.gui.window,
+                list(self.factory.bricks)[1],
+                self.tab.configure,
+                True,
+            ),
         )
 
     def test_not_on_a_brick(self):

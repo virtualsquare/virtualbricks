@@ -106,7 +106,9 @@ class ImageRow(Row[Image]):
         super().__init__(gui, item, configure, icons, sizes)
 
     def make_actions(self) -> imagemenu.ImageActions:
-        return imagemenu.ImageActions(self.gui, self.item, self.configure)
+        return imagemenu.ImageActions(
+            self.gui.engine, self.gui.window, self.item, self.configure
+        )
 
     def menu_model(self) -> Gio.Menu:
         return imagemenu.menu(self.item, self.there())
@@ -301,7 +303,13 @@ class ImagesTab(RowsTab[Image]):
         self, widget: Gtk.Widget, event: Gdk.EventButton | None, item: Image
     ) -> Gtk.Menu:
         return imagemenu.popup(
-            widget, event, self.gui, item, self.configure, True
+            widget,
+            event,
+            self.gui.engine,
+            self.gui.window,
+            item,
+            self.configure,
+            True,
         )
 
     def panel_for(self, item: Image) -> ImageDetails:

@@ -585,13 +585,6 @@ class NotHere:
         return self.lacks
 
 
-class FakeGui:
-    def __init__(self, factory):
-        self.brickfactory = factory
-        self.engine = NotHere(factory)
-        self.window = None
-
-
 class TestWhatWaits(GuiTestCase):
     """What the windows grey over a connection: 19 R12, R13, step 6."""
 
@@ -600,7 +593,7 @@ class TestWhatWaits(GuiTestCase):
         untranslated(self)
         os.makedirs(self.factory.runtime_dir)
         self.manager.current = OpenProject(self.folder("lab1"), None)
-        self.gui = FakeGui(self.factory)
+        self.engine = NotHere(self.factory)
         self.configured = []
 
     def enabled(self, actions):
@@ -614,22 +607,20 @@ class TestWhatWaits(GuiTestCase):
         vm = self.factory.new_brick("qemu", "vm1")
         vm.proc = FakeProcess(vm)
         enabled = self.enabled(
-            BrickActions(self.gui, vm, self.configured.append)
+            BrickActions(self.engine, None, vm, self.configured.append)
         )
         # without unixterm here
         self.assertNotIn("console", enabled)
         self.assertNotIn("terminate", enabled)
         self.assertIn("kill", enabled)
-        model = brickmenu.menu(
-            vm, [vm], [], console_lacks=self.gui.engine.lacks
-        )
+        model = brickmenu.menu(vm, [vm], [], console_lacks=self.engine.lacks)
         self.assertIn(
             "Open Control Monitor (needs unixterm of vde2)", labels(model)
         )
         # with it, through the connection (step 6)
-        self.gui.engine.lacks = None
+        self.engine.lacks = None
         enabled = self.enabled(
-            BrickActions(self.gui, vm, self.configured.append)
+            BrickActions(self.engine, None, vm, self.configured.append)
         )
         self.assertIn("console", enabled)
         self.assertNotIn("terminate", enabled)
@@ -639,13 +630,13 @@ class TestWhatWaits(GuiTestCase):
         self.patch(brickmenu, "logger", logger)
         vm = self.factory.new_brick("qemu", "vm1")
         vm.proc = FakeProcess(vm)
-        self.gui.engine.lacks = None
-        self.gui.engine.open_console = lambda brick: defer.fail(
+        self.engine.lacks = None
+        self.engine.open_console = lambda brick: defer.fail(
             Refused("The connection to lab is lost")
         )
-        BrickActions(self.gui, vm, self.configured.append).activate_action(
-            "console", None
-        )
+        BrickActions(
+            self.engine, None, vm, self.configured.append
+        ).activate_action("console", None)
         self.assertEqual(
             logger.formatted(),
             ["Cannot open the console of vm1: The connection to lab is lost"],
@@ -656,7 +647,7 @@ class TestWhatWaits(GuiTestCase):
         self.assertNotIn(
             "show",
             self.enabled(
-                ImageActions(self.gui, image, self.configured.append)
+                ImageActions(self.engine, None, image, self.configured.append)
             ),
         )
 
@@ -668,7 +659,7 @@ class TestWhatWaits(GuiTestCase):
             pass
         qemu_img = FakeQemuImg()
         qemu_img.infos[image.path] = INFO
-        section = DisksSection(vm, self.gui.engine, images.InfoCache(qemu_img))
+        section = DisksSection(vm, self.engine, images.InfoCache(qemu_img))
         self.addCleanup(section.destroy)
         enabled = self.enabled(section.row("hda").actions)
         # a copy starts over there

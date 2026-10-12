@@ -64,14 +64,17 @@ class FakeEngine:
 class FakeGui:
     def __init__(self):
         self.engine = FakeEngine()
+        self.window = object()
 
 
 class FakeMenus:
     def __init__(self):
         self.shown = []
 
-    def popup(self, widget, event, gui, brick, configure):
-        self.shown.append((widget, brick, event.button, gui, configure))
+    def popup(self, widget, event, engine, window, brick, configure):
+        self.shown.append(
+            (widget, brick, event.button, engine, window, configure)
+        )
         return self
 
 
@@ -402,7 +405,16 @@ class TestClicks(TopologyTestCase):
         self.assertTrue(self.press(self.vm, button=3))
         self.assertEqual(
             self.menus.shown,
-            [(self.view.area, self.vm, 3, self.gui, self.configured.append)],
+            [
+                (
+                    self.view.area,
+                    self.vm,
+                    3,
+                    self.gui.engine,
+                    self.gui.window,
+                    self.configured.append,
+                )
+            ],
         )
         # kept while it shows
         self.assertIs(self.tab._menu, self.menus)

@@ -82,7 +82,9 @@ class BrickRow(Row[Brick]):
     GROUP = brickmenu.GROUP
 
     def make_actions(self) -> brickmenu.BrickActions:
-        return brickmenu.BrickActions(self.gui, self.item, self.configure)
+        return brickmenu.BrickActions(
+            self.gui.engine, self.gui.window, self.item, self.configure
+        )
 
     def menu_model(self) -> Gio.Menu:
         factory = self.gui.brickfactory

@@ -29,7 +29,6 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gio, Gtk
 
@@ -47,9 +46,6 @@ from virtualbricks.gui.mainwindow.tab import (
     menu_section,
 )
 from virtualbricks.i18n import _
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
 
 GROUP = "event"
 
@@ -93,12 +89,15 @@ class EventActions(MenuActions):
 
     def __init__(
         self,
-        gui: MainWindow,
+        engine: Engine,
+        window: Gtk.Window,
         event: Event,
         configure: Callable[[Event], None],
     ) -> None:
         super().__init__()
-        self.gui = gui
+        self.engine = engine
+        # what the dialogs open over: the main window
+        self.window = window
         self.event = event
         self._configure = configure
         for name, callback in (
@@ -127,28 +126,29 @@ class EventActions(MenuActions):
             self.action(name).set_enabled(value)
 
     def startstop(self) -> None:
-        startstop(self.gui.engine, self.event)
+        startstop(self.engine, self.event)
 
     def run_now(self) -> None:
-        self.gui.engine.run_event(self.event)
+        self.engine.run_event(self.event)
 
     def configure(self) -> None:
         self._configure(self.event)
 
     def rename(self) -> None:
-        RenameDialog(self.gui.engine, self.event).show(self.gui.window)
+        RenameDialog(self.engine, self.event).show(self.window)
 
     def duplicate(self) -> None:
-        self.gui.engine.duplicate(self.event)
+        self.engine.duplicate(self.event)
 
     def delete(self) -> None:
-        DeleteDialog(self.gui.engine, self.event).show(self.gui.window)
+        DeleteDialog(self.engine, self.event).show(self.window)
 
 
 def popup(
     widget: Gtk.Widget,
     event: Gdk.EventButton | None,
-    gui: MainWindow,
+    engine: Engine,
+    window: Gtk.Window,
     the_event: Event,
     configure: Callable[[Event], None],
     keys: bool = False,
@@ -156,7 +156,8 @@ def popup(
     """
     Open the menu of the_event: at the pointer, for a click on widget, or
     under widget when event is None, as for the Menu key. Keep the menu that
-    it returns while it shows. Its Settings call configure.
+    it returns while it shows. Its Settings call configure; its dialogs open
+    over window.
     """
 
     return tab.popup(
@@ -164,5 +165,5 @@ def popup(
         event,
         menu(the_event, keys),
         GROUP,
-        EventActions(gui, the_event, configure),
+        EventActions(engine, window, the_event, configure),
     )

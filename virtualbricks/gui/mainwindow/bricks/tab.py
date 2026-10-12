@@ -164,7 +164,13 @@ class BricksTab(RowsTab[Brick]):
         self, widget: Gtk.Widget, event: Gdk.EventButton | None, item: Brick
     ) -> Gtk.Menu:
         return brickmenu.popup(
-            widget, event, self.gui, item, self.configure, True
+            widget,
+            event,
+            self.gui.engine,
+            self.gui.window,
+            item,
+            self.configure,
+            True,
         )
 
     def panel_for(self, item: Brick) -> Panel | None:

@@ -38,7 +38,7 @@ from __future__ import annotations
 import functools
 import signal
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from gi.repository import Gdk, Gio, GLib, Gtk
 from twisted.internet import defer
@@ -63,9 +63,6 @@ from virtualbricks.gui.mainwindow.tab import (
     menu_section,
 )
 from virtualbricks.i18n import _
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
 
 logger = Logger()
 resuming = "Resuming virtual machine {name}"
@@ -218,13 +215,15 @@ class BrickActions(MenuActions):
 
     def __init__(
         self,
-        gui: MainWindow,
+        engine: Engine,
+        window: Gtk.Window,
         brick: Brick,
         configure: Callable[[Brick], None],
     ) -> None:
         super().__init__()
-        self.gui = gui
-        self.engine = gui.engine
+        self.engine = engine
+        # what the dialogs open over: the main window
+        self.window = window
         self.brick = brick
         self._configure = configure
         for name, callback in (
@@ -313,7 +312,7 @@ class BrickActions(MenuActions):
 
         name = self.brick.name
         waiting = WaitWindow(text.format(name=name)).wait_for(
-            deferred, self.gui.window
+            deferred, self.window
         )
         waiting.addErrback(
             lambda failure: logger.error(
@@ -328,7 +327,7 @@ class BrickActions(MenuActions):
         self._configure(self.brick)
 
     def rename(self) -> None:
-        RenameDialog(self.engine, self.brick).show(self.gui.window)
+        RenameDialog(self.engine, self.brick).show(self.window)
 
     def duplicate(self) -> None:
         self.engine.duplicate(self.brick)
@@ -355,7 +354,7 @@ class BrickActions(MenuActions):
         )
 
     def delete(self) -> None:
-        DeleteDialog(self.engine, self.brick).show(self.gui.window)
+        DeleteDialog(self.engine, self.brick).show(self.window)
 
     # The items of the process
 
@@ -404,7 +403,8 @@ class BrickActions(MenuActions):
 def popup(
     widget: Gtk.Widget,
     event: Gdk.EventButton | None,
-    gui: MainWindow,
+    engine: Engine,
+    window: Gtk.Window,
     brick: Brick,
     configure: Callable[[Brick], None],
     keys: bool = False,
@@ -412,15 +412,16 @@ def popup(
     """
     Open the menu of brick: at the pointer, for a click on widget, or under
     widget when event is None, as for the Menu key. Keep the menu that it
-    returns while it shows. Its Settings call configure.
+    returns while it shows. Its Settings call configure; its dialogs open
+    over window.
     """
 
-    factory = gui.brickfactory
-    lacks = gui.engine.console_lacks(brick)
+    factory = engine.factory
+    lacks = engine.console_lacks(brick)
     return tab.popup(
         widget,
         event,
         menu(brick, factory.bricks, list(factory.events), keys, lacks),
         GROUP,
-        BrickActions(gui, brick, configure),
+        BrickActions(engine, window, brick, configure),
     )

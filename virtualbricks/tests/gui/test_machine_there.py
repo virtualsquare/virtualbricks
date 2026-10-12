@@ -185,7 +185,7 @@ class TestTheImagesTab(ThereTestCase):
             "Find the File…",
         )
         actions = imagemenu.ImageActions(
-            self.gui, self.frr, self.configured.append
+            self.engine, self.gui.window, self.frr, self.configured.append
         )
         self.assertFalse(actions.lookup_action("find-file").get_enabled())
         self.assertTrue(actions.lookup_action("show").get_enabled())
@@ -199,7 +199,12 @@ class TestTheImagesTab(ThereTestCase):
             (self.here, "Find the File…"),
         ):
             menu = imagemenu.popup(
-                widget, None, self.gui, image, self.configured.append
+                widget,
+                None,
+                self.engine,
+                self.gui.window,
+                image,
+                self.configured.append,
             )
             self.addCleanup(menu.destroy)
             self.assertEqual(menu.get_children()[0].get_label(), first)

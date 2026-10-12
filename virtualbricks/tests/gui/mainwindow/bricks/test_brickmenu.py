@@ -41,13 +41,6 @@ class FakeProcess:
     pid = 41301
 
 
-class FakeGui:
-    def __init__(self, factory):
-        self.brickfactory = factory
-        self.engine = LocalEngine(factory)
-        self.window = object()
-
-
 class FakeDialog:
     def __init__(self, shown, *args):
         self.shown = shown
@@ -101,7 +94,9 @@ class BrickMenuTestCase(GuiTestCase):
     def setUp(self):
         super().setUp()
         os.makedirs(self.factory.runtime_dir)
-        self.gui = FakeGui(self.factory)
+        self.engine = LocalEngine(self.factory)
+        # what the dialogs open over: the main window
+        self.window = object()
         # what Settings shows
         self.configured = []
         self.logger = FakeLogger()
@@ -239,7 +234,9 @@ class TestTheMenu(BrickMenuTestCase):
         )
         vm.add_sock()
         actions = set(
-            BrickActions(self.gui, vm, self.configured.append).list_actions()
+            BrickActions(
+                self.engine, self.window, vm, self.configured.append
+            ).list_actions()
         )
 
         def walk(model):
@@ -261,7 +258,9 @@ class TestTheMenu(BrickMenuTestCase):
 class TestWhatIsEnabled(BrickMenuTestCase):
 
     def enabled(self, brick):
-        actions = BrickActions(self.gui, brick, self.configured.append)
+        actions = BrickActions(
+            self.engine, self.window, brick, self.configured.append
+        )
         return sorted(
             name
             for name in actions.list_actions()
@@ -332,7 +331,9 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
     def setUp(self):
         super().setUp()
         self.sw = self.brick("switch", "sw")
-        self.actions = BrickActions(self.gui, self.sw, self.configured.append)
+        self.actions = BrickActions(
+            self.engine, self.window, self.sw, self.configured.append
+        )
 
     def activate(self, name, target=None):
         self.actions.activate_action(name, target)
@@ -340,8 +341,10 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
     def recording(self, brick):
         """The actions of brick, with an engine that only remembers."""
 
-        self.gui.engine = RecordingEngine(self.factory)
-        return BrickActions(self.gui, brick, self.configured.append)
+        self.engine = RecordingEngine(self.factory)
+        return BrickActions(
+            self.engine, self.window, brick, self.configured.append
+        )
 
     def test_settings(self):
         self.activate("configure")
@@ -351,9 +354,7 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
         shown = []
         self.patch(brickmenu, "DeleteDialog", lambda *a: FakeDialog(shown, *a))
         self.activate("delete")
-        self.assertEqual(
-            shown, [((self.gui.engine, self.sw), self.gui.window)]
-        )
+        self.assertEqual(shown, [((self.engine, self.sw), self.window)])
 
     def test_start_and_stop(self):
         actions = self.recording(self.sw)
@@ -361,16 +362,14 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
         self.running(self.sw)
         actions.activate_action("startstop", None)
         self.assertEqual(
-            self.gui.engine.calls, [("start", self.sw), ("stop", self.sw)]
+            self.engine.calls, [("start", self.sw), ("stop", self.sw)]
         )
 
     def test_rename(self):
         shown = []
         self.patch(brickmenu, "RenameDialog", lambda *a: FakeDialog(shown, *a))
         self.activate("rename")
-        self.assertEqual(
-            shown, [((self.gui.engine, self.sw), self.gui.window)]
-        )
+        self.assertEqual(shown, [((self.engine, self.sw), self.window)])
 
     def test_duplicate(self):
         self.activate("duplicate")
@@ -392,14 +391,12 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
         actions = self.recording(vm)
         actions.activate_action("suspend", None)
         actions.activate_action("resume", None)
-        self.assertEqual(
-            self.gui.engine.calls, [("suspend", vm), ("resume", vm)]
-        )
+        self.assertEqual(self.engine.calls, [("suspend", vm), ("resume", vm)])
         self.assertEqual(
             waited,
             [
-                ("Suspending vm…", self.gui.window),
-                ("Resuming vm…", self.gui.window),
+                ("Suspending vm…", self.window),
+                ("Resuming vm…", self.window),
             ],
         )
 
@@ -410,7 +407,9 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
         vm.send_signal = lambda number: done.append(number)
         vm.send = lambda data: done.append(data)
         vm.stop = lambda **kwargs: done.append(kwargs)
-        actions = BrickActions(self.gui, vm, self.configured.append)
+        actions = BrickActions(
+            self.engine, self.window, vm, self.configured.append
+        )
         for name in (
             "console",
             "pause",
@@ -446,7 +445,7 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
     def test_restart(self):
         actions = self.recording(self.running(self.sw))
         actions.activate_action("restart", None)
-        self.assertEqual(self.gui.engine.calls, [("restart", self.sw)])
+        self.assertEqual(self.engine.calls, [("restart", self.sw)])
 
 
 class TestTheEventsOfABrick(BrickMenuTestCase):
@@ -520,7 +519,9 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
         )
 
     def test_choosing(self):
-        actions = BrickActions(self.gui, self.sw, self.configured.append)
+        actions = BrickActions(
+            self.engine, self.window, self.sw, self.configured.append
+        )
         for name in ("when-starts", "when-stops"):
             self.assertEqual(actions.get_action_state(name).unpack(), "")
         actions.activate_action("when-starts", GLib.Variant.new_string("boot"))
@@ -536,7 +537,9 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
         self.assertEqual(self.sw.config.on_stop, "draft")
 
     def test_the_choice_follows_the_brick(self):
-        actions = BrickActions(self.gui, self.sw, self.configured.append)
+        actions = BrickActions(
+            self.engine, self.window, self.sw, self.configured.append
+        )
         self.sw.update_config({"on_start": "boot"})
         actions.update()
         self.assertEqual(
@@ -551,7 +554,10 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
         )
         self.addCleanup(result.destroy)
         result.insert_action_group(
-            "brick", BrickActions(self.gui, self.sw, self.configured.append)
+            "brick",
+            BrickActions(
+                self.engine, self.window, self.sw, self.configured.append
+            ),
         )
         [item] = [
             child
@@ -589,7 +595,9 @@ class TestPopup(BrickMenuTestCase):
         widget = Gtk.Button()
         self.addCleanup(widget.destroy)
         event = Gdk.Event.new(Gdk.EventType.BUTTON_PRESS)
-        result = popup(widget, event, self.gui, sw, self.configured.append)
+        result = popup(
+            widget, event, self.engine, self.window, sw, self.configured.append
+        )
         self.addCleanup(result.destroy)
         self.assertEqual(shown, [event])
         self.assertIs(result.get_attach_widget(), widget)
@@ -606,7 +614,13 @@ class TestPopup(BrickMenuTestCase):
         configure = result.get_children()[1]
         self.assertEqual(configure.get_property("accel"), "")
         with_keys = popup(
-            widget, event, self.gui, sw, self.configured.append, keys=True
+            widget,
+            event,
+            self.engine,
+            self.window,
+            sw,
+            self.configured.append,
+            keys=True,
         )
         self.addCleanup(with_keys.destroy)
         configure = with_keys.get_children()[1]
@@ -627,7 +641,8 @@ class TestPopup(BrickMenuTestCase):
         result = popup(
             widget,
             None,
-            self.gui,
+            self.engine,
+            self.window,
             self.brick("switch", "sw"),
             self.configured.append,
         )

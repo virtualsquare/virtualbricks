@@ -35,13 +35,6 @@ if has_display:
     )
 
 
-class FakeGui:
-    def __init__(self, factory):
-        self.brickfactory = factory
-        self.engine = LocalEngine(factory)
-        self.window = object()
-
-
 class FakeDialog:
     def __init__(self, shown, *args):
         self.shown = shown
@@ -55,7 +48,9 @@ class ImageMenuTestCase(GuiTestCase):
 
     def setUp(self):
         super().setUp()
-        self.gui = FakeGui(self.factory)
+        self.engine = LocalEngine(self.factory)
+        # what the dialogs open over: the main window
+        self.window = object()
         # what Details shows
         self.configured = []
         self.there = self.image("frr")
@@ -93,7 +88,7 @@ class TestTheMenu(ImageMenuTestCase):
     def test_every_item_has_its_action(self):
         actions = set(
             ImageActions(
-                self.gui, self.missing, self.configured.append
+                self.engine, self.window, self.missing, self.configured.append
             ).list_actions()
         )
         model = menu(self.missing, False)
@@ -110,7 +105,9 @@ class TestTheMenu(ImageMenuTestCase):
 class TestWhatIsEnabled(ImageMenuTestCase):
 
     def enabled(self, image):
-        actions = ImageActions(self.gui, image, self.configured.append)
+        actions = ImageActions(
+            self.engine, self.window, image, self.configured.append
+        )
         return sorted(
             name
             for name in actions.list_actions()
@@ -130,7 +127,9 @@ class TestWhatIsEnabled(ImageMenuTestCase):
         )
 
     def test_update(self):
-        actions = ImageActions(self.gui, self.missing, self.configured.append)
+        actions = ImageActions(
+            self.engine, self.window, self.missing, self.configured.append
+        )
         self.missing.set_path(self.there.path)
         actions.update()
         self.assertTrue(actions.get_action_enabled("show"))
@@ -140,7 +139,9 @@ class TestWhatIsEnabled(ImageMenuTestCase):
 class TestWhatTheyDo(ImageMenuTestCase):
 
     def test_details(self):
-        actions = ImageActions(self.gui, self.there, self.configured.append)
+        actions = ImageActions(
+            self.engine, self.window, self.there, self.configured.append
+        )
         actions.activate_action("details", None)
         self.assertEqual(self.configured, [self.there])
 
@@ -150,7 +151,9 @@ class TestWhatTheyDo(ImageMenuTestCase):
             self.patch(
                 imagemenu, name, lambda *a, n=name: FakeDialog(shown, n, *a)
             )
-        actions = ImageActions(self.gui, self.missing, self.configured.append)
+        actions = ImageActions(
+            self.engine, self.window, self.missing, self.configured.append
+        )
         actions.activate_action("rename", None)
         actions.activate_action("find-file", None)
         actions.activate_action("remove", None)
@@ -158,16 +161,16 @@ class TestWhatTheyDo(ImageMenuTestCase):
             shown,
             [
                 (
-                    ("RenameDialog", self.gui.engine, self.missing),
-                    self.gui.window,
+                    ("RenameDialog", self.engine, self.missing),
+                    self.window,
                 ),
                 (
-                    ("FindFileDialog", self.gui.engine, self.missing),
-                    self.gui.window,
+                    ("FindFileDialog", self.engine, self.missing),
+                    self.window,
                 ),
                 (
-                    ("RemoveImageDialog", self.gui.engine, self.missing),
-                    self.gui.window,
+                    ("RemoveImageDialog", self.engine, self.missing),
+                    self.window,
                 ),
             ],
         )
@@ -180,9 +183,9 @@ class TestWhatTheyDo(ImageMenuTestCase):
             lambda parent, path: shown.append((parent, path)),
         )
         ImageActions(
-            self.gui, self.there, self.configured.append
+            self.engine, self.window, self.there, self.configured.append
         ).activate_action("show", None)
-        self.assertEqual(shown, [(self.gui.window, self.there.path)])
+        self.assertEqual(shown, [(self.window, self.there.path)])
 
 
 class TestPopup(ImageMenuTestCase):
@@ -198,7 +201,12 @@ class TestPopup(ImageMenuTestCase):
         self.addCleanup(widget.destroy)
         click = Gdk.Event.new(Gdk.EventType.BUTTON_PRESS)
         result = popup(
-            widget, click, self.gui, self.missing, self.configured.append
+            widget,
+            click,
+            self.engine,
+            self.window,
+            self.missing,
+            self.configured.append,
         )
         self.addCleanup(result.destroy)
         self.assertEqual(shown, [click])

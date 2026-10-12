@@ -29,11 +29,11 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gio, Gtk
 
 from virtualbricks.bricks.virtualmachine import Image
+from virtualbricks.engine import Engine
 from virtualbricks.gui.dialogs.imagedialogs import (
     FindFileDialog,
     RemoveImageDialog,
@@ -48,9 +48,6 @@ from virtualbricks.gui.mainwindow.tab import (
     menu_section,
 )
 from virtualbricks.i18n import _
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
 
 GROUP = "image"
 
@@ -84,12 +81,15 @@ class ImageActions(MenuActions):
 
     def __init__(
         self,
-        gui: MainWindow,
+        engine: Engine,
+        window: Gtk.Window,
         image: Image,
         configure: Callable[[Image], None],
     ) -> None:
         super().__init__()
-        self.gui = gui
+        self.engine = engine
+        # what the dialogs open over: the main window
+        self.window = window
         self.image = image
         self._configure = configure
         for name, callback in (
@@ -107,31 +107,32 @@ class ImageActions(MenuActions):
     def update(self) -> None:
         """The actions that the image allows now."""
 
-        there = self.gui.engine.machine.exists(self.image.path)
+        there = self.engine.machine.exists(self.image.path)
         self.action("find-file").set_enabled(not there)
         # the file manager shows the files of this machine only
-        self.action("show").set_enabled(there and self.gui.engine.local)
+        self.action("show").set_enabled(there and self.engine.local)
 
     def find_file(self) -> None:
-        FindFileDialog(self.gui.engine, self.image).show(self.gui.window)
+        FindFileDialog(self.engine, self.image).show(self.window)
 
     def details(self) -> None:
         self._configure(self.image)
 
     def rename(self) -> None:
-        RenameDialog(self.gui.engine, self.image).show(self.gui.window)
+        RenameDialog(self.engine, self.image).show(self.window)
 
     def show(self) -> None:
-        show_in_files(self.gui.window, self.image.path)
+        show_in_files(self.window, self.image.path)
 
     def remove_image(self) -> None:
-        RemoveImageDialog(self.gui.engine, self.image).show(self.gui.window)
+        RemoveImageDialog(self.engine, self.image).show(self.window)
 
 
 def popup(
     widget: Gtk.Widget,
     event: Gdk.EventButton | None,
-    gui: MainWindow,
+    engine: Engine,
+    window: Gtk.Window,
     image: Image,
     configure: Callable[[Image], None],
     keys: bool = False,
@@ -139,14 +140,15 @@ def popup(
     """
     Open the menu of image: at the pointer, for a click on widget, or under
     widget when event is None, as for the Menu key. Keep the menu that it
-    returns while it shows. Its Details call configure.
+    returns while it shows. Its Details call configure; its dialogs open
+    over window.
     """
 
-    there = gui.engine.machine.exists(image.path)
+    there = engine.machine.exists(image.path)
     return tab.popup(
         widget,
         event,
         menu(image, there, keys),
         GROUP,
-        ImageActions(gui, image, configure),
+        ImageActions(engine, window, image, configure),
     )

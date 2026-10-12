@@ -353,7 +353,12 @@ class TopologyTab(Tab, Gtk.Overlay):
         if event.button == 3:
             # kept while it shows
             self._menu = brickmenu.popup(
-                area, event, self.gui, brick, self.configure
+                area,
+                event,
+                self.gui.engine,
+                self.gui.window,
+                brick,
+                self.configure,
             )
         elif event.button == 1 and event.type == Gdk.EventType._2BUTTON_PRESS:
             self.configure(brick)

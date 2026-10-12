@@ -399,7 +399,8 @@ class TestTheKeysAndTheMouse(EventsTestCase):
                 (
                     row.menu_button,
                     None,
-                    self.gui,
+                    self.gui.engine,
+                    self.gui.window,
                     self.ev,
                     self.tab.configure,
                     True,

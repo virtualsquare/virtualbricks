@@ -377,7 +377,8 @@ class TestTheKeysAndTheMouse(ImagesTestCase):
                 (
                     row.menu_button,
                     None,
-                    self.gui,
+                    self.gui.engine,
+                    self.gui.window,
                     self.frr,
                     self.tab.configure,
                     True,

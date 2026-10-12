@@ -105,7 +105,9 @@ class EventRow(Row[Event]):
         super().__init__(gui, item, configure, icons, sizes)
 
     def make_actions(self) -> eventmenu.EventActions:
-        return eventmenu.EventActions(self.gui, self.item, self.configure)
+        return eventmenu.EventActions(
+            self.gui.engine, self.gui.window, self.item, self.configure
+        )
 
     def menu_model(self) -> Gio.Menu:
         return eventmenu.menu(self.item)
@@ -290,7 +292,13 @@ class EventsTab(RowsTab[Event]):
         self, widget: Gtk.Widget, event: Gdk.EventButton | None, item: Event
     ) -> Gtk.Menu:
         return eventmenu.popup(
-            widget, event, self.gui, item, self.configure, True
+            widget,
+            event,
+            self.gui.engine,
+            self.gui.window,
+            item,
+            self.configure,
+            True,
         )
 
     def panel_for(self, item: Event) -> EventEditor:
