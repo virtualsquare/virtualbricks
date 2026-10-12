@@ -83,7 +83,10 @@ class FakeGui:
 
 
 class ProjectsGui(FakeGui):
-    """The main window, as the windows of the projects see it."""
+    """
+    What the main window does for the windows of the projects, recorded:
+    their callbacks are its methods.
+    """
 
     window = None
 
@@ -115,6 +118,25 @@ class ProjectsGui(FakeGui):
 
     def export_project(self, summary, parent=None):
         self.calls.append(("export", summary.name))
+
+    def name_dialog_callbacks(self):
+        """The callbacks of the name dialog, by their argument."""
+
+        return {
+            "new_project": self.on_new,
+            "save_project": self.on_save,
+            "open_project": self.on_open,
+            "set_title": self.set_title,
+        }
+
+    def projects_callbacks(self):
+        """The callbacks of the Projects window, by their argument."""
+
+        return {
+            **self.name_dialog_callbacks(),
+            "import_project": self.import_project,
+            "export_project": self.export_project,
+        }
 
 
 class GuiTestCase(unittest.TestCase):

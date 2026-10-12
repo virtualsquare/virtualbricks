@@ -35,13 +35,13 @@ from twisted.logger import Logger
 from twisted.python.failure import Failure
 
 from virtualbricks import errors
+from virtualbricks.config.report import Report
 from virtualbricks.config.workspace import Workspace
 from virtualbricks.engine import Engine
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
     from virtualbricks.remote.client import RemoteWorkspace
 
 logger = Logger()
@@ -76,23 +76,32 @@ class ProjectNameDialog:
     """
     Ask a name, and create, rename or duplicate a project with it.
 
-    gui is the main window: the dialog saves, creates and opens projects
-    through it, as its menus do, and renames and duplicates them through
-    engine. on_done, if set, is called after a change.
+    The dialog creates, saves and opens projects as the menus of the main
+    window do, with new_project, save_project and open_project, and renames
+    and duplicates them through engine; set_title names a project renamed
+    in the title of the main window. on_done, if set, is called after a
+    change.
     """
 
     on_done: Callable[[str], object] | None = None
 
     def __init__(
         self,
-        gui: MainWindow,
         engine: Engine,
         kind: str,
         original: str | None = None,
         workspace: Workspace | RemoteWorkspace | None = None,
+        *,
+        new_project: Callable[[str, str], defer.Deferred[Report]],
+        save_project: Callable[[], defer.Deferred[None]],
+        open_project: Callable[[str], defer.Deferred[Report]],
+        set_title: Callable[[], None],
     ) -> None:
-        self.gui = gui
         self.engine = engine
+        self.new_project = new_project
+        self.save_project = save_project
+        self.open_project = open_project
+        self.set_title = set_title
         self.kind = kind
         self.original = original
         # the workspace of the Virtualbricks of the bricks
@@ -261,8 +270,8 @@ class ProjectNameDialog:
 
     def apply(self) -> defer.Deferred[str]:
         """
-        Do what the dialog is for, through the main window and the engine:
-        a Deferred of the name, or of the failure of the engine.
+        Do what the dialog is for, through its callbacks and the engine: a
+        Deferred of the name, or of the failure of the engine.
         """
 
         name = self.name_entry.get_text()
@@ -270,7 +279,7 @@ class ProjectNameDialog:
         doing: defer.Deferred[Any]
         if self.kind == NEW:
             doing = defer.maybeDeferred(
-                self.gui.on_new, name, self.description()
+                self.new_project, name, self.description()
             )
             doing.addCallback(
                 lambda _: logger.info(project_created, name=name)
@@ -287,7 +296,7 @@ class ProjectNameDialog:
                 return engine.duplicate_project(original, name)
 
             if self.is_current():
-                doing = defer.maybeDeferred(self.gui.on_save)
+                doing = defer.maybeDeferred(self.save_project)
             else:
                 doing = defer.succeed(None)
             doing.addCallback(duplicate)
@@ -298,12 +307,12 @@ class ProjectNameDialog:
             )
             assert self.open_check is not None, "a duplicate has it"
             if self.open_check.get_active():
-                doing.addCallback(lambda _: self.gui.on_open(name))
+                doing.addCallback(lambda _: self.open_project(name))
         return doing.addCallback(lambda _: name)
 
     def _renamed(self, result: object, name: str) -> None:
         logger.info(project_renamed, old=self.original, name=name)
-        self.gui.set_title()
+        self.set_title()
 
     def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         if response_id != Gtk.ResponseType.OK:

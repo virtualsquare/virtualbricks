@@ -50,7 +50,6 @@ from virtualbricks.i18n import _, ngettext
 from virtualbricks.markdown import first_line
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
     from virtualbricks.remote.client import RemoteWorkspace
 
 logger = Logger()
@@ -192,20 +191,33 @@ class ProjectsWindow:
     """
     The Projects window.
 
-    gui is the main window: projects are opened, created and saved through
-    it, as its menus do, and it runs the import and the export. engine
-    lists the projects, measures them and removes them.
+    Projects are opened, created and saved as the menus of the main window
+    do, with open_project, new_project and save_project, which the name
+    dialog takes too; set_title names the project open in the title of the
+    main window, and import_project and export_project run the import and
+    the export. engine lists the projects, measures them and removes them.
     """
 
     def __init__(
         self,
-        gui: MainWindow,
         engine: Engine,
         workspace: Workspace | RemoteWorkspace | None = None,
         disk_usage: Callable[[str], defer.Deferred[DiskUsage]] | None = None,
+        *,
+        open_project: Callable[[str], defer.Deferred[Report]],
+        new_project: Callable[[str, str], defer.Deferred[Report]],
+        save_project: Callable[[], defer.Deferred[None]],
+        set_title: Callable[[], None],
+        import_project: Callable[[Callable[[], object]], object],
+        export_project: Callable[[ProjectSummary, Gtk.Window], object],
     ) -> None:
-        self.gui = gui
         self.engine = engine
+        self.open_project = open_project
+        self.new_project = new_project
+        self.save_project = save_project
+        self.set_title = set_title
+        self.import_project = import_project
+        self.export_project = export_project
         # the workspace of the Virtualbricks of the bricks
         self.workspace = engine.workspace if workspace is None else workspace
         if disk_usage is None:
@@ -601,13 +613,13 @@ class ProjectsWindow:
     def open(self, name: str) -> None:
         if self.is_open(name) or not self._is_readable(name):
             return
-        opening = defer.maybeDeferred(self.gui.on_open, name)
+        opening = defer.maybeDeferred(self.open_project, name)
         opening.addCallbacks(
             self._opened, self._not_opened, errbackArgs=(name,)
         )
 
     def _opened(self, report: Report | None) -> None:
-        self.gui.set_title()
+        self.set_title()
         self.window.destroy()
 
     def _not_opened(self, failure: Failure, name: str) -> None:
@@ -628,7 +640,14 @@ class ProjectsWindow:
         self, kind: str, original: str | None = None
     ) -> projectname.ProjectNameDialog:
         dialog = projectname.ProjectNameDialog(
-            self.gui, self.engine, kind, original, workspace=self.workspace
+            self.engine,
+            kind,
+            original,
+            workspace=self.workspace,
+            new_project=self.new_project,
+            save_project=self.save_project,
+            open_project=self.open_project,
+            set_title=self.set_title,
         )
         dialog.on_done = self.on_name_done
         dialog.show(self.window)
@@ -649,7 +668,7 @@ class ProjectsWindow:
         self.name_dialog(projectname.NEW)
 
     def on_import_clicked(self, button: Gtk.Button) -> None:
-        self.gui.import_project(on_closed=self.on_import_closed)
+        self.import_project(self.on_import_closed)
 
     def on_import_closed(self) -> None:
         if not self.destroyed:
@@ -665,7 +684,7 @@ class ProjectsWindow:
 
     def on_export_clicked(self, button: Gtk.Button) -> None:
         if self.selected is not None:
-            self.gui.export_project(self.selected, self.window)
+            self.export_project(self.selected, self.window)
 
     def on_rename(
         self,

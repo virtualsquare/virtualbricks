@@ -660,7 +660,15 @@ class MainWindow:
     # The projects, for the Projects window and the name dialog
 
     def show_projects(self, problem: str | None = None) -> ProjectsWindow:
-        window = ProjectsWindow(self, self.engine)
+        window = ProjectsWindow(
+            self.engine,
+            open_project=self.on_open,
+            new_project=self.on_new,
+            save_project=self.on_save,
+            set_title=self.set_title,
+            import_project=self.import_project,
+            export_project=self.export_project,
+        )
         if problem is not None:
             window.show_problem(problem)
         window.show(self.window)
@@ -684,7 +692,13 @@ class MainWindow:
         self, kind: str, original: str | None = None
     ) -> projectname.ProjectNameDialog:
         dialog = projectname.ProjectNameDialog(
-            self, self.engine, kind, original
+            self.engine,
+            kind,
+            original,
+            new_project=self.on_new,
+            save_project=self.on_save,
+            open_project=self.on_open,
+            set_title=self.set_title,
         )
         dialog.show(self.window)
         return dialog

@@ -49,7 +49,7 @@ class NameTestCase(GuiTestCase):
 
     def dialog(self, kind, original=None):
         dialog = projectname.ProjectNameDialog(
-            self.gui, self.gui.engine, kind, original
+            self.gui.engine, kind, original, **self.gui.name_dialog_callbacks()
         )
         dialog.on_done = self.done.append
         self.addCleanup(dialog.dialog.destroy)

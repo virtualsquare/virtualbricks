@@ -86,7 +86,9 @@ class ProjectsTestCase(GuiTestCase):
 
     def window(self):
         window = projects.ProjectsWindow(
-            self.gui, self.gui.engine, disk_usage=self.disk_usage
+            self.gui.engine,
+            disk_usage=self.disk_usage,
+            **self.gui.projects_callbacks(),
         )
         self.addCleanup(self.destroy, window)
         return window
@@ -334,7 +336,9 @@ class TestDetails(ProjectsTestCase):
 
     def test_the_thread(self):
         self.lab("lab")
-        window = projects.ProjectsWindow(self.gui, self.gui.engine)
+        window = projects.ProjectsWindow(
+            self.gui.engine, **self.gui.projects_callbacks()
+        )
         self.addCleanup(self.destroy, window)
         called = []
         self.patch(
@@ -430,6 +434,25 @@ class TestActions(ProjectsTestCase):
         dialog.dialog.response(Gtk.ResponseType.OK)
         self.assertEqual(window.selected.name, "copy")
         self.assertIn("copy", self.names(window))
+
+    def test_the_name_dialog_does_as_the_main_window(self):
+        window = self.window()
+        window.new_button.clicked()
+        [dialog] = self.dialogs
+        self.assertEqual(
+            [
+                dialog.new_project,
+                dialog.save_project,
+                dialog.open_project,
+                dialog.set_title,
+            ],
+            [
+                self.gui.on_new,
+                self.gui.on_save,
+                self.gui.on_open,
+                self.gui.set_title,
+            ],
+        )
 
     def test_a_name_dialog_after_the_window(self):
         window = self.window()
