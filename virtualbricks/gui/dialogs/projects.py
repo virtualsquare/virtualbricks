@@ -44,6 +44,7 @@ from virtualbricks.config.workspace import DiskUsage, ProjectSummary, Workspace
 from virtualbricks.engine import Engine
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.dialogs import projectname
+from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.gui.markdownview import MarkdownView
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _, ngettext
@@ -187,7 +188,7 @@ class ProjectRow:
         )
 
 
-class ProjectsWindow:
+class ProjectsWindow(Window):
     """
     The Projects window.
 

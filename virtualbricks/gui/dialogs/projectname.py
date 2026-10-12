@@ -38,6 +38,7 @@ from virtualbricks import errors
 from virtualbricks.config.report import Report
 from virtualbricks.config.workspace import Workspace
 from virtualbricks.engine import Engine
+from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
 
@@ -72,7 +73,7 @@ def _label(
     return label
 
 
-class ProjectNameDialog:
+class ProjectNameDialog(Window):
     """
     Ask a name, and create, rename or duplicate a project with it.
 
@@ -202,11 +203,6 @@ class ProjectNameDialog:
 
     def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
-
-    def show(self, parent: Gtk.Window | None = None) -> None:
-        if parent is not None:
-            self.dialog.set_transient_for(parent)
-        self.dialog.show()
 
     # The name
 

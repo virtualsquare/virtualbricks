@@ -47,6 +47,7 @@ from virtualbricks.config.workspace import ProjectSummary, projects
 from virtualbricks.engine import Engine
 from virtualbricks.gui.dialogs import projectname
 from virtualbricks.gui.dialogs.about import AboutDialog
+from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.gui.dialogs.exportproject import ExportProjectDialog
 from virtualbricks.gui.dialogs.importdialog import ImportDialog
 from virtualbricks.gui.dialogs.logging import LoggingWindow
@@ -135,7 +136,7 @@ def remote_title(engine: RemoteEngine) -> str:
     )
 
 
-class MainWindow:
+class MainWindow(Window):
     """
     The main GUI object for virtualbricks, containing all the configuration for
     the widgets and the connections to the main engine.

@@ -45,6 +45,7 @@ from virtualbricks.config.archive import (
     member_kind,
     report_from_list,
 )
+from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _, ngettext
 
@@ -145,7 +146,7 @@ def _label(
     return label
 
 
-class ExportProjectDialog:
+class ExportProjectDialog(Window):
     """Export a project: images is a list of (name, path)."""
 
     def __init__(
@@ -306,9 +307,7 @@ class ExportProjectDialog:
         return self.window
 
     def show(self, parent: Gtk.Window | None = None) -> None:
-        if parent is not None:
-            self.window.set_transient_for(parent)
-        self.window.show()
+        super().show(parent)
         self.on_changed()
 
     def show_page(self, name: str) -> None:

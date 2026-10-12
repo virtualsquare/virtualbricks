@@ -55,6 +55,7 @@ from virtualbricks.config.images import ImageInfo
 from virtualbricks.config.workspace import Workspace, copy_sparse
 from virtualbricks.engine import Engine
 from virtualbricks.gui import imageinfo
+from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.gui.pathentry import PathCompletion
 from virtualbricks.i18n import _
@@ -131,7 +132,7 @@ def read_description(path: str) -> str:
         return ""
 
 
-class _AddDialog:
+class _AddDialog(Window):
 
     # called with the image added
     on_added: Callable[[Image], object] | None = None
@@ -146,11 +147,6 @@ class _AddDialog:
         """Whether the dialog can add; if not, it says why."""
 
         raise NotImplementedError
-
-    def show(self, parent: Gtk.Window | None = None) -> None:
-        if parent is not None:
-            self.dialog.set_transient_for(parent)
-        self.dialog.show()
 
     def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
