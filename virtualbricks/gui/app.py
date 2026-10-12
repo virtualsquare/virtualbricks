@@ -173,7 +173,8 @@ class Application(CliApplication):
 
     def migrate(self) -> defer.Deferred[Any] | None:
         """Convert the files of older versions, once; may return a Deferred."""
-        migration = startup_migration(self.options.workspace)
+        assert self.workspace is not None, "take_locks() gives it"
+        migration = startup_migration(self.workspace)
         if migration is None:
             return None
         window = MigrationWindow(migration=migration)
@@ -294,7 +295,8 @@ class RemoteApplication(Application):
     """
 
     def __init__(self, options: cli.CommandLineOptions) -> None:
-        super().__init__(options)
+        # no workspace: that of the Virtualbricks there
+        super().__init__(options, None)
         self.engine: RemoteEngine | None = None
         self.quitting = False
         # the Virtualbricks there said it quits

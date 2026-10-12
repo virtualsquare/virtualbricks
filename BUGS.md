@@ -132,39 +132,3 @@ one leaves the list.
   `settings.toml`: the first loaded it, the second set `terminal` and
   wrote it, the first wrote its copy as at quit, and `terminal` had its
   old value again.
-
-## Workspaces
-
-- [ ] **The workspace is read three times at start, and the run may not
-  use the folder it locked.** Without `--workspace`, the start reads the
-  `workspace` setting from the files three times:
-  - for the locks (step 2 of page 27): `take_locks()` in
-    `virtualbricks/main.py`, through `startup_workspace()` in
-    `virtualbricks/migrate/engine.py`, which reads the settings of 2.1 if
-    they are to be converted, else `settings.toml`, with the migration's
-    own reader (`_startup_settings()`);
-  - for the migration (step 6): `startup_migration()`, the same files
-    again;
-  - for the run (step 9): `install_workspace()` in
-    `virtualbricks/app.py`, `get_setting("workspace")` after
-    `load_settings()`.
-
-  Each makes it a folder with `workspace_folder()` in
-  `virtualbricks/locations.py`.
-
-  Another Virtualbricks of yours may write `settings.toml` between the
-  first reading and the last: one that runs beside it with
-  `--lock workspace` writes the whole file at each change of a setting
-  and at quit (see "Two Virtualbricks on one computer undo each other's
-  settings", under Settings), and its Settings window changes the
-  workspace for the next start. The run then works in a folder whose lock
-  it doesn't hold, and holds the lock of a folder it doesn't use: another
-  Virtualbricks can start in the same workspace, with `--workspace`. The
-  gap is short, but the GUI keeps it open as long as its migration window
-  is. Page 27 recommends reading it once, at step 2 (O6, open). Seen on
-  3.0.0.dev3, on 12 October 2026, reviewing the start-up against page 27:
-  in an isolated home, with
-  `--lock workspace`, `take_locks()` locked the folder `w1` of the
-  setting; the setting was then written as `w2`, and
-  `install_workspace()` gave the run `w2`; a `take_locks()` with
-  `--workspace w2` after it wasn't refused.

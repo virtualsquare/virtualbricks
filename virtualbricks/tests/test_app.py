@@ -78,7 +78,11 @@ class AppTestCase(unittest.TestCase):
         self.manager = use_workspace(self)
 
     def application(self, mode=NO_GUI, **options):
-        return app.Application(CommandLineOptions(mode, **options))
+        # the folder that take_locks() gives: --workspace, or the setting's
+        folder = options.get("workspace") or os.path.join(
+            self.root, ".virtualbricks"
+        )
+        return app.Application(CommandLineOptions(mode, **options), folder)
 
 
 class TestLogLevel(unittest.TestCase):

@@ -19,11 +19,10 @@ from twisted.logger import (
 from twisted.python import logfile, reflect
 from twisted.python.failure import Failure
 
-from virtualbricks import cli, locations, locks
+from virtualbricks import cli, locks
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks.switchwrapper import look_all
 from virtualbricks.config.settings import (
-    get_setting,
     load_settings,
     load_state,
     store_settings,
@@ -84,8 +83,12 @@ def excepthook(
 
 class Application:
 
-    def __init__(self, options: cli.CommandLineOptions):
+    def __init__(self, options: cli.CommandLineOptions, workspace: str | None):
         self.options = options
+        # the folder of the workspace, --workspace or the setting's, as
+        # take_locks() read it to lock it: the migration and the run use it,
+        # and don't read the setting again
+        self.workspace = workspace
 
     def get_log_observers(self) -> list[ILogObserver]:
         observers = []
@@ -121,7 +124,8 @@ class Application:
 
     def migrate(self) -> defer.Deferred[Any] | None:
         """Convert the files of older versions, once; may return a Deferred."""
-        migration = startup_migration(self.options.workspace)
+        assert self.workspace is not None, "take_locks() gives it"
+        migration = startup_migration(self.workspace)
         if migration is None:
             return None
         migration.run()
@@ -152,9 +156,8 @@ class Application:
         # the folder of the command line, for this run only: the setting
         # stays as it is. Either stays for the run, whose lock is that of
         # this folder: a new setting is for the next start.
-        projects.path = self.options.workspace or locations.workspace_folder(
-            str(get_setting("workspace"))
-        )
+        assert self.workspace is not None, "take_locks() gives it"
+        projects.path = self.workspace
         # with the link to the workspace, and room for its socket
         projects.make_runtime_dir()
 

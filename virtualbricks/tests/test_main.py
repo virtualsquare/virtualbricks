@@ -92,9 +92,10 @@ class TestTakeLocks(unittest.TestCase):
         self.workspace = os.path.join(self.root, ".virtualbricks")
 
     def take(self, **options):
-        lock = main.take_locks(CommandLineOptions(NO_GUI, **options))
+        # the lock, and the folder of the workspace that the run uses
+        lock, folder = main.take_locks(CommandLineOptions(NO_GUI, **options))
         self.addCleanup(release, lock)
-        return lock
+        return lock, folder
 
     def refused(self, **options):
         return str(self.assertRaises(SystemExit, self.take, **options))
@@ -104,7 +105,7 @@ class TestTakeLocks(unittest.TestCase):
         return self.take(workspace=folder, lock=locks.WORKSPACE)
 
     def test_held_until_released(self):
-        lock = self.take(lock=locks.USER)
+        lock, _folder = self.take(lock=locks.USER)
         self.assertFalse(lock_is_free())
         lock.release()
         self.assertTrue(lock_is_free())
@@ -127,7 +128,8 @@ class TestTakeLocks(unittest.TestCase):
         self.assertFalse(os.path.exists(self.workspace))
 
     def test_the_workspace_of_the_settings(self):
-        lock = self.take()
+        lock, folder = self.take()
+        self.assertEqual(folder, self.workspace)
         path = locations.workspace_lock_file(self.workspace)
         self.assertEqual(locks.holders(path), ((os.getpid(), ME),))
         lock.release()
@@ -138,14 +140,16 @@ class TestTakeLocks(unittest.TestCase):
         settings.write_settings(
             AppSettings(workspace=labs), locations.settings_file()
         )
-        self.take(lock=locks.USER)
+        _lock, folder = self.take(lock=locks.USER)
+        self.assertEqual(folder, labs)
         path = locations.workspace_lock_file(labs)
         self.assertEqual(locks.holders(path), ((os.getpid(), ME),))
 
     def test_side_by_side(self):
         a = os.path.join(self.root, "labs", "a")
         b = os.path.join(self.root, "labs", "b")
-        self.in_workspace(a)
+        # the folder of the command line, not the setting's
+        self.assertEqual(self.in_workspace(a)[1], a)
         # the folder is made for its lock
         self.assertTrue(os.path.isfile(locations.workspace_lock_file(a)))
         self.in_workspace(b)
@@ -162,7 +166,7 @@ class TestTakeLocks(unittest.TestCase):
     def test_the_settings_of_2_1_are_converted_alone(self):
         with open(locations.legacy_settings_file(), "w"):
             pass
-        lock = self.in_workspace(os.path.join(self.root, "a"))
+        lock, _folder = self.in_workspace(os.path.join(self.root, "a"))
         # the user lock alone: no other workspace starts meanwhile
         error = self.assertRaises(
             SystemExit, self.in_workspace, os.path.join(self.root, "other")
@@ -233,29 +237,36 @@ class TestInstallReactor(unittest.TestCase):
 class TestInstallApplication(unittest.TestCase):
 
     def test_without_the_windows(self):
-        application = main.install_application(CommandLineOptions(NO_GUI))
+        application = main.install_application(
+            CommandLineOptions(NO_GUI), "/srv/labs"
+        )
         self.assertIs(type(application), app.Application)
         self.assertEqual(application.options, CommandLineOptions(NO_GUI))
+        self.assertEqual(application.workspace, "/srv/labs")
 
     def test_the_windows(self):
         if not has_display:  # pragma: no cover
             raise unittest.SkipTest("GTK can't open a display")
         from virtualbricks.gui import app as gui_app
 
-        self.assertIs(
-            type(main.install_application(CommandLineOptions(GUI))),
-            gui_app.Application,
+        application = main.install_application(
+            CommandLineOptions(GUI), "/srv/labs"
         )
-        self.assertIs(
-            type(main.install_application(CommandLineOptions(REMOTE))),
-            gui_app.RemoteApplication,
+        self.assertIs(type(application), gui_app.Application)
+        self.assertEqual(application.workspace, "/srv/labs")
+        # the windows of another Virtualbricks have no workspace
+        application = main.install_application(
+            CommandLineOptions(REMOTE), None
         )
+        self.assertIs(type(application), gui_app.RemoteApplication)
+        self.assertIsNone(application.workspace)
 
     def test_not_for_a_command(self):
         self.assertRaises(
             AssertionError,
             main.install_application,
             CommandLineOptions(COMMAND),
+            None,
         )
 
 
@@ -271,8 +282,9 @@ class RecordingApplication:
     and the script give.
     """
 
-    def __init__(self, options):
+    def __init__(self, options, workspace):
         self.options = options
+        self.workspace = workspace
         self.calls = []
         self.migrated = None
         self.ran = None
@@ -346,17 +358,22 @@ class TestRun(unittest.TestCase):
         globalLogPublisher.addObserver(self.events.append)
         self.addCleanup(globalLogPublisher.removeObserver, self.events.append)
 
-    def application(self, options):
-        application = RecordingApplication(options)
+    def application(self, options, workspace):
+        application = RecordingApplication(options, workspace)
         application.migrated = self.migrated
         application.ran = self.ran
         self.made.append(application)
         return application
 
-    def run_main(self, lock=None, **options):
+    def run_main(self, lock=None, workspace="/srv/labs", **options):
         options.setdefault("no_term", True)
         done = defer.ensureDeferred(
-            main.run(self.reactor, CommandLineOptions(NO_GUI, **options), lock)
+            main.run(
+                self.reactor,
+                CommandLineOptions(NO_GUI, **options),
+                lock,
+                workspace,
+            )
         )
         [application] = self.made
         return done, application
@@ -364,6 +381,8 @@ class TestRun(unittest.TestCase):
     def test_the_steps(self):
         lock = FakeLock()
         done, application = self.run_main(lock, no_term=False)
+        # the folder that take_locks() locked
+        self.assertEqual(application.workspace, "/srv/labs")
         self.assertEqual(
             application.calls,
             [
@@ -418,7 +437,7 @@ class TestRun(unittest.TestCase):
 
     def test_without_a_lock(self):
         # the windows of another Virtualbricks
-        _done, application = self.run_main()
+        _done, application = self.run_main(workspace=None)
         self.assertIn(("share_user_lock", None), application.calls)
         self.assertNotIn(
             "after",
@@ -487,11 +506,16 @@ class TestRunWithoutTheWindows(unittest.TestCase):
         self.reactor = FakeReactor()
 
     def run_main(self, **options):
+        # the folder that take_locks() gives: --workspace, or the setting's
+        folder = options.get("workspace") or os.path.join(
+            self.root, ".virtualbricks"
+        )
         return defer.ensureDeferred(
             main.run(
                 self.reactor,
                 CommandLineOptions(NO_GUI, no_term=True, **options),
                 None,
+                folder,
             )
         )
 
@@ -566,10 +590,10 @@ class TestMain(unittest.TestCase):
 
     def take_locks(self, options):
         self.calls.append(("locks", options.mode))
-        return "the lock"
+        return "the lock", "the folder"
 
     def react(self, run, args):
-        self.calls.append(("react", run, args[0].mode, args[1]))
+        self.calls.append(("react", run, args[0].mode, *args[1:]))
 
     def client(self, words, target, script=None, workspace=None):
         self.calls.append(("client", words, target, script, workspace))
@@ -587,7 +611,7 @@ class TestMain(unittest.TestCase):
                 "i18n",
                 ("locks", NO_GUI),
                 ("reactor", NO_GUI),
-                ("react", main.run, NO_GUI, "the lock"),
+                ("react", main.run, NO_GUI, "the lock", "the folder"),
             ],
         )
 
@@ -599,7 +623,7 @@ class TestMain(unittest.TestCase):
                 "i18n",
                 ("locks", GUI),
                 ("reactor", GUI),
-                ("react", main.run, GUI, "the lock"),
+                ("react", main.run, GUI, "the lock", "the folder"),
             ],
         )
 
@@ -611,7 +635,7 @@ class TestMain(unittest.TestCase):
             [
                 "i18n",
                 ("reactor", REMOTE),
-                ("react", main.run, REMOTE, None),
+                ("react", main.run, REMOTE, None, None),
             ],
         )
 

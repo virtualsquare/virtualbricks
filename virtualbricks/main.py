@@ -19,8 +19,12 @@ starts = (
 )
 
 
-def take_locks(options: cli.CommandLineOptions) -> locks.Lock:
-    """The locks of policy, and that of workspace, made if missing."""
+def take_locks(options: cli.CommandLineOptions) -> tuple[locks.Lock, str]:
+    """
+    The locks of policy, and that of the workspace, made if missing; and the
+    folder of the workspace, which the run uses: the setting is read here
+    alone, so the run works in the folder it locked.
+    """
     from virtualbricks.migrate import settings_to_convert, startup_workspace
 
     try:
@@ -37,7 +41,7 @@ def take_locks(options: cli.CommandLineOptions) -> locks.Lock:
         except BaseException:
             lock.unlock()
             raise
-        return lock
+        return lock, workspace
     except OSError as exc:
         raise SystemExit(
             f"Cannot take the lock {exc.filename}: {exc.strerror}. With"
@@ -63,22 +67,27 @@ def install_reactor(options: cli.CommandLineOptions) -> None:
         gireactor.install()
 
 
-def install_application(options: cli.CommandLineOptions) -> Application:
+def install_application(
+    options: cli.CommandLineOptions, workspace: str | None
+) -> Application:
     assert options.mode in (cli.NO_GUI, cli.GUI, cli.REMOTE)
+    if options.mode == cli.REMOTE:
+        from virtualbricks.gui.app import RemoteApplication
+
+        return RemoteApplication(options)
     if options.mode == cli.NO_GUI:
         from virtualbricks.app import Application
-    elif options.mode == cli.GUI:
-        from virtualbricks.gui.app import Application
     else:
-        from virtualbricks.gui.app import RemoteApplication as Application
+        from virtualbricks.gui.app import Application
 
-    return Application(options)
+    return Application(options, workspace)
 
 
 async def run(
     reactor: PosixReactorBase,
     options: cli.CommandLineOptions,
     lock: locks.Lock | None,
+    workspace: str | None,
 ) -> None:
     import platform
 
@@ -89,7 +98,7 @@ async def run(
 
     if lock is not None:
         reactor.addSystemEventTrigger("after", "shutdown", lock.release)
-    app = install_application(options)
+    app = install_application(options, workspace)
     app.install_logging()
     logger = Logger("virtualbricks.main")
     logger.info(
@@ -130,9 +139,9 @@ def main() -> NoReturn:
     i18n.install()
     options = cli.parse_or_exit()
     if options.mode in (cli.GUI, cli.NO_GUI):
-        lock = take_locks(options)
+        lock, workspace = take_locks(options)
     else:
-        lock = None
+        lock, workspace = None, None
 
     if options.mode == cli.COMMAND:
         from virtualbricks.console import client
@@ -149,7 +158,7 @@ def main() -> NoReturn:
         from twisted.internet import task
 
         install_reactor(options)
-        task.react(run, (options, lock))
+        task.react(run, (options, lock, workspace))
 
 
 if __name__ == "__main__":

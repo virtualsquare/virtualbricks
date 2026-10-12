@@ -521,16 +521,15 @@ def startup_workspace(workspace: str | None = None) -> str:
     return locations.workspace_folder(_startup_settings()[1].workspace)
 
 
-def startup_migration(workspace: str | None = None) -> Migration | None:
+def startup_migration(workspace: str) -> Migration | None:
     """
     Return the migration the app must run before starting, or None.
 
-    The projects migrated are those of workspace, the folder given on the
-    command line, or else of the workspace setting.
+    The projects migrated are those of workspace, the folder of
+    startup_workspace() that the app locked.
     """
 
     legacy_settings, app, project = _startup_settings()
-    workspace = workspace or locations.workspace_folder(app.workspace)
     migration = Migration(
         workspace, InPlace(workspace), legacy_settings, app, project
     )

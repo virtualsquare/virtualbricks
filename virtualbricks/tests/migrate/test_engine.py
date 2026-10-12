@@ -21,15 +21,16 @@ import os
 from twisted.trial import unittest
 
 from virtualbricks import locations, locks
+from virtualbricks.config.report import Report
 from virtualbricks.config.settings import (
     FORMAT as SETTINGS_FORMAT,
+)
+from virtualbricks.config.settings import (
     AppSettings,
     ProjectSettings,
+    use_project,
 )
-from virtualbricks.config.report import Report
-from virtualbricks.config.tomlfile import load_toml
-from virtualbricks.config.settings import use_project
-from virtualbricks.config.tomlfile import dumps_toml
+from virtualbricks.config.tomlfile import dumps_toml, load_toml
 from virtualbricks.migrate import engine, startup_migration
 from virtualbricks.migrate.engine import (
     FAILED,
@@ -550,12 +551,12 @@ class TestEntryPoints(EngineTestCase):
         self.legacy_settings = locations.legacy_settings_file()
 
     def test_fresh_install(self):
-        self.assertIsNone(startup_migration())
+        self.assertIsNone(startup_migration(self.workspace))
 
     def test_startup_with_old_settings(self):
         write_settings(self.legacy_settings, self.workspace, "lab")
         write_project(self.workspace, "lab")
-        migration = startup_migration()
+        migration = startup_migration(self.workspace)
         self.assertEqual(
             [item.name for item in migration.pending()],
             [locations.LEGACY_SETTINGS_FILE, "lab"],
@@ -575,7 +576,7 @@ class TestEntryPoints(EngineTestCase):
             load_toml(locations.state_file())["workspaces"],
             [{"path": self.workspace, "current_project": "lab"}],
         )
-        self.assertIsNone(startup_migration())
+        self.assertIsNone(startup_migration(self.workspace))
 
     def test_startup_with_new_settings(self):
         # an old project copied into a migrated workspace
@@ -585,13 +586,16 @@ class TestEntryPoints(EngineTestCase):
         )
         write_settings(self.legacy_settings, "/elsewhere", "lab")
         write_project(self.workspace, "lab")
-        migration = startup_migration()
+        migration = startup_migration(self.workspace)
         self.assertEqual([item.name for item in migration.items], ["lab"])
 
     def test_unreadable_settings_use_the_defaults(self):
         write(locations.settings_file(), "workspace = \n")
-        write_project(os.path.join(self.root, ".virtualbricks"), "lab")
-        migration = startup_migration()
+        folder = os.path.join(self.root, ".virtualbricks")
+        write_project(folder, "lab")
+        # the workspace of the defaults
+        self.assertEqual(engine.startup_workspace(), folder)
+        migration = startup_migration(folder)
         self.assertEqual([item.name for item in migration.items], ["lab"])
         with open(self.legacy_settings, "wb") as fp:
             fp.write(b"\xff\xfe")

@@ -50,8 +50,9 @@ if has_display:
     from virtualbricks.migrate import gui as migrate_gui
 
 
-def application(mode=GUI, **options):
-    return gui_app.Application(CommandLineOptions(mode, **options))
+def application(mode=GUI, workspace=None, **options):
+    # workspace: the folder that take_locks() gives
+    return gui_app.Application(CommandLineOptions(mode, **options), workspace)
 
 
 def error(text, level=LogLevel.error, **fields):
@@ -296,18 +297,20 @@ class TestMigrate(GuiTestCase):
             lambda window: self.shown.append(window),
         )
 
+        # the workspace of the settings
+        self.workspace = os.path.join(self.root, ".virtualbricks")
+
     def old_files(self):
-        folder = os.path.join(self.root, ".virtualbricks")
-        write_settings(locations.legacy_settings_file(), folder, "lab")
-        write_project(folder, "lab", CONFIG1)
+        write_settings(locations.legacy_settings_file(), self.workspace, "lab")
+        write_project(self.workspace, "lab", CONFIG1)
 
     def test_nothing_to_migrate(self):
-        self.assertIsNone(application().migrate())
+        self.assertIsNone(application(workspace=self.workspace).migrate())
         self.assertEqual(self.shown, [])
 
     def test_show_the_migration(self):
         self.old_files()
-        closed = application().migrate()
+        closed = application(workspace=self.workspace).migrate()
         window = self.shown[0]
         self.addCleanup(window.window.destroy)
         self.assertTrue(window.fixed)

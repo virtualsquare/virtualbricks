@@ -332,12 +332,12 @@
 </style>
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 27 &middot; Design &middot; revision 5, proposal</div>
+    <div class="eyebrow">Step 27 &middot; Design &middot; revision 6, proposal</div>
     <h1>Virtualbricks Start-up Sequence</h1>
     <p class="lede">The order in which Virtualbricks should start, mode by mode: the command line, then the locale, the locks, the reactor and the log, and so on to the exception hooks, last. Below it, the analysis of how <code>develop</code> starts today.</p>
     <ul class="meta">
-      <li>branch <b>mg/cli-argparse</b> at 7eed41f</li>
-      <li>revision 5 &middot; 9 October 2026</li>
+      <li>branch <b>develop</b> at afa87f2</li>
+      <li>revision 6 &middot; 12 October 2026</li>
       <li><span class="status">proposal</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> your request of today: &ldquo;make a diagram / table of the initialization actions that happens for every virtualbricks application: cli application, gui application, remote application, command mode. Right now it is very confusing and I want to refactor that code. Also highlight the dependencies with a special attention to the reactor installation&rdquo;. It describes the code as it is, read in <code>cli.py</code>, <code>app.py</code>, <code>gui/app.py</code>, <code>console/client.py</code> and <code>migrate/</code>. The import chains of <a href="#reactor">&sect;12</a> were measured today in the project&rsquo;s virtualenv (Python 3.10, Twisted of the venv), one fresh interpreter per module. Two things found while reading are bugs, checked today and added to <code>BUGS.md</code> (<a href="#confusing">&sect;14</a>, item 8). Nothing here was decided: its section 8 listed where the refactor could cut, with my recommendation; revision 3 folds it into &sect;2&ndash;&sect;9.</p>
@@ -345,6 +345,7 @@
     <p class="revision"><strong>What changed:</strong> revision 3 turns the page into the design of the new start, for your request of today: &ldquo;Rework the start-up sequence document. There is now the cli_new.py (it will be renamed once old code is deprecated) that is able to parse the command line parameters with little overhead. There is also a draft of a main function. What I want is: parse the command line early without any imports, so that the CLI is fast (--help and --version) do not have to import anything; the main function setup the basic functionality: i18n, install the reactor if needed, setup the logs, etc. it then calls the specific main function for the selected mode; each main_&lt;mode&gt; now setup the whatever is needed for the selected mode. Use lazy imports as much as possible&rdquo;. &sect;1&ndash;&sect;9 are new: the three stages, what each imports, notes on the draft of <code>main.py</code>, six steps and eight questions, each with my recommendation; nothing is decided. &sect;9&ndash;&sect;15 are the analysis of revisions 1 and 2, renumbered, and the parser of &sect;16 is now <code>cli_new.py</code>. Written against <code>mg/cli-argparse</code> at 7eed41f, with your uncommitted <code>main.py</code> and the rename of <code>CommandLine</code> to <code>CommandLineOptions</code>; the times of &sect;3 were measured today in the venv, medians of 21 runs. Its section numbers, and those of revision 4, are of their revision.</p>
     <p class="revision"><strong>What changed:</strong> revision 4 records your answer of today: &ldquo;keep the imports in sockets.py and locations.py at the top level&rdquo;. I read it as Q1 C and Q2 B: <code>cli_new.py</code> keeps importing <code>sockets</code> and <code>locks</code> at its top, and <code>locations.py</code> keeps <code>tempfile</code>, <code>hashlib</code> and <code>base64</code> at its. Stage 1 loads the package, the parser, <code>sockets</code>, <code>locks</code> and <code>locations</code>: <code>--version</code> in 45 ms and <code>--help</code> in 59 ms, against 172 and 174 ms today. The step that made stage 1 import nothing goes, so there are five; &sect;3, &sect;6, &sect;8 and &sect;9 follow. Q3&ndash;Q8 are open.</p>
     <p class="revision"><strong>What changed:</strong> revision 5 lays out the order of the steps of each mode, for your request of today: &ldquo;Do not start thinking how to implement the code yet. I want to know all the initialisation steps and the order they should happen for each mode. i18n come first, then locking, logs. Hooks should be installed last&rdquo;. <a href="#glance">&sect;1</a>&ndash;<a href="#questions">&sect;8</a> are new: the order of each mode, its 21 steps, what needs what, the quit, what moves from today, the command line with Q1 and Q2, and six questions on the order, O1&ndash;O6, each with my recommendation. What revisions 3 and 4 said of the code waits until the order is settled: <code>main()</code> and <code>main_&lt;mode&gt;()</code>, the rules of the lazy imports, the notes on your draft of <code>main.py</code>, the steps of the work, and Q3&ndash;Q8. The analysis of today is <a href="#branch">&sect;9</a>&ndash;<a href="#parser">&sect;15</a>.</p>
+    <p class="revision"><strong>What changed:</strong> revision 6 records your answer of today to O6: &ldquo;go with A, fix it&rdquo;. The workspace is read once, at step 2: <code>take_locks()</code> gives back the folder it locked, <code>--workspace</code> or the setting&rsquo;s, and <code>run()</code> hands it to the application, whose migration (step 6) and workspace (step 9) use it; <code>startup_migration()</code> takes the folder and no longer reads the setting for it, and the remote windows get none. A setting changed in between by another Virtualbricks is for the next start, so the run can no longer work in a folder whose lock it doesn&rsquo;t hold; the entry of <code>BUGS.md</code> that showed it is gone. Steps 2 and 9 of <a href="#every">&sect;3</a>, <a href="#needs">&sect;4</a> and <a href="#questions">&sect;8</a> follow; O1&ndash;O5 are as revision 5 left them, and the analysis of <a href="#branch">&sect;9</a>&ndash;<a href="#parser">&sect;15</a> is still that of 7eed41f.</p>
   </header>
 
   <div class="layout">
@@ -381,7 +382,7 @@
           <div><dt>Command</dt><dd>Command line, locale, the client. No locks, reactor, log or hooks.</dd></div>
           <div><dt>The reactor</dt><dd>After the locks, so that a refused lock exits without loading GTK or Twisted; before the log, whose first line names it (<a class="ref" href="#questions">O1</a>).</dd></div>
           <div><dt>Steps</dt><dd>21, numbered in <a href="#order">&sect;2</a> and <a href="#every">&sect;3</a>; why each comes where it does in <a href="#needs">&sect;4</a>; the quit in <a href="#quit">&sect;5</a>; what moves from today in <a href="#moves">&sect;6</a>.</dd></div>
-          <div><dt>Open</dt><dd>Six questions on the order, O1&ndash;O6, each with my recommendation (<a href="#questions">&sect;8</a>).</dd></div>
+          <div><dt>Open</dt><dd>Six questions on the order, O1&ndash;O6, each with my recommendation; O6 is decided (<a href="#questions">&sect;8</a>).</dd></div>
         </dl>
       </section>
 
@@ -510,7 +511,7 @@
             <tr><td><span class="n">6</span><strong>Migration.</strong> The settings and the projects of 2.1, converted in place.</td><td>in the migration window: the loop starts here, and the start goes on when it closes</td><td>at once, into the log</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
             <tr><td><span class="n">7</span><strong>Share the user lock</strong>, after converting the settings of 2.1 under <code>--lock workspace</code>.</td><td>&#10003;</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
             <tr class="reactor-row"><td><span class="n">8</span><strong>Settings.</strong> <code>settings.toml</code>, the defaults written if there is none; KSM turned on, through <code>sudo</code> and the reactor, if the settings ask for it; their writing at quit.</td><td>&#10003;, and <code>state.toml</code></td><td>&#10003;, and <code>state.toml</code></td><td>those of this computer, without KSM</td><td><span class="none">&ndash;</span></td></tr>
-            <tr><td><span class="n">9</span><strong>Workspace.</strong> The folder of the projects: <code>--workspace</code>, or the setting (<a class="ref" href="#questions">O6</a>).</td><td>&#10003;</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
+            <tr><td><span class="n">9</span><strong>Workspace.</strong> The folder of the projects: the one step 2 locked, <code>--workspace</code> or the setting&rsquo;s (<a class="ref" href="#questions">O6</a>).</td><td>&#10003;</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
             <tr><td><span class="n">10</span><strong>Runtime folder</strong> of the workspace, and its link to it.</td><td>&#10003;</td><td>&#10003;</td><td><span class="none">&ndash;</span></td><td><span class="none">&ndash;</span></td></tr>
 
             <tr class="phase"><td colspan="5">The engine and the windows</td></tr>
@@ -563,7 +564,7 @@
           </tbody>
         </table>
         </div>
-        <p>Steps 16 and 17 have no need between them, nor 14 with 16 to 19: their order is a choice. Steps 2 and 9 read the same setting, the workspace, once for the lock and once for the run (<a class="ref" href="#questions">O6</a>).</p>
+        <p>Steps 16 and 17 have no need between them, nor 14 with 16 to 19: their order is a choice. Step 2 reads the workspace for the lock, and step 9 takes the folder it locked, without reading the setting again (<a class="ref" href="#questions">O6</a>).</p>
       </section>
 
       <section id="quit">
@@ -646,7 +647,7 @@
             <tr><td>O3</td><td><p>Where do the signals of <code>pdb</code> go, with <code>-b</code> and a terminal?</p><p><strong>A.</strong> With the hooks, last. <strong>B.</strong> After the engine, as today, so that <code>pdb</code> can stop the start.</p></td><td class="rec">A</td></tr>
             <tr><td>O4</td><td><p>When does the log end?</p><p><strong>A.</strong> After shutdown, after the locks are released. <strong>B.</strong> Before shutdown, after the project is saved, as today.</p></td><td class="rec">A: the log covers the whole quit</td></tr>
             <tr><td>O5</td><td><p>When does the GUI set its title and say which programs are missing?</p><p><strong>A.</strong> Right after the last project, which they read. <strong>B.</strong> After everything, the console included, as today.</p></td><td class="rec">A</td></tr>
-            <tr><td>O6</td><td><p>The workspace is read for the locks (2) and for the run (9). Once or twice?</p><p><strong>A.</strong> Once, at 2: the run uses what the locks used. <strong>B.</strong> Twice, as today, from two readers of the same setting.</p></td><td class="rec">A: the locked folder and the run&rsquo;s are the same by construction</td></tr>
+            <tr><td>O6</td><td><p>The workspace is read for the locks (2) and for the run (9). Once or twice?</p><p><strong>A.</strong> Once, at 2: the run uses what the locks used. <strong>B.</strong> Twice, as today, from two readers of the same setting.</p></td><td class="rec decided">A, 12 October, as recommended: the locked folder and the run&rsquo;s are the same by construction</td></tr>
           </tbody>
         </table>
         </div>
