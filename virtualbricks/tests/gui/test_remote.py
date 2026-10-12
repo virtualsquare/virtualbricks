@@ -601,6 +601,7 @@ class TestWhatWaits(GuiTestCase):
         os.makedirs(self.factory.runtime_dir)
         self.manager.current = OpenProject(self.folder("lab1"), None)
         self.gui = FakeGui(self.factory)
+        self.configured = []
 
     def enabled(self, actions):
         return {
@@ -612,7 +613,9 @@ class TestWhatWaits(GuiTestCase):
     def test_the_console_and_sigterm(self):
         vm = self.factory.new_brick("qemu", "vm1")
         vm.proc = FakeProcess(vm)
-        enabled = self.enabled(BrickActions(self.gui, vm))
+        enabled = self.enabled(
+            BrickActions(self.gui, vm, self.configured.append)
+        )
         # without unixterm here
         self.assertNotIn("console", enabled)
         self.assertNotIn("terminate", enabled)
@@ -625,7 +628,9 @@ class TestWhatWaits(GuiTestCase):
         )
         # with it, through the connection (step 6)
         self.gui.engine.lacks = None
-        enabled = self.enabled(BrickActions(self.gui, vm))
+        enabled = self.enabled(
+            BrickActions(self.gui, vm, self.configured.append)
+        )
         self.assertIn("console", enabled)
         self.assertNotIn("terminate", enabled)
 
@@ -638,7 +643,9 @@ class TestWhatWaits(GuiTestCase):
         self.gui.engine.open_console = lambda brick: defer.fail(
             Refused("The connection to lab is lost")
         )
-        BrickActions(self.gui, vm).activate_action("console", None)
+        BrickActions(self.gui, vm, self.configured.append).activate_action(
+            "console", None
+        )
         self.assertEqual(
             logger.formatted(),
             ["Cannot open the console of vm1: The connection to lab is lost"],
@@ -646,7 +653,12 @@ class TestWhatWaits(GuiTestCase):
 
     def test_show_in_files(self):
         image = self.image("frr")
-        self.assertNotIn("show", self.enabled(ImageActions(self.gui, image)))
+        self.assertNotIn(
+            "show",
+            self.enabled(
+                ImageActions(self.gui, image, self.configured.append)
+            ),
+        )
 
     def test_the_menu_of_a_disk(self):
         image = self.image("frr")

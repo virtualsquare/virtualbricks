@@ -51,7 +51,7 @@ shows the objects in use, as the list says which are.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
 
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango
@@ -222,12 +222,15 @@ class Row(Gtk.ListBoxRow, Generic[T]):
         self,
         gui: MainWindow,
         item: T,
+        configure: Callable[[T], None],
         icons: Pictures[T],
         sizes: Gtk.SizeGroup,
     ) -> None:
         super().__init__(visible=True)
         self.gui = gui
         self.item = item
+        # what Settings of the menu does: the tab shows them
+        self.configure = configure
         self.icons = icons
         self.actions = self.make_actions()
         self.insert_action_group(self.GROUP, self.actions)
@@ -409,7 +412,12 @@ class RowList(Gtk.ListBox, Generic[T]):
     # search, with the switch, with both.
     NONE = NO_MATCH = NONE_RUNNING = NO_RUNNING_MATCH = ""
 
-    def __init__(self, gui: MainWindow, factory: BrickFactory) -> None:
+    def __init__(
+        self,
+        gui: MainWindow,
+        factory: BrickFactory,
+        configure: Callable[[T], None],
+    ) -> None:
         super().__init__(
             visible=True,
             selection_mode=Gtk.SelectionMode.SINGLE,
@@ -417,6 +425,8 @@ class RowList(Gtk.ListBox, Generic[T]):
         )
         self.gui = gui
         self.factory = factory
+        # for the menus of the rows
+        self.configure = configure
         self.search = ""
         self.only_running = False
         self.icons = self.make_icons()
@@ -796,11 +806,14 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
 
     def configure(self, item: T) -> None:
         """
-        Show the settings of item in place of the list. Those of another
-        object close first, as with Cancel. An object without a panel, as a
-        router, shows nothing.
+        Show the tab, and the settings of item in place of the list. Those
+        of another object close first, as with Cancel. An object without a
+        panel, as a router, shows nothing.
         """
 
+        notebook = self.get_parent()
+        if isinstance(notebook, Gtk.Notebook):
+            notebook.set_current_page(notebook.page_num(self))
         controller = self.panel_for(item)
         if controller is None:
             return
@@ -1015,7 +1028,7 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
     def on_row_activated(
         self, listbox: RowList[T], row: Gtk.ListBoxRow
     ) -> None:
-        self.gui.curtain_up(listbox.item_of(row))
+        self.configure(listbox.item_of(row))
 
     def on_button_press(
         self, listbox: RowList[T], event: Gdk.EventButton

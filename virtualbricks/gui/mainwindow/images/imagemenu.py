@@ -28,6 +28,7 @@ the File comes first, and Show in Files can't show it.
 from __future__ import annotations
 
 import functools
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gio, Gtk
@@ -80,10 +81,16 @@ def menu(image: Image, there: bool, keys: bool = False) -> Gio.Menu:
 class ImageActions(MenuActions):
     """What the items of the menu of an image do."""
 
-    def __init__(self, gui: MainWindow, image: Image) -> None:
+    def __init__(
+        self,
+        gui: MainWindow,
+        image: Image,
+        configure: Callable[[Image], None],
+    ) -> None:
         super().__init__()
         self.gui = gui
         self.image = image
+        self._configure = configure
         for name, callback in (
             ("find-file", self.find_file),
             ("details", self.details),
@@ -108,7 +115,7 @@ class ImageActions(MenuActions):
         FindFileDialog(self.gui.engine, self.image).show(self.gui.window)
 
     def details(self) -> None:
-        self.gui.curtain_up(self.image)
+        self._configure(self.image)
 
     def rename(self) -> None:
         RenameDialog(self.gui.engine, self.image).show(self.gui.window)
@@ -125,12 +132,13 @@ def popup(
     event: Gdk.EventButton | None,
     gui: MainWindow,
     image: Image,
+    configure: Callable[[Image], None],
     keys: bool = False,
 ) -> Gtk.Menu:
     """
     Open the menu of image: at the pointer, for a click on widget, or under
     widget when event is None, as for the Menu key. Keep the menu that it
-    returns while it shows.
+    returns while it shows. Its Details call configure.
     """
 
     there = gui.engine.machine.exists(image.path)
@@ -139,5 +147,5 @@ def popup(
         event,
         menu(image, there, keys),
         GROUP,
-        ImageActions(gui, image),
+        ImageActions(gui, image, configure),
     )

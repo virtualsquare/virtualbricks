@@ -83,7 +83,9 @@ if has_display:
             return list(self.factory.events)
 
         def make_row(self, item):
-            return EventRow(self.gui, item, self.icons, self._sizes)
+            return EventRow(
+                self.gui, item, self.configure, self.icons, self._sizes
+            )
 
         def make_icons(self):
             return Icons(rowtab.ICON_SIZE)
@@ -102,7 +104,7 @@ class RowTabTestCase(GuiTestCase):
     def setUp(self):
         super().setUp()
         self.event = self.factory.new_event("start-vms")
-        self.list = EventList(object(), self.factory)
+        self.list = EventList(object(), self.factory, lambda item: None)
         self.addCleanup(self.list.destroy)
         self.addCleanup(self.list.close)
         self.row = self.list.row_of(self.event)

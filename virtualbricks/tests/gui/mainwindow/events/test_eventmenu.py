@@ -57,9 +57,6 @@ class FakeGui:
         self.window = object()
         self.calls = []
 
-    def curtain_up(self, event):
-        self.calls.append(("configure", event))
-
     def ask_remove_event(self, event):
         self.calls.append(("delete", event))
 
@@ -80,6 +77,8 @@ class EventMenuTestCase(GuiTestCase):
         self.clock = task.Clock()
         self.patch(event_module, "reactor", self.clock)
         self.gui = FakeGui(self.factory)
+        # what Settings shows
+        self.configured = []
         Recording.performed = []
 
     def event(self, name, delay=5, *commands):
@@ -143,7 +142,11 @@ class TestTheMenu(EventMenuTestCase):
 
     def test_every_item_has_its_action(self):
         event = self.ready()
-        actions = set(EventActions(self.gui, event).list_actions())
+        actions = set(
+            EventActions(
+                self.gui, event, self.configured.append
+            ).list_actions()
+        )
         model = menu(event)
         used = set()
         for i in range(model.get_n_items()):
@@ -167,7 +170,7 @@ class TestWhatIsEnabled(EventMenuTestCase):
     ]
 
     def enabled(self, event):
-        actions = EventActions(self.gui, event)
+        actions = EventActions(self.gui, event, self.configured.append)
         return sorted(
             name
             for name in actions.list_actions()
@@ -197,7 +200,7 @@ class TestWhatIsEnabled(EventMenuTestCase):
 
     def test_update(self):
         event = self.ready()
-        actions = EventActions(self.gui, event)
+        actions = EventActions(self.gui, event, self.configured.append)
         event.start()
         self.assertTrue(actions.get_action_enabled("rename"))
         actions.update()
@@ -208,29 +211,32 @@ class TestWhatTheItemsDo(EventMenuTestCase):
 
     def test_the_gui(self):
         event = self.ready()
-        actions = EventActions(self.gui, event)
+        actions = EventActions(self.gui, event, self.configured.append)
         actions.activate_action("configure", None)
         actions.activate_action("delete", None)
-        self.assertEqual(
-            self.gui.calls, [("configure", event), ("delete", event)]
-        )
+        self.assertEqual(self.configured, [event])
+        self.assertEqual(self.gui.calls, [("delete", event)])
 
     def test_rename(self):
         shown = []
         self.patch(eventmenu, "RenameDialog", lambda *a: FakeDialog(shown, *a))
         event = self.ready()
-        EventActions(self.gui, event).activate_action("rename", None)
+        EventActions(self.gui, event, self.configured.append).activate_action(
+            "rename", None
+        )
         self.assertEqual(shown, [((self.gui.engine, event), self.gui.window)])
 
     def test_duplicate(self):
         event = self.ready()
-        EventActions(self.gui, event).activate_action("duplicate", None)
+        EventActions(self.gui, event, self.configured.append).activate_action(
+            "duplicate", None
+        )
         copy = self.factory.get_event("ev2")
         self.assertEqual(copy.config, event.config)
 
     def test_start_and_stop(self):
         event = self.ready()
-        actions = EventActions(self.gui, event)
+        actions = EventActions(self.gui, event, self.configured.append)
         actions.activate_action("startstop", None)
         self.assertIsNotNone(event.scheduled)
         actions.activate_action("startstop", None)
@@ -240,7 +246,9 @@ class TestWhatTheItemsDo(EventMenuTestCase):
 
     def test_run_now(self):
         event = self.event("ev", 5, "sw1 on", "sw2 on")
-        EventActions(self.gui, event).activate_action("run-now", None)
+        EventActions(self.gui, event, self.configured.append).activate_action(
+            "run-now", None
+        )
         self.assertEqual(Recording.performed, ["sw1 on", "sw2 on"])
         # it doesn't start the event
         self.assertIsNone(event.scheduled)
@@ -251,7 +259,9 @@ class TestWhatTheItemsDo(EventMenuTestCase):
         event = self.waiting()
         scheduled = event.scheduled
         self.clock.advance(2)
-        EventActions(self.gui, event).activate_action("run-now", None)
+        EventActions(self.gui, event, self.configured.append).activate_action(
+            "run-now", None
+        )
         self.assertEqual(Recording.performed, ["sw1 on"])
         self.assertIs(event.scheduled, scheduled)
         self.assertEqual(scheduled.getTime(), 5)
@@ -273,7 +283,7 @@ class TestPopup(EventMenuTestCase):
         widget = Gtk.Button()
         self.addCleanup(widget.destroy)
         click = Gdk.Event.new(Gdk.EventType.BUTTON_PRESS)
-        result = popup(widget, click, self.gui, event)
+        result = popup(widget, click, self.gui, event, self.configured.append)
         self.addCleanup(result.destroy)
         self.assertEqual(shown, [click])
         self.assertIs(result.get_attach_widget(), widget)
@@ -289,7 +299,9 @@ class TestPopup(EventMenuTestCase):
         # no keys, unless asked
         configure = result.get_children()[2]
         self.assertEqual(configure.get_property("accel"), "")
-        with_keys = popup(widget, click, self.gui, event, keys=True)
+        with_keys = popup(
+            widget, click, self.gui, event, self.configured.append, keys=True
+        )
         self.addCleanup(with_keys.destroy)
         configure = with_keys.get_children()[2]
         self.assertEqual(configure.get_property("accel"), "Return")
@@ -306,7 +318,9 @@ class TestPopup(EventMenuTestCase):
         )
         widget = Gtk.Button()
         self.addCleanup(widget.destroy)
-        result = popup(widget, None, self.gui, self.ready())
+        result = popup(
+            widget, None, self.gui, self.ready(), self.configured.append
+        )
         self.addCleanup(result.destroy)
         self.assertEqual(
             shown,

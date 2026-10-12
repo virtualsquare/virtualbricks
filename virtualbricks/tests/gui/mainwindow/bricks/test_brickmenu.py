@@ -48,9 +48,6 @@ class FakeGui:
         self.window = object()
         self.calls = []
 
-    def curtain_up(self, brick):
-        self.calls.append(("configure", brick))
-
     def ask_remove_brick(self, brick):
         self.calls.append(("delete", brick))
 
@@ -103,6 +100,8 @@ class BrickMenuTestCase(GuiTestCase):
         super().setUp()
         os.makedirs(self.factory.runtime_dir)
         self.gui = FakeGui(self.factory)
+        # what Settings shows
+        self.configured = []
         self.logger = FakeLogger()
         self.patch(brickmenu, "logger", self.logger)
 
@@ -237,7 +236,9 @@ class TestTheMenu(BrickMenuTestCase):
             self.brick("qemu", "vm", self.brick("switch", "sw").socks[0])
         )
         vm.add_sock()
-        actions = set(BrickActions(self.gui, vm).list_actions())
+        actions = set(
+            BrickActions(self.gui, vm, self.configured.append).list_actions()
+        )
 
         def walk(model):
             for i in range(model.get_n_items()):
@@ -258,7 +259,7 @@ class TestTheMenu(BrickMenuTestCase):
 class TestWhatIsEnabled(BrickMenuTestCase):
 
     def enabled(self, brick):
-        actions = BrickActions(self.gui, brick)
+        actions = BrickActions(self.gui, brick, self.configured.append)
         return sorted(
             name
             for name in actions.list_actions()
@@ -329,7 +330,7 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
     def setUp(self):
         super().setUp()
         self.sw = self.brick("switch", "sw")
-        self.actions = BrickActions(self.gui, self.sw)
+        self.actions = BrickActions(self.gui, self.sw, self.configured.append)
 
     def activate(self, name, target=None):
         self.actions.activate_action(name, target)
@@ -338,14 +339,13 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
         """The actions of brick, with an engine that only remembers."""
 
         self.gui.engine = RecordingEngine(self.factory)
-        return BrickActions(self.gui, brick)
+        return BrickActions(self.gui, brick, self.configured.append)
 
     def test_the_gui(self):
         for name in ("configure", "delete"):
             self.activate(name)
-        self.assertEqual(
-            self.gui.calls, [("configure", self.sw), ("delete", self.sw)]
-        )
+        self.assertEqual(self.configured, [self.sw])
+        self.assertEqual(self.gui.calls, [("delete", self.sw)])
 
     def test_start_and_stop(self):
         actions = self.recording(self.sw)
@@ -395,7 +395,7 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
         vm.send_signal = lambda number: done.append(number)
         vm.send = lambda data: done.append(data)
         vm.stop = lambda **kwargs: done.append(kwargs)
-        actions = BrickActions(self.gui, vm)
+        actions = BrickActions(self.gui, vm, self.configured.append)
         for name in (
             "console",
             "pause",
@@ -505,7 +505,7 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
         )
 
     def test_choosing(self):
-        actions = BrickActions(self.gui, self.sw)
+        actions = BrickActions(self.gui, self.sw, self.configured.append)
         for name in ("when-starts", "when-stops"):
             self.assertEqual(actions.get_action_state(name).unpack(), "")
         actions.activate_action("when-starts", GLib.Variant.new_string("boot"))
@@ -521,7 +521,7 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
         self.assertEqual(self.sw.config.on_stop, "draft")
 
     def test_the_choice_follows_the_brick(self):
-        actions = BrickActions(self.gui, self.sw)
+        actions = BrickActions(self.gui, self.sw, self.configured.append)
         self.sw.update_config({"on_start": "boot"})
         actions.update()
         self.assertEqual(
@@ -535,7 +535,9 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
             menu(self.sw, self.factory.bricks, self.events())
         )
         self.addCleanup(result.destroy)
-        result.insert_action_group("brick", BrickActions(self.gui, self.sw))
+        result.insert_action_group(
+            "brick", BrickActions(self.gui, self.sw, self.configured.append)
+        )
         [item] = [
             child
             for child in result.get_children()
@@ -572,7 +574,7 @@ class TestPopup(BrickMenuTestCase):
         widget = Gtk.Button()
         self.addCleanup(widget.destroy)
         event = Gdk.Event.new(Gdk.EventType.BUTTON_PRESS)
-        result = popup(widget, event, self.gui, sw)
+        result = popup(widget, event, self.gui, sw, self.configured.append)
         self.addCleanup(result.destroy)
         self.assertEqual(shown, [event])
         self.assertIs(result.get_attach_widget(), widget)
@@ -588,7 +590,9 @@ class TestPopup(BrickMenuTestCase):
         # no keys, unless asked
         configure = result.get_children()[1]
         self.assertEqual(configure.get_property("accel"), "")
-        with_keys = popup(widget, event, self.gui, sw, keys=True)
+        with_keys = popup(
+            widget, event, self.gui, sw, self.configured.append, keys=True
+        )
         self.addCleanup(with_keys.destroy)
         configure = with_keys.get_children()[1]
         self.assertEqual(configure.get_property("accel"), "Return")
@@ -605,7 +609,13 @@ class TestPopup(BrickMenuTestCase):
         )
         widget = Gtk.Button()
         self.addCleanup(widget.destroy)
-        result = popup(widget, None, self.gui, self.brick("switch", "sw"))
+        result = popup(
+            widget,
+            None,
+            self.gui,
+            self.brick("switch", "sw"),
+            self.configured.append,
+        )
         self.addCleanup(result.destroy)
         self.assertEqual(
             shown,

@@ -82,7 +82,8 @@ class BrickListTestCase(GuiTestCase):
         self.gui = FakeGui(self.factory)
         self.sw = self.factory.new_brick("switch", "sw")
         self.tap = self.factory.new_brick("tap", "tap")
-        self.list = BrickList(self.gui, self.factory)
+        self.configured = []
+        self.list = BrickList(self.gui, self.factory, self.configured.append)
         self.addCleanup(self.list.destroy)
         # a test that closes it says so
         self.addCleanup(lambda: self.list.close())
@@ -251,7 +252,11 @@ class TestTheRows(BrickListTestCase):
     def test_a_row_for_a_running_brick(self):
         # its summary, unless the list shows only what runs
         row = BrickRow(
-            self.gui, self.running(self.sw), self.list.icons, Gtk.SizeGroup()
+            self.gui,
+            self.running(self.sw),
+            self.configured.append,
+            self.list.icons,
+            Gtk.SizeGroup(),
         )
         self.addCleanup(row.destroy)
         self.assertEqual(row.detail.get_text(), "Switch · 32 ports")

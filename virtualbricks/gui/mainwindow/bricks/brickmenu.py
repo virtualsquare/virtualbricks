@@ -37,7 +37,7 @@ from __future__ import annotations
 
 import functools
 import signal
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any
 
 from gi.repository import Gdk, Gio, GLib, Gtk
@@ -214,11 +214,17 @@ def _process_menu(brick: Brick, console_lacks: str | None = None) -> Gio.Menu:
 class BrickActions(MenuActions):
     """What the items of the menu of a brick do."""
 
-    def __init__(self, gui: MainWindow, brick: Brick) -> None:
+    def __init__(
+        self,
+        gui: MainWindow,
+        brick: Brick,
+        configure: Callable[[Brick], None],
+    ) -> None:
         super().__init__()
         self.gui = gui
         self.engine = gui.engine
         self.brick = brick
+        self._configure = configure
         for name, callback in (
             ("startstop", self.startstop),
             ("configure", self.configure),
@@ -315,7 +321,7 @@ class BrickActions(MenuActions):
         startstop(self.engine, self.brick)
 
     def configure(self) -> None:
-        self.gui.curtain_up(self.brick)
+        self._configure(self.brick)
 
     def rename(self) -> None:
         RenameDialog(self.engine, self.brick).show(self.gui.window)
@@ -396,12 +402,13 @@ def popup(
     event: Gdk.EventButton | None,
     gui: MainWindow,
     brick: Brick,
+    configure: Callable[[Brick], None],
     keys: bool = False,
 ) -> Gtk.Menu:
     """
     Open the menu of brick: at the pointer, for a click on widget, or under
     widget when event is None, as for the Menu key. Keep the menu that it
-    returns while it shows.
+    returns while it shows. Its Settings call configure.
     """
 
     factory = gui.brickfactory
@@ -411,5 +418,5 @@ def popup(
         event,
         menu(brick, factory.bricks, list(factory.events), keys, lacks),
         GROUP,
-        BrickActions(gui, brick),
+        BrickActions(gui, brick, configure),
     )

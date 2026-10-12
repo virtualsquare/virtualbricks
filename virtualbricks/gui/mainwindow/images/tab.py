@@ -33,6 +33,7 @@ are :mod:`virtualbricks.gui.mainwindow.images.imagedetails`'s.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, GdkPixbuf, Gio, Gtk
@@ -95,16 +96,17 @@ class ImageRow(Row[Image]):
         self,
         gui: MainWindow,
         item: Image,
+        configure: Callable[[Image], None],
         icons: Pictures[Image],
         sizes: Gtk.SizeGroup,
         infos: Infos,
     ) -> None:
         # the first update() needs it
         self.infos = infos
-        super().__init__(gui, item, icons, sizes)
+        super().__init__(gui, item, configure, icons, sizes)
 
     def make_actions(self) -> imagemenu.ImageActions:
-        return imagemenu.ImageActions(self.gui, self.item)
+        return imagemenu.ImageActions(self.gui, self.item, self.configure)
 
     def menu_model(self) -> Gio.Menu:
         return imagemenu.menu(self.item, self.there())
@@ -173,10 +175,15 @@ class ImageList(RowList[Image]):
     NONE_RUNNING = _("No image is in use")
     NO_RUNNING_MATCH = _("No image in use matches “{text}”")
 
-    def __init__(self, gui: MainWindow, factory: BrickFactory) -> None:
+    def __init__(
+        self,
+        gui: MainWindow,
+        factory: BrickFactory,
+        configure: Callable[[Image], None],
+    ) -> None:
         # the rows need it, from the first
         self.infos = gui.engine.machine.infos
-        super().__init__(gui, factory)
+        super().__init__(gui, factory, configure)
         # what the rows of the images say of the bricks
         for signal in brick_signals(factory):
             signal.connect(self.on_brick_changed)
@@ -193,7 +200,9 @@ class ImageList(RowList[Image]):
         return list(self.factory.images)
 
     def make_row(self, item: Image) -> ImageRow:
-        return ImageRow(self.gui, item, self.icons, self._sizes, self.infos)
+        return ImageRow(
+            self.gui, item, self.configure, self.icons, self._sizes, self.infos
+        )
 
     def make_icons(self) -> ThemeIcons:
         return ThemeIcons(ICONS, ICON_SIZE)
@@ -235,7 +244,7 @@ class ImagesTab(RowsTab[Image]):
         return theme_icon(ICONS, EMPTY_ICON_SIZE, grey=True)
 
     def make_list(self) -> ImageList:
-        return ImageList(self.gui, self.factory)
+        return ImageList(self.gui, self.factory, self.configure)
 
     def signals(self) -> tuple[Signal, Signal, Signal]:
         factory = self.factory
@@ -291,7 +300,9 @@ class ImagesTab(RowsTab[Image]):
     def popup(
         self, widget: Gtk.Widget, event: Gdk.EventButton | None, item: Image
     ) -> Gtk.Menu:
-        return imagemenu.popup(widget, event, self.gui, item, True)
+        return imagemenu.popup(
+            widget, event, self.gui, item, self.configure, True
+        )
 
     def panel_for(self, item: Image) -> ImageDetails:
         return ImageDetails(

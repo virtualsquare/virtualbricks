@@ -28,6 +28,7 @@ runs the actions at once, to try an event out; a wait goes on.
 from __future__ import annotations
 
 import functools
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gio, Gtk
@@ -89,10 +90,16 @@ def startstop(engine: Engine, event: Event) -> None:
 class EventActions(MenuActions):
     """What the items of the menu of an event do."""
 
-    def __init__(self, gui: MainWindow, event: Event) -> None:
+    def __init__(
+        self,
+        gui: MainWindow,
+        event: Event,
+        configure: Callable[[Event], None],
+    ) -> None:
         super().__init__()
         self.gui = gui
         self.event = event
+        self._configure = configure
         for name, callback in (
             ("startstop", self.startstop),
             ("run-now", self.run_now),
@@ -125,7 +132,7 @@ class EventActions(MenuActions):
         self.gui.engine.run_event(self.event)
 
     def configure(self) -> None:
-        self.gui.curtain_up(self.event)
+        self._configure(self.event)
 
     def rename(self) -> None:
         RenameDialog(self.gui.engine, self.event).show(self.gui.window)
@@ -142,12 +149,13 @@ def popup(
     event: Gdk.EventButton | None,
     gui: MainWindow,
     the_event: Event,
+    configure: Callable[[Event], None],
     keys: bool = False,
 ) -> Gtk.Menu:
     """
     Open the menu of the_event: at the pointer, for a click on widget, or
     under widget when event is None, as for the Menu key. Keep the menu that
-    it returns while it shows.
+    it returns while it shows. Its Settings call configure.
     """
 
     return tab.popup(
@@ -155,5 +163,5 @@ def popup(
         event,
         menu(the_event, keys),
         GROUP,
-        EventActions(gui, the_event),
+        EventActions(gui, the_event, configure),
     )

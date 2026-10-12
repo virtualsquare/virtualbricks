@@ -35,6 +35,7 @@ new event. The menu of an event is
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING, cast
 
 from gi.repository import Gdk, Gio, Gtk
@@ -94,16 +95,17 @@ class EventRow(Row[Event]):
         self,
         gui: MainWindow,
         item: Event,
+        configure: Callable[[Event], None],
         icons: Pictures[Event],
         sizes: Gtk.SizeGroup,
         clock: IReactorTime,
     ) -> None:
         # the first update() needs it
         self.clock = clock
-        super().__init__(gui, item, icons, sizes)
+        super().__init__(gui, item, configure, icons, sizes)
 
     def make_actions(self) -> eventmenu.EventActions:
-        return eventmenu.EventActions(self.gui, self.item)
+        return eventmenu.EventActions(self.gui, self.item, self.configure)
 
     def menu_model(self) -> Gio.Menu:
         return eventmenu.menu(self.item)
@@ -150,13 +152,14 @@ class EventList(RowList[Event]):
         self,
         gui: MainWindow,
         factory: BrickFactory,
+        configure: Callable[[Event], None],
         clock: IReactorTime | None = None,
     ) -> None:
         # the rows need them, from the first
         self.clock = cast("IReactorTime", reactor) if clock is None else clock
         self._countdown = task.LoopingCall(self._tick)
         self._countdown.clock = self.clock
-        super().__init__(gui, factory)
+        super().__init__(gui, factory, configure)
         # what the rows of the events say of the bricks
         for signal in brick_signals(factory):
             signal.connect(self.on_brick_changed)
@@ -173,7 +176,9 @@ class EventList(RowList[Event]):
         return list(self.factory.events)
 
     def make_row(self, item: Event) -> EventRow:
-        return EventRow(self.gui, item, self.icons, self._sizes, self.clock)
+        return EventRow(
+            self.gui, item, self.configure, self.icons, self._sizes, self.clock
+        )
 
     def make_icons(self) -> Icons:
         return Icons(ICON_SIZE)
@@ -240,7 +245,7 @@ class EventsTab(RowsTab[Event]):
         super().__init__(gui, factory)
 
     def make_list(self) -> EventList:
-        return EventList(self.gui, self.factory, self.clock)
+        return EventList(self.gui, self.factory, self.configure, self.clock)
 
     def signals(self) -> tuple[Signal, Signal, Signal]:
         factory = self.factory
@@ -277,14 +282,16 @@ class EventsTab(RowsTab[Event]):
             making = self.gui.engine.new_event(new_event.name, new_event.delay)
             # TODO: Should we disable the main window?
             # TODO: timeout?
-            making.addCallback(self.gui.curtain_up)
+            making.addCallback(self.configure)
 
         NewEventDialog(self.gui.engine, on_response).show(self.gui.window)
 
     def popup(
         self, widget: Gtk.Widget, event: Gdk.EventButton | None, item: Event
     ) -> Gtk.Menu:
-        return eventmenu.popup(widget, event, self.gui, item, True)
+        return eventmenu.popup(
+            widget, event, self.gui, item, self.configure, True
+        )
 
     def panel_for(self, item: Event) -> EventEditor:
         return EventEditor(Draft(item))

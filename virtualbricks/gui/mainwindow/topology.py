@@ -32,6 +32,7 @@ opens its menu, a double click configures it.
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gio, GLib, GObject, Gtk
@@ -109,10 +110,17 @@ class TopologyTab(Tab, Gtk.Overlay):
 
     title = _("_Topology")
 
-    def __init__(self, gui: MainWindow, factory: BrickFactory) -> None:
+    def __init__(
+        self,
+        gui: MainWindow,
+        factory: BrickFactory,
+        configure: Callable[[Brick], None],
+    ) -> None:
         super().__init__(visible=True)
         self.gui = gui
         self.factory = factory
+        # the settings of a brick, which the Bricks tab shows
+        self.configure = configure
         self._menu: Gtk.Menu | None = None
         self.direction = "LR"
         self._shown = False
@@ -344,9 +352,11 @@ class TopologyTab(Tab, Gtk.Overlay):
             return False
         if event.button == 3:
             # kept while it shows
-            self._menu = brickmenu.popup(area, event, self.gui, brick)
+            self._menu = brickmenu.popup(
+                area, event, self.gui, brick, self.configure
+            )
         elif event.button == 1 and event.type == Gdk.EventType._2BUTTON_PRESS:
-            self.gui.curtain_up(brick)
+            self.configure(brick)
         return True
 
     def on_bar_allocated(

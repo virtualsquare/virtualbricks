@@ -30,6 +30,7 @@ other, and only then is the row under the pointer framed.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, GdkPixbuf, Gio, Gtk
@@ -81,7 +82,7 @@ class BrickRow(Row[Brick]):
     GROUP = brickmenu.GROUP
 
     def make_actions(self) -> brickmenu.BrickActions:
-        return brickmenu.BrickActions(self.gui, self.item)
+        return brickmenu.BrickActions(self.gui, self.item, self.configure)
 
     def menu_model(self) -> Gio.Menu:
         factory = self.gui.brickfactory
@@ -128,8 +129,13 @@ class BrickList(RowList[Brick]):
     NONE_RUNNING = _("No brick is running")
     NO_RUNNING_MATCH = _("No running brick matches “{text}”")
 
-    def __init__(self, gui: MainWindow, factory: BrickFactory) -> None:
-        super().__init__(gui, factory)
+    def __init__(
+        self,
+        gui: MainWindow,
+        factory: BrickFactory,
+        configure: Callable[[Brick], None],
+    ) -> None:
+        super().__init__(gui, factory, configure)
         self._drag_icon: Gtk.Widget | None = None
         self._drag_label: Gtk.Label | None = None
 
@@ -145,7 +151,9 @@ class BrickList(RowList[Brick]):
         return list(self.factory.bricks)
 
     def make_row(self, item: Brick) -> BrickRow:
-        return BrickRow(self.gui, item, self.icons, self._sizes)
+        return BrickRow(
+            self.gui, item, self.configure, self.icons, self._sizes
+        )
 
     def kind(self, item: Brick) -> str:
         return brickinfo.kind(item)

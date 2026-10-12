@@ -132,9 +132,6 @@ class FakeGui:
         self.engine = engine
         self.window = None
 
-    def curtain_up(self, image):
-        pass
-
 
 class ThereTestCase(GuiTestCase):
     """
@@ -157,6 +154,7 @@ class ThereTestCase(GuiTestCase):
         self.engine = LocalEngine(self.factory)
         self.engine.machine = self.machine
         self.gui = FakeGui(self.engine)
+        self.configured = []
 
 
 class TestTheImagesTab(ThereTestCase):
@@ -186,7 +184,9 @@ class TestTheImagesTab(ThereTestCase):
             first.get_item_attribute_value(0, "label").unpack(),
             "Find the File…",
         )
-        actions = imagemenu.ImageActions(self.gui, self.frr)
+        actions = imagemenu.ImageActions(
+            self.gui, self.frr, self.configured.append
+        )
         self.assertFalse(actions.lookup_action("find-file").get_enabled())
         self.assertTrue(actions.lookup_action("show").get_enabled())
 
@@ -198,7 +198,9 @@ class TestTheImagesTab(ThereTestCase):
             (self.frr, "Details…"),
             (self.here, "Find the File…"),
         ):
-            menu = imagemenu.popup(widget, None, self.gui, image)
+            menu = imagemenu.popup(
+                widget, None, self.gui, image, self.configured.append
+            )
             self.addCleanup(menu.destroy)
             self.assertEqual(menu.get_children()[0].get_label(), first)
 

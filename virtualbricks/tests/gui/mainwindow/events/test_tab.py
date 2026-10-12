@@ -52,11 +52,7 @@ class FakeGui:
         self.brickfactory = factory
         self.engine = LocalEngine(factory)
         self.window = object()
-        self.configured = []
         self.removed = []
-
-    def curtain_up(self, event):
-        self.configured.append(event)
 
     def ask_remove_event(self, event):
         self.removed.append(event)
@@ -283,7 +279,7 @@ class TestTheRowAboveTheList(EventsTestCase):
         event = self.factory.get_event("start_lab")
         self.assertEqual(event.config.delay, 30)
         self.assertEqual(event.config.actions, [])
-        self.assertEqual(self.gui.configured, [event])
+        self.assertIs(self.tab.configuring, event)
 
     def test_start_all_starts_what_can(self):
         # an event without actions doesn't stop the others
@@ -398,7 +394,17 @@ class TestTheKeysAndTheMouse(EventsTestCase):
         row = self.select(self.ev)
         self.assertTrue(self.press(Gdk.KEY_Menu))
         self.assertEqual(
-            shown, [(row.menu_button, None, self.gui, self.ev, True)]
+            shown,
+            [
+                (
+                    row.menu_button,
+                    None,
+                    self.gui,
+                    self.ev,
+                    self.tab.configure,
+                    True,
+                )
+            ],
         )
         self.assertEqual(self.tab._menu, "menu")
 
@@ -416,7 +422,11 @@ class TestTheKeysAndTheMouse(EventsTestCase):
 
     def test_a_double_click_configures(self):
         self.tab.list.emit("row-activated", self.row())
-        self.assertEqual(self.gui.configured, [self.ev])
+        self.assertIs(self.tab.configuring, self.ev)
+
+    def test_settings_in_the_menu_of_a_row(self):
+        self.row().actions.activate_action("configure", None)
+        self.assertIs(self.tab.configuring, self.ev)
 
 
 class TestTheSettings(EventsTestCase):

@@ -23,8 +23,8 @@ The main window of Virtualbricks.
 a notebook with the tabs of the other modules of this package, which it
 tells when a project opens, is saved, or Virtualbricks quits (see
 :mod:`virtualbricks.gui.mainwindow.tab`). It keeps what the menus of the
-bricks and the events call: configure, remove, and wait_for(), which says
-what Suspend and Resume wait for. What the windows change, run or ask of
+bricks and the events call: remove and wait_for(), which says what
+Suspend and Resume wait for. What the windows change, run or ask of
 the machine goes through its engine, ``engine``, and they read the bricks,
 the events and the images of ``engine.factory``.
 """
@@ -43,8 +43,8 @@ from twisted.python.failure import Failure
 from virtualbricks import errors, ksm
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks import Brick
-from virtualbricks.bricks.event import Event, is_event
-from virtualbricks.bricks.virtualmachine import Image, is_disk_image
+from virtualbricks.bricks.event import Event
+from virtualbricks.bricks.virtualmachine import Image
 from virtualbricks.config import settings
 from virtualbricks.config.report import Report
 from virtualbricks.config.settings import get_setting, ksm_started
@@ -73,12 +73,9 @@ from virtualbricks.locations import short_path, workspace_folder
 from virtualbricks.programs import missing_programs
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.rowtab import RowsTab
     from virtualbricks.remote.client import RemoteEngine
-    from virtualbricks.remote.follower import Item
 
 T = TypeVar("T")
-ItemT = TypeVar("ItemT", bound="Brick | Event | Image")
 
 logger = Logger()
 cannot_open_project = 'Cannot open the project "{name}": {error}'
@@ -293,7 +290,7 @@ class MainWindow:
         self.append_tab(self.events)
         self.images = ImagesTab(self, self.factory)
         self.append_tab(self.images)
-        self.append_tab(TopologyTab(self, self.factory))
+        self.append_tab(TopologyTab(self, self.factory, self.bricks.configure))
         self.append_tab(ReadmeTab(self.engine))
         vbox1.pack_start(self.main_notebook, True, True, 0)
         self.window.add(vbox1)
@@ -462,24 +459,6 @@ class MainWindow:
     """ ********************************************************     """
     """ Signal handlers                                           """
     """ ********************************************************     """
-
-    def curtain_up(self, item: Item) -> None:
-        """
-        Show the settings of a brick in the Bricks tab, of an event in the
-        Events tab, or the details of a disk image in the Images tab.
-        """
-
-        # an image has no type: ask it first
-        if is_disk_image(item):
-            self._configure(self.images, item)
-        elif is_event(item):
-            self._configure(self.events, item)
-        else:
-            self._configure(self.bricks, item)
-
-    def _configure(self, tab: RowsTab[ItemT], item: ItemT) -> None:
-        self.main_notebook.set_current_page(self.main_notebook.page_num(tab))
-        tab.configure(item)
 
     def set_title(self) -> None:
         if not self.engine.local:

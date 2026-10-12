@@ -73,10 +73,6 @@ class FakeGui:
         self.engine = LocalEngine(factory)
         self.window = object()
         self.removed = []
-        self.configured = []
-
-    def curtain_up(self, brick):
-        self.configured.append(brick)
 
     def ask_remove_brick(self, brick):
         self.removed.append(brick)
@@ -323,7 +319,7 @@ class TestTheRowAboveTheList(BricksTestCase):
         tap = self.factory.get_brick("tap1")
         self.assertIsNotNone(tap)
         self.assertIs(self.tab.list.selected(), tap)
-        self.assertEqual(self.gui.configured, [tap])
+        self.assertIs(self.tab.configuring, tap)
 
     def test_start_all_starts_what_can(self):
         self.brick("qemu", "vm")
@@ -482,7 +478,18 @@ class TestTheKeys(BricksTestCase):
         self.assertTrue(self.press(Gdk.KEY_F10, Gdk.ModifierType.SHIFT_MASK))
         self.assertFalse(self.press(Gdk.KEY_F10))
         self.assertEqual(
-            shown, [(row.menu_button, None, self.gui, self.sw, True)] * 2
+            shown,
+            [
+                (
+                    row.menu_button,
+                    None,
+                    self.gui,
+                    self.sw,
+                    self.tab.configure,
+                    True,
+                )
+            ]
+            * 2,
         )
         self.assertEqual(self.tab._menu, "menu")
 
@@ -577,11 +584,12 @@ class TestTheMouse(BricksTestCase):
             self.tab.get_toplevel().get_focus(),
             self.tab.list.row_of(list(self.factory.bricks)[1]),
         )
-        [(widget, event, gui, brick, keys)] = shown
+        [(widget, event, gui, brick, configure, keys)] = shown
         self.assertIs(widget, self.tab.list)
         self.assertEqual(event.button, 3)
         self.assertEqual(
-            (gui, brick, keys), (self.gui, list(self.factory.bricks)[1], True)
+            (gui, brick, configure, keys),
+            (self.gui, list(self.factory.bricks)[1], self.tab.configure, True),
         )
 
     def test_not_on_a_brick(self):
@@ -595,7 +603,25 @@ class TestTheMouse(BricksTestCase):
     def test_a_double_click_configures(self):
         row = self.tab.list.row_of(self.sw)
         self.tab.list.emit("row-activated", row)
-        self.assertEqual(self.gui.configured, [self.sw])
+        self.assertIs(self.tab.configuring, self.sw)
+
+    def test_settings_in_the_menu_of_a_row(self):
+        row = self.tab.list.row_of(self.sw)
+        row.actions.activate_action("configure", None)
+        self.assertIs(self.tab.configuring, self.sw)
+
+    def test_the_tab_shows(self):
+        notebook = Gtk.Notebook()
+        notebook.append_page(self.tab)
+        notebook.append_page(Gtk.Label(visible=True))
+        self.addCleanup(notebook.remove, self.tab)
+        notebook.set_current_page(1)
+        self.tab.configure(self.sw)
+        self.assertEqual(notebook.get_current_page(), 0)
+        # a router has no settings, and its tab shows all the same
+        notebook.set_current_page(1)
+        self.tab.configure(self.brick("router", "r"))
+        self.assertEqual(notebook.get_current_page(), 0)
 
 
 class TestWhatTheWindowTells(BricksTestCase):

@@ -63,19 +63,15 @@ class FakeEngine:
 
 class FakeGui:
     def __init__(self):
-        self.configured = []
         self.engine = FakeEngine()
-
-    def curtain_up(self, brick):
-        self.configured.append(brick)
 
 
 class FakeMenus:
     def __init__(self):
         self.shown = []
 
-    def popup(self, widget, event, gui, brick):
-        self.shown.append((widget, brick, event.button, gui))
+    def popup(self, widget, event, gui, brick, configure):
+        self.shown.append((widget, brick, event.button, gui, configure))
         return self
 
 
@@ -120,7 +116,9 @@ class TopologyTestCase(GuiTestCase):
         self.vm = self.factory.new_brick("qemu", "vm")
         self.vm.connect(self.sw1.socks[0])
         self.gui = FakeGui()
-        self.tab = TopologyTab(self.gui, self.factory)
+        # what the Bricks tab shows
+        self.configured = []
+        self.tab = TopologyTab(self.gui, self.factory, self.configured.append)
         self.addCleanup(self.tab.destroy)
         self.view = self.tab.view
 
@@ -403,17 +401,18 @@ class TestClicks(TopologyTestCase):
     def test_the_menu_of_a_brick(self):
         self.assertTrue(self.press(self.vm, button=3))
         self.assertEqual(
-            self.menus.shown, [(self.view.area, self.vm, 3, self.gui)]
+            self.menus.shown,
+            [(self.view.area, self.vm, 3, self.gui, self.configured.append)],
         )
         # kept while it shows
         self.assertIs(self.tab._menu, self.menus)
 
     def test_a_double_click_configures(self):
         self.assertTrue(self.press(self.vm, double=True))
-        self.assertEqual(self.gui.configured, [self.vm])
+        self.assertEqual(self.configured, [self.vm])
         # one click does nothing
         self.assertTrue(self.press(self.vm))
-        self.assertEqual(self.gui.configured, [self.vm])
+        self.assertEqual(self.configured, [self.vm])
 
     def test_not_on_a_brick(self):
         event = Gdk.Event.new(Gdk.EventType.BUTTON_PRESS)

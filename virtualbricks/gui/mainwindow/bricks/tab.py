@@ -81,7 +81,7 @@ class BricksTab(RowsTab[Brick]):
     new_popover: NewBrickPopover | None = None
 
     def make_list(self) -> BrickList:
-        return BrickList(self.gui, self.factory)
+        return BrickList(self.gui, self.factory, self.configure)
 
     def signals(self) -> tuple[Signal, Signal, Signal]:
         factory = self.factory
@@ -141,12 +141,14 @@ class BricksTab(RowsTab[Brick]):
         assert row is not None, "the list follows the factory"
         self.list.select_row(row)
         row.grab_focus()
-        self.gui.curtain_up(brick)
+        self.configure(brick)
 
     def popup(
         self, widget: Gtk.Widget, event: Gdk.EventButton | None, item: Brick
     ) -> Gtk.Menu:
-        return brickmenu.popup(widget, event, self.gui, item, True)
+        return brickmenu.popup(
+            widget, event, self.gui, item, self.configure, True
+        )
 
     def panel_for(self, item: Brick) -> Panel | None:
         return new_panel(item, self.gui)

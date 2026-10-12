@@ -63,11 +63,7 @@ class FakeGui:
         self.brickfactory = factory
         self.engine = LocalEngine(factory)
         self.window = object()
-        self.configured = []
         self.removed = []
-
-    def curtain_up(self, image):
-        self.configured.append(image)
 
     def ask_remove_image(self, image):
         self.removed.append(image)
@@ -374,7 +370,17 @@ class TestTheKeysAndTheMouse(ImagesTestCase):
         row = self.select(self.frr)
         self.assertTrue(self.press(Gdk.KEY_Menu))
         self.assertEqual(
-            shown, [(row.menu_button, None, self.gui, self.frr, True)]
+            shown,
+            [
+                (
+                    row.menu_button,
+                    None,
+                    self.gui,
+                    self.frr,
+                    self.tab.configure,
+                    True,
+                )
+            ],
         )
 
     def test_the_menu_of_a_row(self):
@@ -387,7 +393,11 @@ class TestTheKeysAndTheMouse(ImagesTestCase):
 
     def test_a_double_click_shows_the_details(self):
         self.tab.list.emit("row-activated", self.row())
-        self.assertEqual(self.gui.configured, [self.frr])
+        self.assertIs(self.tab.configuring, self.frr)
+
+    def test_details_in_the_menu_of_a_row(self):
+        self.row().actions.activate_action("details", None)
+        self.assertIs(self.tab.configuring, self.frr)
 
 
 class TestTheDetails(ImagesTestCase):
