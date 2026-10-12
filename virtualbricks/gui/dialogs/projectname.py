@@ -36,6 +36,7 @@ from twisted.python.failure import Failure
 
 from virtualbricks import errors
 from virtualbricks.config.workspace import Workspace
+from virtualbricks.engine import Engine
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
 
@@ -76,7 +77,7 @@ class ProjectNameDialog:
     Ask a name, and create, rename or duplicate a project with it.
 
     gui is the main window: the dialog saves, creates and opens projects
-    through it, as its menus do, and renames and duplicates them through its
+    through it, as its menus do, and renames and duplicates them through
     engine. on_done, if set, is called after a change.
     """
 
@@ -85,17 +86,17 @@ class ProjectNameDialog:
     def __init__(
         self,
         gui: MainWindow,
+        engine: Engine,
         kind: str,
         original: str | None = None,
         workspace: Workspace | RemoteWorkspace | None = None,
     ) -> None:
         self.gui = gui
+        self.engine = engine
         self.kind = kind
         self.original = original
         # the workspace of the Virtualbricks of the bricks
-        self.workspace = (
-            gui.engine.workspace if workspace is None else workspace
-        )
+        self.workspace = engine.workspace if workspace is None else workspace
         self.build_ui()
         self.name_entry.set_text(self.suggested_name())
         self.check()
@@ -216,7 +217,7 @@ class ProjectNameDialog:
         """The bricks of the project renamed, if it's the open one."""
 
         if self.kind == RENAME and self.is_current():
-            return [brick.name for brick in self.gui.brickfactory.bricks]
+            return [brick.name for brick in self.engine.factory.bricks]
         return None
 
     def check(self) -> None:
@@ -260,12 +261,12 @@ class ProjectNameDialog:
 
     def apply(self) -> defer.Deferred[str]:
         """
-        Do what the dialog is for, through the main window and its engine:
+        Do what the dialog is for, through the main window and the engine:
         a Deferred of the name, or of the failure of the engine.
         """
 
         name = self.name_entry.get_text()
-        engine = self.gui.engine
+        engine = self.engine
         doing: defer.Deferred[Any]
         if self.kind == NEW:
             doing = defer.maybeDeferred(

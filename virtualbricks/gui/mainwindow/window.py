@@ -754,7 +754,9 @@ class MainWindow:
     def project_name_dialog(
         self, kind: str, original: str | None = None
     ) -> projectname.ProjectNameDialog:
-        dialog = projectname.ProjectNameDialog(self, kind, original)
+        dialog = projectname.ProjectNameDialog(
+            self, self.engine, kind, original
+        )
         dialog.show(self.window)
         return dialog
 

@@ -627,7 +627,7 @@ class ProjectsWindow:
         self, kind: str, original: str | None = None
     ) -> projectname.ProjectNameDialog:
         dialog = projectname.ProjectNameDialog(
-            self.gui, kind, original, workspace=self.workspace
+            self.gui, self.gui.engine, kind, original, workspace=self.workspace
         )
         dialog.on_done = self.on_name_done
         dialog.show(self.window)

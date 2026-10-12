@@ -22,8 +22,8 @@ import os
 from virtualbricks import locations
 from virtualbricks.config.settings import current_project
 from virtualbricks.config.tomlfile import dump_toml, load_toml
-from virtualbricks.tests.config.test_images import FakeWorkspace
 from virtualbricks.tests import FakeLogger
+from virtualbricks.tests.config.test_images import FakeWorkspace
 from virtualbricks.tests.gui import GuiTestCase, ProjectsGui, has_display
 
 if has_display:
@@ -48,7 +48,9 @@ class NameTestCase(GuiTestCase):
         self.done = []
 
     def dialog(self, kind, original=None):
-        dialog = projectname.ProjectNameDialog(self.gui, kind, original)
+        dialog = projectname.ProjectNameDialog(
+            self.gui, self.gui.engine, kind, original
+        )
         dialog.on_done = self.done.append
         self.addCleanup(dialog.dialog.destroy)
         return dialog
