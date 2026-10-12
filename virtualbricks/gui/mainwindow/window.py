@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from gi.repository import Gdk, Gtk
 from twisted.internet import defer
@@ -462,24 +462,6 @@ class MainWindow:
     """ ********************************************************     """
     """ Signal handlers                                           """
     """ ********************************************************     """
-
-    def curtain_down(self) -> None:
-        """
-        Close the settings that show, in the tab that shows them: their OK
-        and Cancel are there.
-        """
-
-        page = self.main_notebook.get_nth_page(
-            self.main_notebook.get_current_page()
-        )
-        rows_tabs: tuple[RowsTab[Any], ...] = (
-            self.bricks,
-            self.events,
-            self.images,
-        )
-        for tab in rows_tabs:
-            if page is tab:
-                tab.close_settings()
 
     def curtain_up(self, item: Item) -> None:
         """

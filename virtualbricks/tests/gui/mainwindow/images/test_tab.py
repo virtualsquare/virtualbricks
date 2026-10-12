@@ -25,9 +25,9 @@ import os
 
 from twisted.internet import defer
 
-from virtualbricks.qemu import run
 from virtualbricks.config.workspace import OpenProject
 from virtualbricks.engine import LocalEngine
+from virtualbricks.qemu import run
 from virtualbricks.tests.config.test_images import INFO, FakeQemuImg
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 from virtualbricks.tests.gui.mainwindow.bricks.test_brickmenu import content
@@ -65,13 +65,9 @@ class FakeGui:
         self.window = object()
         self.configured = []
         self.removed = []
-        self.tab = None
 
     def curtain_up(self, image):
         self.configured.append(image)
-
-    def curtain_down(self):
-        self.tab.close_settings()
 
     def ask_remove_image(self, image):
         self.removed.append(image)
@@ -99,7 +95,6 @@ class ImagesTestCase(GuiTestCase):
         self.qemu_img.infos[self.frr.path] = INFO
         self.gui = FakeGui(self.factory)
         self.tab = ImagesTab(self.gui, self.factory)
-        self.gui.tab = self.tab
         self.addCleanup(self.tab.destroy)
         self.addCleanup(lambda: self.tab.on_quit())
         self.qemu_img.answer()

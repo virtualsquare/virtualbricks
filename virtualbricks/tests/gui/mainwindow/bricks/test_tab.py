@@ -36,8 +36,8 @@ if has_display:
     from virtualbricks.gui.mainwindow.bricks import brickmenu, tab
     from virtualbricks.gui.mainwindow.bricks.newbrick import NewBrickPopover
     from virtualbricks.gui.mainwindow.bricks.tab import BricksTab, count
-    from virtualbricks.gui.mainwindow.rowtab import types
     from virtualbricks.gui.mainwindow.picture import Icons
+    from virtualbricks.gui.mainwindow.rowtab import types
 
 
 class FakeProcess:
@@ -74,14 +74,9 @@ class FakeGui:
         self.window = object()
         self.removed = []
         self.configured = []
-        self.tab = None
 
     def curtain_up(self, brick):
         self.configured.append(brick)
-
-    def curtain_down(self):
-        # the panels close the settings through the window
-        self.tab.close_settings()
 
     def ask_remove_brick(self, brick):
         self.removed.append(brick)
@@ -128,7 +123,6 @@ class BricksTestCase(GuiTestCase):
         self.done = []
         self.sw = self.brick("switch", "sw")
         self.tab = BricksTab(self.gui, self.factory)
-        self.gui.tab = self.tab
         self.addCleanup(self.tab.destroy)
         # a test that quits says so
         self.addCleanup(lambda: self.tab.on_quit())

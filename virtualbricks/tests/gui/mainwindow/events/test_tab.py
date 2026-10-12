@@ -54,14 +54,9 @@ class FakeGui:
         self.window = object()
         self.configured = []
         self.removed = []
-        self.tab = None
 
     def curtain_up(self, event):
         self.configured.append(event)
-
-    def curtain_down(self):
-        # the panels close the settings through the window
-        self.tab.close_settings()
 
     def ask_remove_event(self, event):
         self.removed.append(event)
@@ -86,7 +81,6 @@ class EventsTestCase(GuiTestCase):
         self.gui = FakeGui(self.factory)
         self.ev = self.event("start-vms", 5, "vm1 on")
         self.tab = EventsTab(self.gui, self.factory, self.clock)
-        self.gui.tab = self.tab
         self.addCleanup(self.tab.destroy)
         # a test that quits says so
         self.addCleanup(lambda: self.tab.on_quit())
