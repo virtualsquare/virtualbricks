@@ -63,6 +63,7 @@ from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks import Brick
 from virtualbricks.bricks.event import Event
 from virtualbricks.bricks.virtualmachine import Image
+from virtualbricks.engine import Engine
 from virtualbricks.gui import graphics
 from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
 from virtualbricks.gui.mainwindow.picture import greyed
@@ -220,14 +221,17 @@ class Row(Gtk.ListBoxRow, Generic[T]):
 
     def __init__(
         self,
-        gui: MainWindow,
+        engine: Engine,
+        window: Gtk.Window,
         item: T,
         configure: Callable[[T], None],
         icons: Pictures[T],
         sizes: Gtk.SizeGroup,
     ) -> None:
         super().__init__(visible=True)
-        self.gui = gui
+        self.engine = engine
+        # what the dialogs of the menu open over: the main window
+        self.window = window
         self.item = item
         # what Settings of the menu does: the tab shows them
         self.configure = configure
@@ -414,7 +418,8 @@ class RowList(Gtk.ListBox, Generic[T]):
 
     def __init__(
         self,
-        gui: MainWindow,
+        engine: Engine,
+        window: Gtk.Window,
         factory: BrickFactory,
         configure: Callable[[T], None],
     ) -> None:
@@ -423,7 +428,9 @@ class RowList(Gtk.ListBox, Generic[T]):
             selection_mode=Gtk.SelectionMode.SINGLE,
             activate_on_single_click=False,
         )
-        self.gui = gui
+        # for the rows
+        self.engine = engine
+        self.window = window
         self.factory = factory
         # for the menus of the rows
         self.configure = configure

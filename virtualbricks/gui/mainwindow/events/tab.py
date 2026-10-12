@@ -51,6 +51,7 @@ from virtualbricks.bricks.eventinfo import (
     SEPARATOR,
     State,
 )
+from virtualbricks.engine import Engine
 from virtualbricks.gui.mainwindow.events import eventmenu
 from virtualbricks.gui.mainwindow.events.eventeditor import EventEditor
 from virtualbricks.gui.mainwindow.events.newevent import (
@@ -93,7 +94,8 @@ class EventRow(Row[Event]):
 
     def __init__(
         self,
-        gui: MainWindow,
+        engine: Engine,
+        window: Gtk.Window,
         item: Event,
         configure: Callable[[Event], None],
         icons: Pictures[Event],
@@ -102,11 +104,11 @@ class EventRow(Row[Event]):
     ) -> None:
         # the first update() needs it
         self.clock = clock
-        super().__init__(gui, item, configure, icons, sizes)
+        super().__init__(engine, window, item, configure, icons, sizes)
 
     def make_actions(self) -> eventmenu.EventActions:
         return eventmenu.EventActions(
-            self.gui.engine, self.gui.window, self.item, self.configure
+            self.engine, self.window, self.item, self.configure
         )
 
     def menu_model(self) -> Gio.Menu:
@@ -127,7 +129,7 @@ class EventRow(Row[Event]):
                 name=event.name
             )
         self.show_state(
-            eventinfo.summary(event, self.gui.brickfactory),
+            eventinfo.summary(event, self.engine.factory),
             label,
             state is State.WAITING,
             state is State.NOT_CONFIGURED,
@@ -136,7 +138,7 @@ class EventRow(Row[Event]):
         )
 
     def on_startstop_clicked(self, button: Gtk.Button) -> None:
-        eventmenu.startstop(self.gui.engine, self.item)
+        eventmenu.startstop(self.engine, self.item)
 
 
 class EventList(RowList[Event]):
@@ -152,7 +154,8 @@ class EventList(RowList[Event]):
 
     def __init__(
         self,
-        gui: MainWindow,
+        engine: Engine,
+        window: Gtk.Window,
         factory: BrickFactory,
         configure: Callable[[Event], None],
         clock: IReactorTime | None = None,
@@ -161,7 +164,7 @@ class EventList(RowList[Event]):
         self.clock = cast("IReactorTime", reactor) if clock is None else clock
         self._countdown = task.LoopingCall(self._tick)
         self._countdown.clock = self.clock
-        super().__init__(gui, factory, configure)
+        super().__init__(engine, window, factory, configure)
         # what the rows of the events say of the bricks
         for signal in brick_signals(factory):
             signal.connect(self.on_brick_changed)
@@ -179,7 +182,13 @@ class EventList(RowList[Event]):
 
     def make_row(self, item: Event) -> EventRow:
         return EventRow(
-            self.gui, item, self.configure, self.icons, self._sizes, self.clock
+            self.engine,
+            self.window,
+            item,
+            self.configure,
+            self.icons,
+            self._sizes,
+            self.clock,
         )
 
     def make_icons(self) -> Icons:
@@ -247,7 +256,13 @@ class EventsTab(RowsTab[Event]):
         super().__init__(gui, factory)
 
     def make_list(self) -> EventList:
-        return EventList(self.gui, self.factory, self.configure, self.clock)
+        return EventList(
+            self.gui.engine,
+            self.gui.window,
+            self.factory,
+            self.configure,
+            self.clock,
+        )
 
     def signals(self) -> tuple[Signal, Signal, Signal]:
         factory = self.factory

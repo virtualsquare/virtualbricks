@@ -98,7 +98,9 @@ class BricksTab(RowsTab[Brick]):
         super().__init__(gui, factory)
 
     def make_list(self) -> BrickList:
-        return BrickList(self.gui, self.factory, self.configure)
+        return BrickList(
+            self.gui.engine, self.gui.window, self.factory, self.configure
+        )
 
     def signals(self) -> tuple[Signal, Signal, Signal]:
         factory = self.factory

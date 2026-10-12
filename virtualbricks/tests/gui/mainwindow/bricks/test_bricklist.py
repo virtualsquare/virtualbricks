@@ -44,13 +44,6 @@ class FakeProcess:
     pid = 41301
 
 
-class FakeGui:
-    def __init__(self, factory):
-        self.brickfactory = factory
-        self.engine = LocalEngine(factory)
-        self.window = None
-
-
 class FakeDrag:
     """What the list asks GTK during a drag, and what it tells it."""
 
@@ -79,14 +72,20 @@ class BrickListTestCase(GuiTestCase):
     def setUp(self):
         super().setUp()
         os.makedirs(self.factory.runtime_dir)
-        self.gui = FakeGui(self.factory)
+        self.engine = LocalEngine(self.factory)
         self.sw = self.factory.new_brick("switch", "sw")
         self.tap = self.factory.new_brick("tap", "tap")
         self.configured = []
-        self.list = BrickList(self.gui, self.factory, self.configured.append)
-        self.addCleanup(self.list.destroy)
+        self.list = self.make_list(self.engine)
+
+    def make_list(self, engine):
+        """The list of the bricks, which asks engine."""
+
+        bricks = BrickList(engine, None, self.factory, self.configured.append)
+        self.addCleanup(bricks.destroy)
         # a test that closes it says so
-        self.addCleanup(lambda: self.list.close())
+        self.addCleanup(lambda: bricks.close())
+        return bricks
 
     def brick(self, kind, name):
         return self.factory.new_brick(kind, name)
@@ -252,7 +251,8 @@ class TestTheRows(BrickListTestCase):
     def test_a_row_for_a_running_brick(self):
         # its summary, unless the list shows only what runs
         row = BrickRow(
-            self.gui,
+            self.engine,
+            None,
             self.running(self.sw),
             self.configured.append,
             self.list.icons,
@@ -310,13 +310,12 @@ class TestTheRows(BrickListTestCase):
         self.assertFalse(row.startstop.get_sensitive())
 
     def test_start_and_stop(self):
-        self.gui.engine = RecordingEngine(self.factory)
+        engine = RecordingEngine(self.factory)
+        self.list = self.make_list(engine)
         self.row(self.sw).startstop.clicked()
         self.running(self.sw)
         self.row(self.sw).startstop.clicked()
-        self.assertEqual(
-            self.gui.engine.calls, [("start", self.sw), ("stop", self.sw)]
-        )
+        self.assertEqual(engine.calls, [("start", self.sw), ("stop", self.sw)])
 
     def test_the_actions_of_the_menu(self):
         row = self.row(self.sw)
@@ -357,7 +356,7 @@ class TestTheConsole(BrickListTestCase):
 
     def test_what_it_lacks(self):
         # over a connection, a terminal program of this computer
-        self.gui.engine.console_lacks = lambda brick: "needs vdeterm of vde2"
+        self.engine.console_lacks = lambda brick: "needs vdeterm of vde2"
         self.running(self.sw)
         model = self.row(self.sw).menu_model()
         process = model.get_item_link(2, "section").get_item_link(0, "submenu")

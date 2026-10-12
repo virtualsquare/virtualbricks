@@ -43,6 +43,7 @@ from virtualbricks.bricks import Brick
 from virtualbricks.bricks.virtualmachine import Image, ImageDraft
 from virtualbricks.config import images
 from virtualbricks.config.images import ImageInfo
+from virtualbricks.engine import Engine
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.dialogs.addimage import (
     ExistingImageDialog,
@@ -94,7 +95,8 @@ class ImageRow(Row[Image]):
 
     def __init__(
         self,
-        gui: MainWindow,
+        engine: Engine,
+        window: Gtk.Window,
         item: Image,
         configure: Callable[[Image], None],
         icons: Pictures[Image],
@@ -103,11 +105,11 @@ class ImageRow(Row[Image]):
     ) -> None:
         # the first update() needs it
         self.infos = infos
-        super().__init__(gui, item, configure, icons, sizes)
+        super().__init__(engine, window, item, configure, icons, sizes)
 
     def make_actions(self) -> imagemenu.ImageActions:
         return imagemenu.ImageActions(
-            self.gui.engine, self.gui.window, self.item, self.configure
+            self.engine, self.window, self.item, self.configure
         )
 
     def menu_model(self) -> Gio.Menu:
@@ -116,7 +118,7 @@ class ImageRow(Row[Image]):
     def there(self) -> bool:
         """Whether the file of the image is on the machine of the bricks."""
 
-        return self.gui.engine.machine.exists(self.item.path)
+        return self.engine.machine.exists(self.item.path)
 
     def info(self) -> ImageInfo | None:
         """What qemu-img info says of the file, once read; read it if not."""
@@ -143,8 +145,8 @@ class ImageRow(Row[Image]):
         """Show the image with info, or what the cache has if read."""
 
         image = self.item
-        machine = self.gui.engine.machine
-        uses = images.uses(self.gui.brickfactory, image, machine.taken)
+        machine = self.engine.machine
+        uses = images.uses(self.engine.factory, image, machine.taken)
         there = self.there()
         image_state = imageinfo.state(image, uses, there)
         if image_state is State.MISSING:
@@ -179,13 +181,14 @@ class ImageList(RowList[Image]):
 
     def __init__(
         self,
-        gui: MainWindow,
+        engine: Engine,
+        window: Gtk.Window,
         factory: BrickFactory,
         configure: Callable[[Image], None],
     ) -> None:
         # the rows need it, from the first
-        self.infos = gui.engine.machine.infos
-        super().__init__(gui, factory, configure)
+        self.infos = engine.machine.infos
+        super().__init__(engine, window, factory, configure)
         # what the rows of the images say of the bricks
         for signal in brick_signals(factory):
             signal.connect(self.on_brick_changed)
@@ -203,7 +206,13 @@ class ImageList(RowList[Image]):
 
     def make_row(self, item: Image) -> ImageRow:
         return ImageRow(
-            self.gui, item, self.configure, self.icons, self._sizes, self.infos
+            self.engine,
+            self.window,
+            item,
+            self.configure,
+            self.icons,
+            self._sizes,
+            self.infos,
         )
 
     def make_icons(self) -> ThemeIcons:
@@ -246,7 +255,9 @@ class ImagesTab(RowsTab[Image]):
         return theme_icon(ICONS, EMPTY_ICON_SIZE, grey=True)
 
     def make_list(self) -> ImageList:
-        return ImageList(self.gui, self.factory, self.configure)
+        return ImageList(
+            self.gui.engine, self.gui.window, self.factory, self.configure
+        )
 
     def signals(self) -> tuple[Signal, Signal, Signal]:
         factory = self.factory

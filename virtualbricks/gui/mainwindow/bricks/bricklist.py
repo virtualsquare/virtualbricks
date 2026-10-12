@@ -31,7 +31,6 @@ other, and only then is the row under the pointer framed.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, GdkPixbuf, Gio, Gtk
 
@@ -42,6 +41,7 @@ from virtualbricks.bricks.brickinfo import (
     SEPARATOR,
     State,
 )
+from virtualbricks.engine import Engine
 from virtualbricks.gui.mainwindow.bricks import brickmenu
 from virtualbricks.gui.mainwindow.picture import Icons
 from virtualbricks.gui.mainwindow.rowtab import (
@@ -51,9 +51,6 @@ from virtualbricks.gui.mainwindow.rowtab import (
 )
 from virtualbricks.i18n import _
 from virtualbricks.observable import Signal
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
 
 DRAG_ICON_SIZE = 24
 TARGETS = [
@@ -83,16 +80,16 @@ class BrickRow(Row[Brick]):
 
     def make_actions(self) -> brickmenu.BrickActions:
         return brickmenu.BrickActions(
-            self.gui.engine, self.gui.window, self.item, self.configure
+            self.engine, self.window, self.item, self.configure
         )
 
     def menu_model(self) -> Gio.Menu:
-        factory = self.gui.brickfactory
+        factory = self.engine.factory
         return brickmenu.menu(
             self.item,
             factory.bricks,
             list(factory.events),
-            console_lacks=self.gui.engine.console_lacks(self.item),
+            console_lacks=self.engine.console_lacks(self.item),
         )
 
     def update(self, processes: bool = False) -> None:
@@ -120,7 +117,7 @@ class BrickRow(Row[Brick]):
             self.startstop.set_sensitive(False)
 
     def on_startstop_clicked(self, button: Gtk.Button) -> None:
-        brickmenu.startstop(self.gui.engine, self.item)
+        brickmenu.startstop(self.engine, self.item)
 
 
 class BrickList(RowList[Brick]):
@@ -133,11 +130,12 @@ class BrickList(RowList[Brick]):
 
     def __init__(
         self,
-        gui: MainWindow,
+        engine: Engine,
+        window: Gtk.Window,
         factory: BrickFactory,
         configure: Callable[[Brick], None],
     ) -> None:
-        super().__init__(gui, factory, configure)
+        super().__init__(engine, window, factory, configure)
         self._drag_icon: Gtk.Widget | None = None
         self._drag_label: Gtk.Label | None = None
 
@@ -154,7 +152,12 @@ class BrickList(RowList[Brick]):
 
     def make_row(self, item: Brick) -> BrickRow:
         return BrickRow(
-            self.gui, item, self.configure, self.icons, self._sizes
+            self.engine,
+            self.window,
+            item,
+            self.configure,
+            self.icons,
+            self._sizes,
         )
 
     def kind(self, item: Brick) -> str:
@@ -266,5 +269,5 @@ class BrickList(RowList[Brick]):
             Gtk.drag_finish(context, done is True, False, time)
             return done
 
-        self.gui.engine.connect(source, row.item).addBoth(finish)
+        self.engine.connect(source, row.item).addBoth(finish)
         return True
