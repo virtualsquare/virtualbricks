@@ -478,9 +478,6 @@ class SettingsWindow(Window):
             changes = page.draft.changes()
             if changes:
                 writes.setdefault(page.draft.brick.write, {}).update(changes)
-        tray = None
-        for changes in writes.values():
-            tray = changes.get("tray_icon", tray)
         ksm_page = self._ksm_page()
         turn = ksm_page is not None and (
             KSM in ksm_page.draft.changes() or KSM in ksm_page.draft.failed
@@ -498,11 +495,6 @@ class SettingsWindow(Window):
         def written(_: object) -> bool | defer.Deferred[bool]:
             for page in self.pages:
                 page.draft.saved()
-            if tray is not None:
-                if tray:
-                    self.gui.start_systray()
-                else:
-                    self.gui.stop_systray()
             if not turn or ksm_page is None:
                 return True
             wanted = ksm_page.draft.get(KSM)

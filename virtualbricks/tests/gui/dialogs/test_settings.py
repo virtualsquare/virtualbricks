@@ -219,8 +219,7 @@ class TestOk(WindowTestCase):
         project = load_toml(self.project.project_file)
         self.assertIs(project["settings"]["log_link_loops"], True)
         self.assertEqual(self.closed, [True])
-        # nothing about the tray or KSM
-        self.assertEqual(window.gui.systray, [])
+        # nothing about KSM
         self.assertEqual(self.ksm, [])
 
     def test_follows_the_console(self):
@@ -243,12 +242,6 @@ class TestOk(WindowTestCase):
         self.assertEqual(get_setting("terminal"), "x-terminal-emulator")
         self.assertFalse(os.path.exists(locations.settings_file()))
         self.assertEqual(self.ksm, [])
-
-    def test_tray_icon(self):
-        window = self.window()
-        control(window, "tray_icon").set_active(False)
-        self.ok(window)
-        self.assertEqual(window.gui.systray, ["stop"])
 
     def test_a_failure(self):
         window = self.window()

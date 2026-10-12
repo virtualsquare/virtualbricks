@@ -45,6 +45,7 @@ from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks import Brick
 from virtualbricks.bricks.event import Event, is_event
 from virtualbricks.bricks.virtualmachine import Image, is_disk_image
+from virtualbricks.config import settings
 from virtualbricks.config.report import Report
 from virtualbricks.config.settings import get_setting, ksm_started
 from virtualbricks.config.workspace import ProjectSummary, projects
@@ -164,8 +165,9 @@ class MainWindow:
         self.messages = MessageLog() if messages is None else messages
 
         logger.info(start_virtualbricks)
-        if get_setting("tray_icon"):
-            self.start_systray()
+        # the tray icon follows its setting, whatever changes it
+        self.set_tray_icon()
+        settings.changed.connect(self.on_setting_changed)
 
         # attach the quit callback at the end, so it is not called if an
         # exception is raised before because of a syntax error of another kind
@@ -321,6 +323,8 @@ class MainWindow:
         # status_icon (Gtk.StatusIcon)
         # Glade image "virtualbricks.png" (virtualbricks/gui/data)
         self.status_icon = Gtk.StatusIcon(
+            # until its setting says otherwise
+            visible=False,
             pixbuf=load_pixbuf("virtualbricks.png"),
             has_tooltip=True,
             tooltip_text=_("Virtualbricks visible"),
@@ -617,13 +621,21 @@ class MainWindow:
 
     # status icon handling
 
-    def start_systray(self) -> None:
-        if not self.status_icon.get_visible():
-            self.status_icon.set_visible(True)
+    def set_tray_icon(self) -> None:
+        """Show the tray icon, or hide it, as its setting says."""
 
-    def stop_systray(self) -> None:
-        if self.status_icon.get_visible():
-            self.status_icon.set_visible(False)
+        self.status_icon.set_visible(bool(get_setting("tray_icon")))
+
+    def on_setting_changed(self, name: str) -> None:
+        """A setting changed: in the Settings window, in the console."""
+
+        if name != "tray_icon":
+            return
+        self.set_tray_icon()
+        if self.status_icon.get_visible() or self.window.get_visible():
+            return
+        # with the icon gone, nothing else would show the window again
+        self.window_toggle()
 
     def window_toggle(self) -> None:
         if self.window.get_visible():

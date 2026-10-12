@@ -32,8 +32,8 @@ from virtualbricks.tests import (
     FakeLogger,
     isolate,
     make_factory,
-    use_workspace,
     reset_settings,
+    use_workspace,
 )
 
 try:
@@ -80,13 +80,6 @@ class FakeGui:
     def __init__(self, factory):
         self.brickfactory = factory
         self.engine = LocalEngine(factory)
-        self.systray = []
-
-    def start_systray(self):
-        self.systray.append("start")
-
-    def stop_systray(self):
-        self.systray.append("stop")
 
 
 class ProjectsGui(FakeGui):

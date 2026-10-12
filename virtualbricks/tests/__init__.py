@@ -27,9 +27,9 @@ from virtualbricks import locks
 
 # The tests of the configuration are virtualbricks.tests.config: here that
 # name is theirs, so the settings are taken by name and from their module.
-from virtualbricks.config.settings import AppSettings
 from virtualbricks.config import settings
-from virtualbricks.config.settings import AppState
+from virtualbricks.config.settings import AppSettings, AppState
+from virtualbricks.observable import Observable, Signal
 
 DATA = os.path.join(os.path.dirname(__file__), "data")
 
@@ -172,6 +172,8 @@ def reset_settings(test, **values):
     test.patch(settings, "_state_path", None)
     test.patch(settings, "_read_only", False)
     test.patch(settings, "_ksm_start", None)
+    # and its own observers of the settings that change
+    test.patch(settings, "changed", Signal(Observable(), "changed"))
 
 
 def make_factory(test=None):

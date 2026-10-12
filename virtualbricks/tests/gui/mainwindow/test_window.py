@@ -194,3 +194,51 @@ class TestKsmWarning(GuiTestCase):
             window.ksm_warning(True, True, False), window.ksm_still_off
         )
         self.assertIsNone(window.ksm_warning(True, True, True))
+
+
+class TestTrayIcon(GuiTestCase):
+    """The tray icon follows its setting, whatever changes it."""
+
+    def setUp(self):
+        super().setUp()
+        # windows show and hide only here, not on the display
+        self.visible = set()
+        self.patch(Gtk.Window, "show", lambda w: self.visible.add(w))
+        self.patch(Gtk.Window, "hide", lambda w: self.visible.discard(w))
+        self.patch(Gtk.Window, "get_visible", lambda w: w in self.visible)
+
+    def main_window(self):
+        gui = MainWindow(LocalEngine(self.factory))
+        self.addCleanup(gui.window.destroy)
+        return gui
+
+    def test_at_start(self):
+        gui = self.main_window()
+        self.assertTrue(gui.status_icon.get_visible())
+        self.assertIn(gui.window, self.visible)
+
+    def test_none_at_start(self):
+        set_setting("tray_icon", False)
+        gui = self.main_window()
+        self.assertFalse(gui.status_icon.get_visible())
+        self.assertIn(gui.window, self.visible)
+
+    def test_follows_the_setting(self):
+        gui = self.main_window()
+        set_setting("tray_icon", False)
+        self.assertFalse(gui.status_icon.get_visible())
+        set_setting("tray_icon", True)
+        self.assertTrue(gui.status_icon.get_visible())
+        # the window stays as it was
+        self.assertIn(gui.window, self.visible)
+
+    def test_shows_the_hidden_window(self):
+        gui = self.main_window()
+        gui.window_toggle()
+        self.assertNotIn(gui.window, self.visible)
+        set_setting("tray_icon", False)
+        # else nothing would show it again
+        self.assertIn(gui.window, self.visible)
+        self.assertEqual(
+            gui.status_icon.get_tooltip_text(), "Virtualbricks visible"
+        )
