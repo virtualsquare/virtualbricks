@@ -33,6 +33,7 @@ if has_display:
 
     from virtualbricks.gui.mainwindow.events import eventmenu, tab
     from virtualbricks.gui.mainwindow.events.eventeditor import EventEditor
+    from virtualbricks.gui.mainwindow.events.newevent import NewEvent
     from virtualbricks.gui.mainwindow.events.tab import EventsTab, count
 
 
@@ -280,7 +281,15 @@ class TestTheRowAboveTheList(EventsTestCase):
         shown = []
         self.patch(tab, "NewEventDialog", lambda *a: FakeDialog(shown, *a))
         self.tab.new_button.clicked()
-        self.assertEqual(shown, [((self.gui,), self.gui.window)])
+        [((engine, create), parent)] = shown
+        self.assertIs(engine, self.gui.engine)
+        self.assertIs(parent, self.gui.window)
+        # Create: the event made, then its settings, to add its actions
+        create(NewEvent("start lab", 30))
+        event = self.factory.get_event("start_lab")
+        self.assertEqual(event.config.delay, 30)
+        self.assertEqual(event.config.actions, [])
+        self.assertEqual(self.gui.configured, [event])
 
     def test_start_all_starts_what_can(self):
         # an event without actions doesn't stop the others

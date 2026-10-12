@@ -28,17 +28,17 @@ event, without actions.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from dataclasses import dataclass
 
 from gi.repository import Gtk, Pango
 
 from virtualbricks import errors
+from virtualbricks.engine import Engine
+from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.gui.mainwindow.events.eventeditor import delay_button
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
 
 # The name suggested, and the delay, in seconds.
 NAME = "new_event"
@@ -47,19 +47,27 @@ MARGIN = 18
 GAP = 6
 
 
-class NewEventDialog:
-    """
-    Ask a name and a delay, create the event and show its settings.
+@dataclass(frozen=True)
+class NewEvent:
+    name: str
+    delay: int
 
-    gui is the main window, which has the factory and shows the settings.
+
+OnCreateNewEventCallback = Callable[[NewEvent], None]
+
+
+class NewEventDialog(Window):
+    """
+    Ask a name and a delay, create the event through engine and show its
+    settings in gui, the main window.
     """
 
-    def __init__(self, gui: MainWindow) -> None:
-        self.gui = gui
-        self.factory = gui.brickfactory
+    def __init__(
+        self, engine: Engine, on_create_new_event: OnCreateNewEventCallback
+    ) -> None:
+        self.engine = engine
+        self.on_create_new_event = on_create_new_event
         self.build_ui()
-        self.name_entry.set_text(self.factory.unused_name(NAME))
-        self.check()
 
     def build_ui(self) -> None:
         self.dialog = Gtk.Dialog(
@@ -111,25 +119,25 @@ class NewEventDialog:
         grid.attach(delay, 1, 2, 1, 1)
         self.dialog.get_content_area().pack_start(grid, True, True, 0)
 
+        # initial data
+        self.name_entry.set_text(self.engine.factory.unused_name(NAME))
+        self.check(self.name_entry.get_text())
+
+        # signals
         self.name_entry.connect("changed", self.on_name_changed)
         self.dialog.connect("response", self.on_response)
 
     def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
-    def show(self, parent: Gtk.Window | None = None) -> None:
-        if parent is not None:
-            self.dialog.set_transient_for(parent)
-        self.dialog.show()
-
     # The name
 
-    def check(self) -> None:
+    def check(self, event_name: str) -> None:
         """Say what is wrong with the name, if anything, and wait for it."""
 
         message = None
         try:
-            self.factory.check_name(self.name_entry.get_text())
+            self.engine.factory.check_name(event_name)
         except errors.InvalidNameError as exc:
             message = str(exc)
         self.name_message.set_text(message or "")
@@ -137,20 +145,19 @@ class NewEventDialog:
         self.create_button.set_sensitive(message is None)
 
     def on_name_changed(self, entry: Gtk.Entry) -> None:
-        self.check()
+        self.check(entry.get_text())
 
     # The action
 
     def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
-        if response_id != Gtk.ResponseType.OK:
-            dialog.destroy()
-            return
-        if not self.create_button.get_sensitive():
-            return
-        # a number typed and not yet taken
-        self.delay.update()
-        making = self.gui.engine.new_event(
-            self.name_entry.get_text(), self.delay.get_value_as_int()
-        )
+        new_event = None
+        if response_id == Gtk.ResponseType.OK:
+            if self.create_button.get_sensitive():
+                self.delay.update()
+                new_event = NewEvent(
+                    self.name_entry.get_text(), self.delay.get_value_as_int()
+                )
+
         dialog.destroy()
-        making.addCallback(self.gui.curtain_up)
+        if new_event is not None:
+            self.on_create_new_event(new_event)

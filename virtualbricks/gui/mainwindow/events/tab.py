@@ -52,7 +52,10 @@ from virtualbricks.bricks.eventinfo import (
 )
 from virtualbricks.gui.mainwindow.events import eventmenu
 from virtualbricks.gui.mainwindow.events.eventeditor import EventEditor
-from virtualbricks.gui.mainwindow.events.newevent import NewEventDialog
+from virtualbricks.gui.mainwindow.events.newevent import (
+    NewEvent,
+    NewEventDialog,
+)
 from virtualbricks.gui.mainwindow.picture import Icons
 from virtualbricks.gui.mainwindow.rowtab import (
     ICON_SIZE,
@@ -270,7 +273,13 @@ class EventsTab(RowsTab[Event]):
             self.gui.engine.stop_event(event)
 
     def new_item(self) -> None:
-        NewEventDialog(self.gui).show(self.gui.window)
+        def on_response(new_event: NewEvent) -> None:
+            making = self.gui.engine.new_event(new_event.name, new_event.delay)
+            # TODO: Should we disable the main window?
+            # TODO: timeout?
+            making.addCallback(self.gui.curtain_up)
+
+        NewEventDialog(self.gui.engine, on_response).show(self.gui.window)
 
     def popup(
         self, widget: Gtk.Widget, event: Gdk.EventButton | None, item: Event

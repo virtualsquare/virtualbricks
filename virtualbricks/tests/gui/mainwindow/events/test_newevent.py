@@ -24,28 +24,23 @@ if has_display:
     from gi.repository import Gtk
 
     from virtualbricks.gui.mainwindow.events.eventeditor import MAX_DELAY
-    from virtualbricks.gui.mainwindow.events.newevent import NewEventDialog
-
-
-class FakeGui:
-    def __init__(self, factory):
-        self.brickfactory = factory
-        self.engine = LocalEngine(factory)
-        self.configured = []
-
-    def curtain_up(self, event):
-        self.configured.append(event)
+    from virtualbricks.gui.mainwindow.events.newevent import (
+        NewEvent,
+        NewEventDialog,
+    )
 
 
 class NewEventTestCase(GuiTestCase):
 
     def setUp(self):
         super().setUp()
-        self.gui = FakeGui(self.factory)
+        self.engine = LocalEngine(self.factory)
+        # what the dialog asks for, when Create is pressed
+        self.created = []
         self.destroyed = []
 
     def dialog(self):
-        dialog = NewEventDialog(self.gui)
+        dialog = NewEventDialog(self.engine, self.created.append)
         dialog.dialog.connect("destroy", self.destroyed.append)
         self.addCleanup(dialog.dialog.destroy)
         return dialog
@@ -123,7 +118,7 @@ class TestTheName(NewEventTestCase):
         dialog = self.dialog()
         self.type(dialog, "sw1")
         dialog.dialog.response(Gtk.ResponseType.OK)
-        self.assertEqual(self.events(), [])
+        self.assertEqual(self.created, [])
         self.assertEqual(self.destroyed, [])
 
 
@@ -134,23 +129,19 @@ class TestCreate(NewEventTestCase):
         self.type(dialog, "start lab")
         dialog.delay.set_value(5)
         dialog.dialog.response(Gtk.ResponseType.OK)
-        event = self.factory.get_event("start_lab")
-        self.assertEqual(event.config.delay, 5)
-        self.assertEqual(event.config.actions, [])
-        # its settings, to add its actions
-        self.assertEqual(self.gui.configured, [event])
+        # as typed: the tab makes the event
+        self.assertEqual(self.created, [NewEvent("start lab", 5)])
+        self.assertEqual(self.events(), [])
         self.assertEqual(len(self.destroyed), 1)
 
     def test_a_delay_typed(self):
         dialog = self.dialog()
         dialog.delay.set_text("30")
         dialog.dialog.response(Gtk.ResponseType.OK)
-        event = self.factory.get_event("new_event")
-        self.assertEqual(event.config.delay, 30)
+        self.assertEqual(self.created, [NewEvent("new_event", 30)])
 
     def test_cancel(self):
         dialog = self.dialog()
         dialog.dialog.response(Gtk.ResponseType.CANCEL)
-        self.assertEqual(self.events(), [])
-        self.assertEqual(self.gui.configured, [])
+        self.assertEqual(self.created, [])
         self.assertEqual(len(self.destroyed), 1)
