@@ -1,7 +1,7 @@
 # -*- test-case-name: virtualbricks.tests.gui.test_app,virtualbricks.tests.gui.test_remote -*-
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from gi.repository import Gtk
@@ -122,23 +122,31 @@ def _now(deferred: defer.Deferred[T]) -> T:
 
 class WindowFrontend:
     """
-    How the console opens, makes and saves projects with the windows: through
-    the main window, which saves what its tabs hold and shows the project.
-    Its engine is that of this process, which answers at once, as the
-    console wants.
+    How the console opens, makes and saves projects with the windows: as the
+    main window does, which saves what its tabs hold and shows the project,
+    with open_project, new_project and save_project. Its engine is that of
+    this process, which answers at once, as the console wants.
     """
 
-    def __init__(self, gui: MainWindow) -> None:
-        self.gui = gui
+    def __init__(
+        self,
+        *,
+        open_project: Callable[[str], defer.Deferred[Report]],
+        new_project: Callable[[str], defer.Deferred[Report]],
+        save_project: Callable[[], defer.Deferred[None]],
+    ) -> None:
+        self.open_project = open_project
+        self.new_project = new_project
+        self.save_project = save_project
 
     def open(self, name: str, factory: BrickFactory) -> Report:
-        return _now(self.gui.on_open(name))
+        return _now(self.open_project(name))
 
     def new(self, name: str, factory: BrickFactory) -> None:
-        _now(self.gui.on_new(name))
+        _now(self.new_project(name))
 
     def save(self, factory: BrickFactory) -> None:
-        _now(self.gui.on_save())
+        _now(self.save_project())
 
 
 class Application(CliApplication):
@@ -208,7 +216,13 @@ class Application(CliApplication):
         # The workspace has no desktop of its own: removing a project moves
         # it to the trash only in the GUI.
         projects.trasher = DesktopTrash()
-        use_frontend(WindowFrontend(self.main_window))
+        use_frontend(
+            WindowFrontend(
+                open_project=self.main_window.on_open,
+                new_project=self.main_window.on_new,
+                save_project=self.main_window.on_save,
+            )
+        )
         await self.check_prerequisites()
         if self.start_up_problem is not None:
             self.main_window.show_start_up_problem(self.start_up_problem)

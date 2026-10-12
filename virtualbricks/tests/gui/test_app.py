@@ -209,20 +209,23 @@ class TestWindowFrontend(GuiTestCase):
     def test_through_the_window(self):
         calls = []
 
-        class Window:
-            def on_open(self, name):
-                calls.append(("open", name))
-                return defer.succeed("report")
+        def open_project(name):
+            calls.append(("open", name))
+            return defer.succeed("report")
 
-            def on_new(self, name):
-                calls.append(("new", name))
-                return defer.succeed(None)
+        def new_project(name):
+            calls.append(("new", name))
+            return defer.succeed(None)
 
-            def on_save(self):
-                calls.append(("save",))
-                return defer.succeed(None)
+        def save_project():
+            calls.append(("save",))
+            return defer.succeed(None)
 
-        frontend = gui_app.WindowFrontend(Window())
+        frontend = gui_app.WindowFrontend(
+            open_project=open_project,
+            new_project=new_project,
+            save_project=save_project,
+        )
         self.assertEqual(frontend.open("lab", self.factory), "report")
         frontend.new("lab2", self.factory)
         frontend.save(self.factory)
@@ -381,6 +384,15 @@ class FakeMainWindow:
     def show_start_up_problem(self, message):
         self.calls.append(("problem", message))
 
+    def on_open(self, name):
+        pass
+
+    def on_new(self, name, description=""):
+        pass
+
+    def on_save(self):
+        pass
+
 
 class TestCreateMainWindow(GuiTestCase):
 
@@ -413,7 +425,15 @@ class TestCreateMainWindow(GuiTestCase):
         self.assertIsInstance(
             console_projects.frontend, gui_app.WindowFrontend
         )
-        self.assertIs(console_projects.frontend.gui, window)
+        frontend = console_projects.frontend
+        self.assertEqual(
+            [
+                frontend.open_project,
+                frontend.new_project,
+                frontend.save_project,
+            ],
+            [window.on_open, window.on_new, window.on_save],
+        )
         # the programs and KSM are checked before it goes on
         self.assertNoResult(created)
         self.checked.callback(None)
