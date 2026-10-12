@@ -46,18 +46,15 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Sequence
 from typing import Any
 
-import gi
+from gi.repository import Gtk, Pango
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Pango  # noqa: E402
-
-from virtualbricks.bricks.draft import Draft, Problem  # noqa: E402
-from virtualbricks.bricks.sock import Sock  # noqa: E402
-from virtualbricks.config.schema import Float, info_of, kind_of  # noqa: E402
-from virtualbricks.engine import Engine  # noqa: E402
-from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
-from virtualbricks.gui.pathentry import PathCompletion  # noqa: E402
-from virtualbricks.i18n import _  # noqa: E402
+from virtualbricks.bricks.draft import Draft, Problem
+from virtualbricks.bricks.sock import Sock
+from virtualbricks.config.schema import Float, info_of, kind_of
+from virtualbricks.engine import Engine
+from virtualbricks.gui.pango import pango_attr_list
+from virtualbricks.gui.pathentry import PathCompletion
+from virtualbricks.i18n import _
 
 # Between the sections, and around the texts of a row, in pixels.
 GAP = 8

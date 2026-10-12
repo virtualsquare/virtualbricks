@@ -30,25 +30,22 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING
 
-import gi
+from gi.repository import Gdk, Gio, Gtk
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gio, Gtk  # noqa: E402
-
-from virtualbricks.bricks.virtualmachine import Image  # noqa: E402
-from virtualbricks.gui.mainwindow import tab  # noqa: E402
-from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
+from virtualbricks.bricks.virtualmachine import Image
+from virtualbricks.gui.dialogs.imagedialogs import (
+    FindFileDialog,
+    show_in_files,
+)
+from virtualbricks.gui.dialogs.renamedialog import RenameDialog
+from virtualbricks.gui.mainwindow import tab
+from virtualbricks.gui.mainwindow.tab import (
     MenuActions,
     menu_item,
     menu_of,
     menu_section,
 )
-from virtualbricks.gui.dialogs.imagedialogs import (  # noqa: E402
-    FindFileDialog,
-    show_in_files,
-)
-from virtualbricks.gui.dialogs.renamedialog import RenameDialog  # noqa: E402
-from virtualbricks.i18n import _  # noqa: E402
+from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.window import MainWindow

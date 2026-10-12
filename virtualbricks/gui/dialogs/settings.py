@@ -44,22 +44,18 @@ from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, cast
 
 import attr
-import gi
-
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # noqa: E402
-
-from twisted.internet import defer  # noqa: E402
-from twisted.internet.interfaces import (  # noqa: E402
+from gi.repository import Gtk
+from twisted.internet import defer
+from twisted.internet.interfaces import (
     IDelayedCall,
     IReactorTime,
 )
-from twisted.logger import Logger  # noqa: E402
-from twisted.python.failure import Failure  # noqa: E402
+from twisted.logger import Logger
+from twisted.python.failure import Failure
 
-from virtualbricks import ksm, locations  # noqa: E402
-from virtualbricks.config import settings  # noqa: E402
-from virtualbricks.config.settings import (  # noqa: E402
+from virtualbricks import ksm, locations
+from virtualbricks.config import settings
+from virtualbricks.config.settings import (
     AppSettings,
     ProjectSettings,
     SettingValue,
@@ -67,16 +63,16 @@ from virtualbricks.config.settings import (  # noqa: E402
     set_setting,
     store_settings,
 )
-from virtualbricks.engine import Engine  # noqa: E402
-from virtualbricks.gui.dialogs.base import Window  # noqa: E402
-from virtualbricks.gui.form import (  # noqa: E402
+from virtualbricks.engine import Engine
+from virtualbricks.gui.dialogs.base import Window
+from virtualbricks.gui.form import (
     Form,
     set_options,
 )
-from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.locations import short_path  # noqa: E402
-from virtualbricks.programs import FolderPrograms, QemuInfo  # noqa: E402
-from virtualbricks.settingsdraft import (  # noqa: E402
+from virtualbricks.i18n import _
+from virtualbricks.locations import short_path
+from virtualbricks.programs import FolderPrograms, QemuInfo
+from virtualbricks.settingsdraft import (
     PLAYING,
     Facts,
     Owner,

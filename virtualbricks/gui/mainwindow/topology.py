@@ -34,30 +34,26 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
-import gi
+from gi.repository import Gdk, Gio, GLib, GObject, Gtk
+from twisted.logger import Logger
 
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gio, GLib, GObject, Gtk  # noqa: E402
-from twisted.logger import Logger  # noqa: E402
-
-from virtualbricks.brickfactory import BrickFactory  # noqa: E402
-from virtualbricks.bricks import Brick  # noqa: E402
-from virtualbricks.gui.mainwindow import picture  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks import brickmenu  # noqa: E402
-from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks import Brick
+from virtualbricks.gui.mainwindow import picture
+from virtualbricks.gui.mainwindow.bricks import brickmenu
+from virtualbricks.gui.mainwindow.tab import (
     Tab,
     brick_signals,
     icon_button,
 )
-from virtualbricks.gui.mainwindow.topologyview import (  # noqa: E402
+from virtualbricks.gui.mainwindow.topologyview import (
     EPSILON,
     LEVELS,
     MARGIN,
     TopologyView,
 )
-from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.topology import layout  # noqa: E402
+from virtualbricks.i18n import _
+from virtualbricks.topology import layout
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.window import MainWindow

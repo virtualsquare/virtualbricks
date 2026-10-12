@@ -32,9 +32,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, TypeAlias
 
-import gi
-
-gi.require_version("Gtk", "3.0")
 from gi.repository import GObject, Gtk, Pango
 
 from virtualbricks.bricks.virtualmachine import Image, VirtualMachine

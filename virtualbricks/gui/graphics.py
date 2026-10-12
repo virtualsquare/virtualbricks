@@ -22,9 +22,6 @@ from __future__ import annotations
 
 import os
 
-import gi
-
-gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf
 
 from virtualbricks.bricks import Base

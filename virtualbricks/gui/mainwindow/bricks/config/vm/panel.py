@@ -25,41 +25,26 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-import gi
+from gi.repository import Gtk
+from twisted.logger import Logger
+from twisted.python.failure import Failure
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # noqa: E402
-from twisted.logger import Logger  # noqa: E402
-from twisted.python.failure import Failure  # noqa: E402
-
-from virtualbricks.bricks.virtualmachine import (  # noqa: E402
-    VirtualMachineDraft,
-)
-from virtualbricks.gui.form import Form, Row  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks.config.panel import (
-    Panel,
-)  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks.config.picker import (  # noqa: E402
-    Picker,
-)
-from virtualbricks.gui.mainwindow.bricks.config.vm import (  # noqa: E402
+from virtualbricks.bricks.virtualmachine import VirtualMachineDraft
+from virtualbricks.gui.form import Form, Row
+from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
+from virtualbricks.gui.mainwindow.bricks.config.picker import Picker
+from virtualbricks.gui.mainwindow.bricks.config.vm import (
     devices,
     machine,
     media,
     network,
     system,
 )
-from virtualbricks.gui.mainwindow.bricks.config.vm.devices import (  # noqa: E402
-    UsbDevices,
-)
-from virtualbricks.gui.mainwindow.bricks.config.vm.disks import (  # noqa: E402
-    DisksSection,
-)
-from virtualbricks.gui.mainwindow.bricks.config.vm.network import (  # noqa: E402
-    Cards,
-)
-from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.programs import QemuInfo  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks.config.vm.devices import UsbDevices
+from virtualbricks.gui.mainwindow.bricks.config.vm.disks import DisksSection
+from virtualbricks.gui.mainwindow.bricks.config.vm.network import Cards
+from virtualbricks.i18n import _
+from virtualbricks.programs import QemuInfo
 
 logger = Logger()
 qemu_error = "Cannot ask {program} what it has"

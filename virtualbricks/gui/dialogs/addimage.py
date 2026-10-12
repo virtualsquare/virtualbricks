@@ -43,10 +43,6 @@ import os
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
-import gi
-
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
 from twisted.internet import defer, threads
 from twisted.python.failure import Failure

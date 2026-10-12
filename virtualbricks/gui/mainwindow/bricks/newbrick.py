@@ -37,23 +37,20 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-import gi
+from gi.repository import GdkPixbuf, GLib, Gtk, Pango
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import GdkPixbuf, GLib, Gtk, Pango  # noqa: E402
-
-from virtualbricks import errors  # noqa: E402
-from virtualbricks.bricks import Brick  # noqa: E402
-from virtualbricks.engine import Engine  # noqa: E402
-from virtualbricks.gui import graphics  # noqa: E402
-from virtualbricks.bricks.brickinfo import (  # noqa: E402
+from virtualbricks import errors
+from virtualbricks.bricks import Brick
+from virtualbricks.bricks.brickinfo import (
     NEW_KINDS,
     Issue,
     Kind,
     new_name,
 )
-from virtualbricks.gui.mainwindow.rowtab import styled  # noqa: E402
-from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
+from virtualbricks.engine import Engine
+from virtualbricks.gui import graphics
+from virtualbricks.gui.mainwindow.rowtab import styled
+from virtualbricks.gui.pango import pango_attr_list
 
 ICON_SIZE = 24
 # The longest line, in characters: the tooltip has it whole.

@@ -41,24 +41,19 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-import gi
+from gi.repository import Gtk
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # noqa: E402
-
-from virtualbricks.brickfactory import BrickFactory  # noqa: E402
-from virtualbricks.gui.form import Form  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks.config.panel import (  # noqa: E402
-    Panel,
-)
-from virtualbricks.bricks import eventinfo  # noqa: E402
-from virtualbricks.console.dispatch import check  # noqa: E402
-from virtualbricks.bricks.eventinfo import (  # noqa: E402
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks import eventinfo
+from virtualbricks.bricks.eventinfo import (
     Action,
     Kind,
 )
-from virtualbricks.gui.mainwindow.tab import icon_button  # noqa: E402
-from virtualbricks.i18n import _  # noqa: E402
+from virtualbricks.console.dispatch import check
+from virtualbricks.gui.form import Form
+from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
+from virtualbricks.gui.mainwindow.tab import icon_button
+from virtualbricks.i18n import _
 
 # Between the widgets, in pixels.
 GAP = 8

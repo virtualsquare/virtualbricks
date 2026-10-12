@@ -38,16 +38,13 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator
 from typing import TYPE_CHECKING
 
-import gi
+from gi.repository import Gtk
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # noqa: E402
-
+from virtualbricks.bricks import is_running
 from virtualbricks.bricks.draft import Draft
 from virtualbricks.engine import Engine, LocalEngine
 from virtualbricks.gui.form import Form, Row
 from virtualbricks.i18n import _
-from virtualbricks.bricks import is_running
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.window import MainWindow

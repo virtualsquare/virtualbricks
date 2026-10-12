@@ -32,28 +32,24 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import gi
+from gi.repository import Gdk, GdkPixbuf, Gio, Gtk
 
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, GdkPixbuf, Gio, Gtk  # noqa: E402
-
-from virtualbricks.brickfactory import BrickFactory  # noqa: E402
-from virtualbricks.bricks import Brick, brickinfo, is_running  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks import brickmenu  # noqa: E402
-from virtualbricks.bricks.brickinfo import (  # noqa: E402
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks import Brick, brickinfo, is_running
+from virtualbricks.bricks.brickinfo import (
     LABELS,
     SEPARATOR,
     State,
 )
-from virtualbricks.gui.mainwindow.picture import Icons  # noqa: E402
-from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks import brickmenu
+from virtualbricks.gui.mainwindow.picture import Icons
+from virtualbricks.gui.mainwindow.rowtab import (
     ICON_SIZE,
     Row,
     RowList,
 )
-from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.observable import Signal  # noqa: E402
+from virtualbricks.i18n import _
+from virtualbricks.observable import Signal
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.window import MainWindow

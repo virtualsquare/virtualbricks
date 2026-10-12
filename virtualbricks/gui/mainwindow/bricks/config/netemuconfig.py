@@ -31,18 +31,13 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-import gi
+from gi.repository import Gtk, Pango
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Pango  # noqa: E402
-
-from virtualbricks.bricks.netemu import NetemuConfig, NetemuDraft  # noqa: E402
-from virtualbricks.gui.form import HIGHEST, Form  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks.config.panel import (
-    Panel,
-)  # noqa: E402
-from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
-from virtualbricks.i18n import _  # noqa: E402
+from virtualbricks.bricks.netemu import NetemuConfig, NetemuDraft
+from virtualbricks.gui.form import HIGHEST, Form
+from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
+from virtualbricks.gui.pango import pango_attr_list
+from virtualbricks.i18n import _
 
 # Around the texts of a state, and between the cells of the grid, in pixels.
 GAP = 6

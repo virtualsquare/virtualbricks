@@ -34,23 +34,19 @@ import time
 from collections.abc import Callable, Iterable
 from typing import Any
 
-import gi
-
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango
 from twisted.internet import utils
 from twisted.logger import Logger
 
 from virtualbricks import __version__
 from virtualbricks.gui import graphics
+from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.gui.messages import (
     Entry,
     MessageLog,
     parse_filter,
     type_name,
 )
-from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.i18n import _, ngettext
 
 logger = Logger()

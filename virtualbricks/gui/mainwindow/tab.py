@@ -31,14 +31,10 @@ from __future__ import annotations
 
 from typing import TypeVar
 
-import gi
+from gi.repository import Gdk, Gio, GLib, Gtk
 
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
-
-from virtualbricks.brickfactory import BrickFactory  # noqa: E402
-from virtualbricks.observable import Signal  # noqa: E402
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.observable import Signal
 
 B = TypeVar("B", bound=Gtk.Button)
 

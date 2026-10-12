@@ -34,9 +34,6 @@ import os
 from collections.abc import Iterable, Sequence
 from typing import Any
 
-import gi
-
-gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from twisted.internet import defer
 from twisted.logger import Logger

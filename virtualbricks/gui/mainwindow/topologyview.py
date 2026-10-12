@@ -41,20 +41,16 @@ import math
 from typing import Any
 
 import cairo
-import gi
+from gi.repository import Gdk, GLib, GObject, Gtk
 
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, GLib, GObject, Gtk  # noqa: E402
-
-from virtualbricks.bricks import Brick  # noqa: E402
-from virtualbricks.gui.mainwindow.picture import (  # noqa: E402
+from virtualbricks.bricks import Brick
+from virtualbricks.gui.mainwindow.picture import (
     MARGIN,
     Icons,
     Palette,
     draw,
 )
-from virtualbricks.topology import Layout, Node  # noqa: E402
+from virtualbricks.topology import Layout, Node
 
 # The zooms of zoom in and zoom out, the first and the last also the limits.
 LEVELS = (0.1, 0.25, 0.33, 0.5, 0.67, 0.8, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0)

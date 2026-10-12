@@ -26,10 +26,6 @@ from __future__ import annotations
 
 from typing import TypeVar
 
-import gi
-
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 from twisted.internet import defer, task
 

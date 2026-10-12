@@ -31,33 +31,23 @@ draft of the brick; a router has none.
 
 from __future__ import annotations
 
-import gi
+from gi.repository import Gdk, Gtk
+from twisted.internet import defer
+from twisted.logger import Logger
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gtk  # noqa: E402
-from twisted.internet import defer  # noqa: E402
-from twisted.logger import Logger  # noqa: E402
-
-from virtualbricks.bricks import brickinfo  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks import brickmenu  # noqa: E402
-from virtualbricks.bricks.brickinfo import State  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks.bricklist import (  # noqa: E402
-    BrickList,
-)
-from virtualbricks.gui.mainwindow.bricks.config import new_panel  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks.config.panel import (  # noqa: E402
-    Panel,
-)
-from virtualbricks.gui.mainwindow.bricks.newbrick import (  # noqa: E402
-    NewBrickPopover,
-)
-from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
+from virtualbricks.bricks import Brick, brickinfo, is_running, must_stop
+from virtualbricks.bricks.brickinfo import State
+from virtualbricks.gui.mainwindow.bricks import brickmenu
+from virtualbricks.gui.mainwindow.bricks.bricklist import BrickList
+from virtualbricks.gui.mainwindow.bricks.config import new_panel
+from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
+from virtualbricks.gui.mainwindow.bricks.newbrick import NewBrickPopover
+from virtualbricks.gui.mainwindow.rowtab import (
     RowsTab,
     log_failures,
 )
-from virtualbricks.i18n import _, ngettext  # noqa: E402
-from virtualbricks.bricks import Brick, is_running, must_stop  # noqa: E402
-from virtualbricks.observable import Signal  # noqa: E402
+from virtualbricks.i18n import _, ngettext
+from virtualbricks.observable import Signal
 
 logger = Logger()
 not_started = "Brick not started."

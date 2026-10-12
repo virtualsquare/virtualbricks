@@ -40,31 +40,27 @@ import signal
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
-import gi
+from gi.repository import Gdk, Gio, GLib, Gtk
+from twisted.internet import defer
+from twisted.logger import Logger
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
-from twisted.internet import defer  # noqa: E402
-from twisted.logger import Logger  # noqa: E402
-
-from virtualbricks.bricks.event import Event  # noqa: E402
-from virtualbricks.bricks.virtualmachine import (  # noqa: E402
+from virtualbricks.bricks import Brick, brickinfo, is_running, must_stop
+from virtualbricks.bricks.brickinfo import NO_CONSOLE, State
+from virtualbricks.bricks.event import Event
+from virtualbricks.bricks.virtualmachine import (
     VirtualMachine,
     is_virtualmachine,
 )
-from virtualbricks.engine import Engine  # noqa: E402
-from virtualbricks.gui.mainwindow import tab  # noqa: E402
-from virtualbricks.bricks import Brick, brickinfo  # noqa: E402
-from virtualbricks.bricks.brickinfo import NO_CONSOLE, State  # noqa: E402
-from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
+from virtualbricks.engine import Engine
+from virtualbricks.gui.dialogs.renamedialog import RenameDialog
+from virtualbricks.gui.mainwindow import tab
+from virtualbricks.gui.mainwindow.tab import (
     MenuActions,
     menu_item,
     menu_of,
     menu_section,
 )
-from virtualbricks.gui.dialogs.renamedialog import RenameDialog  # noqa: E402
-from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.bricks import is_running, must_stop  # noqa: E402
+from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.window import MainWindow

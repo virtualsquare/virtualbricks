@@ -33,10 +33,6 @@ import datetime
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
-import gi
-
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gio, GLib, Gtk, Pango
 from twisted.internet import defer
 from twisted.logger import Logger
@@ -47,11 +43,10 @@ from virtualbricks.config.report import Report
 from virtualbricks.config.workspace import DiskUsage, ProjectSummary, Workspace
 from virtualbricks.engine import Engine
 from virtualbricks.gui import imageinfo
-from virtualbricks.gui.markdownview import MarkdownView
 from virtualbricks.gui.dialogs import projectname
-from virtualbricks.i18n import _
+from virtualbricks.gui.markdownview import MarkdownView
 from virtualbricks.gui.pango import pango_attr_list
-from virtualbricks.i18n import ngettext
+from virtualbricks.i18n import _, ngettext
 from virtualbricks.markdown import first_line
 
 if TYPE_CHECKING:  # pragma: no cover

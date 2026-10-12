@@ -46,10 +46,6 @@ import os
 from collections.abc import Callable, Sequence
 from typing import Any
 
-import gi
-
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gio, Gtk
 from twisted.internet import defer
 from twisted.logger import Logger

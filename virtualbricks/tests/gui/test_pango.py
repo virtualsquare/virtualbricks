@@ -17,11 +17,10 @@
 
 """Lists of Pango text attributes."""
 
+from gi.repository import Pango
 from twisted.trial import unittest
 
-# first: it asks for the version of Pango
-from virtualbricks.gui.pango import pango_attr_list  # isort: skip
-from gi.repository import Pango  # noqa: E402
+from virtualbricks.gui.pango import pango_attr_list
 
 
 class TestAttrList(unittest.TestCase):

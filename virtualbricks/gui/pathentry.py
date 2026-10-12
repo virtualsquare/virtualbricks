@@ -24,12 +24,9 @@ windows are entries that complete from the folders there (page 19 R9).
 
 from __future__ import annotations
 
-import gi
+from gi.repository import Gtk
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # noqa: E402
-
-from virtualbricks.engine import Engine  # noqa: E402
+from virtualbricks.engine import Engine
 
 
 class PathCompletion:

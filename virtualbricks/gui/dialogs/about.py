@@ -9,15 +9,11 @@ from __future__ import annotations
 
 from typing import List
 
-import gi
-
-from virtualbricks.gui.dialogs.base import Window
-
-gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, Gtk
 
 from virtualbricks import __version__
 from virtualbricks.gui import graphics
+from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.i18n import _
 
 COPYRIGHT = """\

@@ -131,8 +131,11 @@ extend-exclude = ["_trial_temp"]
 [tool.ruff.lint]
 # ruff's defaults (E4, E7, E9, F); formatting and line length are left to black
 select = ["E4", "E7", "E9", "F", "I"]
-# gi.require_version() has to run before the gi.repository imports
-ignore = ["E402"]
+
+[tool.ruff.lint.per-file-ignores]
+# outside virtualbricks.gui, gi.require_version() has to run before the
+# gi.repository import
+"virtualbricks/migrate/gui.py" = ["E402"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["virtualbricks"]

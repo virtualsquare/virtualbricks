@@ -18,10 +18,7 @@
 
 """Pango for the widgets built in Python: lists of text attributes."""
 
-import gi
-
-gi.require_version("Pango", "1.0")
-from gi.repository import Pango  # noqa: E402
+from gi.repository import Pango
 
 
 def pango_attr_list(*attributes: Pango.Attribute) -> Pango.AttrList:

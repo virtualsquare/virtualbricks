@@ -29,24 +29,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import gi
+from gi.repository import GObject, Gtk, Pango
+from twisted.logger import Logger
+from twisted.python.failure import Failure
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import GObject, Gtk, Pango  # noqa: E402
-from twisted.logger import Logger  # noqa: E402
-from twisted.python.failure import Failure  # noqa: E402
-
-from virtualbricks.bricks.virtualmachine import UsbDevice  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks.config.picker import (  # noqa: E402
+from virtualbricks.bricks.virtualmachine import UsbDevice
+from virtualbricks.gui.mainwindow.bricks.config.picker import (
     Option,
     Picker,
 )
-from virtualbricks.gui.mainwindow.bricks.config.vm.machine import (  # noqa: E402
-    missing,
-)
-from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
-from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.programs import QemuInfo  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks.config.vm.machine import missing
+from virtualbricks.gui.pango import pango_attr_list
+from virtualbricks.i18n import _
+from virtualbricks.programs import QemuInfo
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.bricks.config.vm.panel import (

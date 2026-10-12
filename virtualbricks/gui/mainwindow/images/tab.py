@@ -35,23 +35,22 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import gi
+from gi.repository import Gdk, GdkPixbuf, Gio, Gtk
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, GdkPixbuf, Gio, Gtk  # noqa: E402
-
-from virtualbricks.brickfactory import BrickFactory  # noqa: E402
-from virtualbricks.bricks import Brick  # noqa: E402
-from virtualbricks.bricks.virtualmachine import Image, ImageDraft  # noqa: E402
-from virtualbricks.config import images  # noqa: E402
-from virtualbricks.config.images import ImageInfo  # noqa: E402
-from virtualbricks.gui import imageinfo  # noqa: E402
-from virtualbricks.gui.imageinfo import LABELS, State  # noqa: E402
-from virtualbricks.gui.mainwindow.images import imagemenu  # noqa: E402
-from virtualbricks.gui.mainwindow.images.imagedetails import (  # noqa: E402
-    ImageDetails,
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks import Brick
+from virtualbricks.bricks.virtualmachine import Image, ImageDraft
+from virtualbricks.config import images
+from virtualbricks.config.images import ImageInfo
+from virtualbricks.gui import imageinfo
+from virtualbricks.gui.dialogs.addimage import (
+    ExistingImageDialog,
+    NewDiskDialog,
 )
-from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
+from virtualbricks.gui.imageinfo import LABELS, State
+from virtualbricks.gui.mainwindow.images import imagemenu
+from virtualbricks.gui.mainwindow.images.imagedetails import ImageDetails
+from virtualbricks.gui.mainwindow.rowtab import (
     EMPTY_ICON_SIZE,
     ICON_SIZE,
     Pictures,
@@ -61,13 +60,9 @@ from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     ThemeIcons,
     theme_icon,
 )
-from virtualbricks.gui.mainwindow.tab import brick_signals  # noqa: E402
-from virtualbricks.gui.dialogs.addimage import (  # noqa: E402
-    ExistingImageDialog,
-    NewDiskDialog,
-)
-from virtualbricks.i18n import _, ngettext  # noqa: E402
-from virtualbricks.observable import Signal  # noqa: E402
+from virtualbricks.gui.mainwindow.tab import brick_signals
+from virtualbricks.i18n import _, ngettext
+from virtualbricks.observable import Signal
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.bricks.config.vm.imagepicker import (

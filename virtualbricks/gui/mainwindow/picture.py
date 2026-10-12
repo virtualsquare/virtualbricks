@@ -36,11 +36,7 @@ from collections.abc import Callable
 from typing import Any
 
 import cairo
-import gi
-
-gi.require_version("Gdk", "3.0")
-gi.require_version("PangoCairo", "1.0")
-from gi.repository import (  # noqa: E402
+from gi.repository import (
     Gdk,
     GdkPixbuf,
     GLib,
@@ -48,10 +44,10 @@ from gi.repository import (  # noqa: E402
     PangoCairo,
 )
 
-from virtualbricks.gui import graphics  # noqa: E402
-from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.bricks import Base, is_running  # noqa: E402
-from virtualbricks.topology import ICON, Layout, Node  # noqa: E402
+from virtualbricks.bricks import Base, is_running
+from virtualbricks.gui import graphics
+from virtualbricks.i18n import _
+from virtualbricks.topology import ICON, Layout, Node
 
 # Around the lab, in pixels.
 MARGIN = 20

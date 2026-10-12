@@ -32,13 +32,10 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 
 import attr
-import gi
+from gi.repository import Gtk, Pango
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Pango  # noqa: E402
-
-from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
-from virtualbricks.i18n import _  # noqa: E402
+from virtualbricks.gui.pango import pango_attr_list
+from virtualbricks.i18n import _
 
 # Between the texts of an option, and around them, in pixels.
 GAP = 6

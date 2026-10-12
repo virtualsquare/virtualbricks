@@ -30,25 +30,21 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING
 
-import gi
+from gi.repository import Gdk, Gio, Gtk
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gio, Gtk  # noqa: E402
-
-from virtualbricks.bricks.event import Event  # noqa: E402
-from virtualbricks.engine import Engine  # noqa: E402
-from virtualbricks.gui.mainwindow import tab  # noqa: E402
-from virtualbricks.bricks import eventinfo  # noqa: E402
-from virtualbricks.bricks.eventinfo import State  # noqa: E402
-from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
+from virtualbricks.bricks import eventinfo, is_running
+from virtualbricks.bricks.event import Event
+from virtualbricks.bricks.eventinfo import State
+from virtualbricks.engine import Engine
+from virtualbricks.gui.dialogs.renamedialog import RenameDialog
+from virtualbricks.gui.mainwindow import tab
+from virtualbricks.gui.mainwindow.tab import (
     MenuActions,
     menu_item,
     menu_of,
     menu_section,
 )
-from virtualbricks.gui.dialogs.renamedialog import RenameDialog  # noqa: E402
-from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.bricks import is_running  # noqa: E402
+from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.window import MainWindow

@@ -33,9 +33,6 @@ import os
 from collections.abc import Callable
 from typing import Any
 
-import gi
-
-gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango
 from twisted.logger import Logger
 from twisted.python.failure import Failure
@@ -45,9 +42,13 @@ from virtualbricks.config.archive import (
     ArchiveCancelled,
     ArchiveContents,
     ArchiveJob,
+    find_qemu_img,
     inspect_archive,
 )
 from virtualbricks.config.importing import (
+    COPY,
+    SKIP,
+    USE,
     ImageUse,
     ImportPlan,
     ImportResult,
@@ -58,13 +59,10 @@ from virtualbricks.config.importing import (
 )
 from virtualbricks.config.tomlfile import Table
 from virtualbricks.config.workspace import Workspace, projects
-from virtualbricks.config.archive import find_qemu_img
-from virtualbricks.config.importing import COPY, SKIP, USE
-from virtualbricks.gui.markdownview import MarkdownLabel
-from virtualbricks.i18n import _
 from virtualbricks.gui.dialogs.base import Window
+from virtualbricks.gui.markdownview import MarkdownLabel
 from virtualbricks.gui.pango import pango_attr_list
-from virtualbricks.i18n import ngettext
+from virtualbricks.i18n import _, ngettext
 from virtualbricks.markdown import first_paragraph
 
 logger = Logger()

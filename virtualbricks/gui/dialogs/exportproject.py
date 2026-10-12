@@ -31,24 +31,22 @@ import os
 from collections.abc import Callable, Iterable, Sized
 from typing import Any
 
-import gi
-
-gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango
 from twisted.logger import Logger
 from twisted.python.failure import Failure
 
 from virtualbricks import locations
 from virtualbricks.config.archive import (
+    DISK,
     ArchiveCancelled,
     ArchiveJob,
     export_project,
+    find_qemu_img,
+    member_kind,
     report_from_list,
 )
-from virtualbricks.config.archive import DISK, find_qemu_img, member_kind
-from virtualbricks.i18n import _
 from virtualbricks.gui.pango import pango_attr_list
-from virtualbricks.i18n import ngettext
+from virtualbricks.i18n import _, ngettext
 
 logger = Logger()
 exported = 'Project "{name}" exported to {path}'

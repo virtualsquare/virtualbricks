@@ -30,17 +30,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import gi
+from gi.repository import Gtk, Pango
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Pango  # noqa: E402
-
-from virtualbricks import errors  # noqa: E402
-from virtualbricks.gui.mainwindow.events.eventeditor import (  # noqa: E402
-    delay_button,
-)
-from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
-from virtualbricks.i18n import _  # noqa: E402
+from virtualbricks import errors
+from virtualbricks.gui.mainwindow.events.eventeditor import delay_button
+from virtualbricks.gui.pango import pango_attr_list
+from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.window import MainWindow
