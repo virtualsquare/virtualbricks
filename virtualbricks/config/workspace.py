@@ -379,7 +379,7 @@ class Workspace:
 
         if self._path is not None:
             return self._path
-        return str(get_setting("workspace"))
+        return locations.workspace_folder(str(get_setting("workspace")))
 
     @path.setter
     def path(self, path: str | None) -> None:

@@ -101,6 +101,18 @@ def default_workspace() -> str:
     return os.path.join(home(), ".virtualbricks")
 
 
+def workspace_folder(setting: str) -> str:
+    """
+    The absolute path of the folder that the workspace setting names, kept as
+    written: ~ is the home folder, a relative path starts in the current
+    folder, as --workspace does, and empty is the default.
+    """
+
+    if not setting:
+        return default_workspace()
+    return os.path.abspath(os.path.expanduser(setting))
+
+
 def legacy_settings_file() -> str:
     return os.path.join(home(), LEGACY_SETTINGS_FILE)
 

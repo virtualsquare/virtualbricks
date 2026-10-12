@@ -68,7 +68,7 @@ from virtualbricks.gui.mainwindow.tab import Tab, switch, tabs
 from virtualbricks.gui.mainwindow.topology import TopologyTab
 from virtualbricks.gui.messages import MessageLog
 from virtualbricks.i18n import _
-from virtualbricks.locations import short_path
+from virtualbricks.locations import short_path, workspace_folder
 from virtualbricks.programs import missing_programs
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -131,7 +131,12 @@ def remote_title(engine: RemoteEngine) -> str:
     if copy.project is None:
         return _("Virtualbricks on {where}").format(where=engine.where)
     workspace = copy.machine.get("workspace")
-    if workspace and workspace != copy.settings.get("workspace", workspace):
+    # the folder of its setting, or the setting as written from a
+    # Virtualbricks there that doesn't send the folder
+    setting = copy.machine.get(
+        "setting_workspace", copy.settings.get("workspace", workspace)
+    )
+    if workspace and workspace != setting:
         # not the workspace of its setting: another beside it may be
         return _(
             "Virtualbricks (project: {name}, workspace: {workspace} on"
@@ -497,7 +502,7 @@ class MainWindow:
         if projects.current:
             name = projects.current.name
             workspace = os.path.abspath(projects.path)
-            if workspace == os.path.abspath(str(get_setting("workspace"))):
+            if workspace == workspace_folder(str(get_setting("workspace"))):
                 title = _("Virtualbricks (project: {0})").format(name)
             else:
                 # another beside it may have a project of the same name

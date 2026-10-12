@@ -147,7 +147,8 @@ settings they have: the last one to write wins.
 
 **workspace** = *path*, default `"~/.virtualbricks"`
 :   The directory of the projects, *.virtualbricks* in your home directory
-    by default. Write it as an absolute path: **~** is not expanded.
+    by default. **~** is your home directory, a relative path starts in the
+    directory Virtualbricks starts in, and an empty string is the default.
     **virtualbricks --workspace** *directory* uses another directory for
     one run, made if it isn't there, and leaves this setting as it is. Each
     workspace has its shared images, in its *shared_images* directory, and

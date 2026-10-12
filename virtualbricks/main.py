@@ -30,7 +30,7 @@ def take_locks(options: cli.CommandLineOptions) -> locks.Lock:
         )
         lock = locks.acquire(options.lock, user_alone)
         try:
-            workspace = os.path.abspath(startup_workspace(options.workspace))
+            workspace = startup_workspace(options.workspace)
             if lock.locked:
                 os.makedirs(workspace, exist_ok=True)
             lock.take_workspace(workspace)

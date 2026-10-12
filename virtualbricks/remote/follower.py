@@ -55,8 +55,8 @@ from twisted.internet.posixbase import PosixReactorBase
 from twisted.logger import (
     ILogObserver,
     LogEvent,
-    LogLevel,
     Logger,
+    LogLevel,
     LogPublisher,
     formatEvent,
     globalLogPublisher,
@@ -225,6 +225,10 @@ def machine_table(
     return {
         "version": __version__,
         "workspace": workspace.path,
+        # the folder of the workspace setting, its ~ expanded here
+        "setting_workspace": locations.workspace_folder(
+            str(settings.get_setting("workspace"))
+        ),
         # where the private copies of the machines are
         "project_folder": None if current is None else current.path,
         # whether the files removed go to a trash: the windows there give one

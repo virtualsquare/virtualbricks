@@ -19,7 +19,7 @@ from twisted.logger import (
 from twisted.python import logfile, reflect
 from twisted.python.failure import Failure
 
-from virtualbricks import cli, locks
+from virtualbricks import cli, locations, locks
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks.switchwrapper import look_all
 from virtualbricks.config.settings import (
@@ -152,7 +152,9 @@ class Application:
         # the folder of the command line, for this run only: the setting
         # stays as it is. Either stays for the run, whose lock is that of
         # this folder: a new setting is for the next start.
-        projects.path = self.options.workspace or str(get_setting("workspace"))
+        projects.path = self.options.workspace or locations.workspace_folder(
+            str(get_setting("workspace"))
+        )
         # with the link to the workspace, and room for its socket
         projects.make_runtime_dir()
 

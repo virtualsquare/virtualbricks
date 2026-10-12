@@ -135,24 +135,6 @@ one leaves the list.
 
 ## Workspaces
 
-- [ ] **A `workspace` setting with `~` is a folder named `~` in the current
-  folder.** The setting is kept as it is written (`Path` in
-  `virtualbricks/config/schema.py` is a string), and nothing expands `~` or
-  makes a relative path absolute. The locks take `os.path.abspath()` of it,
-  which keeps the `~` (`take_locks()` in `virtualbricks/main.py`, through
-  `startup_workspace()` in `virtualbricks/migrate/engine.py`); the migration
-  and the run take it as it is (`startup_migration()` there;
-  `install_workspace()` in `virtualbricks/app.py`, then `Workspace.path` in
-  `virtualbricks/config/workspace.py`). The workspace then depends on the
-  folder Virtualbricks starts in, where it makes a folder named `~`, and the
-  projects of `~/labs` never show. `virtualbricks-config`(5) gives the default
-  as `"~/.virtualbricks"`, so a `~` is what a setting written by hand would
-  have; a relative path goes the same way. `--workspace` is not affected:
-  `cli.py` expands it. The start-up before `main.py` did the same. Seen on
-  3.0.0.dev3, on 12 October 2026, reviewing the start-up against page 27: with
-  `workspace = "~/labs"` in the `settings.toml` of an isolated home, started
-  from a scratch folder, the lock made `~/labs/.virtualbricks.lock` in that
-  folder, the run's workspace was `~/labs`, and `labs` in the home wasn't made.
 - [ ] **The workspace is read three times at start, and the run may not
   use the folder it locked.** Without `--workspace`, the start reads the
   `workspace` setting from the files three times:
@@ -160,12 +142,15 @@ one leaves the list.
     `virtualbricks/main.py`, through `startup_workspace()` in
     `virtualbricks/migrate/engine.py`, which reads the settings of 2.1 if
     they are to be converted, else `settings.toml`, with the migration's
-    own reader (`_startup_settings()`), and makes the path absolute;
+    own reader (`_startup_settings()`);
   - for the migration (step 6): `startup_migration()`, the same files
-    again, the value as written;
+    again;
   - for the run (step 9): `install_workspace()` in
     `virtualbricks/app.py`, `get_setting("workspace")` after
-    `load_settings()`, the value as written.
+    `load_settings()`.
+
+  Each makes it a folder with `workspace_folder()` in
+  `virtualbricks/locations.py`.
 
   Another Virtualbricks of yours may write `settings.toml` between the
   first reading and the last: one that runs beside it with
@@ -176,10 +161,9 @@ one leaves the list.
   it doesn't hold, and holds the lock of a folder it doesn't use: another
   Virtualbricks can start in the same workspace, with `--workspace`. The
   gap is short, but the GUI keeps it open as long as its migration window
-  is. The readings differ in form too: the locks make the path absolute,
-  the run keeps a relative one as it is. Page 27 recommends reading it
-  once, at step 2 (O6, open). Seen on 3.0.0.dev3, on 12 October 2026,
-  reviewing the start-up against page 27: in an isolated home, with
+  is. Page 27 recommends reading it once, at step 2 (O6, open). Seen on
+  3.0.0.dev3, on 12 October 2026, reviewing the start-up against page 27:
+  in an isolated home, with
   `--lock workspace`, `take_locks()` locked the folder `w1` of the
   setting; the setting was then written as `w2`, and
   `install_workspace()` gave the run `w2`; a `take_locks()` with

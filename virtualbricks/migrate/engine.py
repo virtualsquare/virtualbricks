@@ -35,6 +35,11 @@ from typing import Final, Literal, TypeAlias
 import attr
 from twisted.logger import Logger
 
+from virtualbricks import locations, locks
+from virtualbricks.config.projectfile import (
+    upgrade_readme,
+    write_project_file,
+)
 from virtualbricks.config.report import (
     ERROR,
     INFO,
@@ -43,10 +48,7 @@ from virtualbricks.config.report import (
     Message,
     Report,
 )
-from virtualbricks.config.projectfile import (
-    upgrade_readme,
-    write_project_file,
-)
+from virtualbricks.config.schema import load_record
 from virtualbricks.config.settings import (
     AppSettings,
     AppState,
@@ -57,8 +59,6 @@ from virtualbricks.config.settings import (
     write_state,
 )
 from virtualbricks.config.tomlfile import DecodeError, Table, load_toml
-from virtualbricks.config.schema import load_record
-from virtualbricks import locations, locks
 from virtualbricks.migrate import convert, legacy
 
 Status = Literal["waiting", "migrating", "migrated", "failed", "skipped"]
@@ -379,7 +379,8 @@ class Migration:
         if self.current_project is not None:
             # the project of the old settings is in their workspace
             workspace = WorkspaceState(
-                self.app_settings.workspace, self.current_project
+                locations.workspace_folder(self.app_settings.workspace),
+                self.current_project,
             )
             write_state(AppState([workspace]), self.target.state_file)
         path = self.target.report_file
@@ -511,13 +512,13 @@ def _startup_settings() -> tuple[str | None, AppSettings, ProjectSettings]:
 def startup_workspace(workspace: str | None = None) -> str:
     """
     The workspace of the app: workspace, the folder given on the command
-    line, or else that of the settings, as the migration at startup reads
-    them.
+    line, or else the folder of the setting, as the migration at startup
+    reads the settings; an absolute path.
     """
 
     if workspace:
         return workspace
-    return _startup_settings()[1].workspace
+    return locations.workspace_folder(_startup_settings()[1].workspace)
 
 
 def startup_migration(workspace: str | None = None) -> Migration | None:
@@ -529,7 +530,7 @@ def startup_migration(workspace: str | None = None) -> Migration | None:
     """
 
     legacy_settings, app, project = _startup_settings()
-    workspace = workspace or app.workspace
+    workspace = workspace or locations.workspace_folder(app.workspace)
     migration = Migration(
         workspace, InPlace(workspace), legacy_settings, app, project
     )
@@ -549,9 +550,9 @@ def in_place_migration(
     else:
         app = _read_app_settings(locations.settings_file())
         project = ProjectSettings()
-    target = InPlace(app.workspace)
+    workspace = locations.workspace_folder(app.workspace)
     return Migration(
-        app.workspace, target, legacy_settings, app, project, **options
+        workspace, InPlace(workspace), legacy_settings, app, project, **options
     )
 
 

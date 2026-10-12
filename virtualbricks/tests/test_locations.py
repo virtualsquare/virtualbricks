@@ -146,6 +146,20 @@ class TestLocations(unittest.TestCase):
         )
         self.assertEqual(locations.short_path("/srv/a.img"), "/srv/a.img")
 
+    def test_workspace_folder(self):
+        folder = locations.workspace_folder
+        self.assertEqual(folder("/srv/labs"), "/srv/labs")
+        self.assertEqual(folder("/srv/labs/"), "/srv/labs")
+        self.assertEqual(folder("~/labs"), "/home/alice/labs")
+        self.assertEqual(folder("~"), "/home/alice")
+        # in the current folder
+        here = os.getcwd()
+        self.assertEqual(folder("labs"), os.path.join(here, "labs"))
+        self.assertEqual(
+            folder("../labs"), os.path.join(os.path.dirname(here), "labs")
+        )
+        self.assertEqual(folder(""), "/home/alice/.virtualbricks")
+
     def test_workspace_lock_file(self):
         self.assertEqual(
             locations.workspace_lock_file("/home/alice/labs"),
