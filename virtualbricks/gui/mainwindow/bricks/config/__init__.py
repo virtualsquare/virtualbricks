@@ -29,6 +29,7 @@ the tests import the others from their modules.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from virtualbricks.bricks import Brick
@@ -67,10 +68,17 @@ PANELS: dict[str, type[Panel]] = {
 }
 
 
-def new_panel(brick: Brick, gui: MainWindow | None = None) -> Panel | None:
-    """The panel of brick on a new draft, or None if it has none yet."""
+def new_panel(
+    brick: Brick,
+    gui: MainWindow | None = None,
+    show_images: Callable[[], object] | None = None,
+) -> Panel | None:
+    """
+    The panel of brick on a new draft, or None if it has none yet;
+    show_images shows the Images tab, for the disks of a virtual machine.
+    """
 
     panel = PANELS.get(brick.get_type())
     if panel is None:
         return None
-    return panel(brick.draft_factory(brick), gui)
+    return panel(brick.draft_factory(brick), gui, show_images)

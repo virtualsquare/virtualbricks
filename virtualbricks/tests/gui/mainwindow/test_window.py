@@ -196,6 +196,19 @@ class TestKsmWarning(GuiTestCase):
         self.assertIsNone(window.ksm_warning(True, True, True))
 
 
+class TestTheTabs(GuiTestCase):
+
+    def test_the_disks_show_the_images(self):
+        gui = MainWindow(LocalEngine(self.factory))
+        self.addCleanup(gui.window.destroy)
+        gui.bricks.show_images()
+        notebook = gui.main_notebook
+        self.assertEqual(
+            notebook.get_current_page(), notebook.page_num(gui.images)
+        )
+        self.assertNotEqual(notebook.page_num(gui.images), 0)
+
+
 class TestTrayIcon(GuiTestCase):
     """The tray icon follows its setting, whatever changes it."""
 

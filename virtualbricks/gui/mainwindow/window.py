@@ -274,11 +274,12 @@ class MainWindow:
         self._reconnect: Callable[[], object] | None = None
         vbox1.pack_start(self.lost_bar, False, False, 0)
         self.main_notebook = Gtk.Notebook(visible=True, can_focus=True)
-        self.bricks = BricksTab(self, self.factory)
+        # the disks of a virtual machine show the Images tab
+        self.images = ImagesTab(self, self.factory)
+        self.bricks = BricksTab(self, self.factory, self.images.present)
         self.append_tab(self.bricks)
         self.events = EventsTab(self, self.factory)
         self.append_tab(self.events)
-        self.images = ImagesTab(self, self.factory)
         self.append_tab(self.images)
         self.append_tab(TopologyTab(self, self.factory, self.bricks.configure))
         self.append_tab(ReadmeTab(self.engine))
@@ -543,13 +544,6 @@ class MainWindow:
             self.status_icon.set_tooltip_text(_("Virtualbricks hidden"))
             return True
         return False
-
-    def show_images(self) -> None:
-        """Show the Images tab."""
-
-        self.main_notebook.set_current_page(
-            self.main_notebook.page_num(self.images)
-        )
 
     # status icon handling
 

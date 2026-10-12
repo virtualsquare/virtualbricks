@@ -114,7 +114,11 @@ class BricksTestCase(GuiTestCase):
         self.gui = FakeGui(self.factory)
         self.done = []
         self.sw = self.brick("switch", "sw")
-        self.tab = BricksTab(self.gui, self.factory)
+        # what the disks of a machine show: the Images tab
+        self.images_shown = []
+        self.tab = BricksTab(
+            self.gui, self.factory, lambda: self.images_shown.append(True)
+        )
         self.addCleanup(self.tab.destroy)
         # a test that quits says so
         self.addCleanup(lambda: self.tab.on_quit())
@@ -660,7 +664,7 @@ class TestTheSettings(BricksTestCase):
         calls = []
         controllers = {}
 
-        def adapt(brick, gui):
+        def adapt(brick, gui, show_images):
             controllers[brick] = FakePanel(calls, brick)
             return controllers[brick]
 
@@ -930,6 +934,10 @@ class TestTheSettings(BricksTestCase):
         self.assertIsNone(self.tab.configuring)
         # and with none
         self.tab.on_open()
+
+    def test_the_panels_show_the_images(self):
+        self.tab.panel_for(self.sw).show_images()
+        self.assertEqual(self.images_shown, [True])
 
     def test_a_router_has_no_panel(self):
         self.tab.configure(self.brick("router", "r"))

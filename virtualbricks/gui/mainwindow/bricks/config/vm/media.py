@@ -50,14 +50,14 @@ BOOT = (
 def build_disks(panel: VirtualMachinePanel, page: Page) -> None:
     form = page.form
     vm = panel.draft.brick
-    # the main window shows the Images tab
-    manage = getattr(panel.gui, "show_images", None)
 
     def changed() -> None:
         section.to_draft(panel.draft)
         panel.on_changed()
 
-    section = DisksSection(vm, panel.engine, manage=manage, changed=changed)
+    section = DisksSection(
+        vm, panel.engine, manage=panel.show_images, changed=changed
+    )
     panel.disks = section
     form.add(section)
     form.section(_("Changes"))

@@ -804,6 +804,13 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
 
     # The settings of an object
 
+    def present(self) -> None:
+        """Show the tab, in the notebook of the main window."""
+
+        notebook = self.get_parent()
+        if isinstance(notebook, Gtk.Notebook):
+            notebook.set_current_page(notebook.page_num(self))
+
     def configure(self, item: T) -> None:
         """
         Show the tab, and the settings of item in place of the list. Those
@@ -811,9 +818,7 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
         panel, as a router, shows nothing.
         """
 
-        notebook = self.get_parent()
-        if isinstance(notebook, Gtk.Notebook):
-            notebook.set_current_page(notebook.page_num(self))
+        self.present()
         controller = self.panel_for(item)
         if controller is None:
             return

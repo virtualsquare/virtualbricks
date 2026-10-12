@@ -43,6 +43,17 @@ class TestTheDisksSection(MachinePanelTestCase):
         self.assertEqual(self.vm.config.hda_image, "deb")
         self.assertIn(self.panel, self.calls)
 
+    def test_the_images(self):
+        shown = []
+        panel = self.panel.__class__(
+            self.panel.draft.__class__(self.vm),
+            self.gui,
+            lambda: shown.append(True),
+        )
+        self.addCleanup(panel.widget.destroy)
+        panel.disks.manage()
+        self.assertEqual(shown, [True])
+
     def test_the_changes(self):
         rows = self.panel.rows
         rows["forget_disk_changes"].control.set_active(True)

@@ -26,15 +26,20 @@ made is selected and its settings show. The switch shows all the bricks or
 the running ones, and Start All starts the bricks that can start.
 The menu of a brick is :mod:`virtualbricks.gui.mainwindow.bricks.brickmenu`'s, and
 its settings are its panel of :mod:`virtualbricks.gui.mainwindow.bricks.config`, on a
-draft of the brick; a router has none.
+draft of the brick; a router has none. The disks of a virtual machine show
+the Images tab with ``show_images``.
 """
 
 from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gtk
 from twisted.internet import defer
 from twisted.logger import Logger
 
+from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks import Brick, brickinfo, is_running, must_stop
 from virtualbricks.bricks.brickinfo import State
 from virtualbricks.gui.mainwindow.bricks import brickmenu
@@ -48,6 +53,9 @@ from virtualbricks.gui.mainwindow.rowtab import (
 )
 from virtualbricks.i18n import _, ngettext
 from virtualbricks.observable import Signal
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.gui.mainwindow.window import MainWindow
 
 logger = Logger()
 not_started = "Brick not started."
@@ -79,6 +87,15 @@ class BricksTab(RowsTab[Brick]):
     EMPTY_ICON = "switch.png"
     # made at the first New Brick, and kept
     new_popover: NewBrickPopover | None = None
+
+    def __init__(
+        self,
+        gui: MainWindow,
+        factory: BrickFactory,
+        show_images: Callable[[], object],
+    ) -> None:
+        self.show_images = show_images
+        super().__init__(gui, factory)
 
     def make_list(self) -> BrickList:
         return BrickList(self.gui, self.factory, self.configure)
@@ -151,7 +168,7 @@ class BricksTab(RowsTab[Brick]):
         )
 
     def panel_for(self, item: Brick) -> Panel | None:
-        return new_panel(item, self.gui)
+        return new_panel(item, self.gui, self.show_images)
 
     def settings_words(self, item: Brick) -> str:
         return _("{kind} settings").format(kind=brickinfo.kind(item))
