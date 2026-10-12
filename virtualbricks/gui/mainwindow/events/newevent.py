@@ -152,11 +152,13 @@ class NewEventDialog(Window):
     def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
         new_event = None
         if response_id == Gtk.ResponseType.OK:
-            if self.create_button.get_sensitive():
-                self.delay.update()
-                new_event = NewEvent(
-                    self.name_entry.get_text(), self.delay.get_value_as_int()
-                )
+            if not self.create_button.get_sensitive():
+                # Create waits for a good name
+                return
+            self.delay.update()
+            new_event = NewEvent(
+                self.name_entry.get_text(), self.delay.get_value_as_int()
+            )
 
         dialog.destroy()
         if new_event is not None:
