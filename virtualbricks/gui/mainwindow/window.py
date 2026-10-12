@@ -274,15 +274,18 @@ class MainWindow:
         self._reconnect: Callable[[], object] | None = None
         vbox1.pack_start(self.lost_bar, False, False, 0)
         self.main_notebook = Gtk.Notebook(visible=True, can_focus=True)
+        engine, window, factory = self.engine, self.window, self.factory
         # the disks of a virtual machine show the Images tab
-        self.images = ImagesTab(self, self.factory)
-        self.bricks = BricksTab(self, self.factory, self.images.present)
+        self.images = ImagesTab(engine, window, factory)
+        self.bricks = BricksTab(engine, window, factory, self.images.present)
         self.append_tab(self.bricks)
-        self.events = EventsTab(self, self.factory)
+        self.events = EventsTab(engine, window, factory)
         self.append_tab(self.events)
         self.append_tab(self.images)
-        self.append_tab(TopologyTab(self, self.factory, self.bricks.configure))
-        self.append_tab(ReadmeTab(self.engine))
+        self.append_tab(
+            TopologyTab(engine, window, factory, self.bricks.configure)
+        )
+        self.append_tab(ReadmeTab(engine))
         vbox1.pack_start(self.main_notebook, True, True, 0)
         self.window.add(vbox1)
 

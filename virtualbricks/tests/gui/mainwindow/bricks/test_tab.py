@@ -67,13 +67,6 @@ class FakeSwitch:
         return "Switch"
 
 
-class FakeGui:
-    def __init__(self, factory):
-        self.brickfactory = factory
-        self.engine = LocalEngine(factory)
-        self.window = object()
-
-
 class FakeDialog:
     def __init__(self, shown, factory):
         self.shown = shown
@@ -111,13 +104,18 @@ class BricksTestCase(GuiTestCase):
         os.makedirs(self.factory.runtime_dir)
         self.logger = FakeLogger()
         self.patch(tab, "logger", self.logger)
-        self.gui = FakeGui(self.factory)
+        self.engine = LocalEngine(self.factory)
+        # what the dialogs open over: the main window
+        self.window = object()
         self.done = []
         self.sw = self.brick("switch", "sw")
         # what the disks of a machine show: the Images tab
         self.images_shown = []
         self.tab = BricksTab(
-            self.gui, self.factory, lambda: self.images_shown.append(True)
+            self.engine,
+            self.window,
+            self.factory,
+            lambda: self.images_shown.append(True),
         )
         self.addCleanup(self.tab.destroy)
         # a test that quits says so
@@ -451,7 +449,7 @@ class TestTheKeys(BricksTestCase):
         self.select(self.sw)
         self.assertTrue(self.press(Gdk.KEY_Delete))
         self.assertTrue(self.press(Gdk.KEY_KP_Delete))
-        self.assertEqual(deleted, [(self.sw, self.gui.window)] * 2)
+        self.assertEqual(deleted, [(self.sw, self.window)] * 2)
 
     def test_delete_waits_while_it_runs(self):
         deleted = self.deleted()
@@ -471,7 +469,7 @@ class TestTheKeys(BricksTestCase):
         self.assertFalse(self.press(Gdk.KEY_F2))
         self.select(self.sw)
         self.assertTrue(self.press(Gdk.KEY_F2))
-        self.assertEqual(shown, [(self.sw, self.gui.window)])
+        self.assertEqual(shown, [(self.sw, self.window)])
         # not while it runs
         self.running(self.sw)
         self.assertTrue(self.press(Gdk.KEY_F2))
@@ -496,8 +494,8 @@ class TestTheKeys(BricksTestCase):
                 (
                     row.menu_button,
                     None,
-                    self.gui.engine,
-                    self.gui.window,
+                    self.engine,
+                    self.window,
                     self.sw,
                     self.tab.configure,
                     True,
@@ -575,7 +573,7 @@ class TestTheKeys(BricksTestCase):
         self.assertTrue(
             self.tab.list.emit("key-press-event", self.key(Gdk.KEY_Delete))
         )
-        self.assertEqual(deleted, [(self.sw, self.gui.window)])
+        self.assertEqual(deleted, [(self.sw, self.window)])
 
 
 class TestTheMouse(BricksTestCase):
@@ -605,8 +603,8 @@ class TestTheMouse(BricksTestCase):
         self.assertEqual(
             (engine, window, brick, configure, keys),
             (
-                self.gui.engine,
-                self.gui.window,
+                self.engine,
+                self.window,
                 list(self.factory.bricks)[1],
                 self.tab.configure,
                 True,
@@ -943,7 +941,7 @@ class TestTheSettings(BricksTestCase):
         self.tab.on_open()
 
     def test_the_panels_ask_the_engine_of_the_window(self):
-        self.assertIs(self.tab.panel_for(self.sw).engine, self.gui.engine)
+        self.assertIs(self.tab.panel_for(self.sw).engine, self.engine)
 
     def test_the_panels_show_the_images(self):
         self.tab.panel_for(self.sw).show_images()

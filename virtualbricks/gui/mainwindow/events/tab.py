@@ -36,7 +36,7 @@ new event. The menu of an event is
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from gi.repository import Gdk, Gio, Gtk
 from twisted.internet import reactor, task
@@ -69,9 +69,6 @@ from virtualbricks.gui.mainwindow.rowtab import (
 from virtualbricks.gui.mainwindow.tab import brick_signals
 from virtualbricks.i18n import _, ngettext
 from virtualbricks.observable import Signal
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
 
 # How often the countdown moves, in seconds.
 TICK = 1
@@ -247,18 +244,19 @@ class EventsTab(RowsTab[Event]):
 
     def __init__(
         self,
-        gui: MainWindow,
+        engine: Engine,
+        window: Gtk.Window,
         factory: BrickFactory,
         clock: IReactorTime | None = None,
     ) -> None:
         # for the list, which the tab makes first
         self.clock = clock
-        super().__init__(gui, factory)
+        super().__init__(engine, window, factory)
 
     def make_list(self) -> EventList:
         return EventList(
-            self.gui.engine,
-            self.gui.window,
+            self.engine,
+            self.window,
             self.factory,
             self.configure,
             self.clock,
@@ -286,22 +284,22 @@ class EventsTab(RowsTab[Event]):
 
         for event in self.items():
             if self.can_start(event):
-                self.gui.engine.start_event(event)
+                self.engine.start_event(event)
 
     def stop_all(self) -> None:
         """Stop the waiting events: their actions don't run."""
 
         for event in self.items():
-            self.gui.engine.stop_event(event)
+            self.engine.stop_event(event)
 
     def new_item(self) -> None:
         def on_response(new_event: NewEvent) -> None:
-            making = self.gui.engine.new_event(new_event.name, new_event.delay)
+            making = self.engine.new_event(new_event.name, new_event.delay)
             # TODO: Should we disable the main window?
             # TODO: timeout?
             making.addCallback(self.configure)
 
-        NewEventDialog(self.gui.engine, on_response).show(self.gui.window)
+        NewEventDialog(self.engine, on_response).show(self.window)
 
     def popup(
         self, widget: Gtk.Widget, event: Gdk.EventButton | None, item: Event
@@ -309,8 +307,8 @@ class EventsTab(RowsTab[Event]):
         return eventmenu.popup(
             widget,
             event,
-            self.gui.engine,
-            self.gui.window,
+            self.engine,
+            self.window,
             item,
             self.configure,
             True,

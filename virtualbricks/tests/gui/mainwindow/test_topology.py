@@ -61,12 +61,6 @@ class FakeEngine:
     workspace = projects
 
 
-class FakeGui:
-    def __init__(self):
-        self.engine = FakeEngine()
-        self.window = object()
-
-
 class FakeMenus:
     def __init__(self):
         self.shown = []
@@ -118,10 +112,14 @@ class TopologyTestCase(GuiTestCase):
         self.sw1 = self.factory.new_brick("switch", "sw1")
         self.vm = self.factory.new_brick("qemu", "vm")
         self.vm.connect(self.sw1.socks[0])
-        self.gui = FakeGui()
+        self.engine = FakeEngine()
+        # what the menus open over: the main window
+        self.window = object()
         # what the Bricks tab shows
         self.configured = []
-        self.tab = TopologyTab(self.gui, self.factory, self.configured.append)
+        self.tab = TopologyTab(
+            self.engine, self.window, self.factory, self.configured.append
+        )
         self.addCleanup(self.tab.destroy)
         self.view = self.tab.view
 
@@ -410,8 +408,8 @@ class TestClicks(TopologyTestCase):
                     self.view.area,
                     self.vm,
                     3,
-                    self.gui.engine,
-                    self.gui.window,
+                    self.engine,
+                    self.window,
                     self.configured.append,
                 )
             ],

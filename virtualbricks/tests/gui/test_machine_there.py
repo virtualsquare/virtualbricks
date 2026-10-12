@@ -126,13 +126,6 @@ class MachineThere(LocalMachine):
         return "/lab/shared_images"
 
 
-class FakeGui:
-    def __init__(self, engine):
-        self.brickfactory = engine.factory
-        self.engine = engine
-        self.window = None
-
-
 class ThereTestCase(GuiTestCase):
     """
     The image frr, whose file is there only, and the image here, whose file
@@ -153,7 +146,7 @@ class ThereTestCase(GuiTestCase):
         )
         self.engine = LocalEngine(self.factory)
         self.engine.machine = self.machine
-        self.gui = FakeGui(self.engine)
+        self.window = None
         self.configured = []
 
 
@@ -161,7 +154,7 @@ class TestTheImagesTab(ThereTestCase):
 
     def setUp(self):
         super().setUp()
-        self.tab = ImagesTab(self.gui, self.factory)
+        self.tab = ImagesTab(self.engine, self.window, self.factory)
         self.addCleanup(self.tab.destroy)
         self.addCleanup(lambda: self.tab.on_quit())
 
@@ -185,7 +178,7 @@ class TestTheImagesTab(ThereTestCase):
             "Find the File…",
         )
         actions = imagemenu.ImageActions(
-            self.engine, self.gui.window, self.frr, self.configured.append
+            self.engine, self.window, self.frr, self.configured.append
         )
         self.assertFalse(actions.lookup_action("find-file").get_enabled())
         self.assertTrue(actions.lookup_action("show").get_enabled())
@@ -202,7 +195,7 @@ class TestTheImagesTab(ThereTestCase):
                 widget,
                 None,
                 self.engine,
-                self.gui.window,
+                self.window,
                 image,
                 self.configured.append,
             )

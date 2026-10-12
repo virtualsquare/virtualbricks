@@ -70,7 +70,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.gui.mainwindow.bricks.config.vm.imagepicker import (
         Infos,
     )
-    from virtualbricks.gui.mainwindow.window import MainWindow
 
 # The icon of an image, the first that the theme has.
 ICONS = ("drive-harddisk", "drive-harddisk-symbolic", "media-floppy")
@@ -244,8 +243,10 @@ class ImagesTab(RowsTab[Image]):
     )
     STARTS = False
 
-    def __init__(self, gui: MainWindow, factory: BrickFactory) -> None:
-        super().__init__(gui, factory)
+    def __init__(
+        self, engine: Engine, window: Gtk.Window, factory: BrickFactory
+    ) -> None:
+        super().__init__(engine, window, factory)
         # the menu of Add Image, made at its first click
         self._add_menu: Gtk.Popover | None = None
         for signal in brick_signals(factory):
@@ -256,7 +257,7 @@ class ImagesTab(RowsTab[Image]):
 
     def make_list(self) -> ImageList:
         return ImageList(
-            self.gui.engine, self.gui.window, self.factory, self.configure
+            self.engine, self.window, self.factory, self.configure
         )
 
     def signals(self) -> tuple[Signal, Signal, Signal]:
@@ -301,13 +302,13 @@ class ImagesTab(RowsTab[Image]):
         return popover
 
     def add_existing(self) -> ExistingImageDialog:
-        dialog = ExistingImageDialog(self.gui.engine)
-        dialog.show(self.gui.window)
+        dialog = ExistingImageDialog(self.engine)
+        dialog.show(self.window)
         return dialog
 
     def add_new(self) -> NewDiskDialog:
-        dialog = NewDiskDialog(self.gui.engine)
-        dialog.show(self.gui.window)
+        dialog = NewDiskDialog(self.engine)
+        dialog.show(self.window)
         return dialog
 
     def popup(
@@ -316,8 +317,8 @@ class ImagesTab(RowsTab[Image]):
         return imagemenu.popup(
             widget,
             event,
-            self.gui.engine,
-            self.gui.window,
+            self.engine,
+            self.window,
             item,
             self.configure,
             True,
@@ -325,7 +326,7 @@ class ImagesTab(RowsTab[Image]):
 
     def panel_for(self, item: Image) -> ImageDetails:
         return ImageDetails(
-            ImageDraft(item, self.factory), self.gui.engine.machine
+            ImageDraft(item, self.factory), self.engine.machine
         )
 
     def settings_words(self, item: Image) -> str:

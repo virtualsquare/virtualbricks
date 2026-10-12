@@ -47,13 +47,6 @@ class Recording(StartAction):
         return 0
 
 
-class FakeGui:
-    def __init__(self, factory):
-        self.brickfactory = factory
-        self.engine = LocalEngine(factory)
-        self.window = object()
-
-
 class FakeDialog:
     def __init__(self, shown, *args):
         self.shown = shown
@@ -70,9 +63,13 @@ class EventsTestCase(GuiTestCase):
         self.clock = task.Clock()
         self.patch(event_module, "reactor", self.clock)
         Recording.performed = []
-        self.gui = FakeGui(self.factory)
+        self.engine = LocalEngine(self.factory)
+        # what the dialogs open over: the main window
+        self.window = object()
         self.ev = self.event("start-vms", 5, "vm1 on")
-        self.tab = EventsTab(self.gui, self.factory, self.clock)
+        self.tab = EventsTab(
+            self.engine, self.window, self.factory, self.clock
+        )
         self.addCleanup(self.tab.destroy)
         # a test that quits says so
         self.addCleanup(lambda: self.tab.on_quit())
@@ -268,8 +265,8 @@ class TestTheRowAboveTheList(EventsTestCase):
         self.patch(tab, "NewEventDialog", lambda *a: FakeDialog(shown, *a))
         self.tab.new_button.clicked()
         [((engine, create), parent)] = shown
-        self.assertIs(engine, self.gui.engine)
-        self.assertIs(parent, self.gui.window)
+        self.assertIs(engine, self.engine)
+        self.assertIs(parent, self.window)
         # Create: the event made, then its settings, to add its actions
         create(NewEvent("start lab", 30))
         event = self.factory.get_event("start_lab")
@@ -369,18 +366,14 @@ class TestTheKeysAndTheMouse(EventsTestCase):
         self.patch(eventmenu, "DeleteDialog", lambda *a: FakeDialog(shown, *a))
         self.select(self.ev)
         self.assertTrue(self.press(Gdk.KEY_Delete))
-        self.assertEqual(
-            shown, [((self.gui.engine, self.ev), self.gui.window)]
-        )
+        self.assertEqual(shown, [((self.engine, self.ev), self.window)])
 
     def test_rename(self):
         shown = []
         self.patch(eventmenu, "RenameDialog", lambda *a: FakeDialog(shown, *a))
         self.select(self.ev)
         self.assertTrue(self.press(Gdk.KEY_F2))
-        self.assertEqual(
-            shown, [((self.gui.engine, self.ev), self.gui.window)]
-        )
+        self.assertEqual(shown, [((self.engine, self.ev), self.window)])
         # not while it waits
         self.ev.start()
         self.assertTrue(self.press(Gdk.KEY_F2))
@@ -399,8 +392,8 @@ class TestTheKeysAndTheMouse(EventsTestCase):
                 (
                     row.menu_button,
                     None,
-                    self.gui.engine,
-                    self.gui.window,
+                    self.engine,
+                    self.window,
                     self.ev,
                     self.tab.configure,
                     True,

@@ -58,13 +58,6 @@ class LaterQemuImg(FakeQemuImg):
             super().__call__(args).chainDeferred(later)
 
 
-class FakeGui:
-    def __init__(self, factory):
-        self.brickfactory = factory
-        self.engine = LocalEngine(factory)
-        self.window = object()
-
-
 class FakeDialog:
     def __init__(self, shown, *args):
         self.shown = shown
@@ -85,8 +78,10 @@ class ImagesTestCase(GuiTestCase):
         self.manager.current = OpenProject(self.folder("lab"), None)
         self.frr = self.image("frr")
         self.qemu_img.infos[self.frr.path] = INFO
-        self.gui = FakeGui(self.factory)
-        self.tab = ImagesTab(self.gui, self.factory)
+        self.engine = LocalEngine(self.factory)
+        # what the dialogs open over: the main window
+        self.window = object()
+        self.tab = ImagesTab(self.engine, self.window, self.factory)
         self.addCleanup(self.tab.destroy)
         self.addCleanup(lambda: self.tab.on_quit())
         self.qemu_img.answer()
@@ -294,8 +289,8 @@ class TestTheRowAboveTheList(ImagesTestCase):
         self.assertEqual(
             shown,
             [
-                (("ExistingImageDialog", self.gui.engine), self.gui.window),
-                (("NewDiskDialog", self.gui.engine), self.gui.window),
+                (("ExistingImageDialog", self.engine), self.window),
+                (("NewDiskDialog", self.engine), self.window),
             ],
         )
 
@@ -360,9 +355,7 @@ class TestTheKeysAndTheMouse(ImagesTestCase):
         )
         self.select(self.frr)
         self.assertTrue(self.press(Gdk.KEY_Delete))
-        self.assertEqual(
-            shown, [((self.gui.engine, self.frr), self.gui.window)]
-        )
+        self.assertEqual(shown, [((self.engine, self.frr), self.window)])
 
     def test_the_menu(self):
         shown = []
@@ -377,8 +370,8 @@ class TestTheKeysAndTheMouse(ImagesTestCase):
                 (
                     row.menu_button,
                     None,
-                    self.gui.engine,
-                    self.gui.window,
+                    self.engine,
+                    self.window,
                     self.frr,
                     self.tab.configure,
                     True,

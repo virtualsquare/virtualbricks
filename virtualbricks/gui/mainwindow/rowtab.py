@@ -52,7 +52,7 @@ shows the objects in use, as the list says which are.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
+from typing import Any, Generic, Protocol, TypeVar
 
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango
 from twisted.internet import defer
@@ -75,9 +75,6 @@ from virtualbricks.gui.mainwindow.tab import (
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
 from virtualbricks.observable import Signal
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
 
 # The objects of a tab: bricks, events or disk images.
 T = TypeVar("T", bound="Brick | Event | Image")
@@ -588,9 +585,13 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
     # Whether the objects start and stop: then Start All and Stop All.
     STARTS = True
 
-    def __init__(self, gui: MainWindow, factory: BrickFactory) -> None:
+    def __init__(
+        self, engine: Engine, window: Gtk.Window, factory: BrickFactory
+    ) -> None:
         super().__init__(visible=True)
-        self.gui = gui
+        self.engine = engine
+        # what the dialogs of the tab open over: the main window
+        self.window = window
         self.factory = factory
         self._menu: Gtk.Menu | None = None
         # the object whose settings show, and their panel
@@ -945,7 +946,7 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
         # a number just taken can make an error, which shows beside OK
         if panel.draft.errors():
             return
-        applying = self.gui.engine.apply(panel.draft)
+        applying = self.engine.apply(panel.draft)
         applying.addCallbacks(
             lambda _: self.close_settings(), self._not_applied
         )

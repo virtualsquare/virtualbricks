@@ -33,7 +33,6 @@ the Images tab with ``show_images``.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gtk
 from twisted.internet import defer
@@ -42,6 +41,7 @@ from twisted.logger import Logger
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks import Brick, brickinfo, is_running, must_stop
 from virtualbricks.bricks.brickinfo import State
+from virtualbricks.engine import Engine
 from virtualbricks.gui.mainwindow.bricks import brickmenu
 from virtualbricks.gui.mainwindow.bricks.bricklist import BrickList
 from virtualbricks.gui.mainwindow.bricks.config import new_panel
@@ -53,9 +53,6 @@ from virtualbricks.gui.mainwindow.rowtab import (
 )
 from virtualbricks.i18n import _, ngettext
 from virtualbricks.observable import Signal
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
 
 logger = Logger()
 not_started = "Brick not started."
@@ -90,16 +87,17 @@ class BricksTab(RowsTab[Brick]):
 
     def __init__(
         self,
-        gui: MainWindow,
+        engine: Engine,
+        window: Gtk.Window,
         factory: BrickFactory,
         show_images: Callable[[], object],
     ) -> None:
         self.show_images = show_images
-        super().__init__(gui, factory)
+        super().__init__(engine, window, factory)
 
     def make_list(self) -> BrickList:
         return BrickList(
-            self.gui.engine, self.gui.window, self.factory, self.configure
+            self.engine, self.window, self.factory, self.configure
         )
 
     def signals(self) -> tuple[Signal, Signal, Signal]:
@@ -127,7 +125,7 @@ class BricksTab(RowsTab[Brick]):
     def start_all(self) -> defer.Deferred[None]:
         """Start the bricks that can start; the failures are logged."""
 
-        engine = self.gui.engine
+        engine = self.engine
         deferreds = [
             engine.start(brick)
             for brick in self.items()
@@ -138,7 +136,7 @@ class BricksTab(RowsTab[Brick]):
     def stop_all(self) -> defer.Deferred[None]:
         """Stop the bricks that can stop; the failures are logged."""
 
-        engine = self.gui.engine
+        engine = self.engine
         deferreds = [
             engine.stop(brick)
             for brick in self.items()
@@ -150,7 +148,7 @@ class BricksTab(RowsTab[Brick]):
         """Offer the kinds of bricks, under the button."""
 
         if self.new_popover is None:
-            self.new_popover = NewBrickPopover(self.gui.engine, self.on_made)
+            self.new_popover = NewBrickPopover(self.engine, self.on_made)
         self.new_popover.popup_at(self.new_button)
 
     def on_made(self, brick: Brick) -> None:
@@ -168,15 +166,15 @@ class BricksTab(RowsTab[Brick]):
         return brickmenu.popup(
             widget,
             event,
-            self.gui.engine,
-            self.gui.window,
+            self.engine,
+            self.window,
             item,
             self.configure,
             True,
         )
 
     def panel_for(self, item: Brick) -> Panel | None:
-        return new_panel(item, self.gui.engine, self.show_images)
+        return new_panel(item, self.engine, self.show_images)
 
     def settings_words(self, item: Brick) -> str:
         return _("{kind} settings").format(kind=brickinfo.kind(item))

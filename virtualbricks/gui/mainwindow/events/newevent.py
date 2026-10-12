@@ -58,8 +58,8 @@ OnCreateNewEventCallback = Callable[[NewEvent], None]
 
 class NewEventDialog(Window):
     """
-    Ask a name and a delay, create the event through engine and show its
-    settings in gui, the main window.
+    Ask a name and a delay, the name checked against the project of engine;
+    Create gives them to on_create_new_event.
     """
 
     def __init__(

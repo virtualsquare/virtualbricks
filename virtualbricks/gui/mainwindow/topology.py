@@ -33,13 +33,13 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gio, GLib, GObject, Gtk
 from twisted.logger import Logger
 
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks import Brick
+from virtualbricks.engine import Engine
 from virtualbricks.gui.mainwindow import picture
 from virtualbricks.gui.mainwindow.bricks import brickmenu
 from virtualbricks.gui.mainwindow.tab import (
@@ -55,9 +55,6 @@ from virtualbricks.gui.mainwindow.topologyview import (
 )
 from virtualbricks.i18n import _
 from virtualbricks.topology import layout
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
 
 logger = Logger()
 drawing_topology = "drawing topology"
@@ -112,12 +109,15 @@ class TopologyTab(Tab, Gtk.Overlay):
 
     def __init__(
         self,
-        gui: MainWindow,
+        engine: Engine,
+        window: Gtk.Window,
         factory: BrickFactory,
         configure: Callable[[Brick], None],
     ) -> None:
         super().__init__(visible=True)
-        self.gui = gui
+        self.engine = engine
+        # what the menu of a brick opens its dialogs over: the main window
+        self.window = window
         self.factory = factory
         # the settings of a brick, which the Bricks tab shows
         self.configure = configure
@@ -310,7 +310,7 @@ class TopologyTab(Tab, Gtk.Overlay):
             kind.add_pattern(f"*{extension.upper()}")
             chooser.add_filter(kind)
             formats[kind] = extension
-        current = self.gui.engine.workspace.current
+        current = self.engine.workspace.current
         name = current.name if current is not None else "topology"
         chooser.set_current_name(f"{name}.png")
         chooser.connect("notify::filter", self.on_export_format, formats)
@@ -355,8 +355,8 @@ class TopologyTab(Tab, Gtk.Overlay):
             self._menu = brickmenu.popup(
                 area,
                 event,
-                self.gui.engine,
-                self.gui.window,
+                self.engine,
+                self.window,
                 brick,
                 self.configure,
             )
