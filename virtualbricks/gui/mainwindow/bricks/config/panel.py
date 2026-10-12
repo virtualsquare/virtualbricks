@@ -28,15 +28,14 @@ while the draft has no errors, and on OK takes what is typed and not yet in
 the draft, with ``commit()``, then applies the draft; the brick sees nothing
 before. While the brick runs, an info bar says what ``running_words()``
 says. A change in a row refreshes the rows, then calls the callbacks of
-``connect_changed()``. ``engine`` is the engine of ``gui``, the main window,
-for a panel that asks the machine, or else the engine of this machine;
+``connect_changed()``. ``engine`` is the engine of the main window, for a
+panel that asks the machine, or else the engine of this machine;
 ``show_images`` shows the Images tab, for the disks of a virtual machine.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
-from typing import TYPE_CHECKING
 
 from gi.repository import Gtk
 
@@ -45,9 +44,6 @@ from virtualbricks.bricks.draft import Draft
 from virtualbricks.engine import Engine, LocalEngine
 from virtualbricks.gui.form import Form, Row
 from virtualbricks.i18n import _
-
-if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
 
 
 def spin_buttons(widget: Gtk.Widget) -> Iterator[Gtk.SpinButton]:
@@ -66,16 +62,14 @@ class Panel:
     def __init__(
         self,
         draft: Draft,
-        gui: MainWindow | None = None,
+        engine: Engine | None = None,
         show_images: Callable[[], object] | None = None,
     ) -> None:
         self.draft = draft
-        self.gui = gui
+        self._engine = engine
         self.show_images = show_images
         self._callbacks: list[Callable[[Panel], None]] = []
-        self.form = Form(
-            draft, self.on_changed, gui.engine if gui is not None else None
-        )
+        self.form = Form(draft, self.on_changed, engine)
         root = self.build(self.form)
         self.widget = self.form.widget if root is None else root
         self.refresh()
@@ -90,11 +84,11 @@ class Panel:
 
     @property
     def engine(self) -> Engine:
-        """What the panel asks of the machine: through the main window."""
+        """What the panel asks of the machine: the main window's engine."""
 
-        if self.gui is None:
+        if self._engine is None:
             return LocalEngine(self.draft.brick.factory)
-        return self.gui.engine
+        return self._engine
 
     @property
     def rows(self) -> dict[str, Row]:

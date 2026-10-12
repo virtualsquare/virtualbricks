@@ -47,7 +47,7 @@ class TestTheDisksSection(MachinePanelTestCase):
         shown = []
         panel = self.panel.__class__(
             self.panel.draft.__class__(self.vm),
-            self.gui,
+            self.engine,
             lambda: shown.append(True),
         )
         self.addCleanup(panel.widget.destroy)
@@ -99,7 +99,7 @@ class TestTheCdromSection(MachinePanelTestCase):
     def test_a_boot_order_of_its_own(self):
         self.vm.update_config({"boot_order": "cdn"})
         panel = self.panel.__class__(
-            self.panel.draft.__class__(self.vm), self.gui
+            self.panel.draft.__class__(self.vm), self.engine
         )
         self.addCleanup(panel.widget.destroy)
         boot = panel.rows["boot_order"].control

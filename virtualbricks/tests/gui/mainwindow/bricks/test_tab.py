@@ -664,7 +664,7 @@ class TestTheSettings(BricksTestCase):
         calls = []
         controllers = {}
 
-        def adapt(brick, gui, show_images):
+        def adapt(brick, engine, show_images):
             controllers[brick] = FakePanel(calls, brick)
             return controllers[brick]
 
@@ -934,6 +934,9 @@ class TestTheSettings(BricksTestCase):
         self.assertIsNone(self.tab.configuring)
         # and with none
         self.tab.on_open()
+
+    def test_the_panels_ask_the_engine_of_the_window(self):
+        self.assertIs(self.tab.panel_for(self.sw).engine, self.gui.engine)
 
     def test_the_panels_show_the_images(self):
         self.tab.panel_for(self.sw).show_images()

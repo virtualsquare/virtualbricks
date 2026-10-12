@@ -63,13 +63,6 @@ class FakePrograms:
             deferred.callback(info)
 
 
-class PanelGui:
-    """The main window, as a panel sees it: its engine."""
-
-    def __init__(self, engine):
-        self.engine = engine
-
-
 class MachinePanelTestCase(GuiTestCase):
 
     target = "debian-13"
@@ -83,19 +76,17 @@ class MachinePanelTestCase(GuiTestCase):
             UsbDevice("046d:c52b", "Logitech, Inc. Unifying Receiver")
         ]
         # QEMU and lsusb, as the engine of the window asks them
-        self.gui = PanelGui(
-            LocalEngine(
-                self.factory,
-                programs=self.programs,
-                which=self.which,
-                usb_devices=lambda: self.lsusb(),
-            )
+        self.engine = LocalEngine(
+            self.factory,
+            programs=self.programs,
+            which=self.which,
+            usb_devices=lambda: self.lsusb(),
         )
         self.switch = self.factory.new_brick("switch", "sw1")
         self.vm = self.factory.new_brick("qemu", "vm1")
         self.prepare()
         self.panel = VirtualMachinePanel(
-            VirtualMachineDraft(self.vm), self.gui
+            VirtualMachineDraft(self.vm), self.engine
         )
         self.addCleanup(self.panel.widget.destroy)
         self.calls = []
@@ -240,7 +231,7 @@ class TestItsQemu(MachinePanelTestCase):
 
     def test_a_program_not_installed(self):
         self.vm.update_config({"qemu_program": "qemu-system-aarch64"})
-        panel = VirtualMachinePanel(VirtualMachineDraft(self.vm), self.gui)
+        panel = VirtualMachinePanel(VirtualMachineDraft(self.vm), self.engine)
         self.addCleanup(panel.widget.destroy)
         self.assertIsNone(panel.draft.qemu)
         self.assertEqual(
@@ -271,7 +262,7 @@ class TestTheMachineThere(MachinePanelTestCase):
     """The panel says what the machine of the bricks has, not this one."""
 
     def prepare(self):
-        self.gui.engine.machine = MachineThere(self.manager)
+        self.engine.machine = MachineThere(self.manager)
         self.vm.update_config({"qemu_program": "qemu-system-aarch64"})
         self.vm.add_plug(self.switch.socks[0], "52:54:00:00:00:01", "e1000")
 
@@ -296,7 +287,7 @@ class TestOverAConnection(MachinePanelTestCase):
     """The paths of the machine are typed: those of the machine there."""
 
     def prepare(self):
-        self.gui.engine.local = False
+        self.engine.local = False
 
     def test_no_browse_button(self):
         for key, name in (("kernel", "kernel"), ("cdrom", "cdrom_image")):

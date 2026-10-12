@@ -168,7 +168,7 @@ class BricksTab(RowsTab[Brick]):
         )
 
     def panel_for(self, item: Brick) -> Panel | None:
-        return new_panel(item, self.gui, self.show_images)
+        return new_panel(item, self.gui.engine, self.show_images)
 
     def settings_words(self, item: Brick) -> str:
         return _("{kind} settings").format(kind=brickinfo.kind(item))

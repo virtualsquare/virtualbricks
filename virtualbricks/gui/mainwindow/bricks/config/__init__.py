@@ -33,6 +33,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from virtualbricks.bricks import Brick
+from virtualbricks.engine import Engine
 
 from .captureconfig import CapturePanel
 from .netemuconfig import NetemuPanel
@@ -45,8 +46,6 @@ from .vm.panel import VirtualMachinePanel
 from .wireconfig import WirePanel
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
-
     from .panel import Panel
 
 __all__ = [
@@ -70,15 +69,16 @@ PANELS: dict[str, type[Panel]] = {
 
 def new_panel(
     brick: Brick,
-    gui: MainWindow | None = None,
+    engine: Engine | None = None,
     show_images: Callable[[], object] | None = None,
 ) -> Panel | None:
     """
-    The panel of brick on a new draft, or None if it has none yet;
-    show_images shows the Images tab, for the disks of a virtual machine.
+    The panel of brick on a new draft, or None if it has none yet; it asks
+    the machine through engine, and show_images shows the Images tab, for
+    the disks of a virtual machine.
     """
 
     panel = PANELS.get(brick.get_type())
     if panel is None:
         return None
-    return panel(brick.draft_factory(brick), gui, show_images)
+    return panel(brick.draft_factory(brick), engine, show_images)
