@@ -731,7 +731,7 @@ class MainWindow:
     # The projects, for the Projects window and the name dialog
 
     def show_projects(self, problem: str | None = None) -> ProjectsWindow:
-        window = ProjectsWindow(self)
+        window = ProjectsWindow(self, self.engine)
         if problem is not None:
             window.show_problem(problem)
         window.show(self.window)

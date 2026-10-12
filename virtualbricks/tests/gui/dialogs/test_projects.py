@@ -27,8 +27,8 @@ from virtualbricks import engine, errors, locations
 from virtualbricks.config.tomlfile import dump_toml, load_toml
 from virtualbricks.config.workspace import DiskUsage
 from virtualbricks.console import ampwire
-from virtualbricks.tests.config.test_images import FakeWorkspace
 from virtualbricks.tests import FakeLogger, FakeTrash
+from virtualbricks.tests.config.test_images import FakeWorkspace
 from virtualbricks.tests.gui import GuiTestCase, ProjectsGui, has_display
 
 if has_display:
@@ -85,7 +85,9 @@ class ProjectsTestCase(GuiTestCase):
         os.utime(path, (when, when))
 
     def window(self):
-        window = projects.ProjectsWindow(self.gui, disk_usage=self.disk_usage)
+        window = projects.ProjectsWindow(
+            self.gui, self.gui.engine, disk_usage=self.disk_usage
+        )
         self.addCleanup(self.destroy, window)
         return window
 
@@ -332,7 +334,7 @@ class TestDetails(ProjectsTestCase):
 
     def test_the_thread(self):
         self.lab("lab")
-        window = projects.ProjectsWindow(self.gui)
+        window = projects.ProjectsWindow(self.gui, self.gui.engine)
         self.addCleanup(self.destroy, window)
         called = []
         self.patch(

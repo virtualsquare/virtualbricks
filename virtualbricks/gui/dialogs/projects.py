@@ -193,22 +193,23 @@ class ProjectsWindow:
     The Projects window.
 
     gui is the main window: projects are opened, created and saved through
-    it, as its menus do, and it runs the import and the export.
+    it, as its menus do, and it runs the import and the export. engine
+    lists the projects, measures them and removes them.
     """
 
     def __init__(
         self,
         gui: MainWindow,
+        engine: Engine,
         workspace: Workspace | RemoteWorkspace | None = None,
         disk_usage: Callable[[str], defer.Deferred[DiskUsage]] | None = None,
     ) -> None:
         self.gui = gui
+        self.engine = engine
         # the workspace of the Virtualbricks of the bricks
-        self.workspace = (
-            gui.engine.workspace if workspace is None else workspace
-        )
+        self.workspace = engine.workspace if workspace is None else workspace
         if disk_usage is None:
-            disk_usage = gui.engine.disk_usage
+            disk_usage = engine.disk_usage
         self._disk_usage = disk_usage
         self.rows: list[ProjectRow] = []
         self.selected: ProjectSummary | None = None
@@ -267,7 +268,7 @@ class ProjectsWindow:
         self.open_button.connect("clicked", self.on_open_clicked)
         self.duplicate_button.connect("clicked", self.on_duplicate_clicked)
         self.export_button.connect("clicked", self.on_export_clicked)
-        self.local = self.gui.engine.local
+        self.local = self.engine.local
         if not self.local:
             # the archives stay on their machine, for now (19 R12), and
             # the file manager shows the files of this one
@@ -456,7 +457,7 @@ class ProjectsWindow:
         """Read the projects again, keeping the selection."""
 
         selected = self.selected.name if self.selected else None
-        reading = self.gui.engine.project_summaries()
+        reading = self.engine.project_summaries()
         reading.addCallbacks(
             self._fill, self._not_listed, callbackArgs=(selected,)
         )
@@ -627,7 +628,7 @@ class ProjectsWindow:
         self, kind: str, original: str | None = None
     ) -> projectname.ProjectNameDialog:
         dialog = projectname.ProjectNameDialog(
-            self.gui, self.gui.engine, kind, original, workspace=self.workspace
+            self.gui, self.engine, kind, original, workspace=self.workspace
         )
         dialog.on_done = self.on_name_done
         dialog.show(self.window)
@@ -692,9 +693,7 @@ class ProjectsWindow:
         parameter: GLib.Variant | None = None,
     ) -> RemoveDialog | None:
         if self.selected is not None:
-            dialog = RemoveDialog(
-                self.gui.engine, self.workspace, self.selected
-            )
+            dialog = RemoveDialog(self.engine, self.workspace, self.selected)
             dialog.on_done = self.on_removed
             dialog.show(self.window)
             return dialog
