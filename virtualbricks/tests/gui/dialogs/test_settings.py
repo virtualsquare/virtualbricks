@@ -26,10 +26,10 @@ from twisted.internet import defer, task
 from virtualbricks import ksm, locations
 from virtualbricks.config.settings import get_setting, set_setting
 from virtualbricks.config.tomlfile import load_toml
+from virtualbricks.engine import LocalEngine
 from virtualbricks.observable import Observable, Signal
 from virtualbricks.programs import REQUIRED, FolderPrograms, Missing, Version
 from virtualbricks.tests.gui import (
-    FakeGui,
     GuiTestCase,
     has_display,
     untranslated,
@@ -114,14 +114,16 @@ class WindowTestCase(GuiTestCase):
         self.patch(ksm, "ksm_available", lambda: self.available)
         self.closed = []
 
-    def gui(self):
-        gui = FakeGui(self.factory)
-        gui.engine.programs_found = self.facts.programs_found
-        gui.engine.qemu = self.facts.qemu
-        return gui
+    def local_engine(self):
+        engine = LocalEngine(self.factory)
+        engine.programs_found = self.facts.programs_found
+        engine.qemu = self.facts.qemu
+        return engine
 
-    def window(self, gui=None):
-        window = settings_window.SettingsWindow(gui or self.gui(), self.clock)
+    def window(self, engine=None):
+        window = settings_window.SettingsWindow(
+            engine or self.local_engine(), self.clock
+        )
         window.dialog.connect("destroy", lambda _: self.closed.append(True))
         self.addCleanup(window.dialog.destroy)
         return window
@@ -494,9 +496,7 @@ class TestOverAConnection(WindowTestCase):
             }
         )
         self.engine = EngineThere(values, self.facts)
-        gui = FakeGui(self.factory)
-        gui.engine = self.engine
-        self.window = self.window(gui)
+        self.window = self.window(self.engine)
 
     def test_three_pages(self):
         self.assertEqual(

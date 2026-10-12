@@ -795,7 +795,7 @@ class MainWindow:
         dialog.show(parent or self.window)
 
     def on_file_settings_item_activate(self, menuitem: Gtk.MenuItem) -> bool:
-        SettingsWindow(self).show(self.window)
+        SettingsWindow(self.engine).show(self.window)
         return True
 
     def on_file_logs_item_activate(self, menuitem: Gtk.MenuItem) -> bool:

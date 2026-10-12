@@ -82,7 +82,6 @@ from virtualbricks.settingsdraft import (
 )
 
 if TYPE_CHECKING:  # pragma: no cover
-    from virtualbricks.gui.mainwindow.window import MainWindow
     from virtualbricks.remote.mirror import MirrorFactory
 
 logger = Logger()
@@ -143,14 +142,13 @@ class SettingsWindow(Window):
     the open project."""
 
     def __init__(
-        self, gui: MainWindow, clock: IReactorTime | None = None
+        self, engine: Engine, clock: IReactorTime | None = None
     ) -> None:
         if clock is None:
             from twisted.internet import reactor
 
             clock = cast("IReactorTime", reactor)
-        self.gui = gui
-        self.engine = gui.engine
+        self.engine = engine
         self.clock = clock
         available: bool | None
         if self.engine.local:
