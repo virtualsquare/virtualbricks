@@ -740,7 +740,7 @@ class ProjectsWindow(Window):
         self.destroyed = True
 
 
-class RemoveDialog:
+class RemoveDialog(Window):
     """Ask whether to move a project to the trash or delete it for good."""
 
     TRASH = 1
@@ -758,13 +758,19 @@ class RemoveDialog:
         self.workspace = workspace
         self.summary = summary
         self.name = summary.name
-        is_open = workspace.current is not None and (
+        self.is_open = workspace.current is not None and (
             workspace.current.name == self.name
         )
-        self.can_trash = not is_open and workspace.can_trash(self.name)
+        self.can_trash = not self.is_open and workspace.can_trash(self.name)
         # the space it takes, counted by the engine if not given: there,
         # over a connection
-        usage = disk_usage
+        self.usage = disk_usage
+        self.build_ui()
+        if not self.is_open and disk_usage is None:
+            counting = engine.disk_usage(self.name)
+            counting.addCallbacks(self._counted, lambda failure: None)
+
+    def build_ui(self) -> None:
         self.dialog = Gtk.MessageDialog(
             modal=True,
             destroy_with_parent=True,
@@ -774,7 +780,7 @@ class RemoveDialog:
         self.dialog.add_button(_("Cancel"), Gtk.ResponseType.CANCEL)
         self.delete_button: Gtk.Widget | None
         self.trash_button: Gtk.Widget | None
-        if is_open:
+        if self.is_open:
             self.dialog.set_property("message-type", Gtk.MessageType.INFO)
             self.dialog.set_property(
                 "text", _("{name} is open").format(name=self.name)
@@ -801,11 +807,11 @@ class RemoveDialog:
                     "suggested-action"
                 )
                 self.dialog.set_default_response(self.TRASH)
-            self.dialog.format_secondary_text(self.explain(usage))
-            if usage is None:
-                counting = engine.disk_usage(self.name)
-                counting.addCallbacks(self._counted, lambda failure: None)
+            self.dialog.format_secondary_text(self.explain(self.usage))
         self.dialog.connect("response", self.on_response)
+
+    def get_root_widget(self) -> Gtk.MessageDialog:
+        return self.dialog
 
     def _counted(self, usage: DiskUsage) -> None:
         self.dialog.format_secondary_text(self.explain(usage))
@@ -828,11 +834,6 @@ class RemoveDialog:
         return (
             what + where + " " + _("The images it uses stay where they are.")
         )
-
-    def show(self, parent: Gtk.Window | None = None) -> None:
-        if parent is not None:
-            self.dialog.set_transient_for(parent)
-        self.dialog.show()
 
     def remove(self, how: int) -> defer.Deferred[None]:
         trash = how == self.TRASH
