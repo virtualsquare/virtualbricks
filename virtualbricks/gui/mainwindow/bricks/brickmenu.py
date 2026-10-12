@@ -52,6 +52,7 @@ from virtualbricks.bricks.virtualmachine import (
     is_virtualmachine,
 )
 from virtualbricks.engine import Engine
+from virtualbricks.gui.dialogs.deletedialog import DeleteDialog
 from virtualbricks.gui.dialogs.renamedialog import RenameDialog
 from virtualbricks.gui.mainwindow import tab
 from virtualbricks.gui.mainwindow.tab import (
@@ -351,7 +352,7 @@ class BrickActions(MenuActions):
         )
 
     def delete(self) -> None:
-        self.gui.ask_remove_brick(self.brick)
+        DeleteDialog(self.engine, self.brick).show(self.gui.window)
 
     # The items of the process
 

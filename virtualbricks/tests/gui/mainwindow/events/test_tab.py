@@ -52,10 +52,6 @@ class FakeGui:
         self.brickfactory = factory
         self.engine = LocalEngine(factory)
         self.window = object()
-        self.removed = []
-
-    def ask_remove_event(self, event):
-        self.removed.append(event)
 
 
 class FakeDialog:
@@ -369,9 +365,13 @@ class TestAProjectWithoutEvents(EventsTestCase):
 class TestTheKeysAndTheMouse(EventsTestCase):
 
     def test_delete(self):
+        shown = []
+        self.patch(eventmenu, "DeleteDialog", lambda *a: FakeDialog(shown, *a))
         self.select(self.ev)
         self.assertTrue(self.press(Gdk.KEY_Delete))
-        self.assertEqual(self.gui.removed, [self.ev])
+        self.assertEqual(
+            shown, [((self.gui.engine, self.ev), self.gui.window)]
+        )
 
     def test_rename(self):
         shown = []

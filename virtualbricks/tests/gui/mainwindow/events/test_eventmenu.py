@@ -55,10 +55,6 @@ class FakeGui:
         self.brickfactory = factory
         self.engine = LocalEngine(factory)
         self.window = object()
-        self.calls = []
-
-    def ask_remove_event(self, event):
-        self.calls.append(("delete", event))
 
 
 class FakeDialog:
@@ -209,13 +205,20 @@ class TestWhatIsEnabled(EventMenuTestCase):
 
 class TestWhatTheItemsDo(EventMenuTestCase):
 
-    def test_the_gui(self):
+    def test_settings(self):
         event = self.ready()
         actions = EventActions(self.gui, event, self.configured.append)
         actions.activate_action("configure", None)
-        actions.activate_action("delete", None)
         self.assertEqual(self.configured, [event])
-        self.assertEqual(self.gui.calls, [("delete", event)])
+
+    def test_delete(self):
+        shown = []
+        self.patch(eventmenu, "DeleteDialog", lambda *a: FakeDialog(shown, *a))
+        event = self.ready()
+        EventActions(self.gui, event, self.configured.append).activate_action(
+            "delete", None
+        )
+        self.assertEqual(shown, [((self.gui.engine, event), self.gui.window)])
 
     def test_rename(self):
         shown = []

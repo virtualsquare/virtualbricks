@@ -40,10 +40,6 @@ class FakeGui:
         self.brickfactory = factory
         self.engine = LocalEngine(factory)
         self.window = object()
-        self.calls = []
-
-    def ask_remove_image(self, image):
-        self.calls.append(("remove", image))
 
 
 class FakeDialog:
@@ -143,22 +139,21 @@ class TestWhatIsEnabled(ImageMenuTestCase):
 
 class TestWhatTheyDo(ImageMenuTestCase):
 
-    def test_the_gui(self):
+    def test_details(self):
         actions = ImageActions(self.gui, self.there, self.configured.append)
         actions.activate_action("details", None)
-        actions.activate_action("remove", None)
         self.assertEqual(self.configured, [self.there])
-        self.assertEqual(self.gui.calls, [("remove", self.there)])
 
     def test_dialogs(self):
         shown = []
-        for name in ("RenameDialog", "FindFileDialog"):
+        for name in ("RenameDialog", "FindFileDialog", "RemoveImageDialog"):
             self.patch(
                 imagemenu, name, lambda *a, n=name: FakeDialog(shown, n, *a)
             )
         actions = ImageActions(self.gui, self.missing, self.configured.append)
         actions.activate_action("rename", None)
         actions.activate_action("find-file", None)
+        actions.activate_action("remove", None)
         self.assertEqual(
             shown,
             [
@@ -168,6 +163,10 @@ class TestWhatTheyDo(ImageMenuTestCase):
                 ),
                 (
                     ("FindFileDialog", self.gui.engine, self.missing),
+                    self.gui.window,
+                ),
+                (
+                    ("RemoveImageDialog", self.gui.engine, self.missing),
                     self.gui.window,
                 ),
             ],

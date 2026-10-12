@@ -36,6 +36,7 @@ from gi.repository import Gdk, Gio, Gtk
 from virtualbricks.bricks.virtualmachine import Image
 from virtualbricks.gui.dialogs.imagedialogs import (
     FindFileDialog,
+    RemoveImageDialog,
     show_in_files,
 )
 from virtualbricks.gui.dialogs.renamedialog import RenameDialog
@@ -124,7 +125,7 @@ class ImageActions(MenuActions):
         show_in_files(self.gui.window, self.image.path)
 
     def remove_image(self) -> None:
-        self.gui.ask_remove_image(self.image)
+        RemoveImageDialog(self.gui.engine, self.image).show(self.gui.window)
 
 
 def popup(

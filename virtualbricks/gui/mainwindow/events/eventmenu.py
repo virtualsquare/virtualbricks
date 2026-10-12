@@ -37,6 +37,7 @@ from virtualbricks.bricks import eventinfo, is_running
 from virtualbricks.bricks.event import Event
 from virtualbricks.bricks.eventinfo import State
 from virtualbricks.engine import Engine
+from virtualbricks.gui.dialogs.deletedialog import DeleteDialog
 from virtualbricks.gui.dialogs.renamedialog import RenameDialog
 from virtualbricks.gui.mainwindow import tab
 from virtualbricks.gui.mainwindow.tab import (
@@ -141,7 +142,7 @@ class EventActions(MenuActions):
         self.gui.engine.duplicate(self.event)
 
     def delete(self) -> None:
-        self.gui.ask_remove_event(self.event)
+        DeleteDialog(self.gui.engine, self.event).show(self.gui.window)
 
 
 def popup(

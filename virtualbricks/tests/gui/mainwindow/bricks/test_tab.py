@@ -72,10 +72,6 @@ class FakeGui:
         self.brickfactory = factory
         self.engine = LocalEngine(factory)
         self.window = object()
-        self.removed = []
-
-    def ask_remove_brick(self, brick):
-        self.removed.append(brick)
 
 
 class FakeDialog:
@@ -434,19 +430,32 @@ class TestAProjectWithoutBricks(BricksTestCase):
 
 class TestTheKeys(BricksTestCase):
 
+    def deleted(self):
+        """What Delete… is asked for, and over which window, from now."""
+
+        shown = []
+        self.patch(
+            brickmenu,
+            "DeleteDialog",
+            lambda engine, brick: FakeDialog(shown, brick),
+        )
+        return shown
+
     def test_delete(self):
+        deleted = self.deleted()
         self.assertFalse(self.press(Gdk.KEY_Delete))
         self.select(self.sw)
         self.assertTrue(self.press(Gdk.KEY_Delete))
         self.assertTrue(self.press(Gdk.KEY_KP_Delete))
-        self.assertEqual(self.gui.removed, [self.sw, self.sw])
+        self.assertEqual(deleted, [(self.sw, self.gui.window)] * 2)
 
     def test_delete_waits_while_it_runs(self):
+        deleted = self.deleted()
         # as Delete… in its menu
         self.running(self.sw)
         self.select(self.sw)
         self.assertTrue(self.press(Gdk.KEY_Delete))
-        self.assertEqual(self.gui.removed, [])
+        self.assertEqual(deleted, [])
 
     def test_rename(self):
         shown = []
@@ -552,6 +561,7 @@ class TestTheKeys(BricksTestCase):
         self.assertFalse(self.tab.on_key_press(self.tab, event.key))
 
     def test_the_signals(self):
+        deleted = self.deleted()
         # the tab catches what the list leaves
         event = self.key(Gdk.KEY_f, Gdk.ModifierType.CONTROL_MASK)
         self.show()
@@ -560,7 +570,7 @@ class TestTheKeys(BricksTestCase):
         self.assertTrue(
             self.tab.list.emit("key-press-event", self.key(Gdk.KEY_Delete))
         )
-        self.assertEqual(self.gui.removed, [self.sw])
+        self.assertEqual(deleted, [(self.sw, self.gui.window)])
 
 
 class TestTheMouse(BricksTestCase):

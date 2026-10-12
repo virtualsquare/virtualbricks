@@ -22,11 +22,11 @@ The main window of Virtualbricks.
 ``MainWindow`` builds its UI in ``build_ui()``: the menus, the status icon, and
 a notebook with the tabs of the other modules of this package, which it
 tells when a project opens, is saved, or Virtualbricks quits (see
-:mod:`virtualbricks.gui.mainwindow.tab`). It keeps what the menus of the
-bricks and the events call: remove and wait_for(), which says what
-Suspend and Resume wait for. What the windows change, run or ask of
-the machine goes through its engine, ``engine``, and they read the bricks,
-the events and the images of ``engine.factory``.
+:mod:`virtualbricks.gui.mainwindow.tab`). It keeps what the menu of the
+bricks calls: wait_for(), which says what Suspend and Resume wait for.
+What the windows change, run or ask of the machine goes through its
+engine, ``engine``, and they read the bricks, the events and the images
+of ``engine.factory``.
 """
 
 from __future__ import annotations
@@ -42,9 +42,6 @@ from twisted.python.failure import Failure
 
 from virtualbricks import errors, ksm
 from virtualbricks.brickfactory import BrickFactory
-from virtualbricks.bricks import Brick
-from virtualbricks.bricks.event import Event
-from virtualbricks.bricks.virtualmachine import Image
 from virtualbricks.config import settings
 from virtualbricks.config.report import Report
 from virtualbricks.config.settings import get_setting, ksm_started
@@ -52,9 +49,7 @@ from virtualbricks.config.workspace import ProjectSummary, projects
 from virtualbricks.engine import Engine
 from virtualbricks.gui.dialogs import projectname
 from virtualbricks.gui.dialogs.about import AboutDialog
-from virtualbricks.gui.dialogs.deletedialog import DeleteDialog
 from virtualbricks.gui.dialogs.exportproject import ExportProjectDialog
-from virtualbricks.gui.dialogs.imagedialogs import RemoveImageDialog
 from virtualbricks.gui.dialogs.importdialog import ImportDialog
 from virtualbricks.gui.dialogs.logging import LoggingWindow
 from virtualbricks.gui.dialogs.projects import ProjectsWindow
@@ -553,15 +548,6 @@ class MainWindow:
             self.status_icon.set_tooltip_text(_("Virtualbricks hidden"))
             return True
         return False
-
-    def ask_remove_brick(self, brick: Brick) -> None:
-        DeleteDialog(self.engine, brick).show(self.window)
-
-    def ask_remove_event(self, event: Event) -> None:
-        DeleteDialog(self.engine, event).show(self.window)
-
-    def ask_remove_image(self, image: Image) -> None:
-        RemoveImageDialog(self.engine, image).show(self.window)
 
     def show_images(self) -> None:
         """Show the Images tab."""

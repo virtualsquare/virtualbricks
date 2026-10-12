@@ -63,10 +63,6 @@ class FakeGui:
         self.brickfactory = factory
         self.engine = LocalEngine(factory)
         self.window = object()
-        self.removed = []
-
-    def ask_remove_image(self, image):
-        self.removed.append(image)
 
 
 class FakeDialog:
@@ -358,9 +354,15 @@ class TestAProjectWithoutImages(ImagesTestCase):
 class TestTheKeysAndTheMouse(ImagesTestCase):
 
     def test_delete(self):
+        shown = []
+        self.patch(
+            imagemenu, "RemoveImageDialog", lambda *a: FakeDialog(shown, *a)
+        )
         self.select(self.frr)
         self.assertTrue(self.press(Gdk.KEY_Delete))
-        self.assertEqual(self.gui.removed, [self.frr])
+        self.assertEqual(
+            shown, [((self.gui.engine, self.frr), self.gui.window)]
+        )
 
     def test_the_menu(self):
         shown = []

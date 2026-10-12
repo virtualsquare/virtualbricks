@@ -48,9 +48,6 @@ class FakeGui:
         self.window = object()
         self.calls = []
 
-    def ask_remove_brick(self, brick):
-        self.calls.append(("delete", brick))
-
     def wait_for(self, deferred, text):
         self.calls.append(("wait", text))
         return deferred
@@ -341,11 +338,17 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
         self.gui.engine = RecordingEngine(self.factory)
         return BrickActions(self.gui, brick, self.configured.append)
 
-    def test_the_gui(self):
-        for name in ("configure", "delete"):
-            self.activate(name)
+    def test_settings(self):
+        self.activate("configure")
         self.assertEqual(self.configured, [self.sw])
-        self.assertEqual(self.gui.calls, [("delete", self.sw)])
+
+    def test_delete(self):
+        shown = []
+        self.patch(brickmenu, "DeleteDialog", lambda *a: FakeDialog(shown, *a))
+        self.activate("delete")
+        self.assertEqual(
+            shown, [((self.gui.engine, self.sw), self.gui.window)]
+        )
 
     def test_start_and_stop(self):
         actions = self.recording(self.sw)
