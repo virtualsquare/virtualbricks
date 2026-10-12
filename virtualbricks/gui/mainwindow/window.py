@@ -22,18 +22,16 @@ The main window of Virtualbricks.
 ``MainWindow`` builds its UI in ``build_ui()``: the menus, the status icon, and
 a notebook with the tabs of the other modules of this package, which it
 tells when a project opens, is saved, or Virtualbricks quits (see
-:mod:`virtualbricks.gui.mainwindow.tab`). It keeps what the menu of the
-bricks calls: wait_for(), which says what Suspend and Resume wait for.
-What the windows change, run or ask of the machine goes through its
-engine, ``engine``, and they read the bricks, the events and the images
-of ``engine.factory``.
+:mod:`virtualbricks.gui.mainwindow.tab`). What the windows change, run or
+ask of the machine goes through its engine, ``engine``, and they read the
+bricks, the events and the images of ``engine.factory``.
 """
 
 from __future__ import annotations
 
 import os
 from collections.abc import Callable
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gtk
 from twisted.internet import defer
@@ -54,7 +52,6 @@ from virtualbricks.gui.dialogs.importdialog import ImportDialog
 from virtualbricks.gui.dialogs.logging import LoggingWindow
 from virtualbricks.gui.dialogs.projects import ProjectsWindow
 from virtualbricks.gui.dialogs.settings import SettingsWindow
-from virtualbricks.gui.dialogs.wait import WaitWindow
 from virtualbricks.gui.graphics import load_pixbuf
 from virtualbricks.gui.mainwindow.bricks import BricksTab
 from virtualbricks.gui.mainwindow.events import EventsTab
@@ -69,8 +66,6 @@ from virtualbricks.programs import missing_programs
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.remote.client import RemoteEngine
-
-T = TypeVar("T")
 
 logger = Logger()
 cannot_open_project = 'Cannot open the project "{name}": {error}'
@@ -555,16 +550,6 @@ class MainWindow:
         self.main_notebook.set_current_page(
             self.main_notebook.page_num(self.images)
         )
-
-    def wait_for(
-        self, deferred: defer.Deferred[T], text: str
-    ) -> defer.Deferred[T]:
-        """
-        Say text above the window, insensitive, until deferred fires;
-        deferred, which fires with what it had.
-        """
-
-        return WaitWindow(text).wait_for(deferred, self.window)
 
     # status icon handling
 

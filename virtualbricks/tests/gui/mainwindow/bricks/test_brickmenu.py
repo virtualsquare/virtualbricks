@@ -46,11 +46,6 @@ class FakeGui:
         self.brickfactory = factory
         self.engine = LocalEngine(factory)
         self.window = object()
-        self.calls = []
-
-    def wait_for(self, deferred, text):
-        self.calls.append(("wait", text))
-        return deferred
 
 
 class FakeDialog:
@@ -60,6 +55,16 @@ class FakeDialog:
 
     def show(self, parent):
         self.shown.append((self.args, parent))
+
+
+class FakeWait:
+    def __init__(self, waited, text):
+        self.waited = waited
+        self.text = text
+
+    def wait_for(self, deferred, parent):
+        self.waited.append((self.text, parent))
+        return deferred
 
 
 def content(model):
@@ -379,6 +384,10 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
         self.assertIs(tap.plugs[0].sock, self.sw.socks[0])
 
     def test_suspend_and_resume_wait(self):
+        waited = []
+        self.patch(
+            brickmenu, "WaitWindow", lambda text: FakeWait(waited, text)
+        )
         vm = self.running(self.brick("qemu", "vm"))
         actions = self.recording(vm)
         actions.activate_action("suspend", None)
@@ -387,8 +396,11 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
             self.gui.engine.calls, [("suspend", vm), ("resume", vm)]
         )
         self.assertEqual(
-            self.gui.calls,
-            [("wait", "Suspending vm…"), ("wait", "Resuming vm…")],
+            waited,
+            [
+                ("Suspending vm…", self.gui.window),
+                ("Resuming vm…", self.gui.window),
+            ],
         )
 
     def test_the_process(self):

@@ -54,6 +54,7 @@ from virtualbricks.bricks.virtualmachine import (
 from virtualbricks.engine import Engine
 from virtualbricks.gui.dialogs.deletedialog import DeleteDialog
 from virtualbricks.gui.dialogs.renamedialog import RenameDialog
+from virtualbricks.gui.dialogs.wait import WaitWindow
 from virtualbricks.gui.mainwindow import tab
 from virtualbricks.gui.mainwindow.tab import (
     MenuActions,
@@ -306,12 +307,14 @@ class BrickActions(MenuActions):
         self, deferred: defer.Deferred[Any], text: str, error: str
     ) -> None:
         """
-        The main window waits for deferred, saying text, with the name of
-        the brick; a failure is logged as error.
+        The main window waits for deferred, insensitive, under a window that
+        says text, with the name of the brick; a failure is logged as error.
         """
 
         name = self.brick.name
-        waiting = self.gui.wait_for(deferred, text.format(name=name))
+        waiting = WaitWindow(text.format(name=name)).wait_for(
+            deferred, self.gui.window
+        )
         waiting.addErrback(
             lambda failure: logger.error(
                 error, name=name, error=failure.getErrorMessage()
