@@ -63,6 +63,7 @@ from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.gui.markdownview import MarkdownLabel
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _, ngettext
+from virtualbricks.locations import short_path
 from virtualbricks.markdown import first_paragraph
 
 logger = Logger()
@@ -212,14 +213,15 @@ class ImageRow:
 
     def describe(self) -> str:
         image = self.image
+        path = short_path(image.path)
         if image.choice == COPY and not image.known:
             return _(
                 "Looking in the archive… if it's there, copied to {path}"
-            ).format(path=image.path)
+            ).format(path=path)
         if image.choice == COPY:
-            return _("Copied to {path}").format(path=image.path)
+            return _("Copied to {path}").format(path=path)
         if image.choice == USE:
-            return _("Uses {path}").format(path=image.path)
+            return _("Uses {path}").format(path=path)
         return _("Unset: its disks get an image later, in their settings")
 
     def on_toggled(self, button: Gtk.RadioButton, choice: str) -> None:
@@ -541,7 +543,8 @@ class ImportDialog(Window):
 
     def show_form(self, plan: ImportPlan) -> None:
         self.plan = plan
-        self.archive_label.set_text(plan.contents.path)
+        self.archive_label.set_text(short_path(plan.contents.path))
+        self.archive_label.set_tooltip_text(plan.contents.path)
         self.name_entry.set_text(plan.name)
         description = first_paragraph(plan.contents.description)
         self.description_label.set_markdown(description)

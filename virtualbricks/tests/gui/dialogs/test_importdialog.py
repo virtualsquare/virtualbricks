@@ -22,17 +22,17 @@ import os
 from twisted.internet import defer
 
 from virtualbricks import locations
-
-from virtualbricks.config.archive import ArchiveCancelled
-from virtualbricks.config.settings import ProjectSettings
-from virtualbricks.config.report import Report
-from virtualbricks.config.settings import use_project
 from virtualbricks.config.archive import (
+    ArchiveCancelled,
     ArchiveContents,
     ArchiveError,
+)
+from virtualbricks.config.archive import (
     Member as ArchiveMember,
 )
 from virtualbricks.config.importing import ImportResult
+from virtualbricks.config.report import Report
+from virtualbricks.config.settings import ProjectSettings, use_project
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
@@ -168,6 +168,9 @@ class TestReading(ImportTestCase):
         self.read()
         dialog = self.dialog
         self.assertEqual(dialog.page(), "form")
+        # with ~ for the home
+        self.assertEqual(dialog.archive_label.get_text(), "~/ospf-lab.vbp")
+        self.assertEqual(dialog.archive_label.get_tooltip_text(), self.archive)
         self.assertEqual(dialog.name_entry.get_text(), "ospf-lab")
         # the first paragraph, rendered
         self.assertEqual(
@@ -185,10 +188,14 @@ class TestReading(ImportTestCase):
         [row] = self.rows()
         self.assertEqual(row.used_label.get_text(), "Used by vm.hda")
         self.assertTrue(row.copy_button.get_active())
-        library = os.path.join(self.manager.path, "shared_images")
+        # with ~ for the home, where the workspace of the tests is
         self.assertEqual(
             row.path_label.get_text(),
-            f"Copied to {library}/deb.qcow2",
+            "Copied to ~/workspace/shared_images/deb.qcow2",
+        )
+        library = os.path.join(self.manager.path, "shared_images")
+        self.assertEqual(
+            row.path_label.get_tooltip_text(), f"{library}/deb.qcow2"
         )
         self.assertEqual(
             row.copy_button.get_tooltip_text(), "2.0 KB in the archive"
@@ -299,7 +306,7 @@ class TestChoices(ImportTestCase):
         self.assertTrue(row.copy_button.get_active())
         row.use_button.set_active(True)
         self.assertEqual((row.image.choice, row.image.path), ("use", mine))
-        self.assertEqual(row.path_label.get_text(), f"Uses {mine}")
+        self.assertEqual(row.path_label.get_text(), "Uses ~/images/mine.qcow2")
         self.assertTrue(self.dialog.import_button.get_sensitive())
         # and the file goes away
         os.remove(mine)
