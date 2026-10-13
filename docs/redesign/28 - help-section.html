@@ -276,17 +276,18 @@
 </style>
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 28 &middot; Design &middot; revision 3, proposal</div>
+    <div class="eyebrow">Step 28 &middot; Design &middot; revision 4, proposal</div>
     <h1>Virtualbricks Help</h1>
     <p class="lede">A user guide for the windows of Virtualbricks: Help &rarr; Contents, or F1 in any window, opens the page about that window. The pages are written once, in Mallard, the format of the GNOME help. Yelp shows them where it is installed, and anywhere else the browser shows the same pages as HTML.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 2de30a6</li>
-      <li>revision 3 &middot; 13 October 2026</li>
+      <li>revision 4 &middot; 13 October 2026</li>
       <li><span class="status">proposal</span></li>
     </ul>
-    <p class="revision"><strong>What this covers:</strong> your questions of today, &ldquo;what is the standard way to add an help section to the application?&rdquo; and &ldquo;Does mallard works if I don&rsquo;t have yelp installed?&rdquo;, then your request, &ldquo;write the design page for the help section&rdquo;. The questions are H1 to H8, in <a href="#decisions">&sect;11</a>.</p>
+    <p class="revision"><strong>What this covers:</strong> your questions of today, &ldquo;what is the standard way to add an help section to the application?&rdquo; and &ldquo;Does mallard works if I don&rsquo;t have yelp installed?&rdquo;, then your request, &ldquo;write the design page for the help section&rdquo;. The eight questions, H1 to H8 in <a href="#decisions">&sect;11</a>, are decided.</p>
     <p class="revision"><strong>What changed:</strong> revision 2 follows your question of today, &ldquo;How to keep website in sync with the help?&rdquo;, and your request, &ldquo;add it to page 28 as revision 2&rdquo;. The new <a href="#website">&sect;7</a> says how the website takes the help from a commit of <code>develop</code>, and the Documentation pages with it, and how <code>make publish</code> stops on a stale copy. H7 asks which commit the website follows, H8 how the copy is made. Step 5 of the plan is now that work; the sections after &sect;6 move down by one.</p>
     <p class="revision"><strong>What changed:</strong> revision 3 records your answers of today: &ldquo;H1: A, H2: A, H3: A, H4: A, H5: A, H6: A&rdquo;, each as recommended. The guide is in Mallard; Yelp opens it where it finds the pages, the installed HTML or the website elsewhere; the HTML is built by the hook, committed and installed; F1 works in every window, with a Help button in Settings and in the settings of the tabs; English first; the sixteen pages of &sect;3. H7 and H8, the website, are still open, and only step 5 waits for them.</p>
+    <p class="revision"><strong>What changed:</strong> revision 4 records your answers of today: &ldquo;H7: A, H8: A&rdquo;. The website has one copy of the help: of <code>develop</code> while 3.0 is in development, of the latest release after it. <code>invoke sync-docs REF</code> copies the help and the Documentation pages of a commit into <code>content/</code>, the copy is committed on <code>website</code>, and <code>make publish</code> checks it first. Every question is decided, and the plan of &sect;10 can start.</p>
   </header>
 
   <div class="layout">
@@ -318,7 +319,7 @@
           <div><dt>F1</dt><dd>Help &rarr; Contents, with F1, opens the guide. F1 in a window opens that window&rsquo;s page: the Settings window opens <i>Settings</i>, the Images tab <i>Disk images</i>. Settings, and the settings of a brick or an event, get a Help button too (&sect;5, <a class="ref done" href="#decisions">H4</a>).</dd></div>
           <div><dt>HTML</dt><dd><code>yelp-build</code> makes it, a pre-commit hook keeps it in step, as the man pages are kept, and it is committed in <code>help/html/</code>. So a packager needs no Yelp tools (&sect;6, <a class="ref done" href="#decisions">H3</a>).</dd></div>
           <div><dt>Languages</dt><dd>English first. The pages are ready for <code>itstool</code>, which turns them into a <code>.pot</code> and back, as the program&rsquo;s strings are (&sect;6, <a class="ref done" href="#decisions">H5</a>).</dd></div>
-          <div><dt>Website</dt><dd>A task of the <code>website</code> branch copies the HTML of a commit of <code>develop</code> into the site, and the Documentation pages with it. <code>make publish</code> stops while the copy differs from that commit (&sect;7, <a class="ref" href="#decisions">H7</a>, <a class="ref" href="#decisions">H8</a>).</dd></div>
+          <div><dt>Website</dt><dd>A task of the <code>website</code> branch copies the HTML of a commit of <code>develop</code> into the site, and the Documentation pages with it. <code>make publish</code> stops while the copy differs from that commit (&sect;7, <a class="ref done" href="#decisions">H7</a>, <a class="ref done" href="#decisions">H8</a>).</dd></div>
           <div><dt>Plan</dt><dd>Four steps on <code>develop</code>, a commit each, then one on <code>website</code> (&sect;10).</dd></div>
         </dl>
       </section>
@@ -498,7 +499,7 @@ PAGE_EXCLUDES = ['help']</code></pre>
         </figure>
         <p>The pages keep the look of the GNOME help, not that of the site. <code>yelp-build html -x</code> imports a stylesheet of our own, which could add the site&rsquo;s name and a link back to it; that is for later.</p>
         <h3>Which commit</h3>
-        <p>While 3.0 is in development the site describes <code>develop</code>, as its posts and its Documentation pages do. Once 3.0 is out it should describe the release, since the last way of &sect;4 sends every installed Virtualbricks to <code>/help/C/</code>. One copy, of <code>develop</code> now and of the latest release then, is enough while one version is in use (<a class="ref" href="#decisions">H7</a>). A copy for each version, under <code>/help/3.0/C/</code>, with the version in the address that <code>show_help()</code> opens, is the step after, if older versions stay in use.</p>
+        <p>While 3.0 is in development the site describes <code>develop</code>, as its posts and its Documentation pages do. Once 3.0 is out it should describe the release, since the last way of &sect;4 sends every installed Virtualbricks to <code>/help/C/</code>. One copy, of <code>develop</code> now and of the latest release then, is enough while one version is in use (<a class="ref done" href="#decisions">H7</a>). A copy for each version, under <code>/help/3.0/C/</code>, with the version in the address that <code>show_help()</code> opens, is the step after, if older versions stay in use.</p>
         <p class="note">Checked with Pelican 4.11 on the <code>website</code> branch at b35197b, in a scratch worktree, with the sample pages of &sect;6 in <code>content/help/C/</code>. Without the three settings, Pelican reads each page as an article and skips it with an error. With them, <code>output/help/C/</code> has the files byte for byte, <code>C.css</code> and <code>yelp.js</code> too. <code>yelp-build html</code> lists <code>-x CUSTOM</code>, &ldquo;Import the custom XSLT file&rdquo;.</p>
       </section>
 
@@ -621,7 +622,7 @@ PAGE_EXCLUDES = ['help']</code></pre>
                 <p><b>B</b> A copy for each version, <code>/help/3.0/C/</code>, and <code>show_help()</code> opens the one of its version: right for every install, a folder more on the site for each release.</p>
                 <p><b>C</b> Always <code>develop</code>: the newest pages, which may describe windows that a released Virtualbricks doesn&rsquo;t have.</p>
               </td>
-              <td class="rec">open; A recommended</td>
+              <td class="rec decided">A</td>
             </tr>
             <tr>
               <td>H8</td>
@@ -631,12 +632,12 @@ PAGE_EXCLUDES = ['help']</code></pre>
                 <p><b>B</b> <code>pelicanconf.py</code> reads the help from <code>develop</code> at each build, with nothing committed: one step less, but what is published depends on how fresh the local refs are, and <code>website</code> doesn&rsquo;t build on its own.</p>
                 <p><b>C</b> A GitHub Action that builds the site and pushes <code>gh-pages</code> when <code>develop</code> changes: no step by hand, but it takes over <code>make github</code>, a larger change.</p>
               </td>
-              <td class="rec">open; A recommended</td>
+              <td class="rec decided">A</td>
             </tr>
           </tbody>
         </table>
         </div>
-        <p>Your answer, 13 October: H1 to H6, A. H7 and H8 are open.</p>
+        <p>Your answers, 13 October: H1 to H6, A; then H7 and H8, A.</p>
         <p>My choices, which the questions don&rsquo;t cover: the id <code>virtualbricks</code>, kept if the application takes <code>org.virtualsquare.Virtualbricks</code>; the menu item named Contents, as in GTK 3 programs with a menu bar; no Help button in the windows with a header bar; the HTML in <code>share/virtualbricks/</code>, not <code>share/doc/</code>.</p>
       </section>
 
