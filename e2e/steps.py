@@ -450,10 +450,7 @@ def main_window(virtualbricks, name):
     the settings.
     """
 
-    workspace = virtualbricks.workspace
-    # with ~ for the home, as Virtualbricks says it
-    if workspace.startswith(virtualbricks.home + os.sep):
-        workspace = "~" + workspace[len(virtualbricks.home) :]
+    workspace = shown(virtualbricks, virtualbricks.workspace)
     titles = (
         f"Virtualbricks (project: {name})",
         f"Virtualbricks (project: {name}, workspace: {workspace})",
@@ -462,6 +459,14 @@ def main_window(virtualbricks, name):
         lambda: any(virtualbricks.shows("frame", title) for title in titles),
         f"the main window shows the project {name}",
     )
+
+
+def shown(virtualbricks, path):
+    """The path with ~ for the home, as Virtualbricks shows it."""
+
+    if path.startswith(virtualbricks.home + os.sep):
+        return "~" + path[len(virtualbricks.home) :]
+    return path
 
 
 # Bricks
@@ -1722,7 +1727,7 @@ def select_project(virtualbricks, name):
         lambda: project_row(window, name), f"the row of {name} shows"
     )
     virtualbricks.click("label", name, within=item)
-    path = os.path.join(virtualbricks.workspace, name)
+    path = shown(virtualbricks, os.path.join(virtualbricks.workspace, name))
     return virtualbricks.find("label", path, within=window).get_parent()
 
 
@@ -1964,10 +1969,11 @@ def export_project(virtualbricks, archive):
     virtualbricks.choose("Export…", "Projects")
     window = virtualbricks.find("frame", EXPORT_WINDOW)
     path = os.path.join(virtualbricks.home, archive)
+    suggested = shown(virtualbricks, path)
     entry = virtualbricks.find("text", within=window)
     virtualbricks.wait_for(
-        lambda: harness.a11y.text(entry) == path,
-        f"the window suggests {path}",
+        lambda: harness.a11y.text(entry) == suggested,
+        f"the window suggests {suggested}",
     )
     virtualbricks.click("button", "Export", within=window)
     says(virtualbricks, window, f"Exported to {path}, ")

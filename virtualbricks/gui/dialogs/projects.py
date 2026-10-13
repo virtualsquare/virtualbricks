@@ -541,7 +541,7 @@ class ProjectsWindow(Window):
             return
         self.details_stack.set_visible_child_name("details")
         self.title_label.set_text(summary.name)
-        self.path_label.set_text(summary.path)
+        self.path_label.set_text(imageinfo.short_path(summary.path))
         readable = summary.problem is None
         self.problem_label.set_text(
             _("The project file can't be read: {problem}").format(

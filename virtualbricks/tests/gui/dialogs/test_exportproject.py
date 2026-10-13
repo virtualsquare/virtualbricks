@@ -22,8 +22,7 @@ import os
 from twisted.internet import defer
 
 from virtualbricks import locations
-from virtualbricks.config.archive import ArchiveCancelled
-from virtualbricks.config.archive import ArchiveError
+from virtualbricks.config.archive import ArchiveCancelled, ArchiveError
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
@@ -101,10 +100,7 @@ class TestChoices(ExportTestCase):
 
     def test_defaults(self):
         dialog = self.dialog()
-        self.assertEqual(
-            dialog.filename_entry.get_text(),
-            os.path.join(os.path.expanduser("~"), "lab.vbp"),
-        )
+        self.assertEqual(dialog.filename_entry.get_text(), "~/lab.vbp")
         self.assertFalse(dialog.project_check.get_sensitive())
         self.assertTrue(dialog.disks_check.get_active())
         self.assertFalse(dialog.images_check.get_active())

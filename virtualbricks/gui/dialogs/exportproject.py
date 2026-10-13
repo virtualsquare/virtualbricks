@@ -165,8 +165,11 @@ class ExportProjectDialog(Window):
         self.job: ArchiveJob | None = None
         self.destroyed = False
         super().__init__()
+        # with ~ for the home, which output() expands
         self.filename_entry.set_text(
-            os.path.join(os.path.expanduser("~"), f"{self.name}.vbp")
+            locations.short_path(
+                os.path.join(locations.home(), f"{self.name}.vbp")
+            )
         )
 
     # The widgets

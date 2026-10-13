@@ -243,9 +243,8 @@ class TestDetails(ProjectsTestCase):
         window = self.window()
         window.select("lab")
         self.assertEqual(window.title_label.get_text(), "lab")
-        self.assertEqual(
-            window.path_label.get_text(), self.manager.project_path("lab")
-        )
+        # with ~ for the home, where the workspace of the tests is
+        self.assertEqual(window.path_label.get_text(), "~/workspace/lab")
         readme = window.readme_view.get_buffer()
         self.assertEqual(
             readme.get_text(*readme.get_bounds(), False), "OSPF lab"
