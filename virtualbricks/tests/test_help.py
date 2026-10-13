@@ -16,14 +16,16 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The user guide: the Mallard pages of help/C/ and their HTML in help/html/C/,
-which help/build.py makes with the Yelp tools.
+The user guide: the Mallard pages of help/C/, their pictures in
+help/C/figures/, and their HTML in help/html/C/, which help/build.py makes
+with the Yelp tools.
 
 The tests of the pages are skipped when the sources of the guide are not
 there, as in an installed package, and those that run yelp-check when the
 Yelp tools are not installed.
 """
 
+import filecmp
 import glob
 import importlib.util
 import io
@@ -39,6 +41,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 HELP = os.path.join(ROOT, "help")
 PAGES = os.path.join(HELP, "C")
 HTML = os.path.join(HELP, "html", "C")
+FIGURES = os.path.join(PAGES, "figures")
 MALLARD = "{http://projectmallard.org/1.0/}"
 
 
@@ -47,6 +50,10 @@ def page_names():
         os.path.basename(path)[: -len(".page")]
         for path in glob.glob(os.path.join(PAGES, "*.page"))
     )
+
+
+def picture_names():
+    return sorted(os.listdir(FIGURES)) if os.path.isdir(FIGURES) else []
 
 
 def load_build():
@@ -101,6 +108,53 @@ class TestThePages(PagesTestCase):
             self.assertIn(guides[0], sections, name)
 
 
+class TestTheFigures(PagesTestCase):
+    """The pictures of help/C/figures/, which the end-to-end tests take."""
+
+    def figures(self):
+        """(page, figure) of each figure of the pages."""
+
+        for name in page_names():
+            root = ET.parse(os.path.join(PAGES, f"{name}.page")).getroot()
+            for figure in root.iter(f"{MALLARD}figure"):
+                yield name, figure
+
+    def test_each_picture_is_shown_once(self):
+        shown = sorted(
+            media.get("src")
+            for _, figure in self.figures()
+            for media in figure.iter(f"{MALLARD}media")
+        )
+        self.assertEqual(
+            shown, [f"figures/{name}" for name in picture_names()]
+        )
+
+    def test_each_figure_has_a_title_and_a_text(self):
+        # the text, for those who don't see the picture
+        for page, figure in self.figures():
+            self.assertTrue(figure.findtext(f"{MALLARD}title"), page)
+            media = figure.find(f"{MALLARD}media")
+            self.assertEqual(media.get("type"), "image", page)
+            self.assertTrue(media.findtext(f"{MALLARD}p"), page)
+
+    def test_the_html_has_a_copy_of_each(self):
+        copies = os.path.join(HTML, "figures")
+        self.assertEqual(
+            picture_names(),
+            sorted(os.listdir(copies)) if os.path.isdir(copies) else [],
+            "run python help/build.py",
+        )
+        for name in picture_names():
+            self.assertTrue(
+                filecmp.cmp(
+                    os.path.join(FIGURES, name),
+                    os.path.join(copies, name),
+                    shallow=False,
+                ),
+                name,
+            )
+
+
 class TestTheInstall(PagesTestCase):
     """pyproject.toml installs every page, and all of its HTML."""
 
@@ -124,7 +178,23 @@ class TestTheInstall(PagesTestCase):
         # the pages, their style and their scripts
         self.assertEqual(
             self.data_files()["share/virtualbricks/help/C"],
-            [f"help/html/C/{name}" for name in sorted(os.listdir(HTML))],
+            [
+                f"help/html/C/{name}"
+                for name in sorted(os.listdir(HTML))
+                if os.path.isfile(os.path.join(HTML, name))
+            ],
+        )
+
+    def test_the_pictures(self):
+        # beside the pages, and beside the HTML
+        data_files = self.data_files()
+        self.assertEqual(
+            data_files["share/help/C/virtualbricks/figures"],
+            [f"help/C/figures/{name}" for name in picture_names()],
+        )
+        self.assertEqual(
+            data_files["share/virtualbricks/help/C/figures"],
+            [f"help/html/C/figures/{name}" for name in picture_names()],
         )
 
 
@@ -172,14 +242,18 @@ class TestBuild(unittest.TestCase):
 
     def render(self, folder):
         for name, text in self.rendered.items():
-            with open(os.path.join(folder, name), "w", encoding="utf-8") as fp:
+            path = os.path.join(folder, name)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as fp:
                 fp.write(text)
 
     def contents(self):
         result = {}
-        for name in os.listdir(self.target):
-            with open(os.path.join(self.target, name), encoding="utf-8") as fp:
-                result[name] = fp.read()
+        for parent, _dirs, names in os.walk(self.target):
+            for name in names:
+                path = os.path.join(parent, name)
+                with open(path, encoding="utf-8") as fp:
+                    result[os.path.relpath(path, self.target)] = fp.read()
         return result
 
     def test_build(self):
@@ -195,6 +269,22 @@ class TestBuild(unittest.TestCase):
             self.build.build(), (["first-lab.html", "index.html"], ["C.css"])
         )
         self.assertEqual(self.contents(), self.rendered)
+
+    def test_figures(self):
+        """The pictures that yelp-build copies, in figures/."""
+
+        self.rendered["figures/lab.png"] = "picture"
+        self.assertEqual(
+            self.build.build(),
+            (["C.css", "figures/lab.png", "index.html"], []),
+        )
+        self.assertEqual(self.contents(), self.rendered)
+        # gone: the folder too
+        del self.rendered["figures/lab.png"]
+        self.assertEqual(self.build.build(), ([], ["figures/lab.png"]))
+        self.assertEqual(
+            sorted(os.listdir(self.target)), ["C.css", "index.html"]
+        )
 
     def test_check_writes_nothing(self):
         self.assertEqual(

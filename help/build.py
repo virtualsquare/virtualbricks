@@ -20,14 +20,18 @@
 Check the pages of the user guide and build their HTML with the Yelp tools.
 
     help/C/<page>.page      source, Mallard, shown by Yelp
+    help/C/figures/         the pictures of the pages, which the end-to-end
+                            tests take: pytest --pictures -m pictures
     help/html/C/            the HTML of yelp-build, committed like the man
-                            pages, for a desktop without Yelp and the website
+                            pages, for a desktop without Yelp and the website;
+                            in figures/, a copy of the pictures it shows
 
 First yelp-check validates each page against the schema of Mallard and looks
 for links to pages that aren't there; then yelp-build writes the HTML, and the
 script copies into help/html/C/ the files that changed and removes those of
-pages that are gone. Running it twice in a row leaves the tree untouched. With
---check it writes nothing and exits with 1 if the HTML is out of date.
+pages that are gone, in figures/ too. Running it twice in a row leaves the
+tree untouched. With --check it writes nothing and exits with 1 if the HTML
+is out of date.
 
 The HTML depends on the version of yelp-xsl: another version may write other
 HTML from the same pages.
@@ -85,11 +89,22 @@ def render(folder):
     run([tool("yelp-build"), "html", "-o", folder + os.sep, PAGES + os.sep])
 
 
+def files(folder):
+    """The files under folder, as paths relative to it; none if it isn't."""
+
+    found = set()
+    for parent, _dirs, names in os.walk(folder):
+        for name in names:
+            path = os.path.join(parent, name)
+            found.add(os.path.relpath(path, folder))
+    return found
+
+
 def differences(built, target):
     """The files of target to write and to remove, to make it built."""
 
-    new = set(os.listdir(built))
-    old = set(os.listdir(target)) if os.path.isdir(target) else set()
+    new = files(built)
+    old = files(target)
     write = sorted(
         name
         for name in new
@@ -114,13 +129,16 @@ def build(check=False):
         render(built)
         write, remove = differences(built, HTML)
         if not check:
-            os.makedirs(HTML, exist_ok=True)
             for name in write:
-                shutil.copyfile(
-                    os.path.join(built, name), os.path.join(HTML, name)
-                )
+                path = os.path.join(HTML, name)
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                shutil.copyfile(os.path.join(built, name), path)
             for name in remove:
                 os.remove(os.path.join(HTML, name))
+            # the folders left empty, as figures/ without pictures
+            for parent, dirs, names in os.walk(HTML, topdown=False):
+                if parent != HTML and not dirs and not names:
+                    os.rmdir(parent)
     return write, remove
 
 

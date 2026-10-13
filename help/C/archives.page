@@ -28,6 +28,13 @@
       other computer may have them;</p></item>
       <item><p>the other files of the folder of the project.</p></item>
     </list>
+    <figure>
+      <title>The Export Project window</title>
+      <media type="image" mime="image/png" src="figures/export.png">
+        <p>The Export Project window: Save as ~/new_project.vbp, and the
+        project, its file and its README, included, with its size.</p>
+      </media>
+    </figure>
     <p>The export runs in the background, with its progress. You can stop it,
     or close the window and let it finish: the <gui>Logs</gui> window says
     when it's done. With <cmd>qemu-img</cmd> installed, the disks are

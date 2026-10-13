@@ -219,8 +219,13 @@
 
 ## User guide
 
-- [ ] Pictures in the pages, taken by the e2e tests on Broadway, so that
-  they follow the windows (28 §12)
+- [ ] Pictures at scale 2, sharp on high-resolution screens: Xvfb with
+  `GDK_SCALE=2`, or Broadway once on GTK 4 (29 §11)
+- [ ] Pictures of the states: the menu of a brick, a running brick, the
+  Messages window with a clock fixed for the tests (29 §11)
+- [ ] Pictures for each language, once the guide is translated:
+  `help/<lang>/figures/`, taken with `LANGUAGE` set (29 §11)
+- [ ] A picture of the main window in the README (29 §11)
 - [ ] Translate the guide: a `.pot` of the pages with `itstool`, a `.po`
   for each language, `help/<lang>/` with `itstool -m`; the HTML of the
   language, else `C` (28 §6, §12)
@@ -340,6 +345,9 @@
 
 # DONE
 
+- [x] Pictures in the pages of the guide: eleven, of the windows they are
+  about, taken by scenarios of the e2e tests on Broadway, `pytest
+  --pictures -m pictures`, in `help/C/figures/` (28 §12, 29)
 - [x] The user guide: sixteen Mallard pages in `help/C/`, Yelp where it
   finds them, else their HTML in the browser, else the website; Help ›
   Contents, F1 in each window for its page, Help in the settings;

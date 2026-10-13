@@ -3,6 +3,7 @@ include l10n.sh
 include docs/*.html docs/redesign/*.html
 include docs/man/build.py docs/man/*.md docs/man/*.[1-9]
 include help/build.py help/C/*.page help/html/C/*
+include help/C/figures/*.png help/html/C/figures/*.png
 include tools/*.py
 include locale/virtualbricks/virtualbricks.pot locale/virtualbricks/*.po
 recursive-include share *

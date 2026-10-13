@@ -11,6 +11,13 @@
   folder: what the lab is for, its addresses, how to use it. The
   <gui>Readme</gui> tab shows it rendered. The Projects window shows it too,
   and the Import window its first paragraph.</p>
+  <figure>
+    <title>The Readme tab</title>
+    <media type="image" mime="image/png" src="figures/readme.png">
+      <p>The Readme tab: the README rendered, with a heading, a paragraph, a
+      list and a link; Edit and Preview over the top right corner.</p>
+    </media>
+  </figure>
   <p>Two buttons float over the top right corner of the tab: <gui>Edit</gui>
   opens the text, and <gui>Preview</gui> goes back to the rendered README.
   While you write, <gui>Syntax</gui> shows what the text can hold. The

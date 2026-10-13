@@ -31,6 +31,13 @@
     starts first, since the machine plugs into it, and both rows say
     <gui>Running</gui>.</p></item>
   </steps>
+  <figure>
+    <title>The first lab, running</title>
+    <media type="image" mime="image/png" src="figures/first-lab.png">
+      <p>The Bricks tab with two rows, both Running: sw1, a switch of 32
+      ports, and vm1, a virtual machine of 64 MiB whose card eth0 is on sw1.</p>
+    </media>
+  </figure>
   <p>The disk is a <gui>Private copy</gui> of the image: the machine writes
   its changes to a file of its own, in the folder of the project, and the
   image stays as it is. See <link xref="images"/>.</p>

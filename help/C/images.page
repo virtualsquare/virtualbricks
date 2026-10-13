@@ -13,6 +13,13 @@
   sees, the space that the file takes, and which disks use it, on a private
   copy or the image itself. Its state is <gui>In use</gui> while a running
   machine reads it.</p>
+  <figure>
+    <title>The Images tab</title>
+    <media type="image" mime="image/png" src="figures/images.png">
+      <p>The Images tab with the image debian: qcow2, a disk of 1.0 GB, the
+      space that its file takes, and no disk uses it.</p>
+    </media>
+  </figure>
   <section id="add">
     <title>Adding an image</title>
     <p><gui>Add Image</gui> offers two ways:</p>

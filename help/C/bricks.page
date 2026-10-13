@@ -54,6 +54,14 @@
     with the first problem beside it. <gui>Cancel</gui> and <key>Esc</key> go
     back to the list without a change. While the brick runs, a bar over its
     settings says which of them change at once.</p>
+    <figure>
+      <title>The settings of a switch</title>
+      <media type="image" mime="image/png" src="figures/switch-settings.png">
+        <p>The settings of sw1 in place of the list, under a line that names
+        it: Ports, 32, and Hub mode and Fast spanning tree, off; Help, Cancel
+        and OK at the bottom.</p>
+      </media>
+    </figure>
   </section>
   <section id="menu">
     <title>The menu of a brick</title>

@@ -12,6 +12,13 @@
   lights up, and its tooltip says its name, its kind and its state. The
   right button opens the menu of the brick, as in the <gui>Bricks</gui> tab,
   and a double click its settings.</p>
+  <figure>
+    <title>The Topology tab</title>
+    <media type="image" mime="image/png" src="figures/topology.png">
+      <p>The Topology tab: sw1 and vm1, joined by a line, with the buttons of
+      the zoom over the top right corner.</p>
+    </media>
+  </figure>
   <section id="zoom">
     <title>Zooming</title>
     <p>A bar over the top right corner has <gui>Zoom Out</gui>, the zoom

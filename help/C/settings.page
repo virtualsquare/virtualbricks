@@ -14,6 +14,13 @@
   <keyseq><key>Ctrl</key><key>P</key></keyseq>. The window has a page for each
   place where settings are kept, and a line at the top of each page says
   where. Each setting has a line that says what it does.</p>
+  <figure>
+    <title>The Settings window</title>
+    <media type="image" mime="image/png" src="figures/settings.png">
+      <p>The Settings window, on its page This computer: Terminal, Tray icon,
+      Missing programs, Share memory (KSM), Audio driver and Workspace.</p>
+    </media>
+  </figure>
   <p>The windows of another Virtualbricks, opened with
   <cmd>virtualbricks --connect</cmd>, have a third page, for the computer
   where the bricks run; see <link xref="remote"/>.</p>

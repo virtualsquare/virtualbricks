@@ -20,8 +20,16 @@
     <title>The Events tab</title>
     <p><gui>New Event</gui> asks for a <gui>Name</gui> and the seconds to
     wait, then shows the settings of the event: <gui>Add Action</gui> adds
-    an action, and the button beside an action removes it. The row of an
-    event and its menu have:</p>
+    an action, and the button beside an action removes it.</p>
+    <figure>
+      <title>The settings of an event</title>
+      <media type="image" mime="image/png" src="figures/event-settings.png">
+        <p>The settings of new_event: wait 5 seconds, then Start a brick, sw1,
+        with the button that removes the action beside it, and Add Action
+        under it.</p>
+      </media>
+    </figure>
+    <p>The row of an event and its menu have:</p>
     <terms>
       <item>
         <title><gui>Start</gui>, <gui>Stop</gui></title>

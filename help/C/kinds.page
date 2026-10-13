@@ -12,6 +12,15 @@
   brick in three groups. A new brick is named after its kind and the first
   free number, as <sys>sw1</sys> or <sys>tap1</sys>, and its settings show at
   once.</p>
+  <figure>
+    <title>New Brick</title>
+    <media type="image" mime="image/png" src="figures/new-brick.png">
+      <p>New Brick open over the Bricks tab: the kinds of brick in three
+      groups, Machines and switches, Links and This computer, each with a line
+      that says what it is; the row Router says that vde_router isn't
+      installed.</p>
+    </media>
+  </figure>
   <p>When this computer lacks the program of a kind, its row says so after a
   warning sign. You can still make the brick: it starts once the program is
   installed. See <link xref="programs"/>.</p>

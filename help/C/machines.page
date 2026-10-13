@@ -15,6 +15,14 @@
   <gui>Sound and USB</gui>; <gui>Kernel</gui>, to boot a kernel of your own;
   and <gui>Advanced</gui>. The line at the top says which QEMU will run
   it.</p>
+  <figure>
+    <title>The settings of a virtual machine</title>
+    <media type="image" mime="image/png" src="figures/machine-settings.png">
+      <p>The settings of vm1: the line at the top names its QEMU, the sections
+      are at the left, and the section Machine shows Program, Machine type,
+      CPU model, KVM, Virtual CPUs and Memory.</p>
+    </media>
+  </figure>
   <section id="disks">
     <title>Disks</title>
     <p><gui>Add Disk</gui> adds a disk on the first free device. Each disk

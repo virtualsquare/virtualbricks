@@ -451,9 +451,12 @@ pre-commit run --all-files     # run them without committing
   `--check` it only tells whether one is out of date.
 - **help**: `python3 help/build.py` checks the pages of the user guide,
   `help/C/*.page`, with `yelp-check`, and builds their HTML into
-  `help/html/C/` with `yelp-build`; the HTML is committed. It needs the Yelp
+  `help/html/C/` with `yelp-build`, with a copy of their pictures; the HTML
+  is committed. It runs when a page or a picture changes, and needs the Yelp
   tools (`yelp-tools` in Debian). With `--check` it only tells whether the
-  HTML is out of date.
+  HTML is out of date. The end-to-end tests take the pictures,
+  `help/C/figures/`: `pytest --pictures -m pictures`, see
+  [e2e/README.md](e2e/README.md#the-pictures-of-the-user-guide).
 - **translations**: `./l10n.sh` extracts the messages of the sources into
   `locale/virtualbricks/virtualbricks.pot`, merges them into the `.po` file of
   each language and compiles the `.mo` catalogs, which are committed too. It
@@ -556,8 +559,9 @@ To add a language, see the top of `l10n.sh`.
   `control-protocols.html`; in `redesign/`, the designs of the parts that
   were rewritten, numbered in the order of the work, from the conversion of
   the Glade files to the console.
-- `help/`: the user guide, Mallard pages in `C/`, their HTML in `html/C/`,
-  and `build.py`, which checks the pages and builds the HTML.
+- `help/`: the user guide, Mallard pages in `C/` and their pictures in
+  `C/figures/`, their HTML in `html/C/`, and `build.py`, which checks the
+  pages and builds the HTML.
 - `tools/`: the scripts of the development, as `typecoverage.py`.
 - `locale/`: the translations; `share/`: the desktop file and the icon.
 
