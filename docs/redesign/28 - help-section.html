@@ -230,6 +230,7 @@
 
   table.decisions td:first-child { white-space: nowrap; }
   table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
   table.decisions p { margin: 0 0 6px; }
   table.decisions p:last-child { margin: 0; }
   .note { font-size: 14px; color: var(--muted); }
@@ -275,16 +276,17 @@
 </style>
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 28 &middot; Design &middot; revision 2, proposal</div>
+    <div class="eyebrow">Step 28 &middot; Design &middot; revision 3, proposal</div>
     <h1>Virtualbricks Help</h1>
     <p class="lede">A user guide for the windows of Virtualbricks: Help &rarr; Contents, or F1 in any window, opens the page about that window. The pages are written once, in Mallard, the format of the GNOME help. Yelp shows them where it is installed, and anywhere else the browser shows the same pages as HTML.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 2de30a6</li>
-      <li>revision 2 &middot; 13 October 2026</li>
+      <li>revision 3 &middot; 13 October 2026</li>
       <li><span class="status">proposal</span></li>
     </ul>
-    <p class="revision"><strong>What this covers:</strong> your questions of today, &ldquo;what is the standard way to add an help section to the application?&rdquo; and &ldquo;Does mallard works if I don&rsquo;t have yelp installed?&rdquo;, then your request, &ldquo;write the design page for the help section&rdquo;. The questions, H1 to H8 in <a href="#decisions">&sect;11</a>, are open, each with my recommendation.</p>
+    <p class="revision"><strong>What this covers:</strong> your questions of today, &ldquo;what is the standard way to add an help section to the application?&rdquo; and &ldquo;Does mallard works if I don&rsquo;t have yelp installed?&rdquo;, then your request, &ldquo;write the design page for the help section&rdquo;. The questions are H1 to H8, in <a href="#decisions">&sect;11</a>.</p>
     <p class="revision"><strong>What changed:</strong> revision 2 follows your question of today, &ldquo;How to keep website in sync with the help?&rdquo;, and your request, &ldquo;add it to page 28 as revision 2&rdquo;. The new <a href="#website">&sect;7</a> says how the website takes the help from a commit of <code>develop</code>, and the Documentation pages with it, and how <code>make publish</code> stops on a stale copy. H7 asks which commit the website follows, H8 how the copy is made. Step 5 of the plan is now that work; the sections after &sect;6 move down by one.</p>
+    <p class="revision"><strong>What changed:</strong> revision 3 records your answers of today: &ldquo;H1: A, H2: A, H3: A, H4: A, H5: A, H6: A&rdquo;, each as recommended. The guide is in Mallard; Yelp opens it where it finds the pages, the installed HTML or the website elsewhere; the HTML is built by the hook, committed and installed; F1 works in every window, with a Help button in Settings and in the settings of the tabs; English first; the sixteen pages of &sect;3. H7 and H8, the website, are still open, and only step 5 waits for them.</p>
   </header>
 
   <div class="layout">
@@ -310,12 +312,12 @@
       <section id="glance">
         <h2><span class="num">&sect;1</span>At a glance</h2>
         <dl class="glance">
-          <div><dt>Format</dt><dd>Mallard pages in <code>help/C/</code>, one topic each: how to make a lab, what each window does, what to do when something goes wrong. They link the man pages for the details (<a class="ref" href="#decisions">H1</a>).</dd></div>
-          <div><dt>Pages</dt><dd>Sixteen pages in four groups: getting started, your lab, projects, and settings and beyond (&sect;3, <a class="ref" href="#decisions">H6</a>).</dd></div>
-          <div><dt>Opening</dt><dd>Yelp, through <code>help:virtualbricks</code>, when a program handles <code>help:</code> and the pages are where Yelp looks. Otherwise the browser, on the HTML built from the same pages and installed with Virtualbricks, or on the website copy if that isn&rsquo;t there either (&sect;4, <a class="ref" href="#decisions">H2</a>).</dd></div>
-          <div><dt>F1</dt><dd>Help &rarr; Contents, with F1, opens the guide. F1 in a window opens that window&rsquo;s page: the Settings window opens <i>Settings</i>, the Images tab <i>Disk images</i>. Settings, and the settings of a brick or an event, get a Help button too (&sect;5, <a class="ref" href="#decisions">H4</a>).</dd></div>
-          <div><dt>HTML</dt><dd><code>yelp-build</code> makes it, a pre-commit hook keeps it in step, as the man pages are kept, and it is committed in <code>help/html/</code>. So a packager needs no Yelp tools (&sect;6, <a class="ref" href="#decisions">H3</a>).</dd></div>
-          <div><dt>Languages</dt><dd>English first. The pages are ready for <code>itstool</code>, which turns them into a <code>.pot</code> and back, as the program&rsquo;s strings are (&sect;6, <a class="ref" href="#decisions">H5</a>).</dd></div>
+          <div><dt>Format</dt><dd>Mallard pages in <code>help/C/</code>, one topic each: how to make a lab, what each window does, what to do when something goes wrong. They link the man pages for the details (<a class="ref done" href="#decisions">H1</a>).</dd></div>
+          <div><dt>Pages</dt><dd>Sixteen pages in four groups: getting started, your lab, projects, and settings and beyond (&sect;3, <a class="ref done" href="#decisions">H6</a>).</dd></div>
+          <div><dt>Opening</dt><dd>Yelp, through <code>help:virtualbricks</code>, when a program handles <code>help:</code> and the pages are where Yelp looks. Otherwise the browser, on the HTML built from the same pages and installed with Virtualbricks, or on the website copy if that isn&rsquo;t there either (&sect;4, <a class="ref done" href="#decisions">H2</a>).</dd></div>
+          <div><dt>F1</dt><dd>Help &rarr; Contents, with F1, opens the guide. F1 in a window opens that window&rsquo;s page: the Settings window opens <i>Settings</i>, the Images tab <i>Disk images</i>. Settings, and the settings of a brick or an event, get a Help button too (&sect;5, <a class="ref done" href="#decisions">H4</a>).</dd></div>
+          <div><dt>HTML</dt><dd><code>yelp-build</code> makes it, a pre-commit hook keeps it in step, as the man pages are kept, and it is committed in <code>help/html/</code>. So a packager needs no Yelp tools (&sect;6, <a class="ref done" href="#decisions">H3</a>).</dd></div>
+          <div><dt>Languages</dt><dd>English first. The pages are ready for <code>itstool</code>, which turns them into a <code>.pot</code> and back, as the program&rsquo;s strings are (&sect;6, <a class="ref done" href="#decisions">H5</a>).</dd></div>
           <div><dt>Website</dt><dd>A task of the <code>website</code> branch copies the HTML of a commit of <code>develop</code> into the site, and the Documentation pages with it. <code>make publish</code> stops while the copy differs from that commit (&sect;7, <a class="ref" href="#decisions">H7</a>, <a class="ref" href="#decisions">H8</a>).</dd></div>
           <div><dt>Plan</dt><dd>Four steps on <code>develop</code>, a commit each, then one on <code>website</code> (&sect;10).</dd></div>
         </dl>
@@ -461,7 +463,7 @@ def show_help(window: Gtk.Window | None, page: str | None = None) -&gt; None:
         <h3>In the sources</h3>
         <ul>
           <li><code>help/C/*.page</code>, the pages, and later <code>help/C/figures/</code>.</li>
-          <li><code>help/html/C/</code>, the HTML that <code>yelp-build html</code> makes: one <code>.html</code> for each page, plus <code>C.css</code>, <code>yelp.js</code> and <code>highlight.pack.js</code>. It is committed, as the man pages are (<a class="ref" href="#decisions">H3</a>).</li>
+          <li><code>help/html/C/</code>, the HTML that <code>yelp-build html</code> makes: one <code>.html</code> for each page, plus <code>C.css</code>, <code>yelp.js</code> and <code>highlight.pack.js</code>. It is committed, as the man pages are (<a class="ref done" href="#decisions">H3</a>).</li>
           <li>A pre-commit hook, <code>help</code>, beside <code>man</code>: on a change to <code>help/C/</code> it runs <code>yelp-check validate</code>, <code>yelp-check links</code> and <code>yelp-build html</code>. Like <code>man</code>, which needs pandoc, it needs <code>yelp-tools</code> on the machine that commits, and nowhere else.</li>
         </ul>
         <h3>Installed</h3>
@@ -471,7 +473,7 @@ def show_help(window: Gtk.Window | None, page: str | None = None) -&gt; None:
           <li>Both in <code>[tool.setuptools.data-files]</code>, a key for each folder, as the man pages are listed. <code>MANIFEST.in</code> takes <code>help/</code> into the sdist.</li>
         </ul>
         <h3>Languages</h3>
-        <p>English first (<a class="ref" href="#decisions">H5</a>). Later, <code>itstool</code> writes a <code>.pot</code> of the pages, the translators fill a <code>.po</code> for each language as for the program, and <code>itstool -m</code> writes <code>help/&lt;lang&gt;/</code>. Yelp then picks the language of the desktop by itself. For the HTML, <code>show_help()</code> picks the folder of the language, else <code>C</code>. The <code>l10n</code> hook could run it.</p>
+        <p>English first (<a class="ref done" href="#decisions">H5</a>). Later, <code>itstool</code> writes a <code>.pot</code> of the pages, the translators fill a <code>.po</code> for each language as for the program, and <code>itstool -m</code> writes <code>help/&lt;lang&gt;/</code>. Yelp then picks the language of the desktop by itself. For the HTML, <code>show_help()</code> picks the folder of the language, else <code>C</code>. The <code>l10n</code> hook could run it.</p>
         <p class="note">Checked with <code>yelp-tools</code> 42.1, <code>itstool</code> 2.0.6 and <code>mallard-rng</code> from the Debian 13 packages, unpacked in a scratch folder, on four sample pages. <code>yelp-check validate</code> refuses a page with an unknown element. <code>yelp-check links</code> names an <code>xref</code> to a page that isn&rsquo;t there, and exits with 1. <code>yelp-build html</code> makes 196 KB with no remote resources, and keeps the <code>if:test="target:html"</code> paragraph of a pair while dropping its <code>!target:html</code> twin. In the <code>ubuntu:22.04</code> image, dpkg leaves out <code>/usr/share/doc/*</code> and <code>/usr/share/man/*</code>; the <code>debian:bookworm</code> image leaves out neither. The versions of <code>yelp-tools</code> on the other targets aren&rsquo;t checked: only the machine that commits needs them.</p>
       </section>
 
@@ -550,7 +552,7 @@ PAGE_EXCLUDES = ['help']</code></pre>
         <h2><span class="num">&sect;11</span>Decisions</h2>
         <div class="scroll">
         <table class="decisions wide">
-          <thead><tr><th></th><th>Question</th><th>Options</th><th>Recommended</th></tr></thead>
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
           <tbody>
             <tr>
               <td>H1</td>
@@ -561,7 +563,7 @@ PAGE_EXCLUDES = ['help']</code></pre>
                 <p><b>C</b> Markdown in a Help window of Virtualbricks (&sect;8).</p>
                 <p><b>D</b> DocBook (&sect;8).</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec decided">A</td>
             </tr>
             <tr>
               <td>H2</td>
@@ -571,7 +573,7 @@ PAGE_EXCLUDES = ['help']</code></pre>
                 <p><b>B</b> Always the HTML in the browser: the same everywhere, but not the help of the desktop.</p>
                 <p><b>C</b> Always Yelp, recommended by the package; an error without it.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec decided">A</td>
             </tr>
             <tr>
               <td>H3</td>
@@ -581,7 +583,7 @@ PAGE_EXCLUDES = ['help']</code></pre>
                 <p><b>B</b> Built when the package is built: nothing generated in git, but every packager, and every <code>pip install</code> from the sdist, needs <code>yelp-tools</code>.</p>
                 <p><b>C</b> Only on the website: nothing installed, but no help offline, and the pages may be those of another version.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec decided">A</td>
             </tr>
             <tr>
               <td>H4</td>
@@ -590,7 +592,7 @@ PAGE_EXCLUDES = ['help']</code></pre>
                 <p><b>A</b> F1 in every window opens its page, and a Help button in Settings and in the settings of a brick or an event (&sect;5).</p>
                 <p><b>B</b> Only Help &rarr; Contents, with F1 in the main window.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec decided">A</td>
             </tr>
             <tr>
               <td>H5</td>
@@ -599,7 +601,7 @@ PAGE_EXCLUDES = ['help']</code></pre>
                 <p><b>A</b> English first; <code>itstool</code> and the five languages of the program later (&sect;6).</p>
                 <p><b>B</b> <code>itstool</code> from the start, with empty <code>.po</code> files for de, es, fr, it and nl.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec decided">A</td>
             </tr>
             <tr>
               <td>H6</td>
@@ -609,7 +611,7 @@ PAGE_EXCLUDES = ['help']</code></pre>
                 <p><b>B</b> A start: the index, <i>Make your first lab</i> and <i>When something goes wrong</i>, the rest page by page later; F1 then opens the index from most windows.</p>
                 <p><b>C</b> A page for every window and every field, a reference of the GUI.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec decided">A</td>
             </tr>
             <tr>
               <td>H7</td>
@@ -619,7 +621,7 @@ PAGE_EXCLUDES = ['help']</code></pre>
                 <p><b>B</b> A copy for each version, <code>/help/3.0/C/</code>, and <code>show_help()</code> opens the one of its version: right for every install, a folder more on the site for each release.</p>
                 <p><b>C</b> Always <code>develop</code>: the newest pages, which may describe windows that a released Virtualbricks doesn&rsquo;t have.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec">open; A recommended</td>
             </tr>
             <tr>
               <td>H8</td>
@@ -629,11 +631,12 @@ PAGE_EXCLUDES = ['help']</code></pre>
                 <p><b>B</b> <code>pelicanconf.py</code> reads the help from <code>develop</code> at each build, with nothing committed: one step less, but what is published depends on how fresh the local refs are, and <code>website</code> doesn&rsquo;t build on its own.</p>
                 <p><b>C</b> A GitHub Action that builds the site and pushes <code>gh-pages</code> when <code>develop</code> changes: no step by hand, but it takes over <code>make github</code>, a larger change.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec">open; A recommended</td>
             </tr>
           </tbody>
         </table>
         </div>
+        <p>Your answer, 13 October: H1 to H6, A. H7 and H8 are open.</p>
         <p>My choices, which the questions don&rsquo;t cover: the id <code>virtualbricks</code>, kept if the application takes <code>org.virtualsquare.Virtualbricks</code>; the menu item named Contents, as in GTK 3 programs with a menu bar; no Help button in the windows with a header bar; the HTML in <code>share/virtualbricks/</code>, not <code>share/doc/</code>.</p>
       </section>
 
