@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="programs">
+  <info>
+    <link type="guide" xref="index#start"/>
+    <link type="seealso" xref="kinds"/>
+    <link type="seealso" xref="settings"/>
+    <title type="sort">3</title>
+    <desc>VDE and QEMU: what a missing program stops, and where
+    Virtualbricks looks for them.</desc>
+  </info>
+  <title>The programs it needs</title>
+  <p>The bricks are programs that Virtualbricks runs: the VDE programs for
+  the switches, the links and the interfaces of this computer, and QEMU for
+  the virtual machines. On Debian and Ubuntu they come in these
+  packages:</p>
+  <table frame="all" rules="rows">
+    <thead>
+      <tr><td><p>Package</p></td><td><p>Programs</p></td></tr>
+    </thead>
+    <tbody>
+      <tr><td><p><sys>vde2</sys></p></td><td><p><cmd>vde_switch</cmd>,
+      <cmd>vde_plug</cmd>, <cmd>dpipe</cmd>, <cmd>vde_plug2tap</cmd>,
+      <cmd>vde_pcapplug</cmd>, <cmd>wirefilter</cmd>, <cmd>vdeterm</cmd>,
+      <cmd>unixterm</cmd></p></td></tr>
+      <tr><td><p><sys>vde2-cryptcab</sys></p></td><td><p><cmd>vde_cryptcab</cmd>,
+      for the tunnels</p></td></tr>
+      <tr><td><p><sys>vde-netemu</sys></p></td><td><p><cmd>vde-netemu</cmd>,
+      for the Netemu links</p></td></tr>
+      <tr><td><p><sys>qemu-system-x86</sys></p></td><td><p><cmd>qemu-system-x86_64</cmd>
+      and <cmd>qemu-system-i386</cmd></p></td></tr>
+      <tr><td><p><sys>qemu-utils</sys></p></td><td><p><cmd>qemu-img</cmd>,
+      which reads and makes the disk images</p></td></tr>
+    </tbody>
+  </table>
+  <p>No distribution ships <cmd>vde_router</cmd>, the program of the
+  router.</p>
+  <section id="where">
+    <title>Where Virtualbricks looks</title>
+    <p>Each project has a folder for the QEMU programs and one for the VDE
+    programs, in its settings: choose <guiseq><gui>File</gui>
+    <gui>Settings</gui></guiseq>, then the page of the project. A program that
+    isn't in its folder is looked for in the folders of <sys>PATH</sys>.</p>
+    <p>Under each folder, the <gui>Settings</gui> window says what it holds:
+    the version of QEMU and its programs, and whether the programs of the
+    bricks are there, or which one is missing and the package that has it. A
+    folder that doesn't exist is an error, and <gui>OK</gui> stays greyed
+    until it is fixed.</p>
+  </section>
+  <section id="missing">
+    <title>When a program is missing</title>
+    <list>
+      <item><p><gui>New Brick</gui> shows a warning sign on the kinds whose
+      program is missing, and says which one.</p></item>
+      <item><p>At start, Virtualbricks warns about the programs it can't
+      find. <gui>Missing programs</gui>, in the settings of this computer,
+      turns the warning off.</p></item>
+      <item><p>A brick whose program is missing doesn't start, and the
+      <gui>Logs</gui> window says why. Install the package, and start it
+      again.</p></item>
+    </list>
+  </section>
+</page>

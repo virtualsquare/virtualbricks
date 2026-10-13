@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>The kinds of brick</title>
+<link rel="stylesheet" type="text/css" href="C.css">
+<script type="text/javascript" src="highlight.pack.js"></script><script>
+document.addEventListener('DOMContentLoaded', function() {
+  var matches = document.querySelectorAll('code.syntax')
+  for (var i = 0; i < matches.length; i++) {
+    hljs.highlightBlock(matches[i]);
+  }
+}, false);</script><script type="text/javascript" src="yelp.js"></script>
+</head>
+<body><main><div class="page">
+<header><div class="inner pagewide"><div class="trails" role="navigation"><div class="trail">
+<a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#start" title="Getting started">Getting started</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">The kinds of brick</span></h1></div>
+<div class="region">
+<div class="contents pagewide">
+<p class="p"><span class="gui">New Brick</span>, in the <span class="gui">Bricks</span> tab, lists the kinds of
+  brick in three groups. A new brick is named after its kind and the first
+  free number, as <span class="sys">sw1</span> or <span class="sys">tap1</span>, and its settings show at
+  once.</p>
+<p class="p">When this computer lacks the program of a kind, its row says so after a
+  warning sign. You can still make the brick: it starts once the program is
+  installed. See <span class="link"><a href="programs.html" title="The programs it needs">The programs it needs</a></span>.</p>
+</div>
+<section id="machines"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">Machines and switches</span></h2></div>
+<div class="region"><div class="contents pagewide"><div class="terms"><div class="inner"><div class="region"><dl class="terms">
+<dt class="terms"><span class="gui">Virtual machine</span></dt>
+<dd class="terms"><p class="p">A computer that QEMU runs, with its disks, its memory, and a
+        network card for each switch it plugs into. See
+        <span class="link"><a href="machines.html" title="Virtual machines">Virtual machines</a></span>.</p></dd>
+<dt class="terms"><span class="gui">Switch</span></dt>
+<dd class="terms"><p class="p">A VDE switch: the other bricks plug into its ports, as into an
+        Ethernet switch. It can start as it is. It runs
+        <span class="cmd">vde_switch</span>.</p></dd>
+<dt class="terms"><span class="gui">Switch wrapper</span></dt>
+<dd class="terms"><p class="p">A switch that another program runs. The bricks of this project
+        plug into its socket, whose path its settings give. You don't start
+        or stop it: it runs while that socket is there.</p></dd>
+<dt class="terms"><span class="gui">Router</span></dt>
+<dd class="terms"><p class="p">A VDE router between switches. It has no settings yet: its console
+        configures it. It runs <span class="cmd">vde_router</span>.</p></dd>
+</dl></div></div></div></div></div>
+</div></section><section id="links"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">Links</span></h2></div>
+<div class="region"><div class="contents pagewide"><div class="terms"><div class="inner"><div class="region"><dl class="terms">
+<dt class="terms"><span class="gui">Wire</span></dt>
+<dd class="terms"><p class="p">A cable between two switches, which its settings choose. It runs
+        <span class="cmd">dpipe</span> and <span class="cmd">vde_plug</span>.</p></dd>
+<dt class="terms"><span class="gui">Netemu</span></dt>
+<dd class="terms"><p class="p">A cable between two switches that emulates a network link: its
+        bandwidth, delay, loss and more, in states that change over time. It
+        runs <span class="cmd">vde-netemu</span>, or <span class="cmd">wirefilter</span>.</p></dd>
+<dt class="terms"><span class="gui">Tunnel server</span></dt>
+<dd class="terms"><p class="p">One end of an encrypted tunnel: it joins a switch here to a tunnel
+        client on another computer, which connects to it. It runs
+        <span class="cmd">vde_cryptcab</span>.</p></dd>
+<dt class="terms"><span class="gui">Tunnel client</span></dt>
+<dd class="terms"><p class="p">The other end of an encrypted tunnel: it joins a switch here to a
+        tunnel server on another computer, whose address its settings give.
+        It runs <span class="cmd">vde_cryptcab</span>.</p></dd>
+</dl></div></div></div></div></div>
+</div></section><section id="host"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">This computer</span></h2></div>
+<div class="region"><div class="contents pagewide">
+<div class="terms"><div class="inner"><div class="region"><dl class="terms">
+<dt class="terms"><span class="gui">Tap</span></dt>
+<dd class="terms"><p class="p">A network interface of this computer, plugged into a switch: this
+        computer joins the lab through it. It runs <span class="cmd">vde_plug2tap</span> as
+        root, through <span class="cmd">sudo</span>.</p></dd>
+<dt class="terms"><span class="gui">Capture interface</span></dt>
+<dd class="terms"><p class="p">An interface of this computer, whose packets go to a switch. It
+        runs <span class="cmd">vde_pcapplug</span> as root, through <span class="cmd">sudo</span>.</p></dd>
+</dl></div></div></div>
+<p class="p">For what <span class="cmd">sudo</span> needs, see <span class="link"><a href="problems.html#sudo" title="A tap or a capture interface doesn't start">A tap or a capture interface doesn't start</a></span>.</p>
+</div></div>
+</div></section><section class="links" role="navigation"><div class="inner">
+<div class="hgroup pagewide"></div>
+<div class="contents pagewide">
+<div class="links guidelinks"><div class="inner">
+<div class="title"><h2><span class="title">More Information</span></h2></div>
+<div class="region"><ul><li class="links "><a href="index.html#start" title="Getting started">Getting started</a></li></ul></div>
+</div></div>
+<div class="links seealsolinks"><div class="inner">
+<div class="title"><h2><span class="title">See Also</span></h2></div>
+<div class="region"><ul>
+<li class="links ">
+<a href="bricks.html" title="Bricks">Bricks</a><span class="desc"> — Start, stop, configure, connect, rename and delete the bricks of a
+    lab.</span>
+</li>
+<li class="links ">
+<a href="first-lab.html" title="Make your first lab">Make your first lab</a><span class="desc"> — A switch and a machine plugged into it, started.</span>
+</li>
+<li class="links ">
+<a href="programs.html" title="The programs it needs">The programs it needs</a><span class="desc"> — VDE and QEMU: what a missing program stops, and where
+    Virtualbricks looks for them.</span>
+</li>
+</ul></div>
+</div></div>
+</div>
+</div></section>
+</div>
+<div class="clear"></div></article><footer><div class="inner pagewide"></div></footer>
+</div></main></body>
+</html>

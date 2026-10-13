@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="images">
+  <info>
+    <link type="guide" xref="index#lab"/>
+    <link type="seealso" xref="machines#disks"/>
+    <title type="sort">3</title>
+    <desc>Add, make, share and find the disk images of a project.</desc>
+  </info>
+  <title>Disk images</title>
+  <p>A disk image is a file that holds the disk of a virtual machine, as
+  <file>debian.qcow2</file>. The <gui>Images</gui> tab has a row for each
+  image of the project: its format, the size of the disk that the machine
+  sees, the space that the file takes, and which disks use it, on a private
+  copy or the image itself. Its state is <gui>In use</gui> while a running
+  machine reads it.</p>
+  <section id="add">
+    <title>Adding an image</title>
+    <p><gui>Add Image</gui> offers two ways:</p>
+    <terms>
+      <item>
+        <title><gui>Existing Image…</gui></title>
+        <p>A file you have. Virtualbricks reads it with <cmd>qemu-img</cmd>
+        and copies it to the shared images of the workspace, unless you choose
+        <gui>Use it where it is</gui>.</p>
+      </item>
+      <item>
+        <title><gui>New Empty Disk…</gui></title>
+        <p>A new file, of the <gui>Size</gui> and <gui>Format</gui> you choose,
+        qcow2 or raw, in a <gui>Folder</gui>.</p>
+      </item>
+    </terms>
+    <p>The same two are in the list of images of each disk of a machine.</p>
+  </section>
+  <section id="shared">
+    <title>The shared images</title>
+    <p>Each workspace has a folder of images that its projects share,
+    <file>shared_images</file>. An image there can be used by several
+    projects, and by several machines of each, each machine on a private copy
+    of its own.</p>
+  </section>
+  <section id="menu">
+    <title>The menu of an image</title>
+    <terms>
+      <item>
+        <title><gui>Details…</gui></title>
+        <p>The name and the description, which you can change, then what
+        <cmd>qemu-img</cmd> says of the file, each disk that uses it, and the
+        other projects that use the same file.</p>
+      </item>
+      <item>
+        <title><gui>Rename…</gui></title>
+        <p>A new name, in the disks that use it too.</p>
+      </item>
+      <item>
+        <title><gui>Show in Files</gui></title>
+        <p>The file, in the file manager.</p>
+      </item>
+      <item>
+        <title><gui>Remove…</gui></title>
+        <p>The image leaves the project. The dialog says which disks lose their
+        image, and offers to move the file to the trash only when it is in the
+        shared images and no other project uses it.</p>
+      </item>
+      <item>
+        <title><gui>Find the File…</gui></title>
+        <p>For an image whose file is missing: choose where it is now. The
+        private copies made on it follow it.</p>
+      </item>
+    </terms>
+  </section>
+</page>
