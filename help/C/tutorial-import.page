@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="tutorial-import">
+  <info>
+    <link type="guide" xref="index#tutorials"/>
+    <link type="seealso" xref="archives"/>
+    <link type="seealso" xref="images"/>
+    <title type="sort">1</title>
+    <desc>A lab someone sent you, whose disk image isn't in the
+    archive.</desc>
+  </info>
+  <title>Import a lab without its image</title>
+  <p>A colleague sends you <file>DTN2hops_26_Feb_2026.vbp</file>, a lab of
+  four virtual machines, <sys>node1</sys> to <sys>node4</sys>, five
+  switches, a switch wrapper and three channel emulators. The machines run on private copies of one disk image,
+  <sys>debian13</sys>, a file of a few gigabytes that the archive doesn't
+  hold: the private copies are in it, with what was done in each machine,
+  but not the image they are made on. Your colleague sends the image apart,
+  or you have it already.</p>
+  <p>The lab was made with Virtualbricks 2.1, and Virtualbricks converts it
+  while it reads the archive. An archive of this version imports the same
+  way.</p>
+  <section id="open">
+    <title>Open the archive</title>
+    <steps>
+      <item><p>Choose <guiseq><gui>Projects</gui><gui>Import…</gui></guiseq>,
+      or <gui>Import…</gui> in the Projects window. The Import Project window
+      asks for the archive.</p></item>
+      <item><p>Click the button of the file, which says
+      <gui>(None)</gui>, and choose
+      <file>DTN2hops_26_Feb_2026.vbp</file>. The window reads the archive,
+      then shows what it holds.</p></item>
+    </steps>
+    <figure>
+      <title>The Import Project window, with the lab</title>
+      <media type="image" mime="image/png" src="figures/import.png">
+        <p>The Import Project window for ~/DTN2hops_26_Feb_2026.vbp: the
+        name DTN2hops_26_Feb_2026; 3 netemu, 4 qemu, 5 switch and 1
+        switchwrapper; the image debian13, used by node1.hda to node4.hda,
+        with Copy grey and Leave unset chosen; Open the project after the
+        import, on.</p>
+      </media>
+    </figure>
+  </section>
+  <section id="options">
+    <title>What the window offers</title>
+    <terms>
+      <item>
+        <title><gui>Name</gui></title>
+        <p><sys>DTN2hops_26_Feb_2026</sys>, the name of the file. If a
+        project has it already, the window suggests
+        <sys>DTN2hops_26_Feb_2026-2</sys>: an import never replaces a
+        project. You can change it.</p>
+      </item>
+      <item>
+        <title>The bricks</title>
+        <p>Below the name, how many bricks of each kind the project has, by
+        the names of the project file: <sys>netemu</sys> are the channel
+        emulators, <sys>qemu</sys> the virtual machines.</p>
+      </item>
+      <item>
+        <title><gui>Images</gui></title>
+        <p>A row for <sys>debian13</sys>, used by the disk
+        <sys>hda</sys> of each of the four machines, with three
+        choices:</p>
+        <list>
+          <item><p><gui>Copy</gui>, from the archive to the shared images of
+          your workspace;</p></item>
+          <item><p><gui>Use a file…</gui> of this computer;</p></item>
+          <item><p><gui>Leave unset</gui>, for its disks to get an image
+          later.</p></item>
+        </list>
+        <p><gui>Leave unset</gui> is chosen: the window looked for the image
+        where the project had it,
+        <file>/home/carlo/VB_images/debian13.qcow2</file> on your colleague's
+        computer, and in your shared images, under the name
+        <file>debian13.qcow2</file>, and found it in neither. Had it
+        found it, <gui>Use a file…</gui> would be chosen, with that
+        file.</p>
+      </item>
+      <item>
+        <title><gui>Open the project after the import</gui></title>
+        <p>On: once imported, the lab opens in the main window.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="greyed">
+    <title>What is grey, and why</title>
+    <terms>
+      <item>
+        <title><gui>Copy</gui></title>
+        <p>The archive doesn't hold the image: there is nothing to copy. Its
+        tooltip says <gui>Not in the archive</gui>. In a large archive, the
+        window may look for the image for a while: <gui>Copy</gui> is chosen
+        meanwhile, the row says <gui>Looking in the archive…</gui>, and
+        <gui>Copy</gui> turns grey once the window has read the archive to
+        its end.</p>
+      </item>
+      <item>
+        <title><gui>Import</gui></title>
+        <p>Grey until the window has read the archive, and whenever something
+        stops the import; the window says what. Under the name: a name that
+        is empty, has a <sys>/</sys>, starts with a dot, is too long, or is a
+        project's already. At the bottom, in red: a file chosen with <gui>Use a
+        file…</gui> that isn't there any more, or a name too long for the
+        names of the bricks. Their sockets are in a folder named after the
+        project, and the path of a socket has at most 107 bytes; the longest
+        name of this lab, <sys>sat_channel_emulator</sys>, has 20.</p>
+      </item>
+      <item>
+        <title><gui>This computer's paths</gui></title>
+        <p>Not there at all for this lab. It shows when the project names the
+        folders of QEMU and VDE of the computer it comes from, and they
+        aren't yours; a project of Virtualbricks 2.1 doesn't name them.</p>
+      </item>
+      <item>
+        <title><guiseq><gui>Projects</gui><gui>Import…</gui></guiseq></title>
+        <p>Grey in the windows of another Virtualbricks, opened with
+        <cmd>--connect</cmd>: the archives stay on the computer they are
+        on, for now. See <link xref="remote"/>.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="image">
+    <title>Choose the image</title>
+    <p>This is the choice that matters.</p>
+    <terms>
+      <item>
+        <title>You have the image</title>
+        <p>Click <gui>Use a file…</gui> and choose it; the row then says
+        <gui>Uses</gui> and its path. The import points the private copies
+        of the four machines at it, so that they keep what was done in them.
+        It must be the image the lab was made on, a copy of your colleague's
+        file: a private copy holds only the changes over its image, and over
+        another one the machine finds a damaged disk.</p>
+      </item>
+      <item>
+        <title>You don't have it</title>
+        <p>Keep <gui>Leave unset</gui>. The project comes without the image
+        <sys>debian13</sys>, and the disks of the four machines without an
+        image. Their private copies come as the archive has them, made on the
+        file of your colleague's computer. When you give the disks an image,
+        in their settings, the first start of each machine moves its private
+        copy aside, as <file>node1_hda.cow.bak-</file> and the date, and
+        makes a new one, empty: the machine starts from the image as it is,
+        without what was done in it.</p>
+      </item>
+    </terms>
+    <note style="tip">
+      <p>If you get the image later, import the archive again then, with
+      <gui>Use a file…</gui>, and remove the first import.</p>
+    </note>
+  </section>
+  <section id="import">
+    <title>Import</title>
+    <steps>
+      <item><p>Click <gui>Import</gui>. The window shows the progress, and
+      <gui>Cancel</gui> becomes <gui>Stop</gui>: an import stopped removes
+      what it wrote. You can close the window, and let the import
+      finish.</p></item>
+      <item><p>The main window shows <sys>DTN2hops_26_Feb_2026</sys>, with
+      its thirteen bricks, all stopped.</p></item>
+      <item><p>Open <guiseq><gui>File</gui><gui>Logs</gui></guiseq>: the
+      import says what needs your attention. With the image left unset:
+      <sys>left unset: give its disks an image in their settings</sys>, and
+      for each machine <sys>its image is unset, the private disk is left as
+      it is</sys>.</p></item>
+    </steps>
+    <p>If a brick of the project open before runs, the lab is imported but
+    doesn't open: stop the bricks, then open it from the Projects window.</p>
+    <p>In the <gui>Bricks</gui> tab, the start button of
+    <sys>switchwrapper</sys> is grey: a switch wrapper is a switch that
+    another program runs, at <file>/var/run/switch/sck</file>, and it runs
+    while that program's switch is there. See <link xref="kinds"/>.</p>
+  </section>
+</page>

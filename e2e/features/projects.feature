@@ -87,6 +87,20 @@ Feature: Projects
       | node3                | Virtual machine · x86_64 · KVM · 500 MiB · eth0 on switchwrapper · eth1 on sw1     | Stopped        |
       | node4                | Virtual machine · x86_64 · KVM · 500 MiB · eth0 on switchwrapper · eth1 on sw4     | Stopped        |
 
+  @needs-qemu-img
+  Scenario: An archive without its image, imported with a file of my home folder for it, gives the image to its machines
+    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my home folder
+    And the empty disk image debian13.qcow2 of 1 GB, in my home folder
+    And Virtualbricks is running
+    When I choose the archive DTN2hops_26_Feb_2026.vbp of my home folder in the Import window, which suggests the name DTN2hops_26_Feb_2026
+    And in the Import window, I use the file debian13.qcow2 of my home folder for the image debian13
+    And I import the archive chosen in the Import window
+    Then the main window shows the project DTN2hops_26_Feb_2026
+    When I open the tab Images
+    Then the list of images has
+      | Image    | Detail                                                             | State      |
+      | debian13 | qcow2 · 1.0 GB disk · node1, node2, node3 and node4, private copies | Not in use |
+
   Scenario: A project exported to an archive, then imported with the name it suggests, has its bricks
     Given Virtualbricks is running
     When I add the switch sw1

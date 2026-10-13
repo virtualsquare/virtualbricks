@@ -118,6 +118,7 @@ include = ["virtualbricks*"]
     "help/C/remote.page",
     "help/C/settings.page",
     "help/C/topology.page",
+    "help/C/tutorial-import.page",
 ]
 "share/virtualbricks/help/C" = [
     "help/html/C/C.css",
@@ -138,6 +139,7 @@ include = ["virtualbricks*"]
     "help/html/C/remote.html",
     "help/html/C/settings.html",
     "help/html/C/topology.html",
+    "help/html/C/tutorial-import.html",
     "help/html/C/yelp.js",
 ]
 "share/help/C/virtualbricks/figures" = [
@@ -145,6 +147,7 @@ include = ["virtualbricks*"]
     "help/C/figures/export.png",
     "help/C/figures/first-lab.png",
     "help/C/figures/images.png",
+    "help/C/figures/import.png",
     "help/C/figures/machine-settings.png",
     "help/C/figures/new-brick.png",
     "help/C/figures/projects.png",
@@ -158,6 +161,7 @@ include = ["virtualbricks*"]
     "help/html/C/figures/export.png",
     "help/html/C/figures/first-lab.png",
     "help/html/C/figures/images.png",
+    "help/html/C/figures/import.png",
     "help/html/C/figures/machine-settings.png",
     "help/html/C/figures/new-brick.png",
     "help/html/C/figures/projects.png",

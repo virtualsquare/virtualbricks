@@ -57,6 +57,9 @@ The steps of a user:
 | `When I remove the project new_project, which can't go to the trash, and delete it permanently` | The same, where the question has no Move to Trash and says the drive of the workspace has no trash: Delete Permanently |
 | `When I import the archive lab.vbp of my home folder with the name it suggests, lab` | Import…, in the menu Projects; in the window, the button of the file, then Home and the archive in the file chooser, and Open; the name must be the one the window suggests; then Import, with Open the project as it is, and the window closes once the project opens |
 | `When I import the archive new_project.vbp of my home folder, typing its path, with the name it suggests, new_project-2` | The same, where in the file chooser, once clicked, Ctrl+L shows the entry of its location: the path of the archive typed there, then Return once Open is enabled |
+| `When I choose the archive lab.vbp of my home folder in the Import window, which suggests the name lab` | The same as the import, up to the name the window suggests: Import isn't clicked, and the window stays |
+| `When in the Import window, I use the file debian13.qcow2 of my home folder for the image debian13` | Use a file…, in the row of the image; in the file chooser it opens, Home, the file and Open; the row then says `Uses ~/debian13.qcow2` |
+| `When I import the archive chosen in the Import window` | Import, in the Import window, which closes once the project opens |
 | `When I export the project to new_project.vbp of my home folder` | Export…, in the menu Projects, for the open project; the window suggests the archive in the home, `~/new_project.vbp`; then Export, and Close once it says where it exported it |
 | `When I open the Export window` | Export…, in the menu Projects, for the open project; then the window shows |
 | `Then sw1 is running` | Its row says Running, and the processes of its start run; when no step started it, as with `--command`, the process its row tells, which has its sockets |
@@ -214,7 +217,7 @@ The steps of the user guide:
 | `When I press F1 in the Settings window` | F1, once the window is active |
 | `Then the desktop opens "help:virtualbricks/settings"` | The program of the tests got the link, and only it |
 | `Then the desktop opens the HTML of the page settings` | The program of the tests got the path of `help/html/C/settings.html` of the sources, and only it: the desktop gives a file by its path |
-| `Then the picture settings shows the Settings window` | The picture of the window for the guide, as it shows, with the menus open over it: the pointer away from the windows first, once the screen hasn't changed for half a second. With `pytest --pictures`, `help/C/figures/settings.png`, if it changed; else `settings.png` in the folder of the scenario, which the end of the run lists if it differs from that of `help/C/figures/`. The windows: `main window`, `Settings window`, `Projects window`, `Export window` |
+| `Then the picture settings shows the Settings window` | The picture of the window for the guide, as it shows, with the menus open over it: the pointer away from the windows first, once the screen hasn't changed for half a second. With `pytest --pictures`, `help/C/figures/settings.png`, if it changed; else `settings.png` in the folder of the scenario, which the end of the run lists if it differs from that of `help/C/figures/`. The windows: `main window`, `Settings window`, `Projects window`, `Export window`, `Import window` |
 
 The steps of the disk images:
 

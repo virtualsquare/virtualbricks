@@ -1945,12 +1945,56 @@ def import_archive(virtualbricks, archive, name):
     opens.
     """
 
+    import_with(virtualbricks, in_home(virtualbricks, archive), name)
+
+
+@when(
+    words(
+        "I choose the archive {archive} of my home folder in the Import"
+        " window, which suggests the name {name:Project}"
+    )
+)
+def choose_archive(virtualbricks, archive, name):
+    """
+    Import…, in the menu Projects; in the window, the button of the file,
+    then Home and the archive in the file chooser, and Open; the window
+    reads it, and the name it suggests is name. Import isn't clicked.
+    """
+
+    choose_with(virtualbricks, in_home(virtualbricks, archive), name)
+
+
+@when(
+    words(
+        "in the Import window, I use the file {file} of my home folder for"
+        " the image {image}"
+    )
+)
+def use_image_file(virtualbricks, file, image):
+    """
+    Use a file…, in the row of the image; in the file chooser it opens,
+    Home, the file and Open; the row then says that it uses it.
+    """
+
+    window = virtualbricks.find("frame", IMPORT_WINDOW)
+    row = virtualbricks.find("label", image, within=window).get_parent()
+    virtualbricks.click("radio button", "Use a file…", within=row)
+    title = f"The file of {image}"
+    in_home(virtualbricks, file)(virtualbricks.find("file chooser", title))
+    virtualbricks.gone("file chooser", title)
+    path = os.path.join("~", file)
+    virtualbricks.find("label", f"Uses {path}", within=row)
+
+
+def in_home(virtualbricks, archive):
+    """What chooses archive of the home in a file chooser: Home, it, Open."""
+
     def choose(chooser):
         virtualbricks.click("label", "Home", within=chooser)
         virtualbricks.click("table cell", archive, within=chooser)
         virtualbricks.click("button", "Open", within=chooser)
 
-    import_with(virtualbricks, choose, name)
+    return choose
 
 
 @when(
@@ -1989,6 +2033,26 @@ def import_with(virtualbricks, choose, name):
     opens.
     """
 
+    choose_with(virtualbricks, choose, name)
+    import_chosen(virtualbricks)
+
+
+@when("I import the archive chosen in the Import window")
+def import_chosen(virtualbricks):
+    """Import, in the Import window, which closes once the project opens."""
+
+    window = virtualbricks.find("frame", IMPORT_WINDOW)
+    virtualbricks.click("button", "Import", within=window)
+    virtualbricks.gone("frame", IMPORT_WINDOW)
+
+
+def choose_with(virtualbricks, choose, name):
+    """
+    Import…, in the menu Projects; in the window, the button of the file,
+    then choose(chooser) in the file chooser, which closes; the name it
+    suggests is name. Return the window.
+    """
+
     virtualbricks.choose("Import…", "Projects")
     window = virtualbricks.find("frame", IMPORT_WINDOW)
     # the button of the file names it: none yet
@@ -1996,8 +2060,7 @@ def import_with(virtualbricks, choose, name):
     choose(virtualbricks.find("file chooser", CHOOSE_ARCHIVE))
     virtualbricks.gone("file chooser", CHOOSE_ARCHIVE)
     suggests(virtualbricks, window, "Name", name)
-    virtualbricks.click("button", "Import", within=window)
-    virtualbricks.gone("frame", IMPORT_WINDOW)
+    return window
 
 
 EXPORT_WINDOW = "Export Project"
@@ -4324,6 +4387,7 @@ PICTURED = {
     "Settings window": ("dialog", SETTINGS_WINDOW),
     "Projects window": ("frame", PROJECTS_WINDOW),
     "Export window": ("frame", EXPORT_WINDOW),
+    "Import window": ("frame", IMPORT_WINDOW),
 }
 
 

@@ -102,3 +102,9 @@ Feature: The pictures of the user guide
     Given Virtualbricks is running
     When I open the Settings window
     Then the picture settings shows the Settings window
+
+  Scenario: The Import window, with the archive of a lab without its image
+    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my home folder
+    And Virtualbricks is running
+    When I choose the archive DTN2hops_26_Feb_2026.vbp of my home folder in the Import window, which suggests the name DTN2hops_26_Feb_2026
+    Then the picture import shows the Import window

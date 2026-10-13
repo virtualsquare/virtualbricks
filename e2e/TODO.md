@@ -205,6 +205,11 @@ that the tests can't do yet: those needs come first.
   converted at the import: the main window lists its 13 bricks
   "An archive of Virtualbricks 2.1 is converted at its import, and
   opens", `projects.feature`
+- [x] Import an archive without its image, with a file of the home for it
+  the image is in the Images tab, used by the private copies of the four
+  machines
+  "An archive without its image, imported with a file of my home folder for
+  it, gives the image to its machines", `projects.feature`
 - [x] Export a project to an archive, then import it under another name
   the archive has the project, its path typed in the file chooser; not its
   private disks yet, which need a virtual machine
@@ -376,10 +381,11 @@ that the tests can't do yet: those needs come first.
 
 ## Pictures of the guide
 
-- [x] The eleven pictures of `help/C/figures/`, a scenario each: the first
+- [x] The twelve pictures of `help/C/figures/`, a scenario each: the first
   lab, New Brick, the settings of a switch, of a machine and of an event,
   the tabs Images, Topology and Readme, the Projects, Export and Settings
-  windows, `pictures.feature`
+  windows, and the Import window with an archive without its image,
+  `pictures.feature`
 - [ ] The pictures of the states: the menu of a brick, a running brick, the
   Messages window, which needs a clock fixed for the tests
 

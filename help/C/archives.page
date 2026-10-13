@@ -5,6 +5,7 @@
   <info>
     <link type="guide" xref="index#projects"/>
     <link type="seealso" xref="projects"/>
+    <link type="seealso" xref="tutorial-import"/>
     <title type="sort">2</title>
     <desc>A lab in one file, for another computer.</desc>
   </info>

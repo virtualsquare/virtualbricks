@@ -345,6 +345,10 @@
 
 # DONE
 
+- [x] A Tutorials section in the guide; the first, `tutorial-import`:
+  import the DTN lab whose archive hasn't its image, what the Import window
+  offers, what is grey and why, and what each choice of the image does to
+  the private copies of the machines; its picture, `import.png`
 - [x] Pictures in the pages of the guide: eleven, of the windows they are
   about, taken by scenarios of the e2e tests on Broadway, `pytest
   --pictures -m pictures`, in `help/C/figures/` (28 §12, 29)
