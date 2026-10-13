@@ -275,15 +275,16 @@
 </style>
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 28 &middot; Design &middot; revision 1, proposal</div>
+    <div class="eyebrow">Step 28 &middot; Design &middot; revision 2, proposal</div>
     <h1>Virtualbricks Help</h1>
     <p class="lede">A user guide for the windows of Virtualbricks: Help &rarr; Contents, or F1 in any window, opens the page about that window. The pages are written once, in Mallard, the format of the GNOME help. Yelp shows them where it is installed, and anywhere else the browser shows the same pages as HTML.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 2de30a6</li>
-      <li>revision 1 &middot; 13 October 2026</li>
+      <li>revision 2 &middot; 13 October 2026</li>
       <li><span class="status">proposal</span></li>
     </ul>
-    <p class="revision"><strong>What this covers:</strong> your questions of today, &ldquo;what is the standard way to add an help section to the application?&rdquo; and &ldquo;Does mallard works if I don&rsquo;t have yelp installed?&rdquo;, then your request, &ldquo;write the design page for the help section&rdquo;. The six questions, H1 to H6 in <a href="#decisions">&sect;10</a>, are open, each with my recommendation.</p>
+    <p class="revision"><strong>What this covers:</strong> your questions of today, &ldquo;what is the standard way to add an help section to the application?&rdquo; and &ldquo;Does mallard works if I don&rsquo;t have yelp installed?&rdquo;, then your request, &ldquo;write the design page for the help section&rdquo;. The questions, H1 to H8 in <a href="#decisions">&sect;11</a>, are open, each with my recommendation.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 follows your question of today, &ldquo;How to keep website in sync with the help?&rdquo;, and your request, &ldquo;add it to page 28 as revision 2&rdquo;. The new <a href="#website">&sect;7</a> says how the website takes the help from a commit of <code>develop</code>, and the Documentation pages with it, and how <code>make publish</code> stops on a stale copy. H7 asks which commit the website follows, H8 how the copy is made. Step 5 of the plan is now that work; the sections after &sect;6 move down by one.</p>
   </header>
 
   <div class="layout">
@@ -296,11 +297,12 @@
         <li><a href="#opening"><span>4</span>Opening it</a></li>
         <li><a href="#context"><span>5</span>F1 in each window</a></li>
         <li><a href="#build"><span>6</span>Build, install, translate</a></li>
-        <li><a href="#others"><span>7</span>Other directions</a></li>
-        <li><a href="#code"><span>8</span>The code and the tests</a></li>
-        <li><a href="#plan"><span>9</span>Implementation plan</a></li>
-        <li><a href="#decisions"><span>10</span>Decisions</a></li>
-        <li><a href="#later"><span>11</span>Later</a></li>
+        <li><a href="#website"><span>7</span>The website</a></li>
+        <li><a href="#others"><span>8</span>Other directions</a></li>
+        <li><a href="#code"><span>9</span>The code and the tests</a></li>
+        <li><a href="#plan"><span>10</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>11</span>Decisions</a></li>
+        <li><a href="#later"><span>12</span>Later</a></li>
       </ol>
     </nav>
 
@@ -314,7 +316,8 @@
           <div><dt>F1</dt><dd>Help &rarr; Contents, with F1, opens the guide. F1 in a window opens that window&rsquo;s page: the Settings window opens <i>Settings</i>, the Images tab <i>Disk images</i>. Settings, and the settings of a brick or an event, get a Help button too (&sect;5, <a class="ref" href="#decisions">H4</a>).</dd></div>
           <div><dt>HTML</dt><dd><code>yelp-build</code> makes it, a pre-commit hook keeps it in step, as the man pages are kept, and it is committed in <code>help/html/</code>. So a packager needs no Yelp tools (&sect;6, <a class="ref" href="#decisions">H3</a>).</dd></div>
           <div><dt>Languages</dt><dd>English first. The pages are ready for <code>itstool</code>, which turns them into a <code>.pot</code> and back, as the program&rsquo;s strings are (&sect;6, <a class="ref" href="#decisions">H5</a>).</dd></div>
-          <div><dt>Plan</dt><dd>Four steps on <code>develop</code>, a commit each, then the website copy (&sect;9).</dd></div>
+          <div><dt>Website</dt><dd>A task of the <code>website</code> branch copies the HTML of a commit of <code>develop</code> into the site, and the Documentation pages with it. <code>make publish</code> stops while the copy differs from that commit (&sect;7, <a class="ref" href="#decisions">H7</a>, <a class="ref" href="#decisions">H8</a>).</dd></div>
+          <div><dt>Plan</dt><dd>Four steps on <code>develop</code>, a commit each, then one on <code>website</code> (&sect;10).</dd></div>
         </dl>
       </section>
 
@@ -472,8 +475,33 @@ def show_help(window: Gtk.Window | None, page: str | None = None) -&gt; None:
         <p class="note">Checked with <code>yelp-tools</code> 42.1, <code>itstool</code> 2.0.6 and <code>mallard-rng</code> from the Debian 13 packages, unpacked in a scratch folder, on four sample pages. <code>yelp-check validate</code> refuses a page with an unknown element. <code>yelp-check links</code> names an <code>xref</code> to a page that isn&rsquo;t there, and exits with 1. <code>yelp-build html</code> makes 196 KB with no remote resources, and keeps the <code>if:test="target:html"</code> paragraph of a pair while dropping its <code>!target:html</code> twin. In the <code>ubuntu:22.04</code> image, dpkg leaves out <code>/usr/share/doc/*</code> and <code>/usr/share/man/*</code>; the <code>debian:bookworm</code> image leaves out neither. The versions of <code>yelp-tools</code> on the other targets aren&rsquo;t checked: only the machine that commits needs them.</p>
       </section>
 
+      <section id="website">
+        <h2><span class="num">&sect;7</span>The website</h2>
+        <p>The website is the <code>website</code> branch of the same repository: Pelican, published by hand with <code>make github</code>, which builds with <code>publishconf.py</code> and pushes <code>gh-pages</code> to <code>virtualsquare</code>. There is no CI. The help has one source, the HTML in <code>help/html/C/</code> of <code>develop</code>, and the website takes a copy of it from a commit, as it should take its Documentation pages.</p>
+        <h3>The copy</h3>
+        <ul>
+          <li><strong>A task, <code>invoke sync-docs REF</code></strong>, in <code>tasks.py</code>. It empties <code>content/help/C/</code>, so that a page removed from the guide leaves the site too, and fills it from <code>git archive REF help/html/C</code>. It says which commit <code>REF</code> was in the local repository; a fetch first makes it the published one.</li>
+          <li><strong>The Documentation pages with it.</strong> <code>config-files</code> and <code>control-protocols</code> are made by hand today from <code>docs/*.html</code>: the page&rsquo;s head up to <code>&lt;body&gt;</code> kept, the body after <code>&lt;/style&gt;</code> taken as it is, the <code>&lt;style&gt;</code> moved into <code>NAME.css</code>. The task does the same for each page that <code>content/documentation/</code> has, from the same commit, so the guide and the pages it links never come from two commits.</li>
+          <li><strong>A commit on <code>website</code></strong>, as now, with the commit of <code>develop</code> in its message: <i>Help and Documentation of develop 2c4eb22</i>.</li>
+          <li><strong>A check, <code>invoke sync-docs --check REF</code></strong>, which changes nothing and exits with 1 when the site differs from <code>REF</code>, naming the files. The <code>publish</code> target of the <code>Makefile</code> runs it first, so <code>make github</code> stops on a stale copy instead of publishing it.</li>
+        </ul>
+        <h3>In Pelican</h3>
+        <p>The help is copied as it is, not read as content. <code>pelicanconf.py</code> gets <code>help</code> in <code>STATIC_PATHS</code>, and in <code>ARTICLE_EXCLUDES</code> and <code>PAGE_EXCLUDES</code>. A <i>Help</i> item in the menu of the site, beside Documentation, links <code>/help/C/</code>, and so does the first post.</p>
+        <figure class="code">
+          <figcaption>pelicanconf.py, what changes</figcaption>
+<pre><code>STATIC_PATHS = ['images', 'documentation', <span class="h">'help'</span>]
+<span class="c"># the HTML of yelp-build, copied byte for byte</span>
+ARTICLE_EXCLUDES = ['help']
+PAGE_EXCLUDES = ['help']</code></pre>
+        </figure>
+        <p>The pages keep the look of the GNOME help, not that of the site. <code>yelp-build html -x</code> imports a stylesheet of our own, which could add the site&rsquo;s name and a link back to it; that is for later.</p>
+        <h3>Which commit</h3>
+        <p>While 3.0 is in development the site describes <code>develop</code>, as its posts and its Documentation pages do. Once 3.0 is out it should describe the release, since the last way of &sect;4 sends every installed Virtualbricks to <code>/help/C/</code>. One copy, of <code>develop</code> now and of the latest release then, is enough while one version is in use (<a class="ref" href="#decisions">H7</a>). A copy for each version, under <code>/help/3.0/C/</code>, with the version in the address that <code>show_help()</code> opens, is the step after, if older versions stay in use.</p>
+        <p class="note">Checked with Pelican 4.11 on the <code>website</code> branch at b35197b, in a scratch worktree, with the sample pages of &sect;6 in <code>content/help/C/</code>. Without the three settings, Pelican reads each page as an article and skips it with an error. With them, <code>output/help/C/</code> has the files byte for byte, <code>C.css</code> and <code>yelp.js</code> too. <code>yelp-build html</code> lists <code>-x CUSTOM</code>, &ldquo;Import the custom XSLT file&rdquo;.</p>
+      </section>
+
       <section id="others">
-        <h2><span class="num">&sect;7</span>Other directions</h2>
+        <h2><span class="num">&sect;8</span>Other directions</h2>
         <ul>
           <li><strong>Markdown in a window of Virtualbricks.</strong> The Readme tab already draws Markdown, with pictures (<a href="05%20-%20readme-markdown.html">page 05</a>). A Help window with a list of pages on the left would need nothing outside Virtualbricks. But it would be a viewer of our own to keep: links between pages, search, the language of the pages, and no copy for the browser or the website without a second renderer.</li>
           <li><strong>HTML by hand</strong>, in the style of the reference pages, opened in the browser. It has one form and no tools, but no schema, no link check, and no way to translate a page but copying it.</li>
@@ -483,7 +511,7 @@ def show_help(window: Gtk.Window | None, page: str | None = None) -&gt; None:
       </section>
 
       <section id="code">
-        <h2><span class="num">&sect;8</span>The code and the tests</h2>
+        <h2><span class="num">&sect;9</span>The code and the tests</h2>
         <h3>What changes</h3>
         <ul>
           <li><code>gui/help.py</code>, new: <code>yelp_finds_it()</code>, <code>find_html()</code>, <code>help_uri()</code>, <code>show_help()</code>.</li>
@@ -502,7 +530,7 @@ def show_help(window: Gtk.Window | None, page: str | None = None) -&gt; None:
       </section>
 
       <section id="plan">
-        <h2><span class="num">&sect;9</span>Implementation plan</h2>
+        <h2><span class="num">&sect;10</span>Implementation plan</h2>
         <p>On <code>develop</code>, a commit for each step and a stop for review after each, as before. Your own files in the working tree stay out of every commit.</p>
         <div class="scroll">
         <table class="wide">
@@ -512,14 +540,14 @@ def show_help(window: Gtk.Window | None, page: str | None = None) -&gt; None:
             <tr><td class="nowrap">2 Opening</td><td><code>gui/help.py</code>; Help &rarr; Contents with F1.</td><td><code>help_uri()</code> for each way.</td></tr>
             <tr><td class="nowrap">3 F1</td><td><code>help_page</code> on the windows and the tabs, F1 in each, the Help buttons of Settings and of the settings in the tabs.</td><td>Each <code>help_page</code> names a page; the e2e scenario.</td></tr>
             <tr><td class="nowrap">4 Install and docs</td><td><code>data-files</code> and <code>MANIFEST.in</code>; a line in the README and in the FILES of <code>virtualbricks</code>(1) and its HTML twin; &ldquo;Since then&rdquo; on page 18 (<code>show_uri_on_window()</code> in one more place); this page&rsquo;s Implemented; the TODO.</td><td><code>pyproject.toml</code> lists every page; an install in a virtualenv opens the HTML.</td></tr>
-            <tr><td class="nowrap">5 Website</td><td>On <code>website</code>: <code>help/html/C/</code> as static files under <code>/help/C/</code>, and <code>command-line</code>, <code>vbp-format</code> and <code>archive-protocol</code> as Documentation pages, for the links of &sect;3.</td><td>The build check of the website.</td></tr>
+            <tr><td class="nowrap">5 Website</td><td>On <code>website</code>: <code>invoke sync-docs</code> and its <code>--check</code>, run by <code>make publish</code>; the three settings of <code>pelicanconf.py</code>; the Help item of the menu; <code>command-line</code>, <code>vbp-format</code> and <code>archive-protocol</code> as Documentation pages, for the links of &sect;3; the first sync, from the commit of step 4 (&sect;7).</td><td>The build check of the website; <code>--check</code> passes after a sync and fails after a change on <code>develop</code>.</td></tr>
           </tbody>
         </table>
         </div>
       </section>
 
       <section id="decisions">
-        <h2><span class="num">&sect;10</span>Decisions</h2>
+        <h2><span class="num">&sect;11</span>Decisions</h2>
         <div class="scroll">
         <table class="decisions wide">
           <thead><tr><th></th><th>Question</th><th>Options</th><th>Recommended</th></tr></thead>
@@ -529,9 +557,9 @@ def show_help(window: Gtk.Window | None, page: str | None = None) -&gt; None:
               <td>The format of the pages</td>
               <td>
                 <p><b>A</b> Mallard: topic pages, Yelp, a schema, a link check, HTML built from the same pages, <code>itstool</code> for translations (&sect;3).</p>
-                <p><b>B</b> HTML by hand, as the reference pages (&sect;7).</p>
-                <p><b>C</b> Markdown in a Help window of Virtualbricks (&sect;7).</p>
-                <p><b>D</b> DocBook (&sect;7).</p>
+                <p><b>B</b> HTML by hand, as the reference pages (&sect;8).</p>
+                <p><b>C</b> Markdown in a Help window of Virtualbricks (&sect;8).</p>
+                <p><b>D</b> DocBook (&sect;8).</p>
               </td>
               <td class="rec">A</td>
             </tr>
@@ -549,7 +577,7 @@ def show_help(window: Gtk.Window | None, page: str | None = None) -&gt; None:
               <td>H3</td>
               <td>Where the HTML comes from</td>
               <td>
-                <p><b>A</b> Built by the <code>help</code> hook, committed in <code>help/html/</code>, installed in <code>share/virtualbricks/help/</code>, and copied to the website (&sect;6).</p>
+                <p><b>A</b> Built by the <code>help</code> hook, committed in <code>help/html/</code>, installed in <code>share/virtualbricks/help/</code>, and copied to the website (&sect;6, &sect;7).</p>
                 <p><b>B</b> Built when the package is built: nothing generated in git, but every packager, and every <code>pip install</code> from the sdist, needs <code>yelp-tools</code>.</p>
                 <p><b>C</b> Only on the website: nothing installed, but no help offline, and the pages may be those of another version.</p>
               </td>
@@ -583,6 +611,26 @@ def show_help(window: Gtk.Window | None, page: str | None = None) -&gt; None:
               </td>
               <td class="rec">A</td>
             </tr>
+            <tr>
+              <td>H7</td>
+              <td>Which commit the website follows</td>
+              <td>
+                <p><b>A</b> One copy: <code>develop</code> while 3.0 is in development, the latest release after it (&sect;7).</p>
+                <p><b>B</b> A copy for each version, <code>/help/3.0/C/</code>, and <code>show_help()</code> opens the one of its version: right for every install, a folder more on the site for each release.</p>
+                <p><b>C</b> Always <code>develop</code>: the newest pages, which may describe windows that a released Virtualbricks doesn&rsquo;t have.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>H8</td>
+              <td>How the copy is made</td>
+              <td>
+                <p><b>A</b> <code>invoke sync-docs REF</code> copies the help and the Documentation pages into <code>content/</code>, the copy is committed on <code>website</code>, and <code>make publish</code> checks it first (&sect;7).</p>
+                <p><b>B</b> <code>pelicanconf.py</code> reads the help from <code>develop</code> at each build, with nothing committed: one step less, but what is published depends on how fresh the local refs are, and <code>website</code> doesn&rsquo;t build on its own.</p>
+                <p><b>C</b> A GitHub Action that builds the site and pushes <code>gh-pages</code> when <code>develop</code> changes: no step by hand, but it takes over <code>make github</code>, a larger change.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
           </tbody>
         </table>
         </div>
@@ -590,9 +638,10 @@ def show_help(window: Gtk.Window | None, page: str | None = None) -&gt; None:
       </section>
 
       <section id="later">
-        <h2><span class="num">&sect;11</span>Later</h2>
+        <h2><span class="num">&sect;12</span>Later</h2>
         <ul>
           <li>Pictures in the pages, taken by the e2e tests on Broadway, so that they follow the windows when the windows change.</li>
+          <li>On the website, a stylesheet for <code>yelp-build html -x</code> with the name of the site and a link back to it; a copy for each version (H7 B) once two versions are in use; a GitHub Action (H8 C) if publishing by hand becomes a burden.</li>
           <li>The translations of &sect;6.</li>
           <li>A Keyboard Shortcuts window, <code>Gtk.ShortcutsWindow</code>, under Help, with Ctrl+?.</li>
           <li>With GTK 4 (<a href="18%20-%20gtk4-migration.html">page 18</a>), <code>show_help()</code> goes through the <code>gui/compat.py</code> that page plans for <code>Gtk.UriLauncher</code>, since <code>Gtk.show_uri_on_window()</code> has no GTK 4 twin.</li>
