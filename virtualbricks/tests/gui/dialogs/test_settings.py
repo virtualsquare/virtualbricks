@@ -245,6 +245,22 @@ class TestOk(WindowTestCase):
         self.assertFalse(os.path.exists(locations.settings_file()))
         self.assertEqual(self.ksm, [])
 
+    def test_help(self):
+        opened = []
+        self.patch(
+            settings_window,
+            "show_help",
+            lambda parent, page=None: opened.append((parent, page)),
+        )
+        window = self.window()
+        dialog = window.dialog
+        help_button = dialog.get_widget_for_response(Gtk.ResponseType.HELP)
+        self.assertEqual(help_button.get_label(), "Help")
+        help_button.clicked()
+        self.assertEqual(opened, [(dialog, "settings")])
+        # open
+        self.assertEqual(self.closed, [])
+
     def test_a_failure(self):
         window = self.window()
 

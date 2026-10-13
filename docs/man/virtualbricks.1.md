@@ -930,6 +930,17 @@ runs another version.
 :   The sockets of the terminals of the consoles that the windows of
     **--connect** open, see **THE WINDOWS OF ANOTHER VIRTUALBRICKS**.
 
+*prefix*/share/help/C/virtualbricks/
+:   The user guide, the pages that Yelp shows as *help:virtualbricks*:
+    **Contents** of the menu **Help** opens its index, and F1 the page
+    about the window in view. *prefix* is where Virtualbricks is
+    installed, as */usr* or *~/.local*.
+
+*prefix*/share/virtualbricks/help/C/
+:   The user guide in HTML, which the browser shows where Yelp doesn't
+    find the pages, as in a virtualenv; without it, the copy of
+    *https://www.virtualbricks.it/help/C/*.
+
 The settings, the state and the projects are described in
 **virtualbricks-config**(5).
 

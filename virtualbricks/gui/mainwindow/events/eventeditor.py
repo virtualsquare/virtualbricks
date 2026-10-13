@@ -227,6 +227,8 @@ class ActionRow(Gtk.Box):
 class EventEditor(Panel):
     """The delay and the actions of an event, on a draft."""
 
+    help_page = "events"
+
     def build(self, form: Form) -> Gtk.Box:
         event = self.draft.brick
         factory = event.factory

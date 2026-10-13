@@ -245,6 +245,8 @@ class ImageRow:
 class ImportDialog(Window):
     """Import a project from an archive (board I1)."""
 
+    help_page = "archives"
+
     def __init__(
         self,
         factory: BrickFactory,

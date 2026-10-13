@@ -217,6 +217,25 @@
   (e.g. no re-exports for names only typing or tests use)
 - [ ] Document the project: layout, deployment, running the tests
 
+## User guide
+
+- [ ] Pictures in the pages, taken by the e2e tests on Broadway, so that
+  they follow the windows (28 §12)
+- [ ] Translate the guide: a `.pot` of the pages with `itstool`, a `.po`
+  for each language, `help/<lang>/` with `itstool -m`; the HTML of the
+  language, else `C` (28 §6, §12)
+- [ ] On the website, a stylesheet for `yelp-build html -x` with the name
+  of the site and a link back to it; a copy for each version once two
+  are in use (H7 B); a GitHub Action that publishes it (H8 C) if
+  publishing by hand becomes a burden (28 §12)
+- [ ] A Keyboard Shortcuts window, `Gtk.ShortcutsWindow`, under Help,
+  with Ctrl+? (28 §12)
+- [ ] Open `help:` links only when the program that handles them is Yelp,
+  else the HTML: today any program of `help:` is taken for Yelp
+  (`yelp_finds_it()` in `gui/help.py`, 28 Implemented)
+- [ ] Fix `Version=2.0.0b2` in `share/virtualbricks.desktop`: the key is
+  the version of the Desktop Entry specification, as 1.5 (28 §12)
+
 ## Console
 
 - [ ] Answer in JSON for scripts, as `brick list --json` (14 §11); the
@@ -321,6 +340,11 @@
 
 # DONE
 
+- [x] The user guide: sixteen Mallard pages in `help/C/`, Yelp where it
+  finds them, else their HTML in the browser, else the website; Help ›
+  Contents, F1 in each window for its page, Help in the settings;
+  installed in `share/help/C/virtualbricks/` and
+  `share/virtualbricks/help/C/` (28)
 - [x] Update the copyright notice to 2026: the headers, COPYING, the
   About dialog and the `--help` text; in the About dialog VDE is
   2003-2025 (vdeplug4) and QEMU 2003-2026, as `qemu -version` says

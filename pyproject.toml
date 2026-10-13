@@ -98,6 +98,47 @@ include = ["virtualbricks*"]
     "docs/man/virtualbricks-archive.7",
     "docs/man/virtualbricks-control.7",
 ]
+# the user guide: its pages, where Yelp looks, and their HTML, for the
+# browser where Yelp isn't (virtualbricks.gui.help)
+"share/help/C/virtualbricks" = [
+    "help/C/archives.page",
+    "help/C/bricks.page",
+    "help/C/console.page",
+    "help/C/events.page",
+    "help/C/first-lab.page",
+    "help/C/images.page",
+    "help/C/index.page",
+    "help/C/kinds.page",
+    "help/C/machines.page",
+    "help/C/problems.page",
+    "help/C/programs.page",
+    "help/C/projects.page",
+    "help/C/readme.page",
+    "help/C/remote.page",
+    "help/C/settings.page",
+    "help/C/topology.page",
+]
+"share/virtualbricks/help/C" = [
+    "help/html/C/C.css",
+    "help/html/C/archives.html",
+    "help/html/C/bricks.html",
+    "help/html/C/console.html",
+    "help/html/C/events.html",
+    "help/html/C/first-lab.html",
+    "help/html/C/highlight.pack.js",
+    "help/html/C/images.html",
+    "help/html/C/index.html",
+    "help/html/C/kinds.html",
+    "help/html/C/machines.html",
+    "help/html/C/problems.html",
+    "help/html/C/programs.html",
+    "help/html/C/projects.html",
+    "help/html/C/readme.html",
+    "help/html/C/remote.html",
+    "help/html/C/settings.html",
+    "help/html/C/topology.html",
+    "help/html/C/yelp.js",
+]
 "share/locale/de/LC_MESSAGES" = ["locale/de/LC_MESSAGES/virtualbricks.mo"]
 "share/locale/es/LC_MESSAGES" = ["locale/es/LC_MESSAGES/virtualbricks.mo"]
 "share/locale/fr/LC_MESSAGES" = ["locale/fr/LC_MESSAGES/virtualbricks.mo"]

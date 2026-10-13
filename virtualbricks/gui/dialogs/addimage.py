@@ -134,6 +134,8 @@ def read_description(path: str) -> str:
 
 class _AddDialog(Window):
 
+    help_page = "images"
+
     # called with the image added
     on_added: Callable[[Image], object] | None = None
     engine: Engine
@@ -216,7 +218,7 @@ class ExistingImageDialog(_AddDialog):
         self.path: str | None = None
         self.info: ImageInfo | None = None
         self.working = False
-        self.build_ui()
+        super().__init__()
         self.check()
 
     def build_ui(self) -> None:
@@ -463,7 +465,7 @@ class NewDiskDialog(_AddDialog):
         self.factory = engine.factory
         self.workspace = engine.workspace if workspace is None else workspace
         self.working = False
-        self.build_ui()
+        super().__init__()
         self.check()
 
     def build_ui(self) -> None:

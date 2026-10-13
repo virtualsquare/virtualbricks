@@ -62,12 +62,14 @@ class NewEventDialog(Window):
     Create gives them to on_create_new_event.
     """
 
+    help_page = "events"
+
     def __init__(
         self, engine: Engine, on_create_new_event: OnCreateNewEventCallback
     ) -> None:
         self.engine = engine
         self.on_create_new_event = on_create_new_event
-        self.build_ui()
+        super().__init__()
 
     def build_ui(self) -> None:
         self.dialog = Gtk.Dialog(

@@ -82,6 +82,7 @@ class BricksTab(RowsTab[Brick]):
         "Add the first one to start the lab."
     )
     EMPTY_ICON = "switch.png"
+    HELP_PAGE = "bricks"
     # made at the first New Brick, and kept
     new_popover: NewBrickPopover | None = None
 
@@ -143,6 +144,13 @@ class BricksTab(RowsTab[Brick]):
             if self.can_stop(brick)
         ]
         return log_failures(deferreds, not_stopped, logger)
+
+    @property
+    def help_page(self) -> str | None:
+        # the kinds, while New Brick offers them
+        if self.new_popover is not None and self.new_popover.get_visible():
+            return "kinds"
+        return super().help_page
 
     def new_item(self) -> None:
         """Offer the kinds of bricks, under the button."""

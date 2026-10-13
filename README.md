@@ -59,6 +59,8 @@ These are optional:
   without them Virtualbricks uses Python's `tarfile`;
 - `gvfs`, so that removing a project can move it to the trash of your desktop;
   without a trash the window offers to delete it for good;
+- `yelp`, to read the user guide, *Help › Contents* or F1 in a window; without
+  it the guide opens in your browser;
 - an askpass helper for `sudo`, as `ssh-askpass`, to type the password of root
   in a window (see [Configuration](#configuration)).
 
@@ -72,8 +74,11 @@ pip install --user .
 
 It installs the `virtualbricks` command, the `virtualbricks-migrate` window,
 the manual pages of the configuration files and of the archives of the
-projects, and the translations. To work on the code, follow
-[Development](#development) instead.
+projects, the user guide, and the translations. Yelp shows the guide from
+`~/.local/share/help/`, where `pip install --user` puts it; in a virtualenv
+Yelp doesn't find it, and the guide opens in your browser, from the HTML
+installed with it. To work on the code, follow [Development](#development)
+instead.
 
 ## Running
 
@@ -434,7 +439,7 @@ scenario from a use case in words.
 ### Code style
 
 The code is formatted with `black`, at 79 columns, and checked with `ruff`.
-`pre-commit` runs them, and three more hooks, on every commit:
+`pre-commit` runs them, and four more hooks, on every commit:
 
 ```sh
 pre-commit run --all-files     # run them without committing
@@ -444,6 +449,11 @@ pre-commit run --all-files     # run them without committing
 - **man pages**: `python docs/man/build.py` builds the pages of `docs/man/`
   from their Markdown sources with pandoc; the pages are committed. With
   `--check` it only tells whether one is out of date.
+- **help**: `python3 help/build.py` checks the pages of the user guide,
+  `help/C/*.page`, with `yelp-check`, and builds their HTML into
+  `help/html/C/` with `yelp-build`; the HTML is committed. It needs the Yelp
+  tools (`yelp-tools` in Debian). With `--check` it only tells whether the
+  HTML is out of date.
 - **translations**: `./l10n.sh` extracts the messages of the sources into
   `locale/virtualbricks/virtualbricks.pot`, merges them into the `.po` file of
   each language and compiles the `.mo` catalogs, which are committed too. It
@@ -546,6 +556,8 @@ To add a language, see the top of `l10n.sh`.
   `control-protocols.html`; in `redesign/`, the designs of the parts that
   were rewritten, numbered in the order of the work, from the conversion of
   the Glade files to the console.
+- `help/`: the user guide, Mallard pages in `C/`, their HTML in `html/C/`,
+  and `build.py`, which checks the pages and builds the HTML.
 - `tools/`: the scripts of the development, as `typecoverage.py`.
 - `locale/`: the translations; `share/`: the desktop file and the icon.
 

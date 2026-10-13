@@ -649,9 +649,11 @@ class LoggingWindow(Window):
     them, to clear them and to report a bug.
     """
 
+    help_page = "problems"
+
     def __init__(self, messages: MessageLog) -> None:
         self.messages = messages
-        self.build_ui()
+        super().__init__()
 
     def build_ui(self) -> None:
         self.window = Gtk.Window(

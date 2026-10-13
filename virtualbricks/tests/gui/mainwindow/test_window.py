@@ -31,8 +31,9 @@ from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
-    from gi.repository import Gtk
+    from gi.repository import Gdk, Gtk
 
+    from virtualbricks.gui.dialogs import base
     from virtualbricks.gui.mainwindow import window
     from virtualbricks.gui.mainwindow.window import MainWindow
 
@@ -255,3 +256,74 @@ class TestTrayIcon(GuiTestCase):
         self.assertEqual(
             gui.status_icon.get_tooltip_text(), "Virtualbricks visible"
         )
+
+
+class TestHelp(GuiTestCase):
+    """
+    Help: Contents opens the index of the guide, F1 the page of the tab in
+    view; About doesn't take F1.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.opened = []
+
+        def show_help(parent, page=None):
+            self.opened.append((parent, page))
+
+        # Contents, and F1 of the window
+        self.patch(window, "show_help", show_help)
+        self.patch(base, "show_help", show_help)
+        self.abouts = []
+        self.patch(window, "AboutDialog", lambda: self.abouts.append(1))
+        self.gui = MainWindow(LocalEngine(self.factory))
+        self.addCleanup(self.gui.window.destroy)
+
+    def help_items(self):
+        menubar = self.gui.menubar
+        return menubar.get_children()[-1].get_submenu().get_children()
+
+    def press(self, keyval, state=0):
+        event = Gdk.Event.new(Gdk.EventType.KEY_PRESS)
+        event.key.keyval = keyval
+        event.key.state = Gdk.ModifierType(state)
+        event.key.window = self.gui.window.get_window()
+        return self.gui.window.emit("key-press-event", event)
+
+    def test_the_items(self):
+        labels = [
+            item.get_label()
+            for item in self.help_items()
+            if not isinstance(item, Gtk.SeparatorMenuItem)
+        ]
+        self.assertEqual(labels, ["_Contents", "gtk-about"])
+
+    def test_contents(self):
+        contents = self.help_items()[0]
+        contents.activate()
+        self.assertEqual(self.opened, [(self.gui.window, None)])
+        # F1 shows beside it
+        self.assertEqual(contents.get_child().get_accel(), (Gdk.KEY_F1, 0))
+
+    def test_f1(self):
+        self.assertTrue(self.press(Gdk.KEY_F1))
+        self.assertEqual(self.opened, [(self.gui.window, "bricks")])
+        self.assertEqual(self.abouts, [])
+
+    def test_f1_on_another_tab(self):
+        notebook = self.gui.main_notebook
+        for page, title in (
+            ("events", "_Events"),
+            ("images", "_Images"),
+            ("topology", "_Topology"),
+            ("readme", "Readme"),
+        ):
+            [tab] = [
+                tab for tab in notebook.get_children() if tab.title == title
+            ]
+            notebook.set_current_page(notebook.page_num(tab))
+            self.assertEqual(self.gui.help_page, page)
+
+    def test_not_ctrl_f1(self):
+        self.assertFalse(self.press(Gdk.KEY_F1, Gdk.ModifierType.CONTROL_MASK))
+        self.assertEqual(self.opened, [])

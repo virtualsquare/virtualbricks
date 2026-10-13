@@ -199,6 +199,16 @@ The steps of the Settings window:
 | `Then settings.toml has`, with a table under it | The settings of the table in the settings file, a name and a value each, the value as TOML writes it, once Virtualbricks has written them |
 | `Then project.toml has the settings`, with a table under it | The same, in the table `settings` of the file of the project |
 
+The steps of the user guide:
+
+| Step | What it does |
+| :- | :- |
+| `Given the desktop opens help: links and web pages with a program of the tests` | Before Virtualbricks starts: a desktop file in the data folder of its home, the default of its `mimeapps.list` for `x-scheme-handler/help` and `text/html`, runs a script that writes each link, or path, it gets on a line of the file `opened` of the scenario; Yelp and the browser of this computer open nothing |
+| `Given the pages of the guide are where Yelp looks` | Before Virtualbricks starts: `help/C/virtualbricks` of the data folder of its home is a link to `help/C` of the sources, where it finds them as installed |
+| `When I press F1 in the Settings window` | F1, once the window is active |
+| `Then the desktop opens "help:virtualbricks/settings"` | The program of the tests got the link, and only it |
+| `Then the desktop opens the HTML of the page settings` | The program of the tests got the path of `help/html/C/settings.html` of the sources, and only it: the desktop gives a file by its path |
+
 The steps of the disk images:
 
 | Step | What it does |
@@ -319,7 +329,7 @@ def stop_brick(virtualbricks, name):
   | `click_text(widget, index, length)` | Clicks the middle of length characters of the text of the widget, from the index of the character in `a11y.text()`: a link or a toggle of a text view, which must show. GTK 3 counts the images of a text view in the offsets of AT-SPI, not in its text: `a11y.offset()` turns one into the other |
   | `spin(name, by, within=None)` | Clicks the + of the spin button `by` times, or its - `-by` times; after each click, its value changes |
   | `type(text, role, name=None, within=None, over=False)` | Clicks it, once it shows and is enabled, a spin button in its text, left of its - and +, and types text at its cursor; then it has the text: see [What it can't do yet](README.md#what-it-cant-do-yet). With `over`, in place of the text it has, as a user who selects it all first. A `password text` tells AT-SPI a dot for each character, as it shows them: then it has as many more |
-  | `key(keys, window)` | Presses keys, as `Escape`, `Return`, `Delete`, `F2` or `Control+l`, in window, a frame or a dialog, once it is active: click in it first, as the keys go to the window clicked last. Text goes with `type()` |
+  | `key(keys, window)` | Presses keys, as `Escape`, `Return`, `Delete`, `F1`, `F2` or `Control+l`, in window, a frame or a dialog, once it is active: click in it first, as the keys go to the window clicked last. Text goes with `type()` |
   | `drag(start, end, ready=None)` | Presses at start, a point of the screen, moves to end and releases there; `ready()`, if given, right before the press, half a second after the click before |
   | `choose(item, menu)` | A menu of the menu bar, then its item |
   | `row(name)` | The row of a list with that name, for `within=` |

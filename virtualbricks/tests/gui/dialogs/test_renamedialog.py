@@ -83,6 +83,15 @@ class TestTheDialog(RenameTestCase):
             self.assertEqual(header.get_title(), title)
             self.assertEqual(header.get_subtitle(), item.name)
 
+    def test_its_page_of_the_guide(self):
+        for item, page in (
+            (self.sw1, "bricks"),
+            (self.vm1, "bricks"),
+            (self.boot, "events"),
+            (self.image, "images"),
+        ):
+            self.assertEqual(self.dialog(item).help_page, page)
+
     def test_the_name_selected(self):
         # typing replaces it; Rename waits for another
         dialog = self.dialog(self.sw1)

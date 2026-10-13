@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="projects">
+  <info>
+    <link type="guide" xref="index#projects"/>
+    <link type="seealso" xref="archives"/>
+    <title type="sort">1</title>
+    <desc>Open, make, rename, copy and remove the projects of a
+    workspace.</desc>
+  </info>
+  <title>Projects</title>
+  <p>A project is a lab: its bricks, its events, its disk images and its
+  README. Each is a folder of the workspace, with the file
+  <file>project.toml</file>, the <file>README.md</file> and the private
+  copies of the disks of its machines. Virtualbricks opens the project that
+  was open last.</p>
+  <section id="window">
+    <title>The Projects window</title>
+    <p>Choose <guiseq><gui>Projects</gui><gui>Projects…</gui></guiseq>, or
+    press <keyseq><key>Ctrl</key><key>O</key></keyseq>. The list has the
+    projects of the workspace, the last used first, each with the first line
+    of its README, its bricks and when it was used last. A project whose
+    images are missing, or whose file can't be read, says so. Typing filters
+    the list by name and description. Beside the list, the selected project
+    shows its README, its bricks, events and images, and the space that it
+    takes.</p>
+    <terms>
+      <item>
+        <title><gui>Open</gui></title>
+        <p>Save the open project, and open the selected one.</p>
+      </item>
+      <item>
+        <title><gui>New…</gui></title>
+        <p>A new, empty project, with a copy of the settings of the open one;
+        also <guiseq><gui>Projects</gui><gui>New Project…</gui></guiseq>,
+        <keyseq><key>Ctrl</key><key>N</key></keyseq>.</p>
+      </item>
+      <item>
+        <title><gui>Duplicate…</gui></title>
+        <p>A copy of the project, with the private copies of its disks but not
+        its images, which the copy shares.</p>
+      </item>
+      <item>
+        <title><gui>Rename…</gui></title>
+        <p>A new name; the dialog says at once if a name can't be used.</p>
+      </item>
+      <item>
+        <title><gui>Show in Files</gui></title>
+        <p>The folder of the project, in the file manager.</p>
+      </item>
+      <item>
+        <title><gui>Remove…</gui></title>
+        <p>The folder of the project goes to the trash, where you can restore
+        it, or, where the workspace has no trash, is deleted for good. The
+        dialog says how much it takes. The images it uses stay where they are.
+        The open project can't be removed: open another one first.</p>
+      </item>
+      <item>
+        <title><gui>Import…</gui>, <gui>Export…</gui></title>
+        <p>A project in one file; see <link xref="archives"/>.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="save">
+    <title>Saving</title>
+    <p>Virtualbricks saves the open project every three minutes, when you open
+    another one and when it quits. <guiseq><gui>Projects</gui><gui>Save</gui></guiseq>,
+    <keyseq><key>Ctrl</key><key>S</key></keyseq>, saves it now.</p>
+    <note style="warning">
+      <p>Don't edit <file>project.toml</file> while Virtualbricks runs with the
+      project open: the next save writes over your changes.</p>
+    </note>
+  </section>
+  <section id="workspace">
+    <title>Workspaces</title>
+    <p>A workspace is a folder of projects, <file>~/.virtualbricks</file>
+    unless the setting <sys>workspace</sys> names another; the
+    <gui>Settings</gui> window shows which. It keeps
+    the images that its projects share, in <file>shared_images</file>. Started
+    with <cmd>virtualbricks --workspace <var>folder</var></cmd>, Virtualbricks
+    uses another folder for that run, made if it isn't there, and a
+    Virtualbricks can run in each workspace side by side.</p>
+  </section>
+  <section id="start-up">
+    <title>At start</title>
+    <p>If the project that was open last can't be opened, the Projects window
+    opens and says why. A project written by a newer Virtualbricks is not
+    read, and never written over.</p>
+  </section>
+</page>

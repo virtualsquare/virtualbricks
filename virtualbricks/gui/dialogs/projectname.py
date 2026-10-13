@@ -84,6 +84,8 @@ class ProjectNameDialog(Window):
     change.
     """
 
+    help_page = "projects"
+
     on_done: Callable[[str], object] | None = None
 
     def __init__(
@@ -107,7 +109,7 @@ class ProjectNameDialog(Window):
         self.original = original
         # the workspace of the Virtualbricks of the bricks
         self.workspace = engine.workspace if workspace is None else workspace
-        self.build_ui()
+        super().__init__()
         self.name_entry.set_text(self.suggested_name())
         self.check()
 

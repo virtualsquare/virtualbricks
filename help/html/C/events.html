@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Events</title>
+<link rel="stylesheet" type="text/css" href="C.css">
+<script type="text/javascript" src="highlight.pack.js"></script><script>
+document.addEventListener('DOMContentLoaded', function() {
+  var matches = document.querySelectorAll('code.syntax')
+  for (var i = 0; i < matches.length; i++) {
+    hljs.highlightBlock(matches[i]);
+  }
+}, false);</script><script type="text/javascript" src="yelp.js"></script>
+</head>
+<body><main><div class="page">
+<header><div class="inner pagewide"><div class="trails" role="navigation"><div class="trail">
+<a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#lab" title="Your lab">Your lab</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">Events</span></h1></div>
+<div class="region">
+<div class="contents pagewide">
+<p class="p">An event waits a number of seconds, then runs its actions, all at once:
+  an action doesn't wait for the one before. An action can:</p>
+<div class="list"><div class="inner"><div class="region"><ul class="list">
+<li class="list"><p class="p"><span class="gui">Start a brick</span> or <span class="gui">Stop a brick</span>;</p></li>
+<li class="list"><p class="p"><span class="gui">Start an event</span> or <span class="gui">Stop an event</span>;</p></li>
+<li class="list"><p class="p">run a <span class="gui">Console command</span> of Virtualbricks, as
+    <span class="cmd">brick set vm1 memory=512</span>;</p></li>
+<li class="list"><p class="p">run a <span class="gui">Shell command</span> of this computer.</p></li>
+</ul></div></div></div>
+</div>
+<section id="tab"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">The Events tab</span></h2></div>
+<div class="region"><div class="contents pagewide">
+<p class="p"><span class="gui">New Event</span> asks for a <span class="gui">Name</span> and the seconds to
+    wait, then shows the settings of the event: <span class="gui">Add Action</span> adds
+    an action, and the button beside an action removes it. The row of an
+    event and its menu have:</p>
+<div class="terms"><div class="inner"><div class="region"><dl class="terms">
+<dt class="terms">
+<span class="gui">Start</span>, <span class="gui">Stop</span>
+</dt>
+<dd class="terms"><p class="p">Start the event: it waits, then runs its actions. Stop an event
+        that waits, before it runs them. <span class="gui">Waiting</span>, above the list,
+        shows only the events that wait.</p></dd>
+<dt class="terms"><span class="gui">Run Now</span></dt>
+<dd class="terms"><p class="p">Run the actions now, without waiting.</p></dd>
+<dt class="terms">
+<span class="gui">Configure…</span>, <span class="gui">Rename…</span>,
+        <span class="gui">Duplicate</span>, <span class="gui">Delete…</span>
+</dt>
+<dd class="terms"><p class="p">As for a brick. Before an event goes, the dialog says what goes with
+        it: the actions of the other events that start or stop it, and the
+        bricks that will no longer run it.</p></dd>
+</dl></div></div></div>
+</div></div>
+</div></section><section id="order"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">Starting a lab in order</span></h2></div>
+<div class="region"><div class="contents pagewide">
+<p class="p">Some systems need the network up before they start. Make an event
+    that starts the switches, and one that waits a few seconds and starts the
+    machines; then start both:</p>
+<div class="steps"><div class="inner"><div class="region"><ol class="steps">
+<li class="steps"><p class="p">Make the event <span class="sys">network</span>, which waits 0 seconds,
+      with an action that starts each switch.</p></li>
+<li class="steps"><p class="p">Make the event <span class="sys">machines</span>, which waits 10 seconds,
+      with an action that starts each machine.</p></li>
+<li class="steps"><p class="p">Make the event <span class="sys">lab</span>, which waits 0 seconds, with
+      the actions <span class="gui">Start an event</span> <span class="sys">network</span> and
+      <span class="gui">Start an event</span> <span class="sys">machines</span>.</p></li>
+<li class="steps"><p class="p">Start <span class="sys">lab</span>.</p></li>
+</ol></div></div></div>
+</div></div>
+</div></section><section id="bricks"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">An event when a brick starts or stops</span></h2></div>
+<div class="region"><div class="contents pagewide"><p class="p">In the menu of a brick, <span class="gui">When It Starts</span> and <span class="gui">When It
+    Stops</span> choose an event to start each time the brick starts or
+    stops, as one that runs a shell command of this computer once a tap is
+    up.</p></div></div>
+</div></section><section class="links" role="navigation"><div class="inner">
+<div class="hgroup pagewide"></div>
+<div class="contents pagewide">
+<div class="links guidelinks"><div class="inner">
+<div class="title"><h2><span class="title">More Information</span></h2></div>
+<div class="region"><ul><li class="links "><a href="index.html#lab" title="Your lab">Your lab</a></li></ul></div>
+</div></div>
+<div class="links seealsolinks"><div class="inner">
+<div class="title"><h2><span class="title">See Also</span></h2></div>
+<div class="region"><ul>
+<li class="links ">
+<a href="bricks.html" title="Bricks">Bricks</a><span class="desc"> — Start, stop, configure, connect, rename and delete the bricks of a
+    lab.</span>
+</li>
+<li class="links "><a href="bricks.html#menu" title="The menu of a brick">The menu of a brick</a></li>
+</ul></div>
+</div></div>
+</div>
+</div></section>
+</div>
+<div class="clear"></div></article><footer><div class="inner pagewide"></div></footer>
+</div></main></body>
+</html>

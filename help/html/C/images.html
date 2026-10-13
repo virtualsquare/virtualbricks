@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Disk images</title>
+<link rel="stylesheet" type="text/css" href="C.css">
+<script type="text/javascript" src="highlight.pack.js"></script><script>
+document.addEventListener('DOMContentLoaded', function() {
+  var matches = document.querySelectorAll('code.syntax')
+  for (var i = 0; i < matches.length; i++) {
+    hljs.highlightBlock(matches[i]);
+  }
+}, false);</script><script type="text/javascript" src="yelp.js"></script>
+</head>
+<body><main><div class="page">
+<header><div class="inner pagewide"><div class="trails" role="navigation"><div class="trail">
+<a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#lab" title="Your lab">Your lab</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">Disk images</span></h1></div>
+<div class="region">
+<div class="contents pagewide"><p class="p">A disk image is a file that holds the disk of a virtual machine, as
+  <span class="file">debian.qcow2</span>. The <span class="gui">Images</span> tab has a row for each
+  image of the project: its format, the size of the disk that the machine
+  sees, the space that the file takes, and which disks use it, on a private
+  copy or the image itself. Its state is <span class="gui">In use</span> while a running
+  machine reads it.</p></div>
+<section id="add"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">Adding an image</span></h2></div>
+<div class="region"><div class="contents pagewide">
+<p class="p"><span class="gui">Add Image</span> offers two ways:</p>
+<div class="terms"><div class="inner"><div class="region"><dl class="terms">
+<dt class="terms"><span class="gui">Existing Image…</span></dt>
+<dd class="terms"><p class="p">A file you have. Virtualbricks reads it with <span class="cmd">qemu-img</span>
+        and copies it to the shared images of the workspace, unless you choose
+        <span class="gui">Use it where it is</span>.</p></dd>
+<dt class="terms"><span class="gui">New Empty Disk…</span></dt>
+<dd class="terms"><p class="p">A new file, of the <span class="gui">Size</span> and <span class="gui">Format</span> you choose,
+        qcow2 or raw, in a <span class="gui">Folder</span>.</p></dd>
+</dl></div></div></div>
+<p class="p">The same two are in the list of images of each disk of a machine.</p>
+</div></div>
+</div></section><section id="shared"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">The shared images</span></h2></div>
+<div class="region"><div class="contents pagewide"><p class="p">Each workspace has a folder of images that its projects share,
+    <span class="file">shared_images</span>. An image there can be used by several
+    projects, and by several machines of each, each machine on a private copy
+    of its own.</p></div></div>
+</div></section><section id="menu"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">The menu of an image</span></h2></div>
+<div class="region"><div class="contents pagewide"><div class="terms"><div class="inner"><div class="region"><dl class="terms">
+<dt class="terms"><span class="gui">Details…</span></dt>
+<dd class="terms"><p class="p">The name and the description, which you can change, then what
+        <span class="cmd">qemu-img</span> says of the file, each disk that uses it, and the
+        other projects that use the same file.</p></dd>
+<dt class="terms"><span class="gui">Rename…</span></dt>
+<dd class="terms"><p class="p">A new name, in the disks that use it too.</p></dd>
+<dt class="terms"><span class="gui">Show in Files</span></dt>
+<dd class="terms"><p class="p">The file, in the file manager.</p></dd>
+<dt class="terms"><span class="gui">Remove…</span></dt>
+<dd class="terms"><p class="p">The image leaves the project. The dialog says which disks lose their
+        image, and offers to move the file to the trash only when it is in the
+        shared images and no other project uses it.</p></dd>
+<dt class="terms"><span class="gui">Find the File…</span></dt>
+<dd class="terms"><p class="p">For an image whose file is missing: choose where it is now. The
+        private copies made on it follow it.</p></dd>
+</dl></div></div></div></div></div>
+</div></section><section class="links" role="navigation"><div class="inner">
+<div class="hgroup pagewide"></div>
+<div class="contents pagewide">
+<div class="links guidelinks"><div class="inner">
+<div class="title"><h2><span class="title">More Information</span></h2></div>
+<div class="region"><ul><li class="links "><a href="index.html#lab" title="Your lab">Your lab</a></li></ul></div>
+</div></div>
+<div class="links seealsolinks"><div class="inner">
+<div class="title"><h2><span class="title">See Also</span></h2></div>
+<div class="region"><ul>
+<li class="links ">
+<a href="machines.html" title="Virtual machines">Virtual machines</a><span class="desc"> — The disks, network cards and consoles of a virtual machine.</span>
+</li>
+<li class="links "><a href="machines.html#disks" title="Disks">Disks</a></li>
+</ul></div>
+</div></div>
+</div>
+</div></section>
+</div>
+<div class="clear"></div></article><footer><div class="inner pagewide"></div></footer>
+</div></main></body>
+</html>

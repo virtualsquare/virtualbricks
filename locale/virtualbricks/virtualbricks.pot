@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-09 00:02+0200\n"
+"POT-Creation-Date: 2026-10-13 14:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -3402,6 +3402,10 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
+#: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/mainwindow/rowtab.py
+msgid "Help"
+msgstr ""
+
 #: virtualbricks/gui/dialogs/settings.py
 msgid "OK"
 msgstr ""
@@ -4656,6 +4660,10 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/window.py
 msgid "_Help"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "_Contents"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/window.py

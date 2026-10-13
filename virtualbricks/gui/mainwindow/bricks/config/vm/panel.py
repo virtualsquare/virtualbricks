@@ -115,6 +115,7 @@ SECTIONS = (
 class VirtualMachinePanel(Panel):
     """The settings of a virtual machine."""
 
+    help_page = "machines"
     draft: VirtualMachineDraft
     # what the sections make
     machine_picker: Picker

@@ -109,6 +109,7 @@ class ReadmeTab(Tab, Gtk.Overlay):
     """The README of the open project rendered, or its text in the editor."""
 
     title = _("Readme")
+    help_page = "readme"
 
     def __init__(
         self, engine: Engine, clock: IReactorTime | None = None
