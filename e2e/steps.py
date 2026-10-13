@@ -608,6 +608,22 @@ def configure(virtualbricks, name):
     virtualbricks.click("button", "Configure…")
 
 
+@when(words("I open the settings of {name:Brick}"))
+def open_brick_settings(virtualbricks, name):
+    """Configure…, in its menu: its settings show, in place of the list."""
+
+    configure(virtualbricks, name)
+    virtualbricks.find("button", "OK")
+
+
+@when(words("I open the settings of {name:Brick}, on its page {page}"))
+def open_brick_settings_page(virtualbricks, name, page):
+    """The same, then the page, in the list at the left of its settings."""
+
+    open_brick_settings(virtualbricks, name)
+    settings_page(virtualbricks, page)
+
+
 def settings_page(virtualbricks, page):
     """The page of the settings of a brick, in the list at their left."""
 
@@ -1622,6 +1638,35 @@ def workspace_without_trash(virtualbricks, drive_without_trash):
     os.makedirs(virtualbricks.workspace)
 
 
+@given("the workspace is the default one")
+def default_workspace(virtualbricks):
+    """
+    Before Virtualbricks starts: its workspace is ~/.virtualbricks, the one
+    of its settings, as for a user who never chose another; then the title
+    of the main window names the project alone.
+    """
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    virtualbricks.workspace = os.path.join(
+        virtualbricks.home, ".virtualbricks"
+    )
+    os.makedirs(virtualbricks.workspace, exist_ok=True)
+
+
+@when(words("the projects were last saved on {day}"))
+def saved_on(virtualbricks, day):
+    """
+    The file of each project of the workspace last changed on the day, as
+    2024-08-02, at noon: the Projects window says that day, not the time of
+    the scenario.
+    """
+
+    moment = time.mktime(time.strptime(f"{day} 12:00", "%Y-%m-%d %H:%M"))
+    pattern = os.path.join(virtualbricks.workspace, "*", "project.toml")
+    for path in glob.glob(pattern):
+        os.utime(path, (moment, moment))
+
+
 @when("I open the Projects window")
 def open_projects(virtualbricks):
     """Projects…, in the menu Projects."""
@@ -1966,8 +2011,7 @@ def export_project(virtualbricks, archive):
     where it exported it.
     """
 
-    virtualbricks.choose("Export…", "Projects")
-    window = virtualbricks.find("frame", EXPORT_WINDOW)
+    window = open_export(virtualbricks)
     path = os.path.join(virtualbricks.home, archive)
     suggested = shown(virtualbricks, path)
     entry = virtualbricks.find("text", within=window)
@@ -1979,6 +2023,14 @@ def export_project(virtualbricks, archive):
     says(virtualbricks, window, f"Exported to {path}, ")
     virtualbricks.click("button", "Close", within=window)
     virtualbricks.gone("frame", EXPORT_WINDOW)
+
+
+@when("I open the Export window")
+def open_export(virtualbricks):
+    """Export…, in the menu Projects, for the open project: the window."""
+
+    virtualbricks.choose("Export…", "Projects")
+    return virtualbricks.find("frame", EXPORT_WINDOW)
 
 
 @then(words("the archive {archive} of my home folder has the bricks"))
@@ -2771,6 +2823,18 @@ def new_event(virtualbricks, name, seconds=None):
         )
     virtualbricks.click("button", "Create", within=dialog)
     virtualbricks.gone("dialog", "New Event")
+    virtualbricks.find("label", "Event settings")
+
+
+@when(words("I open the settings of the event {name:Brick}"))
+def open_event_settings(virtualbricks, name):
+    """
+    Configure…, in its menu, in the tab Events: its settings show, in place
+    of the list.
+    """
+
+    on_tab(virtualbricks, EVENTS)
+    configure(virtualbricks, name)
     virtualbricks.find("label", "Event settings")
 
 
@@ -4259,6 +4323,7 @@ def links_opened(virtualbricks, links):
 PICTURED = {
     "Settings window": ("dialog", SETTINGS_WINDOW),
     "Projects window": ("frame", PROJECTS_WINDOW),
+    "Export window": ("frame", EXPORT_WINDOW),
 }
 
 

@@ -374,6 +374,15 @@ that the tests can't do yet: those needs come first.
   of the tab, and `machines`
 - [ ] Press Help in the settings of a brick
 
+## Pictures of the guide
+
+- [x] The eleven pictures of `help/C/figures/`, a scenario each: the first
+  lab, New Brick, the settings of a switch, of a machine and of an event,
+  the tabs Images, Topology and Readme, the Projects, Export and Settings
+  windows, `pictures.feature`
+- [ ] The pictures of the states: the menu of a brick, a running brick, the
+  Messages window, which needs a clock fixed for the tests
+
 # Out of reach on Broadway
 
 - The tray icon: Broadway has no system tray

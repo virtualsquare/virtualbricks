@@ -133,6 +133,23 @@ one leaves the list.
   wrote it, the first wrote its copy as at quit, and `terminal` had its
   old value again.
 
+## Virtual machines
+
+- [ ] **The settings of a new machine can fail to ask QEMU what it has.**
+  Once, New Brick, then Virtual machine, showed the alert `Cannot ask
+  /usr/bin/qemu-system-i386 what it has` (`qemu_error`, logged by
+  `not_answered()` or `answered()` of
+  `virtualbricks/gui/mainwindow/bricks/config/vm/panel.py`) and stopped
+  the scenario. The reason isn't known: with `--no-term` the failure goes
+  only to the Logs window, and the alert says no more. The questions of
+  `programs.run()` have no timeout, so QEMU itself failed or exited
+  badly, or its answer didn't parse. Seen on 3.0.0.dev3, on 13 October
+  2026, in the scenario "The settings of a virtual machine, on its page
+  Machine" of `e2e/features/pictures.feature`, eight scenarios at a time,
+  one of them running a machine; not again in 60 more runs, the scenario
+  16 times at once and the feature 4 times, with a `sitecustomize.py` in
+  `E2E_PYTHONPATH` that printed every failure logged.
+
 ## Main window
 
 - [ ] **The tray icon prints a GTK critical on Broadway.** Each start of

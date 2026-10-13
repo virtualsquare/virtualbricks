@@ -54,6 +54,7 @@ pytest --count 20 -k switch_runs         # 20 times: is it flaky?
 pytest --record-all -k switch_runs       # a video, also if it passes
 pytest -n 8                              # eight scenarios at a time
 pytest --alluredir=allure-results        # the results, for Allure
+pytest --pictures -m pictures            # the pictures of the user guide
 ```
 
 `pytest` runs the end-to-end tests, and those of `recording.py`
@@ -86,11 +87,11 @@ taken for as long as the others; `conftest.py` says how.
 | `projects/` | The projects of Virtualbricks 2.1 of the scenarios, a folder each, with its `.project` |
 | `TODO.md` | The scenarios, written and to write, by area, and what they need that the tests can't do yet |
 | `test_features.py` | Makes a test of each scenario of `features/` |
-| `conftest.py` | The fixtures: `desktop`, shared, and `virtualbricks` and `other_virtualbricks`, for each scenario; the report of a step that fails, `--record-all` |
+| `conftest.py` | The fixtures: `desktop`, shared, and `virtualbricks` and `other_virtualbricks`, for each scenario; the report of a step that fails, `--record-all`; `--pictures` |
 | `harness.py` | What the steps drive: `Virtualbricks`, with `find`, `click`, `key`, `drag`, `choose`, `row`, `children`, …; the `Desktop` and its `Screen`s |
 | `a11y.py` | The widgets, as a screen reader sees them, through AT-SPI |
 | `broadway.py` | The mouse and the keys: a browser of `broadwayd`, whose clicks, drags, wheel and keys reach GTK as a user's do; it keeps what the screen shows |
-| `recording.py` | The screenshot and the video of a scenario, from what the browser kept |
+| `recording.py` | The screenshot and the video of a scenario, and the pictures of the user guide, from what the browser kept |
 | `test_recording.py` | The tests of `recording.py` |
 | `../allurerc.mjs` | The configuration of the report of Allure |
 
@@ -325,6 +326,37 @@ compressed, and where they are; nothing is decoded while the scenario runs.
 When it ends, `recording.py` decodes them as `broadway.js` does, draws the
 screen with cairo and gives the frames to `ffmpeg`. Without `ffmpeg` there
 is only the screenshot.
+
+## The pictures of the user guide
+
+The pages of the user guide, in `help/C/`, show pictures of the windows,
+in `help/C/figures/`. The scenarios of `features/pictures.feature`, tagged
+`@pictures`, take them, each with the step `Then the picture NAME shows
+the WINDOW`: the window as GTK drew it, its shadow transparent, with the
+menus open over it, without the pointer.
+
+```sh
+pytest --pictures -m pictures   # the pictures that changed, in help/C/figures/
+pytest -m pictures              # which differ from those of help/C/figures/
+```
+
+With `--pictures`, each picture whose pixels changed goes in
+`help/C/figures/`, and the end of the run lists it, under "pictures of the
+user guide": commit it with the change of the window. Without it, a
+picture goes in the folder of its scenario, and the list has those that
+differ from the pictures of `help/C/figures/`, or are new; the run doesn't
+fail for them. A picture has the fonts and the GTK of the computer that
+takes it: on another computer, they all differ.
+
+When a window changes, its scenario lists its picture, which
+`pytest --pictures -m pictures` takes again. A picture shows nothing that
+changes from one run to the next, so that the same window gives the same
+picture: the scenarios run in the default workspace, which the title of
+the main window doesn't name; the Projects window shows the projects as
+saved on a day of 2024; Virtualbricks shows the paths in the home, the
+temporary folder of the scenario, with `~`; the pointer is away from the
+windows, the cursor of a text doesn't blink, and the picture is taken
+once the screen has been still for half a second.
 
 ## The report of Allure
 

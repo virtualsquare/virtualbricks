@@ -86,6 +86,12 @@ def pytest_addoption(parser):
     )
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "pictures: the scenarios of the pictures of the user guide"
+    )
+
+
 @pytest.fixture(scope="session")
 def desktop(tmp_path_factory):
     lacking = harness.missing()
@@ -350,7 +356,7 @@ def pytest_terminal_summary(terminalreporter, config):
         terminalreporter.section("pictures of the user guide")
         figures = os.path.relpath(FIGURES, harness.ROOT)
         says = {
-            "taken": "taken again",
+            "taken": "taken",
             "differs": f"differs from that of {figures}/",
             "new": f"new, not in {figures}/",
         }

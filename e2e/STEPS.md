@@ -23,6 +23,8 @@ The steps of a user:
 | `When I give sw1 34 ports and hub mode in its settings, then cancel` | The same, then Cancel |
 | `When I give sw1 34 ports and hub mode in its settings, then press Escape` | The same, then Escape |
 | `When I turn on "No display" in the settings of vm1, on its page Display` | Configure… in its menu; the page, in the list at the left of its settings, then the switch of the setting, which must be the other way, turned on, or off with `turn off`; then OK |
+| `When I open the settings of sw1` | Configure… in its menu: its settings show, in place of the list, as they are |
+| `When I open the settings of vm1, on its page Machine` | The same, then the page, in the list at the left of its settings |
 | `When I choose "x86_64" for "Program" in the settings of vm1, on its page Machine` | Configure… in its menu; the page, in the list at the left of its settings, then the list of the setting, which must show another choice, and the choice; then OK |
 | `When I terminate vm1, from its menu` | Process and its number, in its menu, then Terminate: SIGTERM, which a machine stops at, where its Stop asks the system of the machine to stop; then it can start again, and the processes of its start have quit |
 | `When I pause vm1, from its menu` | Process and its number, in its menu, then Pause: SIGSTOP, which stops the processes of the brick; its row still says Running |
@@ -43,7 +45,9 @@ The steps of a user:
 | `When I quit Virtualbricks` | File, then Quit |
 | `When I start Virtualbricks again` | Starts it with its settings, as after it ran before, on a new screen, and waits for a window |
 | `Given the workspace is on a drive without a trash` | A folder in `/dev/shm` for the workspace, before Virtualbricks starts: a file system in memory that the system mounts, where the desktop makes no trash; removed once Virtualbricks has stopped |
+| `Given the workspace is the default one` | Before Virtualbricks starts: its workspace is `~/.virtualbricks`, that of its settings, as for a user who never chose another; the title of the main window names the project alone |
 | `When I open the Projects window` | Projects…, in the menu Projects |
+| `When the projects were last saved on 2024-08-02` | The file of each project of the workspace last changed on the day, at noon: the Projects window says that day, not the time of the scenario |
 | `When I make a new project with the name it suggests, new_project-2` | New…, in the Projects window: its name must be the one the dialog suggests; then Create, and the dialog closes |
 | `When I save the project` | Save, in the menu Projects: the open project, with its README |
 | `When I open the project new_project` | In the Projects window, its row, then Open in its details; the window closes |
@@ -53,7 +57,8 @@ The steps of a user:
 | `When I remove the project new_project, which can't go to the trash, and delete it permanently` | The same, where the question has no Move to Trash and says the drive of the workspace has no trash: Delete Permanently |
 | `When I import the archive lab.vbp of my home folder with the name it suggests, lab` | Import…, in the menu Projects; in the window, the button of the file, then Home and the archive in the file chooser, and Open; the name must be the one the window suggests; then Import, with Open the project as it is, and the window closes once the project opens |
 | `When I import the archive new_project.vbp of my home folder, typing its path, with the name it suggests, new_project-2` | The same, where in the file chooser, once clicked, Ctrl+L shows the entry of its location: the path of the archive typed there, then Return once Open is enabled |
-| `When I export the project to new_project.vbp of my home folder` | Export…, in the menu Projects, for the open project; the window suggests the archive in the home; then Export, and Close once it says where it exported it |
+| `When I export the project to new_project.vbp of my home folder` | Export…, in the menu Projects, for the open project; the window suggests the archive in the home, `~/new_project.vbp`; then Export, and Close once it says where it exported it |
+| `When I open the Export window` | Export…, in the menu Projects, for the open project; then the window shows |
 | `Then sw1 is running` | Its row says Running, and the processes of its start run; when no step started it, as with `--command`, the process its row tells, which has its sockets |
 | `Then sw1 is still running` | The same |
 | `Then w1 runs with the sockets of sw1 and sw2` | It runs, and a `vde_plug` of its start is in the socket of each switch: the one its `vde_switch` listens on |
@@ -146,6 +151,7 @@ The steps of the events, in the tab Events:
 | `When I make an event that starts sw1 after 2 seconds, with the name it suggests, new_event` | New Event, in the tab Events: the name must be the one the dialog suggests; the seconds typed in Wait, then Create; in the settings of the event, Add Action, Start a brick and the brick, then OK |
 | `When I make an event that starts sw2 at once, with the name it suggests, new_event` | The same, with 0 seconds in Wait |
 | `When I make an event without actions, with the name it suggests, new_event` | New Event, in the tab Events, with the name it suggests: Create, then OK in the settings of the event |
+| `When I open the settings of the event new_event` | Configure… in its menu, in the tab Events: its settings show, in place of the list, as they are |
 | `When I start the event new_event` | Its Start, in the tab Events; then it waits: its Stop shows |
 | `When I stop the event new_event while it waits` | Its Stop, in the tab Events, while its row says Waiting; then its Start shows, and its row says Ready |
 | `When I ask to delete the event new_event, from its menu` | Delete…, in its menu, in the tab Events: the dialog Delete Event asks to delete it, by its name. Then the steps of the dialog: `Then the Delete dialog says …`, `When I confirm the delete` |
@@ -208,7 +214,7 @@ The steps of the user guide:
 | `When I press F1 in the Settings window` | F1, once the window is active |
 | `Then the desktop opens "help:virtualbricks/settings"` | The program of the tests got the link, and only it |
 | `Then the desktop opens the HTML of the page settings` | The program of the tests got the path of `help/html/C/settings.html` of the sources, and only it: the desktop gives a file by its path |
-| `Then the picture settings shows the Settings window` | The picture of the window for the guide, as it shows, with the menus open over it: the pointer away from the windows first, once the screen hasn't changed for half a second. With `pytest --pictures`, `help/C/figures/settings.png`, if it changed; else `settings.png` in the folder of the scenario, which the end of the run lists if it differs from that of `help/C/figures/`. The windows: `main window`, `Settings window`, `Projects window` |
+| `Then the picture settings shows the Settings window` | The picture of the window for the guide, as it shows, with the menus open over it: the pointer away from the windows first, once the screen hasn't changed for half a second. With `pytest --pictures`, `help/C/figures/settings.png`, if it changed; else `settings.png` in the folder of the scenario, which the end of the run lists if it differs from that of `help/C/figures/`. The windows: `main window`, `Settings window`, `Projects window`, `Export window` |
 
 The steps of the disk images:
 
