@@ -525,9 +525,10 @@ the program's own.
 
 ## The typed commands
 
-Protocol 2 adds a typed AMP command for each command of the console, in
-the module **virtualbricks.console.ampcommands**, which loads nothing else
-of Virtualbricks but **ampwire**; a program imports it, or copies it. A
+Protocol 2, still in development, adds a typed AMP command for each
+command of the console, in the module
+**virtualbricks.console.ampcommands**, which loads nothing else of
+Virtualbricks but **ampwire**; a program imports it, or copies it. A
 connection speaks them once **Hello** has agreed on 2; before, they fail
 with **ProtocolNeeded**. The name of a command is its words, each with a
 capital: **brick card add** is **BrickCardAdd**, **status** is **Status**.
@@ -566,10 +567,14 @@ async def main(reactor):
         print(exc)
 ```
 
-Protocol 2 keeps its commands. A later Virtualbricks may add commands to
-it, or optional arguments, which an older one refuses with
-**UnhandledCommand** or **BadArgument**; a change of any other kind is
-protocol 3, and a program that asks for 2 then gets 1, with **Run**.
+Protocol 2 is still in development: until it is stable, a later
+Virtualbricks may change its commands in any way, without notice and
+without a new number, so a program wants the same **version** of
+Virtualbricks, in the answer of **Hello**. Once it is stable, protocol 2
+will keep its commands. A later Virtualbricks will add commands to it, or
+optional arguments, which an older one refuses with **UnhandledCommand**
+or **BadArgument**; a change of any other kind will be protocol 3, and a
+program that asks for 2 will then get 1, with **Run**.
 
 ## The commands of the windows
 

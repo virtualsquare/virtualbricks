@@ -42,7 +42,9 @@ Protocol, and on them three protocols:
 :   On the same connection, once **Hello** agrees on it: a typed command
     for each command of the console, as **BrickStart** with its names, and
     the commands of the windows of **virtualbricks --connect**: **Follow**,
-    which sends the project, then each change, and the others.
+    which sends the project, then each change, and the others. Still in
+    development: its commands may change in any way, without notice, see
+    **VERSIONS**.
 
 ```
   +--------------+  +-------------+---------------------------+
@@ -384,6 +386,9 @@ Their errors:
 ```
 
 # AMP PROTOCOL 2
+
+Protocol 2 is still in development: a later Virtualbricks may change its
+commands in any way, without notice, see **VERSIONS**.
 
 Once **Hello** has agreed on 2, a connection speaks the commands of
 protocol 1 and those of protocol 2; before, these fail with
@@ -775,18 +780,23 @@ The JSON protocol is 1, in the greeting; another would have another
 number. Over AMP, **Hello** agrees on the protocol: the highest that both
 ends speak. 1 is always one of them.
 
-Protocol 2 keeps its commands as they are. A later Virtualbricks may add
-commands to it, and optional arguments to its commands, and nothing else:
-an older one answers a command it doesn't have with **UNHANDLED**, and an
-argument it doesn't know with **BAD_ARGUMENT**, so a program that sends
-them knows that they weren't done. A change of any other kind makes
-protocol 3, which would take the place of 2: a program that speaks both
-calls **Hello** with **protocols** [1, 2, 3]. The sources keep the commands
-of protocol 2 in *tests/data/amp-protocol-2.txt*, which the tests compare
-with the modules.
+Protocol 2 is still in development. Until it is stable, a later
+Virtualbricks may change its commands in any way, without notice and
+without a new number: rename a command or an argument, change a type,
+make an argument needed, add an error, or take a command away. A program
+that speaks protocol 2 wants the same version of Virtualbricks at both
+ends, as the windows of **virtualbricks --connect** do: the **version** in
+the answer of **Hello**.
 
-The windows of **virtualbricks --connect** also want the same version of
-Virtualbricks at both ends: the **version** in the answer of **Hello**.
+Once it is stable, protocol 2 will keep its commands as they are. A later
+Virtualbricks will add commands to it, and optional arguments to its
+commands, and nothing else: an older one answers a command it doesn't have
+with **UNHANDLED**, and an argument it doesn't know with **BAD_ARGUMENT**,
+so a program that sends them knows that they weren't done. A change of any
+other kind will make protocol 3, which would take the place of 2: a program
+that speaks both calls **Hello** with **protocols** [1, 2, 3]. The sources
+keep the commands of protocol 2 in *tests/data/amp-protocol-2.txt*, which
+the tests compare with the modules.
 
 # LIMITS
 

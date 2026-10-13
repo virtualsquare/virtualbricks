@@ -196,12 +196,13 @@ Virtualbricks: it calls `Run` with a line of the console and gets a Deferred
 of its answer; `virtualbricks/console/ampwire.py` has the commands. Once
 `Hello` agrees on protocol 2, each command of the console is an AMP command
 of its own, with typed arguments, as `BrickStart(name=["sw1", "vm1"])`:
-`virtualbricks/console/ampcommands.py` has them. A description after
-`--listen`, in the syntax of Twisted's endpoints, puts a socket elsewhere,
-as `--listen unix:~/labs/lab1.sock`, and `protocol=json` makes it speak
-JSON, a line for each request and answer, so any program can use it. The
-option can be given more than once, for an AMP socket and a JSON one at
-once. `--command` talks to either: `--connect
+`virtualbricks/console/ampcommands.py` has them. Protocol 2 is still in
+development: its commands may change in any way, without notice. A
+description after `--listen`, in the syntax of Twisted's endpoints, puts a
+socket elsewhere, as `--listen unix:~/labs/lab1.sock`, and `protocol=json`
+makes it speak JSON, a line for each request and answer, so any program can
+use it. The option can be given more than once, for an AMP socket and a
+JSON one at once. `--command` talks to either: `--connect
 unix:~/labs/lab1.json:protocol=json --command status`.
 
 `--listen tcp:8765` listens on a port of this machine, and
