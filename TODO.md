@@ -15,8 +15,6 @@
 
 - [ ] Ask QEMU for other architectures the same way; only
   qemu-system-x86 is recorded (10 §13)
-- [ ] Switchwrapper not configured if the path does not exist / switch
-  is not started
 
 # IDEAS
 
@@ -55,8 +53,6 @@
 - [ ] Add build_ui in the tabs classes as well
 - [ ] Move the GTK code outside `gui/` into it:
   `migrate/gui.py`, the GTK parts of `cli.py`
-- [ ] Stop passing MainWindow around: set the transient window of a
-  dialog another way
 - [ ] Take the work of the tabs (on_open, on_save, ...) to the main
   window, which coordinates it
 - [ ] Add an attribute to the Tab class that says whether it is the tab
@@ -187,6 +183,8 @@
   view is (06 §9)
 - [ ] Show the events in the picture, next to the bricks they start
   (08 §10)
+- [ ] Export the picture as if all the bricks were running, an option of
+  Export as Image: no brick grey and faded
 
 ## Readme
 
