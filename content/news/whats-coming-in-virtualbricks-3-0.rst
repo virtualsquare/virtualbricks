@@ -205,5 +205,9 @@ The README lists the libraries that the installation needs first. Then:
    pip install .
    virtualbricks
 
+*Help › Contents* opens the user guide, and F1 its page about the window you
+are in, in Yelp or in your browser. The guide is `here on the site
+<{static}/help/C/index.html>`_ too.
+
 It is a development version: tell us what breaks on `GitHub
 <https://github.com/virtualsquare/virtualbricks/issues>`_.
