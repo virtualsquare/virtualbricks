@@ -595,7 +595,8 @@ written with Twisted.</dd>
 <dd>On the same connection, once <tt class="docutils literal">Hello</tt> agrees on it: a typed command for
 each command of the console, and the commands of the windows of
 <tt class="docutils literal">virtualbricks <span class="pre">--connect</span></tt>, as <tt class="docutils literal">Follow</tt>, which sends the project and
-then each change.</dd>
+then each change. Still in development: its commands may change in any
+way, without notice, see <a class="reference internal" href="#versions">Versions</a>.</dd>
 </dl>
 <p>What they share:</p>
 <ul class="simple">
@@ -826,6 +827,8 @@ checks the certificate of Virtualbricks and its name, and
 </div>
 <div class="section" id="amp-protocol-2">
 <h2>AMP protocol 2</h2>
+<p>Protocol 2 is still in development: a later Virtualbricks may change its
+commands in any way, without notice, see <a class="reference internal" href="#versions">Versions</a>.</p>
 <p>A connection speaks protocol 2 once <tt class="docutils literal">Hello</tt> has agreed on it: the
 program calls <tt class="docutils literal">Hello</tt> with <tt class="docutils literal"><span class="pre">protocols=[1,</span> 2]</tt>, and the answer has
 <tt class="docutils literal">protocol</tt> 2. From then on, it speaks the commands of both protocols;
@@ -1117,15 +1120,22 @@ own, with <tt class="docutils literal">vdeterm</tt> or <tt class="docutils liter
 </div>
 <div class="section" id="versions">
 <h3>Versions</h3>
-<p>Protocol 2 keeps its commands as they are. A later Virtualbricks may add
-commands to it, and optional arguments to its commands, and nothing else:
-an older one answers a command it doesn't have with <tt class="docutils literal">UNHANDLED</tt>, and an
-argument it doesn't know with <tt class="docutils literal">BAD_ARGUMENT</tt>, so a program knows that
-they weren't done. A change of any other kind makes protocol 3, which would
-take the place of 2: a program that speaks both calls <tt class="docutils literal">Hello</tt> with
-<tt class="docutils literal"><span class="pre">protocols=[1,</span> 2, 3]</tt>. The sources keep the commands of protocol 2 in
-<tt class="docutils literal"><span class="pre">tests/data/amp-protocol-2.txt</span></tt>, and the tests compare it with the
-modules, so that no change slips in.</p>
+<p>Protocol 2 is still in development. Until it is stable, a later
+Virtualbricks may change its commands in any way, without notice and
+without a new number: rename a command or an argument, change a type, make
+an argument needed, add an error, or take a command away. A program that
+speaks protocol 2 wants the same version of Virtualbricks at both ends, as
+the windows of <tt class="docutils literal">virtualbricks <span class="pre">--connect</span></tt> do: the <tt class="docutils literal">version</tt> in the
+answer of <tt class="docutils literal">Hello</tt>.</p>
+<p>Once it is stable, protocol 2 will keep its commands as they are. A later
+Virtualbricks will add commands to it, and optional arguments to its
+commands, and nothing else: an older one answers a command it doesn't have
+with <tt class="docutils literal">UNHANDLED</tt>, and an argument it doesn't know with <tt class="docutils literal">BAD_ARGUMENT</tt>,
+so a program knows that they weren't done. A change of any other kind will
+make protocol 3, which would take the place of 2: a program that speaks
+both calls <tt class="docutils literal">Hello</tt> with <tt class="docutils literal"><span class="pre">protocols=[1,</span> 2, 3]</tt>. The sources keep the
+commands of protocol 2 in <tt class="docutils literal"><span class="pre">tests/data/amp-protocol-2.txt</span></tt>, and the tests
+compare it with the modules.</p>
 </div>
 </div>
 <div class="section" id="the-windows-of-another-virtualbricks">

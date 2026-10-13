@@ -519,7 +519,8 @@ written with Twisted.&lt;/dd&gt;
 &lt;dd&gt;On the same connection, once &lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt; agrees on it: a typed command for
 each command of the console, and the commands of the windows of
 &lt;tt class="docutils literal"&gt;virtualbricks &lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt;, as &lt;tt class="docutils literal"&gt;Follow&lt;/tt&gt;, which sends the project and
-then each change.&lt;/dd&gt;
+then each change. Still in development: its commands may change in any
+way, without notice, see &lt;a class="reference internal" href="#versions"&gt;Versions&lt;/a&gt;.&lt;/dd&gt;
 &lt;/dl&gt;
 &lt;p&gt;What they share:&lt;/p&gt;
 &lt;ul class="simple"&gt;
@@ -750,6 +751,8 @@ checks the certificate of Virtualbricks and its name, and
 &lt;/div&gt;
 &lt;div class="section" id="amp-protocol-2"&gt;
 &lt;h2&gt;AMP protocol 2&lt;/h2&gt;
+&lt;p&gt;Protocol 2 is still in development: a later Virtualbricks may change its
+commands in any way, without notice, see &lt;a class="reference internal" href="#versions"&gt;Versions&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;A connection speaks protocol 2 once &lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt; has agreed on it: the
 program calls &lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt; with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;protocols=[1,&lt;/span&gt; 2]&lt;/tt&gt;, and the answer has
 &lt;tt class="docutils literal"&gt;protocol&lt;/tt&gt; 2. From then on, it speaks the commands of both protocols;
@@ -1041,15 +1044,22 @@ own, with &lt;tt class="docutils literal"&gt;vdeterm&lt;/tt&gt; or &lt;tt class=
 &lt;/div&gt;
 &lt;div class="section" id="versions"&gt;
 &lt;h3&gt;Versions&lt;/h3&gt;
-&lt;p&gt;Protocol 2 keeps its commands as they are. A later Virtualbricks may add
-commands to it, and optional arguments to its commands, and nothing else:
-an older one answers a command it doesn't have with &lt;tt class="docutils literal"&gt;UNHANDLED&lt;/tt&gt;, and an
-argument it doesn't know with &lt;tt class="docutils literal"&gt;BAD_ARGUMENT&lt;/tt&gt;, so a program knows that
-they weren't done. A change of any other kind makes protocol 3, which would
-take the place of 2: a program that speaks both calls &lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt; with
-&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;protocols=[1,&lt;/span&gt; 2, 3]&lt;/tt&gt;. The sources keep the commands of protocol 2 in
-&lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;tests/data/amp-protocol-2.txt&lt;/span&gt;&lt;/tt&gt;, and the tests compare it with the
-modules, so that no change slips in.&lt;/p&gt;
+&lt;p&gt;Protocol 2 is still in development. Until it is stable, a later
+Virtualbricks may change its commands in any way, without notice and
+without a new number: rename a command or an argument, change a type, make
+an argument needed, add an error, or take a command away. A program that
+speaks protocol 2 wants the same version of Virtualbricks at both ends, as
+the windows of &lt;tt class="docutils literal"&gt;virtualbricks &lt;span class="pre"&gt;--connect&lt;/span&gt;&lt;/tt&gt; do: the &lt;tt class="docutils literal"&gt;version&lt;/tt&gt; in the
+answer of &lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt;.&lt;/p&gt;
+&lt;p&gt;Once it is stable, protocol 2 will keep its commands as they are. A later
+Virtualbricks will add commands to it, and optional arguments to its
+commands, and nothing else: an older one answers a command it doesn't have
+with &lt;tt class="docutils literal"&gt;UNHANDLED&lt;/tt&gt;, and an argument it doesn't know with &lt;tt class="docutils literal"&gt;BAD_ARGUMENT&lt;/tt&gt;,
+so a program knows that they weren't done. A change of any other kind will
+make protocol 3, which would take the place of 2: a program that speaks
+both calls &lt;tt class="docutils literal"&gt;Hello&lt;/tt&gt; with &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;protocols=[1,&lt;/span&gt; 2, 3]&lt;/tt&gt;. The sources keep the
+commands of protocol 2 in &lt;tt class="docutils literal"&gt;&lt;span class="pre"&gt;tests/data/amp-protocol-2.txt&lt;/span&gt;&lt;/tt&gt;, and the tests
+compare it with the modules.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;div class="section" id="the-windows-of-another-virtualbricks"&gt;
