@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Virtual machines</title>
+<link rel="stylesheet" type="text/css" href="C.css">
+<script type="text/javascript" src="highlight.pack.js"></script><script>
+document.addEventListener('DOMContentLoaded', function() {
+  var matches = document.querySelectorAll('code.syntax')
+  for (var i = 0; i < matches.length; i++) {
+    hljs.highlightBlock(matches[i]);
+  }
+}, false);</script><script type="text/javascript" src="yelp.js"></script>
+</head>
+<body><main><div class="page">
+<header><div class="inner pagewide"><div class="trails" role="navigation"><div class="trail">
+<a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#lab" title="Your lab">Your lab</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">Virtual machines</span></h1></div>
+<div class="region">
+<div class="contents pagewide">
+<p class="p">A virtual machine is a brick that QEMU runs. Its settings have a
+  section for each part of it: <span class="gui">Machine</span>, the QEMU program, the
+  type of machine, its processors and its memory; <span class="gui">Disks</span>;
+  <span class="gui">CD-ROM and boot</span>; <span class="gui">Network</span>; <span class="gui">Display</span>;
+  <span class="gui">Sound and USB</span>; <span class="gui">Kernel</span>, to boot a kernel of your own;
+  and <span class="gui">Advanced</span>. The line at the top says which QEMU will run
+  it.</p>
+<div class="figure"><div class="inner">
+<a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h2><span class="title">The settings of a virtual machine</span></h2></div>
+<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/machine-settings.png" class="media media-block" alt="The settings of vm1: the line at the top names its QEMU, the sections
+      are at the left, and the section Machine shows Program, Machine type,
+      CPU model, KVM, Virtual CPUs and Memory."></div></div></div></div>
+</div></div>
+</div>
+<section id="disks"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">Disks</span></h2></div>
+<div class="region">
+<div class="contents pagewide">
+<p class="p"><span class="gui">Add Disk</span> adds a disk on the first free device. Each disk
+    chooses its image in a list of the images of the project, which says what
+    each is and who uses it. The list also has <span class="gui">Add an Existing
+    Image…</span>, <span class="gui">New Empty Disk…</span> and <span class="gui">Manage Images…</span>,
+    which shows the <span class="gui">Images</span> tab.</p>
+<div class="terms"><div class="inner">
+<div class="title title-terms"><h3><span class="title">How a disk uses its image</span></h3></div>
+<div class="region"><dl class="terms">
+<dt class="terms"><span class="gui">Private copy</span></dt>
+<dd class="terms"><p class="p">The default. The machine writes its changes to a file of its own in
+        the folder of the project, made at its next start, as
+        <span class="file">vm1_hda.cow</span>, and the image stays as it is. Several
+        machines can share one image this way.</p></dd>
+<dt class="terms"><span class="gui">The image itself</span></dt>
+<dd class="terms"><p class="p">The machine writes to the image.</p></dd>
+</dl></div>
+</div></div>
+<p class="p">The line under a disk says what it does. The menu of a disk has
+    <span class="gui">Save as a New Image…</span>, which keeps the changes of the machine as
+    an image of their own; <span class="gui">Merge into</span> the image, which writes them
+    into it, and lists first what else uses it; <span class="gui">Start Over from</span> the
+    image, which throws the changes away; <span class="gui">Show in Files</span> and
+    <span class="gui">Remove Disk</span>. Saving and merging run in the background, with
+    their progress, and can be stopped.</p>
+</div>
+<section class="links" role="navigation"><div class="inner">
+<div class="hgroup pagewide"></div>
+<div class="contents pagewide"><div class="links seealsolinks"><div class="inner">
+<div class="title"><h3><span class="title">See Also</span></h3></div>
+<div class="region"><ul><li class="links ">
+<a href="images.html" title="Disk images">Disk images</a><span class="desc"> — Add, make, share and find the disk images of a project.</span>
+</li></ul></div>
+</div></div></div>
+</div></section>
+</div>
+</div></section><section id="network"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">Network cards</span></h2></div>
+<div class="region"><div class="contents pagewide">
+<p class="p"><span class="gui">Add Card</span> adds a network card. The cards are in the order the
+    machine sees them, the first one first. Each has a <span class="gui">Model</span>, a
+    <span class="gui">MAC address</span>, and what it is <span class="gui">Plugged into</span>:</p>
+<div class="list"><div class="inner"><div class="region"><ul class="list">
+<li class="list"><p class="p">a switch of the lab;</p></li>
+<li class="list"><p class="p"><span class="gui">The host only, on QEMU's user network</span>: QEMU joins the
+      machine to this computer, and through it to the networks this computer
+      reaches, with no switch;</p></li>
+<li class="list"><p class="p"><span class="gui">Other bricks plug into it</span>: the card is a socket,
+      and a wire can plug into it when the setting <span class="gui">Plugs into
+      machines</span> of the project allows it;</p></li>
+<li class="list"><p class="p"><span class="gui">Nothing</span>.</p></li>
+</ul></div></div></div>
+</div></div>
+</div></section><section id="console"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">The console of a machine</span></h2></div>
+<div class="region"><div class="contents pagewide"><p class="p">While the machine runs, <span class="guiseq"><span class="gui">Process</span> ▸ <span class="gui">Open Control
+    Monitor</span></span>, in its menu, opens the monitor of QEMU in a
+    terminal, the one of the <span class="gui">Terminal</span> setting. There you type the
+    commands of QEMU, as <span class="cmd">info network</span>.</p></div></div>
+</div></section><section id="state"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">Stop, suspend, resume</span></h2></div>
+<div class="region"><div class="contents pagewide"><p class="p"><span class="gui">Stop</span> asks the system of the machine to shut down.
+    <span class="gui">Suspend</span>, under <span class="gui">Process</span>, saves the state of the
+    machine in its first disk and stops it; <span class="gui">Resume</span> starts it again
+    from there. <span class="gui">Reset</span> is the reset button of the machine.</p></div></div>
+</div></section><section class="links" role="navigation"><div class="inner">
+<div class="hgroup pagewide"></div>
+<div class="contents pagewide">
+<div class="links guidelinks"><div class="inner">
+<div class="title"><h2><span class="title">More Information</span></h2></div>
+<div class="region"><ul><li class="links "><a href="index.html#lab" title="Your lab">Your lab</a></li></ul></div>
+</div></div>
+<div class="links seealsolinks"><div class="inner">
+<div class="title"><h2><span class="title">See Also</span></h2></div>
+<div class="region"><ul>
+<li class="links ">
+<a href="bricks.html" title="Bricks">Bricks</a><span class="desc"> — Start, stop, configure, connect, rename and delete the bricks of a
+    lab.</span>
+</li>
+<li class="links ">
+<a href="first-lab.html" title="Make your first lab">Make your first lab</a><span class="desc"> — A switch and a machine plugged into it, started.</span>
+</li>
+<li class="links ">
+<a href="images.html" title="Disk images">Disk images</a><span class="desc"> — Add, make, share and find the disk images of a project.</span>
+</li>
+</ul></div>
+</div></div>
+</div>
+</div></section>
+</div>
+<div class="clear"></div></article><footer><div class="inner pagewide"></div></footer>
+</div></main></body>
+</html>

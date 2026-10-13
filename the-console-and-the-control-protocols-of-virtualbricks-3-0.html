@@ -56,6 +56,7 @@
                                 <li ><a href="https://www.virtualbricks.it/pages/authors.html">Authors</a></li>
                                 <li  class="active"><a href="https://www.virtualbricks.it/category/news.html">News</a></li>
                                 <li ><a href="https://www.virtualbricks.it/category/documentation.html">Documentation</a></li>
+                                <li><a href="https://www.virtualbricks.it/help/C/">Help</a></li>
                             </ul>
                         </div>
                     </div>
@@ -659,24 +660,24 @@ the proof of Virtualbricks:</p>
 with <tt class="docutils literal">ok</tt> <tt class="docutils literal">false</tt> and why, as <tt class="docutils literal">Wrong token</tt>, and the connection
 closes. A whole client, in Python and nothing else, for a Virtualbricks
 started with <tt class="docutils literal"><span class="pre">--listen</span> tcp:8766:protocol=json</tt>:</p>
-<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">hmac</span><span class="o">,</span> <span class="nn">json</span><span class="o">,</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">secrets</span><span class="o">,</span> <span class="nn">socket</span><span class="o">,</span> <span class="nn">sys</span>
+<div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">hmac</span><span class="o">,</span><span class="w"> </span><span class="nn">json</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">secrets</span><span class="o">,</span><span class="w"> </span><span class="nn">socket</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
 
 
-<span class="k">def</span> <span class="nf">proof</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">side</span><span class="p">,</span> <span class="n">nonce</span><span class="p">,</span> <span class="n">mine</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">proof</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">side</span><span class="p">,</span> <span class="n">nonce</span><span class="p">,</span> <span class="n">mine</span><span class="p">):</span>
     <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;virtualbricks </span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">nonce</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">mine</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="k">return</span> <span class="n">hmac</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="s2">&quot;sha256&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
 
 
-<span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="o">**</span><span class="n">message</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="o">**</span><span class="n">message</span><span class="p">):</span>
     <span class="n">lines</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">message</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span> <span class="o">+</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">lines</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 
 
-<span class="k">def</span> <span class="nf">receive</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">receive</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">lines</span><span class="o">.</span><span class="n">readline</span><span class="p">())</span>
 
 
-<span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="n">port</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="n">port</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
     <span class="n">sock</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">create_connection</span><span class="p">((</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="p">))</span>
     <span class="n">lines</span> <span class="o">=</span> <span class="n">sock</span><span class="o">.</span><span class="n">makefile</span><span class="p">(</span><span class="s2">&quot;rwb&quot;</span><span class="p">)</span>
     <span class="n">first</span> <span class="o">=</span> <span class="n">receive</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
@@ -692,7 +693,7 @@ started with <tt class="docutils literal"><span class="pre">--listen</span> tcp:
     <span class="k">return</span> <span class="n">lines</span>
 
 
-<span class="k">def</span> <span class="nf">ask</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ask</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
     <span class="n">send</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="n">line</span><span class="p">)</span>
     <span class="n">answer</span> <span class="o">=</span> <span class="n">receive</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">answer</span><span class="p">[</span><span class="s2">&quot;lines&quot;</span><span class="p">]))</span>
@@ -800,16 +801,16 @@ connection closes.</dd>
 <p><tt class="docutils literal">virtualbricks <span class="pre">--command</span></tt> calls <tt class="docutils literal">Hello</tt>, proves the token if the answer
 is <tt class="docutils literal">TOKEN_NEEDED</tt>, then sends each line with <tt class="docutils literal">Run</tt>. A program with
 Twisted, on a unix socket:</p>
-<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
-<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">endpoints</span><span class="p">,</span> <span class="n">task</span>
-<span class="kn">from</span> <span class="nn">twisted.internet.defer</span> <span class="kn">import</span> <span class="n">ensureDeferred</span>
-<span class="kn">from</span> <span class="nn">twisted.protocols</span> <span class="kn">import</span> <span class="n">amp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">twisted.internet</span><span class="w"> </span><span class="kn">import</span> <span class="n">endpoints</span><span class="p">,</span> <span class="n">task</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">twisted.internet.defer</span><span class="w"> </span><span class="kn">import</span> <span class="n">ensureDeferred</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">twisted.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">amp</span>
 
-<span class="kn">from</span> <span class="nn">virtualbricks.console.ampwire</span> <span class="kn">import</span> <span class="n">Run</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">virtualbricks.console.ampwire</span><span class="w"> </span><span class="kn">import</span> <span class="n">Run</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">reactor</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">reactor</span><span class="p">):</span>
     <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s2">&quot;~/labs/lab1.sock&quot;</span><span class="p">)</span>
     <span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">UNIXClientEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
     <span class="n">vb</span> <span class="o">=</span> <span class="k">await</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">connectProtocol</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">amp</span><span class="o">.</span><span class="n">AMP</span><span class="p">())</span>
@@ -1016,56 +1017,56 @@ project opens, the copy starts over with <tt class="docutils literal">Opened</tt
 <p>A program that follows declares the eight pushes, and has a responder for
 each: Twisted closes the connection on a command it has no responder for.
 A program that follows the project and drives it with typed commands:</p>
-<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">json</span><span class="o">,</span> <span class="nn">os</span>
+<div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span>
 
-<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">defer</span><span class="p">,</span> <span class="n">endpoints</span><span class="p">,</span> <span class="n">task</span>
-<span class="kn">from</span> <span class="nn">twisted.protocols</span> <span class="kn">import</span> <span class="n">amp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">twisted.internet</span><span class="w"> </span><span class="kn">import</span> <span class="n">defer</span><span class="p">,</span> <span class="n">endpoints</span><span class="p">,</span> <span class="n">task</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">twisted.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">amp</span>
 
-<span class="kn">from</span> <span class="nn">virtualbricks.console.ampcommands</span> <span class="kn">import</span> <span class="n">BrickSet</span><span class="p">,</span> <span class="n">BrickStop</span><span class="p">,</span> <span class="n">NotFound</span>
-<span class="kn">from</span> <span class="nn">virtualbricks.console.ampwire</span> <span class="kn">import</span> <span class="n">Hello</span><span class="p">,</span> <span class="n">authenticate</span>
-<span class="kn">from</span> <span class="nn">virtualbricks.remote</span> <span class="kn">import</span> <span class="n">commands</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">virtualbricks.console.ampcommands</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrickSet</span><span class="p">,</span> <span class="n">BrickStop</span><span class="p">,</span> <span class="n">NotFound</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">virtualbricks.console.ampwire</span><span class="w"> </span><span class="kn">import</span> <span class="n">Hello</span><span class="p">,</span> <span class="n">authenticate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">virtualbricks.remote</span><span class="w"> </span><span class="kn">import</span> <span class="n">commands</span>
 
 
-<span class="k">class</span> <span class="nc">Follower</span><span class="p">(</span><span class="n">amp</span><span class="o">.</span><span class="n">AMP</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Follower</span><span class="p">(</span><span class="n">amp</span><span class="o">.</span><span class="n">AMP</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prints what changes: a responder for each of the eight pushes.&quot;&quot;&quot;</span>
 
     <span class="nd">@commands</span><span class="o">.</span><span class="n">Opened</span><span class="o">.</span><span class="n">responder</span>
-    <span class="k">def</span> <span class="nf">opened</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">machine</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">opened</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">machine</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Opened&quot;</span><span class="p">,</span> <span class="n">project</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{}</span>
 
     <span class="nd">@commands</span><span class="o">.</span><span class="n">Changed</span><span class="o">.</span><span class="n">responder</span>
-    <span class="k">def</span> <span class="nf">changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Changed&quot;</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">state</span><span class="p">))</span>
         <span class="k">return</span> <span class="p">{}</span>
 
     <span class="nd">@commands</span><span class="o">.</span><span class="n">Renamed</span><span class="o">.</span><span class="n">responder</span>
-    <span class="k">def</span> <span class="nf">renamed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">renamed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{}</span>
 
     <span class="nd">@commands</span><span class="o">.</span><span class="n">Removed</span><span class="o">.</span><span class="n">responder</span>
-    <span class="k">def</span> <span class="nf">removed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">removed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{}</span>
 
     <span class="nd">@commands</span><span class="o">.</span><span class="n">Synced</span><span class="o">.</span><span class="n">responder</span>
-    <span class="k">def</span> <span class="nf">synced</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">synced</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Synced&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{}</span>
 
     <span class="nd">@commands</span><span class="o">.</span><span class="n">SettingsChanged</span><span class="o">.</span><span class="n">responder</span>
-    <span class="k">def</span> <span class="nf">settings_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{}</span>
 
     <span class="nd">@commands</span><span class="o">.</span><span class="n">Logged</span><span class="o">.</span><span class="n">responder</span>
-    <span class="k">def</span> <span class="nf">logged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{}</span>
 
     <span class="nd">@commands</span><span class="o">.</span><span class="n">Quitting</span><span class="o">.</span><span class="n">responder</span>
-    <span class="k">def</span> <span class="nf">quitting</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">quitting</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{}</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">reactor</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">reactor</span><span class="p">):</span>
     <span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">TCP4ClientEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="mi">8765</span><span class="p">)</span>
     <span class="n">vb</span> <span class="o">=</span> <span class="k">await</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">connectProtocol</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">Follower</span><span class="p">())</span>
     <span class="n">config</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s2">&quot;~/.config&quot;</span><span class="p">)</span>
