@@ -247,15 +247,16 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 29 &middot; Design &middot; revision 1, proposal</div>
+    <div class="eyebrow">Step 29 &middot; Design &middot; revision 2, decided</div>
     <h1>Pictures in the Guide</h1>
     <p class="lede">The pages of the user guide get a picture of the window they are about, taken by the end-to-end tests on Broadway. When a window changes, its picture is taken again by the same scenario, so the guide shows the windows as they are.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 9d0082fa</li>
-      <li>revision 1 &middot; 13 October 2026</li>
-      <li><span class="status">proposal</span></li>
+      <li>revision 2 &middot; 13 October 2026</li>
+      <li><span class="status">decided</span></li>
     </ul>
-    <p class="revision"><strong>What this covers:</strong> your request of today, &ldquo;work on this point in the TODO list: Pictures in the pages, taken by the e2e tests on Broadway, so that they follow the windows (28 &sect;12)&rdquo;. The five questions, F1 to F5 in <a href="#decisions">&sect;10</a>, are open, each with what I&rsquo;d choose.</p>
+    <p class="revision"><strong>What this covers:</strong> your request of today, &ldquo;work on this point in the TODO list: Pictures in the pages, taken by the e2e tests on Broadway, so that they follow the windows (28 &sect;12)&rdquo;. The five questions, F1 to F5 in <a href="#decisions">&sect;10</a>, are decided.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 records your answer of today: &ldquo;all the proposed answers are fine. proceed with the implementation&rdquo;. F1 to F5 are A, as recommended: the eleven pictures of &sect;3; written by <code>pytest --pictures</code> only, any other run lists those that differ; the window&rsquo;s surface with its shadow; in Git LFS; the fonts of the machine that takes them. The plan of &sect;9 starts.</p>
   </header>
 
   <div class="layout">
@@ -280,11 +281,11 @@
       <section id="glance">
         <h2><span class="num">&sect;1</span>At a glance</h2>
         <dl class="glance">
-          <div><dt>Pictures</dt><dd>Eleven, one for each page about a window: the Bricks tab of the first lab, New Brick, the settings of a switch, of a machine and of an event, the Images, Topology and Readme tabs, the Projects window, Export and Settings (&sect;3, <a class="ref" href="#decisions">F1</a>).</dd></div>
+          <div><dt>Pictures</dt><dd>Eleven, one for each page about a window: the Bricks tab of the first lab, New Brick, the settings of a switch, of a machine and of an event, the Images, Topology and Readme tabs, the Projects window, Export and Settings (&sect;3, <a class="ref done" href="#decisions">F1</a>).</dd></div>
           <div><dt>Taken by</dt><dd>Scenarios of their own, in <code>e2e/features/pictures.feature</code>: each makes the lab of its picture with the steps there are, then <i>Then the picture settings shows the Settings window</i> (&sect;5).</dd></div>
-          <div><dt>A picture</dt><dd>The window&rsquo;s own surface, as broadwayd sent it: the window as GTK drew it, its shadow transparent, the menus open over it, no pointer. The same run gives the same bytes (&sect;4, <a class="ref" href="#decisions">F3</a>).</dd></div>
-          <div><dt>Updating</dt><dd><code>pytest --pictures</code> writes them into <code>help/C/figures/</code>. Any other run takes them into the folder of the scenario, and its summary lists those that differ, without failing: fonts and GTK differ by machine (&sect;5, <a class="ref" href="#decisions">F2</a>).</dd></div>
-          <div><dt>The guide</dt><dd>A Mallard <code>&lt;figure&gt;</code> in each page; <code>yelp-build</code> copies the pictures into <code>help/html/C/figures/</code>; installed beside the pages and the HTML; on the website through <code>sync-docs</code>. In Git LFS, as the other PNGs (&sect;6, <a class="ref" href="#decisions">F4</a>).</dd></div>
+          <div><dt>A picture</dt><dd>The window&rsquo;s own surface, as broadwayd sent it: the window as GTK drew it, its shadow transparent, the menus open over it, no pointer. The same run gives the same bytes (&sect;4, <a class="ref done" href="#decisions">F3</a>).</dd></div>
+          <div><dt>Updating</dt><dd><code>pytest --pictures</code> writes them into <code>help/C/figures/</code>. Any other run takes them into the folder of the scenario, and its summary lists those that differ, without failing: fonts and GTK differ by machine (&sect;5, <a class="ref done" href="#decisions">F2</a>).</dd></div>
+          <div><dt>The guide</dt><dd>A Mallard <code>&lt;figure&gt;</code> in each page; <code>yelp-build</code> copies the pictures into <code>help/html/C/figures/</code>; installed beside the pages and the HTML; on the website through <code>sync-docs</code>. In Git LFS, as the other PNGs (&sect;6, <a class="ref done" href="#decisions">F4</a>).</dd></div>
           <div><dt>Plan</dt><dd>Three steps on <code>develop</code>, a commit each, then one on <code>website</code> (&sect;9).</dd></div>
         </dl>
       </section>
@@ -346,7 +347,7 @@
         <ul>
           <li><strong>A scenario for each picture</strong>, in <code>e2e/features/pictures.feature</code>, run with the others. It makes its lab with the steps there are, then takes the picture with one step of the screen: <i>Then the picture settings shows the Settings window</i>. A picture that needs QEMU is tagged as the scenarios of machines are, and skipped without it.</li>
           <li><strong><code>pytest --pictures</code></strong>, a new option of <code>e2e/conftest.py</code>, writes each picture into <code>help/C/figures/NAME.png</code>. The <code>help</code> hook then rebuilds the HTML, as for a change to a page.</li>
-          <li><strong>Any other run</strong> writes the picture into the folder of the scenario, and the end of the run lists the pictures that differ from those of <code>help/C/figures/</code>. It doesn&rsquo;t fail: the pictures carry the fonts and the GTK of the machine that takes them, so on another machine every picture differs (<a class="ref" href="#decisions">F2</a>).</li>
+          <li><strong>Any other run</strong> writes the picture into the folder of the scenario, and the end of the run lists the pictures that differ from those of <code>help/C/figures/</code>. It doesn&rsquo;t fail: the pictures carry the fonts and the GTK of the machine that takes them, so on another machine every picture differs (<a class="ref done" href="#decisions">F2</a>).</li>
           <li><strong>When a window changes</strong>, its scenario still runs, and the list says which picture to take again; a scenario that no longer runs fails as any other.</li>
         </ul>
         <figure class="code">
@@ -376,7 +377,7 @@
           <li><strong>In a page</strong>, a Mallard figure, with a title and a text for those who don&rsquo;t see it. Yelp shows the picture; the HTML has it as an <code>&lt;img&gt;</code>.</li>
           <li><strong><code>help/build.py</code></strong> compares <code>figures/</code> too, and the hook runs on a change to <code>help/C/figures/</code> as well.</li>
           <li><strong>Installed</strong> beside what they belong to: <code>share/help/C/virtualbricks/figures/</code> and <code>share/virtualbricks/help/C/figures/</code>, a key of <code>data-files</code> each, as now. <code>MANIFEST.in</code> takes them.</li>
-          <li><strong>Git LFS</strong> takes them as it takes every PNG. The picture in <code>help/C/figures/</code> and its copy in <code>help/html/C/figures/</code> are the same file, so LFS keeps one object for both (<a class="ref" href="#decisions">F4</a>). A clone without <code>git-lfs</code> gets pointers in place of pictures, as it already does for the icons.</li>
+          <li><strong>Git LFS</strong> takes them as it takes every PNG. The picture in <code>help/C/figures/</code> and its copy in <code>help/html/C/figures/</code> are the same file, so LFS keeps one object for both (<a class="ref done" href="#decisions">F4</a>). A clone without <code>git-lfs</code> gets pointers in place of pictures, as it already does for the icons.</li>
           <li><strong>The website</strong> gets them with the next <code>invoke sync-docs</code>, which copies <code>help/html/C/</code> with its subfolders; the <code>website</code> branch keeps PNGs in LFS too.</li>
           <li><strong>Size</strong>: about 40 KB a picture, so 450 KB for the eleven, in the tree twice and in LFS once.</li>
         </ul>
@@ -442,7 +443,7 @@
         <h2><span class="num">&sect;10</span>Decisions</h2>
         <div class="scroll">
         <table class="decisions wide">
-          <thead><tr><th></th><th>Question</th><th>Options</th><th>I&rsquo;d choose</th></tr></thead>
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
           <tbody>
             <tr>
               <td>F1</td>
@@ -452,7 +453,7 @@
                 <p><b>B</b> Three to start: the first lab, New Brick and Settings; the others page by page later.</p>
                 <p><b>C</b> The eleven, and the states too: the menu of a brick, a running brick, the Messages window with a clock fixed for the tests.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec decided">A</td>
             </tr>
             <tr>
               <td>F2</td>
@@ -462,7 +463,7 @@
                 <p><b>B</b> At every run, into <code>help/C/figures/</code>: <code>git status</code> shows what changed, and a run on another machine changes them all.</p>
                 <p><b>C</b> A check that fails when a picture differs: exact on one machine, failing on the others.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec decided">A</td>
             </tr>
             <tr>
               <td>F3</td>
@@ -472,7 +473,7 @@
                 <p><b>B</b> The same, without the shadow: cropped to the window, the edge sharp.</p>
                 <p><b>C</b> The screen cropped by the window&rsquo;s extents, with what shows behind it.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec decided">A</td>
             </tr>
             <tr>
               <td>F4</td>
@@ -481,7 +482,7 @@
                 <p><b>A</b> In <code>help/C/figures/</code> and their copies in <code>help/html/C/figures/</code>, in Git LFS as the other PNGs (&sect;6).</p>
                 <p><b>B</b> Outside LFS, in Git itself: a clone needs no <code>git-lfs</code> for them, but each picture taken again adds its size to the history, twice.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec decided">A</td>
             </tr>
             <tr>
               <td>F5</td>
@@ -490,11 +491,12 @@
                 <p><b>A</b> Those of the machine that takes them: here DejaVu Sans.</p>
                 <p><b>B</b> Cantarell, the font of GNOME, set in the GTK settings of the scenarios of the pictures, as GNOME&rsquo;s own help looks; it needs <code>fonts-cantarell</code> where they are taken.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec decided">A</td>
             </tr>
           </tbody>
         </table>
         </div>
+        <p>Your answer, 13 October: F1 to F5, A.</p>
       </section>
 
       <section id="later">
