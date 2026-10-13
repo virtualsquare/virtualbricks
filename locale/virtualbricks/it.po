@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-09 00:02+0200\n"
+"POT-Creation-Date: 2026-10-13 13:19+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -4892,6 +4892,11 @@ msgstr "porta:"
 #: virtualbricks/gui/mainwindow/window.py
 msgid "_Help"
 msgstr "_Aiuto"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "_Contents"
+msgstr "Eventi"
 
 #: virtualbricks/gui/mainwindow/window.py
 #, fuzzy

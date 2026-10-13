@@ -31,7 +31,7 @@ from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
-    from gi.repository import Gtk
+    from gi.repository import Gdk, Gtk
 
     from virtualbricks.gui.mainwindow import window
     from virtualbricks.gui.mainwindow.window import MainWindow
@@ -255,3 +255,41 @@ class TestTrayIcon(GuiTestCase):
         self.assertEqual(
             gui.status_icon.get_tooltip_text(), "Virtualbricks visible"
         )
+
+
+class TestHelpMenu(GuiTestCase):
+    """Help: Contents, with F1, opens the guide; About doesn't take F1."""
+
+    def setUp(self):
+        super().setUp()
+        self.opened = []
+        self.patch(
+            window,
+            "show_help",
+            lambda parent, page=None: self.opened.append((parent, page)),
+        )
+        self.abouts = []
+        self.patch(window, "AboutDialog", lambda: self.abouts.append(1))
+        self.gui = MainWindow(LocalEngine(self.factory))
+        self.addCleanup(self.gui.window.destroy)
+
+    def items(self):
+        menubar = self.gui.menubar
+        help_menu = menubar.get_children()[-1].get_submenu()
+        return [
+            item.get_label()
+            for item in help_menu.get_children()
+            if not isinstance(item, Gtk.SeparatorMenuItem)
+        ]
+
+    def test_the_items(self):
+        self.assertEqual(self.items(), ["_Contents", "gtk-about"])
+
+    def test_f1(self):
+        self.assertTrue(
+            Gtk.accel_groups_activate(
+                self.gui.window, Gdk.KEY_F1, Gdk.ModifierType(0)
+            )
+        )
+        self.assertEqual(self.opened, [(self.gui.window, None)])
+        self.assertEqual(self.abouts, [])
