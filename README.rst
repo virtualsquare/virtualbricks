@@ -74,7 +74,11 @@ says how to commit them:
    $ git add content && git commit -m "Help and Documentation of develop 1234abcd"
 
 The guide is copied as it is, and Pelican doesn't read it: *help* is in
-*STATIC_PATHS*, *ARTICLE_EXCLUDES* and *PAGE_EXCLUDES*. A page of the
+*STATIC_PATHS*, *ARTICLE_EXCLUDES* and *PAGE_EXCLUDES*. One thing changes on
+the way: the guide and the pages of *docs/* link the site in full, with
+*https://www.virtualbricks.it/*, as the guide installed with Virtualbricks
+needs; their copies here link within the site, relative to their folder, so
+that a local build doesn't lead to the published site. A page of the
 Documentation keeps its head here, the metadata of Pelican; its body is
 that of *docs/NAME.html*, its style *NAME.css*. A new page starts as a head
 with an empty body, which the next sync fills.

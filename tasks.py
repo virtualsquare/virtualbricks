@@ -155,6 +155,10 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 HELP_SOURCE = 'help/html/C'
 HELP_PATH = os.path.join('content', 'help', 'C')
 DOCUMENTATION_PATH = os.path.join('content', 'documentation')
+# The address of the site, which the help and the pages of docs/ link in
+# full, as the help installed with Virtualbricks needs; the copies here link
+# within the site, so that a local build stays local.
+SITE = 'https://www.virtualbricks.it/'
 
 
 def git(*args):
@@ -179,6 +183,18 @@ def documentation_page(source, page):
     return head + body + '</body>\n</html>\n', textwrap.dedent(source[start:end])
 
 
+def within_site(data, path):
+    """
+    data, the file at path, a page of the site, with the links to the site
+    relative to the folder of path.
+    """
+    if not path.endswith('.html'):
+        return data
+    up = os.path.relpath('content', os.path.dirname(path))
+    return data.replace(('href="' + SITE).encode(),
+                        ('href="' + up + '/').encode())
+
+
 def read(path):
     """The bytes of path in this checkout, None if it isn't there."""
     try:
@@ -192,7 +208,8 @@ def docs_of(ref):
     """
     The files of the help and of the Documentation as ref has them, by their
     path in the site: every file of help/html/C; for each page of the
-    Documentation of the site, NAME.html, its docs/NAME.html.
+    Documentation of the site, NAME.html, its docs/NAME.html. Their links to
+    the site are relative.
     """
     files = {}
     try:
@@ -203,15 +220,16 @@ def docs_of(ref):
         for member in archive.getmembers():
             if member.isfile():
                 name = os.path.relpath(member.name, HELP_SOURCE)
+                path = os.path.join(HELP_PATH, name)
                 data = archive.extractfile(member).read()
-                files[os.path.join(HELP_PATH, name)] = data
+                files[path] = within_site(data, path)
     for name in sorted(os.listdir(os.path.join(ROOT, DOCUMENTATION_PATH))):
         if not name.endswith('.html'):
             continue
         path = os.path.join(DOCUMENTATION_PATH, name)
         source = git('show', '{}:docs/{}'.format(ref, name)).decode('utf-8')
         page, css = documentation_page(source, read(path).decode('utf-8'))
-        files[path] = page.encode('utf-8')
+        files[path] = within_site(page.encode('utf-8'), path)
         files[path[:-len('.html')] + '.css'] = css.encode('utf-8')
     return files
 
