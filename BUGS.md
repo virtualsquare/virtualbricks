@@ -72,6 +72,50 @@ one leaves the list.
            compressed        uncompressed  ratio uncompressed_name
                   617               10240  94.4% .gz.vbp.2or1v0ic.part
   ```
+- [ ] **An image left unset at the import is dropped, and the private
+  copies can't follow it.** With Leave unset, the import writes the image
+  without a path (`place_images()` in `virtualbricks/config/importing.py`),
+  and the project drops it when it opens: the Images tab is empty, and the
+  disks have no image. Find the File…, which points the private copies at
+  the file found with `qemu-img rebase -u` (`relink()` in
+  `virtualbricks/config/images.py`), can't be used. The private copies of
+  the archive keep the image of the other computer as backing file; once
+  the disks get an image in their settings, the first start of each
+  machine moves its copy aside as `.bak-` and the date, and makes a new one
+  (`_ensure_private_image_cow()` in
+  `virtualbricks/bricks/virtualmachine.py`): what was done in the machines
+  is set aside. Keeping the image, with its path of the other computer,
+  would let Find the File… rebase them. Seen on 3.0.0.dev3, on 13 October
+  2026, writing the tutorial `tutorial-import` of the guide, with the
+  archive of 2.1 `DTN2hops_26_Feb_2026.vbp` (four private disks, not their
+  image), imported with Leave unset. The Logs window had:
+
+  ```
+  Import   .project:1: [Image:debian13] /home/carlo/VB_images/
+           debian13.qcow2 not found, kept in the library
+  Import   images.debian13: left unset: give its disks an image in
+           their settings
+  Import   bricks.node1.disks.hda: its image is unset, the private disk
+           is left as it is
+  Project  images.debian13: has no path, image dropped
+  Project  bricks.node1.disks.hda.image: no image named "debian13"
+  ```
+
+  and the same two lines of `node1` for `node2` to `node4`. The first line,
+  of the conversion of 2.1, says the image is kept; the fifth, that it's
+  dropped.
+- [ ] **The Import window names the bricks by their type in the project
+  file.** Under the name, "3 netemu · 4 qemu · 5 switch · 1 switchwrapper"
+  (`facts()` in `virtualbricks/gui/dialogs/importdialog.py`), where the
+  other windows say Netemu, Virtual machine, Switch and Switch wrapper.
+  Seen on 3.0.0.dev3, on 13 October 2026, in the picture `import.png` of
+  the guide.
+- [ ] **The Import window sends to the Messages window, which is Logs.**
+  While the import runs: "You can close this window: the Messages window
+  says when the import is done." (`_build_running()` in
+  `virtualbricks/gui/dialogs/importdialog.py`); the window is File › Logs.
+  Seen on 3.0.0.dev3, on 13 October 2026, writing the tutorial
+  `tutorial-import` of the guide.
 
 ## Remote windows
 
