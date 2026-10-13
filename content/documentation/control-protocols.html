@@ -52,7 +52,7 @@
     <li class="file">
       <h2><a href="#amp-2">AMP 2</a></h2>
       <p class="how">Hello <b>protocols=[1, 2]</b></p>
-      <p>On the same connection, once <code>Hello</code> agrees on it: a typed command for each command of the console, as <code>BrickStart</code> with its names, and the commands of the windows of <code>virtualbricks --connect</code>: <code>Follow</code>, which sends the project, then each change, and the others.</p>
+      <p>On the same connection, once <code>Hello</code> agrees on it: a typed command for each command of the console, as <code>BrickStart</code> with its names, and the commands of the windows of <code>virtualbricks --connect</code>: <code>Follow</code>, which sends the project, then each change, and the others. Still in development: its commands may change in any way, without notice, see <a href="#versions">Versions</a>.</p>
       <dl>
         <dt>Carries</dt><dd>the boxes of AMP, on the same connection</dd>
         <dt>Commands</dt><dd>59 typed, 19 of the windows, 8 pushes</dd>
@@ -199,6 +199,7 @@ virtualbricks --listen tcp:port[:protocol=json]</code></pre></figure>
 </section>
 <section id="amp-2">
 <h2>AMP protocol 2</h2>
+<p>Protocol 2 is still in development: a later Virtualbricks may change its commands in any way, without notice, see <a href="#versions">Versions</a>.</p>
 <p>Once <code>Hello</code> has agreed on 2, a connection speaks the commands of protocol 1 and those of protocol 2; before, these fail with <code>PROTOCOL_NEEDED</code>. They are in two modules that load nothing else of Virtualbricks but <code>ampwire</code>: <code>virtualbricks.console.ampcommands</code>, the typed commands, and <code>virtualbricks.remote.commands</code>, those of the windows; a program imports them, or copies them. Each command of protocol 2 has the same errors:</p>
 <dl class="terms">
 <dt><code>NOT_FOUND</code></dt><dd><p>A name of the command names nothing there: a brick, an event, an image, a project, a program or a file. Nothing was done.</p></dd>
@@ -352,8 +353,8 @@ virtualbricks --listen tcp:port[:protocol=json]</code></pre></figure>
 <section id="versions">
 <h2>Versions</h2>
 <p>The JSON protocol is 1, in the greeting; another would have another number. Over AMP, <code>Hello</code> agrees on the protocol: the highest that both ends speak. 1 is always one of them.</p>
-<p>Protocol 2 keeps its commands as they are. A later Virtualbricks may add commands to it, and optional arguments to its commands, and nothing else: an older one answers a command it doesn&#x27;t have with <code>UNHANDLED</code>, and an argument it doesn&#x27;t know with <code>BAD_ARGUMENT</code>, so a program that sends them knows that they weren&#x27;t done. A change of any other kind makes protocol 3, which would take the place of 2: a program that speaks both calls <code>Hello</code> with <code>protocols</code> [1, 2, 3]. The sources keep the commands of protocol 2 in <em>tests/data/amp-protocol-2.txt</em>, which the tests compare with the modules.</p>
-<p>The windows of <code>virtualbricks --connect</code> also want the same version of Virtualbricks at both ends: the <code>version</code> in the answer of <code>Hello</code>.</p>
+<p>Protocol 2 is still in development. Until it is stable, a later Virtualbricks may change its commands in any way, without notice and without a new number: rename a command or an argument, change a type, make an argument needed, add an error, or take a command away. A program that speaks protocol 2 wants the same version of Virtualbricks at both ends, as the windows of <code>virtualbricks --connect</code> do: the <code>version</code> in the answer of <code>Hello</code>.</p>
+<p>Once it is stable, protocol 2 will keep its commands as they are. A later Virtualbricks will add commands to it, and optional arguments to its commands, and nothing else: an older one answers a command it doesn&#x27;t have with <code>UNHANDLED</code>, and an argument it doesn&#x27;t know with <code>BAD_ARGUMENT</code>, so a program that sends them knows that they weren&#x27;t done. A change of any other kind will make protocol 3, which would take the place of 2: a program that speaks both calls <code>Hello</code> with <code>protocols</code> [1, 2, 3]. The sources keep the commands of protocol 2 in <em>tests/data/amp-protocol-2.txt</em>, which the tests compare with the modules.</p>
 </section>
 <section id="limits">
 <h2>Limits</h2>
