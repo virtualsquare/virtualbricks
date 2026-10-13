@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Import a lab without its image</title>
+<link rel="stylesheet" type="text/css" href="C.css">
+<script type="text/javascript" src="highlight.pack.js"></script><script>
+document.addEventListener('DOMContentLoaded', function() {
+  var matches = document.querySelectorAll('code.syntax')
+  for (var i = 0; i < matches.length; i++) {
+    hljs.highlightBlock(matches[i]);
+  }
+}, false);</script><script type="text/javascript" src="yelp.js"></script>
+</head>
+<body><main><div class="page">
+<header><div class="inner pagewide"><div class="trails" role="navigation"><div class="trail">
+<a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#tutorials" title="Tutorials">Tutorials</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">Import a lab without its image</span></h1></div>
+<div class="region">
+<div class="contents pagewide">
+<p class="p">A colleague sends you <span class="file">DTN2hops_26_Feb_2026.vbp</span>, a lab of
+  four virtual machines, <span class="sys">node1</span> to <span class="sys">node4</span>, five
+  switches, a switch wrapper and three channel emulators. The machines run on private copies of one disk image,
+  <span class="sys">debian13</span>, a file of a few gigabytes that the archive doesn't
+  hold: the private copies are in it, with what was done in each machine,
+  but not the image they are made on. Your colleague sends the image apart,
+  or you have it already.</p>
+<p class="p">The lab was made with Virtualbricks 2.1, and Virtualbricks converts it
+  while it reads the archive. An archive of this version imports the same
+  way.</p>
+</div>
+<section id="open"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">Open the archive</span></h2></div>
+<div class="region"><div class="contents pagewide">
+<div class="steps"><div class="inner"><div class="region"><ol class="steps">
+<li class="steps"><p class="p">Choose <span class="guiseq"><span class="gui">Projects</span> ▸ <span class="gui">Import…</span></span>,
+      or <span class="gui">Import…</span> in the Projects window. The Import Project window
+      asks for the archive.</p></li>
+<li class="steps"><p class="p">Click the button of the file, which says
+      <span class="gui">(None)</span>, and choose
+      <span class="file">DTN2hops_26_Feb_2026.vbp</span>. The window reads the archive,
+      then shows what it holds.</p></li>
+</ol></div></div></div>
+<div class="figure"><div class="inner">
+<a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h3><span class="title">The Import Project window, with the lab</span></h3></div>
+<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import.png" class="media media-block" alt="The Import Project window for ~/DTN2hops_26_Feb_2026.vbp: the
+        name DTN2hops_26_Feb_2026; 3 netemu, 4 qemu, 5 switch and 1
+        switchwrapper; the image debian13, used by node1.hda to node4.hda,
+        with Copy grey and Leave unset chosen; Open the project after the
+        import, on."></div></div></div></div>
+</div></div>
+</div></div>
+</div></section><section id="options"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">What the window offers</span></h2></div>
+<div class="region"><div class="contents pagewide"><div class="terms"><div class="inner"><div class="region"><dl class="terms">
+<dt class="terms"><span class="gui">Name</span></dt>
+<dd class="terms"><p class="p"><span class="sys">DTN2hops_26_Feb_2026</span>, the name of the file. If a
+        project has it already, the window suggests
+        <span class="sys">DTN2hops_26_Feb_2026-2</span>: an import never replaces a
+        project. You can change it.</p></dd>
+<dt class="terms">The bricks</dt>
+<dd class="terms"><p class="p">Below the name, how many bricks of each kind the project has, by
+        the names of the project file: <span class="sys">netemu</span> are the channel
+        emulators, <span class="sys">qemu</span> the virtual machines.</p></dd>
+<dt class="terms"><span class="gui">Images</span></dt>
+<dd class="terms">
+<p class="p">A row for <span class="sys">debian13</span>, used by the disk
+        <span class="sys">hda</span> of each of the four machines, with three
+        choices:</p>
+<div class="list"><div class="inner"><div class="region"><ul class="list">
+<li class="list"><p class="p"><span class="gui">Copy</span>, from the archive to the shared images of
+          your workspace;</p></li>
+<li class="list"><p class="p"><span class="gui">Use a file…</span> of this computer;</p></li>
+<li class="list"><p class="p"><span class="gui">Leave unset</span>, for its disks to get an image
+          later.</p></li>
+</ul></div></div></div>
+<p class="p"><span class="gui">Leave unset</span> is chosen: the window looked for the image
+        where the project had it,
+        <span class="file">/home/carlo/VB_images/debian13.qcow2</span> on your colleague's
+        computer, and in your shared images, under the name
+        <span class="file">debian13.qcow2</span>, and found it in neither. Had it
+        found it, <span class="gui">Use a file…</span> would be chosen, with that
+        file.</p>
+</dd>
+<dt class="terms"><span class="gui">Open the project after the import</span></dt>
+<dd class="terms"><p class="p">On: once imported, the lab opens in the main window.</p></dd>
+</dl></div></div></div></div></div>
+</div></section><section id="greyed"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">What is grey, and why</span></h2></div>
+<div class="region"><div class="contents pagewide"><div class="terms"><div class="inner"><div class="region"><dl class="terms">
+<dt class="terms"><span class="gui">Copy</span></dt>
+<dd class="terms"><p class="p">The archive doesn't hold the image: there is nothing to copy. Its
+        tooltip says <span class="gui">Not in the archive</span>. In a large archive, the
+        window may look for the image for a while: <span class="gui">Copy</span> is chosen
+        meanwhile, the row says <span class="gui">Looking in the archive…</span>, and
+        <span class="gui">Copy</span> turns grey once the window has read the archive to
+        its end.</p></dd>
+<dt class="terms"><span class="gui">Import</span></dt>
+<dd class="terms"><p class="p">Grey until the window has read the archive, and whenever something
+        stops the import; the window says what. Under the name: a name that
+        is empty, has a <span class="sys">/</span>, starts with a dot, is too long, or is a
+        project's already. At the bottom, in red: a file chosen with <span class="gui">Use a
+        file…</span> that isn't there any more, or a name too long for the
+        names of the bricks. Their sockets are in a folder named after the
+        project, and the path of a socket has at most 107 bytes; the longest
+        name of this lab, <span class="sys">sat_channel_emulator</span>, has 20.</p></dd>
+<dt class="terms"><span class="gui">This computer's paths</span></dt>
+<dd class="terms"><p class="p">Not there at all for this lab. It shows when the project names the
+        folders of QEMU and VDE of the computer it comes from, and they
+        aren't yours; a project of Virtualbricks 2.1 doesn't name them.</p></dd>
+<dt class="terms"><span class="guiseq"><span class="gui">Projects</span> ▸ <span class="gui">Import…</span></span></dt>
+<dd class="terms"><p class="p">Grey in the windows of another Virtualbricks, opened with
+        <span class="cmd">--connect</span>: the archives stay on the computer they are
+        on, for now. See <span class="link"><a href="remote.html" title="Another computer">Another computer</a></span>.</p></dd>
+</dl></div></div></div></div></div>
+</div></section><section id="image"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">Choose the image</span></h2></div>
+<div class="region"><div class="contents pagewide">
+<p class="p">This is the choice that matters.</p>
+<div class="terms"><div class="inner"><div class="region"><dl class="terms">
+<dt class="terms">You have the image</dt>
+<dd class="terms"><p class="p">Click <span class="gui">Use a file…</span> and choose it; the row then says
+        <span class="gui">Uses</span> and its path. The import points the private copies
+        of the four machines at it, so that they keep what was done in them.
+        It must be the image the lab was made on, a copy of your colleague's
+        file: a private copy holds only the changes over its image, and over
+        another one the machine finds a damaged disk.</p></dd>
+<dt class="terms">You don't have it</dt>
+<dd class="terms"><p class="p">Keep <span class="gui">Leave unset</span>. The project comes without the image
+        <span class="sys">debian13</span>, and the disks of the four machines without an
+        image. Their private copies come as the archive has them, made on the
+        file of your colleague's computer. When you give the disks an image,
+        in their settings, the first start of each machine moves its private
+        copy aside, as <span class="file">node1_hda.cow.bak-</span> and the date, and
+        makes a new one, empty: the machine starts from the image as it is,
+        without what was done in it.</p></dd>
+</dl></div></div></div>
+<div class="note note-tip" title="Tip">
+<svg height="24" width="24" version="1.1">
+ <g>
+  <path class="yelp-svg-fill" style="color-rendering:auto;text-decoration-color:#000000;color:#000000;isolation:auto;mix-blend-mode:normal;shape-rendering:auto;solid-color:#000000;block-progression:tb;text-decoration-line:none;text-decoration-style:solid;image-rendering:auto;white-space:normal;text-indent:0;text-transform:none" d="m12 2c-3.8541 0-7 3.1459-7 7 0 1.823 0.4945 3.139 1.1641 4.133 0.6695 0.994 1.4328 1.671 2.039 2.471 0.0882 0.116 0.1749 0.656 0.2071 1.32 0.016 0.332 0.0133 0.68 0.1894 1.119 0.0881 0.22 0.2439 0.478 0.5059 0.672 0.2619 0.194 0.6028 0.285 0.8945 0.285h4c0.583 0 1.204-0.478 1.402-0.908 0.199-0.43 0.217-0.793 0.244-1.137 0.056-0.688 0.138-1.319 0.211-1.441 0.549-0.916 1.304-2.009 1.94-3.114 0.636-1.104 1.203-2.199 1.203-3.4 0-3.8541-3.146-7-7-7zm0 2c2.773 0 5 2.2267 5 5 0 0.456-0.359 1.401-0.936 2.402-0.111 0.195-0.246 0.399-0.369 0.598h-7.8825c-0.4871-0.728-0.8125-1.519-0.8125-3 0-2.7733 2.2267-5 5-5z"></path>
+  <path class="yelp-svg-fill" d="m9 20a0.5 0.5 0 0 0 -0.5 0.5 0.5 0.5 0 0 0 0.5 0.5h6a0.5 0.5 0 0 0 0.5 -0.5 0.5 0.5 0 0 0 -0.5 -0.5h-6zm0 2a0.5 0.5 0 0 0 -0.5 0.5 0.5 0.5 0 0 0 0.5 0.5h6a0.5 0.5 0 0 0 0.5 -0.5 0.5 0.5 0 0 0 -0.5 -0.5h-6z"></path>
+ </g>
+</svg><div class="inner"><div class="region"><div class="contents"><p class="p">If you get the image later, import the archive again then, with
+      <span class="gui">Use a file…</span>, and remove the first import.</p></div></div></div>
+</div>
+</div></div>
+</div></section><section id="import"><div class="inner">
+<div class="hgroup pagewide"><h2 class="title"><span class="title">Import</span></h2></div>
+<div class="region"><div class="contents pagewide">
+<div class="steps"><div class="inner"><div class="region"><ol class="steps">
+<li class="steps"><p class="p">Click <span class="gui">Import</span>. The window shows the progress, and
+      <span class="gui">Cancel</span> becomes <span class="gui">Stop</span>: an import stopped removes
+      what it wrote. You can close the window, and let the import
+      finish.</p></li>
+<li class="steps"><p class="p">The main window shows <span class="sys">DTN2hops_26_Feb_2026</span>, with
+      its thirteen bricks, all stopped.</p></li>
+<li class="steps"><p class="p">Open <span class="guiseq"><span class="gui">File</span> ▸ <span class="gui">Logs</span></span>: the
+      import says what needs your attention. With the image left unset:
+      <span class="sys">left unset: give its disks an image in their settings</span>, and
+      for each machine <span class="sys">its image is unset, the private disk is left as
+      it is</span>.</p></li>
+</ol></div></div></div>
+<p class="p">If a brick of the project open before runs, the lab is imported but
+    doesn't open: stop the bricks, then open it from the Projects window.</p>
+<p class="p">In the <span class="gui">Bricks</span> tab, the start button of
+    <span class="sys">switchwrapper</span> is grey: a switch wrapper is a switch that
+    another program runs, at <span class="file">/var/run/switch/sck</span>, and it runs
+    while that program's switch is there. See <span class="link"><a href="kinds.html" title="The kinds of brick">The kinds of brick</a></span>.</p>
+</div></div>
+</div></section><section class="links" role="navigation"><div class="inner">
+<div class="hgroup pagewide"></div>
+<div class="contents pagewide">
+<div class="links guidelinks"><div class="inner">
+<div class="title"><h2><span class="title">More Information</span></h2></div>
+<div class="region"><ul><li class="links "><a href="index.html#tutorials" title="Tutorials">Tutorials</a></li></ul></div>
+</div></div>
+<div class="links seealsolinks"><div class="inner">
+<div class="title"><h2><span class="title">See Also</span></h2></div>
+<div class="region"><ul>
+<li class="links ">
+<a href="archives.html" title="Import and export">Import and export</a><span class="desc"> — A lab in one file, for another computer.</span>
+</li>
+<li class="links ">
+<a href="images.html" title="Disk images">Disk images</a><span class="desc"> — Add, make, share and find the disk images of a project.</span>
+</li>
+</ul></div>
+</div></div>
+</div>
+</div></section>
+</div>
+<div class="clear"></div></article><footer><div class="inner pagewide"></div></footer>
+</div></main></body>
+</html>
