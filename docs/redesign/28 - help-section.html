@@ -1,0 +1,604 @@
+<title>Virtualbricks Help Section</title>
+<meta name="description" content="A proposal for the user guide of Virtualbricks: Mallard pages shown by Yelp, or as HTML in the browser where Yelp is missing, Help &rarr; Contents and F1 in each window, the HTML committed and installed, English first.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+  .note { font-size: 14px; color: var(--muted); }
+  table.pages td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.pages td.from { color: var(--muted); font-size: 13.5px; }
+  table.pages tr.group td { font: 600 12px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); padding-top: 16px; }
+
+  /* page 28: the way to the guide, one row per case */
+  .route { display: grid; gap: 10px; margin: 16px 0 22px; padding: 0; list-style: none; }
+  .route li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px 18px; margin: 0; max-width: none; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  @media (min-width: 720px) { .route li { grid-template-columns: 2.4em minmax(0, 1fr) minmax(0, 1.15fr); align-items: baseline; } }
+  .route .n { font: 500 13px/1 var(--font-mono); color: var(--accent); }
+  .route .when { font-size: 14.5px; }
+  .route .opens { font: 13px/1.5 var(--font-mono); color: var(--code-ink); overflow-wrap: anywhere; }
+  .route .opens b { font-weight: 500; color: var(--accent); }
+
+  /* a GTK 3 window, Adwaita light, as page 24 draws them */
+  figure.board { margin: 20px 0 30px; min-width: 0; }
+  figure.board .stage { background: var(--code-bg); border-radius: 10px; padding: 22px 18px; overflow-x: auto; }
+  figure.board figcaption { font-size: 14px; line-height: 1.5; color: var(--muted); margin-top: 10px; max-width: 82ch; }
+  .gtk {
+    --w-bg: #f6f5f4; --w-view: #ffffff; --w-ink: #2e3436; --w-dim: #77767b;
+    --w-border: #cdc7c2; --w-sel: #3584e4; --w-sel-ink: #ffffff;
+    width: 420px; margin: 0 auto;
+    font: 13px/1.45 "Cantarell", "Noto Sans", system-ui, sans-serif;
+    color: var(--w-ink); background: var(--w-bg);
+    border: 1px solid #b8b1aa; border-radius: 8px 8px 3px 3px;
+    box-shadow: 0 8px 26px rgba(0,0,0,.20), 0 1px 3px rgba(0,0,0,.12);
+    overflow: hidden; text-align: left;
+  }
+  .gtk .tb { text-align: center; font-weight: 700; padding: 8px; background: linear-gradient(#efedeb, #e8e6e3); border-bottom: 1px solid var(--w-border); }
+  .gtk .menubar { display: flex; gap: 2px; padding: 2px 6px; border-bottom: 1px solid var(--w-border); }
+  .gtk .menubar span { padding: 3px 8px; }
+  .gtk .menubar span.open { background: var(--w-sel); color: var(--w-sel-ink); border-radius: 3px 3px 0 0; }
+  .gtk .area { position: relative; height: 150px; background: var(--w-view); }
+  .gtk .menu { position: absolute; top: 0; left: 118px; width: 190px; background: var(--w-view); border: 1px solid #b8b1aa; box-shadow: 0 4px 12px rgba(0,0,0,.18); padding: 4px 0; }
+  .gtk .mi { display: flex; justify-content: space-between; gap: 16px; padding: 4px 12px; }
+  .gtk .mi.sel { background: var(--w-sel); color: var(--w-sel-ink); }
+  .gtk .mi .acc { color: var(--w-dim); }
+  .gtk .mi.sel .acc { color: var(--w-sel-ink); }
+  .gtk .sep { height: 1px; background: #e2dedb; margin: 4px 0; }
+  .gtk u { text-decoration: underline; text-underline-offset: 2px; }
+</style>
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 28 &middot; Design &middot; revision 1, proposal</div>
+    <h1>Virtualbricks Help</h1>
+    <p class="lede">A user guide for the windows of Virtualbricks: Help &rarr; Contents, or F1 in any window, opens the page about that window. The pages are written once, in Mallard, the format of the GNOME help. Yelp shows them where it is installed, and anywhere else the browser shows the same pages as HTML.</p>
+    <ul class="meta">
+      <li>branch <b>develop</b> at 2de30a6</li>
+      <li>revision 1 &middot; 13 October 2026</li>
+      <li><span class="status">proposal</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your questions of today, &ldquo;what is the standard way to add an help section to the application?&rdquo; and &ldquo;Does mallard works if I don&rsquo;t have yelp installed?&rdquo;, then your request, &ldquo;write the design page for the help section&rdquo;. The six questions, H1 to H6 in <a href="#decisions">&sect;10</a>, are open, each with my recommendation.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>Today</a></li>
+        <li><a href="#guide"><span>3</span>The guide</a></li>
+        <li><a href="#opening"><span>4</span>Opening it</a></li>
+        <li><a href="#context"><span>5</span>F1 in each window</a></li>
+        <li><a href="#build"><span>6</span>Build, install, translate</a></li>
+        <li><a href="#others"><span>7</span>Other directions</a></li>
+        <li><a href="#code"><span>8</span>The code and the tests</a></li>
+        <li><a href="#plan"><span>9</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>10</span>Decisions</a></li>
+        <li><a href="#later"><span>11</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Format</dt><dd>Mallard pages in <code>help/C/</code>, one topic each: how to make a lab, what each window does, what to do when something goes wrong. They link the man pages for the details (<a class="ref" href="#decisions">H1</a>).</dd></div>
+          <div><dt>Pages</dt><dd>Sixteen pages in four groups: getting started, your lab, projects, and settings and beyond (&sect;3, <a class="ref" href="#decisions">H6</a>).</dd></div>
+          <div><dt>Opening</dt><dd>Yelp, through <code>help:virtualbricks</code>, when a program handles <code>help:</code> and the pages are where Yelp looks. Otherwise the browser, on the HTML built from the same pages and installed with Virtualbricks, or on the website copy if that isn&rsquo;t there either (&sect;4, <a class="ref" href="#decisions">H2</a>).</dd></div>
+          <div><dt>F1</dt><dd>Help &rarr; Contents, with F1, opens the guide. F1 in a window opens that window&rsquo;s page: the Settings window opens <i>Settings</i>, the Images tab <i>Disk images</i>. Settings, and the settings of a brick or an event, get a Help button too (&sect;5, <a class="ref" href="#decisions">H4</a>).</dd></div>
+          <div><dt>HTML</dt><dd><code>yelp-build</code> makes it, a pre-commit hook keeps it in step, as the man pages are kept, and it is committed in <code>help/html/</code>. So a packager needs no Yelp tools (&sect;6, <a class="ref" href="#decisions">H3</a>).</dd></div>
+          <div><dt>Languages</dt><dd>English first. The pages are ready for <code>itstool</code>, which turns them into a <code>.pot</code> and back, as the program&rsquo;s strings are (&sect;6, <a class="ref" href="#decisions">H5</a>).</dd></div>
+          <div><dt>Plan</dt><dd>Four steps on <code>develop</code>, a commit each, then the website copy (&sect;9).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>Today</h2>
+        <ul>
+          <li><strong>The Help menu</strong> has one item, About, the stock <code>gtk-about</code> item (<code>gui/mainwindow/window.py</code>, line 247). F1 does nothing. The accelerators of the window are Ctrl+N, Ctrl+O, Ctrl+S, Ctrl+P and Ctrl+Q.</li>
+          <li><strong>The reference pages</strong> are for whoever already knows what to look for: <code>virtualbricks</code>(1), the command and the console; <code>virtualbricks-config</code>(5), the files; <code>virtualbricks-vbp</code>(5) and <code>virtualbricks-archive</code>(7), the archives; <code>virtualbricks-control</code>(7), the control protocols. Each has an HTML twin in <code>docs/</code>, and two are on the website. None of them says how to use the windows.</li>
+          <li><strong>The README</strong> and the four posts of the website describe what is new in 3.0, not how to do a task.</li>
+          <li><strong>The console</strong> has <code>help</code>, for its own commands.</li>
+          <li><strong>Opening a link</strong> already has a pattern. <code>markdownview.open_link()</code>, <code>projects.py</code> and <code>imagedialogs.py</code> call <code>Gtk.show_uri_on_window()</code> and log a <code>GLib.Error</code>.</li>
+          <li><strong>Finding installed files</strong> has a pattern too. <code>i18n.find_localedir()</code> looks in the checkout, then under <code>sys.prefix</code>, the user base and <code>sys.base_prefix</code>, so that the catalogs are found in a virtualenv and after <code>pip install --user</code>.</li>
+          <li><strong>The desktop file</strong> is <code>share/virtualbricks.desktop</code>, so the usual id of the guide is <code>virtualbricks</code>. Page 18 plans <code>org.virtualsquare.Virtualbricks</code> as the id of the application. The guide can keep the short id, as <code>help:gnome-terminal</code> does.</li>
+        </ul>
+      </section>
+
+      <section id="guide">
+        <h2><span class="num">&sect;3</span>The guide</h2>
+        <p>Mallard is the format of the GNOME help: an XML page for each topic, linked into guides. A topic says which guide it belongs to, so the index lists the topics without being edited for each new one. Pages are short and task-shaped: &ldquo;Make your first lab&rdquo;, not &ldquo;The New Brick popover&rdquo;. <code>yelp-check</code> validates them against the schema and finds links to pages that aren&rsquo;t there.</p>
+        <p>The guide is for someone at the windows. For the console, the files and the protocols it says what they are for, and links the man page that has the details. A Mallard conditional gives each link two forms: <code>man:virtualbricks(1)</code> for Yelp, which shows man pages, and the website copy in the HTML.</p>
+        <div class="scroll">
+        <table class="pages wide">
+          <thead><tr><th>Page</th><th>Title, and what it covers</th><th>F1 from</th></tr></thead>
+          <tbody>
+            <tr><td>index</td><td>Virtualbricks Help: the four groups below.</td><td class="from">Help &rarr; Contents</td></tr>
+            <tr class="group"><td colspan="3">Getting started</td></tr>
+            <tr><td>first-lab</td><td>Make your first lab: a switch and a machine plugged into it, started, the project saved.</td><td class="from">&mdash;</td></tr>
+            <tr><td>kinds</td><td>The kinds of brick: what each one is for, which program runs it, what it plugs into.</td><td class="from">New Brick</td></tr>
+            <tr><td>programs</td><td>The programs it needs: VDE and QEMU, what a missing one greys out, where Settings looks for them.</td><td class="from">&mdash;</td></tr>
+            <tr class="group"><td colspan="3">Your lab</td></tr>
+            <tr><td>bricks</td><td>Bricks: start, stop, configure, connect, rename, delete; the panel of a brick.</td><td class="from">Bricks tab, a brick&rsquo;s settings, Rename and Delete</td></tr>
+            <tr><td>machines</td><td>Virtual machines: disks, private copies, network cards, the consoles.</td><td class="from">a machine&rsquo;s settings</td></tr>
+            <tr><td>images</td><td>Disk images: add, make, the shared images, start a disk over.</td><td class="from">Images tab, image dialogs</td></tr>
+            <tr><td>events</td><td>Events: delays and actions, start a lab in order.</td><td class="from">Events tab, an event&rsquo;s settings</td></tr>
+            <tr><td>topology</td><td>The picture of the lab, and how to export it.</td><td class="from">Topology tab</td></tr>
+            <tr><td>readme</td><td>The README of a project, with its pictures.</td><td class="from">Readme tab</td></tr>
+            <tr class="group"><td colspan="3">Projects</td></tr>
+            <tr><td>projects</td><td>Projects: open, new, rename, duplicate, remove; the workspace.</td><td class="from">Projects window, its dialogs</td></tr>
+            <tr><td>archives</td><td>Import and export: a lab in one file, for another computer.</td><td class="from">Import, Export</td></tr>
+            <tr class="group"><td colspan="3">Settings and beyond</td></tr>
+            <tr><td>settings</td><td>Settings: the programs, the terminal, KSM, the settings of the project.</td><td class="from">Settings window</td></tr>
+            <tr><td>console</td><td>The console and scripts; links <code>virtualbricks</code>(1).</td><td class="from">&mdash;</td></tr>
+            <tr><td>remote</td><td>Another computer: a lab machine that listens, its windows on your desktop; links <code>virtualbricks-control</code>(7).</td><td class="from">&mdash;</td></tr>
+            <tr><td>problems</td><td>When something goes wrong: the messages, a brick that doesn&rsquo;t start, a tap that needs rights, another Virtualbricks that runs, a project that can&rsquo;t be read.</td><td class="from">Messages window</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <figure class="code">
+          <figcaption>help/C/first-lab.page (part)</figcaption>
+<pre><code>&lt;page xmlns="http://projectmallard.org/1.0/"
+      xmlns:if="http://projectmallard.org/if/1.0/"
+      type="topic" id="first-lab"&gt;
+  &lt;info&gt;
+    <span class="h">&lt;link type="guide" xref="index#start"/&gt;</span>
+    &lt;link type="seealso" xref="kinds"/&gt;
+    &lt;desc&gt;A switch and a machine plugged into it, started.&lt;/desc&gt;
+  &lt;/info&gt;
+  &lt;title&gt;Make your first lab&lt;/title&gt;
+  &lt;steps&gt;
+    &lt;item&gt;&lt;p&gt;Click &lt;gui&gt;New Brick&lt;/gui&gt; and choose &lt;gui&gt;Switch&lt;/gui&gt;.&lt;/p&gt;&lt;/item&gt;
+    &lt;item&gt;&lt;p&gt;Press &lt;keyseq&gt;&lt;key&gt;Ctrl&lt;/key&gt;&lt;key&gt;S&lt;/key&gt;&lt;/keyseq&gt; to save it.&lt;/p&gt;&lt;/item&gt;
+  &lt;/steps&gt;
+  <span class="c">&lt;!-- Yelp shows man pages; the HTML links the website copy --&gt;</span>
+  &lt;p <span class="h">if:test="!target:html"</span>&gt;The same from the console:
+    &lt;link href="man:virtualbricks(1)"&gt;virtualbricks(1)&lt;/link&gt;.&lt;/p&gt;
+  &lt;p <span class="h">if:test="target:html"</span>&gt;The same from the console:
+    &lt;link href="https://www.virtualbricks.it/documentation/command-line.html"&gt;virtualbricks(1)&lt;/link&gt;.&lt;/p&gt;
+&lt;/page&gt;</code></pre>
+        </figure>
+        <p class="note">The website has the Documentation pages <code>config-files</code> and <code>control-protocols</code> today. <code>command-line</code> and the other two would join them before the guide links them.</p>
+      </section>
+
+      <section id="opening">
+        <h2><span class="num">&sect;4</span>Opening it</h2>
+        <p>A Mallard page needs a program to show it, and only Yelp does. Yelp registers the <code>help:</code> scheme. Without it, nothing handles <code>help:virtualbricks</code>, and <code>Gtk.show_uri_on_window()</code> raises. That is the usual case on Xfce, on KDE and under a bare window manager. Virtualbricks therefore picks the first of three ways that works:</p>
+        <ol class="route">
+          <li><span class="n">1</span><span class="when">A program handles <code>help:</code>, and the pages are in a folder where Yelp looks: <code>~/.local/share/help</code> or the <code>help</code> folder of a system data folder. This covers a Debian package and <code>pip install --user</code>.</span><span class="opens">Yelp: <b>help:virtualbricks/settings</b></span></li>
+          <li><span class="n">2</span><span class="when">Otherwise, the HTML installed with Virtualbricks is found, as <code>find_localedir()</code> finds the catalogs: in the checkout, under <code>sys.prefix</code>, the user base or <code>sys.base_prefix</code>. This covers a virtualenv and a desktop without Yelp.</span><span class="opens">the browser: <b>file:///&hellip;/share/virtualbricks/help/C/settings.html</b></span></li>
+          <li><span class="n">3</span><span class="when">Otherwise, the website copy, for an install that lost its files.</span><span class="opens">the browser: <b>https://www.virtualbricks.it/help/C/settings.html</b></span></li>
+        </ol>
+        <p>The check for 1 looks at the folders before it opens anything, so Yelp never says &ldquo;page not found&rdquo; for pages installed in a virtualenv, where it doesn&rsquo;t look. A failure to open is logged, as a link of the README is.</p>
+        <figure class="board">
+          <div class="stage">
+            <div class="gtk" role="img" aria-label="The Help menu of the main window, open: Contents with F1, a separator, About.">
+              <div class="tb">lab1 &mdash; Virtualbricks</div>
+              <div class="menubar"><span><u>F</u>ile</span><span><u>P</u>rojects</span><span class="open"><u>H</u>elp</span></div>
+              <div class="area">
+                <div class="menu" style="left: 104px;">
+                  <div class="mi sel"><span><u>C</u>ontents</span><span class="acc">F1</span></div>
+                  <div class="sep"></div>
+                  <div class="mi"><span><u>A</u>bout</span><span class="acc"></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <figcaption>Help &rarr; Contents, with F1, above About. In the main window F1 opens the page of the tab in view; Contents always opens the index.</figcaption>
+        </figure>
+        <figure class="code">
+          <figcaption>virtualbricks/gui/help.py (sketch)</figcaption>
+<pre><code><span class="c">"""The guide: in Yelp when it can show it, else its HTML in the browser."""</span>
+
+ID = "virtualbricks"
+WEBSITE = "https://www.virtualbricks.it/help/C/"
+
+def yelp_finds_it() -&gt; bool:
+    if Gio.AppInfo.get_default_for_uri_scheme("help") is None:
+        return False
+    folders = [GLib.get_user_data_dir(), *GLib.get_system_data_dirs()]
+    return any(
+        isfile(join(folder, "help", "C", ID, "index.page"))
+        for folder in folders
+    )
+
+def help_uri(page: str | None, html: str | None) -&gt; str:
+    if yelp_finds_it():
+        return f"help:{ID}/{page}" if page else f"help:{ID}"
+    name = f"{page or 'index'}.html"
+    if html is not None:
+        return Gio.File.new_for_path(join(html, name)).get_uri()
+    return WEBSITE + name
+
+def show_help(window: Gtk.Window | None, page: str | None = None) -&gt; None:
+    uri = help_uri(page, find_html())  <span class="c"># find_html() as find_localedir()</span>
+    try:
+        Gtk.show_uri_on_window(window, uri, Gdk.CURRENT_TIME)
+    except GLib.Error as exc:
+        logger.error(cannot_open_help, uri=uri, error=exc.message)</code></pre>
+        </figure>
+        <p class="note">Checked on Debian 13, this machine. Yelp 42.2 handles <code>help:</code> through <code>yelp.desktop</code>. With <code>XDG_DATA_DIRS</code> and <code>XDG_DATA_HOME</code> on empty folders, <code>Gio.AppInfo.get_default_for_uri_scheme("help")</code> is <code>None</code>, and <code>Gio.AppInfo.launch_default_for_uri("help:virtualbricks")</code> fails with <code>G_IO_ERROR</code> 15, &ldquo;The specified location is not supported&rdquo;. Not tried: Yelp showing pages from <code>~/.local/share/help</code>; KDE&rsquo;s help center on a Mallard page.</p>
+      </section>
+
+      <section id="context">
+        <h2><span class="num">&sect;5</span>F1 in each window</h2>
+        <p>Each window names its page, and F1 opens it. The table of &sect;3 lists them. The windows subclass <code>dialogs/base.py</code>&rsquo;s <code>Window</code> since 12 October, so the key is handled once there: a <code>help_page</code> attribute, <code>None</code> for the guide&rsquo;s index, and a key handler on the root widget that calls <code>show_help()</code>. In the main window, F1 opens the page of the tab in view, and of the settings in view: each tab gets <code>help_page</code> too, and a panel names its page, <i>machines</i> for a machine&rsquo;s.</p>
+        <p>The places with a row of buttons get a Help button as well, on the left: the Settings window, where GTK puts <code>Gtk.ResponseType.HELP</code>, and the settings of a brick or an event in their tab, beside Cancel and OK. The windows with a header bar keep F1 only, since a header bar has no room for Help without a menu.</p>
+        <p>The windows of <code>--connect</code> are the same windows, so they open the same pages, from this computer. The <i>remote</i> page tells the lab machine apart from this one.</p>
+      </section>
+
+      <section id="build">
+        <h2><span class="num">&sect;6</span>Build, install, translate</h2>
+        <h3>In the sources</h3>
+        <ul>
+          <li><code>help/C/*.page</code>, the pages, and later <code>help/C/figures/</code>.</li>
+          <li><code>help/html/C/</code>, the HTML that <code>yelp-build html</code> makes: one <code>.html</code> for each page, plus <code>C.css</code>, <code>yelp.js</code> and <code>highlight.pack.js</code>. It is committed, as the man pages are (<a class="ref" href="#decisions">H3</a>).</li>
+          <li>A pre-commit hook, <code>help</code>, beside <code>man</code>: on a change to <code>help/C/</code> it runs <code>yelp-check validate</code>, <code>yelp-check links</code> and <code>yelp-build html</code>. Like <code>man</code>, which needs pandoc, it needs <code>yelp-tools</code> on the machine that commits, and nowhere else.</li>
+        </ul>
+        <h3>Installed</h3>
+        <ul>
+          <li><code>share/help/C/virtualbricks/</code>, the pages, where Yelp looks.</li>
+          <li><code>share/virtualbricks/help/C/</code>, the HTML. Not <code>share/doc/</code>: the Ubuntu container images leave <code>/usr/share/doc/*</code> out.</li>
+          <li>Both in <code>[tool.setuptools.data-files]</code>, a key for each folder, as the man pages are listed. <code>MANIFEST.in</code> takes <code>help/</code> into the sdist.</li>
+        </ul>
+        <h3>Languages</h3>
+        <p>English first (<a class="ref" href="#decisions">H5</a>). Later, <code>itstool</code> writes a <code>.pot</code> of the pages, the translators fill a <code>.po</code> for each language as for the program, and <code>itstool -m</code> writes <code>help/&lt;lang&gt;/</code>. Yelp then picks the language of the desktop by itself. For the HTML, <code>show_help()</code> picks the folder of the language, else <code>C</code>. The <code>l10n</code> hook could run it.</p>
+        <p class="note">Checked with <code>yelp-tools</code> 42.1, <code>itstool</code> 2.0.6 and <code>mallard-rng</code> from the Debian 13 packages, unpacked in a scratch folder, on four sample pages. <code>yelp-check validate</code> refuses a page with an unknown element. <code>yelp-check links</code> names an <code>xref</code> to a page that isn&rsquo;t there, and exits with 1. <code>yelp-build html</code> makes 196 KB with no remote resources, and keeps the <code>if:test="target:html"</code> paragraph of a pair while dropping its <code>!target:html</code> twin. In the <code>ubuntu:22.04</code> image, dpkg leaves out <code>/usr/share/doc/*</code> and <code>/usr/share/man/*</code>; the <code>debian:bookworm</code> image leaves out neither. The versions of <code>yelp-tools</code> on the other targets aren&rsquo;t checked: only the machine that commits needs them.</p>
+      </section>
+
+      <section id="others">
+        <h2><span class="num">&sect;7</span>Other directions</h2>
+        <ul>
+          <li><strong>Markdown in a window of Virtualbricks.</strong> The Readme tab already draws Markdown, with pictures (<a href="05%20-%20readme-markdown.html">page 05</a>). A Help window with a list of pages on the left would need nothing outside Virtualbricks. But it would be a viewer of our own to keep: links between pages, search, the language of the pages, and no copy for the browser or the website without a second renderer.</li>
+          <li><strong>HTML by hand</strong>, in the style of the reference pages, opened in the browser. It has one form and no tools, but no schema, no link check, and no way to translate a page but copying it.</li>
+          <li><strong>Yelp only.</strong> The pages and <code>help:virtualbricks</code>, with Yelp in the package&rsquo;s Recommends. It is the least code, but on a desktop without Yelp, Help shows an error.</li>
+          <li><strong>DocBook</strong>, which the GNOME help used before Mallard. Yelp still reads it, but it is a book in chapters, heavier to write, and the GNOME guides moved away from it.</li>
+        </ul>
+      </section>
+
+      <section id="code">
+        <h2><span class="num">&sect;8</span>The code and the tests</h2>
+        <h3>What changes</h3>
+        <ul>
+          <li><code>gui/help.py</code>, new: <code>yelp_finds_it()</code>, <code>find_html()</code>, <code>help_uri()</code>, <code>show_help()</code>.</li>
+          <li><code>gui/dialogs/base.py</code>: <code>Window.help_page</code>, and F1 on the root widget.</li>
+          <li><code>gui/mainwindow/window.py</code>: Help &rarr; Contents with F1; F1 opens the page of the tab in view. <code>gui/mainwindow/tab.py</code>: <code>help_page</code> in the protocol of a tab.</li>
+          <li><code>gui/dialogs/settings.py</code> and <code>gui/mainwindow/rowtab.py</code>: a Help button; <code>help_page</code> on the panels.</li>
+          <li><code>help/</code>, <code>.pre-commit-config.yaml</code>, <code>pyproject.toml</code>, <code>MANIFEST.in</code>.</li>
+        </ul>
+        <h3>Tests</h3>
+        <ul>
+          <li><code>help_uri()</code> for each way of &sect;4, with fake folders and a fake answer for the handler: Yelp with and without a page, the installed HTML, the website.</li>
+          <li>The pages against the code: each <code>help_page</code> of a window or a tab names a page of <code>help/C/</code>; each page has its HTML in <code>help/html/C/</code>; <code>pyproject.toml</code> lists every page. These need no tools.</li>
+          <li><code>yelp-check validate</code> and <code>links</code> on <code>help/C/</code>, skipped where <code>yelp-check</code> isn&rsquo;t installed.</li>
+          <li>An e2e scenario, on the Broadway display of the e2e tests: F1 in the Settings window opens the page <code>settings</code>. A fake desktop file in the test&rsquo;s own data folder handles <code>help:</code> and <code>text/html</code>, and writes down the URI it gets. A second run without it ends on the HTML.</li>
+        </ul>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;9</span>Implementation plan</h2>
+        <p>On <code>develop</code>, a commit for each step and a stop for review after each, as before. Your own files in the working tree stay out of every commit.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">1 The pages</td><td>The sixteen pages of &sect;3 in <code>help/C/</code>, without pictures; the <code>help</code> hook; the built HTML in <code>help/html/C/</code>.</td><td><code>yelp-check validate</code> and <code>links</code>; each page has its HTML.</td></tr>
+            <tr><td class="nowrap">2 Opening</td><td><code>gui/help.py</code>; Help &rarr; Contents with F1.</td><td><code>help_uri()</code> for each way.</td></tr>
+            <tr><td class="nowrap">3 F1</td><td><code>help_page</code> on the windows and the tabs, F1 in each, the Help buttons of Settings and of the settings in the tabs.</td><td>Each <code>help_page</code> names a page; the e2e scenario.</td></tr>
+            <tr><td class="nowrap">4 Install and docs</td><td><code>data-files</code> and <code>MANIFEST.in</code>; a line in the README and in the FILES of <code>virtualbricks</code>(1) and its HTML twin; &ldquo;Since then&rdquo; on page 18 (<code>show_uri_on_window()</code> in one more place); this page&rsquo;s Implemented; the TODO.</td><td><code>pyproject.toml</code> lists every page; an install in a virtualenv opens the HTML.</td></tr>
+            <tr><td class="nowrap">5 Website</td><td>On <code>website</code>: <code>help/html/C/</code> as static files under <code>/help/C/</code>, and <code>command-line</code>, <code>vbp-format</code> and <code>archive-protocol</code> as Documentation pages, for the links of &sect;3.</td><td>The build check of the website.</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;10</span>Decisions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Recommended</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>H1</td>
+              <td>The format of the pages</td>
+              <td>
+                <p><b>A</b> Mallard: topic pages, Yelp, a schema, a link check, HTML built from the same pages, <code>itstool</code> for translations (&sect;3).</p>
+                <p><b>B</b> HTML by hand, as the reference pages (&sect;7).</p>
+                <p><b>C</b> Markdown in a Help window of Virtualbricks (&sect;7).</p>
+                <p><b>D</b> DocBook (&sect;7).</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>H2</td>
+              <td>What opens the guide</td>
+              <td>
+                <p><b>A</b> Yelp when it handles <code>help:</code> and finds the pages, else the installed HTML in the browser, else the website (&sect;4).</p>
+                <p><b>B</b> Always the HTML in the browser: the same everywhere, but not the help of the desktop.</p>
+                <p><b>C</b> Always Yelp, recommended by the package; an error without it.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>H3</td>
+              <td>Where the HTML comes from</td>
+              <td>
+                <p><b>A</b> Built by the <code>help</code> hook, committed in <code>help/html/</code>, installed in <code>share/virtualbricks/help/</code>, and copied to the website (&sect;6).</p>
+                <p><b>B</b> Built when the package is built: nothing generated in git, but every packager, and every <code>pip install</code> from the sdist, needs <code>yelp-tools</code>.</p>
+                <p><b>C</b> Only on the website: nothing installed, but no help offline, and the pages may be those of another version.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>H4</td>
+              <td>Help from a window</td>
+              <td>
+                <p><b>A</b> F1 in every window opens its page, and a Help button in Settings and in the settings of a brick or an event (&sect;5).</p>
+                <p><b>B</b> Only Help &rarr; Contents, with F1 in the main window.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>H5</td>
+              <td>Languages</td>
+              <td>
+                <p><b>A</b> English first; <code>itstool</code> and the five languages of the program later (&sect;6).</p>
+                <p><b>B</b> <code>itstool</code> from the start, with empty <code>.po</code> files for de, es, fr, it and nl.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>H6</td>
+              <td>The pages of the first version</td>
+              <td>
+                <p><b>A</b> The sixteen of &sect;3: tasks, each window, and what to do when something goes wrong.</p>
+                <p><b>B</b> A start: the index, <i>Make your first lab</i> and <i>When something goes wrong</i>, the rest page by page later; F1 then opens the index from most windows.</p>
+                <p><b>C</b> A page for every window and every field, a reference of the GUI.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <p>My choices, which the questions don&rsquo;t cover: the id <code>virtualbricks</code>, kept if the application takes <code>org.virtualsquare.Virtualbricks</code>; the menu item named Contents, as in GTK 3 programs with a menu bar; no Help button in the windows with a header bar; the HTML in <code>share/virtualbricks/</code>, not <code>share/doc/</code>.</p>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;11</span>Later</h2>
+        <ul>
+          <li>Pictures in the pages, taken by the e2e tests on Broadway, so that they follow the windows when the windows change.</li>
+          <li>The translations of &sect;6.</li>
+          <li>A Keyboard Shortcuts window, <code>Gtk.ShortcutsWindow</code>, under Help, with Ctrl+?.</li>
+          <li>With GTK 4 (<a href="18%20-%20gtk4-migration.html">page 18</a>), <code>show_help()</code> goes through the <code>gui/compat.py</code> that page plans for <code>Gtk.UriLauncher</code>, since <code>Gtk.show_uri_on_window()</code> has no GTK 4 twin.</li>
+          <li>Found on the way: <code>share/virtualbricks.desktop</code> has <code>Version=2.0.0b2</code>. That key is the version of the Desktop Entry specification, such as 1.5, not that of Virtualbricks.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
