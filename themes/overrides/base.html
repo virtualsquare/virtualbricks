@@ -84,6 +84,9 @@
                                 {% for cat, null in categories %}
                                 <li {% if cat == category or (article and cat == article.category) %} class="active"{% endif %}><a href="{{ SITEURL }}/{{ cat.url }}">{{ cat }}</a></li>
                                 {% endfor %}
+                                {# Virtualbricks: the user guide, which invoke sync-docs
+                                   copies from develop #}
+                                <li><a href="{{ SITEURL }}/help/C/">Help</a></li>
                             </ul>
                         </div>
                     </div>

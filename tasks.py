@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 
+import io
 import os
 import shlex
 import shutil
+import subprocess
 import sys
 import datetime
+import tarfile
+import textwrap
 
 from invoke import task
+from invoke.exceptions import Exit
 from invoke.main import program
 from invoke.util import cd
 from pelican import main as pelican_main
@@ -142,6 +147,122 @@ def gh_pages(c):
     c.run('ghp-import -b {github_pages_branch} '
           '-m {commit_message} '
           '{deploy_path} -p'.format(**CONFIG))
+
+# The help, the HTML of the user guide, and the pages of the Documentation
+# are copies of those of a commit of develop, made by sync-docs: page 28 of
+# develop's docs/redesign, section 7.
+ROOT = os.path.dirname(os.path.abspath(__file__))
+HELP_SOURCE = 'help/html/C'
+HELP_PATH = os.path.join('content', 'help', 'C')
+DOCUMENTATION_PATH = os.path.join('content', 'documentation')
+
+
+def git(*args):
+    """What git writes, run in this checkout; Exit if it fails."""
+    result = subprocess.run(('git',) + args, cwd=ROOT, capture_output=True)
+    if result.returncode:
+        raise Exit(result.stderr.decode().strip(), code=1)
+    return result.stdout
+
+
+def documentation_page(source, page):
+    """
+    A page of the Documentation, and its stylesheet, from the page of docs/
+    in develop, source, and the page of the site: its head, the metadata of
+    Pelican, kept; the body of source after its <style>, as it is; the
+    <style> in the stylesheet.
+    """
+    head = page[:page.index('<body>\n') + len('<body>\n')]
+    start = source.index('<style>\n') + len('<style>\n')
+    end = source.index('</style>\n')
+    body = source[end + len('</style>\n'):].lstrip('\n')
+    return head + body + '</body>\n</html>\n', textwrap.dedent(source[start:end])
+
+
+def read(path):
+    """The bytes of path in this checkout, None if it isn't there."""
+    try:
+        with open(os.path.join(ROOT, path), 'rb') as file:
+            return file.read()
+    except FileNotFoundError:
+        return None
+
+
+def docs_of(ref):
+    """
+    The files of the help and of the Documentation as ref has them, by their
+    path in the site: every file of help/html/C; for each page of the
+    Documentation of the site, NAME.html, its docs/NAME.html.
+    """
+    files = {}
+    try:
+        tar = git('archive', '--format=tar', ref, HELP_SOURCE)
+    except Exit:
+        raise Exit('{} has no {}'.format(ref, HELP_SOURCE), code=1)
+    with tarfile.open(fileobj=io.BytesIO(tar)) as archive:
+        for member in archive.getmembers():
+            if member.isfile():
+                name = os.path.relpath(member.name, HELP_SOURCE)
+                data = archive.extractfile(member).read()
+                files[os.path.join(HELP_PATH, name)] = data
+    for name in sorted(os.listdir(os.path.join(ROOT, DOCUMENTATION_PATH))):
+        if not name.endswith('.html'):
+            continue
+        path = os.path.join(DOCUMENTATION_PATH, name)
+        source = git('show', '{}:docs/{}'.format(ref, name)).decode('utf-8')
+        page, css = documentation_page(source, read(path).decode('utf-8'))
+        files[path] = page.encode('utf-8')
+        files[path[:-len('.html')] + '.css'] = css.encode('utf-8')
+    return files
+
+
+def help_files():
+    """The paths of the files of the help in the site."""
+    paths = []
+    for folder, _, names in os.walk(os.path.join(ROOT, HELP_PATH)):
+        for name in names:
+            paths.append(os.path.relpath(os.path.join(folder, name), ROOT))
+    return paths
+
+
+@task(positional=['ref'], help={
+    'ref': 'the commit of develop: develop, a tag or a hash',
+    'check': 'change nothing: exit with 1 if the site differs from REF',
+})
+def sync_docs(c, ref, check=False):
+    """Copy the help and the Documentation of a commit of develop"""
+    commit = git('rev-parse', '--short', ref + '^{commit}').decode().strip()
+    wanted = docs_of(ref)
+    changed = [path for path in sorted(wanted) if read(path) != wanted[path]]
+    gone = sorted(path for path in help_files() if path not in wanted)
+    if check:
+        for path in changed:
+            state = 'missing' if read(path) is None else 'not as in'
+            print('{}: {} {} {}'.format(path, state, ref, commit))
+        for path in gone:
+            print('{}: not in {} {}'.format(path, ref, commit))
+        if changed or gone:
+            raise Exit('The help and the Documentation differ from {} {}: '
+                       'invoke sync-docs {}'.format(ref, commit, ref), code=1)
+        print('The help and the Documentation are those of {} {}'.format(
+            ref, commit))
+        return
+    for path in changed:
+        print('{} {}'.format('added' if read(path) is None else 'updated', path))
+        os.makedirs(os.path.dirname(os.path.join(ROOT, path)), exist_ok=True)
+        with open(os.path.join(ROOT, path), 'wb') as file:
+            file.write(wanted[path])
+    for path in gone:
+        print('removed {}'.format(path))
+        os.remove(os.path.join(ROOT, path))
+    for folder, folders, names in os.walk(os.path.join(ROOT, HELP_PATH),
+                                          topdown=False):
+        if not folders and not names:
+            os.rmdir(folder)
+    print('{} is {} in this repository: git fetch first for the published '
+          'one.'.format(ref, commit))
+    print('Commit as: Help and Documentation of {} {}'.format(ref, commit))
+
 
 def pelican_run(cmd):
     cmd += ' ' + program.core.remainder  # allows to pass-through args to pelican

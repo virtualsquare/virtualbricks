@@ -12,6 +12,11 @@ GITHUB_PAGES_BRANCH=gh-pages
 GITHUB_PAGES_REMOTE=virtualsquare
 GITHUB_PAGES_CNAME=www.virtualbricks.it
 
+# The commit of develop whose help and Documentation the site has: publish
+# stops while they differ (invoke sync-docs)
+INVOKE?=invoke
+DOCS_REF?=develop
+
 
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
@@ -40,6 +45,7 @@ help:
 	@echo '   make clean                          remove the generated files         '
 	@echo '   make regenerate                     regenerate files upon modification '
 	@echo '   make publish                        generate using production settings '
+	@echo '                                       once the help is that of DOCS_REF  '
 	@echo '   make serve [PORT=8000]              serve site at http://localhost:8000'
 	@echo '   make serve-global [SERVER=0.0.0.0]  serve (as root) to $(SERVER):80    '
 	@echo '   make devserver [PORT=8000]          serve and regenerate together      '
@@ -72,6 +78,7 @@ devserver-global:
 	$(PELICAN) -lr $(INPUTDIR) -o $(OUTPUTDIR) -s $(CONFFILE) $(PELICANOPTS) -b 0.0.0.0
 
 publish: clean
+	"$(INVOKE)" sync-docs --check $(DOCS_REF)
 	"$(PELICAN)" "$(INPUTDIR)" -o "$(OUTPUTDIR)" -s "$(PUBLISHCONF)" $(PELICANOPTS)
 
 github: publish

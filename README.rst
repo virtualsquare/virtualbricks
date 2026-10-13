@@ -58,4 +58,36 @@ The home page is *content/pages/home.rst*, a hidden page with the slug
 *home*, saved as *index.html*: Elegant's own home page, the *index*
 template, is not built.
 
+The help and the Documentation
+==============================
+
+The user guide, *content/help/C/*, and the pages of the Documentation,
+*content/documentation/*, are copies of what a commit of **develop** has:
+the HTML of the guide, *help/html/C/*, and the pages of *docs/*. They are
+never edited here. The task *sync-docs*, of *tasks.py*, makes them, and
+says how to commit them:
+
+.. code::
+
+   $ git fetch virtualsquare
+   $ invoke sync-docs virtualsquare/develop
+   $ git add content && git commit -m "Help and Documentation of develop 1234abcd"
+
+The guide is copied as it is, and Pelican doesn't read it: *help* is in
+*STATIC_PATHS*, *ARTICLE_EXCLUDES* and *PAGE_EXCLUDES*. A page of the
+Documentation keeps its head here, the metadata of Pelican; its body is
+that of *docs/NAME.html*, its style *NAME.css*. A new page starts as a head
+with an empty body, which the next sync fills.
+
+*make publish*, and so *make github*, first runs ``invoke sync-docs --check
+$(DOCS_REF)``, *develop* unless the command line says otherwise, and stops
+while the site differs from it. While 3.0 is in development the site
+follows **develop**; once it is out, the latest release:
+
+.. code::
+
+   $ make github DOCS_REF=v3.0.0
+
+*invoke* is in *requirements.txt*.
+
 .. _Elegant: https://github.com/Pelican-Elegant/elegant

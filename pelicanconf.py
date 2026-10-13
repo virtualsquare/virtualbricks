@@ -10,8 +10,12 @@ SITEURL = ''
 
 PATH = 'content'
 
-# The documents of the Documentation category bring their stylesheets
-STATIC_PATHS = ['images', 'documentation']
+# The documents of the Documentation category bring their stylesheets; the
+# help, the HTML of the user guide that invoke sync-docs copies from develop,
+# is copied as it is, not read as articles or pages
+STATIC_PATHS = ['images', 'documentation', 'help']
+ARTICLE_EXCLUDES = ['help']
+PAGE_EXCLUDES = ['help']
 
 TIMEZONE = 'Europe/Rome'
 
