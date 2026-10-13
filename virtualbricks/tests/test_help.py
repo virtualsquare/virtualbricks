@@ -101,6 +101,33 @@ class TestThePages(PagesTestCase):
             self.assertIn(guides[0], sections, name)
 
 
+class TestTheInstall(PagesTestCase):
+    """pyproject.toml installs every page, and all of its HTML."""
+
+    def data_files(self):
+        if sys.version_info >= (3, 11):
+            import tomllib
+        else:
+            import tomli as tomllib
+
+        with open(os.path.join(ROOT, "pyproject.toml"), "rb") as file:
+            project = tomllib.load(file)
+        return project["tool"]["setuptools"]["data-files"]
+
+    def test_the_pages_where_yelp_looks(self):
+        self.assertEqual(
+            self.data_files()["share/help/C/virtualbricks"],
+            [f"help/C/{name}.page" for name in page_names()],
+        )
+
+    def test_the_html(self):
+        # the pages, their style and their scripts
+        self.assertEqual(
+            self.data_files()["share/virtualbricks/help/C"],
+            [f"help/html/C/{name}" for name in sorted(os.listdir(HTML))],
+        )
+
+
 class TestYelpCheck(PagesTestCase):
     """The pages against the schema of Mallard, and their links."""
 

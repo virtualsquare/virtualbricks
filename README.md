@@ -59,6 +59,8 @@ These are optional:
   without them Virtualbricks uses Python's `tarfile`;
 - `gvfs`, so that removing a project can move it to the trash of your desktop;
   without a trash the window offers to delete it for good;
+- `yelp`, to read the user guide, *Help › Contents* or F1 in a window; without
+  it the guide opens in your browser;
 - an askpass helper for `sudo`, as `ssh-askpass`, to type the password of root
   in a window (see [Configuration](#configuration)).
 
@@ -72,8 +74,11 @@ pip install --user .
 
 It installs the `virtualbricks` command, the `virtualbricks-migrate` window,
 the manual pages of the configuration files and of the archives of the
-projects, and the translations. To work on the code, follow
-[Development](#development) instead.
+projects, the user guide, and the translations. Yelp shows the guide from
+`~/.local/share/help/`, where `pip install --user` puts it; in a virtualenv
+Yelp doesn't find it, and the guide opens in your browser, from the HTML
+installed with it. To work on the code, follow [Development](#development)
+instead.
 
 ## Running
 
