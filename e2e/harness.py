@@ -39,6 +39,7 @@ import sys
 import tempfile
 
 import broadway
+import recording
 
 try:
     import a11y
@@ -53,11 +54,14 @@ A11Y_BUS = "/usr/share/dbus-1/services/org.a11y.Bus.service"
 START_TIMEOUT = 30
 QUIT_TIMEOUT = 30
 TIMEOUT = 10
+# Seconds: the screen is still once it hasn't changed for so long.
+STILL = 0.5
 # The first settings of each Virtualbricks: no alert of missing programs,
 # which depends on the machine and stops the clicks on the main window.
 SETTINGS = "format = 1\nwarn_missing_programs = false\n"
-# GTK without animations: a popover shows at once where it ends up.
-GTK_SETTINGS = "[Settings]\ngtk-enable-animations = 0\n"
+# GTK without animations: a popover shows at once where it ends up. The
+# cursor of a text doesn't blink: the screen is still, as for a picture.
+GTK_SETTINGS = "[Settings]\ngtk-enable-animations = 0\ngtk-cursor-blink = 0\n"
 # Virtualbricks, as python -m virtualbricks, with the system lock of
 # --lock system, user and workspace in the folder of the tests: /tmp has the
 # one of the Virtualbricks of the user, which it shares with no other.
@@ -647,6 +651,27 @@ class Virtualbricks:
         self.wait_for(
             lambda: a11y.position(bar)[0] != before, "the list scrolls"
         )
+
+    def picture(self, window):
+        """
+        The picture of window, a frame or a dialog, as it shows, with the
+        menus open over it (recording.picture): taken with the pointer away
+        from the windows, once the screen is still.
+        """
+
+        self.browser.away()
+        self.wait_for(
+            lambda: self.browser.idle() >= STILL,
+            f"the screen is still for {STILL} s",
+        )
+        surface = self.wait_for(
+            lambda: self.browser.window_at(*a11y.extents(window)),
+            f"the {window.get_role_name()} {window.get_name()!r} is a"
+            " surface of the screen",
+        )
+        with self.browser.changed:
+            timeline = list(self.browser.timeline)
+        return recording.picture(timeline, surface)
 
     def wait_for(self, get, what, timeout=TIMEOUT):
         """What get returns once it is true; AssertionError after timeout."""

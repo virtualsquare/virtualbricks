@@ -15,7 +15,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The tests of recording.py: the images of broadwayd, decoded and drawn."""
+"""
+The tests of recording.py: the images of broadwayd, decoded and drawn, and
+the picture of a window.
+"""
 
 import os
 import shutil
@@ -24,13 +27,14 @@ import zlib
 
 import cairo
 import pytest
-
 import recording
 
-# pixels as broadwayd sends them: B, G, R, A
+# pixels as broadwayd sends them: B, G, R, A, and R, G, B not multiplied by
+# A
 RED = bytes([0, 0, 255, 255])
 GREEN = bytes([0, 255, 0, 255])
 BLUE = bytes([255, 0, 0, 255])
+HALF_RED = bytes([0, 0, 255, 128])
 
 
 def command(cmd, length):
@@ -143,7 +147,7 @@ def test_new_surface():
 
     replay = recording.Replay((4, 4))
     replay.apply(image(0, 1, 1, 1, RED))
-    replay.apply((1, "surface", 1))
+    replay.apply((1, "surface", 1, False))
     replay.apply(image(1, 1, 1, 1, command(0x10, 1)))
     assert bytes(replay.images[1][0]) == bytes(4)
 
@@ -174,7 +178,7 @@ def timeline():
     """A surface red at 0, green at 3."""
 
     return [
-        (0, "surface", 1),
+        (0, "surface", 1, False),
         image(0, 1, 2, 2, RED * 4),
         (0, "layout", [(1, 0, 0)], None),
         image(3, 1, 2, 2, GREEN * 4),
@@ -232,3 +236,95 @@ def test_video_length(tmp_path):
         check=True,
     )
     assert float(probe.stdout) == pytest.approx(3.44, abs=0.1)
+
+
+# picture
+
+
+def window_and_menu():
+    """
+    The window 1, 4 by 4 at 2, 2, red but its column at the right, half
+    transparent as a shadow; the menu 2 over it, 2 by 2 at 5, 5, green, and
+    out of it by one; the window 3 under it, blue, all over the screen.
+    """
+
+    return [
+        (0, "surface", 3, False),
+        image(0, 3, 10, 10, BLUE * 100),
+        (0, "surface", 1, False),
+        image(0, 1, 4, 4, (RED * 3 + HALF_RED) * 4),
+        (0, "surface", 2, True),
+        image(0, 2, 2, 2, GREEN * 4),
+        (0, "layout", [(3, 0, 0), (1, 2, 2), (2, 5, 5)], (3, 3)),
+    ]
+
+
+def test_picture():
+    """
+    The window and the menu, on a canvas that holds both, transparent where
+    nothing is; not the window under it, nor the pointer. A pixel partly
+    transparent is as cairo has them: R, G and B multiplied by A.
+    """
+
+    picture = recording.picture(window_and_menu(), 1)
+    assert (picture.get_width(), picture.get_height()) == (5, 5)
+    assert screen_pixel(picture, 0, 0) == RED
+    assert screen_pixel(picture, 1, 1) == RED
+    assert screen_pixel(picture, 3, 0) == bytes([0, 0, 128, 128])
+    assert screen_pixel(picture, 3, 3) == GREEN
+    assert screen_pixel(picture, 4, 4) == GREEN
+    assert screen_pixel(picture, 4, 0) == bytes(4)
+
+
+def test_picture_without_hidden_menu():
+    """A menu that shows no more isn't in it."""
+
+    events = window_and_menu()
+    events.append((1, "layout", [(3, 0, 0), (1, 2, 2)], None))
+    picture = recording.picture(events, 1)
+    assert (picture.get_width(), picture.get_height()) == (4, 4)
+
+
+def test_picture_without_window_over():
+    """Another window over it isn't in it: a window is no menu."""
+
+    events = window_and_menu()
+    events += [
+        (1, "surface", 4, False),
+        image(1, 4, 2, 2, GREEN * 4),
+        (1, "layout", [(3, 0, 0), (1, 2, 2), (4, 2, 2)], None),
+    ]
+    picture = recording.picture(events, 1)
+    assert screen_pixel(picture, 0, 0) == RED
+
+
+def test_picture_not_shown():
+    events = window_and_menu()
+    events.append((1, "layout", [(3, 0, 0)], None))
+    with pytest.raises(ValueError):
+        recording.picture(events, 1)
+
+
+# same
+
+
+def test_same(tmp_path):
+    path = str(tmp_path / "picture.png")
+    recording.picture(window_and_menu(), 1).write_to_png(path)
+    assert recording.same(recording.picture(window_and_menu(), 1), path)
+
+
+def test_same_other_pixels(tmp_path):
+    path = str(tmp_path / "picture.png")
+    recording.picture(window_and_menu(), 1).write_to_png(path)
+    assert not recording.same(recording.picture(window_and_menu(), 3), path)
+
+
+def test_same_without_picture(tmp_path):
+    """None, or a file that isn't a PNG, as a pointer of Git LFS."""
+
+    picture = recording.picture(window_and_menu(), 1)
+    assert not recording.same(picture, str(tmp_path / "picture.png"))
+    pointer = tmp_path / "pointer.png"
+    pointer.write_text("version https://git-lfs.github.com/spec/v1\n")
+    assert not recording.same(picture, str(pointer))

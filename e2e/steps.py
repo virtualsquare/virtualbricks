@@ -71,11 +71,18 @@ brick.pattern = r"[\w.-]+"
 def words(text):
     """
     The words of a step, where {name:Brick} is the name of a brick,
-    {name:Project} that of a project, and {name:Image} that of a disk image.
+    {name:Project} that of a project, {name:Image} that of a disk image and
+    {name:Picture} that of a picture of the user guide.
     """
 
     return parsers.parse(
-        text, extra_types={"Brick": brick, "Project": brick, "Image": brick}
+        text,
+        extra_types={
+            "Brick": brick,
+            "Project": brick,
+            "Image": brick,
+            "Picture": brick,
+        },
     )
 
 
@@ -4239,6 +4246,41 @@ def links_opened(virtualbricks, links):
         virtualbricks.wait_for(lambda: lines() == links, f"opened {links}")
     except AssertionError:
         raise AssertionError(f"opened {lines()}") from None
+
+
+# The windows of the pictures, by their words in the steps: their role and
+# their title. The title of the main window names its project.
+PICTURED = {
+    "Settings window": ("dialog", SETTINGS_WINDOW),
+    "Projects window": ("frame", PROJECTS_WINDOW),
+}
+
+
+@then(words("the picture {name:Picture} shows the {window}"))
+def picture_shows(virtualbricks, keep_picture, name, window):
+    """
+    The picture of the window, as it shows, for the user guide: see
+    keep_picture of conftest.py for where it goes.
+    """
+
+    if window == "main window":
+        found = main_window_frame(virtualbricks)
+    else:
+        assert window in PICTURED, f"no picture of the {window}"
+        found = virtualbricks.find(*PICTURED[window])
+    keep_picture(name, virtualbricks.picture(found))
+
+
+def main_window_frame(virtualbricks):
+    """The main window, once it shows: its title starts with Virtualbricks."""
+
+    def frame():
+        for found in harness.a11y.find_all(virtualbricks.app, "frame"):
+            if found.get_name().startswith("Virtualbricks"):
+                return found
+        return None
+
+    return virtualbricks.wait_for(frame, "the main window shows")
 
 
 # Time

@@ -26,7 +26,9 @@ steps are in :mod:`steps`. When a step fails, the report has the step, the
 widgets that show and the output of each Virtualbricks, and the folder of
 each a screenshot and a video of its screen (:mod:`recording`); with
 --record-all, every scenario has them. With --alluredir=, the results of
-Allure have them too.
+Allure have them too. The pictures of the user guide go in the folder of
+their scenario, or with --pictures in help/C/figures/, and the end of the
+run lists those that differ from the pictures there.
 """
 
 import os
@@ -34,10 +36,9 @@ import shutil
 import time
 
 import allure
-import pytest
-
 import broadway
 import harness
+import pytest
 import recording
 
 # the step definitions are fixtures, for every scenario
@@ -58,8 +59,16 @@ DURATIONS = "e2e/durations"
 # how many there are.
 WORKER = "PYTEST_XDIST_WORKER"
 WORKERS = "PYTEST_XDIST_WORKER_COUNT"
+# The pictures of the user guide, which the pages show.
+FIGURES = os.path.join(harness.ROOT, "help", "C", "figures")
+# Of a scenario, among the user properties of its report: a picture it
+# took, (name, how, path), how "taken" in FIGURES with --pictures, else
+# "differs" from the picture there or "new", in the folder of the scenario.
+PICTURE = "picture of the user guide"
 # What each test of this run took: its setup, its call and its teardown.
 took = {}
+# The pictures of this run that changed or differ, as PICTURE.
+pictures = []
 
 
 def pytest_addoption(parser):
@@ -68,6 +77,12 @@ def pytest_addoption(parser):
         action="store_true",
         help="a screenshot and a video of each scenario, not only of those "
         "that fail",
+    )
+    parser.addoption(
+        "--pictures",
+        action="store_true",
+        help="the pictures of the user guide in help/C/figures/, those that "
+        "changed",
     )
 
 
@@ -125,6 +140,34 @@ def other_virtualbricks(virtualbricks, tmp_path, request):
     finally:
         vb.stop(bricks=False)
         _record(request, vb, " of the other Virtualbricks")
+
+
+@pytest.fixture
+def keep_picture(virtualbricks, request):
+    """
+    keep_picture(name, picture): the picture name of the user guide, a
+    surface of cairo. With --pictures, in help/C/figures/, where the pages
+    show it, if it changed; else in the folder of the scenario, as
+    name.png. Those that changed, or differ from the pictures there, are in
+    the report of the scenario, which the end of the run lists.
+    """
+
+    def keep(name, picture):
+        figure = os.path.join(FIGURES, f"{name}.png")
+        same = recording.same(picture, figure)
+        if request.config.getoption("pictures"):
+            if same:
+                return
+            os.makedirs(FIGURES, exist_ok=True)
+            path, how = figure, "taken"
+        else:
+            path = os.path.join(virtualbricks.folder, f"{name}.png")
+            how = "differs" if os.path.exists(figure) else "new"
+        picture.write_to_png(path)
+        if not same:
+            request.node.user_properties.append((PICTURE, (name, how, path)))
+
+    return keep
 
 
 def _record(request, vb, of=""):
@@ -206,6 +249,11 @@ def pytest_collection_modifyitems(config, items):
 
 def pytest_runtest_logreport(report):
     took[report.nodeid] = took.get(report.nodeid, 0.0) + report.duration
+    # also from the workers of pytest-xdist
+    if report.when == "call":
+        for key, value in report.user_properties:
+            if key == PICTURE:
+                pictures.append(tuple(value))
 
 
 def pytest_sessionfinish(session):
@@ -286,7 +334,10 @@ def _report(vb, of=""):
 
 
 def pytest_terminal_summary(terminalreporter, config):
-    """The screenshots and the videos of the run."""
+    """
+    The screenshots and the videos of the run, and the pictures of the user
+    guide that changed or differ.
+    """
 
     recorded = config.stash.get(RECORDED, [])
     if recorded:
@@ -295,3 +346,17 @@ def pytest_terminal_summary(terminalreporter, config):
             terminalreporter.write_line(scenario)
             for line in lines:
                 terminalreporter.write_line(f"  {line}")
+    if pictures:
+        terminalreporter.section("pictures of the user guide")
+        figures = os.path.relpath(FIGURES, harness.ROOT)
+        says = {
+            "taken": "taken again",
+            "differs": f"differs from that of {figures}/",
+            "new": f"new, not in {figures}/",
+        }
+        for name, how, path in sorted(pictures):
+            terminalreporter.write_line(f"{name}: {says[how]}, {path}")
+        if any(how != "taken" for _, how, _ in pictures):
+            terminalreporter.write_line(
+                f"pytest --pictures takes them in {figures}/"
+            )

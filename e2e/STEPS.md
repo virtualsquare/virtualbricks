@@ -208,6 +208,7 @@ The steps of the user guide:
 | `When I press F1 in the Settings window` | F1, once the window is active |
 | `Then the desktop opens "help:virtualbricks/settings"` | The program of the tests got the link, and only it |
 | `Then the desktop opens the HTML of the page settings` | The program of the tests got the path of `help/html/C/settings.html` of the sources, and only it: the desktop gives a file by its path |
+| `Then the picture settings shows the Settings window` | The picture of the window for the guide, as it shows, with the menus open over it: the pointer away from the windows first, once the screen hasn't changed for half a second. With `pytest --pictures`, `help/C/figures/settings.png`, if it changed; else `settings.png` in the folder of the scenario, which the end of the run lists if it differs from that of `help/C/figures/`. The windows: `main window`, `Settings window`, `Projects window` |
 
 The steps of the disk images:
 
@@ -332,6 +333,7 @@ def stop_brick(virtualbricks, name):
   | `key(keys, window)` | Presses keys, as `Escape`, `Return`, `Delete`, `F1`, `F2` or `Control+l`, in window, a frame or a dialog, once it is active: click in it first, as the keys go to the window clicked last. Text goes with `type()` |
   | `drag(start, end, ready=None)` | Presses at start, a point of the screen, moves to end and releases there; `ready()`, if given, right before the press, half a second after the click before |
   | `choose(item, menu)` | A menu of the menu bar, then its item |
+  | `picture(window)` | The picture of a frame or a dialog, a surface of cairo: the window as GTK drew it, its shadow transparent, with the menus open over it; the pointer away from the windows first, once the screen is still |
   | `row(name)` | The row of a list with that name, for `within=` |
   | `rows(within)` | The rows of the list in a scroll pane, from the first to the last, each the names of its labels: the wheel scrolls through it |
   | `names(role, within=None)` | The names of the widgets of that role that show now |

@@ -16,7 +16,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The screenshot and the video of a scenario, from what broadwayd showed.
+The screenshot and the video of a scenario, and the pictures of the user
+guide, from what broadwayd showed.
 
 The browser of :mod:`broadway` keeps the timeline of the screen: the
 surfaces as they are made, their images as broadwayd sends them, and after
@@ -24,9 +25,11 @@ each change the surfaces that show and the pointer. Nothing is decoded
 while the scenario runs. Replay goes through the timeline afterwards: it
 decodes the images as broadway.js does and draws the screen with cairo,
 with the pointer and the step of the scenario. ffmpeg makes the video, a
-frame for each change.
+frame for each change. A picture is a window alone, as GTK drew it, with
+the menus open over it.
 """
 
+import io
 import os
 import shutil
 import subprocess
@@ -81,8 +84,9 @@ class Replay:
 
     def __init__(self, size):
         self.size = size
-        # id: (image, width, height), the image in the bytes of cairo's
-        # ARGB32, as broadwayd sends it: B, G, R, A
+        # id: (image, width, height), the image as broadwayd sends it: B, G,
+        # R, A, as cairo's ARGB32 has them, but R, G and B not multiplied by
+        # A, as the canvas of a browser takes them
         self.images = {}
         # (id, x, y) of the surfaces that show, bottom first
         self.layout = []
@@ -119,13 +123,11 @@ class Replay:
         cr = cairo.Context(screen)
         cr.set_source_rgb(*BACKGROUND)
         cr.paint()
+        # the images as they are: where a window is partly transparent, as
+        # its corners, a pixel or two is a little lighter than it should be
         for id, x, y in self.layout:
             if id in self.images:
-                data, w, h = self.images[id]
-                image = cairo.ImageSurface.create_for_data(
-                    data, cairo.FORMAT_ARGB32, w, h, w * 4
-                )
-                cr.set_source_surface(image, x, y)
+                cr.set_source_surface(_surface(self.images[id]), x, y)
                 cr.paint()
         if self.pointer is not None:
             cr.arc(*self.pointer, 6, 0, 6.2832)
@@ -149,6 +151,99 @@ class Replay:
             cr.set_source_rgb(1, 1, 1)
             cr.show_text(text)
         return screen
+
+
+def picture(timeline, window) -> cairo.ImageSurface:
+    """
+    The picture of the surface window as it shows at the end of the
+    timeline, that of a browser: its image, and over it those of the menus
+    above it, each at its place, on a canvas that holds them all. Not the
+    pointer; transparent where nothing is, and the shadows as GTK drew them.
+    """
+
+    layout = []
+    menus = set()
+    for event in timeline:
+        if event[1] == "surface":
+            _, _, id, temp = event
+            (menus.add if temp else menus.discard)(id)
+        elif event[1] == "layout":
+            layout = event[2]
+    ids = [id for id, _, _ in layout]
+    if window not in ids:
+        raise ValueError(f"the surface {window} doesn't show")
+    shown = [
+        place
+        for place in layout[ids.index(window) :]
+        if place[0] == window or place[0] in menus
+    ]
+    # the images of those surfaces only: one is decoded from its own before
+    replay = Replay(None)
+    wanted = {id for id, _, _ in shown}
+    for event in timeline:
+        if event[1] in ("surface", "image") and event[2] in wanted:
+            replay.apply(event)
+    if window not in replay.images:
+        raise ValueError(f"the surface {window} has no image")
+    placed = [
+        (_premultiplied(replay.images[id]), x, y)
+        for id, x, y in shown
+        if id in replay.images
+    ]
+    left = min(x for _, x, _ in placed)
+    top = min(y for _, _, y in placed)
+    right = max(x + image[1] for image, x, _ in placed)
+    bottom = max(y + image[2] for image, _, y in placed)
+    canvas = cairo.ImageSurface(
+        cairo.FORMAT_ARGB32, right - left, bottom - top
+    )
+    cr = cairo.Context(canvas)
+    for image, x, y in placed:
+        cr.set_source_surface(_surface(image), x - left, y - top)
+        cr.paint()
+    return canvas
+
+
+def same(picture, path) -> bool:
+    """
+    Whether the PNG at path has the pixels of picture, once written as a
+    PNG: a pixel partly transparent may come back a little different.
+    False if there is none.
+    """
+
+    try:
+        other = cairo.ImageSurface.create_from_png(path)
+    except cairo.Error:
+        # none, or not a PNG, as the pointer of Git LFS without git-lfs
+        return False
+    png = io.BytesIO()
+    picture.write_to_png(png)
+    png.seek(0)
+    written = cairo.ImageSurface.create_from_png(png)
+    return (other.get_width(), other.get_height()) == (
+        written.get_width(),
+        written.get_height(),
+    ) and bytes(other.get_data()) == bytes(written.get_data())
+
+
+def _premultiplied(image):
+    # (image, width, height) of Replay, with R, G and B multiplied by A, as
+    # cairo takes them
+    data, width, height = image
+    data = bytearray(data)
+    for pixel, alpha in enumerate(data[3::4]):
+        if 0 < alpha < 255:
+            for i in range(pixel * 4, pixel * 4 + 3):
+                data[i] = (data[i] * alpha + 127) // 255
+    return data, width, height
+
+
+def _surface(image):
+    # a surface of cairo of (image, width, height) of Replay
+    data, width, height = image
+    return cairo.ImageSurface.create_for_data(
+        data, cairo.FORMAT_ARGB32, width, height, width * 4
+    )
 
 
 def decode(old, width, height, data):

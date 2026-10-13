@@ -31,7 +31,7 @@ broadwayd: what it sends, and when, is what broadway.js does.
 It doesn't draw: it keeps the timeline of the screen, the images of the
 surfaces as broadwayd sends them and, after each change, the surfaces that
 show and the pointer. :mod:`recording` makes a screenshot and a video of
-it.
+it, and the picture of a window.
 """
 
 import base64
@@ -122,8 +122,9 @@ class Browser:
         self.grab = None
         self.closed = False
         self.changed = threading.Condition()
-        # (time, kind, ...): "surface", id; "image", id, width, height,
-        # deflated data; "layout", [(id, x, y)] bottom first, pointer
+        # (time, kind, ...): "surface", id, temp, whether it is a menu or
+        # another surface of a moment; "image", id, width, height, deflated
+        # data; "layout", [(id, x, y)] bottom first, pointer
         self.timeline = []
         self._sending = threading.Lock()
         self._start = time.monotonic()
@@ -265,6 +266,47 @@ class Browser:
                     self._pointer("e", self.under, GDK_CROSSING_NORMAL)
             self._pointer("m", self._target(surface))
             self._snapshot()
+
+    def away(self):
+        """
+        The pointer goes to a corner of the screen where no surface shows:
+        nothing shows under it, as hovered.
+        """
+
+        width, height = SCREEN
+        for x in (width - 1, 0):
+            for y in (height - 1, 0):
+                if self.surface_at(x, y) == 0:
+                    self.move(x, y)
+                    return
+        raise AssertionError("a surface shows at each corner of the screen")
+
+    def idle(self) -> float:
+        """
+        The seconds since the timeline last grew: since broadwayd sent
+        something, or the pointer moved.
+        """
+
+        with self.changed:
+            last = self.timeline[-1][0] if self.timeline else self._start
+        return time.monotonic() - last
+
+    def window_at(self, x, y, width, height) -> int:
+        """
+        The surface of a window that shows at x, y, width by height, as
+        AT-SPI says where a window is, its shadow too; or 0. Not a menu.
+        """
+
+        with self.changed:
+            for surface in self.stacking:
+                if (
+                    surface.visible
+                    and not surface.temp
+                    and (surface.x, surface.y) == (x, y)
+                    and (surface.width, surface.height) == (width, height)
+                ):
+                    return surface.id
+        return 0
 
     def surface_at(self, x, y) -> int:
         """The surface on top at x, y, or 0."""
@@ -418,7 +460,9 @@ class Browser:
                 id, x, y, w, h, temp = struct.unpack_from("<HhhHHB", data, pos)
                 pos += 11
                 surface = Surface(id, x, y, w, h, bool(temp))
-                self.timeline.append((time.monotonic(), "surface", id))
+                self.timeline.append(
+                    (time.monotonic(), "surface", id, bool(temp))
+                )
                 self.surfaces[id] = surface
                 self.stacking.append(surface)
                 self._configured(surface)
