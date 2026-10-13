@@ -17,7 +17,7 @@
 
 """
 The Settings window (page 23): a page for each owner of settings, each a
-form on a draft, and Cancel and OK in the header bar.
+form on a draft, and Cancel, Help and OK in the header bar.
 
 On the machine of the bricks, two pages: This computer, the settings of its
 settings.toml, in two sections, those of these windows and those of the
@@ -69,6 +69,7 @@ from virtualbricks.gui.form import (
     Form,
     set_options,
 )
+from virtualbricks.gui.help import show_help
 from virtualbricks.i18n import _
 from virtualbricks.locations import short_path
 from virtualbricks.programs import FolderPrograms, QemuInfo
@@ -141,6 +142,8 @@ class SettingsWindow(Window):
     """The settings of these windows, of the machine of the bricks, and of
     the open project."""
 
+    help_page = "settings"
+
     def __init__(
         self, engine: Engine, clock: IReactorTime | None = None
     ) -> None:
@@ -181,6 +184,7 @@ class SettingsWindow(Window):
             destroy_with_parent=True,
         )
         self.dialog.add_button(_("Cancel"), Gtk.ResponseType.CANCEL)
+        self.dialog.add_button(_("Help"), Gtk.ResponseType.HELP)
         self.ok_button = self.dialog.add_button(_("OK"), Gtk.ResponseType.OK)
         self.ok_button.get_style_context().add_class("suggested-action")
         self.spinner = Gtk.Spinner()
@@ -447,6 +451,8 @@ class SettingsWindow(Window):
     def on_response(self, dialog: Gtk.Dialog, response_id: int) -> bool:
         if response_id == Gtk.ResponseType.OK:
             self.ok()
+        elif response_id == Gtk.ResponseType.HELP:
+            show_help(dialog, self.help_page)
         else:
             dialog.destroy()
         return True

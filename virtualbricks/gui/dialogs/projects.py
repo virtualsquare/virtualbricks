@@ -199,6 +199,8 @@ class ProjectsWindow(Window):
     the export. engine lists the projects, measures them and removes them.
     """
 
+    help_page = "projects"
+
     def __init__(
         self,
         engine: Engine,
@@ -228,7 +230,7 @@ class ProjectsWindow(Window):
         self.selected: ProjectSummary | None = None
         self._usage_for: str | None = None
         self.destroyed = False
-        self.build_ui()
+        super().__init__()
         self.reload()
 
     # The widgets
@@ -743,6 +745,8 @@ class ProjectsWindow(Window):
 class RemoveDialog(Window):
     """Ask whether to move a project to the trash or delete it for good."""
 
+    help_page = "projects"
+
     TRASH = 1
     DELETE = 2
     on_done: Callable[[str], object] | None = None
@@ -765,7 +769,7 @@ class RemoveDialog(Window):
         # the space it takes, counted by the engine if not given: there,
         # over a connection
         self.usage = disk_usage
-        self.build_ui()
+        super().__init__()
         if not self.is_open and disk_usage is None:
             counting = engine.disk_usage(self.name)
             counting.addCallbacks(self._counted, lambda failure: None)

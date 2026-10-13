@@ -33,7 +33,9 @@ three that works:
 3. else the copy of the website.
 
 A page is named as its file in ``help/C/``, without ``.page``. A failure to
-open is logged.
+open is logged. The windows, the tabs and the panels of the settings name
+their page in ``help_page``, which F1 opens: see
+:class:`virtualbricks.gui.dialogs.base.Window`.
 """
 
 from __future__ import annotations
@@ -45,6 +47,9 @@ from os.path import abspath, dirname, isfile, join
 
 from gi.repository import Gdk, Gio, GLib, Gtk
 from twisted.logger import Logger
+
+from virtualbricks.bricks.event import is_event
+from virtualbricks.bricks.virtualmachine import is_disk_image
 
 logger = Logger()
 cannot_open_help = "Cannot open the help, {uri}: {error}"
@@ -107,6 +112,16 @@ def help_uri(page: str | None, yelp: bool, html: str | None) -> str:
     if html is not None:
         return Gio.File.new_for_path(join(html, name)).get_uri()
     return WEBSITE + name
+
+
+def page_about(item: object) -> str:
+    """The page about item: a brick, an event or a disk image."""
+
+    if is_disk_image(item):
+        return "images"
+    if is_event(item):
+        return "events"
+    return "bricks"
 
 
 def show_help(window: Gtk.Window | None, page: str | None = None) -> None:

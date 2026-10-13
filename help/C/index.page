@@ -7,6 +7,9 @@
   <p><app>Virtualbricks</app> makes labs of virtual machines and of the
   switches, cables, taps and tunnels between them, and runs them on this
   computer.</p>
+  <p>Press <key>F1</key> in a window for the page about it. The settings of a
+  brick, an event or a disk image, and the <gui>Settings</gui> window, have a
+  <gui>Help</gui> button too.</p>
   <section id="start" style="2column">
     <title>Getting started</title>
   </section>

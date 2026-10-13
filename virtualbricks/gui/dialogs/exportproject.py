@@ -149,6 +149,8 @@ def _label(
 class ExportProjectDialog(Window):
     """Export a project: images is a list of (name, path)."""
 
+    help_page = "archives"
+
     def __init__(
         self,
         path: str,
@@ -162,7 +164,7 @@ class ExportProjectDialog(Window):
         self.required, self.disks, self.others = project_files(path)
         self.job: ArchiveJob | None = None
         self.destroyed = False
-        self.build_ui()
+        super().__init__()
         self.filename_entry.set_text(
             os.path.join(os.path.expanduser("~"), f"{self.name}.vbp")
         )

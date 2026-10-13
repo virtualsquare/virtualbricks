@@ -241,6 +241,7 @@ class EventsTab(RowsTab[Event]):
         "Add one to script the lab."
     )
     EMPTY_ICON = "event.png"
+    HELP_PAGE = "events"
 
     def __init__(
         self,

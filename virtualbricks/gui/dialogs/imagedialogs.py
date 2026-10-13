@@ -113,6 +113,8 @@ def disks_words(uses: Sequence[DiskUse]) -> str:
 class RemoveImageDialog(Window):
     """Remove an image from the library, and maybe its file."""
 
+    help_page = "images"
+
     def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
@@ -122,7 +124,7 @@ class RemoveImageDialog(Window):
         # the files are those of the machine of the bricks
         self.machine = engine.machine
         self.image = image
-        self.build_ui()
+        super().__init__()
 
     def build_ui(self) -> None:
         self.dialog, self.remove_button, box = action_dialog(
@@ -229,6 +231,8 @@ class RemoveImageDialog(Window):
 class FindFileDialog(Window):
     """Give an image whose file is missing its file again."""
 
+    help_page = "images"
+
     def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
@@ -239,7 +243,7 @@ class FindFileDialog(Window):
         self.factory = engine.factory
         self.image = image
         self.workspace = projects if workspace is None else workspace
-        self.build_ui()
+        super().__init__()
 
     def found(self) -> str | None:
         """The file of the same name in the shared images, if there's one."""
@@ -371,6 +375,8 @@ class _JobDialog(Window):
     and Cancel stops it.
     """
 
+    help_page = "images"
+
     job: ArchiveJob | None = None
     # called when the job is done
     on_done: Callable[[], object] | None = None
@@ -473,7 +479,7 @@ class SaveImageDialog(_JobDialog):
         self.start = archive.save_image if start is None else start
         # called with the new image, and whether the disk uses it
         self.on_saved: Callable[[Image, bool], object] | None = None
-        self.build_ui()
+        super().__init__()
         self.check()
 
     def build_ui(self) -> None:
@@ -616,7 +622,7 @@ class MergeDialog(_JobDialog):
         self.start = archive.merge_image if start is None else start
         # passed to Save as a New Image, instead
         self.on_saved: Callable[[Image, bool], object] | None = None
-        self.build_ui()
+        super().__init__()
         self.check()
 
     def others(self) -> list[DiskUse]:
@@ -711,6 +717,8 @@ class MergeDialog(_JobDialog):
 class StartOverDialog(Window):
     """Start a disk over from its image, without its private copy."""
 
+    help_page = "images"
+
     def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
@@ -722,7 +730,7 @@ class StartOverDialog(Window):
         self.device = device
         # called when the copy is gone
         self.on_done: Callable[[], object] | None = None
-        self.build_ui()
+        super().__init__()
 
     def build_ui(self) -> None:
         vm = self.vm.name

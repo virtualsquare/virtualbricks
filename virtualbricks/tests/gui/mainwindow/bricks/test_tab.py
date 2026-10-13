@@ -828,11 +828,15 @@ class TestTheSettings(BricksTestCase):
         self.assertEqual(
             packing(actions),
             [
+                (self.tab.help_button, False, False),
                 (self.tab.cancel_button, False, False),
                 (self.tab.why, True, True),
                 (self.tab.ok_button, False, False),
             ],
         )
+        self.assertEqual(self.tab.help_button.get_label(), "Help")
+        # Alt+H is the menu's
+        self.assertFalse(self.tab.help_button.get_use_underline())
         self.assertEqual(self.tab.cancel_button.get_label(), "_Cancel")
         self.assertEqual(self.tab.ok_button.get_label(), "_OK")
         self.assertTrue(self.tab.ok_button.get_use_underline())
@@ -841,7 +845,8 @@ class TestTheSettings(BricksTestCase):
                 "suggested-action"
             )
         )
-        for button in (self.tab.cancel_button, self.tab.ok_button):
+        buttons = (self.tab.help_button, self.tab.cancel_button)
+        for button in (*buttons, self.tab.ok_button):
             self.assertTrue(button.get_visible())
         controller = controllers[self.sw]
         # the panel shows, but not what it hides
@@ -979,3 +984,52 @@ class TestTheSettings(BricksTestCase):
         self.factory.remove_brick(self.sw)
         # not told any more
         self.assertIs(self.tab.configuring, self.sw)
+
+
+class TestTheHelp(BricksTestCase):
+    """The page of the guide that F1 and Help open."""
+
+    def setUp(self):
+        super().setUp()
+        self.opened = []
+        self.patch(
+            rowtab,
+            "show_help",
+            lambda window, page=None: self.opened.append((window, page)),
+        )
+
+        # fake panels, of the page of their kind: the real panel of a
+        # machine asks its QEMU
+        def panel(brick, engine, show_images):
+            fake = FakePanel([], brick)
+            fake.help_page = "machines" if brick.name == "vm" else "bricks"
+            return fake
+
+        self.patch(tab, "new_panel", panel)
+
+    def test_the_list(self):
+        self.assertEqual(self.tab.help_page, "bricks")
+
+    def test_new_brick(self):
+        self.show()
+        self.tab.new_item()
+        popover = self.tab.new_popover
+        self.addCleanup(popover.destroy)
+        self.assertEqual(self.tab.help_page, "kinds")
+        popover.hide()
+        self.assertEqual(self.tab.help_page, "bricks")
+
+    def test_the_settings(self):
+        self.tab.configure(self.sw)
+        self.assertEqual(self.tab.help_page, "bricks")
+        self.tab.configure(self.brick("qemu", "vm"))
+        self.assertEqual(self.tab.help_page, "machines")
+        self.tab.close_settings()
+        self.assertEqual(self.tab.help_page, "bricks")
+
+    def test_help(self):
+        self.tab.configure(self.brick("qemu", "vm"))
+        self.tab.help_button.clicked()
+        self.assertEqual(self.opened, [(self.window, "machines")])
+        # the settings stay
+        self.assertEqual(self.tab.configuring.name, "vm")

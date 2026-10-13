@@ -21,9 +21,10 @@ Code shared by the windows and dialogs that build their UI in Python.
 Every window subclasses ``Window`` and implements ``build_ui()``, that
 creates the widgets, and ``get_root_widget()``, that returns the main
 widget. Who wants to know when a window closes connects to the ``destroy``
-signal of that widget. The settings of the bricks, of the events and of the
-disk images are panels on drafts instead, of
-:mod:`virtualbricks.gui.mainwindow.bricks.config.panel`.
+signal of that widget. F1 in a window opens the page of the user guide that
+its ``help_page`` names, of :mod:`virtualbricks.gui.help`. The settings of
+the bricks, of the events and of the disk images are panels on drafts
+instead, of :mod:`virtualbricks.gui.mainwindow.bricks.config.panel`.
 
 The small dialogs that ask before an action, as Rename, Delete and Remove
 Image, are an ``action_dialog()`` of ``text_label()`` lines.
@@ -33,8 +34,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from gi.repository import Gtk, Pango
+from gi.repository import Gdk, Gtk, Pango
 
+from virtualbricks.gui.help import show_help
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
 
@@ -46,13 +48,20 @@ GAP = 8
 
 class Window:
     """
-    A window or a dialog. The UI is built when the instance is made, unless
-    a subclass makes it in its own ``__init__``; show() shows it, above
-    parent if given.
+    A window or a dialog. The UI is built when the instance is made: a
+    subclass with an ``__init__`` of its own calls this one once what
+    ``build_ui()`` reads is set. show() shows it, above parent if given.
     """
 
     def __init__(self) -> None:
         self.build_ui()
+        self.get_root_widget().connect("key-press-event", self.on_help_key)
+
+    @property
+    def help_page(self) -> str | None:
+        """The page of the guide about the window, None for its index."""
+
+        return None
 
     def build_ui(self) -> None:
         """Make the widgets."""
@@ -69,6 +78,16 @@ class Window:
         if parent is not None:
             window.set_transient_for(parent)
         window.show()
+
+    def on_help_key(self, window: Gtk.Window, event: Gdk.EventKey) -> bool:
+        """F1 opens the page of the guide about the window."""
+
+        # not Ctrl+F1, which shows a tooltip, nor Shift+F1
+        modifiers = event.state & Gtk.accelerator_get_default_mod_mask()
+        if event.keyval != Gdk.KEY_F1 or modifiers:
+            return False
+        show_help(window, self.help_page)
+        return True
 
 
 def text_label(

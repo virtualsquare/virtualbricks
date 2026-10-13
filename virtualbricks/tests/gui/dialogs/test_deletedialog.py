@@ -111,6 +111,10 @@ class DeleteTestCase(GuiTestCase):
 
 class TestWhatItSays(DeleteTestCase):
 
+    def test_its_page_of_the_guide(self):
+        self.assertEqual(self.dialog(self.sw1).help_page, "bricks")
+        self.assertEqual(self.dialog(self.boot).help_page, "events")
+
     def test_a_switch(self):
         self.actions(self.boot, StartAction("sw1"))
         dialog = self.dialog(self.sw1)

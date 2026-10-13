@@ -17,18 +17,30 @@
 
 """The way to the user guide: Yelp, the HTML, or the website."""
 
+import importlib
 import os
+import pkgutil
 
 from twisted.trial import unittest
 
 from virtualbricks.tests import FakeLogger
-from virtualbricks.tests.gui import has_display
+from virtualbricks.tests.gui import GuiTestCase, has_display
+from virtualbricks.tests.test_help import page_names
 
 if has_display:
     from gi.repository import Gio, GLib, Gtk
 
+    from virtualbricks import gui
     from virtualbricks.gui import help
-    from virtualbricks.gui.help import find_html, help_uri, show_help
+    from virtualbricks.gui.dialogs.base import Window
+    from virtualbricks.gui.help import (
+        find_html,
+        help_uri,
+        page_about,
+        show_help,
+    )
+    from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
+    from virtualbricks.gui.mainwindow.tab import Tab
 
 
 class HelpTestCase(unittest.TestCase):
@@ -167,3 +179,94 @@ class TestShowHelp(HelpTestCase):
             logger.formatted(),
             ["Cannot open the help, file:///h/index.html: no browser"],
         )
+
+
+class TestPageAbout(GuiTestCase):
+
+    def test_each_kind(self):
+        factory = self.factory
+        self.assertEqual(
+            page_about(factory.new_brick("switch", "sw")), "bricks"
+        )
+        self.assertEqual(page_about(factory.new_brick("qemu", "vm")), "bricks")
+        self.assertEqual(page_about(factory.new_event("ev")), "events")
+        self.assertEqual(page_about(self.image("disk")), "images")
+
+
+def subclasses(base):
+    """The subclasses of base in the modules of virtualbricks.gui."""
+
+    for module in pkgutil.walk_packages(gui.__path__, "virtualbricks.gui."):
+        importlib.import_module(module.name)
+    found, todo = [], [base]
+    while todo:
+        for cls in todo.pop().__subclasses__():
+            todo.append(cls)
+            if cls.__module__.startswith("virtualbricks.gui."):
+                found.append(cls)
+    return found
+
+
+class TestTheNamedPages(HelpTestCase):
+    """
+    The windows, the tabs and the panels name a page of the guide, which F1
+    opens.
+    """
+
+    def named(self, base):
+        """
+        The page that each subclass of base names: None if it doesn't, a
+        property if it says which.
+        """
+
+        # the property of base that says None; a panel names "bricks"
+        unnamed = vars(base)["help_page"]
+        if not isinstance(unnamed, property):
+            unnamed = object()
+        pages = {}
+        for cls in subclasses(base):
+            page = getattr(cls, "HELP_PAGE", None) or cls.help_page
+            pages[cls.__name__] = None if page is unnamed else page
+        return pages
+
+    def test_a_page_of_the_guide(self):
+        names = set(page_names())
+        for base in (Window, Tab, Panel):
+            for cls, page in self.named(base).items():
+                if isinstance(page, str):
+                    self.assertIn(page, names, cls)
+
+    def test_every_window(self):
+        pages = self.named(Window)
+        # About opens the index
+        self.assertEqual(
+            [cls for cls, page in pages.items() if page is None],
+            ["AboutDialog"],
+        )
+        self.assertEqual(pages["SettingsWindow"], "settings")
+        self.assertEqual(pages["LoggingWindow"], "problems")
+        self.assertIsInstance(pages["MainWindow"], property)
+
+    def test_every_tab(self):
+        pages = self.named(Tab)
+        self.assertEqual(
+            {
+                cls: page
+                for cls, page in pages.items()
+                if not isinstance(page, property)
+            },
+            {
+                "BricksTab": "bricks",
+                "EventsTab": "events",
+                "ImagesTab": "images",
+                "TopologyTab": "topology",
+                "ReadmeTab": "readme",
+            },
+        )
+
+    def test_every_panel(self):
+        pages = self.named(Panel)
+        self.assertEqual(pages["VirtualMachinePanel"], "machines")
+        self.assertEqual(pages["EventEditor"], "events")
+        self.assertEqual(pages["ImageDetails"], "images")
+        self.assertEqual(pages["SwitchPanel"], "bricks")

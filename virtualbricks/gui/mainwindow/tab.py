@@ -21,7 +21,8 @@ A tab of the main window, and what the window tells its tabs.
 
 A tab is the widget of its page, and a :class:`Tab` too: the window puts it
 in its notebook under its title, and tells it when a project opens, is
-saved, or Virtualbricks quits, and when it shows or another tab does.
+saved, or Virtualbricks quits, and when it shows or another tab does. F1
+opens the page of the user guide about the tab in view, its ``help_page``.
 
 The tabs share the helpers after it: a button with an icon, and the menus
 of the bricks and the events, their items and where they open.
@@ -47,6 +48,12 @@ class Tab:
 
     # the label of the tab, with the underline of its mnemonic
     title = ""
+
+    @property
+    def help_page(self) -> str | None:
+        """The page of the guide about what the tab shows."""
+
+        return None
 
     def on_open(self) -> None:
         """A project opened: another one, a new one or an imported one."""

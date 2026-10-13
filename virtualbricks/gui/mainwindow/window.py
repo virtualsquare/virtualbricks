@@ -149,7 +149,7 @@ class MainWindow(Window):
         # what the windows call, and what they read
         self.engine = engine
         self.factory = self.brickfactory = factory = engine.factory
-        self.build_ui()
+        super().__init__()
         # the messages of this run, see virtualbricks.gui.messages
         self.messages = MessageLog() if messages is None else messages
 
@@ -364,13 +364,11 @@ class MainWindow(Window):
             Gdk.ModifierType.CONTROL_MASK,
             Gtk.AccelFlags.VISIBLE,
         )
-        help_contents_item.add_accelerator(
-            "activate",
-            accel_group,
-            Gdk.KEY_F1,
-            Gdk.ModifierType(0),
-            Gtk.AccelFlags.VISIBLE,
-        )
+        # F1 shows beside it, but the key of the window opens the page of
+        # the tab in view, help_page
+        contents_label = help_contents_item.get_child()
+        assert isinstance(contents_label, Gtk.AccelLabel), "a label item"
+        contents_label.set_accel(Gdk.KEY_F1, Gdk.ModifierType(0))
 
         # Signals
         self.window.connect("delete-event", self.on_window_delete_event)
@@ -428,6 +426,14 @@ class MainWindow(Window):
 
     def get_root_widget(self) -> Gtk.Window:
         return self.window
+
+    @property
+    def help_page(self) -> str | None:
+        """The page of the guide about the tab in view."""
+
+        notebook = self.main_notebook
+        tab = notebook.get_nth_page(notebook.get_current_page())
+        return tab.help_page if isinstance(tab, Tab) else None
 
     def check_prerequisites(self) -> defer.Deferred[None]:
         """

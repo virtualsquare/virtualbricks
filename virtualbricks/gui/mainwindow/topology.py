@@ -106,6 +106,7 @@ class TopologyTab(Tab, Gtk.Overlay):
     """The picture of the bricks of the project and how they connect."""
 
     title = _("_Topology")
+    help_page = "topology"
 
     def __init__(
         self,

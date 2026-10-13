@@ -42,6 +42,7 @@ from virtualbricks.bricks.virtualmachine import is_disk_image
 from virtualbricks.console import ampcommands, ampwire
 from virtualbricks.engine import Engine
 from virtualbricks.gui.dialogs.base import Window, action_dialog, text_label
+from virtualbricks.gui.help import page_about
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -56,7 +57,7 @@ class RenameDialog(Window):
         # the names are checked on its factory
         self.factory = engine.factory
         self.item = item
-        self.build_ui()
+        super().__init__()
         self.name_entry.set_text(item.name)
         # after the name: the focus selects it
         self.name_entry.grab_focus()
@@ -90,6 +91,10 @@ class RenameDialog(Window):
 
     def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
+
+    @property
+    def help_page(self) -> str:
+        return page_about(self.item)
 
     # The name
 

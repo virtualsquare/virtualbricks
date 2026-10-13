@@ -25,7 +25,7 @@ New, the search, a switch between all the objects and the running ones, how
 many run, and Start All and Stop All; under them, the ``RowList``, or a page
 that says what the objects are when the project has none. The second has the
 settings of one object: a line that names it, its panel in a scrolled
-window, and Cancel and OK. The panel, of
+window, and Help, Cancel and OK. The panel, of
 :mod:`virtualbricks.gui.mainwindow.bricks.config.panel`, is on a draft: an
 info bar over it while its object runs, and OK only while the draft has no
 errors, the first of them beside it; OK applies the draft.
@@ -46,7 +46,8 @@ another object, as Cancel.
 Each tab says what differs: its words, its rows, its menu, how its objects
 start and stop, what New does, and their panels. A kind of object that
 doesn't start or stop, as the disk images, has no Start or Stop: the switch
-shows the objects in use, as the list says which are.
+shows the objects in use, as the list says which are. Help, and F1, open the
+page of the guide about the list, or about the panel that shows.
 """
 
 from __future__ import annotations
@@ -65,6 +66,7 @@ from virtualbricks.bricks.event import Event
 from virtualbricks.bricks.virtualmachine import Image
 from virtualbricks.engine import Engine
 from virtualbricks.gui import graphics
+from virtualbricks.gui.help import show_help
 from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
 from virtualbricks.gui.mainwindow.picture import greyed
 from virtualbricks.gui.mainwindow.tab import (
@@ -584,6 +586,8 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
     EMPTY_ICON = ""
     # Whether the objects start and stop: then Start All and Stop All.
     STARTS = True
+    # The page of the guide about the list; a panel names its own.
+    HELP_PAGE = ""
 
     def __init__(
         self, engine: Engine, window: Gtk.Window, factory: BrickFactory
@@ -779,6 +783,14 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
 
     # What the tabs share
 
+    @property
+    def help_page(self) -> str | None:
+        """The page of the guide about the list, or the panel that shows."""
+
+        if self._controller is not None:
+            return self._controller.help_page
+        return self.HELP_PAGE
+
     def update(self) -> None:
         """The row above the list, and the page, for the objects there are."""
 
@@ -878,13 +890,17 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
         scrolled.add(holder)
 
         actions = Gtk.Box(visible=True, spacing=GAP, margin=GAP)
+        # no mnemonic: Alt+H opens the menu Help
+        self.help_button = Gtk.Button(visible=True, label=_("Help"))
         self.cancel_button = Gtk.Button.new_with_mnemonic(_("_Cancel"))
         self.ok_button = Gtk.Button.new_with_mnemonic(_("_OK"))
         self.ok_button.get_style_context().add_class("suggested-action")
         self.cancel_button.show()
         self.ok_button.show()
+        actions.pack_start(self.help_button, False, False, 0)
         actions.pack_start(self.cancel_button, False, False, 0)
         actions.pack_end(self.ok_button, False, False, 0)
+        self.help_button.connect("clicked", self.on_help_clicked)
         self.cancel_button.connect("clicked", self.on_cancel_clicked)
         self.ok_button.connect("clicked", self.on_ok_clicked)
         why = self.why = Gtk.Label(
@@ -959,6 +975,9 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
             return
         self.why.set_text(failure.getErrorMessage())
         self.why.set_visible(True)
+
+    def on_help_clicked(self, button: Gtk.Button) -> None:
+        show_help(self.window, self.help_page)
 
     def on_cancel_clicked(self, button: Gtk.Button) -> None:
         self.close_settings()

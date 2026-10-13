@@ -49,6 +49,7 @@ from virtualbricks.console import ampcommands, ampwire
 from virtualbricks.engine import Engine
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.dialogs.base import Window, action_dialog, text_label
+from virtualbricks.gui.help import page_about
 from virtualbricks.i18n import _, ngettext
 
 logger = Logger()
@@ -179,10 +180,14 @@ class DeleteDialog(Window):
         self.item = item
         # the files are those of the machine of the bricks
         self.machine = engine.machine
-        self.build_ui()
+        super().__init__()
 
     def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
+
+    @property
+    def help_page(self) -> str:
+        return page_about(self.item)
 
     def build_ui(self) -> None:
         name = self.item.name

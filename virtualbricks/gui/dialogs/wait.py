@@ -41,9 +41,11 @@ PULSE = 0.2
 class WaitWindow(Window):
     """Say text above a window, insensitive until a Deferred fires."""
 
+    help_page = "machines"
+
     def __init__(self, text: str) -> None:
         self.text = text
-        self.build_ui()
+        super().__init__()
         self.pulsing = task.LoopingCall(self.bar.pulse)
 
     def build_ui(self) -> None:

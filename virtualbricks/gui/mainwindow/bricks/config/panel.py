@@ -59,6 +59,9 @@ def spin_buttons(widget: Gtk.Widget) -> Iterator[Gtk.SpinButton]:
 class Panel:
     """The settings of a brick, on a draft."""
 
+    # the page of the guide about them
+    help_page = "bricks"
+
     def __init__(
         self,
         draft: Draft,

@@ -94,7 +94,7 @@ class AboutDialog(Window):
     AboutDialog: Gtk.AboutDialog
 
     def __init__(self) -> None:
-        self.build_ui()
+        super().__init__()
 
     def build_ui(self) -> None:
         dialog = self.AboutDialog = Gtk.AboutDialog()

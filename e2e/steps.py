@@ -53,10 +53,9 @@ except ImportError:
     import tomli as tomllib
 
 import cairo
+import harness
 import pytest
 from pytest_bdd import given, parsers, step, then, when
-
-import harness
 
 
 def brick(text):
@@ -4133,6 +4132,113 @@ def home_file_has(virtualbricks, file, docstring):
         found = [line.rstrip() for line in text.read().splitlines()]
     wanted = [line.rstrip() for line in docstring.splitlines()]
     assert found == wanted, f"{file} has\n" + "\n".join(found)
+
+
+# The user guide
+
+# The program of the tests that the desktop opens the links with
+OPENER = "virtualbricks-e2e-opener.desktop"
+
+
+def opened(virtualbricks):
+    """The file where the program of the tests writes the links it opens."""
+
+    return os.path.join(virtualbricks.folder, "opened")
+
+
+@given(
+    "the desktop opens help: links and web pages with a program of the tests"
+)
+def opens_with_the_tests(virtualbricks):
+    """
+    Before Virtualbricks starts: a program of the tests, the default of its
+    desktop for help: links and for web pages, writes each link it opens on
+    a line of a file; Yelp and the browser of this computer open nothing.
+    """
+
+    script = os.path.join(virtualbricks.folder, "opener.sh")
+    with open(script, "w") as file:
+        file.write(
+            "#!/bin/sh\n"
+            f"printf '%s\\n' \"$1\" >> {shlex.quote(opened(virtualbricks))}\n"
+        )
+    os.chmod(script, 0o755)
+    applications = os.path.join(
+        virtualbricks.home, ".local", "share", "applications"
+    )
+    os.makedirs(applications, exist_ok=True)
+    with open(os.path.join(applications, OPENER), "w") as file:
+        file.write(
+            "[Desktop Entry]\n"
+            "Type=Application\n"
+            "Name=The links of the tests\n"
+            "NoDisplay=true\n"
+            f'Exec="{script}" %u\n'
+            "MimeType=x-scheme-handler/help;text/html;\n"
+        )
+    # the defaults of the user come first
+    with open(
+        os.path.join(virtualbricks.config, "mimeapps.list"), "w"
+    ) as file:
+        file.write(
+            "[Default Applications]\n"
+            f"x-scheme-handler/help={OPENER}\n"
+            f"text/html={OPENER}\n"
+        )
+
+
+@given("the pages of the guide are where Yelp looks")
+def pages_for_yelp(virtualbricks):
+    """
+    Before Virtualbricks starts: help/C/virtualbricks of the data folder of
+    the user is the folder of the pages of the sources.
+    """
+
+    folder = os.path.join(virtualbricks.home, ".local", "share", "help", "C")
+    os.makedirs(folder, exist_ok=True)
+    os.symlink(
+        os.path.join(harness.ROOT, "help", "C"),
+        os.path.join(folder, "virtualbricks"),
+    )
+
+
+@when("I press F1 in the Settings window")
+def f1_in_settings(virtualbricks):
+    virtualbricks.key("F1", virtualbricks.find("dialog", SETTINGS_WINDOW))
+
+
+@then(words('the desktop opens "{link}"'))
+def desktop_opens(virtualbricks, link):
+    """The program of the tests has opened the link, and only it."""
+
+    links_opened(virtualbricks, [link])
+
+
+@then(words("the desktop opens the HTML of the page {page}"))
+def desktop_opens_html(virtualbricks, page):
+    """
+    The program of the tests has opened the HTML of the page, in the
+    sources, and only it: its path, as the desktop gives a file.
+    """
+
+    path = os.path.join(harness.ROOT, "help", "html", "C", f"{page}.html")
+    links_opened(virtualbricks, [path])
+
+
+def links_opened(virtualbricks, links):
+    """Wait for the program of the tests to open these links."""
+
+    def lines():
+        try:
+            with open(opened(virtualbricks)) as file:
+                return file.read().splitlines()
+        except FileNotFoundError:
+            return []
+
+    try:
+        virtualbricks.wait_for(lambda: lines() == links, f"opened {links}")
+    except AssertionError:
+        raise AssertionError(f"opened {lines()}") from None
 
 
 # Time

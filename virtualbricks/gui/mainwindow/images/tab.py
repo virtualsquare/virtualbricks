@@ -242,6 +242,7 @@ class ImagesTab(RowsTab[Image]):
         " give a machine its disk."
     )
     STARTS = False
+    HELP_PAGE = "images"
 
     def __init__(
         self, engine: Engine, window: Gtk.Window, factory: BrickFactory

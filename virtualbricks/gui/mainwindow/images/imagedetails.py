@@ -96,6 +96,7 @@ def mode_words(use: DiskUse) -> str:
 class ImageDetails(Panel):
     """The name, the description and the facts of an image, on a draft."""
 
+    help_page = "images"
     draft: ImageDraft
 
     def __init__(
