@@ -13,9 +13,6 @@
   <section id="start" style="2column">
     <title>Getting started</title>
   </section>
-  <section id="tutorials" style="2column">
-    <title>Tutorials</title>
-  </section>
   <section id="lab" style="2column">
     <title>Your lab</title>
   </section>
@@ -24,5 +21,8 @@
   </section>
   <section id="beyond" style="2column">
     <title>Settings and beyond</title>
+  </section>
+  <section id="tutorials" style="2column">
+    <title>Tutorials</title>
   </section>
 </page>
