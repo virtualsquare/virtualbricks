@@ -25,9 +25,10 @@
   <file>Downloads</file>, where it takes 6.8 GB. In a terminal:</p>
   <screen>cd ~/Downloads
 tar -xzf debian13.tar.gz</screen>
-  <p>The lab was made with Virtualbricks 2.1, and Virtualbricks converts it
-  while it reads the archive. An archive of this version imports the same
-  way.</p>
+  <p>You import the lab into Virtualbricks, started on your computer, the one
+  the two files are on. The lab was made with Virtualbricks 2.1, and
+  Virtualbricks converts it while it reads the archive. An archive of this
+  version imports the same way.</p>
   <section id="open">
     <title>Open the archive</title>
     <steps>
@@ -42,9 +43,6 @@ tar -xzf debian13.tar.gz</screen>
             Export….</p>
           </media>
         </figure>
-        <p><gui>Import…</gui> is grey in the windows of another
-        Virtualbricks, opened with <cmd>--connect</cmd>: the archives stay on
-        the computer they are on, for now. See <link xref="remote"/>.</p>
       </item>
       <item>
         <p>Click the button of the file, which says <gui>(None)</gui>. In the
