@@ -68,11 +68,24 @@ def brick(text):
 brick.pattern = r"[\w.-]+"
 
 
+def folder(text):
+    """
+    A folder of the home, in "my home folder" or "my Downloads folder": its
+    path in the home, "" for the home itself.
+    """
+
+    return "" if text == "home" else text
+
+
+folder.pattern = r"home|Downloads"
+
+
 def words(text):
     """
     The words of a step, where {name:Brick} is the name of a brick,
-    {name:Project} that of a project, {name:Image} that of a disk image and
-    {name:Picture} that of a picture of the user guide.
+    {name:Project} that of a project, {name:Image} that of a disk image,
+    {name:Picture} that of a picture of the user guide and {folder:Folder}
+    that of a folder of the home.
     """
 
     return parsers.parse(
@@ -82,8 +95,17 @@ def words(text):
             "Project": brick,
             "Image": brick,
             "Picture": brick,
+            "Folder": folder,
         },
     )
+
+
+def in_my(virtualbricks, folder, file):
+    """The path of file in folder of the home, which is made if it isn't."""
+
+    path = os.path.join(virtualbricks.home, folder)
+    os.makedirs(path, exist_ok=True)
+    return os.path.join(path, file)
 
 
 @pytest.fixture
@@ -1653,6 +1675,24 @@ def default_workspace(virtualbricks):
     os.makedirs(virtualbricks.workspace, exist_ok=True)
 
 
+@given(
+    words("the files of my {folder:Folder} folder were last changed on {day}")
+)
+def changed_on(virtualbricks, folder, day):
+    """
+    Each file of the folder of the home last changed on the day, as
+    2024-08-02, at noon: a file chooser says that day, not the time of the
+    scenario.
+    """
+
+    moment = time.mktime(time.strptime(f"{day} 12:00", "%Y-%m-%d %H:%M"))
+    top = os.path.join(virtualbricks.home, folder)
+    for name in os.listdir(top):
+        path = os.path.join(top, name)
+        if os.path.isfile(path):
+            os.utime(path, (moment, moment))
+
+
 @when(words("the projects were last saved on {day}"))
 def saved_on(virtualbricks, day):
     """
@@ -1945,53 +1985,81 @@ def import_archive(virtualbricks, archive, name):
     opens.
     """
 
-    import_with(virtualbricks, in_home(virtualbricks, archive), name)
+    import_with(virtualbricks, in_folder(virtualbricks, archive), name)
 
 
 @when(
     words(
-        "I choose the archive {archive} of my home folder in the Import"
-        " window, which suggests the name {name:Project}"
+        "I choose the archive {archive} of my {folder:Folder} folder in the"
+        " Import window, which suggests the name {name:Project}"
     )
 )
-def choose_archive(virtualbricks, archive, name):
+def choose_archive(virtualbricks, archive, folder, name):
     """
     Import…, in the menu Projects; in the window, the button of the file,
-    then Home and the archive in the file chooser, and Open; the window
-    reads it, and the name it suggests is name. Import isn't clicked.
+    then the archive in the file chooser, as the step that selects a file
+    there does, and Open; the window reads it, and the name it suggests is
+    name. Import isn't clicked.
     """
 
-    choose_with(virtualbricks, in_home(virtualbricks, archive), name)
+    choose_with(virtualbricks, in_folder(virtualbricks, archive, folder), name)
 
 
 @when(
     words(
-        "in the Import window, I use the file {file} of my home folder for"
-        " the image {image}"
+        "in the Import window, I use the file {file} of my {folder:Folder}"
+        " folder for the image {image}"
     )
 )
-def use_image_file(virtualbricks, file, image):
+def use_image_file(virtualbricks, file, folder, image):
     """
-    Use a file…, in the row of the image; in the file chooser it opens,
-    Home, the file and Open; the row then says that it uses it.
+    Use a file…, in the row of the image; in the file chooser it opens, the
+    file, as the step that selects a file there does, and Open; the row then
+    says that it uses it.
     """
 
     window = virtualbricks.find("frame", IMPORT_WINDOW)
     row = virtualbricks.find("label", image, within=window).get_parent()
     virtualbricks.click("radio button", "Use a file…", within=row)
     title = f"The file of {image}"
-    in_home(virtualbricks, file)(virtualbricks.find("file chooser", title))
+    choose = in_folder(virtualbricks, file, folder)
+    choose(virtualbricks.find("file chooser", title))
     virtualbricks.gone("file chooser", title)
-    path = os.path.join("~", file)
+    path = os.path.join("~", folder, file)
     virtualbricks.find("label", f"Uses {path}", within=row)
 
 
-def in_home(virtualbricks, archive):
-    """What chooses archive of the home in a file chooser: Home, it, Open."""
+@when(
+    words("in the file chooser, I select {file} of my {folder:Folder} folder")
+)
+def select_file(virtualbricks, file, folder):
+    """
+    In the file chooser that shows, Home; for another folder, the folder and
+    Open, which goes into it; then the file, which is selected. Open isn't
+    clicked.
+    """
+
+    select_in(virtualbricks, virtualbricks.find("file chooser"), file, folder)
+
+
+def select_in(virtualbricks, chooser, file, folder):
+    """In chooser, file of folder of the home: see select_file."""
+
+    virtualbricks.click("label", "Home", within=chooser)
+    if folder:
+        virtualbricks.click("table cell", folder, within=chooser)
+        virtualbricks.click("button", "Open", within=chooser)
+    virtualbricks.click("table cell", file, within=chooser)
+
+
+def in_folder(virtualbricks, file, folder=""):
+    """
+    What chooses file of folder of the home in a file chooser: it, as
+    select_in selects it, and Open.
+    """
 
     def choose(chooser):
-        virtualbricks.click("label", "Home", within=chooser)
-        virtualbricks.click("table cell", archive, within=chooser)
+        select_in(virtualbricks, chooser, file, folder)
         virtualbricks.click("button", "Open", within=chooser)
 
     return choose
@@ -2037,6 +2105,14 @@ def import_with(virtualbricks, choose, name):
     import_chosen(virtualbricks)
 
 
+@when("I open the Import window")
+def open_import(virtualbricks):
+    """Import…, in the menu Projects; then the window shows. Return it."""
+
+    virtualbricks.choose("Import…", "Projects")
+    return virtualbricks.find("frame", IMPORT_WINDOW)
+
+
 @when("I import the archive chosen in the Import window")
 def import_chosen(virtualbricks):
     """Import, in the Import window, which closes once the project opens."""
@@ -2053,8 +2129,7 @@ def choose_with(virtualbricks, choose, name):
     suggests is name. Return the window.
     """
 
-    virtualbricks.choose("Import…", "Projects")
-    window = virtualbricks.find("frame", IMPORT_WINDOW)
+    window = open_import(virtualbricks)
     # the button of the file names it: none yet
     virtualbricks.click("button", "(None)", within=window)
     choose(virtualbricks.find("file chooser", CHOOSE_ARCHIVE))
@@ -2194,15 +2269,18 @@ DISK_OPTIONS = ("-hda", "-hdb", "-hdc", "-hdd", "-fda", "-fdb", "-mtdblock")
 
 
 @given(
-    words("the empty disk image {file} of {size:d} {unit}, in my home folder")
+    words(
+        "the empty disk image {file} of {size:d} {unit}, in my {folder:Folder}"
+        " folder"
+    )
 )
-def disk_image(virtualbricks, file, size, unit):
+def disk_image(virtualbricks, file, size, unit, folder):
     """
-    In the home, an empty disk of size MB or GB, made with qemu-img create,
-    in the format of the extension of file: qcow2, or raw.
+    In the folder of the home, an empty disk of size MB or GB, made with
+    qemu-img create, in the format of the extension of file: qcow2, or raw.
     """
 
-    path = os.path.join(virtualbricks.home, file)
+    path = in_my(virtualbricks, folder, file)
     fmt = os.path.splitext(file)[1].removeprefix(".")
     subprocess.run(
         ["qemu-img", "create", "-q", "-f", fmt, path, str(size * UNITS[unit])],
@@ -2219,7 +2297,7 @@ def disk_image(virtualbricks, file, size, unit):
 def disk_image_snapshot(virtualbricks, file, size, unit, snapshot):
     """The same, with a snapshot, made with qemu-img snapshot."""
 
-    disk_image(virtualbricks, file, size, unit)
+    disk_image(virtualbricks, file, size, unit, "")
     path = os.path.join(virtualbricks.home, file)
     subprocess.run(["qemu-img", "snapshot", "-c", snapshot, path], check=True)
 
@@ -3899,16 +3977,18 @@ def old_project(virtualbricks, name):
 
 @given(
     words(
-        "the archive {name:Project}.vbp of Virtualbricks 2.1, in my home folder"
+        "the archive {name:Project}.vbp of Virtualbricks 2.1, in my"
+        " {folder:Folder} folder"
     )
 )
-def old_archive(virtualbricks, name):
+def old_archive(virtualbricks, name, folder):
     """
-    In the home, the archive of projects/NAME as 2.1 exported it: its
-    .project, without images, in a tar compressed with gzip, as tar cfz did.
+    In the folder of the home, the archive of projects/NAME as 2.1 exported
+    it: its .project, without images, in a tar compressed with gzip, as tar
+    cfz did.
     """
 
-    path = os.path.join(virtualbricks.home, f"{name}.vbp")
+    path = in_my(virtualbricks, folder, f"{name}.vbp")
     with tarfile.open(path, "w:gz") as archive:
         archive.add(os.path.join(PROJECTS, name, ".project"), ".project")
 
@@ -4388,6 +4468,8 @@ PICTURED = {
     "Projects window": ("frame", PROJECTS_WINDOW),
     "Export window": ("frame", EXPORT_WINDOW),
     "Import window": ("frame", IMPORT_WINDOW),
+    # the one that shows
+    "file chooser": ("file chooser", None),
 }
 
 
@@ -4438,6 +4520,11 @@ def click(virtualbricks, role, name):
 @when(words('I choose "{item}" in the menu "{menu}"'))
 def choose(virtualbricks, item, menu):
     virtualbricks.choose(item, menu)
+
+
+@when(words('I open the menu "{menu}"'))
+def open_menu(virtualbricks, menu):
+    virtualbricks.open_menu(menu)
 
 
 @then(words('the {role} "{name}" shows'))

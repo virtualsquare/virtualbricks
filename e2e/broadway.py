@@ -294,11 +294,13 @@ class Browser:
     def window_at(self, x, y, width, height) -> int:
         """
         The surface of a window that shows at x, y, width by height, as
-        AT-SPI says where a window is, its shadow too; or 0. Not a menu.
+        AT-SPI says where a window is, its shadow too; or 0. Not a menu. Of
+        two there, as a file chooser of the size of the main window over it,
+        the one on top.
         """
 
         with self.changed:
-            for surface in self.stacking:
+            for surface in reversed(self.stacking):
                 if (
                     surface.visible
                     and not surface.temp

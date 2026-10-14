@@ -48,6 +48,7 @@ The steps of a user:
 | `Given the workspace is the default one` | Before Virtualbricks starts: its workspace is `~/.virtualbricks`, that of its settings, as for a user who never chose another; the title of the main window names the project alone |
 | `When I open the Projects window` | Projects…, in the menu Projects |
 | `When the projects were last saved on 2024-08-02` | The file of each project of the workspace last changed on the day, at noon: the Projects window says that day, not the time of the scenario |
+| `Given the files of my Downloads folder were last changed on 2024-08-02` | Each file of the folder of the home last changed on the day, at noon: a file chooser says that day, not the time of the scenario. Also `of my home folder` |
 | `When I make a new project with the name it suggests, new_project-2` | New…, in the Projects window: its name must be the one the dialog suggests; then Create, and the dialog closes |
 | `When I save the project` | Save, in the menu Projects: the open project, with its README |
 | `When I open the project new_project` | In the Projects window, its row, then Open in its details; the window closes |
@@ -57,8 +58,10 @@ The steps of a user:
 | `When I remove the project new_project, which can't go to the trash, and delete it permanently` | The same, where the question has no Move to Trash and says the drive of the workspace has no trash: Delete Permanently |
 | `When I import the archive lab.vbp of my home folder with the name it suggests, lab` | Import…, in the menu Projects; in the window, the button of the file, then Home and the archive in the file chooser, and Open; the name must be the one the window suggests; then Import, with Open the project as it is, and the window closes once the project opens |
 | `When I import the archive new_project.vbp of my home folder, typing its path, with the name it suggests, new_project-2` | The same, where in the file chooser, once clicked, Ctrl+L shows the entry of its location: the path of the archive typed there, then Return once Open is enabled |
-| `When I choose the archive lab.vbp of my home folder in the Import window, which suggests the name lab` | The same as the import, up to the name the window suggests: Import isn't clicked, and the window stays |
-| `When in the Import window, I use the file debian13.qcow2 of my home folder for the image debian13` | Use a file…, in the row of the image; in the file chooser it opens, Home, the file and Open; the row then says `Uses ~/debian13.qcow2` |
+| `When I choose the archive lab.vbp of my home folder in the Import window, which suggests the name lab` | The same as the import, up to the name the window suggests: Import isn't clicked, and the window stays. Also `of my Downloads folder`: in the file chooser, Home, then Downloads and Open, which goes into it, before the archive |
+| `When in the Import window, I use the file debian13.qcow2 of my home folder for the image debian13` | Use a file…, in the row of the image; in the file chooser it opens, Home, the file and Open; the row then says `Uses ~/debian13.qcow2`. Also `of my Downloads folder`, as above: then `Uses ~/Downloads/debian13.qcow2` |
+| `When I open the Import window` | Import…, in the menu Projects; then the window shows |
+| `When in the file chooser, I select debian13.qcow2 of my Downloads folder` | In the file chooser that shows, Home, then Downloads and Open, which goes into it, then the file, which is selected: Open isn't clicked. Also `of my home folder` |
 | `When I import the archive chosen in the Import window` | Import, in the Import window, which closes once the project opens |
 | `When I export the project to new_project.vbp of my home folder` | Export…, in the menu Projects, for the open project; the window suggests the archive in the home, `~/new_project.vbp`; then Export, and Close once it says where it exported it |
 | `When I open the Export window` | Export…, in the menu Projects, for the open project; then the window shows |
@@ -217,13 +220,13 @@ The steps of the user guide:
 | `When I press F1 in the Settings window` | F1, once the window is active |
 | `Then the desktop opens "help:virtualbricks/settings"` | The program of the tests got the link, and only it |
 | `Then the desktop opens the HTML of the page settings` | The program of the tests got the path of `help/html/C/settings.html` of the sources, and only it: the desktop gives a file by its path |
-| `Then the picture settings shows the Settings window` | The picture of the window for the guide, as it shows, with the menus open over it: the pointer away from the windows first, once the screen hasn't changed for half a second. With `pytest --pictures`, `help/C/figures/settings.png`, if it changed; else `settings.png` in the folder of the scenario, which the end of the run lists if it differs from that of `help/C/figures/`. The windows: `main window`, `Settings window`, `Projects window`, `Export window`, `Import window` |
+| `Then the picture settings shows the Settings window` | The picture of the window for the guide, as it shows, with the menus open over it: the pointer away from the windows first, once the screen hasn't changed for half a second. With `pytest --pictures`, `help/C/figures/settings.png`, if it changed; else `settings.png` in the folder of the scenario, which the end of the run lists if it differs from that of `help/C/figures/`. The windows: `main window`, `Settings window`, `Projects window`, `Export window`, `Import window`, and `file chooser`, the one that shows |
 
 The steps of the disk images:
 
 | Step | What it does |
 | :- | :- |
-| `Given the empty disk image disk.qcow2 of 1 GB, in my home folder` | Made with `qemu-img create`, of MB or GB of 1000, as Virtualbricks counts them, in the format of its extension: `qcow2` or `raw` |
+| `Given the empty disk image disk.qcow2 of 1 GB, in my home folder` | Made with `qemu-img create`, of MB or GB of 1000, as Virtualbricks counts them, in the format of its extension: `qcow2` or `raw`. Also `in my Downloads folder` |
 | `Given the empty disk image disk.qcow2 of 1 GB, in my home folder, with the snapshot clean` | The same, then the snapshot, made with `qemu-img snapshot -c` |
 | `When I add an existing image, disk.qcow2 of my home folder, with the name it suggests, disk` | The tab Images, Add Image, then Existing Image…; in the dialog, the button of the file, then Home and the file in the file chooser, and Open; the name must be the one the dialog suggests; then Add, with Copy it to the shared images as it is, and the dialog closes |
 | `When I add an existing image, disk.qcow2 of my home folder, used where it is, with the name it suggests, disk` | The same, with Use it where it is in place of the copy |
@@ -253,7 +256,7 @@ The steps of the migration of Virtualbricks 2.1:
 | Step | What it does |
 | :- | :- |
 | `Given the project DTN2hops_26_Feb_2026 of Virtualbricks 2.1` | A copy of `projects/DTN2hops_26_Feb_2026` in the workspace |
-| `Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my home folder` | The archive that 2.1 exported of `projects/DTN2hops_26_Feb_2026`, in the home: its `.project`, without images, in a tar compressed with gzip |
+| `Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my home folder` | The archive that 2.1 exported of `projects/DTN2hops_26_Feb_2026`, in the home: its `.project`, without images, in a tar compressed with gzip. Also `in my Downloads folder` |
 | `Given the settings of Virtualbricks 2.1, with DTN2hops_26_Feb_2026 open last` | `~/.virtualbricks.conf`, of the workspace of the tests, in place of the settings: the next start is the first |
 | `Given the project lab of Virtualbricks 2.1, whose .project is`, with a text under it | A folder lab in the workspace, whose `.project` has the text; the steps keep it, to check it later |
 | `Given the project DTN2hops_26_Feb_2026 of Virtualbricks 2.1, as the single file lab.vbl in the workspace` | Its `.project`, as a file of the workspace, as the versions before 2.1 kept a project |
@@ -300,6 +303,7 @@ The steps of the screen, for any widget, by its role and its name:
 | :- | :- |
 | `When I click the button "New Brick"` | Clicks the widget, once it shows and is enabled |
 | `When I choose "Quit" in the menu "File"` | The menu of the menu bar, then its item |
+| `When I open the menu "Projects"` | The menu of the menu bar, which stays open, once its items are under it |
 | `Then the label "No Bricks Yet" shows` | Waits until the widget shows |
 | `Then the label "No Bricks Yet" doesn't show` | Waits until it doesn't |
 | `And I print the widgets` | Prints the widgets that show, with their roles and names (`pytest -s`) |

@@ -118,10 +118,12 @@ def desktop(tmp_path_factory):
 def virtualbricks(desktop, tmp_path, request):
     """
     A Virtualbricks, not started; stopped at the end, with its screen, which
-    is recorded if a step failed, or with --record-all.
+    is recorded if a step failed, or with --record-all. Its home is the
+    folder user of that of the scenario, as a file chooser names it in the
+    pictures of the guide.
     """
 
-    vb = harness.Virtualbricks(desktop, str(tmp_path))
+    vb = harness.Virtualbricks(desktop, str(tmp_path / "user"), str(tmp_path))
     vb.make_home()
     try:
         yield vb

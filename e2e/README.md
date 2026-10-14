@@ -353,10 +353,13 @@ When a window changes, its scenario lists its picture, which
 changes from one run to the next, so that the same window gives the same
 picture: the scenarios run in the default workspace, which the title of
 the main window doesn't name; the Projects window shows the projects as
-saved on a day of 2024; Virtualbricks shows the paths in the home, the
-temporary folder of the scenario, with `~`; the pointer is away from the
-windows, the cursor of a text doesn't blink, and the picture is taken
-once the screen has been still for half a second.
+saved on a day of 2024, and a file chooser the files of the home as
+changed on that day; Virtualbricks shows the paths in the home with `~`,
+and a file chooser names the home by its folder, `user` in the temporary
+folder of the scenario; the pointer is away from the windows, the cursor
+of a text doesn't blink, and the picture is taken once the screen has
+been still for half a second. A file chooser has the width of the main
+window, which the settings of GIO in the home give it.
 
 ## The report of Allure
 
@@ -420,8 +423,9 @@ chose. Read the scenario as you would one of a contributor: it is the test.
   its own in `/tmp`; AT-SPI starts on that bus when it is first asked. The
   variables of your desktop (`DISPLAY`, the buses) are out of the
   environment of the tests and of Virtualbricks.
-- `virtualbricks`, for each scenario, makes a home with `settings.toml` and
-  a workspace; `Given Virtualbricks is running` starts a `broadwayd`, then
+- `virtualbricks`, for each scenario, makes a home, the folder `user` of
+  that of the scenario, with `settings.toml`, the settings of GTK and of
+  GIO (the keyfile backend, not your dconf) and a workspace; `Given Virtualbricks is running` starts a `broadwayd`, then
   `python -m virtualbricks --no-term --lock none --workspace …` on this
   checkout, in English, on it, and waits for its main window; the step
   `… with OPTIONS` gives it those of the scenario. It starts through a few

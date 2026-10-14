@@ -62,6 +62,14 @@ SETTINGS = "format = 1\nwarn_missing_programs = false\n"
 # GTK without animations: a popover shows at once where it ends up. The
 # cursor of a text doesn't blink: the screen is still, as for a picture.
 GTK_SETTINGS = "[Settings]\ngtk-enable-animations = 0\ngtk-cursor-blink = 0\n"
+# Those of GIO, in a file of the home: a file chooser of GTK as wide as the
+# main window, where it would make itself wider than the pages of the guide
+# that show it. GTK takes the size only with a position.
+GIO_SETTINGS = (
+    "[org/gtk/settings/file-chooser]\n"
+    "window-position = (0, 0)\n"
+    "window-size = (850, 600)\n"
+)
 # Virtualbricks, as python -m virtualbricks, with the system lock of
 # --lock system, user and workspace in the folder of the tests: /tmp has the
 # one of the Virtualbricks of the user, which it shares with no other.
@@ -205,6 +213,7 @@ class Virtualbricks:
         for folder, name, text in (
             ("virtualbricks", "settings.toml", SETTINGS),
             ("gtk-3.0", "settings.ini", GTK_SETTINGS),
+            (os.path.join("glib-2.0", "settings"), "keyfile", GIO_SETTINGS),
         ):
             os.makedirs(os.path.join(self.config, folder))
             with open(os.path.join(self.config, folder, name), "w") as file:
@@ -322,8 +331,9 @@ class Virtualbricks:
             # the words of the steps: no translation
             LANGUAGE="C",
             LC_ALL="C.UTF-8",
-            # nothing of the desktop's: no dconf, no gvfs
-            GSETTINGS_BACKEND="memory",
+            # nothing of the desktop's: no dconf, the settings of GIO in a
+            # file of the home; no gvfs
+            GSETTINGS_BACKEND="keyfile",
             GIO_USE_VFS="local",
             # E2E_PYTHONPATH first: a sitecustomize.py there can break
             # Virtualbricks, to see a scenario fail
@@ -585,20 +595,28 @@ class Virtualbricks:
         self.browser.key(keys)
 
     def choose(self, item, menu):
+        """Open the menu of the menu bar, then click its item."""
+
+        self.open_menu(menu)
+        self.browser.click(*a11y.center(self.enabled("menu item", item)))
+
+    def open_menu(self, menu):
         """
-        Click the menu of the menu bar, then its item, once it is under the
-        menu: GTK may show the menu at the top left of the screen first, and
-        move it under the menu bar after, later when the computer is busy.
+        Click the menu of the menu bar; return once its items are under it:
+        GTK may show the menu at the top left of the screen first, and move
+        it under the menu bar after, later when the computer is busy.
         """
 
         title = self.click("menu", menu)
         _x, top, _width, height = a11y.extents(title)
-        widget = self.enabled("menu item", item)
-        self.wait_for(
-            lambda: a11y.extents(widget)[1] >= top + height,
-            f"the menu item {item!r} is under the menu {menu!r}",
-        )
-        self.browser.click(*a11y.center(widget))
+
+        def under():
+            items = list(a11y.find_all(title, "menu item"))
+            return items and all(
+                a11y.extents(item)[1] >= top + height for item in items
+            )
+
+        self.wait_for(under, f"the items of the menu {menu!r} are under it")
 
     def row(self, name):
         """The row of the list that is named name, once it shows."""
