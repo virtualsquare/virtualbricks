@@ -25,7 +25,7 @@ repos:
         entry: python3 help/build.py
         language: system
         pass_filenames: false
-        files: ^help/(C/.*\.page|C/figures/.*\.png|build\.py)$
+        files: ^help/(C/.*\.page|C/figures/.*\.png|build\.py|html\.xsl)$
       - id: l10n
         name: update translations
         entry: ./l10n.sh

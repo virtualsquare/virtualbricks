@@ -1455,3 +1455,9 @@ a.gloss-term:hover span.gloss-desc, a.gloss-term:focus span.gloss-desc {
   .if-choose.if__not-target-mobile > .if-when { display: none; }
   .if-choose.if__not-target-mobile > .if-else { display: block; }
 }
+
+main > div.page { min-width: 0; }
+div.figure:not(:has(a.figure-zoomed)) div.media img[data-yelp-original-width] {
+  max-width: 100%;
+  height: auto;
+}

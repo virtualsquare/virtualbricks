@@ -452,11 +452,12 @@ pre-commit run --all-files     # run them without committing
   `--check` it only tells whether one is out of date.
 - **help**: `python3 help/build.py` checks the pages of the user guide,
   `help/C/*.page`, with `yelp-check`, and builds their HTML into
-  `help/html/C/` with `yelp-build`, with a copy of their pictures; the HTML
-  is committed. It runs when a page or a picture changes, and needs the Yelp
-  tools (`yelp-tools` in Debian). With `--check` it only tells whether the
-  HTML is out of date. The end-to-end tests take the pictures,
-  `help/C/figures/`: `pytest --pictures -m pictures`, see
+  `help/html/C/` with `yelp-build`, with a copy of their pictures and the
+  CSS of `help/html.xsl`, which shrinks the pictures to the window; the HTML
+  is committed. It runs when a page, a picture or `help/html.xsl` changes,
+  and needs the Yelp tools (`yelp-tools` in Debian). With `--check` it only
+  tells whether the HTML is out of date. The end-to-end tests take the
+  pictures, `help/C/figures/`: `pytest --pictures -m pictures`, see
   [e2e/README.md](e2e/README.md#the-pictures-of-the-user-guide).
 - **translations**: `./l10n.sh` extracts the messages of the sources into
   `locale/virtualbricks/virtualbricks.pot`, merges them into the `.po` file of

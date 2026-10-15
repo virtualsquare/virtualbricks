@@ -154,6 +154,13 @@ class TestTheFigures(PagesTestCase):
                 name,
             )
 
+    def test_the_pictures_shrink_to_the_window(self):
+        # the CSS of help/html.xsl, in the HTML
+        with open(os.path.join(HTML, "C.css"), encoding="utf-8") as fp:
+            css = fp.read()
+        self.assertIn("main > div.page { min-width: 0; }", css)
+        self.assertIn("div.media img[data-yelp-original-width]", css)
+
 
 class TestTheInstall(PagesTestCase):
     """pyproject.toml installs every page, and all of its HTML."""

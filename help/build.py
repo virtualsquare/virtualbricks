@@ -20,6 +20,7 @@
 Check the pages of the user guide and build their HTML with the Yelp tools.
 
     help/C/<page>.page      source, Mallard, shown by Yelp
+    help/html.xsl           what the HTML adds to the stylesheets of yelp-xsl
     help/C/figures/         the pictures of the pages, which the end-to-end
                             tests take: pytest --pictures -m pictures
     help/html/C/            the HTML of yelp-build, committed like the man
@@ -49,6 +50,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 PAGES = os.path.join(HERE, "C")
+CUSTOM = os.path.join(HERE, "html.xsl")
 HTML = os.path.join(HERE, "html", "C")
 
 
@@ -86,7 +88,17 @@ def check_pages():
 def render(folder):
     """Write the HTML of the pages into folder."""
 
-    run([tool("yelp-build"), "html", "-o", folder + os.sep, PAGES + os.sep])
+    run(
+        [
+            tool("yelp-build"),
+            "html",
+            "-x",
+            CUSTOM,
+            "-o",
+            folder + os.sep,
+            PAGES + os.sep,
+        ]
+    )
 
 
 def files(folder):

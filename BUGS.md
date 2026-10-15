@@ -188,22 +188,3 @@ one leaves the list.
   on 3.0.0.dev3, on 13 October 2026, in the output of the e2e scenarios;
   `G_DEBUG=fatal-criticals`, with Python's `faulthandler` registered for
   SIGTRAP, put it at the `Gtk.StatusIcon(...)` of `build_ui()`.
-
-## User guide
-
-- [ ] **The pictures of the guide don't shrink to the window: the page
-  scrolls sideways.** In a browser window narrower than a page and its
-  widest picture, the HTML of the guide (`help/html/C/`, and its copy on
-  the website) keeps the pictures at their size and scrolls sideways:
-  below about 980 px for the pages with a picture of the main window, 902
-  px wide (`first-lab`, `bricks`, `images`, …), below about 1070 px for
-  `tutorial-import`, whose pictures are in numbered steps, indented more,
-  and at any phone width. `yelp.js` scales a figure down to its column
-  (`yelp_figure_init()`), but the column grows to the picture: in the CSS
-  of yelp-xsl 42.1, `main` is a row flexbox, and `main > div.page` keeps
-  `min-width: auto`, so it isn't narrower than its widest picture. With
-  `main > div.page { min-width: 0; }` added, the pictures scale down and
-  nothing scrolls, at 700 px and at 1000 px. Yelp wasn't tried. Seen on
-  3.0.0.dev3, on 15 October 2026, in headless Chromium, with the
-  `scrollWidth` of each page with pictures at 700, 900, 1000, 1050, 1100
-  and 1280 px; first noticed on 14 October, in `tutorial-import`.
