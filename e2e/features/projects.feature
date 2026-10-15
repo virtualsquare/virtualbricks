@@ -101,9 +101,7 @@ Feature: Projects
       | Image    | Detail                                                             | State      |
       | debian13 | qcow2 · 1.0 GB disk · node1, node2, node3 and node4, private copies | Not in use |
 
-  # The bug "An image left unset at the import is dropped, and the private
-  # copies can't follow it" of BUGS.md: @bug until it is fixed.
-  @bug @needs-qemu-img @needs-vde_switch @needs-qemu-system-x86_64
+  @needs-qemu-img @needs-vde_switch @needs-qemu-system-x86_64
   Scenario: An archive without its image, imported with the image left unset, keeps it missing, and its private copies follow the file found for it
     Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, with the private disks of its machines, in my Downloads folder
     And the empty disk image debian13.qcow2 of 1 GB, in my Downloads folder

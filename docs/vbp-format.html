@@ -513,7 +513,7 @@
 <h2>The project file</h2>
 <p>The <code>project.toml</code> of an archive is the project file as the project had it, in the format of the Virtualbricks that exported it: 2 today. The import upgrades an older one, and refuses a newer one: &quot;project.toml: written by a newer Virtualbricks (format 3)&quot;. An archive carries the paths of the computer it comes from, in these keys, which the import changes:</p>
 <div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Meaning</th></tr></thead><tbody>
-<tr><th scope="row"><code class="key">[images.<em>name</em>] path</code></th><td class="meaning"><p>The file of the image on the computer it comes from: absolute, or relative to the project&#39;s folder. The import writes the file that the image uses on this computer, or &quot;&quot; for an image left unset.</p></td></tr>
+<tr><th scope="row"><code class="key">[images.<em>name</em>] path</code></th><td class="meaning"><p>The file of the image on the computer it comes from: absolute, or relative to the project&#39;s folder. The import writes the file that the image uses on this computer; an image left unset keeps this path, and has no file until Find the File…, in the Images tab, gives it one.</p></td></tr>
 <tr><th scope="row"><code class="key">[bricks.<em>vm</em>.disks.<em>device</em>] image, private</code></th><td class="meaning"><p>The image of a disk, by name, and whether the disk writes to its private disk, <em>vm</em>_<em>device</em>.cow. The import changes neither.</p></td></tr>
 <tr><th scope="row"><code class="key">[settings] qemu_path, vde_path</code></th><td class="meaning"><p>The folders of QEMU and VDE on the computer it comes from. The import replaces each with this computer&#39;s when the folder doesn&#39;t exist here, unless you choose otherwise.</p></td></tr>
 </tbody></table></div>
@@ -578,7 +578,7 @@
 <p>The import plans an image for each table <code>[images.<em>name</em>]</code> of the project file. Its disks are those whose <code>image</code> is <em>name</em>, and its copy in the archive is the member <em>IMAGES/name</em>, if the archive has it. The Import window gives each image a choice, with a default:</p>
 <ul>
 <li>An image that the archive has is copied into the shared images, <em>workspace</em>/shared_images, under the name of its file on the computer it comes from, <em>debian-12.qcow2</em>, or the next free one, <em>debian-12.1.qcow2</em>&hellip; When the shared images have a file with that name and the size of the image, the <code>real_size</code> of a packed one, that file is used instead.</li>
-<li>An image that the archive doesn&#39;t have uses its file if this computer has it at the same path, otherwise a file of the shared images with the name of its file or of the image; otherwise it&#39;s left unset, and its disks get an image later, in their settings.</li>
+<li>An image that the archive doesn&#39;t have uses its file if this computer has it at the same path, otherwise a file of the shared images with the name of its file or of the image; otherwise it&#39;s left unset: it keeps its path, and Find the File…, in the Images tab, gives it a file later.</li>
 </ul>
 <p>Then the import writes the path of each image into <code>[images.<em>name</em>]</code>, points the private disks at it (see <a href="#private-disks">Private disks</a>), and removes the <em>IMAGES</em> folder. A member of <em>IMAGES/</em> that no table of the project file names is dropped. By default, a file of the shared images with the file name and the size of an image is taken for it: nothing compares their contents.</p>
 <p>The Export window stores every image of the project whose file exists, or none; it stores none by default, as images are large and often already on the other computer.</p>
@@ -601,7 +601,7 @@ backing file format: qcow2
 <span class="out">...</span></code></pre></figure>
 <p>The import points each private disk at the file that its image uses on this computer, in the format of that file:</p>
 <figure class="code"><pre><code>qemu-img rebase -u -b <em>image</em> -F <em>format</em> <em>disk</em></code></pre></figure>
-<p><code>-u</code>, the unsafe mode, changes only the name of the backing file: the image must hold the same data as the one the disk was made on. A private disk whose image is left unset keeps its backing file as it is, and the import says so. A private disk made by an older version may be in another format than qcow2: it&#39;s stored as it is, and the import points it at its image as the others.</p>
+<p><code>-u</code>, the unsafe mode, changes only the name of the backing file: the image must hold the same data as the one the disk was made on. A private disk whose image is left unset keeps its backing file as it is, and the import says so; Find the File…, in the Images tab, points it at the file it gives the image. A private disk made by an older version may be in another format than qcow2: it&#39;s stored as it is, and the import points it at its image as the others.</p>
 </section>
 
 <section id="packed">

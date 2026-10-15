@@ -29,19 +29,24 @@ from twisted.trial import unittest
 
 from virtualbricks import locations
 from virtualbricks.config import archive, importing
-from virtualbricks.config.tomlfile import load_toml
-from virtualbricks.config.importing import plan_import, update_plan
 from virtualbricks.config.archive import (
     ArchiveContents,
     ArchiveError,
+    Tool,
+)
+from virtualbricks.config.archive import (
     Member as ArchiveMember,
 )
-from virtualbricks.config.importing import ImportResult
+from virtualbricks.config.importing import (
+    ImageUse,
+    ImportResult,
+    MachinePath,
+    plan_import,
+    update_plan,
+)
 from virtualbricks.config.settings import ProjectSettings, use_project
+from virtualbricks.config.tomlfile import dumps_toml, load_toml
 from virtualbricks.config.workspace import Workspace
-from virtualbricks.config.tomlfile import dumps_toml
-from virtualbricks.config.archive import Tool
-from virtualbricks.config.importing import ImageUse, MachinePath
 from virtualbricks.tests import isolate, reset_settings
 from virtualbricks.tests.config.test_archive import (
     LEGACY,
@@ -420,7 +425,10 @@ class TestRunImport(ImportingTestCase):
         plan = self.plan(self.lab())
         plan.images[0].choice = "skip"
         result = self.run_import(plan)
-        self.assertEqual(self.data()["images"]["deb"]["path"], "")
+        # the path it had, for Find the File… to give it a file
+        self.assertEqual(
+            self.data()["images"]["deb"]["path"], "/other/deb.qcow2"
+        )
         self.assertEqual(
             [m.where for m in result.report],
             ["images.deb", "bricks.vm.disks.hda"],
@@ -443,7 +451,7 @@ class TestRunImport(ImportingTestCase):
             {
                 "deb": os.path.join(self.library, "deb"),
                 "mine": mine,
-                "gone": "",
+                "gone": "/o/gone",
             },
         )
 
@@ -477,7 +485,10 @@ class TestRunImport(ImportingTestCase):
         plan.images[0].choice = "copy"
         plan.images[0].path = os.path.join(self.library, "deb.qcow2")
         result = self.run_import(plan)
-        self.assertEqual(self.data()["images"]["deb"]["path"], "")
+        # the path it had, for Find the File… to give it a file
+        self.assertEqual(
+            self.data()["images"]["deb"]["path"], "/other/deb.qcow2"
+        )
         self.assertIn("not in the archive", str(list(result.report)[0]))
 
     def test_the_copy_takes_a_free_name(self):

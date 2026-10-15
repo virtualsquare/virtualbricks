@@ -233,7 +233,9 @@ class ImageRow:
             return _("Copied to {path}").format(path=path)
         if image.choice == USE:
             return _("Uses {path}").format(path=path)
-        return _("Unset: its disks get an image later, in their settings")
+        return _(
+            "Unset: Find the File…, in the Images tab, gives it one later"
+        )
 
     def on_toggled(self, button: Gtk.RadioButton, choice: str) -> None:
         if self._updating or not button.get_active():

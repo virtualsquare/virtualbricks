@@ -56,8 +56,10 @@
         <title><gui>Images</gui></title>
         <p>For each image of the project: <gui>Copy</gui> it from the archive
         to the shared images, <gui>Use a file…</gui> of this computer, or
-        <gui>Leave unset</gui>, for its disks to get an image later. Each has
-        a choice made already, so <gui>Import</gui> works at once.</p>
+        <gui>Leave unset</gui>: the image stays without its file, until
+        <link xref="images#menu"><gui>Find the File…</gui></link>, in the
+        <gui>Images</gui> tab, gives it one. Each has a choice made already, so
+        <gui>Import</gui> works at once.</p>
       </item>
       <item>
         <title><gui>This computer's paths</gui></title>

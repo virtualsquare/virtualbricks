@@ -29,7 +29,8 @@ it (``run_import``):
 2. The images copied from the archive go to the shared images,
    ``<workspace>/shared_images``.
 3. The project file gets the paths of the images and, if chosen, this
-   computer's paths.
+   computer's paths. An image left unset keeps its path, whose file is
+   missing here until Find the File… gives it one.
 4. The private disks are pointed at their images with ``qemu-img rebase -u``.
 5. The folder is renamed into place, with the next free name if the name
    was taken meanwhile.
@@ -375,7 +376,11 @@ class _Import:
             data = self.convert_project()
         paths = self.place_images()
         for name, path in paths.items():
-            remap_image(data, name, path)
+            # One left unset keeps its path, as an image whose file is
+            # missing: Find the File… points it and its private disks at a
+            # file of this computer.
+            if path:
+                remap_image(data, name, path)
         table = data.setdefault("settings", {})
         if isinstance(table, dict):
             # as the plan's job() writes them
@@ -472,7 +477,10 @@ class _Import:
         return data
 
     def place_images(self) -> dict[str, str]:
-        """Copy, use or leave unset each image; return their paths."""
+        """
+        Copy, use or leave unset each image; return their paths, "" for
+        those left unset.
+        """
 
         paths = {}
         # as the plan's job() writes them
@@ -505,7 +513,8 @@ class _Import:
                 paths[name] = str(image["path"])
             else:
                 self.report.warning(
-                    "left unset: give its disks an image in their settings",
+                    "left unset, without its file: Find the File…, in the"
+                    " Images tab, gives it one",
                     f"images.{name}",
                 )
                 paths[name] = ""

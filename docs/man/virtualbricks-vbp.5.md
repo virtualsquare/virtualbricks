@@ -285,7 +285,8 @@ changes:
 **[images.***name***]** **path**
 :   The file of the image on the computer it comes from: absolute, or
     relative to the project's folder. The import writes the file that the
-    image uses on this computer, or \"\" for an image left unset.
+    image uses on this computer; an image left unset keeps this path, and
+    has no file until Find the File..., in the Images tab, gives it one.
 
 **[bricks.***vm***.disks.***device***]** **image**, **private**
 :   The image of a disk, by name, and whether the disk writes to its
@@ -332,8 +333,8 @@ Import window gives each image a choice, with a default:
   image, the **real_size** of a packed one, that file is used instead.
 - An image that the archive doesn't have uses its file if this computer has
   it at the same path, otherwise a file of the shared images with the name
-  of its file or of the image; otherwise it's left unset, and its disks get an
-  image later, in their settings.
+  of its file or of the image; otherwise it's left unset: it keeps its path,
+  and Find the File..., in the Images tab, gives it a file later.
 
 Then the import writes the path of each image into **[images.***name***]**,
 points the private disks at it (see **PRIVATE DISKS**), and removes the
@@ -379,7 +380,9 @@ qemu-img rebase -u -b image -F format disk
 **-u**, the unsafe mode, changes only the name of the backing file: the
 image must hold the same data as the one the disk was made on. A private
 disk whose image is left unset keeps its backing file as it is, and the
-import says so. A private disk made by an older version may be in another
+import says so; Find the File..., in the Images tab, points it at the file
+it gives the image.
+A private disk made by an older version may be in another
 format than qcow2: it's stored as it is, and the import points it at its
 image as the others.
 

@@ -70,8 +70,9 @@
       </item>
       <item>
         <title><gui>Find the File…</gui></title>
-        <p>For an image whose file is missing: choose where it is now. The
-        private copies made on it follow it.</p>
+        <p>For an image whose file is missing, as one left unset at the
+        import of an archive: choose where it is now. The private copies made
+        on it follow it.</p>
       </item>
     </terms>
   </section>

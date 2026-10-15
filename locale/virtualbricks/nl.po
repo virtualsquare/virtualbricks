@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 23:11+0200\n"
+"POT-Creation-Date: 2026-10-16 00:15+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2904,7 +2904,7 @@ msgid "Uses {path}"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/importdialog.py
-msgid "Unset: its disks get an image later, in their settings"
+msgid "Unset: Find the File…, in the Images tab, gives it one later"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/importdialog.py

@@ -437,7 +437,9 @@ qemu_path = "/usr/bin"
     :   **copy** moves the image from the archive to **path**, or to the
         next free name, *debian-12.1.qcow2*, *debian-12.2.qcow2*... **use**
         uses the file **path** of this computer. **skip** leaves the image
-        unset: its disks get one in their settings later. **auto** copies the
+        unset: it keeps its path of the project file, and its private disks
+        their backing file, until Find the File..., in the Images tab, gives
+        it a file of this computer. **auto** copies the
         image if the archive has it, otherwise uses **fallback**, otherwise
         skips it; the application sends it for the images of an older archive
         that the inspection hadn't seen yet when the import started.
@@ -491,8 +493,8 @@ The import takes these steps:
 4. Move each copied image to the shared images, sending it with
    **created**; then remove the *IMAGES* folder, or *.images* in an older
    archive, with the images that aren't copied.
-5. Rewrite **project.toml** with the path of each image, \"\" for an image
-   left unset, and with **settings**.
+5. Rewrite **project.toml** with the path of each image but those left
+   unset, which keep theirs, and with **settings**.
 6. Point each private disk at its image, in the format of the image:
    **qemu-img rebase -u -b** *image* **-F** *format* *disk*.
 7. Unpack the packed disks and images, in the step **unpack**.

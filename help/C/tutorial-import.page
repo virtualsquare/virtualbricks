@@ -97,8 +97,9 @@ tar -xzf debian13.tar.gz</screen>
           your workspace. It's grey: the archive doesn't hold the image, and
           there is nothing to copy.</p></item>
           <item><p><gui>Use a file…</gui> of this computer.</p></item>
-          <item><p><gui>Leave unset</gui>, for its disks to get an image
-          later.</p></item>
+          <item><p><gui>Leave unset</gui>: the image stays without its file,
+          until <gui>Find the File…</gui>, in the <gui>Images</gui> tab, gives
+          it one.</p></item>
         </list>
         <p><gui>Leave unset</gui> is chosen: the window looked for the image
         where the project had it,
@@ -163,7 +164,9 @@ tar -xzf debian13.tar.gz</screen>
       </item>
       <item>
         <title><gui>Leave unset</gui></title>
-        <p>You won't be able to start the virtual machines.</p>
+        <p>The virtual machines can't start until
+        <link xref="images#menu"><gui>Find the File…</gui></link>, in the
+        <gui>Images</gui> tab, gives <sys>debian13</sys> its file.</p>
       </item>
     </terms>
     <note style="tip">
