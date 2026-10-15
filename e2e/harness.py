@@ -670,6 +670,31 @@ class Virtualbricks:
             read()
         return [rows[index] for index in sorted(rows)]
 
+    def reveal(self, role, name, within):
+        """
+        The widget of role and name in within, a scroll pane, once it shows:
+        if the pane has it scrolled out, the wheel scrolls the pane down to
+        its bottom, then up to its top, until it shows, as a user looks for
+        it.
+        """
+
+        found = self.shows(role, name, within)
+        bars = [
+            bar
+            for bar in a11y.find_all(within, "scroll bar")
+            if a11y.vertical(bar)
+        ]
+        if found is None and bars:
+            bar = bars[0]
+            # down to the maximum, then up to the minimum
+            for down, end in ((True, 2), (False, 1)):
+                while found is None and a11y.position(bar)[0] != (
+                    a11y.position(bar)[end]
+                ):
+                    self._turn(within, bar, down)
+                    found = self.shows(role, name, within)
+        return found or self.find(role, name, within)
+
     def _turn(self, pane, bar, down):
         """A turn of the wheel over pane; then its scroll bar moves."""
 

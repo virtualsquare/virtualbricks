@@ -78,6 +78,12 @@ one leaves the list.
   and the same two lines of `node1` for `node2` to `node4`. The first line,
   of the conversion of 2.1, says the image is kept; the fifth, that it's
   dropped.
+  The scenario "An archive without its image, imported with the image left
+  unset, keeps it missing, and its private copies follow the file found for
+  it" of `e2e/features/projects.feature` shows it, tagged `@bug`: it fails
+  at the list of images, which is empty; with the image kept, it checks
+  that Find the File… points the private copies at the file, and that
+  `node2` starts on its copy, not set aside.
 
 ## Remote windows
 

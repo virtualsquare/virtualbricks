@@ -210,6 +210,14 @@ that the tests can't do yet: those needs come first.
   machines
   "An archive without its image, imported with a file of my home folder for
   it, gives the image to its machines", `projects.feature`
+- [x] Import an archive without its image, with the image left unset, then
+  find its file
+  the image stays, missing; Find the File… points the private copies at the
+  file, and a machine starts on its copy, with what was done in it (`qemu-img
+  dd`); a bug of BUGS.md not fixed yet, `@bug`
+  "An archive without its image, imported with the image left unset, keeps
+  it missing, and its private copies follow the file found for it",
+  `projects.feature`
 - [x] Export a project to an archive, then import it under another name
   the archive has the project, its path typed in the file chooser; not its
   private disks yet, which need a virtual machine

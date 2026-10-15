@@ -16,7 +16,7 @@ The steps of a user:
 | `Given Virtualbricks is running with --listen` | Starts it with the options, as the shell splits them, in place of `--lock none`, and waits for its main window; with `--listen` alone, until it listens on the socket of its workspace too. With `--connect`, these are the windows of the other Virtualbricks, which runs the bricks: see the steps of another Virtualbricks |
 | `When I add the switch sw1` | New Brick, the kind, then OK on its settings; the new brick must be named `sw1`. Any kind of New Brick: `the virtual machine vm1`, `the router r1`, … |
 | `When I join sw1 and sw2 with the wire w1` | New Brick, Wire, then sw1 for its left end and sw2 for its right end, and OK; the new wire must be named `w1` |
-| `When I start sw1` | Its Start button; it must run, with new processes |
+| `When I start sw1` | Its Start button, the list scrolled to it if it doesn't show; it must run, with new processes |
 | `When I try to start wr1` | A click on its Start, also when it is disabled, as a user may click it |
 | `When I stop sw1` | Its Stop button; it must stop |
 | `When I give sw1 34 ports and hub mode, with the buttons of its settings` | Configure… in its menu, the + or the - of Ports until it says 34, Hub mode turned on, then OK |
@@ -60,6 +60,7 @@ The steps of a user:
 | `When I import the archive new_project.vbp of my home folder, typing its path, with the name it suggests, new_project-2` | The same, where in the file chooser, once clicked, Ctrl+L shows the entry of its location: the path of the archive typed there, then Return once Open is enabled |
 | `When I choose the archive lab.vbp of my home folder in the Import window, which suggests the name lab` | The same as the import, up to the name the window suggests: Import isn't clicked, and the window stays. Also `of my Downloads folder`: in the file chooser, Home, then Downloads and Open, which goes into it, before the archive |
 | `When in the Import window, I use the file debian13.qcow2 of my home folder for the image debian13` | Use a file…, in the row of the image; in the file chooser it opens, Home, the file and Open; the row then says `Uses ~/debian13.qcow2`. Also `of my Downloads folder`, as above: then `Uses ~/Downloads/debian13.qcow2` |
+| `Then the Import window leaves the image debian13 unset` | In the row of the image, Leave unset is on: the choice of the window for an image that neither the archive nor the shared images have |
 | `When I open the Import window` | Import…, in the menu Projects; then the window shows |
 | `When in the file chooser, I select debian13.qcow2 of my Downloads folder` | In the file chooser that shows, Home, then Downloads and Open, which goes into it, then the file, which is selected: Open isn't clicked. Also `of my home folder` |
 | `When I import the archive chosen in the Import window` | Import, in the Import window, which closes once the project opens |
@@ -239,7 +240,7 @@ The steps of the disk images:
 | `When I open the details of disk` | Details…, in its menu, in the tab Images; then they show, with its name |
 | `When I remove the image disk, which the disk vm1 (hda) loses, and move its file to the trash` | Remove…, in its menu, in the tab Images: the dialog asks to remove it, and says that the disks lose it, `The disk vm1 (hda) will have no image.`; Also move the file to the trash turned on, then Remove, and the dialog closes |
 | `When I remove the image disk, which the disk vm1 (hda) loses, and whose file new_project uses too` | The same, where the dialog says `The project new_project uses the file too: it stays.`, and offers nothing for the file; then Remove |
-| `When I find the file of debian13, debian13.qcow2 of my home folder` | Find the File…, in its menu, in the tab Images; in the dialog, which asks where the file is, the button of the file, then Home and the file in the file chooser, and Open; then Use This File, and the dialog closes |
+| `When I find the file of debian13, debian13.qcow2 of my home folder` | Find the File…, in its menu, in the tab Images; in the dialog, which asks where the file is, the button of the file, then Home and the file in the file chooser, and Open; then Use This File, and the dialog closes. Also `of my Downloads folder`: in the file chooser, Home, then Downloads and Open, which goes into it, before the file |
 | `Then the list of images has`, with a table under it | The rows of the tab Images, all of them and in order, once they are those of the table: the name of each image, its detail without the space its file takes (`… on disk`), which depends on the file system, and its state |
 | `Then the shared images have disk.qcow2, a copy of that of my home folder` | `shared_images` of the workspace has the file, with the same bytes, and the home still has it |
 | `Then project.toml has the image disk, of disk.qcow2 in the shared images` | The image in the file of the project has the file of the shared images |
@@ -250,6 +251,7 @@ The steps of the disk images:
 | `Then the details of disk have`, with a table under it | The facts of the table, a name and a value each, as File or Format, are those of the details of the image, which show, once it has read its file |
 | `Then the details of disk say what qemu-img info says of disk.qcow2 of the shared images` | The facts of the details are those of `qemu-img info` of the file: File, its path with `~` for the home; Format; Size, the disk and the space it takes, in MB and GB of 1000; Snapshots, if any; and Changed, when the file changed, which isn't of `qemu-img` |
 | `Then vm1 runs on a private copy of disk.qcow2 of the shared images` | It runs, and a disk of its QEMU, after `-hda` or another device, is a file of its own whose backing file is that of the shared images, as `qemu-img info -U` says |
+| `Then node2 runs on its private copy from the archive, with what was done in it, on debian13.qcow2 of my Downloads folder` | It runs, and each disk of its QEMU in the folder of a project, after `-hda` or in a `-drive`, is the private copy of the archive: not set aside as `node2_hda.cow.bak-DATE` for a new one, above the file, as `qemu-img info -U` says, and its disk still starts with the 768 KiB that the step of the archive wrote in it, as `qemu-img dd` reads them |
 | `Then the file disk.raw of the shared images is in the trash` | `shared_images` has it no more, and the trash of the home has it: a `.trashinfo` with its path, and the file |
 | `Then the Delete dialog says that the private copy vm1_hda.cow goes to the trash` | A line of the dialog that asks to delete the machine says so, with the size of the copy, which depends on the file system |
 | `Then the file vm1_hda.cow of the project folder is in the trash` | The folder of the project has it no more, and the trash of the home has it: a `.trashinfo` with its path, and the file |
@@ -353,6 +355,7 @@ def stop_brick(virtualbricks, name):
   | `choose(item, menu)` | A menu of the menu bar, then its item |
   | `picture(window)` | The picture of a frame or a dialog, a surface of cairo: the window as GTK drew it, its shadow transparent, with the menus open over it; the pointer away from the windows first, once the screen is still |
   | `row(name)` | The row of a list with that name, for `within=` |
+  | `reveal(role, name, within)` | The widget in within, a scroll pane, once it shows: if the pane has it scrolled out, the wheel scrolls the pane down, then up, until it shows |
   | `rows(within)` | The rows of the list in a scroll pane, from the first to the last, each the names of its labels: the wheel scrolls through it |
   | `names(role, within=None)` | The names of the widgets of that role that show now |
   | `wait_for(get, what)` | What `get()` returns, once it is true |

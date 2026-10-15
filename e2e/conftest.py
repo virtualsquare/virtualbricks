@@ -286,8 +286,18 @@ def bare(nodeid):
 
 
 def pytest_bdd_apply_tag(tag, function):
-    """@needs-PROGRAM: the scenario is skipped without PROGRAM."""
+    """
+    @needs-PROGRAM: the scenario is skipped without PROGRAM. @bug: it shows
+    an open bug of BUGS.md, and is expected to fail; once it passes, it
+    fails, for the tag to go with the fix.
+    """
 
+    if tag == "bug":
+        bug = pytest.mark.xfail(
+            strict=True, reason="an open bug of BUGS.md; fixed, the tag goes"
+        )
+        bug(function)
+        return True
     if not tag.startswith("needs-"):
         return None
     program = tag[len("needs-") :]

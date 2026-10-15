@@ -101,6 +101,37 @@ Feature: Projects
       | Image    | Detail                                                             | State      |
       | debian13 | qcow2 · 1.0 GB disk · node1, node2, node3 and node4, private copies | Not in use |
 
+  # The bug "An image left unset at the import is dropped, and the private
+  # copies can't follow it" of BUGS.md: @bug until it is fixed.
+  @bug @needs-qemu-img @needs-vde_switch @needs-qemu-system-x86_64
+  Scenario: An archive without its image, imported with the image left unset, keeps it missing, and its private copies follow the file found for it
+    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, with the private disks of its machines, in my Downloads folder
+    And the empty disk image debian13.qcow2 of 1 GB, in my Downloads folder
+    And Virtualbricks is running
+    When I choose the archive DTN2hops_26_Feb_2026.vbp of my Downloads folder in the Import window, which suggests the name DTN2hops_26_Feb_2026
+    Then the Import window leaves the image debian13 unset
+    When I import the archive chosen in the Import window
+    Then the main window shows the project DTN2hops_26_Feb_2026
+    When I open the tab Images
+    Then the list of images has
+      | Image    | Detail                                                                                            | State        |
+      | debian13 | /home/carlo/VB_images/debian13.qcow2 isn't there · node1, node2, node3 and node4, private copies | File missing |
+    When I find the file of debian13, debian13.qcow2 of my Downloads folder
+    Then the list of images has
+      | Image    | Detail                                                              | State      |
+      | debian13 | qcow2 · 1.0 GB disk · node1, node2, node3 and node4, private copies | Not in use |
+    When I open the tab Bricks
+    And I start sw2
+    And I start sw3
+    And I start sw5
+    And I start node2
+    Then node2 runs on its private copy from the archive, with what was done in it, on debian13.qcow2 of my Downloads folder
+    When I terminate node2, from its menu
+    And I stop sw2
+    And I stop sw3
+    And I stop sw5
+    Then no brick runs
+
   Scenario: A project exported to an archive, then imported with the name it suggests, has its bricks
     Given Virtualbricks is running
     When I add the switch sw1

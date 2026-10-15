@@ -538,9 +538,13 @@ NO_BRICKS = "No Bricks Yet"
 
 @when(words("I start {name:Brick}"))
 def start_brick(virtualbricks, brick_processes, name):
-    """Its button Start; then it runs, with new processes."""
+    """
+    Its button Start, the list scrolled to it if it doesn't show; then it
+    runs, with new processes.
+    """
 
     before = virtualbricks.children()
+    in_view(virtualbricks, "button", f"Start {name}")
     virtualbricks.click("button", f"Start {name}")
     virtualbricks.find("button", f"Stop {name}")
     brick_processes[name] = virtualbricks.wait_for(
@@ -1066,6 +1070,20 @@ def runs_in_other(virtualbricks, other_virtualbricks, brick_processes, name):
     assert pids and pids <= lab, f"the other runs {lab}, not {pids}"
     windows = virtualbricks.children(virtualbricks.process.pid)
     assert not windows, f"the windows run {windows}"
+
+
+def in_view(virtualbricks, role, name):
+    """
+    The widget of a row of the list of bricks: if it doesn't show, the
+    wheel scrolls the list until it does (harness.Virtualbricks.reveal).
+    """
+
+    found = virtualbricks.shows(role, name)
+    if found is not None:
+        return found
+    tab = virtualbricks.find("page tab", "Bricks")
+    pane = virtualbricks.find("scroll pane", within=tab)
+    return virtualbricks.reveal(role, name, pane)
 
 
 def brick_rows(virtualbricks):
@@ -2031,6 +2049,21 @@ def use_image_file(virtualbricks, file, folder, image):
     virtualbricks.find("label", f"Uses {path}", within=row)
 
 
+@then(words("the Import window leaves the image {image} unset"))
+def image_left_unset(virtualbricks, image):
+    """
+    In the row of the image, Leave unset is on: the choice of the window
+    for an image that neither the archive nor the shared images have.
+    """
+
+    window = virtualbricks.find("frame", IMPORT_WINDOW)
+    row = virtualbricks.find("label", image, within=window).get_parent()
+    unset = virtualbricks.find("radio button", "Leave unset", within=row)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(unset), "Leave unset is on"
+    )
+
+
 @when(
     words("in the file chooser, I select {file} of my {folder:Folder} folder")
 )
@@ -2568,13 +2601,17 @@ def remove_image(virtualbricks, name, disks):
     return dialog
 
 
-@when(words("I find the file of {name:Image}, {file} of my home folder"))
-def find_file(virtualbricks, name, file):
+@when(
+    words(
+        "I find the file of {name:Image}, {file} of my {folder:Folder} folder"
+    )
+)
+def find_file(virtualbricks, name, file, folder):
     """
     Find the File…, in its menu, in the tab Images; in the dialog, which
-    asks where the file is, the button of the file, then Home and the file
-    in the file chooser, and Open; then Use This File, and the dialog
-    closes.
+    asks where the file is, the button of the file, then the file in the
+    file chooser, as the step that selects a file there does, and Open;
+    then Use This File, and the dialog closes.
     """
 
     on_tab(virtualbricks, IMAGES)
@@ -2583,7 +2620,10 @@ def find_file(virtualbricks, name, file):
     dialog = virtualbricks.find("dialog", FIND_FILE)
     where = f"Where is the file of {name}?"
     virtualbricks.find("label", where, within=dialog)
-    choose_home_file(virtualbricks, dialog, CHOOSE_FILE, file)
+    virtualbricks.click("button", "(None)", within=dialog)
+    choose = in_folder(virtualbricks, file, folder)
+    choose(virtualbricks.find("file chooser", CHOOSE_FILE))
+    virtualbricks.gone("file chooser", CHOOSE_FILE)
     virtualbricks.click("button", "Use This File", within=dialog)
     virtualbricks.gone("dialog", FIND_FILE)
 
@@ -2799,15 +2839,7 @@ def runs_on_copy(virtualbricks, brick_processes, vm, file):
 
     brick_running(virtualbricks, brick_processes, vm)
     image = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
-    disks = []
-    for pid in brick_processes[vm]:
-        words = virtualbricks.command_line(pid)
-        disks += [
-            disk
-            for option, disk in zip(words, words[1:])
-            if option in DISK_OPTIONS
-        ]
-    assert disks, f"{vm} runs with no disk"
+    disks = machine_disks(virtualbricks, brick_processes, vm)
     above = []
     for disk in disks:
         info = image_info(disk, shared=True)
@@ -2816,6 +2848,92 @@ def runs_on_copy(virtualbricks, brick_processes, vm, file):
         if disk != image and backing == image:
             return
     raise AssertionError(f"the disks {disks} of {vm} are above {above}")
+
+
+def machine_disks(virtualbricks, brick_processes, vm):
+    """
+    The files of the disks of the QEMU of vm, that a step started: after
+    -hda or another device, or in the file= of a -drive, as a virtio disk.
+    """
+
+    disks = []
+    for pid in brick_processes[vm]:
+        words = virtualbricks.command_line(pid)
+        for option, value in zip(words, words[1:]):
+            if option in DISK_OPTIONS:
+                disks.append(value)
+            elif option == "-drive":
+                disks += [
+                    part.removeprefix("file=")
+                    for part in value.split(",")
+                    if part.startswith("file=")
+                ]
+    assert disks, f"{vm} runs with no disk"
+    return disks
+
+
+@then(
+    words(
+        "{vm:Brick} runs on its private copy from the archive, with what was"
+        " done in it, on {file} of my {folder:Folder} folder"
+    )
+)
+def runs_on_archive_copy(virtualbricks, brick_processes, vm, file, folder):
+    """
+    It runs, and each disk of its QEMU in the folder of a project is the
+    private copy of the archive, as VM_hda.cow: the start didn't set it
+    aside as VM_hda.cow.bak-DATE for a new one; it is above the file, as
+    qemu-img info says, and its disk still starts with the bytes that the
+    step of the archive wrote in it.
+    """
+
+    brick_running(virtualbricks, brick_processes, vm)
+    image = os.path.join(virtualbricks.home, folder, file)
+    copies = [
+        disk
+        for disk in machine_disks(virtualbricks, brick_processes, vm)
+        if os.path.samefile(
+            os.path.dirname(os.path.dirname(disk)), virtualbricks.workspace
+        )
+    ]
+    assert copies, f"no disk of {vm} is in the folder of a project"
+    for copy in copies:
+        aside = glob.glob(glob.escape(copy) + ".bak-*")
+        assert not aside, f"{copy} was set aside for a new one: {aside}"
+        backing = image_info(copy, shared=True).get("full-backing-filename")
+        assert backing == image, f"{copy} is above {backing}, not {image}"
+        start = disk_start(virtualbricks, copy, PRIVATE_DATA)
+        name = os.path.basename(copy)
+        assert start == private_data(name), f"{name} lost what it had"
+
+
+def disk_start(virtualbricks, path, size):
+    """
+    The first size bytes of the disk of the image at path, as a machine
+    reads them, with qemu-img dd; also while a machine has it, which locks
+    it.
+    """
+
+    start = os.path.join(virtualbricks.folder, "disk-start.raw")
+    subprocess.run(
+        [
+            "qemu-img",
+            "dd",
+            "-U",
+            "-O",
+            "raw",
+            f"bs={size}",
+            "count=1",
+            f"if={path}",
+            f"of={start}",
+        ],
+        check=True,
+        capture_output=True,
+    )
+    with open(start, "rb") as file:
+        data = file.read()
+    os.remove(start)
+    return data
 
 
 @then(words("the file {file} of the shared images is in the trash"))
@@ -4102,6 +4220,15 @@ def private_disks(project):
     return disks
 
 
+def private_data(name):
+    """
+    The PRIVATE_DATA bytes at the start of the private disk of that name:
+    from a random generator seeded with it, the same each time.
+    """
+
+    return random.Random(name).randbytes(PRIVATE_DATA)
+
+
 def private_disk(path, image):
     """
     A qcow2 disk of PRIVATE_SIZE, on image, with PRIVATE_DATA bytes at its
@@ -4109,9 +4236,8 @@ def private_disk(path, image):
     """
 
     raw = path + ".raw"
-    generator = random.Random(os.path.basename(path))
     with open(raw, "wb") as file:
-        file.write(generator.randbytes(PRIVATE_DATA))
+        file.write(private_data(os.path.basename(path)))
         file.truncate(PRIVATE_SIZE)
     subprocess.run(
         ["qemu-img", "convert", "-q", "-f", "raw", "-O", "qcow2", raw, path],

@@ -134,6 +134,9 @@ Some rules:
 - Prefer the steps of a user to those of the screen: `When I start sw1`, not
   `When I click the button "Start sw1"`. A scenario that needs a step of the
   screen often says that a step of a user is missing.
+- A scenario of a bug of [BUGS.md](../BUGS.md) not fixed yet is tagged
+  `@bug`, with a comment above it that names the bug: see [Group the
+  scenarios](#group-the-scenarios).
 
 ## Group the scenarios
 
@@ -165,6 +168,13 @@ pytest -m "not slow"   # all but those tagged @slow
 pytest warns of a tag it doesn't know (`PytestUnknownMarkWarning`): name
 each in `markers`, in `[tool.pytest.ini_options]` of `pyproject.toml`.
 `@needs-PROGRAM` is not one: `conftest.py` makes it a skip.
+
+`@bug` isn't one either: the scenario shows a bug of
+[BUGS.md](../BUGS.md) not fixed yet, and fails until it is. `conftest.py`
+makes it a strict xfail: the run says `xfailed`, and passes. Once the bug
+is fixed the scenario passes, and the run fails, `XPASS(strict)`, until the
+fix takes the tag away. `pytest --runxfail` runs it as any other, to see
+the step that fails.
 
 ```toml
 markers = [
