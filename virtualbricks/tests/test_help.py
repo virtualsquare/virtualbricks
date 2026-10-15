@@ -165,7 +165,12 @@ class TestTheFigures(PagesTestCase):
 class TestTheInstall(PagesTestCase):
     """pyproject.toml installs every page, and all of its HTML."""
 
-    def data_files(self):
+    def installed(self, folder):
+        """
+        The files installed in folder: the patterns of its data-files,
+        expanded as setuptools does, from the root of the sources.
+        """
+
         if sys.version_info >= (3, 11):
             import tomllib
         else:
@@ -173,18 +178,23 @@ class TestTheInstall(PagesTestCase):
 
         with open(os.path.join(ROOT, "pyproject.toml"), "rb") as file:
             project = tomllib.load(file)
-        return project["tool"]["setuptools"]["data-files"]
+        patterns = project["tool"]["setuptools"]["data-files"][folder]
+        return sorted(
+            os.path.relpath(path, ROOT)
+            for pattern in patterns
+            for path in glob.glob(os.path.join(ROOT, pattern))
+        )
 
     def test_the_pages_where_yelp_looks(self):
         self.assertEqual(
-            self.data_files()["share/help/C/virtualbricks"],
+            self.installed("share/help/C/virtualbricks"),
             [f"help/C/{name}.page" for name in page_names()],
         )
 
     def test_the_html(self):
         # the pages, their style and their scripts
         self.assertEqual(
-            self.data_files()["share/virtualbricks/help/C"],
+            self.installed("share/virtualbricks/help/C"),
             [
                 f"help/html/C/{name}"
                 for name in sorted(os.listdir(HTML))
@@ -194,13 +204,12 @@ class TestTheInstall(PagesTestCase):
 
     def test_the_pictures(self):
         # beside the pages, and beside the HTML
-        data_files = self.data_files()
         self.assertEqual(
-            data_files["share/help/C/virtualbricks/figures"],
+            self.installed("share/help/C/virtualbricks/figures"),
             [f"help/C/figures/{name}" for name in picture_names()],
         )
         self.assertEqual(
-            data_files["share/virtualbricks/help/C/figures"],
+            self.installed("share/virtualbricks/help/C/figures"),
             [f"help/html/C/figures/{name}" for name in picture_names()],
         )
 
