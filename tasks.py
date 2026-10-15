@@ -249,7 +249,11 @@ def help_files():
 })
 def sync_docs(c, ref, check=False):
     """Copy the help and the Documentation of a commit of develop"""
-    commit = git('rev-parse', '--short', ref + '^{commit}').decode().strip()
+    try:
+        commit = git('rev-parse', '--short', ref + '^{commit}').decode().strip()
+    except Exit:
+        raise Exit('{} is no commit of this repository: git fetch, or name '
+                   'another'.format(ref), code=1)
     wanted = docs_of(ref)
     changed = [path for path in sorted(wanted) if read(path) != wanted[path]]
     gone = sorted(path for path in help_files() if path not in wanted)
