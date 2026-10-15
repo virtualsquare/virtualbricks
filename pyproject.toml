@@ -89,99 +89,20 @@ include = ["virtualbricks*"]
 [tool.setuptools.data-files]
 "share/applications" = ["share/virtualbricks.desktop"]
 "share/pixmaps" = ["share/virtualbricks.xpm"]
-"share/man/man1" = ["docs/man/virtualbricks.1"]
-"share/man/man5" = [
-    "docs/man/virtualbricks-config.5",
-    "docs/man/virtualbricks-vbp.5",
-]
-"share/man/man7" = [
-    "docs/man/virtualbricks-archive.7",
-    "docs/man/virtualbricks-control.7",
-]
+"share/man/man1" = ["docs/man/*.1"]
+"share/man/man5" = ["docs/man/*.5"]
+"share/man/man7" = ["docs/man/*.7"]
 # the user guide: its pages, where Yelp looks, and their HTML, for the
 # browser where Yelp isn't (virtualbricks.gui.help); beside each, in
 # figures/, the pictures
-"share/help/C/virtualbricks" = [
-    "help/C/archives.page",
-    "help/C/bricks.page",
-    "help/C/console.page",
-    "help/C/events.page",
-    "help/C/first-lab.page",
-    "help/C/images.page",
-    "help/C/index.page",
-    "help/C/kinds.page",
-    "help/C/machines.page",
-    "help/C/problems.page",
-    "help/C/programs.page",
-    "help/C/projects.page",
-    "help/C/readme.page",
-    "help/C/remote.page",
-    "help/C/settings.page",
-    "help/C/topology.page",
-    "help/C/tutorial-import.page",
-]
+"share/help/C/virtualbricks" = ["help/C/*.page"]
 "share/virtualbricks/help/C" = [
-    "help/html/C/C.css",
-    "help/html/C/archives.html",
-    "help/html/C/bricks.html",
-    "help/html/C/console.html",
-    "help/html/C/events.html",
-    "help/html/C/first-lab.html",
-    "help/html/C/highlight.pack.js",
-    "help/html/C/images.html",
-    "help/html/C/index.html",
-    "help/html/C/kinds.html",
-    "help/html/C/machines.html",
-    "help/html/C/problems.html",
-    "help/html/C/programs.html",
-    "help/html/C/projects.html",
-    "help/html/C/readme.html",
-    "help/html/C/remote.html",
-    "help/html/C/settings.html",
-    "help/html/C/topology.html",
-    "help/html/C/tutorial-import.html",
-    "help/html/C/yelp.js",
+    "help/html/C/*.html",
+    "help/html/C/*.css",
+    "help/html/C/*.js",
 ]
-"share/help/C/virtualbricks/figures" = [
-    "help/C/figures/event-settings.png",
-    "help/C/figures/export.png",
-    "help/C/figures/first-lab.png",
-    "help/C/figures/images.png",
-    "help/C/figures/import-archive.png",
-    "help/C/figures/import-done.png",
-    "help/C/figures/import-image.png",
-    "help/C/figures/import-menu.png",
-    "help/C/figures/import-progress.png",
-    "help/C/figures/import-ready.png",
-    "help/C/figures/import.png",
-    "help/C/figures/machine-settings.png",
-    "help/C/figures/new-brick.png",
-    "help/C/figures/projects.png",
-    "help/C/figures/readme.png",
-    "help/C/figures/settings.png",
-    "help/C/figures/switch-settings.png",
-    "help/C/figures/topology.png",
-]
-"share/virtualbricks/help/C/figures" = [
-    "help/html/C/figures/event-settings.png",
-    "help/html/C/figures/export.png",
-    "help/html/C/figures/first-lab.png",
-    "help/html/C/figures/images.png",
-    "help/html/C/figures/import-archive.png",
-    "help/html/C/figures/import-done.png",
-    "help/html/C/figures/import-image.png",
-    "help/html/C/figures/import-menu.png",
-    "help/html/C/figures/import-progress.png",
-    "help/html/C/figures/import-ready.png",
-    "help/html/C/figures/import.png",
-    "help/html/C/figures/machine-settings.png",
-    "help/html/C/figures/new-brick.png",
-    "help/html/C/figures/projects.png",
-    "help/html/C/figures/readme.png",
-    "help/html/C/figures/settings.png",
-    "help/html/C/figures/switch-settings.png",
-    "help/html/C/figures/topology.png",
-]
+"share/help/C/virtualbricks/figures" = ["help/C/figures/*.png"]
+"share/virtualbricks/help/C/figures" = ["help/html/C/figures/*.png"]
 "share/locale/de/LC_MESSAGES" = ["locale/de/LC_MESSAGES/virtualbricks.mo"]
 "share/locale/es/LC_MESSAGES" = ["locale/es/LC_MESSAGES/virtualbricks.mo"]
 "share/locale/fr/LC_MESSAGES" = ["locale/fr/LC_MESSAGES/virtualbricks.mo"]
