@@ -16,13 +16,20 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import stat
 import textwrap
 
 from twisted.trial import unittest
 
-from virtualbricks.config.tomlfile import DecodeError, dump_toml, load_toml
 from virtualbricks.config import tomlfile
-from virtualbricks.config.tomlfile import Note, dumps_toml, loads_toml
+from virtualbricks.config.tomlfile import (
+    DecodeError,
+    Note,
+    dump_toml,
+    dumps_toml,
+    load_toml,
+    loads_toml,
+)
 
 DOCUMENT = {
     "format": 1,
@@ -267,6 +274,28 @@ class TestFiles(unittest.TestCase):
         self.assertRaises(OSError, dump_toml, {"a": 2}, path)
         self.assertEqual(load_toml(path), {"a": 1})
         self.assertEqual(os.listdir(directory), ["x.toml"])
+
+    def umask(self, mask):
+        self.addCleanup(os.umask, os.umask(mask))
+
+    def mode(self, path):
+        return stat.S_IMODE(os.stat(path).st_mode)
+
+    def test_a_new_file_has_the_mode_of_the_umask(self):
+        for mask, mode in ((0o022, 0o644), (0o002, 0o664), (0o077, 0o600)):
+            self.umask(mask)
+            path = self.mktemp()
+            dump_toml({"a": 1}, path)
+            self.assertEqual(self.mode(path), mode)
+
+    def test_a_replaced_file_keeps_its_mode(self):
+        self.umask(0o022)
+        path = self.mktemp()
+        dump_toml({"a": 1}, path)
+        os.chmod(path, 0o640)
+        dump_toml({"a": 2}, path)
+        self.assertEqual(load_toml(path), {"a": 2})
+        self.assertEqual(self.mode(path), 0o640)
 
     def test_load_invalid(self):
         path = self.mktemp()

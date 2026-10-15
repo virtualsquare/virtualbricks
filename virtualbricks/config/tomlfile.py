@@ -34,8 +34,8 @@ from __future__ import annotations
 import datetime
 import os
 import re
+import stat
 import sys
-import tempfile
 import textwrap
 from collections.abc import Mapping
 from typing import NamedTuple, TypeAlias, TypeGuard
@@ -239,17 +239,41 @@ def dumps_toml(
     return _space_tables(tomlkit.dumps(document))
 
 
+def _create_beside(path: str, suffix: str) -> tuple[int, str]:
+    """
+    Create a hidden file next to path, as mkstemp() does, but with the mode
+    of any new file: mkstemp() makes it 0600 whatever the umask. Here the
+    kernel applies the umask; reading it would change it for every thread.
+    """
+
+    directory = os.path.dirname(os.path.abspath(path))
+    prefix = f".{os.path.basename(path)}."
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC
+    while True:
+        tmp = os.path.join(directory, prefix + os.urandom(4).hex() + suffix)
+        try:
+            return os.open(tmp, flags, 0o666), tmp
+        except FileExistsError:
+            continue
+
+
 def dump_toml(
     data: Table, path: str, notes: Notes | None = None, header: str = ""
 ) -> None:
-    """Write the data to path, replacing the file only once it's complete."""
+    """
+    Write the data to path, replacing the file only once it's complete. The
+    file keeps its mode; a new one has the mode the umask gives.
+    """
 
-    directory = os.path.dirname(os.path.abspath(path))
-    fd, tmp = tempfile.mkstemp(
-        dir=directory, prefix=f".{os.path.basename(path)}.", suffix=".tmp"
-    )
+    try:
+        mode: int | None = stat.S_IMODE(os.stat(path).st_mode)
+    except FileNotFoundError:
+        mode = None
+    fd, tmp = _create_beside(path, ".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fp:
+            if mode is not None:
+                os.fchmod(fp.fileno(), mode)
             fp.write(dumps_toml(data, notes, header))
             fp.flush()
             os.fsync(fp.fileno())

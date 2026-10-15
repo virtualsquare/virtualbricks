@@ -1088,6 +1088,10 @@ def write_archive(job: Table, emit: Emit, tool: Tool) -> dict[str, Any]:
             out.close()
         progress.done = progress.total
         progress.send()
+        # mkstemp made the file private; an archive isn't.
+        umask = os.umask(0)
+        os.umask(umask)
+        os.chmod(part, 0o666 & ~umask)
         os.replace(part, output)
     except BaseException:
         if os.path.lexists(part):

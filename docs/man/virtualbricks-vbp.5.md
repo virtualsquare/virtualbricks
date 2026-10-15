@@ -46,7 +46,7 @@ image **scratch**:
 ```
 $ tar -tvf lab.vbp
 -rw-r--r-- alice/alice     318 2026-10-07 22:57 contents.toml
--rw------- alice/alice    6247 2026-10-07 21:19 project.toml
+-rw-r--r-- alice/alice    6247 2026-10-07 21:19 project.toml
 -rw-r--r-- alice/alice      31 2026-10-07 21:19 README.md
 -rw-r--r-- alice/alice  328192 2026-10-07 22:57 vm1_hda.cow
 -rw-r--r-- alice/alice  328192 2026-10-07 22:57 IMAGES/debian
