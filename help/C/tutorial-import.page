@@ -77,7 +77,7 @@ tar -xzf debian13.tar.gz</screen>
       <item>
         <title><gui>Name</gui></title>
         <p><sys>DTN2hops_26_Feb_2026</sys>, the name of the file. If another
-        project already this name, the window suggests
+        project already has this name, the window suggests
         <sys>DTN2hops_26_Feb_2026-2</sys>: an import never replaces an existing
         project. You can change it; under the input box, the window says if and
         why a name can't be a project's: it's empty, is too long, etc.</p>
