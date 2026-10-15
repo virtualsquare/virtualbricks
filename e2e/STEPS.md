@@ -63,6 +63,8 @@ The steps of a user:
 | `When I open the Import window` | Import…, in the menu Projects; then the window shows |
 | `When in the file chooser, I select debian13.qcow2 of my Downloads folder` | In the file chooser that shows, Home, then Downloads and Open, which goes into it, then the file, which is selected: Open isn't clicked. Also `of my home folder` |
 | `When I import the archive chosen in the Import window` | Import, in the Import window, which closes once the project opens |
+| `Given the extraction of an archive stops after its first 1 MiB, until I let it go on` | Before Virtualbricks starts: `bsdtar` and `tar` of its `PATH` are scripts that run `heldtar.py` with those of the tests. An extraction from the input reads that much of the archive, then waits, at most a minute, for the next step. The Import window shows the progress of the first MiB, the same each time |
+| `When I let the extraction go on` | The extraction that waits goes on |
 | `When I export the project to new_project.vbp of my home folder` | Export…, in the menu Projects, for the open project; the window suggests the archive in the home, `~/new_project.vbp`; then Export, and Close once it says where it exported it |
 | `When I open the Export window` | Export…, in the menu Projects, for the open project; then the window shows |
 | `Then sw1 is running` | Its row says Running, and the processes of its start run; when no step started it, as with `--command`, the process its row tells, which has its sockets |
@@ -257,6 +259,7 @@ The steps of the migration of Virtualbricks 2.1:
 | :- | :- |
 | `Given the project DTN2hops_26_Feb_2026 of Virtualbricks 2.1` | A copy of `projects/DTN2hops_26_Feb_2026` in the workspace |
 | `Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my home folder` | The archive that 2.1 exported of `projects/DTN2hops_26_Feb_2026`, in the home: its `.project`, without images, in a tar compressed with gzip. Also `in my Downloads folder` |
+| `Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, with the private disks of its machines, in my Downloads folder` | The same, with the private disk of each disk of a machine that has one, `node1_hda.cow`: a qcow2 of 1 GiB, made with `qemu-img`, on the path of the image in the project, which needn't be there, with 768 KiB at its start, random but the same each time. The four of DTN2hops make an archive of 3.2 MB. Also `in my home folder` |
 | `Given the settings of Virtualbricks 2.1, with DTN2hops_26_Feb_2026 open last` | `~/.virtualbricks.conf`, of the workspace of the tests, in place of the settings: the next start is the first |
 | `Given the project lab of Virtualbricks 2.1, whose .project is`, with a text under it | A folder lab in the workspace, whose `.project` has the text; the steps keep it, to check it later |
 | `Given the project DTN2hops_26_Feb_2026 of Virtualbricks 2.1, as the single file lab.vbl in the workspace` | Its `.project`, as a file of the workspace, as the versions before 2.1 kept a project |

@@ -92,6 +92,7 @@ taken for as long as the others; `conftest.py` says how.
 | `a11y.py` | The widgets, as a screen reader sees them, through AT-SPI |
 | `broadway.py` | The mouse and the keys: a browser of `broadwayd`, whose clicks, drags, wheel and keys reach GTK as a user's do; it keeps what the screen shows |
 | `recording.py` | The screenshot and the video of a scenario, and the pictures of the user guide, from what the browser kept |
+| `heldtar.py` | `tar` or `bsdtar` in their place, for a scenario: holds an extraction after its first bytes, until a step lets it go on |
 | `test_recording.py` | The tests of `recording.py` |
 | `../allurerc.mjs` | The configuration of the report of Allure |
 

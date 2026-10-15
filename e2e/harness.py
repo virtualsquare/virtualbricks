@@ -206,6 +206,9 @@ class Virtualbricks:
         self.lab = self
         # the programs it doesn't find, as if this computer hadn't them
         self.hidden = set()
+        # the programs it finds in place of those of this computer: {name:
+        # the text of a script}
+        self.replaced = {}
 
     def make_home(self):
         """Its first settings, those of GTK, and its workspace."""
@@ -345,19 +348,25 @@ class Virtualbricks:
             env.update(
                 GDK_BACKEND="broadway", BROADWAY_DISPLAY=self.screen.display
             )
-        if self.hidden:
-            env["PATH"] = self.path_without(env.get("PATH", ""))
+        if self.hidden or self.replaced:
+            env["PATH"] = self.own_path(env.get("PATH", ""))
         return env
 
-    def path_without(self, path):
+    def own_path(self, path):
         """
         A PATH of one folder of its own, with a link to each program of the
-        folders of path, the first of a name, but those hidden.
+        folders of path, the first of a name, but those hidden, and the
+        scripts of those replaced.
         """
 
         folder = os.path.join(self.folder, "path")
         shutil.rmtree(folder, ignore_errors=True)
         os.makedirs(folder)
+        for name, text in self.replaced.items():
+            script = os.path.join(folder, name)
+            with open(script, "w") as file:
+                file.write(text)
+            os.chmod(script, 0o755)
         for directory in filter(None, path.split(os.pathsep)):
             try:
                 names = os.listdir(directory)

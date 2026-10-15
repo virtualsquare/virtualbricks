@@ -36,11 +36,13 @@ import configparser
 import glob
 import json
 import os
+import random
 import re
 import shlex
 import shutil
 import socket
 import subprocess
+import sys
 import tarfile
 import tempfile
 import time
@@ -2122,6 +2124,49 @@ def import_chosen(virtualbricks):
     virtualbricks.gone("frame", IMPORT_WINDOW)
 
 
+# heldtar.py, which holds an extraction, and the file that lets it go on
+HELDTAR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "heldtar.py"
+)
+HELD_SCRIPT = """\
+#!/bin/sh
+exec {python} -I {heldtar} {real} {gate} {size} "$@"
+"""
+UNHOLD = "extraction-goes-on"
+
+
+@given(
+    words(
+        "the extraction of an archive stops after its first {size:d} MiB,"
+        " until I let it go on"
+    )
+)
+def extraction_stops(virtualbricks, size):
+    """
+    bsdtar and tar, on the PATH of Virtualbricks, run heldtar.py with the
+    program of this computer: an extraction from the input reads size MiB
+    of the archive, then waits for UNHOLD in the folder of the scenario.
+    """
+
+    gate = os.path.join(virtualbricks.folder, UNHOLD)
+    for name in ("bsdtar", "tar"):
+        real = shutil.which(name)
+        if real is None:
+            continue
+        virtualbricks.replaced[name] = HELD_SCRIPT.format(
+            python=shlex.quote(sys.executable),
+            heldtar=shlex.quote(HELDTAR),
+            real=shlex.quote(real),
+            gate=shlex.quote(gate),
+            size=size << 20,
+        )
+
+
+@when("I let the extraction go on")
+def extraction_goes_on(virtualbricks):
+    open(os.path.join(virtualbricks.folder, UNHOLD), "w").close()
+
+
 def choose_with(virtualbricks, choose, name):
     """
     Import…, in the menu Projects; in the window, the button of the file,
@@ -3991,6 +4036,92 @@ def old_archive(virtualbricks, name, folder):
     path = in_my(virtualbricks, folder, f"{name}.vbp")
     with tarfile.open(path, "w:gz") as archive:
         archive.add(os.path.join(PROJECTS, name, ".project"), ".project")
+
+
+@given(
+    words(
+        "the archive {name:Project}.vbp of Virtualbricks 2.1, with the private"
+        " disks of its machines, in my {folder:Folder} folder"
+    )
+)
+def old_archive_with_disks(virtualbricks, name, folder):
+    """
+    The same, with the private disk of each disk of a machine that has one:
+    VM_DEVICE.cow, made with qemu-img on the path of its image in the
+    project, which needn't be there, and PRIVATE_DATA bytes written in it,
+    random but the same each time, that gzip doesn't make smaller.
+    """
+
+    project = os.path.join(PROJECTS, name, ".project")
+    staging = os.path.join(virtualbricks.folder, "private-disks")
+    os.makedirs(staging, exist_ok=True)
+    path = in_my(virtualbricks, folder, f"{name}.vbp")
+    with tarfile.open(path, "w:gz") as archive:
+        archive.add(project, ".project")
+        for vm, device, image in private_disks(project):
+            cow = f"{vm}_{device}.cow"
+            private_disk(os.path.join(staging, cow), image)
+            archive.add(os.path.join(staging, cow), cow)
+
+
+# The bytes written in each private disk of an archive: those of the four
+# of DTN2hops make an archive of 3.2 MB, which the import extracts in four
+# chunks
+PRIVATE_DATA = 768 * 1024
+# The size of a private disk, as the machine sees it
+PRIVATE_SIZE = 1 << 30
+
+
+def private_disks(project):
+    """
+    The private disks of the machines of a .project of 2.1: (the machine,
+    the device, the path of the image), for each hdX=IMAGE with privatehdX=*
+    in a [Qemu:VM] section; the path from [Image:IMAGE].
+    """
+
+    sections = {}
+    section = None
+    with open(project) as file:
+        for line in file:
+            line = line.strip()
+            if line.startswith("[") and line.endswith("]"):
+                section = sections.setdefault(line[1:-1], {})
+            elif section is not None and "=" in line:
+                key, value = line.split("=", 1)
+                section[key] = value
+    disks = []
+    for title, values in sections.items():
+        kind, _, vm = title.partition(":")
+        if kind != "Qemu":
+            continue
+        for key, value in values.items():
+            if key.startswith("private") and value == "*":
+                device = key.removeprefix("private")
+                image = sections.get(f"Image:{values.get(device)}", {})
+                disks.append((vm, device, image.get("path", "")))
+    return disks
+
+
+def private_disk(path, image):
+    """
+    A qcow2 disk of PRIVATE_SIZE, on image, with PRIVATE_DATA bytes at its
+    start, from a random generator seeded with its name.
+    """
+
+    raw = path + ".raw"
+    generator = random.Random(os.path.basename(path))
+    with open(raw, "wb") as file:
+        file.write(generator.randbytes(PRIVATE_DATA))
+        file.truncate(PRIVATE_SIZE)
+    subprocess.run(
+        ["qemu-img", "convert", "-q", "-f", "raw", "-O", "qcow2", raw, path],
+        check=True,
+    )
+    os.remove(raw)
+    subprocess.run(
+        ["qemu-img", "rebase", "-u", "-b", image, "-F", "qcow2", path],
+        check=True,
+    )
 
 
 @given(
