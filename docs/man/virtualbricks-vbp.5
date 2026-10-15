@@ -88,7 +88,7 @@ When \f[B]qemu\-img\f[R] is installed, the archive is not compressed as
 a whole: its disks are compressed one by one inside it (see \f[B]PACKED
 DISKS\f[R]), and the rest is a few kilobytes.
 Without \f[B]qemu\-img\f[R], the whole archive is compressed with gzip,
-whose header then has no time.
+whose header then has neither a time nor a name.
 .PP
 Virtualbricks reads an archive that is not compressed or compressed with
 gzip, bzip2 or xz, which it recognizes by its first bytes, whatever its

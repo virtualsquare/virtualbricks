@@ -46,21 +46,6 @@ one leaves the list.
 
 ## Archives
 
-- [ ] **A gzip archive names the temporary file in its header.** Without
-  `qemu-img`, the export compresses the archive with
-  `gzip.GzipFile(fileobj=..., mtime=0)` (`_Output` in
-  `virtualbricks/config/archive.py`), which takes the name of the file
-  from `fileobj.name`: the header of the archive holds the name of the
-  unfinished archive, `.lab.vbp.XXXXXXXX.part`, with the flag FNAME.
-  `gunzip -N` restores the tar under that hidden name, and `gzip -lN`
-  lists it. Seen on 3.0.0.dev3, on 7 October 2026, writing
-  `virtualbricks-vbp`(5):
-
-  ```
-  $ gzip -lN < lab.vbp
-           compressed        uncompressed  ratio uncompressed_name
-                  617               10240  94.4% .gz.vbp.2or1v0ic.part
-  ```
 - [ ] **An image left unset at the import is dropped, and the private
   copies can't follow it.** With Leave unset, the import writes the image
   without a path (`place_images()` in `virtualbricks/config/importing.py`),

@@ -1033,8 +1033,10 @@ class _Output:
     def __init__(self, path: str, progress: Progress, compress: bool):
         self.fp = open(path, "wb")
         self.progress = progress
+        # As gzip -n, without a time or a name: GzipFile would take that of
+        # fileobj, the unfinished archive.
         self.gzip = (
-            gzip.GzipFile(fileobj=self.fp, mode="wb", mtime=0)
+            gzip.GzipFile(filename="", fileobj=self.fp, mode="wb", mtime=0)
             if compress
             else None
         )

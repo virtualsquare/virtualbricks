@@ -404,7 +404,7 @@
 <p>The members with holes are GNU sparse members, whose header name is a placeholder; see <a href="#holes">Holes</a>.</p>
 
 <h3 id="container-compression">Compression</h3>
-<p>When <code>qemu-img</code> is installed, the archive is not compressed as a whole: its disks are compressed one by one inside it (see <a href="#packed">Packed disks</a>), and the rest is a few kilobytes. Without <code>qemu-img</code>, the whole archive is compressed with gzip, whose header then has no time.</p>
+<p>When <code>qemu-img</code> is installed, the archive is not compressed as a whole: its disks are compressed one by one inside it (see <a href="#packed">Packed disks</a>), and the rest is a few kilobytes. Without <code>qemu-img</code>, the whole archive is compressed with gzip, whose header then has neither a time nor a name.</p>
 <p>Virtualbricks reads an archive that is not compressed or compressed with gzip, bzip2 or xz, which it recognizes by its first bytes, whatever its extension.</p>
 
 <h3 id="container-name">The name of the file</h3>

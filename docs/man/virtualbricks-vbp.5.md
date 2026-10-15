@@ -95,7 +95,7 @@ placeholder; see **HOLES**.
 When **qemu-img** is installed, the archive is not compressed as a whole:
 its disks are compressed one by one inside it (see **PACKED DISKS**), and
 the rest is a few kilobytes. Without **qemu-img**, the whole archive is
-compressed with gzip, whose header then has no time.
+compressed with gzip, whose header then has neither a time nor a name.
 
 Virtualbricks reads an archive that is not compressed or compressed with
 gzip, bzip2 or xz, which it recognizes by its first bytes, whatever its

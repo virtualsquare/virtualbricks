@@ -31,7 +31,6 @@ from twisted.python import failure
 from twisted.trial import unittest
 
 from virtualbricks.config import archive
-from virtualbricks.config.tomlfile import dumps_toml
 from virtualbricks.config.archive import (
     ArchiveContents,
     ArchiveError,
@@ -40,6 +39,7 @@ from virtualbricks.config.archive import (
     Tool,
 )
 from virtualbricks.config.report import Report
+from virtualbricks.config.tomlfile import dumps_toml
 
 MiB = 1 << 20
 PROJECT = dumps_toml(
@@ -925,6 +925,12 @@ class TestWrite(ArchiveTestCase):
             result, output = self.export(self.tool(name), output)
             self.assertEqual(result["output"], output)
             self.assertEqual(result["size"], os.path.getsize(output))
+            # as gzip -n: no name, the unfinished file's, and no time
+            with open(output, "rb") as fp:
+                header = fp.read(10)
+            self.assertEqual(header[:3], b"\x1f\x8b\x08")
+            self.assertEqual(header[3], 0, "flags")
+            self.assertEqual(header[4:8], b"\0\0\0\0", "mtime")
             self.check(output)
             shutil.rmtree(self.path("lab"))
 
