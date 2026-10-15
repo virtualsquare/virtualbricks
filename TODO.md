@@ -237,7 +237,7 @@
   with Ctrl+? (28 §12)
 - [ ] Open `help:` links only when the program that handles them is Yelp,
   else the HTML: today any program of `help:` is taken for Yelp
-  (`yelp_finds_it()` in `gui/help.py`, 28 Implemented)
+  (`find_yelp()` in `gui/help.py`, 28 Implemented)
 - [ ] Fix `Version=2.0.0b2` in `share/virtualbricks.desktop`: the key is
   the version of the Desktop Entry specification, as 1.5 (28 §12)
 
@@ -345,6 +345,10 @@
 
 # DONE
 
+- [x] The guide opens in Yelp, the program of `help:` links, wherever the
+  pages are: `help:virtualbricks` where they are installed where Yelp
+  looks, else the files of the pages, of the sources or of a virtualenv;
+  without Yelp, the HTML in the browser (`gui/help.py`, 28 Since then)
 - [x] A Tutorials section in the guide, the last; the first,
   `tutorial-import`, "Import DTN2hops": the archive and `debian13.qcow2`,
   downloaded apart, imported with Use a file…; what the Import window

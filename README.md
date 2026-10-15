@@ -75,10 +75,11 @@ pip install --user .
 It installs the `virtualbricks` command, the `virtualbricks-migrate` window,
 the manual pages of the configuration files and of the archives of the
 projects, the user guide, and the translations. Yelp shows the guide from
-`~/.local/share/help/`, where `pip install --user` puts it; in a virtualenv
-Yelp doesn't find it, and the guide opens in your browser, from the HTML
-installed with it. To work on the code, follow [Development](#development)
-instead.
+`~/.local/share/help/`, where `pip install --user` puts it; in a virtualenv,
+or from the sources, where Yelp doesn't look, Virtualbricks gives Yelp the
+files of the pages. Without Yelp, the guide opens in your browser, from the
+HTML installed with it. To work on the code, follow
+[Development](#development) instead.
 
 ## Running
 

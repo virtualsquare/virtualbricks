@@ -366,14 +366,18 @@ that the tests can't do yet: those needs come first.
 
 - [x] Press F1 in the Settings window, where the pages of the guide are
   where Yelp looks
-  the desktop opens `help:virtualbricks/settings`: a program of the tests
-  is its default for `help:` links and web pages, and writes them down
-  "F1 in the Settings window opens its page as a help: link, where the
-  pages are where Yelp looks", `help.feature`
+  Yelp opens `help:virtualbricks/settings`: a program of the tests is the
+  default for `help:` links and web pages, and writes down what it opens
+  "F1 in the Settings window opens its page in Yelp as a help: link, where
+  the pages are where Yelp looks", `help.feature`
 - [x] Press F1 in the Settings window without the pages where Yelp looks
-  the desktop opens the HTML of the page `settings`, in the sources
-  "F1 in the Settings window opens the HTML of its page, without the pages
-  where Yelp looks", `help.feature`
+  Yelp opens the file of the page `settings`, in the sources
+  "F1 in the Settings window opens the file of its page in Yelp, without
+  the pages where Yelp looks", `help.feature`
+- [x] Press F1 in the Settings window without Yelp
+  the browser opens the HTML of the page `settings`, in the sources
+  "F1 in the Settings window opens the HTML of its page in the browser,
+  without Yelp", `help.feature`
 - [ ] Open the guide with Help, Contents: its index
 - [ ] Press F1 in a tab and in the settings of a virtual machine: the page
   of the tab, and `machines`

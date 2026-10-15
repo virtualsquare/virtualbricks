@@ -28,16 +28,20 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 from virtualbricks.tests.test_help import page_names
 
 if has_display:
-    from gi.repository import Gio, GLib, Gtk
+    from gi.repository import Gdk, Gio, GLib, Gtk
 
     from virtualbricks import gui
     from virtualbricks.gui import help
     from virtualbricks.gui.dialogs.base import Window
     from virtualbricks.gui.help import (
         find_html,
-        help_uri,
+        find_pages,
+        find_yelp,
+        html_uri,
+        launch_context,
         page_about,
         show_help,
+        yelp_uri,
     )
     from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
     from virtualbricks.gui.mainwindow.tab import Tab
@@ -56,41 +60,55 @@ class HelpTestCase(unittest.TestCase):
         return path
 
 
-class TestHelpUri(HelpTestCase):
+def file_uri(*parts):
+    return "file://" + os.path.abspath(os.path.join(*parts))
 
-    def test_yelp(self):
-        self.assertEqual(
-            help_uri("settings", True, "/html"), "help:virtualbricks/settings"
-        )
-        self.assertEqual(help_uri(None, True, None), "help:virtualbricks")
+
+class TestHtmlUri(HelpTestCase):
 
     def test_html(self):
         self.assertEqual(
-            help_uri("settings", False, "/usr/share/virtualbricks/help/C"),
+            html_uri("settings", "/usr/share/virtualbricks/help/C"),
             "file:///usr/share/virtualbricks/help/C/settings.html",
         )
-        self.assertEqual(help_uri(None, False, "/h"), "file:///h/index.html")
+        self.assertEqual(html_uri(None, "/h"), "file:///h/index.html")
 
     def test_website(self):
         self.assertEqual(
-            help_uri("first-lab", False, None),
+            html_uri("first-lab", None),
             "https://www.virtualbricks.it/help/C/first-lab.html",
         )
         self.assertEqual(
-            help_uri(None, False, None),
+            html_uri(None, None),
             "https://www.virtualbricks.it/help/C/index.html",
         )
+
+
+class TestFindYelp(HelpTestCase):
+
+    def setUp(self):
+        # the program of each scheme
+        self.programs = {}
+        self.patch(
+            Gio.AppInfo,
+            "get_default_for_uri_scheme",
+            lambda scheme: self.programs.get(scheme),
+        )
+
+    def test_the_program_of_help_links(self):
+        yelp = object()
+        self.programs["help"] = yelp
+        self.programs["ghelp"] = object()
+        self.assertIs(find_yelp(), yelp)
+
+    def test_none(self):
+        self.programs["ghelp"] = object()
+        self.assertIsNone(find_yelp())
 
 
 class TestYelpFindsIt(HelpTestCase):
 
     def setUp(self):
-        self.handler = object()
-        self.patch(
-            Gio.AppInfo,
-            "get_default_for_uri_scheme",
-            lambda scheme: self.handler if scheme == "help" else None,
-        )
         self.data = self.mktemp()
         self.empty = self.mktemp()
 
@@ -102,10 +120,39 @@ class TestYelpFindsIt(HelpTestCase):
         self.touch(self.data, "help", "C", "gedit", "index.page")
         self.assertFalse(help.yelp_finds_it([self.empty, self.data]))
 
-    def test_no_yelp(self):
-        self.touch(self.data, "help", "C", "virtualbricks", "index.page")
-        self.handler = None
-        self.assertFalse(help.yelp_finds_it([self.data]))
+
+class TestFindPages(HelpTestCase):
+
+    def setUp(self):
+        self.source = self.mktemp()
+        self.patch(help, "SOURCE_PAGES", self.source)
+        self.venv = self.mktemp()
+        self.user = self.mktemp()
+
+    def installed(self, prefix):
+        folder = os.path.join(prefix, "share", "help", "C", "virtualbricks")
+        self.touch(folder, "index.page")
+        return folder
+
+    def test_installed(self):
+        folder = self.installed(self.user)
+        self.assertEqual(find_pages([self.venv, self.user]), folder)
+
+    def test_the_first_prefix(self):
+        folder = self.installed(self.venv)
+        self.installed(self.user)
+        self.assertEqual(find_pages([self.venv, self.user]), folder)
+
+    def test_the_sources_first(self):
+        self.touch(self.source, "index.page")
+        self.installed(self.venv)
+        self.assertEqual(find_pages([self.venv]), self.source)
+
+    def test_none(self):
+        self.touch(
+            self.venv, "share", "virtualbricks", "help", "C", "index.html"
+        )
+        self.assertIsNone(find_pages([self.venv, self.user]))
 
 
 class TestFindHtml(HelpTestCase):
@@ -139,10 +186,66 @@ class TestFindHtml(HelpTestCase):
         self.assertIsNone(find_html([self.venv, self.user]))
 
 
+class TestYelpUri(HelpTestCase):
+    """help: where Yelp finds the pages, else the file of the page."""
+
+    def setUp(self):
+        self.data = self.mktemp()
+        self.source = self.mktemp()
+        self.patch(help, "SOURCE_PAGES", self.source)
+        self.venv = self.mktemp()
+
+    def uri(self, page):
+        return yelp_uri(page, [self.data], [self.venv])
+
+    def test_installed(self):
+        self.touch(self.data, "help", "C", "virtualbricks", "index.page")
+        # before the sources
+        self.touch(self.source, "index.page")
+        self.assertEqual(self.uri("settings"), "help:virtualbricks/settings")
+        self.assertEqual(self.uri(None), "help:virtualbricks")
+
+    def test_the_sources(self):
+        self.touch(self.source, "index.page")
+        self.assertEqual(
+            self.uri("settings"), file_uri(self.source, "settings.page")
+        )
+        self.assertEqual(self.uri(None), file_uri(self.source, "index.page"))
+
+    def test_installed_where_yelp_doesnt_look(self):
+        folder = os.path.join(self.venv, "share", "help", "C", "virtualbricks")
+        self.touch(folder, "index.page")
+        self.assertEqual(self.uri("bricks"), file_uri(folder, "bricks.page"))
+
+    def test_no_pages(self):
+        self.assertIsNone(self.uri("settings"))
+
+
+class FakeYelp:
+    """Yelp's desktop entry: the links it opens, with their context."""
+
+    def __init__(self, error=None):
+        self.error = error
+        self.opened = []
+
+    def launch_uris(self, uris, context):
+        if self.error is not None:
+            raise GLib.Error(self.error)
+        self.opened.append((uris, context))
+
+
 class TestShowHelp(HelpTestCase):
 
     def setUp(self):
-        self.patch(help, "yelp_finds_it", lambda: False)
+        self.yelp = None
+        self.patch(help, "find_yelp", lambda: self.yelp)
+        # where Yelp looks for the pages, and the folder of their files
+        self.installed = False
+        self.pages = None
+        self.patch(
+            help, "yelp_finds_it", lambda data_dirs=None: self.installed
+        )
+        self.patch(help, "find_pages", lambda prefixes=None: self.pages)
         self.patch(help, "find_html", lambda: "/h")
         self.opened = []
         self.patch(
@@ -162,9 +265,27 @@ class TestShowHelp(HelpTestCase):
         self.assertEqual(self.opened, [(None, "file:///h/index.html")])
 
     def test_yelp(self):
-        self.patch(help, "yelp_finds_it", lambda: True)
+        self.yelp = FakeYelp()
+        self.installed = True
         show_help(None, "bricks")
-        self.assertEqual(self.opened, [(None, "help:virtualbricks/bricks")])
+        [(uris, context)] = self.yelp.opened
+        self.assertEqual(uris, ["help:virtualbricks/bricks"])
+        self.assertIsInstance(context, Gdk.AppLaunchContext)
+        self.assertEqual(self.opened, [])
+
+    def test_yelp_with_the_files(self):
+        self.yelp = FakeYelp()
+        self.pages = "/p"
+        show_help(None, "bricks")
+        [(uris, context)] = self.yelp.opened
+        self.assertEqual(uris, ["file:///p/bricks.page"])
+        self.assertEqual(self.opened, [])
+
+    def test_yelp_without_the_pages(self):
+        self.yelp = FakeYelp()
+        show_help(None, "bricks")
+        self.assertEqual(self.yelp.opened, [])
+        self.assertEqual(self.opened, [(None, "file:///h/bricks.html")])
 
     def test_an_error(self):
         logger = FakeLogger()
@@ -179,6 +300,32 @@ class TestShowHelp(HelpTestCase):
             logger.formatted(),
             ["Cannot open the help, file:///h/index.html: no browser"],
         )
+
+    def test_an_error_of_yelp(self):
+        logger = FakeLogger()
+        self.patch(help, "logger", logger)
+        self.yelp = FakeYelp("no yelp")
+        self.installed = True
+        show_help(None)
+        self.assertEqual(
+            logger.formatted(),
+            ["Cannot open the help, help:virtualbricks: no yelp"],
+        )
+        self.assertEqual(self.opened, [])
+
+
+class TestLaunchContext(HelpTestCase):
+
+    def test_the_display_of_the_window(self):
+        window = Gtk.Window()
+        self.addCleanup(window.destroy)
+        context = launch_context(window)
+        self.assertIsInstance(context, Gdk.AppLaunchContext)
+        self.assertEqual(context.props.display, window.get_display())
+
+    def test_without_a_window(self):
+        context = launch_context(None)
+        self.assertEqual(context.props.display, Gdk.Display.get_default())
 
 
 class TestPageAbout(GuiTestCase):

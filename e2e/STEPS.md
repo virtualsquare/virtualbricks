@@ -217,11 +217,13 @@ The steps of the user guide:
 
 | Step | What it does |
 | :- | :- |
-| `Given the desktop opens help: links and web pages with a program of the tests` | Before Virtualbricks starts: a desktop file in the data folder of its home, the default of its `mimeapps.list` for `x-scheme-handler/help` and `text/html`, runs a script that writes each link, or path, it gets on a line of the file `opened` of the scenario; Yelp and the browser of this computer open nothing |
+| `Given the browser of the desktop is a program of the tests` | Before Virtualbricks starts: a desktop file in the data folder of its home, the default of its `mimeapps.list` for `text/html`, runs a script that writes `browser` and each link, or path, it gets on a line of the file `opened` of the scenario; the browser of this computer opens nothing |
+| `Given Yelp is a program of the tests` | Before Virtualbricks starts: another desktop file, the default of its `mimeapps.list` for `x-scheme-handler/help`, runs the same script, which writes `yelp` and the link; the Yelp of this computer opens nothing. Without it, and with `Given yelp isn't on this computer`, the desktop has no program for `help:` links: GIO takes a desktop file only if its program is on `PATH` |
 | `Given the pages of the guide are where Yelp looks` | Before Virtualbricks starts: `help/C/virtualbricks` of the data folder of its home is a link to `help/C` of the sources, where it finds them as installed |
 | `When I press F1 in the Settings window` | F1, once the window is active |
-| `Then the desktop opens "help:virtualbricks/settings"` | The program of the tests got the link, and only it |
-| `Then the desktop opens the HTML of the page settings` | The program of the tests got the path of `help/html/C/settings.html` of the sources, and only it: the desktop gives a file by its path |
+| `Then Yelp opens "help:virtualbricks/settings"` | The program of the tests got the link, as Yelp, and only it |
+| `Then Yelp opens the page settings of the sources` | The program of the tests got the path of `help/C/settings.page` of the sources, as Yelp, and only it: the desktop gives a file by its path |
+| `Then the browser opens the HTML of the page settings` | The program of the tests got the path of `help/html/C/settings.html` of the sources, as browser, and only it |
 | `Then the picture settings shows the Settings window` | The picture of the window for the guide, as it shows, with the menus open over it: the pointer away from the windows first, once the screen hasn't changed for half a second. With `pytest --pictures`, `help/C/figures/settings.png`, if it changed; else `settings.png` in the folder of the scenario, which the end of the run lists if it differs from that of `help/C/figures/`. The windows: `main window`, `Settings window`, `Projects window`, `Export window`, `Import window`, and `file chooser`, the one that shows |
 
 The steps of the disk images:

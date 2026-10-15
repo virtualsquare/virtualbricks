@@ -4487,55 +4487,78 @@ def home_file_has(virtualbricks, file, docstring):
 
 # The user guide
 
-# The program of the tests that the desktop opens the links with
+# The program of the tests that opens the links, as the browser and as Yelp
 OPENER = "virtualbricks-e2e-opener.desktop"
+YELP = "virtualbricks-e2e-yelp.desktop"
 
 
 def opened(virtualbricks):
-    """The file where the program of the tests writes the links it opens."""
+    """
+    The file where the program of the tests writes the links it opens, a
+    line each: who opens it, browser or Yelp, and the link.
+    """
 
     return os.path.join(virtualbricks.folder, "opened")
 
 
-@given(
-    "the desktop opens help: links and web pages with a program of the tests"
-)
-def opens_with_the_tests(virtualbricks):
+def opener(virtualbricks, who, name, mime_type):
     """
-    Before Virtualbricks starts: a program of the tests, the default of its
-    desktop for help: links and for web pages, writes each link it opens on
-    a line of a file; Yelp and the browser of this computer open nothing.
+    A desktop entry of the program of the tests, in the data folder of the
+    home, the default of its desktop for the MIME type: it writes who and
+    each link it gets on a line of opened().
     """
 
     script = os.path.join(virtualbricks.folder, "opener.sh")
-    with open(script, "w") as file:
-        file.write(
-            "#!/bin/sh\n"
-            f"printf '%s\\n' \"$1\" >> {shlex.quote(opened(virtualbricks))}\n"
-        )
-    os.chmod(script, 0o755)
+    if not os.path.exists(script):
+        with open(script, "w") as file:
+            file.write(
+                "#!/bin/sh\n"
+                'printf \'%s %s\\n\' "$1" "$2"'
+                f" >> {shlex.quote(opened(virtualbricks))}\n"
+            )
+        os.chmod(script, 0o755)
     applications = os.path.join(
         virtualbricks.home, ".local", "share", "applications"
     )
     os.makedirs(applications, exist_ok=True)
-    with open(os.path.join(applications, OPENER), "w") as file:
+    with open(os.path.join(applications, name), "w") as file:
         file.write(
             "[Desktop Entry]\n"
             "Type=Application\n"
-            "Name=The links of the tests\n"
+            f"Name=The links of the tests, as {who}\n"
             "NoDisplay=true\n"
-            f'Exec="{script}" %u\n'
-            "MimeType=x-scheme-handler/help;text/html;\n"
+            f'Exec="{script}" {who} %u\n'
+            f"MimeType={mime_type};\n"
         )
     # the defaults of the user come first
-    with open(
-        os.path.join(virtualbricks.config, "mimeapps.list"), "w"
-    ) as file:
-        file.write(
-            "[Default Applications]\n"
-            f"x-scheme-handler/help={OPENER}\n"
-            f"text/html={OPENER}\n"
-        )
+    path = os.path.join(virtualbricks.config, "mimeapps.list")
+    if not os.path.exists(path):
+        with open(path, "w") as file:
+            file.write("[Default Applications]\n")
+    with open(path, "a") as file:
+        file.write(f"{mime_type}={name}\n")
+
+
+@given("the browser of the desktop is a program of the tests")
+def browser_of_the_tests(virtualbricks):
+    """
+    Before Virtualbricks starts: the program of the tests is the default of
+    its desktop for web pages, as browser; the browser of this computer
+    opens nothing.
+    """
+
+    opener(virtualbricks, "browser", OPENER, "text/html")
+
+
+@given("Yelp is a program of the tests")
+def yelp_of_the_tests(virtualbricks):
+    """
+    Before Virtualbricks starts: the program of the tests is the default of
+    its desktop for help: links, as Yelp; the Yelp of this computer, if
+    any, opens nothing.
+    """
+
+    opener(virtualbricks, "yelp", YELP, "x-scheme-handler/help")
 
 
 @given("the pages of the guide are where Yelp looks")
@@ -4558,22 +4581,34 @@ def f1_in_settings(virtualbricks):
     virtualbricks.key("F1", virtualbricks.find("dialog", SETTINGS_WINDOW))
 
 
-@then(words('the desktop opens "{link}"'))
-def desktop_opens(virtualbricks, link):
-    """The program of the tests has opened the link, and only it."""
+@then(words('Yelp opens "{link}"'))
+def yelp_opens(virtualbricks, link):
+    """The program of the tests has opened the link as Yelp, and only it."""
 
-    links_opened(virtualbricks, [link])
+    links_opened(virtualbricks, [f"yelp {link}"])
 
 
-@then(words("the desktop opens the HTML of the page {page}"))
-def desktop_opens_html(virtualbricks, page):
+@then(words("Yelp opens the page {page} of the sources"))
+def yelp_opens_the_file(virtualbricks, page):
+    """
+    The program of the tests has opened the file of the page, in the
+    sources, as Yelp, and only it: its path, as the desktop gives a file.
+    """
+
+    path = os.path.join(harness.ROOT, "help", "C", f"{page}.page")
+    links_opened(virtualbricks, [f"yelp {path}"])
+
+
+@then(words("the browser opens the HTML of the page {page}"))
+def browser_opens_html(virtualbricks, page):
     """
     The program of the tests has opened the HTML of the page, in the
-    sources, and only it: its path, as the desktop gives a file.
+    sources, as browser, and only it: its path, as the desktop gives a
+    file.
     """
 
     path = os.path.join(harness.ROOT, "help", "html", "C", f"{page}.html")
-    links_opened(virtualbricks, [path])
+    links_opened(virtualbricks, [f"browser {path}"])
 
 
 def links_opened(virtualbricks, links):
