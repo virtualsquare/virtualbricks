@@ -18,12 +18,12 @@ document.addEventListener('DOMContentLoaded', function() {
 <a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#tutorials" title="Tutorials">Tutorials</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">Import DTN2hops</span></h1></div>
 <div class="region">
 <div class="contents pagewide">
-<p class="p">DTN2hops is a lab of four virtual machines, <span class="sys">node1</span> to
+<p class="p">DTN2hops is a testbed of four virtual machines, <span class="sys">node1</span> to
   <span class="sys">node4</span>, five switches, a switch wrapper and three channel
   emulators. It comes in two files, which you have downloaded into your
   <span class="file">Downloads</span> folder:</p>
 <div class="list"><div class="inner"><div class="region"><ul class="list">
-<li class="list"><p class="p"><span class="file">DTN2hops_26_Feb_2026.vbp</span>, the archive of the lab:
+<li class="list"><p class="p"><span class="file">DTN2hops_26_Feb_2026.vbp</span>, the archive of the testbed:
     its bricks, and the private copy of the disk of each machine, with what
     was done in it;</p></li>
 <li class="list"><p class="p"><span class="file">debian13.tar.gz</span>, which holds the disk image that
@@ -34,10 +34,9 @@ document.addEventListener('DOMContentLoaded', function() {
   <span class="file">Downloads</span>, where it takes 6.8 GB. In a terminal:</p>
 <div class="screen"><pre class="contents"><code>cd ~/Downloads
 tar -xzf debian13.tar.gz</code></pre></div>
-<p class="p">You import the lab into Virtualbricks, started on your computer, the one
-  the two files are on. The lab was made with Virtualbricks 2.1, and
-  Virtualbricks converts it while it reads the archive. An archive of this
-  version imports the same way.</p>
+<p class="p">You import the testbed into Virtualbricks. The testbed was made with
+  Virtualbricks 2.1, and Virtualbricks converts it while it reads the
+  archive.</p>
 </div>
 <section id="open"><div class="inner">
 <div class="hgroup pagewide"><h2 class="title"><span class="title">Open the archive</span></h2></div>
@@ -71,7 +70,7 @@ tar -xzf debian13.tar.gz</code></pre></div>
 <div class="hgroup pagewide"><h2 class="title"><span class="title">What the window offers</span></h2></div>
 <div class="region"><div class="contents pagewide">
 <div class="figure"><div class="inner">
-<a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h3><span class="title">The Import Project window, with the lab</span></h3></div>
+<a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h3><span class="title">The Import Project window, with the testbed</span></h3></div>
 <div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import.png" class="media media-block" alt="The Import Project window for
         ~/Downloads/DTN2hops_26_Feb_2026.vbp: the name DTN2hops_26_Feb_2026;
         3 netemu, 4 qemu, 5 switch and 1 switchwrapper; the image debian13,
@@ -80,56 +79,39 @@ tar -xzf debian13.tar.gz</code></pre></div>
 </div></div>
 <div class="terms"><div class="inner"><div class="region"><dl class="terms">
 <dt class="terms"><span class="gui">Name</span></dt>
-<dd class="terms"><p class="p"><span class="sys">DTN2hops_26_Feb_2026</span>, the name of the file. If a
-        project has it already, the window suggests
-        <span class="sys">DTN2hops_26_Feb_2026-2</span>: an import never replaces a
-        project. You can change it; under it, the window says why a name
-        can't be a project's: it's empty, has a <span class="sys">/</span>, starts with a
-        dot, is too long, or is a project's already.</p></dd>
+<dd class="terms"><p class="p"><span class="sys">DTN2hops_26_Feb_2026</span>, the name of the file. If another
+        project already this name, the window suggests
+        <span class="sys">DTN2hops_26_Feb_2026-2</span>: an import never replaces an existing
+        project. You can change it; under the input box, the window says if and
+        why a name can't be a project's: it's empty, is too long, etc.</p></dd>
 <dt class="terms">The bricks</dt>
 <dd class="terms"><p class="p">Below the name, how many bricks of each kind the project has, by
         the names of the project file: <span class="sys">netemu</span> are the channel
         emulators, <span class="sys">qemu</span> the virtual machines.</p></dd>
 <dt class="terms"><span class="gui">Images</span></dt>
 <dd class="terms">
-<p class="p">A row for <span class="sys">debian13</span>, used by the disk
-        <span class="sys">hda</span> of each of the four machines, with three
-        choices:</p>
+<p class="p">A row for <span class="sys">debian13</span>, used by the <span class="sys">hda</span> disk of
+        each of the four machines, with three choices:</p>
 <div class="list"><div class="inner"><div class="region"><ul class="list">
 <li class="list"><p class="p"><span class="gui">Copy</span>, from the archive to the shared images of
           your workspace. It's grey: the archive doesn't hold the image, and
-          there is nothing to copy; its tooltip says <span class="gui">Not in the
-          archive</span>. In a large archive, the window may look for the
-          image for a while: <span class="gui">Copy</span> is chosen meanwhile, the row
-          says <span class="gui">Looking in the archive…</span>, and <span class="gui">Copy</span> turns
-          grey once the window has read the archive to its end.</p></li>
-<li class="list"><p class="p"><span class="gui">Use a file…</span> of this computer, which the project
-          uses where it is.</p></li>
+          there is nothing to copy.</p></li>
+<li class="list"><p class="p"><span class="gui">Use a file…</span> of this computer.</p></li>
 <li class="list"><p class="p"><span class="gui">Leave unset</span>, for its disks to get an image
           later.</p></li>
 </ul></div></div></div>
 <p class="p"><span class="gui">Leave unset</span> is chosen: the window looked for the image
         where the project had it,
         <span class="file">/home/carlo/VB_images/debian13.qcow2</span> on the computer the
-        lab was made on, and in your shared images, as
+        testbed was made on, and in your shared images, as
         <span class="file">debian13.qcow2</span> or <span class="file">debian13</span>, and found it in
         neither. It doesn't look in <span class="file">Downloads</span>.</p>
 </dd>
-<dt class="terms"><span class="gui">This computer's paths</span></dt>
-<dd class="terms"><p class="p">Not there at all for this lab. It shows when the project names the
-        folders of QEMU and VDE of the computer it comes from, and they
-        aren't yours; a project of Virtualbricks 2.1 doesn't name them.</p></dd>
 <dt class="terms"><span class="gui">Open the project after the import</span></dt>
-<dd class="terms"><p class="p">On: once imported, the lab opens in the main window.</p></dd>
+<dd class="terms"><p class="p">On: once imported, the testbed opens in the main window.</p></dd>
 <dt class="terms"><span class="gui">Import</span></dt>
 <dd class="terms"><p class="p">Grey until the window has read the archive, and whenever something
-        stops the import; the window says what. Under the name: a name that
-        can't be a project's. At the bottom, in red: a file chosen with
-        <span class="gui">Use a file…</span> that isn't there any more, or a name too long
-        for the names of the bricks. Their sockets are in a folder named
-        after the project, and the path of a socket has at most 107 bytes;
-        the longest name of this lab, <span class="sys">sat_channel_emulator</span>, has
-        20.</p></dd>
+        stops the import; the window says what.</p></dd>
 </dl></div></div></div>
 </div></div>
 </div></section><section id="image"><div class="inner">
@@ -163,22 +145,15 @@ tar -xzf debian13.tar.gz</code></pre></div>
 </div></div>
 <p class="p">The row now says <span class="gui">Uses ~/Downloads/debian13.qcow2</span>. The import
     points the private copies of the four machines at it, so that they keep
-    what was done in them. It must be the image the lab was made on: a
-    private copy holds only the changes over its image, and over another one
-    the machine finds a damaged disk.</p>
-<p class="p">The other two choices don't do for this lab:</p>
+    what was done in them. It must be the image the testbed was made on: a
+    private copy holds only the changes over its image. If you use a different
+    one the machine finds a damaged disk.</p>
+<p class="p">The other two choices don't do for this testbed:</p>
 <div class="terms"><div class="inner"><div class="region"><dl class="terms">
 <dt class="terms"><span class="gui">Copy</span></dt>
 <dd class="terms"><p class="p">Grey: the archive doesn't hold the image.</p></dd>
 <dt class="terms"><span class="gui">Leave unset</span></dt>
-<dd class="terms"><p class="p">The project would come without the image <span class="sys">debian13</span>, and
-        the disks of the four machines without an image. Their private
-        copies would stay made on the file of the computer the lab comes
-        from. When you gave the disks an image, in their settings, the first
-        start of each machine would move its private copy aside, as
-        <span class="file">node1_hda.cow.bak-</span> and the date, and make a new one,
-        empty: the machines would start from the image as it is, without
-        what was done in them.</p></dd>
+<dd class="terms"><p class="p">You won't be able to start the virtual machines.</p></dd>
 </dl></div></div></div>
 <div class="note note-tip" title="Tip">
 <svg height="24" width="24" version="1.1">
@@ -209,19 +184,20 @@ tar -xzf debian13.tar.gz</code></pre></div>
             the import is done. The button Stop at the top left."></div></div></div></div>
 </div></div>
 </li></ol></div></div></div>
-<p class="p">Once imported, the lab opens: the main window shows
+<p class="p">Once imported, the project opens: the main window shows
     <span class="sys">DTN2hops_26_Feb_2026</span>, with its thirteen bricks, all
     stopped.</p>
 <div class="figure"><div class="inner">
-<a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h3><span class="title">The lab, imported</span></h3></div>
+<a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h3><span class="title">The project, imported</span></h3></div>
 <div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import-done.png" class="media media-block" alt="The main window of the project DTN2hops_26_Feb_2026, on its tab
         Bricks: 0 of 13 running; sw1 to sw4, switchwrapper, sw5,
         channel_emulator, sat_channel_emulator, to_host_ch_emulator, then
         node1, all stopped, with the start button of switchwrapper
         grey."></div></div></div></div>
 </div></div>
-<p class="p">If a brick of the project open before runs, the lab is imported but
-    doesn't open: stop the bricks, then open it from the Projects window.</p>
+<p class="p">If a brick of the previous project was running before the import, the
+    project is imported but doesn't open: stop the bricks, then open it from the
+    Projects window.</p>
 <p class="p">The start button of <span class="sys">switchwrapper</span> is grey: a switch wrapper
     is a switch that another program runs, at
     <span class="file">/var/run/switch/sck</span>, and it runs while that program's switch

@@ -5,16 +5,16 @@
     <link type="seealso" xref="archives"/>
     <link type="seealso" xref="images"/>
     <title type="sort">1</title>
-    <desc>The lab DTN2hops, from its archive and its disk image, downloaded
+    <desc>The DTN2hops testbed, from its archive and its disk image, downloaded
     apart.</desc>
   </info>
   <title>Import DTN2hops</title>
-  <p>DTN2hops is a lab of four virtual machines, <sys>node1</sys> to
+  <p>DTN2hops is a testbed of four virtual machines, <sys>node1</sys> to
   <sys>node4</sys>, five switches, a switch wrapper and three channel
   emulators. It comes in two files, which you have downloaded into your
   <file>Downloads</file> folder:</p>
   <list>
-    <item><p><file>DTN2hops_26_Feb_2026.vbp</file>, the archive of the lab:
+    <item><p><file>DTN2hops_26_Feb_2026.vbp</file>, the archive of the testbed:
     its bricks, and the private copy of the disk of each machine, with what
     was done in it;</p></item>
     <item><p><file>debian13.tar.gz</file>, which holds the disk image that
@@ -25,10 +25,9 @@
   <file>Downloads</file>, where it takes 6.8 GB. In a terminal:</p>
   <screen>cd ~/Downloads
 tar -xzf debian13.tar.gz</screen>
-  <p>You import the lab into Virtualbricks, started on your computer, the one
-  the two files are on. The lab was made with Virtualbricks 2.1, and
-  Virtualbricks converts it while it reads the archive. An archive of this
-  version imports the same way.</p>
+  <p>You import the testbed into Virtualbricks. The testbed was made with
+  Virtualbricks 2.1, and Virtualbricks converts it while it reads the
+  archive.</p>
   <section id="open">
     <title>Open the archive</title>
     <steps>
@@ -65,7 +64,7 @@ tar -xzf debian13.tar.gz</screen>
   <section id="options">
     <title>What the window offers</title>
     <figure>
-      <title>The Import Project window, with the lab</title>
+      <title>The Import Project window, with the testbed</title>
       <media type="image" mime="image/png" src="figures/import.png">
         <p>The Import Project window for
         ~/Downloads/DTN2hops_26_Feb_2026.vbp: the name DTN2hops_26_Feb_2026;
@@ -77,12 +76,11 @@ tar -xzf debian13.tar.gz</screen>
     <terms>
       <item>
         <title><gui>Name</gui></title>
-        <p><sys>DTN2hops_26_Feb_2026</sys>, the name of the file. If a
-        project has it already, the window suggests
-        <sys>DTN2hops_26_Feb_2026-2</sys>: an import never replaces a
-        project. You can change it; under it, the window says why a name
-        can't be a project's: it's empty, has a <sys>/</sys>, starts with a
-        dot, is too long, or is a project's already.</p>
+        <p><sys>DTN2hops_26_Feb_2026</sys>, the name of the file. If another
+        project already this name, the window suggests
+        <sys>DTN2hops_26_Feb_2026-2</sys>: an import never replaces an existing
+        project. You can change it; under the input box, the window says if and
+        why a name can't be a project's: it's empty, is too long, etc.</p>
       </item>
       <item>
         <title>The bricks</title>
@@ -92,49 +90,31 @@ tar -xzf debian13.tar.gz</screen>
       </item>
       <item>
         <title><gui>Images</gui></title>
-        <p>A row for <sys>debian13</sys>, used by the disk
-        <sys>hda</sys> of each of the four machines, with three
-        choices:</p>
+        <p>A row for <sys>debian13</sys>, used by the <sys>hda</sys> disk of
+        each of the four machines, with three choices:</p>
         <list>
           <item><p><gui>Copy</gui>, from the archive to the shared images of
           your workspace. It's grey: the archive doesn't hold the image, and
-          there is nothing to copy; its tooltip says <gui>Not in the
-          archive</gui>. In a large archive, the window may look for the
-          image for a while: <gui>Copy</gui> is chosen meanwhile, the row
-          says <gui>Looking in the archive…</gui>, and <gui>Copy</gui> turns
-          grey once the window has read the archive to its end.</p></item>
-          <item><p><gui>Use a file…</gui> of this computer, which the project
-          uses where it is.</p></item>
+          there is nothing to copy.</p></item>
+          <item><p><gui>Use a file…</gui> of this computer.</p></item>
           <item><p><gui>Leave unset</gui>, for its disks to get an image
           later.</p></item>
         </list>
         <p><gui>Leave unset</gui> is chosen: the window looked for the image
         where the project had it,
         <file>/home/carlo/VB_images/debian13.qcow2</file> on the computer the
-        lab was made on, and in your shared images, as
+        testbed was made on, and in your shared images, as
         <file>debian13.qcow2</file> or <file>debian13</file>, and found it in
         neither. It doesn't look in <file>Downloads</file>.</p>
       </item>
       <item>
-        <title><gui>This computer's paths</gui></title>
-        <p>Not there at all for this lab. It shows when the project names the
-        folders of QEMU and VDE of the computer it comes from, and they
-        aren't yours; a project of Virtualbricks 2.1 doesn't name them.</p>
-      </item>
-      <item>
         <title><gui>Open the project after the import</gui></title>
-        <p>On: once imported, the lab opens in the main window.</p>
+        <p>On: once imported, the testbed opens in the main window.</p>
       </item>
       <item>
         <title><gui>Import</gui></title>
         <p>Grey until the window has read the archive, and whenever something
-        stops the import; the window says what. Under the name: a name that
-        can't be a project's. At the bottom, in red: a file chosen with
-        <gui>Use a file…</gui> that isn't there any more, or a name too long
-        for the names of the bricks. Their sockets are in a folder named
-        after the project, and the path of a socket has at most 107 bytes;
-        the longest name of this lab, <sys>sat_channel_emulator</sys>, has
-        20.</p>
+        stops the import; the window says what.</p>
       </item>
     </terms>
   </section>
@@ -172,10 +152,10 @@ tar -xzf debian13.tar.gz</screen>
     </figure>
     <p>The row now says <gui>Uses ~/Downloads/debian13.qcow2</gui>. The import
     points the private copies of the four machines at it, so that they keep
-    what was done in them. It must be the image the lab was made on: a
-    private copy holds only the changes over its image, and over another one
-    the machine finds a damaged disk.</p>
-    <p>The other two choices don't do for this lab:</p>
+    what was done in them. It must be the image the testbed was made on: a
+    private copy holds only the changes over its image. If you use a different
+    one the machine finds a damaged disk.</p>
+    <p>The other two choices don't do for this testbed:</p>
     <terms>
       <item>
         <title><gui>Copy</gui></title>
@@ -183,14 +163,7 @@ tar -xzf debian13.tar.gz</screen>
       </item>
       <item>
         <title><gui>Leave unset</gui></title>
-        <p>The project would come without the image <sys>debian13</sys>, and
-        the disks of the four machines without an image. Their private
-        copies would stay made on the file of the computer the lab comes
-        from. When you gave the disks an image, in their settings, the first
-        start of each machine would move its private copy aside, as
-        <file>node1_hda.cow.bak-</file> and the date, and make a new one,
-        empty: the machines would start from the image as it is, without
-        what was done in them.</p>
+        <p>You won't be able to start the virtual machines.</p>
       </item>
     </terms>
     <note style="tip">
@@ -220,11 +193,11 @@ tar -xzf debian13.tar.gz</screen>
         </figure>
       </item>
     </steps>
-    <p>Once imported, the lab opens: the main window shows
+    <p>Once imported, the project opens: the main window shows
     <sys>DTN2hops_26_Feb_2026</sys>, with its thirteen bricks, all
     stopped.</p>
     <figure>
-      <title>The lab, imported</title>
+      <title>The project, imported</title>
       <media type="image" mime="image/png" src="figures/import-done.png">
         <p>The main window of the project DTN2hops_26_Feb_2026, on its tab
         Bricks: 0 of 13 running; sw1 to sw4, switchwrapper, sw5,
@@ -233,8 +206,9 @@ tar -xzf debian13.tar.gz</screen>
         grey.</p>
       </media>
     </figure>
-    <p>If a brick of the project open before runs, the lab is imported but
-    doesn't open: stop the bricks, then open it from the Projects window.</p>
+    <p>If a brick of the previous project was running before the import, the
+    project is imported but doesn't open: stop the bricks, then open it from the
+    Projects window.</p>
     <p>The start button of <sys>switchwrapper</sys> is grey: a switch wrapper
     is a switch that another program runs, at
     <file>/var/run/switch/sck</file>, and it runs while that program's switch
