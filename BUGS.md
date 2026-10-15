@@ -93,12 +93,6 @@ one leaves the list.
   and the same two lines of `node1` for `node2` to `node4`. The first line,
   of the conversion of 2.1, says the image is kept; the fifth, that it's
   dropped.
-- [ ] **The Import window names the bricks by their type in the project
-  file.** Under the name, "3 netemu · 4 qemu · 5 switch · 1 switchwrapper"
-  (`facts()` in `virtualbricks/gui/dialogs/importdialog.py`), where the
-  other windows say Netemu, Virtual machine, Switch and Switch wrapper.
-  Seen on 3.0.0.dev3, on 13 October 2026, in the picture `import.png` of
-  the guide.
 - [ ] **The Import window sends to the Messages window, which is Logs.**
   While the import runs: "You can close this window: the Messages window
   says when the import is done." (`_build_running()` in

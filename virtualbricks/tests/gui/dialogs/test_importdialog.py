@@ -182,7 +182,8 @@ class TestReading(ImportTestCase):
         )
         self.assertEqual(dialog.description_label.get_lines(), 4)
         self.assertEqual(
-            dialog.facts_label.get_text(), "1 qemu · 2 switch · 1 event"
+            dialog.facts_label.get_text(),
+            "2 × Switch · 1 × Virtual machine · 1 event",
         )
         self.assertFalse(dialog.scan_box.get_visible())
         [row] = self.rows()
@@ -469,6 +470,19 @@ class TestHelpers(ImportTestCase):
         self.assertEqual(
             importdialog.facts({"bricks": "x", "events": {"a": {}, "b": {}}}),
             "2 events",
+        )
+
+    def test_facts_name_the_kinds(self):
+        bricks = {
+            "a": {"type": "switchwrapper"},
+            "b": {"type": "netemu"},
+            "c": {"type": "netemu"},
+            # a type of another version, as it is
+            "d": {"type": "hub"},
+        }
+        self.assertEqual(
+            importdialog.facts({"bricks": bricks}),
+            "2 × Netemu · 1 × Switch wrapper · 1 × hub",
         )
 
     def test_find_qemu_img(self):

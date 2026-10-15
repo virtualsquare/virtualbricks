@@ -37,7 +37,8 @@ from gi.repository import Gtk, Pango
 from twisted.logger import Logger
 from twisted.python.failure import Failure
 
-from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.brickfactory import BRICK_CLASSES, BrickFactory
+from virtualbricks.bricks.brickinfo import KINDS
 from virtualbricks.config.archive import (
     ArchiveCancelled,
     ArchiveContents,
@@ -82,18 +83,28 @@ PATTERNS = ("*.vbp", "*.tar.gz", "*.tgz", "*.tar")
 DESCRIPTION_LINES = 4
 
 
+def _kind(brick_type: str) -> str:
+    """The kind of a type of the project file; an unknown type as it is."""
+
+    cls = BRICK_CLASSES.get(brick_type.lower())
+    return KINDS.get(cls.type, cls.type) if cls else brick_type
+
+
 def facts(data: Table) -> str:
-    """ "3 bricks · 1 event" for the project file data."""
+    """
+    "2 × Switch · 1 × Virtual machine · 1 event" for the project file data:
+    the bricks by their kind, as the Bricks tab names it.
+    """
 
     bricks = data.get("bricks", {})
     events = data.get("events", {})
     counts = collections.Counter(
-        str(table.get("type", "?"))
+        _kind(str(table.get("type", "?")))
         for table in (bricks.values() if isinstance(bricks, dict) else [])
         if isinstance(table, dict)
     )
     parts = [
-        _("{count} {type}").format(count=count, type=kind)
+        _("{count} × {kind}").format(count=count, kind=kind)
         for kind, count in sorted(counts.items())
     ]
     n_events = len(events) if isinstance(events, dict) else 0

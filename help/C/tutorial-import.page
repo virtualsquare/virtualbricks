@@ -68,9 +68,9 @@ tar -xzf debian13.tar.gz</screen>
       <media type="image" mime="image/png" src="figures/import.png">
         <p>The Import Project window for
         ~/Downloads/DTN2hops_26_Feb_2026.vbp: the name DTN2hops_26_Feb_2026;
-        3 netemu, 4 qemu, 5 switch and 1 switchwrapper; the image debian13,
-        used by node1.hda to node4.hda, with Copy grey and Leave unset
-        chosen; Open the project after the import, on.</p>
+        3 × Netemu, 5 × Switch, 1 × Switch wrapper and 4 × Virtual machine;
+        the image debian13, used by node1.hda to node4.hda, with Copy grey and
+        Leave unset chosen; Open the project after the import, on.</p>
       </media>
     </figure>
     <terms>
@@ -85,8 +85,8 @@ tar -xzf debian13.tar.gz</screen>
       <item>
         <title>The bricks</title>
         <p>Below the name, how many bricks of each kind the project has, by
-        the names of the project file: <sys>netemu</sys> are the channel
-        emulators, <sys>qemu</sys> the virtual machines.</p>
+        the names of the <gui>Bricks</gui> tab: <gui>Netemu</gui> are the
+        channel emulators.</p>
       </item>
       <item>
         <title><gui>Images</gui></title>
