@@ -61,8 +61,12 @@ dev = [
     "PyGObject-stubs>=2.17",
 ]
 website = [
-    { include-group = "dev" },
-    "pelican[markdown]==4.11.0.post0",
+    # those of requirements.txt in the website branch: pelican builds the
+    # site, invoke runs its tasks, ghp-import publishes it (make github).
+    # Pelican 4.12 needs Python 3.11 or newer.
+    "pelican==4.12.0",
+    "invoke==3.0.3",
+    "ghp-import==2.1.0",
 ]
 
 [project.urls]
