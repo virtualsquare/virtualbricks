@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev4\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 23:10+0200\n"
+"POT-Creation-Date: 2026-10-15 23:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2948,7 +2948,7 @@ msgstr ""
 
 #: virtualbricks/gui/dialogs/importdialog.py
 msgid ""
-"You can close this window: the Messages window says when the import is done."
+"You can close this window: the Logs window says when the import is done."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/importdialog.py

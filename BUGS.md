@@ -93,12 +93,6 @@ one leaves the list.
   and the same two lines of `node1` for `node2` to `node4`. The first line,
   of the conversion of 2.1, says the image is kept; the fifth, that it's
   dropped.
-- [ ] **The Import window sends to the Messages window, which is Logs.**
-  While the import runs: "You can close this window: the Messages window
-  says when the import is done." (`_build_running()` in
-  `virtualbricks/gui/dialogs/importdialog.py`); the window is File › Logs.
-  Seen on 3.0.0.dev3, on 13 October 2026, writing the tutorial
-  `tutorial-import` of the guide.
 
 ## Remote windows
 

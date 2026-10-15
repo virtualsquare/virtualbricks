@@ -441,7 +441,7 @@ class ImportDialog(Window):
         box.pack_start(
             _label(
                 _(
-                    "You can close this window: the Messages window says"
+                    "You can close this window: the Logs window says"
                     " when the import is done."
                 ),
                 dim=True,

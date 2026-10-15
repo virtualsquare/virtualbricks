@@ -187,7 +187,7 @@ tar -xzf debian13.tar.gz</screen>
           <media type="image" mime="image/png" src="figures/import-progress.png">
             <p>The Import Project window during the import: Extracting the
             archive, with the progress bar a third full, 1.0 MB of 3.2 MB, and
-            under it You can close this window: the Messages window says when
+            under it You can close this window: the Logs window says when
             the import is done. The button Stop at the top left.</p>
           </media>
         </figure>
