@@ -381,13 +381,13 @@ that the tests can't do yet: those needs come first.
 
 ## Pictures of the guide
 
-- [x] The seventeen pictures of `help/C/figures/`, a scenario each: the
+- [x] The eighteen pictures of `help/C/figures/`, a scenario each: the
   first lab, New Brick, the settings of a switch, of a machine and of an
   event, the tabs Images, Topology and Readme, the Projects, Export and
-  Settings windows, and the six of the tutorial that imports DTN2hops (the
+  Settings windows, and the seven of the tutorial that imports DTN2hops (the
   menu Projects, the file choosers of the archive and of its image, the
-  Import window before and after the choice of the image, the lab
-  imported), `pictures.feature`
+  Import window before and after the choice of the image and while it
+  imports, the lab imported), `pictures.feature`
 - [ ] The pictures of the states: the menu of a brick, a running brick, the
   Messages window, which needs a clock fixed for the tests
 

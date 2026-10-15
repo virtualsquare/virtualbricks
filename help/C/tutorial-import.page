@@ -162,6 +162,14 @@ tar -xzf debian13.tar.gz</screen>
         </figure>
       </item>
     </steps>
+    <figure>
+      <title>The image, chosen</title>
+      <media type="image" mime="image/png" src="figures/import-ready.png">
+        <p>The Import Project window, with Use a file… chosen for debian13,
+        which uses ~/Downloads/debian13.qcow2, and the button Import at the
+        top right.</p>
+      </media>
+    </figure>
     <p>The row now says <gui>Uses ~/Downloads/debian13.qcow2</gui>. The import
     points the private copies of the four machines at it, so that they keep
     what was done in them. It must be the image the lab was made on: a
@@ -202,11 +210,12 @@ tar -xzf debian13.tar.gz</screen>
         what it wrote. You can close the window, and let the import
         finish.</p>
         <figure>
-          <title>Ready to import</title>
-          <media type="image" mime="image/png" src="figures/import-ready.png">
-            <p>The Import Project window, with Use a file… chosen for
-            debian13, which uses ~/Downloads/debian13.qcow2, and the button
-            Import at the top right.</p>
+          <title>The import, under way</title>
+          <media type="image" mime="image/png" src="figures/import-progress.png">
+            <p>The Import Project window during the import: Extracting the
+            archive, with the progress bar a third full, 1.0 MB of 3.2 MB, and
+            under it You can close this window: the Messages window says when
+            the import is done. The button Stop at the top left.</p>
           </media>
         </figure>
       </item>

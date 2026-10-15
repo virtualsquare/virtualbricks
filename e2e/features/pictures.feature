@@ -108,8 +108,9 @@ Feature: The pictures of the user guide
     When I open the menu "Projects"
     Then the picture import-menu shows the main window
 
+  @needs-qemu-img
   Scenario: The file chooser of the Import window, on the archive of DTN2hops
-    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my Downloads folder
+    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, with the private disks of its machines, in my Downloads folder
     And the files of my Downloads folder were last changed on 2024-08-02
     And Virtualbricks is running
     When I open the Import window
@@ -117,15 +118,16 @@ Feature: The pictures of the user guide
     And in the file chooser, I select DTN2hops_26_Feb_2026.vbp of my Downloads folder
     Then the picture import-archive shows the file chooser
 
+  @needs-qemu-img
   Scenario: The Import window, with the archive of DTN2hops, which hasn't its image
-    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my Downloads folder
+    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, with the private disks of its machines, in my Downloads folder
     And Virtualbricks is running
     When I choose the archive DTN2hops_26_Feb_2026.vbp of my Downloads folder in the Import window, which suggests the name DTN2hops_26_Feb_2026
     Then the picture import shows the Import window
 
   @needs-qemu-img
   Scenario: The file chooser of the image of DTN2hops, on its file
-    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my Downloads folder
+    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, with the private disks of its machines, in my Downloads folder
     And the empty disk image debian13.qcow2 of 1 GB, in my Downloads folder
     And the files of my Downloads folder were last changed on 2024-08-02
     And Virtualbricks is running
@@ -136,7 +138,7 @@ Feature: The pictures of the user guide
 
   @needs-qemu-img
   Scenario: The Import window, with the archive of DTN2hops and the file of its image
-    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my Downloads folder
+    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, with the private disks of its machines, in my Downloads folder
     And the empty disk image debian13.qcow2 of 1 GB, in my Downloads folder
     And Virtualbricks is running
     When I choose the archive DTN2hops_26_Feb_2026.vbp of my Downloads folder in the Import window, which suggests the name DTN2hops_26_Feb_2026
@@ -144,8 +146,22 @@ Feature: The pictures of the user guide
     Then the picture import-ready shows the Import window
 
   @needs-qemu-img
+  Scenario: The Import window, while it imports DTN2hops
+    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, with the private disks of its machines, in my Downloads folder
+    And the empty disk image debian13.qcow2 of 1 GB, in my Downloads folder
+    And the extraction of an archive stops after its first 1 MiB, until I let it go on
+    And Virtualbricks is running
+    When I choose the archive DTN2hops_26_Feb_2026.vbp of my Downloads folder in the Import window, which suggests the name DTN2hops_26_Feb_2026
+    And in the Import window, I use the file debian13.qcow2 of my Downloads folder for the image debian13
+    And I click the button "Import"
+    Then the label "Extracting the archive" shows
+    And the picture import-progress shows the Import window
+    When I let the extraction go on
+    Then the main window shows the project DTN2hops_26_Feb_2026
+
+  @needs-qemu-img
   Scenario: The main window, once DTN2hops is imported
-    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my Downloads folder
+    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, with the private disks of its machines, in my Downloads folder
     And the empty disk image debian13.qcow2 of 1 GB, in my Downloads folder
     And Virtualbricks is running
     When I choose the archive DTN2hops_26_Feb_2026.vbp of my Downloads folder in the Import window, which suggests the name DTN2hops_26_Feb_2026
