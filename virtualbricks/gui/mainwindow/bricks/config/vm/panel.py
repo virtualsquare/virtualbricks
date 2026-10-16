@@ -260,11 +260,13 @@ class VirtualMachinePanel(Panel):
         self.on_changed()
         machine_type = chosen if info.has_machine(chosen) else ""
         deferred = self.engine.machine_properties(info, machine_type)
-        deferred.addCallback(self.described, program, chosen)
-        deferred.addErrback(
+        # only the question: a failure of described() isn't QEMU's
+        deferred.addCallbacks(
+            self.described,
             lambda failure: logger.failure(
                 qemu_error, failure, program=info.path
-            )
+            ),
+            callbackArgs=(program, chosen),
         )
 
     def described(

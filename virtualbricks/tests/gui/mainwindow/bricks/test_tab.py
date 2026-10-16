@@ -798,6 +798,19 @@ class TestTheSettings(BricksTestCase):
         self.assertIsNone(self.tab.running_bar)
         self.assertIsNone(self.tab.running_words)
         self.assertIsNone(self.tab.why)
+
+    def test_a_panel_changed_once_closed(self):
+        # as a machine's, when its QEMU answers after OK
+        self.tab.configure(self.sw)
+        closed = self.tab._controller
+        self.tab.ok_button.clicked()
+        closed.on_changed()
+        # while the settings of another brick show
+        self.tab.configure(self.brick("switch", "sw2"))
+        closed.draft.set("ports", 200)
+        closed.on_changed()
+        self.assertTrue(self.tab.ok_button.get_sensitive())
+        self.assertFalse(self.tab.why.get_visible())
         # its changes, with nothing to show
         self.running(self.sw)
 

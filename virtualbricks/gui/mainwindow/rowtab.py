@@ -940,6 +940,9 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
         self.running_bar.set_visible(running)
 
     def on_panel_changed(self, panel: Panel) -> None:
+        if panel is not self._controller:
+            # closed meanwhile: a machine's changes when its QEMU answers
+            return
         assert self.why is not None, "the settings show"
         errors = panel.draft.errors()
         self.ok_button.set_sensitive(not errors)
