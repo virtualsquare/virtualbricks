@@ -28,6 +28,7 @@ from twisted.trial import unittest
 
 from virtualbricks import programs as programs_module
 from virtualbricks.programs import (
+    EMPTY_MACHINE,
     PACKAGES,
     QEMU_QUESTIONS,
     REQUIRED,
@@ -45,6 +46,7 @@ from virtualbricks.programs import (
     find_program,
     machine_question,
     missing_programs,
+    package_of,
     parse_cpus,
     parse_devices,
     parse_machine_properties,
@@ -90,6 +92,18 @@ TARGETS = {
 }
 # What Netemu passes to its program.
 NETEMU_OPTIONS = ("-v", "-b", "-d", "-c", "-l", "--nofifo", "-M")
+# The other architectures recorded, as record.py has them.
+QEMU = "qemu-system-x86_64"
+EMULATORS = (
+    "qemu-system-aarch64",
+    "qemu-system-arm",
+    "qemu-system-ppc64",
+    "qemu-system-riscv64",
+    "qemu-system-s390x",
+    "qemu-system-mips64el",
+)
+# A name that -cpu takes, as PowerPC's conan/doyle.
+CPU_NAME = re.compile(r"^[\w./+-]+$")
 
 
 def load(target):
@@ -101,9 +115,29 @@ def answers(table):
     return {name: Answer(**answer) for name, answer in table.items()}
 
 
-def recorded_info(target):
+def recording(target, program=QEMU):
+    """What a program of target answered: its path, answers and machines."""
+
     data = load(target)
-    return qemu_info(data["qemu"]["program"], answers(data["qemu"]["answers"]))
+    return data["qemu"] if program == QEMU else data["emulators"][program]
+
+
+def recorded_info(target, program=QEMU):
+    recorded = recording(target, program)
+    return qemu_info(recorded["program"], answers(recorded["answers"]))
+
+
+def flags(text):
+    """The first word of each line under the headings of the CPU flags."""
+
+    words = set()
+    under = False
+    for line in text.splitlines():
+        if line.endswith(":"):
+            under = "flag" in line.lower()
+        elif under and line.strip():
+            words.add(line.split()[0])
+    return words
 
 
 def upstream(package_version):
@@ -182,6 +216,85 @@ class TestRecordings(unittest.SynchronousTestCase):
             for machine, answer in load(target)["qemu"]["machines"].items():
                 properties = parse_machine_properties(answer["out"])
                 self.assertIn("acpi", properties, (target, machine))
+
+    def test_every_emulator(self):
+        for target in TARGETS:
+            self.assertEqual(
+                sorted(load(target)["emulators"]), sorted(EMULATORS), target
+            )
+
+    def test_emulator_versions(self):
+        for target in TARGETS:
+            version = recorded_info(target).version
+            for program in EMULATORS:
+                self.assertEqual(
+                    recorded_info(target, program).version,
+                    version,
+                    (target, program),
+                )
+
+    def test_emulator_netdevs(self):
+        # asked of the empty machine, which every program has
+        for target in TARGETS:
+            netdevs = recorded_info(target).netdevs
+            for program in EMULATORS:
+                self.assertEqual(
+                    recorded_info(target, program).netdevs,
+                    netdevs,
+                    (target, program),
+                )
+
+    def test_emulator_cpus(self):
+        for target in TARGETS:
+            for program in (QEMU,) + EMULATORS:
+                where = (target, program)
+                info = recorded_info(target, program)
+                text = recording(target, program)["answers"]["cpus"]["out"]
+                self.assertTrue(info.cpus, where)
+                for entry in info.cpus:
+                    self.assertRegex(entry.name, CPU_NAME, where)
+                self.assertFalse(
+                    {entry.name for entry in info.cpus} & flags(text), where
+                )
+
+    def test_emulator_machines(self):
+        for target in TARGETS:
+            for program in EMULATORS:
+                where = (target, program)
+                info = recorded_info(target, program)
+                machines = recording(target, program)["machines"]
+                default = info.default_machine
+                self.assertEqual(
+                    sorted(machines),
+                    sorted(
+                        filter(
+                            None,
+                            [
+                                default or EMPTY_MACHINE,
+                                "virt" if info.has_machine("virt") else "",
+                            ],
+                        )
+                    ),
+                    where,
+                )
+                for machine, answer in machines.items():
+                    self.assertEqual(answer["status"], 0, (where, machine))
+                    self.assertTrue(
+                        parse_machine_properties(answer["out"]),
+                        (where, machine),
+                    )
+
+    def test_without_default_machine(self):
+        for target in TARGETS:
+            without = {
+                program
+                for program in EMULATORS
+                if not recorded_info(target, program).default_machine
+            }
+            expected = {"qemu-system-aarch64", "qemu-system-arm"}
+            if recorded_info(target).version >= Version(11, 0):
+                expected.add("qemu-system-riscv64")
+            self.assertEqual(without, expected, target)
 
     def test_vde(self):
         for target in TARGETS:
@@ -292,6 +405,110 @@ class TestParse(unittest.SynchronousTestCase):
             [entry.name for entry in parse_cpus(text)], ["486", "host"]
         )
 
+    def test_cpus_of_powerpc(self):
+        # QEMU 6.2 to 8.2, without a heading
+        text = (
+            "PowerPC 601_v1           PVR 00010001\n"
+            "PowerPC 601              (alias for 601_v2)\n"
+        )
+        self.assertEqual(
+            parse_cpus(text),
+            (
+                Entry("601_v1", "PVR 00010001"),
+                Entry("601", "(alias for 601_v2)"),
+            ),
+        )
+
+    def test_cpus_of_s390x(self):
+        # QEMU 6.2 to 8.2: a heading only over the flags
+        text = (
+            "s390 qemu            QEMU Virtual CPU version 2.5+       "
+            "(migration-safe)\n"
+            "s390 gen16b          IBM 3932 GA1                        "
+            "(migration-safe)\n"
+            "\n"
+            "Recognized feature flags:\n"
+            "esan3                Instructions marked as n3\n"
+            "zarch                z/Architecture architectural mode\n"
+        )
+        self.assertEqual(
+            parse_cpus(text),
+            (
+                Entry(
+                    "qemu",
+                    "QEMU Virtual CPU version 2.5+       " "(migration-safe)",
+                ),
+                Entry(
+                    "gen16b",
+                    "IBM 3932 GA1                        " "(migration-safe)",
+                ),
+            ),
+        )
+
+    def test_cpus_of_mips(self):
+        text = "MIPS '4Kc'\nMIPS '4KEcR1'\n"
+        self.assertEqual(
+            [entry.name for entry in parse_cpus(text)], ["4Kc", "4KEcR1"]
+        )
+
+    def test_cpus_of_sparc(self):
+        # QEMU 6.2 to 8.2: names with spaces, which -cpu takes with dashes
+        text = (
+            "Sparc  Fujitsu MB86904 IU 04000000 FPU 00080000 MMU 04000000"
+            " NWINS 8 \n"
+            "Sparc  TI MicroSparc I IU 41000000 FPU 00080000 MMU 41000000"
+            " NWINS 7 -fsmuld \n"
+            "Sparc            LEON3 IU f3000000 FPU 00080000 MMU f3000000"
+            " NWINS 8 \n"
+            "Default CPU feature flags (use '-' to remove): float swap mul\n"
+            "Numerical features (use '=' to set): iu_version nwindows\n"
+        )
+        self.assertEqual(
+            parse_cpus(text),
+            (
+                Entry(
+                    "Fujitsu-MB86904",
+                    "IU 04000000 FPU 00080000 MMU 04000000 NWINS 8",
+                ),
+                Entry(
+                    "TI-MicroSparc-I",
+                    "IU 41000000 FPU 00080000 MMU 41000000 NWINS 7 -fsmuld",
+                ),
+                Entry(
+                    "LEON3", "IU f3000000 FPU 00080000 MMU f3000000 NWINS 8"
+                ),
+            ),
+        )
+
+    def test_cpus_of_sparc_indented(self):
+        # from QEMU 9.2, its features right after the list
+        text = (
+            "Available CPU types:\n"
+            " Fujitsu-MB86904      (IU 04000000 FPU 00080000 MMU 04000000"
+            " NWINS 8) \n"
+            " LEON3                (IU f3000000 FPU 00080000 MMU f3000000"
+            " NWINS 8) \n"
+            "Default CPU feature flags (use '-' to remove): mul div fsmuld \n"
+            "Available CPU feature flags (use '+' to add): float128 \n"
+            "Numerical features (use '=' to set): iu_version nwindows\n"
+        )
+        self.assertEqual(
+            [entry.name for entry in parse_cpus(text)],
+            ["Fujitsu-MB86904", "LEON3"],
+        )
+
+    def test_cpus_names_alone(self):
+        # m68k, sh4, RISC-V, avr and loongarch64 up to QEMU 8.2
+        text = "cfv4e\nm5206\nm68000\n"
+        self.assertEqual(
+            parse_cpus(text),
+            (Entry("cfv4e"), Entry("m5206"), Entry("m68000")),
+        )
+
+    def test_cpus_none(self):
+        # hppa up to QEMU 7.2
+        self.assertEqual(parse_cpus(""), ())
+
     def test_devices(self):
         text = (
             "Controller/Bridge/Hub devices:\n"
@@ -359,6 +576,26 @@ class TestParse(unittest.SynchronousTestCase):
             "vde_cryptcab (vde2-cryptcab)",
         )
         self.assertEqual(str(Missing("vde_router", None)), "vde_router")
+
+    def test_package_of(self):
+        self.assertEqual(package_of("qemu-system-arm"), "qemu-system-arm")
+        self.assertEqual(package_of("qemu-system-arm64"), "qemu-system-arm")
+        self.assertIsNone(package_of("vde_router"))
+        self.assertIsNone(package_of("qemu-system-unknown"))
+
+    def test_package_of_a_program_that_moved(self):
+        self.assertEqual(
+            package_of("qemu-system-riscv64"),
+            "qemu-system-riscv or qemu-system-misc",
+        )
+        self.assertEqual(
+            str(
+                Missing(
+                    "qemu-system-riscv64", package_of("qemu-system-riscv64")
+                )
+            ),
+            "qemu-system-riscv64 (qemu-system-riscv or qemu-system-misc)",
+        )
 
 
 def executable(directory, name, mode=0o755):
@@ -430,7 +667,7 @@ class TestFind(ProgramsTestCase):
         self.assertEqual(missing_programs(self.bin, self.bin), [])
 
     def test_packages(self):
-        for name in REQUIRED:
+        for name in REQUIRED + (QEMU,) + EMULATORS:
             self.assertIsNotNone(PACKAGES[name], name)
 
 
@@ -509,20 +746,22 @@ class TestFolderPrograms(ProgramsTestCase):
 class FakeRun:
     """Answers the questions from a recording, and counts them."""
 
-    def __init__(self, target="debian-13", wait=False):
+    def __init__(self, target="debian-13", wait=False, program=QEMU):
         data = load(target)
+        recorded = recording(target, program)
         self.answers = {
             QEMU_QUESTIONS[name]: Answer(**answer)
-            for name, answer in data["qemu"]["answers"].items()
+            for name, answer in recorded["answers"].items()
         }
-        for machine, answer in data["qemu"]["machines"].items():
+        for machine, answer in recorded["machines"].items():
             self.answers[machine_question(machine)] = Answer(**answer)
-        # the default machine is one of the pc machines
-        default = qemu_info("", answers(data["qemu"]["answers"]))
-        self.answers.setdefault(
-            machine_question(default.default_machine),
-            self.answers[machine_question("pc")],
-        )
+        if program == QEMU:
+            # the default machine is one of the pc machines
+            default = qemu_info("", answers(recorded["answers"]))
+            self.answers.setdefault(
+                machine_question(default.default_machine),
+                self.answers[machine_question("pc")],
+            )
         for name, answer in data["vde"]["answers"].items():
             self.answers[(name,) + VDE_QUESTIONS[name]] = Answer(**answer)
         # no target ships vde-netemu, a fork of wirefilter with its help
@@ -658,6 +897,20 @@ class TestQemu(ProgramsTestCase):
                 machine_question(info.default_machine),
                 machine_question("q35"),
             ],
+        )
+
+    def test_machine_properties_without_default(self):
+        arm = executable(self.bin, "qemu-system-aarch64")
+        self.run = FakeRun(program="qemu-system-aarch64")
+        programs = Programs(self.run)
+        info = self.successResultOf(programs.qemu(arm))
+        self.assertEqual(info.default_machine, "")
+        properties = self.successResultOf(programs.machine_properties(info))
+        self.assertIn("dump-guest-core", properties)
+        self.successResultOf(programs.machine_properties(info, "virt"))
+        asked = [args for _, args in self.run.calls[len(QEMU_QUESTIONS) :]]
+        self.assertEqual(
+            asked, [machine_question("none"), machine_question("virt")]
         )
 
     def test_machine_properties_missing(self):

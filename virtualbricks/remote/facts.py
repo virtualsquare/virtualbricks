@@ -49,6 +49,7 @@ from virtualbricks.engine import folder_entries
 from virtualbricks.errors import CommandError, InvalidNameError
 from virtualbricks.i18n import _
 from virtualbricks.programs import (
+    EMPTY_MACHINE,
     Answer,
     ProgramError,
     programs,
@@ -156,7 +157,7 @@ class Facts(_Base):
                 asking = defer.succeed(machine)
             else:
                 asking = programs.qemu(path).addCallback(
-                    lambda info: info.default_machine
+                    lambda info: info.default_machine or EMPTY_MACHINE
                 )
             answering = asking.addCallback(
                 lambda chosen: programs.machine_answer(path, chosen)

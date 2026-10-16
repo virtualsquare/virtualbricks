@@ -119,11 +119,16 @@ and 1.7.
 
 ### W6. The CPU models of QEMU 8 and older
 
-- **Why:** up to QEMU 8, a line of `-cpu help` starts with the architecture,
-  as "x86 486"; from QEMU 9 it's indented instead.
+- **Why:** up to QEMU 8, each architecture writes `-cpu help` its own way:
+  the architecture first, as "x86 486", "PowerPC 603" and "s390 qemu";
+  "MIPS '4Kc'"; SPARC's names with spaces, as "Sparc  Fujitsu MB86904 IU ...",
+  which `-cpu` takes as Fujitsu-MB86904; or the names alone without a
+  heading, as m68k, sh4, RISC-V, avr and loongarch64. From QEMU 9 every
+  architecture indents them under a heading.
 - **Needed on:** Ubuntu 22.04 (6.2), Debian 12 (7.2), Ubuntu 24.04 (8.2.2).
   No target has QEMU 9; Debian 13 has 10.0.
-- **Where:** `virtualbricks/programs.py`, `parse_cpus()`, "Up to QEMU 8".
+- **Where:** `virtualbricks/programs.py`, `_cpu()` and `parse_cpus()`, "Up
+  to QEMU 8".
 - **Removing it:** only the indented lines; when the oldest QEMU supported is
   9 or later.
 

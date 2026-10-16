@@ -20,7 +20,9 @@ Record what the QEMU and VDE programs of each target distribution answer.
 
 Each target runs in a podman container: its packages are installed, its
 programs are asked the questions of virtualbricks.programs, and the answers
-are written to <target>.json next to this script, for the tests. Run it again
+are written to <target>.json next to this script, for the tests: those of
+qemu-system-x86_64 under "qemu", those of the other architectures under
+"emulators", by program. Run it again
 for a new distribution, or when a distribution updates its QEMU:
 
     python virtualbricks/tests/data/programs/record.py [TARGET...]
@@ -46,9 +48,32 @@ from virtualbricks.programs import (
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PACKAGES = ("qemu-system-x86", "qemu-system-gui", "vde2", "vde2-cryptcab")
+PACKAGES = (
+    "qemu-system-x86",
+    "qemu-system-gui",
+    "vde2",
+    "vde2-cryptcab",
+    "qemu-system-arm",
+    "qemu-system-mips",
+    "qemu-system-ppc",
+    "qemu-system-misc",
+)
+# The packages that only some targets have: riscv and s390x are in
+# qemu-system-misc where they're missing.
+OPTIONAL = ("qemu-system-riscv", "qemu-system-s390x")
 QEMU = "qemu-system-x86_64"
 MACHINES = ("pc", "q35")
+# The other architectures, those Debian releases on: each is asked the same
+# questions, and of its machine types the default one, virt where it has one,
+# and the empty machine where it has no default.
+EMULATORS = (
+    "qemu-system-aarch64",
+    "qemu-system-arm",
+    "qemu-system-ppc64",
+    "qemu-system-riscv64",
+    "qemu-system-s390x",
+    "qemu-system-mips64el",
+)
 # Ubuntu moves the releases it no longer supports to old-releases: when the
 # archive doesn't answer, the sources are pointed there.
 OLD_RELEASES = (
@@ -73,6 +98,22 @@ def _ask(name: str, *args: str) -> str:
     return f"ask {shlex.quote(name)} {shlex.join(args)}"
 
 
+# Asks a program of its machine types, as machine_question() does: the default
+# one, virt where it has one, and none where it has no default. Their names go
+# to /out/PROGRAM.machines.
+MACHINES_OF = r"""machines() {
+  list=$("$1" -machine help)
+  default=$(printf '%s\n' "$list" | sed -n 's/^\([^ ]*\) .*(default)$/\1/p')
+  asked=$default
+  printf '%s\n' "$list" | grep -q '^virt ' && asked="$asked virt"
+  [ -z "$default" ] && asked="$asked none"
+  for machine in $asked; do
+    ask "$1.machine.$machine" "$1" -machine "$machine,help"
+  done
+  echo $asked >"/out/$1.machines"
+}"""
+
+
 def script() -> str:
     """The shell script that runs in the container, answers in /out."""
 
@@ -82,12 +123,17 @@ def script() -> str:
         'ask() { name=$1; shift; if "$@" >"/out/$name.out"'
         ' 2>"/out/$name.err"; then echo 0; else echo $?; fi'
         ' >"/out/$name.status"; }',
+        MACHINES_OF,
         "apt-get update -qq >/dev/null 2>&1 ||"
         f" {{ {OLD_RELEASES} && apt-get update -qq >/dev/null; }}",
-        "apt-get install -y -qq --no-install-recommends "
-        f"{' '.join(PACKAGES)} >/dev/null 2>&1 || exit 1",
-        "dpkg-query -W -f '${Package}\\t${Version}\\n' "
-        f"{' '.join(PACKAGES)} >/out/packages.tsv",
+        f"packages='{' '.join(PACKAGES)}'",
+        f"for package in {' '.join(OPTIONAL)}; do"
+        ' [ -n "$(apt-cache madison $package 2>/dev/null)" ]'
+        ' && packages="$packages $package"; done',
+        "apt-get install -y -qq --no-install-recommends"
+        " $packages >/dev/null 2>&1 || exit 1",
+        "dpkg-query -W -f '${Package}\\t${Version}\\n' $packages"
+        " >/out/packages.tsv",
         f"command -v {QEMU} >/out/qemu.path",
     ]
     for name, args in QEMU_QUESTIONS.items():
@@ -96,6 +142,12 @@ def script() -> str:
         lines.append(
             _ask(f"machine.{machine}", QEMU, *machine_question(machine))
         )
+    for program in EMULATORS:
+        lines.append(f"if command -v {program} >/out/{program}.path; then")
+        for name, args in QEMU_QUESTIONS.items():
+            lines.append("  " + _ask(f"{program}.{name}", program, *args))
+        lines.append(f"  machines {program}")
+        lines.append("fi")
     for program in VDE_PROGRAMS:
         lines.append(
             f"printf '%s\\t%s\\n' {program} \"$(command -v {program})\""
@@ -128,6 +180,29 @@ def _table(path: str) -> dict[str, str]:
     return {key: value for key, value in rows}
 
 
+def _emulators(out: str) -> dict[str, object]:
+    """The answers of the other architectures, by program."""
+
+    emulators = {}
+    for program in EMULATORS:
+        path = _read(os.path.join(out, f"{program}.path")).strip()
+        if not path:
+            continue
+        machines = _read(os.path.join(out, f"{program}.machines")).split()
+        emulators[program] = {
+            "program": path,
+            "answers": {
+                name: _answer(out, f"{program}.{name}")
+                for name in QEMU_QUESTIONS
+            },
+            "machines": {
+                machine: _answer(out, f"{program}.machine.{machine}")
+                for machine in machines
+            },
+        }
+    return emulators
+
+
 def record(target: str) -> None:
     image = TARGETS[target]
     with tempfile.TemporaryDirectory() as out:
@@ -156,6 +231,7 @@ def record(target: str) -> None:
                     for machine in MACHINES
                 },
             },
+            "emulators": _emulators(out),
             "vde": {
                 "programs": programs,
                 "answers": {

@@ -305,7 +305,7 @@ class Consoles:
         that the terminal needs, and its package; None if it can.
         """
 
-        from virtualbricks.programs import PACKAGES
+        from virtualbricks.programs import package_of
         from virtualbricks.vde import which
 
         program = brick.term_command
@@ -313,7 +313,7 @@ class Consoles:
             which(program)
         except FileNotFoundError:
             return _("needs {program} of {package}").format(
-                program=program, package=PACKAGES.get(program) or program
+                program=program, package=package_of(program) or program
             )
         return None
 

@@ -46,6 +46,7 @@ from virtualbricks.programs import (
     Programs,
     parse_machine_properties,
 )
+from virtualbricks.programs import vde_info as make_vde_info
 from virtualbricks.tests import BrickTestCase, CommandTestCase, FakeLogger
 from virtualbricks.tests.test_programs import (
     TARGETS,
@@ -54,7 +55,6 @@ from virtualbricks.tests.test_programs import (
     load,
     recorded_info,
 )
-from virtualbricks.programs import vde_info as make_vde_info
 
 RUN = "/run/vb"
 
@@ -798,13 +798,17 @@ class TestPrepare(CommandTestCase):
         self.assertIn(("-machine", f"{info.default_machine},help"), asked)
 
     def test_missing_program(self):
+        # whatever this computer has installed
+        self.patch(os, "environ", dict(os.environ, PATH=self.bin))
         vm = self.factory.new_brick("qemu", "vm")
         vm.update_config({"qemu_program": "qemu-system-arm"})
         failure = self.failureResultOf(vm.prepare())
         failure.trap(ProgramError)
-        self.assertEqual(str(failure.value), "qemu-system-arm isn't installed")
+        self.assertEqual(
+            str(failure.value),
+            "qemu-system-arm (qemu-system-arm) isn't installed",
+        )
         os.remove(os.path.join(self.bin, "qemu-system-i386"))
-        self.patch(os, "environ", dict(os.environ, PATH=self.bin))
         vm.update_config({"qemu_program": "qemu-system-i386"})
         failure = self.failureResultOf(vm.prepare())
         self.assertEqual(

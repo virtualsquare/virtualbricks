@@ -33,11 +33,11 @@ import attr
 
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.programs import (
-    PACKAGES,
     Missing,
     ProgramError,
     QemuInfo,
     VdeInfo,
+    package_of,
 )
 
 __all__ = ["Command", "Prepared", "joined", "socket_path", "vde_program"]
@@ -109,7 +109,7 @@ def vde_program(vde: VdeInfo | None, name: str) -> str:
     path = vde.programs.get(name)
     if path is None:
         raise ProgramError(
-            f"{Missing(name, PACKAGES.get(name))} isn't installed"
+            f"{Missing(name, package_of(name))} isn't installed"
         )
     return path
 

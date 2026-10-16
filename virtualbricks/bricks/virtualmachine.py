@@ -18,7 +18,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import datetime
 import errno
 import itertools
@@ -26,6 +25,7 @@ import os
 import re
 import shutil
 from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import attr
@@ -65,15 +65,15 @@ from virtualbricks.config.tomlfile import Value
 from virtualbricks.config.workspace import projects
 from virtualbricks.i18n import N_, _
 from virtualbricks.nic import is_valid_mac, random_mac
+from virtualbricks.observable import Observable, Signal
 from virtualbricks.programs import (
-    PACKAGES,
     Missing,
     ProgramError,
     QemuInfo,
     decode_output,
+    package_of,
     programs,
 )
-from virtualbricks.observable import Observable, Signal
 from virtualbricks.qemu import imageformat
 from virtualbricks.qemu.imageformat import NotCowFileError
 from virtualbricks.qemu.run import qemu_img, which
@@ -1197,7 +1197,7 @@ class VirtualMachine(bricks.Brick):
         try:
             path = self.program()
         except FileNotFoundError:
-            missing = Missing(name, PACKAGES.get(name))
+            missing = Missing(name, package_of(name))
             return defer.fail(ProgramError(f"{missing} isn't installed"))
         disks = [disk for disk in self.disks() if disk.image]
 

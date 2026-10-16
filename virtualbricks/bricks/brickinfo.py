@@ -45,6 +45,7 @@ from typing import TYPE_CHECKING, Any
 
 import attr
 
+from virtualbricks.bricks import Brick, is_running
 from virtualbricks.bricks.capture import Capture
 from virtualbricks.bricks.netemu import Netemu
 from virtualbricks.bricks.plug import Plug
@@ -58,8 +59,7 @@ from virtualbricks.bricks.tunnellisten import TunnelListen
 from virtualbricks.bricks.virtualmachine import VirtualMachine
 from virtualbricks.bricks.wire import Wire
 from virtualbricks.i18n import _, ngettext
-from virtualbricks.programs import PACKAGES, Missing, find_program
-from virtualbricks.bricks import Brick, is_running
+from virtualbricks.programs import Missing, find_program, package_of
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
@@ -510,12 +510,12 @@ def _folder(name: str, vde_folder: str, qemu_folder: str) -> str:
 
 def _not_installed(choice: Sequence[str]) -> str:
     if len(choice) > 1:
-        names = [str(Missing(name, PACKAGES.get(name))) for name in choice]
+        names = [str(Missing(name, package_of(name))) for name in choice]
         return _("Neither {programs} nor {last} is installed.").format(
             programs=", ".join(names[:-1]), last=names[-1]
         )
     name = choice[0]
-    package = PACKAGES.get(name)
+    package = package_of(name)
     if package is None:
         return _(
             "{program} isn't installed, and no distribution ships it."

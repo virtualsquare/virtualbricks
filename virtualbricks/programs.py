@@ -47,7 +47,7 @@ from twisted.internet.utils import getProcessOutputAndValue
 from twisted.python.failure import Failure
 
 __all__ = [
-    "PACKAGES",
+    "EMPTY_MACHINE",
     "QEMU_QUESTIONS",
     "VDE_PROGRAMS",
     "VDE_QUESTIONS",
@@ -64,11 +64,16 @@ __all__ = [
     "find_program",
     "machine_question",
     "missing_programs",
+    "package_of",
     "parse_machine_properties",
     "programs",
     "qemu_info",
     "qemu_programs",
 ]
+
+# The machine type of every QEMU, which has nothing: a program without a
+# default machine type answers some questions only of a machine.
+EMPTY_MACHINE = "none"
 
 # The questions asked to a QEMU program, by the name of their answer.
 QEMU_QUESTIONS: dict[str, tuple[str, ...]] = {
@@ -79,7 +84,7 @@ QEMU_QUESTIONS: dict[str, tuple[str, ...]] = {
     "devices": ("-device", "help"),
     "displays": ("-display", "help"),
     "audio_drivers": ("-audiodev", "help"),
-    "netdevs": ("-netdev", "help"),
+    "netdevs": ("-machine", EMPTY_MACHINE, "-netdev", "help"),
     "accelerators": ("-accel", "help"),
 }
 
@@ -90,8 +95,10 @@ VDE_QUESTIONS: dict[str, tuple[str, ...]] = {
 }
 
 # The programs of the bricks, and the package of Debian and Ubuntu that has
-# each; None for a program that no distribution ships.
-PACKAGES: dict[str, str | None] = {
+# each; None for a program that no distribution ships. A program that moved to
+# another package has both, the newer first.
+_RISCV = ("qemu-system-riscv", "qemu-system-misc")
+PACKAGES: dict[str, str | tuple[str, ...] | None] = {
     "vde_switch": "vde2",
     "vde_plug": "vde2",
     "dpipe": "vde2",
@@ -106,8 +113,63 @@ PACKAGES: dict[str, str | None] = {
     "qemu-img": "qemu-utils",
     "qemu-system-x86_64": "qemu-system-x86",
     "qemu-system-i386": "qemu-system-x86",
+    "qemu-system-x86_64-microvm": "qemu-system-x86",
+    # Ubuntu's only
+    "qemu-system-x86_64-spice": "qemu-system-x86",
+    "qemu-system-aarch64": "qemu-system-arm",
+    "qemu-system-arm": "qemu-system-arm",
+    "qemu-system-mips": "qemu-system-mips",
+    "qemu-system-mipsel": "qemu-system-mips",
+    "qemu-system-mips64": "qemu-system-mips",
+    "qemu-system-mips64el": "qemu-system-mips",
+    "qemu-system-ppc": "qemu-system-ppc",
+    "qemu-system-ppc64": "qemu-system-ppc",
+    "qemu-system-riscv32": _RISCV,
+    "qemu-system-riscv64": _RISCV,
+    # in qemu-system-misc on Debian 12
+    "qemu-system-s390x": ("qemu-system-s390x", "qemu-system-misc"),
+    "qemu-system-sparc": "qemu-system-sparc",
+    "qemu-system-sparc64": "qemu-system-sparc",
+    "qemu-system-alpha": "qemu-system-misc",
+    "qemu-system-avr": "qemu-system-misc",
+    "qemu-system-cris": "qemu-system-misc",
+    "qemu-system-hexagon": "qemu-system-misc",
+    "qemu-system-hppa": "qemu-system-misc",
+    "qemu-system-loongarch64": "qemu-system-misc",
+    "qemu-system-m68k": "qemu-system-misc",
+    "qemu-system-microblaze": "qemu-system-misc",
+    "qemu-system-microblazeel": "qemu-system-misc",
+    "qemu-system-nios2": "qemu-system-misc",
+    "qemu-system-or1k": "qemu-system-misc",
+    "qemu-system-rx": "qemu-system-misc",
+    "qemu-system-sh4": "qemu-system-misc",
+    "qemu-system-sh4eb": "qemu-system-misc",
+    "qemu-system-tricore": "qemu-system-misc",
+    "qemu-system-xtensa": "qemu-system-misc",
+    "qemu-system-xtensaeb": "qemu-system-misc",
+    # Debian's names for some of them, links to the programs above
+    "qemu-system-amd64": "qemu-system-x86",
+    "qemu-system-arm64": "qemu-system-arm",
+    "qemu-system-armel": "qemu-system-arm",
+    "qemu-system-armhf": "qemu-system-arm",
+    "qemu-system-loong64": "qemu-system-misc",
+    "qemu-system-powerpc": "qemu-system-ppc",
+    "qemu-system-ppc64el": "qemu-system-ppc",
+    "qemu-system-ppc64le": "qemu-system-ppc",
 }
 VDE_PROGRAMS = tuple(name for name in PACKAGES if not name.startswith("qemu"))
+
+
+def package_of(program: str) -> str | None:
+    """
+    The package that has a program, as Missing names it: both of a program
+    that moved, as "qemu-system-riscv or qemu-system-misc".
+    """
+
+    package = PACKAGES.get(program)
+    if isinstance(package, tuple):
+        return " or ".join(package)
+    return package
 
 
 def machine_question(machine: str) -> tuple[str, ...]:
@@ -288,20 +350,56 @@ def parse_machines(text: str) -> tuple[tuple[Entry, ...], str]:
     return tuple(entries), default
 
 
+# The architectures that start the lines of their CPU models up to QEMU 8.
+_CPU_PREFIXES = ("x86", "PowerPC", "s390")
+_SPARC_CPU = re.compile(r"Sparc\s+(.+?)\s+(IU .*)$")
+_MIPS_CPU = re.compile(r"MIPS '([^']+)'")
+
+
+def _cpu(line: str) -> Entry | None:
+    """The CPU model of a line of ``-cpu help``; None if it has none."""
+
+    stripped = line.strip()
+    if line[:1].isspace():
+        name, _, description = stripped.partition(" ")
+    elif match := _SPARC_CPU.match(line):
+        # -cpu takes the name with dashes
+        name, description = match.group(1).replace(" ", "-"), match.group(2)
+    elif match := _MIPS_CPU.match(line):
+        name, description = match.group(1), ""
+    elif line.partition(" ")[0] in _CPU_PREFIXES:
+        name, _, description = line.partition(" ")[2].strip().partition(" ")
+    elif " " not in stripped:
+        name, description = stripped, ""
+    else:
+        # the features that SPARC lists after its models
+        return None
+    return Entry(name, description.strip())
+
+
 def parse_cpus(text: str) -> tuple[Entry, ...]:
     """
     The CPU models of ``-cpu help``.
 
-    Up to QEMU 8 a line starts with the architecture, as "x86 486"; from
-    QEMU 9 it's indented instead.
+    From QEMU 9 every architecture indents them under a heading. Up to QEMU 8
+    each has its own way: indented under a heading as arm; after the
+    architecture as "x86 486", "PowerPC 603" and "s390 qemu"; "MIPS '4Kc'";
+    "Sparc  Fujitsu MB86904 IU ..." for the model Fujitsu-MB86904; or the
+    names alone, without a heading, as m68k and RISC-V. The list ends at a
+    blank line, before the flags of x86 and s390x.
     """
 
-    entries = []
-    for line in _items(text):
-        if not line[:1].isspace():
-            line = line.partition(" ")[2]
-        name, _, description = line.strip().partition(" ")
-        entries.append(Entry(name, description.strip()))
+    entries: list[Entry] = []
+    for line in text.splitlines():
+        if not line.strip():
+            if entries:
+                break
+            continue
+        if line.endswith(":"):
+            continue
+        entry = _cpu(line)
+        if entry is not None:
+            entries.append(entry)
     return tuple(entries)
 
 
@@ -525,7 +623,9 @@ def vde_found(folder: str) -> FolderPrograms:
 
     found = _found(folder, REQUIRED)
     missing = tuple(
-        Missing(name, PACKAGES[name]) for name in REQUIRED if name not in found
+        Missing(name, package_of(name))
+        for name in REQUIRED
+        if name not in found
     )
     return FolderPrograms(folder, _exists(folder), found, missing)
 
@@ -539,9 +639,9 @@ def qemu_found(folder: str) -> FolderPrograms:
     found = _found(folder, ["qemu-img", *qemu_programs(folder)])
     missing = []
     if "qemu-img" not in found:
-        missing.append(Missing("qemu-img", PACKAGES["qemu-img"]))
+        missing.append(Missing("qemu-img", package_of("qemu-img")))
     if not any(name.startswith("qemu-system-") for name in found):
-        missing.append(Missing(QEMU_OF_A_FOLDER, PACKAGES[QEMU_OF_A_FOLDER]))
+        missing.append(Missing(QEMU_OF_A_FOLDER, package_of(QEMU_OF_A_FOLDER)))
     return FolderPrograms(folder, _exists(folder), found, tuple(missing))
 
 
@@ -724,10 +824,13 @@ class Programs:
     def machine_properties(
         self, info: QemuInfo, machine: str = ""
     ) -> defer.Deferred[frozenset[str]]:
-        """The properties of a machine type; the default one if empty."""
+        """
+        The properties of a machine type; the default one if empty, or the
+        empty machine of a program without a default one.
+        """
 
         deferred = self.machine_answer(
-            info.path, machine or info.default_machine
+            info.path, machine or info.default_machine or EMPTY_MACHINE
         )
         return deferred.addCallback(
             lambda answer: parse_machine_properties(answer.out)
