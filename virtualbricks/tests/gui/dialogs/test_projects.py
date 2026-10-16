@@ -30,6 +30,7 @@ from virtualbricks.console import ampwire
 from virtualbricks.tests import FakeLogger, FakeTrash
 from virtualbricks.tests.config.test_images import FakeWorkspace
 from virtualbricks.tests.gui import GuiTestCase, ProjectsGui, has_display
+from virtualbricks.tests.gui.test_drop import takes_files
 
 if has_display:
     from gi.repository import Gdk, GdkPixbuf, Gtk
@@ -146,7 +147,7 @@ class TestList(ProjectsTestCase):
         window.empty_new_button.clicked()
         self.assertEqual(self.dialogs[0].kind, "new")
         window.empty_import_button.clicked()
-        self.assertEqual(self.gui.calls, [("import",)])
+        self.assertEqual(self.gui.calls, [("import", None)])
 
     def test_the_most_recent_first(self):
         self.lab("old", days=30)
@@ -461,7 +462,7 @@ class TestActions(ProjectsTestCase):
     def test_import(self):
         window = self.window()
         window.import_button.clicked()
-        self.assertEqual(self.gui.calls, [("import",)])
+        self.assertEqual(self.gui.calls, [("import", None)])
         self.lab("imported")
         self.gui.import_closed()
         self.assertIn("imported", self.names(window))
@@ -521,6 +522,52 @@ class TestActions(ProjectsTestCase):
         self.addCleanup(parent.destroy)
         window.show(parent)
         self.assertIs(window.window.get_transient_for(), parent)
+
+
+class TestDrop(ProjectsTestCase):
+    """Archives dropped on the window are imported, a window each."""
+
+    def test_the_window_takes_files(self):
+        window = self.window()
+        # its content, the projects or the empty page, all of it
+        content = window.stack.get_parent()
+        self.assertIs(content.get_parent(), window.window)
+        self.assertTrue(takes_files(content))
+        # nothing in it takes the drop first
+        self.assertIsNone(window.search_entry.drag_dest_get_target_list())
+        self.assertIsNone(window.readme_view.drag_dest_get_target_list())
+
+    def test_not_over_a_connection(self):
+        self.gui.engine.local = False
+        window = self.window()
+        self.assertFalse(takes_files(window.stack.get_parent()))
+
+    def test_archives_dropped(self):
+        window = self.window()
+        window.import_files(["/home/a.vbp", "/home/b.tar.gz"], [])
+        self.assertEqual(
+            self.gui.calls,
+            [("import", "/home/a.vbp"), ("import", "/home/b.tar.gz")],
+        )
+        self.assertFalse(window.info_bar.get_visible())
+        # the list follows the import, once its window closes
+        self.lab("imported")
+        self.gui.import_closed()
+        self.assertEqual(self.names(window), ["imported"])
+
+    def test_what_isnt_a_file_here(self):
+        window = self.window()
+        window.import_files(
+            ["/home/a.vbp"], ["https://example.org/lab.vbp", "/home/labs"]
+        )
+        # the archive all the same
+        self.assertEqual(self.gui.calls, [("import", "/home/a.vbp")])
+        self.assertTrue(window.info_bar.get_visible())
+        self.assertEqual(
+            window.info_label.get_text(),
+            "Only the files of this computer can be imported, not "
+            "https://example.org/lab.vbp, /home/labs",
+        )
 
 
 class TestRemove(ProjectsTestCase):

@@ -475,6 +475,9 @@ class MarkdownView(Gtk.TextView):
     def __init__(self, **properties: Any) -> None:
         properties.setdefault("wrap_mode", Gtk.WrapMode.WORD_CHAR)
         super().__init__(editable=False, cursor_visible=False, **properties)
+        # a view: what is dropped on it is for the window around it, as an
+        # archive to import
+        self.drag_dest_unset()
         self.buffer = self.get_buffer()
         for name, style in STYLES.items():
             self.buffer.create_tag(name, **style)

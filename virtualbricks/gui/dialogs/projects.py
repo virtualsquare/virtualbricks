@@ -22,7 +22,8 @@ The Projects window: find, open and look after the projects.
 A searchable list of the projects, the most recently used first, and the
 details of the selected one with every action: Open, Duplicate, Export,
 Rename, Show in Files and Remove. New and Import are in the header bar, and
-the folder of the workspace under its title.
+the folder of the workspace under its title; an archive dropped on the window
+is imported too.
 The space a project takes is read in the background, for the selected
 project only.
 """
@@ -42,7 +43,7 @@ from virtualbricks import errors
 from virtualbricks.config.report import Report
 from virtualbricks.config.workspace import DiskUsage, ProjectSummary, Workspace
 from virtualbricks.engine import Engine
-from virtualbricks.gui import imageinfo
+from virtualbricks.gui import drop, imageinfo
 from virtualbricks.gui.dialogs import projectname
 from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.gui.markdownview import MarkdownView
@@ -195,8 +196,9 @@ class ProjectsWindow(Window):
     Projects are opened, created and saved as the menus of the main window
     do, with open_project, new_project and save_project, which the name
     dialog takes too; set_title names the project open in the title of the
-    main window, and import_project and export_project run the import and
-    the export. engine lists the projects, measures them and removes them.
+    main window, and import_project and export_project run the import, of an
+    archive dropped or chosen, and the export. engine lists the projects,
+    measures them and removes them.
     """
 
     help_page = "projects"
@@ -211,7 +213,7 @@ class ProjectsWindow(Window):
         new_project: Callable[[str, str], defer.Deferred[Report]],
         save_project: Callable[[], defer.Deferred[None]],
         set_title: Callable[[], None],
-        import_project: Callable[[Callable[[], object]], object],
+        import_project: Callable[[Callable[[], object], str | None], object],
         export_project: Callable[[ProjectSummary, Gtk.Window], object],
     ) -> None:
         self.engine = engine
@@ -294,6 +296,12 @@ class ProjectsWindow(Window):
                 _("Not over a connection, for now")
             )
             self._action("show").set_enabled(False)
+        else:
+            # an archive dropped on the window is imported (04 §3); on its
+            # content, which GTK highlights, as it doesn't a toplevel
+            drop.take_files(outer, self.import_files)
+            # it takes drops of text, and would refuse the archive
+            self.search_entry.drag_dest_unset()
 
     def _build_empty(self) -> Gtk.Box:
         box = Gtk.Box(
@@ -671,7 +679,15 @@ class ProjectsWindow(Window):
         self.name_dialog(projectname.NEW)
 
     def on_import_clicked(self, button: Gtk.Button) -> None:
-        self.import_project(self.on_import_closed)
+        self.import_project(self.on_import_closed, None)
+
+    def import_files(self, files: list[str], others: list[str]) -> None:
+        """Import the files dropped, each in its own Import window."""
+
+        for path in files:
+            self.import_project(self.on_import_closed, path)
+        if others:
+            self.show_problem(drop.refusal(others))
 
     def on_import_closed(self) -> None:
         if not self.destroyed:

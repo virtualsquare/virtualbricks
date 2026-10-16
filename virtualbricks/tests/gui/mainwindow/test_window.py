@@ -29,12 +29,16 @@ from virtualbricks.config.settings import (
 from virtualbricks.engine import LocalEngine
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
+from virtualbricks.tests.gui.test_drop import takes_files
 
 if has_display:
     from gi.repository import Gdk, Gtk
 
     from virtualbricks.gui.dialogs import base
     from virtualbricks.gui.mainwindow import window
+    from virtualbricks.gui.mainwindow.readme import ReadmeTab
+    from virtualbricks.gui.mainwindow.rowtab import RowsTab
+    from virtualbricks.gui.mainwindow.tab import tabs
     from virtualbricks.gui.mainwindow.window import MainWindow
 
 
@@ -208,6 +212,53 @@ class TestTheTabs(GuiTestCase):
             notebook.get_current_page(), notebook.page_num(gui.images)
         )
         self.assertNotEqual(notebook.page_num(gui.images), 0)
+
+
+class TestDrop(GuiTestCase):
+    """Archives dropped on the window are imported, a window each."""
+
+    def setUp(self):
+        super().setUp()
+        self.gui = MainWindow(LocalEngine(self.factory))
+        self.addCleanup(self.gui.window.destroy)
+        self.logger = FakeLogger()
+        self.patch(window, "logger", self.logger)
+        self.imported = []
+        self.gui.import_project = lambda path: self.imported.append(path)
+
+    def test_the_window_takes_files(self):
+        # its content, menus and tabs, all of it
+        self.assertTrue(takes_files(self.gui.window.get_child()))
+        # nothing in it takes the drop first, but the fields of text
+        found = []
+        for tab in tabs(self.gui.main_notebook):
+            if isinstance(tab, RowsTab):
+                self.assertIsNone(tab.search.drag_dest_get_target_list())
+                found.append(tab.help_page)
+            elif isinstance(tab, ReadmeTab):
+                self.assertIsNone(tab.preview.drag_dest_get_target_list())
+                found.append(tab.help_page)
+        self.assertEqual(len(found), 4)
+
+    def test_archives_dropped(self):
+        self.gui.import_files(["/home/a.vbp", "/home/b.tar.gz"], [])
+        self.assertEqual(self.imported, ["/home/a.vbp", "/home/b.tar.gz"])
+        self.assertEqual(self.logger.events, [])
+
+    def test_what_isnt_a_file_here(self):
+        self.gui.import_files(
+            ["/home/a.vbp"], ["https://example.org/lab.vbp", "/home/labs"]
+        )
+        # the archive all the same
+        self.assertEqual(self.imported, ["/home/a.vbp"])
+        self.assertEqual(self.logger.levels(), ["error"])
+        self.assertEqual(
+            self.logger.formatted(),
+            [
+                "Only the files of this computer can be imported, not "
+                "https://example.org/lab.vbp, /home/labs"
+            ],
+        )
 
 
 class TestTrayIcon(GuiTestCase):

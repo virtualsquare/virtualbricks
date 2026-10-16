@@ -44,8 +44,9 @@
   <section id="import">
     <title>Importing a project</title>
     <p>Choose <guiseq><gui>Projects</gui><gui>Import…</gui></guiseq>, or
-    <gui>Import…</gui> in the Projects window, then the archive. One page
-    shows what it holds:</p>
+    <gui>Import…</gui> in the Projects window, then the archive; or drop
+    the archive on the main window or on the Projects window, from the file
+    manager. One page shows what it holds:</p>
     <terms>
       <item>
         <title><gui>Name</gui></title>

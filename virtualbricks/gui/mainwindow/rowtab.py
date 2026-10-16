@@ -616,6 +616,9 @@ class RowsTab(Tab, Gtk.Stack, Generic[T]):
         self.search = Gtk.SearchEntry(
             visible=True, placeholder_text=self.SEARCH, width_chars=24
         )
+        # it would take an archive dropped on it, as text, from the main
+        # window, which imports it
+        self.search.drag_dest_unset()
         self.all_button = Gtk.RadioButton(
             visible=True, label=_("All"), draw_indicator=False
         )

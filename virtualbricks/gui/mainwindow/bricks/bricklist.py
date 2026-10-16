@@ -261,8 +261,8 @@ class BrickList(RowList[Brick]):
     ) -> bool:
         source = self.dragged(context)
         if source is None:
-            Gtk.drag_finish(context, False, False, time)
-            return True
+            # not a brick: for the window, which imports archives
+            return False
 
         def finish(done: object) -> object:
             # a failure goes on, to the log

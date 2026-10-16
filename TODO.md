@@ -8,7 +8,6 @@
 
 ## Projects
 
-- [ ] Import an archive dropped on the Projects window (04 §3, §9)
 - [ ] Drop the import message window
 
 ## Bricks and programs
@@ -345,6 +344,10 @@
 
 # DONE
 
+- [x] Import an archive dropped on the Projects window, or on the main
+  window: an Import window for each file, reading it; what isn't a file of
+  this computer is named in the bar of the Projects window, or in an error
+  (`gui/drop.py`, 04 §3, §9, Since then)
 - [x] The guide opens in Yelp, the program of `help:` links, wherever the
   pages are: `help:virtualbricks` where they are installed where Yelp
   looks, else the files of the pages, of the sources or of a virtualenv;

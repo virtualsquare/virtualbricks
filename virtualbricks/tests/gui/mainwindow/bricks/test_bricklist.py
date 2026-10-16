@@ -499,8 +499,9 @@ class TestDragAndDrop(BrickListTestCase):
         row = self.row(self.sw)
         self.assertIs(self.list.on_drag_motion(row, None, 1, 2, 42), False)
         self.list.on_drag_leave(row, None, 43)
-        self.assertTrue(self.list.on_drag_drop(row, None, 1, 2, 44))
-        self.assertEqual(self.drag.finished, [(False, False, 44)])
+        # the drop goes on to the window, which takes files
+        self.assertIs(self.list.on_drag_drop(row, None, 1, 2, 44), False)
+        self.assertEqual(self.drag.finished, [])
 
     def test_the_drop(self):
         self.assertTrue(

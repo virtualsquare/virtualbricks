@@ -29,10 +29,12 @@ that the tests can't do yet: those needs come first.
 - [ ] Run the scenarios on X11 too, on Xvfb, beside Broadway: a second
   kind of screen in `harness.py`, chosen with an option as `pytest --screen
   x11`, Broadway the default; the steps don't change. It needs `xvfb`, and
-  `python-xlib` or `xdotool` for XTest, the input of X11; not tried yet,
-  without Xvfb on the machine. It would test what most users run, and what
-  Broadway can't: real keys and drag and drop. The work: the screen, its
-  input with XTest, and its recording with `ffmpeg`. What differs:
+  `python-xlib` or `xdotool` for XTest, the input of X11; both are on the
+  machine since 16 Oct 2026, and a drop on the Projects window was tried
+  by hand there, not yet from the tests. It would test what most users
+  run, and what Broadway can't: real keys and drag and drop. The work: the
+  screen, its input with XTest, and its recording with `ffmpeg`. What
+  differs:
 
   | | Broadway, now | Xvfb |
   | :- | :- | :- |
@@ -407,7 +409,10 @@ that the tests can't do yet: those needs come first.
 
 - The tray icon: Broadway has no system tray
 - A tap and a capture interface that run: they need `CAP_NET_ADMIN`
-- A file dropped from the desktop on the Projects window
+- A file dropped from the desktop on the Projects window or on the main
+  window: on Xvfb it works, tried by hand on 16 Oct 2026, a drag from a GTK
+  window of its own that offers the file, with `xdotool mousedown`, moves
+  and `mouseup`
 - A row of bricks dropped on another, which connects the two: GTK 3 on
   Broadway has no drag and drop (`gdkdnd-broadway.c` finds no window under
   the pointer). Besides, the rows never start a drag: a `GtkListBoxRow` has

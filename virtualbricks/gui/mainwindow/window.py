@@ -45,6 +45,7 @@ from virtualbricks.config.report import Report
 from virtualbricks.config.settings import get_setting, ksm_started
 from virtualbricks.config.workspace import ProjectSummary, projects
 from virtualbricks.engine import Engine
+from virtualbricks.gui import drop
 from virtualbricks.gui.dialogs import projectname
 from virtualbricks.gui.dialogs.about import AboutDialog
 from virtualbricks.gui.dialogs.base import Window
@@ -94,6 +95,7 @@ programs_not_found = (
     " it: {programs}. Some bricks won't start."
 )
 quit_refused = "{error}"
+files_refused = "{error}"
 # the answers of the bar of a connection lost
 RECONNECT = 1
 QUIT = 2
@@ -292,6 +294,10 @@ class MainWindow(Window):
         self.append_tab(ReadmeTab(engine))
         vbox1.pack_start(self.main_notebook, True, True, 0)
         self.window.add(vbox1)
+        if self.engine.local:
+            # an archive dropped on the window is imported, as on the
+            # Projects window; on its content, which GTK highlights
+            drop.take_files(vbox1, self.import_files)
 
         # systray_menu (Gtk.Menu)
         self.systray_menu = Gtk.Menu(visible=True, can_focus=False)
@@ -720,9 +726,14 @@ class MainWindow(Window):
         return dialog
 
     def import_project(
-        self, on_closed: Callable[[], object] | None = None
+        self,
+        on_closed: Callable[[], object] | None = None,
+        path: str | None = None,
     ) -> ImportDialog:
-        """Import a project; on_closed is called when the window closes."""
+        """
+        Import a project, from the archive at path if given, else from the
+        one chosen; on_closed is called when the window closes.
+        """
 
         dialog = ImportDialog(self.brickfactory)
 
@@ -733,7 +744,17 @@ class MainWindow(Window):
 
         dialog.show(self.window)
         dialog.get_root_widget().connect("destroy", destroyed)
+        if path is not None:
+            dialog.choose(path)
         return dialog
+
+    def import_files(self, files: list[str], others: list[str]) -> None:
+        """Import the files dropped, each in its own Import window."""
+
+        for path in files:
+            self.import_project(path=path)
+        if others:
+            logger.error(files_refused, error=drop.refusal(others))
 
     def export_project(
         self, summary: ProjectSummary | None, parent: Gtk.Window | None = None

@@ -533,6 +533,11 @@ class TestTheMainWindow(GuiTestCase):
                 item.get_tooltip_text(), "Not over a connection, for now"
             )
 
+    def test_no_archive_dropped(self):
+        self.assertIsNone(
+            self.gui.window.get_child().drag_dest_get_target_list()
+        )
+
     def test_the_bar(self):
         self.assertFalse(self.gui.lost_bar.get_visible())
         tries = []
