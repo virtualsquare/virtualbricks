@@ -103,21 +103,3 @@ one leaves the list.
   `settings.toml`: the first loaded it, the second set `terminal` and
   wrote it, the first wrote its copy as at quit, and `terminal` had its
   old value again.
-
-## Main window
-
-- [ ] **The tray icon prints a GTK critical on Broadway.** Each start of
-  the windows on GTK's Broadway backend prints
-  `Gtk-CRITICAL **: gtk_widget_get_scale_factor: assertion
-  'GTK_IS_WIDGET (widget)' failed`, so the output of every e2e scenario
-  has it, whatever the scenario does. It comes from the `Gtk.StatusIcon`
-  that `MainWindow.build_ui()` (`virtualbricks/gui/mainwindow/window.py`)
-  makes with the picture `virtualbricks.png`, hidden until its setting
-  says otherwise. On X11 the same `Gtk.StatusIcon(visible=False,
-  pixbuf=...)` prints nothing; on Wayland it wasn't tried. Probably GTK
-  gives a status icon its widgets only on X11, and setting the picture
-  elsewhere asks the scale factor of a widget that isn't there. Nothing
-  else was seen wrong: Broadway has no tray anyway (`e2e/TODO.md`). Seen
-  on 3.0.0.dev3, on 13 October 2026, in the output of the e2e scenarios;
-  `G_DEBUG=fatal-criticals`, with Python's `faulthandler` registered for
-  SIGTRAP, put it at the `Gtk.StatusIcon(...)` of `build_ui()`.

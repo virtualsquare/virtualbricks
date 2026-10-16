@@ -215,6 +215,21 @@ in the move to GTK 4 (`docs/redesign/18 - gtk4-migration.html`).
 - **Where:** `virtualbricks/bricks/tunnellisten.py`, `OPENSSL_CONFIG`,
   `write_openssl_config()` and `cryptcab()`, "OPENSSL_CONF". Commit b6c2e05.
 
+### W14. The tray icon has its picture only on X11
+
+- **Why:** GTK 3 has a tray only on X11. On another display, as Broadway
+  or Wayland, a `Gtk.StatusIcon` has no image, and a picture given to it
+  prints `Gtk-CRITICAL **: gtk_widget_get_scale_factor: assertion
+  'GTK_IS_WIDGET (widget)' failed`: `gtk_status_icon_update_image()` asks
+  the scale factor of the image before it checks that there is one. There
+  the icon goes without its picture, which no tray would show anyway.
+- **Needed on:** every target (GTK 3.24.33 to 3.24.52, and the branch
+  gtk-3-24 still so). It goes with `Gtk.StatusIcon`, which GTK 4 doesn't
+  have.
+- **Where:** `virtualbricks/gui/mainwindow/window.py`,
+  `MainWindow.build_ui()`, "GTK 3 has a tray only on X11".
+- **Removing it:** the picture given when the icon is made, `pixbuf=`.
+
 ## The end-to-end tests
 
 The tests in `e2e/` run Virtualbricks on `broadwayd`, GTK 3's HTML5 backend,
@@ -281,4 +296,4 @@ no workaround, such as drag and drop.
 - When a distribution goes: check its column in [Versions](#versions) again,
   remove the workarounds of its section and raise the floors, then move what
   the next oldest distribution still needs into a section of its own.
-- When the move to GTK 4 starts, check W7 to W12 and E1 to E7 again.
+- When the move to GTK 4 starts, check W7 to W12, W14 and E1 to E7 again.

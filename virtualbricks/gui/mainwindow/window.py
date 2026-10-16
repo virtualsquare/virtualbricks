@@ -33,7 +33,7 @@ import os
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from gi.repository import Gdk, Gtk
+from gi.repository import Gdk, GdkX11, Gtk
 from twisted.internet import defer
 from twisted.logger import Logger
 from twisted.python.failure import Failure
@@ -316,14 +316,17 @@ class MainWindow(Window):
         self.systray_menu.append(systray_close_item)
 
         # status_icon (Gtk.StatusIcon)
-        # Glade image "virtualbricks.png" (virtualbricks/gui/data)
         self.status_icon = Gtk.StatusIcon(
             # until its setting says otherwise
             visible=False,
-            pixbuf=load_pixbuf("virtualbricks.png"),
             has_tooltip=True,
             tooltip_text=_("Virtualbricks visible"),
         )
+        # GTK 3 has a tray only on X11: elsewhere the icon has no image to
+        # show its picture in, and a picture prints a GTK critical
+        if isinstance(self.window.get_display(), GdkX11.X11Display):
+            # Glade image "virtualbricks.png" (virtualbricks/gui/data)
+            self.status_icon.set_from_pixbuf(load_pixbuf("virtualbricks.png"))
 
         # Need the complete widget tree:
         # accelerators.
