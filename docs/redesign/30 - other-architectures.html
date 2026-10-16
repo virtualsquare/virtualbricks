@@ -1,0 +1,509 @@
+<title>QEMU for Other Architectures</title>
+<meta name="description" content="A proposal for the QEMU programs of other architectures in Virtualbricks: what each emulator of the seven targets answers, one reader for every CPU list, the settings left out where a machine can&rsquo;t take them, and six more architectures recorded for the tests.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+  .note { font-size: 14px; color: var(--muted); }
+  table.pages td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.pages td.from { color: var(--muted); font-size: 13.5px; }
+  table.pages tr.group td { font: 600 12px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); padding-top: 16px; }
+
+  table.arches td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.arches td.muted { color: var(--muted); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 30 &middot; Design &middot; revision 2, decided</div>
+    <h1>QEMU for Other Architectures</h1>
+    <p class="lede">Virtualbricks asks the QEMU program of a machine what it has, and builds the command line from the answers. The questions are the same for every <code>qemu-system-*</code>, but only <code>qemu-system-x86_64</code> was recorded and tested. Asked of every emulator of the seven targets, the others answer in ways the parsers don&rsquo;t read, and some settings stop their machines. This page proposes how to read every answer, what to leave out where a machine can&rsquo;t take it, and which architectures to record.</p>
+    <ul class="meta">
+      <li>branch <b>develop</b> at 02468470</li>
+      <li>revision 2 &middot; 16 October 2026</li>
+      <li><span class="status">decided</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your request of today, &ldquo;work on &lsquo;Ask QEMU for other architectures the same way; only qemu-system-x86 is recorded&rsquo;&rdquo;, the item of the TODO from <a href="10%20-%20settings-redesign.html#later">10 &sect;13</a>. The five questions, Q1 to Q5 in <a href="#decisions">&sect;11</a>, are decided.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 records your answer of today: &ldquo;The default answers are fine. Go on with the implementation&rdquo;. Q1 to Q5 are A, as recommended: six more programs recorded on the seven targets; a machine with no machine type, on a program without a default one, is refused to start, and the panel warns; Debian&rsquo;s links left out of the menus; both packages named; <code>start.py</code> starts a machine of each recorded program. The plan of &sect;10 starts.</p>
+    <p class="revision"><strong>How the facts were found:</strong> in a podman image of each target with every <code>qemu-system-*</code> package of its archive, each emulator (33 on Ubuntu 22.04, up to 43 on Ubuntu 24.04) answered the questions of <code>programs.py</code>, and the command lines that <code>VirtualMachine.command()</code> builds from those answers, 18 kinds per emulator, 3&thinsp;930 in all, were started for real, paused and without a display (<code>-S</code>, four seconds each). The scripts were in the scratch folder of that session, not in the repository, and are gone; step 4&rsquo;s <code>start.py</code> takes their place.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>Today</a></li>
+        <li><a href="#answers"><span>3</span>What they answer</a></li>
+        <li><a href="#asking"><span>4</span>Asking</a></li>
+        <li><a href="#lines"><span>5</span>Command lines</a></li>
+        <li><a href="#qemu"><span>6</span>Left to QEMU</a></li>
+        <li><a href="#recordings"><span>7</span>The recordings</a></li>
+        <li><a href="#names"><span>8</span>Names and packages</a></li>
+        <li><a href="#code"><span>9</span>The code and the tests</a></li>
+        <li><a href="#plan"><span>10</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>11</span>Decisions</a></li>
+        <li><a href="#later"><span>12</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Asking</dt><dd>The network backends are asked with <code>-machine none</code>, so that a program without a default machine answers too. One reader for the CPU lists of every architecture and every QEMU from 6.2 (&sect;4).</dd></div>
+          <div><dt>No default</dt><dd>On arm, aarch64 and five more a machine needs a machine type: without one the start is refused with a message, and the panel says so under the machine type (&sect;5, <a class="ref done" href="#decisions">Q2</a>).</dd></div>
+          <div><dt>Left out</dt><dd>As for any setting a program lacks, with a warning: the PC speaker outside the PC machines, the clock drift fix outside the x86 ones, the standard VGA and virtio disks where the program has neither. A card the program lacks becomes an rtl8139, or else the program&rsquo;s own virtio-net (&sect;5).</dd></div>
+          <div><dt>Recordings</dt><dd>Six more architectures on the seven targets, those Debian releases on: aarch64, arm, ppc64, riscv64, s390x and mips64el; the other CPU lists as excerpts in the tests (&sect;7, <a class="ref done" href="#decisions">Q1</a>).</dd></div>
+          <div><dt>Names</dt><dd>Each emulator once in the program menu, under QEMU&rsquo;s name, not again under Debian&rsquo;s links; the package of each one for the messages of a missing program (&sect;8, <a class="ref done" href="#decisions">Q3</a>, <a class="ref done" href="#decisions">Q4</a>).</dd></div>
+          <div><dt>Plan</dt><dd>Four steps on <code>develop</code>, a commit each, the last a check of the recorded architectures in the containers (&sect;10, <a class="ref done" href="#decisions">Q5</a>).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>Today</h2>
+        <p>The program menu of a machine lists every <code>qemu-system-*</code> in the QEMU folder and in <code>PATH</code>, and <code>programs.py</code> asks any of them the questions of <code>QEMU_QUESTIONS</code>. What goes wrong with the ones that aren&rsquo;t x86:</p>
+        <ul>
+          <li><strong>The network backends.</strong> <code>-netdev help</code> fails on a program without a default machine: <i>No machine specified, and there is no default</i>. That is aarch64, arm, avr, rx and tricore everywhere, sh4 from QEMU 9.2, riscv32 and riscv64 on 11.1. The answer reads as no backend, so on Debian, whose QEMU has VDE, a machine of qemu-system-aarch64 starts with its cards unplugged and the warning <i>can&rsquo;t join a VDE switch</i>.</li>
+          <li><strong>The CPU models.</strong> Up to QEMU 8.2 each architecture writes its list its own way, and the reader expects a heading. With none, as PowerPC, MIPS, SPARC, RISC-V, m68k, sh4 and avr have, it finds no CPU model, and the one chosen is left out with <i>has no CPU model</i>. s390x has a heading only above its feature flags: the reader takes its 311 flags for the models. From 9.2 every list has the same shape, but SPARC follows its list with three lines of features, read as models named <i>CPU</i>, <i>CPU</i> and <i>features</i>.</li>
+          <li><strong>No default machine type.</strong> The panel offers <i>The default</i>, and QEMU refuses the start with the message above.</li>
+          <li><strong>The PC speaker</strong> goes into <code>-machine pcspk-audiodev=snd0</code>, which every machine that isn&rsquo;t a PC refuses: <i>Property &lsquo;virt-10.0-machine.pcspk-audiodev&rsquo; not found</i>.</li>
+          <li><strong>The clock drift fix,</strong> <code>-rtc driftfix=slew</code>, stops the machines of alpha, hppa and MIPS, which have the clock chip of the PC: <i>the &lsquo;slew&rsquo; policy is only available for x86 machines</i> from 9.2, <i>Invalid lost tick policy</i> before. On the others it does nothing, or warns.</li>
+          <li><strong>The cards.</strong> rtl8139, the model of a new card and the stand-in for a model the program lacks, isn&rsquo;t in s390x, sparc, avr, microblaze, rx, tricore, nios2 and hexagon: <i>&lsquo;rtl8139&rsquo; is not a valid device model name</i>.</li>
+          <li><strong>The standard VGA</strong> isn&rsquo;t in s390x, sparc, m68k and the small boards: <i>standard VGA not available</i>. <strong>Virtio disks</strong> aren&rsquo;t in sparc, or1k on 6.2 and the small boards: <i>&lsquo;virtio-blk&rsquo; is not a valid device model name</i>.</li>
+          <li><strong>The packages.</strong> <code>PACKAGES</code> knows the two programs of qemu-system-x86: a missing qemu-system-aarch64 is named without the package that has it.</li>
+          <li><strong>Two names for one program.</strong> From Ubuntu 24.04 and Debian 13 the packages add links with Debian&rsquo;s names of the architectures: <code>arm64</code>, <code>armel</code>, <code>armhf</code>, <code>amd64</code>, <code>loong64</code>, <code>powerpc</code>, <code>ppc64el</code>; <code>ppc64le</code> is a link to <code>ppc64</code> on every target. The menu shows aarch64 and arm64, the same program.</li>
+        </ul>
+        <p>Everything else works. On aarch64 and arm with <code>virt</code>, MIPS with <code>malta</code>, PowerPC with <code>g3beige</code>, s390x, riscv64 with <code>virt</code>, alpha, hppa and sparc64, the lines of the other settings start: disks and CD-ROM (on <code>virt</code> <code>-hda</code> and <code>-cdrom</code> become virtio drives, the machine&rsquo;s own kind), USB, the serial socket, the keyboard, gdb, ACPI off where the machine has the property and left out with a warning where it hasn&rsquo;t. KVM is listed by the x86 programs only, on this amd64 host, and the other ones leave it out with the warning they have today.</p>
+      </section>
+
+      <section id="answers">
+        <h2><span class="num">&sect;3</span>What they answer</h2>
+        <p>The common architectures, on the oldest and the newest QEMU of the targets. <i>Default</i> is the machine type QEMU takes without <code>-machine</code>; the cards are those of the stand-in of &sect;5.</p>
+        <div class="scroll">
+        <table class="arches wide">
+          <thead><tr><th>Program</th><th>Package</th><th>Default machine, 6.2 &rarr; 11.1</th><th>CPU list up to 8.2</th><th>Cards</th></tr></thead>
+          <tbody>
+            <tr><td>x86_64, i386</td><td>qemu-system-x86</td><td>pc-i440fx-*</td><td><code>x86 486</code></td><td>rtl8139, e1000, virtio-net-pci</td></tr>
+            <tr><td>aarch64, arm</td><td>qemu-system-arm</td><td>none: <code>virt</code> and boards</td><td>a heading, indented</td><td>the same, on <code>virt</code></td></tr>
+            <tr><td>ppc, ppc64</td><td>qemu-system-ppc</td><td>g3beige; pseries-*</td><td><code>PowerPC 603 PVR&hellip;</code></td><td>the same</td></tr>
+            <tr><td>mips, mipsel, mips64, mips64el</td><td>qemu-system-mips</td><td>malta</td><td><code>MIPS '4Kc'</code></td><td>the same</td></tr>
+            <tr><td>riscv32, riscv64</td><td>qemu-system-misc; qemu-system-riscv from Debian 13 and Ubuntu 25.04</td><td>spike; none on 11.1</td><td>names alone</td><td>the same, on <code>virt</code>; spike has no PCI</td></tr>
+            <tr><td>s390x</td><td>qemu-system-s390x; qemu-system-misc on Debian 12</td><td>s390-ccw-virtio-*</td><td><code>s390 qemu &hellip;</code>, a heading only over the flags</td><td>virtio-net-ccw</td></tr>
+            <tr><td>sparc, sparc64</td><td>qemu-system-sparc</td><td>SS-5; sun4u</td><td><code>Sparc  Fujitsu MB86904 IU&hellip;</code>: spaces where <code>-cpu</code> takes dashes</td><td>sparc none of its own; sparc64 the PCI ones</td></tr>
+            <tr><td>the others</td><td>qemu-system-misc</td><td>mixed: none on avr, rx, tricore, sh4 from 9.2</td><td>plain names, a heading, or no list (hppa to 7.2, microblaze to 8.2, nios2)</td><td>mostly PCI ones; none on the small boards</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>From QEMU 9.2 every architecture writes its CPU list as x86 does since then: <code>Available CPUs:</code> and the models indented under it. Up to 8.2 the five shapes are these:</p>
+        <figure class="code"><figcaption>-cpu help, QEMU 6.2 to 8.2</figcaption><pre><code><span class="c"># x86, PowerPC, s390x: the architecture first</span>
+x86 486                   (alias configured by machine type)
+PowerPC 603              PVR 00030100
+s390 qemu            QEMU Virtual CPU version 2.5+       (migration-safe)
+<span class="c"># MIPS: the name in quotes</span>
+MIPS '4Kc'
+<span class="c"># SPARC: the name with spaces, which -cpu takes with dashes</span>
+Sparc  Fujitsu MB86904 IU 04000000 FPU 00080000 MMU 04000000 NWINS 8
+<span class="c"># m68k, sh4, RISC-V, avr, loongarch64: the names alone, no heading</span>
+cfv4e
+<span class="c"># arm, aarch64, alpha, or1k, xtensa and others: a heading, indented</span>
+Available CPUs:
+  a64fx</code></pre></figure>
+        <p>A few list their type names until 8.2 and their model names after, as <code>ev4-alpha-cpu</code> and then <code>ev4</code> on alpha, the same for avr, rx and loongarch64; QEMU takes both after <code>-cpu</code>.</p>
+      </section>
+
+      <section id="asking">
+        <h2><span class="num">&sect;4</span>Asking</h2>
+        <ul>
+          <li><strong>The network backends:</strong> <code>-machine none -netdev help</code>. The machine type <code>none</code>, the empty machine, is in every program from 6.2, and where both questions answer, the two answers are the same, on every emulator of every target. Only <code>qemu-system-x86_64-microvm</code> answers neither: it runs with KVM only.</li>
+          <li><strong>The CPU models:</strong> one reader for the six shapes of &sect;3. A line under a heading and indented is a model; a line that begins with <code>x86</code>, <code>PowerPC</code> or <code>s390</code> is a model after that word; <code>MIPS '&hellip;'</code> is the name in quotes; <code>Sparc</code> is the name up to <code>IU</code>, its spaces as dashes; a line of a single word is a model; any other line, as the features of SPARC, is not. The list ends at the first blank line after a model, before the flags of x86 and s390x. Read this way, every list of the seven targets gives names that <code>-cpu</code> takes.</li>
+          <li><strong>The properties of the machine type</strong> are asked of the type chosen, or of the default one; of none when the program has no default and the type chosen isn&rsquo;t there, instead of <code>-machine ,help</code>, which fails.</li>
+        </ul>
+        <p>The other questions answer on every architecture as they do on x86: <code>--version</code>, <code>-help</code>, <code>-machine help</code>, <code>-device help</code>, <code>-display help</code>, <code>-audiodev help</code> and <code>-accel help</code>, with or without a default machine.</p>
+      </section>
+
+      <section id="lines">
+        <h2><span class="num">&sect;5</span>Command lines</h2>
+        <p>As step 10 decided for the settings a program can&rsquo;t honour (<a href="10%20-%20settings-redesign.html#versions">10 &sect;7</a>, V2&nbsp;B): the setting is left out, the machine starts, and the warning in Logs names the machine, the key and the version; the panel shows the same words under the row. Each check is an answer of the program or of its machine type, not the name of the architecture.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Setting</th><th>Taken when</th><th>Else</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">Machine type</td><td>The program has it, or has a default one.</td><td>The start is refused: <i>vm1: qemu-system-aarch64 has no default machine type: choose one in its settings</i>. The panel shows it under <i>Machine type</i> as a warning, as it does a card in nothing, which can&rsquo;t start either (<a class="ref done" href="#decisions">Q2</a>).</td></tr>
+            <tr><td class="nowrap">PC speaker</td><td>The machine type has <code>vmport</code>, which pc and q35 alone have. QEMU doesn&rsquo;t list <code>pcspk-audiodev</code>: it adds it to each PC machine as it makes it, as an alias of the speaker&rsquo;s own.</td><td>No sound card: <i>QEMU 10.0 has the PC speaker on PC machines only: the machine has no sound card</i>.</td></tr>
+            <tr><td class="nowrap">Clock drift fix</td><td>The machine type has <code>smm</code>, a property of every x86 machine, the kind QEMU asks for.</td><td><code>driftfix=slew</code> left out: <i>QEMU 10.0 fixes the clock drift of x86 machines only</i>. The local time stays.</td></tr>
+            <tr><td class="nowrap">Standard VGA</td><td>The program has the device <code>VGA</code>.</td><td><code>-vga std</code> left out: <i>QEMU 10.0 has no standard VGA</i>.</td></tr>
+            <tr><td class="nowrap">Virtio disks</td><td>The program has <code>virtio-blk</code>, the alias of the virtio disk of its bus: <code>virtio-blk-pci</code>, <code>-ccw</code> on s390x, <code>-device</code> on the virtio-mmio machines.</td><td>The disks as <code>-hda</code> and the others: <i>QEMU 10.0 has no virtio disks: the disks are the machine&rsquo;s own kind</i>.</td></tr>
+            <tr><td class="nowrap">A card&rsquo;s model</td><td>The program has it.</td><td>As today rtl8139 if the program has it; else <code>virtio-net</code>, the alias of the virtio card of its bus (<code>virtio-net-pci</code>, <code>virtio-net-ccw</code> on s390x, <code>virtio-net-device</code> on m68k&rsquo;s <code>virt</code>); else the card is left out. Started for real on s390x, aarch64 and riscv64 <code>virt</code>, m68k <code>virt</code>, x86, PowerPC and MIPS, on 6.2 and 11.1. A new card in the panel takes the same model once the program has answered.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>The checks go into <code>lacks()</code> with the others, so the panel and the start say the same thing; the refusal of the machine type goes into <code>prepare()</code>, before any work for the start, since nothing can be left out in its place.</p>
+      </section>
+
+      <section id="qemu">
+        <h2><span class="num">&sect;6</span>Left to QEMU</h2>
+        <p>What a machine type needs of its own isn&rsquo;t in any answer, and QEMU says it clearly in Logs when the start fails. These stay as they are:</p>
+        <ul>
+          <li>a kernel (m68k <code>mcf5208evb</code>, cris), a BIOS (sh4 <code>shix</code>, rx) or a firmware that the distribution doesn&rsquo;t ship (riscv32);</li>
+          <li>more memory than the default 64 MiB: 80 MiB for <code>pseries</code>, more than 1 GiB for loongarch64;</li>
+          <li>one CPU only: <code>-smp 2</code> is refused by g3beige, the SPARC machines, sh4 and the small boards;</li>
+          <li>no PCI bus (riscv <code>spike</code>, sh4, xtensa, or1k&rsquo;s simulator): no PCI card, sound card or virtio-pci disk; the machine type <code>virt</code> has one.</li>
+        </ul>
+      </section>
+
+      <section id="recordings">
+        <h2><span class="num">&sect;7</span>The recordings</h2>
+        <p>Today <code>record.py</code> records qemu-system-x86_64 on each target, with the machine types pc and q35: about 80 KB a target. The proposal (<a class="ref done" href="#decisions">Q1</a>): six more programs, the architectures Debian releases on besides x86, each with its default machine type and <code>virt</code> where it has one:</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Program</th><th>Debian&rsquo;s architecture</th><th>Machine types recorded</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td><code>qemu-system-aarch64</code></td><td>arm64</td><td><code>virt</code></td><td>No default machine; the boards of a lab.</td></tr>
+            <tr><td><code>qemu-system-arm</code></td><td>armhf, armel</td><td><code>virt</code></td><td>No default machine; 32 bits.</td></tr>
+            <tr><td><code>qemu-system-ppc64</code></td><td>ppc64el</td><td><code>pseries-*</code></td><td>The PowerPC list up to 8.2.</td></tr>
+            <tr><td><code>qemu-system-riscv64</code></td><td>riscv64</td><td>spike, <code>virt</code></td><td>Its package changes; no default on 11.1.</td></tr>
+            <tr><td><code>qemu-system-s390x</code></td><td>s390x</td><td><code>s390-ccw-virtio-*</code></td><td>No rtl8139, no VGA, its own bus.</td></tr>
+            <tr><td><code>qemu-system-mips64el</code></td><td>mips64el, in Debian 12</td><td>malta</td><td>The MIPS list up to 8.2; the clock drift fix.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>That is about 2.6 MB more for the seven targets, beside the 570 KB of today. The other shapes of &sect;3 (SPARC, m68k, sh4, the type names of alpha) go into the tests of the reader as excerpts of a few lines each, copied from the answers. Each recording gets a table of its emulators, keyed by program, each with the answers and the machine types; qemu-system-x86_64 stays where it is, so that the tests that read it don&rsquo;t change.</p>
+      </section>
+
+      <section id="names">
+        <h2><span class="num">&sect;8</span>Names and packages</h2>
+        <h3>The program menu</h3>
+        <p>Each program once (<a class="ref done" href="#decisions">Q3</a>): a name that is a link to another emulator of the same folder, as <code>qemu-system-arm64</code> to <code>qemu-system-aarch64</code>, is left out of the menu, and the name QEMU gives the program stays. The one a machine uses stays in its menu, whichever it is, so a project made with <code>qemu-system-amd64</code> shows it. The Settings window&rsquo;s list of the programs of a folder does the same.</p>
+        <h3>The packages</h3>
+        <p><code>PACKAGES</code> gets every emulator of the targets, by the package of Debian and Ubuntu: qemu-system-arm, -mips, -ppc, -sparc, -s390x, -riscv and -misc, and the links of &sect;2 with the package of their program. Two moved (<a class="ref done" href="#decisions">Q4</a>): riscv32 and riscv64 are in qemu-system-misc up to Debian 12 and Ubuntu 24.04, in qemu-system-riscv after; s390x in qemu-system-misc on Debian 12. The proposal names both, the newer first: <i>qemu-system-riscv64 (qemu-system-riscv or qemu-system-misc) isn&rsquo;t installed</i>.</p>
+        <h3>The guide and the README</h3>
+        <p>The table of packages in <i>The programs it needs</i> gets a line for the other architectures, and the README&rsquo;s list of programs says which machines need a machine type chosen.</p>
+      </section>
+
+      <section id="code">
+        <h2><span class="num">&sect;9</span>The code and the tests</h2>
+        <ul>
+          <li><code>programs.py</code>: the question of the backends, <code>parse_cpus()</code>, <code>PACKAGES</code> with a tuple where a program has two packages, <code>machine_properties()</code> with no machine; <code>qemu_programs()</code> without the links.</li>
+          <li><code>bricks/virtualmachine.py</code>: <code>lacks()</code> with the four checks, the stand-in card in <code>_cards()</code> and in <code>VirtualMachineDraft.add_card()</code>, <code>prepare()</code> refusing a machine without a type; the panel&rsquo;s machine page shows the warning of the type.</li>
+          <li><code>tests/data/programs/record.py</code>: the six programs and their machine types; the seven recordings made again.</li>
+          <li>Tests: the reader on each shape of &sect;3; on each recording, each program&rsquo;s CPU models are names <code>-cpu</code> takes and its backends are those of x86; command lines of every recorded program on every target, with the warnings of &sect;5; the refusal; the menu without links. All of it new code, so with tests of its own.</li>
+          <li>The check (<a class="ref done" href="#decisions">Q5</a>): <code>start.py</code> starts, beside the sample project, a machine of each recorded program in the target&rsquo;s container, paused, with a disk, a CD-ROM and a card, as this page&rsquo;s survey did.</li>
+        </ul>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;10</span>Implementation plan</h2>
+        <p>On <code>develop</code>, a commit for each step and a stop for review after each. Your own files in the working tree stay out of every commit.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">1 Asking</td><td>The backends with <code>-machine none</code>, <code>parse_cpus()</code>, the machine properties, <code>PACKAGES</code>; <code>record.py</code> with the six programs, the recordings made again.</td><td>The reader on every shape; every recording of every program.</td></tr>
+            <tr><td class="nowrap">2 Lines</td><td>The four checks of <code>lacks()</code>, the stand-in card, the refusal of a machine without a type, the panel.</td><td>The lines of every recorded program on every target; the panel&rsquo;s warning.</td></tr>
+            <tr><td class="nowrap">3 Names</td><td>The menus without the links; the guide&rsquo;s page of the programs, the README; this page&rsquo;s Implemented; the TODO.</td><td>The menu of a folder with links.</td></tr>
+            <tr><td class="nowrap">4 Check</td><td><code>start.py</code> with the recorded programs, run on the seven targets; what it finds, fixed in commits of their own.</td><td>Every recorded program starts on every target where its package is.</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;11</span>Decisions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Q1</td>
+              <td>Which programs to record</td>
+              <td>
+                <p><b>A</b> Six more, Debian&rsquo;s architectures: aarch64, arm, ppc64, riscv64, s390x, mips64el, on the seven targets; the other shapes as excerpts in the tests (&sect;7). About 2.6 MB.</p>
+                <p><b>B</b> Every emulator, on the seven targets: about 12 MB, most of it for boards no lab runs.</p>
+                <p><b>C</b> Every emulator on Ubuntu 22.04 and Debian testing, the oldest and the newest QEMU, and the six of A on the others.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>Q2</td>
+              <td>A program without a default machine type</td>
+              <td>
+                <p><b>A</b> The start is refused with a message, and the panel warns under <i>Machine type</i>; OK stays (&sect;5).</p>
+                <p><b>B</b> The same, but OK is greyed until a machine type is chosen.</p>
+                <p><b>C</b> Virtualbricks chooses one, <code>virt</code> or else the first of the list, with a warning.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>Q3</td>
+              <td>The links of Debian&rsquo;s names</td>
+              <td>
+                <p><b>A</b> Left out of the menus, unless a machine uses one (&sect;8).</p>
+                <p><b>B</b> Listed, as today.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>Q4</td>
+              <td>A program in two packages</td>
+              <td>
+                <p><b>A</b> Both named, the newer first: <i>qemu-system-riscv or qemu-system-misc</i>.</p>
+                <p><b>B</b> The package of the newer releases only.</p>
+                <p><b>C</b> The one this computer&rsquo;s package lists have, asked of <code>apt-cache</code>.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>Q5</td>
+              <td>The check in the containers</td>
+              <td>
+                <p><b>A</b> <code>start.py</code> starts a machine of each recorded program too (&sect;9); its containers install their packages, about 300 MB more each.</p>
+                <p><b>B</b> No check beyond the tests on the recordings: this page&rsquo;s survey stands for it.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;12</span>Later</h2>
+        <ul>
+          <li>The memory and the CPUs that a machine type takes, from QMP&rsquo;s <code>query-machines</code>, which has <code>cpu-max</code> and <code>default-ram-id</code>: the panel could warn of <code>-smp 2</code> on a machine of one CPU.</li>
+          <li>A machine type chosen for the user when a program without a default is chosen in the panel, if Q2 stays A.</li>
+          <li>KVM on hosts that aren&rsquo;t x86, as aarch64 on arm64: the checks of &sect;5 don&rsquo;t change, the recordings would need such a host.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
