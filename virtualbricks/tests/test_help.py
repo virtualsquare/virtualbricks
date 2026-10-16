@@ -224,11 +224,16 @@ class TestYelpCheck(PagesTestCase):
             raise unittest.SkipTest("yelp-check")
 
     def check(self, *args):
+        # yelp-check is a script of the system's Python: without the
+        # PYTHONPATH that trial -j gives its workers, its sys.path
+        env = dict(os.environ)
+        env.pop("PYTHONPATH", None)
         result = subprocess.run(
             [self.yelp_check, *args],
             capture_output=True,
             encoding="utf-8",
             check=False,
+            env=env,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         return result.stdout

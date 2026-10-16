@@ -121,15 +121,3 @@ one leaves the list.
   on 3.0.0.dev3, on 13 October 2026, in the output of the e2e scenarios;
   `G_DEBUG=fatal-criticals`, with Python's `faulthandler` registered for
   SIGTRAP, put it at the `Gtk.StatusIcon(...)` of `build_ui()`.
-
-## Tests
-
-- [ ] **The tests of `yelp-check` fail in trial's workers.** With
-  `trial -j8 virtualbricks`, the three tests of `TestYelpCheck`
-  (`virtualbricks/tests/test_help.py`) fail: `/usr/bin/yelp-check`, a
-  script of the system's Python, imports the standard library of the
-  Python that runs trial (pyenv's 3.10) and stops at `AssertionError: SRE
-  module mismatch`. The workers of `-j` get trial's `sys.path` in
-  `PYTHONPATH`, and `check()` runs the program with that environment.
-  Without `-j` the module passes. Seen on 3.0.0.dev4, on 16 October 2026,
-  running the whole suite; also with `-j2` and `test_help` alone.
