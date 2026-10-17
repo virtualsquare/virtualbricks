@@ -381,8 +381,9 @@ coverage report
 - The tests don't touch your settings, your projects or the locks: each one
   runs in a temporary home. They need neither root, nor Qemu, nor VDE, but
   one: `test_integration.py` makes the sample project of
-  `virtualbricks/tests/sample.py`, a brick of each kind, and starts it with
-  the programs installed here, the machine paused; it is skipped without
+  `virtualbricks/tests/sample.py`, a brick of each kind and a machine of each
+  architecture that the recordings have, and starts it with the programs
+  installed here, the machines paused; it is skipped without
   `qemu-system-x86_64`, `qemu-img` and `vde_switch`.
 - The command lines of the bricks are tested against what the QEMU and VDE of
   each supported distribution answer, QEMU for x86 and for the architectures

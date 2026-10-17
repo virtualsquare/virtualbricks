@@ -25,8 +25,10 @@ distribution. :func:`build` makes the bricks in the open project, and
 happened to each: whether it started and was still running, what it warned
 about, and what its program wrote on stderr.
 
-The machine runs paused, with QEMU's -S. The tap and the capture need root:
-without it they are left out.
+The machines run paused, with QEMU's -S: vm1, and a machine of each other
+architecture that the tests record, with the settings of a PC that it
+leaves out. The tap and the capture need root: without them they are left
+out.
 """
 
 from __future__ import annotations
@@ -65,6 +67,17 @@ PROGRAMS: dict[str, tuple[str, ...]] = {
     "cap0": ("vde_pcapplug",),
 }
 PRIVILEGED = ("tap0", "cap0")
+# The machines of the other architectures, by name: their program, and the
+# machine type it needs where it has no default one, or spike has no PCI.
+EMULATORS: dict[str, tuple[str, str]] = {
+    "aarch64": ("qemu-system-aarch64", "virt"),
+    "arm": ("qemu-system-arm", "virt"),
+    "ppc64": ("qemu-system-ppc64", ""),
+    "riscv64": ("qemu-system-riscv64", "virt"),
+    "s390x": ("qemu-system-s390x", ""),
+    "mips64el": ("qemu-system-mips64el", ""),
+}
+PROGRAMS.update({name: (program,) for name, (program, _) in EMULATORS.items()})
 
 
 def is_root() -> bool:
@@ -92,10 +105,11 @@ def build(factory: Any, folder: str, root: bool | None = None) -> None:
     card on the host only and a socket card that a wire joins to sw3, a
     Netemu between sw1 and sw2, a tunnel from sw3 to sw2, a switch wrapper
     of sw1, a router, and with root a tap on sw2 and a capture of lo into
-    sw3. When sw1 starts, an event sets the ports of sw2.
+    sw3. When sw1 starts, an event sets the ports of sw2. A machine of each
+    of EMULATORS, on sw1 too, with a disk and a CD-ROM.
 
     The images of the machine's two private disks, one qcow2 and one raw,
-    are made in folder.
+    and that of the CD-ROM are made in folder.
     """
 
     if root is None:
@@ -139,6 +153,27 @@ def build(factory: Any, folder: str, root: bool | None = None) -> None:
     client = factory.new_brick("tunnelconnect", "tc0")
     client.update_config({"password": "secret", "server_host": "127.0.0.1"})
     client.connect(sw3.socks[0])
+    cdrom = _image(folder, "cdrom", "raw")
+    for index, (name, (program, machine)) in enumerate(EMULATORS.items()):
+        other = factory.new_brick("qemu", name)
+        other.update_config(
+            {
+                "qemu_program": program,
+                "machine_type": machine,
+                # pseries takes 80 MiB at least
+                "memory": 256,
+                "headless": True,
+                "hda_private": True,
+                "cdrom": "image",
+                "cdrom_image": cdrom,
+                # what only a PC takes, left out with a warning
+                "sound_card": "pcspk",
+                "standard_vga": True,
+                "clock_drift_fix": True,
+            }
+        )
+        other.set_image("hda", factory.get_image("deb"))
+        other.add_plug(sw1.socks[0], f"52:54:00:00:01:{index:02x}", "e1000")
     wrapper = factory.new_brick("switchwrapper", "wr0")
     wrapper.update_config({"socket_path": sw1.path()})
     factory.new_brick("router", "r0")
@@ -229,9 +264,10 @@ def run(factory: Any) -> Any:
     ports of sw2, which the event set.
     """
 
-    vm = factory.get_brick("vm1")
-    if vm is not None:
-        vm.command = _paused(vm.command)
+    for name in ("vm1", *EMULATORS):
+        vm = factory.get_brick(name)
+        if vm is not None:
+            vm.command = _paused(vm.command)
     messages = _Messages()
     globalLogPublisher.addObserver(messages)
     report: dict[str, Any] = {"bricks": {}}

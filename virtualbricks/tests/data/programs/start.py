@@ -21,9 +21,10 @@ Start the sample project in the container of each target distribution.
 The check to run before a release, and after a distribution updates its
 QEMU. Each target runs in a podman container with its own QEMU, VDE, Python
 and libraries, installed from its packages, and starts the sample project of
-virtualbricks.tests.sample as root, the tap and the capture included: the
-project is made, saved, opened again and started. For each target it prints
-what didn't start or didn't keep running, and the warnings:
+virtualbricks.tests.sample as root, the tap and the capture included, and a
+machine of each architecture that the recordings have: the project is made,
+saved, opened again and started. For each target it prints what didn't
+start or didn't keep running, and the warnings:
 
     python virtualbricks/tests/data/programs/start.py [TARGET...]
 
@@ -44,6 +45,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SOURCE = os.path.normpath(os.path.join(HERE, "..", "..", "..", ".."))
 PACKAGES = (
     "qemu-system-x86",
+    "qemu-system-arm",
+    "qemu-system-mips",
+    "qemu-system-ppc",
+    "qemu-system-misc",
     "qemu-utils",
     "vde2",
     "vde2-cryptcab",
@@ -52,8 +57,9 @@ PACKAGES = (
     "python3-attr",
     "python3-tomlkit",
 )
-# Needed before Python 3.11, and not packaged after.
-OPTIONAL = ("python3-tomli",)
+# Needed before Python 3.11, and not packaged after; riscv and s390x are in
+# qemu-system-misc where they're missing.
+OPTIONAL = ("python3-tomli", "qemu-system-riscv", "qemu-system-s390x")
 VERSIONS = ("qemu-system-x86", "vde2", "python3", "python3-twisted")
 # The tap needs /dev/net/tun and the capture a raw socket.
 PODMAN = (
