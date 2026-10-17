@@ -67,7 +67,16 @@ class NotConnectedError(Error):
 
 
 class LinkLoopError(Error):
-    pass
+    """The links of a brick lead back to it: the bricks on a loop don't start."""
+
+    def __init__(self, name: str) -> None:
+        Error.__init__(self, name)
+        self.name = name
+
+    def __str__(self) -> str:
+        return _("Cannot start '{name}': its links make a loop").format(
+            name=self.name
+        )
 
 
 class LockedImageError(Error):

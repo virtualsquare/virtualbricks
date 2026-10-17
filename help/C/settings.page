@@ -77,11 +77,9 @@
       </item>
       <item>
         <title><gui>Plugs into machines</gui></title>
-        <p>Let plugs go into the socket cards of machines.</p>
-      </item>
-      <item>
-        <title><gui>Loops of links</gui></title>
-        <p>Log an error when links make a loop.</p>
+        <p>Let plugs go into the socket cards of machines. Machines plugged
+        into each other's cards make a loop, and the bricks on a loop don't
+        start: an error says so.</p>
       </item>
     </terms>
   </section>

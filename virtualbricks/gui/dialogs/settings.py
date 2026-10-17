@@ -94,7 +94,7 @@ WINDOWS = ("terminal", "tray_icon", "warn_missing_programs")
 BRICKS = ("kernel_samepage_merging", "audio_driver", "workspace")
 # Those of the project.
 PROGRAMS = ("qemu_path", "vde_path")
-LINKS = ("allow_female_plugs", "log_link_loops")
+LINKS = ("allow_female_plugs",)
 KSM = "kernel_samepage_merging"
 # Seconds after the last key in a folder before the window asks what it holds.
 FOLDER_DELAY = 0.5
@@ -301,7 +301,6 @@ class SettingsWindow(Window):
         form.path("vde_path", _("The Folder of the VDE Programs"), True)
         form.section(_("Links"))
         form.switch("allow_female_plugs")
-        form.switch("log_link_loops")
         # its defaults, which can't be changed while no project is open
         form.widget.set_sensitive(current is not None)
         return page

@@ -21,11 +21,15 @@ from twisted.internet import defer
 from twisted.trial import unittest
 
 from virtualbricks import ksm, locations
+from virtualbricks.config import settings
+from virtualbricks.config.report import Report
+from virtualbricks.config.schema import dump_record, field_names, info_of
 from virtualbricks.config.settings import (
     PROJECT_KEYS,
     RETIRED_PROJECT_KEYS,
     AppSettings,
     ProjectSettings,
+    check_format,
     current_project,
     get_setting,
     has_option,
@@ -35,20 +39,14 @@ from virtualbricks.config.settings import (
     new_project_settings,
     parse_setting,
     project_settings,
+    set_current_project,
     set_setting,
     setting_kind,
     store_settings,
-)
-from virtualbricks.config.report import Report
-from virtualbricks.config.schema import dump_record, field_names, info_of
-from virtualbricks.config.tomlfile import dump_toml, load_toml
-from virtualbricks.config import settings
-from virtualbricks.config.settings import (
-    check_format,
-    set_current_project,
     store_state,
     use_project,
 )
+from virtualbricks.config.tomlfile import dump_toml, load_toml
 from virtualbricks.tests import FakeLogger, isolate, reset_settings
 
 
@@ -117,14 +115,18 @@ class TestValues(SettingsTestCase):
         set_setting("tray_icon", False)
         self.assertIs(get_setting("tray_icon"), False)
         use_project(ProjectSettings())
-        self.assertRaises(ValueError, set_setting, "log_link_loops", "maybe")
-        set_setting("log_link_loops", True)
-        self.assertIs(get_setting("log_link_loops"), True)
+        self.assertRaises(
+            ValueError, set_setting, "allow_female_plugs", "maybe"
+        )
+        set_setting("allow_female_plugs", True)
+        self.assertIs(get_setting("allow_female_plugs"), True)
 
     def test_parse(self):
         self.assertIs(parse_setting("allow_female_plugs", "yes"), True)
         self.assertIs(parse_setting("tray_icon", "no"), False)
-        self.assertRaises(ValueError, parse_setting, "log_link_loops", "qed")
+        self.assertRaises(
+            ValueError, parse_setting, "allow_female_plugs", "qed"
+        )
 
     def test_setting_kind(self):
         self.assertEqual(setting_kind("qemu_path").format("/opt"), '"/opt"')
@@ -144,15 +146,15 @@ class TestProjectSettings(SettingsTestCase):
 
     def test_no_project_is_open(self):
         self.assertIsNone(project_settings())
-        self.assertIs(get_setting("log_link_loops"), False)
+        self.assertIs(get_setting("allow_female_plugs"), False)
         error = self.assertRaises(
-            ValueError, set_setting, "log_link_loops", True
+            ValueError, set_setting, "allow_female_plugs", True
         )
         self.assertEqual(
             str(error),
-            "log_link_loops is a setting of a project, and none is open",
+            "allow_female_plugs is a setting of a project, and none is open",
         )
-        self.assertIs(get_setting("log_link_loops"), False)
+        self.assertIs(get_setting("allow_female_plugs"), False)
 
     def test_the_open_project(self):
         project = ProjectSettings(qemu_path="/opt/qemu")
@@ -169,12 +171,12 @@ class TestProjectSettings(SettingsTestCase):
         self.assertEqual(get_setting("terminal"), "/usr/bin/foot")
 
     def test_a_new_project_copies_the_open_one(self):
-        project = ProjectSettings(vde_path="/opt/vde", log_link_loops=True)
+        project = ProjectSettings(vde_path="/opt/vde", allow_female_plugs=True)
         use_project(project)
         new = new_project_settings()
         self.assertEqual(new, project)
-        new.log_link_loops = False
-        self.assertIs(project.log_link_loops, True)
+        new.allow_female_plugs = False
+        self.assertIs(project.allow_female_plugs, True)
 
     def test_a_new_project_without_an_open_one(self):
         self.assertEqual(new_project_settings(), ProjectSettings())
@@ -189,19 +191,16 @@ class TestProjectSettings(SettingsTestCase):
     def test_project_keys(self):
         self.assertEqual(
             PROJECT_KEYS,
-            {
-                "log_link_loops",
-                "allow_female_plugs",
-                "qemu_path",
-                "vde_path",
-            },
+            {"allow_female_plugs", "qemu_path", "vde_path"},
         )
         # none of them is a setting of the application
         self.assertFalse(PROJECT_KEYS & set(field_names(AppSettings)))
 
     def test_retired_keys(self):
-        # private copies are always qcow2
-        self.assertEqual(RETIRED_PROJECT_KEYS, {"cow_format"})
+        # private copies are always qcow2, and a loop always stops a start
+        self.assertEqual(
+            RETIRED_PROJECT_KEYS, {"cow_format", "log_link_loops"}
+        )
         self.assertFalse(RETIRED_PROJECT_KEYS & PROJECT_KEYS)
 
 

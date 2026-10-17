@@ -663,9 +663,9 @@ class TestImportedProject(EngineTestCase):
 
     def test_uses_the_settings_of_new_projects(self):
         # those of the open project
-        use_project(ProjectSettings(log_link_loops=True))
+        use_project(ProjectSettings(allow_female_plugs=True))
         data, _, _ = self.convert(CONFIG1)
-        self.assertIs(data["settings"]["log_link_loops"], True)
+        self.assertIs(data["settings"]["allow_female_plugs"], True)
 
     def test_no_project_file(self):
         data, report, directory = self.convert()

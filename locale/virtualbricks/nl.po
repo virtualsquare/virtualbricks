@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 17:23+0200\n"
+"POT-Creation-Date: 2026-10-17 18:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1077,14 +1077,6 @@ msgstr ""
 #: virtualbricks/config/importing.py
 #, python-brace-format
 msgid "{name}: {path} doesn't exist"
-msgstr ""
-
-#: virtualbricks/config/settings.py
-msgid "Loops of links"
-msgstr ""
-
-#: virtualbricks/config/settings.py
-msgid "Log an error when links make a loop"
 msgstr ""
 
 #: virtualbricks/config/settings.py
@@ -2336,6 +2328,11 @@ msgstr ""
 #: virtualbricks/errors.py
 #, python-brace-format
 msgid "{name} is in use"
+msgstr ""
+
+#: virtualbricks/errors.py
+#, python-brace-format
+msgid "Cannot start '{name}': its links make a loop"
 msgstr ""
 
 #: virtualbricks/gui/app.py

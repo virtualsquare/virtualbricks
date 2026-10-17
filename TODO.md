@@ -22,8 +22,6 @@
 - [ ] Follow a setting that another Virtualbricks of yours changes, without
   a restart (21 §14)
 - [ ] Move `locations` into `config` (maybe)
-- [ ] Drop the `log_link_loops` setting, maybe: a loop always stops a
-  start (10 §13, 23 §12)
 - [ ] Show what KSM saves in its row of the Settings window: the pages
   shared, from `/sys/kernel/mm/ksm/pages_sharing` (23 §12)
 - [ ] Change the settings of a project that isn't open, from the Projects
@@ -346,6 +344,11 @@
 
 # DONE
 
+- [x] Drop the `log_link_loops` setting: a loop always stopped a start,
+  and the setting only logged a second error; the error of the start says
+  "Cannot start 'vm1': its links make a loop" now, and the key is read
+  without a word from older projects, dropped from a 2.1 migration
+  (10 §13, 23 §12)
 - [x] Ask QEMU for other architectures the same way: aarch64, arm, ppc64,
   riscv64, s390x and mips64el recorded beside x86; one reader for the CPU
   lists of every architecture; the network backends asked of the empty

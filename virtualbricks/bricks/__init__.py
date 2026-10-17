@@ -50,7 +50,7 @@ from twisted.python.failure import Failure
 from virtualbricks import errors, observable, terminal
 from virtualbricks.bricks.command import Command, Prepared
 from virtualbricks.bricks.draft import Draft
-from virtualbricks.bricks.plug import Plug, link_loop
+from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
     Path,
@@ -486,9 +486,7 @@ class Brick(Base):
         if self.is_running():
             return defer.succeed(self)
         if self._linking:
-            if get_setting("log_link_loops"):
-                self.logger.error(link_loop)
-            return defer.fail(errors.LinkLoopError())
+            return defer.fail(errors.LinkLoopError(self.name))
         if self._waiting is not None:
             waiter: defer.Deferred[Brick] = defer.Deferred()
             self._waiting.append(waiter)

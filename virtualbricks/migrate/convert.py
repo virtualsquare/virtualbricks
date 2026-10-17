@@ -43,12 +43,6 @@ from virtualbricks.config.projectfile import (
     project_document,
 )
 from virtualbricks.config.report import Report
-from virtualbricks.config.settings import (
-    PROJECT_KEYS,
-    AppSettings,
-    ProjectSettings,
-    SettingValue,
-)
 from virtualbricks.config.schema import (
     Bool,
     Float,
@@ -60,6 +54,12 @@ from virtualbricks.config.schema import (
     field_names,
     kind_of,
 )
+from virtualbricks.config.settings import (
+    PROJECT_KEYS,
+    AppSettings,
+    ProjectSettings,
+    SettingValue,
+)
 from virtualbricks.config.tomlfile import Table
 from virtualbricks.migrate import legacy
 from virtualbricks.nic import random_mac
@@ -67,11 +67,15 @@ from virtualbricks.nic import random_mac
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.bricks.netemu import MarkovConfig, Netemu
-    from virtualbricks.bricks.virtualmachine import VirtualMachine
     from virtualbricks.bricks.sock import Sock
-    from virtualbricks.bricks.virtualmachine import HostonlySock
+    from virtualbricks.bricks.virtualmachine import (
+        HostonlySock,
+        VirtualMachine,
+    )
 
-SETTINGS_DROPPED = frozenset(("alt-term", "cdroms", "kvm", "python", "sudo"))
+SETTINGS_DROPPED = frozenset(
+    ("alt-term", "cdroms", "erroronloop", "kvm", "python", "sudo")
+)
 BRICK_TYPES = {
     "Capture": "capture",
     "Netemu": "netemu",
@@ -170,7 +174,6 @@ SETTINGS_RENAMED = {
     "ksm": "kernel_samepage_merging",
     "systray": "tray_icon",
     "show_missing": "warn_missing_programs",
-    "erroronloop": "log_link_loops",
     "femaleplugs": "allow_female_plugs",
     "qemupath": "qemu_path",
     "vdepath": "vde_path",

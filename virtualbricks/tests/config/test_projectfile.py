@@ -25,42 +25,41 @@ from virtualbricks.bricks.eventaction import (
     ShellAction,
     StartAction,
 )
+from virtualbricks.bricks.virtualmachine import UsbDevice
+from virtualbricks.config import projectfile, tomlfile
 from virtualbricks.config.projectfile import (
     FORMAT,
-    ProjectFormatError,
-    project_document,
-)
-from virtualbricks.config.settings import ProjectSettings
-from virtualbricks.config.report import Report
-from virtualbricks.config.schema import dump_record
-from virtualbricks.config.tomlfile import dump_toml, load_toml
-from virtualbricks.config import projectfile
-from virtualbricks.config.projectfile import (
     HEADER,
+    ProjectFormatError,
     create_project_file,
     devices_for_image,
     image_paths,
+    project_document,
     project_notes,
     read_project_file,
     remap_image,
-    resolve as resolve_socket,
     restore_project,
     save_project,
     socket_target,
     upgrade_project,
     upgrade_readme,
 )
+from virtualbricks.config.projectfile import (
+    resolve as resolve_socket,
+)
+from virtualbricks.config.report import Report
+from virtualbricks.config.schema import dump_record
+from virtualbricks.config.settings import ProjectSettings, use_project
 from virtualbricks.config.tomlfile import (
     FORMAT_NOTE,
     Note,
     comment_lines,
+    dump_toml,
     dumps_toml,
+    load_toml,
     loads_toml,
 )
-from virtualbricks.config import tomlfile
-from virtualbricks.config.settings import use_project
 from virtualbricks.tests import isolate, make_factory, reset_settings
-from virtualbricks.bricks.virtualmachine import UsbDevice
 
 
 def build_lab(factory, image_path="/images/deb.qcow2"):
@@ -508,13 +507,16 @@ class TestLenientReading(ProjectFileTestCase):
         )
 
     def test_retired_settings(self):
-        # every project written before private copies were always qcow2
+        # every project written before private copies were always qcow2,
+        # and before a loop of links always stopped a start
+        settings = {"cow_format": "qcow", "log_link_loops": True}
         _, project_settings = self.restore(
-            {"format": 1, "settings": {"cow_format": "qcow", "vde_path": "/v"}}
+            {"format": 1, "settings": {**settings, "vde_path": "/v"}}
         )
         self.assertEqual(project_settings.vde_path, "/v")
         # read without a word; the other missing settings are reported
-        self.assertFalse([m for m in self.messages() if "cow_format" in m])
+        for key in settings:
+            self.assertFalse([m for m in self.messages() if key in m])
 
     def test_empty_settings_table(self):
         self.restore({"format": 1, "settings": {}})

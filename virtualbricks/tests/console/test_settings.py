@@ -52,8 +52,8 @@ class TestSettings(ConsoleTestCase):
 
     def test_all_or_none(self):
         self.assertEqual(
-            self.fails("setting set tray_icon=false log_link_loops=qed"),
-            "log_link_loops: 'qed' is not true or false",
+            self.fails("setting set tray_icon=false allow_female_plugs=qed"),
+            "allow_female_plugs: 'qed' is not true or false",
         )
         self.assertTrue(get_setting("tray_icon"))
         self.assertEqual(

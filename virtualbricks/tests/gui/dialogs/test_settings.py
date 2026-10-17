@@ -207,19 +207,19 @@ class TestOk(WindowTestCase):
     def test_only_what_changed(self):
         window = self.window()
         control(window, "terminal").set_text("/usr/bin/foot")
-        control(window, "log_link_loops").set_active(True)
+        control(window, "allow_female_plugs").set_active(True)
         # meanwhile, the console
         set_setting("warn_missing_programs", False)
         self.assertTrue(self.ok(window))
         self.assertEqual(get_setting("terminal"), "/usr/bin/foot")
-        self.assertIs(self.project.settings.log_link_loops, True)
+        self.assertIs(self.project.settings.allow_female_plugs, True)
         # the console's stays
         self.assertIs(get_setting("warn_missing_programs"), False)
         data = load_toml(locations.settings_file())
         self.assertEqual(data["terminal"], "/usr/bin/foot")
-        self.assertNotIn("log_link_loops", data)
+        self.assertNotIn("allow_female_plugs", data)
         project = load_toml(self.project.project_file)
-        self.assertIs(project["settings"]["log_link_loops"], True)
+        self.assertIs(project["settings"]["allow_female_plugs"], True)
         self.assertEqual(self.closed, [True])
         # nothing about KSM
         self.assertEqual(self.ksm, [])
@@ -411,7 +411,7 @@ class TestFacts(WindowTestCase):
 
     def test_a_switch_asks_nothing(self):
         window = self.window()
-        control(window, "log_link_loops").set_active(True)
+        control(window, "allow_female_plugs").set_active(True)
         self.clock.advance(1)
         self.assertEqual(len(self.facts.asked), 1)
 
@@ -508,7 +508,6 @@ class TestOverAConnection(WindowTestCase):
                 "vde_path": "/opt/vde/bin",
                 "qemu_path": "/opt/qemu/bin",
                 "allow_female_plugs": True,
-                "log_link_loops": False,
             }
         )
         self.engine = EngineThere(values, self.facts)

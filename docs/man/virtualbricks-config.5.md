@@ -252,10 +252,6 @@ with the defaults when none is. An imported project brings the paths of the
 machine it comes from; the import dialog offers to replace them with those of
 the open project.
 
-**log_link_loops** = *boolean*, default `false`
-:   Log an error when starting a brick finds a loop in the links. The bricks
-    on a loop don't start either way.
-
 **allow_female_plugs** = *boolean*, default `false`
 :   Allow plugs to connect to the socket cards of virtual machines, not only
     to switches.
@@ -267,8 +263,10 @@ the open project.
 :   The directory of the VDE programs, such as **vde_switch**(1).
 
 Older project files have a **cow_format** key, the format of the private
-copies of the disks, which are always qcow2 now: it's read without a word,
-and dropped at the next save.
+copies of the disks, which are always qcow2 now, and a **log_link_loops**
+key, which decided whether a loop in the links was logged, while the bricks
+on a loop never started: an error says so now. Both are read without a
+word, and dropped at the next save.
 
 ## Images
 
@@ -942,7 +940,6 @@ the six empty disks.
 format = 1
 
 [settings]
-log_link_loops = false
 allow_female_plugs = false
 qemu_path = "/usr/bin"
 vde_path = "/usr/bin"

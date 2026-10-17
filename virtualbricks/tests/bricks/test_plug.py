@@ -20,14 +20,15 @@
 from twisted.internet import defer
 
 from virtualbricks import errors
-from virtualbricks.config.settings import get_setting, set_setting
-from virtualbricks.bricks.plug import Plug, link_loop
+from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.sock import Sock
-from virtualbricks.tests import BrickTestCase, FakeLogger
+from virtualbricks.tests import BrickTestCase
 
 
 class FakeBrick:
     """A brick that only knows how to be powered on."""
+
+    name = "vm1"
 
     def __init__(self, result=None):
         self.result = result
@@ -44,8 +45,6 @@ class TestPlug(BrickTestCase):
 
     def setUp(self):
         super().setUp()
-        self.logger = FakeLogger()
-        self.patch(Plug, "logger", self.logger)
         self.brick = FakeBrick()
         self.plug = Plug(self.brick)
         self.other = FakeBrick()
@@ -163,25 +162,13 @@ class TestPlug(BrickTestCase):
         self.plug.connect(self.sock)
         deferred = self.plug.connected()
         self.assertFalse(self.plug._antiloop)
-        return self.assertFailure(deferred, errors.LinkLoopError)
-
-    def test_loop_is_only_logged_when_the_settings_ask(self):
-        self.other.start = self.plug.connected
-        self.plug.connect(self.sock)
-        self.assertFalse(get_setting("log_link_loops"))
-        d = self.assertFailure(self.plug.connected(), errors.LinkLoopError)
-
-        def check_silent(_):
-            self.assertEqual(self.logger.events, [])
-            set_setting("log_link_loops", True)
-            deferred = self.plug.connected()
-            return self.assertFailure(deferred, errors.LinkLoopError)
-
-        def check_logged(_):
-            self.assertEqual(self.logger.levels(), ["error"])
-            self.assertEqual(self.logger.events[0][1], link_loop)
-
-        return d.addCallback(check_silent).addCallback(check_logged)
+        d = self.assertFailure(deferred, errors.LinkLoopError)
+        # the error says so, whoever started the brick
+        return d.addCallback(
+            lambda e: self.assertEqual(
+                str(e), "Cannot start 'vm1': its links make a loop"
+            )
+        )
 
     def test_can_be_used_again_after_a_loop(self):
         self.other.start = self.plug.connected

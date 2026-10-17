@@ -98,7 +98,7 @@ class TestDraft(unittest.TestCase):
         self.assertEqual(draft.get("qemu_path"), "/opt/qemu")
         self.assertEqual(
             draft.keys,
-            ("log_link_loops", "allow_female_plugs", "qemu_path", "vde_path"),
+            ("allow_female_plugs", "qemu_path", "vde_path"),
         )
         self.assertEqual(draft.changes(), {})
         self.assertEqual(draft.problems(), [])
@@ -106,19 +106,19 @@ class TestDraft(unittest.TestCase):
     def test_changes_and_ok(self):
         project = owner(ProjectSettings)
         draft = SettingsDraft(project)
-        draft.set("log_link_loops", True)
+        draft.set("allow_female_plugs", True)
         draft.set("qemu_path", "/opt/qemu")
         changes = draft.changes()
         self.assertEqual(
-            changes, {"log_link_loops": True, "qemu_path": "/opt/qemu"}
+            changes, {"allow_female_plugs": True, "qemu_path": "/opt/qemu"}
         )
         draft.give(changes)
         self.assertEqual(project.written, [changes])
         # OK wrote them: the draft starts from them
         draft.saved()
         self.assertEqual(draft.changes(), {})
-        draft.set("log_link_loops", False)
-        self.assertEqual(draft.changes(), {"log_link_loops": False})
+        draft.set("allow_female_plugs", False)
+        self.assertEqual(draft.changes(), {"allow_female_plugs": False})
 
     def test_follow_a_setting_untouched(self):
         draft = SettingsDraft(owner(AppSettings))

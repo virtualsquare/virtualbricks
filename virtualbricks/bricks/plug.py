@@ -23,17 +23,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet import defer
-from twisted.logger import Logger
 
 from virtualbricks import errors
-from virtualbricks.config.settings import get_setting
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.bricks import Brick
     from virtualbricks.bricks.sock import Sock
     from virtualbricks.bricks.virtualmachine import HostonlySock
-
-link_loop = "The links make a loop: the bricks on it don't start."
 
 
 class Plug:
@@ -42,7 +38,6 @@ class Plug:
     sock: Sock | HostonlySock | None = None
     _antiloop = False
     mode = "vde"
-    logger = Logger()
     model = ""
     mac = ""
 
@@ -54,10 +49,8 @@ class Plug:
 
     def connected(self) -> defer.Deferred[Any]:
         if self._antiloop:
-            if get_setting("log_link_loops"):
-                self.logger.error(link_loop)
             self._antiloop = False
-            return defer.fail(errors.LinkLoopError())
+            return defer.fail(errors.LinkLoopError(self.brick.name))
 
         self._antiloop = True
         if self.sock is None or self.sock.brick is None:

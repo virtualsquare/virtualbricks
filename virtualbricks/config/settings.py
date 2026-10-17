@@ -39,8 +39,6 @@ from twisted.logger import Logger
 
 from virtualbricks import locations
 from virtualbricks.config.report import Report
-from virtualbricks.i18n import N_
-from virtualbricks.observable import Observable, Signal
 from virtualbricks.config.schema import (
     Bool,
     Kind,
@@ -51,9 +49,9 @@ from virtualbricks.config.schema import (
     define,
     dump_record,
     field,
-    load_record,
     field_names,
     kind_of,
+    load_record,
     notes,
     parse_value,
 )
@@ -64,6 +62,8 @@ from virtualbricks.config.tomlfile import (
     dump_toml,
     load_toml,
 )
+from virtualbricks.i18n import N_
+from virtualbricks.observable import Observable, Signal
 
 # The settings are strings and booleans.
 SettingValue: TypeAlias = str | bool
@@ -113,12 +113,6 @@ def check_format(data: Table, report: Report, where: str) -> bool:
 class ProjectSettings:
     """The settings that each project has its own copy of."""
 
-    log_link_loops: bool = field(
-        Bool(),
-        default=False,
-        label=N_("Loops of links"),
-        help=N_("Log an error when links make a loop"),
-    )
     allow_female_plugs: bool = field(
         Bool(),
         default=False,
@@ -141,8 +135,9 @@ class ProjectSettings:
 
 # The settings that projects had once and have no more: a project file
 # written with one is read without a word, and loses it when it's saved.
-# Private copies are always qcow2 (page 23 S7).
-RETIRED_PROJECT_KEYS = frozenset(("cow_format",))
+# Private copies are always qcow2 (page 23 S7), and a loop of links always
+# stops a start, with an error that says so.
+RETIRED_PROJECT_KEYS = frozenset(("cow_format", "log_link_loops"))
 
 
 @define

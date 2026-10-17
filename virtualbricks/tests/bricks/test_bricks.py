@@ -22,9 +22,8 @@ import os
 
 from twisted.internet import defer, task
 
-from virtualbricks import bricks
-from virtualbricks.bricks import BaseConfig
-from virtualbricks.bricks import BrickConfig
+from virtualbricks import bricks, errors
+from virtualbricks.bricks import BaseConfig, BrickConfig
 from virtualbricks.bricks.eventaction import StartAction
 from virtualbricks.config.report import Report
 from virtualbricks.config.schema import field_names, info_of, kind_of
@@ -180,6 +179,29 @@ class TestRelatedEvents(BrickTestCase):
         self.assertEqual(started, ["boot"])
         switch._start_related_events(on=False, off=True)
         self.assertEqual(started, ["boot"])
+
+
+class TestLoop(BrickTestCase):
+
+    def setUp(self):
+        super().setUp()
+        # two machines, each plugged into a socket card of the other
+        self.vm1 = self.factory.new_brick("qemu", "vm1")
+        self.vm2 = self.factory.new_brick("qemu", "vm2")
+        self.vm1.add_plug(self.vm2.add_sock())
+        self.vm2.add_plug(self.vm1.add_sock())
+
+    def test_a_loop_stops_the_start(self):
+        # vm2 starts first, for vm1, and asks for vm1 again
+        error = self.failureResultOf(self.vm1.start(), errors.LinkLoopError)
+        self.assertEqual(
+            error.getErrorMessage(),
+            "Cannot start 'vm1': its links make a loop",
+        )
+        self.assertFalse(self.vm1.starting())
+        self.assertFalse(self.vm2.starting())
+        # and again, not waiting for the start that failed
+        self.failureResultOf(self.vm2.start(), errors.LinkLoopError)
 
 
 class TestRestart(BrickTestCase):

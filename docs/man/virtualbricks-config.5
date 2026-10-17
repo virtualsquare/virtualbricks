@@ -261,10 +261,6 @@ open, or with the defaults when none is.
 An imported project brings the paths of the machine it comes from; the
 import dialog offers to replace them with those of the open project.
 .TP
-\f[B]log_link_loops\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
-Log an error when starting a brick finds a loop in the links.
-The bricks on a loop don\(aqt start either way.
-.TP
 \f[B]allow_female_plugs\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Allow plugs to connect to the socket cards of virtual machines, not only
 to switches.
@@ -276,8 +272,11 @@ The directory of the QEMU programs.
 The directory of the VDE programs, such as \f[B]vde_switch\f[R](1).
 .PP
 Older project files have a \f[B]cow_format\f[R] key, the format of the
-private copies of the disks, which are always qcow2 now: it\(aqs read
-without a word, and dropped at the next save.
+private copies of the disks, which are always qcow2 now, and a
+\f[B]log_link_loops\f[R] key, which decided whether a loop in the links
+was logged, while the bricks on a loop never started: an error says so
+now.
+Both are read without a word, and dropped at the next save.
 .SS Images
 .TP
 \f[B]path\f[R] = \f[I]path\f[R], default \f[CR]\(dq\(dq\f[R]
@@ -984,7 +983,6 @@ and the six empty disks.
 format = 1
 
 [settings]
-log_link_loops = false
 allow_female_plugs = false
 qemu_path = \(dq/usr/bin\(dq
 vde_path = \(dq/usr/bin\(dq

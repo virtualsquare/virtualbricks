@@ -25,14 +25,14 @@ from virtualbricks.bricks.eventaction import (
     EventAction,
     ShellAction,
 )
-from virtualbricks.config.projectfile import DEFAULT_MODEL
+from virtualbricks.bricks.virtualmachine import UsbDevice, UsbDeviceKind
+from virtualbricks.config.projectfile import DEFAULT_MODEL, describe_action
 from virtualbricks.config.projectfile import FORMAT as PROJECT_FORMAT
-from virtualbricks.config.projectfile import describe_action
+from virtualbricks.config.report import Report
+from virtualbricks.config.schema import Bool, Float, Int, Mac, Str, dump_record
 from virtualbricks.config.settings import (
     ProjectSettings,
 )
-from virtualbricks.config.schema import Bool, Float, Int, Mac, Str, dump_record
-from virtualbricks.config.report import Report
 from virtualbricks.migrate import convert
 from virtualbricks.migrate.convert import (
     MigrationError,
@@ -50,7 +50,6 @@ from virtualbricks.tests.migrate.fixtures import (
     PROJECT,
     WAN,
 )
-from virtualbricks.bricks.virtualmachine import UsbDevice, UsbDeviceKind
 
 
 def messages(report, level=None):
@@ -115,7 +114,8 @@ class TestConvertSettings(unittest.TestCase):
         self.assertEqual(current, locations.DEFAULT_PROJECT)
 
     def test_dropped_and_unknown(self):
-        dropped = ("alt-term", "cdroms", "kvm", "python", "sudo")
+        dropped = ("alt-term", "cdroms", "erroronloop", "kvm", "python")
+        dropped += ("sudo",)
         options = {key: "x" for key in dropped}
         options["color"] = "red"
         _, _, _, report = self.convert(**options)
@@ -124,10 +124,11 @@ class TestConvertSettings(unittest.TestCase):
             [
                 "vb.conf:4: alt-term: not used any more, dropped",
                 "vb.conf:5: cdroms: not used any more, dropped",
-                "vb.conf:6: kvm: not used any more, dropped",
-                "vb.conf:7: python: not used any more, dropped",
-                "vb.conf:8: sudo: not used any more, dropped",
-                "vb.conf:9: color: unknown setting, dropped",
+                "vb.conf:6: erroronloop: not used any more, dropped",
+                "vb.conf:7: kvm: not used any more, dropped",
+                "vb.conf:8: python: not used any more, dropped",
+                "vb.conf:9: sudo: not used any more, dropped",
+                "vb.conf:10: color: unknown setting, dropped",
             ],
         )
         self.assertEqual(report.warnings, 1)
