@@ -28,8 +28,6 @@ from virtualbricks.tests import BrickTestCase
 class FakeBrick:
     """A brick that only knows how to be powered on."""
 
-    name = "vm1"
-
     def __init__(self, result=None):
         self.result = result
         self.start_calls = 0
@@ -109,14 +107,11 @@ class TestPlug(BrickTestCase):
 
     def test_connected_when_not_connected(self):
         deferred = self.plug.connected()
-        # nothing is left behind by the failed attempt
-        self.assertFalse(self.plug._antiloop)
         return self.assertFailure(deferred, errors.NotConnectedError)
 
     def test_connected_to_a_sock_without_a_brick(self):
         self.plug.connect(Sock(None, "orphan"))
         deferred = self.plug.connected()
-        self.assertFalse(self.plug._antiloop)
         return self.assertFailure(deferred, errors.NotConnectedError)
 
     def test_connected_powers_on_the_other_brick(self):
@@ -124,7 +119,6 @@ class TestPlug(BrickTestCase):
         deferred = self.plug.connected()
         self.assertEqual(self.other.start_calls, 1)
         self.assertEqual(self.brick.start_calls, 0)
-        self.assertFalse(self.plug._antiloop)
         return deferred.addCallback(self.assertIs, self.other)
 
     def test_connected_waits_for_the_other_brick(self):
@@ -133,17 +127,13 @@ class TestPlug(BrickTestCase):
         self.plug.connect(self.sock)
         deferred = self.plug.connected()
         self.assertFalse(deferred.called)
-        # while it starts, the plug knows it's being followed
-        self.assertTrue(self.plug._antiloop)
         pending.callback("started")
-        self.assertFalse(self.plug._antiloop)
         return deferred.addCallback(self.assertEqual, "started")
 
     def test_connected_passes_on_the_failure(self):
         self.other.result = defer.fail(errors.BadConfigError("no switch"))
         self.plug.connect(self.sock)
         deferred = self.plug.connected()
-        self.assertFalse(self.plug._antiloop)
         return self.assertFailure(deferred, errors.BadConfigError)
 
     def test_connected_to_its_own_brick(self):
@@ -152,31 +142,15 @@ class TestPlug(BrickTestCase):
         self.plug.connect(sock)
         deferred = self.plug.connected()
         self.assertEqual(self.brick.start_calls, 0)
-        self.assertFalse(self.plug._antiloop)
         return deferred.addCallback(self.assertIs, self.brick)
 
-    def test_loop(self):
-        # powering on the other brick powers on this one, which needs the
-        # other brick again
-        self.other.start = self.plug.connected
+    def test_connected_again_while_the_other_brick_starts(self):
+        # as when the start of this brick failed by another plug, and it's
+        # started again: not a loop, the other brick is asked again
+        self.other.result = defer.Deferred()
         self.plug.connect(self.sock)
-        deferred = self.plug.connected()
-        self.assertFalse(self.plug._antiloop)
-        d = self.assertFailure(deferred, errors.LinkLoopError)
-        # the error says so, whoever started the brick
-        return d.addCallback(
-            lambda e: self.assertEqual(
-                str(e), "Cannot start 'vm1': its links make a loop"
-            )
-        )
-
-    def test_can_be_used_again_after_a_loop(self):
-        self.other.start = self.plug.connected
-        self.plug.connect(self.sock)
-        d = self.assertFailure(self.plug.connected(), errors.LinkLoopError)
-
-        def again(_):
-            self.other.start = lambda: defer.succeed("fine")
-            return self.plug.connected()
-
-        return d.addCallback(again).addCallback(self.assertEqual, "fine")
+        first = self.plug.connected()
+        second = self.plug.connected()
+        self.assertEqual(self.other.start_calls, 2)
+        self.assertNoResult(first)
+        self.assertIs(second, self.other.result)

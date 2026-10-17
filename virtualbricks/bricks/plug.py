@@ -36,7 +36,6 @@ class Plug:
 
     # the socket it's in: a brick's, QEMU's own user network, or none
     sock: Sock | HostonlySock | None = None
-    _antiloop = False
     mode = "vde"
     model = ""
     mac = ""
@@ -48,28 +47,22 @@ class Plug:
         return self.sock is not None
 
     def connected(self) -> defer.Deferred[Any]:
-        if self._antiloop:
-            self._antiloop = False
-            return defer.fail(errors.LinkLoopError(self.brick.name))
+        """
+        Start the brick of the socket, the one this plug's brick needs.
 
-        self._antiloop = True
+        A loop of links is the start's to find: the brick that starts is
+        asked to start again before its first start returns.
+        """
+
         if self.sock is None or self.sock.brick is None:
-            self._antiloop = False
             return defer.fail(errors.NotConnectedError())
 
         # special case where a brick (vm) is plugged to itself:
         # brick -> plug -> sock <- brick
         if self.sock.brick is self.brick:
-            self._antiloop = False
             return defer.succeed(self.brick)
 
-        def clear_antiloop(passthru: object) -> object:
-            self._antiloop = False
-            return passthru
-
-        d = self.sock.brick.start()
-        d.addBoth(clear_antiloop)
-        return d
+        return self.sock.brick.start()
 
     def connect(self, sock: Sock | HostonlySock) -> None:
         assert sock is not None, "Cannot connect a plug to nothing"

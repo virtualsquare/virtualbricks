@@ -203,6 +203,21 @@ class TestLoop(BrickTestCase):
         # and again, not waiting for the start that failed
         self.failureResultOf(self.vm2.start(), errors.LinkLoopError)
 
+    def test_no_loop_while_a_brick_it_plugs_into_starts(self):
+        # a wire between a switch and a switch wrapper with no switch yet
+        sw1 = self.factory.new_brick("switch", "sw1")
+        os.makedirs(os.path.dirname(sw1.socks[0].path))
+        sw1.prepare = lambda resume="": defer.Deferred()  # slow to start
+        sw2 = self.factory.new_brick("switchwrapper", "sw2")
+        sw2.cbset_socket_path(self.mktemp())
+        wire = self.factory.new_brick("wire", "wire1")
+        wire.connect(sw1.socks[0])
+        wire.connect(sw2.socks[0])
+        self.failureResultOf(wire.start(), errors.BadConfigError)
+        # started again while the switch starts: no loop, still no switch
+        self.assertTrue(sw1.starting())
+        self.failureResultOf(wire.start(), errors.BadConfigError)
+
 
 class TestRestart(BrickTestCase):
 
