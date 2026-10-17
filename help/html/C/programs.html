@@ -51,12 +51,28 @@ document.addEventListener('DOMContentLoaded', function() {
       and <span class="cmd">qemu-system-i386</span></p></td>
 </tr>
 <tr>
+<td style="border-top-style: solid;"><p class="p"><span class="sys">qemu-system-arm</span>, <span class="sys">qemu-system-mips</span>,
+      <span class="sys">qemu-system-ppc</span>, <span class="sys">qemu-system-riscv</span>,
+      <span class="sys">qemu-system-s390x</span>, <span class="sys">qemu-system-sparc</span>,
+      <span class="sys">qemu-system-misc</span></p></td>
+<td style="border-top-style: solid;"><p class="p">The other architectures, as
+      <span class="cmd">qemu-system-aarch64</span> in <span class="sys">qemu-system-arm</span>; up to
+      Debian 12 and Ubuntu 24.04, <span class="sys">qemu-system-misc</span> has those of
+      RISC-V, and on Debian 12 that of s390x</p></td>
+</tr>
+<tr>
 <td style="border-top-style: solid;"><p class="p"><span class="sys">qemu-utils</span></p></td>
 <td style="border-top-style: solid;"><p class="p"><span class="cmd">qemu-img</span>,
       which reads and makes the disk images</p></td>
 </tr>
 </tbody>
 </table></div></div></div>
+<p class="p">The menu of the programs shows each once, by the name QEMU gives it:
+  Debian's other names, as <span class="cmd">qemu-system-arm64</span> for
+  <span class="cmd">qemu-system-aarch64</span>, only where a machine uses one. Some
+  programs have no default machine type, as <span class="cmd">qemu-system-aarch64</span>
+  and <span class="cmd">qemu-system-arm</span>: choose one in the section
+  <span class="gui">Machine</span>, as <span class="sys">virt</span>, or the machine doesn't start.</p>
 <p class="p">No distribution ships <span class="cmd">vde_router</span>, the program of the
   router.</p>
 </div>

@@ -34,7 +34,6 @@ from virtualbricks.bricks import FakeProcess
 from virtualbricks.bricks.eventaction import ShellAction
 from virtualbricks.config import settings
 from virtualbricks.console import ampcommands, ampwire, control
-from virtualbricks.programs import qemu_programs
 from virtualbricks.remote import commands, follower
 from virtualbricks.remote.follower import (
     LogKeeper,
@@ -45,6 +44,7 @@ from virtualbricks.remote.follower import (
 )
 from virtualbricks.tests import FakeLogger, use_workspace
 from virtualbricks.tests.console import ConsoleTestCase
+from virtualbricks.tests.test_programs import executable
 
 
 class Project:
@@ -186,6 +186,11 @@ class TestFollow(FollowTestCase):
         self.assertEqual(self.got(), [])
 
     def test_the_project_then_the_answer(self):
+        folder = os.path.abspath(self.mktemp())
+        executable(folder, "qemu-system-x86_64")
+        os.symlink("qemu-system-x86_64", f"{folder}/qemu-system-amd64")
+        settings.set_setting("qemu_path", folder)
+        self.patch(os, "environ", dict(os.environ, PATH=""))
         self.factory.new_image("frr", "/lab/frr.qcow2")
         self.factory.new_event("boot")
         switch = self.factory.new_brick("switch", "sw1")
@@ -220,10 +225,9 @@ class TestFollow(FollowTestCase):
             machine["workspace_runtime_dir"],
             locations.workspace_runtime_dir(self.workspace.path),
         )
-        self.assertEqual(
-            machine["qemu_programs"],
-            qemu_programs(settings.get_setting("qemu_path")),
-        )
+        # each program once, and Debian's links to them
+        self.assertEqual(machine["qemu_programs"], ["qemu-system-x86_64"])
+        self.assertEqual(machine["qemu_links"], ["qemu-system-amd64"])
         self.assertEqual(
             got[1][3:],
             ({"path": "/lab/frr.qcow2", "description": ""}, {"file": None}),

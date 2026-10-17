@@ -31,13 +31,11 @@ from virtualbricks import __version__, locations, locks, sockets
 from virtualbricks.bricks import FakeProcess
 from virtualbricks.bricks.brickinfo import NEW_KINDS
 from virtualbricks.bricks.eventaction import ShellAction
-from virtualbricks.config import settings
-from virtualbricks.console import ampcommands, ampwire, control
 from virtualbricks.bricks.virtualmachine import UsbDevice
-from virtualbricks.config import images
+from virtualbricks.config import images, settings
 from virtualbricks.config.workspace import Workspace
+from virtualbricks.console import ampcommands, ampwire, control
 from virtualbricks.errors import CommandError
-from virtualbricks.qemu import run
 from virtualbricks.programs import (
     QEMU_QUESTIONS,
     Answer,
@@ -47,6 +45,7 @@ from virtualbricks.programs import (
     qemu_found,
     vde_found,
 )
+from virtualbricks.qemu import run
 from virtualbricks.remote import (
     answers,
     client,
@@ -75,13 +74,13 @@ from virtualbricks.tests import (
     short_folder,
     use_workspace,
 )
-from virtualbricks.tests.console import ConsoleTestCase
-from virtualbricks.tests.console.test_control import TOKEN, tls_file
 from virtualbricks.tests.config.test_images import (
     INFO,
     FakeQemuImg,
     FakeWorkspace,
 )
+from virtualbricks.tests.console import ConsoleTestCase
+from virtualbricks.tests.console.test_control import TOKEN, tls_file
 from virtualbricks.tests.remote.test_mirror import Project
 from virtualbricks.tests.test_programs import FakeRun, executable
 
@@ -576,6 +575,14 @@ class TestFacts(ClientTestCase):
     def test_what_the_windows_read(self):
         machine = self.engine.machine
         self.assertEqual(machine.qemu_programs(), ["qemu-system-x86_64"])
+        # Debian's link to it there, as the machine table has it, only for
+        # the machine that uses it
+        machine.mirror.machine["qemu_links"] = ["qemu-system-amd64"]
+        self.assertEqual(machine.qemu_programs(), ["qemu-system-x86_64"])
+        self.assertEqual(
+            machine.qemu_programs("qemu-system-amd64"),
+            ["qemu-system-amd64", "qemu-system-x86_64"],
+        )
         settings.set_setting("audio_driver", "pa")
         self.pump.flush()
         self.clock().advance(0)

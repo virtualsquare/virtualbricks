@@ -28,10 +28,23 @@
       for the Netemu links</p></td></tr>
       <tr><td><p><sys>qemu-system-x86</sys></p></td><td><p><cmd>qemu-system-x86_64</cmd>
       and <cmd>qemu-system-i386</cmd></p></td></tr>
+      <tr><td><p><sys>qemu-system-arm</sys>, <sys>qemu-system-mips</sys>,
+      <sys>qemu-system-ppc</sys>, <sys>qemu-system-riscv</sys>,
+      <sys>qemu-system-s390x</sys>, <sys>qemu-system-sparc</sys>,
+      <sys>qemu-system-misc</sys></p></td><td><p>The other architectures, as
+      <cmd>qemu-system-aarch64</cmd> in <sys>qemu-system-arm</sys>; up to
+      Debian 12 and Ubuntu 24.04, <sys>qemu-system-misc</sys> has those of
+      RISC-V, and on Debian 12 that of s390x</p></td></tr>
       <tr><td><p><sys>qemu-utils</sys></p></td><td><p><cmd>qemu-img</cmd>,
       which reads and makes the disk images</p></td></tr>
     </tbody>
   </table>
+  <p>The menu of the programs shows each once, by the name QEMU gives it:
+  Debian's other names, as <cmd>qemu-system-arm64</cmd> for
+  <cmd>qemu-system-aarch64</cmd>, only where a machine uses one. Some
+  programs have no default machine type, as <cmd>qemu-system-aarch64</cmd>
+  and <cmd>qemu-system-arm</cmd>: choose one in the section
+  <gui>Machine</gui>, as <sys>virt</sys>, or the machine doesn't start.</p>
   <p>No distribution ships <cmd>vde_router</cmd>, the program of the
   router.</p>
   <section id="where">

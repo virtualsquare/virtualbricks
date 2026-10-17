@@ -82,7 +82,11 @@ from virtualbricks.config.settings import SettingValue
 from virtualbricks.config.tomlfile import Table
 from virtualbricks.config.workspace import Workspace, projects
 from virtualbricks.observable import Callback, Signal
-from virtualbricks.programs import missing_programs, qemu_programs
+from virtualbricks.programs import (
+    missing_programs,
+    qemu_links,
+    qemu_programs,
+)
 from virtualbricks.remote import commands
 from virtualbricks.remote.commands import BRICK, EVENT, IMAGE
 
@@ -239,7 +243,9 @@ def machine_table(
         ),
         "runtime_dir": factory.runtime_dir,
         "missing": [str(missing) for missing in missing_programs(vde, qemu)],
+        # each program once, and the links to them apart
         "qemu_programs": qemu_programs(qemu),
+        "qemu_links": qemu_links(qemu),
         "lacks": lacks,
         "ksm": ksm.check_ksm(),
         "ksm_available": ksm.ksm_available(),

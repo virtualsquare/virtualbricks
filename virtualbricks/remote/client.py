@@ -64,6 +64,9 @@ from virtualbricks.bricks.virtualmachine import (
 )
 from virtualbricks.config.images import ImageInfo, parse_info
 from virtualbricks.config.report import Report
+from virtualbricks.config.schema import Kind as FieldKind
+from virtualbricks.config.schema import kind_of
+from virtualbricks.config.settings import SettingValue, setting_kind
 from virtualbricks.config.workspace import (
     TAKEN,
     DiskUsage,
@@ -73,8 +76,6 @@ from virtualbricks.config.workspace import (
     name_problem,
     room_problem,
 )
-from virtualbricks.config.settings import SettingValue, setting_kind
-from virtualbricks.config.schema import Kind as FieldKind, kind_of
 from virtualbricks.console import ampcommands, ampwire, wire
 from virtualbricks.console import client as console_client
 from virtualbricks.i18n import _
@@ -88,7 +89,8 @@ from virtualbricks.programs import (
 from virtualbricks.remote import commands
 from virtualbricks.remote.commands import BRICK, EVENT, IMAGE
 from virtualbricks.remote.drafts import what_changed
-from virtualbricks.remote.follower import Item, kind_of as kind_of_item
+from virtualbricks.remote.follower import Item
+from virtualbricks.remote.follower import kind_of as kind_of_item
 from virtualbricks.remote.mirror import Json, MirrorFactory, Mirroring
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -456,8 +458,12 @@ class RemoteMachine:
     def setting(self, name: str) -> SettingValue:
         return self.mirror.settings[name]
 
-    def qemu_programs(self) -> list[str]:
-        return list(self.mirror.machine.get("qemu_programs", []))
+    def qemu_programs(self, used: str = "") -> list[str]:
+        machine = self.mirror.machine
+        names = list(machine.get("qemu_programs", []))
+        if used in machine.get("qemu_links", []):
+            names = sorted([*names, used])
+        return names
 
 
 class OpenThere:

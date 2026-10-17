@@ -44,7 +44,10 @@ sudo apt install qemu-system-x86 qemu-system-gui qemu-utils vde2 \
   and newer: before a machine starts, Virtualbricks asks its QEMU what it
   has, and a setting that this QEMU lacks is left out, with a warning in
   *File › Logs*. Ubuntu builds its QEMU without VDE, which a machine needs to
-  plug into a switch: there, use a QEMU package built with it;
+  plug into a switch: there, use a QEMU package built with it.
+  `qemu-system-aarch64` and `qemu-system-arm`, and `qemu-system-riscv64` of
+  QEMU 11, have no default machine type: a machine of theirs needs one, as
+  `virt`, chosen in its settings;
 - VDE 2: `vde_switch`, `vde_plug`, `wirefilter`, `vde_plug2tap`,
   `vde_pcapplug`, `dpipe`, `vdeterm` and `unixterm`, and `vde_cryptcab`, in
   its own package; the router brick needs `vde_router`, which no distribution
@@ -382,7 +385,8 @@ coverage report
   the programs installed here, the machine paused; it is skipped without
   `qemu-system-x86_64`, `qemu-img` and `vde_switch`.
 - The command lines of the bricks are tested against what the QEMU and VDE of
-  each supported distribution answer, recorded in
+  each supported distribution answer, QEMU for x86 and for the architectures
+  that Debian releases on, recorded in
   `virtualbricks/tests/data/programs/<target>.json`. In the same folder,
   `record.py` records them again, for a new distribution or when one updates
   its QEMU, and `start.py` starts the sample project in a container of each

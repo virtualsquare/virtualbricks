@@ -10,11 +10,6 @@
 
 - [ ] Drop the import message window
 
-## Bricks and programs
-
-- [ ] Ask QEMU for other architectures the same way; only
-  qemu-system-x86 is recorded (10 §13)
-
 # IDEAS
 
 ## Config
@@ -60,6 +55,13 @@
 
 ## Bricks and programs
 
+- [ ] Read the memory and the CPUs that a machine type takes from QMP's
+  `query-machines`, which has `cpu-max` and `default-ram-id`: the panel
+  could warn of `-smp 2` on a machine of one CPU (30 §12)
+- [ ] Choose a machine type, as `virt`, when a program without a default
+  one is chosen in the panel (30 §12)
+- [ ] KVM on hosts that aren't x86, as aarch64 on arm64: the recordings
+  would need such a host (30 §12)
 - [ ] Give a switch wrapper an error state when its control folder isn't
   a switch's: a folder without the socket `ctl`, now Stopped, or the `ctl`
   that a killed switch leaves, now Running; a connection to `ctl` would
@@ -344,6 +346,12 @@
 
 # DONE
 
+- [x] Ask QEMU for other architectures the same way: aarch64, arm, ppc64,
+  riscv64, s390x and mips64el recorded beside x86; one reader for the CPU
+  lists of every architecture; the network backends asked of the empty
+  machine; what a machine can't take left out with a warning; a machine
+  without a machine type refused on a program without a default one;
+  Debian's links out of the menus (10 §13, 30)
 - [x] Import an archive dropped on the Projects window, or on the main
   window: an Import window for each file, reading it; what isn't a file of
   this computer is named in the bar of the Projects window, or in an error

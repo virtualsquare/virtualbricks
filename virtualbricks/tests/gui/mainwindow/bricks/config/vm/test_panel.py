@@ -266,7 +266,7 @@ class MachineThere(LocalMachine):
     def setting(self, name):
         return self.settings[name]
 
-    def qemu_programs(self):
+    def qemu_programs(self, used=""):
         return ["qemu-system-aarch64"]
 
 

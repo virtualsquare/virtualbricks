@@ -20,8 +20,8 @@
 import os
 import signal
 
-from twisted.trial import unittest
 from twisted.internet import defer, error, task
+from twisted.trial import unittest
 
 from virtualbricks import errors, ksm
 from virtualbricks.bricks import FakeProcess
@@ -43,13 +43,13 @@ from virtualbricks.tests import (
     short_folder,
     use_workspace,
 )
-from virtualbricks.tests.test_programs import executable
 from virtualbricks.tests.config.test_images import (
     INFO,
     FakeQemuImg,
     FakeWorkspace,
     ImagesTestCase,
 )
+from virtualbricks.tests.test_programs import executable
 
 
 class FakeBrick:
@@ -549,6 +549,13 @@ class TestMachine(EngineTestCase):
         machine = self.engine.machine
         self.assertEqual(machine.setting("qemu_path"), folder)
         self.assertEqual(machine.qemu_programs(), ["qemu-system-riscv64"])
+        # Debian's link to it, for the machine that uses it
+        os.symlink("qemu-system-riscv64", f"{folder}/qemu-system-riscv")
+        self.assertEqual(machine.qemu_programs(), ["qemu-system-riscv64"])
+        self.assertEqual(
+            machine.qemu_programs("qemu-system-riscv"),
+            ["qemu-system-riscv", "qemu-system-riscv64"],
+        )
 
     def test_its_files(self):
         path = os.path.abspath(self.mktemp())

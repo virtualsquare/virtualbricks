@@ -62,7 +62,8 @@ def build(panel: VirtualMachinePanel, page: Page) -> None:
     form = page.form
     draft = panel.draft
     form.section(_("Machine"))
-    names = panel.engine.machine.qemu_programs()
+    # the program of the machine stays, a link to another or not
+    names = panel.engine.machine.qemu_programs(draft.get("qemu_program"))
     form.choice(
         "qemu_program",
         [(name, name.removeprefix("qemu-system-")) for name in names],

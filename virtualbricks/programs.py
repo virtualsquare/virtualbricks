@@ -68,6 +68,7 @@ __all__ = [
     "parse_machine_properties",
     "programs",
     "qemu_info",
+    "qemu_links",
     "qemu_programs",
 ]
 
@@ -507,23 +508,59 @@ def find_program(name: str, folder: str) -> str | None:
     return None
 
 
-def qemu_programs(folder: str) -> list[str]:
-    """The names of the QEMU system emulators, in folder and in PATH."""
+def _emulators(folder: str) -> dict[str, str]:
+    """
+    The QEMU system emulators in folder and in PATH: by name, the name of
+    the program it is, another where the name is a link to an emulator of
+    its folder, as Debian's qemu-system-arm64 to qemu-system-aarch64.
+    """
 
     folders = [folder] + os.environ.get("PATH", "").split(os.pathsep)
-    names: set[str] = set()
+    found: dict[str, str] = {}
     for directory in filter(None, folders):
         try:
             entries = os.listdir(directory)
         except OSError:
             continue
-        names.update(
-            name
-            for name in entries
-            if name.startswith("qemu-system-")
-            and os.access(os.path.join(directory, name), os.X_OK)
-        )
-    return sorted(names)
+        real = os.path.realpath(directory)
+        for name in entries:
+            path = os.path.join(directory, name)
+            if (
+                name in found
+                or not name.startswith("qemu-system-")
+                or not os.access(path, os.X_OK)
+            ):
+                continue
+            target = os.path.realpath(path)
+            program = os.path.basename(target)
+            same = os.path.dirname(target) == real
+            found[name] = (
+                program
+                if same and program.startswith("qemu-system-")
+                else name
+            )
+    return found
+
+
+def qemu_programs(folder: str, used: str = "") -> list[str]:
+    """
+    The names of the QEMU system emulators, in folder and in PATH, each
+    program once: a link to another is left out, unless it's used.
+    """
+
+    return sorted(
+        name
+        for name, program in _emulators(folder).items()
+        if program == name or name == used
+    )
+
+
+def qemu_links(folder: str) -> list[str]:
+    """The names that qemu_programs() leaves out: links to another."""
+
+    return sorted(
+        name for name, program in _emulators(folder).items() if program != name
+    )
 
 
 # The programs that Virtualbricks warns about at start when they're missing:

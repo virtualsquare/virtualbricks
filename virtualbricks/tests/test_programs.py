@@ -57,6 +57,7 @@ from virtualbricks.programs import (
     parse_version,
     qemu_found,
     qemu_info,
+    qemu_links,
     qemu_programs,
     run,
     vde_found,
@@ -647,6 +648,52 @@ class TestFind(ProgramsTestCase):
         self.assertEqual(
             qemu_programs(self.bin), ["qemu-system-arm", "qemu-system-x86_64"]
         )
+
+    def test_each_program_once(self):
+        # Debian's names that are links to another emulator of the folder
+        executable(self.bin, "qemu-system-aarch64")
+        executable(self.bin, "qemu-system-x86_64")
+        os.symlink("qemu-system-aarch64", f"{self.bin}/qemu-system-arm64")
+        os.symlink("qemu-system-x86_64", f"{self.bin}/qemu-system-amd64")
+        # a link to another folder, or to what isn't an emulator, stays
+        os.symlink(
+            f"{self.bin}/qemu-system-x86_64", f"{self.path}/qemu-system-lab"
+        )
+        executable(self.bin, "qemu-wrapper")
+        os.symlink("qemu-wrapper", f"{self.bin}/qemu-system-wrapped")
+        expected = [
+            "qemu-system-aarch64",
+            "qemu-system-lab",
+            "qemu-system-wrapped",
+            "qemu-system-x86_64",
+        ]
+        self.assertEqual(qemu_programs(self.bin), expected)
+        self.assertEqual(
+            qemu_links(self.bin), ["qemu-system-amd64", "qemu-system-arm64"]
+        )
+        # the one a machine uses
+        self.assertEqual(
+            qemu_programs(self.bin, "qemu-system-amd64"),
+            ["qemu-system-aarch64", "qemu-system-amd64"] + expected[1:],
+        )
+        self.assertEqual(
+            list(qemu_found(self.bin).found),
+            ["qemu-system-aarch64", "qemu-system-lab"]
+            + ["qemu-system-wrapped", "qemu-system-x86_64"],
+        )
+
+    def test_a_folder_that_is_a_link(self):
+        # /bin of a merged /usr: its programs are those of /usr/bin
+        executable(self.bin, "qemu-system-x86_64")
+        os.symlink("qemu-system-x86_64", f"{self.bin}/qemu-system-amd64")
+        os.symlink(self.bin, f"{self.root}/usrbin")
+        self.patch(
+            os,
+            "environ",
+            dict(os.environ, PATH=f"{self.root}/usrbin:{self.bin}"),
+        )
+        self.assertEqual(qemu_programs(""), ["qemu-system-x86_64"])
+        self.assertEqual(qemu_links(""), ["qemu-system-amd64"])
 
     def test_missing_programs(self):
         for name in REQUIRED:

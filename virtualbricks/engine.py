@@ -79,11 +79,11 @@ from virtualbricks.programs import (
     FolderPrograms,
     Programs,
     QemuInfo,
-    programs as known_programs,
     qemu_found,
     qemu_programs,
     vde_found,
 )
+from virtualbricks.programs import programs as known_programs
 from virtualbricks.qemu import run
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -175,10 +175,13 @@ class LocalMachine:
 
         return get_setting(name)
 
-    def qemu_programs(self) -> list[str]:
-        """The names of the QEMU system emulators, for a machine to use."""
+    def qemu_programs(self, used: str = "") -> list[str]:
+        """
+        The names of the QEMU system emulators, for a machine to use: a link
+        to another, as qemu-system-arm64, only if it's the one used.
+        """
 
-        return qemu_programs(str(get_setting("qemu_path")))
+        return qemu_programs(str(get_setting("qemu_path")), used)
 
 
 class LocalEngine:

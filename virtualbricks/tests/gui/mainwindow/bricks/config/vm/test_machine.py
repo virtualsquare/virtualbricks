@@ -17,7 +17,10 @@
 
 """The Machine section: the program, the pickers of its QEMU, the rest."""
 
+import os
+
 from virtualbricks import engine
+from virtualbricks.programs import qemu_programs
 from virtualbricks.tests.gui.mainwindow.bricks.config.vm.test_panel import (
     MachinePanelTestCase,
 )
@@ -30,7 +33,7 @@ class TestTheMachineSection(MachinePanelTestCase):
         self.patch(
             engine,
             "qemu_programs",
-            lambda folder: ["qemu-system-i386", "qemu-system-x86_64"],
+            lambda folder, used: ["qemu-system-i386", "qemu-system-x86_64"],
         )
         self.vm.update_config(
             {"machine_type": "pc-i440fx-jammy", "cpu_model": "max"}
@@ -67,3 +70,31 @@ class TestTheMachineSection(MachinePanelTestCase):
             [row.option.name for row in machines.list.get_children()],
             ["pc-i440fx-jammy", "The default"],
         )
+
+
+class TestALinkToAProgram(MachinePanelTestCase):
+
+    def prepare(self):
+        # Debian's qemu-system-amd64, the program of the machine
+        folder = os.path.abspath(self.mktemp())
+        os.makedirs(folder)
+        path = os.path.join(folder, "qemu-system-x86_64")
+        with open(path, "w") as fp:
+            fp.write("#!/bin/sh\n")
+        os.chmod(path, 0o755)
+        os.symlink("qemu-system-x86_64", f"{folder}/qemu-system-amd64")
+        self.patch(os, "environ", dict(os.environ, PATH=""))
+        self.patch(
+            engine,
+            "qemu_programs",
+            lambda _, used: qemu_programs(folder, used),
+        )
+        self.vm.update_config({"qemu_program": "qemu-system-amd64"})
+
+    def test_it_stays(self):
+        program = self.panel.rows["qemu_program"].control
+        self.assertEqual(
+            [tuple(row) for row in program.get_model()],
+            [("amd64", "qemu-system-amd64"), ("x86_64", "qemu-system-x86_64")],
+        )
+        self.assertEqual(program.get_active_id(), "qemu-system-amd64")
