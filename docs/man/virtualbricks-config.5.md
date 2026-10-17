@@ -412,7 +412,8 @@ default in its place.
 
 **machine_type** = *string*, default `""`
 :   The machine type, as in **-machine type=**. Empty means the default of
-    QEMU.
+    QEMU. A program without a default one, as **qemu-system-aarch64**,
+    doesn't start the machine until it has a type of the program.
 
 **cpu_model** = *string*, default `""`
 :   The CPU model: **-cpu**.

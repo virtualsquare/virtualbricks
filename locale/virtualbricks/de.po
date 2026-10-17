@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-16 10:06+0200\n"
+"POT-Creation-Date: 2026-10-17 17:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1053,6 +1053,12 @@ msgstr ""
 
 #: virtualbricks/bricks/virtualmachine.py
 msgid "Two letters, as it or de"
+msgstr ""
+
+#: virtualbricks/bricks/virtualmachine.py
+#, python-brace-format
+msgid ""
+"{program} has no default machine type: choose one, or {brick} can't start"
 msgstr ""
 
 #: virtualbricks/bricks/virtualmachine.py

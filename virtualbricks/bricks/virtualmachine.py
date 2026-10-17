@@ -109,6 +109,10 @@ snapshot_error = "Error on snapshot"
 SNAPSHOT = "virtualbricks"
 # The prompt of the monitor of QEMU, without the space that follows it.
 MONITOR_PROMPT = "(qemu)"
+# The card in place of a model the program lacks, where it lacks
+# DEFAULT_MODEL too: the alias of the virtio card of its bus, as
+# virtio-net-ccw on s390x.
+VIRTIO_CARD = "virtio-net"
 
 
 @dataclass(frozen=True)
@@ -911,12 +915,17 @@ class VirtualMachineDraft(Draft):
     # the cards
 
     def add_card(self) -> int:
-        """A new card in nothing, after the other plugs; its index."""
+        """
+        A new card in nothing, after the other plugs; its index. Its model
+        is the one that stands in for a model the program lacks, once the
+        program answered.
+        """
 
         index = sum(1 for card in self.cards if card.kind == "plug")
-        self.cards.insert(
-            index, Card("plug", DEFAULT_MODEL, random_mac(), None)
-        )
+        model = DEFAULT_MODEL
+        if self.qemu is not None:
+            model = stand_in(self.qemu) or DEFAULT_MODEL
+        self.cards.insert(index, Card("plug", model, random_mac(), None))
         return index
 
     def remove_card(self, index: int) -> None:
@@ -986,6 +995,15 @@ class VirtualMachineDraft(Draft):
         ):
             if used:
                 problems.append(Problem(name, text))
+        qemu = self.qemu
+        if qemu is not None and needs_machine_type(
+            qemu, settings.machine_type
+        ):
+            text = _(
+                "{program} has no default machine type: choose one, or"
+                " {brick} can't start"
+            ).format(program=settings.qemu_program, brick=self.brick.name)
+            problems.append(Problem("machine_type", text, error=False))
         for index, card in enumerate(self.cards):
             if not is_valid_mac(card.mac):
                 text = _("{mac} isn't a MAC address").format(mac=card.mac)
@@ -1191,6 +1209,8 @@ class VirtualMachine(bricks.Brick):
 
         The machine type is asked for its properties, as ACPI; a machine type
         that the program doesn't have is left out, so its default is asked.
+        A program without a default machine type refuses the start before
+        the disks, unless the machine has a type of the program.
         """
 
         name = self.config.qemu_program
@@ -1205,29 +1225,44 @@ class VirtualMachine(bricks.Brick):
             qemu: QemuInfo,
         ) -> defer.Deferred[tuple[QemuInfo, frozenset[str]]]:
             machine = self.config.machine_type
+            if needs_machine_type(qemu, machine):
+                lacked = (
+                    f"no machine type {machine}, nor a default one"
+                    if machine
+                    else "no default machine type"
+                )
+                raise errors.BadConfigError(
+                    f"{self.name}: {name} has {lacked}: choose one in its"
+                    " settings"
+                )
             if not qemu.has_machine(machine):
                 machine = ""
             deferred = programs.machine_properties(qemu, machine)
             return deferred.addCallback(lambda properties: (qemu, properties))
 
-        def prepared(results: list[Any]) -> Prepared:
-            (qemu, properties), paths = results
-            return Prepared(
-                qemu=qemu,
-                machine_properties=properties,
-                disks=tuple((disk.device, p) for disk, p in zip(disks, paths)),
-                audio_driver=str(get_setting("audio_driver")),
-                resume=resume,
+        def ask_disks(
+            answers: tuple[QemuInfo, frozenset[str]],
+        ) -> defer.Deferred[Prepared]:
+            qemu, properties = answers
+            deferred = defer.gatherResults(
+                [disk.get_real_disk_name() for disk in disks],
+                consumeErrors=True,
+            )
+            return deferred.addCallback(
+                lambda paths: Prepared(
+                    qemu=qemu,
+                    machine_properties=properties,
+                    disks=tuple(
+                        (disk.device, p) for disk, p in zip(disks, paths)
+                    ),
+                    audio_driver=str(get_setting("audio_driver")),
+                    resume=resume,
+                )
             )
 
-        machine: defer.Deferred[Any] = programs.qemu(path).addCallback(
-            ask_machine
+        return (
+            programs.qemu(path).addCallback(ask_machine).addCallback(ask_disks)
         )
-        paths: defer.Deferred[Any] = defer.gatherResults(
-            [disk.get_real_disk_name() for disk in disks], consumeErrors=True
-        )
-        deferred = defer.gatherResults([machine, paths], consumeErrors=True)
-        return deferred.addCallback(prepared)
 
     def command(self, prepared: Prepared) -> Command:
         """
@@ -1291,8 +1326,9 @@ class VirtualMachine(bricks.Brick):
         cmd.option("-loadvm", prepared.resume)
         if config.headless:
             cmd.option("-display", "none")
+        virtio_disks = config.virtio_disks and "virtio_disks" not in lacked
         for device, path in prepared.disks:
-            if config.virtio_disks:
+            if virtio_disks:
                 cmd.option("-drive", f"file={path},if=virtio")
             else:
                 cmd.option(f"-{device}", path)
@@ -1307,7 +1343,7 @@ class VirtualMachine(bricks.Brick):
             cmd.option("-gdb", f"tcp::{config.gdb_port}")
         if config.use_vnc and not config.headless:
             cmd.option("-vnc", f":{config.vnc_display}")
-        if config.standard_vga:
+        if config.standard_vga and "standard_vga" not in lacked:
             cmd.option("-vga", "std")
         if config.use_usb:
             for usb in config.usb_devices:
@@ -1322,11 +1358,12 @@ class VirtualMachine(bricks.Brick):
             cmd.option("-cdrom", config.cdrom_image)
         elif config.cdrom == "device":
             cmd.option("-cdrom", config.cdrom_device)
+        drift_fix = config.clock_drift_fix and "clock_drift_fix" not in lacked
         cmd.option(
             "-rtc",
             joined(
                 "base=localtime" if config.clock_local_time else "",
-                "driftfix=slew" if config.clock_drift_fix else "",
+                "driftfix=slew" if drift_fix else "",
             ),
         )
         if len(config.keyboard_layout) == 2:
@@ -1368,16 +1405,20 @@ class VirtualMachine(bricks.Brick):
         links: Sequence[Plug | Sock],
         lacked: set[str],
     ) -> None:
-        """The network cards, each with its backend when QEMU has it."""
+        """
+        The network cards, each with its backend when QEMU has it; a model
+        that QEMU lacks has another in its place, or the card is left out.
+        """
 
-        if not links:
-            cmd.option("-net", "none")
-            return
         vde = "vde" in qemu.netdevs
+        cards = 0
         for index, link in enumerate(links):
-            model = link.model
+            model: str | None = link.model
             if f"card{index}" in lacked:
-                model = DEFAULT_MODEL
+                model = stand_in(qemu)
+            if model is None:
+                continue
+            cards += 1
             netdev = _netdev(link, index, vde)
             device = f"{model},mac={link.mac},id=vx{index}"
             if netdev is None:
@@ -1385,6 +1426,8 @@ class VirtualMachine(bricks.Brick):
             else:
                 cmd.option("-device", f"{device},netdev=vx{index}")
                 cmd.option("-netdev", netdev)
+        if not cards:
+            cmd.option("-net", "none")
 
     def add_sock(
         self,
@@ -1504,6 +1547,27 @@ def needs_vde(link: Plug | Sock) -> bool:
     return link.mode == "vde"
 
 
+def stand_in(qemu: QemuInfo) -> str | None:
+    """
+    The model of a card in place of one the program lacks: DEFAULT_MODEL,
+    else the virtio card of its bus; None if it has neither.
+    """
+
+    for model in (DEFAULT_MODEL, VIRTIO_CARD):
+        if qemu.device(model) is not None:
+            return model
+    return None
+
+
+def needs_machine_type(qemu: QemuInfo, machine: str) -> bool:
+    """
+    Whether a machine of that machine type can't start: the program lacks
+    it, and has no default one, as qemu-system-aarch64.
+    """
+
+    return not qemu.default_machine and not qemu.has_machine(machine)
+
+
 @attr.define(frozen=True)
 class Lack:
     """
@@ -1545,13 +1609,16 @@ def lacks(
 
     cards are the model of each network card, and whether it joins a VDE
     socket. machine_properties are those of the machine type, or of the
-    default one when the program lacks it.
+    default one when the program lacks it: the PC speaker and the clock
+    drift fix are of the x86 machines, which have the properties vmport and
+    smm. A machine type that the program lacks, with no default one, isn't
+    a lack: the start is refused.
     """
 
     version = f"QEMU {qemu.version}"
     found = []
     machine = config.machine_type
-    if machine and not qemu.has_machine(machine):
+    if machine and qemu.default_machine and not qemu.has_machine(machine):
         found.append(
             Lack(
                 "machine_type",
@@ -1569,6 +1636,14 @@ def lacks(
                 f"{version} has no audio driver {audio_driver}",
                 "the machine has no sound card",
                 "audio_driver of the settings",
+            )
+        )
+    elif card == "pcspk" and "vmport" not in machine_properties:
+        found.append(
+            Lack(
+                "sound_card",
+                f"{version} has the PC speaker on PC machines only",
+                "the machine has no sound card",
             )
         )
     elif card and card != "pcspk" and qemu.device(card) is None:
@@ -1610,19 +1685,39 @@ def lacks(
                 "install the qemu-system-gui package",
             )
         )
+    if config.virtio_disks and qemu.device("virtio-blk") is None:
+        found.append(
+            Lack(
+                "virtio_disks",
+                f"{version} has no virtio disks",
+                "the disks are the machine's own kind",
+            )
+        )
+    if config.standard_vga and qemu.device("VGA") is None:
+        found.append(Lack("standard_vga", f"{version} has no standard VGA"))
+    instead = stand_in(qemu)
+    left_out = set()
     for index, (model, _vde) in enumerate(cards):
         if qemu.device(model) is None:
+            if instead is None:
+                left_out.add(index)
             found.append(
                 Lack(
                     f"card{index}",
                     f"{version} has no network card {model}",
-                    f"card {index} is a {DEFAULT_MODEL}",
+                    (
+                        f"card {index} is a {instead}"
+                        if instead
+                        else f"card {index} is left out"
+                    ),
                     "",
                 )
             )
     if "vde" not in qemu.netdevs:
         unplugged = [
-            str(index) for index, (_model, vde) in enumerate(cards) if vde
+            str(index)
+            for index, (_model, vde) in enumerate(cards)
+            if vde and index not in left_out
         ]
         if unplugged:
             found.append(
@@ -1634,6 +1729,14 @@ def lacks(
                     "",
                 )
             )
+    if config.clock_drift_fix and "smm" not in machine_properties:
+        found.append(
+            Lack(
+                "clock_drift_fix",
+                f"{version} fixes the clock drift of x86 machines only",
+                "the local time stays" if config.clock_local_time else "",
+            )
+        )
     return found
 
 

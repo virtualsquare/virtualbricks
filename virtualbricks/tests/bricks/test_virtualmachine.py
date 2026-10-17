@@ -20,21 +20,14 @@
 
 import os
 
+import attr
 from twisted.internet import defer, error
 from twisted.python.failure import Failure
 from twisted.trial import unittest
 
 from virtualbricks import bricks
-from virtualbricks.qemu import imageformat
 from virtualbricks.bricks import virtualmachine
-from virtualbricks.config.workspace import OpenProject
-from virtualbricks.config.report import Report
-from virtualbricks.tests import (
-    use_workspace,
-    BrickTestCase,
-    CommandTestCase,
-    FakeLogger,
-)
+from virtualbricks.bricks.draft import Problem, apply
 from virtualbricks.bricks.virtualmachine import (
     Card,
     Image,
@@ -48,14 +41,31 @@ from virtualbricks.bricks.virtualmachine import (
     resume,
     suspend,
 )
-from virtualbricks.bricks.draft import Problem, apply
+from virtualbricks.config.report import Report
+from virtualbricks.config.workspace import OpenProject
 from virtualbricks.programs import parse_machine_properties
-from virtualbricks.tests.test_programs import TARGETS, load, recorded_info
+from virtualbricks.qemu import imageformat
+from virtualbricks.tests import (
+    BrickTestCase,
+    CommandTestCase,
+    FakeLogger,
+    use_workspace,
+)
+from virtualbricks.tests.test_programs import (
+    EMULATORS,
+    QEMU,
+    TARGETS,
+    recorded_info,
+    recording,
+)
+
+AARCH64 = "qemu-system-aarch64"
+S390X = "qemu-system-s390x"
 
 
-def properties(target, machine="pc"):
+def properties(target, machine="pc", program=QEMU):
     return parse_machine_properties(
-        load(target)["qemu"]["machines"][machine]["out"]
+        recording(target, program)["machines"][machine]["out"]
     )
 
 
@@ -416,6 +426,147 @@ class TestLacks(BrickTestCase):
         )
         self.assertEqual(found, [])
 
+    def test_the_pc_speaker(self):
+        # of the PC machines, which have vmport
+        self.vm.update_config({"sound_card": "pcspk"})
+        for target in TARGETS:
+            self.assertEqual(self.lacking(target, machine="q35"), {}, target)
+        found = lacks(
+            self.vm.config,
+            [],
+            recorded_info("debian-13", AARCH64),
+            properties("debian-13", "virt", AARCH64),
+            "alsa",
+        )
+        self.assertEqual(
+            [lack.words() for lack in found],
+            [
+                "QEMU 10.0.13 has the PC speaker on PC machines only: the"
+                " machine has no sound card"
+            ],
+        )
+
+    def test_the_clock_drift_fix(self):
+        # of the x86 machines, which have smm
+        self.vm.update_config({"clock_drift_fix": True})
+        for target in TARGETS:
+            self.assertEqual(self.lacking(target), {}, target)
+        for program in EMULATORS:
+            info = recorded_info("debian-testing", program)
+            machine = info.default_machine or "virt"
+            found = lacks(
+                self.vm.config,
+                [],
+                info,
+                properties("debian-testing", machine, program),
+                "alsa",
+            )
+            self.assertEqual(
+                [lack.words() for lack in found],
+                ["QEMU 11.1.2 fixes the clock drift of x86 machines only"],
+                program,
+            )
+        # the local time without the fix
+        self.vm.update_config({"clock_local_time": True})
+        found = lacks(
+            self.vm.config, [], recorded_info("debian-13"), frozenset(), "alsa"
+        )
+        self.assertEqual(
+            [lack.words() for lack in found],
+            [
+                "QEMU 10.0.13 fixes the clock drift of x86 machines only: the"
+                " local time stays"
+            ],
+        )
+
+    def test_vga_and_virtio_disks(self):
+        # every recorded program has virtio disks; s390x has no VGA
+        self.vm.update_config({"standard_vga": True, "virtio_disks": True})
+        for target in TARGETS:
+            self.assertEqual(self.lacking(target), {}, target)
+            for program in EMULATORS:
+                found = lacks(
+                    self.vm.config,
+                    [],
+                    recorded_info(target, program),
+                    frozenset(["smm", "vmport"]),
+                    "alsa",
+                )
+                self.assertEqual(
+                    [lack.key for lack in found],
+                    ["standard_vga"] if program == S390X else [],
+                    (target, program),
+                )
+        info = recorded_info("debian-13")
+        devices = tuple(
+            device for device in info.devices if device.alias != "virtio-blk"
+        )
+        found = lacks(
+            self.vm.config,
+            [],
+            attr.evolve(info, devices=devices),
+            properties("debian-13"),
+            "alsa",
+        )
+        self.assertEqual(
+            [lack.words() for lack in found],
+            [
+                "QEMU 10.0.13 has no virtio disks: the disks are the"
+                " machine's own kind"
+            ],
+        )
+
+    def test_a_card_in_place_of_another(self):
+        # rtl8139, else the virtio card, else none
+        cards = [("e1000", False), ("igb", True)]
+        for target in TARGETS:
+            found = lacks(
+                self.vm.config,
+                cards,
+                recorded_info(target, S390X),
+                frozenset(),
+                "alsa",
+            )
+            words = {lack.key: lack.words() for lack in found}
+            self.assertTrue(
+                words["card0"].endswith(
+                    "has no network card e1000: card 0 is a virtio-net"
+                ),
+                target,
+            )
+        info = recorded_info("debian-13")
+        devices = tuple(
+            device
+            for device in info.devices
+            if device.category != "Network devices"
+        )
+        found = lacks(
+            self.vm.config,
+            cards,
+            attr.evolve(info, devices=devices, netdevs=frozenset(["user"])),
+            frozenset(),
+            "alsa",
+        )
+        self.assertEqual(
+            [lack.words() for lack in found],
+            [
+                "QEMU 10.0.13 has no network card e1000: card 0 is left out",
+                "QEMU 10.0.13 has no network card igb: card 1 is left out",
+            ],
+        )
+
+    def test_a_machine_type_without_a_default(self):
+        # the start is refused, which isn't a lack
+        self.vm.update_config({"machine_type": "pc"})
+        found = lacks(
+            self.vm.config,
+            [],
+            recorded_info("debian-13", AARCH64),
+            properties("debian-13", "none", AARCH64),
+            "alsa",
+        )
+        self.assertEqual(found, [])
+
     def test_the_command_says_the_same(self):
         self.vm.update_config(
             {
@@ -540,6 +691,27 @@ class TestTheDraft(DraftTestCase):
         )
         self.assertEqual(draft.errors(), [])
 
+    def test_no_default_machine_type(self):
+        # a warning: OK applies the settings, and the start is refused
+        draft = VirtualMachineDraft(self.vm)
+        draft.set("qemu_program", AARCH64)
+        draft.qemu = recorded_info("debian-13", AARCH64)
+        draft.machine_properties = properties("debian-13", "none", AARCH64)
+        warning = Problem(
+            "machine_type",
+            "qemu-system-aarch64 has no default machine type: choose one, or"
+            " vm1 can't start",
+            error=False,
+        )
+        self.assertEqual(draft.problems(), [warning])
+        self.assertEqual(draft.errors(), [])
+        # a machine type it lacks, which no default replaces
+        draft.set("machine_type", "pc")
+        self.assertEqual(draft.problems(), [warning])
+        draft.set("machine_type", "virt")
+        draft.machine_properties = properties("debian-13", "virt", AARCH64)
+        self.assertEqual(draft.problems(), [])
+
 
 class TestTheCards(DraftTestCase):
 
@@ -601,6 +773,27 @@ class TestTheCards(DraftTestCase):
         )
         # the machine waits for OK
         self.assertEqual(len(self.vm.plugs), 2)
+
+    def test_a_new_card_of_its_program(self):
+        # the card in place of one its QEMU lacks, once it answered
+        draft = VirtualMachineDraft(self.vm)
+        draft.qemu = recorded_info("debian-13")
+        self.assertEqual(draft.cards[draft.add_card()].model, "rtl8139")
+        draft.qemu = recorded_info("debian-13", S390X)
+        self.assertEqual(draft.cards[draft.add_card()].model, "virtio-net")
+        # with no other, the default one, which the card's lack names
+        draft.qemu = attr.evolve(draft.qemu, devices=())
+        index = draft.add_card()
+        self.assertEqual(draft.cards[index].model, "rtl8139")
+        self.assertIn(
+            Problem(
+                f"card{index}",
+                "QEMU 10.0.13 has no network card rtl8139: card"
+                f" {index} is left out",
+                error=False,
+            ),
+            draft.problems(),
+        )
 
     def test_a_socket_becomes_a_plug(self):
         draft = VirtualMachineDraft(self.vm)

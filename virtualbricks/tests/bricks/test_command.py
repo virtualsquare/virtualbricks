@@ -49,11 +49,14 @@ from virtualbricks.programs import (
 from virtualbricks.programs import vde_info as make_vde_info
 from virtualbricks.tests import BrickTestCase, CommandTestCase, FakeLogger
 from virtualbricks.tests.test_programs import (
+    EMULATORS,
+    QEMU,
     TARGETS,
     FakeRun,
     answers,
     load,
     recorded_info,
+    recording,
 )
 
 RUN = "/run/vb"
@@ -75,13 +78,21 @@ def prepared_vde(target="debian-13", **programs):
 
 
 def prepared_qemu(
-    target="debian-13", disks=(), driver="alsa", resume="", **changes
+    target="debian-13",
+    disks=(),
+    driver="alsa",
+    resume="",
+    program=QEMU,
+    machine="pc",
+    **changes,
 ):
-    qemu = attr.evolve(recorded_info(target), **changes)
-    pc = load(target)["qemu"]["machines"]["pc"]["out"]
+    """What prepare() gathers for a recorded program and machine type."""
+
+    qemu = attr.evolve(recorded_info(target, program), **changes)
+    out = recording(target, program)["machines"][machine]["out"]
     return Prepared(
         qemu=qemu,
-        machine_properties=parse_machine_properties(pc),
+        machine_properties=parse_machine_properties(out),
         disks=disks,
         audio_driver=driver,
         resume=resume,
@@ -724,6 +735,155 @@ class TestMachine(LinesTestCase):
         index = argv.index("-netdev")
         self.assertEqual(argv[index + 1], "user,id=vx0")
 
+    def test_every_recorded_program(self):
+        # the settings of a PC: the PC speaker and the clock drift fix are
+        # the x86 machines' own; s390x has neither VGA nor rtl8139
+        vm = self.brick(
+            "qemu",
+            "vm",
+            sound_card="pcspk",
+            virtio_disks=True,
+            standard_vga=True,
+            clock_local_time=True,
+            clock_drift_fix=True,
+        )
+        vm.add_plug(hostonly_sock, "00:aa:00:00:00:01", "e1000")
+        disks = (("hda", "/lab/vm_hda.cow"),)
+        for target in TARGETS:
+            for program in (QEMU, *EMULATORS):
+                where = (target, program)
+                pc = program == QEMU
+                s390x = program == "qemu-system-s390x"
+                info = recorded_info(target, program)
+                machine = "pc" if pc else info.default_machine or "virt"
+                vm.update_config(
+                    {"qemu_program": program, "machine_type": machine}
+                )
+                prepared = prepared_qemu(
+                    target, disks, program=program, machine=machine
+                )
+                argv, warnings = self.line(vm, prepared)
+                version = f"vm: QEMU {info.version}"
+                expected = (
+                    []
+                    if pc
+                    else [
+                        f"{version} has the PC speaker on PC machines only"
+                        " (sound_card): the machine has no sound card"
+                    ]
+                )
+                if s390x:
+                    expected += [
+                        f"{version} has no standard VGA (standard_vga)",
+                        f"{version} has no network card e1000: card 0 is a"
+                        " virtio-net",
+                    ]
+                if not pc:
+                    expected.append(
+                        f"{version} fixes the clock drift of x86 machines"
+                        " only (clock_drift_fix): the local time stays"
+                    )
+                self.assertEqual(warnings, expected, where)
+                model = "virtio-net" if s390x else "e1000"
+                self.assertEqual(
+                    argv,
+                    [info.path, "-machine"]
+                    + [
+                        (
+                            f"type={machine},pcspk-audiodev=snd0"
+                            if pc
+                            else f"type={machine}"
+                        )
+                    ]
+                    + ["-smp", "1", "-m", "64"]
+                    + (["-audiodev", "alsa,id=snd0"] if pc else [])
+                    + ["-drive", "file=/lab/vm_hda.cow,if=virtio"]
+                    + ([] if s390x else ["-vga", "std"])
+                    + ["-name", "vm", "-device"]
+                    + [f"{model},mac=00:aa:00:00:00:01,id=vx0,netdev=vx0"]
+                    + ["-netdev", "user,id=vx0", "-rtc"]
+                    + [
+                        (
+                            "base=localtime,driftfix=slew"
+                            if pc
+                            else "base=localtime"
+                        )
+                    ]
+                    + machine_line("", "vm")[9:],
+                    where,
+                )
+
+    def test_the_lacks_of_other_machines(self):
+        # QEMU 10.0 with neither virtio disks nor VGA, and the clock drift
+        # fix alone: no -rtc
+        vm = self.brick(
+            "qemu",
+            "vm",
+            virtio_disks=True,
+            standard_vga=True,
+            clock_drift_fix=True,
+        )
+        info = recorded_info("debian-13")
+        prepared = attr.evolve(
+            prepared_qemu(
+                disks=(("hda", "/lab/vm_hda.cow"),),
+                devices=tuple(
+                    device
+                    for device in info.devices
+                    if device.name not in ("VGA", "virtio-blk-pci")
+                ),
+            ),
+            machine_properties=frozenset(),
+        )
+        argv, warnings = self.line(vm, prepared)
+        self.assertEqual(argv[5:7], ["-hda", "/lab/vm_hda.cow"])
+        for option in ("-drive", "-vga", "-rtc"):
+            self.assertNotIn(option, argv)
+        self.assertEqual(
+            warnings,
+            [
+                "vm: QEMU 10.0.13 has no virtio disks (virtio_disks): the"
+                " disks are the machine's own kind",
+                "vm: QEMU 10.0.13 has no standard VGA (standard_vga)",
+                "vm: QEMU 10.0.13 fixes the clock drift of x86 machines"
+                " only (clock_drift_fix)",
+            ],
+        )
+
+    def test_a_card_left_out(self):
+        # a QEMU with igb alone: no card in place of e1000, so no line for
+        # it, and no VDE switch for it to join
+        vm = self.brick("qemu", "vm")
+        vm.add_plug(self.sw1.socks[0], "00:aa:00:00:00:01", "e1000")
+        info = recorded_info("ubuntu-24.04")
+        prepared = prepared_qemu(
+            "ubuntu-24.04",
+            devices=tuple(
+                device
+                for device in info.devices
+                if device.category != "Network devices" or device.name == "igb"
+            ),
+        )
+        argv, warnings = self.line(vm, prepared)
+        self.assertEqual(argv, machine_line(info.path, "vm"))
+        self.assertEqual(
+            warnings,
+            [
+                "vm: QEMU 8.2.2 has no network card e1000: card 0 is left"
+                " out"
+            ],
+        )
+        # the others stay
+        vm.add_plug(hostonly_sock, "00:aa:00:00:00:02", "igb")
+        argv, _ = self.line(vm, prepared)
+        index = argv.index("-device")
+        self.assertEqual(
+            argv[index : index + 4],
+            ["-device", "igb,mac=00:aa:00:00:00:02,id=vx1,netdev=vx1"]
+            + ["-netdev", "user,id=vx1"],
+        )
+        self.assertNotIn("-net", argv)
+
 
 class TestPrepare(CommandTestCase):
 
@@ -796,6 +956,47 @@ class TestPrepare(CommandTestCase):
         self.successResultOf(vm.prepare())
         asked = [args for _, args in self.run.calls]
         self.assertIn(("-machine", f"{info.default_machine},help"), asked)
+
+    def test_without_default_machine_type(self):
+        # refused before any work on the disks
+        program = "qemu-system-aarch64"
+        self.run = FakeRun(program=program)
+        fake = Programs(self.run)
+        self.patch(virtualmachine, "programs", fake)
+        with open(os.path.join(self.bin, program), "w") as fp:
+            fp.write("#!/bin/sh\n")
+        os.chmod(os.path.join(self.bin, program), 0o755)
+        self.factory.new_image("debian", "/images/debian.qcow2")
+        vm = self.factory.new_brick("qemu", "vm")
+        vm.update_config({"qemu_program": program, "hda_image": "debian"})
+        disks = []
+        disk = vm.disk("hda")
+        real = disk.get_real_disk_name
+        self.patch(
+            disk,
+            "get_real_disk_name",
+            lambda: disks.append(disk) or real(),
+        )
+        failure = self.failureResultOf(vm.prepare())
+        failure.trap(errors.BadConfigError)
+        self.assertEqual(
+            str(failure.value),
+            "vm: qemu-system-aarch64 has no default machine type: choose one"
+            " in its settings",
+        )
+        vm.update_config({"machine_type": "pc"})
+        failure = self.failureResultOf(vm.prepare())
+        self.assertEqual(
+            str(failure.value),
+            "vm: qemu-system-aarch64 has no machine type pc, nor a default"
+            " one: choose one in its settings",
+        )
+        self.assertEqual(disks, [])
+        vm.update_config({"machine_type": "virt"})
+        prepared = self.successResultOf(vm.prepare())
+        self.assertIn("acpi", prepared.machine_properties)
+        self.assertEqual(prepared.disks, (("hda", "/images/debian.qcow2"),))
+        self.assertEqual(disks, [disk])
 
     def test_missing_program(self):
         # whatever this computer has installed

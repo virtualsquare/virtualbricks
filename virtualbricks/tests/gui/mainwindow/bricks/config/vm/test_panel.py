@@ -28,7 +28,12 @@ from virtualbricks.config.settings import set_setting
 from virtualbricks.engine import LocalEngine, LocalMachine
 from virtualbricks.programs import parse_machine_properties
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
-from virtualbricks.tests.test_programs import load, recorded_info
+from virtualbricks.tests.test_programs import (
+    QEMU,
+    load,
+    recorded_info,
+    recording,
+)
 
 if has_display:
     from gi.repository import Gtk
@@ -41,20 +46,26 @@ if has_display:
 class FakePrograms:
     """The answers of the recorded QEMUs, when told."""
 
-    def __init__(self, target="debian-13"):
+    def __init__(self, target="debian-13", program=QEMU):
         self.target = target
+        self.program = program
         self.asked = []
         self.waiting = []
 
     def qemu(self, path):
         self.asked.append(path)
         deferred = defer.Deferred()
-        self.waiting.append((deferred, recorded_info(self.target)))
+        info = recorded_info(self.target, self.program)
+        self.waiting.append((deferred, info))
         return deferred
 
     def machine_properties(self, info, machine):
         self.asked.append((info.path, machine))
-        out = load(self.target)["qemu"]["machines"]["pc"]["out"]
+        if self.program == QEMU:
+            out = load(self.target)["qemu"]["machines"]["pc"]["out"]
+        else:
+            machines = recording(self.target, self.program)["machines"]
+            out = machines[machine or "none"]["out"]
         return defer.succeed(parse_machine_properties(out))
 
     def answer(self):
@@ -66,12 +77,13 @@ class FakePrograms:
 class MachinePanelTestCase(GuiTestCase):
 
     target = "debian-13"
+    program = QEMU
     answer = True
 
     def setUp(self):
         super().setUp()
         untranslated(self)
-        self.programs = FakePrograms(self.target)
+        self.programs = FakePrograms(self.target, self.program)
         self.found = [
             UsbDevice("046d:c52b", "Logitech, Inc. Unifying Receiver")
         ]
@@ -330,3 +342,28 @@ class TestWhatItLacks(MachinePanelTestCase):
             " QEMU built with VDE",
         )
         self.assertTrue(self.panel.cards.lack.get_visible())
+
+
+class TestWithoutDefaultMachineType(MachinePanelTestCase):
+
+    program = "qemu-system-aarch64"
+
+    def prepare(self):
+        self.vm.update_config({"qemu_program": self.program})
+
+    def which(self, name):
+        return f"/usr/bin/{name}"
+
+    def test_a_warning(self):
+        row = self.panel.rows["machine_type"]
+        self.assertTrue(row.problem.get_visible())
+        self.assertEqual(
+            row.problem.get_text(),
+            "qemu-system-aarch64 has no default machine type: choose one, or"
+            " vm1 can't start",
+        )
+        # the start is refused, and OK stays
+        self.assertEqual(self.panel.draft.errors(), [])
+        self.panel.machine_picker.choose("virt")
+        self.programs.answer()
+        self.assertFalse(row.problem.get_visible())
