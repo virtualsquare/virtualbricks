@@ -29,16 +29,16 @@ plug and sock, the two ends of a link between bricks.
 
 from __future__ import annotations
 
-import os
 import collections
 import functools
 import locale
+import os
 import re
 from collections.abc import Collection
 from contextlib import AbstractContextManager
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, cast
 
-from twisted.internet import protocol, reactor, error, defer
+from twisted.internet import defer, error, protocol, reactor
 from twisted.internet.interfaces import (
     IProcessTransport,
     IReactorProcess,
@@ -102,7 +102,8 @@ event_without_actions = (
 shutdown_brick = "Shutting down {name} (pid: {pid})"
 attribute_set = "Attribute {attr} set in {brick} with value {value}."
 start_brick = "Starting: {args}"
-left_out = "{warning}"
+# not {warning}: twisted.python.log takes that field for a warning of Python
+left_out = "{text}"
 open_console = "Opening console for {name}\n%{args}\n"
 console_done = "Console terminated\n{status}"
 restarting = "Restarting process!"
@@ -641,7 +642,7 @@ class Brick(Base):
         """
 
         for warning in command.warnings:
-            self.logger.warn(left_out, warning=warning)
+            self.logger.warn(left_out, text=warning)
         args = command.argv
         self.logger.info(start_brick, args=" ".join(args))
         if self.need_sudo():

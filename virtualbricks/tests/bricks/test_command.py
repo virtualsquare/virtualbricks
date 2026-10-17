@@ -26,6 +26,7 @@ options that each QEMU spells its own way.
 import os
 
 import attr
+from twisted.python import log
 
 from virtualbricks import bricks, errors
 from virtualbricks.brickfactory import BRICK_CLASSES
@@ -1074,6 +1075,32 @@ class TestStart(CommandTestCase):
             netemu.logger.formatted()[0],
             "ne: vde-netemu (vde-netemu) isn't installed: wirefilter runs in"
             " its place",
+        )
+
+    def test_warnings_to_the_old_observers(self):
+        # those of twisted.python.log, which take a field named warning for
+        # a warning of Python
+        os.remove(os.path.join(self.bin, "vde-netemu"))
+        wirefilter = os.path.join(self.bin, "wirefilter")
+        with open(wirefilter, "w") as fp:
+            fp.write("#!/bin/sh\n")
+        os.chmod(wirefilter, 0o755)
+        self.patch(os, "environ", dict(os.environ, PATH=self.bin))
+        netemu = self.netemu()
+        texts = []
+
+        def observer(event):
+            texts.append(log.textFromEventDict(event))
+
+        log.addObserver(observer)
+        self.addCleanup(log.removeObserver, observer)
+        # the logger of the bricks, not the fake one
+        del netemu.logger
+        netemu.start()
+        self.assertIn(
+            "ne: vde-netemu (vde-netemu) isn't installed: wirefilter runs in"
+            " its place",
+            texts,
         )
 
     def test_sudo(self):
