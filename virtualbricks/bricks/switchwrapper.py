@@ -179,11 +179,14 @@ class SwitchWrapper(bricks.Brick):
             self._start_related_events(on=running, off=not running)
         self.changed.notify(self)
 
-    def start(self, resume: str = "") -> defer.Deferred[bricks.Brick]:
+    def start(
+        self, resume: str = "", *, chain: tuple[bricks.Brick, ...] = ()
+    ) -> defer.Deferred[bricks.Brick]:
         """
         Look at the control folder now, for a brick that plugs into it: the
         brick runs if a switch listens there, else it can't start. Users
-        can't start it: another program starts its switch.
+        can't start it: another program starts its switch. It plugs into
+        nothing, so no chain of starts goes on from it.
         """
 
         if not self.configured():

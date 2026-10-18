@@ -182,7 +182,9 @@ class _FakeBrick:
     # as a brick's: its plug isn't saved by itself
     connections: str | None = None
 
-    def start(self) -> defer.Deferred[_FakeBrick]:
+    def start(
+        self, *, chain: tuple[bricks.Brick, ...] = ()
+    ) -> defer.Deferred[_FakeBrick]:
         return defer.succeed(self)
 
 
@@ -1144,7 +1146,9 @@ class VirtualMachine(bricks.Brick):
                 sock.nickname = f"{name}_{suffix}"
                 sock.path = self.runtime_path(f"{name}_{suffix}[]")
 
-    def start(self, resume: str = "") -> defer.Deferred[bricks.Brick]:
+    def start(
+        self, resume: str = "", *, chain: tuple[bricks.Brick, ...] = ()
+    ) -> defer.Deferred[bricks.Brick]:
         """
         Start the machine, from the saved state resume if given.
 
@@ -1153,7 +1157,7 @@ class VirtualMachine(bricks.Brick):
 
         if self.is_running() or self.starting():
             # its images are locked already, or will be
-            return bricks.Brick.start(self, resume)
+            return bricks.Brick.start(self, resume, chain=chain)
 
         def acquire(passthru: bricks.Brick) -> bricks.Brick:
             self.acquire()
@@ -1163,7 +1167,7 @@ class VirtualMachine(bricks.Brick):
             self.release()
             return passthru
 
-        d = bricks.Brick.start(self, resume)
+        d = bricks.Brick.start(self, resume, chain=chain)
         # a machine refused, as one not configured, has nothing to release
         if self._exited_d is not None:
             d.addCallback(acquire)

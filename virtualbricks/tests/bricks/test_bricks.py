@@ -183,31 +183,70 @@ class TestRelatedEvents(BrickTestCase):
 
 class TestLoop(BrickTestCase):
 
-    def setUp(self):
-        super().setUp()
-        # two machines, each plugged into a socket card of the other
-        self.vm1 = self.factory.new_brick("qemu", "vm1")
-        self.vm2 = self.factory.new_brick("qemu", "vm2")
-        self.vm1.add_plug(self.vm2.add_sock())
-        self.vm2.add_plug(self.vm1.add_sock())
+    def ring(self, *names):
+        """Machines, each plugged into a socket card of the next one."""
+
+        vms = [self.factory.new_brick("qemu", name) for name in names]
+        for vm, after in zip(vms, vms[1:] + vms[:1]):
+            vm.add_plug(after.add_sock())
+        return vms
+
+    def slow_switch(self, name):
+        """A switch whose start goes on until the test ends."""
+
+        switch = self.factory.new_brick("switch", name)
+        os.makedirs(os.path.dirname(switch.socks[0].path), exist_ok=True)
+        switch.prepare = lambda resume="": defer.Deferred()
+        return switch
+
+    def assertLoop(self, deferred, message):
+        error = self.failureResultOf(deferred, errors.LinkLoopError)
+        self.assertEqual(error.getErrorMessage(), message)
 
     def test_a_loop_stops_the_start(self):
         # vm2 starts first, for vm1, and asks for vm1 again
-        error = self.failureResultOf(self.vm1.start(), errors.LinkLoopError)
-        self.assertEqual(
-            error.getErrorMessage(),
-            "Cannot start 'vm1': its links make a loop",
+        vm1, vm2 = self.ring("vm1", "vm2")
+        self.assertLoop(
+            vm1.start(),
+            "Cannot start 'vm1': its links make a loop, vm1 → vm2 → vm1",
         )
-        self.assertFalse(self.vm1.starting())
-        self.assertFalse(self.vm2.starting())
+        self.assertFalse(vm1.starting())
+        self.assertFalse(vm2.starting())
         # and again, not waiting for the start that failed
-        self.failureResultOf(self.vm2.start(), errors.LinkLoopError)
+        self.assertLoop(
+            vm2.start(),
+            "Cannot start 'vm2': its links make a loop, vm2 → vm1 → vm2",
+        )
+
+    def test_every_brick_of_the_loop(self):
+        vm1, _, _ = self.ring("vm1", "vm2", "vm3")
+        self.assertLoop(
+            vm1.start(),
+            "Cannot start 'vm1': its links make a loop, vm1 → vm2 → vm3 → vm1",
+        )
+
+    def test_only_the_bricks_of_the_loop(self):
+        # a wire into the cards of the machines of a loop: not on it
+        vm1, vm2 = self.ring("vm1", "vm2")
+        wire = self.factory.new_brick("wire", "wire1")
+        wire.connect(vm1.add_sock())
+        wire.connect(vm2.add_sock())
+        self.assertLoop(
+            wire.start(),
+            "Cannot start 'vm1': its links make a loop, vm1 → vm2 → vm1",
+        )
+
+    def test_two_links_to_one_brick_are_no_loop(self):
+        sw1 = self.slow_switch("sw1")
+        vm1 = self.factory.new_brick("qemu", "vm1")
+        vm1.add_plug(sw1.socks[0])
+        vm1.add_plug(sw1.socks[0])
+        self.assertNoResult(vm1.start())
+        self.assertTrue(sw1.starting())
 
     def test_no_loop_while_a_brick_it_plugs_into_starts(self):
         # a wire between a switch and a switch wrapper with no switch yet
-        sw1 = self.factory.new_brick("switch", "sw1")
-        os.makedirs(os.path.dirname(sw1.socks[0].path))
-        sw1.prepare = lambda resume="": defer.Deferred()  # slow to start
+        sw1 = self.slow_switch("sw1")
         sw2 = self.factory.new_brick("switchwrapper", "sw2")
         sw2.cbset_socket_path(self.mktemp())
         wire = self.factory.new_brick("wire", "wire1")

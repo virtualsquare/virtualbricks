@@ -46,12 +46,12 @@ class Plug:
     def configured(self) -> bool:
         return self.sock is not None
 
-    def connected(self) -> defer.Deferred[Any]:
+    def connected(self, chain: tuple[Brick, ...] = ()) -> defer.Deferred[Any]:
         """
         Start the brick of the socket, the one this plug's brick needs.
 
-        A loop of links is the start's to find: the brick that starts is
-        asked to start again before its first start returns.
+        chain is the bricks whose starts led here, this plug's brick last:
+        the start of the brick of the socket finds a loop in it.
         """
 
         if self.sock is None or self.sock.brick is None:
@@ -62,7 +62,7 @@ class Plug:
         if self.sock.brick is self.brick:
             return defer.succeed(self.brick)
 
-        return self.sock.brick.start()
+        return self.sock.brick.start(chain=chain)
 
     def connect(self, sock: Sock | HostonlySock) -> None:
         assert sock is not None, "Cannot connect a plug to nothing"

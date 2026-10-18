@@ -31,9 +31,11 @@ class FakeBrick:
     def __init__(self, result=None):
         self.result = result
         self.start_calls = 0
+        self.chains = []
 
-    def start(self):
+    def start(self, chain=()):
         self.start_calls += 1
+        self.chains.append(chain)
         if self.result is None:
             return defer.succeed(self)
         return self.result
@@ -120,6 +122,13 @@ class TestPlug(BrickTestCase):
         self.assertEqual(self.other.start_calls, 1)
         self.assertEqual(self.brick.start_calls, 0)
         return deferred.addCallback(self.assertIs, self.other)
+
+    def test_connected_passes_the_chain_on(self):
+        # the bricks whose starts led here: the start of the other brick
+        # finds a loop in them
+        self.plug.connect(self.sock)
+        self.plug.connected((self.brick,))
+        self.assertEqual(self.other.chains, [(self.brick,)])
 
     def test_connected_waits_for_the_other_brick(self):
         pending = defer.Deferred()

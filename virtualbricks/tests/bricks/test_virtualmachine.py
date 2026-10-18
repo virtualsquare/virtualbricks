@@ -224,7 +224,7 @@ class TestRunning(CommandTestCase):
         started = defer.Deferred()
         seen = []
 
-        def start(brick, resume=""):
+        def start(brick, resume="", chain=()):
             seen.append(resume)
             brick._exited_d = defer.Deferred()
             return started

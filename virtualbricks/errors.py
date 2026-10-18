@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from virtualbricks.i18n import _
@@ -69,14 +70,15 @@ class NotConnectedError(Error):
 class LinkLoopError(Error):
     """The links of a brick lead back to it: the bricks on a loop don't start."""
 
-    def __init__(self, name: str) -> None:
-        Error.__init__(self, name)
-        self.name = name
+    def __init__(self, loop: Sequence[str]) -> None:
+        Error.__init__(self, tuple(loop))
+        # the names of the bricks on the loop, the first again at the end
+        self.loop = tuple(loop)
 
     def __str__(self) -> str:
-        return _("Cannot start '{name}': its links make a loop").format(
-            name=self.name
-        )
+        return _(
+            "Cannot start '{name}': its links make a loop, {loop}"
+        ).format(name=self.loop[0], loop=" → ".join(self.loop))
 
 
 class LockedImageError(Error):

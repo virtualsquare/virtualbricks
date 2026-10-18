@@ -79,7 +79,7 @@
         <title><gui>Plugs into machines</gui></title>
         <p>Let plugs go into the socket cards of machines. Machines plugged
         into each other's cards make a loop, and the bricks on a loop don't
-        start: an error says so.</p>
+        start: an error names them, as <code>vm1 → vm2 → vm1</code>.</p>
       </item>
     </terms>
   </section>
