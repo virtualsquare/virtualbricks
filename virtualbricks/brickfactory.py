@@ -18,10 +18,10 @@
 
 from __future__ import annotations
 
-import os
-import re
 import copy
 import itertools
+import os
+import re
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
@@ -30,28 +30,38 @@ from twisted.internet import defer
 from twisted.logger import Logger
 
 from virtualbricks import errors, locations
-from virtualbricks.bricks.plug import Plug
-from virtualbricks.config.schema import field_values, references
-from virtualbricks.bricks import Brick, capture, netemu, router, switch
-from virtualbricks.bricks import switchwrapper, tap, tunnelconnect
-from virtualbricks.bricks import tunnellisten, virtualmachine, wire
-from virtualbricks.errors import NameAlreadyInUseError
+from virtualbricks.bricks import (
+    Brick,
+    capture,
+    must_stop,
+    netemu,
+    router,
+    switch,
+    switchwrapper,
+    tap,
+    tunnelconnect,
+    tunnellisten,
+    virtualmachine,
+    wire,
+)
 from virtualbricks.bricks.event import Event, is_event
 from virtualbricks.bricks.eventaction import (
     StartAction,
     StopAction,
     StoredAction,
 )
+from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.sock import Sock
-from virtualbricks.i18n import _
-from virtualbricks.observable import Observable, Signal
-from virtualbricks.bricks import must_stop
 from virtualbricks.bricks.virtualmachine import (
     Disk,
     HostonlySock,
     Image,
     is_disk_image,
 )
+from virtualbricks.config.schema import field_values, references
+from virtualbricks.errors import NameAlreadyInUseError
+from virtualbricks.i18n import _
+from virtualbricks.observable import Observable, Signal
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.remote.follower import Item
@@ -132,9 +142,15 @@ def normalize_name(name: str) -> str:
 
 
 class BrickFactory:
-    """This is the main class for the core engine.
+    """
+    The objects of the open project: its bricks, events, disk images and
+    sockets, and the signals that tell when one comes, changes or goes. A
+    rename or a delete reaches whatever names the object.
 
-    All the bricks are created and stored in the factory.
+    The console, the control sockets, the project files and the bricks call
+    it directly. The windows read it, and change it through the engine
+    (engine.py), which calls it, or sends the change to the Virtualbricks
+    whose copy it is (MirrorFactory).
     """
 
     @property
