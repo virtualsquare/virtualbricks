@@ -1,0 +1,446 @@
+<title>The Brick Factory</title>
+<meta name="description" content="BrickFactory, the objects of the open project: why it stays out of the engine of the windows, whether its name should change, and the application keeping what ends the run.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+  .ref.open { color: var(--decide); background: var(--decide-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+  .note { font-size: 14px; color: var(--muted); }
+  table.pages td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.pages td.from { color: var(--muted); font-size: 13.5px; }
+  table.pages tr.group td { font: 600 12px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); padding-top: 16px; }
+
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 31 &middot; Design &middot; revision 1, proposal</div>
+    <h1>The Brick Factory</h1>
+    <p class="lede"><code>BrickFactory</code> holds the bricks, the events and the images of the open project, and all of Virtualbricks uses it: the windows read it, and the console, the sockets, the project files and the bricks call it. This page asks whether it belongs inside the engine of the windows, which it doesn&rsquo;t; whether its name should change; and whether the end of the run, which the run waits for through the factory, belongs to the application.</p>
+    <ul class="meta">
+      <li>branch <b>develop</b> at 41186a48</li>
+      <li>revision 1 &middot; 18 October 2026</li>
+      <li><span class="status">proposal</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your question of today, &ldquo;Is it possible to integrate the brick factory into the engine? Does it make sense?&rdquo;, and, after my answer, &ldquo;Fix the docstring and write the design page&rdquo;. The docstring is fixed in 41186a48: it called the factory &ldquo;the main class for the core engine&rdquo;, from before <code>engine.py</code>, and now says what the factory holds and who calls it. The counts of <a href="#today">&sect;2</a> and <a href="#name">&sect;4</a> were taken today with <code>git grep</code> at 41186a48. The three questions, F1 to F3 in <a href="#decisions">&sect;7</a>, are open.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>Today</a></li>
+        <li><a href="#engine"><span>3</span>Into the engine</a></li>
+        <li><a href="#name"><span>4</span>The name</a></li>
+        <li><a href="#end"><span>5</span>The end of the run</a></li>
+        <li><a href="#plan"><span>6</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>7</span>Decisions</a></li>
+        <li><a href="#later"><span>8</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Engine</dt><dd>The factory stays out of the engine. Only the windows have an engine; the console, the sockets, the project files, the converter of 2.1 and the bricks use the factory alone, and the windows of <code>--connect</code> read a copy that is a <code>BrickFactory</code> too (&sect;3).</dd></div>
+          <div><dt>Docstring</dt><dd>Fixed in 41186a48: the objects of the open project, their signals, and who calls it.</dd></div>
+          <div><dt>Name</dt><dd><code>BrickFactory</code> stays (<a class="ref open" href="#decisions">F1</a>): a rename touches about 650 lines in 66 modules and 1&thinsp;270 lines in 94 test files, and changes no behaviour. If it changes, to <code>Testbed</code>, the README&rsquo;s word (&sect;4, <a class="ref open" href="#decisions">F2</a>).</dd></div>
+          <div><dt>End of the run</dt><dd>The Deferred that ends the run becomes the application&rsquo;s: <code>main.run()</code> waits for <code>app.done</code>, and the windows of <code>--connect</code> fire their own, not the copy&rsquo;s. The factory keeps <code>quit()</code> and <code>quitting</code> (&sect;5, <a class="ref open" href="#decisions">F3</a>).</dd></div>
+          <div><dt>Plan</dt><dd>One step for F3, with the log line <i>Engine: Bye!</i>; a second one, mechanical, only if F1 isn&rsquo;t A (&sect;6).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>Today</h2>
+        <p><code>brickfactory.py</code> holds, by name, the bricks, the events, the images and the sockets of the open project, and ten signals: a brick, an event or an image came, changed or went, and <code>quitting</code>. It checks the names (<code>check_name()</code>, <code>check_brick_name()</code>), and a rename or a delete reaches whatever names the object (<code>rename_item()</code>, <code>users()</code>). Its calls answer at once. One factory lasts the whole run: opening a project empties it with <code>reset()</code> and fills it again.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Who</th><th>Holds it as</th><th>What it does with it</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">The windows</td><td><code>engine.factory</code></td><td>Read it and follow its signals; change it through the engine (<a href="19%20-%20remote-gui.html#engine">19 &sect;6</a>).</td></tr>
+            <tr><td class="nowrap"><code>LocalEngine</code></td><td><code>self.factory</code></td><td>Calls it, each call in a Deferred.</td></tr>
+            <tr><td class="nowrap"><code>RemoteEngine</code></td><td><code>self.factory</code>, a <code>MirrorFactory</code></td><td>The copy of the project of another Virtualbricks, built by the code that reads a project file; the changes go there.</td></tr>
+            <tr><td class="nowrap">The console</td><td><code>Context.factory</code>; the terminal&rsquo;s <code>brickfactory</code></td><td>Runs the commands on it, <code>run(factory, text)</code>: typed, from <code>--run</code>, from <code>source</code>.</td></tr>
+            <tr><td class="nowrap">The control sockets</td><td><code>brickfactory</code></td><td>The same, for each line of JSON and each AMP command; <code>Follower</code> follows its signals for the windows of another Virtualbricks.</td></tr>
+            <tr><td class="nowrap">The project files</td><td><code>open(name, factory)</code>, <code>save(factory)</code></td><td>Fill it and write it; the autosave every 180 seconds.</td></tr>
+            <tr><td class="nowrap">The bricks</td><td><code>brick.factory</code></td><td>New sockets, the runtime folder, the images and the events they name.</td></tr>
+            <tr><td class="nowrap">The events</td><td><code>perform(factory)</code></td><td>Start and stop bricks and events, run console commands.</td></tr>
+            <tr><td class="nowrap">The switch wrappers</td><td><code>look_all(factory)</code></td><td>Look at their folders, every second.</td></tr>
+            <tr><td class="nowrap">The converter of 2.1</td><td>a <code>BrickFactory</code> of its own</td><td>Reads an old project into it, then writes it in format 1 (<code>migrate/convert.py:410</code>).</td></tr>
+            <tr><td class="nowrap">The Python shell</td><td><code>factory</code></td><td>The console&rsquo;s <code>python</code>, as virtualbricks(1) says.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p><code>LocalEngine</code> is made in two places, both of the windows: <code>gui/app.py:214</code>, and the panel of a brick made without one (<code>panel.py:93</code>). With <code>--no-gui</code> there is no engine at all.</p>
+      </section>
+
+      <section id="engine">
+        <h2><span class="num">&sect;3</span>Into the engine</h2>
+        <p>It could be done: <code>LocalEngine</code> takes the bricks, the events, the images and the signals, and the factory goes. It doesn&rsquo;t fit, for three reasons.</p>
+        <ul>
+          <li><strong>Most of the program has no engine.</strong> Everything in &sect;2 but the windows holds the factory alone. Merged, the console, the sockets, the converter and the bricks would hold an object that brings the workspace, the reactor&rsquo;s clock, qemu-img, the USB devices and the programs, which they don&rsquo;t use; or every mode would make an engine, the converter&rsquo;s too.</li>
+          <li><strong>The windows read the same thing on both sides.</strong> <code>MirrorFactory</code> is a <code>BrickFactory</code>, so that the copy of another Virtualbricks is built by the code that reads a project file, and the tabs read <code>engine.factory</code> and follow its signals whichever engine they have. A factory inside <code>LocalEngine</code> needs <code>MirrorFactory</code> inside <code>RemoteEngine</code> too, or the two engines differ in what the windows read.</li>
+          <li><strong>Two kinds of call.</strong> The factory&rsquo;s calls answer at once; the engine&rsquo;s return a Deferred, so that a window waits for this machine as it would for another (<a href="19%20-%20remote-gui.html#engine">19 &sect;6</a>). On one object, a window could call the <code>new_brick()</code> that answers at once where it should call the engine&rsquo;s, and over a connection that changes the copy, not the project there. Page 19 put the line where the windows stop: they read the factory, and change things through the engine.</li>
+        </ul>
+        <p>So the two stay as they are: the factory, the objects of the open project for whoever holds it; the engine, what the windows ask, of this machine or of another.</p>
+      </section>
+
+      <section id="name">
+        <h2><span class="num">&sect;4</span>The name</h2>
+        <h3>What it says wrong</h3>
+        <ul>
+          <li>It makes the bricks, <code>new_brick()</code>, but it also holds the events, the images and the sockets, renames, deletes, checks the names and quits.</li>
+          <li>It called itself the core engine in its docstring until 41186a48, and still does in the log, when Virtualbricks quits: <i>Engine: Bye!</i> (<code>brickfactory.py:70</code>).</li>
+          <li>Twisted has factories too. The protocols of the control sockets and the console&rsquo;s terminal call it <code>brickfactory</code>, since a protocol of Twisted has a <code>factory</code> of its own (<code>console/control.py</code>, <code>console/terminal.py</code>).</li>
+        </ul>
+        <h3>What a rename touches</h3>
+        <ul>
+          <li>The class, its module (44 modules import it) and <code>MirrorFactory</code>.</li>
+          <li>The attributes and the parameters that hold it: <code>engine.factory</code>, <code>brick.factory</code>, <code>Context.factory</code>, <code>brickfactory</code>, and every <code>factory</code> argument. With the class, about 650 lines in 66 modules.</li>
+          <li>The tests: 1&thinsp;270 lines in 94 files, <code>make_factory()</code> among them.</li>
+          <li>What users see: the name <code>factory</code> in the Python shell, written in virtualbricks(1), in <code>command-line.html</code> and in the README. It could stay as a second name for a release.</li>
+          <li>The design pages name the factory in 18 of them; they stay as written, as the history of each step.</li>
+        </ul>
+        <p>None of it changes what Virtualbricks does. The confusion with the engine came from the docstring, now fixed, and the clash with Twisted is in two modules, where it is already handled. Hence F1 A: keep the name. The log line goes in any case (&sect;6).</p>
+        <h3>The names</h3>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Name</th><th>For</th><th>Against</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap"><code>Testbed</code></td><td>The README&rsquo;s word from its first paragraph, &ldquo;design and manage testbeds consisting of many VMs&rdquo;, and the guide&rsquo;s since 36bcf2cb: DTN2hops is a testbed, the imported project a project. <code>workspace.open(name, testbed)</code> reads as what it does. No other code uses the word.</td><td>Longer than <code>factory</code>; <code>MirrorTestbed</code>.</td></tr>
+            <tr><td class="nowrap"><code>Project</code></td><td>The README&rsquo;s Source layout: &ldquo;the bricks, the events and the images of the open project&rdquo;.</td><td><code>OpenProject</code>, <code>ProjectSummary</code> and <code>projects</code> are the files of a project, and <code>MirrorFactory.project</code> its name; the factory outlives each project it holds.</td></tr>
+            <tr><td class="nowrap"><code>Lab</code></td><td>The man page&rsquo;s NAME line, &ldquo;labs of QEMU machines and VDE networks&rdquo;.</td><td>Page 19 calls the Virtualbricks that the windows connect to the lab machine; the guide went from lab to testbed.</td></tr>
+            <tr><td class="nowrap"><code>Model</code></td><td>The README&rsquo;s &ldquo;the model in memory&rdquo;.</td><td>Says what any such class is, not what this one holds.</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="end">
+        <h2><span class="num">&sect;5</span>The end of the run</h2>
+        <h3>Today</h3>
+        <ul>
+          <li><code>Application.install_factory()</code> makes the factory with a new Deferred (<code>app.py:165</code>), and <code>main.run()</code> ends when it fires, <code>await factory.quit_d</code> (<code>main.py:134</code>); then the reactor stops, the project is saved, the settings stored and the lock released.</li>
+          <li><code>factory.quit()</code> (<code>brickfactory.py:195</code>) refuses while bricks run, logs <i>Engine: Bye!</i>, stops the events, tells <code>quitting</code> and fires the Deferred. The console&rsquo;s <code>quit</code> calls it (<code>console/general.py:150</code>), and through <code>run()</code> so do Ctrl+D in the terminal, the control sockets, <code>--run</code> and an event that runs <code>quit</code>; the windows&rsquo; Quit calls it through <code>LocalEngine.quit()</code> (<code>engine.py:570</code>).</li>
+          <li><code>quitting</code> is followed by the main window, whose tabs stop following the factory and the Readme tab saves its text (<code>window.py:166</code>), and by <code>Follower</code>, which tells the windows of another Virtualbricks <code>Quitting</code> (<code>follower.py:418</code>).</li>
+          <li>The windows of <code>--connect</code> don&rsquo;t quit the Virtualbricks there. <code>RemoteEngine.quit()</code> calls <code>RemoteApplication.quit()</code> (<code>gui/app.py:470</code>), which closes the windows and the connection, and ends the run by firing the copy&rsquo;s <code>quit_d</code> (<code>gui/app.py:486</code>). The copy itself never quits: its end is <code>ended</code>, when <code>Quitting</code> comes.</li>
+          <li><code>MirrorFactory</code> (<code>mirror.py:133</code>) and the converter make a Deferred that nobody waits for.</li>
+        </ul>
+        <p>The factory doesn&rsquo;t make the Deferred, <code>install_factory()</code> passes it in; but the run waits for it through the factory, and the windows of <code>--connect</code> reach into the copy to fire it.</p>
+        <h3>The proposal</h3>
+        <p>The application keeps what ends its run (<a class="ref open" href="#decisions">F3</a>&nbsp;B):</p>
+        <figure class="code">
+          <figcaption>app.py and main.py</figcaption>
+<pre><code><span class="h">class</span> Application:
+    <span class="h">def</span> __init__(self, options, workspace):
+        ...
+        <span class="c"># what ends the run: quit() of the factory, or the windows of --connect</span>
+        self.done: defer.Deferred[None] = defer.Deferred()
+
+    <span class="h">def</span> install_factory(self, reactor):
+        <span class="h">return</span> BrickFactory(self.done)
+
+<span class="c"># main.run(), at the end</span>
+    <span class="h">await</span> app.done</code></pre>
+        </figure>
+        <p><code>RemoteApplication.quit()</code> fires <code>self.done</code> rather than <code>self.copy.quit_d</code>. <code>factory.quit()</code> doesn&rsquo;t change: it fires the Deferred it was given, which is <code>app.done</code>. Nothing that users see changes.</p>
+        <p>Why not take quitting out of the factory altogether (F3&nbsp;C): <code>quit()</code> needs the bricks, for the refusal, and the events, to stop them, so whatever holds it would hold the factory as well; and everything that runs a command would carry a second object for one command: <code>run()</code> has seven callers in five modules, <code>app.py</code>, <code>bricks/eventaction.py</code>, <code>console/control.py</code>, <code>console/general.py</code> and <code>console/terminal.py</code>. The two that follow <code>quitting</code> hold the factory already.</p>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;6</span>Implementation plan</h2>
+        <p>On <code>develop</code>, a commit for each step and a stop for review after each. Your own files in the working tree stay out of every commit.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">1 The end</td><td><code>Application.done</code>, given to the factory; <code>main.run()</code> waits for it; <code>RemoteApplication.quit()</code> fires its own. The log line at quit drops &ldquo;Engine:&rdquo; and says <i>Bye!</i>. This page&rsquo;s Implemented.</td><td>The tests of the run and of the windows of <code>--connect</code> look at <code>app.done</code> (<code>test_app.py</code>, <code>gui/test_remote.py</code>): amended code, no new tests.</td></tr>
+            <tr><td class="nowrap">2 The name</td><td>Only if F1 isn&rsquo;t A: the rename of &sect;4 in one commit, with <code>git mv</code> for the module so that its history follows; virtualbricks(1) and its web page, the README, <code>e2e/README.md</code>.</td><td>The tests pass with the new names and nothing else changed; the Python shell has both names, if F1 is C.</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;7</span>Decisions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>I&rsquo;d choose</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>F1</td>
+              <td>The name of the factory</td>
+              <td>
+                <p><b>A</b> <code>BrickFactory</code> stays, with the docstring of 41186a48 (&sect;4).</p>
+                <p><b>B</b> The class, its module and <code>MirrorFactory</code> get the new name; the attributes and the parameters stay <code>factory</code>. About 260 lines, and a <code>Testbed</code> called <code>factory</code> everywhere.</p>
+                <p><b>C</b> All of it: the class, the module, the attributes, the parameters and the tests, the Python shell with both names for a release. About 1&thinsp;900 lines in 160 files, in one commit.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>F2</td>
+              <td>The new name, if F1 isn&rsquo;t A</td>
+              <td>
+                <p><b>A</b> <code>Testbed</code>, <code>testbed.py</code>, <code>MirrorTestbed</code>.</p>
+                <p><b>B</b> <code>Project</code>.</p>
+                <p><b>C</b> <code>Lab</code>.</p>
+                <p><b>D</b> <code>Model</code>.</p>
+              </td>
+              <td class="rec">A</td>
+            </tr>
+            <tr>
+              <td>F3</td>
+              <td>What ends the run</td>
+              <td>
+                <p><b>A</b> As today: the factory&rsquo;s <code>quit_d</code>, and the windows of <code>--connect</code> fire the copy&rsquo;s.</p>
+                <p><b>B</b> The application&rsquo;s <code>done</code>, given to the factory; <code>main.run()</code> waits for it, and the windows of <code>--connect</code> fire their own. The factory keeps <code>quit()</code> and <code>quitting</code> (&sect;5).</p>
+                <p><b>C</b> Quitting leaves the factory: an object of the application with the refusal, the events stopped, <code>quitting</code> and the Deferred, which the console, <code>run()</code> and its callers, <code>LocalEngine</code>, the main window and <code>Follower</code> get beside the factory.</p>
+              </td>
+              <td class="rec">B</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;8</span>Later</h2>
+        <ul>
+          <li><code>BrickFactory</code>&rsquo;s Deferred could become optional, so that <code>MirrorFactory</code> and the converter don&rsquo;t make one that nobody waits for, if F3 is B.</li>
+          <li>The name again, if a new reader trips on it after the docstring: the counts of &sect;4 only grow.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
