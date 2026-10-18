@@ -243,16 +243,17 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 31 &middot; Design &middot; revision 2, decided</div>
+    <div class="eyebrow">Step 31 &middot; Design &middot; revision 3, implemented</div>
     <h1>The Brick Factory</h1>
     <p class="lede"><code>BrickFactory</code> holds the bricks, the events and the images of the open project, and all of Virtualbricks uses it: the windows read it, and the console, the sockets, the project files and the bricks call it. This page asks whether it belongs inside the engine of the windows, which it doesn&rsquo;t; whether its name should change; and whether the end of the run, which the run waits for through the factory, belongs to the application.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 41186a48</li>
-      <li>revision 2 &middot; 18 October 2026</li>
-      <li><span class="status">decided</span></li>
+      <li>revision 3 &middot; 18 October 2026</li>
+      <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> your question of today, &ldquo;Is it possible to integrate the brick factory into the engine? Does it make sense?&rdquo;, and, after my answer, &ldquo;Fix the docstring and write the design page&rdquo;. The docstring is fixed in 41186a48: it called the factory &ldquo;the main class for the core engine&rdquo;, from before <code>engine.py</code>, and now says what the factory holds and who calls it. The counts of <a href="#today">&sect;2</a> and <a href="#name">&sect;4</a> were taken today with <code>git grep</code> at 41186a48. The three questions, F1 to F3 in <a href="#decisions">&sect;7</a>, are decided.</p>
     <p class="revision"><strong>What changed:</strong> revision 2 records your answer of today: &ldquo;Default answers are fine. Implement in a new branch and push&rdquo;. F1 is A, as recommended: <code>BrickFactory</code> keeps its name, so F2 doesn&rsquo;t apply and step 2 of <a href="#plan">&sect;6</a> doesn&rsquo;t happen. F3 is B: the application keeps the Deferred that ends the run. Step 1 starts, on the branch <code>mg/run-end</code>.</p>
+    <p class="revision"><strong>Implemented</strong> on 18 October 2026 on <code>mg/run-end</code>, step 1 of <a href="#plan">&sect;6</a>, with this revision: <code>Application.done</code>, made with the application and given to the factory by <code>install_factory()</code>; <code>main.run()</code> waits for it; <code>RemoteApplication.quit()</code> fires it, and the copy&rsquo;s own Deferred stays as it was, which the test of Quit now checks; the log line at quit says <i>Bye!</i>. As planned, the tests of the run (<code>test_main.py</code>, <code>test_app.py</code>) and of the windows of <code>--connect</code> (<code>gui/test_remote.py</code>) look at <code>application.done</code>, with no new tests. 3166 tests pass, and so do the three end-to-end scenarios that quit or close the windows.</p>
   </header>
 
   <div class="layout">

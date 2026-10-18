@@ -178,8 +178,9 @@ class RemoteTestCase(GuiTestCase):
     def launch(self, install_settings=None, args=None):
         """
         The windows of the Virtualbricks at /run/lab.amp, as main.run starts
-        them: copy is the factory of step 11, whose quit_d ends the run once
-        the windows close; created is the Deferred of their start.
+        them: copy is the factory of step 11, and the application's done
+        ends the run once the windows close; created is the Deferred of their
+        start.
         """
 
         options = parse(args or ["--connect", "unix:/run/lab.amp"])
@@ -216,7 +217,7 @@ class TestRemoteApplication(RemoteTestCase):
         )
         self.assertIsNone(self.successResultOf(self.created))
         # the run goes on until the windows close
-        self.assertNoResult(self.copy.quit_d)
+        self.assertNoResult(application.done)
         self.assertEqual(self.logger.events, [])
 
     def test_this_computer(self):
@@ -410,10 +411,12 @@ class TestRemoteApplication(RemoteTestCase):
         self.assertEqual(windows.calls[-1], ("quit",))
         self.assertTrue(windows.window.destroyed)
         # the run ends
-        self.assertIsNone(self.successResultOf(self.copy.quit_d))
+        self.assertIsNone(self.successResultOf(application.done))
         # the connection closes; the Virtualbricks there goes on
         self.assertFalse(application.engine.windows.connected)
         self.assertFalse(self.factory.quit_d.called)
+        # the end is the application's: the copy doesn't quit
+        self.assertFalse(self.copy.quit_d.called)
         # quit again: nothing more
         application.quit()
         self.assertEqual(windows.calls.count(("quit",)), 1)
@@ -426,7 +429,7 @@ class TestRemoteApplication(RemoteTestCase):
         sw1.proc = StandIn(sw1, 4242)
         self.successResultOf(application.engine.quit())
         self.assertEqual(windows.calls[-1], ("quit",))
-        self.assertIsNone(self.successResultOf(self.copy.quit_d))
+        self.assertIsNone(self.successResultOf(application.done))
 
     def test_the_window_closed(self):
         # closing the window quits: it isn't destroyed twice
@@ -435,13 +438,13 @@ class TestRemoteApplication(RemoteTestCase):
         windows.window.destroy()
         application.quit()
         self.assertEqual(windows.window.destroys, 1)
-        self.assertIsNone(self.successResultOf(self.copy.quit_d))
+        self.assertIsNone(self.successResultOf(application.done))
 
     def test_quit_without_a_connection(self):
         application = self.launch()
         application.engine.windows = None
         application.quit()
-        self.assertIsNone(self.successResultOf(self.copy.quit_d))
+        self.assertIsNone(self.successResultOf(application.done))
 
 
 class TestTheStepsItSkips(RemoteTestCase):

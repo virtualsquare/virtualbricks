@@ -89,6 +89,9 @@ class Application:
         # take_locks() read it to lock it: the migration and the run use it,
         # and don't read the setting again
         self.workspace = workspace
+        # what ends the run: quit() of the factory, or the windows of
+        # --connect closing (page 31)
+        self.done: defer.Deferred[None] = defer.Deferred()
 
     def get_log_observers(self) -> list[ILogObserver]:
         observers = []
@@ -162,7 +165,7 @@ class Application:
         projects.make_runtime_dir()
 
     def install_factory(self, reactor: PosixReactorBase) -> BrickFactory:
-        return BrickFactory(defer.Deferred())
+        return BrickFactory(self.done)
 
     def open_last_project(self, factory: BrickFactory) -> None:
         """Open the project open last, or a new new_project_N."""

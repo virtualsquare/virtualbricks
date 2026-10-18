@@ -67,7 +67,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.remote.follower import Item
 
 logger = Logger()
-engine_bye = "Engine: Bye!"
+bye = "Bye!"
 create_image = "Creating new disk image at '{path}'"
 remove_socks = "Removing socks: {socks}"
 disconnect_plug = "Disconnecting plug to {sock}"
@@ -196,7 +196,7 @@ class BrickFactory:
         if any(must_stop(brick) for brick in self._bricks):
             msg = _("Cannot close virtualbricks: there are running bricks")
             raise errors.BrickRunningError(msg)
-        logger.info(engine_bye)
+        logger.info(bye)
         for e in self._events.values():
             e.stop()
         self.quitting.notify(self)

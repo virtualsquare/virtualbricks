@@ -131,7 +131,7 @@ async def run(
     if not app.options.no_term:
         app.start_console(factory)
     app.install_sys_hooks()
-    await factory.quit_d
+    await app.done
     return None
 
 
