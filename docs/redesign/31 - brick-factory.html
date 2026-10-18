@@ -243,15 +243,16 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 31 &middot; Design &middot; revision 1, proposal</div>
+    <div class="eyebrow">Step 31 &middot; Design &middot; revision 2, decided</div>
     <h1>The Brick Factory</h1>
     <p class="lede"><code>BrickFactory</code> holds the bricks, the events and the images of the open project, and all of Virtualbricks uses it: the windows read it, and the console, the sockets, the project files and the bricks call it. This page asks whether it belongs inside the engine of the windows, which it doesn&rsquo;t; whether its name should change; and whether the end of the run, which the run waits for through the factory, belongs to the application.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 41186a48</li>
-      <li>revision 1 &middot; 18 October 2026</li>
-      <li><span class="status">proposal</span></li>
+      <li>revision 2 &middot; 18 October 2026</li>
+      <li><span class="status">decided</span></li>
     </ul>
-    <p class="revision"><strong>What this covers:</strong> your question of today, &ldquo;Is it possible to integrate the brick factory into the engine? Does it make sense?&rdquo;, and, after my answer, &ldquo;Fix the docstring and write the design page&rdquo;. The docstring is fixed in 41186a48: it called the factory &ldquo;the main class for the core engine&rdquo;, from before <code>engine.py</code>, and now says what the factory holds and who calls it. The counts of <a href="#today">&sect;2</a> and <a href="#name">&sect;4</a> were taken today with <code>git grep</code> at 41186a48. The three questions, F1 to F3 in <a href="#decisions">&sect;7</a>, are open.</p>
+    <p class="revision"><strong>What this covers:</strong> your question of today, &ldquo;Is it possible to integrate the brick factory into the engine? Does it make sense?&rdquo;, and, after my answer, &ldquo;Fix the docstring and write the design page&rdquo;. The docstring is fixed in 41186a48: it called the factory &ldquo;the main class for the core engine&rdquo;, from before <code>engine.py</code>, and now says what the factory holds and who calls it. The counts of <a href="#today">&sect;2</a> and <a href="#name">&sect;4</a> were taken today with <code>git grep</code> at 41186a48. The three questions, F1 to F3 in <a href="#decisions">&sect;7</a>, are decided.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 records your answer of today: &ldquo;Default answers are fine. Implement in a new branch and push&rdquo;. F1 is A, as recommended: <code>BrickFactory</code> keeps its name, so F2 doesn&rsquo;t apply and step 2 of <a href="#plan">&sect;6</a> doesn&rsquo;t happen. F3 is B: the application keeps the Deferred that ends the run. Step 1 starts, on the branch <code>mg/run-end</code>.</p>
   </header>
 
   <div class="layout">
@@ -275,8 +276,8 @@
         <dl class="glance">
           <div><dt>Engine</dt><dd>The factory stays out of the engine. Only the windows have an engine; the console, the sockets, the project files, the converter of 2.1 and the bricks use the factory alone, and the windows of <code>--connect</code> read a copy that is a <code>BrickFactory</code> too (&sect;3).</dd></div>
           <div><dt>Docstring</dt><dd>Fixed in 41186a48: the objects of the open project, their signals, and who calls it.</dd></div>
-          <div><dt>Name</dt><dd><code>BrickFactory</code> stays (<a class="ref open" href="#decisions">F1</a>): a rename touches about 650 lines in 66 modules and 1&thinsp;270 lines in 94 test files, and changes no behaviour. If it changes, to <code>Testbed</code>, the README&rsquo;s word (&sect;4, <a class="ref open" href="#decisions">F2</a>).</dd></div>
-          <div><dt>End of the run</dt><dd>The Deferred that ends the run becomes the application&rsquo;s: <code>main.run()</code> waits for <code>app.done</code>, and the windows of <code>--connect</code> fire their own, not the copy&rsquo;s. The factory keeps <code>quit()</code> and <code>quitting</code> (&sect;5, <a class="ref open" href="#decisions">F3</a>).</dd></div>
+          <div><dt>Name</dt><dd><code>BrickFactory</code> stays (<a class="ref done" href="#decisions">F1</a>): a rename touches about 650 lines in 66 modules and 1&thinsp;270 lines in 94 test files, and changes no behaviour. Should it change one day, to <code>Testbed</code>, the README&rsquo;s word (&sect;4, <a class="ref done" href="#decisions">F2</a>).</dd></div>
+          <div><dt>End of the run</dt><dd>The Deferred that ends the run becomes the application&rsquo;s: <code>main.run()</code> waits for <code>app.done</code>, and the windows of <code>--connect</code> fire their own, not the copy&rsquo;s. The factory keeps <code>quit()</code> and <code>quitting</code> (&sect;5, <a class="ref done" href="#decisions">F3</a>).</dd></div>
           <div><dt>Plan</dt><dd>One step for F3, with the log line <i>Engine: Bye!</i>; a second one, mechanical, only if F1 isn&rsquo;t A (&sect;6).</dd></div>
         </dl>
       </section>
@@ -359,7 +360,7 @@
         </ul>
         <p>The factory doesn&rsquo;t make the Deferred, <code>install_factory()</code> passes it in; but the run waits for it through the factory, and the windows of <code>--connect</code> reach into the copy to fire it.</p>
         <h3>The proposal</h3>
-        <p>The application keeps what ends its run (<a class="ref open" href="#decisions">F3</a>&nbsp;B):</p>
+        <p>The application keeps what ends its run (<a class="ref done" href="#decisions">F3</a>&nbsp;B):</p>
         <figure class="code">
           <figcaption>app.py and main.py</figcaption>
 <pre><code><span class="h">class</span> Application:
@@ -396,7 +397,7 @@
         <h2><span class="num">&sect;7</span>Decisions</h2>
         <div class="scroll">
         <table class="decisions wide">
-          <thead><tr><th></th><th>Question</th><th>Options</th><th>I&rsquo;d choose</th></tr></thead>
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
           <tbody>
             <tr>
               <td>F1</td>
@@ -406,7 +407,7 @@
                 <p><b>B</b> The class, its module and <code>MirrorFactory</code> get the new name; the attributes and the parameters stay <code>factory</code>. About 260 lines, and a <code>Testbed</code> called <code>factory</code> everywhere.</p>
                 <p><b>C</b> All of it: the class, the module, the attributes, the parameters and the tests, the Python shell with both names for a release. About 1&thinsp;900 lines in 160 files, in one commit.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec decided">A</td>
             </tr>
             <tr>
               <td>F2</td>
@@ -417,7 +418,7 @@
                 <p><b>C</b> <code>Lab</code>.</p>
                 <p><b>D</b> <code>Model</code>.</p>
               </td>
-              <td class="rec">A</td>
+              <td class="rec decided">A</td>
             </tr>
             <tr>
               <td>F3</td>
@@ -427,7 +428,7 @@
                 <p><b>B</b> The application&rsquo;s <code>done</code>, given to the factory; <code>main.run()</code> waits for it, and the windows of <code>--connect</code> fire their own. The factory keeps <code>quit()</code> and <code>quitting</code> (&sect;5).</p>
                 <p><b>C</b> Quitting leaves the factory: an object of the application with the refusal, the events stopped, <code>quitting</code> and the Deferred, which the console, <code>run()</code> and its callers, <code>LocalEngine</code>, the main window and <code>Follower</code> get beside the factory.</p>
               </td>
-              <td class="rec">B</td>
+              <td class="rec decided">B</td>
             </tr>
           </tbody>
         </table>
