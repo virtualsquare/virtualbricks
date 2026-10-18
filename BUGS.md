@@ -46,6 +46,37 @@ one leaves the list.
   (`virtualbricks/remote/follower.py`), from `_responder()` in
   `virtualbricks/console/control.py`.
 
+## Machines
+
+- [ ] **A socket card keeps a number that changes, and two can get one
+  name.** The cards of a machine are numbered by their place, the plug
+  cards first, then the socket cards: `eth0`, `eth1`… in the console and
+  in the summary of the brick (`_card()` in
+  `virtualbricks/bricks/brickinfo.py`). A socket card gets its name once,
+  when it's made, from the number of cards then: `sock_eth{N}` in
+  `add_sock()` (`virtualbricks/bricks/virtualmachine.py`), which the
+  cards of a draft call without a name (`_apply_cards()` there), from the
+  console and from the machine panel. So a plug card added after a socket
+  card renumbers it, and its name tells another number; and once a card
+  before it goes, a new socket card can take the name of one that's left.
+  Two socket cards with one name have one socket path, `runtime_path()` of
+  the name, and a plug into either finds the first by the name
+  (`get_sock()` in `virtualbricks/brickfactory.py`, `Target` in
+  `virtualbricks/console/bricks.py`); that is from the code, not tried.
+  Seen on 3.0.0.dev5, on 18 October 2026, in the console: `brick card add
+  vm1 socket` answered `vm1 eth0: socket vm1:sock_eth0`, then `brick card
+  add vm1 plug vm2:sock_eth0` answered `vm1 eth0: plugged into
+  vm2:sock_eth0`, and `brick list` had `eth0 on vm2 · eth1 as a socket`,
+  that socket still `vm1:sock_eth0`. With two socket cards, `brick card
+  remove vm1 eth0` and `brick card add vm1 socket`, `brick show vm1` had:
+
+  ```
+  eth0: socket vm1:sock_eth1, rtl8139, 02:69:4a:9f:11:65
+  eth1: socket vm1:sock_eth1, rtl8139, fa:da:e6:78:42:f0
+  ```
+
+  and the `project.toml` saved then has `name = "sock_eth1"` in both.
+
 ## Signals
 
 - [ ] **Two SIGTERMs in a row hang `--no-gui -l FILE`.** The second SIGTERM
