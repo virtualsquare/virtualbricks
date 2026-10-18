@@ -338,11 +338,12 @@ class TestFactory(AppTestCase):
 
     def test_install_factory(self):
         # the bricks of this process, whose quit ends the run
-        factory = self.application().install_factory("reactor")
+        application = self.application()
+        factory = application.install_factory("reactor")
         self.assertIsInstance(factory, BrickFactory)
-        self.assertNoResult(factory.quit_d)
+        self.assertNoResult(application.done)
         factory.quit()
-        self.assertIsNone(self.successResultOf(factory.quit_d))
+        self.assertIsNone(self.successResultOf(application.done))
 
 
 class TestProject(AppTestCase):

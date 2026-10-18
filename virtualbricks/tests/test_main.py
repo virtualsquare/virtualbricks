@@ -34,6 +34,7 @@ from virtualbricks import (
     main,
     sockets,
 )
+from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.cli import (
     COMMAND,
     GUI,
@@ -54,7 +55,6 @@ from virtualbricks.tests import (
     hold_lock,
     isolate,
     lock_is_free,
-    make_factory,
     release,
     reset_settings,
     use_workspace,
@@ -288,6 +288,8 @@ class RecordingApplication:
         self.calls = []
         self.migrated = None
         self.ran = None
+        # what ends the run, as Application's
+        self.done = defer.Deferred()
 
     def install_logging(self):
         self.calls.append("install_logging")
@@ -313,7 +315,7 @@ class RecordingApplication:
 
     def install_factory(self, reactor):
         self.calls.append(("install_factory", reactor))
-        self.factory = make_factory()
+        self.factory = BrickFactory(self.done)
         return self.factory
 
     def open_last_project(self, factory):

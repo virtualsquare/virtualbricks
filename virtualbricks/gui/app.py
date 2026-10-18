@@ -343,8 +343,7 @@ class RemoteApplication(Application):
     ) -> None:
         """
         Connect, then show the windows of factory, the copy that
-        install_factory() made; its quit_d ends the run, once the windows
-        close.
+        install_factory() made; done ends the run, once the windows close.
         """
 
         from virtualbricks.remote import client
@@ -483,4 +482,4 @@ class RemoteApplication(Application):
             windows.transport.loseConnection()
         # the sockets of the consoles
         self.consoles.close()
-        self.copy.quit_d.callback(None)
+        self.done.callback(None)
