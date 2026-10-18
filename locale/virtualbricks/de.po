@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 18:05+0200\n"
+"POT-Creation-Date: 2026-10-18 07:06+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2332,7 +2332,7 @@ msgstr ""
 
 #: virtualbricks/errors.py
 #, python-brace-format
-msgid "Cannot start '{name}': its links make a loop"
+msgid "Cannot start '{name}': its links make a loop, {loop}"
 msgstr ""
 
 #: virtualbricks/gui/app.py

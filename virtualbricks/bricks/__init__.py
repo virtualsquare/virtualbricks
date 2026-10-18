@@ -431,8 +431,6 @@ class Brick(Base):
     # While a start is under way, the Deferreds of those who wait for it:
     # the first is that of the call that began it.
     _waiting: list[defer.Deferred[Brick]] | None = None
-    # While start() follows the links to the bricks it plugs into.
-    _linking = False
     # While it runs: fires with the brick and how its program ended.
     _exited_d: defer.Deferred[tuple[Brick, object]] | None = None
     _last_status: object = None
@@ -466,7 +464,9 @@ class Brick(Base):
         self.plugs: list[Plug] = []
         self.socks: list[Sock] = []
 
-    def start(self, resume: str = "") -> defer.Deferred[Brick]:
+    def start(
+        self, resume: str = "", *, chain: tuple[Brick, ...] = ()
+    ) -> defer.Deferred[Brick]:
         """
         Start the brick, in stages.
 
@@ -479,14 +479,19 @@ class Brick(Base):
         plugs into it.
 
         resume is the saved state that a virtual machine starts from; the
-        other bricks have none. Return a Deferred that fires with the brick
-        once its program runs.
+        other bricks have none. chain is the bricks whose starts led to this
+        one through their plugs, in order: a brick already in it is on a
+        loop, and the error names the bricks of the loop. Return a Deferred
+        that fires with the brick once its program runs.
         """
 
         if self.is_running():
             return defer.succeed(self)
-        if self._linking:
-            return defer.fail(errors.LinkLoopError(self.name))
+        if self in chain:
+            loop = chain[chain.index(self) :] + (self,)
+            return defer.fail(
+                errors.LinkLoopError([brick.name for brick in loop])
+            )
         if self._waiting is not None:
             waiter: defer.Deferred[Brick] = defer.Deferred()
             self._waiting.append(waiter)
@@ -508,15 +513,12 @@ class Brick(Base):
         started: defer.Deferred[Brick] = defer.Deferred()
         self._waiting = [started]
         self._exited_d = defer.Deferred()
-        self._linking = True
-        try:
-            d = defer.DeferredList(
-                [plug.connected() for plug in self.plugs],
-                fireOnOneErrback=True,
-                consumeErrors=True,
-            )
-        finally:
-            self._linking = False
+        chain += (self,)
+        d = defer.DeferredList(
+            [plug.connected(chain) for plug in self.plugs],
+            fireOnOneErrback=True,
+            consumeErrors=True,
+        )
 
         def start_related_events(_: None) -> Brick:
             self._start_related_events(on=True)
