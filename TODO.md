@@ -59,7 +59,11 @@
 - [ ] Choose a machine type, as `virt`, when a program without a default
   one is chosen in the panel (30 §12)
 - [ ] KVM on hosts that aren't x86, as aarch64 on arm64: the recordings
-  would need such a host (30 §12)
+  would need such a host, with `/dev/kvm` for a real start (30 §12).
+  Expected, not tried: `virt`'s default CPU, cortex-a15, is 32-bit and KVM
+  wants `-cpu host` or `max`, and `-accel tcg` doesn't save a CPU that KVM
+  refuses; `virt` defaults to GICv2, a GICv3-only host needs
+  `gic-version=3` or `host`
 - [ ] Give a switch wrapper an error state when its control folder isn't
   a switch's: a folder without the socket `ctl`, now Stopped, or the `ctl`
   that a killed switch leaves, now Running; a connection to `ctl` would
