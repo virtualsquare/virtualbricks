@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-18 07:06+0200\n"
+"POT-Creation-Date: 2026-10-19 13:34+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2419,6 +2419,13 @@ msgstr "Macchina Virtuale"
 #: virtualbricks/errors.py
 #, python-brace-format
 msgid "Cannot start '{name}': its links make a loop, {loop}"
+msgstr ""
+
+#: virtualbricks/errors.py
+#, python-brace-format
+msgid ""
+"The project folder has {file} already, a private copy named after {name}: "
+"move it away first"
 msgstr ""
 
 #: virtualbricks/gui/app.py

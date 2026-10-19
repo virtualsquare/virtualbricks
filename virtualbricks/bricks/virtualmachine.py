@@ -98,6 +98,9 @@ invalid_base = (
     " found_backing_file={found_backing_file} backup_file={backup_file}"
 )
 powerdown = "Sending powerdown to {vm}"
+not_moved_back = (
+    "A rename failed, and the private disk {target} can't go back to {path}"
+)
 update_usb = "update_usb_devices: old {old} - new {new}"
 own_err = "plug {plug} does not belong to {brick}"
 acquire_lock = "Aquiring disk locks"
@@ -539,21 +542,52 @@ class Disk:
 DISK_DEVICES = ("hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock")
 
 
+def _private_disks(folder: str, name: str) -> list[tuple[str, str]]:
+    """
+    The private disks of the machine ``name`` in ``folder``, and their
+    backups: each file's name, and what follows the machine's name in it.
+    """
+
+    disk = re.compile(
+        rf"{re.escape(name)}_(?P<rest>(?:{'|'.join(DISK_DEVICES)})\.cow"
+        r"(?:\.(?:bak|back)-[0-9_-]+)?)\Z"
+    )
+    found = []
+    for filename in sorted(os.listdir(folder)):
+        match = disk.match(filename)
+        if match and os.path.isfile(os.path.join(folder, filename)):
+            found.append((filename, match["rest"]))
+    return found
+
+
 def _rename_private_disks(folder: str, old: str, new: str) -> None:
     """
     Rename the private disks of the machine ``old`` in ``folder``, and their
     backups, after the machine ``new``.
+
+    Any private disk or backup named after ``new`` is in the way, of a
+    device the machine uses or not: a rename would replace it, and a start
+    would take it for the machine's own. The rename is refused before
+    anything moves. If a move fails, those done are moved back.
     """
 
-    disk = re.compile(
-        rf"{re.escape(old)}_(?P<rest>(?:{'|'.join(DISK_DEVICES)})\.cow"
-        r"(?:\.(?:bak|back)-[0-9_-]+)?)\Z"
-    )
-    for filename in sorted(os.listdir(folder)):
-        match = disk.match(filename)
-        path = os.path.join(folder, filename)
-        if match and os.path.isfile(path):
-            os.rename(path, os.path.join(folder, f"{new}_{match['rest']}"))
+    in_the_way = _private_disks(folder, new)
+    if in_the_way:
+        raise errors.PrivateCopyInTheWayError(in_the_way[0][0], new)
+    moved: list[tuple[str, str]] = []
+    try:
+        for filename, rest in _private_disks(folder, old):
+            path = os.path.join(folder, filename)
+            target = os.path.join(folder, f"{new}_{rest}")
+            os.rename(path, target)
+            moved.append((path, target))
+    except OSError:
+        for path, target in reversed(moved):
+            try:
+                os.rename(target, path)
+            except OSError:
+                logger.failure(not_moved_back, path=path, target=target)
+        raise
 
 
 def _image(dev: str) -> str:

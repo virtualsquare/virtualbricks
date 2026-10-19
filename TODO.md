@@ -128,32 +128,17 @@
 
 ## Disk images
 
-- [ ] Make renaming a virtual machine safe for its private disks: it can
-  overwrite a disk that is in the way, or leave the disks half renamed
-  - since 2928039 `VirtualMachine.set_name()`, which every rename goes
-    through, calls `_rename_private_disks()` in
-    `bricks/virtualmachine.py`: it moves `<old>_<dev>.cow` and its
-    backups (`.cow.bak-…`) to `<new>_<dev>.cow` with `os.rename()`,
-    one file after the other, and nothing is checked first
-  - a file in the way is replaced without a word, and what was in it is
-    lost. No machine owns such a file, but it can be there: the disk of a
-    machine that was deleted, or one that the rename bug fixed in 2928039
-    left behind. Before it, the GUI and the console renamed `a` to `b`
-    without moving `a_hda.cow`, and `b` started a new, empty
-    `b_hda.cow`; renaming `b` back to `a` now moves the empty disk over
-    the one that holds the machine's data
-  - if a move fails halfway (permissions, a read-only folder), the disks
-    moved so far have the new name and the rest the old one. The machine
-    keeps its old name, because `set_name()` raises before it sets it, so
-    it no longer finds the disks already moved and starts new ones
-  - what could be done: check every target before moving anything, and
-    refuse the rename naming the file in the way (the rename dialog and
-    `brick rename` show the error); if a move fails, move back the files
-    already moved
-  - since 32a9ef3 the Delete dialog sends a machine's private copies to
-    the trash (24 D4), so fewer of them are left in the way; the console's
-    `brick delete` still leaves them, and the Rename dialog shows a
-    refusal of the folder in red (08e07e5)
+- [ ] Save the project right after a rename that moved a machine's private
+  disks: the files have the new name at once, `project.toml` at the next
+  autosave (180 s) or at quit, so a crash in between leaves the machine
+  under its old name, starting new empty copies. And, beyond the rename:
+  when is it sensible to save the project, besides the autosave and the
+  quit?
+- [ ] Refuse a new machine, or a duplicate, named after private disks
+  left in the project folder, as a rename is: a start takes
+  `<name>_<dev>.cow` for its own when its backing file is the image, so
+  the new machine starts on the disk of another. The console's `brick
+  delete` leaves such copies
 
 - [ ] Show the images of all projects: each file once, the projects and
   disks that use it, and the files of shared_images no project uses, as the
@@ -348,6 +333,12 @@
 
 # DONE
 
+- [x] Make renaming a virtual machine safe for its private disks: a
+  private disk or backup named after the new name, of any device, refuses
+  the rename and names it, before anything moves; a move that fails moves
+  back those done. Before, `os.rename()` replaced the file in the way: a
+  machine renamed onto the copy that a 2.1.0 rename left behind, or that
+  the console's `brick delete` leaves, wiped it
 - [x] Drop the `log_link_loops` setting: a loop always stopped a start,
   and the setting only logged a second error; the error of the start says
   "Cannot start 'vm1': its links make a loop" now, and the key is read

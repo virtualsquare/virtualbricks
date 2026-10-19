@@ -98,6 +98,21 @@ class ImageAlreadyInUseError(Error):
     pass
 
 
+class PrivateCopyInTheWayError(Error):
+    """A private copy named after a machine's new name is in its folder."""
+
+    def __init__(self, filename: str, name: str) -> None:
+        Error.__init__(self, filename, name)
+        self.filename = filename
+        self.name = name
+
+    def __str__(self) -> str:
+        return _(
+            "The project folder has {file} already, a private copy named"
+            " after {name}: move it away first"
+        ).format(file=self.filename, name=self.name)
+
+
 # Project specific errors
 
 

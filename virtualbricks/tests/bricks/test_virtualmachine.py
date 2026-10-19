@@ -25,7 +25,7 @@ from twisted.internet import defer, error
 from twisted.python.failure import Failure
 from twisted.trial import unittest
 
-from virtualbricks import bricks
+from virtualbricks import bricks, errors
 from virtualbricks.bricks import virtualmachine
 from virtualbricks.bricks.draft import Problem, apply
 from virtualbricks.bricks.virtualmachine import (
@@ -175,6 +175,79 @@ class TestVirtualMachine(BrickTestCase):
         self.factory.rename_item(vm, "c")
         self.assertEqual(
             sorted(os.listdir(path)), ["axb_hda.cow", "c_hda.cow"]
+        )
+
+    def test_rename_refused_by_a_private_disk_in_the_way(self):
+        # of a device it uses, of one it doesn't, a backup, or with no
+        # disks of its own
+        cases = [
+            (["vm_hda.cow"], "r1_hda.cow"),
+            (["vm_hda.cow"], "r1_hdb.cow"),
+            (["vm_hda.cow"], "r1_hda.cow.bak-2026-09-30_10-00"),
+            ([], "r1_hda.cow"),
+        ]
+        vm = self.factory.new_brick("qemu", "vm")
+        for own, other in cases:
+            path = self.open_project(*own, other)
+            with self.assertRaises(errors.PrivateCopyInTheWayError) as caught:
+                self.factory.rename_item(vm, "r1")
+            self.assertEqual(caught.exception.filename, other)
+            self.assertEqual(vm.name, "vm")
+            self.assertEqual(sorted(os.listdir(path)), sorted(own + [other]))
+            with open(os.path.join(path, other)) as f:
+                self.assertEqual(f.read(), other)
+        self.assertEqual(
+            str(caught.exception),
+            "The project folder has r1_hda.cow already, a private copy named"
+            " after r1: move it away first",
+        )
+
+    def fail_rename_of(self, *names):
+        """Make os.rename fail to move the files named."""
+
+        rename = os.rename
+
+        def fail(path, target):
+            if os.path.basename(path) in names:
+                raise PermissionError(13, "Permission denied", path)
+            rename(path, target)
+
+        self.patch(os, "rename", fail)
+
+    def test_rename_moves_back_after_a_failed_move(self):
+        path = self.open_project("vm_hda.cow", "vm_hdb.cow", "vm_hdc.cow")
+        vm = self.factory.new_brick("qemu", "vm")
+        self.fail_rename_of("vm_hdc.cow")
+        self.assertRaises(PermissionError, self.factory.rename_item, vm, "r1")
+        self.assertEqual(vm.name, "vm")
+        self.assertEqual(
+            sorted(os.listdir(path)),
+            ["vm_hda.cow", "vm_hdb.cow", "vm_hdc.cow"],
+        )
+
+    def test_rename_logs_a_disk_that_cannot_go_back(self):
+        path = self.open_project("vm_hda.cow", "vm_hdb.cow", "vm_hdc.cow")
+        logger = FakeLogger()
+        self.patch(virtualmachine, "logger", logger)
+        vm = self.factory.new_brick("qemu", "vm")
+        # r1_hdb.cow can't go back, nor vm_hdc.cow go
+        self.fail_rename_of("r1_hdb.cow", "vm_hdc.cow")
+        with self.assertRaises(PermissionError) as caught:
+            self.factory.rename_item(vm, "r1")
+        self.assertEqual(
+            caught.exception.filename, os.path.join(path, "vm_hdc.cow")
+        )
+        self.assertEqual(
+            sorted(os.listdir(path)),
+            ["r1_hdb.cow", "vm_hda.cow", "vm_hdc.cow"],
+        )
+        self.assertEqual(
+            logger.formatted(),
+            [
+                "A rename failed, and the private disk"
+                f" {os.path.join(path, 'r1_hdb.cow')} can't go back to"
+                f" {os.path.join(path, 'vm_hdb.cow')}"
+            ],
         )
 
     def test_usb_kind(self):
