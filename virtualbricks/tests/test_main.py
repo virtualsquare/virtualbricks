@@ -19,6 +19,8 @@
 
 import os
 import pwd
+import signal
+import subprocess
 import sys
 
 from twisted.internet import defer, task
@@ -73,9 +75,26 @@ class FakeReactor:
 
     def __init__(self):
         self.triggers = []
+        # what callFromThread() gave the loop, and the handlers that ran
+        self.for_the_loop = []
+        self.handled = []
 
     def addSystemEventTrigger(self, phase, event, callable, *args):
         self.triggers.append((phase, event, callable, args))
+
+    def callFromThread(self, callable, *args):
+        self.for_the_loop.append((callable, args))
+
+    def run_the_loop(self):
+        while self.for_the_loop:
+            callable, args = self.for_the_loop.pop(0)
+            callable(*args)
+
+    def sigInt(self, number, frame=None):
+        self.handled.append(("sigInt", number, frame))
+
+    def sigTerm(self, number, frame=None):
+        self.handled.append(("sigTerm", number, frame))
 
     def shutdown(self):
         for phase in ("before", "during", "after"):
@@ -232,6 +251,121 @@ class TestInstallReactor(unittest.TestCase):
             AssertionError, main.install_reactor, CommandLineOptions(COMMAND)
         )
         self.assertEqual(self.installed, [])
+
+
+# A reactor that runs with the handlers of handle_signals_in_the_loop(), and a
+# log file, of Twisted's LogFile as -l FILE has. A line written by the loop gets
+# the signal where it is at its worst: inside the threading._RLock that guards
+# the write, which has the lock but no owner yet. It prints "signalled" then.
+SIGNAL_IN_A_WRITE = """\
+import os
+import signal
+import sys
+import threading
+
+reactor_name, name, path = sys.argv[1:]
+# where SIGINT is ignored, Python leaves it so, and Twisted along with it
+signal.signal(signal.SIGINT, signal.default_int_handler)
+if reactor_name == "gi":
+    from twisted.internet import gireactor
+
+    gireactor.install()
+else:
+    from twisted.internet import default
+
+    default.install()
+from twisted.internet import reactor
+from twisted.logger import Logger, globalLogBeginner, textFileLogObserver
+from twisted.python import logfile
+
+from virtualbricks import main
+
+armed = False
+
+
+def acquire(self, blocking=True, timeout=-1):
+    global armed
+    me = threading.get_ident()
+    if self._owner == me:
+        self._count += 1
+        return 1
+    rc = self._block.acquire(blocking, timeout)
+    if armed:
+        armed = False
+        print("signalled", flush=True)
+        os.kill(os.getpid(), getattr(signal, name))
+    if rc:
+        self._owner = me
+        self._count = 1
+    return rc
+
+
+def write():
+    global armed
+    armed = True
+    Logger().info("A line of the loop")
+
+
+threading._RLock.acquire = acquire
+log_file = logfile.LogFile.fromFullPath(path)
+globalLogBeginner.beginLoggingTo(
+    [textFileLogObserver(log_file)], redirectStandardIO=False
+)
+main.handle_signals_in_the_loop(reactor)
+# after the GLib reactor installs the handlers once more
+reactor.callLater(0.2, write)
+reactor.run()
+"""
+
+
+class TestHandleSignalsInTheLoop(unittest.TestCase):
+
+    def test_the_loop_handles_them(self):
+        reactor = FakeReactor()
+        main.handle_signals_in_the_loop(reactor)
+        reactor.sigInt(signal.SIGINT)
+        reactor.sigTerm(signal.SIGTERM, "frame")
+        # nothing logs in the signal handler
+        self.assertEqual(reactor.handled, [])
+        reactor.run_the_loop()
+        self.assertEqual(
+            reactor.handled,
+            [
+                ("sigInt", signal.SIGINT, None),
+                ("sigTerm", signal.SIGTERM, "frame"),
+            ],
+        )
+
+    def signal_in_a_write(self, reactor, name):
+        path = self.mktemp()
+        try:
+            result = subprocess.run(
+                [sys.executable, "-c", SIGNAL_IN_A_WRITE, reactor, name, path],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+        except subprocess.TimeoutExpired:
+            self.fail(f"{name} in a write to the log file hangs it")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "signalled\n")
+        with open(path) as file:
+            # the words, after the time and the namespace
+            lines = [line.split("] ", 1)[1] for line in file]
+        self.assertEqual(
+            lines[:2],
+            ["A line of the loop\n", f"Received {name}, shutting down.\n"],
+        )
+
+    def test_sigterm_in_a_write(self):
+        self.signal_in_a_write("default", "SIGTERM")
+
+    def test_sigint_in_a_write(self):
+        self.signal_in_a_write("default", "SIGINT")
+
+    def test_with_the_windows(self):
+        self.signal_in_a_write("gi", "SIGTERM")
+        self.signal_in_a_write("gi", "SIGINT")
 
 
 class TestInstallApplication(unittest.TestCase):
@@ -464,6 +598,15 @@ class TestRun(unittest.TestCase):
         _done, application = self.run_main(no_term=True)
         self.assertNotIn("start_console", application.calls)
         self.assertEqual(application.calls[-1], "install_sys_hooks")
+
+    def test_signals_in_the_loop(self):
+        self.run_main()
+        self.reactor.sigTerm(signal.SIGTERM)
+        self.assertEqual(self.reactor.handled, [])
+        self.reactor.run_the_loop()
+        self.assertEqual(
+            self.reactor.handled, [("sigTerm", signal.SIGTERM, None)]
+        )
 
 
 class QuietApplication(app.Application):

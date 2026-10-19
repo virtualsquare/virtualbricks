@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, NoReturn
 from virtualbricks import __version__, cli, i18n, locks
 
 if TYPE_CHECKING:  # pragma: no cover
+    from types import FrameType
+
     from twisted.internet.posixbase import PosixReactorBase
 
     from virtualbricks.app import Application
@@ -67,6 +69,28 @@ def install_reactor(options: cli.CommandLineOptions) -> None:
         gireactor.install()
 
 
+def handle_signals_in_the_loop(reactor: PosixReactorBase) -> None:
+    """
+    Make SIGINT and SIGTERM hand the handlers of the reactor to its loop. They
+    log a line: in a signal handler, one that came in the middle of a write to
+    the log file waits forever for the lock that its own thread holds. From
+    the loop, they log and stop the reactor as they do.
+    """
+
+    sig_int, sig_term = reactor.sigInt, reactor.sigTerm
+
+    def on_sigint(number: int, frame: FrameType | None = None) -> None:
+        reactor.callFromThread(sig_int, number, frame)
+
+    def on_sigterm(number: int, frame: FrameType | None = None) -> None:
+        reactor.callFromThread(sig_term, number, frame)
+
+    # Twisted installs these when the reactor starts, and the GLib reactor
+    # does once more right after: they must be set before it runs
+    reactor.sigInt = on_sigint  # type: ignore[method-assign]
+    reactor.sigTerm = on_sigterm  # type: ignore[method-assign]
+
+
 def install_application(
     options: cli.CommandLineOptions, workspace: str | None
 ) -> Application:
@@ -96,6 +120,8 @@ async def run(
     from twisted.logger import Logger
     from twisted.python import reflect
 
+    # task.react() runs this before the reactor
+    handle_signals_in_the_loop(reactor)
     if lock is not None:
         reactor.addSystemEventTrigger("after", "shutdown", lock.release)
     app = install_application(options, workspace)

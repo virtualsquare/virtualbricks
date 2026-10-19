@@ -61,23 +61,19 @@ one leaves the list.
   `brick card add vm1 plug vm2:sock_eth0` answered `vm1 eth0: plugged into
   vm2:sock_eth0`, and `brick list` had `eth0 on vm2 · eth1 as a socket`.
 
-## Signals
+## Platforms
 
-- [ ] **Two SIGTERMs in a row hang `--no-gui -l FILE`.** The second SIGTERM
-  arrived while the handler of the first was writing "Received SIGTERM,
-  shutting down." to the log file: the process stays, ignores further
-  SIGTERMs, and its socket doesn't answer. Seen on 6 October 2026 with
-  `pkill` matching both `timeout` and the `python` it ran, so each sent one;
-  Python 3.10, Twisted 26.4.0. The Python stack, from `py-bt` in gdb, has
-  Twisted's `sigTerm()` in `sigTerm()`, both at the `self._block.acquire()`
-  of `threading._RLock`, through `LogFile.write()`, which
-  `twisted.python.threadable` synchronizes. That lock is the pure Python
-  `RLock`: the signal came after the first `_block.acquire()` returned and
-  before `_owner` was set, so the second handler waits for a lock that its
-  own thread holds. The log file of `-l` is a `LogFile` (`_log_file` in
-  `virtualbricks/cli.py`); the standard output takes no such lock.
-  `sigInt()` logs the same way, so two Ctrl+C might hang it too (not
-  tried).
+- [ ] **Virtualbricks doesn't start on Twisted 22.1.** That is the Twisted
+  of Ubuntu 22.04, a supported target. `class
+  ControlFactory(protocol.Factory[Any])` in
+  `virtualbricks/console/control.py`, there since f117c701, raises
+  `TypeError: 'type' object is not subscriptable` when imported: the
+  `Factory` of Twisted 22.1 isn't generic yet. `virtualbricks.app` imports
+  it, so `--no-gui` and the windows both stop there. Seen on 3.0.0.dev6, on
+  19 October 2026, with Python 3.10 and `twisted==22.1.0` in a venv. With
+  that base class made subscriptable for the run, the other modules import,
+  but for those of the windows and `topology.py`, not tried: the venv has
+  no `gi` and no `pygraphviz`.
 
 ## Remote windows
 
