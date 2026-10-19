@@ -44,6 +44,30 @@ class TestBase(BrickTestCase):
         self.assertRaises(KeyError, switch.update_config, {"nope": 1})
         self.assertRaises(ValueError, switch.update_config, {"ports": 500})
 
+    def test_update_config_all_or_none(self):
+        # a bad value, or a name the config doesn't have, after a good one:
+        # nothing changes, nothing goes to the program, no one is told
+        switch = self.factory.new_brick("switch", "sw")
+        calls = []
+        changed = []
+        switch.cbset_ports = calls.append
+        switch.changed.connect(changed.append)
+        with self.assertRaisesRegex(ValueError, "^hub_mode: "):
+            switch.update_config({"ports": 16, "hub_mode": "maybe"})
+        self.assertRaises(
+            KeyError, switch.update_config, {"ports": 16, "nope": 1}
+        )
+        self.assertEqual(switch.config.ports, 32)
+        self.assertEqual((calls, changed), ([], []))
+
+    def test_setters_see_the_new_config(self):
+        # every value is set before the first setter runs
+        switch = self.factory.new_brick("switch", "sw")
+        seen = []
+        switch.cbset_ports = lambda ports: seen.append(switch.config.hub_mode)
+        switch.update_config({"ports": 16, "hub_mode": True})
+        self.assertEqual(seen, [True])
+
     def test_muted(self):
         switch = self.factory.new_brick("switch", "sw")
         changed = []

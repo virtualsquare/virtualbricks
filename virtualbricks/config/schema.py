@@ -22,7 +22,8 @@ Declarative configuration schemas.
 A schema is an attrs class whose fields are declared with :func:`field`. The
 kind of a field checks its values, converts them to and from TOML data and
 parses the text typed in the console. Values are checked when an instance is
-created and whenever a field is assigned.
+created and whenever a field is assigned; :func:`check_value` checks one
+without assigning it.
 
 The help of a field says what it's for; with the range or the choices of its
 kind and its default, it's the comment above its key in the files, see
@@ -66,6 +67,7 @@ __all__ = [
     "Record",
     "Ref",
     "Str",
+    "check_value",
     "define",
     "dump_record",
     "field",
@@ -402,16 +404,20 @@ class FieldInfo:
     when: tuple[str, object] | None = attr.field(default=None)
 
 
+def _check(kind: Kind[T], name: str, value: object) -> None:
+    try:
+        kind.check(value)
+    except ValueError as exc:
+        raise ValueError(f"{name}: {exc}") from None
+
+
 def _validator(
     kind: Kind[T],
 ) -> Callable[[object, attr.Attribute[object], object], None]:
     def validate(
         instance: object, attribute: attr.Attribute[object], value: object
     ) -> None:
-        try:
-            kind.check(value)
-        except ValueError as exc:
-            raise ValueError(f"{attribute.name}: {exc}") from None
+        _check(kind, attribute.name, value)
 
     return validate
 
@@ -484,6 +490,15 @@ def key_of(cls_or_obj: object, name: str) -> str:
         if attribute.name == name:
             return ".".join(_path(attribute))
     raise KeyError(name)
+
+
+def check_value(cls_or_obj: object, name: str, value: object) -> None:
+    """
+    Check a value of a field as its assignment does, without assigning it:
+    the same ValueError, and KeyError if there is no such field.
+    """
+
+    _check(kind_of(cls_or_obj, name), name, value)
 
 
 def field_values(obj: object) -> dict[str, object]:

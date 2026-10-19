@@ -18,12 +18,6 @@
 
 """The network emulator."""
 
-from virtualbricks.config.report import Report
-from virtualbricks.config.schema import dump_record, field_names
-from virtualbricks.tests import (
-    BrickTestCase,
-    CommandTestCase,
-)
 from virtualbricks.bricks.draft import Problem, apply
 from virtualbricks.bricks.netemu import (
     BRICK_KEYS,
@@ -31,6 +25,12 @@ from virtualbricks.bricks.netemu import (
     NetemuConfig,
     NetemuDraft,
     NetemuTable,
+)
+from virtualbricks.config.report import Report
+from virtualbricks.config.schema import dump_record, field_names
+from virtualbricks.tests import (
+    BrickTestCase,
+    CommandTestCase,
 )
 
 
@@ -115,6 +115,49 @@ class TestNetemu(BrickTestCase):
         netemu.update()
         self.assertIn(b"markov-numnodes 2\n", sent)
         self.assertIn(b"markov-time 100\n", sent)
+
+    def test_both_ways_with_the_ends(self):
+        # "the same both ways" goes with the two ends: the emulator gets the
+        # new ends the new way, and the changes given stay as they were
+        netemu = self.factory.new_brick("netemu", "wan")
+        netemu.proc = FakeProcess()
+        changes = {
+            "delay": 10,
+            "delay_right_to_left": 20,
+            "delay_symmetric": False,
+        }
+        netemu.update_config(changes)
+        config = netemu.config
+        self.assertEqual(
+            (config.delay, config.delay_right_to_left, config.delay_symmetric),
+            (10, 20, False),
+        )
+        self.assertEqual(
+            set(netemu.proc.written),
+            {b"delay LR 10[0]\n", b"delay RL 20[0]\n"},
+        )
+        self.assertEqual(
+            changes,
+            {"delay": 10, "delay_right_to_left": 20, "delay_symmetric": False},
+        )
+
+    def test_a_bad_value_changes_nothing(self):
+        netemu = self.factory.new_brick("netemu", "wan")
+        netemu.proc = FakeProcess()
+        changes = {
+            "delay": 10,
+            "delay_right_to_left": 20,
+            "delay_symmetric": False,
+            "loss_right_to_left": 150.0,
+        }
+        self.assertRaises(ValueError, netemu.update_config, changes)
+        config = netemu.config
+        self.assertEqual(
+            (config.delay, config.delay_right_to_left, config.delay_symmetric),
+            (0, 0, True),
+        )
+        self.assertEqual(netemu.proc.written, [])
+        self.assertEqual(len(changes), 4)
 
 
 class TestStates(CommandTestCase):

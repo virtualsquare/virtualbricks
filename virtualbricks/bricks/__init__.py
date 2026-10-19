@@ -55,6 +55,7 @@ from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
     Path,
     Ref,
+    check_value,
     define,
     dump_record,
     field,
@@ -369,20 +370,29 @@ class Base:
 
     def update_config(self, changes: dict[str, object]) -> None:
         """
-        Set the settings in changes, a mapping of names to values: KeyError
-        for a name the config doesn't have. Each value that changes goes to
-        the ``cbset_<name>`` method of the brick, if it has one, and the
+        Set the settings in changes, a mapping of names to values, all or
+        none: KeyError for a name the config doesn't have, ValueError for a
+        value its field refuses, before anything changes. The values that
+        change are all set, then each goes to the ``cbset_<name>`` method of
+        the brick, if it has one, which sees the whole new config; and the
         brick says it changed, once.
         """
 
         for name, value in changes.items():
             self._check_option(name)
-            if value != getattr(self.config, name):
-                logger.info(attribute_set, attr=name, brick=self, value=value)
-                setattr(self.config, name, value)
-                setter = getattr(self, "cbset_" + name, None)
-                if setter:
-                    setter(value)
+            check_value(self.config, name, value)
+        changed = {
+            name: value
+            for name, value in changes.items()
+            if value != getattr(self.config, name)
+        }
+        for name, value in changed.items():
+            logger.info(attribute_set, attr=name, brick=self, value=value)
+            setattr(self.config, name, value)
+        for name, value in changed.items():
+            setter = getattr(self, "cbset_" + name, None)
+            if setter:
+                setter(value)
         self.changed.notify(self)
 
     def rename_references(self, target: str, old: str, new: str) -> bool:

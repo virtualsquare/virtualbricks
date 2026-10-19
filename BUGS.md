@@ -43,6 +43,16 @@ one leaves the list.
   and no "Process terminated". No `vde_switch` was left after; what ended
   it wasn't looked into, nor what a virtual machine would do.
 
+- [ ] **A Netemu takes a negative delay, bandwidth or buffer size.**
+  `delay`, `bandwidth` and `buffer_size`, and their `_right_to_left`, are
+  `Int()` with no minimum (`virtualbricks/bricks/netemu.py`). With one,
+  an older project that has such a value would be read with a warning and
+  the default, so the reading needs a word too. Seen on 3.0.0.dev6, on 19
+  October 2026, with `--no-gui`: `brick set ne1 delay=-5 bandwidth=-1
+  buffer_size=-100` was taken, `project.toml` kept the three, and `brick
+  start ne1` ran `wirefilter` with `-d -5`, which `brick list` summed up
+  as `a ↔ b · -5 ms`. What wirefilter does with them wasn't looked into.
+
 ## Machines
 
 - [ ] **A plug card added after a socket card moves it.** The cards of a

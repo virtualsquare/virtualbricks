@@ -103,8 +103,11 @@
     the like; `draft.py` looks them up by name too
 - [ ] Keep notes of your own on a brick: a key, shown in its panel and
   above its table (10 §13, 11 §11)
-- [ ] Check every value in `brick.update_config()` before assigning any,
-  for the console too (11 §11)
+- [ ] Keep a brick and its program in step when a `cbset_<name>` method
+  raises: `update_config()` has set every value by then, so the error
+  leaves the program told only of the settings before it, and the windows
+  not told at all. None raises today: they write to the program's
+  console, and the switch wrapper's `look()` takes `OSError` itself
 - [ ] Change one setting of a brick without a mapping of one:
   `brick.update_config({setting: value})` in the brick menu and in New
   Event
@@ -333,6 +336,13 @@
 
 # DONE
 
+- [x] Check every value in `brick.update_config()` before assigning any:
+  a bad value or a key the brick lacks, wherever it comes in the changes,
+  leaves the brick as it was, its program and the windows untold; every
+  value is set before the `cbset_` methods run, so Netemu no longer sets
+  the two ends of a "same both ways" first, nor takes them out of the
+  changes it's given (`check_value()` in `config/schema.py`, 11 §11,
+  Since then). The console, AMP and the panels already checked on a draft
 - [x] Make renaming a virtual machine safe for its private disks: a
   private disk or backup named after the new name, of any device, refuses
   the rename and names it, before anything moves; a move that fails moves

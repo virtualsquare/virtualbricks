@@ -19,6 +19,8 @@ import copy
 
 from twisted.trial import unittest
 
+from virtualbricks.config import schema
+from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
     Bool,
     Choice,
@@ -32,30 +34,27 @@ from virtualbricks.config.schema import (
     Record,
     Ref,
     Str,
+    check_value,
     define,
     dump_record,
     field,
     field_default,
+    field_help,
+    field_info,
     field_names,
     field_values,
+    fields,
     info_of,
     key_of,
     kind_of,
     load_record,
     notes,
     parse_value,
+    references,
     rename_references,
     why_unused,
 )
-from virtualbricks.config.report import Report
 from virtualbricks.config.tomlfile import Note
-from virtualbricks.config import schema
-from virtualbricks.config.schema import (
-    field_help,
-    field_info,
-    fields,
-    references,
-)
 
 
 @define
@@ -308,6 +307,19 @@ class TestFields(unittest.TestCase):
             machine.kvm = "yes"
         machine.ram = 128
         self.assertEqual(machine.ram, 128)
+
+    def test_check_value(self):
+        # as an assignment checks it, without assigning it
+        machine = Machine()
+        check_value(machine, "ram", 128)
+        check_value(Machine, "tags", ["a"])
+        self.assertEqual(machine.ram, 64)
+        with self.assertRaises(ValueError) as assigned:
+            machine.kvm = "yes"
+        with self.assertRaises(ValueError) as checked:
+            check_value(machine, "kvm", "yes")
+        self.assertEqual(str(checked.exception), str(assigned.exception))
+        self.assertRaises(KeyError, check_value, machine, "nope", 1)
 
     def test_introspection(self):
         self.assertEqual(

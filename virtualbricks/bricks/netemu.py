@@ -492,39 +492,12 @@ class Netemu(Wire):
         return cmd
 
     def update_config(self, changes: dict[str, object]) -> None:
-        self._set(
-            changes,
-            "buffer_size_symmetric",
-            "buffer_size",
-            "buffer_size_right_to_left",
-        )
-        self._set(changes, "delay_symmetric", "delay", "delay_right_to_left")
-        self._set(
-            changes,
-            "bandwidth_symmetric",
-            "bandwidth",
-            "bandwidth_right_to_left",
-        )
-        self._set(changes, "loss_symmetric", "loss", "loss_right_to_left")
         Wire.update_config(self, changes)
         # the events belong to the brick, so every state has the same ones
         for name in BRICK_KEYS:
             value = getattr(self.config, name)
             for state in self.markov_manager.states:
                 setattr(state, name, value)
-
-    def _set(
-        self,
-        attrs: dict[str, object],
-        symm: str,
-        left_to_right: str,
-        right_to_left: str,
-    ) -> None:
-        if symm in attrs and attrs[symm] != getattr(self.config, symm):
-            if left_to_right in attrs:
-                setattr(self.config, left_to_right, attrs.pop(left_to_right))
-            if right_to_left in attrs:
-                setattr(self.config, right_to_left, attrs.pop(right_to_left))
 
     def rename_references(self, target: str, old: str, new: str) -> bool:
         changed = False
