@@ -229,7 +229,9 @@ bricks and the line has the same keys, but for Tab, which indents; Ctrl+D
 on an empty line comes back to the console.
 
 When the input isn't a terminal, as a pipe, each line is a command, run
-after the one before, and the end of the input quits.
+once the one before is done, the last one too without its new line. An
+error doesn't stop the lines after it; **--run** stops at the first. The
+end of the input quits, once the last command is done.
 
 ## Scripts
 

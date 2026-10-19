@@ -23,8 +23,9 @@ import sys
 import termios
 
 from twisted.conch.insults import helper, insults
-from twisted.internet import defer
+from twisted.internet import defer, error, reactor, stdio
 from twisted.internet.testing import StringTransport
+from twisted.python.failure import Failure
 from twisted.trial import unittest
 
 from virtualbricks import __version__
@@ -355,6 +356,157 @@ class TestPlain(ConsoleTestCase):
         later.callback(["done"])
         self.assertEqual(transport.value(), b"done\n")
         self.assertTrue(self.factory.quit_d.called)
+
+
+class TestPlainOrder(ConsoleTestCase):
+    """The lines of one read, and the end of the input."""
+
+    def setUp(self):
+        super().setUp()
+        self.later = defer.Deferred()
+        commands = list(command_module.COMMANDS)
+        self.patch(command_module, "COMMANDS", commands)
+        command(None, "slow", help="h")(lambda context: self.later)
+        self.quits = []
+        quit = self.factory.quit
+        self.patch(
+            self.factory, "quit", lambda: [self.quits.append(1), quit()]
+        )
+        self.console = PlainConsole(self.factory, self.clock())
+        # as the standard input, it takes resumeProducing() once closed
+        self.transport = StringTransport(lenient=True)
+        self.console.makeConnection(self.transport)
+
+    def test_the_lines_of_one_read_wait(self):
+        self.console.dataReceived(b"slow\nbrick new switch\n")
+        self.assertEqual(list(self.factory.bricks), [])
+        self.assertEqual(self.transport.producerState, "paused")
+        self.later.callback(["done"])
+        self.assertEqual(self.transport.value(), b"done\nsw1\n")
+        self.assertEqual(self.transport.producerState, "producing")
+
+    def test_the_end_waits_for_the_lines_left(self):
+        self.console.dataReceived(b"slow\nbrick new switch\n")
+        self.console.connectionLost(None)
+        self.assertEqual(self.quits, [])
+        self.later.callback(["done"])
+        self.assertEqual(self.transport.value(), b"done\nsw1\n")
+        self.assertEqual(self.quits, [1])
+
+    def test_the_last_line_without_its_new_line(self):
+        self.console.dataReceived(b"status\nbrick new switch")
+        self.assertEqual(list(self.factory.bricks), [])
+        self.console.readConnectionLost()
+        self.assertEqual(self.transport.value().splitlines()[-1], b"sw1")
+        self.assertEqual(self.quits, [1])
+
+    def test_the_end_of_the_input_keeps_the_output(self):
+        self.console.dataReceived(b"slow\n")
+        self.console.readConnectionLost()
+        self.assertFalse(self.transport.disconnecting)
+        self.later.callback(["done"])
+        self.assertEqual(self.transport.value(), b"done\n")
+        self.assertEqual(self.quits, [1])
+
+    def test_close(self):
+        self.console.dataReceived(b"slow\nbrick new switch\n")
+        closed = self.console.close()
+        self.assertTrue(self.transport.disconnecting)
+        # once the answers are written
+        self.assertNoResult(closed)
+        self.console.connectionLost(None)
+        self.successResultOf(closed)
+        # Virtualbricks quits: the lines that wait don't run
+        self.later.callback(["done"])
+        self.assertEqual(list(self.factory.bricks), [])
+        self.assertEqual(self.quits, [])
+
+    def test_close_without_the_output(self):
+        self.console.writeConnectionLost()
+        self.successResultOf(self.console.close())
+        self.assertFalse(self.transport.disconnecting)
+
+
+class TestPlainOnPipes(ConsoleTestCase):
+    """The console on the pipes of a real standard input and output."""
+
+    # what it waits for may never come
+    timeout = 10
+
+    def setUp(self):
+        super().setUp()
+        # those still open: a number closed twice may be the reactor's
+        self.open = set()
+        self.addCleanup(lambda: [self.close(fd) for fd in list(self.open)])
+
+    def pipe(self):
+        read, write = os.pipe()
+        self.open.update((read, write))
+        return read, write
+
+    def close(self, fd):
+        self.open.discard(fd)
+        os.close(fd)
+
+    def connect(self, console, stdin, stdout):
+        io = stdio.StandardIO(console, stdin, stdout, reactor)
+        # before the pipes close: the reactor drops what it watches
+        self.addCleanup(self.disconnect, io)
+
+    def disconnect(self, io):
+        if not io.disconnected:
+            io.connectionLost(Failure(error.ConnectionDone()))
+
+    def fill(self, fd):
+        """Fill the pipe of fd, so that what is written to it waits."""
+
+        os.set_blocking(fd, False)
+        size = 0
+        try:
+            while True:
+                size += os.write(fd, b"x" * 4096)
+        except BlockingIOError:
+            pass
+        return size
+
+    def read(self, fd, size):
+        """Up to size bytes of fd, fewer if it ends first."""
+
+        data = b""
+        while len(data) < size:
+            more = os.read(fd, size - len(data))
+            if not more:
+                break
+            data += more
+        return data
+
+    @defer.inlineCallbacks
+    def test_the_answers_after_the_end_of_the_input(self):
+        stdin, lines = self.pipe()
+        answers, stdout = self.pipe()
+        # the answers can't be written before the end of the input is read
+        filled = self.fill(stdout)
+        os.write(lines, b"brick new switch\n")
+        self.close(lines)
+        console = PlainConsole(self.factory, self.clock())
+        self.connect(console, stdin, stdout)
+        yield self.factory.quit_d
+        self.read(answers, filled)
+        yield console.close()
+        self.close(stdout)
+        self.assertEqual(self.read(answers, 4), b"sw1\n")
+
+
+class TestStart(ConsoleTestCase):
+
+    def test_plain_closes_before_shutdown(self):
+        triggers = []
+        reactor = self.clock()
+        reactor.addSystemEventTrigger = lambda *args: triggers.append(args)
+        self.patch(terminal.os, "isatty", lambda fd: False)
+        self.patch(terminal.stdio, "StandardIO", lambda protocol: protocol)
+        console = terminal.start(self.factory, {}, reactor)
+        self.assertEqual(triggers, [("before", "shutdown", console.close)])
 
 
 class TestRawTerminal(unittest.TestCase):

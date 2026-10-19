@@ -3,26 +3,6 @@
 Bugs found and not fixed yet, by area, each with how it was seen. A fixed
 one leaves the list.
 
-## Console
-
-- [ ] **Lines piped in at once don't wait for each other.** When the
-  input isn't a terminal, `virtualbricks`(1) promises that each line is a
-  command "run after the one before", but the lines that come in one read
-  all run at once: a file piped in, or a script's `printf` of several
-  lines. `PlainConsole` (`virtualbricks/console/terminal.py`) is a
-  `LineOnlyReceiver`, whose `dataReceived()` passes every line of a read
-  to `lineReceived()` in one loop; pausing the standard input, as
-  `lineReceived()` does while a command runs, only holds back the reads
-  that follow. The quick command that comes next also clears `busy`, so
-  the end of the input quits while the slow one still runs. The test
-  `test_one_command_after_the_other` gives one line per read. Seen on
-  3.0.0.dev5, on 17 October 2026, with `--no-gui --workspace FOLDER` and
-  `brick stop sw1` and `quit` written in one `printf`: `quit` answered
-  "Error: sw1 is running: stop it first" before "sw1 stopped". Checked
-  with `PlainConsole` and a command that waits: `slow` and
-  `brick new switch` in one read, `sw1` was answered while `slow` ran,
-  and the end of the input quit before it ended.
-
 ## Control socket
 
 - [ ] **`Changed` comes after the answer of `BrickStop`.** Over AMP 2, with
@@ -45,6 +25,23 @@ one leaves the list.
   The answer of a typed command waits for `pushes_first()`
   (`virtualbricks/remote/follower.py`), from `_responder()` in
   `virtualbricks/console/control.py`.
+
+## Bricks
+
+- [ ] **A brick that is starting counts as stopped.** `must_stop()`
+  (`virtualbricks/bricks/__init__.py`) asks `is_running()`, which is
+  `proc is not None`, and a start sets `proc` only once it spawns the
+  program: after the bricks it plugs into are up and `prepare()` is done.
+  In between, `quit` isn't refused: Virtualbricks says "Bye!", and the
+  program is spawned while it shuts down, with nothing to stop it.
+  `must_stop()` also guards deleting and renaming a brick and closing the
+  project; `Brick.starting()` tells a start under way. Seen on
+  3.0.0.dev6, on 19 October 2026, with `--no-gui --workspace FOLDER -l
+  FILE` and `brick start sw1`, `brick list`, `brick stop sw1` and `brick
+  list` read from a file, before the console ran piped lines one after
+  the other: the log had "Bye!", then "Starting: /usr/bin/vde_switch …",
+  and no "Process terminated". No `vde_switch` was left after; what ended
+  it wasn't looked into, nor what a virtual machine would do.
 
 ## Machines
 

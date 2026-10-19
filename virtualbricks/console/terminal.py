@@ -27,7 +27,7 @@ and Ctrl+D comes back; Ctrl+D on an empty line quits, as ``quit`` does.
 Both lines have the keys of readline, :mod:`virtualbricks.console.lineedit`.
 
 When the input is not a terminal, as a pipe, :class:`PlainConsole` reads it
-a line at a time, and quits at its end.
+a line at a time, each once the one before is done, and quits at its end.
 
 The terminal keeps its output processing: the lines it writes end as the
 terminal ends them. Only the line mode, the echo and the signals are turned
@@ -49,11 +49,12 @@ from twisted.conch import manhole, recvline
 from twisted.conch.insults import insults
 from twisted.internet import defer, stdio
 from twisted.internet.base import ReactorBase
-from twisted.internet.interfaces import IPushProducer, IReactorTime
+from twisted.internet.interfaces import IHalfCloseableProtocol, IReactorTime
 from twisted.internet.protocol import connectionDone
 from twisted.logger import Logger
 from twisted.protocols import basic
 from twisted.python.failure import Failure
+from zope.interface import implementer
 
 from virtualbricks import __version__, locations
 from virtualbricks.brickfactory import BrickFactory
@@ -379,8 +380,17 @@ class Switcher(insults.TerminalProtocol):
         return self.lost
 
 
-class PlainConsole(basic.LineOnlyReceiver):
-    """The console on an input that isn't a terminal: a line at a time."""
+@implementer(IHalfCloseableProtocol)
+class PlainConsole(basic.LineReceiver):
+    """
+    The console on an input that isn't a terminal: a line at a time, each
+    once the one before is done, the last one too without its new line.
+
+    While a command runs, it pauses: the lines after it wait, those of the
+    same read too, and so does the input. Its end closes only the input: the
+    answers still to come are written, and Virtualbricks quits once the last
+    command is done.
+    """
 
     delimiter = b"\n"
 
@@ -389,42 +399,83 @@ class PlainConsole(basic.LineOnlyReceiver):
     ) -> None:
         self.brickfactory = factory
         self.reactor = reactor
+        # the input ended: quit once its lines are done
         self.ended = False
+        # a command runs
         self.busy = False
+        # Virtualbricks quits: nothing more runs
+        self.closed = False
+        # fires once the output is closed
+        self.output_closed: defer.Deferred[None] = defer.Deferred()
 
     def write_lines(self, lines: Iterable[str]) -> None:
         assert self.transport is not None, "the input is connected"
         for line in lines:
             self.transport.write(line.encode("utf-8", "replace") + b"\n")
 
-    def _input(self) -> IPushProducer:
-        """The standard input, which pauses while a command runs."""
-
-        return cast("IPushProducer", self.transport)
-
     def lineReceived(self, line: bytes) -> None:
-        self.busy = True
-        self._input().pauseProducing()
         done = run(
             self.brickfactory, line.decode("utf-8", "replace"), self.reactor
         )
         done.addCallbacks(
             self.write_lines, lambda f: self.write_lines(error_lines(f))
         )
+        if done.called:
+            # at once: the next line follows
+            return
+        self.busy = True
+        self.pauseProducing()
         done.addBoth(self._next)
 
     def _next(self, _: object) -> None:
         self.busy = False
-        if self.ended:
+        if self.closed:
+            return
+        # the lines that wait run, up to one that takes time
+        self.resumeProducing()
+        if self.ended and not self.busy:
             self._quit()
-        else:
-            self._input().resumeProducing()
+
+    def readConnectionLost(self) -> None:
+        self._end()
+
+    def writeConnectionLost(self) -> None:
+        # no one reads the answers: the commands go on all the same
+        self._output_closed()
 
     def connectionLost(self, reason: Failure = connectionDone) -> None:
-        # the end of the input: quit, once the last command is done
+        self._output_closed()
+        self._end()
+
+    def _end(self) -> None:
+        """The end of the input: its last line runs, then Virtualbricks quits."""
+
+        if self.ended or self.closed:
+            return
         self.ended = True
+        rest = self.clearLineBuffer()
+        if rest and not rest.endswith(self.delimiter):
+            # a line, though no new line ends it
+            rest += self.delimiter
+        self.dataReceived(rest)
         if not self.busy:
             self._quit()
+
+    def _output_closed(self) -> None:
+        if not self.output_closed.called:
+            self.output_closed.callback(None)
+
+    def close(self) -> defer.Deferred[None]:
+        """
+        Virtualbricks quits: write the answers left and close the output.
+        The Deferred fires then. The lines that wait don't run.
+        """
+
+        self.closed = True
+        if not self.output_closed.called:
+            assert self.transport is not None, "the input is connected"
+            self.transport.loseConnection()
+        return self.output_closed
 
     def _quit(self) -> None:
         done = run(self.brickfactory, "quit", self.reactor)
@@ -479,7 +530,10 @@ def start(
     assert sys.__stdin__ is not None, "Python has a standard input"
     stdin = sys.__stdin__.fileno()
     if not os.isatty(stdin):
-        return stdio.StandardIO(PlainConsole(factory, reactor))
+        console = PlainConsole(factory, reactor)
+        # before the reactor drops the answers it has yet to write
+        reactor.addSystemEventTrigger("before", "shutdown", console.close)
+        return stdio.StandardIO(console)
     raw = RawTerminal(stdin)
     raw.start()
     reactor.addSystemEventTrigger("after", "shutdown", raw.stop)

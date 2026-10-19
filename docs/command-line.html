@@ -229,17 +229,17 @@
   <ul class="files">
     <li class="file">
       <h2><a href="#console-typing">In the terminal</a></h2>
-      <p class="how">$ <b>virtualbricks</b> [--no-gui]</p>
-      <p>Started from a terminal, it reads the commands of its console there, beside the windows. With <code>--no-gui</code> it runs without them, and the console is the way in: a lab on a machine without a display.</p>
+      <p class="how">$ <b>virtualbricks</b> [--no-gui] &middot; a pipe</p>
+      <p>Started from a terminal, it reads the commands of its console there, beside the windows. With <code>--no-gui</code> it runs without them, and the console is the way in: a lab on a machine without a display. From a pipe, it reads a command a line, each once the one before is done, and an error doesn&#x27;t stop the next.</p>
       <dl>
         <dt>Keys</dt><dd>editing, history, Tab</dd>
         <dt>Prompt</dt><dd>the open project</dd>
-        <dt>Ends</dt><dd><code>quit</code>, Ctrl+D</dd>
+        <dt>Ends</dt><dd><code>quit</code>, Ctrl+D, the end of a pipe</dd>
       </dl>
     </li>
     <li class="file">
       <h2><a href="#console-scripts">From a file</a></h2>
-      <p class="how"><b>--run</b> FILE &middot; <b>source</b> FILE &middot; a pipe</p>
+      <p class="how"><b>--run</b> FILE &middot; <b>source</b> FILE</p>
       <p>A command a line, each after the one before: a lab set up the same way every time, on a server too.</p>
       <dl>
         <dt>Skips</dt><dd>empty lines, <code>#</code> comments</dd>
@@ -358,7 +358,7 @@ virtualbricks --connect [description] [--workspace directory] --run file</code><
 </dl>
 <p>The Alt keys need a terminal that sends Escape before the key, as most do; xterm does with its <code>metaSendsEscape</code> resource. Escape and then the key works everywhere.</p>
 <p><code>python</code> opens a Python shell, where <code>factory</code> is the factory of the bricks and the line has the same keys, but for Tab, which indents; Ctrl+D on an empty line comes back to the console.</p>
-<p>When the input isn&#x27;t a terminal, as a pipe, each line is a command, run after the one before, and the end of the input quits.</p>
+<p>When the input isn&#x27;t a terminal, as a pipe, each line is a command, run once the one before is done, the last one too without its new line. An error doesn&#x27;t stop the lines after it; <code>--run</code> stops at the first. The end of the input quits, once the last command is done.</p>
 <h3 id="console-scripts">Scripts</h3>
 <p>A file of commands, one a line, runs with <code>source</code> <em>file</em> in the console or <code>--run</code> <em>file</em> at start. Empty lines and comments are skipped, and the first error stops the file, saying where, as <em>lab.vb</em>:7.</p>
 </section>
