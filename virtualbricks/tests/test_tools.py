@@ -24,6 +24,9 @@ import contextlib
 import importlib.util
 import io
 import os
+import signal
+import sys
+import tempfile
 import textwrap
 
 from twisted.trial import unittest
@@ -183,3 +186,136 @@ class TestTypeCoverage(unittest.TestCase):
                 self.tool.main([self.mktemp()])
         self.assertEqual(raised.exception.code, 2)
         self.assertIn("no such file or folder", err.getvalue())
+
+
+# Programs in place of Virtualbricks, which write their pid in their home: one
+# that a SIGTERM ends, one that stays, one that never catches SIGTERM.
+PID = "open(os.environ['HOME'] + '/pid', 'w').write(str(os.getpid()))\n"
+LEAVES = (
+    "import os, signal, time\n"
+    + PID
+    + "print(os.environ['HOME'], os.environ['XDG_CONFIG_HOME'],"
+    " os.environ['XDG_DATA_HOME'], os.environ['XDG_RUNTIME_DIR'],"
+    " flush=True)\n"
+    "signal.signal(signal.SIGTERM, lambda *args: os._exit(0))\n"
+    "time.sleep(30)\n"
+)
+STAYS = (
+    "import os, signal, time\n"
+    + PID
+    + "signal.signal(signal.SIGTERM, lambda *args: None)\n"
+    "time.sleep(30)\n"
+)
+DEAF = "import os, time\n" + PID + "time.sleep(30)\n"
+
+
+class TestSignalRace(unittest.TestCase):
+
+    def setUp(self):
+        self.tool = load("signalrace")
+        self.folder = os.path.abspath(self.mktemp())
+        os.makedirs(self.folder)
+
+    def one_run(self, code, **times):
+        times.setdefault("settle", 0)
+        times.setdefault("wait", 1)
+        return self.tool.one_run(
+            [sys.executable, "-c", code],
+            self.folder,
+            [signal.SIGTERM, signal.SIGTERM],
+            (0, 100),
+            **times,
+        )
+
+    def assertGone(self):
+        with open(os.path.join(self.folder, "pid")) as file:
+            pid = int(file.read())
+        self.assertRaises(ProcessLookupError, os.kill, pid, 0)
+
+    def test_command(self):
+        """Without the windows or the console, in the folder."""
+        self.assertEqual(
+            self.tool.command("python3", "/run/1", False),
+            [
+                "python3",
+                "-m",
+                "virtualbricks",
+                "--no-gui",
+                "--no-term",
+                "--workspace",
+                "/run/1/workspace",
+                "-l",
+                "/run/1/vb.log",
+            ],
+        )
+        self.assertEqual(
+            self.tool.command("python3", "/run/1", True)[-2:], ["-l", "-"]
+        )
+
+    def test_a_run_that_ends(self):
+        """It isn't counted; it had a home of its own."""
+        self.assertIsNone(self.one_run(LEAVES))
+        with open(os.path.join(self.folder, "stdout")) as file:
+            self.assertEqual(
+                file.read().split(),
+                [
+                    self.folder,
+                    os.path.join(self.folder, ".config"),
+                    os.path.join(self.folder, ".local", "share"),
+                    os.path.join(self.folder, "run"),
+                ],
+            )
+
+    def test_a_run_that_stays(self):
+        """It hung; it doesn't outlive the run."""
+        hung = self.one_run(STAYS)
+        self.assertEqual(hung.folder, self.folder)
+        self.assertGreaterEqual(hung.delay, 0)
+        self.assertGone()
+
+    def test_a_run_that_ends_first(self):
+        error = self.assertRaises(
+            self.tool.DidNotStart, self.one_run, "raise SystemExit(3)"
+        )
+        self.assertEqual(str(error), "it ended with 3")
+
+    def test_a_run_that_never_catches_sigterm(self):
+        error = self.assertRaises(
+            self.tool.DidNotStart, self.one_run, DEAF, start=0.3
+        )
+        self.assertEqual(str(error), "it didn't catch SIGTERM in 0.3 s")
+        self.assertGone()
+
+    def main(self, *argv):
+        tmp = self.mktemp()
+        os.makedirs(tmp)
+        self.patch(tempfile, "tempdir", tmp)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = self.tool.main(list(argv))
+        return code, out.getvalue().splitlines(), tmp
+
+    def test_main(self):
+        """Two runs of this Virtualbricks; none hangs, nothing is left."""
+        code, lines, tmp = self.main("--runs", "2")
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            lines, ["0 of 2 runs hung (SIGTERM SIGTERM, 200-400 µs apart)"]
+        )
+        self.assertEqual(os.listdir(tmp), [])
+
+    def test_main_when_a_run_does_not_start(self):
+        """The runs after it don't start; its folder stays."""
+        code, lines, tmp = self.main(
+            "--runs", "20", "--jobs", "1", "--python", "false"
+        )
+        self.assertEqual(code, 2)
+        [root] = os.listdir(tmp)
+        self.assertEqual(
+            lines,
+            [
+                "A run didn't start: it ended with 1. Its folder:"
+                f" {os.path.join(tmp, root, '0')}"
+            ],
+        )
+        self.assertEqual(os.listdir(os.path.join(tmp, root)), ["0"])
