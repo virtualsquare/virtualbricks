@@ -36,6 +36,7 @@ The steps of a user:
 | `When I press Delete on the row of sw1` | A click on its name, which selects its row, then the key Delete |
 | `When I rename sw1 to core, with F2` | A click on its name, then F2: the dialog Rename Brick has its name, selected, as typing replaces it; the new name typed in place of it, then Rename, and the dialog closes |
 | `When I type sw1 as the new name of sw2, with F2` | The same, without Rename: the dialog stays |
+| `When I try to rename vm1 to web, with F2` | The same as rename, without waiting for the dialog to close, as it stays open when the rename is refused |
 | `When I cancel the Rename dialog` | Its Cancel; then it closes |
 | `When I start all the bricks` | Start All; each brick whose row said Stopped must run, with the process its row tells, and Start All must start no other |
 | `When I stop all the bricks` | Stop All; each brick that ran must be able to start again |
@@ -80,6 +81,7 @@ The steps of a user:
 | `Then wr1 is not configured` | Its row says Not configured, its Start is disabled, and no process has its sockets |
 | `Then the Delete dialog says "The event new_event will no longer start sw1."` | A line of the dialog that asks to delete is the text |
 | `Then the Rename dialog says "sw1 is the name of a brick", and Rename is disabled` | The line under its field is the text, and its Rename is disabled |
+| `Then the Rename dialog refuses it, saying "The project folder has web_hda.cow already, a private copy named after web: move it away first"` | The dialog is still open, and a line under its field is the text |
 | `Then Delete… is disabled in the menu of sw1, and nothing asks to delete it` | Its menu opens, which it wouldn't under a dialog, with Delete… disabled, and no dialog shows; then Escape closes the menu |
 | `Then wr1 can't start: "Configure wr1 first"` | Its Start is disabled, and the state in its row says why, in its tooltip, which the screen readers read |
 | `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |
@@ -233,6 +235,7 @@ The steps of the disk images:
 | :- | :- |
 | `Given the empty disk image disk.qcow2 of 1 GB, in my home folder` | Made with `qemu-img create`, of MB or GB of 1000, as Virtualbricks counts them, in the format of its extension: `qcow2` or `raw`. Also `in my Downloads folder` |
 | `Given the empty disk image disk.qcow2 of 1 GB, in my home folder, with the snapshot clean` | The same, then the snapshot, made with `qemu-img snapshot -c` |
+| `Given the private copy web_hda.cow, on disk.qcow2 of my home folder, left in the project folder by a machine deleted from the console` | Once Virtualbricks runs: in the folder of the project, a qcow2 of 1 GiB made with `qemu-img` on the image, with 768 KiB at its start, random but the same each time |
 | `When I add an existing image, disk.qcow2 of my home folder, with the name it suggests, disk` | The tab Images, Add Image, then Existing Image…; in the dialog, the button of the file, then Home and the file in the file chooser, and Open; the name must be the one the dialog suggests; then Add, with Copy it to the shared images as it is, and the dialog closes |
 | `When I add an existing image, disk.qcow2 of my home folder, used where it is, with the name it suggests, disk` | The same, with Use it where it is in place of the copy |
 | `When I add a new empty disk, disk, of 20 MB in the format raw` | The tab Images, Add Image, then New Empty Disk…; in the dialog, the name typed, the size typed in Size, its unit and the format chosen in their lists, the folder as it is, the shared images; then Create, and the dialog closes |
@@ -255,6 +258,8 @@ The steps of the disk images:
 | `Then the file disk.raw of the shared images is in the trash` | `shared_images` has it no more, and the trash of the home has it: a `.trashinfo` with its path, and the file |
 | `Then the Delete dialog says that the private copy vm1_hda.cow goes to the trash` | A line of the dialog that asks to delete the machine says so, with the size of the copy, which depends on the file system |
 | `Then the file vm1_hda.cow of the project folder is in the trash` | The folder of the project has it no more, and the trash of the home has it: a `.trashinfo` with its path, and the file |
+| `Then the project folder still has vm1_hda.cow` | The folder of the project has the file |
+| `Then the private copy web_hda.cow still has what was written in it` | The disk of the file of the project folder still starts with the 768 KiB that the step of the private copy wrote in it, as `qemu-img dd` reads them |
 | `Then the shared images still have disk.raw, in no trash` | `shared_images` has the file, and the trash of the home doesn't |
 
 The steps of the migration of Virtualbricks 2.1:

@@ -892,6 +892,14 @@ def rename(virtualbricks, name, new):
     virtualbricks.gone("dialog", RENAME_BRICK)
 
 
+@when(words("I try to rename {name:Brick} to {new}, with F2"))
+def try_rename(virtualbricks, name, new):
+    """The same, without waiting for the dialog to close."""
+
+    dialog = type_new_name(virtualbricks, name, new)
+    virtualbricks.click("button", "Rename", within=dialog)
+
+
 @when(words("I type {new} as the new name of {name:Brick}, with F2"))
 def type_new_name(virtualbricks, name, new):
     """
@@ -919,6 +927,14 @@ def rename_says(virtualbricks, text):
     dialog = virtualbricks.find("dialog", RENAME_BRICK)
     virtualbricks.find("label", text, within=dialog)
     virtualbricks.disabled("button", "Rename", within=dialog)
+
+
+@then(words('the Rename dialog refuses it, saying "{text}"'))
+def rename_refused(virtualbricks, text):
+    """The dialog is still open, and a line under its field is the text."""
+
+    dialog = virtualbricks.find("dialog", RENAME_BRICK)
+    virtualbricks.find("label", text, within=dialog)
 
 
 @when("I cancel the Rename dialog")
@@ -2968,6 +2984,43 @@ def project_file_in_trash(virtualbricks, file):
     trashed = trashed_as(trash, path)
     assert trashed is not None, f"the trash has no {path}"
     assert os.path.isfile(os.path.join(trash, "files", trashed))
+
+
+@given(
+    words(
+        "the private copy {file}, on disk.qcow2 of my {folder:Folder} folder,"
+        " left in the project folder by a machine deleted from the console"
+    )
+)
+def private_copy_left(virtualbricks, file, folder):
+    """
+    A qcow2 disk of 1 GiB in the folder of the project, made with qemu-img
+    on the image, with PRIVATE_DATA bytes at its start, random but the same
+    each time.
+    """
+
+    path = os.path.join(os.path.dirname(project_path(virtualbricks)), file)
+    private_disk(path, in_my(virtualbricks, folder, "disk.qcow2"))
+
+
+@then(words("the project folder still has {file}"))
+def project_file_kept(virtualbricks, file):
+    """The folder of the project has the file."""
+
+    path = os.path.join(os.path.dirname(project_path(virtualbricks)), file)
+    assert os.path.isfile(path), f"{path} is gone"
+
+
+@then(words("the private copy {file} still has what was written in it"))
+def private_copy_kept(virtualbricks, file):
+    """
+    The disk of the file of the project folder still starts with the
+    PRIVATE_DATA bytes written in it, as qemu-img dd reads them.
+    """
+
+    path = os.path.join(os.path.dirname(project_path(virtualbricks)), file)
+    start = disk_start(virtualbricks, path, PRIVATE_DATA)
+    assert start == private_data(file), f"{file} lost what it had"
 
 
 @then(words("the shared images still have {file}, in no trash"))

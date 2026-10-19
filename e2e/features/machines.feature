@@ -73,3 +73,25 @@ Feature: Virtual machines
     Then the list of bricks has
       | Brick | Detail | State |
     And the file vm1_hda.cow of the project folder is in the trash
+
+  @needs-qemu-img @needs-qemu-system-i386
+  Scenario: A virtual machine isn't renamed after a private copy left in the project folder, and no copy moves
+    Given the empty disk image disk.qcow2 of 1 GB, in my home folder
+    And Virtualbricks is running
+    And the private copy web_hda.cow, on disk.qcow2 of my home folder, left in the project folder by a machine deleted from the console
+    When I add an existing image, disk.qcow2 of my home folder, with the name it suggests, disk
+    And I open the tab Bricks
+    And I add the virtual machine vm1
+    And I turn on "No display" in the settings of vm1, on its page Display
+    And I give vm1 the image disk, on its disk hda
+    And I start vm1
+    Then vm1 runs on a private copy of disk.qcow2 of the shared images
+    When I terminate vm1, from its menu
+    And I try to rename vm1 to web, with F2
+    Then the Rename dialog refuses it, saying "The project folder has web_hda.cow already, a private copy named after web: move it away first"
+    When I cancel the Rename dialog
+    Then the list of bricks has
+      | Brick | Detail                                            | State   |
+      | vm1   | Virtual machine · i386 · 64 MiB · no network card | Stopped |
+    And the project folder still has vm1_hda.cow
+    And the private copy web_hda.cow still has what was written in it

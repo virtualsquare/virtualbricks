@@ -140,6 +140,13 @@ that the tests can't do yet: those needs come first.
   has it, out of the project folder; `@needs-qemu-system-i386`
   "A virtual machine deleted takes its private copy to the trash",
   `machines.feature`
+- [x] Rename a virtual machine after a private copy left in the project
+  folder
+  the Rename dialog refuses it, naming the file, and stays open; the
+  machine keeps its name and its copy, and the copy left keeps what was
+  written in it; `@needs-qemu-system-i386`
+  "A virtual machine isn't renamed after a private copy left in the
+  project folder, and no copy moves", `machines.feature`
 
 ### Disk images
 
