@@ -516,7 +516,7 @@ class TestCards(BricksTestCase):
         self.assertEqual(
             self.run_line("brick card add vm1 socket mac=52:54:00:00:00:03"),
             [
-                "vm1 eth1: socket vm1:sock_eth1, rtl8139, 52:54:00:00:00:03",
+                "vm1 eth1: socket vm1:sock_eth0, rtl8139, 52:54:00:00:00:03",
             ],
         )
         # a plug goes before the sockets
@@ -528,6 +528,15 @@ class TestCards(BricksTestCase):
         self.assertEqual(
             self.run_line("brick card add vm1 plug"),
             [f"vm1 eth2: in nothing, rtl8139, {self.vm.plugs[2].mac}"],
+        )
+
+    def test_a_new_socket_takes_a_free_name(self):
+        self.run_line("brick card add vm1 socket mac=52:54:00:00:00:01")
+        self.run_line("brick card add vm1 socket mac=52:54:00:00:00:02")
+        self.run_line("brick card remove vm1 eth0")
+        self.assertEqual(
+            self.run_line("brick card add vm1 socket mac=52:54:00:00:00:03"),
+            ["vm1 eth1: socket vm1:sock_eth0, rtl8139, 52:54:00:00:00:03"],
         )
 
     def test_what_is_wrong(self):
@@ -572,7 +581,7 @@ class TestCards(BricksTestCase):
         )
         self.assertEqual(
             self.run_line("brick card remove vm1 eth0"),
-            ["eth0: socket vm1:sock_eth1, rtl8139, 52:54:00:00:00:02"],
+            ["eth0: socket vm1:sock_eth0, rtl8139, 52:54:00:00:00:02"],
         )
 
     def test_remove_several(self):

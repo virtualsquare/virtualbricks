@@ -112,7 +112,7 @@ class TestVirtualMachine(BrickTestCase):
         vm.add_plug(sw.socks[0], "00:aa:00:00:00:01", "e1000")
         default = vm.add_sock("00:aa:00:00:00:02", "e1000")
         named = vm.add_sock(name="sock_x")
-        self.assertEqual(default.nickname, "vm_sock_eth1")
+        self.assertEqual(default.nickname, "vm_sock_eth0")
         self.assertEqual(named.nickname, "vm_sock_x")
         self.assertEqual(
             named.path, os.path.join(self.factory.runtime_dir, "vm_sock_x[]")
@@ -121,10 +121,32 @@ class TestVirtualMachine(BrickTestCase):
         projects.current = OpenProject(self.mktemp(), None)
         os.makedirs(projects.current.path)
         self.factory.rename_item(vm, "vm2")
-        self.assertEqual(default.nickname, "vm2_sock_eth1")
+        self.assertEqual(default.nickname, "vm2_sock_eth0")
         self.assertEqual(
             default.path,
-            os.path.join(self.factory.runtime_dir, "vm2_sock_eth1[]"),
+            os.path.join(self.factory.runtime_dir, "vm2_sock_eth0[]"),
+        )
+
+    def test_a_new_socket_card_takes_a_free_name(self):
+        vm = self.factory.new_brick("qemu", "vm")
+        first, second = vm.add_sock(), vm.add_sock()
+        vm.remove_plug(first)
+        self.assertEqual(vm.add_sock().nickname, "vm_sock_eth0")
+        self.assertEqual(vm.add_sock().nickname, "vm_sock_eth2")
+        self.assertEqual(second.nickname, "vm_sock_eth1")
+
+    def test_a_taken_socket_card_name_is_refused(self):
+        vm = self.factory.new_brick("qemu", "vm")
+        vm.add_sock(name="sock_eth0")
+        socks = list(self.factory.socks)
+        self.assertRaises(ValueError, vm.add_sock, name="sock_eth0")
+        self.assertEqual(self.factory.socks, socks)
+        self.assertEqual(len(vm.socks), 1)
+        self.assertEqual(vm.add_sock().nickname, "vm_sock_eth1")
+        # the name of another machine's card is free
+        other = self.factory.new_brick("qemu", "vm2")
+        self.assertEqual(
+            other.add_sock(name="sock_eth0").nickname, "vm2_sock_eth0"
         )
 
     def test_rename_keeps_other_sockets(self):

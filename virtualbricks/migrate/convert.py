@@ -41,6 +41,7 @@ from virtualbricks.config.projectfile import (
     describe_action,
     old_action,
     project_document,
+    unique_sock_names,
 )
 from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
@@ -660,6 +661,10 @@ class _Converter:
     def sockets(self) -> None:
         from virtualbricks.bricks.virtualmachine import is_virtualmachine
 
+        # the socket cards of each machine, named once all of them are read
+        cards: defaultdict[
+            str, list[tuple[VirtualMachine, legacy.Link, str | None, str]]
+        ] = defaultdict(list)
         for link in self.project.links:
             if link.kind != "sock":
                 continue
@@ -682,9 +687,20 @@ class _Converter:
                     f'"{link.socket}" is not a socket name, using a default',
                     where,
                 )
-            model = link.model or DEFAULT_MODEL
-            # None gives the card its default name
-            vm.add_sock(self.mac(link), model, name if valid else None)
+            # None gives the card a default name
+            cards[link.owner].append(
+                (vm, link, name if valid else None, self.mac(link))
+            )
+        for socks in cards.values():
+            names = unique_sock_names([read for vm, link, read, mac in socks])
+            for (vm, link, read, mac), name in zip(socks, names):
+                if read is not None and read != name:
+                    self.report.warning(
+                        f'"{link.socket}" is the name of another socket card,'
+                        f" using {name}",
+                        self.where(link.lineno),
+                    )
+                vm.add_sock(mac, link.model or DEFAULT_MODEL, name)
 
     def plugs(self) -> None:
         from virtualbricks.bricks.virtualmachine import is_virtualmachine

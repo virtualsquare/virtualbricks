@@ -556,8 +556,9 @@ sees them. Each card has these keys:
 **name** = *string*
 :   With **"socket"**, the name of the socket card, made of letters, digits,
     underscores, hyphens and dots. Other bricks connect to it as
-    *vm*:*name*. When it's missing, the card is named **sock_eth***N* after
-    its position.
+    *vm*:*name*. When it's missing, or a card before it has the same, the
+    card gets the first **sock_eth***N* that no socket card of the machine
+    has, with a warning.
 
 **model** = *string*, default `"rtl8139"`
 :   The model of the card, for example **"e1000"** or

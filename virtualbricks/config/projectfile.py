@@ -35,10 +35,17 @@ from __future__ import annotations
 
 import contextlib
 import functools
+import itertools
 import os
 import re
 import shlex
-from collections.abc import Callable, Collection, Iterator
+from collections.abc import (
+    Callable,
+    Collection,
+    Container,
+    Iterator,
+    Sequence,
+)
 from typing import TYPE_CHECKING, TypeAlias, TypedDict, cast
 
 from virtualbricks import errors, locations
@@ -237,6 +244,33 @@ class Nic(TypedDict, total=False):
 
 # What the plugs of a brick connect to: sockets, or its network cards.
 Targets: TypeAlias = list[str] | list[Nic]
+
+
+def free_sock_name(taken: Container[str]) -> str:
+    """Return the first sock_ethN not in taken."""
+
+    return next(
+        name
+        for name in (f"sock_eth{n}" for n in itertools.count())
+        if name not in taken
+    )
+
+
+def unique_sock_names(names: Sequence[str | None]) -> list[str]:
+    """
+    Return the names of the socket cards of a machine, given in order. A
+    missing name, or one that a card before has, becomes the first
+    sock_ethN that no card has: the first card of a name keeps it.
+    """
+
+    taken = {name for name in names if name is not None}
+    unique: list[str] = []
+    for name in names:
+        if name is None or name in unique:
+            name = free_sock_name(taken)
+            taken.add(name)
+        unique.append(name)
+    return unique
 
 
 # Writing
@@ -478,9 +512,7 @@ def _read_target(value: Value, report: Report, where: str) -> str:
     return value
 
 
-def _read_nic(
-    table: Value, index: int, report: Report, where: str
-) -> Nic | None:
+def _read_nic(table: Value, report: Report, where: str) -> Nic | None:
     if not isinstance(table, dict):
         report.warning("is not a table, card dropped", where)
         return None
@@ -512,10 +544,9 @@ def _read_nic(
         )
     elif kind == "socket":
         name = table.get("name")
-        if not isinstance(name, str) or not SOCKET_NAME.fullmatch(name):
-            name = f"sock_eth{index}"
-            report.warning(f"name: missing or invalid, using {name}", where)
-        nic["name"] = name
+        # a socket card without one gets its name with the others
+        if isinstance(name, str) and SOCKET_NAME.fullmatch(name):
+            nic["name"] = name
     for key in table.keys() - NIC_KEYS[nic["kind"]]:
         report.warning("unknown field, dropped", f"{where}.{key}")
     return nic
@@ -550,14 +581,25 @@ def _read_connections(
             report.warning("nics: is not a list, cards dropped", where)
             nics = []
         plugs: list[Nic] = []
+        socks: list[tuple[Nic, str]] = []
         for index, item in enumerate(nics):
-            nic = _read_nic(item, index, report, f"{where}.nics[{index}]")
+            at = f"{where}.nics[{index}]"
+            nic = _read_nic(item, report, at)
             if nic is None:
                 continue
             if nic["kind"] == "socket":
-                brick.add_sock(nic["mac"], nic["model"], nic["name"])
+                socks.append((nic, at))
             else:
                 plugs.append(nic)
+        names = unique_sock_names([nic.get("name") for nic, at in socks])
+        for (nic, at), name in zip(socks, names):
+            if "name" not in nic:
+                report.warning(f"name: missing or invalid, using {name}", at)
+            elif nic["name"] != name:
+                report.warning(
+                    f"name: {nic['name']} is another card's, using {name}", at
+                )
+            brick.add_sock(nic["mac"], nic["model"], name)
         return plugs
     return []
 

@@ -637,7 +637,7 @@ class TestConnections(ConvertTestCase):
                 },
                 {
                     "kind": "socket",
-                    "name": "sock_eth2",
+                    "name": "sock_eth1",
                     "model": "e1000",
                     "mac": "00:11:22:33:44:57",
                 },
@@ -652,6 +652,35 @@ class TestConnections(ConvertTestCase):
                 "machine, dropped",
                 '.project:8: socket card of "nobody", which is not a virtual '
                 "machine, dropped",
+            ],
+        )
+
+    def test_socket_cards_of_one_name(self):
+        text = (
+            "[Qemu:vm]\n[Qemu:vm2]\n"
+            "sock|vm|vm_sock_eth1|e1000|00:11:22:33:44:55\n"
+            "sock|vm|vm_sock_eth1|e1000|00:11:22:33:44:56\n"
+            "link|vm2|vm_sock_eth1|e1000|00:11:22:33:44:57\n"
+        )
+        data, _, report = self.convert(text)
+        self.assertEqual(
+            [
+                (nic["name"], nic["mac"])
+                for nic in data["bricks"]["vm"]["nics"]
+            ],
+            [
+                ("sock_eth1", "00:11:22:33:44:55"),
+                ("sock_eth0", "00:11:22:33:44:56"),
+            ],
+        )
+        self.assertEqual(
+            data["bricks"]["vm2"]["nics"][0]["connect"], "vm:sock_eth1"
+        )
+        self.assertEqual(
+            messages(report),
+            [
+                '.project:4: "vm_sock_eth1" is the name of another socket'
+                " card, using sock_eth0"
             ],
         )
 

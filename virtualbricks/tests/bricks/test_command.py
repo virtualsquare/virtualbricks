@@ -511,7 +511,7 @@ class TestMachine(LinesTestCase):
             prepared = prepared_qemu(target, resume="snap1")
             argv, warnings = self.line(vm, prepared)
             expected_warnings = []
-            sock = f"vde,id=vx2,sock=ptp://{RUN}/vm2_sock_eth2"
+            sock = f"vde,id=vx2,sock=ptp://{RUN}/vm2_sock_eth0"
             if facts.vde:
                 cards = [
                     "-device",

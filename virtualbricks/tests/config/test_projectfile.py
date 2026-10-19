@@ -33,6 +33,7 @@ from virtualbricks.config.projectfile import (
     ProjectFormatError,
     create_project_file,
     devices_for_image,
+    free_sock_name,
     image_paths,
     project_document,
     project_notes,
@@ -41,6 +42,7 @@ from virtualbricks.config.projectfile import (
     restore_project,
     save_project,
     socket_target,
+    unique_sock_names,
     upgrade_project,
     upgrade_readme,
 )
@@ -91,7 +93,7 @@ def build_lab(factory, image_path="/images/deb.qcow2"):
     vm.add_plug(sw1.socks[0], "00:aa:00:00:00:01", "e1000")
     vm.add_plug(factory.get_sock("_hostonly"), "00:aa:00:00:00:02")
     vm.add_plug(None, "00:aa:00:00:00:03", "rtl8139")
-    vm.add_sock("00:aa:00:00:00:04", "virtio")
+    vm.add_sock("00:aa:00:00:00:04", "virtio", "sock_eth3")
     tap = factory.new_brick("tap", "tap0")
     tap.update_config({"address_mode": "manual", "ip_address": "10.0.0.2"})
     tap.connect(sw2.socks[0])
@@ -676,7 +678,7 @@ class TestLenientReading(ProjectFileTestCase):
         vm = factory.get_brick("vm")
         self.assertEqual(len(vm.plugs), 3)
         self.assertEqual(vm.plugs[0].model, "rtl8139")
-        self.assertEqual([s.nickname for s in vm.socks], ["vm_sock_eth4"])
+        self.assertEqual([s.nickname for s in vm.socks], ["vm_sock_eth0"])
         messages = self.messages()
         self.assertIn(
             "bricks.vm.nics[0]: is not a table, card dropped", messages
@@ -688,13 +690,66 @@ class TestLenientReading(ProjectFileTestCase):
         )
         self.assertIn("bricks.vm.nics[2]: model: 3, using rtl8139", messages)
         self.assertIn(
-            "bricks.vm.nics[4]: name: missing or invalid, using sock_eth4",
+            "bricks.vm.nics[4]: name: missing or invalid, using sock_eth0",
             messages,
         )
         self.assertIn(
             "bricks.vm.nics[5].vlan: unknown field, dropped", messages
         )
         self.assertEqual(sum(1 for m in messages if "mac: " in m), 2)
+
+    def test_socket_cards_of_one_name(self):
+        data = self.lab()
+        data["bricks"]["vm"]["nics"] = [
+            {
+                "kind": "socket",
+                "name": "sock_eth1",
+                "mac": "00:aa:00:00:00:01",
+            },
+            {
+                "kind": "socket",
+                "name": "sock_eth1",
+                "mac": "00:aa:00:00:00:02",
+            },
+            {"kind": "socket", "mac": "00:aa:00:00:00:03"},
+            {
+                "kind": "socket",
+                "name": "sock_eth0",
+                "mac": "00:aa:00:00:00:04",
+            },
+        ]
+        data["bricks"]["w"]["endpoints"] = ["vm:sock_eth1", "vm:sock_eth0"]
+        factory, _ = self.restore(data)
+        vm = factory.get_brick("vm")
+        self.assertEqual(
+            [(sock.nickname, sock.mac) for sock in vm.socks],
+            [
+                ("vm_sock_eth1", "00:aa:00:00:00:01"),
+                ("vm_sock_eth2", "00:aa:00:00:00:02"),
+                ("vm_sock_eth3", "00:aa:00:00:00:03"),
+                ("vm_sock_eth0", "00:aa:00:00:00:04"),
+            ],
+        )
+        # the first card of a name keeps what plugs into it
+        self.assertEqual(
+            [plug.sock.mac for plug in factory.get_brick("w").plugs],
+            ["00:aa:00:00:00:01", "00:aa:00:00:00:04"],
+        )
+        messages = self.messages()
+        self.assertIn(
+            "bricks.vm.nics[1]: name: sock_eth1 is another card's, using "
+            "sock_eth2",
+            messages,
+        )
+        self.assertIn(
+            "bricks.vm.nics[2]: name: missing or invalid, using sock_eth3",
+            messages,
+        )
+        saved = project_document(factory, ProjectSettings())
+        self.assertEqual(
+            [nic["name"] for nic in saved["bricks"]["vm"]["nics"]],
+            ["sock_eth1", "sock_eth2", "sock_eth3", "sock_eth0"],
+        )
 
     def test_nics_not_a_list(self):
         data = self.lab()
@@ -732,6 +787,28 @@ class TestLenientReading(ProjectFileTestCase):
         data["events"]["boot"]["actions"] = []
         self.restore(data)
         self.assertNotIn("events", " ".join(self.messages()))
+
+
+class TestSockNames(unittest.TestCase):
+
+    def test_free(self):
+        self.assertEqual(free_sock_name(set()), "sock_eth0")
+        self.assertEqual(
+            free_sock_name({"sock_eth0", "sock_eth2", "sock_eth1x"}),
+            "sock_eth1",
+        )
+
+    def test_unique(self):
+        self.assertEqual(unique_sock_names([]), [])
+        self.assertEqual(
+            unique_sock_names(["lan", "sock_eth0", "lan", None, "sock_eth0"]),
+            ["lan", "sock_eth0", "sock_eth1", "sock_eth2", "sock_eth3"],
+        )
+
+    def test_a_card_after_keeps_its_name(self):
+        self.assertEqual(
+            unique_sock_names([None, "sock_eth0"]), ["sock_eth1", "sock_eth0"]
+        )
 
 
 class TestRead(ProjectFileTestCase):

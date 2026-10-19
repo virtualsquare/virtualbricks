@@ -46,7 +46,7 @@ from virtualbricks.bricks.draft import Draft, Problem
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.sock import Sock
 from virtualbricks.config.images import ImageInfo, read_info
-from virtualbricks.config.projectfile import DEFAULT_MODEL
+from virtualbricks.config.projectfile import DEFAULT_MODEL, free_sock_name
 from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
     Bool,
@@ -1476,14 +1476,24 @@ class VirtualMachine(bricks.Brick):
         """
         Add a network card with a VDE socket other bricks can plug into.
 
-        ``name`` is the socket's name within this VM, ``sock_ethN`` by default.
+        ``name`` is the socket's name within this VM, by default the first
+        ``sock_ethN`` that no other socket card has. A name that another
+        socket card has is a ValueError: the two would share one socket.
         """
 
+        prefix = f"{self.name}_"
+        taken = {
+            sock.nickname[len(prefix) :]
+            for sock in self.socks
+            if sock.nickname.startswith(prefix)
+        }
+        if name is None:
+            name = free_sock_name(taken)
+        elif name in taken:
+            raise ValueError(f"{self.name} has a socket card {name} already")
         sock = self.factory.new_sock(self)
         sock.model = model or DEFAULT_MODEL
         sock.mac = mac or random_mac()
-        if name is None:
-            name = f"sock_eth{len(self.plugs) + len(self.socks)}"
         sock.path = self.runtime_path(f"{self.name}_{name}[]")
         sock.nickname = f"{self.name}_{name}"
         self.socks.append(sock)
