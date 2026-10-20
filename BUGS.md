@@ -76,6 +76,23 @@ in 3.0: they wait until after it.
   `brick card add vm1 plug vm2:sock_eth0` answered `vm1 eth0: plugged into
   vm2:sock_eth0`, and `brick list` had `eth0 on vm2 · eth1 as a socket`.
 
+## Platforms
+
+- [ ] **A README picture with too many pixels is read on Ubuntu 26.04 and
+  Debian testing.** `read_picture()` (`virtualbricks/gui/markdownview.py`)
+  turns down a picture of more than `PICTURE_PIXELS` with
+  `loader.set_size(0, 0)` on `size-prepared`, so that the loader gives up
+  before it takes the memory. With gdk-pixbuf 2.44, installed with
+  `glycin-loaders`, the loader goes on, and the whole picture comes back:
+  2.44.5 and glycin-loaders 2.1.5 on Ubuntu 26.04, 2.44.8 and 2.2.2 on
+  Debian testing. With the 2.42.10 of Ubuntu 24.04 and the 2.42.12 of
+  Debian 13 it gives up. Seen on 3.0.0.dev6, on 20 October 2026:
+  `TestReadPicture.test_too_many_pixels` in
+  `virtualbricks/tests/gui/test_markdownview.py` failed in containers of
+  Ubuntu 26.04 and Debian testing with their packages
+  (`tools/targetsuite.py`), and passed in those of Ubuntu 24.04 and Debian
+  13. A large picture in the Readme tab wasn't tried.
+
 ## Remote windows
 
 - [ ] *Later.* **The windows of `--connect` turn KSM on in this
@@ -160,3 +177,32 @@ in 3.0: they wait until after it.
   the tool said "Another Virtualbricks is running on this machine with
   --lock system". The other six tests of the class passed, and all seven
   passed once it had quit.
+
+- [ ] **Some unit tests need the programs of the bricks installed.**
+  `README.md` says that the tests need neither QEMU nor VDE, but these
+  fail without them:
+  - 26 tests that check the answer of `brick new switch` or `brick new
+    tap`, to which the console adds "vde_switch isn't installed" or
+    "vde_plug2tap isn't installed": in `test_control.py`,
+    `test_general.py` and `test_terminal.py` of
+    `virtualbricks/tests/console/`, `test_eventaction.py` of
+    `virtualbricks/tests/bricks/`, and `virtualbricks/tests/test_app.py`;
+  - `TestNew.test_a_name` and `test_named_after_the_kind` in
+    `virtualbricks/tests/console/test_bricks.py`, where `brick new qemu`
+    adds "qemu-system-i386 isn't installed";
+  - `TestAudioDriver.test_not_listed` and `test_unknown_yet` and
+    `TestDraft.test_failed` in `virtualbricks/tests/test_settingsdraft.py`,
+    whose problems have one more, "No program x-terminal-emulator on this
+    computer";
+  - `TestStart.test_environment` in
+    `virtualbricks/tests/bricks/test_command.py`, without `vde_cryptcab`,
+    and at times `test_resume` or `test_warnings` of the same class with
+    it.
+
+  Seen on 3.0.0.dev6, on 20 October 2026, in containers of Ubuntu 24.04
+  and 26.04 with their packages, without these programs; once vde2 was
+  installed, the first group passed. As root there, five more failed,
+  which expect a permission error: two in
+  `virtualbricks/tests/config/test_workspace.py`, two in
+  `virtualbricks/tests/test_locks.py`, and one in
+  `virtualbricks/tests/gui/dialogs/test_projectname.py`.

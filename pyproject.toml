@@ -46,6 +46,8 @@ dev = [
     { include-group = "e2e" },
     "black>=26.5",
     "pre-commit>=4.0",
+    # tox.ini: the tests on the Python libraries of each distribution
+    "tox>=4.67",
     # pandoc, for docs/man/build.py
     "pypandoc-binary==1.17",
     "pyflakes>=3.0",

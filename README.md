@@ -326,7 +326,8 @@ pre-commit install
 
 The `dev` dependency group has the tools of the project: `coverage`, `pytest`,
 `pytest-bdd` and `pytest-repeat` for the end-to-end tests, `black`, `ruff`,
-`pyflakes`, `pre-commit`, `pypandoc-binary`, which brings pandoc for the
+`pyflakes`, `pre-commit`, `tox`, which runs the tests on the libraries of
+each distribution, `pypandoc-binary`, which brings pandoc for the
 manual page, `mypy` and `mypy-zope`, which check the types, and
 `PyGObject-stubs`, the types of GTK. `--group` needs pip 25.1 or newer, and
 the pip of a new environment is often older, hence the upgrade. The editable
@@ -379,6 +380,26 @@ coverage report
 ```
 
 `trial` writes in `_trial_temp/`, which git ignores.
+
+tox runs them on each supported distribution's Python and versions of its
+Python libraries, from PyPI, as the environments of `tox.ini` have them:
+
+```sh
+tox                                  # Ubuntu 24.04, Debian 13, 26.04, testing
+tox -e ubuntu-24.04                  # the oldest
+tox -e debian-13 -- virtualbricks.tests.console.test_control
+```
+
+It needs `python3.12`, `python3.13` and `python3.14` in the `PATH`; with
+pyenv, name them in `pyenv global`, or in `PYENV_VERSION`, which tox passes
+on. PyGObject 3.48 and 3.50, of Ubuntu 24.04 and Debian 13, are built with
+the GObject Introspection of before GLib 2.80: on Debian,
+`libgirepository1.0-dev`. The C libraries, GTK, GLib and gdk-pixbuf among
+them, stay those of your computer. `tools/targetsuite.py` runs the tests in
+a container of each distribution instead, on all of its own packages and
+with the programs of the bricks, as a user that isn't root, and tells the
+versions that tox has otherwise. It needs `podman` and the network, and
+takes some minutes: it is a check before a release, with `start.py` below.
 
 - The tests don't touch your settings, your projects or the locks: each one
   runs in a temporary home. They need neither root, nor Qemu, nor VDE, but
@@ -571,7 +592,8 @@ To add a language, see the top of `l10n.sh`.
 - `help/`: the user guide, Mallard pages in `C/` and their pictures in
   `C/figures/`, their HTML in `html/C/`, and `build.py`, which checks the
   pages and builds the HTML.
-- `tools/`: the scripts of the development, as `typecoverage.py`.
+- `tools/`: the scripts of the development, as `typecoverage.py` and
+  `targetsuite.py`.
 - `locale/`: the translations; `share/`: the desktop file and the icon.
 
 ## License

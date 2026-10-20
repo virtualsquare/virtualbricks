@@ -11,6 +11,8 @@ _trial_temp/
 /virtualbricks.egg-info/
 # Python virtual environment
 /.venv/
+# the environments of tox
+/.tox/
 # Personal private files
 /tmp/
 # Debian package build artifacts

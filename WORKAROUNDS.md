@@ -34,7 +34,10 @@ container of each, on 4 October 2026:
 | vde2-cryptcab | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 |
 
 The versions are those of the packages, without the revision of the
-distribution.
+distribution. Those of Python and its libraries are in `tox.ini` too, an
+environment for each distribution, and `virtualbricks/tests/test_tools.py`
+checks that they are the same; `tools/targetsuite.py` tells those that a
+distribution has otherwise.
 
 ## Gone with Ubuntu 24.04
 
@@ -295,4 +298,8 @@ no workaround, such as drag and drop.
 - When a distribution goes: check its column in [Versions](#versions) again,
   remove the workarounds of its section and raise the floors, then move what
   the next oldest distribution still needs into a section of its own.
+- A distribution that comes or goes has, besides its column, an environment
+  in `tox.ini` and a line in `TARGETS` of `tools/targetsuite.py`;
+  `virtualbricks/tests/test_tools.py` checks that they agree. A version
+  that changes in the table changes in `tox.ini` too.
 - When the move to GTK 4 starts, check W7 to W12, W14 and E1 to E7 again.
