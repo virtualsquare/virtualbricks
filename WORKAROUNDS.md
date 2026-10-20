@@ -107,9 +107,7 @@ newer:
 | `README.md`, Requirements | "QEMU 8.2 and newer" | 10.0 |
 | `README.md`, Development | "has to run on Python 3.12" | 3.13 |
 
-markdown-it-py (`>=3.0`) stays: Debian 13 has 3.0.0. With Twisted 24.11, the
-tests of the AMP socket run everywhere: their entry in `BUGS.md`, under
-Platforms, goes.
+markdown-it-py (`>=3.0`) stays: Debian 13 has 3.0.0.
 
 ## Gone with Ubuntu 26.04
 

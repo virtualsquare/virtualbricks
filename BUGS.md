@@ -76,21 +76,6 @@ in 3.0: they wait until after it.
   `brick card add vm1 plug vm2:sock_eth0` answered `vm1 eth0: plugged into
   vm2:sock_eth0`, and `brick list` had `eth0 on vm2 · eth1 as a socket`.
 
-## Platforms
-
-- [ ] *Later.* **The tests of the AMP socket don't run on a Twisted older
-  than 24.7.** That is Ubuntu 24.04 (24.3). They patch `amp._log`, the
-  logger of `twisted.protocols.amp`, which came in Twisted 24.7:
-  `test_control.py` in `virtualbricks/tests/console/`, `test_client.py`,
-  `test_follower.py`, `test_mirror.py` and `test_tunnel.py` in
-  `virtualbricks/tests/remote/`, and `test_remote.py` in
-  `virtualbricks/tests/gui/`. Under IDEAS since page 17, until 20 October
-  2026; checked that day: `hasattr(amp, "_log")` is false with
-  `twisted==22.1.0` in a venv, true with 26.4, and the sources of 22.4
-  and 24.3 have no `_log`, those of 24.7 and 24.11 have it. Likely fix:
-  catch the log of AMP another way, with a log observer, or patch it only
-  where it is. It goes by itself with Ubuntu 24.04.
-
 ## Remote windows
 
 - [ ] *Later.* **The windows of `--connect` turn KSM on in this

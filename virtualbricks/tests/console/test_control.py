@@ -23,6 +23,7 @@ import stat
 
 from twisted.internet import address, defer, endpoints, reactor, task, threads
 from twisted.internet.testing import StringTransport
+from twisted.logger import formatEvent, globalLogPublisher
 from twisted.protocols import amp, basic
 from twisted.test import iosim
 
@@ -442,8 +443,10 @@ class AMPTestCase(ConsoleTestCase):
         self.factory.runtime_dir = "/run/vb"
         self.logger = FakeLogger()
         self.patch(control, "logger", self.logger)
-        self.amp_log = FakeLogger()
-        self.patch(amp, "_log", self.amp_log)
+        # what reaches the log, AMP's lines among them
+        self.logged = []
+        globalLogPublisher.addObserver(self.logged.append)
+        self.addCleanup(globalLogPublisher.removeObserver, self.logged.append)
         self.workspace = use_workspace(self)
         self.workspace.current = Project()
         self.server = control.ControlFactory(
@@ -518,7 +521,7 @@ class TestAMP(AMPTestCase):
         self.assertEqual(
             [
                 line
-                for line in self.amp_log.formatted()
+                for line in map(formatEvent, self.logged)
                 if "AMPControl" in line
             ],
             [],
@@ -604,11 +607,12 @@ class TestAMP(AMPTestCase):
     def test_lost_while_it_runs(self):
         self.declare()
         first = self.call(ampwire.Run, line="wait a")
-        self.call(ampwire.Run, line="wait b")
+        second = self.call(ampwire.Run, line="wait b")
         self.program.transport.loseConnection()
         self.pump.flush()
         self.assertEqual(self.server.connections, set())
         self.failureResultOf(first)
+        self.failureResultOf(second)
         # the command goes on; its answer, and the requests after it, drop
         self.waiting["a"].callback(["a done"])
         self.assertEqual(list(self.waiting), ["a"])

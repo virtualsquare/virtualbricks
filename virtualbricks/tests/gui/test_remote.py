@@ -24,7 +24,6 @@ import os
 
 from twisted.internet import defer, task
 from twisted.logger import LogLevel
-from twisted.protocols import amp
 from twisted.test import iosim
 
 from virtualbricks import locations, sockets
@@ -126,7 +125,6 @@ class RemoteTestCase(GuiTestCase):
         self.patch(control, "logger", FakeLogger())
         self.patch(follower, "logger", FakeLogger())
         self.patch(mirror, "logger", FakeLogger())
-        self.patch(amp, "_log", FakeLogger())
         self.logger = FakeLogger()
         self.patch(gui_app, "logger", self.logger)
         self.manager.current = Project(self.folder("lab1"))

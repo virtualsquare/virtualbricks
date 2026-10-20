@@ -112,7 +112,6 @@ class ClientTestCase(ConsoleTestCase):
         self.patch(control, "logger", FakeLogger())
         self.patch(follower, "logger", FakeLogger())
         self.patch(mirror, "logger", FakeLogger())
-        self.patch(amp, "_log", FakeLogger())
         self.workspace = use_workspace(self)
         self.workspace.current = Project(os.path.abspath(self.mktemp()))
         os.makedirs(self.workspace.current.path)

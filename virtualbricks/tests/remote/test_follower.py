@@ -125,7 +125,6 @@ class FollowTestCase(ConsoleTestCase):
         self.logger = FakeLogger()
         self.patch(control, "logger", self.logger)
         self.patch(follower, "logger", self.logger)
-        self.patch(amp, "_log", FakeLogger())
         self.workspace = use_workspace(self)
         self.workspace.current = Project()
         self.keeper = LogKeeper()

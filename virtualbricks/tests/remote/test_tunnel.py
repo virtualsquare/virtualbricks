@@ -175,7 +175,6 @@ class AttachTestCase(ConsoleTestCase):
         self.logger = FakeLogger()
         self.patch(control, "logger", self.logger)
         self.patch(follower, "logger", FakeLogger())
-        self.patch(amp, "_log", FakeLogger())
         self.workspace = use_workspace(self)
         self.workspace.current = Project("/lab/ospf")
         self.patch(follower, "keeper", LogKeeper())
