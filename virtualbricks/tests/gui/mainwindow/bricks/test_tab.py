@@ -587,7 +587,15 @@ class TestTheMouse(BricksTestCase):
 
     def test_the_right_button(self):
         shown = []
-        self.patch(brickmenu, "popup", lambda *args: shown.append(args))
+        # the button read in the handler: PyGObject 3.50 lets the event go
+        # once it returns
+        self.patch(
+            brickmenu,
+            "popup",
+            lambda widget, event, *args: shown.append(
+                (widget, event.button, *args)
+            ),
+        )
         # an OffscreenWindow allocates what it has when it shows
         self.brick("qemu", "vm")
         self.show()
@@ -597,9 +605,9 @@ class TestTheMouse(BricksTestCase):
             self.tab.get_toplevel().get_focus(),
             self.tab.list.row_of(list(self.factory.bricks)[1]),
         )
-        [(widget, event, engine, window, brick, configure, keys)] = shown
+        [(widget, button, engine, window, brick, configure, keys)] = shown
         self.assertIs(widget, self.tab.list)
-        self.assertEqual(event.button, 3)
+        self.assertEqual(button, 3)
         self.assertEqual(
             (engine, window, brick, configure, keys),
             (
