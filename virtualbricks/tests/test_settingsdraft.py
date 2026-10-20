@@ -263,15 +263,6 @@ class TestAudioDriver(unittest.TestCase):
         self.draft.set("audio_driver", "pipewire")
         self.assertEqual(self.draft.problems(), [])
 
-    def test_qemu_6_2(self):
-        # it lists none: taken on trust
-        self.draft.facts = Facts(qemu_version="6.2.0", audio_drivers=None)
-        self.assertEqual(self.draft.problems(), [])
-        self.assertEqual(
-            self.draft.note("audio_driver"),
-            "QEMU 6.2.0 doesn't list its drivers: this one is taken on trust",
-        )
-
 
 class TestKsm(unittest.TestCase):
 

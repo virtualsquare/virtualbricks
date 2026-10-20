@@ -46,10 +46,7 @@ from functools import partial
 from typing import Any, ClassVar, Generic, TypeVar, cast
 
 import attr
-
-# attrs 21.2, shipped by Ubuntu 22.04, has no "attrs" namespace yet. Imported,
-# not assigned, so that mypy's plugin of attrs knows the classes it makes.
-from attr import define
+from attrs import define
 
 from virtualbricks.config.report import Report
 from virtualbricks.config.tomlfile import Note, Notes, Table, Value

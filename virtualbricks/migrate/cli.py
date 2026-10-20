@@ -29,13 +29,11 @@ import argparse
 import os
 import sys
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, NoReturn, TextIO
+from typing import TYPE_CHECKING, NoReturn, TextIO, Unpack
 
 from virtualbricks.migrate import engine
 
 if TYPE_CHECKING:  # pragma: no cover
-    from typing_extensions import Unpack
-
     from virtualbricks.migrate.gui import WindowOptions
 
 DESCRIPTION = """\

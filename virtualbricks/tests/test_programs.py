@@ -71,25 +71,18 @@ class Target(NamedTuple):
     """What differs between the QEMU of the targets."""
 
     vde: bool
-    stream: bool
-    audio_listed: bool
     # which of the options that newer QEMUs dropped it still has
     old_options: frozenset[str]
 
 
 OLD_OPTIONS = frozenset(("-no-acpi", "-portrait", "-sdl", "-soundhw"))
 TARGETS = {
-    "ubuntu-22.04": Target(False, False, False, OLD_OPTIONS),
-    "debian-12": Target(
-        True, True, True, frozenset(("-no-acpi", "-portrait"))
-    ),
-    "ubuntu-24.04": Target(
-        False, True, True, frozenset(("-no-acpi", "-portrait"))
-    ),
-    "ubuntu-25.04": Target(False, True, True, frozenset()),
-    "debian-13": Target(True, True, True, frozenset()),
-    "ubuntu-26.04": Target(False, True, True, frozenset()),
-    "debian-testing": Target(True, True, True, frozenset()),
+    "debian-12": Target(True, frozenset(("-no-acpi", "-portrait"))),
+    "ubuntu-24.04": Target(False, frozenset(("-no-acpi", "-portrait"))),
+    "ubuntu-25.04": Target(False, frozenset()),
+    "debian-13": Target(True, frozenset()),
+    "ubuntu-26.04": Target(False, frozenset()),
+    "debian-testing": Target(True, frozenset()),
 }
 # What Netemu passes to its program.
 NETEMU_OPTIONS = ("-v", "-b", "-d", "-c", "-l", "--nofifo", "-M")
@@ -166,19 +159,13 @@ class TestRecordings(unittest.SynchronousTestCase):
                 version.startswith(upstream(package)), (target, version)
             )
             self.assertGreaterEqual(
-                recorded_info(target).version, Version(6, 2), target
+                recorded_info(target).version, Version(7, 2), target
             )
 
     def test_differences(self):
         for target, expected in TARGETS.items():
             info = recorded_info(target)
             self.assertEqual("vde" in info.netdevs, expected.vde, target)
-            self.assertEqual(
-                {"stream", "dgram"} <= info.netdevs, expected.stream, target
-            )
-            self.assertEqual(
-                info.audio_drivers is not None, expected.audio_listed, target
-            )
             self.assertEqual(
                 info.options & OLD_OPTIONS, expected.old_options, target
             )
@@ -188,6 +175,8 @@ class TestRecordings(unittest.SynchronousTestCase):
             info = recorded_info(target)
             self.assertTrue(info.has_machine("pc"), target)
             self.assertTrue(info.has_machine("q35"), target)
+            self.assertLessEqual({"stream", "dgram"}, info.netdevs, target)
+            self.assertTrue(info.audio_drivers, target)
             self.assertTrue(info.has_machine(info.default_machine), target)
             self.assertTrue(
                 info.default_machine.startswith("pc-i440fx-"), target
@@ -407,7 +396,7 @@ class TestParse(unittest.SynchronousTestCase):
         )
 
     def test_cpus_of_powerpc(self):
-        # QEMU 6.2 to 8.2, without a heading
+        # QEMU 7.2 to 8.2, without a heading
         text = (
             "PowerPC 601_v1           PVR 00010001\n"
             "PowerPC 601              (alias for 601_v2)\n"
@@ -421,7 +410,7 @@ class TestParse(unittest.SynchronousTestCase):
         )
 
     def test_cpus_of_s390x(self):
-        # QEMU 6.2 to 8.2: a heading only over the flags
+        # QEMU 7.2 to 8.2: a heading only over the flags
         text = (
             "s390 qemu            QEMU Virtual CPU version 2.5+       "
             "(migration-safe)\n"
@@ -453,7 +442,7 @@ class TestParse(unittest.SynchronousTestCase):
         )
 
     def test_cpus_of_sparc(self):
-        # QEMU 6.2 to 8.2: names with spaces, which -cpu takes with dashes
+        # QEMU 7.2 to 8.2: names with spaces, which -cpu takes with dashes
         text = (
             "Sparc  Fujitsu MB86904 IU 04000000 FPU 00080000 MMU 04000000"
             " NWINS 8 \n"
@@ -563,10 +552,6 @@ class TestParse(unittest.SynchronousTestCase):
             {"--help", "-h", "--band", "-b", "--vde-plug", "-v"}
             | {"--RED", "-r", "--TCPADV", "-A"},
         )
-
-    def test_audio_drivers_not_listed(self):
-        info = recorded_info("ubuntu-22.04")
-        self.assertIsNone(info.audio_drivers)
 
     def test_device_unknown(self):
         self.assertIsNone(recorded_info("debian-13").device("no-such-card"))

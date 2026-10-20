@@ -14,106 +14,80 @@ in quotes find it with `grep -rn`.
 The versions of the supported distributions, from `apt-cache policy` in a
 container of each, on 4 October 2026:
 
-| | Ubuntu 22.04 | Debian 12 | Ubuntu 24.04 | Debian 13 | Ubuntu 26.04 | Debian testing, sid |
-|---|---|---|---|---|---|---|
-| Python | 3.10.6 | 3.11.2 | 3.12.3 | 3.13.5 | 3.14.3 | 3.14.7 |
-| GTK 3 | 3.24.33 | 3.24.38 | 3.24.41 | 3.24.49 | 3.24.52 | 3.24.52 |
-| GLib | 2.72.4 | 2.74.6 | 2.80.0 | 2.84.4 | 2.88.0 | 2.90.0 |
-| Pango | 1.50.6 | 1.50.12 | 1.52.1 | 1.56.3 | 1.57.0 | 1.58.0, 1.58.2 |
-| AT-SPI (at-spi2-core) | 2.44.0 | 2.46.0 | 2.52.0 | 2.56.2 | 2.60.4 | 2.62.0 |
-| PyGObject | 3.42.1 | 3.42.2 | 3.48.2 | 3.50.0 | 3.56.2 | 3.58.0 |
-| Twisted | 22.1.0 | 22.4.0 | 24.3.0 | 24.11.0 | 25.5.0 | 26.4.0 |
-| attrs | 21.2.0 | 22.2.0 | 23.2.0 | 25.3.0 | 25.4.0 | 26.1.0 |
-| tomli | 1.2.2 | 2.0.1 | 2.0.1 | 2.2.1 | 2.4.0 | 2.4.1 |
-| tomlkit | 0.9.2 | 0.11.7 | 0.12.4 | 0.13.2 | 0.13.3 | 0.13.3 |
-| markdown-it-py | 1.1.0 | 2.1.0 | 3.0.0 | 3.0.0 | 3.0.0 | 4.2.0 |
-| pygraphviz | 1.7 | 1.7 | 1.7 | 1.14 | 1.14 | 1.14 |
-| zope.interface | 5.4.0 | 5.5.2 | 6.1 | 7.2 | 8.2 | 8.6 |
-| pyOpenSSL | 21.0.0 | 23.0.0 | 23.2.0 | 25.0.0 | 25.3.0 | 26.4.0 |
-| OpenSSL | 3.0.2 | 3.0.22 | 3.0.13 | 3.5.7 | 3.5.5 | 3.6.4, 3.6.5 |
-| QEMU | 6.2 | 7.2 | 8.2.2 | 10.0.13 | 10.2.1 | 11.1.1, 11.1.2 |
-| vde2-cryptcab | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 |
+| | Debian 12 | Ubuntu 24.04 | Debian 13 | Ubuntu 26.04 | Debian testing, sid |
+|---|---|---|---|---|---|
+| Python | 3.11.2 | 3.12.3 | 3.13.5 | 3.14.3 | 3.14.7 |
+| GTK 3 | 3.24.38 | 3.24.41 | 3.24.49 | 3.24.52 | 3.24.52 |
+| GLib | 2.74.6 | 2.80.0 | 2.84.4 | 2.88.0 | 2.90.0 |
+| Pango | 1.50.12 | 1.52.1 | 1.56.3 | 1.57.0 | 1.58.0, 1.58.2 |
+| AT-SPI (at-spi2-core) | 2.46.0 | 2.52.0 | 2.56.2 | 2.60.4 | 2.62.0 |
+| PyGObject | 3.42.2 | 3.48.2 | 3.50.0 | 3.56.2 | 3.58.0 |
+| Twisted | 22.4.0 | 24.3.0 | 24.11.0 | 25.5.0 | 26.4.0 |
+| attrs | 22.2.0 | 23.2.0 | 25.3.0 | 25.4.0 | 26.1.0 |
+| tomlkit | 0.11.7 | 0.12.4 | 0.13.2 | 0.13.3 | 0.13.3 |
+| markdown-it-py | 2.1.0 | 3.0.0 | 3.0.0 | 3.0.0 | 4.2.0 |
+| pygraphviz | 1.7 | 1.7 | 1.14 | 1.14 | 1.14 |
+| zope.interface | 5.5.2 | 6.1 | 7.2 | 8.2 | 8.6 |
+| pyOpenSSL | 23.0.0 | 23.2.0 | 25.0.0 | 25.3.0 | 26.4.0 |
+| OpenSSL | 3.0.22 | 3.0.13 | 3.5.7 | 3.5.5 | 3.6.4, 3.6.5 |
+| QEMU | 7.2 | 8.2.2 | 10.0.13 | 10.2.1 | 11.1.1, 11.1.2 |
+| vde2-cryptcab | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 |
 
 The versions are those of the packages, without the revision of the
 distribution.
 
-## Gone with Ubuntu 22.04
+## Gone with Debian 12
 
-Ubuntu 22.04 is the only target with Python 3.10, attrs 21 and QEMU 6.2.
+Debian 12 is the only target with Python 3.11, attrs 22, PyGObject 3.42,
+Twisted 22 and QEMU 7.2.
 
-### W1. tomllib, else tomli
+### W5. The "qemu:" lines in the help of QEMU 7.2
 
-- **Why:** Python 3.10 has no `tomllib`; it came in 3.11.
-- **Needed on:** Ubuntu 22.04 (3.10.6). Debian 12 (3.11.2) and later have it.
-- **Where:** `virtualbricks/config/tomlfile.py` and `e2e/steps.py`, "import
-  tomli as tomllib"; `pyproject.toml`, the dependency `tomli>=1.2;
-  python_version < '3.11'`.
-- **Removing it:** `import tomllib` alone, and the dependency goes.
-
-### W2. attr.define, not attrs.define
-
-- **Why:** attrs 21.2.0 has no `attrs` namespace; it came in 21.3.0.
-- **Needed on:** Ubuntu 22.04 (21.2.0). Debian 12 (22.2.0) and later have it.
-- **Where:** `virtualbricks/config/schema.py`, "define = attr.define".
-- **Removing it:** optional: attrs keeps `attr` too. `from attrs import define`
-  if the new names are wanted.
-
-### W3. Unpack from typing_extensions
-
-- **Why:** Python 3.10 has no `typing.Unpack`; it came in 3.11.
-- **Needed on:** Ubuntu 22.04 (3.10.6), for the type checker only: the import
-  is under `TYPE_CHECKING`, and typing_extensions isn't a dependency.
-- **Where:** `virtualbricks/migrate/gui.py` and `virtualbricks/migrate/cli.py`,
-  "from typing_extensions import Unpack".
-- **Removing it:** `from typing import Unpack`.
-
-### W4. The audio drivers of QEMU 6.2, taken on trust
-
-- **Why:** QEMU 6.2 can't list its audio drivers (`-audiodev help` fails), so
-  a sound card's driver can't be checked before the machine starts.
-- **Needed on:** Ubuntu 22.04 (QEMU 6.2).
-- **Where:** `virtualbricks/programs.py`, `QemuInfo.audio_drivers` ("None when
-  the program can't list them") and `qemu_info()`, "if audio.status == 0
-  else None"; `virtualbricks/bricks/virtualmachine.py`,
-  `VirtualMachineDraft.note()` ("doesn't list its drivers") and `lacks()`
-  ("QEMU 6.2 doesn't list its drivers").
-- **Removing it:** `audio_drivers` is always a set; the note and the `None`
-  checks go.
-
-### W5. The "qemu:" lines in the help of QEMU 6.2
-
-- **Why:** QEMU 6.2 writes a message for each module it leaves out among the
-  lines of a `help` list.
-- **Needed on:** Ubuntu 22.04 (QEMU 6.2). Whether later QEMU write them wasn't
-  checked: check on the oldest QEMU left before removing it.
-- **Where:** `virtualbricks/programs.py`, `_items()`, "as QEMU 6.2 writes
+- **Why:** QEMU 7.2 writes a message for each module it leaves out among the
+  lines of a `help` list, as "qemu: module ui-ui-gtk not found, do you want
+  to install qemu-system-gui package?" under `-display help` without
+  `qemu-system-gui`.
+- **Needed on:** Debian 12 (QEMU 7.2). QEMU 8.2 of Ubuntu 24.04 and later,
+  without `qemu-system-gui`, list only what they have: checked on 20
+  October 2026.
+- **Where:** `virtualbricks/programs.py`, `_items()`, "as QEMU 7.2 writes
   them".
 
-QEMU 6.2 is also the oldest QEMU supported on its own terms (every major
-version from 6.2): W4 and W5 go when that promise changes, which may be later
-than Ubuntu 22.04.
+QEMU 7.2 is also the oldest QEMU supported: W5 goes when that changes.
 
-### The floors that follow Ubuntu 22.04
+### W15. AttrsInstance only for the type checker
 
-The oldest versions that Virtualbricks asks for are those of Ubuntu 22.04.
-With it gone, raise them to those of Debian 12:
+- **Why:** attrs 22.2 has `AttrsInstance` in its types only; it came in
+  `attr` itself in 23.1.
+- **Needed on:** Debian 12 (22.2.0). Ubuntu 24.04 (23.2.0) and later have
+  it.
+- **Where:** `virtualbricks/bricks/draft.py`, "has AttrsInstance in its types
+  only", imported under `TYPE_CHECKING`.
+- **Removing it:** optional: `from attr import AttrsInstance` with the other
+  imports.
 
-| Where | Now | Debian 12 |
+### The floors that follow Debian 12
+
+The oldest versions that Virtualbricks asks for are those of Debian 12.
+With it gone, raise them to those of Ubuntu 24.04:
+
+| Where | Now | Ubuntu 24.04 |
 |---|---|---|
-| `pyproject.toml`, `requires-python` | `>=3.10` | `>=3.11` |
-| `pyproject.toml`, `[tool.black]` and `[tool.ruff]` | `py310` | `py311` |
-| `pyproject.toml`, `Twisted[tls]` | `>=22.1` | `>=22.4` |
-| `pyproject.toml`, `pyOpenSSL` | `>=21.0` | `>=23.0` |
-| `pyproject.toml`, `attrs` | `>=20.1` | `>=22.2` |
-| `pyproject.toml`, `markdown-it-py` | `>=1.1` | `>=2.1` |
-| `pyproject.toml`, `zope.interface` | `>=5.4` | `>=5.5` |
-| `pyproject.toml`, `tomlkit` | `>=0.9` | `>=0.11` |
-| `pyproject.toml`, `tomli` | `>=1.2` | gone (W1) |
-| `README.md`, Requirements | "Python 3.10 or newer" | 3.11 |
-| `README.md`, Development | "has to run on Python 3.10" | 3.11 |
+| `pyproject.toml`, `requires-python` | `>=3.11` | `>=3.12` |
+| `pyproject.toml`, `[tool.black]` and `[tool.ruff]` | `py311` | `py312` |
+| `pyproject.toml`, `[tool.mypy]`, `python_version` | `3.11` | `3.12` |
+| `pyproject.toml`, `Twisted[tls]` | `>=22.4` | `>=24.3` |
+| `pyproject.toml`, `pyOpenSSL` | `>=23.0` | `>=23.2` |
+| `pyproject.toml`, `attrs` | `>=22.2` | `>=23.2` |
+| `pyproject.toml`, `markdown-it-py` | `>=2.1` | `>=3.0` |
+| `pyproject.toml`, `zope.interface` | `>=5.5` | `>=6.1` |
+| `pyproject.toml`, `tomlkit` | `>=0.11` | `>=0.12` |
+| `pyproject.toml`, `PyGObject` | `>=3.42` | `>=3.48` |
+| `README.md`, Requirements | "Python 3.11 or newer" | 3.12 |
+| `README.md`, Requirements | "QEMU 7.2 and newer" | 8.2 |
+| `README.md`, Development | "has to run on Python 3.11" | 3.12 |
 
-PyGObject (`>=3.42`) and pygraphviz (`>=1.7`) stay: Debian 12 has 3.42.2
-and 1.7.
+pygraphviz (`>=1.7`) stays: Ubuntu 24.04 has 1.7.
 
 ## Gone with Debian 12 and Ubuntu 24.04
 
@@ -125,12 +99,25 @@ and 1.7.
   which `-cpu` takes as Fujitsu-MB86904; or the names alone without a
   heading, as m68k, sh4, RISC-V, avr and loongarch64. From QEMU 9 every
   architecture indents them under a heading.
-- **Needed on:** Ubuntu 22.04 (6.2), Debian 12 (7.2), Ubuntu 24.04 (8.2.2).
-  No target has QEMU 9; Debian 13 has 10.0.
+- **Needed on:** Debian 12 (7.2), Ubuntu 24.04 (8.2.2). No target has QEMU
+  9; Debian 13 has 10.0.
 - **Where:** `virtualbricks/programs.py`, `_cpu()` and `parse_cpus()`, "Up
   to QEMU 8".
 - **Removing it:** only the indented lines; when the oldest QEMU supported is
   9 or later.
+
+### W16. TypeIs from typing_extensions
+
+- **Why:** Python 3.12 and older have no `typing.TypeIs`; it came in 3.13.
+- **Needed on:** Debian 12 (3.11.2) and Ubuntu 24.04 (3.12.3), for the type
+  checker only: the import is under `TYPE_CHECKING`, and typing_extensions
+  isn't a dependency.
+- **Where:** `virtualbricks/bricks/event.py`,
+  `virtualbricks/bricks/switchwrapper.py` and
+  `virtualbricks/bricks/virtualmachine.py`, "from typing_extensions import
+  TypeIs".
+- **Removing it:** `from typing import TypeIs`, once mypy's `python_version`
+  is 3.13.
 
 ## Needed on every target
 
@@ -144,7 +131,7 @@ in the move to GTK 4 (`docs/redesign/18 - gtk4-migration.html`).
   allocated: `gtk_widget_size_allocate()` clears it afterwards ("Size
   allocation is god" in `gtkwidget.c`). Whatever changes a size on
   `size-allocate` does it in an idle call.
-- **Needed on:** every target (GTK 3.24.33 to 3.24.52).
+- **Needed on:** every target (GTK 3.24.38 to 3.24.52).
 - **Where:** "GTK would lose" and "GTK forgets":
   - `virtualbricks/gui/mainwindow/topologyview.py`,
     `TopologyView.on_allocated()` → `_fit_later()`;
@@ -203,7 +190,7 @@ in the move to GTK 4 (`docs/redesign/18 - gtk4-migration.html`).
   without their breaks. `MarkdownLabel` joins the lines of the README with a
   line separator, which doesn't end the paragraph, and keeps only the lines
   that fit.
-- **Needed on:** every target (Pango 1.50.6 to 1.58.2); GTK 4 lays out its
+- **Needed on:** every target (Pango 1.50.12 to 1.58.2); GTK 4 lays out its
   labels with Pango too.
 - **Where:** `virtualbricks/gui/markdownview.py`, `MarkdownLabel` and its
   `fit()`, `LINE_SEPARATOR`.
@@ -214,7 +201,7 @@ in the move to GTK 4 (`docs/redesign/18 - gtk4-migration.html`).
   its legacy provider, and loads only when told. Each end of a tunnel writes
   an OpenSSL configuration that loads it, and starts vde_cryptcab with
   `OPENSSL_CONF` naming it.
-- **Needed on:** every target (OpenSSL 3.0.2 to 3.6.5, vde2-cryptcab
+- **Needed on:** every target (OpenSSL 3.0.13 to 3.6.5, vde2-cryptcab
   2.3.2+r586 everywhere). It goes only if vde_cryptcab changes its cipher. An
   OpenSSL without the legacy provider would stop the tunnels altogether.
 - **Where:** `virtualbricks/bricks/tunnellisten.py`, `OPENSSL_CONFIG`,
@@ -228,7 +215,7 @@ in the move to GTK 4 (`docs/redesign/18 - gtk4-migration.html`).
   'GTK_IS_WIDGET (widget)' failed`: `gtk_status_icon_update_image()` asks
   the scale factor of the image before it checks that there is one. There
   the icon goes without its picture, which no tray would show anyway.
-- **Needed on:** every target (GTK 3.24.33 to 3.24.52, and the branch
+- **Needed on:** every target (GTK 3.24.38 to 3.24.52, and the branch
   gtk-3-24 still so). It goes with `Gtk.StatusIcon`, which GTK 4 doesn't
   have.
 - **Where:** `virtualbricks/gui/mainwindow/window.py`,
@@ -239,7 +226,7 @@ in the move to GTK 4 (`docs/redesign/18 - gtk4-migration.html`).
 
 The tests in `e2e/` run Virtualbricks on `broadwayd`, GTK 3's HTML5 backend,
 and find its widgets through AT-SPI. These workarounds are for limits of GTK
-3 on Broadway and of what GTK 3 tells AT-SPI, on every target (GTK 3.24.33 to
+3 on Broadway and of what GTK 3 tells AT-SPI, on every target (GTK 3.24.38 to
 3.24.52): they go, or change, with GTK 4. `e2e/README.md` (What it can't do
 yet) and `e2e/TODO.md` (Out of reach on Broadway) have the limits that have
 no workaround, such as drag and drop.
@@ -290,8 +277,7 @@ no workaround, such as drag and drop.
 ### E7. The browser speaks the Broadway of GTK 3
 
 - **Why:** `e2e/broadway.py` speaks the protocol of `broadway.js` of GTK
-  3.24; that of GTK 4 differs. On Ubuntu 22.04, `gtk4-broadwayd` (GTK 4.6.9)
-  crashes with any window: with GTK 4 there, the tests would need Xvfb.
+  3.24; that of GTK 4 differs.
 - **Where:** `e2e/broadway.py`, `e2e/recording.py`.
 
 ## Keeping this list

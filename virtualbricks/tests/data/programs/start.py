@@ -57,9 +57,8 @@ PACKAGES = (
     "python3-attr",
     "python3-tomlkit",
 )
-# Needed before Python 3.11, and not packaged after; riscv and s390x are in
-# qemu-system-misc where they're missing.
-OPTIONAL = ("python3-tomli", "qemu-system-riscv", "qemu-system-s390x")
+# riscv and s390x are in qemu-system-misc where they're missing.
+OPTIONAL = ("qemu-system-riscv", "qemu-system-s390x")
 VERSIONS = ("qemu-system-x86", "vde2", "python3", "python3-twisted")
 # The tap needs /dev/net/tun and the capture a raw socket.
 PODMAN = (

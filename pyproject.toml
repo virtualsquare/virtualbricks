@@ -10,20 +10,19 @@ readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Virtualbricks team" }]
 license = "GPL-2.0-or-later"
 license-files = ["COPYING", "LICENCE"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "pygraphviz>=1.7",
     # tls: pyOpenSSL and service-identity, for the ssl sockets
-    "Twisted[tls]>=22.1",
-    # the certificates of the ssl sockets, and of their clients: 21.0 is the
-    # python3-openssl of Ubuntu 22.04, the oldest of Debian and Ubuntu
-    "pyOpenSSL>=21.0",
-    "attrs>=20.1",
-    "markdown-it-py>=1.1",
-    "zope.interface>=5.4",
+    "Twisted[tls]>=22.4",
+    # the certificates of the ssl sockets, and of their clients: 23.0 is the
+    # python3-openssl of Debian 12, the oldest of Debian and Ubuntu
+    "pyOpenSSL>=23.0",
+    "attrs>=22.2",
+    "markdown-it-py>=2.1",
+    "zope.interface>=5.5",
     "PyGObject>=3.42",
-    "tomli>=1.2; python_version < '3.11'",
-    "tomlkit>=0.9",
+    "tomlkit>=0.11",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -54,8 +53,8 @@ dev = [
     # the types; mypy-zope holds mypy to the versions it supports
     "mypy>=2.4",
     "mypy-zope>=1.0.17",
-    # The types of the libraries: Twisted, attrs, tomlkit and tomli ship
-    # theirs, mypy-zope has zope.interface's. There are none for pygraphviz.
+    # The types of the libraries: Twisted, attrs and tomlkit ship theirs,
+    # mypy-zope has zope.interface's. There are none for pygraphviz.
     # The stubs are of GTK 4 unless PYGOBJECT_STUB_CONFIG=Gtk3,Gdk3 at their
     # install: see Setting up in README.md.
     "PyGObject-stubs>=2.17",
@@ -130,11 +129,11 @@ exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:"]
 
 [tool.black]
 line-length = 79
-target-version = ["py310"]
+target-version = ["py311"]
 
 [tool.ruff]
 line-length = 79
-target-version = "py310"
+target-version = "py311"
 extend-exclude = ["_trial_temp"]
 
 [tool.ruff.lint]
@@ -154,7 +153,7 @@ known-first-party = ["virtualbricks"]
 # mypy alone checks these; the tests are left out
 files = ["virtualbricks", "tools"]
 exclude = ["^virtualbricks/tests/"]
-python_version = "3.10"
+python_version = "3.11"
 # the interfaces of zope.interface and @implementer
 plugins = ["mypy_zope:plugin"]
 warn_unused_ignores = true

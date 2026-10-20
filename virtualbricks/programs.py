@@ -233,8 +233,7 @@ class QemuInfo:
     cpus: tuple[Entry, ...]
     devices: tuple[Device, ...]
     displays: frozenset[str]
-    # None when the program can't list them, as QEMU 6.2
-    audio_drivers: frozenset[str] | None
+    audio_drivers: frozenset[str]
     netdevs: frozenset[str]
     accelerators: frozenset[str]
 
@@ -302,7 +301,7 @@ def _items(text: str) -> list[str]:
     for line in lines[index + 1 :]:
         if not line.strip():
             break
-        # the messages of a module left out, as QEMU 6.2 writes them
+        # the messages of a module left out, as QEMU 7.2 writes them
         if not line.startswith("qemu:"):
             items.append(line)
     return items
@@ -458,7 +457,6 @@ def qemu_info(path: str, answers: Mapping[str, Answer]) -> QemuInfo:
     """What the answers to QEMU_QUESTIONS say about the program."""
 
     machines, default = parse_machines(answers["machines"].out)
-    audio = answers["audio_drivers"]
     return QemuInfo(
         path=path,
         version=parse_version(answers["version"].out),
@@ -468,7 +466,7 @@ def qemu_info(path: str, answers: Mapping[str, Answer]) -> QemuInfo:
         cpus=parse_cpus(answers["cpus"].out),
         devices=parse_devices(answers["devices"].out),
         displays=parse_names(answers["displays"].out),
-        audio_drivers=parse_names(audio.out) if audio.status == 0 else None,
+        audio_drivers=parse_names(answers["audio_drivers"].out),
         netdevs=parse_names(answers["netdevs"].out),
         accelerators=parse_names(answers["accelerators"].out),
     )

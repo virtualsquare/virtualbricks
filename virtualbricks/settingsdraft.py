@@ -59,8 +59,7 @@ from virtualbricks.programs import FolderPrograms
 # the place of the console as its terminal takes a program and its arguments
 # (page 32): x-terminal-emulator, that of the desktop on Debian and Ubuntu,
 # first. Each one was run on every target that has its terminal. GNOME
-# Console 42, of Ubuntu 22.04, takes the console as one string after -e, as
-# the later ones do too.
+# Console takes the console as one string after -e.
 TERMINALS = (
     "x-terminal-emulator -e {command}",
     "gnome-terminal -- {command}",
@@ -111,7 +110,7 @@ class Facts:
     vde: FolderPrograms | None = None
     qemu: FolderPrograms | None = None
     # the version of the QEMU of the folder, as "10.0.11", and its audio
-    # drivers, None if it lists none, as QEMU 6.2
+    # drivers
     qemu_version: str = ""
     audio_drivers: frozenset[str] | None = None
     # whether the machine of the bricks has KSM
@@ -212,16 +211,6 @@ class SettingsDraft(Draft):
             if facts.where:
                 return _("{where} has no KSM").format(where=facts.where)
             return _("This Linux has no KSM")
-        if (
-            name == "audio_driver"
-            and facts.qemu_version
-            and facts.audio_drivers is None
-        ):
-            # QEMU 6.2
-            return _(
-                "QEMU {version} doesn't list its drivers: this one is taken on"
-                " trust"
-            ).format(version=facts.qemu_version)
         if name == "qemu_path":
             return self._qemu_note()
         if name == "vde_path":

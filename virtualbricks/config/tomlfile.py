@@ -19,10 +19,10 @@
 """
 Read and write TOML files.
 
-Reading uses tomllib, or tomli before Python 3.11. Writing uses tomlkit with a
-fixed layout: plain values first, then tables. A list of tables is written as
-``[[…]]`` blocks, unless its tables are small enough for one line each.
-Files are replaced atomically.
+Reading uses tomllib. Writing uses tomlkit with a fixed layout: plain values
+first, then tables. A list of tables is written as ``[[…]]`` blocks, unless
+its tables are small enough for one line each. Files are replaced
+atomically.
 
 A file can start with a header, and a key written on its own line can have a
 note: its description on the lines above it, and ``# default`` beside it when
@@ -35,15 +35,10 @@ import datetime
 import os
 import re
 import stat
-import sys
 import textwrap
+import tomllib
 from collections.abc import Mapping
 from typing import NamedTuple, TypeAlias, TypeGuard
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:  # pragma: no cover (Python 3.10)
-    import tomli as tomllib
 
 import tomlkit
 from tomlkit import items

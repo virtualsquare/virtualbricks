@@ -46,13 +46,8 @@ import sys
 import tarfile
 import tempfile
 import time
+import tomllib
 import urllib.parse
-
-try:
-    import tomllib
-except ImportError:
-    # before Python 3.11
-    import tomli as tomllib
 
 import cairo
 import harness

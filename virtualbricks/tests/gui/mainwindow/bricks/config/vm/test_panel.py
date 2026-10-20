@@ -310,7 +310,7 @@ class TestOverAConnection(MachinePanelTestCase):
 
 class TestWhatItLacks(MachinePanelTestCase):
 
-    target = "ubuntu-22.04"
+    target = "ubuntu-24.04"
 
     def prepare(self):
         self.vm.update_config(
@@ -321,24 +321,22 @@ class TestWhatItLacks(MachinePanelTestCase):
         )
         self.vm.add_plug(self.switch.socks[0], "52:54:00:00:00:01", "e1000")
         self.vm.add_plug(hostonly_sock, "52:54:00:00:00:02", "e1000")
-        set_setting("audio_driver", "alsa")
+        set_setting("audio_driver", "sndio")
 
     def test_the_words_of_the_start(self):
         rows = self.panel.rows
         self.assertFalse(rows["machine_type"].problem.get_visible())
         self.assertEqual(
             rows["sound_card"].problem.get_text(),
-            "QEMU 6.2.0 has no sound card virtio-sound-pci: the machine has none",
+            "QEMU 8.2.2 has no audio driver sndio: the machine has no sound"
+            " card",
         )
-        # 6.2 lists no drivers
         self.assertEqual(
-            rows["audio_driver"].caption.get_text(),
-            "From the settings · QEMU 6.2.0 doesn't list its drivers: this"
-            " one is taken on trust",
+            rows["audio_driver"].caption.get_text(), "From the settings"
         )
         self.assertEqual(
             self.panel.cards.lack.get_text(),
-            "QEMU 6.2.0 can't join a VDE switch: card 0 unplugged; install a"
+            "QEMU 8.2.2 can't join a VDE switch: card 0 unplugged; install a"
             " QEMU built with VDE",
         )
         self.assertTrue(self.panel.cards.lack.get_visible())

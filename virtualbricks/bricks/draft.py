@@ -53,7 +53,7 @@ from virtualbricks.config.settings import get_setting
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:  # pragma: no cover
-    # attrs 21.2, of Ubuntu 22.04, has no AttrsInstance yet
+    # attrs 22.2, of Debian 12, has AttrsInstance in its types only
     from attr import AttrsInstance
 
 R = TypeVar("R", bound="AttrsInstance")

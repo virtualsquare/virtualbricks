@@ -659,7 +659,7 @@ class TestMachine(LinesTestCase):
         self.assertEqual(argv[1:3], ["-machine", "acpi=off"])
         # a machine without the property, on a QEMU with the old option
         prepared = attr.evolve(
-            prepared_qemu("ubuntu-22.04"), machine_properties=frozenset()
+            prepared_qemu("debian-12"), machine_properties=frozenset()
         )
         argv, warnings = self.line(vm, prepared)
         self.assertEqual(argv[1], "-no-acpi")
@@ -678,12 +678,6 @@ class TestMachine(LinesTestCase):
             argv[5:9],
             ["-audiodev", "pa,id=snd0", "-device", "sb16,audiodev=snd0"],
         )
-        # QEMU 6.2 can't list its drivers: the one of the settings is taken
-        argv, warnings = self.line(
-            vm, prepared_qemu("ubuntu-22.04", driver="x")
-        )
-        self.assertEqual(argv[5:7], ["-audiodev", "x,id=snd0"])
-        self.assertEqual(warnings, [])
 
     def test_pc_speaker(self):
         vm = self.brick("qemu", "vm", sound_card="pcspk", machine_type="q35")

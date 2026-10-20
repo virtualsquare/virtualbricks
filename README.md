@@ -10,7 +10,7 @@ software-defined.
 
 ## Requirements
 
-Virtualbricks needs Python 3.10 or newer and GTK 3.
+Virtualbricks needs Python 3.11 or newer and GTK 3.
 
 pip installs the Python libraries that Virtualbricks depends on, but two of
 them are built against libraries of your system, which pip can't install:
@@ -40,7 +40,7 @@ sudo apt install qemu-system-x86 qemu-system-gui qemu-utils vde2 \
 ```
 
 - `qemu-system-*` for each architecture of your VMs, and `qemu-img`;
-  `qemu-system-gui` has the windows of the machines, SDL and GTK. QEMU 6.2
+  `qemu-system-gui` has the windows of the machines, SDL and GTK. QEMU 7.2
   and newer: before a machine starts, Virtualbricks asks its QEMU what it
   has, and a setting that this QEMU lacks is left out, with a warning in
   *File › Logs*. Ubuntu builds its QEMU without VDE, which a machine needs to
@@ -345,7 +345,7 @@ PYGOBJECT_STUB_CONFIG=Gtk3,Gdk3 pip install --no-deps --no-cache-dir \
 With the stubs of GTK 4, mypy finds hundreds of errors such as `"Box" has no
 attribute "pack_start"`.
 
-The code has to run on Python 3.10, the oldest that is supported, so it is
+The code has to run on Python 3.11, the oldest that is supported, so it is
 best to work with that one.
 
 To try your changes without touching your own settings and projects, give

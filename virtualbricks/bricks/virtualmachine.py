@@ -938,16 +938,6 @@ class VirtualMachineDraft(Draft):
         self.qemu: QemuInfo | None = None
         self.machine_properties: frozenset[str] = frozenset()
 
-    def note(self, name: str) -> str:
-        qemu = self.qemu
-        if name == "audio_driver" and qemu and qemu.audio_drivers is None:
-            # QEMU 6.2
-            return _(
-                "QEMU {version} doesn't list its drivers: this one is taken on"
-                " trust"
-            ).format(version=qemu.version)
-        return ""
-
     # the cards
 
     def add_card(self) -> int:
@@ -1675,9 +1665,7 @@ def lacks(
             )
         )
     card = config.sound_card
-    # QEMU 6.2 doesn't list its drivers: the driver is taken on trust
-    drivers = qemu.audio_drivers
-    if card and drivers is not None and audio_driver not in drivers:
+    if card and audio_driver not in qemu.audio_drivers:
         found.append(
             Lack(
                 "sound_card",

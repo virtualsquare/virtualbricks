@@ -391,12 +391,11 @@ class SettingsWindow(Window):
                 qemu_version=str(info.version),
                 audio_drivers=info.audio_drivers,
             )
-            if info.audio_drivers is not None:
-                playing, others = audio_drivers(info.audio_drivers)
-                set_options(
-                    self.audio_combo,
-                    playing + ([""] if playing and others else []) + others,
-                )
+            playing, others = audio_drivers(info.audio_drivers)
+            set_options(
+                self.audio_combo,
+                playing + ([""] if playing and others else []) + others,
+            )
 
         def failed(failure: Failure) -> None:
             # no facts: the rows say nothing more

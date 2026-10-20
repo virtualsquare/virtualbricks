@@ -33,6 +33,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tomllib
 import xml.etree.ElementTree as ET
 
 from twisted.trial import unittest
@@ -170,11 +171,6 @@ class TestTheInstall(PagesTestCase):
         The files installed in folder: the patterns of its data-files,
         expanded as setuptools does, from the root of the sources.
         """
-
-        if sys.version_info >= (3, 11):
-            import tomllib
-        else:
-            import tomli as tomllib
 
         with open(os.path.join(ROOT, "pyproject.toml"), "rb") as file:
             project = tomllib.load(file)

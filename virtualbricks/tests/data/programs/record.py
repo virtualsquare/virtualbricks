@@ -84,7 +84,6 @@ OLD_RELEASES = (
 # The target distributions, and Ubuntu 25.04 for QEMU 9, which none of them
 # ships.
 TARGETS: dict[str, str] = {
-    "ubuntu-22.04": "docker.io/library/ubuntu:22.04",
     "debian-12": "docker.io/library/debian:bookworm",
     "ubuntu-24.04": "docker.io/library/ubuntu:24.04",
     "ubuntu-25.04": "docker.io/library/ubuntu:25.04",

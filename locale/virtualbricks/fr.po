@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-20 09:14+0200\n"
+"POT-Creation-Date: 2026-10-20 11:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1037,11 +1037,6 @@ msgstr ""
 
 #: virtualbricks/bricks/virtualmachine.py
 msgid "Give the machine ACPI"
-msgstr ""
-
-#: virtualbricks/bricks/virtualmachine.py virtualbricks/settingsdraft.py
-#, python-brace-format
-msgid "QEMU {version} doesn't list its drivers: this one is taken on trust"
 msgstr ""
 
 #: virtualbricks/bricks/virtualmachine.py
