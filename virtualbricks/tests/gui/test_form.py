@@ -557,7 +557,7 @@ class TestATextWithAMenu(FormTestCase):
         made.section("Windows")
         combo = made.combo_entry("terminal", ["xterm", "", "konsole"])
         entry = combo.get_child()
-        self.assertEqual(entry.get_text(), "x-terminal-emulator")
+        self.assertEqual(entry.get_text(), "x-terminal-emulator -e {command}")
         self.assertIs(made.rows["terminal"].title.get_mnemonic_widget(), entry)
         combo.set_active_id("konsole")
         self.assertEqual(draft.get("terminal"), "konsole")

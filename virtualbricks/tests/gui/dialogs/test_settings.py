@@ -177,7 +177,9 @@ class TestPages(WindowTestCase):
         terminal = row(window, "terminal")
         self.assertEqual(terminal.title.get_text(), "Terminal")
         self.assertEqual(
-            terminal.help, "The terminal that opens the consoles of the bricks"
+            terminal.help,
+            "The terminal that opens the consoles of the bricks: {command} is"
+            " the console, {name} the name of the brick",
         )
         self.assertEqual(
             row(window, "allow_female_plugs").title.get_text(),
@@ -241,7 +243,9 @@ class TestOk(WindowTestCase):
         control(window, "kernel_samepage_merging").set_active(True)
         window.on_response(window.dialog, Gtk.ResponseType.CANCEL)
         self.assertEqual(self.closed, [True])
-        self.assertEqual(get_setting("terminal"), "x-terminal-emulator")
+        self.assertEqual(
+            get_setting("terminal"), "x-terminal-emulator -e {command}"
+        )
         self.assertFalse(os.path.exists(locations.settings_file()))
         self.assertEqual(self.ksm, [])
 

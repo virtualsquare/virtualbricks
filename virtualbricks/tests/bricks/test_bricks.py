@@ -21,10 +21,12 @@
 import os
 
 from twisted.internet import defer, task
+from twisted.trial import unittest
 
 from virtualbricks import bricks, errors
-from virtualbricks.bricks import BaseConfig, BrickConfig
+from virtualbricks.bricks import BaseConfig, BrickConfig, terminal_command
 from virtualbricks.bricks.eventaction import StartAction
+from virtualbricks.config import settings
 from virtualbricks.config.report import Report
 from virtualbricks.config.schema import field_names, info_of, kind_of
 from virtualbricks.tests import (
@@ -323,3 +325,147 @@ class TestRestart(BrickTestCase):
         self.assertEqual(self.done, [("off", {}), ("off", {"kill": True})])
         self.stopped.callback(None)
         self.assertEqual(self.done[-1], "on")
+
+
+VDETERM = ["/usr/bin/vdeterm", "/run/vb/lab/sw1.mgmt"]
+
+
+class TestTerminalCommand(unittest.TestCase):
+    """The line of the terminal that opens a console (page 32)."""
+
+    def line(self, setting, command=VDETERM, name="sw1"):
+        return terminal_command(setting, command, name)
+
+    def test_the_place_of_the_console(self):
+        self.assertEqual(
+            self.line("gnome-terminal -- {command}"),
+            ["gnome-terminal", "--", *VDETERM],
+        )
+        # the words split as the shell splits them, without a shell
+        self.assertEqual(
+            self.line("xterm -fa 'DejaVu Sans Mono' -e {command}"),
+            ["xterm", "-fa", "DejaVu Sans Mono", "-e", *VDETERM],
+        )
+
+    def test_without_the_place(self):
+        # -e at the end, as the terminal used to be run
+        self.assertEqual(self.line("xterm"), ["xterm", "-e", *VDETERM])
+        self.assertEqual(
+            self.line("/usr/bin/xterm -hold"),
+            ["/usr/bin/xterm", "-hold", "-e", *VDETERM],
+        )
+
+    def test_inside_a_word(self):
+        # the console quoted for the shell, which reads that word
+        command = ["/usr/bin/vdeterm", "/run/my lab/sw1.mgmt"]
+        self.assertEqual(
+            self.line("foot sh -c '{command}; read'", command),
+            [
+                "foot",
+                "sh",
+                "-c",
+                "/usr/bin/vdeterm '/run/my lab/sw1.mgmt'; read",
+            ],
+        )
+
+    def test_in_quotes(self):
+        # one word, as the shell keeps a quoted word: for a terminal that
+        # takes one string
+        for setting in ("xfce4-terminal -e '{command}'", 'sh -c "{command}"'):
+            self.assertEqual(
+                self.line(setting)[-1], "/usr/bin/vdeterm /run/vb/lab/sw1.mgmt"
+            )
+        # quotes around a word that is the place only in part
+        self.assertEqual(
+            self.line("x {command}''"),
+            ["x", "/usr/bin/vdeterm /run/vb/lab/sw1.mgmt"],
+        )
+
+    def test_the_name(self):
+        self.assertEqual(
+            self.line("xterm -T {name} -e {command}"),
+            ["xterm", "-T", "sw1", "-e", *VDETERM],
+        )
+        self.assertEqual(
+            self.line("kgx '--title=Console of {name}' -- {command}"),
+            ["kgx", "--title=Console of sw1", "--", *VDETERM],
+        )
+        # the name isn't the place of the console
+        self.assertEqual(
+            self.line("xterm -T {name}"),
+            ["xterm", "-T", "sw1", "-e", *VDETERM],
+        )
+
+    def test_other_braces(self):
+        self.assertEqual(
+            self.line("xterm -T {title} -e {command}"),
+            ["xterm", "-T", "{title}", "-e", *VDETERM],
+        )
+        # what replaces a place isn't read again for places
+        command = ["/usr/bin/vdeterm", "/run/{name}/sw1.mgmt"]
+        self.assertEqual(
+            self.line("sh -c 'exec {command}'", command),
+            ["sh", "-c", "exec /usr/bin/vdeterm '/run/{name}/sw1.mgmt'"],
+        )
+
+    def test_no_line(self):
+        for setting in ("", "  "):
+            with self.assertRaisesRegex(errors.BadConfigError, "empty"):
+                self.line(setting)
+        with self.assertRaisesRegex(
+            errors.BadConfigError, "^The setting terminal can't be read: "
+        ):
+            self.line("xterm -T 'sw1")
+
+
+class FakeSpawner:
+    def __init__(self):
+        self.spawned = []
+
+    def spawnProcess(self, protocol, executable, args, env):
+        self.spawned.append((executable, args))
+
+
+class TestOpenConsole(BrickTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.folder = os.path.abspath(self.mktemp())
+        os.makedirs(self.folder)
+        for name in ("vdeterm", "unixterm"):
+            path = os.path.join(self.folder, name)
+            with open(path, "w") as fp:
+                fp.write("#!/bin/sh\n")
+            os.chmod(path, 0o755)
+        settings.set_setting("vde_path", self.folder)
+        self.reactor = FakeSpawner()
+        self.patch(bricks, "_reactor", lambda: self.reactor)
+
+    def test_the_line_of_the_setting(self):
+        settings.set_setting("terminal", "xterm -T {name} -e {command}")
+        switch = self.factory.new_brick("switch", "sw1")
+        switch.open_console()
+        vdeterm = os.path.join(self.folder, "vdeterm")
+        self.assertEqual(
+            self.reactor.spawned,
+            [
+                (
+                    "xterm",
+                    ["xterm", "-T", "sw1", "-e", vdeterm, switch.console()],
+                )
+            ],
+        )
+
+    def test_a_machine(self):
+        vm = self.factory.new_brick("qemu", "vm1")
+        vm.open_console()
+        unixterm = os.path.join(self.folder, "unixterm")
+        self.assertEqual(
+            self.reactor.spawned,
+            [
+                (
+                    "x-terminal-emulator",
+                    ["x-terminal-emulator", "-e", unixterm, vm.console()],
+                )
+            ],
+        )

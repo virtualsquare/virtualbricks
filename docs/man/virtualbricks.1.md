@@ -827,7 +827,7 @@ for a Virtualbricks that asks for one. See **Sockets on the network**.
 
 **setting set** *KEY*=*VALUE*...
 :   Change settings, all or none.
-    For example, **setting set terminal=/usr/bin/gnome-terminal**.
+    For example, **setting set terminal="gnome-terminal -- {command}"**.
 
 **setting unset** *KEY*...
 :   Put settings back to their defaults.

@@ -24,6 +24,7 @@ from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
     Bool,
     Choice,
+    Command,
     Float,
     Int,
     IPv4,
@@ -207,6 +208,17 @@ class TestStrings(unittest.TestCase):
         kind.check("")
         with self.assertRaisesRegex(ValueError, '"ab" is not a number'):
             kind.check("ab")
+
+    def test_command(self):
+        kind = Command()
+        kind.check("gnome-terminal -- {command}")
+        kind.check("")
+        self.assertEqual(kind.parse("xterm -T 'a b'"), "xterm -T 'a b'")
+        with self.assertRaisesRegex(ValueError, "^a quote isn't closed$"):
+            kind.check("xterm -T 'a b")
+        with self.assertRaisesRegex(ValueError, "^it ends with a backslash$"):
+            kind.check("xterm \\")
+        self.assertRaises(ValueError, kind.check, 1)
 
     def test_path_and_ref(self):
         Path().check("/x")

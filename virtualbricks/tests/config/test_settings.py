@@ -89,7 +89,9 @@ class TestCheckFormat(unittest.TestCase):
 class TestValues(SettingsTestCase):
 
     def test_defaults(self):
-        self.assertEqual(get_setting("terminal"), "x-terminal-emulator")
+        self.assertEqual(
+            get_setting("terminal"), "x-terminal-emulator -e {command}"
+        )
         self.assertEqual(
             get_setting("workspace"),
             os.path.join(self.root, ".virtualbricks"),
@@ -330,7 +332,9 @@ class TestLoadStore(SettingsTestCase):
         dump_toml({"format": 2, "terminal": "/x"}, self.path())
         report = load_settings()
         self.assertTrue(report.has_errors)
-        self.assertEqual(get_setting("terminal"), "x-terminal-emulator")
+        self.assertEqual(
+            get_setting("terminal"), "x-terminal-emulator -e {command}"
+        )
         self.assertFalse(store_settings())
         self.assertEqual(load_toml(self.path())["format"], 2)
 
@@ -353,8 +357,9 @@ class TestLoadStore(SettingsTestCase):
             "\n# The version of the layout of this file\nformat = 1\n", text
         )
         self.assertIn(
-            "\n# The terminal that opens the consoles of the bricks\n"
-            '# (default "x-terminal-emulator")\n'
+            "\n# The terminal that opens the consoles of the bricks: {command}"
+            " is the console,\n# {name} the name of the brick"
+            ' (default "x-terminal-emulator -e {command}")\n'
             'terminal = "/usr/bin/foot"\n',
             text,
         )

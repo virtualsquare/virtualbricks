@@ -35,6 +35,7 @@ windows join it to the terminal.
 from __future__ import annotations
 
 import os
+import shlex
 import shutil
 from collections.abc import Callable
 from typing import TYPE_CHECKING, NoReturn
@@ -54,7 +55,12 @@ from twisted.python.failure import Failure
 
 from virtualbricks import locations
 from virtualbricks.brickfactory import BrickFactory
-from virtualbricks.bricks import Brick, TermProtocol, is_running
+from virtualbricks.bricks import (
+    Brick,
+    TermProtocol,
+    is_running,
+    terminal_command,
+)
 from virtualbricks.bricks.brickinfo import NO_CONSOLE
 from virtualbricks.bricks.virtualmachine import is_virtualmachine
 from virtualbricks.config.settings import get_setting
@@ -339,19 +345,21 @@ class Consoles:
         path = os.path.join(
             self._folder(), f"{self.count}-{brick.name}.{console}"
         )
+        # the line first: no socket for a setting that makes no line
+        args = terminal_command(
+            str(get_setting("terminal")), [program, path], brick.name
+        )
         terminal = Terminal(self, brick.name, console)
         endpoint = endpoints.UNIXServerEndpoint(self.reactor, path, mode=0o600)
         terminal.port = await endpoint.listen(terminal)
-        term = str(get_setting("terminal"))
-        args = [term, "-e", program, path]
         logger.info(
             console_open,
             name=brick.name,
             where=self.where,
-            args=" ".join(args),
+            args=shlex.join(args),
         )
         spawn = self.reactor.spawnProcess if self.spawn is None else self.spawn
-        spawn(TermProtocol(), term, args, os.environ)
+        spawn(TermProtocol(), args[0], args, os.environ)
 
     async def attach(self, terminal: Relay, name: str, console: str) -> None:
         """Join terminal to the console of the brick name there."""

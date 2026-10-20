@@ -1,0 +1,490 @@
+<title>The terminal command</title>
+<meta name="description" content="The terminal setting as a command line with a place for the console, {command}, so that any terminal opens the consoles of the bricks, with its own options: what runs today, the terminals of Debian checked, the values of before, the menu and the checks.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+  .ref.open { color: var(--decide); background: var(--decide-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+  .note { font-size: 14px; color: var(--muted); }
+  table.pages td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.pages td.from { color: var(--muted); font-size: 13.5px; }
+  table.pages tr.group td { font: 600 12px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); padding-top: 16px; }
+
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 32 &middot; Design &middot; revision 3, decided</div>
+    <h1>The terminal command</h1>
+    <p class="lede">The setting <code>terminal</code> names a program, and a console opens as <code><i>terminal</i> -e <i>program</i> <i>socket</i></code>, so only a terminal that takes <code>-e</code> that way can open it. This page makes the setting a command line with a place for the console, <code>{command}</code>, so that any terminal works, with its own options: <code>gnome-terminal -- {command}</code>, <code>xfce4-terminal -x {command}</code>, <code>xterm -hold -e {command}</code>.</p>
+    <ul class="meta">
+      <li>branch <b>develop</b> at c06584ae</li>
+      <li>revision 3 &middot; 19 October 2026</li>
+      <li><span class="status">decided</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> item 10 of the list of pressing tasks, the first item of your <code># TODO</code>: &ldquo;Let the terminal be a command with a place for the console, so that any terminal works&rdquo;, left for later by S6 C of <a href="23%20-%20settings-window.html#decisions">page 23</a> (&sect;12 there). The facts of <a href="#today">&sect;2</a> were checked today: the command lines that Virtualbricks runs, recorded by a stand-in on <code>PATH</code>, and the nineteen terminals of Debian trixie, run in podman under Xvfb. The five questions, T1 to T5 in <a href="#decisions">&sect;8</a>, are decided.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 records your answer of today: &ldquo;Defaults are fine, T5: B&rdquo;. T1 to T4 are A, as recommended. T5 is B: <code>{name}</code>, the name of the brick, is a place in the line too, for the title of its window (<a href="#setting">&sect;3</a>). The lines of the menu and the default carry no title, as decided; a title in them is in <a href="#later">&sect;9</a>. Step 1 starts, on <code>develop</code>.</p>
+    <p class="revision"><strong>What changed:</strong> revision 3 records what step 1 found, written and not committed yet. <code>{command}</code> in quotes, as in <code>xfce4-terminal -e '{command}'</code>, is one word: as the shell keeps a quoted word, and as a terminal whose <code>-e</code> takes one string needs (<a href="#setting">&sect;3</a>). Only <code>{command}</code> typed as a word of its own becomes several. The menu&rsquo;s line of GNOME Console is <code>kgx -e '{command}'</code>: kgx 42, of Ubuntu 22.04, has no <code>--</code>, and every kgx of the targets takes the console as one string after <code>-e</code>. The check of the targets found nothing else (<a href="#menu">&sect;5</a>).</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>Today</a></li>
+        <li><a href="#setting"><span>3</span>The setting</a></li>
+        <li><a href="#old"><span>4</span>The values of before</a></li>
+        <li><a href="#menu"><span>5</span>The menu</a></li>
+        <li><a href="#checks"><span>6</span>The checks</a></li>
+        <li><a href="#plan"><span>7</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>8</span>Decisions</a></li>
+        <li><a href="#later"><span>9</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Setting</dt><dd>A command line, split into words as the shell splits them and run without a shell; <code>{command}</code> stands for the console, <code>vdeterm</code> or <code>unixterm</code> and the socket, and <code>{name}</code> for the brick, as in <code>xterm -T {name} -e {command}</code> (&sect;3, <a class="ref done" href="#decisions">T1</a>, <a class="ref done" href="#decisions">T5</a>).</dd></div>
+          <div><dt>Before</dt><dd>A value without <code>{command}</code> runs as today, with <code>-e {command}</code> after it: <code>xterm</code>, the files that develop wrote, the <code>term</code> of 2.1 and its events keep working, with no migration (&sect;4, <a class="ref done" href="#decisions">T1</a>). The default shows the form: <code>x-terminal-emulator -e {command}</code> (<a class="ref done" href="#decisions">T4</a>).</dd></div>
+          <div><dt>In a word</dt><dd><code>{command}</code> inside a longer word or in quotes gives the console as one word, quoted for the shell, for a terminal that takes one string: <code>foot sh -c '{command}; read'</code> keeps the window open once the brick stops (<a class="ref done" href="#decisions">T2</a>).</dd></div>
+          <div><dt>Menu</dt><dd>The lines of the known terminals that this computer has, each in its own form, checked on the seven targets: <code>gnome-terminal -- {command}</code>, <code>terminator -x {command}</code> (&sect;5, <a class="ref done" href="#decisions">T3</a>).</dd></div>
+          <div><dt>Checks</dt><dd>A quote that isn&rsquo;t closed is refused, in the window, the console and the files; a program that isn&rsquo;t found is a warning, as today (&sect;6).</dd></div>
+          <div><dt>Plan</dt><dd>Two steps: the setting and the consoles, with the check of the targets; then the window, the guide and an end-to-end scenario (&sect;7).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>Today</h2>
+        <ul>
+          <li><code>Brick.open_console()</code> (<code>bricks/__init__.py:712</code>) runs <code>[terminal, "-e", which(term_command), console()]</code>: <code>vdeterm</code> on the control socket of a switch and the other VDE bricks, <code>unixterm</code> on the monitor of a machine.</li>
+          <li>The windows of <code>--connect</code> open the consoles of the bricks there with the terminal of this computer: <code>Consoles.open()</code> (<code>remote/tunnel.py:346</code>) runs the same line on a socket of their own, which they join to the console there (<a href="19%20-%20remote-gui.html">page 19</a> R8).</li>
+          <li>The setting is a <code>Str</code> (<code>config/settings.py:156</code>), <code>x-terminal-emulator</code> by default. The Settings window offers the terminals of <code>TERMINALS</code> that it finds (<code>settingsdraft.py:61</code>), those known to take <code>-e</code> with a program and its arguments, and warns of a program it doesn&rsquo;t find (<code>_check_terminal()</code>).</li>
+          <li>virtualbricks(1) gives <code>setting set terminal=/usr/bin/gnome-terminal</code> as its example of <code>setting set</code> (<code>docs/man/virtualbricks.1.md:830</code>, <code>command-line.html</code>), a value that opens no console.</li>
+        </ul>
+        <figure class="code">
+          <figcaption>what Virtualbricks runs, recorded by a stand-in on PATH</figcaption>
+<pre><code><span class="c">$ printf '%s\n' 'setting set terminal=gnome-terminal' 'brick new switch sw1' \
+    'brick start sw1' 'brick monitor sw1' 'setting set terminal=foot' \
+    'brick monitor sw1' 'brick stop sw1' | virtualbricks --no-gui --workspace ws -l vb.log</span>
+sw1
+sw1 runs, process 301298
+sw1 stopped
+<span class="c">$ grep -A1 'Opening console' vb.log</span>
+[virtualbricks.bricks.switch.Switch#info] Opening console for sw1
+	%gnome-terminal <span class="w">-e</span> /usr/bin/vdeterm /tmp/claude-1000/vbr.OxKa/virtualbricks/6i7ya3ak/new_project/sw1.mgmt
+[virtualbricks.bricks.switch.Switch#info] Opening console for sw1
+	%foot <span class="w">-e</span> /usr/bin/vdeterm /tmp/claude-1000/vbr.OxKa/virtualbricks/6i7ya3ak/new_project/sw1.mgmt</code></pre>
+        </figure>
+        <figure class="code">
+          <figcaption>the real gnome-terminal 3.56.2, Debian trixie in podman</figcaption>
+<pre><code><span class="c">$ gnome-terminal -e probe /run/vb/sw1.mgmt</span>
+# Option &ldquo;-e&rdquo; is deprecated and might be removed in a later version of gnome-terminal.
+# Use &ldquo;-- &rdquo; to terminate the options and put the command line to execute after it.
+<span class="e"># Failed to parse arguments: Too many arguments</span>
+<span class="c">(exit 1; probe did not run)</span>
+<span class="c">$ gnome-terminal -- probe /run/vb/sw1.mgmt</span>
+<span class="c">(exit 0; probe ran with /run/vb/sw1.mgmt)</span></code></pre>
+        </figure>
+        <p><code>probe</code> writes its arguments to a file, so that each form below was seen to run a program with its socket, not only to start a window. Of the nineteen terminals of trixie, four refuse today&rsquo;s line by their own names; Debian&rsquo;s <code>x-terminal-emulator</code> reaches each of them, the first three through a wrapper and terminator by itself, so the default works on every desktop that page 23 checked.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Terminal</th><th>Today&rsquo;s <code>-e</code> <i>program socket</i></th><th>The forms that run a program and its arguments</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap"><code>gnome-terminal</code></td><td class="no">refused: &ldquo;Too many arguments&rdquo;</td><td><code>--</code>, <code>-x</code></td></tr>
+            <tr><td class="nowrap"><code>mate-terminal</code></td><td class="no">runs the program without its socket</td><td><code>--</code>, <code>-x</code></td></tr>
+            <tr><td class="nowrap"><code>xfce4-terminal</code></td><td class="no">refused: Unknown option &ldquo;/run/vb/sw1.mgmt&rdquo;</td><td><code>-x</code></td></tr>
+            <tr><td class="nowrap"><code>terminator</code></td><td class="no">refused, with its usage</td><td><code>-x</code>; as <code>x-terminal-emulator</code>, <code>-e</code> too</td></tr>
+            <tr><td class="nowrap"><code>kgx</code></td><td class="yes">yes; not on Ubuntu 22.04 (page 23)</td><td><code>-e</code>, <code>--</code></td></tr>
+            <tr><td class="nowrap"><code>ptyxis</code></td><td class="yes">yes, on 48 and 50 (page 23)</td><td><code>--</code> in its help; it didn&rsquo;t start in this container</td></tr>
+            <tr><td class="nowrap"><code>tilix</code></td><td class="yes">yes</td><td><code>-e</code>, <code>-x</code></td></tr>
+            <tr><td class="nowrap"><code>kitty</code>, <code>st</code></td><td class="yes">yes</td><td><code>-e</code>, <code>--</code>, or the program alone</td></tr>
+            <tr><td class="nowrap"><code>foot</code></td><td class="yes">yes: it ignores <code>-e</code>, &ldquo;for compatibility with xterm -e&rdquo;</td><td>the program alone; read in its manual, since foot needs Wayland and the headless Weston of the container has no seat</td></tr>
+            <tr><td class="nowrap"><code>x-terminal-emulator</code>, <code>xterm</code>, <code>uxterm</code>, <code>konsole</code>, <code>lxterminal</code>, <code>qterminal</code>, <code>urxvt</code>, <code>alacritty</code>, <code>sakura</code>, <code>terminology</code></td><td class="yes">yes</td><td><code>-e</code> only</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>So what the setting can&rsquo;t do today is narrower than &ldquo;any terminal&rdquo;: one of the four by its own name, on a desktop where it isn&rsquo;t the default; a terminal outside Debian whose form is another, as <code>wezterm start -- {command}</code>; and the options of a terminal, a font, a profile, a size, or <code>-hold</code>, which keeps the window open after the console ends. The list of pressing tasks gave <code>foot</code> as an example: it was wrong, foot works today.</p>
+      </section>
+
+      <section id="setting">
+        <h2><span class="num">&sect;3</span>The setting</h2>
+        <ul>
+          <li>The value is a command line. Its words are split as the console splits its lines, <code>shlex.split()</code> (<code>console/parser.py</code>): quotes keep spaces, a backslash escapes. No shell runs it, so no variables and no pipes, unless the line runs a shell itself.</li>
+          <li><code>{command}</code> typed as a word of its own, outside quotes, becomes the words of the console: the program, with its path, and the socket.</li>
+          <li><code>{command}</code> inside a longer word or in quotes becomes those words quoted for the shell, <code>shlex.join()</code>, as one word, for a terminal or a shell that takes the command as one string (<a class="ref done" href="#decisions">T2</a>&nbsp;A). Quotes make one word, as in the shell: <code>'{command}'</code> is one.</li>
+          <li>A value without <code>{command}</code> gets <code>-e {command}</code> at its end, which is what Virtualbricks does today (<a class="ref done" href="#decisions">T1</a>&nbsp;A).</li>
+          <li><code>{name}</code> becomes the name of the brick, for the title of its window; over a connection, the name of the brick there (<a class="ref done" href="#decisions">T5</a>&nbsp;B). As a word or inside one it is the same text, since a name holds only letters, digits, <code>_</code>, <code>-</code> and <code>.</code>.</li>
+          <li>Braces elsewhere stay as they are typed: the line isn&rsquo;t a format string of Python.</li>
+        </ul>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Setting</th><th>The console of sw1 opens as</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap"><code>x-terminal-emulator -e {command}</code></td><td><code>x-terminal-emulator -e /usr/bin/vdeterm /run/user/1000/virtualbricks/6i7ya3ak/lab/sw1.mgmt</code>, the default (<a class="ref done" href="#decisions">T4</a>)</td></tr>
+            <tr><td class="nowrap"><code>xterm</code></td><td><code>xterm -e /usr/bin/vdeterm &hellip;/sw1.mgmt</code>, as today</td></tr>
+            <tr><td class="nowrap"><code>gnome-terminal -- {command}</code></td><td><code>gnome-terminal -- /usr/bin/vdeterm &hellip;/sw1.mgmt</code></td></tr>
+            <tr><td class="nowrap"><code>xterm -hold -fa Monospace -e {command}</code></td><td>the same, with the options of xterm</td></tr>
+            <tr><td class="nowrap"><code>xterm -T {name} -e {command}</code></td><td><code>xterm -T sw1 -e /usr/bin/vdeterm &hellip;/sw1.mgmt</code>, a window titled <i>sw1</i></td></tr>
+            <tr><td class="nowrap"><code>wezterm start -- {command}</code></td><td>a terminal that Debian doesn&rsquo;t ship</td></tr>
+            <tr><td class="nowrap"><code>kgx -e '{command}'</code></td><td><code>kgx -e "/usr/bin/vdeterm &hellip;/sw1.mgmt"</code>: one word, for a <code>-e</code> that takes one string</td></tr>
+            <tr><td class="nowrap"><code>foot sh -c '{command}; read'</code></td><td><code>foot sh -c "/usr/bin/vdeterm &hellip;/sw1.mgmt; read"</code>: <code>sh</code> gets one word, and waits for Enter once the console ends</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>One function makes the line, <code>terminal_command(setting, command, name)</code> in <code>bricks/__init__.py</code>, beside <code>TermProtocol</code>, which <code>remote/tunnel.py</code> imports already. <code>Brick.open_console()</code> and <code>Consoles.open()</code> both call it, so a console opens the same way over a connection. The log line <i>Opening console for sw1</i> shows the line that runs, as now.</p>
+      </section>
+
+      <section id="old">
+        <h2><span class="num">&sect;4</span>The values of before</h2>
+        <p>With <a class="ref done" href="#decisions">T1</a>&nbsp;A, every value of before means what it meant, since a value without <code>{command}</code> gets today&rsquo;s <code>-e</code>:</p>
+        <ul>
+          <li><code>terminal = "x-terminal-emulator"</code>, in the <code>settings.toml</code> that develop wrote since page 23. It loses its <code># default</code> mark when the default becomes <code>x-terminal-emulator -e {command}</code> (<a class="ref done" href="#decisions">T4</a>&nbsp;A), and opens the same console.</li>
+          <li>The <code>term</code> of 2.1, a path such as <code>/usr/bin/xterm</code>, which <code>migrate/convert.py</code> renames to <code>terminal</code> and checks as a file (<code>convert.py:270</code>). 2.1 ran it as one word, so it holds no spaces; the check stays.</li>
+          <li>A 2.1 event that ran <code>config set terminal /usr/bin/xterm</code>, which the migration turns into <code>setting set terminal=/usr/bin/xterm</code>.</li>
+          <li>A value typed in the console, as <code>setting set terminal=xterm</code>.</li>
+        </ul>
+        <p>The other answers to T1: B adds a table of forms by the program&rsquo;s name, so that <code>gnome-terminal</code> alone gets <code>--</code>. It is kinder to a name typed by hand, but the setting then means three things, a line, a known name, or another name with <code>-e</code>, and the menu of &sect;5 already writes the right line. C keeps the setting a program and only that table, so options and unknown forms stay impossible. D makes <code>{command}</code> required and rewrites the old values; with the files unreleased since page 10 that is allowed, but it gains nothing over A and breaks <code>setting set terminal=xterm</code> in scripts and 2.1 events.</p>
+      </section>
+
+      <section id="menu">
+        <h2><span class="num">&sect;5</span>The menu</h2>
+        <p>The row <i>Terminal</i> stays an entry with a menu (page 23 S6 A). The menu offers whole lines rather than names (<a class="ref done" href="#decisions">T3</a>&nbsp;A): <code>TERMINALS</code> becomes a table of lines, and a line shows when this computer has its program. The desktop&rsquo;s comes first:</p>
+        <figure class="code">
+          <figcaption>settingsdraft.py, TERMINALS</figcaption>
+<pre><code>x-terminal-emulator -e {command}
+gnome-terminal -- {command}      kgx -e '{command}'     ptyxis -- {command}
+konsole -e {command}             xfce4-terminal -x {command}
+mate-terminal -x {command}       terminator -x {command}
+tilix -e {command}               lxterminal -e {command}
+qterminal -e {command}           alacritty -e {command}
+kitty {command}                  foot {command}
+xterm -e {command}               uxterm -e {command}    urxvt -e {command}</code></pre>
+        </figure>
+        <p>Step 1 ran each line on the seven targets in podman, with the probe of &sect;2: each ran the probe with its socket, on every target that packages its terminal. alacritty isn&rsquo;t packaged on Ubuntu 22.04, nor ptyxis on bookworm, 22.04 and 24.04. ptyxis ran with a stand-in for <code>systemd-run</code>, which a container lacks and a desktop has; foot under a headless Sway, which gives it a seat, as a user where Sway 1.7 refuses root. GNOME Console 42 of Ubuntu 22.04 refuses <code>--</code>, and page 23 found that it refuses <code>-e</code> followed by a program and its arguments; <code>kgx -e '{command}'</code>, one string, ran on all seven, kgx 42 to 51. With B, the menu stays the names of today, and a line other than <code>-e</code> is typed by hand.</p>
+      </section>
+
+      <section id="checks">
+        <h2><span class="num">&sect;6</span>The checks</h2>
+        <ul>
+          <li><strong>A quote not closed</strong> can&rsquo;t open a console. The field gets a kind of its own, <code>Command</code> in <code>config/schema.py</code>, a <code>Str</code> whose check splits the words: the Settings window marks the row as an error, as for any value its kind refuses; <code>setting set</code> refuses it, saying that a quote isn&rsquo;t closed; and the reader of <code>settings.toml</code> reports it and keeps the default, as for any bad value.</li>
+          <li><strong>A program not found</strong>, the first word, stays a warning of the row, as <code>_check_terminal()</code> gives it today: the line is right, the computer lacks the program.</li>
+          <li><strong>No terminal</strong>, an empty value, stays the warning it is.</li>
+          <li><strong>No <code>{command}</code></strong> is no problem: the value runs with <code>-e</code> (&sect;4).</li>
+        </ul>
+        <p>A console that can&rsquo;t open for another reason is told as today: the console says why (<code>brick monitor</code>), and the windows log it (<code>brickmenu.console()</code>).</p>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;7</span>Implementation plan</h2>
+        <p>On <code>develop</code>, a commit for each step and a stop for review after each. Your own files in the working tree stay out of every commit.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">1 The line</td><td>The kind <code>Command</code> (<code>config/schema.py</code>); the field&rsquo;s kind, default and help (<code>config/settings.py</code>); <code>terminal_command()</code>, called by <code>Brick.open_console()</code> and <code>Consoles.open()</code>; <code>TERMINALS</code> as lines, after the check of the targets in podman (the script stays out of the repository, as page 23&rsquo;s); <code>_check_terminal()</code> on the first word. virtualbricks-config(5) and <code>config-files.html</code>: the entry <code>terminal</code> and the example; virtualbricks(1) and <code>command-line.html</code>: the example of <code>setting set</code>, <code>setting set terminal="gnome-terminal -- {command}"</code>.</td><td><code>terminal_command()</code> for each rule of &sect;3; the kind&rsquo;s check; the line that <code>open_console()</code> and <code>Consoles.open()</code> spawn; the menu&rsquo;s lines by what is found; a break of each rule fails a test.</td></tr>
+            <tr><td class="nowrap">2 The window and the guide</td><td>The menu of lines in the Settings window; the guide&rsquo;s Settings page (<code>help/C/settings.page</code>); the README&rsquo;s line on the terminal; an end-to-end scenario: <i>Open Control Monitor</i> runs the line of the settings, with a stand-in terminal that records what it runs, since the menu, the engine and the brick are wired in the windows; <code>e2e/STEPS.md</code>. Pages 19 and 23: Since then; this page: Implemented. <code>TODO.md</code>: the item to <code># DONE</code>.</td><td>The scenario, run 20 times; it fails when <code>open_console()</code> drops the line&rsquo;s words.</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;8</span>Decisions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>T1</td>
+              <td>What the setting holds, and the values of before</td>
+              <td>
+                <p><b>A</b> A command line with <code>{command}</code> where the console goes; a value without it gets <code>-e {command}</code> at its end, as today. No migration (&sect;3, &sect;4).</p>
+                <p><b>B</b> As A, but a value without <code>{command}</code> whose program is in a table of known terminals takes its form from there: <code>gnome-terminal</code> alone gets <code>--</code>.</p>
+                <p><b>C</b> No place: the setting stays a program, and Virtualbricks picks the form by its name from that table, <code>-e</code> for any other. No options, no terminal of another form outside the table.</p>
+                <p><b>D</b> <code>{command}</code> required: a value without it is refused; the reader and the migration of 2.1, events included, rewrite <code>xterm</code> as <code>xterm -e {command}</code>.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>T2</td>
+              <td><code>{command}</code> inside a longer word</td>
+              <td>
+                <p><b>A</b> The words of the console quoted for the shell, <code>shlex.join()</code>: <code>sh -c '{command}; read'</code>.</p>
+                <p><b>B</b> Only as a word of its own; inside another word it is refused.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>T3</td>
+              <td>The menu of the Settings window</td>
+              <td>
+                <p><b>A</b> The lines of the known terminals that this computer has, each in its form, from a table checked on the seven targets (&sect;5).</p>
+                <p><b>B</b> The names, as today; another form is typed by hand.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>T4</td>
+              <td>The default</td>
+              <td>
+                <p><b>A</b> <code>x-terminal-emulator -e {command}</code>: the file and the window show the form.</p>
+                <p><b>B</b> <code>x-terminal-emulator</code>, as today, which opens the same console by T1 A.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>T5</td>
+              <td>Other places in the line</td>
+              <td>
+                <p><b>A</b> <code>{command}</code> only.</p>
+                <p><b>B</b> <code>{name}</code> too, the name of the brick, for the title of the window: <code>xterm -T {name} -e {command}</code>. Over a connection it is the brick&rsquo;s name there.</p>
+              </td>
+              <td class="rec decided">B</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;9</span>Later</h2>
+        <ul>
+          <li>A title in the lines of the menu and in the default, as <code>x-terminal-emulator -T {name} -e {command}</code>: Debian&rsquo;s policy asks every <code>x-terminal-emulator</code> to take <code>-T</code>, but the option of each terminal of the table needs the check of the targets first. Until then a line shows <i>vdeterm</i> or <i>unixterm</i> in its title, unless you add the title yourself.</li>
+          <li>A button that opens the terminal of the row on a short program, to try a line before OK.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>

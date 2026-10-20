@@ -31,9 +31,11 @@ from __future__ import annotations
 
 import collections
 import functools
+import io
 import locale
 import os
 import re
+import shlex
 from collections.abc import Collection
 from contextlib import AbstractContextManager
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, cast
@@ -85,6 +87,7 @@ __all__ = [
     "PrivilegedBrick",
     "is_running",
     "must_stop",
+    "terminal_command",
 ]
 
 
@@ -287,6 +290,64 @@ class VDEProcessProtocol(Process):
         self.queue.append(cmd)
         if 0 < len(self.queue) <= self.PIPELINE_SIZE:
             self._send_command()
+
+
+# The places of the setting terminal: the console and the brick (page 32).
+CONSOLE_PLACE = "{command}"
+TERMINAL_PLACES = re.compile(r"\{(command|name)\}")
+
+
+def _typed_words(setting: str) -> list[tuple[str, str]]:
+    """
+    The words of setting, split as the shell splits them, each with its
+    text as typed, quotes included. ValueError if they don't split.
+    """
+
+    stream = io.StringIO(setting)
+    lexer = shlex.shlex(stream, posix=True)
+    lexer.whitespace_split = True
+    lexer.commenters = ""
+    words = []
+    start = 0
+    # the lexer reads a character at a time: what it read for a word is
+    # the word, with the spaces around it
+    for word in lexer:
+        end = stream.tell()
+        words.append((word, setting[start:end].strip()))
+        start = end
+    return words
+
+
+def terminal_command(setting: str, command: list[str], name: str) -> list[str]:
+    """
+    The words that open, in the terminal of setting, the console of the
+    brick name, which runs command. {command} typed as a word of its own
+    becomes the words of command; inside another word or in quotes, command
+    quoted for the shell, as one word. {name} becomes the name. A setting
+    without {command} gets "-e {command}" at its end, as the terminal used
+    to be run.
+    """
+
+    try:
+        words = _typed_words(setting)
+    except ValueError as exc:
+        raise errors.BadConfigError(
+            _("The setting terminal can't be read: {error}").format(error=exc)
+        ) from None
+    if not words:
+        raise errors.BadConfigError(_("The setting terminal is empty"))
+    if not any(CONSOLE_PLACE in word for word, _typed in words):
+        words += [("-e", "-e"), (CONSOLE_PLACE, CONSOLE_PLACE)]
+    places = {"command": shlex.join(command), "name": name}
+    line: list[str] = []
+    for word, typed in words:
+        if typed == CONSOLE_PLACE:
+            line += command
+        else:
+            line.append(
+                TERMINAL_PLACES.sub(lambda place: places[place[1]], word)
+            )
+    return line
 
 
 class TermProtocol(protocol.ProcessProtocol):
@@ -708,10 +769,13 @@ class Brick(Base):
         self.changed.notify(self)
 
     def open_console(self) -> None:
-        term = str(get_setting("terminal"))
-        args = [term, "-e", which(self.term_command), self.console()]
-        self.logger.info(open_console, name=self.name, args=" ".join(args))
-        _reactor().spawnProcess(TermProtocol(), term, args, os.environ)
+        args = terminal_command(
+            str(get_setting("terminal")),
+            [which(self.term_command), self.console()],
+            self.name,
+        )
+        self.logger.info(open_console, name=self.name, args=shlex.join(args))
+        _reactor().spawnProcess(TermProtocol(), args[0], args, os.environ)
 
     def send(self, data: bytes) -> None:
         assert isinstance(data, bytes)

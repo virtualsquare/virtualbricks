@@ -28,7 +28,7 @@ class TestSettings(ConsoleTestCase):
     def test_show(self):
         lines = self.run_line("setting show")
         self.assertEqual(lines[0], "# Virtualbricks")
-        self.assertIn('terminal = "x-terminal-emulator"', lines)
+        self.assertIn('terminal = "x-terminal-emulator -e {command}"', lines)
         self.assertEqual(lines[lines.index("") + 1], "# This project")
         self.assertIn('qemu_path = "/usr/bin"', lines)
         self.assertEqual(

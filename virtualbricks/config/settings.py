@@ -41,6 +41,7 @@ from virtualbricks import locations
 from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
     Bool,
+    Command,
     Kind,
     ListOf,
     Path,
@@ -150,14 +151,20 @@ class AppSettings:
         label=N_("Workspace"),
         help=N_("The folder of the projects"),
     )
-    # the terminal of the desktop on Debian and Ubuntu, which takes -e and a
-    # program with its arguments, through a wrapper for a terminal that
-    # doesn't, as GNOME Terminal (checked on every target, page 23)
+    # The command of a terminal, with {command} where the console goes and
+    # {name} for the brick (page 32); a command without {command} gets
+    # "-e {command}" after it. The default is the terminal of the desktop on
+    # Debian and Ubuntu, which takes -e and a program with its arguments,
+    # through a wrapper for a terminal that doesn't, as GNOME Terminal
+    # (checked on every target, page 23).
     terminal: str = field(
-        Str(),
-        default="x-terminal-emulator",
+        Command(),
+        default="x-terminal-emulator -e {command}",
         label=N_("Terminal"),
-        help=N_("The terminal that opens the consoles of the bricks"),
+        help=N_(
+            "The terminal that opens the consoles of the bricks: {command} is"
+            " the console, {name} the name of the brick"
+        ),
     )
     kernel_samepage_merging: bool = field(
         Bool(),

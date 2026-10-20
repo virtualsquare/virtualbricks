@@ -42,6 +42,7 @@ Nothing here imports GTK.
 
 from __future__ import annotations
 
+import shlex
 import shutil
 from collections.abc import Callable, Iterable, Sequence
 from typing import Any
@@ -54,18 +55,30 @@ from virtualbricks.config.schema import field_names
 from virtualbricks.i18n import _
 from virtualbricks.programs import FolderPrograms
 
-# The terminals that take -e followed by a program and its arguments, as a
-# console needs, on every target (page 23 §9): x-terminal-emulator, that of
-# the desktop, first. gnome-terminal, xfce4-terminal and mate-terminal take
-# one string after -e; x-terminal-emulator reaches them through a wrapper.
+# The commands of the terminals that the Settings window offers, each with
+# the place of the console as its terminal takes a program and its arguments
+# (page 32): x-terminal-emulator, that of the desktop on Debian and Ubuntu,
+# first. Each one was run on every target that has its terminal. GNOME
+# Console 42, of Ubuntu 22.04, takes the console as one string after -e, as
+# the later ones do too.
 TERMINALS = (
-    "x-terminal-emulator",
-    "xterm",
-    "uxterm",
-    "konsole",
-    "ptyxis",
-    "lxterminal",
-    "qterminal",
+    "x-terminal-emulator -e {command}",
+    "gnome-terminal -- {command}",
+    "kgx -e '{command}'",
+    "ptyxis -- {command}",
+    "konsole -e {command}",
+    "xfce4-terminal -x {command}",
+    "mate-terminal -x {command}",
+    "terminator -x {command}",
+    "tilix -e {command}",
+    "lxterminal -e {command}",
+    "qterminal -e {command}",
+    "alacritty -e {command}",
+    "kitty {command}",
+    "foot {command}",
+    "xterm -e {command}",
+    "uxterm -e {command}",
+    "urxvt -e {command}",
 )
 # The audio drivers of QEMU that play the sound on the computer of the
 # machines, in the order the Settings window offers them; the others, as
@@ -77,9 +90,9 @@ QEMU_SYSTEM = "qemu-system-"
 
 
 def terminals(which: Callable[[str], str | None] = shutil.which) -> list[str]:
-    """The terminals of TERMINALS that this computer has."""
+    """The commands of TERMINALS whose terminal this computer has."""
 
-    return [name for name in TERMINALS if which(name)]
+    return [line for line in TERMINALS if which(line.split()[0])]
 
 
 def audio_drivers(drivers: Iterable[str]) -> tuple[list[str], list[str]]:
@@ -289,13 +302,15 @@ class SettingsDraft(Draft):
         return problems
 
     def _check_terminal(self, name: str, terminal: str) -> Problem | None:
-        if not terminal:
+        # its kind refuses a command whose words don't split
+        words = shlex.split(terminal)
+        if not words:
             text = _("No terminal: the consoles of the bricks can't open")
-        elif self.facts.which(terminal) is None:
+        elif self.facts.which(words[0]) is None:
             text = _(
                 "No program {terminal} on this computer: the consoles of the"
                 " bricks can't open"
-            ).format(terminal=terminal)
+            ).format(terminal=words[0])
         else:
             return None
         return Problem(name, text, error=False)

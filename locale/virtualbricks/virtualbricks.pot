@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-19 13:34+0200\n"
+"POT-Creation-Date: 2026-10-20 09:14+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -437,6 +437,15 @@ msgstr ""
 #: virtualbricks/bricks/eventinfo.py
 #, python-brace-format
 msgid "when {brick} stops"
+msgstr ""
+
+#: virtualbricks/bricks/__init__.py
+#, python-brace-format
+msgid "The setting terminal can't be read: {error}"
+msgstr ""
+
+#: virtualbricks/bricks/__init__.py
+msgid "The setting terminal is empty"
 msgstr ""
 
 #: virtualbricks/bricks/__init__.py
@@ -1118,7 +1127,10 @@ msgid "Terminal"
 msgstr ""
 
 #: virtualbricks/config/settings.py
-msgid "The terminal that opens the consoles of the bricks"
+#, python-brace-format
+msgid ""
+"The terminal that opens the consoles of the bricks: {command} is the "
+"console, {name} the name of the brick"
 msgstr ""
 
 #: virtualbricks/config/settings.py

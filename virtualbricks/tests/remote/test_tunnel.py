@@ -29,7 +29,7 @@ from twisted.protocols import amp
 from twisted.test import iosim
 from twisted.trial import unittest
 
-
+from virtualbricks import errors
 from virtualbricks.bricks import FakeProcess
 from virtualbricks.config import settings
 from virtualbricks.console import ampcommands, ampwire, control
@@ -417,6 +417,37 @@ class TestConsoles(unittest.TestCase):
             pass
         os.chmod(path, 0o755)
         return path
+
+    @defer.inlineCallbacks
+    def test_the_line_of_the_setting(self):
+        unixterm = self.program("unixterm")
+        settings.set_setting("terminal", "kgx --title={name} -- {command}")
+        yield defer.ensureDeferred(self.consoles.open(self.vm))
+        [(_protocol, term, args, _env)] = self.spawned
+        self.assertEqual(term, "kgx")
+        path = args[-1]
+        self.assertEqual(args, ["kgx", "--title=vm1", "--", unixterm, path])
+        self.assertTrue(path.endswith("1-vm1.monitor"))
+
+        # the terminal connects, and the socket listens no more
+        async def attach(relay, name, console):
+            pass
+
+        self.consoles.attach = attach
+        endpoint = endpoints.UNIXClientEndpoint(reactor, path)
+        terminal = yield endpoints.connectProtocol(endpoint, Relay())
+        terminal.transport.loseConnection()
+        yield deferLater(0.05)
+
+    def test_no_line_no_socket(self):
+        self.program("unixterm")
+        settings.set_setting("terminal", "")
+        self.failureResultOf(
+            defer.ensureDeferred(self.consoles.open(self.vm)),
+            errors.BadConfigError,
+        )
+        self.assertEqual(self.spawned, [])
+        self.assertEqual(os.listdir(self.consoles._folder()), [])
 
     def test_what_it_lacks(self):
         self.assertEqual(

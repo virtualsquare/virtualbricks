@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import ipaddress
 import re
+import shlex
 from collections.abc import Callable, Collection, Iterator
 from functools import partial
 from typing import Any, ClassVar, Generic, TypeVar, cast
@@ -57,6 +58,7 @@ from virtualbricks.nic import MAC_PATTERN
 __all__ = [
     "Bool",
     "Choice",
+    "Command",
     "Float",
     "IPv4",
     "Int",
@@ -252,6 +254,20 @@ class Str(Kind[str]):
 
 class Path(Str):
     """A file or directory path."""
+
+
+class Command(Str):
+    """A command line, whose words are split as the shell splits them."""
+
+    def check(self, value: object) -> None:
+        super().check(value)
+        try:
+            shlex.split(cast(str, value))
+        except ValueError as exc:
+            # shlex says "No closing quotation" or "No escaped character"
+            if "quotation" in str(exc):
+                raise ValueError("a quote isn't closed") from None
+            raise ValueError("it ends with a backslash") from None
 
 
 class Ref(Str):

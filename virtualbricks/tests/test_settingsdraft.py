@@ -72,12 +72,17 @@ class TestTables(unittest.TestCase):
 
     def test_terminals(self):
         found = {"xterm", "konsole", "gnome-terminal"}
+        # the commands of those found, each with its place of the console
         self.assertEqual(
             terminals(lambda name: name if name in found else None),
-            ["xterm", "konsole"],
+            [
+                "gnome-terminal -- {command}",
+                "konsole -e {command}",
+                "xterm -e {command}",
+            ],
         )
         # the terminal of the desktop first
-        self.assertEqual(TERMINALS[0], "x-terminal-emulator")
+        self.assertEqual(TERMINALS[0], "x-terminal-emulator -e {command}")
 
     def test_audio_drivers(self):
         # QEMU 10.0 of Debian 13
@@ -176,6 +181,27 @@ class TestTerminal(unittest.TestCase):
     def test_found(self):
         self.draft.set("terminal", "xterm")
         self.assertEqual(self.draft.problems(), [])
+        # the program is the first word
+        self.draft.set("terminal", "xterm -T {name} -e {command}")
+        self.assertEqual(self.draft.problems(), [])
+
+    def test_the_program_not_found(self):
+        self.draft.set("terminal", "'gnome-terminal' -- {command}")
+        [problem] = self.draft.problems()
+        self.assertEqual(
+            problem.text,
+            "No program gnome-terminal on this computer: the consoles of the"
+            " bricks can't open",
+        )
+        self.assertFalse(problem.error)
+
+    def test_a_quote_not_closed(self):
+        # an error: no console could open
+        self.draft.set("terminal", "xterm -T 'sw1")
+        [problem] = self.draft.problems()
+        self.assertEqual(problem.key, "terminal")
+        self.assertIn("a quote isn't closed", problem.text)
+        self.assertTrue(problem.error)
 
     def test_not_found(self):
         self.draft.set("terminal", "foot")

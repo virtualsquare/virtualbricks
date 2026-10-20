@@ -111,7 +111,7 @@ def show(context: Context, key: str | None) -> list[str]:
         many=True,
     ),
     help=N_("Change settings, all or none"),
-    example="setting set terminal=/usr/bin/gnome-terminal",
+    example='setting set terminal="gnome-terminal -- {command}"',
 )
 def set_(context: Context, key_value: list[tuple[str, str]]) -> None:
     values = {}

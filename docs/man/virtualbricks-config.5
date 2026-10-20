@@ -159,15 +159,26 @@ directory, and the project that opens at start in it (see
 A Virtualbricks stays in the workspace it started in, whose lock it
 holds: a new value is for the next start.
 .TP
-\f[B]terminal\f[R] = \f[I]string\f[R], default \f[CR]\(dqx\-terminal\-emulator\(dq\f[R]
-The terminal that opens the console of a brick, a program in
-\f[B]PATH\f[R] or a path to one.
-Virtualbricks runs it as \f[I]terminal\f[R] \f[B]\-e\f[R]
-\f[I]program\f[R] \f[I]arguments\f[R], so it must take \f[B]\-e\f[R]
-that way, as \f[B]xterm\f[R](1) and \f[B]konsole\f[R](1) do.
+\f[B]terminal\f[R] = \f[I]string\f[R], default \f[CR]\(dqx\-terminal\-emulator \-e {command}\(dq\f[R]
+The terminal that opens the console of a brick, as a command: its words
+are split as the shell splits them, and it runs without a shell.
+Its program is a program in \f[B]PATH\f[R] or a path to one.
+\f[B]{command}\f[R] is the console: as a word of its own, it is the
+program of the console and its socket, two words; inside a longer word
+or in quotes, the two as one string, quoted for the shell.
+\f[B]{name}\f[R] is the name of the brick.
+A command without \f[B]{command}\f[R] gets \f[B]\-e {command}\f[R] at
+its end, so a terminal named alone runs as \f[I]terminal\f[R]
+\f[B]\-e\f[R] \f[I]program\f[R] \f[I]socket\f[R], as \f[B]xterm\f[R](1)
+and \f[B]konsole\f[R](1) take it.
+For example, \f[B]gnome\-terminal \-\- {command}\f[R],
+\f[B]xfce4\-terminal \-x {command}\f[R], or \f[B]xterm \-T {name} \-hold
+\-e {command}\f[R], which puts the name of the brick in the title and
+keeps the window open when the console ends.
 The default is the terminal of your desktop on Debian and Ubuntu,
 through a wrapper for one that takes \f[B]\-e\f[R] otherwise, as GNOME
 Terminal does.
+A quote that isn\(aqt closed is an error.
 .TP
 \f[B]kernel_samepage_merging\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Turn Kernel Samepage Merging on at start, so that virtual machines share
@@ -956,7 +967,7 @@ without its comments:
 .EX
 format = 1
 workspace = \(dq/home/alice/.virtualbricks\(dq
-terminal = \(dqx\-terminal\-emulator\(dq
+terminal = \(dqx\-terminal\-emulator \-e {command}\(dq
 kernel_samepage_merging = false
 tray_icon = true
 warn_missing_programs = true

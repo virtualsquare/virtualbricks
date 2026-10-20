@@ -156,13 +156,22 @@ settings they have: the last one to write wins.
     stays in the workspace it started in, whose lock it holds: a new value
     is for the next start.
 
-**terminal** = *string*, default `"x-terminal-emulator"`
-:   The terminal that opens the console of a brick, a program in **PATH** or
-    a path to one. Virtualbricks runs it as *terminal* **-e** *program*
-    *arguments*, so it must take **-e** that way, as **xterm**(1) and
-    **konsole**(1) do. The default is the terminal of your desktop on Debian
-    and Ubuntu, through a wrapper for one that takes **-e** otherwise, as
-    GNOME Terminal does.
+**terminal** = *string*, default `"x-terminal-emulator -e {command}"`
+:   The terminal that opens the console of a brick, as a command: its words
+    are split as the shell splits them, and it runs without a shell. Its
+    program is a program in **PATH** or a path to one. **{command}** is the
+    console: as a word of its own, it is the program of the console and
+    its socket, two words; inside a longer word or in quotes, the two as one
+    string, quoted for the shell. **{name}** is the name of the brick. A
+    command without **{command}** gets **-e {command}** at its end, so a
+    terminal named alone runs as *terminal* **-e** *program* *socket*, as
+    **xterm**(1) and **konsole**(1) take it. For example,
+    **gnome-terminal -- {command}**, **xfce4-terminal -x {command}**, or
+    **xterm -T {name} -hold -e {command}**, which puts the name of the brick
+    in the title and keeps the window open when the console ends. The
+    default is the terminal of your desktop on Debian and Ubuntu, through a
+    wrapper for one that takes **-e** otherwise, as GNOME Terminal does. A
+    quote that isn't closed is an error.
 
 **kernel_samepage_merging** = *boolean*, default `false`
 :   Turn Kernel Samepage Merging on at start, so that virtual machines share
@@ -914,7 +923,7 @@ its comments:
 ```
 format = 1
 workspace = "/home/alice/.virtualbricks"
-terminal = "x-terminal-emulator"
+terminal = "x-terminal-emulator -e {command}"
 kernel_samepage_merging = false
 tray_icon = true
 warn_missing_programs = true

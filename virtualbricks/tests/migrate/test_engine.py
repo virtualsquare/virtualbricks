@@ -631,7 +631,7 @@ class TestEntryPoints(EngineTestCase):
         migration = migration_for(self.workspace, output=self.output)
         self.assertIsInstance(migration.target, Folder)
         self.assertEqual(
-            migration.app_settings.terminal, "x-terminal-emulator"
+            migration.app_settings.terminal, "x-terminal-emulator -e {command}"
         )
         self.assertEqual(migration.project_settings, ProjectSettings())
         old = write_settings(os.path.join(self.root, "vb.conf"), "/srv/vb")
