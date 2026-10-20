@@ -77,7 +77,6 @@ class Target(NamedTuple):
 
 OLD_OPTIONS = frozenset(("-no-acpi", "-portrait", "-sdl", "-soundhw"))
 TARGETS = {
-    "debian-12": Target(True, frozenset(("-no-acpi", "-portrait"))),
     "ubuntu-24.04": Target(False, frozenset(("-no-acpi", "-portrait"))),
     "ubuntu-25.04": Target(False, frozenset()),
     "debian-13": Target(True, frozenset()),
@@ -159,7 +158,7 @@ class TestRecordings(unittest.SynchronousTestCase):
                 version.startswith(upstream(package)), (target, version)
             )
             self.assertGreaterEqual(
-                recorded_info(target).version, Version(7, 2), target
+                recorded_info(target).version, Version(8, 2), target
             )
 
     def test_differences(self):
@@ -334,7 +333,6 @@ class TestParse(unittest.SynchronousTestCase):
         text = (
             "Available display backend types:\n"
             "none\n"
-            "qemu: module ui-ui-gtk not found, do you want to install it?\n"
             "gtk\n"
             "\n"
             "Some display backends support suboptions:\n"
@@ -396,7 +394,7 @@ class TestParse(unittest.SynchronousTestCase):
         )
 
     def test_cpus_of_powerpc(self):
-        # QEMU 7.2 to 8.2, without a heading
+        # QEMU 8.2, without a heading
         text = (
             "PowerPC 601_v1           PVR 00010001\n"
             "PowerPC 601              (alias for 601_v2)\n"
@@ -410,7 +408,7 @@ class TestParse(unittest.SynchronousTestCase):
         )
 
     def test_cpus_of_s390x(self):
-        # QEMU 7.2 to 8.2: a heading only over the flags
+        # QEMU 8.2: a heading only over the flags
         text = (
             "s390 qemu            QEMU Virtual CPU version 2.5+       "
             "(migration-safe)\n"
@@ -442,7 +440,7 @@ class TestParse(unittest.SynchronousTestCase):
         )
 
     def test_cpus_of_sparc(self):
-        # QEMU 7.2 to 8.2: names with spaces, which -cpu takes with dashes
+        # QEMU 8.2: names with spaces, which -cpu takes with dashes
         text = (
             "Sparc  Fujitsu MB86904 IU 04000000 FPU 00080000 MMU 04000000"
             " NWINS 8 \n"

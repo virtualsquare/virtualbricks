@@ -659,7 +659,7 @@ class TestMachine(LinesTestCase):
         self.assertEqual(argv[1:3], ["-machine", "acpi=off"])
         # a machine without the property, on a QEMU with the old option
         prepared = attr.evolve(
-            prepared_qemu("debian-12"), machine_properties=frozenset()
+            prepared_qemu("ubuntu-24.04"), machine_properties=frozenset()
         )
         argv, warnings = self.line(vm, prepared)
         self.assertEqual(argv[1], "-no-acpi")

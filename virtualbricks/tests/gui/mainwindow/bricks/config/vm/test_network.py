@@ -53,9 +53,9 @@ class TestTheCards(MachinePanelTestCase):
         self.assertFalse(self.panel.cards.lack.get_visible())
 
     def test_the_models(self):
-        options = model_options(recorded_info("debian-12"), "e1000")
-        self.assertEqual(len(options), 30)
-        self.assertNotIn("igb", [option.value for option in options])
+        options = model_options(recorded_info("ubuntu-24.04"), "e1000")
+        self.assertEqual(len(options), 31)
+        self.assertIn("igb", [option.value for option in options])
         self.assertEqual(model_options(None, "e1000"), [])
 
     def test_a_change(self):

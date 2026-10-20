@@ -484,17 +484,6 @@ class TestExtract(ArchiveTestCase):
         self.assertIn("project.toml", names)
         self.assertNotIn("link", names)
 
-    def test_the_fallback_filter(self):
-        self.patch(tarfile, "data_filter", None)
-        safe = archive._safe_member
-        self.assertIsNone(safe(tarfile.TarInfo("../x"), "/d"))
-        self.assertIsNone(safe(tarfile.TarInfo("/x"), "/d"))
-        link = tarfile.TarInfo("l")
-        link.type = tarfile.SYMTYPE
-        self.assertIsNone(safe(link, "/d"))
-        info = tarfile.TarInfo("ok")
-        self.assertIs(safe(info, "/d"), info)
-
     def test_tool_errors(self):
         with open(self.path("text.vbp"), "w") as fp:
             fp.write("not an archive" * 100)

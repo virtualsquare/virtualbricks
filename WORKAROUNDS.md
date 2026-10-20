@@ -14,82 +14,32 @@ in quotes find it with `grep -rn`.
 The versions of the supported distributions, from `apt-cache policy` in a
 container of each, on 4 October 2026:
 
-| | Debian 12 | Ubuntu 24.04 | Debian 13 | Ubuntu 26.04 | Debian testing, sid |
-|---|---|---|---|---|---|
-| Python | 3.11.2 | 3.12.3 | 3.13.5 | 3.14.3 | 3.14.7 |
-| GTK 3 | 3.24.38 | 3.24.41 | 3.24.49 | 3.24.52 | 3.24.52 |
-| GLib | 2.74.6 | 2.80.0 | 2.84.4 | 2.88.0 | 2.90.0 |
-| Pango | 1.50.12 | 1.52.1 | 1.56.3 | 1.57.0 | 1.58.0, 1.58.2 |
-| AT-SPI (at-spi2-core) | 2.46.0 | 2.52.0 | 2.56.2 | 2.60.4 | 2.62.0 |
-| PyGObject | 3.42.2 | 3.48.2 | 3.50.0 | 3.56.2 | 3.58.0 |
-| Twisted | 22.4.0 | 24.3.0 | 24.11.0 | 25.5.0 | 26.4.0 |
-| attrs | 22.2.0 | 23.2.0 | 25.3.0 | 25.4.0 | 26.1.0 |
-| tomlkit | 0.11.7 | 0.12.4 | 0.13.2 | 0.13.3 | 0.13.3 |
-| markdown-it-py | 2.1.0 | 3.0.0 | 3.0.0 | 3.0.0 | 4.2.0 |
-| pygraphviz | 1.7 | 1.7 | 1.14 | 1.14 | 1.14 |
-| zope.interface | 5.5.2 | 6.1 | 7.2 | 8.2 | 8.6 |
-| pyOpenSSL | 23.0.0 | 23.2.0 | 25.0.0 | 25.3.0 | 26.4.0 |
-| OpenSSL | 3.0.22 | 3.0.13 | 3.5.7 | 3.5.5 | 3.6.4, 3.6.5 |
-| QEMU | 7.2 | 8.2.2 | 10.0.13 | 10.2.1 | 11.1.1, 11.1.2 |
-| vde2-cryptcab | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 |
+| | Ubuntu 24.04 | Debian 13 | Ubuntu 26.04 | Debian testing, sid |
+|---|---|---|---|---|
+| Python | 3.12.3 | 3.13.5 | 3.14.3 | 3.14.7 |
+| GTK 3 | 3.24.41 | 3.24.49 | 3.24.52 | 3.24.52 |
+| GLib | 2.80.0 | 2.84.4 | 2.88.0 | 2.90.0 |
+| Pango | 1.52.1 | 1.56.3 | 1.57.0 | 1.58.0, 1.58.2 |
+| AT-SPI (at-spi2-core) | 2.52.0 | 2.56.2 | 2.60.4 | 2.62.0 |
+| PyGObject | 3.48.2 | 3.50.0 | 3.56.2 | 3.58.0 |
+| Twisted | 24.3.0 | 24.11.0 | 25.5.0 | 26.4.0 |
+| attrs | 23.2.0 | 25.3.0 | 25.4.0 | 26.1.0 |
+| tomlkit | 0.12.4 | 0.13.2 | 0.13.3 | 0.13.3 |
+| markdown-it-py | 3.0.0 | 3.0.0 | 3.0.0 | 4.2.0 |
+| pygraphviz | 1.7 | 1.14 | 1.14 | 1.14 |
+| zope.interface | 6.1 | 7.2 | 8.2 | 8.6 |
+| pyOpenSSL | 23.2.0 | 25.0.0 | 25.3.0 | 26.4.0 |
+| OpenSSL | 3.0.13 | 3.5.7 | 3.5.5 | 3.6.4, 3.6.5 |
+| QEMU | 8.2.2 | 10.0.13 | 10.2.1 | 11.1.1, 11.1.2 |
+| vde2-cryptcab | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 | 2.3.2+r586 |
 
 The versions are those of the packages, without the revision of the
 distribution.
 
-## Gone with Debian 12
+## Gone with Ubuntu 24.04
 
-Debian 12 is the only target with Python 3.11, attrs 22, PyGObject 3.42,
-Twisted 22 and QEMU 7.2.
-
-### W5. The "qemu:" lines in the help of QEMU 7.2
-
-- **Why:** QEMU 7.2 writes a message for each module it leaves out among the
-  lines of a `help` list, as "qemu: module ui-ui-gtk not found, do you want
-  to install qemu-system-gui package?" under `-display help` without
-  `qemu-system-gui`.
-- **Needed on:** Debian 12 (QEMU 7.2). QEMU 8.2 of Ubuntu 24.04 and later,
-  without `qemu-system-gui`, list only what they have: checked on 20
-  October 2026.
-- **Where:** `virtualbricks/programs.py`, `_items()`, "as QEMU 7.2 writes
-  them".
-
-QEMU 7.2 is also the oldest QEMU supported: W5 goes when that changes.
-
-### W15. AttrsInstance only for the type checker
-
-- **Why:** attrs 22.2 has `AttrsInstance` in its types only; it came in
-  `attr` itself in 23.1.
-- **Needed on:** Debian 12 (22.2.0). Ubuntu 24.04 (23.2.0) and later have
-  it.
-- **Where:** `virtualbricks/bricks/draft.py`, "has AttrsInstance in its types
-  only", imported under `TYPE_CHECKING`.
-- **Removing it:** optional: `from attr import AttrsInstance` with the other
-  imports.
-
-### The floors that follow Debian 12
-
-The oldest versions that Virtualbricks asks for are those of Debian 12.
-With it gone, raise them to those of Ubuntu 24.04:
-
-| Where | Now | Ubuntu 24.04 |
-|---|---|---|
-| `pyproject.toml`, `requires-python` | `>=3.11` | `>=3.12` |
-| `pyproject.toml`, `[tool.black]` and `[tool.ruff]` | `py311` | `py312` |
-| `pyproject.toml`, `[tool.mypy]`, `python_version` | `3.11` | `3.12` |
-| `pyproject.toml`, `Twisted[tls]` | `>=22.4` | `>=24.3` |
-| `pyproject.toml`, `pyOpenSSL` | `>=23.0` | `>=23.2` |
-| `pyproject.toml`, `attrs` | `>=22.2` | `>=23.2` |
-| `pyproject.toml`, `markdown-it-py` | `>=2.1` | `>=3.0` |
-| `pyproject.toml`, `zope.interface` | `>=5.5` | `>=6.1` |
-| `pyproject.toml`, `tomlkit` | `>=0.11` | `>=0.12` |
-| `pyproject.toml`, `PyGObject` | `>=3.42` | `>=3.48` |
-| `README.md`, Requirements | "Python 3.11 or newer" | 3.12 |
-| `README.md`, Requirements | "QEMU 7.2 and newer" | 8.2 |
-| `README.md`, Development | "has to run on Python 3.11" | 3.12 |
-
-pygraphviz (`>=1.7`) stays: Ubuntu 24.04 has 1.7.
-
-## Gone with Debian 12 and Ubuntu 24.04
+Ubuntu 24.04 is the only target with Python 3.12, attrs 23, PyGObject 3.48,
+Twisted 24.3 and QEMU 8.2.
 
 ### W6. The CPU models of QEMU 8 and older
 
@@ -99,8 +49,8 @@ pygraphviz (`>=1.7`) stays: Ubuntu 24.04 has 1.7.
   which `-cpu` takes as Fujitsu-MB86904; or the names alone without a
   heading, as m68k, sh4, RISC-V, avr and loongarch64. From QEMU 9 every
   architecture indents them under a heading.
-- **Needed on:** Debian 12 (7.2), Ubuntu 24.04 (8.2.2). No target has QEMU
-  9; Debian 13 has 10.0.
+- **Needed on:** Ubuntu 24.04 (8.2.2). No target has QEMU 9; Debian 13 has
+  10.0.
 - **Where:** `virtualbricks/programs.py`, `_cpu()` and `parse_cpus()`, "Up
   to QEMU 8".
 - **Removing it:** only the indented lines; when the oldest QEMU supported is
@@ -109,15 +59,57 @@ pygraphviz (`>=1.7`) stays: Ubuntu 24.04 has 1.7.
 ### W16. TypeIs from typing_extensions
 
 - **Why:** Python 3.12 and older have no `typing.TypeIs`; it came in 3.13.
-- **Needed on:** Debian 12 (3.11.2) and Ubuntu 24.04 (3.12.3), for the type
-  checker only: the import is under `TYPE_CHECKING`, and typing_extensions
-  isn't a dependency.
+- **Needed on:** Ubuntu 24.04 (3.12.3), for the type checker only: the import
+  is under `TYPE_CHECKING`, and typing_extensions isn't a dependency.
 - **Where:** `virtualbricks/bricks/event.py`,
   `virtualbricks/bricks/switchwrapper.py` and
   `virtualbricks/bricks/virtualmachine.py`, "from typing_extensions import
   TypeIs".
 - **Removing it:** `from typing import TypeIs`, once mypy's `python_version`
   is 3.13.
+
+### W17. The QEMU of RISC-V in qemu-system-misc
+
+- **Why:** Ubuntu 24.04 has `qemu-system-riscv32` and `qemu-system-riscv64`
+  in `qemu-system-misc`; Debian 13, Ubuntu 25.04 and later have them in a
+  package of their own, `qemu-system-riscv`. A RISC-V QEMU that is missing
+  names both packages, and the scripts of the recordings install
+  `qemu-system-riscv` only where there is one.
+- **Needed on:** Ubuntu 24.04 (8.2.2): the packages of the recordings, on 20
+  October 2026.
+- **Where:** `virtualbricks/programs.py`, `_RISCV`;
+  `virtualbricks/tests/data/programs/record.py` and `start.py`, `OPTIONAL`;
+  `help/C/programs.page`, "on Ubuntu 24.04".
+- **Removing it:** `qemu-system-riscv` alone in `PACKAGES`, and among the
+  packages of the two scripts. Then no program is in two packages: the
+  tuples of `PACKAGES`, the "or" of `package_of()` and
+  `test_package_of_a_program_that_moved` can go too.
+
+### The floors that follow Ubuntu 24.04
+
+The oldest versions that Virtualbricks asks for are those of Ubuntu 24.04.
+With it gone, raise them to those of Debian 13; Ubuntu 26.04 has the same or
+newer:
+
+| Where | Now | Debian 13 |
+|---|---|---|
+| `pyproject.toml`, `requires-python` | `>=3.12` | `>=3.13` |
+| `pyproject.toml`, `[tool.black]` and `[tool.ruff]` | `py312` | `py313` |
+| `pyproject.toml`, `[tool.mypy]`, `python_version` | `3.12` | `3.13` |
+| `pyproject.toml`, `Twisted[tls]` | `>=24.3` | `>=24.11` |
+| `pyproject.toml`, `pyOpenSSL` and its comment | `>=23.2` | `>=25.0` |
+| `pyproject.toml`, `attrs` | `>=23.2` | `>=25.3` |
+| `pyproject.toml`, `zope.interface` | `>=6.1` | `>=7.2` |
+| `pyproject.toml`, `tomlkit` | `>=0.12` | `>=0.13` |
+| `pyproject.toml`, `PyGObject` | `>=3.48` | `>=3.50` |
+| `pyproject.toml`, `pygraphviz` | `>=1.7` | `>=1.14` |
+| `README.md`, Requirements | "Python 3.12 or newer" | 3.13 |
+| `README.md`, Requirements | "QEMU 8.2 and newer" | 10.0 |
+| `README.md`, Development | "has to run on Python 3.12" | 3.13 |
+
+markdown-it-py (`>=3.0`) stays: Debian 13 has 3.0.0. With Twisted 24.11, the
+tests of the AMP socket run everywhere: their entry in `BUGS.md`, under
+Platforms, goes.
 
 ## Needed on every target
 
@@ -131,7 +123,7 @@ in the move to GTK 4 (`docs/redesign/18 - gtk4-migration.html`).
   allocated: `gtk_widget_size_allocate()` clears it afterwards ("Size
   allocation is god" in `gtkwidget.c`). Whatever changes a size on
   `size-allocate` does it in an idle call.
-- **Needed on:** every target (GTK 3.24.38 to 3.24.52).
+- **Needed on:** every target (GTK 3.24.41 to 3.24.52).
 - **Where:** "GTK would lose" and "GTK forgets":
   - `virtualbricks/gui/mainwindow/topologyview.py`,
     `TopologyView.on_allocated()` → `_fit_later()`;
@@ -177,7 +169,7 @@ in the move to GTK 4 (`docs/redesign/18 - gtk4-migration.html`).
 - **Why:** a `Gtk.Menu` popped up from Python is released once Python drops
   it, so `popup()` asks its callers to keep it, and the tabs do. Not checked
   again since: the widget that the menu is attached to may hold it too.
-- **Needed on:** every target (GTK 3.24, PyGObject 3.42 to 3.58). It goes with
+- **Needed on:** every target (GTK 3.24, PyGObject 3.48 to 3.58). It goes with
   `Gtk.Menu`, in GTK 4.
 - **Where:** `virtualbricks/gui/mainwindow/tab.py`, `popup()`, "Keep the menu
   that it returns while it shows"; `virtualbricks/gui/mainwindow/topology.py`
@@ -190,7 +182,7 @@ in the move to GTK 4 (`docs/redesign/18 - gtk4-migration.html`).
   without their breaks. `MarkdownLabel` joins the lines of the README with a
   line separator, which doesn't end the paragraph, and keeps only the lines
   that fit.
-- **Needed on:** every target (Pango 1.50.12 to 1.58.2); GTK 4 lays out its
+- **Needed on:** every target (Pango 1.52.1 to 1.58.2); GTK 4 lays out its
   labels with Pango too.
 - **Where:** `virtualbricks/gui/markdownview.py`, `MarkdownLabel` and its
   `fit()`, `LINE_SEPARATOR`.
@@ -215,7 +207,7 @@ in the move to GTK 4 (`docs/redesign/18 - gtk4-migration.html`).
   'GTK_IS_WIDGET (widget)' failed`: `gtk_status_icon_update_image()` asks
   the scale factor of the image before it checks that there is one. There
   the icon goes without its picture, which no tray would show anyway.
-- **Needed on:** every target (GTK 3.24.38 to 3.24.52, and the branch
+- **Needed on:** every target (GTK 3.24.41 to 3.24.52, and the branch
   gtk-3-24 still so). It goes with `Gtk.StatusIcon`, which GTK 4 doesn't
   have.
 - **Where:** `virtualbricks/gui/mainwindow/window.py`,
@@ -226,7 +218,7 @@ in the move to GTK 4 (`docs/redesign/18 - gtk4-migration.html`).
 
 The tests in `e2e/` run Virtualbricks on `broadwayd`, GTK 3's HTML5 backend,
 and find its widgets through AT-SPI. These workarounds are for limits of GTK
-3 on Broadway and of what GTK 3 tells AT-SPI, on every target (GTK 3.24.38 to
+3 on Broadway and of what GTK 3 tells AT-SPI, on every target (GTK 3.24.41 to
 3.24.52): they go, or change, with GTK 4. `e2e/README.md` (What it can't do
 yet) and `e2e/TODO.md` (Out of reach on Broadway) have the limits that have
 no workaround, such as drag and drop.

@@ -57,10 +57,11 @@ PACKAGES = (
     "qemu-system-mips",
     "qemu-system-ppc",
     "qemu-system-misc",
+    "qemu-system-s390x",
 )
-# The packages that only some targets have: riscv and s390x are in
-# qemu-system-misc where they're missing.
-OPTIONAL = ("qemu-system-riscv", "qemu-system-s390x")
+# The packages that only some targets have: riscv is in qemu-system-misc
+# where it's missing.
+OPTIONAL = ("qemu-system-riscv",)
 QEMU = "qemu-system-x86_64"
 MACHINES = ("pc", "q35")
 # The other architectures, those Debian releases on: each is asked the same
@@ -84,7 +85,6 @@ OLD_RELEASES = (
 # The target distributions, and Ubuntu 25.04 for QEMU 9, which none of them
 # ships.
 TARGETS: dict[str, str] = {
-    "debian-12": "docker.io/library/debian:bookworm",
     "ubuntu-24.04": "docker.io/library/ubuntu:24.04",
     "ubuntu-25.04": "docker.io/library/ubuntu:25.04",
     "debian-13": "docker.io/library/debian:trixie",

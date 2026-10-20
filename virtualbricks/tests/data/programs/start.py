@@ -49,6 +49,7 @@ PACKAGES = (
     "qemu-system-mips",
     "qemu-system-ppc",
     "qemu-system-misc",
+    "qemu-system-s390x",
     "qemu-utils",
     "vde2",
     "vde2-cryptcab",
@@ -57,8 +58,8 @@ PACKAGES = (
     "python3-attr",
     "python3-tomlkit",
 )
-# riscv and s390x are in qemu-system-misc where they're missing.
-OPTIONAL = ("qemu-system-riscv", "qemu-system-s390x")
+# riscv is in qemu-system-misc where it's missing.
+OPTIONAL = ("qemu-system-riscv",)
 VERSIONS = ("qemu-system-x86", "vde2", "python3", "python3-twisted")
 # The tap needs /dev/net/tun and the capture a raw socket.
 PODMAN = (

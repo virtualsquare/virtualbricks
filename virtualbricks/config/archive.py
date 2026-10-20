@@ -603,24 +603,12 @@ def read_with_tool(tool: Tool, path: str, name: str) -> bytes:
 def _safe_member(
     tarinfo: tarfile.TarInfo, destination: str
 ) -> tarfile.TarInfo | None:
-    """tarfile's data filter, or the same checks where Python lacks it."""
+    """tarfile's data filter: None for a member that it refuses."""
 
-    data_filter = getattr(tarfile, "data_filter", None)
-    if data_filter is not None:
-        try:
-            return data_filter(tarinfo, destination)
-        except tarfile.FilterError:
-            return None
-    name = tarinfo.name
-    if (
-        os.path.isabs(name)
-        or ".." in name.split("/")
-        or tarinfo.islnk()
-        or tarinfo.issym()
-        or tarinfo.isdev()
-    ):
+    try:
+        return tarfile.data_filter(tarinfo, destination)
+    except tarfile.FilterError:
         return None
-    return tarinfo
 
 
 # The first bytes of the compressed files, and GNU tar's option for them.

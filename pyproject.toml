@@ -10,19 +10,19 @@ readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Virtualbricks team" }]
 license = "GPL-2.0-or-later"
 license-files = ["COPYING", "LICENCE"]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "pygraphviz>=1.7",
     # tls: pyOpenSSL and service-identity, for the ssl sockets
-    "Twisted[tls]>=22.4",
-    # the certificates of the ssl sockets, and of their clients: 23.0 is the
-    # python3-openssl of Debian 12, the oldest of Debian and Ubuntu
-    "pyOpenSSL>=23.0",
-    "attrs>=22.2",
-    "markdown-it-py>=2.1",
-    "zope.interface>=5.5",
-    "PyGObject>=3.42",
-    "tomlkit>=0.11",
+    "Twisted[tls]>=24.3",
+    # the certificates of the ssl sockets, and of their clients: 23.2 is the
+    # python3-openssl of Ubuntu 24.04, the oldest of Debian and Ubuntu
+    "pyOpenSSL>=23.2",
+    "attrs>=23.2",
+    "markdown-it-py>=3.0",
+    "zope.interface>=6.1",
+    "PyGObject>=3.48",
+    "tomlkit>=0.12",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -129,11 +129,11 @@ exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:"]
 
 [tool.black]
 line-length = 79
-target-version = ["py311"]
+target-version = ["py312"]
 
 [tool.ruff]
 line-length = 79
-target-version = "py311"
+target-version = "py312"
 extend-exclude = ["_trial_temp"]
 
 [tool.ruff.lint]
@@ -153,7 +153,7 @@ known-first-party = ["virtualbricks"]
 # mypy alone checks these; the tests are left out
 files = ["virtualbricks", "tools"]
 exclude = ["^virtualbricks/tests/"]
-python_version = "3.11"
+python_version = "3.12"
 # the interfaces of zope.interface and @implementer
 plugins = ["mypy_zope:plugin"]
 warn_unused_ignores = true

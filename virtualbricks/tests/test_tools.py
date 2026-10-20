@@ -287,7 +287,8 @@ class TestSignalRace(unittest.TestCase):
         self.assertGone()
 
     def main(self, *argv):
-        tmp = self.mktemp()
+        # absolute, as mkdtemp() makes its folders from Python 3.12
+        tmp = os.path.abspath(self.mktemp())
         os.makedirs(tmp)
         self.patch(tempfile, "tempdir", tmp)
         out = io.StringIO()

@@ -79,8 +79,8 @@ in 3.0: they wait until after it.
 ## Platforms
 
 - [ ] *Later.* **Virtualbricks doesn't start on a Twisted older than
-  26.4.** That is every target but Debian testing and sid: Debian 12 has
-  22.4, Ubuntu 24.04 24.3, Debian 13 24.11 and Ubuntu 26.04 25.5. `class
+  26.4.** That is every target but Debian testing and sid: Ubuntu 24.04
+  has 24.3, Debian 13 24.11 and Ubuntu 26.04 25.5. `class
   ControlFactory(protocol.Factory[Any])` in
   `virtualbricks/console/control.py`, there since f117c701, raises
   `TypeError: type 'Factory' is not subscriptable` when imported: the
@@ -93,19 +93,19 @@ in 3.0: they wait until after it.
   for the run, every other module imports on Twisted 24.11, but for those
   that need `pygraphviz`, which wasn't installed. Likely fix: the base
   class subscripted for mypy only. Then the tests, in the next entry, and
-  the suite on the Twisted of Debian 12.
+  the suite on the Twisted of Ubuntu 24.04.
 - [ ] *Later.* **The tests of the AMP socket don't run on a Twisted older
-  than 24.7.** That is Debian 12 (22.4) and Ubuntu 24.04 (24.3). They
-  patch `amp._log`, the logger of `twisted.protocols.amp`, which came in
-  Twisted 24.7: `test_control.py` in `virtualbricks/tests/console/`,
-  `test_client.py`, `test_follower.py`, `test_mirror.py` and
-  `test_tunnel.py` in `virtualbricks/tests/remote/`, and `test_remote.py`
-  in `virtualbricks/tests/gui/`. Under IDEAS since page 17, until 20
-  October 2026; checked that day: `hasattr(amp, "_log")` is false with
+  than 24.7.** That is Ubuntu 24.04 (24.3). They patch `amp._log`, the
+  logger of `twisted.protocols.amp`, which came in Twisted 24.7:
+  `test_control.py` in `virtualbricks/tests/console/`, `test_client.py`,
+  `test_follower.py`, `test_mirror.py` and `test_tunnel.py` in
+  `virtualbricks/tests/remote/`, and `test_remote.py` in
+  `virtualbricks/tests/gui/`. Under IDEAS since page 17, until 20 October
+  2026; checked that day: `hasattr(amp, "_log")` is false with
   `twisted==22.1.0` in a venv, true with 26.4, and the sources of 22.4
   and 24.3 have no `_log`, those of 24.7 and 24.11 have it. Likely fix:
   catch the log of AMP another way, with a log observer, or patch it only
-  where it is.
+  where it is. It goes by itself with Ubuntu 24.04.
 
 ## Remote windows
 

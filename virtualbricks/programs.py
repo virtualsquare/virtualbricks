@@ -127,8 +127,7 @@ PACKAGES: dict[str, str | tuple[str, ...] | None] = {
     "qemu-system-ppc64": "qemu-system-ppc",
     "qemu-system-riscv32": _RISCV,
     "qemu-system-riscv64": _RISCV,
-    # in qemu-system-misc on Debian 12
-    "qemu-system-s390x": ("qemu-system-s390x", "qemu-system-misc"),
+    "qemu-system-s390x": "qemu-system-s390x",
     "qemu-system-sparc": "qemu-system-sparc",
     "qemu-system-sparc64": "qemu-system-sparc",
     "qemu-system-alpha": "qemu-system-misc",
@@ -301,9 +300,7 @@ def _items(text: str) -> list[str]:
     for line in lines[index + 1 :]:
         if not line.strip():
             break
-        # the messages of a module left out, as QEMU 7.2 writes them
-        if not line.startswith("qemu:"):
-            items.append(line)
+        items.append(line)
     return items
 
 

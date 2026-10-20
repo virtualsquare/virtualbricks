@@ -44,19 +44,16 @@ Nothing here imports GTK.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 import attr
+from attr import AttrsInstance
 
 from virtualbricks.config.schema import field_names, kind_of, why_unused
 from virtualbricks.config.settings import get_setting
 from virtualbricks.i18n import _
 
-if TYPE_CHECKING:  # pragma: no cover
-    # attrs 22.2, of Debian 12, has AttrsInstance in its types only
-    from attr import AttrsInstance
-
-R = TypeVar("R", bound="AttrsInstance")
+R = TypeVar("R", bound=AttrsInstance)
 
 
 def copy(record: R) -> R:

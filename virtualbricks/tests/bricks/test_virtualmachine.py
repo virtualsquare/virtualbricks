@@ -451,24 +451,24 @@ class TestLacks(BrickTestCase):
             },
         )
 
-    def test_a_sound_card_of_8_2(self):
-        self.vm.update_config({"sound_card": "virtio-sound-pci"})
+    def test_a_sound_card_after_8_2(self):
+        self.vm.update_config({"sound_card": "vhost-user-snd-pci"})
         self.assertEqual(
-            self.lacking("debian-12"),
+            self.lacking("ubuntu-24.04"),
             {
-                "sound_card": "QEMU 7.2.22 has no sound card virtio-sound-pci:"
-                " the machine has none"
+                "sound_card": "QEMU 8.2.2 has no sound card"
+                " vhost-user-snd-pci: the machine has none"
             },
         )
-        for target in ("ubuntu-24.04", "debian-13", "debian-testing"):
+        for target in ("ubuntu-25.04", "debian-13", "debian-testing"):
             self.assertEqual(self.lacking(target), {}, target)
         # the PC speaker is the machine's
         self.vm.update_config({"sound_card": "pcspk"})
-        self.assertEqual(self.lacking("debian-12"), {})
+        self.assertEqual(self.lacking("ubuntu-24.04"), {})
         self.assertEqual(
-            self.lacking("debian-12", driver="nope"),
+            self.lacking("ubuntu-24.04", driver="nope"),
             {
-                "sound_card": "QEMU 7.2.22 has no audio driver nope: the"
+                "sound_card": "QEMU 8.2.2 has no audio driver nope: the"
                 " machine has no sound card"
             },
         )
@@ -476,7 +476,6 @@ class TestLacks(BrickTestCase):
     def test_the_cards_on_ubuntu(self):
         cards = [("e1000", True), ("igb", False), ("rtl8139", True)]
         for target, vde in (
-            ("debian-12", True),
             ("ubuntu-24.04", False),
             ("debian-13", True),
             ("ubuntu-26.04", False),
@@ -493,8 +492,8 @@ class TestLacks(BrickTestCase):
                     ),
                     target,
                 )
-            # igb came with QEMU 8.2
-            self.assertEqual("card1" in found, target == "debian-12", target)
+            # every target has igb
+            self.assertNotIn("card1", found, target)
 
     def test_acpi_off(self):
         # every target turns it off, on the pc machine
@@ -508,7 +507,7 @@ class TestLacks(BrickTestCase):
         found = lacks(
             self.vm.config,
             [],
-            recorded_info("debian-12"),
+            recorded_info("ubuntu-24.04"),
             frozenset(),
             "alsa",
         )
