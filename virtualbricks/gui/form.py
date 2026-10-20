@@ -396,11 +396,11 @@ class Form:
         return entry
 
     def combo_entry(
-        self, name: str, options: Iterable[str] = ()
+        self, name: str, options: Iterable[str] = (), width: int = 20
     ) -> Gtk.ComboBoxText:
         """
         A text, typed or chosen in a menu of options; set_options() changes
-        them.
+        them. Its entry is width characters wide.
         """
 
         combo = Gtk.ComboBoxText.new_with_entry()
@@ -409,7 +409,7 @@ class Form:
         set_options(combo, options)
         entry = combo.get_child()
         assert isinstance(entry, Gtk.Entry), "new_with_entry() made it"
-        entry.set_width_chars(20)
+        entry.set_width_chars(width)
         entry.set_text(self.draft.get(name))
         entry.connect(
             "changed", lambda widget: self._set(name, widget.get_text())

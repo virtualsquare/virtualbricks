@@ -256,7 +256,8 @@ class SettingsWindow(Window):
 
     def _windows(self, form: Form) -> None:
         form.section(_("Windows"))
-        form.combo_entry("terminal", terminals(self.facts.which))
+        # wide enough for the default, x-terminal-emulator -e {command}
+        form.combo_entry("terminal", terminals(self.facts.which), width=32)
         form.switch("tray_icon")
         form.switch("warn_missing_programs")
 

@@ -243,17 +243,19 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 32 &middot; Design &middot; revision 3, decided</div>
+    <div class="eyebrow">Step 32 &middot; Design &middot; revision 4, implemented</div>
     <h1>The terminal command</h1>
     <p class="lede">The setting <code>terminal</code> names a program, and a console opens as <code><i>terminal</i> -e <i>program</i> <i>socket</i></code>, so only a terminal that takes <code>-e</code> that way can open it. This page makes the setting a command line with a place for the console, <code>{command}</code>, so that any terminal works, with its own options: <code>gnome-terminal -- {command}</code>, <code>xfce4-terminal -x {command}</code>, <code>xterm -hold -e {command}</code>.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at c06584ae</li>
-      <li>revision 3 &middot; 19 October 2026</li>
-      <li><span class="status">decided</span></li>
+      <li>revision 4 &middot; 20 October 2026</li>
+      <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> item 10 of the list of pressing tasks, the first item of your <code># TODO</code>: &ldquo;Let the terminal be a command with a place for the console, so that any terminal works&rdquo;, left for later by S6 C of <a href="23%20-%20settings-window.html#decisions">page 23</a> (&sect;12 there). The facts of <a href="#today">&sect;2</a> were checked today: the command lines that Virtualbricks runs, recorded by a stand-in on <code>PATH</code>, and the nineteen terminals of Debian trixie, run in podman under Xvfb. The five questions, T1 to T5 in <a href="#decisions">&sect;8</a>, are decided.</p>
     <p class="revision"><strong>What changed:</strong> revision 2 records your answer of today: &ldquo;Defaults are fine, T5: B&rdquo;. T1 to T4 are A, as recommended. T5 is B: <code>{name}</code>, the name of the brick, is a place in the line too, for the title of its window (<a href="#setting">&sect;3</a>). The lines of the menu and the default carry no title, as decided; a title in them is in <a href="#later">&sect;9</a>. Step 1 starts, on <code>develop</code>.</p>
     <p class="revision"><strong>What changed:</strong> revision 3 records what step 1 found, written and not committed yet. <code>{command}</code> in quotes, as in <code>xfce4-terminal -e '{command}'</code>, is one word: as the shell keeps a quoted word, and as a terminal whose <code>-e</code> takes one string needs (<a href="#setting">&sect;3</a>). Only <code>{command}</code> typed as a word of its own becomes several. The menu&rsquo;s line of GNOME Console is <code>kgx -e '{command}'</code>: kgx 42, of Ubuntu 22.04, has no <code>--</code>, and every kgx of the targets takes the console as one string after <code>-e</code>. The check of the targets found nothing else (<a href="#menu">&sect;5</a>).</p>
+    <p class="revision"><strong>Implemented</strong> on 19 and 20 October 2026 on <code>develop</code>, from c06584ae, in the two steps of <a href="#plan">&sect;7</a>: 38d71330 step 1, the line, with what revision 3 records; and one more, step 2, the window, the guide and the end-to-end scenarios.</p>
+    <p class="revision">The differences from the plan. The entry of the row <i>Terminal</i> was 20 characters wide and showed <code>x-terminal-emulator -e {</code>: it is 32 now, as long as the default and the longest line of the menu, and the window keeps its width. A test says so, and fails when a line of the menu grows longer than the default. The scenarios are two, not one: <i>Open Control Monitor</i> runs a line chosen in the menu, <code>gnome-terminal -- {command}</code>, and one typed with the name of the brick, <code>xterm -T {name} -e {command}</code>, each with a stand-in terminal on <code>PATH</code> that records the words it gets. Both passed 20 runs; both fail when <code>open_console()</code> drops the words of the line, and the second when <code>{name}</code> stays in it. The picture of the Settings window in the guide was taken again, since it shows the default. The two items of <a href="#later">&sect;9</a> are under IDEAS in the TODO.</p>
   </header>
 
   <div class="layout">

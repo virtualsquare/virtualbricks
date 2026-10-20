@@ -1,11 +1,5 @@
 # TODO
 
-## Config
-
-- [ ] Let the terminal be a command with a place for the console, so that
-  any terminal works: `gnome-terminal -- {command}`, `foot {command}`
-  (23 §12, S6 C)
-
 ## Projects
 
 - [ ] Drop the import message window
@@ -26,6 +20,12 @@
   shared, from `/sys/kernel/mm/ksm/pages_sharing` (23 §12)
 - [ ] Change the settings of a project that isn't open, from the Projects
   window (23 §12)
+- [ ] Give the window of a console the name of its brick in the lines of
+  the terminal menu and in the default, as `x-terminal-emulator -T {name}
+  -e {command}`, once the title option of each terminal is checked on the
+  targets (32 §9)
+- [ ] Try the terminal of the Settings window before OK, with a button that
+  opens it on a short program (32 §9)
 
 ## Projects
 
@@ -336,6 +336,13 @@
 
 # DONE
 
+- [x] Let the terminal be a command line with a place for the console, so
+  that any terminal works: `{command}` is the console and `{name}` the name
+  of the brick, as in `gnome-terminal -- {command}` and `xterm -T {name} -e
+  {command}`. A value without `{command}` gets `-e {command}` after it, so
+  `xterm`, the files of before and the `term` of 2.1 keep working. The menu
+  of the Settings window offers whole lines, checked on the seven targets,
+  and a quote that isn't closed is refused (page 32; 23 §12, S6 C)
 - [x] Check every value in `brick.update_config()` before assigning any:
   a bad value or a key the brick lacks, wherever it comes in the changes,
   leaves the brick as it was, its program and the windows untold; every

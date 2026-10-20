@@ -40,3 +40,23 @@ Feature: Settings
     Given Virtualbricks is running
     When I open the Settings window
     Then the menu of "Audio driver" in the Settings window has the audio drivers of qemu-system-x86_64
+
+  @needs-vde_switch @needs-vdeterm
+  Scenario: Open Control Monitor runs the terminal chosen in the Settings window, with the console in its place
+    Given gnome-terminal is a terminal of the tests
+    And Virtualbricks is running
+    When I choose "gnome-terminal -- {command}" for "Terminal" in the Settings window, on its page This computer
+    And I add the switch sw1
+    And I start sw1
+    And I open the control monitor of sw1, from its menu
+    Then gnome-terminal got "--", then the console of sw1
+
+  @needs-vde_switch @needs-vdeterm
+  Scenario: A terminal typed in the Settings window gets the name of the brick and the console in their places
+    Given xterm is a terminal of the tests
+    And Virtualbricks is running
+    When I type "xterm -T {name} -e {command}" as "Terminal" in the Settings window, on its page This computer
+    And I add the switch sw1
+    And I start sw1
+    And I open the control monitor of sw1, from its menu
+    Then xterm got "-T sw1 -e", then the console of sw1

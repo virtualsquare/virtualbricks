@@ -29,6 +29,7 @@ from virtualbricks.config.tomlfile import load_toml
 from virtualbricks.engine import LocalEngine
 from virtualbricks.observable import Observable, Signal
 from virtualbricks.programs import REQUIRED, FolderPrograms, Missing, Version
+from virtualbricks.settingsdraft import TERMINALS
 from virtualbricks.tests.gui import (
     GuiTestCase,
     has_display,
@@ -198,6 +199,15 @@ class TestPages(WindowTestCase):
         model = combo.get_model()
         found = [model[index][0] for index in range(len(model))]
         self.assertEqual(found, settings_window.terminals())
+
+    def test_the_terminal_shows_whole(self):
+        # the default and the lines of the menu, {command} included
+        window = self.window()
+        longest = max(map(len, TERMINALS))
+        self.assertEqual(longest, len(get_setting("terminal")))
+        self.assertEqual(
+            control(window, "terminal").get_width_chars(), longest
+        )
 
 
 class TestOk(WindowTestCase):

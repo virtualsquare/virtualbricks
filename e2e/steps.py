@@ -252,6 +252,62 @@ def program_missing(virtualbricks, program):
     virtualbricks.hidden.add(program)
 
 
+# A terminal of the tests: the words it gets, as JSON, in a file, written
+# whole, and no window
+TERMINAL_SCRIPT = """\
+#!/bin/sh
+exec {python} -I -c '
+import json, os, sys
+with open(sys.argv[1] + ".part", "w") as file:
+    json.dump(sys.argv[2:], file)
+os.replace(sys.argv[1] + ".part", sys.argv[1])
+' {got} "$@"
+"""
+
+
+@given(words("{program} is a terminal of the tests"))
+def terminal_of_the_tests(virtualbricks, program):
+    """
+    The program, on the PATH of Virtualbricks, is a script that writes the
+    words it gets in the file PROGRAM.argv of the folder of the scenario,
+    and opens nothing.
+    """
+
+    virtualbricks.replaced[program] = TERMINAL_SCRIPT.format(
+        python=shlex.quote(sys.executable),
+        got=shlex.quote(terminal_got_file(virtualbricks, program)),
+    )
+
+
+def terminal_got_file(virtualbricks, program):
+    """Where the terminal of the tests writes the words it gets."""
+
+    return os.path.join(virtualbricks.folder, f"{program}.argv")
+
+
+@then(words('{program} got "{before}", then the console of {switch:Brick}'))
+def terminal_got(virtualbricks, brick_processes, program, before, switch):
+    """
+    The terminal of the tests got the words of before, as the shell splits
+    them, then the console of the switch: vdeterm, as Virtualbricks finds
+    it, and the socket after -M of its vde_switch.
+    """
+
+    path = terminal_got_file(virtualbricks, program)
+    virtualbricks.wait_for(lambda: os.path.exists(path), f"{program} runs")
+    with open(path) as file:
+        got = json.load(file)
+    vdeterm = os.path.realpath(shutil.which("vdeterm"))
+    # the program by its name: Virtualbricks may find it by a link
+    shown = [
+        "vdeterm" if os.path.realpath(word) == vdeterm else word
+        for word in got
+    ]
+    console = switch_socket(virtualbricks, brick_processes, switch, "-M")
+    wanted = [*shlex.split(before), "vdeterm", console]
+    assert shown == wanted, f"{program} got {got}"
+
+
 @given(words("Virtualbricks is running with {options}"))
 def running_with(virtualbricks, request, options):
     """
@@ -734,6 +790,16 @@ def continue_(virtualbricks, name):
     """In its menu, Process and its number, then Continue: SIGCONT."""
 
     process_item(virtualbricks, name, "Continue")
+
+
+@when(words("I open the control monitor of {name:Brick}, from its menu"))
+def open_control_monitor(virtualbricks, name):
+    """
+    In its menu, Process and its number, then Open Control Monitor: its
+    console, in the terminal of the settings.
+    """
+
+    process_item(virtualbricks, name, "Open Control Monitor")
 
 
 def process_item(virtualbricks, name, item):
@@ -3747,11 +3813,71 @@ def type_setting(virtualbricks, text, setting, page):
     the setting, in place of the one it has.
     """
 
+    type_in_settings(virtualbricks, text, setting, page)
+
+
+@when(
+    words(
+        'I type "{text}" as "{setting}" in the Settings window, on its page'
+        " {page}"
+    )
+)
+def type_setting_then_ok(virtualbricks, text, setting, page):
+    """The same, then OK, and the window closes."""
+
+    dialog = type_in_settings(virtualbricks, text, setting, page)
+    virtualbricks.click("button", "OK", within=dialog)
+    virtualbricks.gone("dialog", SETTINGS_WINDOW)
+
+
+def type_in_settings(virtualbricks, text, setting, page):
+    """
+    The Settings window, with the text typed in the entry of the setting on
+    the page, in place of the one it has.
+    """
+
     dialog = open_settings(virtualbricks)
     virtualbricks.click("page tab", page, within=dialog)
     virtualbricks.type(
         text, "text", within=virtualbricks.row(setting), over=True
     )
+    return dialog
+
+
+@when(
+    words(
+        'I choose "{choice}" for "{setting}" in the Settings window, on its'
+        " page {page}"
+    )
+)
+def choose_setting(virtualbricks, choice, setting, page):
+    """
+    Settings, in the menu File; on the page, the menu of the setting,
+    opened with its arrow, then the choice, which its text then has; then
+    OK, and the window closes.
+    """
+
+    dialog = open_settings(virtualbricks)
+    virtualbricks.click("page tab", page, within=dialog)
+    row = virtualbricks.row(setting)
+    combo = open_text_menu(virtualbricks, row)
+    virtualbricks.click("menu item", choice, within=combo)
+    text = virtualbricks.find("text", within=row)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.text(text) == choice, f"{setting} is {choice}"
+    )
+    virtualbricks.click("button", "OK", within=dialog)
+    virtualbricks.gone("dialog", SETTINGS_WINDOW)
+
+
+def open_text_menu(virtualbricks, row):
+    """The menu of the text of the row, opened with its arrow: its combo box."""
+
+    combo = virtualbricks.find("combo box", within=row)
+    # its arrow, at its right end: the middle of it is its text
+    x, y, width, height = harness.a11y.extents(combo)
+    virtualbricks.browser.click(x + width - height // 2, y + height // 2)
+    return combo
 
 
 def open_settings(virtualbricks):
@@ -3823,10 +3949,7 @@ def audio_drivers_menu(virtualbricks, setting, program):
     playing = [driver for driver in PLAYING if driver in drivers]
     wanted = playing + sorted(set(drivers) - set(playing))
     virtualbricks.find("dialog", SETTINGS_WINDOW)
-    combo = virtualbricks.find("combo box", within=virtualbricks.row(setting))
-    # its arrow, at its right end: the middle of it is its text
-    x, y, width, height = harness.a11y.extents(combo)
-    virtualbricks.browser.click(x + width - height // 2, y + height // 2)
+    combo = open_text_menu(virtualbricks, virtualbricks.row(setting))
     shown = []
 
     def has():

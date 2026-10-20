@@ -35,8 +35,14 @@
     <terms>
       <item>
         <title><gui>Terminal</gui></title>
-        <p>The terminal that opens the consoles of the bricks. The menu offers
-        those of this computer that can.</p>
+        <p>The terminal that opens the consoles of the bricks, as a command
+        line: <cmd>{command}</cmd> is the console, and <cmd>{name}</cmd> the
+        name of the brick. The menu offers the terminals of this computer,
+        each in the form it takes, as <cmd>gnome-terminal -- {command}</cmd>.
+        Another is typed with its options: <cmd>xterm -T {name} -hold -e
+        {command}</cmd> names the window after the brick and keeps it open
+        once the console ends. A terminal without <cmd>{command}</cmd> gets
+        <cmd>-e {command}</cmd> after it.</p>
       </item>
       <item>
         <title><gui>Tray icon</gui></title>

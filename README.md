@@ -283,9 +283,11 @@ the QEMU and VDE programs. Each folder says what it holds, and what it lacks
 with the package that has it. A new project starts with a copy of the
 settings of the project that is open. The page *This computer* sets
 `terminal`, the terminal of the consoles, one of those its menu offers or
-any that takes `-e` and a program, and `audio_driver`, the audio driver of
-QEMU that plays the sound cards of the machines: `alsa` by default, or one
-of the others that its menu offers, those your QEMU has.
+any other, as a command line with `{command}` where the console goes:
+`xterm -T {name} -e {command}`, where `{name}` is the name of the brick.
+It also sets `audio_driver`, the audio driver of QEMU that plays the sound
+cards of the machines: `alsa` by default, or one of the others that its menu
+offers, those your QEMU has.
 
 A tap and a capture need root. Unless Virtualbricks runs as root, it runs them
 with `sudo -A` when an askpass helper is configured, in `SUDO_ASKPASS` or

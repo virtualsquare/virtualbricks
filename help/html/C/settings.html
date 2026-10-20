@@ -40,8 +40,14 @@ document.addEventListener('DOMContentLoaded', function() {
     <span class="file">~/.config/virtualbricks/settings.toml</span>:</p>
 <div class="terms"><div class="inner"><div class="region"><dl class="terms">
 <dt class="terms"><span class="gui">Terminal</span></dt>
-<dd class="terms"><p class="p">The terminal that opens the consoles of the bricks. The menu offers
-        those of this computer that can.</p></dd>
+<dd class="terms"><p class="p">The terminal that opens the consoles of the bricks, as a command
+        line: <span class="cmd">{command}</span> is the console, and <span class="cmd">{name}</span> the
+        name of the brick. The menu offers the terminals of this computer,
+        each in the form it takes, as <span class="cmd">gnome-terminal -- {command}</span>.
+        Another is typed with its options: <span class="cmd">xterm -T {name} -hold -e
+        {command}</span> names the window after the brick and keeps it open
+        once the console ends. A terminal without <span class="cmd">{command}</span> gets
+        <span class="cmd">-e {command}</span> after it.</p></dd>
 <dt class="terms"><span class="gui">Tray icon</span></dt>
 <dd class="terms"><p class="p">An icon in the system tray.</p></dd>
 <dt class="terms"><span class="gui">Missing programs</span></dt>
