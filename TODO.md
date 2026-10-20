@@ -283,8 +283,6 @@
 - [ ] Slow down an address that sends wrong proofs of the token (17 §12)
 - [ ] Listen on the other types of Twisted's endpoints, as `systemd` for a
   socket that systemd opens (17 §12)
-- [ ] Run the tests of the AMP socket on Twisted 22.1 too: they patch
-  `amp._log`, which 22.1 doesn't have (17)
 
 ## Start-up
 

@@ -1,16 +1,18 @@
 # Bugs
 
 Bugs found and not fixed yet, by area, each with how it was seen. A fixed
-one leaves the list.
+one leaves the list. Those marked *Later* belong to the remote control,
+the control socket and the windows of `--connect`, which is experimental
+in 3.0: they wait until after it.
 
 ## Control socket
 
-- [ ] **`Changed` comes after the answer of `BrickStop`.** Over AMP 2, with
-  `Follow`, the `Changed` push of a brick that stops (`pid` None) comes
-  after the answer of `BrickStop`, every time. `virtualbricks-control`(7)
-  promises that "once a command is answered, the program has what it
-  changed", and `BrickStart` keeps the promise. Seen on 3.0.0.dev3, on 6
-  October 2026, with a switch:
+- [ ] *Later.* **`Changed` comes after the answer of `BrickStop`.** Over
+  AMP 2, with `Follow`, the `Changed` push of a brick that stops (`pid`
+  None) comes after the answer of `BrickStop`, every time.
+  `virtualbricks-control`(7) promises that "once a command is answered,
+  the program has what it changed", and `BrickStart` keeps the promise.
+  Seen on 3.0.0.dev3, on 6 October 2026, with a switch:
 
   ```
   ask BrickStart
@@ -24,7 +26,10 @@ one leaves the list.
   In one run, two `Changed brick sw2 {'pid': None}` came after the answer.
   The answer of a typed command waits for `pushes_first()`
   (`virtualbricks/remote/follower.py`), from `_responder()` in
-  `virtualbricks/console/control.py`.
+  `virtualbricks/console/control.py`. Probably the Deferred of the stop
+  fires before the end of the process, which makes the `Changed`. The
+  windows of `--connect` can show a stopped brick as running for a
+  moment.
 
 ## Bricks
 
@@ -73,8 +78,8 @@ one leaves the list.
 
 ## Platforms
 
-- [ ] **Virtualbricks doesn't start on Twisted 22.1.** That is the Twisted
-  of Ubuntu 22.04, a supported target. `class
+- [ ] *Later.* **Virtualbricks doesn't start on Twisted 22.1.** That is
+  the Twisted of Ubuntu 22.04, a supported target. `class
   ControlFactory(protocol.Factory[Any])` in
   `virtualbricks/console/control.py`, there since f117c701, raises
   `TypeError: 'type' object is not subscriptable` when imported: the
@@ -83,12 +88,24 @@ one leaves the list.
   19 October 2026, with Python 3.10 and `twisted==22.1.0` in a venv. With
   that base class made subscriptable for the run, the other modules import,
   but for those of the windows and `topology.py`, not tried: the venv has
-  no `gi` and no `pygraphviz`.
+  no `gi` and no `pygraphviz`. Likely fix: the base class subscripted for
+  mypy only. Then the tests, in the next entry, and the suite run on
+  Twisted 22.1.
+- [ ] *Later.* **The tests of the AMP socket don't run on Twisted 22.1.**
+  They patch `amp._log`, the logger of `twisted.protocols.amp`, which
+  Twisted 22.1 doesn't have: `test_control.py` in
+  `virtualbricks/tests/console/`, `test_client.py`, `test_follower.py`,
+  `test_mirror.py` and `test_tunnel.py` in `virtualbricks/tests/remote/`,
+  and `test_remote.py` in `virtualbricks/tests/gui/`. Under IDEAS since
+  page 17, until 20 October 2026; checked that day: `hasattr(amp,
+  "_log")` is false with `twisted==22.1.0` in a venv, true with 26.4.
+  Likely fix: catch the log of AMP another way, with a log observer, or
+  patch it only where it is.
 
 ## Remote windows
 
-- [ ] **The windows of `--connect` turn KSM on in this computer.** At
-  their start, `RemoteApplication.install_settings()`
+- [ ] *Later.* **The windows of `--connect` turn KSM on in this
+  computer.** At their start, `RemoteApplication.install_settings()`
   (`virtualbricks/gui/app.py`) calls `load_settings()`
   (`virtualbricks/config/settings.py`), which ends with
   `set_ksm(enable=True)` when the `settings.toml` of this computer has
@@ -109,9 +126,11 @@ one leaves the list.
   2026, reading the start-up code for page 27, then in the old
   `virtualbricks/gui/app.py`; checked again on 12 October 2026 with the
   new start-up: `install_settings()`, with that setting in an isolated
-  home and `set_ksm` replaced, called it with `True`.
-- [ ] **The windows of `--connect` write all the settings of this
-  computer at quit.** `run()` (`virtualbricks/main.py`) registers
+  home and `set_ksm` replaced, called it with `True`. Likely fix, a small
+  one: a way to load the settings without starting KSM, a parameter or a
+  split of `load_settings()`, for `RemoteApplication`.
+- [ ] *Later.* **The windows of `--connect` write all the settings of
+  this computer at quit.** `run()` (`virtualbricks/main.py`) registers
   `store_settings` before the shutdown in every mode, and
   `RemoteApplication` keeps the one of `app.Application`, which
   writes the whole `settings.toml` from the copy it read at the start.
@@ -127,11 +146,14 @@ one leaves the list.
   3.0.0.dev3, on 12 October 2026, reviewing the start-up against page
   27: in an isolated home, the windows read a `settings.toml` with
   `terminal = "xterm"`, another process wrote `"kitty"`, and the
-  `store_settings()` of the quit wrote `"xterm"` back.
+  `store_settings()` of the quit wrote `"xterm"` back. Likely fix, a small
+  one: no `store_settings` at quit for the windows, which write their
+  settings as they change; best fixed with the one under Settings.
 
 ## Settings
 
-- [ ] **Two Virtualbricks on one computer undo each other's settings.**
+- [ ] *Later.* **Two Virtualbricks on one computer undo each other's
+  settings.**
   Each process reads all of `settings.toml` at its start and writes all
   of its own copy back: at each change, from the Settings window or the
   console, and at quit (`store_settings` before shutdown, registered by
@@ -143,4 +165,24 @@ one leaves the list.
   start-up code for page 27; checked with two Python processes on one
   `settings.toml`: the first loaded it, the second set `terminal` and
   wrote it, the first wrote its copy as at quit, and `terminal` had its
-  old value again.
+  old value again. Likely fix: each write reads the file again and
+  writes only the keys that changed, which may need a design page; with
+  it, the write at quit of the windows of `--connect`, under Remote
+  windows.
+
+## Tests
+
+- [ ] **`TestSignalRace.test_main` fails while a Virtualbricks runs on
+  the computer.** The test runs `tools/signalrace.py`, which starts the
+  real program with `--workspace`, so with `--lock workspace`, and that
+  mode takes the system lock and the user lock shared. A Virtualbricks
+  with `--lock system`, the default, of any user, holds the first alone,
+  one with `--lock user` of the same user the second, and either refuses
+  every run. The tool ends with 2, "A run didn't start", and the test
+  fails with `2 != 0`. The e2e tests move the system lock to a file of
+  their own (`LAUNCH` in `e2e/harness.py`, with `E2E_SYSTEM_LOCK`); the
+  tool and its test don't. Seen on 3.0.0.dev6, on 20 October 2026: a
+  Virtualbricks started from a shell held the system lock, and the run of
+  the tool said "Another Virtualbricks is running on this machine with
+  --lock system". The other six tests of the class passed, and all seven
+  passed once it had quit.
