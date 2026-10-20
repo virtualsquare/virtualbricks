@@ -163,21 +163,6 @@ in 3.0: they wait until after it.
 
 ## Tests
 
-- [ ] **`TestSignalRace.test_main` fails while a Virtualbricks runs on
-  the computer.** The test runs `tools/signalrace.py`, which starts the
-  real program with `--workspace`, so with `--lock workspace`, and that
-  mode takes the system lock and the user lock shared. A Virtualbricks
-  with `--lock system`, the default, of any user, holds the first alone,
-  one with `--lock user` of the same user the second, and either refuses
-  every run. The tool ends with 2, "A run didn't start", and the test
-  fails with `2 != 0`. The e2e tests move the system lock to a file of
-  their own (`LAUNCH` in `e2e/harness.py`, with `E2E_SYSTEM_LOCK`); the
-  tool and its test don't. Seen on 3.0.0.dev6, on 20 October 2026: a
-  Virtualbricks started from a shell held the system lock, and the run of
-  the tool said "Another Virtualbricks is running on this machine with
-  --lock system". The other six tests of the class passed, and all seven
-  passed once it had quit.
-
 - [ ] **Some unit tests need the programs of the bricks installed.**
   `README.md` says that the tests need neither QEMU nor VDE, but these
   fail without them:

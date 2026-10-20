@@ -25,11 +25,12 @@ Two signals against a Virtualbricks that runs, many times: how often it hangs.
     python tools/signalrace.py --stdout            -l - instead of a file
     python tools/signalrace.py --python VENV/bin/python
 
-Each run starts virtualbricks --no-gui --no-term -l FILE of this checkout, in
-a home of its own, and waits until the process catches SIGTERM: the reactor
-runs, with its handlers. Half a second later it sends the first signal, and
-the second after a delay drawn between the two numbers of --between, in
-microseconds. A run still there 3 s later hung.
+Each run starts virtualbricks --no-gui --no-term --lock none -l FILE of this
+checkout, in a home of its own and without a lock, which another Virtualbricks
+of the computer would hold. It waits until the process catches SIGTERM: the
+reactor runs, with its handlers. Half a second later it sends the first
+signal, and the second after a delay drawn between the two numbers of
+--between, in microseconds. A run still there 3 s later hung.
 
 The handlers of the reactor once logged from inside the signal handler, and a
 signal that came in the middle of a write to the log file waited forever for
@@ -71,7 +72,7 @@ class DidNotStart(Exception):
 
 
 def command(python: str, folder: str, stdout: bool) -> list[str]:
-    """Virtualbricks without the windows or the console, in folder."""
+    """Virtualbricks without the windows, the console or a lock, in folder."""
 
     log = "-" if stdout else os.path.join(folder, "vb.log")
     return [
@@ -80,6 +81,10 @@ def command(python: str, folder: str, stdout: bool) -> list[str]:
         "virtualbricks",
         "--no-gui",
         "--no-term",
+        # the system lock, in /tmp, is that of every Virtualbricks of the
+        # computer, which --workspace would share
+        "--lock",
+        "none",
         "--workspace",
         os.path.join(folder, "workspace"),
         "-l",

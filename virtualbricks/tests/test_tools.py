@@ -239,7 +239,7 @@ class TestSignalRace(unittest.TestCase):
         self.assertRaises(ProcessLookupError, os.kill, pid, 0)
 
     def test_command(self):
-        """Without the windows or the console, in the folder."""
+        """Without the windows, the console or a lock, in the folder."""
         self.assertEqual(
             self.tool.command("python3", "/run/1", False),
             [
@@ -248,6 +248,8 @@ class TestSignalRace(unittest.TestCase):
                 "virtualbricks",
                 "--no-gui",
                 "--no-term",
+                "--lock",
+                "none",
                 "--workspace",
                 "/run/1/workspace",
                 "-l",
