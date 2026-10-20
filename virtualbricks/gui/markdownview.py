@@ -691,9 +691,10 @@ class MarkdownView(Gtk.TextView):
 
     def link_at(self, it: Gtk.TextIter) -> str | None:
         for tag in it.get_tags():
-            href = self._links.get(tag.props.name)
-            if href is not None:
-                return href
+            # None for a tag without a name
+            name = tag.props.name
+            if name is not None and name in self._links:
+                return self._links[name]
         return None
 
     def _iter_at(self, x: float, y: float) -> Gtk.TextIter | None:

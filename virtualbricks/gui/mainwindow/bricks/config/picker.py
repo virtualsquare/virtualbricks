@@ -182,7 +182,8 @@ class Picker(Gtk.MenuButton):
             self.name.set_text(chosen.name)
             self.words.set_text(chosen.description)
 
-    def _matches(self, row: OptionRow) -> bool:
+    def _matches(self, row: Gtk.ListBoxRow) -> bool:
+        assert isinstance(row, OptionRow), "the list has options"
         return row.matches(self.search.get_text())
 
     def choose(self, value: str) -> None:

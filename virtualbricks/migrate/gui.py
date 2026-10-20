@@ -208,7 +208,9 @@ class MigrationWindow:
         titles = (_("Project"), _("Bricks"), _("Status"))
         for column, title in enumerate(titles):
             renderer = Gtk.CellRendererText()
-            view_column = Gtk.TreeViewColumn(title, renderer, text=column)
+            view_column = Gtk.TreeViewColumn(title=title)
+            view_column.pack_start(renderer, True)
+            view_column.add_attribute(renderer, "text", column)
             view_column.set_expand(column == NAME)
             self.view.append_column(view_column)
         self.view.get_selection().connect("changed", self.on_selection_changed)
@@ -315,7 +317,7 @@ class MigrationWindow:
     def _steps(self, migration: engine.Migration) -> Iterator[None]:
         for item in migration.steps():
             index = migration.items.index(item)
-            self.store[index] = self.row(item)  # type: ignore[index]
+            self.store.set_row(self.store[index].iter, self.row(item))
             self.show_progress(item)
             self.on_selection_changed(self.view.get_selection())
             yield None

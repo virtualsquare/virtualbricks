@@ -361,7 +361,10 @@ class TopologyTab(Tab, Gtk.Overlay):
                 brick,
                 self.configure,
             )
-        elif event.button == 1 and event.type == Gdk.EventType._2BUTTON_PRESS:
+        elif (
+            event.button == 1
+            and event.type == Gdk.EventType.DOUBLE_BUTTON_PRESS
+        ):
             self.configure(brick)
         return True
 
