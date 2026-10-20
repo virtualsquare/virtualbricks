@@ -78,10 +78,12 @@ from virtualbricks.console.parser import line_of
 from virtualbricks.i18n import _
 from virtualbricks.remote import (
     answers,
-    commands as remote_commands,
     facts,
     follower,
     tunnel,
+)
+from virtualbricks.remote import (
+    commands as remote_commands,
 )
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -676,8 +678,15 @@ def _check_keys(typed: type[amp.Command], box: amp.AmpBox) -> None:
 Connection: TypeAlias = ControlProtocol | AMPControl
 
 
-# Any: Twisted's wants protocols whose factory is a Factory[Self]
-class ControlFactory(protocol.Factory[Any]):
+if TYPE_CHECKING:  # pragma: no cover
+    # Any: Twisted's wants protocols whose factory is a Factory[Self]
+    _Factory = protocol.Factory[Any]
+else:
+    # Factory is generic only from Twisted 26.4
+    _Factory = protocol.Factory
+
+
+class ControlFactory(_Factory):
     """
     The connections of a control socket, a sockets.Socket, of the protocol it
     speaks; with a token, each client proves first that it knows it.

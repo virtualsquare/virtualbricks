@@ -111,6 +111,24 @@ markdown-it-py (`>=3.0`) stays: Debian 13 has 3.0.0. With Twisted 24.11, the
 tests of the AMP socket run everywhere: their entry in `BUGS.md`, under
 Platforms, goes.
 
+## Gone with Ubuntu 26.04
+
+Ubuntu 24.04, Debian 13 and Ubuntu 26.04 have a Twisted older than 26.4.
+
+### W18. Twisted's Factory subscripted for the type checker only
+
+- **Why:** the `Factory` of `twisted.internet.protocol` is generic from
+  Twisted 26.4; before, `protocol.Factory[Any]` raises `TypeError: type
+  'Factory' is not subscriptable`, and `virtualbricks.app` imports the
+  module where it is. mypy, with the Twisted of the environment of Setting
+  up, wants it subscripted.
+- **Needed on:** Ubuntu 24.04 (24.3.0), Debian 13 (24.11.0) and Ubuntu 26.04
+  (25.5.0).
+- **Where:** `virtualbricks/console/control.py`, `_Factory`, "generic only
+  from Twisted 26.4".
+- **Removing it:** `class ControlFactory(protocol.Factory[Any])`, with the
+  comment above `_Factory`, once the oldest Twisted supported is 26.4.
+
 ## Needed on every target
 
 These are limits of GTK 3, Pango and OpenSSL that every target has: they go

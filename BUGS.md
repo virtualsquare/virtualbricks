@@ -78,22 +78,6 @@ in 3.0: they wait until after it.
 
 ## Platforms
 
-- [ ] *Later.* **Virtualbricks doesn't start on a Twisted older than
-  26.4.** That is every target but Debian testing and sid: Ubuntu 24.04
-  has 24.3, Debian 13 24.11 and Ubuntu 26.04 25.5. `class
-  ControlFactory(protocol.Factory[Any])` in
-  `virtualbricks/console/control.py`, there since f117c701, raises
-  `TypeError: type 'Factory' is not subscriptable` when imported: the
-  `Factory` of Twisted is generic only from 26.4. `virtualbricks.app`
-  imports it, so `--no-gui` and the windows both stop there. Seen on
-  3.0.0.dev6, on 19 October 2026, with Python 3.10 and `twisted==22.1.0`
-  in a venv, then thought to be of Ubuntu 22.04 alone; on 20 October 2026
-  with the Python 3.13 and Twisted 24.11 of Debian 13, and in the sources
-  of Twisted 22.4, 24.3 and 25.5. With that base class made subscriptable
-  for the run, every other module imports on Twisted 24.11, but for those
-  that need `pygraphviz`, which wasn't installed. Likely fix: the base
-  class subscripted for mypy only. Then the tests, in the next entry, and
-  the suite on the Twisted of Ubuntu 24.04.
 - [ ] *Later.* **The tests of the AMP socket don't run on a Twisted older
   than 24.7.** That is Ubuntu 24.04 (24.3). They patch `amp._log`, the
   logger of `twisted.protocols.amp`, which came in Twisted 24.7:
