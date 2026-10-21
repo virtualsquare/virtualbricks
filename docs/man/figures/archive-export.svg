@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 230" role="img" aria-label="The export links the project file and the README into a staging folder, packs the private disk and the image into it with qemu-img, writes contents.toml there, writes the folder as tar into a .part file next to the archive, and renames it to lab.vbp at the end.">
+    <defs>
+      <marker id="e-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+      <marker id="e-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+    </defs>
+    <text x="16" y="72" class="small muted">the project, and its image</text>
+    <rect x="16" y="83" width="184" height="26" rx="5" class="box"/>
+    <text x="26" y="100" class="mono small">lab/project.toml</text>
+    <rect x="16" y="113" width="184" height="26" rx="5" class="box"/>
+    <text x="26" y="130" class="mono small">lab/README.md</text>
+    <rect x="16" y="143" width="184" height="26" rx="5" class="box"/>
+    <text x="26" y="160" class="mono small">lab/vm1_hda.cow</text>
+    <rect x="16" y="173" width="184" height="26" rx="5" class="box"/>
+    <text x="26" y="190" class="mono small">/srv/vm/debian-12.qcow2</text>
+
+    <line x1="200" y1="96" x2="268" y2="96" class="ln" marker-end="url(#e-tip)"/>
+    <text x="234" y="90" text-anchor="middle" class="small muted">link</text>
+    <line x1="200" y1="126" x2="268" y2="126" class="ln" marker-end="url(#e-tip)"/>
+    <text x="234" y="120" text-anchor="middle" class="small muted">link</text>
+    <line x1="200" y1="156" x2="268" y2="156" class="ln-accent" marker-end="url(#e-tip-acc)"/>
+    <text x="234" y="150" text-anchor="middle" class="mono small t-accent">pack</text>
+    <line x1="200" y1="186" x2="268" y2="186" class="ln-accent" marker-end="url(#e-tip-acc)"/>
+    <text x="234" y="180" text-anchor="middle" class="mono small t-accent">pack</text>
+
+    <rect x="272" y="16" width="210" height="196" rx="8" class="box"/>
+    <text x="286" y="40" class="mono small strong">.virtualbricks-export-*/</text>
+    <text x="292" y="70" class="mono small t-accent">contents.toml</text>
+    <text x="468" y="70" text-anchor="end" class="small muted">written here</text>
+    <text x="292" y="100" class="mono small">project.toml</text>
+    <text x="292" y="130" class="mono small">README.md</text>
+    <text x="292" y="160" class="mono small">vm1_hda.cow</text>
+    <text x="292" y="190" class="mono small">IMAGES/debian</text>
+
+    <line x1="482" y1="91" x2="552" y2="91" class="ln-accent" marker-end="url(#e-tip-acc)"/>
+    <text x="517" y="84" text-anchor="middle" class="mono small t-accent">write</text>
+    <rect x="556" y="76" width="188" height="30" rx="5" class="box"/>
+    <text x="650" y="96" text-anchor="middle" class="mono small">.lab.vbp.XXXXXXXX.part</text>
+    <line x1="650" y1="106" x2="650" y2="172" class="ln" marker-end="url(#e-tip)"/>
+    <text x="640" y="143" text-anchor="end" class="small muted">rename, at the end</text>
+    <rect x="556" y="176" width="188" height="30" rx="5" class="box-accent"/>
+    <text x="650" y="196" text-anchor="middle" class="mono small">lab.vbp</text>
+</svg>

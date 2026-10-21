@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 330" role="img" aria-label="An import over time: the application writes the job on stdin; the process answers on stdout with progress of extract, the path of a copied image, progress of unpack, and the result as its last line; then it exits with status 0.">
+    <defs>
+      <marker id="s-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+      <marker id="s-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+    </defs>
+    <rect x="40" y="12" width="150" height="34" rx="6" class="box"/>
+    <text x="115" y="34" text-anchor="middle" class="strong">application</text>
+    <rect x="470" y="12" width="170" height="34" rx="6" class="box"/>
+    <text x="555" y="34" text-anchor="middle" class="strong">archive process</text>
+    <line x1="115" y1="46" x2="115" y2="318" class="life"/>
+    <line x1="555" y1="46" x2="555" y2="318" class="life"/>
+    <rect x="549" y="66" width="12" height="236" rx="2" class="box-accent"/>
+    <text x="96" y="80" text-anchor="end" class="mono small muted">stdin</text>
+    <path d="M104,116 H98 V254 H104" class="ln"/>
+    <text x="90" y="189" text-anchor="end" class="mono small muted">stdout</text>
+    <text x="96" y="302" text-anchor="end" class="mono small muted">exit</text>
+    <line x1="121" y1="76" x2="545" y2="76" class="ln" marker-end="url(#s-tip)"/>
+    <text x="333" y="67" text-anchor="middle" class="mono">job = "import" &#8230; then EOF</text>
+    <line x1="549" y1="122" x2="121" y2="122" class="ln" marker-end="url(#s-tip)"/>
+    <text x="333" y="113" text-anchor="middle" class="mono">{"progress": {"step": "extract", &#8230;}}</text>
+    <line x1="549" y1="164" x2="121" y2="164" class="ln" marker-end="url(#s-tip)"/>
+    <text x="333" y="155" text-anchor="middle" class="mono">{"created": "&#8230;/shared_images/debian-12.qcow2"}</text>
+    <line x1="549" y1="206" x2="121" y2="206" class="ln" marker-end="url(#s-tip)"/>
+    <text x="333" y="197" text-anchor="middle" class="mono">{"progress": {"step": "unpack", &#8230;}}</text>
+    <line x1="549" y1="248" x2="121" y2="248" class="ln-accent" marker-end="url(#s-tip-acc)"/>
+    <text x="333" y="239" text-anchor="middle" class="mono t-accent">{"result": {"name": "lab", "report": []}}</text>
+    <line x1="549" y1="298" x2="121" y2="298" class="ln dash" marker-end="url(#s-tip)"/>
+    <text x="333" y="289" text-anchor="middle">exit status 0</text>
+    <text x="575" y="80" class="small muted">reads the job to EOF</text>
+    <text x="575" y="126" class="small muted">1 &#183; extract the archive</text>
+    <text x="575" y="168" class="small muted">4 &#183; copy an image</text>
+    <text x="575" y="210" class="small muted">7 &#183; unpack the disks</text>
+    <text x="575" y="252" class="small muted">9 &#183; rename, done</text>
+    <text x="575" y="302" class="small muted">the process exits</text>
+</svg>

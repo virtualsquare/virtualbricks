@@ -48,7 +48,9 @@
       <title>Tar</title>
       <p>An archive is a tar file in the POSIX.1-2001 format, <var>pax</var>: a sequence of 512-byte blocks. Each member is a header block followed by its data, padded with zeros to a whole block. Before a member whose attributes don't fit its header, as times with fractions of a second or the records of a sparse file, comes a pax extended header: a member of type <code>x</code> whose data are records of the form <var>length</var> <var>key</var>=<var>value</var>, each ending with a newline. Two blocks of zeros end the archive, which is then padded with zeros to a multiple of 10240 bytes, the record of tar.</p>
       <p>The blocks of the example:</p>
-      <screen> offset  type  header name                       size
+      <figure>
+        <desc>The 563200 bytes of the example archive, <var>lab.vbp</var>, in file order: the head takes 12 KB; a real disk or image takes gigabytes.</desc>
+        <screen> offset  type  header name                       size
       0  x     PaxHeader/contents.toml             90
    1024  0     contents.toml                      318
    2048  x     PaxHeader/project.toml              90
@@ -62,6 +64,7 @@
  549888  x     IMAGES/PaxHeader/scratch           200
  550912  0     IMAGES/GNUSparseFile.0/scratch    4608
  556032        14 blocks of zeros, to 563200</screen>
+      </figure>
       <p>The members with holes are GNU sparse members, whose header name is a placeholder; see <code>HOLES</code>.</p>
     </section>
     <section id="compression">
@@ -131,12 +134,15 @@
   <section id="order">
     <title>Order</title>
     <p>A new archive starts with <code>contents.toml</code>, then the project file and the README: together, the <var>head</var> of the archive. The other files, the private disks and the images follow, in this order, each group from the smallest file to the largest:</p>
-    <screen> +----------+---------+--------+-------+-------+----------+
+    <figure>
+      <desc>A new archive in file order, not to scale.</desc>
+      <screen> +----------+---------+--------+-------+-------+----------+
  | contents | project | README | other | disks | IMAGES/  |
  |   .toml  |  .toml  |  .md   | files |       |          |
  +----------+---------+--------+-------+-------+----------+
  |&lt;---------- head -----------&gt;|&lt;- smallest to largest --&gt;|
      read by an inspection          read by the import</screen>
+    </figure>
     <p>The order is the writer's promise; a reader accepts any order. With <code>contents.toml</code> first, Virtualbricks reads the archive until it has the members of the head that the list names, and stops there, whatever the size of the archive. Without <code>contents.toml</code>, it reads the archive to its end.</p>
   </section>
   <section id="contents.toml">
@@ -219,7 +225,9 @@ size = 33554432</screen>
   <section id="images-and-disks">
     <title>Images and disks</title>
     <p>A disk doesn't name a file: it names an image of the project, and the image has the path of its file. The archive stores the image under that name, so the name ties the three together:</p>
-    <screen> project.toml                          the archive
+    <figure>
+      <desc>The name ties the disk, the table of the image and the member. The path of the image appears twice, in the table and as the backing file of the private disk; the import replaces both with the file of this computer.</desc>
+      <screen> project.toml                          the archive
  +-----------------------------------+
  | [bricks.vm1.disks.hda]            |
  | image = "debian" --.              |
@@ -230,6 +238,7 @@ size = 33554432</screen>
  +-----------------------------------+
             ^
             '----- backing file ------ vm1_hda.cow</screen>
+    </figure>
     <p>The import plans an image for each table <code>[images.<code><var>name</var></code>]</code> of the project file. Its disks are those whose <code>image</code> is <var>name</var>, and its copy in the archive is the member <var>IMAGES/name</var>, if the archive has it. The Import window gives each image a choice, with a default:</p>
     <list>
       <item>
@@ -288,11 +297,14 @@ Format specific information:
       </item>
     </list>
     <p>A file that ends with a hole has a last region of length 0, at its size. The member <var>IMAGES/scratch</var> of the example, a file of 32 MiB with 4096 bytes of data at 4 MiB, takes 4608 bytes: one block of map, then the data. Its map:</p>
-    <screen>2
+    <figure>
+      <desc>The member <var>IMAGES/scratch</var> of the example, from offset 549888 of the archive: 2048 bytes of headers and map for 4096 bytes of data, which stand for a file of 32 MiB. The last region, 0 bytes at the size of the file, says that it ends with a hole.</desc>
+      <screen>2
 4194304
 4096
 33554432
 0</screen>
+    </figure>
     <p>A reader that doesn't know the format extracts <var>IMAGES/GNUSparseFile.0/scratch</var>, a file with the map and the data, which isn't the image.</p>
     <p>A header holds sizes up to 8 GiB, in octal. <code>bsdtar</code> and GNU <code>tar</code> write a larger size as a <code>size</code> record of the pax header; Virtualbricks, when it writes the archive itself, writes it in the header, in base 256: the first byte 0x80, then the size, big-endian. Python's <code>tarfile</code> misreads a sparse member with a <code>size</code> record; see <code>BUGS</code>.</p>
     <p>When the import extracts an archive, <code>bsdtar -S</code> turns runs of zeros into holes, also those that the archive didn't keep. After GNU <code>tar</code> or <code>tarfile</code>, the import does the same for the private disks and the copied images: blocks of 64 KiB of zeros become holes, if they add up to 1 MiB at least.</p>

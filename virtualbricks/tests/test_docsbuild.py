@@ -945,3 +945,132 @@ class TestHtml(BuildTestCase):
             "<p>lab(1): the <code>lab</code> of <em>machines</em></p>",
             index,
         )
+
+
+class TestReferenceHtml(BuildTestCase):
+    """A man page in HTML: its keys, its powers, its diagrams."""
+
+    FRONT = textwrap.dedent("""\
+        ---
+        title: LAB
+        section: 5
+        help:
+          id: lab
+          title: Lab files
+        ---
+
+        # NAME
+
+        lab - the files of a lab
+
+        # SETTINGS
+
+        """)
+    ASCII = "```\n+-----+\n| lab |\n+-----+\n```\n\n"
+
+    def setUp(self):
+        super().setUp()
+        self.root = os.path.abspath(self.mktemp())
+        for name in ("guide", "man", "built"):
+            self.patch(self.build, name.upper(), os.path.join(self.root, name))
+        os.makedirs(os.path.join(self.root, "guide"))
+        os.makedirs(os.path.join(self.root, "man", "figures"))
+        with open(
+            os.path.join(self.root, "man", "figures", "lab.svg"), "w"
+        ) as fp:
+            fp.write('<svg class="dg"><text>lab</text></svg>\n')
+
+    def built(self, markdown, kind="html"):
+        path = os.path.join(self.root, "man", "lab.5.md")
+        with open(path, "w", encoding="utf-8") as fp:
+            fp.write(self.FRONT + textwrap.dedent(markdown))
+        self.build.build()
+        name = "lab.html" if kind == "html" else "lab.page"
+        built = os.path.join(self.root, "built", kind, name)
+        with open(built, encoding="utf-8") as fp:
+            return " ".join(fp.read().split())
+
+    def test_keys(self):
+        html = self.built("""\
+            **ports** = *integer* 1-128, default `32`
+            :   The number of ports.
+
+            **delay** = *integer* 0-2^31-1
+            :   The delay.
+            """)
+        for part in (
+            '<table class="keys">',
+            "<th>Key</th> <th>Type</th> <th>Default</th> <th>Meaning</th>",
+            "<td><code>ports</code></td> <td><em>integer</em> 1–128</td> "
+            "<td><code>32</code></td> <td>The number of ports.</td>",
+            "<td><em>integer</em> 0–2<sup>31</sup>−1</td> <td></td>",
+        ):
+            self.assertIn(part, html)
+        self.assertNotIn("<dl>", html)
+
+    def test_keys_without_defaults(self):
+        html = self.built("**path** = *string*\n:   The archive.\n")
+        self.assertIn("<th>Key</th> <th>Type</th> <th>Meaning</th>", html)
+
+    def test_not_all_keys(self):
+        # a list with a term that isn't a key stays a list
+        html = self.built(
+            "**ports** = *integer*\n:   Ports.\n\n**hub**\n:   A hub.\n"
+        )
+        self.assertNotIn("<table", html)
+        self.assertIn("<dl>", html)
+
+    def test_powers(self):
+        self.assertIn(
+            "Up to 2<sup>53</sup>−1 bytes, 2<sup>8</sup> of them",
+            self.built("Up to 2^53-1 bytes, 2^8 of them.\n"),
+        )
+
+    def test_diagram(self):
+        markdown = (
+            '::: {.diagram svg="figures/lab.svg"}\n'
+            + self.ASCII
+            + "The **lab**, drawn.\n:::\n"
+        )
+        html = self.built(markdown)
+        self.assertIn(
+            '<figure class="diagram"> <div class="canvas"> '
+            '<svg class="dg"><text>lab</text></svg> </div> '
+            "<figcaption>The <code>lab</code>, drawn.</figcaption> </figure>",
+            html,
+        )
+        # the drawing in place of the ASCII
+        self.assertNotIn("+-----+", html)
+        page = self.built(markdown, "mallard")
+        self.assertIn(
+            "<figure> <desc>The <code>lab</code>, drawn.</desc> "
+            "<screen>+-----+ | lab | +-----+</screen> </figure>",
+            page,
+        )
+
+    def test_listing(self):
+        html = self.built(
+            '::: {.diagram .listing svg="figures/lab.svg"}\n'
+            + self.ASCII
+            + "The lab.\n:::\n"
+        )
+        # the drawing, then the listing
+        self.assertIn("</figure> <pre><code>+-----+", html)
+
+    def test_diagram_without_its_drawing(self):
+        error = self.assertRaises(
+            self.build.Error,
+            self.built,
+            '::: {.diagram svg="figures/gone.svg"}\n'
+            + self.ASCII
+            + "Gone.\n:::\n",
+        )
+        self.assertIn("the drawing figures/gone.svg isn't there", str(error))
+
+    def test_diagram_is_ascii_and_caption(self):
+        error = self.assertRaises(
+            self.build.Error,
+            self.built,
+            '::: {.diagram svg="figures/lab.svg"}\n' + self.ASCII + ":::\n",
+        )
+        self.assertIn("a code block, then its caption", str(error))

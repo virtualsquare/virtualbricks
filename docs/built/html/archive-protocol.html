@@ -57,18 +57,70 @@ process's standard output, one JSON object a line, while the interface
 stays responsive. The process runs one job and exits. It runs at a lower
 priority, <code>nice</code> 10, and it can be stopped at any time with
 SIGTERM.</p>
-<pre><code>  application                         archive process
- +------------+                      +-------------+
- |            |-- stdin: the job ---&gt;|             |
- | ArchiveJob |   TOML, then EOF     |   main()    |-&gt; bsdtar
- |            |                      |             |   or tar
- |            |&lt;- stdout: messages --|             |
- |            |   JSON, one a line   |             |-&gt; qemu-img
- |            |&lt;- stderr ------------|             |
- |            |   kept for errors    |             |
- |            |-- SIGTERM: cancel --&gt;|             |
- |            |&lt;- exit status -------|             |
- +------------+                      +-------------+</code></pre>
+<figure class="diagram">
+<div class="canvas">
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 312" role="img" aria-label="The application writes the job to the archive process's stdin, reads its messages from stdout and its errors from stderr, can send SIGTERM to cancel, and gets its exit status. The process runs bsdtar, GNU tar or tarfile, and qemu-img.">
+    <defs>
+      <marker id="a-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+      <marker id="a-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+      <marker id="a-tip-warn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-warn"/></marker>
+    </defs>
+    <!-- the application -->
+    <rect x="16" y="16" width="200" height="280" rx="8" class="box"/>
+    <text x="34" y="44" class="title">application</text>
+    <text x="34" y="63" class="small muted">Virtualbricks: GTK and Twisted</text>
+    <rect x="34" y="84" width="164" height="38" rx="6" class="box-accent"/>
+    <text x="116" y="108" text-anchor="middle" class="mono">ArchiveJob</text>
+    <text x="34" y="156" class="mono">done</text>
+    <text x="34" y="173" class="small muted">a Deferred, fired at the end</text>
+    <text x="34" y="200" class="mono">cancel()</text>
+    <text x="34" y="217" class="small muted">sends SIGTERM</text>
+    <text x="34" y="244" class="mono">leftovers</text>
+    <text x="34" y="261" class="small muted">removed if no result came</text>
+    <!-- the process -->
+    <rect x="436" y="16" width="180" height="280" rx="8" class="box"/>
+    <text x="454" y="44" class="title">archive process</text>
+    <text x="454" y="63" class="mono small muted">python -m &#8230;archive</text>
+    <rect x="454" y="84" width="144" height="38" rx="6" class="box-accent"/>
+    <text x="526" y="108" text-anchor="middle" class="mono">run_job(job)</text>
+    <text x="454" y="156" class="small">reads the job to EOF</text>
+    <text x="454" y="180" class="small">runs one job, then exits</text>
+    <text x="454" y="204" class="small">nice 10</text>
+    <!-- the channels -->
+    <line x1="224" y1="80" x2="428" y2="80" class="ln" marker-end="url(#a-tip)"/>
+    <text x="326" y="71" text-anchor="middle" class="mono strong">stdin</text>
+    <text x="326" y="97" text-anchor="middle" class="small muted">the job, TOML, then EOF</text>
+    <line x1="428" y1="128" x2="224" y2="128" class="ln-accent" marker-end="url(#a-tip-acc)"/>
+    <text x="326" y="119" text-anchor="middle" class="mono strong t-accent">stdout</text>
+    <text x="326" y="145" text-anchor="middle" class="small muted">messages, one JSON object a line</text>
+    <line x1="428" y1="176" x2="224" y2="176" class="ln" marker-end="url(#a-tip)"/>
+    <text x="326" y="167" text-anchor="middle" class="mono strong">stderr</text>
+    <text x="326" y="193" text-anchor="middle" class="small muted">kept for the error message</text>
+    <line x1="224" y1="224" x2="428" y2="224" class="ln-warn" marker-end="url(#a-tip-warn)"/>
+    <text x="326" y="215" text-anchor="middle" class="mono strong t-warn">SIGTERM</text>
+    <text x="326" y="241" text-anchor="middle" class="small muted">cancels the job</text>
+    <line x1="428" y1="272" x2="224" y2="272" class="ln dash" marker-end="url(#a-tip)"/>
+    <text x="326" y="263" text-anchor="middle" class="mono strong">exit status</text>
+    <text x="326" y="289" text-anchor="middle" class="small muted">0, 1, 2 or 3</text>
+    <!-- the tools -->
+    <line x1="616" y1="103" x2="652" y2="103" class="ln" marker-end="url(#a-tip)"/>
+    <text x="634" y="95" text-anchor="middle" class="small muted">runs</text>
+    <rect x="656" y="70" width="88" height="66" rx="6" class="box"/>
+    <text x="700" y="93" text-anchor="middle" class="mono">bsdtar</text>
+    <text x="700" y="111" text-anchor="middle" class="small muted">or GNU tar</text>
+    <text x="700" y="127" text-anchor="middle" class="small muted">or tarfile</text>
+    <line x1="616" y1="190" x2="652" y2="190" class="ln" marker-end="url(#a-tip)"/>
+    <text x="634" y="182" text-anchor="middle" class="small muted">runs</text>
+    <rect x="656" y="170" width="88" height="40" rx="6" class="box"/>
+    <text x="700" y="195" text-anchor="middle" class="mono">qemu-img</text>
+</svg>
+</div>
+<figcaption>One process for each job. The application writes the job and
+closes stdin; from then on it only listens, and the only thing it can
+still send is SIGTERM. <code>tarfile</code> is Python's, inside the
+process: the last resort when neither <code>bsdtar</code> nor GNU
+<code>tar</code> is installed.</figcaption>
+</figure>
 <p>This page sums up the archives (<code>THE ARCHIVE</code>), and
 describes the protocol between the application and the process
 (<code>THE PROCESS</code>), the three jobs (<code>JOBS</code>), the
@@ -184,21 +236,48 @@ is none when the job is cancelled or the process dies. A reader ignores
 anything else: an empty line, a line that isn't JSON, a value that isn't
 an object, an object with none of these keys.</p>
 <p>An import, for one, says:</p>
-<pre><code> application                                  process
-   |                                            |
-   |  job = &quot;import&quot; ... EOF                    |
-   |-------------------------------------------&gt;|
-   |                                            | extract
-   |  {&quot;progress&quot;: {&quot;step&quot;: &quot;extract&quot;, ...}}    |
-   |&lt;-------------------------------------------|
-   |  {&quot;created&quot;: &quot;.../debian.qcow2&quot;}           | copy
-   |&lt;-------------------------------------------|
-   |  {&quot;progress&quot;: {&quot;step&quot;: &quot;unpack&quot;, ...}}     | unpack
-   |&lt;-------------------------------------------|
-   |  {&quot;result&quot;: {&quot;name&quot;: &quot;lab&quot;, ...}}          |
-   |&lt;-------------------------------------------|
-   |  exit status 0                             |
-   |&lt;- - - - - - - - - - - - - - - - - - - - - -|</code></pre>
+<figure class="diagram">
+<div class="canvas">
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 330" role="img" aria-label="An import over time: the application writes the job on stdin; the process answers on stdout with progress of extract, the path of a copied image, progress of unpack, and the result as its last line; then it exits with status 0.">
+    <defs>
+      <marker id="s-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+      <marker id="s-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+    </defs>
+    <rect x="40" y="12" width="150" height="34" rx="6" class="box"/>
+    <text x="115" y="34" text-anchor="middle" class="strong">application</text>
+    <rect x="470" y="12" width="170" height="34" rx="6" class="box"/>
+    <text x="555" y="34" text-anchor="middle" class="strong">archive process</text>
+    <line x1="115" y1="46" x2="115" y2="318" class="life"/>
+    <line x1="555" y1="46" x2="555" y2="318" class="life"/>
+    <rect x="549" y="66" width="12" height="236" rx="2" class="box-accent"/>
+    <text x="96" y="80" text-anchor="end" class="mono small muted">stdin</text>
+    <path d="M104,116 H98 V254 H104" class="ln"/>
+    <text x="90" y="189" text-anchor="end" class="mono small muted">stdout</text>
+    <text x="96" y="302" text-anchor="end" class="mono small muted">exit</text>
+    <line x1="121" y1="76" x2="545" y2="76" class="ln" marker-end="url(#s-tip)"/>
+    <text x="333" y="67" text-anchor="middle" class="mono">job = "import" &#8230; then EOF</text>
+    <line x1="549" y1="122" x2="121" y2="122" class="ln" marker-end="url(#s-tip)"/>
+    <text x="333" y="113" text-anchor="middle" class="mono">{"progress": {"step": "extract", &#8230;}}</text>
+    <line x1="549" y1="164" x2="121" y2="164" class="ln" marker-end="url(#s-tip)"/>
+    <text x="333" y="155" text-anchor="middle" class="mono">{"created": "&#8230;/shared_images/debian-12.qcow2"}</text>
+    <line x1="549" y1="206" x2="121" y2="206" class="ln" marker-end="url(#s-tip)"/>
+    <text x="333" y="197" text-anchor="middle" class="mono">{"progress": {"step": "unpack", &#8230;}}</text>
+    <line x1="549" y1="248" x2="121" y2="248" class="ln-accent" marker-end="url(#s-tip-acc)"/>
+    <text x="333" y="239" text-anchor="middle" class="mono t-accent">{"result": {"name": "lab", "report": []}}</text>
+    <line x1="549" y1="298" x2="121" y2="298" class="ln dash" marker-end="url(#s-tip)"/>
+    <text x="333" y="289" text-anchor="middle">exit status 0</text>
+    <text x="575" y="80" class="small muted">reads the job to EOF</text>
+    <text x="575" y="126" class="small muted">1 &#183; extract the archive</text>
+    <text x="575" y="168" class="small muted">4 &#183; copy an image</text>
+    <text x="575" y="210" class="small muted">7 &#183; unpack the disks</text>
+    <text x="575" y="252" class="small muted">9 &#183; rename, done</text>
+    <text x="575" y="302" class="small muted">the process exits</text>
+</svg>
+</div>
+<figcaption>An import, as the application sees it. Each progress line
+stands for many, up to ten a second. The result is the last line on
+stdout, and the exit status follows when the process ends.</figcaption>
+</figure>
 <h3 id="ending">Ending</h3>
 <p>The process exits when its job ends, with:</p>
 <dl>
@@ -269,52 +348,79 @@ An image that the import copied to the shared images, and sent with
 <h3 id="inspect">inspect</h3>
 <p>Read what an archive holds: its project file, its README and the list
 of its members.</p>
-<dl>
-<dt><code>archive</code> = <em>path</em></dt>
-<dd>
-The archive to read.
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>archive</code></td>
+<td><em>path</em></td>
+<td>The archive to read.</td>
+</tr>
+</tbody>
+</table>
 <p>The result is an object:</p>
-<dl>
-<dt><code>path</code> = <em>string</em></dt>
-<dd>
-The archive.
-</dd>
-<dt><code>data</code> = <em>object</em></dt>
-<dd>
-The project file, in the current format: converted from
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>path</code></td>
+<td><em>string</em></td>
+<td>The archive.</td>
+</tr>
+<tr>
+<td><code>data</code></td>
+<td><em>object</em></td>
+<td>The project file, in the current format: converted from
 <code>.project</code>, or upgraded from an older
-<code>project.toml</code>.
-</dd>
-<dt><code>description</code> = <em>string</em></dt>
-<dd>
-The README, or "" when there is none. Bytes that aren't UTF-8 are
-replaced.
-</dd>
-<dt><code>members</code> = <em>array</em></dt>
-<dd>
-[<em>name</em>, <em>size</em>, <em>kind</em>, <em>packed</em>,
+<code>project.toml</code>.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td><em>string</em></td>
+<td>The README, or "" when there is none. Bytes that aren't UTF-8 are
+replaced.</td>
+</tr>
+<tr>
+<td><code>members</code></td>
+<td><em>array</em></td>
+<td>[<em>name</em>, <em>size</em>, <em>kind</em>, <em>packed</em>,
 <em>real_size</em>] for each member, in the order of the archive: from
 <code>contents.toml</code> when the archive has one, otherwise from the
-tar headers, with <em>packed</em> false and <em>real_size</em> 0.
-</dd>
-<dt><code>complete</code> = <em>boolean</em></dt>
-<dd>
-Whether <code>members</code> lists every member of the archive.
-</dd>
-<dt><code>report</code> = <em>array</em></dt>
-<dd>
-[<em>level</em>, <em>text</em>, <em>where</em>] for each problem found
-in the project file; <em>level</em> is <code>info</code>,
+tar headers, with <em>packed</em> false and <em>real_size</em> 0.</td>
+</tr>
+<tr>
+<td><code>complete</code></td>
+<td><em>boolean</em></td>
+<td>Whether <code>members</code> lists every member of the archive.</td>
+</tr>
+<tr>
+<td><code>report</code></td>
+<td><em>array</em></td>
+<td>[<em>level</em>, <em>text</em>, <em>where</em>] for each problem
+found in the project file; <em>level</em> is <code>info</code>,
 <code>warning</code> or <code>error</code>, <em>where</em> the key it's
-about, or "".
-</dd>
-<dt><code>converted</code> = <em>boolean</em></dt>
-<dd>
-Whether <code>data</code> was converted from <code>.project</code>.
-</dd>
-</dl>
+about, or "".</td>
+</tr>
+<tr>
+<td><code>converted</code></td>
+<td><em>boolean</em></td>
+<td>Whether <code>data</code> was converted from
+<code>.project</code>.</td>
+</tr>
+</tbody>
+</table>
 <p>An inspection sends the progress of the step <code>read</code>. A new
 archive is read up to the end of its head: the result comes with
 <code>complete</code> true, and the progress stops early. An archive
@@ -323,20 +429,48 @@ project file is read, the inspection sends a <code>head</code> message,
 an object as the result with <code>complete</code> false and the members
 read so far. The Import window shows its form from the head, and
 completes it with the result.</p>
-<pre><code>  new archive, with contents.toml
-  +----------+---------+--------+ - - - - - - - - - - - - +
-  | contents | project | README |   disks, images...      |
-  +----------+---------+--------+ - - - - - - - - - - - - +
-  &#39;------------ read -----------&#39;  not read
-                                &#39;-&gt; result, complete
+<figure class="diagram">
+<div class="canvas">
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 262" role="img" aria-label="A new archive is read only up to the end of its head, and the result comes there, complete. An older archive is read to its end: the head message comes as soon as the project file is read, incomplete, and the complete result at the end.">
+    <defs>
+      <marker id="i-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+    </defs>
+    <text x="16" y="20" class="strong">new archive, with contents.toml</text>
+    <rect x="16" y="32" width="108" height="36" class="box-accent"/>
+    <text x="70" y="55" text-anchor="middle" class="mono small">contents.toml</text>
+    <rect x="124" y="32" width="104" height="36" class="box-accent"/>
+    <text x="176" y="55" text-anchor="middle" class="mono small">project.toml</text>
+    <rect x="228" y="32" width="64" height="36" class="box-accent"/>
+    <text x="260" y="55" text-anchor="middle" class="mono small">README</text>
+    <rect x="292" y="32" width="452" height="36" class="box-ghost"/>
+    <text x="518" y="55" text-anchor="middle" class="small muted">private disks, images: never read</text>
+    <line x1="16" y1="84" x2="290" y2="84" class="ln-accent" marker-end="url(#i-tip-acc)"/>
+    <text x="16" y="100" class="small t-accent">read</text>
+    <line x1="292" y1="84" x2="292" y2="96" class="ln-accent"/>
+    <rect x="208" y="96" width="168" height="24" rx="12" class="box-accent"/>
+    <text x="292" y="112" text-anchor="middle" class="mono small">result, complete</text>
 
-  older archive, without contents.toml
-  +---------+---------+------------------------------------+
-  |   ...   | project |   README, disks, images...         |
-  +---------+---------+------------------------------------+
-  &#39;------ read -------&#39;-&gt; head, not complete
-  &#39;------------------------- read -------------------------&#39;
-                                        result, complete &lt;-&#39;</code></pre>
+    <text x="16" y="152" class="strong">older archive, without contents.toml</text>
+    <rect x="16" y="164" width="92" height="36" class="box"/>
+    <text x="62" y="187" text-anchor="middle" class="small muted">&#8230;</text>
+    <rect x="108" y="164" width="104" height="36" class="box-accent"/>
+    <text x="160" y="187" text-anchor="middle" class="mono small">project.toml</text>
+    <rect x="212" y="164" width="532" height="36" class="box"/>
+    <text x="478" y="187" text-anchor="middle" class="small muted">README, private disks, images, in any order</text>
+    <line x1="16" y1="216" x2="742" y2="216" class="ln-accent" marker-end="url(#i-tip-acc)"/>
+    <text x="16" y="232" class="small t-accent">read</text>
+    <line x1="212" y1="216" x2="212" y2="228" class="ln-accent"/>
+    <rect x="120" y="228" width="184" height="24" rx="12" class="box-accent"/>
+    <text x="212" y="244" text-anchor="middle" class="mono small">head, not complete</text>
+    <line x1="744" y1="216" x2="744" y2="228" class="ln-accent"/>
+    <rect x="576" y="228" width="168" height="24" rx="12" class="box-accent"/>
+    <text x="660" y="244" text-anchor="middle" class="mono small">result, complete</text>
+</svg>
+</div>
+<figcaption>Where each message is sent, along the read of the archive.
+The head of an older archive comes as soon as the project file is read,
+wherever it is; the result comes only at the end.</figcaption>
+</figure>
 <p>The inspection fails when the archive has no project file, when the
 project file can't be read or converted, or when
 <code>contents.toml</code> comes from a newer Virtualbricks.</p>
@@ -349,43 +483,64 @@ files = [&quot;project.toml&quot;, &quot;README.md&quot;, &quot;vm1_hda.cow&quot
 images = [[&quot;debian&quot;, &quot;/srv/vm/debian-12.qcow2&quot;]]
 compression = &quot;none&quot;
 qemu_img = &quot;/usr/bin/qemu-img&quot;</code></pre>
-<dl>
-<dt><code>project</code> = <em>path</em></dt>
-<dd>
-The folder of the project.
-</dd>
-<dt><code>output</code> = <em>path</em></dt>
-<dd>
-The archive to write. A file with that name is replaced when the export
-ends.
-</dd>
-<dt><code>files</code> = <em>array of strings</em></dt>
-<dd>
-The files of the project to store, relative to its folder. The Export
-window always stores <code>project.toml</code> and the README,
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>project</code></td>
+<td><em>path</em></td>
+<td></td>
+<td>The folder of the project.</td>
+</tr>
+<tr>
+<td><code>output</code></td>
+<td><em>path</em></td>
+<td></td>
+<td>The archive to write. A file with that name is replaced when the
+export ends.</td>
+</tr>
+<tr>
+<td><code>files</code></td>
+<td><em>array of strings</em></td>
+<td></td>
+<td>The files of the project to store, relative to its folder. The
+Export window always stores <code>project.toml</code> and the README,
 <code>README.md</code> or, in a project not opened since 3.0,
 <code>README</code>, and lets you choose the private disks, the other
 files and the images; it never stores what older versions left in the
 folder: the <em>.images</em> folder and the <em>.project</em> files. The
 export leaves out a folder <em>IMAGES</em> of the project, as an import
-would take its files for images, and reports it.
-</dd>
-<dt><code>images</code> = <em>array</em> of [<em>name</em>,
-<em>path</em>]</dt>
-<dd>
-The images to store, as <em>IMAGES/name</em>.
-</dd>
-<dt><code>compression</code> = <code>"gzip"</code> |
-<code>"none"</code>, default <code>"gzip"</code></dt>
-<dd>
-Whether to compress the archive with gzip. The application asks for
-<code>"none"</code> when it gives <code>qemu_img</code>.
-</dd>
-<dt><code>qemu_img</code> = <em>path</em>, default <code>""</code></dt>
-<dd>
-The <code>qemu-img</code> that packs the disks, or "" not to pack them.
-</dd>
-</dl>
+would take its files for images, and reports it.</td>
+</tr>
+<tr>
+<td><code>images</code></td>
+<td><em>array</em> of [<em>name</em>, <em>path</em>]</td>
+<td></td>
+<td>The images to store, as <em>IMAGES/name</em>.</td>
+</tr>
+<tr>
+<td><code>compression</code></td>
+<td><code>"gzip"</code> | <code>"none"</code></td>
+<td><code>"gzip"</code></td>
+<td>Whether to compress the archive with gzip. The application asks for
+<code>"none"</code> when it gives <code>qemu_img</code>.</td>
+</tr>
+<tr>
+<td><code>qemu_img</code></td>
+<td><em>path</em></td>
+<td><code>""</code></td>
+<td>The <code>qemu-img</code> that packs the disks, or "" not to pack
+them.</td>
+</tr>
+</tbody>
+</table>
 <p>The export takes these steps:</p>
 <ol type="1">
 <li>It creates the unfinished archive,
@@ -403,35 +558,85 @@ tool, following the links, through gzip if asked, in the step
 <li>It renames the unfinished archive to <em>output</em>, and removes
 the folder.</li>
 </ol>
-<pre><code> lab/project.toml  -- link --&gt;  +---------------------------+
- lab/README.md     -- link --&gt;  | .virtualbricks-export-*/  |
- lab/vm1_hda.cow   -- pack --&gt;  |   contents.toml           |
- debian-12.qcow2   -- pack --&gt;  |   project.toml  README.md |
-                                |   vm1_hda.cow             |
-                                |   IMAGES/debian           |
-                                +---------------------------+
-                                     | tar, in order
-                                     v
-                                .lab.vbp.XXXXXXXX.part
-                                     | rename, at the end
-                                     v
-                                lab.vbp</code></pre>
+<figure class="diagram">
+<div class="canvas">
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 230" role="img" aria-label="The export links the project file and the README into a staging folder, packs the private disk and the image into it with qemu-img, writes contents.toml there, writes the folder as tar into a .part file next to the archive, and renames it to lab.vbp at the end.">
+    <defs>
+      <marker id="e-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+      <marker id="e-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+    </defs>
+    <text x="16" y="72" class="small muted">the project, and its image</text>
+    <rect x="16" y="83" width="184" height="26" rx="5" class="box"/>
+    <text x="26" y="100" class="mono small">lab/project.toml</text>
+    <rect x="16" y="113" width="184" height="26" rx="5" class="box"/>
+    <text x="26" y="130" class="mono small">lab/README.md</text>
+    <rect x="16" y="143" width="184" height="26" rx="5" class="box"/>
+    <text x="26" y="160" class="mono small">lab/vm1_hda.cow</text>
+    <rect x="16" y="173" width="184" height="26" rx="5" class="box"/>
+    <text x="26" y="190" class="mono small">/srv/vm/debian-12.qcow2</text>
+
+    <line x1="200" y1="96" x2="268" y2="96" class="ln" marker-end="url(#e-tip)"/>
+    <text x="234" y="90" text-anchor="middle" class="small muted">link</text>
+    <line x1="200" y1="126" x2="268" y2="126" class="ln" marker-end="url(#e-tip)"/>
+    <text x="234" y="120" text-anchor="middle" class="small muted">link</text>
+    <line x1="200" y1="156" x2="268" y2="156" class="ln-accent" marker-end="url(#e-tip-acc)"/>
+    <text x="234" y="150" text-anchor="middle" class="mono small t-accent">pack</text>
+    <line x1="200" y1="186" x2="268" y2="186" class="ln-accent" marker-end="url(#e-tip-acc)"/>
+    <text x="234" y="180" text-anchor="middle" class="mono small t-accent">pack</text>
+
+    <rect x="272" y="16" width="210" height="196" rx="8" class="box"/>
+    <text x="286" y="40" class="mono small strong">.virtualbricks-export-*/</text>
+    <text x="292" y="70" class="mono small t-accent">contents.toml</text>
+    <text x="468" y="70" text-anchor="end" class="small muted">written here</text>
+    <text x="292" y="100" class="mono small">project.toml</text>
+    <text x="292" y="130" class="mono small">README.md</text>
+    <text x="292" y="160" class="mono small">vm1_hda.cow</text>
+    <text x="292" y="190" class="mono small">IMAGES/debian</text>
+
+    <line x1="482" y1="91" x2="552" y2="91" class="ln-accent" marker-end="url(#e-tip-acc)"/>
+    <text x="517" y="84" text-anchor="middle" class="mono small t-accent">write</text>
+    <rect x="556" y="76" width="188" height="30" rx="5" class="box"/>
+    <text x="650" y="96" text-anchor="middle" class="mono small">.lab.vbp.XXXXXXXX.part</text>
+    <line x1="650" y1="106" x2="650" y2="172" class="ln" marker-end="url(#e-tip)"/>
+    <text x="640" y="143" text-anchor="end" class="small muted">rename, at the end</text>
+    <rect x="556" y="176" width="188" height="30" rx="5" class="box-accent"/>
+    <text x="650" y="196" text-anchor="middle" class="mono small">lab.vbp</text>
+</svg>
+</div>
+<figcaption>An export with <code>qemu-img</code>: <code>pack</code> and
+<code>write</code> are the steps of the progress. The tar tool reads the
+folder in the order of the archive, following the links, so the
+project's files are never copied; without <code>qemu-img</code> the
+disks are linked too, and the tar goes through gzip.</figcaption>
+</figure>
 <p>The result is an object:</p>
-<dl>
-<dt><code>output</code> = <em>string</em></dt>
-<dd>
-The archive.
-</dd>
-<dt><code>size</code> = <em>integer</em></dt>
-<dd>
-Its size, in bytes.
-</dd>
-<dt><code>report</code> = <em>array</em></dt>
-<dd>
-[<em>level</em>, <em>text</em>, <em>where</em>] for each problem, as a
-disk stored as it is.
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>output</code></td>
+<td><em>string</em></td>
+<td>The archive.</td>
+</tr>
+<tr>
+<td><code>size</code></td>
+<td><em>integer</em></td>
+<td>Its size, in bytes.</td>
+</tr>
+<tr>
+<td><code>report</code></td>
+<td><em>array</em></td>
+<td>[<em>level</em>, <em>text</em>, <em>where</em>] for each problem, as
+a disk stored as it is.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="import">import</h3>
 <p>Make a project of an archive. The application reads the archive with
 <code>inspect</code> first, and asks the user what to do with each
@@ -450,37 +655,59 @@ fallback = &quot;&quot;
 
 [settings]
 qemu_path = &quot;/usr/bin&quot;</code></pre>
-<dl>
-<dt><code>archive</code> = <em>path</em></dt>
-<dd>
-The archive to import.
-</dd>
-<dt><code>staging</code> = <em>path</em></dt>
-<dd>
-An empty folder of the workspace,
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>archive</code></td>
+<td><em>path</em></td>
+<td>The archive to import.</td>
+</tr>
+<tr>
+<td><code>staging</code></td>
+<td><em>path</em></td>
+<td>An empty folder of the workspace,
 .importing-<em>name</em>-<em>XXXXXXXX</em>, that the application creates
-and the list of projects ignores. The archive is extracted there.
-</dd>
-<dt><code>destination</code> = <em>path</em></dt>
-<dd>
-The folder of the new project, <em>workspace</em>/<em>name</em>. If a
-folder with that name appeared meanwhile, the import takes the next free
-name, <em>name</em>-2, <em>name</em>-3... and says so in its report. An
-import never replaces a project.
-</dd>
-<dt><code>images</code> = <em>array of tables</em></dt>
-<dd>
-What to do with each image of the project file:
-<dl>
-<dt><code>name</code> = <em>string</em></dt>
-<dd>
-The name of the image in the project file.
-</dd>
-<dt><code>choice</code> = <code>"copy"</code> | <code>"use"</code> |
-<code>"skip"</code> | <code>"auto"</code></dt>
-<dd>
-<code>copy</code> moves the image from the archive to <code>path</code>,
-or to the next free name, <em>debian-12.1.qcow2</em>,
+and the list of projects ignores. The archive is extracted there.</td>
+</tr>
+<tr>
+<td><code>destination</code></td>
+<td><em>path</em></td>
+<td>The folder of the new project, <em>workspace</em>/<em>name</em>. If
+a folder with that name appeared meanwhile, the import takes the next
+free name, <em>name</em>-2, <em>name</em>-3... and says so in its
+report. An import never replaces a project.</td>
+</tr>
+<tr>
+<td><code>images</code></td>
+<td><em>array of tables</em></td>
+<td>What to do with each image of the project file:
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td><em>string</em></td>
+<td>The name of the image in the project file.</td>
+</tr>
+<tr>
+<td><code>choice</code></td>
+<td><code>"copy"</code> | <code>"use"</code> | <code>"skip"</code> |
+<code>"auto"</code></td>
+<td><code>copy</code> moves the image from the archive to
+<code>path</code>, or to the next free name, <em>debian-12.1.qcow2</em>,
 <em>debian-12.2.qcow2</em>... <code>use</code> uses the file
 <code>path</code> of this computer. <code>skip</code> leaves the image
 unset: it keeps its path of the project file, and its private disks
@@ -488,30 +715,37 @@ their backing file, until Find the File..., in the Images tab, gives it
 a file of this computer. <code>auto</code> copies the image if the
 archive has it, otherwise uses <code>fallback</code>, otherwise skips
 it; the application sends it for the images of an older archive that the
-inspection hadn't seen yet when the import started.
-</dd>
-<dt><code>path</code> = <em>path</em></dt>
-<dd>
-Where the copy goes, or the file used.
-</dd>
-<dt><code>fallback</code> = <em>path</em></dt>
-<dd>
-For <code>auto</code>: the file to use if the archive doesn't have the
-image, or "".
-</dd>
-</dl>
-</dd>
-<dt><code>settings</code> = <em>table</em></dt>
-<dd>
-The settings of the project to replace with this computer's:
+inspection hadn't seen yet when the import started.</td>
+</tr>
+<tr>
+<td><code>path</code></td>
+<td><em>path</em></td>
+<td>Where the copy goes, or the file used.</td>
+</tr>
+<tr>
+<td><code>fallback</code></td>
+<td><em>path</em></td>
+<td>For <code>auto</code>: the file to use if the archive doesn't have
+the image, or "".</td>
+</tr>
+</tbody>
+</table></td>
+</tr>
+<tr>
+<td><code>settings</code></td>
+<td><em>table</em></td>
+<td>The settings of the project to replace with this computer's:
 <code>qemu_path</code> and <code>vde_path</code>, the folders of QEMU
-and VDE.
-</dd>
-<dt><code>qemu_img</code> = <em>path</em></dt>
-<dd>
-The <code>qemu-img</code> that unpacks and rebases the disks, or "".
-</dd>
-</dl>
+and VDE.</td>
+</tr>
+<tr>
+<td><code>qemu_img</code></td>
+<td><em>path</em></td>
+<td>The <code>qemu-img</code> that unpacks and rebases the disks, or
+"".</td>
+</tr>
+</tbody>
+</table>
 <p>The application gives every image a default. An image that the
 archive has is copied into the shared images,
 <em>workspace</em>/shared_images, unless they have a file with the same
@@ -521,20 +755,51 @@ of the shared images with its name, and is left unset otherwise. A
 setting is replaced, unless you say otherwise, when its folder doesn't
 exist on this computer.</p>
 <p>The import takes these steps:</p>
-<pre><code> workspace/
- |
- +-- .importing-lab-k2x9q1ab/   1  extract the archive here
- |     contents.toml            2  note what&#39;s packed, remove
- |     project.toml             3  read, or convert .project
- |     README.md
- |     IMAGES/debian  ----.     4  copy, use or skip images
- |     vm1_hda.cow        |     5  rewrite project.toml
- |                        |     6  rebase -u the private
- |                        |        disks on their images
- +-- shared_images/       |     7  unpack the packed disks
- |     debian-12.qcow2 &lt;--&#39;     8  turn zeros into holes
- |
- +-- lab/  &lt;------------------  9  rename into place</code></pre>
+<figure class="diagram">
+<div class="canvas">
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 256" role="img" aria-label="The import extracts the archive into a hidden folder of the workspace, moves the copied image to workspace/shared_images, points the private disk at it as its backing file, and renames the folder to workspace/lab. The numbers are the steps of the import.">
+    <defs>
+      <marker id="m-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+      <marker id="m-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+    </defs>
+    <rect x="16" y="16" width="316" height="226" rx="8" class="box"/>
+    <text x="30" y="40" class="mono small strong">workspace/.importing-lab-k2x9q1ab/</text>
+    <circle cx="312" cy="36" r="9" class="badge"/><text x="312" y="40" text-anchor="middle" class="badge-text">1</text>
+    <text x="36" y="76" class="mono small muted">contents.toml <tspan class="small">(removed)</tspan></text>
+    <circle cx="312" cy="72" r="9" class="badge"/><text x="312" y="76" text-anchor="middle" class="badge-text">2</text>
+    <text x="36" y="108" class="mono small">project.toml</text>
+    <circle cx="290" cy="104" r="9" class="badge"/><text x="290" y="108" text-anchor="middle" class="badge-text">3</text>
+    <circle cx="312" cy="104" r="9" class="badge"/><text x="312" y="108" text-anchor="middle" class="badge-text">5</text>
+    <text x="36" y="140" class="mono small">README.md</text>
+    <text x="36" y="172" class="mono small">vm1_hda.cow</text>
+    <circle cx="268" cy="168" r="9" class="badge"/><text x="268" y="172" text-anchor="middle" class="badge-text">6</text>
+    <circle cx="290" cy="168" r="9" class="badge"/><text x="290" y="172" text-anchor="middle" class="badge-text">7</text>
+    <circle cx="312" cy="168" r="9" class="badge"/><text x="312" y="172" text-anchor="middle" class="badge-text">8</text>
+    <text x="36" y="204" class="mono small">IMAGES/debian</text>
+    <circle cx="312" cy="200" r="9" class="badge"/><text x="312" y="204" text-anchor="middle" class="badge-text">4</text>
+
+    <line x1="332" y1="86" x2="456" y2="86" class="ln-accent" marker-end="url(#m-tip-acc)"/>
+    <text x="394" y="78" text-anchor="middle" class="small t-accent">9 &#183; rename</text>
+    <line x1="332" y1="200" x2="456" y2="224" class="ln" marker-end="url(#m-tip)"/>
+    <text x="394" y="200" text-anchor="middle" class="small muted">4 &#183; move</text>
+
+    <rect x="460" y="16" width="284" height="130" rx="8" class="box"/>
+    <text x="474" y="40" class="mono small strong">workspace/lab/</text>
+    <text x="480" y="76" class="mono small">project.toml</text>
+    <text x="480" y="104" class="mono small">README.md</text>
+    <text x="480" y="132" class="mono small">vm1_hda.cow</text>
+    <rect x="460" y="184" width="284" height="58" rx="8" class="box"/>
+    <text x="474" y="206" class="mono small strong">workspace/shared_images/</text>
+    <text x="480" y="230" class="mono small">debian-12.qcow2</text>
+    <path d="M564,128 H712 V226 H592" class="ln-accent dash" marker-end="url(#m-tip-acc)"/>
+    <text x="704" y="170" text-anchor="end" class="small t-accent">6 &#183; backing file, rebase -u</text>
+</svg>
+</div>
+<figcaption>The files of an import, before and after. The numbers are
+the steps below: the private disk is rebased onto the image's new path
+before the folder is renamed, so that <em>lab/vm1_hda.cow</em> ends up
+backed by <em>shared_images/debian-12.qcow2</em>.</figcaption>
+</figure>
 <ol type="1">
 <li>Extract the archive into <code>staging</code>, in the step
 <code>extract</code>.</li>
@@ -562,19 +827,30 @@ zeros of the private disks and of the copied images into holes.</li>
 permissions of a normal folder.</li>
 </ol>
 <p>The result is an object:</p>
-<dl>
-<dt><code>name</code> = <em>string</em></dt>
-<dd>
-The name of the new project: the name of <code>destination</code>, or
-the next free one.
-</dd>
-<dt><code>report</code> = <em>array</em></dt>
-<dd>
-[<em>level</em>, <em>text</em>, <em>where</em>] for each problem: an
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td><em>string</em></td>
+<td>The name of the new project: the name of <code>destination</code>,
+or the next free one.</td>
+</tr>
+<tr>
+<td><code>report</code></td>
+<td><em>array</em></td>
+<td>[<em>level</em>, <em>text</em>, <em>where</em>] for each problem: an
 image left unset, a disk left compressed or not rebased, what the
-conversion of <code>.project</code> found.
-</dd>
-</dl>
+conversion of <code>.project</code> found.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="progress">Progress</h2>
 <p>Each step counts bytes, <em>done</em> of <em>total</em>:</p>
 <dl>

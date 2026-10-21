@@ -354,7 +354,7 @@ An empty string leaves the plug unconnected. Depending on its type, a brick
 has one plug in **connect**, two in **endpoints**, or network cards in
 **nics**.
 
-## README
+## README {#projects-readme}
 
 The *README.md* of a project is plain text in UTF-8, which Virtualbricks
 reads as Markdown. The Readme tab shows it rendered, and its pencil button

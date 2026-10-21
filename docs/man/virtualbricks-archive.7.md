@@ -36,6 +36,7 @@ one JSON object a line, while the interface stays responsive. The process runs
 one job and exits. It runs at a lower priority, **nice** 10, and it can be
 stopped at any time with SIGTERM.
 
+::: {.diagram svg="figures/archive-process.svg"}
 ```
   application                         archive process
  +------------+                      +-------------+
@@ -50,6 +51,12 @@ stopped at any time with SIGTERM.
  |            |<- exit status -------|             |
  +------------+                      +-------------+
 ```
+
+One process for each job. The application writes the job and closes stdin;
+from then on it only listens, and the only thing it can still send is
+SIGTERM. **tarfile** is Python's, inside the process: the last resort when
+neither **bsdtar** nor GNU **tar** is installed.
+:::
 
 This page sums up the archives (**THE ARCHIVE**), and describes the protocol
 between the application and the process (**THE PROCESS**), the three jobs
@@ -171,6 +178,7 @@ these keys.
 
 An import, for one, says:
 
+::: {.diagram svg="figures/archive-messages.svg"}
 ```
  application                                  process
    |                                            |
@@ -188,6 +196,11 @@ An import, for one, says:
    |  exit status 0                             |
    |<- - - - - - - - - - - - - - - - - - - - - -|
 ```
+
+An import, as the application sees it. Each progress line stands for many,
+up to ten a second. The result is the last line on stdout, and the exit
+status follows when the process ends.
+:::
 
 ## Ending
 
@@ -293,6 +306,7 @@ an object as the result with **complete** false and the members read so far.
 The Import window shows its form from the head, and completes it with the
 result.
 
+::: {.diagram svg="figures/archive-inspect.svg"}
 ```
   new archive, with contents.toml
   +----------+---------+--------+ - - - - - - - - - - - - +
@@ -309,6 +323,11 @@ result.
   '------------------------- read -------------------------'
                                         result, complete <-'
 ```
+
+Where each message is sent, along the read of the archive. The head of an
+older archive comes as soon as the project file is read, wherever it is; the
+result comes only at the end.
+:::
 
 The inspection fails when the archive has no project file, when the project
 file can't be read or converted, or when **contents.toml** comes from a newer
@@ -368,6 +387,7 @@ The export takes these steps:
    following the links, through gzip if asked, in the step **write**.
 5. It renames the unfinished archive to *output*, and removes the folder.
 
+::: {.diagram svg="figures/archive-export.svg"}
 ```
  lab/project.toml  -- link -->  +---------------------------+
  lab/README.md     -- link -->  | .virtualbricks-export-*/  |
@@ -383,6 +403,12 @@ The export takes these steps:
                                      v
                                 lab.vbp
 ```
+
+An export with **qemu-img**: **pack** and **write** are the steps of the
+progress. The tar tool reads the folder in the order of the archive,
+following the links, so the project's files are never copied; without
+**qemu-img** the disks are linked too, and the tar goes through gzip.
+:::
 
 The result is an object:
 
@@ -473,6 +499,7 @@ computer.
 
 The import takes these steps:
 
+::: {.diagram svg="figures/archive-import.svg"}
 ```
  workspace/
  |
@@ -489,6 +516,12 @@ The import takes these steps:
  |
  +-- lab/  <------------------  9  rename into place
 ```
+
+The files of an import, before and after. The numbers are the steps below:
+the private disk is rebased onto the image's new path before the folder is
+renamed, so that *lab/vm1_hda.cow* ends up backed by
+*shared_images/debian-12.qcow2*.
+:::
 
 1. Extract the archive into **staging**, in the step **extract**.
 2. Read which members are packed from **contents.toml**, and remove it: it

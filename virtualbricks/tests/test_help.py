@@ -28,6 +28,7 @@ Yelp tools are not installed.
 import filecmp
 import glob
 import os
+import re
 import shutil
 import subprocess
 import tomllib
@@ -36,6 +37,8 @@ from html.parser import HTMLParser
 from urllib.parse import unquote, urlsplit
 
 from twisted.trial import unittest
+
+from virtualbricks.tests.test_docs import ENTRY
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 PAGES = os.path.join(ROOT, "docs", "built", "mallard")
@@ -153,16 +156,75 @@ class TestTheReference(PagesTestCase):
                 )
 
 
+class TestTheDiagrams(PagesTestCase):
+    """The diagrams of the man pages: ASCII, and their drawings for the web."""
+
+    MAN = os.path.join(ROOT, "docs", "man")
+    DIAGRAM = re.compile(
+        r'^::: \{\.diagram(?: \.listing)? svg="(?P<svg>[^"]+)"\}\n```\n'
+        r"(?P<ascii>.*?)\n```\n",
+        re.MULTILINE | re.DOTALL,
+    )
+
+    def diagrams(self):
+        for path in sorted(glob.glob(os.path.join(self.MAN, "*.[1-9].md"))):
+            with open(path, encoding="utf-8") as fp:
+                for match in self.DIAGRAM.finditer(fp.read()):
+                    yield os.path.basename(path), match["svg"], match["ascii"]
+
+    def test_each_drawing_once(self):
+        drawn = sorted(svg for _page, svg, _ascii in self.diagrams())
+        files = sorted(
+            os.path.relpath(path, self.MAN)
+            for path in glob.glob(os.path.join(self.MAN, "figures", "*.svg"))
+        )
+        self.assertEqual(drawn, files)
+
+    def test_ascii_fits_a_terminal(self):
+        # man indents a code block by 14: 64 columns fit in 80
+        for page, svg, ascii in self.diagrams():
+            for line in ascii.splitlines():
+                self.assertLessEqual(len(line), 64, f"{page}, {svg}: {line}")
+
+
+class TestTheKeys(PagesTestCase):
+    """The keys of virtualbricks-config(5), in its web page."""
+
+    def test_each_key(self):
+        """
+        Each key that test_docs finds is a row of a table of keys, or a term
+        of a list whose terms aren't all keys.
+        """
+
+        source = os.path.join(ROOT, "docs", "man", "virtualbricks-config.5.md")
+        with open(source, encoding="utf-8") as fp:
+            matches = [ENTRY.match(line.rstrip("\n")) for line in fp]
+        names = sorted(m["name"].replace("*", "") for m in matches if m)
+        with open(
+            os.path.join(HTML, "config-files.html"), encoding="utf-8"
+        ) as fp:
+            html = fp.read()
+        shown = []
+        for table in re.findall(
+            r'<table class="keys">.*?</table>', html, re.S
+        ):
+            shown += re.findall(r"<tr>\s*<td>(.*?)</td>", table, re.S)
+        shown += re.findall(r"<dt>(<code>.*?</code>) = ", html)
+        shown = sorted(re.sub(r"<[^>]+>", "", cell) for cell in shown)
+        self.assertEqual(shown, names)
+
+
 class TestTheFigures(PagesTestCase):
     """The pictures of docs/guide/figures/, which the end-to-end tests take."""
 
     def figures(self):
-        """(page, figure) of each figure of the pages."""
+        """(page, figure) of each picture of the pages, not a diagram."""
 
         for name in page_names():
             root = ET.parse(os.path.join(PAGES, f"{name}.page")).getroot()
             for figure in root.iter(f"{MALLARD}figure"):
-                yield name, figure
+                if figure.find(f"{MALLARD}screen") is None:
+                    yield name, figure
 
     def test_each_picture_is_shown_once(self):
         shown = sorted(

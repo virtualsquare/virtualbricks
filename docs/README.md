@@ -172,6 +172,34 @@ In the guide:
   page; the man pages of other programs, as `**tar**(1)`, stay text.
 - A numbered list is a list, not a procedure.
 
+In the HTML:
+
+- A list whose terms are all keys, ``**name** = *type* range, default
+  `value` ``, is a table: Key, Type, Default, if one has it, and Meaning.
+- A power, `2^53-1`, is raised, 2<sup>53</sup>−1, and a range of a key takes
+  a dash, 0–2<sup>53</sup>−1.
+- A diagram is a drawing, in its place:
+
+````markdown
+::: {.diagram svg="figures/control-token.svg"}
+```
+  client                               Virtualbricks
+    |                                        |
+```
+
+The messages of the proof come before any other on a socket that asks for
+the token.
+:::
+````
+
+  The man page and Yelp show the ASCII, then the paragraph, the caption of
+  the drawing in the HTML: it says what both show. The drawing is an SVG
+  file of `man/figures/`, put inline in the page, so that it takes the
+  colours of the page, light or dark, from the classes of `.dg` in
+  `templates/style.css`. With `.listing` too, as
+  `{.diagram .listing svg="…"}`, the block is a listing that the drawing
+  doesn't replace: the HTML shows the drawing, then the listing.
+
 A code block is at most 64 columns wide, since `man` indents it by 14 in an
 80-column terminal: check with `COLUMNS=80 man -l
 docs/built/man/virtualbricks.1`. The tests of `virtualbricks/tests/test_docs.py`

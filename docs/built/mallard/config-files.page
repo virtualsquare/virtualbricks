@@ -293,7 +293,7 @@ hub_mode = false  # default</screen>
       </terms>
       <p>An empty string leaves the plug unconnected. Depending on its type, a brick has one plug in <code>connect</code>, two in <code>endpoints</code>, or network cards in <code>nics</code>.</p>
     </section>
-    <section id="readme">
+    <section id="projects-readme">
       <title>README</title>
       <p>The <var>README.md</var> of a project is plain text in UTF-8, which Virtualbricks reads as Markdown. The Readme tab shows it rendered, and its pencil button edits the text; the details of the Projects window show it rendered too. The list of projects shows its first line, and the import window its first paragraph that isn't a heading. The syntax is a subset of CommonMark, the part that most editors and forges share:</p>
       <terms>

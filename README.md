@@ -228,7 +228,7 @@ certificate instead, and the log names it. `--command` talks to them as
 The three protocols of the sockets, the JSON one and protocols 1 and 2 of
 AMP, and the proof of the token are described for whoever writes a client in
 `man ./docs/built/man/virtualbricks-control.7` and
-[`docs/control-protocols.html`](docs/control-protocols.html).
+[`docs/built/html/control-protocols.html`](docs/built/html/control-protocols.html).
 
 ### The windows of another Virtualbricks
 
@@ -257,7 +257,7 @@ connects again. Quit closes the windows; the Virtualbricks there goes on.
 
 Every option and command is in the manual page, which you can read from the
 sources with `man ./docs/built/man/virtualbricks.1`, and in
-[`docs/command-line.html`](docs/command-line.html).
+[`docs/built/html/command-line.html`](docs/built/html/command-line.html).
 
 ## Configuration
 
@@ -304,11 +304,14 @@ the command line.
 
 The files are described in the manual page, which you can read from the
 sources with `man ./docs/built/man/virtualbricks-config.5`, and in
-[`docs/config-files.html`](docs/config-files.html); the archives that export
-and import projects in `man ./docs/built/man/virtualbricks-vbp.5` and
-[`docs/vbp-format.html`](docs/vbp-format.html), and the process that reads
-and writes them in `man ./docs/built/man/virtualbricks-archive.7` and
-[`docs/archive-protocol.html`](docs/archive-protocol.html).
+[`docs/built/html/config-files.html`](docs/built/html/config-files.html);
+the archives that export and import projects in
+`man ./docs/built/man/virtualbricks-vbp.5` and
+[`docs/built/html/vbp-format.html`](docs/built/html/vbp-format.html), and
+the process that reads and writes them in
+`man ./docs/built/man/virtualbricks-archive.7` and
+[`docs/built/html/archive-protocol.html`](docs/built/html/archive-protocol.html).
+The guide shows them too, in its Reference.
 
 ## Development
 
@@ -589,14 +592,14 @@ To add a language, see the top of `l10n.sh`.
 - `virtualbricks/tests/`: the tests, in the layout of the package.
 - `docs/`: the documentation, written in Markdown: the user guide in
   `guide/`, with its pictures in `guide/figures/`, the manual pages in `man/`,
-  which are the Reference of the guide too; the template and the stylesheet
-  of the HTML in `templates/`;
-  `build.py`, which builds them into `built/`, and `README.md`, which tells
-  how a page is written. The web pages of the manual pages,
-  `command-line.html`, `config-files.html`, `archive-protocol.html`,
-  `control-protocols.html` and `vbp-format.html`; in `redesign/`, the designs
-  of the parts that were rewritten, numbered in the order of the work, from
-  the conversion of the Glade files to the console.
+  which are the Reference of the guide too, with the drawings of their HTML
+  in `man/figures/`; the template and the stylesheet of the HTML in
+  `templates/`; `build.py`, which builds them into `built/`: the man pages,
+  the Mallard pages of Yelp and the HTML, where the web pages of the manual
+  pages are, as `built/html/config-files.html`; and `README.md`, which tells
+  how a page is written. In `redesign/`, the designs of the parts that were
+  rewritten, numbered in the order of the work, from the conversion of the
+  Glade files to the console.
 - `tools/`: the scripts of the development, as `typecoverage.py` and
   `targetsuite.py`.
 - `locale/`: the translations; `share/`: the desktop file and the icon.

@@ -15,8 +15,8 @@
 <li><a href="#description">Description</a></li>
 <li><a href="#options">Options</a></li>
 <li><a href="#the-console">The console</a></li>
-<li><a href="#the-control-socket">The control socket</a></li>
-<li><a href="#the-windows-of-another-virtualbricks">The windows of another Virtualbricks</a></li>
+<li><a href="#control-socket">The control socket</a></li>
+<li><a href="#windows">The windows of another Virtualbricks</a></li>
 <li><a href="#commands-1">Commands</a></li>
 <li><a href="#events-1">Events</a></li>
 <li><a href="#exit-status">Exit status</a></li>
@@ -295,7 +295,7 @@ done.</p>
 <em>file</em> in the console or <code>--run</code> <em>file</em> at
 start. Empty lines and comments are skipped, and the first error stops
 the file, saying where, as <em>lab.vb</em>:7.</p>
-<h2 id="the-control-socket">The control socket</h2>
+<h2 id="control-socket">The control socket</h2>
 <p>A Virtualbricks started with <code>--listen</code>, with the windows
 or without, listens on control sockets once its project is open; without
 it, on none. <code>--listen</code> alone is the socket of the workspace,
@@ -633,8 +633,7 @@ program prints; <code>MachineProperties</code>, <code>UsbDevices</code>,
 <code>Folder</code>, the entries of a folder, for a path being typed.
 <code>Attach</code> switches the connection to the bytes of the console
 of a brick, AMP's <code>ProtocolSwitchCommand</code>.</p>
-<h2 id="the-windows-of-another-virtualbricks">The windows of another
-Virtualbricks</h2>
+<h2 id="windows">The windows of another Virtualbricks</h2>
 <p><code>virtualbricks --connect</code> <em>description</em> opens the
 windows of the Virtualbricks of the socket of <em>description</em>: the
 lab machine, which runs the bricks, this machine or another, and the

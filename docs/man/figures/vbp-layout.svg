@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 150" role="img" aria-label="The blocks of lab.vbp in file order: a pax header before each member; contents.toml, project.toml and README.md form the head; then the private disk vm1_hda.cow, the images IMAGES/debian and IMAGES/scratch, and the blocks of zeros that end the archive.">
+    <text x="16" y="24" class="mono small muted">0</text>
+    <text x="133" y="24" class="mono small muted">2048</text>
+    <text x="244" y="24" class="mono small muted">10240</text>
+    <text x="333" y="24" class="mono small muted">12288</text>
+    <text x="450" y="24" class="mono small muted">281088</text>
+    <text x="577" y="24" class="mono small muted">549888</text>
+    <text x="744" y="24" text-anchor="end" class="mono small muted">563200</text>
+    <rect x="16" y="34" width="13" height="50" class="box"/>
+    <text x="22.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+    <rect x="29" y="34" width="104" height="50" class="box-accent"/>
+    <text x="81" y="63" text-anchor="middle" class="mono small">contents.toml</text>
+    <rect x="133" y="34" width="13" height="50" class="box"/>
+    <text x="139.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+    <rect x="146" y="34" width="98" height="50" class="box-accent"/>
+    <text x="195" y="63" text-anchor="middle" class="mono small">project.toml</text>
+    <rect x="244" y="34" width="13" height="50" class="box"/>
+    <text x="250.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+    <rect x="257" y="34" width="76" height="50" class="box-accent"/>
+    <text x="295" y="63" text-anchor="middle" class="mono small">README.md</text>
+    <rect x="333" y="34" width="13" height="50" class="box"/>
+    <text x="339.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+    <rect x="346" y="34" width="104" height="50" class="box"/>
+    <text x="398" y="56" text-anchor="middle" class="mono small">vm1_hda.cow</text>
+    <text x="398" y="73" text-anchor="middle" class="small muted">packed, sparse</text>
+    <rect x="450" y="34" width="13" height="50" class="box"/>
+    <text x="456.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+    <rect x="463" y="34" width="114" height="50" class="box"/>
+    <text x="520" y="56" text-anchor="middle" class="mono small">IMAGES/debian</text>
+    <text x="520" y="73" text-anchor="middle" class="small muted">packed, sparse</text>
+    <rect x="577" y="34" width="13" height="50" class="box"/>
+    <text x="583.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+    <rect x="590" y="34" width="116" height="50" class="box"/>
+    <text x="648" y="56" text-anchor="middle" class="mono small">IMAGES/scratch</text>
+    <text x="648" y="73" text-anchor="middle" class="small muted">raw, sparse</text>
+    <rect x="706" y="34" width="38" height="50" class="box-ghost"/>
+    <text x="725" y="63" text-anchor="middle" class="small muted">zeros</text>
+    <path d="M16,96 V104 H329 V96" class="ln-accent"/>
+    <text x="172.5" y="126" text-anchor="middle" class="small t-accent">the head: an inspection reads it, then stops</text>
+    <path d="M337,96 V104 H446 V96" class="ln"/>
+    <text x="391.5" y="126" text-anchor="middle" class="small muted">private disks</text>
+    <path d="M454,96 V104 H702 V96" class="ln"/>
+    <text x="578" y="126" text-anchor="middle" class="small muted">images, under IMAGES/</text>
+    <text x="725" y="126" text-anchor="middle" class="small muted">end</text>
+</svg>

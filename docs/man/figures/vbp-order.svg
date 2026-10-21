@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 152" role="img" aria-label="The members of a new archive in file order: contents.toml, project.toml and README.md form the head, which an inspection reads; then the other files, the private disks and the images, each group from smallest to largest, which only the import reads.">
+    <text x="16" y="22" class="mono small muted">offset 0</text>
+    <text x="744" y="22" text-anchor="end" class="mono small muted">end of the archive</text>
+    <rect x="16" y="32" width="104" height="50" class="box-accent"/>
+    <text x="68" y="61" text-anchor="middle" class="mono small">contents.toml</text>
+    <rect x="120" y="32" width="100" height="50" class="box-accent"/>
+    <text x="170" y="61" text-anchor="middle" class="mono small">project.toml</text>
+    <rect x="220" y="32" width="76" height="50" class="box-accent"/>
+    <text x="258" y="61" text-anchor="middle" class="mono small">README.md</text>
+    <rect x="296" y="32" width="36" height="50" class="box"/>
+    <rect x="332" y="32" width="60" height="50" class="box"/>
+    <rect x="392" y="32" width="34" height="50" class="box"/>
+    <rect x="426" y="32" width="52" height="50" class="box"/>
+    <rect x="478" y="32" width="78" height="50" class="box"/>
+    <rect x="556" y="32" width="76" height="50" class="box"/>
+    <rect x="632" y="32" width="112" height="50" class="box"/>
+    <text x="344" y="100" text-anchor="middle" class="small muted">other files</text>
+    <text x="474" y="100" text-anchor="middle" class="small muted">private disks</text>
+    <text x="650" y="100" text-anchor="middle" class="small muted">images</text>
+    <path d="M16,110 V118 H292 V110" class="ln-accent"/>
+    <text x="154" y="140" text-anchor="middle" class="small t-accent">head: an inspection reads it, then stops</text>
+    <path d="M300,110 V118 H744 V110" class="ln"/>
+    <text x="522" y="140" text-anchor="middle" class="small muted">only the import reads the rest, each group from smallest to largest</text>
+</svg>

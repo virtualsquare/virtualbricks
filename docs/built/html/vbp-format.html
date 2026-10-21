@@ -94,6 +94,58 @@ type <code>x</code> whose data are records of the form <em>length</em>
 zeros end the archive, which is then padded with zeros to a multiple of
 10240 bytes, the record of tar.</p>
 <p>The blocks of the example:</p>
+<figure class="diagram">
+<div class="canvas">
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 150" role="img" aria-label="The blocks of lab.vbp in file order: a pax header before each member; contents.toml, project.toml and README.md form the head; then the private disk vm1_hda.cow, the images IMAGES/debian and IMAGES/scratch, and the blocks of zeros that end the archive.">
+    <text x="16" y="24" class="mono small muted">0</text>
+    <text x="133" y="24" class="mono small muted">2048</text>
+    <text x="244" y="24" class="mono small muted">10240</text>
+    <text x="333" y="24" class="mono small muted">12288</text>
+    <text x="450" y="24" class="mono small muted">281088</text>
+    <text x="577" y="24" class="mono small muted">549888</text>
+    <text x="744" y="24" text-anchor="end" class="mono small muted">563200</text>
+    <rect x="16" y="34" width="13" height="50" class="box"/>
+    <text x="22.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+    <rect x="29" y="34" width="104" height="50" class="box-accent"/>
+    <text x="81" y="63" text-anchor="middle" class="mono small">contents.toml</text>
+    <rect x="133" y="34" width="13" height="50" class="box"/>
+    <text x="139.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+    <rect x="146" y="34" width="98" height="50" class="box-accent"/>
+    <text x="195" y="63" text-anchor="middle" class="mono small">project.toml</text>
+    <rect x="244" y="34" width="13" height="50" class="box"/>
+    <text x="250.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+    <rect x="257" y="34" width="76" height="50" class="box-accent"/>
+    <text x="295" y="63" text-anchor="middle" class="mono small">README.md</text>
+    <rect x="333" y="34" width="13" height="50" class="box"/>
+    <text x="339.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+    <rect x="346" y="34" width="104" height="50" class="box"/>
+    <text x="398" y="56" text-anchor="middle" class="mono small">vm1_hda.cow</text>
+    <text x="398" y="73" text-anchor="middle" class="small muted">packed, sparse</text>
+    <rect x="450" y="34" width="13" height="50" class="box"/>
+    <text x="456.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+    <rect x="463" y="34" width="114" height="50" class="box"/>
+    <text x="520" y="56" text-anchor="middle" class="mono small">IMAGES/debian</text>
+    <text x="520" y="73" text-anchor="middle" class="small muted">packed, sparse</text>
+    <rect x="577" y="34" width="13" height="50" class="box"/>
+    <text x="583.5" y="63" text-anchor="middle" class="mono small muted">x</text>
+    <rect x="590" y="34" width="116" height="50" class="box"/>
+    <text x="648" y="56" text-anchor="middle" class="mono small">IMAGES/scratch</text>
+    <text x="648" y="73" text-anchor="middle" class="small muted">raw, sparse</text>
+    <rect x="706" y="34" width="38" height="50" class="box-ghost"/>
+    <text x="725" y="63" text-anchor="middle" class="small muted">zeros</text>
+    <path d="M16,96 V104 H329 V96" class="ln-accent"/>
+    <text x="172.5" y="126" text-anchor="middle" class="small t-accent">the head: an inspection reads it, then stops</text>
+    <path d="M337,96 V104 H446 V96" class="ln"/>
+    <text x="391.5" y="126" text-anchor="middle" class="small muted">private disks</text>
+    <path d="M454,96 V104 H702 V96" class="ln"/>
+    <text x="578" y="126" text-anchor="middle" class="small muted">images, under IMAGES/</text>
+    <text x="725" y="126" text-anchor="middle" class="small muted">end</text>
+</svg>
+</div>
+<figcaption>The 563200 bytes of the example archive, <em>lab.vbp</em>,
+in file order: the head takes 12 KB; a real disk or image takes
+gigabytes.</figcaption>
+</figure>
 <pre><code> offset  type  header name                       size
       0  x     PaxHeader/contents.toml             90
    1024  0     contents.toml                      318
@@ -227,12 +279,35 @@ import would take for images: the export leaves it out, and says so.</p>
 project file and the README: together, the <em>head</em> of the archive.
 The other files, the private disks and the images follow, in this order,
 each group from the smallest file to the largest:</p>
-<pre><code> +----------+---------+--------+-------+-------+----------+
- | contents | project | README | other | disks | IMAGES/  |
- |   .toml  |  .toml  |  .md   | files |       |          |
- +----------+---------+--------+-------+-------+----------+
- |&lt;---------- head -----------&gt;|&lt;- smallest to largest --&gt;|
-     read by an inspection          read by the import</code></pre>
+<figure class="diagram">
+<div class="canvas">
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 152" role="img" aria-label="The members of a new archive in file order: contents.toml, project.toml and README.md form the head, which an inspection reads; then the other files, the private disks and the images, each group from smallest to largest, which only the import reads.">
+    <text x="16" y="22" class="mono small muted">offset 0</text>
+    <text x="744" y="22" text-anchor="end" class="mono small muted">end of the archive</text>
+    <rect x="16" y="32" width="104" height="50" class="box-accent"/>
+    <text x="68" y="61" text-anchor="middle" class="mono small">contents.toml</text>
+    <rect x="120" y="32" width="100" height="50" class="box-accent"/>
+    <text x="170" y="61" text-anchor="middle" class="mono small">project.toml</text>
+    <rect x="220" y="32" width="76" height="50" class="box-accent"/>
+    <text x="258" y="61" text-anchor="middle" class="mono small">README.md</text>
+    <rect x="296" y="32" width="36" height="50" class="box"/>
+    <rect x="332" y="32" width="60" height="50" class="box"/>
+    <rect x="392" y="32" width="34" height="50" class="box"/>
+    <rect x="426" y="32" width="52" height="50" class="box"/>
+    <rect x="478" y="32" width="78" height="50" class="box"/>
+    <rect x="556" y="32" width="76" height="50" class="box"/>
+    <rect x="632" y="32" width="112" height="50" class="box"/>
+    <text x="344" y="100" text-anchor="middle" class="small muted">other files</text>
+    <text x="474" y="100" text-anchor="middle" class="small muted">private disks</text>
+    <text x="650" y="100" text-anchor="middle" class="small muted">images</text>
+    <path d="M16,110 V118 H292 V110" class="ln-accent"/>
+    <text x="154" y="140" text-anchor="middle" class="small t-accent">head: an inspection reads it, then stops</text>
+    <path d="M300,110 V118 H744 V110" class="ln"/>
+    <text x="522" y="140" text-anchor="middle" class="small muted">only the import reads the rest, each group from smallest to largest</text>
+</svg>
+</div>
+<figcaption>A new archive in file order, not to scale.</figcaption>
+</figure>
 <p>The order is the writer's promise; a reader accepts any order. With
 <code>contents.toml</code> first, Virtualbricks reads the archive until
 it has the members of the head that the list names, and stops there,
@@ -266,42 +341,66 @@ real_size = 1376256
 [[members]]
 name = &quot;IMAGES/scratch&quot;
 size = 33554432</code></pre>
-<dl>
-<dt><code>format</code> = <em>integer</em></dt>
-<dd>
-The version of the layout, <code>1</code>. An archive with a higher
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>format</code></td>
+<td><em>integer</em></td>
+<td>The version of the layout, <code>1</code>. An archive with a higher
 <code>format</code> is not read: "contents.toml: written by a newer
 Virtualbricks (format 2)". The format changes only for what an older
-reader can't ignore: keys it doesn't know are ignored.
-</dd>
-<dt><code>members</code> = <em>array of tables</em></dt>
-<dd>
-One table for each member but <code>contents.toml</code> itself:
-<dl>
-<dt><code>name</code> = <em>string</em></dt>
-<dd>
-The name of the member, as in its header.
-</dd>
-<dt><code>size</code> = <em>integer</em></dt>
-<dd>
-The size of the file that the member holds, holes included: what
+reader can't ignore: keys it doesn't know are ignored.</td>
+</tr>
+<tr>
+<td><code>members</code></td>
+<td><em>array of tables</em></td>
+<td>One table for each member but <code>contents.toml</code> itself:
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td><em>string</em></td>
+<td>The name of the member, as in its header.</td>
+</tr>
+<tr>
+<td><code>size</code></td>
+<td><em>integer</em></td>
+<td>The size of the file that the member holds, holes included: what
 <code>ls -l</code> says once it's extracted. A sparse member takes fewer
 bytes in the archive: <code>IMAGES/scratch</code> takes 4608 bytes for
-its 32 MiB.
-</dd>
-<dt><code>packed</code> = <em>boolean</em></dt>
-<dd>
-Present, and <code>true</code>, only when <code>qemu-img</code>
-compressed the member; see <code>PACKED DISKS</code>.
-</dd>
-<dt><code>real_size</code> = <em>integer</em></dt>
-<dd>
-Only with <code>packed</code>: the size of the disk before it was
-compressed, the size it has on the computer it comes from.
-</dd>
-</dl>
-</dd>
-</dl>
+its 32 MiB.</td>
+</tr>
+<tr>
+<td><code>packed</code></td>
+<td><em>boolean</em></td>
+<td>Present, and <code>true</code>, only when <code>qemu-img</code>
+compressed the member; see <code>PACKED DISKS</code>.</td>
+</tr>
+<tr>
+<td><code>real_size</code></td>
+<td><em>integer</em></td>
+<td>Only with <code>packed</code>: the size of the disk before it was
+compressed, the size it has on the computer it comes from.</td>
+</tr>
+</tbody>
+</table></td>
+</tr>
+</tbody>
+</table>
 <p>The kind of a member comes from its name and is not written. An item
 of <code>members</code> that isn't a table is skipped, a size that isn't
 an integer is read as 0, a <code>packed</code> that isn't
@@ -342,17 +441,61 @@ path too: see <code>PRIVATE DISKS</code>.</p>
 <p>A disk doesn't name a file: it names an image of the project, and the
 image has the path of its file. The archive stores the image under that
 name, so the name ties the three together:</p>
-<pre><code> project.toml                          the archive
- +-----------------------------------+
- | [bricks.vm1.disks.hda]            |
- | image = &quot;debian&quot; --.              |
- | private = true     |              |
- |                    v              |  the name
- | [images.debian] &lt;--+--------------+--&gt; IMAGES/debian
- | path = &quot;/srv/vm/debian-12.qcow2&quot;  |
- +-----------------------------------+
-            ^
-            &#39;----- backing file ------ vm1_hda.cow</code></pre>
+<figure class="diagram">
+<div class="canvas">
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 330" role="img" aria-label="In project.toml the disk hda of vm1 names the image debian, whose table has the path /srv/vm/debian-12.qcow2. The archive stores the image as IMAGES/debian, under its name, and the private disk vm1_hda.cow, whose backing file is that path. After the import, the image is the file shared_images/debian-12.qcow2 of the workspace, the table has its path, and the private disk is rebased on it.">
+    <defs>
+      <marker id="i-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+      <marker id="i-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+    </defs>
+    <text x="16" y="22" class="title">project.toml</text>
+    <text x="16" y="40" class="small muted">on the computer it comes from</text>
+    <text x="326" y="22" class="title">the archive</text>
+    <text x="326" y="40" class="small muted">members</text>
+    <text x="536" y="22" class="title">after the import</text>
+    <text x="536" y="40" class="small muted">on this computer</text>
+    <!-- the project file -->
+    <rect x="16" y="54" width="272" height="78" rx="6" class="box"/>
+    <text x="30" y="78" class="mono small">[bricks.vm1.disks.hda]</text>
+    <text x="30" y="98" class="mono small">image = <tspan class="t-accent">"debian"</tspan></text>
+    <text x="30" y="118" class="mono small">private = true</text>
+    <rect x="16" y="168" width="272" height="60" rx="6" class="box"/>
+    <text x="30" y="192" class="mono small">[<tspan class="t-accent">images.debian</tspan>]</text>
+    <text x="30" y="212" class="mono small">path = "/srv/vm/debian-12.qcow2"</text>
+    <path d="M150,104 C 200,110 200,160 150,172" class="ln-accent" marker-end="url(#i-tip-acc)"/>
+    <text x="206" y="146" class="small t-accent">the name</text>
+    <!-- the archive -->
+    <rect x="326" y="168" width="170" height="60" rx="6" class="box-accent"/>
+    <text x="340" y="192" class="mono small">IMAGES/<tspan class="t-accent">debian</tspan></text>
+    <text x="340" y="212" class="small muted">the file, under the name</text>
+    <path d="M288,198 H322" class="ln-accent" marker-end="url(#i-tip-acc)"/>
+    <rect x="326" y="262" width="170" height="54" rx="6" class="box"/>
+    <text x="340" y="284" class="mono small">vm1_hda.cow</text>
+    <text x="340" y="302" class="small muted">backing file: that path</text>
+    <path d="M326,289 H190 V232" class="ln dash" marker-end="url(#i-tip)"/>
+    <!-- after the import -->
+    <rect x="536" y="54" width="208" height="78" rx="6" class="box"/>
+    <text x="550" y="78" class="mono small">[images.debian]</text>
+    <text x="550" y="98" class="mono small">path = "&#8230;/shared_images/</text>
+    <text x="550" y="118" class="mono small">  debian-12.qcow2"</text>
+    <rect x="536" y="168" width="208" height="60" rx="6" class="box"/>
+    <text x="550" y="186" class="mono small">shared_images/</text>
+    <text x="550" y="202" class="mono small">debian-12.qcow2</text>
+    <text x="550" y="219" class="small muted">copied into the shared images</text>
+    <path d="M496,198 H532" class="ln" marker-end="url(#i-tip)"/>
+    <rect x="536" y="262" width="208" height="54" rx="6" class="box"/>
+    <text x="550" y="284" class="mono small">lab/vm1_hda.cow</text>
+    <text x="550" y="302" class="small muted">rebased on it, then unpacked</text>
+    <path d="M496,289 H532" class="ln" marker-end="url(#i-tip)"/>
+    <path d="M640,168 V136" class="ln dash" marker-end="url(#i-tip)"/>
+    <path d="M640,262 V232" class="ln dash" marker-end="url(#i-tip)"/>
+</svg>
+</div>
+<figcaption>The name ties the disk, the table of the image and the
+member. The path of the image appears twice, in the table and as the
+backing file of the private disk; the import replaces both with the file
+of this computer.</figcaption>
+</figure>
 <p>The import plans an image for each table
 <code>[images.<code><em>name</em></code>]</code> of the project file.
 Its disks are those whose <code>image</code> is <em>name</em>, and its
@@ -453,6 +596,52 @@ with zeros to a whole block;</li>
 size. The member <em>IMAGES/scratch</em> of the example, a file of 32
 MiB with 4096 bytes of data at 4 MiB, takes 4608 bytes: one block of
 map, then the data. Its map:</p>
+<figure class="diagram">
+<div class="canvas">
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 246" role="img" aria-label="The member IMAGES/scratch: a pax header with the GNU.sparse records, a header named IMAGES/GNUSparseFile.0/scratch of size 4608, a 512-byte map that says two regions, 4096 bytes at 4194304 and 0 bytes at 33554432, then 4096 bytes of data. Extracted, it is a file of 32 MiB whose only data are those 4096 bytes at 4 MiB.">
+    <defs>
+      <marker id="h-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+    </defs>
+    <text x="598" y="18" text-anchor="middle" class="small t-accent">the size in the header: 4608</text>
+    <path d="M452,34 V26 H744 V34" class="ln-accent"/>
+    <rect x="16" y="40" width="270" height="96" class="box"/>
+    <text x="28" y="60" class="small strong">pax header, type x</text>
+    <text x="28" y="80" class="mono small">GNU.sparse.major=1</text>
+    <text x="28" y="96" class="mono small">GNU.sparse.minor=0</text>
+    <text x="28" y="112" class="mono small">GNU.sparse.name=IMAGES/scratch</text>
+    <text x="28" y="128" class="mono small">GNU.sparse.realsize=33554432</text>
+    <rect x="286" y="40" width="166" height="96" class="box"/>
+    <text x="298" y="60" class="small strong">header, type 0</text>
+    <text x="298" y="80" class="mono small">IMAGES/</text>
+    <text x="298" y="96" class="mono small">GNUSparseFile.0/</text>
+    <text x="298" y="112" class="mono small">scratch</text>
+    <text x="298" y="128" class="mono small">size 4608</text>
+    <rect x="452" y="40" width="138" height="96" class="box-accent"/>
+    <text x="464" y="60" class="small strong">map, 512 bytes</text>
+    <text x="464" y="80" class="mono small">2</text>
+    <text x="464" y="96" class="mono small">4194304 4096</text>
+    <text x="464" y="112" class="mono small">33554432 0</text>
+    <text x="464" y="128" class="small muted">then zeros</text>
+    <rect x="590" y="40" width="154" height="96" class="box-accent"/>
+    <text x="602" y="60" class="small strong">data, 4096 bytes</text>
+    <text x="602" y="80" class="small muted">the regions,</text>
+    <text x="602" y="96" class="small muted">one after the other</text>
+    <!-- the file -->
+    <path d="M667,136 C 667,186 107,166 107,192" class="ln-accent" marker-end="url(#h-tip-acc)"/>
+    <rect x="16" y="196" width="728" height="22" class="box-ghost"/>
+    <rect x="105" y="196" width="4" height="22" class="badge"/>
+    <text x="16" y="238" class="mono small muted">0</text>
+    <text x="107" y="238" text-anchor="middle" class="mono small muted">4 MiB</text>
+    <text x="744" y="238" text-anchor="end" class="mono small muted">32 MiB</text>
+    <text x="420" y="238" text-anchor="middle" class="small muted">the file, extracted: holes but for 4096 bytes</text>
+</svg>
+</div>
+<figcaption>The member <em>IMAGES/scratch</em> of the example, from
+offset 549888 of the archive: 2048 bytes of headers and map for 4096
+bytes of data, which stand for a file of 32 MiB. The last region, 0
+bytes at the size of the file, says that it ends with a
+hole.</figcaption>
+</figure>
 <pre><code>2
 4194304
 4096

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 262" role="img" aria-label="A new archive is read only up to the end of its head, and the result comes there, complete. An older archive is read to its end: the head message comes as soon as the project file is read, incomplete, and the complete result at the end.">
+    <defs>
+      <marker id="i-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+    </defs>
+    <text x="16" y="20" class="strong">new archive, with contents.toml</text>
+    <rect x="16" y="32" width="108" height="36" class="box-accent"/>
+    <text x="70" y="55" text-anchor="middle" class="mono small">contents.toml</text>
+    <rect x="124" y="32" width="104" height="36" class="box-accent"/>
+    <text x="176" y="55" text-anchor="middle" class="mono small">project.toml</text>
+    <rect x="228" y="32" width="64" height="36" class="box-accent"/>
+    <text x="260" y="55" text-anchor="middle" class="mono small">README</text>
+    <rect x="292" y="32" width="452" height="36" class="box-ghost"/>
+    <text x="518" y="55" text-anchor="middle" class="small muted">private disks, images: never read</text>
+    <line x1="16" y1="84" x2="290" y2="84" class="ln-accent" marker-end="url(#i-tip-acc)"/>
+    <text x="16" y="100" class="small t-accent">read</text>
+    <line x1="292" y1="84" x2="292" y2="96" class="ln-accent"/>
+    <rect x="208" y="96" width="168" height="24" rx="12" class="box-accent"/>
+    <text x="292" y="112" text-anchor="middle" class="mono small">result, complete</text>
+
+    <text x="16" y="152" class="strong">older archive, without contents.toml</text>
+    <rect x="16" y="164" width="92" height="36" class="box"/>
+    <text x="62" y="187" text-anchor="middle" class="small muted">&#8230;</text>
+    <rect x="108" y="164" width="104" height="36" class="box-accent"/>
+    <text x="160" y="187" text-anchor="middle" class="mono small">project.toml</text>
+    <rect x="212" y="164" width="532" height="36" class="box"/>
+    <text x="478" y="187" text-anchor="middle" class="small muted">README, private disks, images, in any order</text>
+    <line x1="16" y1="216" x2="742" y2="216" class="ln-accent" marker-end="url(#i-tip-acc)"/>
+    <text x="16" y="232" class="small t-accent">read</text>
+    <line x1="212" y1="216" x2="212" y2="228" class="ln-accent"/>
+    <rect x="120" y="228" width="184" height="24" rx="12" class="box-accent"/>
+    <text x="212" y="244" text-anchor="middle" class="mono small">head, not complete</text>
+    <line x1="744" y1="216" x2="744" y2="228" class="ln-accent"/>
+    <rect x="576" y="228" width="168" height="24" rx="12" class="box-accent"/>
+    <text x="660" y="244" text-anchor="middle" class="mono small">result, complete</text>
+</svg>

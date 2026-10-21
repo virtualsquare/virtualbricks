@@ -614,6 +614,74 @@ def heading_text(inlines, attrs):
     return heading
 
 
+# A power in a man page, 2^53-1, raised in the HTML: 2<sup>53</sup>−1
+POWER = re.compile(r"(\d+)\^(\d+)(-1)?")
+# The range of a key, 0-2^53-1
+RANGE = re.compile(r"^(-?\d+(?:\^\d+(?:-1)?)?)-(\d+(?:\^\d+(?:-1)?)?)(,?)$")
+
+
+def powers(value):
+    """A text in HTML, its powers raised."""
+
+    return POWER.sub(
+        lambda m: f"{m[1]}<sup>{m[2]}</sup>" + ("\u22121" if m[3] else ""),
+        escape(value),
+    )
+
+
+def drawing(attrs, blocks):
+    """
+    A diagram of a man page, ::: {.diagram svg="figures/NAME.svg"}: its
+    ASCII, for the man page and Yelp, then its caption; the path of its
+    drawing, for the HTML, which takes the place of the ASCII, or comes
+    before it in a diagram of class listing too.
+    """
+
+    attrs = dict(attrs)
+    if set(attrs) != {"svg"}:
+        raise Error(f"a diagram has its drawing, svg=, and only that: {attrs}")
+    if [b["t"] for b in blocks] != ["CodeBlock", "Para"]:
+        raise Error(
+            f"the diagram {attrs['svg']} is a code block, then its caption"
+        )
+    path = os.path.join(MAN, attrs["svg"])
+    if not os.path.isfile(path):
+        raise Error(f"the drawing {attrs['svg']} isn't there")
+    return blocks[0], blocks[1]["c"], path
+
+
+def key_entry(term):
+    """
+    The parts of a term of a list of keys, **name** = type, default value:
+    the inlines of the name, of the type and of the default, if any; None
+    if the term isn't one of a key.
+    """
+
+    equals = {"t": "Str", "c": "="}
+    if not term or term[0]["t"] != "Strong" or equals not in term:
+        return None
+    index = term.index(equals)
+    if term[index - 1]["t"] != "Space" or index + 1 >= len(term):
+        return None
+    name, rest = term[: index - 1], term[index + 2 :]
+    default = []
+    for at in range(len(rest) - 3):
+        if (
+            rest[at] == {"t": "Str", "c": ","}
+            or (rest[at]["t"] == "Str" and rest[at]["c"].endswith(","))
+        ) and rest[at + 1 : at + 3] == [
+            {"t": "Space"},
+            {"t": "Str", "c": "default"},
+        ]:
+            if rest[at]["c"] != ",":
+                last = {"t": "Str", "c": rest[at]["c"][:-1]}
+                rest, default = rest[:at] + [last], rest[at + 4 :]
+            else:
+                rest, default = rest[:at], rest[at + 4 :]
+            break
+    return name, rest, default
+
+
 class ReferenceWriter(MallardWriter):
     """
     A page of the reference, from pandoc's tree of a man page: bold is
@@ -676,6 +744,14 @@ class ReferenceWriter(MallardWriter):
         """A numbered list of the reference, not a procedure."""
 
         return Element("list", {"type": "numbered"}, items)
+
+    def div(self, content):
+        (_id, classes, attrs), blocks = content
+        if classes not in (["diagram"], ["diagram", "listing"]):
+            raise Error(f"a div of class {' '.join(classes)} {attrs}")
+        code, caption, _path = drawing(attrs, blocks)
+        desc = self.para("desc", caption)
+        return [Element("figure", children=[desc] + self.block(code))]
 
     def synopsis(self, block):
         """The lines of the synopsis: a paragraph for each."""
@@ -1204,6 +1280,88 @@ class ReferenceHtml(HtmlWriter):
             if rest:
                 result.append({"t": "Str", "c": rest})
             index += 2
+        return result
+
+    def inline(self, inline):
+        if inline["t"] == "Str" and POWER.search(inline["c"]):
+            return [raw(powers(inline["c"]))]
+        return super().inline(inline)
+
+    def block(self, block):
+        kind = block["t"]
+        content = block.get("c")
+        if kind == "Div" and content[0][1][:1] == ["diagram"]:
+            code, caption, path = drawing(content[0][2], content[1])
+            with open(path, encoding="utf-8") as fp:
+                svg = fp.read().strip()
+            canvas = {
+                "t": "RawBlock",
+                "c": ["html", f'<div class="canvas">\n{svg}\n</div>'],
+            }
+            caption = [{"t": "Plain", "c": self.inlines(caption)}]
+            attr = ["", ["diagram"], []]
+            figure = {"t": "Figure", "c": [attr, [None, caption], [canvas]]}
+            # a listing stays, under its drawing; an ASCII diagram goes
+            if "listing" in content[0][1]:
+                return [figure, code]
+            return [figure]
+        if kind == "DefinitionList":
+            entries = [key_entry(term) for term, _definitions in content]
+            if all(entry is not None for entry in entries):
+                return [self.keys(content, entries)]
+        return super().block(block)
+
+    def keys(self, items, entries):
+        """A list of keys, as a table: Key, Type, Default, Meaning."""
+
+        with_default = any(default for _name, _kind, default in entries)
+        head = ["Key", "Type"] + ["Default"] * with_default + ["Meaning"]
+
+        def cell(blocks):
+            return [["", [], []], {"t": "AlignDefault"}, 1, 1, blocks]
+
+        def row(cells):
+            return [["", [], []], cells]
+
+        rows = []
+        for (_term, definitions), (name, kind, default) in zip(items, entries):
+            cells = [self.inlines(name), self.kind(kind)]
+            cells += [self.inlines(default)] * with_default
+            meaning = [b for d in definitions for b in self.blocks(d)]
+            rows.append(
+                row(
+                    [cell([{"t": "Plain", "c": c}]) for c in cells]
+                    + [cell(meaning)]
+                )
+            )
+        head = [row([cell([{"t": "Plain", "c": words(h)}]) for h in head])]
+        specs = [[{"t": "AlignDefault"}, {"t": "ColWidthDefault"}]] * len(
+            head[0][1]
+        )
+        return {
+            "t": "Table",
+            "c": [
+                ["", ["keys"], []],
+                [None, []],
+                specs,
+                [["", [], []], head],
+                [[["", [], []], 0, [], rows]],
+                [["", [], []], []],
+            ],
+        }
+
+    def kind(self, inlines):
+        """The type of a key, its range with a dash: 0–2^53−1."""
+
+        result = []
+        for inline in inlines:
+            match = inline["t"] == "Str" and RANGE.match(inline["c"])
+            if match:
+                low, high, rest = match.groups()
+                html = f"{powers(low)}\u2013{powers(high)}{escape(rest)}"
+                result.append(raw(html))
+            else:
+                result.extend(self.inlines([inline]))
         return result
 
     @staticmethod

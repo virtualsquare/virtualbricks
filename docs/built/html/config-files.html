@@ -175,11 +175,21 @@ the default values at its first start, and rewrites it when OK in the
 Settings window changes one of its settings, and when Virtualbricks
 quits. Two that run side by side, in two workspaces, each write all the
 settings they have: the last one to write wins.</p>
-<dl>
-<dt><code>workspace</code> = <em>path</em>, default
-<code>"~/.virtualbricks"</code></dt>
-<dd>
-The directory of the projects, <em>.virtualbricks</em> in your home
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>workspace</code></td>
+<td><em>path</em></td>
+<td><code>"~/.virtualbricks"</code></td>
+<td>The directory of the projects, <em>.virtualbricks</em> in your home
 directory by default. <code>~</code> is your home directory, a relative
 path starts in the directory Virtualbricks starts in, and an empty
 string is the default. <code>virtualbricks --workspace</code>
@@ -188,14 +198,15 @@ there, and leaves this setting as it is. Each workspace has its shared
 images, in its <em>shared_images</em> directory, and the project that
 opens at start in it (see <code>STATE</code>). A Virtualbricks stays in
 the workspace it started in, whose lock it holds: a new value is for the
-next start.
-</dd>
-<dt><code>terminal</code> = <em>string</em>, default
-<code>"x-terminal-emulator -e {command}"</code></dt>
-<dd>
-The terminal that opens the console of a brick, as a command: its words
-are split as the shell splits them, and it runs without a shell. Its
-program is a program in <code>PATH</code> or a path to one.
+next start.</td>
+</tr>
+<tr>
+<td><code>terminal</code></td>
+<td><em>string</em></td>
+<td><code>"x-terminal-emulator -e {command}"</code></td>
+<td>The terminal that opens the console of a brick, as a command: its
+words are split as the shell splits them, and it runs without a shell.
+Its program is a program in <code>PATH</code> or a path to one.
 <code>{command}</code> is the console: as a word of its own, it is the
 program of the console and its socket, two words; inside a longer word
 or in quotes, the two as one string, quoted for the shell.
@@ -209,37 +220,42 @@ terminal named alone runs as <em>terminal</em> <code>-e</code>
 the brick in the title and keeps the window open when the console ends.
 The default is the terminal of your desktop on Debian and Ubuntu,
 through a wrapper for one that takes <code>-e</code> otherwise, as GNOME
-Terminal does. A quote that isn't closed is an error.
-</dd>
-<dt><code>kernel_samepage_merging</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Turn Kernel Samepage Merging on at start, so that virtual machines share
-identical memory pages. If this Linux has no KSM, or KSM is still off
-once Virtualbricks has tried, the warning at start says so; the setting
-stays as it is.
-</dd>
-<dt><code>tray_icon</code> = <em>boolean</em>, default
-<code>true</code></dt>
-<dd>
-Show an icon in the system tray.
-</dd>
-<dt><code>warn_missing_programs</code> = <em>boolean</em>, default
-<code>true</code></dt>
-<dd>
-Warn at start about the programs that Virtualbricks needs and can't
-find, with the package that has each.
-</dd>
-<dt><code>audio_driver</code> = <em>string</em>, default
-<code>"alsa"</code></dt>
-<dd>
-The audio driver of QEMU that plays the sound cards of the virtual
+Terminal does. A quote that isn't closed is an error.</td>
+</tr>
+<tr>
+<td><code>kernel_samepage_merging</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Turn Kernel Samepage Merging on at start, so that virtual machines
+share identical memory pages. If this Linux has no KSM, or KSM is still
+off once Virtualbricks has tried, the warning at start says so; the
+setting stays as it is.</td>
+</tr>
+<tr>
+<td><code>tray_icon</code></td>
+<td><em>boolean</em></td>
+<td><code>true</code></td>
+<td>Show an icon in the system tray.</td>
+</tr>
+<tr>
+<td><code>warn_missing_programs</code></td>
+<td><em>boolean</em></td>
+<td><code>true</code></td>
+<td>Warn at start about the programs that Virtualbricks needs and can't
+find, with the package that has each.</td>
+</tr>
+<tr>
+<td><code>audio_driver</code></td>
+<td><em>string</em></td>
+<td><code>"alsa"</code></td>
+<td>The audio driver of QEMU that plays the sound cards of the virtual
 machines, as <code>"alsa"</code>, <code>"pa"</code> or
 <code>"pipewire"</code>. It's about this computer, not about a project.
 A driver that the installed QEMU doesn't have leaves the machines
-without a sound card, with a warning.
-</dd>
-</dl>
+without a sound card, with a warning.</td>
+</tr>
+</tbody>
+</table>
 <p>The <code>settings.toml</code> of an older version also has the
 settings of the projects, described under <code>Project settings</code>:
 they're reported, ignored, and dropped at the next save. Each project
@@ -250,31 +266,55 @@ has its own.</p>
 <code>XDG_STATE_HOME</code> is not set. Virtualbricks rewrites it
 whenever it opens a project; of two that run side by side, the last one
 to write it wins.</p>
-<dl>
-<dt><code>workspaces</code> = <em>array</em>, default
-<code>[]</code></dt>
-<dd>
-The workspaces used, the last used first: a table for each, with the
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>workspaces</code></td>
+<td><em>array</em></td>
+<td><code>[]</code></td>
+<td>The workspaces used, the last used first: a table for each, with the
 keys of <code>Workspaces</code>. A workspace that isn't in the list
-opens its <code>new_project</code>.
-</dd>
-</dl>
+opens its <code>new_project</code>.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="workspaces">Workspaces</h3>
-<dl>
-<dt><code>path</code> = <em>path</em></dt>
-<dd>
-The directory of the workspace, as an absolute path. A table without it
-is reported and dropped.
-</dd>
-<dt><code>current_project</code> = <em>string</em>, default
-<code>"new_project"</code></dt>
-<dd>
-The project that opens at start in this workspace. A missing
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>path</code></td>
+<td><em>path</em></td>
+<td></td>
+<td>The directory of the workspace, as an absolute path. A table without
+it is reported and dropped.</td>
+</tr>
+<tr>
+<td><code>current_project</code></td>
+<td><em>string</em></td>
+<td><code>"new_project"</code></td>
+<td>The project that opens at start in this workspace. A missing
 <code>new_project</code> is created. Any other project that can't be
 opened is reported, and Virtualbricks creates and opens
-<code>new_project_0</code>, or the next free number, instead.
-</dd>
-</dl>
+<code>new_project_0</code>, or the next free number, instead.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="projects">Projects</h2>
 <p>A project is a directory of the workspace that contains a
 <code>project.toml</code>. The name of the directory is the name of the
@@ -326,24 +366,38 @@ this project only. A new project starts with a copy of the settings of
 the project that is open, or with the defaults when none is. An imported
 project brings the paths of the machine it comes from; the import dialog
 offers to replace them with those of the open project.</p>
-<dl>
-<dt><code>allow_female_plugs</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Allow plugs to connect to the socket cards of virtual machines, not only
-to switches.
-</dd>
-<dt><code>qemu_path</code> = <em>path</em>, default
-<code>"/usr/bin"</code></dt>
-<dd>
-The directory of the QEMU programs.
-</dd>
-<dt><code>vde_path</code> = <em>path</em>, default
-<code>"/usr/bin"</code></dt>
-<dd>
-The directory of the VDE programs, such as <code>vde_switch</code>(1).
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>allow_female_plugs</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Allow plugs to connect to the socket cards of virtual machines, not
+only to switches.</td>
+</tr>
+<tr>
+<td><code>qemu_path</code></td>
+<td><em>path</em></td>
+<td><code>"/usr/bin"</code></td>
+<td>The directory of the QEMU programs.</td>
+</tr>
+<tr>
+<td><code>vde_path</code></td>
+<td><em>path</em></td>
+<td><code>"/usr/bin"</code></td>
+<td>The directory of the VDE programs, such as
+<code>vde_switch</code>(1).</td>
+</tr>
+</tbody>
+</table>
 <p>Older project files have a <code>cow_format</code> key, the format of
 the private copies of the disks, which are always qcow2 now, and a
 <code>log_link_loops</code> key, which decided whether a loop in the
@@ -351,38 +405,65 @@ links was logged, while the bricks on a loop never started: an error
 says so now. Both are read without a word, and dropped at the next
 save.</p>
 <h3 id="images">Images</h3>
-<dl>
-<dt><code>path</code> = <em>path</em>, default <code>""</code></dt>
-<dd>
-The image file. A relative path is relative to the project directory. An
-image without a path is dropped; an image whose file is missing is kept,
-and reported. Two images can't use the same file.
-</dd>
-<dt><code>description</code> = <em>string</em>, default
-<code>""</code></dt>
-<dd>
-A description, which can span several lines.
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>path</code></td>
+<td><em>path</em></td>
+<td><code>""</code></td>
+<td>The image file. A relative path is relative to the project
+directory. An image without a path is dropped; an image whose file is
+missing is kept, and reported. Two images can't use the same file.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>A description, which can span several lines.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="events">Events</h3>
-<dl>
-<dt><code>icon</code> = <em>path</em>, default <code>""</code></dt>
-<dd>
-An image file to show instead of the icon of events. Nothing shows it
-yet.
-</dd>
-<dt><code>delay</code> = <em>integer</em> 0-2^31-1, default
-<code>0</code></dt>
-<dd>
-Seconds to wait before running the actions.
-</dd>
-<dt><code>actions</code> = <em>array</em>, default <code>[]</code></dt>
-<dd>
-What the event does after its delay, all at once: an action doesn't wait
-for the one before. Each is an inline table whose <code>kind</code> says
-what it does. <code>"start"</code> and <code>"stop"</code> start or stop
-their <code>target</code>, the name of a brick, with the bricks it plugs
-into, or of an event. <code>"console"</code> runs its
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>icon</code></td>
+<td><em>path</em></td>
+<td><code>""</code></td>
+<td>An image file to show instead of the icon of events. Nothing shows
+it yet.</td>
+</tr>
+<tr>
+<td><code>delay</code></td>
+<td><em>integer</em> 0–2<sup>31</sup>−1</td>
+<td><code>0</code></td>
+<td>Seconds to wait before running the actions.</td>
+</tr>
+<tr>
+<td><code>actions</code></td>
+<td><em>array</em></td>
+<td><code>[]</code></td>
+<td>What the event does after its delay, all at once: an action doesn't
+wait for the one before. Each is an inline table whose <code>kind</code>
+says what it does. <code>"start"</code> and <code>"stop"</code> start or
+stop their <code>target</code>, the name of a brick, with the bricks it
+plugs into, or of an event. <code>"console"</code> runs its
 <code>command</code> in the console, see <a
 href="command-line.html">virtualbricks(1)</a>, and <code>"shell"</code>
 runs it with <code>sh</code>(1). A brick or an event renamed is renamed
@@ -391,9 +472,10 @@ in the targets, not in the commands. For example:
     {kind = &quot;start&quot;, target = &quot;sw1&quot;},
     {kind = &quot;console&quot;, command = &quot;brick set vm1 memory=1024&quot;},
     {kind = &quot;shell&quot;, command = &quot;logger lab started&quot;},
-]</code></pre>
-</dd>
-</dl>
+]</code></pre></td>
+</tr>
+</tbody>
+</table>
 <h3 id="bricks">Bricks</h3>
 <p>Every brick table has a <code>type</code>, which is one of
 <code>qemu</code>, <code>switch</code>, <code>switchwrapper</code>,
@@ -401,21 +483,37 @@ in the targets, not in the commands. For example:
 <code>netemu</code>, <code>tunnellisten</code>,
 <code>tunnelconnect</code> and <code>router</code>, and these three
 keys:</p>
-<dl>
-<dt><code>icon</code> = <em>path</em>, default <code>""</code></dt>
-<dd>
-An image file to show instead of the icon of the type. Only virtual
-machines show it, for now.
-</dd>
-<dt><code>on_start</code> = <em>event</em>, default <code>""</code></dt>
-<dd>
-The event that runs when the brick starts.
-</dd>
-<dt><code>on_stop</code> = <em>event</em>, default <code>""</code></dt>
-<dd>
-The event that runs when the brick stops.
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>icon</code></td>
+<td><em>path</em></td>
+<td><code>""</code></td>
+<td>An image file to show instead of the icon of the type. Only virtual
+machines show it, for now.</td>
+</tr>
+<tr>
+<td><code>on_start</code></td>
+<td><em>event</em></td>
+<td><code>""</code></td>
+<td>The event that runs when the brick starts.</td>
+</tr>
+<tr>
+<td><code>on_stop</code></td>
+<td><em>event</em></td>
+<td><code>""</code></td>
+<td>The event that runs when the brick stops.</td>
+</tr>
+</tbody>
+</table>
 <p>The other keys are described below for each type.</p>
 <h3 id="connections">Connections</h3>
 <p>A connection goes from a plug of a brick to a socket of another. It's
@@ -436,7 +534,7 @@ A socket card of a virtual machine, for example
 <p>An empty string leaves the plug unconnected. Depending on its type, a
 brick has one plug in <code>connect</code>, two in
 <code>endpoints</code>, or network cards in <code>nics</code>.</p>
-<h3 id="readme">README</h3>
+<h3 id="projects-readme">README</h3>
 <p>The <em>README.md</em> of a project is plain text in UTF-8, which
 Virtualbricks reads as Markdown. The Readme tab shows it rendered, and
 its pencil button edits the text; the details of the Projects window
@@ -511,282 +609,379 @@ its QEMU program what it has, and writes each option the way that
 version takes it. What the program lacks is left out, and the machine
 starts with a warning that says so, as a machine type or a CPU model
 that it doesn't know, which leaves QEMU's default in its place.</p>
-<dl>
-<dt><code>qemu_program</code> = <em>string</em>, default
-<code>"qemu-system-i386"</code></dt>
-<dd>
-The QEMU program, in the <code>qemu_path</code> directory, for example
-<code>"qemu-system-x86_64"</code>. It can't be empty.
-</dd>
-<dt><code>machine_type</code> = <em>string</em>, default
-<code>""</code></dt>
-<dd>
-The machine type, as in <code>-machine type=</code>. Empty means the
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>qemu_program</code></td>
+<td><em>string</em></td>
+<td><code>"qemu-system-i386"</code></td>
+<td>The QEMU program, in the <code>qemu_path</code> directory, for
+example <code>"qemu-system-x86_64"</code>. It can't be empty.</td>
+</tr>
+<tr>
+<td><code>machine_type</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The machine type, as in <code>-machine type=</code>. Empty means the
 default of QEMU. A program without a default one, as
 <code>qemu-system-aarch64</code>, doesn't start the machine until it has
-a type of the program.
-</dd>
-<dt><code>cpu_model</code> = <em>string</em>, default
-<code>""</code></dt>
-<dd>
-The CPU model: <code>-cpu</code>.
-</dd>
-<dt><code>use_kvm</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Use KVM when the host supports it: <code>-accel kvm -accel tcg</code>.
-</dd>
-<dt><code>cpus</code> = <em>integer</em> 1-64, default
-<code>1</code></dt>
-<dd>
-The number of CPUs: <code>-smp</code>.
-</dd>
-<dt><code>memory</code> = <em>integer</em> 1-99999, default
-<code>64</code></dt>
-<dd>
-The memory, in MiB: <code>-m</code>.
-</dd>
-<dt><code>use_kvm_shadow_memory</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Set the size of the KVM shadow memory to <code>kvm_shadow_memory</code>.
-</dd>
-<dt><code>kvm_shadow_memory</code> = <em>integer</em> 0-99999, default
-<code>1</code></dt>
-<dd>
-The size of the KVM shadow memory, in MiB: <code>-accel
-kvm,kvm-shadow-mem=</code>, which takes it in bytes.
-</dd>
-<dt><code>boot_order</code> = <em>string</em>, default
-<code>""</code></dt>
-<dd>
-The boot order: <code>-boot</code>, for example <code>"c"</code> for the
-first disk or <code>"d"</code> for the CD-ROM. Empty means the QEMU
-default.
-</dd>
-<dt><code>forget_disk_changes</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Write to temporary files instead of the disk images, forgotten when the
-machine stops: <code>-snapshot</code>.
-</dd>
-<dt><code>virtio_disks</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Attach the disks as virtio devices.
-</dd>
-<dt><code>cdrom</code> = <em>choice</em>, default
-<code>"none"</code></dt>
-<dd>
-The CD-ROM: <code>"none"</code>, <code>"image"</code> for the file
+a type of the program.</td>
+</tr>
+<tr>
+<td><code>cpu_model</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The CPU model: <code>-cpu</code>.</td>
+</tr>
+<tr>
+<td><code>use_kvm</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Use KVM when the host supports it: <code>-accel kvm -accel
+tcg</code>.</td>
+</tr>
+<tr>
+<td><code>cpus</code></td>
+<td><em>integer</em> 1–64</td>
+<td><code>1</code></td>
+<td>The number of CPUs: <code>-smp</code>.</td>
+</tr>
+<tr>
+<td><code>memory</code></td>
+<td><em>integer</em> 1–99999</td>
+<td><code>64</code></td>
+<td>The memory, in MiB: <code>-m</code>.</td>
+</tr>
+<tr>
+<td><code>use_kvm_shadow_memory</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Set the size of the KVM shadow memory to
+<code>kvm_shadow_memory</code>.</td>
+</tr>
+<tr>
+<td><code>kvm_shadow_memory</code></td>
+<td><em>integer</em> 0–99999</td>
+<td><code>1</code></td>
+<td>The size of the KVM shadow memory, in MiB: <code>-accel
+kvm,kvm-shadow-mem=</code>, which takes it in bytes.</td>
+</tr>
+<tr>
+<td><code>boot_order</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The boot order: <code>-boot</code>, for example <code>"c"</code> for
+the first disk or <code>"d"</code> for the CD-ROM. Empty means the QEMU
+default.</td>
+</tr>
+<tr>
+<td><code>forget_disk_changes</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Write to temporary files instead of the disk images, forgotten when
+the machine stops: <code>-snapshot</code>.</td>
+</tr>
+<tr>
+<td><code>virtio_disks</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Attach the disks as virtio devices.</td>
+</tr>
+<tr>
+<td><code>cdrom</code></td>
+<td><em>choice</em></td>
+<td><code>"none"</code></td>
+<td>The CD-ROM: <code>"none"</code>, <code>"image"</code> for the file
 <code>cdrom_image</code>, or <code>"device"</code> for the drive
-<code>cdrom_device</code> of the host: <code>-cdrom</code>.
-</dd>
-<dt><code>cdrom_image</code> = <em>path</em>, default
-<code>""</code></dt>
-<dd>
-An image file for the CD-ROM.
-</dd>
-<dt><code>cdrom_device</code> = <em>string</em>, default
-<code>""</code></dt>
-<dd>
-A CD-ROM drive of the host, for example <code>"/dev/cdrom"</code>.
-</dd>
-<dt><code>headless</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-No display: <code>-display none</code>. It leaves out
-<code>use_vnc</code> and <code>sdl_window</code>.
-</dd>
-<dt><code>standard_vga</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-A standard VGA card: <code>-vga std</code>.
-</dd>
-<dt><code>use_vnc</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Show the display over VNC, on display <code>vnc_display</code>.
-</dd>
-<dt><code>vnc_display</code> = <em>integer</em> 0-500, default
-<code>1</code></dt>
-<dd>
-The VNC display: <code>-vnc :<em>N</em></code>.
-</dd>
-<dt><code>sdl_window</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Show the display in an SDL window: <code>-display sdl</code>. QEMU has
-it with the package <code>qemu-system-gui</code>.
-</dd>
-<dt><code>sound_card</code> = <em>string</em>, default
-<code>""</code></dt>
-<dd>
-The sound card, as <code>"ac97"</code>, <code>"es1370"</code> or
+<code>cdrom_device</code> of the host: <code>-cdrom</code>.</td>
+</tr>
+<tr>
+<td><code>cdrom_image</code></td>
+<td><em>path</em></td>
+<td><code>""</code></td>
+<td>An image file for the CD-ROM.</td>
+</tr>
+<tr>
+<td><code>cdrom_device</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>A CD-ROM drive of the host, for example
+<code>"/dev/cdrom"</code>.</td>
+</tr>
+<tr>
+<td><code>headless</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>No display: <code>-display none</code>. It leaves out
+<code>use_vnc</code> and <code>sdl_window</code>.</td>
+</tr>
+<tr>
+<td><code>standard_vga</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>A standard VGA card: <code>-vga std</code>.</td>
+</tr>
+<tr>
+<td><code>use_vnc</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Show the display over VNC, on display <code>vnc_display</code>.</td>
+</tr>
+<tr>
+<td><code>vnc_display</code></td>
+<td><em>integer</em> 0–500</td>
+<td><code>1</code></td>
+<td>The VNC display: <code>-vnc :<em>N</em></code>.</td>
+</tr>
+<tr>
+<td><code>sdl_window</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Show the display in an SDL window: <code>-display sdl</code>. QEMU
+has it with the package <code>qemu-system-gui</code>.</td>
+</tr>
+<tr>
+<td><code>sound_card</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The sound card, as <code>"ac97"</code>, <code>"es1370"</code> or
 <code>"sb16"</code>: <code>-audiodev</code>, with the
 <code>audio_driver</code> setting, and <code>-device</code>.
 <code>"pcspk"</code> is the speaker of the PC: <code>-machine
-pcspk-audiodev=</code>.
-</dd>
-<dt><code>use_usb</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Enable USB, <code>-usb</code>, and pass the devices of
-<code>usb_devices</code> to the guest.
-</dd>
-<dt><code>usb_devices</code> = <em>array</em>, default
-<code>[]</code></dt>
-<dd>
-USB devices of the host, each an inline table with an <code>id</code>,
-the vendor and product id as <code>"046d:c52b"</code>, and a
-<code>description</code>. Each device becomes <code>-device
-usb-host,vendorid=0x046d,productid=0xc52b</code>.
-</dd>
-<dt><code>keyboard_layout</code> = <em>string</em>, default
-<code>""</code></dt>
-<dd>
-The keyboard layout, a code of two letters such as <code>"it"</code>:
-<code>-k</code>.
-</dd>
-<dt><code>clock_local_time</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Set the clock of the guest to the local time: <code>-rtc
-base=localtime</code>.
-</dd>
-<dt><code>clock_drift_fix</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Correct the drift of the clock: <code>-rtc driftfix=slew</code>.
-</dd>
-<dt><code>serial_socket</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Connect the serial port to a socket in the runtime directory:
-<code>-serial unix:</code>...**_serial**.
-</dd>
-<dt><code>use_kernel</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Boot the kernel <code>kernel</code> directly.
-</dd>
-<dt><code>kernel</code> = <em>path</em>, default <code>""</code></dt>
-<dd>
-A kernel image: <code>-kernel</code>.
-</dd>
-<dt><code>use_initrd</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Use the initial ramdisk <code>initrd</code>, with
-<code>use_kernel</code>.
-</dd>
-<dt><code>initrd</code> = <em>path</em>, default <code>""</code></dt>
-<dd>
-An initial ramdisk: <code>-initrd</code>.
-</dd>
-<dt><code>kernel_command_line</code> = <em>string</em>, default
-<code>""</code></dt>
-<dd>
-The kernel command line, with <code>use_kernel</code>:
-<code>-append</code>.
-</dd>
-<dt><code>use_gdb</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Wait for a GDB connection on port <code>gdb_port</code>.
-</dd>
-<dt><code>gdb_port</code> = <em>integer</em> 1-65535, default
-<code>1234</code></dt>
-<dd>
-The port of the GDB server: <code>-gdb tcp::<em>port</em></code>.
-</dd>
-<dt><code>acpi</code> = <em>boolean</em>, default <code>true</code></dt>
-<dd>
-Give the machine ACPI. False turns it off: <code>-machine
+pcspk-audiodev=</code>.</td>
+</tr>
+<tr>
+<td><code>use_usb</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Enable USB, <code>-usb</code>, and pass the devices of
+<code>usb_devices</code> to the guest.</td>
+</tr>
+<tr>
+<td><code>usb_devices</code></td>
+<td><em>array</em></td>
+<td><code>[]</code></td>
+<td>USB devices of the host, each an inline table with an
+<code>id</code>, the vendor and product id as <code>"046d:c52b"</code>,
+and a <code>description</code>. Each device becomes <code>-device
+usb-host,vendorid=0x046d,productid=0xc52b</code>.</td>
+</tr>
+<tr>
+<td><code>keyboard_layout</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The keyboard layout, a code of two letters such as
+<code>"it"</code>: <code>-k</code>.</td>
+</tr>
+<tr>
+<td><code>clock_local_time</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Set the clock of the guest to the local time: <code>-rtc
+base=localtime</code>.</td>
+</tr>
+<tr>
+<td><code>clock_drift_fix</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Correct the drift of the clock: <code>-rtc
+driftfix=slew</code>.</td>
+</tr>
+<tr>
+<td><code>serial_socket</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Connect the serial port to a socket in the runtime directory:
+<code>-serial unix:</code>...**_serial**.</td>
+</tr>
+<tr>
+<td><code>use_kernel</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Boot the kernel <code>kernel</code> directly.</td>
+</tr>
+<tr>
+<td><code>kernel</code></td>
+<td><em>path</em></td>
+<td><code>""</code></td>
+<td>A kernel image: <code>-kernel</code>.</td>
+</tr>
+<tr>
+<td><code>use_initrd</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Use the initial ramdisk <code>initrd</code>, with
+<code>use_kernel</code>.</td>
+</tr>
+<tr>
+<td><code>initrd</code></td>
+<td><em>path</em></td>
+<td><code>""</code></td>
+<td>An initial ramdisk: <code>-initrd</code>.</td>
+</tr>
+<tr>
+<td><code>kernel_command_line</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The kernel command line, with <code>use_kernel</code>:
+<code>-append</code>.</td>
+</tr>
+<tr>
+<td><code>use_gdb</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Wait for a GDB connection on port <code>gdb_port</code>.</td>
+</tr>
+<tr>
+<td><code>gdb_port</code></td>
+<td><em>integer</em> 1–65535</td>
+<td><code>1234</code></td>
+<td>The port of the GDB server: <code>-gdb
+tcp::<em>port</em></code>.</td>
+</tr>
+<tr>
+<td><code>acpi</code></td>
+<td><em>boolean</em></td>
+<td><code>true</code></td>
+<td>Give the machine ACPI. False turns it off: <code>-machine
 acpi=off</code>, or <code>-no-acpi</code> for a machine type without
-that property.
-</dd>
-</dl>
+that property.</td>
+</tr>
+</tbody>
+</table>
 <h4 id="disks">Disks</h4>
 <p>The disks are in the subtables <code>disks.hda</code>,
 <code>disks.hdb</code>, <code>disks.hdc</code>, <code>disks.hdd</code>,
 <code>disks.fda</code>, <code>disks.fdb</code> and
 <code>disks.mtdblock</code>, one for each device, all of them always
 written:</p>
-<dl>
-<dt><code>disks.<em>device</em>.image</code> = <em>image</em>, default
-<code>""</code></dt>
-<dd>
-The image of the device, by name.
-</dd>
-<dt><code>disks.<em>device</em>.private</code> = <em>boolean</em>,
-default <code>false</code></dt>
-<dd>
-Write to a private copy-on-write file, <em>vm</em>_<em>device</em>.cow
-in the project directory, instead of the image, which then stays
-unchanged. Virtualbricks makes the file in the qcow2 format; one in
-another format, made by an older version, is still used.
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>disks.<em>device</em>.image</code></td>
+<td><em>image</em></td>
+<td><code>""</code></td>
+<td>The image of the device, by name.</td>
+</tr>
+<tr>
+<td><code>disks.<em>device</em>.private</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Write to a private copy-on-write file,
+<em>vm</em>_<em>device</em>.cow in the project directory, instead of the
+image, which then stays unchanged. Virtualbricks makes the file in the
+qcow2 format; one in another format, made by an older version, is still
+used.</td>
+</tr>
+</tbody>
+</table>
 <h4 id="network-cards">Network cards</h4>
 <p><code>nics</code> is an array of tables, the network cards in the
 order the guest sees them. Each card has these keys:</p>
-<dl>
-<dt><code>kind</code> = <em>choice</em></dt>
-<dd>
-<code>"plug"</code> for a card plugged into a socket,
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>kind</code></td>
+<td><em>choice</em></td>
+<td></td>
+<td><code>"plug"</code> for a card plugged into a socket,
 <code>"socket"</code> for a card that other bricks plug into, or
 <code>"hostonly"</code> for a card on QEMU's user networking. A plug and
 a socket card need the <code>vde</code> network backend of QEMU, which
 Ubuntu builds its QEMU without: with a QEMU that lacks it, the card is
-there but unplugged, with a warning.
-</dd>
-<dt><code>connect</code> = <em>string</em></dt>
-<dd>
-With <code>"plug"</code>, the socket the card is plugged into; see
-<code>Connections</code>.
-</dd>
-<dt><code>name</code> = <em>string</em></dt>
-<dd>
-With <code>"socket"</code>, the name of the socket card, made of
+there but unplugged, with a warning.</td>
+</tr>
+<tr>
+<td><code>connect</code></td>
+<td><em>string</em></td>
+<td></td>
+<td>With <code>"plug"</code>, the socket the card is plugged into; see
+<code>Connections</code>.</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td><em>string</em></td>
+<td></td>
+<td>With <code>"socket"</code>, the name of the socket card, made of
 letters, digits, underscores, hyphens and dots. Other bricks connect to
 it as <em>vm</em>:<em>name</em>. When it's missing, or a card before it
 has the same, the card gets the first <code>sock_eth<em>N</em></code>
-that no socket card of the machine has, with a warning.
-</dd>
-<dt><code>model</code> = <em>string</em>, default
-<code>"rtl8139"</code></dt>
-<dd>
-The model of the card, for example <code>"e1000"</code> or
+that no socket card of the machine has, with a warning.</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td><em>string</em></td>
+<td><code>"rtl8139"</code></td>
+<td>The model of the card, for example <code>"e1000"</code> or
 <code>"virtio-net-pci"</code>. A model that the installed QEMU doesn't
-have becomes <code>"rtl8139"</code>, with a warning.
-</dd>
-<dt><code>mac</code> = <em>string</em></dt>
-<dd>
-The MAC address, as <code>"52:54:00:12:34:56"</code>. A missing or
-invalid address is replaced with a random one.
-</dd>
-</dl>
+have becomes <code>"rtl8139"</code>, with a warning.</td>
+</tr>
+<tr>
+<td><code>mac</code></td>
+<td><em>string</em></td>
+<td></td>
+<td>The MAC address, as <code>"52:54:00:12:34:56"</code>. A missing or
+invalid address is replaced with a random one.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="switch">switch</h3>
 <p>A VDE switch, <code>vde_switch</code>(1). Plugs connect to it by its
 name.</p>
-<dl>
-<dt><code>ports</code> = <em>integer</em> 1-128, default
-<code>32</code></dt>
-<dd>
-The number of ports.
-</dd>
-<dt><code>hub_mode</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Send every packet to every port, like a hub.
-</dd>
-<dt><code>fast_spanning_tree</code> = <em>boolean</em>, default
-<code>false</code></dt>
-<dd>
-Enable the fast spanning tree protocol.
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ports</code></td>
+<td><em>integer</em> 1–128</td>
+<td><code>32</code></td>
+<td>The number of ports.</td>
+</tr>
+<tr>
+<td><code>hub_mode</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Send every packet to every port, like a hub.</td>
+</tr>
+<tr>
+<td><code>fast_spanning_tree</code></td>
+<td><em>boolean</em></td>
+<td><code>false</code></td>
+<td>Enable the fast spanning tree protocol.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="switchwrapper">switchwrapper</h3>
 <p>A VDE switch that Virtualbricks doesn't start, run by another
 program. Plugs connect to it by its name. It runs while a switch listens
@@ -798,14 +993,25 @@ as the other program starts and stops its switch; a brick that plugs
 into it starts only while that switch is there. A switch wrapper that
 runs keeps neither Virtualbricks from quitting, nor its project from
 closing, nor itself from being deleted.</p>
-<dl>
-<dt><code>socket_path</code> = <em>path</em>, default
-<code>""</code></dt>
-<dd>
-The control directory of the switch; without one, the switch wrapper
-isn't configured.
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>socket_path</code></td>
+<td><em>path</em></td>
+<td><code>""</code></td>
+<td>The control directory of the switch; without one, the switch wrapper
+isn't configured.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="tap">tap</h3>
 <p>A tap interface of the host, plugged into a switch through
 <code>vde_plug2tap</code>(1). It needs root, see
@@ -813,206 +1019,314 @@ isn't configured.
 which Linux limits to 15 characters: New Brick, Rename and the console's
 <code>brick new</code> and <code>brick rename</code> refuse a longer
 one.</p>
-<dl>
-<dt><code>connect</code> = <em>string</em>, default <code>""</code></dt>
-<dd>
-The socket the tap is plugged into.
-</dd>
-<dt><code>address_mode</code> = <em>choice</em>, default
-<code>"off"</code></dt>
-<dd>
-How the interface gets its address: <code>"off"</code> for not at all,
-<code>"dhcp"</code>, or <code>"manual"</code> for
-<code>ip_address</code>, <code>netmask</code> and <code>gateway</code>.
-</dd>
-<dt><code>ip_address</code> = <em>address</em>, default
-<code>"10.0.0.1"</code></dt>
-<dd>
-The address of the interface.
-</dd>
-<dt><code>netmask</code> = <em>address</em>, default
-<code>"255.255.255.0"</code></dt>
-<dd>
-The netmask.
-</dd>
-<dt><code>gateway</code> = <em>address</em>, default
-<code>""</code></dt>
-<dd>
-The default gateway, or empty for none.
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>connect</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The socket the tap is plugged into.</td>
+</tr>
+<tr>
+<td><code>address_mode</code></td>
+<td><em>choice</em></td>
+<td><code>"off"</code></td>
+<td>How the interface gets its address: <code>"off"</code> for not at
+all, <code>"dhcp"</code>, or <code>"manual"</code> for
+<code>ip_address</code>, <code>netmask</code> and
+<code>gateway</code>.</td>
+</tr>
+<tr>
+<td><code>ip_address</code></td>
+<td><em>address</em></td>
+<td><code>"10.0.0.1"</code></td>
+<td>The address of the interface.</td>
+</tr>
+<tr>
+<td><code>netmask</code></td>
+<td><em>address</em></td>
+<td><code>"255.255.255.0"</code></td>
+<td>The netmask.</td>
+</tr>
+<tr>
+<td><code>gateway</code></td>
+<td><em>address</em></td>
+<td><code>""</code></td>
+<td>The default gateway, or empty for none.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="capture">capture</h3>
 <p>Captures the packets of an interface of the host into a switch,
 through <code>vde_pcapplug</code>. It needs root, see
 <code>PRIVILEGES</code>.</p>
-<dl>
-<dt><code>connect</code> = <em>string</em>, default <code>""</code></dt>
-<dd>
-The socket the capture is plugged into.
-</dd>
-<dt><code>interface</code> = <em>string</em>, default
-<code>""</code></dt>
-<dd>
-The interface of the host, for example <code>"eth0"</code>.
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>connect</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The socket the capture is plugged into.</td>
+</tr>
+<tr>
+<td><code>interface</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The interface of the host, for example <code>"eth0"</code>.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="wire">wire</h3>
 <p>Connects two sockets, through <code>dpipe</code>(1) and
 <code>vde_plug</code>(1).</p>
-<dl>
-<dt><code>endpoints</code> = <em>array</em>, default
-<code>["", ""]</code></dt>
-<dd>
-The two sockets, left and right.
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>endpoints</code></td>
+<td><em>array</em></td>
+<td><code>["", ""]</code></td>
+<td>The two sockets, left and right.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="netemu">netemu</h3>
 <p>A wire that emulates a network link: bandwidth, delay, buffer and
 loss, which can change over time between the states of a Markov chain.
 It runs <code>vde-netemu</code>.</p>
-<dl>
-<dt><code>endpoints</code> = <em>array</em>, default
-<code>["", ""]</code></dt>
-<dd>
-The two sockets, left and right. The values of a state apply from left
-to right, the ones that end in **_right_to_left** from right to left. A
-socket card of a virtual machine can only be the right one.
-</dd>
-<dt><code>transition_period</code> = <em>integer</em> 1-2^53-1, default
-<code>100</code></dt>
-<dd>
-How often the emulator may change state, in milliseconds.
-</dd>
-<dt><code>transitions</code> = <em>array</em>, default
-<code>[[0.0]]</code></dt>
-<dd>
-The transition matrix: the number in row <em>i</em> and column
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>endpoints</code></td>
+<td><em>array</em></td>
+<td><code>["", ""]</code></td>
+<td>The two sockets, left and right. The values of a state apply from
+left to right, the ones that end in **_right_to_left** from right to
+left. A socket card of a virtual machine can only be the right one.</td>
+</tr>
+<tr>
+<td><code>transition_period</code></td>
+<td><em>integer</em> 1–2<sup>53</sup>−1</td>
+<td><code>100</code></td>
+<td>How often the emulator may change state, in milliseconds.</td>
+</tr>
+<tr>
+<td><code>transitions</code></td>
+<td><em>array</em></td>
+<td><code>[[0.0]]</code></td>
+<td>The transition matrix: the number in row <em>i</em> and column
 <em>j</em> is the probability of going from state <em>i</em> to state
-<em>j</em> at each period. It has a row and a column for each state.
-</dd>
-</dl>
+<em>j</em> at each period. It has a row and a column for each
+state.</td>
+</tr>
+</tbody>
+</table>
 <p><code>states</code> is an array of tables, at least one, and the
 first one is the state the emulator starts in. Each state has these
 keys:</p>
-<dl>
-<dt><code>name</code> = <em>string</em>, default
-<code>"default name"</code></dt>
-<dd>
-The name of the state.
-</dd>
-<dt><code>bandwidth</code> = <em>integer</em> 0-2^53-1, default
-<code>125000</code></dt>
-<dd>
-The bandwidth, in bytes per second, or 0 for no limit; from left to
-right when <code>bandwidth_symmetric</code> is false.
-</dd>
-<dt><code>bandwidth_right_to_left</code> = <em>integer</em> 0-2^53-1,
-default <code>125000</code></dt>
-<dd>
-The bandwidth from right to left.
-</dd>
-<dt><code>bandwidth_symmetric</code> = <em>boolean</em>, default
-<code>true</code></dt>
-<dd>
-Use <code>bandwidth</code> in both directions.
-</dd>
-<dt><code>delay</code> = <em>integer</em> 0-2^53-1, default
-<code>0</code></dt>
-<dd>
-The propagation delay, one way, in milliseconds; from left to right when
-<code>delay_symmetric</code> is false.
-</dd>
-<dt><code>delay_right_to_left</code> = <em>integer</em> 0-2^53-1,
-default <code>0</code></dt>
-<dd>
-The delay from right to left.
-</dd>
-<dt><code>delay_symmetric</code> = <em>boolean</em>, default
-<code>true</code></dt>
-<dd>
-Use <code>delay</code> in both directions.
-</dd>
-<dt><code>buffer_size</code> = <em>integer</em> 0-2^31-1, default
-<code>75000</code></dt>
-<dd>
-The size of the channel buffer, in bytes, or 0 for no limit; from left
-to right when <code>buffer_size_symmetric</code> is false.
-</dd>
-<dt><code>buffer_size_right_to_left</code> = <em>integer</em> 0-2^31-1,
-default <code>75000</code></dt>
-<dd>
-The size of the channel buffer from right to left.
-</dd>
-<dt><code>buffer_size_symmetric</code> = <em>boolean</em>, default
-<code>true</code></dt>
-<dd>
-Use <code>buffer_size</code> in both directions.
-</dd>
-<dt><code>loss</code> = <em>number</em> 0-100, default
-<code>0.0</code></dt>
-<dd>
-The percentage of packets lost; from left to right when
-<code>loss_symmetric</code> is false.
-</dd>
-<dt><code>loss_right_to_left</code> = <em>number</em> 0-100, default
-<code>0.0</code></dt>
-<dd>
-The percentage of packets lost from right to left.
-</dd>
-<dt><code>loss_symmetric</code> = <em>boolean</em>, default
-<code>true</code></dt>
-<dd>
-Use <code>loss</code> in both directions.
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td><em>string</em></td>
+<td><code>"default name"</code></td>
+<td>The name of the state.</td>
+</tr>
+<tr>
+<td><code>bandwidth</code></td>
+<td><em>integer</em> 0–2<sup>53</sup>−1</td>
+<td><code>125000</code></td>
+<td>The bandwidth, in bytes per second, or 0 for no limit; from left to
+right when <code>bandwidth_symmetric</code> is false.</td>
+</tr>
+<tr>
+<td><code>bandwidth_right_to_left</code></td>
+<td><em>integer</em> 0–2<sup>53</sup>−1</td>
+<td><code>125000</code></td>
+<td>The bandwidth from right to left.</td>
+</tr>
+<tr>
+<td><code>bandwidth_symmetric</code></td>
+<td><em>boolean</em></td>
+<td><code>true</code></td>
+<td>Use <code>bandwidth</code> in both directions.</td>
+</tr>
+<tr>
+<td><code>delay</code></td>
+<td><em>integer</em> 0–2<sup>53</sup>−1</td>
+<td><code>0</code></td>
+<td>The propagation delay, one way, in milliseconds; from left to right
+when <code>delay_symmetric</code> is false.</td>
+</tr>
+<tr>
+<td><code>delay_right_to_left</code></td>
+<td><em>integer</em> 0–2<sup>53</sup>−1</td>
+<td><code>0</code></td>
+<td>The delay from right to left.</td>
+</tr>
+<tr>
+<td><code>delay_symmetric</code></td>
+<td><em>boolean</em></td>
+<td><code>true</code></td>
+<td>Use <code>delay</code> in both directions.</td>
+</tr>
+<tr>
+<td><code>buffer_size</code></td>
+<td><em>integer</em> 0–2<sup>31</sup>−1</td>
+<td><code>75000</code></td>
+<td>The size of the channel buffer, in bytes, or 0 for no limit; from
+left to right when <code>buffer_size_symmetric</code> is false.</td>
+</tr>
+<tr>
+<td><code>buffer_size_right_to_left</code></td>
+<td><em>integer</em> 0–2<sup>31</sup>−1</td>
+<td><code>75000</code></td>
+<td>The size of the channel buffer from right to left.</td>
+</tr>
+<tr>
+<td><code>buffer_size_symmetric</code></td>
+<td><em>boolean</em></td>
+<td><code>true</code></td>
+<td>Use <code>buffer_size</code> in both directions.</td>
+</tr>
+<tr>
+<td><code>loss</code></td>
+<td><em>number</em> 0–100</td>
+<td><code>0.0</code></td>
+<td>The percentage of packets lost; from left to right when
+<code>loss_symmetric</code> is false.</td>
+</tr>
+<tr>
+<td><code>loss_right_to_left</code></td>
+<td><em>number</em> 0–100</td>
+<td><code>0.0</code></td>
+<td>The percentage of packets lost from right to left.</td>
+</tr>
+<tr>
+<td><code>loss_symmetric</code></td>
+<td><em>boolean</em></td>
+<td><code>true</code></td>
+<td>Use <code>loss</code> in both directions.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="tunnellisten">tunnellisten</h3>
 <p>The server end of an encrypted tunnel between two machines, through
 <code>vde_cryptcab</code>(1).</p>
-<dl>
-<dt><code>connect</code> = <em>string</em>, default <code>""</code></dt>
-<dd>
-The socket the tunnel is plugged into.
-</dd>
-<dt><code>listen_port</code> = <em>integer</em> 1-65535, default
-<code>7667</code></dt>
-<dd>
-The UDP port to listen on.
-</dd>
-<dt><code>password</code> = <em>string</em>, default
-<code>""</code></dt>
-<dd>
-The password of the tunnel. It's stored in clear text.
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>connect</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The socket the tunnel is plugged into.</td>
+</tr>
+<tr>
+<td><code>listen_port</code></td>
+<td><em>integer</em> 1–65535</td>
+<td><code>7667</code></td>
+<td>The UDP port to listen on.</td>
+</tr>
+<tr>
+<td><code>password</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The password of the tunnel. It's stored in clear text.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="tunnelconnect">tunnelconnect</h3>
 <p>The client end of an encrypted tunnel, through
 <code>vde_cryptcab</code>(1).</p>
-<dl>
-<dt><code>connect</code> = <em>string</em>, default <code>""</code></dt>
-<dd>
-The socket the tunnel is plugged into.
-</dd>
-<dt><code>server_host</code> = <em>string</em>, default
-<code>""</code></dt>
-<dd>
-The host that runs the server end.
-</dd>
-<dt><code>server_port</code> = <em>integer</em> 1-65535, default
-<code>7667</code></dt>
-<dd>
-The UDP port of the server end.
-</dd>
-<dt><code>local_port</code> = <em>integer</em> 1-65535, default
-<code>10771</code></dt>
-<dd>
-The local UDP port.
-</dd>
-<dt><code>password</code> = <em>string</em>, default
-<code>""</code></dt>
-<dd>
-The password of the tunnel. It's stored in clear text.
-</dd>
-</dl>
+<table class="keys">
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>connect</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The socket the tunnel is plugged into.</td>
+</tr>
+<tr>
+<td><code>server_host</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The host that runs the server end.</td>
+</tr>
+<tr>
+<td><code>server_port</code></td>
+<td><em>integer</em> 1–65535</td>
+<td><code>7667</code></td>
+<td>The UDP port of the server end.</td>
+</tr>
+<tr>
+<td><code>local_port</code></td>
+<td><em>integer</em> 1–65535</td>
+<td><code>10771</code></td>
+<td>The local UDP port.</td>
+</tr>
+<tr>
+<td><code>password</code></td>
+<td><em>string</em></td>
+<td><code>""</code></td>
+<td>The password of the tunnel. It's stored in clear text.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="router">router</h3>
 <p>A router. It has only the two event keys.</p>
 <h2 id="privileges">Privileges</h2>

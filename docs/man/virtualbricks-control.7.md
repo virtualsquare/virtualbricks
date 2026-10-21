@@ -51,6 +51,7 @@ Protocol, and on them three protocols:
     development: its commands may change in any way, without notice, see
     **VERSIONS**.
 
+::: {.diagram svg="figures/control-protocols.svg"}
 ```
   +--------------+  +-------------+---------------------------+
   |     JSON     |  |    AMP 1    |           AMP 2           |
@@ -66,6 +67,11 @@ Protocol, and on them three protocols:
   +-----------------------------------------------------------+
      protocol=json      protocol=amp, the default
 ```
+
+One socket speaks lines of JSON or the boxes of AMP, as its description
+says. On AMP, a connection starts in protocol 1, and **Hello** takes it to
+protocol 2.
+:::
 
 A **tcp** socket answers only a client that proves first that it knows the
 token of Virtualbricks, in either format. This page describes the
@@ -128,6 +134,7 @@ virtualbricks side S C
 where *S* is the nonce of Virtualbricks and *C* that of the client, one
 space between the words, written in lowercase hex digits:
 
+::: {.diagram svg="figures/control-token.svg"}
 ```
   client                               Virtualbricks
     |                                        |
@@ -144,6 +151,10 @@ space between the words, written in lowercase hex digits:
   checks it: if wrong,
   closes the connection
 ```
+
+The messages of the proof come before any other on a socket that asks for
+the token.
+:::
 
 The client proves first, and Virtualbricks then proves it to the client: a
 program that took the port in place of Virtualbricks doesn't know the
@@ -228,6 +239,7 @@ A wrong proof, a line that isn't one, or none in 10 seconds gets an answer
 with **ok** **false** and why, as "Wrong token", and the connection
 closes.
 
+::: {.diagram svg="figures/control-json-session.svg"}
 ```
   client                               Virtualbricks
     |                                        |
@@ -245,6 +257,10 @@ closes.
     |<-- {"ok": true, "lines": [...]} -------|  order
 ```
 
+The JSON protocol: the proof first, on a socket that asks for it; the
+greeting; then each request gets its answer, in the order the requests came.
+:::
+
 # AMP
 
 ## Boxes
@@ -254,6 +270,7 @@ key of no bytes. Each key and each value has its length first, in two
 bytes, the high byte first: a key has from 1 to 255 bytes, a value from 0
 to 65535. A request of **Hello**, and its answer:
 
+::: {.diagram svg="figures/control-boxes.svg"}
 ```
    length  key         length  value
   +-------+-----------+-------+-----------------------+
@@ -270,6 +287,10 @@ to 65535. A request of **Hello**, and its answer:
   | 00 00 |              the end of the box           |
   +-------+-----------+-------+-----------------------+
 ```
+
+The boxes of a request of **Hello** and of its answer, byte by byte: the
+lengths in hex, the keys and the values as text.
+:::
 
 A request has **\_ask**, a tag that the program chooses, different from
 those of its requests that wait, and **\_command**, the name of the
@@ -373,6 +394,7 @@ Their errors:
     connection goes on; or the proof is wrong, or **Authenticate** came
     without a **Challenge** before it, and the connection closes.
 
+::: {.diagram svg="figures/control-amp-session.svg"}
 ```
   program                              Virtualbricks
     |                                        |
@@ -389,6 +411,10 @@ Their errors:
     |--- BrickStart name ["vm1"] ----------->|  protocol 2
     |<-- lines [...] ------------------------|
 ```
+
+A session over AMP: the proof of the token, **Hello**, then the commands of
+protocols 1 and 2 on the same connection.
+:::
 
 # AMP PROTOCOL 2
 
@@ -732,6 +758,7 @@ another project opens, the copy starts over, with **Opened**; **Follow**
 again does the same. A push longer than a value carries isn't sent, and
 the log says so.
 
+::: {.diagram svg="figures/control-follow.svg"}
 ```
   program                              Virtualbricks
     |                                        |
@@ -755,6 +782,10 @@ the log says so.
     |<-- Quitting ---------------------------|  at the end
 ```
 
+**Follow** and its pushes, which want no answer. What a command changed
+comes before its answer.
+:::
+
 ## Attach
 
 **Attach** joins the program to a console of a running brick:
@@ -770,6 +801,7 @@ Virtualbricks can't reach the console. The windows of **virtualbricks
 --connect** join the connection to a terminal of their own, as
 **vdeterm**(1):
 
+::: {.diagram svg="figures/control-attach.svg"}
 ```
   terminal     program            Virtualbricks     console
      |            |                     |              |
@@ -778,6 +810,10 @@ Virtualbricks can't reach the console. The windows of **virtualbricks
      |            |<----------- answer -|              |
      |<= bytes ==>|<====== bytes ======>|<== bytes ===>|
 ```
+
+**Attach**: once it answers, the connection carries only the bytes of the
+console.
+:::
 
 # VERSIONS
 
