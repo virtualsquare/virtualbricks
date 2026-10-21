@@ -31,17 +31,19 @@ in 3.0: they wait until after it.
   windows of `--connect` can show a stopped brick as running for a
   moment.
 
-## Bricks
+## Events
 
-- [ ] **A Netemu takes a negative delay, bandwidth or buffer size.**
-  `delay`, `bandwidth` and `buffer_size`, and their `_right_to_left`, are
-  `Int()` with no minimum (`virtualbricks/bricks/netemu.py`). With one,
-  an older project that has such a value would be read with a warning and
-  the default, so the reading needs a word too. Seen on 3.0.0.dev6, on 19
-  October 2026, with `--no-gui`: `brick set ne1 delay=-5 bandwidth=-1
-  buffer_size=-100` was taken, `project.toml` kept the three, and `brick
-  start ne1` ran `wirefilter` with `-d -5`, which `brick list` summed up
-  as `a ↔ b · -5 ms`. What wirefilter does with them wasn't looked into.
+- [ ] **An event takes a negative delay, and then doesn't start.** The
+  `delay` of `EventConfig` is `Int()` with no minimum
+  (`virtualbricks/bricks/event.py`): the spin of the event editor stops at
+  0, the console doesn't. Seen on 3.0.0.dev6, on 21 October 2026, with
+  `--no-gui`: `event set ev delay=-5` was taken and `project.toml` kept
+  it. With the action `start sw1`, `event start ev` answered "-5 is not
+  greater than or equal to 0 seconds; the messages have the details", the
+  `AssertionError` of Twisted's `callLater()`, and sw1 didn't start.
+  `Int(0)` is likely the whole fix: an older project's negative delay
+  would be read as the default, 0, with a warning, and such an event
+  never started.
 
 ## Machines
 

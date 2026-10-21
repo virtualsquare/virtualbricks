@@ -21,13 +21,14 @@
 from virtualbricks.bricks.draft import Problem, apply
 from virtualbricks.bricks.netemu import (
     BRICK_KEYS,
+    NOT_NEGATIVE,
     STATE_KEYS,
     NetemuConfig,
     NetemuDraft,
     NetemuTable,
 )
 from virtualbricks.config.report import Report
-from virtualbricks.config.schema import dump_record, field_names
+from virtualbricks.config.schema import Int, dump_record, field_names, kind_of
 from virtualbricks.tests import (
     BrickTestCase,
     CommandTestCase,
@@ -158,6 +159,54 @@ class TestNetemu(BrickTestCase):
         )
         self.assertEqual(netemu.proc.written, [])
         self.assertEqual(len(changes), 4)
+
+    def test_nothing_below_zero(self):
+        # a delay, a bandwidth or a buffer size below 0 is 0 to the programs
+        integers = [
+            name
+            for name in STATE_KEYS
+            if isinstance(kind_of(NetemuConfig, name), Int)
+        ]
+        self.assertEqual(sorted(NOT_NEGATIVE), sorted(integers))
+        netemu = self.factory.new_brick("netemu", "wan")
+        for name in NOT_NEGATIVE:
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(
+                    ValueError, f"^{name}: -1 is less than 0$"
+                ):
+                    netemu.update_config({name: -1})
+                netemu.update_config({name: 0})
+                self.assertEqual(getattr(netemu.config, name), 0)
+
+    def test_older_negatives_read_as_zero(self):
+        # older versions took them, and the programs took them for 0
+        netemu = self.factory.new_brick("netemu", "wan")
+        netemu.markov_manager.add(1)
+        table = netemu.config_table()
+        table["states"][0]["delay"] = -5
+        table["states"][1].update(bandwidth=-1, buffer_size_right_to_left=-2)
+        before = repr(table)
+        report = Report()
+        netemu.load_config_table(table, report, "bricks.wan", set())
+        self.assertEqual(
+            [str(m) for m in report],
+            [
+                "bricks.wan.states[0].delay: -5 is less than 0, read as 0, as"
+                " the programs took it",
+                "bricks.wan.states[1].bandwidth: -1 is less than 0, read as 0,"
+                " as the programs took it",
+                "bricks.wan.states[1].buffer_size_right_to_left: -2 is less"
+                " than 0, read as 0, as the programs took it",
+            ],
+        )
+        first, second = netemu.markov_manager.states
+        self.assertEqual(first.delay, 0)
+        self.assertEqual(
+            (second.bandwidth, second.buffer_size_right_to_left), (0, 0)
+        )
+        # the others are read as they are
+        self.assertEqual(second.buffer_size, 75000)
+        self.assertEqual(repr(table), before)
 
 
 class TestStates(CommandTestCase):

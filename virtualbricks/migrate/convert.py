@@ -391,6 +391,36 @@ def _apply_list(
     setattr(instance, key, values)
 
 
+def _negatives_as_zero(
+    items: Iterable[legacy.Item], label: str, filename: str, report: Report
+) -> list[legacy.Item]:
+    """
+    The items of a Netemu with a delay, a bandwidth or a buffer size below 0
+    read as 0, as the programs took it.
+    """
+
+    from virtualbricks.bricks.netemu import NOT_NEGATIVE
+
+    renamed = RENAMED_KEYS["netemu"]
+    read = []
+    for item in items:
+        if renamed.get(item.key, item.key) in NOT_NEGATIVE:
+            try:
+                value = int(item.value.strip())
+            except ValueError:
+                # not a number, which _apply() reports
+                value = 0
+            if value < 0:
+                report.warning(
+                    f"{label} {item.key}: {value} is less than 0, read as 0,"
+                    " as the programs took it",
+                    legacy.where(filename, item.lineno),
+                )
+                item = legacy.Item(item.key, "0", item.lineno)
+        read.append(item)
+    return read
+
+
 # Projects
 
 
@@ -564,6 +594,7 @@ class _Converter:
                 states.append(item)
             else:
                 flat.append(item)
+        flat = _negatives_as_zero(flat, label, self.filename, self.report)
         _apply(brick.config, flat, "netemu", label, self.filename, self.report)
         markov = brick.markov_manager
         for index in range(1, count):
@@ -635,11 +666,14 @@ class _Converter:
             )
             return
         state_item = legacy.Item(match["key"], item.value, item.lineno)
+        state_label = f"{label} state {index}"
         _apply(
             markov.states[index],
-            [state_item],
+            _negatives_as_zero(
+                [state_item], state_label, self.filename, self.report
+            ),
             "netemu",
-            f"{label} state {index}",
+            state_label,
             self.filename,
             self.report,
         )

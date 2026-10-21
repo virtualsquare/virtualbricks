@@ -62,6 +62,19 @@ class HubDraft(SwitchDraft):
         return problems
 
 
+@define
+class OffsetSettings(SwitchConfig):
+
+    offset = field(Int(), default=0, label="Offset", help="Any number")
+
+
+class OffsetDraft(SwitchDraft):
+    """A number with no limits."""
+
+    def read(self):
+        return OffsetSettings(**field_values(self.brick.config))
+
+
 class FormTestCase(GuiTestCase):
 
     def setUp(self):
@@ -302,9 +315,14 @@ class TestTheWidgets(FormTestCase):
         self.assertEqual(loss.get_range(), (0, 100))
         loss.set_value(1.5)
         self.assertEqual(draft.get("loss"), 1.5)
-        # no limits
+        # a lowest only
         bandwidth = made.spin("bandwidth")
-        self.assertEqual(bandwidth.get_range(), (form.LOWEST, form.HIGHEST))
+        self.assertEqual(bandwidth.get_range(), (0, form.HIGHEST))
+        # no limits
+        other = self.make(OffsetDraft(self.switch))
+        other.section("Values")
+        offset = other.spin("offset")
+        self.assertEqual(offset.get_range(), (form.LOWEST, form.HIGHEST))
 
     def test_an_entry(self):
         tunnel = self.factory.new_brick("tunnelconnect", "tc1")

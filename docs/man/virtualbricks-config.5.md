@@ -66,7 +66,9 @@ Virtualbricks carries on:
 
 - A missing key takes its default value.
 - A key with a value of the wrong type or out of range takes its default
-  value.
+  value. A delay, a bandwidth or a buffer size below 0 in a state of a
+  **netemu**, which older versions took, is read as 0, as the programs took
+  it.
 - An unknown key is ignored, and dropped at the next save.
 - A brick of an unknown type, or with an invalid name, is dropped.
 - A connection to a socket that doesn't exist is left unconnected.
@@ -676,31 +678,31 @@ the emulator starts in. Each state has these keys:
 **name** = *string*, default `"default name"`
 :   The name of the state.
 
-**bandwidth** = *integer*, default `125000`
+**bandwidth** = *integer* >= 0, default `125000`
 :   The bandwidth, in bytes per second, or 0 for no limit; from left to
     right when **bandwidth_symmetric** is false.
 
-**bandwidth_right_to_left** = *integer*, default `125000`
+**bandwidth_right_to_left** = *integer* >= 0, default `125000`
 :   The bandwidth from right to left.
 
 **bandwidth_symmetric** = *boolean*, default `true`
 :   Use **bandwidth** in both directions.
 
-**delay** = *integer*, default `0`
+**delay** = *integer* >= 0, default `0`
 :   The propagation delay, one way, in milliseconds; from left to right when
     **delay_symmetric** is false.
 
-**delay_right_to_left** = *integer*, default `0`
+**delay_right_to_left** = *integer* >= 0, default `0`
 :   The delay from right to left.
 
 **delay_symmetric** = *boolean*, default `true`
 :   Use **delay** in both directions.
 
-**buffer_size** = *integer*, default `75000`
+**buffer_size** = *integer* >= 0, default `75000`
 :   The size of the channel buffer, in bytes, or 0 for no limit; from left
     to right when **buffer_size_symmetric** is false.
 
-**buffer_size_right_to_left** = *integer*, default `75000`
+**buffer_size_right_to_left** = *integer* >= 0, default `75000`
 :   The size of the channel buffer from right to left.
 
 **buffer_size_symmetric** = *boolean*, default `true`

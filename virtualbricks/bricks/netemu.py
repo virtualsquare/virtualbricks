@@ -50,7 +50,7 @@ from virtualbricks.config.schema import (
     notes,
     rename_references,
 )
-from virtualbricks.config.tomlfile import Notes, Table
+from virtualbricks.config.tomlfile import Notes, Table, Value
 from virtualbricks.i18n import N_, _
 from virtualbricks.programs import ProgramError, VdeInfo
 
@@ -79,7 +79,7 @@ class NetemuConfig(bricks.BrickConfig):
     )
     # each value both ways, or from left to right and from right to left
     bandwidth: int = field(
-        Int(),
+        Int(0),
         default=125000,
         label=N_("Bandwidth"),
         help=N_(
@@ -88,7 +88,7 @@ class NetemuConfig(bricks.BrickConfig):
         ),
     )
     bandwidth_right_to_left: int = field(
-        Int(),
+        Int(0),
         default=125000,
         label=N_("Bandwidth from right to left"),
         help=N_("Bytes per second from right to left"),
@@ -101,7 +101,7 @@ class NetemuConfig(bricks.BrickConfig):
         help=N_("Use bandwidth both ways"),
     )
     delay: int = field(
-        Int(),
+        Int(0),
         default=0,
         label=N_("Delay"),
         help=N_(
@@ -110,7 +110,7 @@ class NetemuConfig(bricks.BrickConfig):
         ),
     )
     delay_right_to_left: int = field(
-        Int(),
+        Int(0),
         default=0,
         label=N_("Delay from right to left"),
         help=N_("Delay in ms from right to left"),
@@ -123,7 +123,7 @@ class NetemuConfig(bricks.BrickConfig):
         help=N_("Use delay both ways"),
     )
     buffer_size: int = field(
-        Int(),
+        Int(0),
         default=75000,
         label=N_("Buffer"),
         help=N_(
@@ -132,7 +132,7 @@ class NetemuConfig(bricks.BrickConfig):
         ),
     )
     buffer_size_right_to_left: int = field(
-        Int(),
+        Int(0),
         default=75000,
         label=N_("Buffer from right to left"),
         help=N_("Channel buffer in bytes from right to left"),
@@ -171,6 +171,16 @@ class NetemuConfig(bricks.BrickConfig):
 BRICK_KEYS = frozenset(field_names(bricks.BrickConfig))
 # The keys of a state in the project file.
 STATE_KEYS = frozenset(field_names(NetemuConfig)) - BRICK_KEYS
+# The values that older versions took below 0, which the programs took for 0:
+# no delay, no limit.
+NOT_NEGATIVE = (
+    "bandwidth",
+    "bandwidth_right_to_left",
+    "delay",
+    "delay_right_to_left",
+    "buffer_size",
+    "buffer_size_right_to_left",
+)
 
 
 @define
@@ -195,6 +205,32 @@ class NetemuTable(bricks.BrickConfig):
         factory=lambda: [NetemuConfig()],
         help="The states of the emulator; it starts in the first",
     )
+
+
+def _negatives_as_zero(table: Table, report: Report, where: str) -> Table:
+    """
+    The table of a Netemu with the values of NOT_NEGATIVE that are below 0 in
+    its states read as 0, as the programs took them; the table isn't changed.
+    """
+
+    states = table.get("states")
+    if not isinstance(states, list):
+        return table
+    read: list[Value] = []
+    for index, state in enumerate(states):
+        if isinstance(state, dict):
+            state = dict(state)
+            for name in NOT_NEGATIVE:
+                value = state.get(name)
+                if isinstance(value, int) and value < 0:
+                    report.warning(
+                        f"{value} is less than 0, read as 0, as the programs"
+                        " took it",
+                        f"{where}.states[{index}].{name}",
+                    )
+                    state[name] = 0
+        read.append(state)
+    return {**table, "states": read}
 
 
 # Each channel emulator has its instance of this manager class
@@ -526,6 +562,7 @@ class Netemu(Wire):
     def load_config_table(
         self, table: Table, report: Report, where: str, ignore: Collection[str]
     ) -> None:
+        table = _negatives_as_zero(table, report, where)
         data = load_record(NetemuTable, table, report, where, ignore=ignore)
         states = data.states
         # the states are read without the events, which are the brick's

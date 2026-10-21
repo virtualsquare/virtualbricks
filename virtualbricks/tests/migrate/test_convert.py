@@ -570,6 +570,37 @@ class TestNetemu(ConvertTestCase):
             ],
         )
 
+    def test_negatives_read_as_zero(self):
+        # 2.1 took them, and the programs took them for 0
+        text = (
+            "[Netemu:wan]\n"
+            "states=2\n"
+            "delay=-5\n"
+            "chanbufsize=10\n"
+            "state1.bandwidthr=-1\n"
+            "state1.chanbufsize=-100\n"
+            "state1.delayr=x\n"
+        )
+        data, _, report = self.convert(text)
+        first, second = data["bricks"]["wan"]["states"]
+        self.assertEqual((first["delay"], first["buffer_size"]), (0, 10))
+        self.assertEqual(
+            (second["bandwidth_right_to_left"], second["buffer_size"]), (0, 0)
+        )
+        self.assertEqual(
+            messages(report),
+            [
+                ".project:3: [Netemu:wan] delay: -5 is less than 0, read as 0,"
+                " as the programs took it",
+                ".project:5: [Netemu:wan] state 1 bandwidthr: -1 is less than"
+                " 0, read as 0, as the programs took it",
+                ".project:6: [Netemu:wan] state 1 chanbufsize: -100 is less"
+                " than 0, read as 0, as the programs took it",
+                '.project:7: [Netemu:wan] state 1 delayr: "x" is not an'
+                " integer, using the default 0",
+            ],
+        )
+
     def test_one_state_without_a_count(self):
         # the old versions wrote one state as the keys of the brick
         data, _, report = self.convert("[Netemu:wan]\ndelay=10\n")
