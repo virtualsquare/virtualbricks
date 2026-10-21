@@ -403,8 +403,9 @@ versions that tox has otherwise. It needs `podman` and the network, and
 takes some minutes: it is a check before a release, with `start.py` below.
 
 - The tests don't touch your settings, your projects or the locks: each one
-  runs in a temporary home. They need neither root, nor Qemu, nor VDE, but
-  one: `test_integration.py` makes the sample project of
+  runs in a temporary home. They need neither root, nor Qemu, nor VDE: the
+  tests that make bricks find only fakes of their programs, whatever is
+  installed here. But one: `test_integration.py` makes the sample project of
   `virtualbricks/tests/sample.py`, a brick of each kind and a machine of each
   architecture that the recordings have, and starts it with the programs
   installed here, the machines paused; it is skipped without
@@ -427,8 +428,8 @@ takes some minutes: it is a check before a release, with `start.py` below.
   module: `virtualbricks/config/workspace.py` is tested by
   `virtualbricks/tests/config/test_workspace.py`. The helpers are in
   `virtualbricks/tests/__init__.py` (`isolate`, `reset_settings`,
-  `make_factory`, `FakeLogger`, `use_workspace`, and `BrickTestCase` and
-  `CommandTestCase` for the bricks) and, for the windows, in
+  `make_factory`, `FakeLogger`, `use_workspace`, `fake_programs`, and
+  `BrickTestCase` for the bricks) and, for the windows, in
   `virtualbricks/tests/gui/__init__.py` (`GuiTestCase`).
 - `test_docs.py` checks that the manual page of the files documents every
   setting, key of the project file and kind of brick of the code, that the

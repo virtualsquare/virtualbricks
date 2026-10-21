@@ -33,10 +33,7 @@ from virtualbricks.bricks.netemu import (
 )
 from virtualbricks.config.report import Report
 from virtualbricks.config.schema import Int, dump_record, field_names, kind_of
-from virtualbricks.tests import (
-    BrickTestCase,
-    CommandTestCase,
-)
+from virtualbricks.tests import BrickTestCase
 
 
 class TestNetemu(BrickTestCase):
@@ -260,7 +257,7 @@ class TestNetemu(BrickTestCase):
         self.assertEqual(netemu.config.buffer_size, 75000)
 
 
-class TestStates(CommandTestCase):
+class TestStates(BrickTestCase):
 
     def netemu(self):
         netemu = self.factory.new_brick("netemu", "wan")

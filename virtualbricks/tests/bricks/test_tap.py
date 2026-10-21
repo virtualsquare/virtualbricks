@@ -21,13 +21,10 @@
 from virtualbricks import errors
 from virtualbricks.bricks.draft import Problem
 from virtualbricks.bricks.tap import Tap, TapDraft
-from virtualbricks.tests import (
-    BrickTestCase,
-    CommandTestCase,
-)
+from virtualbricks.tests import BrickTestCase
 
 
-class TestTap(CommandTestCase):
+class TestTap(BrickTestCase):
 
     def test_tap(self):
         tap = self.factory.new_brick("tap", "tap0")

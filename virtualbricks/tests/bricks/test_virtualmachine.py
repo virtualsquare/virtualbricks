@@ -47,7 +47,6 @@ from virtualbricks.programs import parse_machine_properties
 from virtualbricks.qemu import imageformat
 from virtualbricks.tests import (
     BrickTestCase,
-    CommandTestCase,
     FakeLogger,
     use_workspace,
 )
@@ -302,7 +301,7 @@ class TestVirtualMachine(BrickTestCase):
         self.assertEqual(len(devices), 1)
 
 
-class TestRunning(CommandTestCase):
+class TestRunning(BrickTestCase):
 
     def test_update_usb_devices(self):
         vm = self.factory.new_brick("qemu", "vm")

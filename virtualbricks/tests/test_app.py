@@ -39,6 +39,7 @@ from virtualbricks.config.settings import (
 from virtualbricks.config.tomlfile import load_toml
 from virtualbricks.tests import (
     FakeLogger,
+    fake_programs,
     isolate,
     make_factory,
     reset_settings,
@@ -432,6 +433,7 @@ class TestTheConsole(AppTestCase):
         super().setUp()
         # the bricks are those of an open project, with its settings
         settings.use_project(settings.ProjectSettings())
+        fake_programs(self)
         self.factory = make_factory(self)
         self.out = io.StringIO()
         self.err = io.StringIO()

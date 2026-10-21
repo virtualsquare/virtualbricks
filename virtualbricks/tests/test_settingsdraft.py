@@ -44,6 +44,12 @@ def owner(record, **values):
     return owner
 
 
+def installed(name):
+    """The which of Facts where this computer has every program."""
+
+    return f"/usr/bin/{name}"
+
+
 def vde(folder="/usr/bin", missing=(), elsewhere=(), exists=True):
     found = {
         name: f"/elsewhere/{name}" if name in elsewhere else f"{folder}/{name}"
@@ -155,6 +161,7 @@ class TestDraft(unittest.TestCase):
 
     def test_failed(self):
         draft = SettingsDraft(owner(AppSettings))
+        draft.facts = Facts(which=installed)
         draft.set("kernel_samepage_merging", True)
         draft.fail("kernel_samepage_merging", "KSM is still off")
         # a warning: OK tries again
@@ -239,6 +246,7 @@ class TestAudioDriver(unittest.TestCase):
 
     def setUp(self):
         self.draft = SettingsDraft(owner(AppSettings, audio_driver="sndio"))
+        self.draft.facts = Facts(which=installed)
 
     def test_unknown_yet(self):
         self.assertEqual(self.draft.problems(), [])
@@ -248,6 +256,7 @@ class TestAudioDriver(unittest.TestCase):
         self.draft.facts = Facts(
             qemu_version="10.0.11",
             audio_drivers=frozenset({"alsa", "pa", "pipewire"}),
+            which=installed,
         )
         self.assertEqual(
             self.draft.problems(),

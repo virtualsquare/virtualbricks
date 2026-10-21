@@ -23,10 +23,7 @@ import os
 from virtualbricks.bricks import capture
 from virtualbricks.bricks.capture import CaptureDraft, host_interfaces
 from virtualbricks.bricks.draft import Problem
-from virtualbricks.tests import (
-    BrickTestCase,
-    CommandTestCase,
-)
+from virtualbricks.tests import BrickTestCase
 
 NET_DEV = """\
 Inter-|   Receive                                                |  Transmit
@@ -37,7 +34,7 @@ enp3s0: 915218862  676120    0    0    0     0          0      3481 51329
 """
 
 
-class TestCapture(CommandTestCase):
+class TestCapture(BrickTestCase):
 
     def test_capture(self):
         capture = self.factory.new_brick("capture", "cap")

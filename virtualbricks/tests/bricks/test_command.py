@@ -48,7 +48,7 @@ from virtualbricks.programs import (
     VdeInfo,
     parse_machine_properties,
 )
-from virtualbricks.tests import BrickTestCase, CommandTestCase, FakeLogger
+from virtualbricks.tests import BrickTestCase, FakeLogger
 from virtualbricks.tests.test_programs import (
     EMULATORS,
     QEMU,
@@ -854,7 +854,7 @@ class TestMachine(LinesTestCase):
         self.assertNotIn("-net", argv)
 
 
-class TestPrepare(CommandTestCase):
+class TestPrepare(BrickTestCase):
 
     def setUp(self):
         super().setUp()
@@ -996,7 +996,7 @@ class FakeReactor:
         self.environments.append(env)
 
 
-class TestStart(CommandTestCase):
+class TestStart(BrickTestCase):
 
     def setUp(self):
         super().setUp()
@@ -1062,7 +1062,8 @@ class TestStart(CommandTestCase):
         tunnel = self.factory.new_brick("tunnellisten", "tl")
         tunnel.connect(sw.socks[0])
         sw.proc = object()
-        tunnel.start()
+        # started, and waiting for its process
+        self.assertNoResult(tunnel.start())
         self.assertEqual(
             self.reactor.environments,
             [dict(os.environ, OPENSSL_CONF=tunnel.openssl_path())],

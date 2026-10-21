@@ -30,6 +30,7 @@ from virtualbricks import locks
 from virtualbricks.config import settings
 from virtualbricks.config.settings import AppSettings, AppState
 from virtualbricks.observable import Observable, Signal
+from virtualbricks.programs import VDE_PROGRAMS
 
 DATA = os.path.join(os.path.dirname(__file__), "data")
 
@@ -216,15 +217,32 @@ class FakeLogger:
         return [format.format(**kwargs) for _, format, kwargs in self.events]
 
 
-# The programs that the bricks start, for CommandTestCase.
-PROGRAMS = (
+# The programs that the bricks start, as fake_programs() makes them: all but
+# vde_router, which no distribution ships.
+PROGRAMS = tuple(name for name in VDE_PROGRAMS if name != "vde_router") + (
     "qemu-system-x86_64",
     "qemu-system-i386",
-    "vde-netemu",
-    "vde_plug2tap",
-    "vde_pcapplug",
-    "vde_switch",
 )
+
+
+def fake_programs(test):
+    """
+    The programs of the bricks as empty executables in a folder of the test,
+    the only ones it finds, whatever this computer has: the folders of the
+    open project are there, and PATH is empty. Return the folder.
+    """
+
+    folder = os.path.abspath(test.mktemp())
+    os.makedirs(folder)
+    for name in PROGRAMS:
+        path = os.path.join(folder, name)
+        with open(path, "w") as fp:
+            fp.write("#!/bin/sh\n")
+        os.chmod(path, 0o755)
+    settings.set_setting("qemu_path", folder)
+    settings.set_setting("vde_path", folder)
+    test.patch(os, "environ", dict(os.environ, PATH=""))
+    return folder
 
 
 def pairs(args):
@@ -240,27 +258,15 @@ def adjacent(args):
 
 
 class BrickTestCase(unittest.TestCase):
-    """A test with its own settings, home directories and brick factory."""
+    """
+    A test with its own settings, home directories and brick factory, where
+    the programs of the bricks are fake executables in self.bin.
+    """
 
     def setUp(self):
         isolate(self)
         reset_settings(self)
         # the bricks are those of an open project, with its settings
         settings.use_project(settings.ProjectSettings())
+        self.bin = fake_programs(self)
         self.factory = make_factory(self)
-
-
-class CommandTestCase(BrickTestCase):
-    """A brick test where the programs of the bricks are fake executables."""
-
-    def setUp(self):
-        super().setUp()
-        self.bin = os.path.abspath(self.mktemp())
-        os.makedirs(self.bin)
-        for name in PROGRAMS:
-            path = os.path.join(self.bin, name)
-            with open(path, "w") as fp:
-                fp.write("#!/bin/sh\n")
-            os.chmod(path, 0o755)
-        settings.set_setting("qemu_path", self.bin)
-        settings.set_setting("vde_path", self.bin)

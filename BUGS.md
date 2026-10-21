@@ -149,35 +149,6 @@ in 3.0: they wait until after it.
 
 ## Tests
 
-- [ ] **Some unit tests need the programs of the bricks installed.**
-  `README.md` says that the tests need neither QEMU nor VDE, but these
-  fail without them:
-  - 26 tests that check the answer of `brick new switch` or `brick new
-    tap`, to which the console adds "vde_switch isn't installed" or
-    "vde_plug2tap isn't installed": in `test_control.py`,
-    `test_general.py` and `test_terminal.py` of
-    `virtualbricks/tests/console/`, `test_eventaction.py` of
-    `virtualbricks/tests/bricks/`, and `virtualbricks/tests/test_app.py`;
-  - `TestNew.test_a_name` and `test_named_after_the_kind` in
-    `virtualbricks/tests/console/test_bricks.py`, where `brick new qemu`
-    adds "qemu-system-i386 isn't installed";
-  - `TestAudioDriver.test_not_listed` and `test_unknown_yet` and
-    `TestDraft.test_failed` in `virtualbricks/tests/test_settingsdraft.py`,
-    whose problems have one more, "No program x-terminal-emulator on this
-    computer";
-  - `TestStart.test_environment` in
-    `virtualbricks/tests/bricks/test_command.py`, without `vde_cryptcab`,
-    and at times `test_resume` or `test_warnings` of the same class with
-    it.
-
-  Seen on 3.0.0.dev6, on 20 October 2026, in containers of Ubuntu 24.04
-  and 26.04 with their packages, without these programs; once vde2 was
-  installed, the first group passed. As root there, five more failed,
-  which expect a permission error: two in
-  `virtualbricks/tests/config/test_workspace.py`, two in
-  `virtualbricks/tests/test_locks.py`, and one in
-  `virtualbricks/tests/gui/dialogs/test_projectname.py`.
-
 - [ ] **"The file chooser of the image of DTN2hops, on its file" fails
   under load.** The scenario of `e2e/features/pictures.feature` fails at
   `And in the file chooser, I select debian13.qcow2 of my Downloads

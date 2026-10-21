@@ -30,7 +30,7 @@ class TestSettings(ConsoleTestCase):
         self.assertEqual(lines[0], "# Virtualbricks")
         self.assertIn('terminal = "x-terminal-emulator -e {command}"', lines)
         self.assertEqual(lines[lines.index("") + 1], "# This project")
-        self.assertIn('qemu_path = "/usr/bin"', lines)
+        self.assertIn(f'qemu_path = "{self.bin}"', lines)
         self.assertEqual(
             self.run_line("setting show tray_icon"), ["tray_icon = true"]
         )
