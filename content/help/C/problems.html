@@ -1,114 +1,108 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>When something goes wrong</title>
-<link rel="stylesheet" type="text/css" href="C.css">
-<script type="text/javascript" src="highlight.pack.js"></script><script>
-document.addEventListener('DOMContentLoaded', function() {
-  var matches = document.querySelectorAll('code.syntax')
-  for (var i = 0; i < matches.length; i++) {
-    hljs.highlightBlock(matches[i]);
-  }
-}, false);</script><script type="text/javascript" src="yelp.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>When something goes wrong — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
 </head>
-<body><main><div class="page">
-<header><div class="inner pagewide"><div class="trails" role="navigation"><div class="trail">
-<a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#beyond" title="Settings and beyond">Settings and beyond</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">When something goes wrong</span></h1></div>
-<div class="region">
-<div class="contents pagewide"></div>
-<section id="logs"><div class="inner">
-<div class="hgroup pagewide"><h2 class="title"><span class="title">The messages</span></h2></div>
-<div class="region"><div class="contents pagewide">
-<p class="p"><span class="guiseq"><span class="gui">File</span> ▸ <span class="gui">Logs</span></span> opens the messages of
-    the run: those of Virtualbricks, of its bricks, and what their programs
-    print, on a grey band, with <span class="sys">2&gt;</span> before what a program writes
-    on its standard error. The field at the top filters as you type
-    (<span class="keyseq"><span class="key"><kbd>Ctrl</kbd></span>+<span class="key"><kbd>F</kbd></span></span>):</p>
-<div class="terms"><div class="inner"><div class="region"><dl class="terms">
-<dt class="terms"><span class="code">level:warning</span></dt>
-<dd class="terms"><p class="p">The warnings and the errors, with what the programs wrote on their
-        standard error.</p></dd>
-<dt class="terms"><span class="code">source:tap1,vm1</span></dt>
-<dd class="terms"><p class="p">The messages of those bricks; <span class="code">source:qemu</span>, those of
-        every virtual machine.</p></dd>
-<dt class="terms">any other word</dt>
-<dd class="terms"><p class="p">The messages that have it.</p></dd>
-</dl></div></div></div>
-<p class="p">The menu of the window has <span class="gui">Save…</span>, which writes every
-    message to a file, whatever the filter, and <span class="gui">Report a bug…</span>,
-    which opens a new email in your mail program, with the messages
-    attached.</p>
-</div></div>
-</div></section><section id="start"><div class="inner">
-<div class="hgroup pagewide"><h2 class="title"><span class="title">A brick doesn't start</span></h2></div>
-<div class="region"><div class="contents pagewide"><div class="list"><div class="inner"><div class="region"><ul class="list">
-<li class="list"><p class="p"><span class="gui">Not connected</span>: a plug of the brick goes nowhere.
-      Use <span class="gui">Connect To</span> in its menu, or its settings.</p></li>
-<li class="list"><p class="p"><span class="gui">Not configured</span>: a setting it needs is missing; its
-      settings say which.</p></li>
-<li class="list"><p class="p">A warning sign in <span class="gui">New Brick</span>, or a message about a
-      program: the program isn't installed; see
-      <span class="link"><a href="programs.html" title="The programs it needs">The programs it needs</a></span>.</p></li>
-<li class="list"><p class="p">Otherwise, filter the <span class="gui">Logs</span> window with the name of
-      the brick: the program says why it stopped.</p></li>
-</ul></div></div></div></div></div>
-</div></section><section id="sudo"><div class="inner">
-<div class="hgroup pagewide"><h2 class="title"><span class="title">A tap or a capture interface doesn't start</span></h2></div>
-<div class="region"><div class="contents pagewide">
-<p class="p">They run as root, through <span class="cmd">sudo</span>, which can't ask for your
-    password on a terminal: Virtualbricks runs it without one. So either:</p>
-<div class="list"><div class="inner"><div class="region"><ul class="list">
-<li class="list"><p class="p">a helper asks for the password in a window: install one, as
-      <span class="sys">ssh-askpass</span>, and name it in the variable
-      <span class="sys">SUDO_ASKPASS</span> or in a line <span class="code">Path askpass
-      /usr/bin/ssh-askpass</span> of <span class="file">/etc/sudo.conf</span>; or</p></li>
-<li class="list"><p class="p">a rule of <span class="file">sudoers</span> lets you run
-      <span class="cmd">vde_plug2tap</span> and <span class="cmd">vde_pcapplug</span> without a password,
-      with <span class="sys">NOPASSWD</span>, as a computer without a display
-      needs.</p></li>
-</ul></div></div></div>
-<p class="p">Otherwise <span class="cmd">sudo</span> refuses at once, and the <span class="gui">Logs</span>
-    window shows what it said.</p>
-</div></div>
-</div></section><section id="lock"><div class="inner">
-<div class="hgroup pagewide"><h2 class="title"><span class="title">Virtualbricks doesn't start</span></h2></div>
-<div class="region"><div class="contents pagewide"><p class="p">Only one Virtualbricks runs on the computer, unless it is started
-    otherwise; a second one is refused, and the message says which process
-    holds the lock, and whose it is. To run a lab beside another, start each
-    in its own workspace, with <span class="cmd">virtualbricks --workspace
-    <span class="var">folder</span></span>; see <span class="link"><a href="console.html" title="The console and scripts">The console and scripts</a></span>.</p></div></div>
-</div></section><section id="project"><div class="inner">
-<div class="hgroup pagewide"><h2 class="title"><span class="title">A project can't be read</span></h2></div>
-<div class="region"><div class="contents pagewide"><p class="p">If the project that was open last can't be opened at start, the
-    Projects window opens and says why. A project written by a newer
-    Virtualbricks is not read, and not written over. Another problem in the
-    file, as a value out of range, takes the default and is reported in the
-    <span class="gui">Logs</span> window, with the setting it is about.</p></div></div>
-</div></section><section id="report"><div class="inner">
-<div class="hgroup pagewide"><h2 class="title"><span class="title">Reporting a problem</span></h2></div>
-<div class="region"><div class="contents pagewide"><p class="p">Tell us what broke at
-    <span class="link"><a href="https://github.com/virtualsquare/virtualbricks/issues" title="https://github.com/virtualsquare/virtualbricks/issues">github.com/virtualsquare/virtualbricks/issues</a></span>,
-    and attach the messages: <span class="gui">Save…</span>, in the menu of the
-    <span class="gui">Logs</span> window, writes them to a file.</p></div></div>
-</div></section><section class="links" role="navigation"><div class="inner">
-<div class="hgroup pagewide"></div>
-<div class="contents pagewide">
-<div class="links guidelinks"><div class="inner">
-<div class="title"><h2><span class="title">More Information</span></h2></div>
-<div class="region"><ul><li class="links "><a href="index.html#beyond" title="Settings and beyond">Settings and beyond</a></li></ul></div>
-</div></div>
-<div class="links seealsolinks"><div class="inner">
-<div class="title"><h2><span class="title">See Also</span></h2></div>
-<div class="region"><ul><li class="links ">
-<a href="programs.html" title="The programs it needs">The programs it needs</a><span class="desc"> — VDE and QEMU: what a missing program stops, and where
-    Virtualbricks looks for them.</span>
-</li></ul></div>
-</div></div>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#beyond">Settings and beyond</a></p>
 </div>
-</div></section>
+<h1>When something goes wrong</h1>
+<h2 id="logs">The messages</h2>
+<p><span class="guiseq"><span class="gui">File</span> › <span
+class="gui">Logs</span></span> opens the messages of the run: those of
+Virtualbricks, of its bricks, and what their programs print, on a grey
+band, with <code class="sys">2&gt;</code> before what a program writes
+on its standard error. The field at the top filters as you type
+(<kbd>Ctrl</kbd>+<kbd>F</kbd>):</p>
+<dl>
+<dt><code>level:warning</code></dt>
+<dd>
+<p>The warnings and the errors, with what the programs wrote on their
+standard error.</p>
+</dd>
+<dt><code>source:tap1,vm1</code></dt>
+<dd>
+<p>The messages of those bricks; <code>source:qemu</code>, those of
+every virtual machine.</p>
+</dd>
+<dt>any other word</dt>
+<dd>
+<p>The messages that have it.</p>
+</dd>
+</dl>
+<p>The menu of the window has <span class="gui">Save…</span>, which
+writes every message to a file, whatever the filter, and <span
+class="gui">Report a bug…</span>, which opens a new email in your mail
+program, with the messages attached.</p>
+<h2 id="start">A brick doesn't start</h2>
+<ul>
+<li><p><span class="gui">Not connected</span>: a plug of the brick goes
+nowhere. Use <span class="gui">Connect To</span> in its menu, or its
+settings.</p></li>
+<li><p><span class="gui">Not configured</span>: a setting it needs is
+missing; its settings say which.</p></li>
+<li><p>A warning sign in <span class="gui">New Brick</span>, or a
+message about a program: the program isn't installed; see <a
+href="programs.html">The programs it needs</a>.</p></li>
+<li><p>Otherwise, filter the <span class="gui">Logs</span> window with
+the name of the brick: the program says why it stopped.</p></li>
+</ul>
+<h2 id="sudo">A tap or a capture interface doesn't start</h2>
+<p>They run as root, through <code class="cmd">sudo</code>, which can't
+ask for your password on a terminal: Virtualbricks runs it without one.
+So either:</p>
+<ul>
+<li><p>a helper asks for the password in a window: install one, as <code
+class="sys">ssh-askpass</code>, and name it in the variable <code
+class="sys">SUDO_ASKPASS</code> or in a line
+<code>Path askpass /usr/bin/ssh-askpass</code> of <code
+class="file">/etc/sudo.conf</code>; or</p></li>
+<li><p>a rule of <code class="file">sudoers</code> lets you run <code
+class="cmd">vde_plug2tap</code> and <code
+class="cmd">vde_pcapplug</code> without a password, with <code
+class="sys">NOPASSWD</code>, as a computer without a display
+needs.</p></li>
+</ul>
+<p>Otherwise <code class="cmd">sudo</code> refuses at once, and the
+<span class="gui">Logs</span> window shows what it said.</p>
+<h2 id="lock">Virtualbricks doesn't start</h2>
+<p>Only one Virtualbricks runs on the computer, unless it is started
+otherwise; a second one is refused, and the message says which process
+holds the lock, and whose it is. To run a lab beside another, start each
+in its own workspace, with <span class="cmd">virtualbricks --workspace
+<em>folder</em></span>; see <a href="console.html">The console and
+scripts</a>.</p>
+<h2 id="project">A project can't be read</h2>
+<p>If the project that was open last can't be opened at start, the
+Projects window opens and says why. A project written by a newer
+Virtualbricks is not read, and not written over. Another problem in the
+file, as a value out of range, takes the default and is reported in the
+<span class="gui">Logs</span> window, with the setting it is about.</p>
+<h2 id="report">Reporting a problem</h2>
+<p>Tell us what broke at <a
+href="https://github.com/virtualsquare/virtualbricks/issues">github.com/virtualsquare/virtualbricks/issues</a>,
+and attach the messages: <span class="gui">Save…</span>, in the menu of
+the <span class="gui">Logs</span> window, writes them to a file.</p>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="programs.html">The programs it needs</a></p>
+<div class="desc">
+<p>VDE and QEMU: what a missing program stops, and where Virtualbricks
+looks for them.</p>
 </div>
-<div class="clear"></div></article><footer><div class="inner pagewide"></div></footer>
-</div></main></body>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
 </html>

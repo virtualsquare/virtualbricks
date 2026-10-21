@@ -1,85 +1,177 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Virtualbricks Help</title>
-<link rel="stylesheet" type="text/css" href="C.css">
-<script type="text/javascript" src="highlight.pack.js"></script><script>
-document.addEventListener('DOMContentLoaded', function() {
-  var matches = document.querySelectorAll('code.syntax')
-  for (var i = 0; i < matches.length; i++) {
-    hljs.highlightBlock(matches[i]);
-  }
-}, false);</script><script type="text/javascript" src="yelp.js"></script>
+<link rel="stylesheet" href="style.css">
 </head>
-<body><main><div class="page">
-<header><div class="inner pagewide"></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title"><span class="app">Virtualbricks</span> Help</span></h1></div>
-<div class="region">
-<div class="contents pagewide">
-<p class="p"><span class="app">Virtualbricks</span> makes labs of virtual machines and of the
-  switches, cables, taps and tunnels between them, and runs them on this
-  computer.</p>
-<p class="p">Press <span class="key"><kbd>F1</kbd></span> in a window for the page about it. The settings of a
-  brick, an event or a disk image, and the <span class="gui">Settings</span> window, have a
-  <span class="gui">Help</span> button too.</p>
+<body>
+<div class="page guide">
+<main>
+<h1><span class="app">Virtualbricks</span> Help</h1>
+<p><span class="app">Virtualbricks</span> makes labs of virtual machines
+and of the switches, cables, taps and tunnels between them, and runs
+them on this computer.</p>
+<p>Press <kbd>F1</kbd> in a window for the page about it. The settings
+of a brick, an event or a disk image, and the <span
+class="gui">Settings</span> window, have a <span class="gui">Help</span>
+button too.</p>
+<h2 class="columns" id="start">Getting started</h2>
+<div class="links">
+<div class="link">
+<p><a href="first-lab.html">Make your first lab</a></p>
+<div class="desc">
+<p>A switch and a machine plugged into it, started.</p>
 </div>
-<section id="start"><div class="inner">
-<div class="hgroup pagewide"><h2 class="title"><span class="title">Getting started</span></h2></div>
-<div class="region"><div class="contents pagewide"><div class="links topiclinks"><div class="inner"><div class="region"><div class="links-twocolumn">
-<div class="links-divs">
-<div class="linkdiv "><a class="linkdiv" href="first-lab.html" title="Make your first lab"><span class="title">Make your first lab</span><span class="linkdiv-dash"> — </span><span class="desc">A switch and a machine plugged into it, started.</span></a></div>
-<div class="linkdiv "><a class="linkdiv" href="kinds.html" title="The kinds of brick"><span class="title">The kinds of brick</span><span class="linkdiv-dash"> — </span><span class="desc">What each brick is for, and the program that runs it.</span></a></div>
 </div>
-<div class="links-divs"><div class="linkdiv "><a class="linkdiv" href="programs.html" title="The programs it needs"><span class="title">The programs it needs</span><span class="linkdiv-dash"> — </span><span class="desc">VDE and QEMU: what a missing program stops, and where
-    Virtualbricks looks for them.</span></a></div></div>
-</div></div></div></div></div></div>
-</div></section><section id="lab"><div class="inner">
-<div class="hgroup pagewide"><h2 class="title"><span class="title">Your lab</span></h2></div>
-<div class="region"><div class="contents pagewide"><div class="links topiclinks"><div class="inner"><div class="region"><div class="links-twocolumn">
-<div class="links-divs">
-<div class="linkdiv "><a class="linkdiv" href="bricks.html" title="Bricks"><span class="title">Bricks</span><span class="linkdiv-dash"> — </span><span class="desc">Start, stop, configure, connect, rename and delete the bricks of a
-    lab.</span></a></div>
-<div class="linkdiv "><a class="linkdiv" href="machines.html" title="Virtual machines"><span class="title">Virtual machines</span><span class="linkdiv-dash"> — </span><span class="desc">The disks, network cards and consoles of a virtual machine.</span></a></div>
-<div class="linkdiv "><a class="linkdiv" href="images.html" title="Disk images"><span class="title">Disk images</span><span class="linkdiv-dash"> — </span><span class="desc">Add, make, share and find the disk images of a project.</span></a></div>
+<div class="link">
+<p><a href="kinds.html">The kinds of brick</a></p>
+<div class="desc">
+<p>What each brick is for, and the program that runs it.</p>
 </div>
-<div class="links-divs">
-<div class="linkdiv "><a class="linkdiv" href="events.html" title="Events"><span class="title">Events</span><span class="linkdiv-dash"> — </span><span class="desc">Start a lab in order, after a delay, or run commands.</span></a></div>
-<div class="linkdiv "><a class="linkdiv" href="topology.html" title="The picture of the lab"><span class="title">The picture of the lab</span><span class="linkdiv-dash"> — </span><span class="desc">See how the bricks connect, and export the picture.</span></a></div>
-<div class="linkdiv "><a class="linkdiv" href="readme.html" title="The README of a project"><span class="title">The README of a project</span><span class="linkdiv-dash"> — </span><span class="desc">Notes on the lab, in Markdown, with pictures.</span></a></div>
 </div>
-</div></div></div></div></div></div>
-</div></section><section id="projects"><div class="inner">
-<div class="hgroup pagewide"><h2 class="title"><span class="title">Projects</span></h2></div>
-<div class="region"><div class="contents pagewide"><div class="links topiclinks"><div class="inner"><div class="region"><div class="links-twocolumn">
-<div class="links-divs"><div class="linkdiv "><a class="linkdiv" href="projects.html" title="Projects"><span class="title">Projects</span><span class="linkdiv-dash"> — </span><span class="desc">Open, make, rename, copy and remove the projects of a
-    workspace.</span></a></div></div>
-<div class="links-divs"><div class="linkdiv "><a class="linkdiv" href="archives.html" title="Import and export"><span class="title">Import and export</span><span class="linkdiv-dash"> — </span><span class="desc">A lab in one file, for another computer.</span></a></div></div>
-</div></div></div></div></div></div>
-</div></section><section id="beyond"><div class="inner">
-<div class="hgroup pagewide"><h2 class="title"><span class="title">Settings and beyond</span></h2></div>
-<div class="region"><div class="contents pagewide"><div class="links topiclinks"><div class="inner"><div class="region"><div class="links-twocolumn">
-<div class="links-divs">
-<div class="linkdiv "><a class="linkdiv" href="settings.html" title="Settings"><span class="title">Settings</span><span class="linkdiv-dash"> — </span><span class="desc">The terminal, KSM, the folders of the programs, and the other
-    settings.</span></a></div>
-<div class="linkdiv "><a class="linkdiv" href="console.html" title="The console and scripts"><span class="title">The console and scripts</span><span class="linkdiv-dash"> — </span><span class="desc">Type commands, run a file of them, or send them from another
-    terminal.</span></a></div>
+<div class="link">
+<p><a href="programs.html">The programs it needs</a></p>
+<div class="desc">
+<p>VDE and QEMU: what a missing program stops, and where Virtualbricks
+looks for them.</p>
 </div>
-<div class="links-divs">
-<div class="linkdiv "><a class="linkdiv" href="remote.html" title="Another computer"><span class="title">Another computer</span><span class="linkdiv-dash"> — </span><span class="desc">A lab on another computer, with its windows on your desktop.</span></a></div>
-<div class="linkdiv "><a class="linkdiv" href="problems.html" title="When something goes wrong"><span class="title">When something goes wrong</span><span class="linkdiv-dash"> — </span><span class="desc">The messages, a brick that doesn't start, a refused start, a
-    project that can't be read.</span></a></div>
 </div>
-</div></div></div></div></div></div>
-</div></section><section id="tutorials"><div class="inner">
-<div class="hgroup pagewide"><h2 class="title"><span class="title">Tutorials</span></h2></div>
-<div class="region"><div class="contents pagewide"><div class="links topiclinks"><div class="inner"><div class="region"><div class="links-twocolumn">
-<div class="links-divs"><div class="linkdiv "><a class="linkdiv" href="tutorial-import.html" title="Import DTN2hops"><span class="title">Import DTN2hops</span><span class="linkdiv-dash"> — </span><span class="desc">The DTN2hops testbed, from its archive and its disk image, downloaded
-    apart.</span></a></div></div>
-<div class="links-divs"></div>
-</div></div></div></div></div></div>
-</div></section>
 </div>
-<div class="clear"></div></article><footer><div class="inner pagewide"></div></footer>
-</div></main></body>
+<h2 class="columns" id="lab">Your lab</h2>
+<div class="links">
+<div class="link">
+<p><a href="bricks.html">Bricks</a></p>
+<div class="desc">
+<p>Start, stop, configure, connect, rename and delete the bricks of a
+lab.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="machines.html">Virtual machines</a></p>
+<div class="desc">
+<p>The disks, network cards and consoles of a virtual machine.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="images.html">Disk images</a></p>
+<div class="desc">
+<p>Add, make, share and find the disk images of a project.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="events.html">Events</a></p>
+<div class="desc">
+<p>Start a lab in order, after a delay, or run commands.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="topology.html">The picture of the lab</a></p>
+<div class="desc">
+<p>See how the bricks connect, and export the picture.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="readme.html">The README of a project</a></p>
+<div class="desc">
+<p>Notes on the lab, in Markdown, with pictures.</p>
+</div>
+</div>
+</div>
+<h2 class="columns" id="projects">Projects</h2>
+<div class="links">
+<div class="link">
+<p><a href="projects.html">Projects</a></p>
+<div class="desc">
+<p>Open, make, rename, copy and remove the projects of a workspace.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="archives.html">Import and export</a></p>
+<div class="desc">
+<p>A lab in one file, for another computer.</p>
+</div>
+</div>
+</div>
+<h2 class="columns" id="beyond">Settings and beyond</h2>
+<div class="links">
+<div class="link">
+<p><a href="settings.html">Settings</a></p>
+<div class="desc">
+<p>The terminal, KSM, the folders of the programs, and the other
+settings.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="console.html">The console and scripts</a></p>
+<div class="desc">
+<p>Type commands, run a file of them, or send them from another
+terminal.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="remote.html">Another computer</a></p>
+<div class="desc">
+<p>A lab on another computer, with its windows on your desktop.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="problems.html">When something goes wrong</a></p>
+<div class="desc">
+<p>The messages, a brick that doesn't start, a refused start, a project
+that can't be read.</p>
+</div>
+</div>
+</div>
+<h2 class="columns" id="reference">Reference</h2>
+<div class="links">
+<div class="link">
+<p><a href="command-line.html">The command line</a></p>
+<div class="desc">
+<p>virtualbricks(1): labs of QEMU machines and VDE networks, and their
+console</p>
+</div>
+</div>
+<div class="link">
+<p><a href="config-files.html">Configuration files</a></p>
+<div class="desc">
+<p>virtualbricks-config(5): settings, state and project files of
+Virtualbricks</p>
+</div>
+</div>
+<div class="link">
+<p><a href="vbp-format.html">The archive format</a></p>
+<div class="desc">
+<p>virtualbricks-vbp(5): the archive of a Virtualbricks project</p>
+</div>
+</div>
+<div class="link">
+<p><a href="archive-protocol.html">The archive protocol</a></p>
+<div class="desc">
+<p>virtualbricks-archive(7): the process that reads and writes project
+archives</p>
+</div>
+</div>
+<div class="link">
+<p><a href="control-protocols.html">The control protocols</a></p>
+<div class="desc">
+<p>virtualbricks-control(7): the protocols of the control sockets: JSON,
+AMP 1 and AMP 2</p>
+</div>
+</div>
+</div>
+<h2 class="columns" id="tutorials">Tutorials</h2>
+<div class="links">
+<div class="link">
+<p><a href="tutorial-import.html">Import DTN2hops</a></p>
+<div class="desc">
+<p>The DTN2hops testbed, from its archive and its disk image, downloaded
+apart.</p>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body>
 </html>

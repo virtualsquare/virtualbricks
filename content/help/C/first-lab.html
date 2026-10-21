@@ -1,94 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>Make your first lab</title>
-<link rel="stylesheet" type="text/css" href="C.css">
-<script type="text/javascript" src="highlight.pack.js"></script><script>
-document.addEventListener('DOMContentLoaded', function() {
-  var matches = document.querySelectorAll('code.syntax')
-  for (var i = 0; i < matches.length; i++) {
-    hljs.highlightBlock(matches[i]);
-  }
-}, false);</script><script type="text/javascript" src="yelp.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Make your first lab — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
 </head>
-<body><main><div class="page">
-<header><div class="inner pagewide"><div class="trails" role="navigation"><div class="trail">
-<a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#start" title="Getting started">Getting started</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">Make your first lab</span></h1></div>
-<div class="region">
-<div class="contents pagewide">
-<p class="p">A lab is a project: its bricks, the events that start and stop them,
-  and the disk images of its machines. The smallest useful one is a switch
-  and a virtual machine plugged into it. You need a disk image for the
-  machine, as a <span class="file">.qcow2</span> file with a system installed.</p>
-<div class="steps"><div class="inner"><div class="region"><ol class="steps">
-<li class="steps"><p class="p">In the <span class="gui">Bricks</span> tab, click <span class="gui">New Brick</span> and
-    choose <span class="gui">Switch</span>. The switch is named <span class="sys">sw1</span>, and its
-    settings show: click <span class="gui">OK</span>.</p></li>
-<li class="steps"><p class="p">Click <span class="gui">New Brick</span> again and choose <span class="gui">Virtual
-    machine</span>. It is named <span class="sys">vm1</span>, and its settings
-    show.</p></li>
-<li class="steps"><p class="p">Under <span class="gui">Disks</span>, click <span class="gui">Add Disk</span>. In the list of
-    images of the new disk, choose <span class="gui">Add an Existing Image…</span>, then
-    the file of your disk image.</p></li>
-<li class="steps"><p class="p">Under <span class="gui">Network</span>, click <span class="gui">Add Card</span>, and choose
-    <span class="sys">sw1</span> in <span class="gui">Plugged into</span>.</p></li>
-<li class="steps"><p class="p">Click <span class="gui">OK</span>.</p></li>
-<li class="steps"><p class="p">Click the start button of <span class="sys">vm1</span>, in its row. The switch
-    starts first, since the machine plugs into it, and both rows say
-    <span class="gui">Running</span>.</p></li>
-</ol></div></div></div>
-<div class="figure"><div class="inner">
-<a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h2><span class="title">The first lab, running</span></h2></div>
-<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/first-lab.png" class="media media-block" alt="The Bricks tab with two rows, both Running: sw1, a switch of 32
-      ports, and vm1, a virtual machine of 64 MiB whose card eth0 is on sw1."></div></div></div></div>
-</div></div>
-<p class="p">The disk is a <span class="gui">Private copy</span> of the image: the machine writes
-  its changes to a file of its own, in the folder of the project, and the
-  image stays as it is. See <span class="link"><a href="images.html" title="Disk images">Disk images</a></span>.</p>
-<p class="p">Virtualbricks saves the project every three minutes and when it quits.
-  To save it now, choose <span class="guiseq"><span class="gui">Projects</span> ▸ <span class="gui">Save</span></span>,
-  or press <span class="keyseq"><span class="key"><kbd>Ctrl</kbd></span>+<span class="key"><kbd>S</kbd></span></span>.</p>
-<div class="note note-tip" title="Tip">
-<svg height="24" width="24" version="1.1">
- <g>
-  <path class="yelp-svg-fill" style="color-rendering:auto;text-decoration-color:#000000;color:#000000;isolation:auto;mix-blend-mode:normal;shape-rendering:auto;solid-color:#000000;block-progression:tb;text-decoration-line:none;text-decoration-style:solid;image-rendering:auto;white-space:normal;text-indent:0;text-transform:none" d="m12 2c-3.8541 0-7 3.1459-7 7 0 1.823 0.4945 3.139 1.1641 4.133 0.6695 0.994 1.4328 1.671 2.039 2.471 0.0882 0.116 0.1749 0.656 0.2071 1.32 0.016 0.332 0.0133 0.68 0.1894 1.119 0.0881 0.22 0.2439 0.478 0.5059 0.672 0.2619 0.194 0.6028 0.285 0.8945 0.285h4c0.583 0 1.204-0.478 1.402-0.908 0.199-0.43 0.217-0.793 0.244-1.137 0.056-0.688 0.138-1.319 0.211-1.441 0.549-0.916 1.304-2.009 1.94-3.114 0.636-1.104 1.203-2.199 1.203-3.4 0-3.8541-3.146-7-7-7zm0 2c2.773 0 5 2.2267 5 5 0 0.456-0.359 1.401-0.936 2.402-0.111 0.195-0.246 0.399-0.369 0.598h-7.8825c-0.4871-0.728-0.8125-1.519-0.8125-3 0-2.7733 2.2267-5 5-5z"></path>
-  <path class="yelp-svg-fill" d="m9 20a0.5 0.5 0 0 0 -0.5 0.5 0.5 0.5 0 0 0 0.5 0.5h6a0.5 0.5 0 0 0 0.5 -0.5 0.5 0.5 0 0 0 -0.5 -0.5h-6zm0 2a0.5 0.5 0 0 0 -0.5 0.5 0.5 0.5 0 0 0 0.5 0.5h6a0.5 0.5 0 0 0 0.5 -0.5 0.5 0.5 0 0 0 -0.5 -0.5h-6z"></path>
- </g>
-</svg><div class="inner"><div class="region"><div class="contents">
-<p class="p">The same lab from the console of Virtualbricks:</p>
-<div class="screen"><pre class="contents"><code>image add debian ~/images/debian.qcow2
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#start">Getting started</a></p>
+</div>
+<h1>Make your first lab</h1>
+<p>A lab is a project: its bricks, the events that start and stop them,
+and the disk images of its machines. The smallest useful one is a switch
+and a virtual machine plugged into it. You need a disk image for the
+machine, as a <code class="file">.qcow2</code> file with a system
+installed.</p>
+<ol type="1">
+<li><p>In the <span class="gui">Bricks</span> tab, click <span
+class="gui">New Brick</span> and choose <span class="gui">Switch</span>.
+The switch is named <code class="sys">sw1</code>, and its settings show:
+click <span class="gui">OK</span>.</p></li>
+<li><p>Click <span class="gui">New Brick</span> again and choose <span
+class="gui">Virtual machine</span>. It is named <code
+class="sys">vm1</code>, and its settings show.</p></li>
+<li><p>Under <span class="gui">Disks</span>, click <span class="gui">Add
+Disk</span>. In the list of images of the new disk, choose <span
+class="gui">Add an Existing Image…</span>, then the file of your disk
+image.</p></li>
+<li><p>Under <span class="gui">Network</span>, click <span
+class="gui">Add Card</span>, and choose <code class="sys">sw1</code> in
+<span class="gui">Plugged into</span>.</p></li>
+<li><p>Click <span class="gui">OK</span>.</p></li>
+<li><p>Click the start button of <code class="sys">vm1</code>, in its
+row. The switch starts first, since the machine plugs into it, and both
+rows say <span class="gui">Running</span>.</p></li>
+</ol>
+<figure>
+<a href="figures/first-lab.png"><img src="figures/first-lab.png"
+alt="The Bricks tab with two rows, both Running: sw1, a switch of 32 ports, and vm1, a virtual machine of 64 MiB whose card eth0 is on sw1." /></a>
+<figcaption>The first lab, running</figcaption>
+</figure>
+<p>The disk is a <span class="gui">Private copy</span> of the image: the
+machine writes its changes to a file of its own, in the folder of the
+project, and the image stays as it is. See <a href="images.html">Disk
+images</a>.</p>
+<p>Virtualbricks saves the project every three minutes and when it
+quits. To save it now, choose <span class="guiseq"><span
+class="gui">Projects</span> › <span class="gui">Save</span></span>, or
+press <kbd>Ctrl</kbd>+<kbd>S</kbd>.</p>
+<div class="note tip">
+<p>The same lab from the console of Virtualbricks:</p>
+<pre><code>image add debian ~/images/debian.qcow2
 brick new switch
 brick new vm
 brick set vm1 hda_image=debian
 brick card add vm1 plug sw1
-brick start vm1</code></pre></div>
-<p class="p">See <span class="link"><a href="console.html" title="The console and scripts">The console and scripts</a></span>.</p>
-</div></div></div>
+brick start vm1</code></pre>
+<p>See <a href="console.html">The console and scripts</a>.</p>
+</div>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="kinds.html">The kinds of brick</a></p>
+<div class="desc">
+<p>What each brick is for, and the program that runs it.</p>
 </div>
 </div>
-<section class="links" role="navigation"><div class="inner">
-<div class="hgroup pagewide"></div>
-<div class="contents pagewide">
-<div class="links guidelinks"><div class="inner">
-<div class="title"><h2><span class="title">More Information</span></h2></div>
-<div class="region"><ul><li class="links "><a href="index.html#start" title="Getting started">Getting started</a></li></ul></div>
-</div></div>
-<div class="links seealsolinks"><div class="inner">
-<div class="title"><h2><span class="title">See Also</span></h2></div>
-<div class="region"><ul>
-<li class="links ">
-<a href="kinds.html" title="The kinds of brick">The kinds of brick</a><span class="desc"> — What each brick is for, and the program that runs it.</span>
-</li>
-<li class="links ">
-<a href="machines.html" title="Virtual machines">Virtual machines</a><span class="desc"> — The disks, network cards and consoles of a virtual machine.</span>
-</li>
-</ul></div>
-</div></div>
+<div class="link">
+<p><a href="machines.html">Virtual machines</a></p>
+<div class="desc">
+<p>The disks, network cards and consoles of a virtual machine.</p>
 </div>
-</div></section>
 </div>
-<div class="clear"></div></article><footer><div class="inner pagewide"></div></footer>
-</div></main></body>
+</div>
+</section>
+</main>
+</div>
+</body>
 </html>
