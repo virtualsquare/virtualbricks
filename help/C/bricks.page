@@ -96,7 +96,8 @@
       <item>
         <title><gui>Duplicate</gui></title>
         <p>A copy of the brick, with its links, named after it with the next
-        free number.</p>
+        free number. The network cards of a machine get new MAC
+        addresses.</p>
       </item>
       <item>
         <title><gui>Connect To</gui></title>

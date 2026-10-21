@@ -24,8 +24,10 @@ from virtualbricks.bricks.eventaction import (
     StartAction,
     StopAction,
 )
+from virtualbricks.bricks.sock import Sock
+from virtualbricks.bricks.virtualmachine import UsbDevice, hostonly_sock
+from virtualbricks.nic import is_valid_mac
 from virtualbricks.tests import BrickTestCase
-from virtualbricks.bricks.virtualmachine import UsbDevice
 
 
 class TestFactory(BrickTestCase):
@@ -76,6 +78,63 @@ class TestFactory(BrickTestCase):
         self.assertEqual(copy.config.memory, 256)
         self.assertEqual(copy.config.usb_devices, vm.config.usb_devices)
         self.assertIsNot(copy.config.usb_devices, vm.config.usb_devices)
+
+    def test_duplicate_machine_cards(self):
+        switch = self.factory.new_brick("switch", "sw1")
+        vm = self.factory.new_brick("qemu", "vm1")
+        vm.add_plug(switch.socks[0], "52:54:00:00:00:01", "e1000")
+        vm.add_plug(None, "52:54:00:00:00:02", "i82551")
+        vm.add_sock("52:54:00:00:00:03", "virtio-net-pci", "uplink")
+        vm.add_plug(hostonly_sock, "52:54:00:00:00:04", "e1000")
+        copy = self.factory.duplicate_brick(vm)
+        # the cards in their order, of their models
+        plug1, plug2, sock, plug3 = copy.links
+        self.assertEqual(
+            [link.model for link in copy.links],
+            ["e1000", "i82551", "virtio-net-pci", "e1000"],
+        )
+        self.assertIs(plug1.sock, switch.socks[0])
+        self.assertIsNone(plug2.sock)
+        self.assertIs(plug3.sock, hostonly_sock)
+        self.assertIsInstance(sock, Sock)
+        self.assertEqual(sock.nickname, "vm2_uplink")
+        self.assertIn(sock, self.factory.socks)
+        # the machine keeps its own
+        self.assertEqual(len(switch.socks[0].plugs), 2)
+        self.assertEqual(vm.socks[0].nickname, "vm1_uplink")
+        # two cards with one MAC address on one switch would not work
+        macs = {link.mac for link in [*vm.links, *copy.links]}
+        self.assertEqual(len(macs), 8)
+        self.assertTrue(all(map(is_valid_mac, macs)))
+
+    def test_duplicate_machine_plugged_into_itself(self):
+        # the copy goes in its own socket card, even after the plug
+        vm = self.factory.new_brick("qemu", "vm1")
+        plug = vm.add_plug(None)
+        plug.connect(vm.add_sock(name="loop"))
+        copy = self.factory.duplicate_brick(vm)
+        self.assertIs(copy.plugs[0].sock, copy.socks[0])
+        self.assertEqual(copy.socks[0].nickname, "vm2_loop")
+
+    def test_duplicate_says_it_changed_with_its_links(self):
+        switch = self.factory.new_brick("switch", "sw1")
+        vm = self.factory.new_brick("qemu", "vm1")
+        vm.add_sock(name="uplink")
+        vm.add_plug(switch.socks[0])
+        changed = []
+        self.factory.brick_changed.connect(
+            lambda brick: changed.append(len(brick.links))
+        )
+        self.factory.duplicate_brick(vm)
+        self.assertEqual(changed, [2])
+
+    def test_duplicate_wire_plugs_in_their_places(self):
+        switch = self.factory.new_brick("switch", "sw1")
+        wire = self.factory.new_brick("wire", "w1")
+        wire.plugs[1].connect(switch.socks[0])
+        copy = self.factory.duplicate_brick(wire)
+        self.assertIsNone(copy.plugs[0].sock)
+        self.assertIs(copy.plugs[1].sock, switch.socks[0])
 
     def test_rename_event_updates_the_bricks(self):
         event = self.factory.new_event("boot")

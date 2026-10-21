@@ -1510,6 +1510,28 @@ class VirtualMachine(bricks.Brick):
         self.add_plug(sock, *args)
         self.changed.notify(self)
 
+    def copy_links(self, brick: bricks.Brick) -> None:
+        """
+        The cards of brick, a machine, in their order and of their models,
+        with new MAC addresses: plugs in the same sockets, socket cards with
+        the same names. A plug in a socket card of brick goes in the copy of
+        that card. The brick doesn't say it changed.
+        """
+
+        copies: dict[int, Sock] = {}
+        plugs: list[tuple[Plug, Sock | HostonlySock]] = []
+        for link in brick.links:
+            if isinstance(link, Plug):
+                plug = self.add_plug(None, model=link.model)
+                if link.sock is not None:
+                    plugs.append((plug, link.sock))
+            else:
+                name = link.nickname[len(brick.name) + 1 :]
+                copies[id(link)] = self.add_sock(model=link.model, name=name)
+        # the socket cards are all there, also those after their plugs
+        for plug, sock in plugs:
+            plug.connect(copies.get(id(sock), sock))
+
     def remove_plug(self, plug: Plug | Sock) -> None:
         """Take a card out: a socket card is unplugged and forgotten."""
 

@@ -306,14 +306,16 @@ class BrickFactory:
             raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
 
     def duplicate_brick(self, brick: Brick) -> Brick:
+        """
+        A copy of brick, with its links, named after it with the next free
+        number.
+        """
+
         name = self.next_name(brick.name)
         new_brick = self.new_brick(brick.get_type(), name)
+        new_brick.copy_links(brick)
+        # the copy says it changed once, with its links
         new_brick.update_config(copy.deepcopy(field_values(brick.config)))
-
-        for p in brick.plugs:
-            if p.sock is not None:
-                new_brick.connect(p.sock)
-
         return new_brick
 
     def remove_brick(self, brick: Brick) -> None:

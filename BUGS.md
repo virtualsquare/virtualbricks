@@ -31,19 +31,6 @@ in 3.0: they wait until after it.
   windows of `--connect` can show a stopped brick as running for a
   moment.
 
-## Machines
-
-- [ ] **A duplicate of a machine has only its plugged cards, of the
-  default model.** The help says that Duplicate makes "a copy of the
-  brick, with its links". `duplicate_brick()` in
-  `virtualbricks/brickfactory.py` copies the settings, then calls
-  `connect()` for each plug in a socket, which adds a card of the default
-  model: the copy loses the socket cards, the cards in nothing and the
-  models. Seen on 3.0.0.dev6, on 21 October 2026, in the console: vm1 had
-  `eth0: plugged into sw1, e1000`, `eth1: in nothing, rtl8139` and `eth2:
-  socket vm1:sock_eth0, rtl8139`; `brick duplicate vm1` made vm2 with
-  only `eth0: plugged into sw1, rtl8139`, with a new MAC address.
-
 ## Platforms
 
 - [ ] **A README picture with too many pixels is read on Ubuntu 26.04 and

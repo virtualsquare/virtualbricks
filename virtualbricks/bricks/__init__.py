@@ -821,6 +821,16 @@ class Brick(Base):
                 self.changed.notify(self)
                 return
 
+    def copy_links(self, brick: Brick) -> None:
+        """
+        Plug in where the plugs of brick, a brick of this kind, are, each
+        plug in the place of its own. The brick doesn't say it changed.
+        """
+
+        for plug, other in zip(self.plugs, brick.plugs):
+            if other.sock is not None:
+                plug.connect(other.sock)
+
     def disconnect(self) -> None:
         for p in self.plugs:
             if p.configured():
