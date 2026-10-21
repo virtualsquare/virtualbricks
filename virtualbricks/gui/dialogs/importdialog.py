@@ -23,7 +23,8 @@ Choosing a file reads the archive in the archive process. The page shows
 the project, a name, and a choice for each image the project uses, each with
 a default: copy it from the archive, use a file of this computer, or leave it
 unset. The import runs in the archive process too; the window follows its
-progress, and can be closed meanwhile.
+progress, can be closed meanwhile, and closes at its end: the Logs window
+has the report.
 """
 
 from __future__ import annotations
@@ -284,7 +285,6 @@ class ImportDialog(Window):
         self.rows: list[ImageRow] = []
         self.inspect_job: ArchiveJob | None = None
         self.import_job: ArchiveJob | None = None
-        self.result: ImportResult | None = None
         self.scanning = False
         self.destroyed = False
         super().__init__()
@@ -316,7 +316,6 @@ class ImportDialog(Window):
         self.stack.add_named(self._build_reading(), "reading")
         self.stack.add_named(self._build_form(), "form")
         self.stack.add_named(self._build_running(), "running")
-        self.stack.add_named(self._build_done(), "done")
         self.stack.add_named(self._build_failed(), "failed")
         self.window.add(self.stack)
 
@@ -464,21 +463,6 @@ class ImportDialog(Window):
         )
         return box
 
-    def _build_done(self) -> Gtk.Box:
-        box = self._page()
-        self.done_label = _label(wrap=True, bold=True)
-        box.pack_start(self.done_label, False, False, 0)
-        self.warnings_heading = _label(_("To check"), bold=True)
-        box.pack_start(self.warnings_heading, False, False, 0)
-        frame = Gtk.Frame(visible=True)
-        self.warnings_list = Gtk.ListBox(
-            visible=True, selection_mode=Gtk.SelectionMode.NONE
-        )
-        frame.add(self.warnings_list)
-        self.warnings_frame = frame
-        box.pack_start(frame, False, False, 0)
-        return box
-
     def _build_failed(self) -> Gtk.Box:
         box = self._page()
         box.set_valign(Gtk.Align.CENTER)
@@ -495,10 +479,10 @@ class ImportDialog(Window):
     def show_page(self, name: str) -> None:
         self.stack.set_visible_child_name(name)
         running = name == "running"
-        finished = name in ("done", "failed")
+        failed = name == "failed"
         self.import_button.set_visible(name in ("choose", "reading", "form"))
-        self.close_button.set_visible(finished)
-        self.cancel_button.set_visible(not finished)
+        self.close_button.set_visible(failed)
+        self.cancel_button.set_visible(not failed)
         self.cancel_button.set_label(_("Stop") if running else _("Cancel"))
 
     # Reading the archive
@@ -716,42 +700,14 @@ class ImportDialog(Window):
 
     def on_imported(self, result: ImportResult) -> None:
         self.import_job = None
-        self.result = result
         logger.info(imported, name=result.name)
         result.report.log(logger)
         assert self.plan is not None, "an import has its plan"
         if self.plan.open:
             self.open_project(result)
-        if self.destroyed:
-            return
-        if self.plan.open:
-            # The main window shows the project, the Logs window the report.
+        if not self.destroyed:
+            # The Logs window has the name and the report.
             self.window.destroy()
-            return
-        self.done_label.set_text(
-            _('Imported as "{name}".').format(name=result.name)
-        )
-        for child in self.warnings_list.get_children():
-            self.warnings_list.remove(child)
-        for message in result.report:
-            row = Gtk.ListBoxRow(visible=True, activatable=False)
-            box = Gtk.Box(
-                visible=True,
-                orientation=Gtk.Orientation.VERTICAL,
-                margin=8,
-                spacing=2,
-            )
-            box.pack_start(_label(message.text, wrap=True), False, False, 0)
-            if message.where:
-                box.pack_start(
-                    _label(message.where, dim=True), False, False, 0
-                )
-            row.add(box)
-            self.warnings_list.add(row)
-        has_messages = len(result.report) > 0
-        self.warnings_heading.set_visible(has_messages)
-        self.warnings_frame.set_visible(has_messages)
-        self.show_page("done")
 
     def open_project(self, result: ImportResult) -> None:
         try:

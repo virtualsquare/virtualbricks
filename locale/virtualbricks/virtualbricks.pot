@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev7\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 16:22+0200\n"
+"POT-Creation-Date: 2026-10-21 16:49+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2974,10 +2974,6 @@ msgid ""
 msgstr ""
 
 #: virtualbricks/gui/dialogs/importdialog.py
-msgid "To check"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/importdialog.py
 #, python-brace-format
 msgid "Cannot read {path}: {error}"
 msgstr ""
@@ -3012,11 +3008,6 @@ msgstr ""
 #: virtualbricks/gui/dialogs/importdialog.py
 #, python-brace-format
 msgid "Importing {name}"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/importdialog.py
-#, python-brace-format
-msgid "Imported as \"{name}\"."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/logging.py
