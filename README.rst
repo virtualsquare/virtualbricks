@@ -63,8 +63,8 @@ The help and the Documentation
 
 The user guide, *content/help/C/*, and the pages of the Documentation,
 *content/documentation/*, are copies of what a commit of **develop** has:
-the HTML of the guide, *help/html/C/*, and the pages of *docs/*. They are
-never edited here. The task *sync-docs*, of *tasks.py*, makes them, and
+the HTML of the guide and of its reference, the man pages, that
+*docs/build.py* writes into *docs/built/html/*. They are never edited here. The task *sync-docs*, of *tasks.py*, makes them, and
 says how to commit them:
 
 .. code::
@@ -73,15 +73,16 @@ says how to commit them:
    $ invoke sync-docs virtualsquare/develop
    $ git add content && git commit -m "Help and Documentation of develop 1234abcd"
 
-The guide is copied as it is, and Pelican doesn't read it: *help* is in
-*STATIC_PATHS*, *ARTICLE_EXCLUDES* and *PAGE_EXCLUDES*. One thing changes on
-the way: the guide and the pages of *docs/* link the site in full, with
-*https://www.virtualbricks.it/*, as the guide installed with Virtualbricks
-needs; their copies here link within the site, relative to their folder, so
-that a local build doesn't lead to the published site. A page of the
-Documentation keeps its head here, the metadata of Pelican; its body is
-that of *docs/NAME.html*, its style *NAME.css*. A new page starts as a head
-with an empty body, which the next sync fills.
+The guide is copied as it is, with its reference and its style, and Pelican
+doesn't read it: *help* is in *STATIC_PATHS*, *ARTICLE_EXCLUDES* and
+*PAGE_EXCLUDES*. One thing changes on the way: a link to the site in full,
+*https://www.virtualbricks.it/*, links within the site, relative to its
+folder, so that a local build doesn't lead to the published site. A page of
+the Documentation keeps its head here, the metadata of Pelican; its body is
+that of the page of the reference with its name, *NAME.html*, whose links to
+the guide lead to *help/C/*; its style, *NAME.css*, is the style of the
+guide. A new page starts as a head with an empty body, which the next sync
+fills.
 
 *make publish*, and so *make github*, first runs ``invoke sync-docs --check
 $(DOCS_REF)``, *develop* unless the command line says otherwise, and stops

@@ -8,7 +8,7 @@ import subprocess
 import sys
 import datetime
 import tarfile
-import textwrap
+import re
 
 from invoke import task
 from invoke.exceptions import Exit
@@ -148,11 +148,12 @@ def gh_pages(c):
           '-m {commit_message} '
           '{deploy_path} -p'.format(**CONFIG))
 
-# The help, the HTML of the user guide, and the pages of the Documentation
-# are copies of those of a commit of develop, made by sync-docs: page 28 of
-# develop's docs/redesign, section 7.
+# The help, the HTML of the user guide and of its reference, and the pages of
+# the Documentation are copies of those of a commit of develop, made by
+# sync-docs: page 28 of develop's docs/redesign, section 7, and page 33, which
+# made the HTML in docs/built/html.
 ROOT = os.path.dirname(os.path.abspath(__file__))
-HELP_SOURCE = 'help/html/C'
+HELP_SOURCE = 'docs/built/html'
 HELP_PATH = os.path.join('content', 'help', 'C')
 DOCUMENTATION_PATH = os.path.join('content', 'documentation')
 # The address of the site, which the help and the pages of docs/ link in
@@ -169,18 +170,25 @@ def git(*args):
     return result.stdout
 
 
-def documentation_page(source, page):
+def documentation_page(source, page, names):
     """
-    A page of the Documentation, and its stylesheet, from the page of docs/
-    in develop, source, and the page of the site: its head, the metadata of
-    Pelican, kept; the body of source after its <style>, as it is; the
-    <style> in the stylesheet.
+    A page of the Documentation from the page of the reference in develop's
+    docs/built/html, source, and the page of the site: its head, the metadata
+    of Pelican, kept; the body of source, its links to the pages of the guide,
+    which aren't among names, those of the Documentation, made links to the
+    help of the site.
     """
     head = page[:page.index('<body>\n') + len('<body>\n')]
-    start = source.index('<style>\n') + len('<style>\n')
-    end = source.index('</style>\n')
-    body = source[end + len('</style>\n'):].lstrip('\n')
-    return head + body + '</body>\n</html>\n', textwrap.dedent(source[start:end])
+    start = source.index('<body>\n') + len('<body>\n')
+    body = source[start:source.index('</body>')]
+
+    def to_help(match):
+        if match.group(1) in names:
+            return match.group(0)
+        return 'href="../help/C/' + match.group(1)
+
+    body = re.sub(r'href="([a-z0-9-]+\.html)', to_help, body)
+    return head + body + '</body>\n</html>\n'
 
 
 def within_site(data, path):
@@ -207,11 +215,14 @@ def read(path):
 def docs_of(ref):
     """
     The files of the help and of the Documentation as ref has them, by their
-    path in the site: every file of help/html/C; for each page of the
-    Documentation of the site, NAME.html, its docs/NAME.html. Their links to
-    the site are relative.
+    path in the site: every file of docs/built/html, the guide and its
+    reference; for each page of the Documentation of the site, NAME.html, the
+    page of the reference of the same name, and the stylesheet of the guide
+    as NAME.css. Their links to the site are relative.
     """
     files = {}
+    # the pages as develop has them, before within_site
+    sources = {}
     try:
         tar = git('archive', '--format=tar', ref, HELP_SOURCE)
     except Exit:
@@ -222,15 +233,17 @@ def docs_of(ref):
                 name = os.path.relpath(member.name, HELP_SOURCE)
                 path = os.path.join(HELP_PATH, name)
                 data = archive.extractfile(member).read()
+                sources[name] = data
                 files[path] = within_site(data, path)
-    for name in sorted(os.listdir(os.path.join(ROOT, DOCUMENTATION_PATH))):
-        if not name.endswith('.html'):
-            continue
+    names = sorted(name for name in os.listdir(os.path.join(ROOT, DOCUMENTATION_PATH))
+                   if name.endswith('.html'))
+    style = sources['style.css']
+    for name in names:
         path = os.path.join(DOCUMENTATION_PATH, name)
-        source = git('show', '{}:docs/{}'.format(ref, name)).decode('utf-8')
-        page, css = documentation_page(source, read(path).decode('utf-8'))
+        source = sources[name].decode('utf-8')
+        page = documentation_page(source, read(path).decode('utf-8'), names)
         files[path] = within_site(page.encode('utf-8'), path)
-        files[path[:-len('.html')] + '.css'] = css.encode('utf-8')
+        files[path[:-len('.html')] + '.css'] = style
     return files
 
 
