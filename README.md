@@ -226,7 +226,7 @@ certificate instead, and the log names it. `--command` talks to them as
 
 The three protocols of the sockets, the JSON one and protocols 1 and 2 of
 AMP, and the proof of the token are described for whoever writes a client in
-`man ./docs/man/virtualbricks-control.7` and
+`man ./docs/built/man/virtualbricks-control.7` and
 [`docs/control-protocols.html`](docs/control-protocols.html).
 
 ### The windows of another Virtualbricks
@@ -255,7 +255,7 @@ later version. When the connection is lost, a bar says why, and Reconnect
 connects again. Quit closes the windows; the Virtualbricks there goes on.
 
 Every option and command is in the manual page, which you can read from the
-sources with `man ./docs/man/virtualbricks.1`, and in
+sources with `man ./docs/built/man/virtualbricks.1`, and in
 [`docs/command-line.html`](docs/command-line.html).
 
 ## Configuration
@@ -302,11 +302,11 @@ also `virtualbricks-migrate`, a window, and `python -m virtualbricks.migrate`,
 the command line.
 
 The files are described in the manual page, which you can read from the
-sources with `man ./docs/man/virtualbricks-config.5`, and in
+sources with `man ./docs/built/man/virtualbricks-config.5`, and in
 [`docs/config-files.html`](docs/config-files.html); the archives that export
-and import projects in `man ./docs/man/virtualbricks-vbp.5` and
+and import projects in `man ./docs/built/man/virtualbricks-vbp.5` and
 [`docs/vbp-format.html`](docs/vbp-format.html), and the process that reads
-and writes them in `man ./docs/man/virtualbricks-archive.7` and
+and writes them in `man ./docs/built/man/virtualbricks-archive.7` and
 [`docs/archive-protocol.html`](docs/archive-protocol.html).
 
 ## Development
@@ -477,18 +477,22 @@ pre-commit run --all-files     # run them without committing
 ```
 
 - **black** and **ruff**: format and check what you changed.
-- **man pages**: `python docs/man/build.py` builds the pages of `docs/man/`
-  from their Markdown sources with pandoc; the pages are committed. With
-  `--check` it only tells whether one is out of date.
-- **help**: `python3 help/build.py` checks the pages of the user guide,
-  `help/C/*.page`, with `yelp-check`, and builds their HTML into
+- **docs**: `python docs/build.py` builds the documentation from its
+  Markdown sources with pandoc: the man pages of `docs/man/` into
+  `docs/built/man/`, and the pages of the user guide, `docs/guide/`, into
+  Mallard pages for Yelp in `docs/built/mallard/`, with a copy of their
+  pictures; what it builds is committed. With `--check` it only tells whether
+  an output is out of date. [docs/README.md](docs/README.md) tells how a page
+  is written. The end-to-end tests take the pictures, `docs/guide/figures/`:
+  `pytest --pictures -m pictures`, see
+  [e2e/README.md](e2e/README.md#the-pictures-of-the-user-guide).
+- **help**: `python3 help/build.py` checks the Mallard pages of the guide,
+  `docs/built/mallard/`, with `yelp-check`, and builds their HTML into
   `help/html/C/` with `yelp-build`, with a copy of their pictures and the
   CSS of `help/html.xsl`, which shrinks the pictures to the window; the HTML
   is committed. It runs when a page, a picture or `help/html.xsl` changes,
   and needs the Yelp tools (`yelp-tools` in Debian). With `--check` it only
-  tells whether the HTML is out of date. The end-to-end tests take the
-  pictures, `help/C/figures/`: `pytest --pictures -m pictures`, see
-  [e2e/README.md](e2e/README.md#the-pictures-of-the-user-guide).
+  tells whether the HTML is out of date.
 - **translations**: `./l10n.sh` extracts the messages of the sources into
   `locale/virtualbricks/virtualbricks.pot`, merges them into the `.po` file of
   each language and compiles the `.mo` catalogs, which are committed too. It
@@ -586,14 +590,16 @@ To add a language, see the top of `l10n.sh`.
   and `images/`. `dialogs/` has the other windows and dialogs, and
   `messages.py` the messages of the Logs window.
 - `virtualbricks/tests/`: the tests, in the layout of the package.
-- `docs/`: the manual pages, in `man/`, and their web pages,
-  `command-line.html`, `config-files.html`, `archive-protocol.html` and
-  `control-protocols.html`; in `redesign/`, the designs of the parts that
-  were rewritten, numbered in the order of the work, from the conversion of
-  the Glade files to the console.
-- `help/`: the user guide, Mallard pages in `C/` and their pictures in
-  `C/figures/`, their HTML in `html/C/`, and `build.py`, which checks the
-  pages and builds the HTML.
+- `docs/`: the documentation, written in Markdown: the user guide in
+  `guide/`, with its pictures in `guide/figures/`, the manual pages in `man/`;
+  `build.py`, which builds them into `built/`, and `README.md`, which tells
+  how a page is written. The web pages of the manual pages,
+  `command-line.html`, `config-files.html`, `archive-protocol.html`,
+  `control-protocols.html` and `vbp-format.html`; in `redesign/`, the designs
+  of the parts that were rewritten, numbered in the order of the work, from
+  the conversion of the Glade files to the console.
+- `help/`: the HTML of the user guide, in `html/C/`, and `build.py`, which
+  checks the Mallard pages and builds their HTML.
 - `tools/`: the scripts of the development, as `typecoverage.py` and
   `targetsuite.py`.
 - `locale/`: the translations; `share/`: the desktop file and the icon.

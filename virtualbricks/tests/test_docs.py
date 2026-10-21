@@ -34,9 +34,6 @@ installed package.
 
 import os
 import re
-import shutil
-import subprocess
-import sys
 
 import tomlkit
 from twisted.trial import unittest
@@ -307,33 +304,6 @@ class TestProjects(DocsTestCase):
         for name, value in state.items():
             self.assertEqual(entries[name][2], toml(value), name)
         self.check_kinds("netemu", NetemuConfig, STATE_KEYS)
-
-
-class TestManPage(DocsTestCase):
-    """The committed man page is built from the current source."""
-
-    def test_up_to_date(self):
-        try:
-            import pypandoc
-
-            pypandoc.get_pandoc_path()
-        except (ImportError, OSError):
-            if shutil.which("pandoc") is None:
-                raise unittest.SkipTest("pandoc") from None
-        result = subprocess.run(
-            [sys.executable, os.path.join(MAN, "build.py"), "--check"],
-            capture_output=True,
-            encoding="utf-8",
-            check=False,
-            env={
-                k: v for k, v in os.environ.items() if k != "SOURCE_DATE_EPOCH"
-            },
-        )
-        self.assertEqual(
-            result.returncode,
-            0,
-            f"{result.stdout}{result.stderr}run python docs/man/build.py",
-        )
 
 
 def section(path, heading):

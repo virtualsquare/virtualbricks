@@ -16,9 +16,9 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The user guide: the Mallard pages of help/C/, their pictures in
-help/C/figures/, and their HTML in help/html/C/, which help/build.py makes
-with the Yelp tools.
+The user guide: the Mallard pages of docs/built/mallard/, which docs/build.py
+writes from their Markdown, their pictures in docs/guide/figures/, and their
+HTML in help/html/C/, which help/build.py makes with the Yelp tools.
 
 The tests of the pages are skipped when the sources of the guide are not
 there, as in an installed package, and those that run yelp-check when the
@@ -40,9 +40,9 @@ from twisted.trial import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 HELP = os.path.join(ROOT, "help")
-PAGES = os.path.join(HELP, "C")
+PAGES = os.path.join(ROOT, "docs", "built", "mallard")
 HTML = os.path.join(HELP, "html", "C")
-FIGURES = os.path.join(PAGES, "figures")
+FIGURES = os.path.join(ROOT, "docs", "guide", "figures")
 MALLARD = "{http://projectmallard.org/1.0/}"
 
 
@@ -110,7 +110,7 @@ class TestThePages(PagesTestCase):
 
 
 class TestTheFigures(PagesTestCase):
-    """The pictures of help/C/figures/, which the end-to-end tests take."""
+    """The pictures of docs/guide/figures/, which the end-to-end tests take."""
 
     def figures(self):
         """(page, figure) of each figure of the pages."""
@@ -184,7 +184,7 @@ class TestTheInstall(PagesTestCase):
     def test_the_pages_where_yelp_looks(self):
         self.assertEqual(
             self.installed("share/help/C/virtualbricks"),
-            [f"help/C/{name}.page" for name in page_names()],
+            [f"docs/built/mallard/{name}.page" for name in page_names()],
         )
 
     def test_the_html(self):
@@ -202,7 +202,7 @@ class TestTheInstall(PagesTestCase):
         # beside the pages, and beside the HTML
         self.assertEqual(
             self.installed("share/help/C/virtualbricks/figures"),
-            [f"help/C/figures/{name}" for name in picture_names()],
+            [f"docs/built/mallard/figures/{name}" for name in picture_names()],
         )
         self.assertEqual(
             self.installed("share/virtualbricks/help/C/figures"),

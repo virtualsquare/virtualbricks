@@ -18,16 +18,10 @@ document.addEventListener('DOMContentLoaded', function() {
 <a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#lab" title="Your lab">Your lab</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">Disk images</span></h1></div>
 <div class="region">
 <div class="contents pagewide">
-<p class="p">A disk image is a file that holds the disk of a virtual machine, as
-  <span class="file">debian.qcow2</span>. The <span class="gui">Images</span> tab has a row for each
-  image of the project: its format, the size of the disk that the machine
-  sees, the space that the file takes, and which disks use it, on a private
-  copy or the image itself. Its state is <span class="gui">In use</span> while a machine
-  that reads it runs or starts.</p>
+<p class="p">A disk image is a file that holds the disk of a virtual machine, as <span class="file">debian.qcow2</span>. The <span class="gui">Images</span> tab has a row for each image of the project: its format, the size of the disk that the machine sees, the space that the file takes, and which disks use it, on a private copy or the image itself. Its state is <span class="gui">In use</span> while a machine that reads it runs or starts.</p>
 <div class="figure"><div class="inner">
 <a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h2><span class="title">The Images tab</span></h2></div>
-<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/images.png" class="media media-block" alt="The Images tab with the image debian: qcow2, a disk of 1.0 GB, the
-      space that its file takes, and no disk uses it."></div></div></div></div>
+<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/images.png" class="media media-block" alt="The Images tab with the image debian: qcow2, a disk of 1.0 GB, the space that its file takes, and no disk uses it."></div></div></div></div>
 </div></div>
 </div>
 <section id="add"><div class="inner">
@@ -36,40 +30,28 @@ document.addEventListener('DOMContentLoaded', function() {
 <p class="p"><span class="gui">Add Image</span> offers two ways:</p>
 <div class="terms"><div class="inner"><div class="region"><dl class="terms">
 <dt class="terms"><span class="gui">Existing Image…</span></dt>
-<dd class="terms"><p class="p">A file you have. Virtualbricks reads it with <span class="cmd">qemu-img</span>
-        and copies it to the shared images of the workspace, unless you choose
-        <span class="gui">Use it where it is</span>.</p></dd>
+<dd class="terms"><p class="p">A file you have. Virtualbricks reads it with <span class="cmd">qemu-img</span> and copies it to the shared images of the workspace, unless you choose <span class="gui">Use it where it is</span>.</p></dd>
 <dt class="terms"><span class="gui">New Empty Disk…</span></dt>
-<dd class="terms"><p class="p">A new file, of the <span class="gui">Size</span> and <span class="gui">Format</span> you choose,
-        qcow2 or raw, in a <span class="gui">Folder</span>.</p></dd>
+<dd class="terms"><p class="p">A new file, of the <span class="gui">Size</span> and <span class="gui">Format</span> you choose, qcow2 or raw, in a <span class="gui">Folder</span>.</p></dd>
 </dl></div></div></div>
 <p class="p">The same two are in the list of images of each disk of a machine.</p>
 </div></div>
 </div></section><section id="shared"><div class="inner">
 <div class="hgroup pagewide"><h2 class="title"><span class="title">The shared images</span></h2></div>
-<div class="region"><div class="contents pagewide"><p class="p">Each workspace has a folder of images that its projects share,
-    <span class="file">shared_images</span>. An image there can be used by several
-    projects, and by several machines of each, each machine on a private copy
-    of its own.</p></div></div>
+<div class="region"><div class="contents pagewide"><p class="p">Each workspace has a folder of images that its projects share, <span class="file">shared_images</span>. An image there can be used by several projects, and by several machines of each, each machine on a private copy of its own.</p></div></div>
 </div></section><section id="menu"><div class="inner">
 <div class="hgroup pagewide"><h2 class="title"><span class="title">The menu of an image</span></h2></div>
 <div class="region"><div class="contents pagewide"><div class="terms"><div class="inner"><div class="region"><dl class="terms">
 <dt class="terms"><span class="gui">Details…</span></dt>
-<dd class="terms"><p class="p">The name and the description, which you can change, then what
-        <span class="cmd">qemu-img</span> says of the file, each disk that uses it, and the
-        other projects that use the same file.</p></dd>
+<dd class="terms"><p class="p">The name and the description, which you can change, then what <span class="cmd">qemu-img</span> says of the file, each disk that uses it, and the other projects that use the same file.</p></dd>
 <dt class="terms"><span class="gui">Rename…</span></dt>
 <dd class="terms"><p class="p">A new name, in the disks that use it too.</p></dd>
 <dt class="terms"><span class="gui">Show in Files</span></dt>
 <dd class="terms"><p class="p">The file, in the file manager.</p></dd>
 <dt class="terms"><span class="gui">Remove…</span></dt>
-<dd class="terms"><p class="p">The image leaves the project. The dialog says which disks lose their
-        image, and offers to move the file to the trash only when it is in the
-        shared images and no other project uses it.</p></dd>
+<dd class="terms"><p class="p">The image leaves the project. The dialog says which disks lose their image, and offers to move the file to the trash only when it is in the shared images and no other project uses it.</p></dd>
 <dt class="terms"><span class="gui">Find the File…</span></dt>
-<dd class="terms"><p class="p">For an image whose file is missing, as one left unset at the
-        import of an archive: choose where it is now. The private copies made
-        on it follow it.</p></dd>
+<dd class="terms"><p class="p">For an image whose file is missing, as one left unset at the import of an archive: choose where it is now. The private copies made on it follow it.</p></dd>
 </dl></div></div></div></div></div>
 </div></section><section class="links" role="navigation"><div class="inner">
 <div class="hgroup pagewide"></div>
@@ -82,8 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="title"><h2><span class="title">See Also</span></h2></div>
 <div class="region"><ul>
 <li class="links ">
-<a href="tutorial-import.html" title="Import DTN2hops">Import DTN2hops</a><span class="desc"> — The DTN2hops testbed, from its archive and its disk image, downloaded
-    apart.</span>
+<a href="tutorial-import.html" title="Import DTN2hops">Import DTN2hops</a><span class="desc"> — The DTN2hops testbed, from its archive and its disk image, downloaded apart.</span>
 </li>
 <li class="links ">
 <a href="machines.html" title="Virtual machines">Virtual machines</a><span class="desc"> — The disks, network cards and consoles of a virtual machine.</span>

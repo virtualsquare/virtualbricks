@@ -18,38 +18,21 @@ document.addEventListener('DOMContentLoaded', function() {
 <a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#start" title="Getting started">Getting started</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">Make your first lab</span></h1></div>
 <div class="region">
 <div class="contents pagewide">
-<p class="p">A lab is a project: its bricks, the events that start and stop them,
-  and the disk images of its machines. The smallest useful one is a switch
-  and a virtual machine plugged into it. You need a disk image for the
-  machine, as a <span class="file">.qcow2</span> file with a system installed.</p>
+<p class="p">A lab is a project: its bricks, the events that start and stop them, and the disk images of its machines. The smallest useful one is a switch and a virtual machine plugged into it. You need a disk image for the machine, as a <span class="file">.qcow2</span> file with a system installed.</p>
 <div class="steps"><div class="inner"><div class="region"><ol class="steps">
-<li class="steps"><p class="p">In the <span class="gui">Bricks</span> tab, click <span class="gui">New Brick</span> and
-    choose <span class="gui">Switch</span>. The switch is named <span class="sys">sw1</span>, and its
-    settings show: click <span class="gui">OK</span>.</p></li>
-<li class="steps"><p class="p">Click <span class="gui">New Brick</span> again and choose <span class="gui">Virtual
-    machine</span>. It is named <span class="sys">vm1</span>, and its settings
-    show.</p></li>
-<li class="steps"><p class="p">Under <span class="gui">Disks</span>, click <span class="gui">Add Disk</span>. In the list of
-    images of the new disk, choose <span class="gui">Add an Existing Image…</span>, then
-    the file of your disk image.</p></li>
-<li class="steps"><p class="p">Under <span class="gui">Network</span>, click <span class="gui">Add Card</span>, and choose
-    <span class="sys">sw1</span> in <span class="gui">Plugged into</span>.</p></li>
+<li class="steps"><p class="p">In the <span class="gui">Bricks</span> tab, click <span class="gui">New Brick</span> and choose <span class="gui">Switch</span>. The switch is named <span class="sys">sw1</span>, and its settings show: click <span class="gui">OK</span>.</p></li>
+<li class="steps"><p class="p">Click <span class="gui">New Brick</span> again and choose <span class="gui">Virtual machine</span>. It is named <span class="sys">vm1</span>, and its settings show.</p></li>
+<li class="steps"><p class="p">Under <span class="gui">Disks</span>, click <span class="gui">Add Disk</span>. In the list of images of the new disk, choose <span class="gui">Add an Existing Image…</span>, then the file of your disk image.</p></li>
+<li class="steps"><p class="p">Under <span class="gui">Network</span>, click <span class="gui">Add Card</span>, and choose <span class="sys">sw1</span> in <span class="gui">Plugged into</span>.</p></li>
 <li class="steps"><p class="p">Click <span class="gui">OK</span>.</p></li>
-<li class="steps"><p class="p">Click the start button of <span class="sys">vm1</span>, in its row. The switch
-    starts first, since the machine plugs into it, and both rows say
-    <span class="gui">Running</span>.</p></li>
+<li class="steps"><p class="p">Click the start button of <span class="sys">vm1</span>, in its row. The switch starts first, since the machine plugs into it, and both rows say <span class="gui">Running</span>.</p></li>
 </ol></div></div></div>
 <div class="figure"><div class="inner">
 <a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h2><span class="title">The first lab, running</span></h2></div>
-<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/first-lab.png" class="media media-block" alt="The Bricks tab with two rows, both Running: sw1, a switch of 32
-      ports, and vm1, a virtual machine of 64 MiB whose card eth0 is on sw1."></div></div></div></div>
+<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/first-lab.png" class="media media-block" alt="The Bricks tab with two rows, both Running: sw1, a switch of 32 ports, and vm1, a virtual machine of 64 MiB whose card eth0 is on sw1."></div></div></div></div>
 </div></div>
-<p class="p">The disk is a <span class="gui">Private copy</span> of the image: the machine writes
-  its changes to a file of its own, in the folder of the project, and the
-  image stays as it is. See <span class="link"><a href="images.html" title="Disk images">Disk images</a></span>.</p>
-<p class="p">Virtualbricks saves the project every three minutes and when it quits.
-  To save it now, choose <span class="guiseq"><span class="gui">Projects</span> ▸ <span class="gui">Save</span></span>,
-  or press <span class="keyseq"><span class="key"><kbd>Ctrl</kbd></span>+<span class="key"><kbd>S</kbd></span></span>.</p>
+<p class="p">The disk is a <span class="gui">Private copy</span> of the image: the machine writes its changes to a file of its own, in the folder of the project, and the image stays as it is. See <span class="link"><a href="images.html" title="Disk images">Disk images</a></span>.</p>
+<p class="p">Virtualbricks saves the project every three minutes and when it quits. To save it now, choose <span class="guiseq"><span class="gui">Projects</span> ▸ <span class="gui">Save</span></span>, or press <span class="keyseq"><span class="key"><kbd>Ctrl</kbd></span>+<span class="key"><kbd>S</kbd></span></span>.</p>
 <div class="note note-tip" title="Tip">
 <svg height="24" width="24" version="1.1">
  <g>

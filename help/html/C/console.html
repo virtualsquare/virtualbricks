@@ -18,41 +18,27 @@ document.addEventListener('DOMContentLoaded', function() {
 <a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#beyond" title="Settings and beyond">Settings and beyond</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">The console and scripts</span></h1></div>
 <div class="region">
 <div class="contents pagewide">
-<p class="p">Started from a terminal, Virtualbricks reads the commands of its console
-  there, beside the windows, unless you give <span class="cmd">--no-term</span>. With
-  <span class="cmd">--no-gui</span> it runs without the windows, and the console is the way
-  in: a lab on a computer without a display.</p>
+<p class="p">Started from a terminal, Virtualbricks reads the commands of its console there, beside the windows, unless you give <span class="cmd">--no-term</span>. With <span class="cmd">--no-gui</span> it runs without the windows, and the console is the way in: a lab on a computer without a display.</p>
 <p class="p">A command is a noun, a verb, then its arguments:</p>
 <div class="screen"><pre class="contents"><code>brick new switch
 brick set vm1 memory=1024 cpus=2
 brick start sw1 vm1
 event start lab
 status</code></pre></div>
-<p class="p">The nouns are <span class="cmd">brick</span>, <span class="cmd">event</span>, <span class="cmd">image</span>,
-  <span class="cmd">setting</span> and <span class="cmd">project</span>. <span class="cmd">help</span> lists the
-  commands, and <span class="cmd">help brick set</span> explains one. <span class="key"><kbd>Tab</kbd></span>
-  completes the words, the names and the keys, and the history is kept between
-  runs.</p>
-<p class="p">Every command and option is in
-  <span class="link"><a href="https://www.virtualbricks.it/documentation/command-line.html" title="https://www.virtualbricks.it/documentation/command-line.html">virtualbricks(1)</a></span>.</p>
+<p class="p">The nouns are <span class="cmd">brick</span>, <span class="cmd">event</span>, <span class="cmd">image</span>, <span class="cmd">setting</span> and <span class="cmd">project</span>. <span class="cmd">help</span> lists the commands, and <span class="cmd">help brick set</span> explains one. <span class="key"><kbd>Tab</kbd></span> completes the words, the names and the keys, and the history is kept between runs.</p>
+<p class="p">Every command and option is in <span class="link"><a href="https://www.virtualbricks.it/documentation/command-line.html" title="https://www.virtualbricks.it/documentation/command-line.html">virtualbricks(1)</a></span>.</p>
 </div>
 <section id="scripts"><div class="inner">
 <div class="hgroup pagewide"><h2 class="title"><span class="title">Scripts</span></h2></div>
-<div class="region"><div class="contents pagewide"><p class="p">A file of commands, one a line, runs with <span class="cmd">source <span class="var">file</span></span>
-    in the console, or with <span class="cmd">virtualbricks --run <span class="var">file</span></span> at
-    start: a lab set up the same way every time. The first error stops the
-    file and says which line. An event can run a command of the console too;
-    see <span class="link"><a href="events.html" title="Events">Events</a></span>.</p></div></div>
+<div class="region"><div class="contents pagewide"><p class="p">A file of commands, one a line, runs with <span class="cmd">source <span class="var">file</span></span> in the console, or with <span class="cmd">virtualbricks --run <span class="var">file</span></span> at start: a lab set up the same way every time. The first error stops the file and says which line. An event can run a command of the console too; see <span class="link"><a href="events.html" title="Events">Events</a></span>.</p></div></div>
 </div></section><section id="command"><div class="inner">
 <div class="hgroup pagewide"><h2 class="title"><span class="title">From another terminal</span></h2></div>
 <div class="region"><div class="contents pagewide">
-<p class="p">Started with <span class="cmd">--listen</span>, Virtualbricks takes commands from
-    other terminals and scripts:</p>
+<p class="p">Started with <span class="cmd">--listen</span>, Virtualbricks takes commands from other terminals and scripts:</p>
 <div class="screen"><pre class="contents"><code>virtualbricks --listen
 virtualbricks --command brick start sw1
 virtualbricks --connect --run start-lab.vb</code></pre></div>
-<p class="p">The answer goes to the standard output, and the exit status says if
-    the command was done.</p>
+<p class="p">The answer goes to the standard output, and the exit status says if the command was done.</p>
 </div></div>
 </div></section><section class="links" role="navigation"><div class="inner">
 <div class="hgroup pagewide"></div>

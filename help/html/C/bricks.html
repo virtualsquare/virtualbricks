@@ -18,10 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#lab" title="Your lab">Your lab</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">Bricks</span></h1></div>
 <div class="region">
 <div class="contents pagewide">
-<p class="p">The <span class="gui">Bricks</span> tab has a row for each brick of the project: its
-  icon, grey while it is stopped; its name; its kind and what matters about
-  it, as <span class="sys">Wire · sw1 ↔ sw2</span>; its state; a button that starts or
-  stops it; and the button of its menu.</p>
+<p class="p">The <span class="gui">Bricks</span> tab has a row for each brick of the project: its icon, grey while it is stopped; its name; its kind and what matters about it, as <span class="sys">Wire · sw1 ↔ sw2</span>; its state; a button that starts or stops it; and the button of its menu.</p>
 <div class="terms"><div class="inner">
 <div class="title title-terms"><h2><span class="title">The states</span></h2></div>
 <div class="region"><dl class="terms">
@@ -30,57 +27,34 @@ document.addEventListener('DOMContentLoaded', function() {
 </dt>
 <dd class="terms"><p class="p">Its program runs, or not.</p></dd>
 <dt class="terms"><span class="gui">Starting</span></dt>
-<dd class="terms"><p class="p">Its program runs once the bricks it plugs into run, and a virtual
-      machine has its disks ready. Meanwhile it counts as running: you can't
-      rename it or delete it, nor quit Virtualbricks.</p></dd>
+<dd class="terms"><p class="p">Its program runs once the bricks it plugs into run, and a virtual machine has its disks ready. Meanwhile it counts as running: you can't rename it or delete it, nor quit Virtualbricks.</p></dd>
 <dt class="terms"><span class="gui">Not connected</span></dt>
-<dd class="terms"><p class="p">A plug of the brick goes nowhere, as a wire with a free end: it can't
-      start until you connect it.</p></dd>
+<dd class="terms"><p class="p">A plug of the brick goes nowhere, as a wire with a free end: it can't start until you connect it.</p></dd>
 <dt class="terms"><span class="gui">Not configured</span></dt>
-<dd class="terms"><p class="p">A setting that it needs is missing, as the host of a tunnel client:
-      it can't start until you set it.</p></dd>
+<dd class="terms"><p class="p">A setting that it needs is missing, as the host of a tunnel client: it can't start until you set it.</p></dd>
 </dl></div>
 </div></div>
 </div>
 <section id="row"><div class="inner">
 <div class="hgroup pagewide"><h2 class="title"><span class="title">Above the list</span></h2></div>
-<div class="region"><div class="contents pagewide"><p class="p"><span class="gui">New Brick</span> adds a brick; see <span class="link"><a href="kinds.html" title="The kinds of brick">The kinds of brick</a></span>. The search
-    field finds a brick by name or by kind: press
-    <span class="keyseq"><span class="key"><kbd>Ctrl</kbd></span>+<span class="key"><kbd>F</kbd></span></span>, or start typing in the
-    list. <span class="gui">All</span> and <span class="gui">Running</span> switch between all the bricks
-    and only those that run, which then show the number of their process. <span class="gui">Start
-    All</span> starts every brick that can start, and <span class="gui">Stop All</span> stops
-    them.</p></div></div>
+<div class="region"><div class="contents pagewide"><p class="p"><span class="gui">New Brick</span> adds a brick; see <span class="link"><a href="kinds.html" title="The kinds of brick">The kinds of brick</a></span>. The search field finds a brick by name or by kind: press <span class="keyseq"><span class="key"><kbd>Ctrl</kbd></span>+<span class="key"><kbd>F</kbd></span></span>, or start typing in the list. <span class="gui">All</span> and <span class="gui">Running</span> switch between all the bricks and only those that run, which then show the number of their process. <span class="gui">Start All</span> starts every brick that can start, and <span class="gui">Stop All</span> stops them.</p></div></div>
 </div></section><section id="start"><div class="inner">
 <div class="hgroup pagewide"><h2 class="title"><span class="title">Starting and stopping</span></h2></div>
-<div class="region"><div class="contents pagewide"><p class="p">The button of a row starts the brick, or stops it. Starting a brick
-    starts first the bricks it plugs into. Stopping a virtual machine asks its
-    system to shut down. Stopping a brick that is starting calls its start
-    off: its program doesn't run, and the bricks it plugs into start all the
-    same.</p></div></div>
+<div class="region"><div class="contents pagewide"><p class="p">The button of a row starts the brick, or stops it. Starting a brick starts first the bricks it plugs into. Stopping a virtual machine asks its system to shut down. Stopping a brick that is starting calls its start off: its program doesn't run, and the bricks it plugs into start all the same.</p></div></div>
 </div></section><section id="settings"><div class="inner">
 <div class="hgroup pagewide"><h2 class="title"><span class="title">The settings of a brick</span></h2></div>
 <div class="region"><div class="contents pagewide">
-<p class="p">Double-click a row, or select it and press <span class="key"><kbd>Enter</kbd></span>: the
-    settings of the brick show in place of the list, under a line that names
-    it. <span class="gui">OK</span> applies them, and is greyed while a setting is wrong,
-    with the first problem beside it. <span class="gui">Cancel</span> and <span class="key"><kbd>Esc</kbd></span> go
-    back to the list without a change. While the brick runs, a bar over its
-    settings says which of them change at once.</p>
+<p class="p">Double-click a row, or select it and press <span class="key"><kbd>Enter</kbd></span>: the settings of the brick show in place of the list, under a line that names it. <span class="gui">OK</span> applies them, and is greyed while a setting is wrong, with the first problem beside it. <span class="gui">Cancel</span> and <span class="key"><kbd>Esc</kbd></span> go back to the list without a change. While the brick runs, a bar over its settings says which of them change at once.</p>
 <div class="figure"><div class="inner">
 <a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h3><span class="title">The settings of a switch</span></h3></div>
-<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/switch-settings.png" class="media media-block" alt="The settings of sw1 in place of the list, under a line that names
-        it: Ports, 32, and Hub mode and Fast spanning tree, off; Help, Cancel
-        and OK at the bottom."></div></div></div></div>
+<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/switch-settings.png" class="media media-block" alt="The settings of sw1 in place of the list, under a line that names it: Ports, 32, and Hub mode and Fast spanning tree, off; Help, Cancel and OK at the bottom."></div></div></div></div>
 </div></div>
 </div></div>
 </div></section><section id="menu"><div class="inner">
 <div class="hgroup pagewide"><h2 class="title"><span class="title">The menu of a brick</span></h2></div>
 <div class="region">
 <div class="contents pagewide">
-<p class="p">The button at the end of the row, the right button of the mouse, the
-    <span class="key"><kbd>Menu</kbd></span> key and the picture of the <span class="gui">Topology</span> tab open
-    the same menu:</p>
+<p class="p">The button at the end of the row, the right button of the mouse, the <span class="key"><kbd>Menu</kbd></span> key and the picture of the <span class="gui">Topology</span> tab open the same menu:</p>
 <div class="terms"><div class="inner"><div class="region"><dl class="terms">
 <dt class="terms">
 <span class="gui">Start</span>, <span class="gui">Stop</span>
@@ -91,32 +65,19 @@ document.addEventListener('DOMContentLoaded', function() {
 <dt class="terms">
 <span class="gui">Rename…</span>, <span class="gui">Delete…</span>
 </dt>
-<dd class="terms"><p class="p">Greyed while the brick runs or starts; <span class="key"><kbd>F2</kbd></span> and
-        <span class="key"><kbd>Delete</kbd></span> in the list. Before a brick goes, the dialog says
-        what goes with it: the bricks plugged into it are unplugged, the events
-        no longer start or stop it, and the private copies of a machine go to
-        the trash.</p></dd>
+<dd class="terms"><p class="p">Greyed while the brick runs or starts; <span class="key"><kbd>F2</kbd></span> and <span class="key"><kbd>Delete</kbd></span> in the list. Before a brick goes, the dialog says what goes with it: the bricks plugged into it are unplugged, the events no longer start or stop it, and the private copies of a machine go to the trash.</p></dd>
 <dt class="terms"><span class="gui">Duplicate</span></dt>
-<dd class="terms"><p class="p">A copy of the brick, with its links, named after it with the next
-        free number. The network cards of a machine get new MAC
-        addresses.</p></dd>
+<dd class="terms"><p class="p">A copy of the brick, with its links, named after it with the next free number. The network cards of a machine get new MAC addresses.</p></dd>
 <dt class="terms"><span class="gui">Connect To</span></dt>
 <dd class="terms"><p class="p">The bricks that this one can plug into.</p></dd>
 <dt class="terms">
 <span class="gui">When It Starts</span>, <span class="gui">When It Stops</span>
 </dt>
-<dd class="terms"><p class="p">An event to run when the brick starts or stops; see
-        <span class="link"><a href="events.html" title="Events">Events</a></span>.</p></dd>
+<dd class="terms"><p class="p">An event to run when the brick starts or stops; see <span class="link"><a href="events.html" title="Events">Events</a></span>.</p></dd>
 <dt class="terms"><span class="gui">Resume</span></dt>
-<dd class="terms"><p class="p">For a virtual machine, start it from the state that
-        <span class="gui">Suspend</span> saved in its first disk.</p></dd>
+<dd class="terms"><p class="p">For a virtual machine, start it from the state that <span class="gui">Suspend</span> saved in its first disk.</p></dd>
 <dt class="terms"><span class="gui">Process</span></dt>
-<dd class="terms"><p class="p">For a running brick, what to do with its process:
-        <span class="gui">Open Control Monitor</span>, which opens the console of the brick
-        in a terminal; <span class="gui">Pause</span> and <span class="gui">Continue</span>;
-        <span class="gui">Suspend</span> and <span class="gui">Reset</span> for a virtual machine;
-        <span class="gui">Restart</span>; <span class="gui">Terminate</span> and <span class="gui">Kill</span>, when it
-        doesn't stop.</p></dd>
+<dd class="terms"><p class="p">For a running brick, what to do with its process: <span class="gui">Open Control Monitor</span>, which opens the console of the brick in a terminal; <span class="gui">Pause</span> and <span class="gui">Continue</span>; <span class="gui">Suspend</span> and <span class="gui">Reset</span> for a virtual machine; <span class="gui">Restart</span>; <span class="gui">Terminate</span> and <span class="gui">Kill</span>, when it doesn't stop.</p></dd>
 </dl></div></div></div>
 </div>
 <section class="links" role="navigation"><div class="inner">

@@ -27,7 +27,7 @@ widgets that show and the output of each Virtualbricks, and the folder of
 each a screenshot and a video of its screen (:mod:`recording`); with
 --record-all, every scenario has them. With --alluredir=, the results of
 Allure have them too. The pictures of the user guide go in the folder of
-their scenario, or with --pictures in help/C/figures/, and the end of the
+their scenario, or with --pictures in docs/guide/figures/, and the end of the
 run lists those that differ from the pictures there.
 """
 
@@ -60,7 +60,7 @@ DURATIONS = "e2e/durations"
 WORKER = "PYTEST_XDIST_WORKER"
 WORKERS = "PYTEST_XDIST_WORKER_COUNT"
 # The pictures of the user guide, which the pages show.
-FIGURES = os.path.join(harness.ROOT, "help", "C", "figures")
+FIGURES = os.path.join(harness.ROOT, "docs", "guide", "figures")
 # Of a scenario, among the user properties of its report: a picture it
 # took, (name, how, path), how "taken" in FIGURES with --pictures, else
 # "differs" from the picture there or "new", in the folder of the scenario.
@@ -81,7 +81,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--pictures",
         action="store_true",
-        help="the pictures of the user guide in help/C/figures/, those that "
+        help="the pictures of the user guide in docs/guide/figures/, those that "
         "changed",
     )
 
@@ -154,7 +154,7 @@ def other_virtualbricks(virtualbricks, tmp_path, request):
 def keep_picture(virtualbricks, request):
     """
     keep_picture(name, picture): the picture name of the user guide, a
-    surface of cairo. With --pictures, in help/C/figures/, where the pages
+    surface of cairo. With --pictures, in docs/guide/figures/, where the pages
     show it, if it changed; else in the folder of the scenario, as
     name.png. Those that changed, or differ from the pictures there, are in
     the report of the scenario, which the end of the run lists.

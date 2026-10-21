@@ -82,7 +82,7 @@ Twisted 24.3 and QEMU 8.2.
   October 2026.
 - **Where:** `virtualbricks/programs.py`, `_RISCV`;
   `virtualbricks/tests/data/programs/record.py` and `start.py`, `OPTIONAL`;
-  `help/C/programs.page`, "on Ubuntu 24.04".
+  `docs/guide/programs.md`, "on Ubuntu 24.04".
 - **Removing it:** `qemu-system-riscv` alone in `PACKAGES`, and among the
   packages of the two scripts. Then no program is in two packages: the
   tuples of `PACKAGES`, the "or" of `package_of()` and

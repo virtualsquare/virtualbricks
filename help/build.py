@@ -19,10 +19,10 @@
 """
 Check the pages of the user guide and build their HTML with the Yelp tools.
 
-    help/C/<page>.page      source, Mallard, shown by Yelp
+    docs/built/mallard/     the pages, in Mallard, that docs/build.py writes
+                            from their Markdown, shown by Yelp; their pictures
+                            in figures/
     help/html.xsl           what the HTML adds to the stylesheets of yelp-xsl
-    help/C/figures/         the pictures of the pages, which the end-to-end
-                            tests take: pytest --pictures -m pictures
     help/html/C/            the HTML of yelp-build, committed like the man
                             pages, for a desktop without Yelp and the website;
                             in figures/, a copy of the pictures it shows
@@ -49,7 +49,7 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-PAGES = os.path.join(HERE, "C")
+PAGES = os.path.join(ROOT, "docs", "built", "mallard")
 CUSTOM = os.path.join(HERE, "html.xsl")
 HTML = os.path.join(HERE, "html", "C")
 

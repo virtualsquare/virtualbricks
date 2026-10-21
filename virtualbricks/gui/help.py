@@ -40,7 +40,7 @@ that works:
    that a virtualenv has its own;
 3. else the copy of the website.
 
-A page is named as its file in ``help/C/``, without ``.page``. A failure to
+A page is named as its source in ``docs/guide/``, without ``.md``. A failure to
 open is logged. The windows, the tabs and the panels of the settings name
 their page in ``help_page``, which F1 opens: see
 :class:`virtualbricks.gui.dialogs.base.Window`.
@@ -66,11 +66,11 @@ cannot_open_help = "Cannot open the help, {uri}: {error}"
 ID = "virtualbricks"
 # The pages, under a data folder, where Yelp looks for them.
 PAGES = join("help", "C", ID)
-# The guide in the sources: its pages, and their HTML, which help/build.py
-# writes.
-SOURCES = join(dirname(dirname(dirname(abspath(__file__)))), "help")
-SOURCE_PAGES = join(SOURCES, "C")
-SOURCE_HTML = join(SOURCES, "html", "C")
+# The guide in the sources: its pages, which docs/build.py writes, and their
+# HTML, which help/build.py writes.
+SOURCES = dirname(dirname(dirname(abspath(__file__))))
+SOURCE_PAGES = join(SOURCES, "docs", "built", "mallard")
+SOURCE_HTML = join(SOURCES, "help", "html", "C")
 # The pages and the HTML once installed, under a prefix.
 INSTALLED_PAGES = join("share", PAGES)
 INSTALLED_HTML = join("share", "virtualbricks", "help", "C")

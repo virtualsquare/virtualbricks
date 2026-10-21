@@ -18,49 +18,31 @@ document.addEventListener('DOMContentLoaded', function() {
 <a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#tutorials" title="Tutorials">Tutorials</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">Import DTN2hops</span></h1></div>
 <div class="region">
 <div class="contents pagewide">
-<p class="p">DTN2hops is a testbed of four virtual machines, <span class="sys">node1</span> to
-  <span class="sys">node4</span>, five switches, a switch wrapper and three channel
-  emulators. It comes in two files, which you have downloaded into your
-  <span class="file">Downloads</span> folder:</p>
+<p class="p">DTN2hops is a testbed of four virtual machines, <span class="sys">node1</span> to <span class="sys">node4</span>, five switches, a switch wrapper and three channel emulators. It comes in two files, which you have downloaded into your <span class="file">Downloads</span> folder:</p>
 <div class="list"><div class="inner"><div class="region"><ul class="list">
-<li class="list"><p class="p"><span class="file">DTN2hops_26_Feb_2026.vbp</span>, the archive of the testbed:
-    its bricks, and the private copy of the disk of each machine, with what
-    was done in it;</p></li>
-<li class="list"><p class="p"><span class="file">debian13.tar.gz</span>, which holds the disk image that
-    the private copies are made on, <span class="file">debian13.qcow2</span>. The archive
-    doesn't hold it.</p></li>
+<li class="list"><p class="p"><span class="file">DTN2hops_26_Feb_2026.vbp</span>, the archive of the testbed: its bricks, and the private copy of the disk of each machine, with what was done in it;</p></li>
+<li class="list"><p class="p"><span class="file">debian13.tar.gz</span>, which holds the disk image that the private copies are made on, <span class="file">debian13.qcow2</span>. The archive doesn't hold it.</p></li>
 </ul></div></div></div>
-<p class="p">Before you start, extract <span class="file">debian13.qcow2</span> into
-  <span class="file">Downloads</span>, where it takes 6.8 GB. In a terminal:</p>
+<p class="p">Before you start, extract <span class="file">debian13.qcow2</span> into <span class="file">Downloads</span>, where it takes 6.8 GB. In a terminal:</p>
 <div class="screen"><pre class="contents"><code>cd ~/Downloads
 tar -xzf debian13.tar.gz</code></pre></div>
-<p class="p">You import the testbed into Virtualbricks. The testbed was made with
-  Virtualbricks 2.1, and Virtualbricks converts it while it reads the
-  archive.</p>
+<p class="p">You import the testbed into Virtualbricks. The testbed was made with Virtualbricks 2.1, and Virtualbricks converts it while it reads the archive.</p>
 </div>
 <section id="open"><div class="inner">
 <div class="hgroup pagewide"><h2 class="title"><span class="title">Open the archive</span></h2></div>
 <div class="region"><div class="contents pagewide"><div class="steps"><div class="inner"><div class="region"><ol class="steps">
 <li class="steps">
-<p class="p">Choose <span class="guiseq"><span class="gui">Projects</span> ▸ <span class="gui">Import…</span></span>. A
-        window opens, and asks for the archive.</p>
+<p class="p">Choose <span class="guiseq"><span class="gui">Projects</span> ▸ <span class="gui">Import…</span></span>. A window opens, and asks for the archive.</p>
 <div class="figure"><div class="inner">
 <a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h3><span class="title">The menu Projects</span></h3></div>
-<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import-menu.png" class="media media-block" alt="The main window, with the menu Projects open: Projects…, New
-            Project…, Open Recent, Save, Duplicate…, Rename…, Import… and
-            Export…."></div></div></div></div>
+<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import-menu.png" class="media media-block" alt="The main window, with the menu Projects open: Projects…, New Project…, Open Recent, Save, Duplicate…, Rename…, Import… and Export…."></div></div></div></div>
 </div></div>
 </li>
 <li class="steps">
-<p class="p">In it, click <span class="gui">Home</span>, double-click <span class="file">Downloads</span>,
-        choose <span class="file">DTN2hops_26_Feb_2026.vbp</span>, and click
-        <span class="gui">Open</span>. The Import Project window opens, reads the archive,
-        then shows what it holds.</p>
+<p class="p">In it, click <span class="gui">Home</span>, double-click <span class="file">Downloads</span>, choose <span class="file">DTN2hops_26_Feb_2026.vbp</span>, and click <span class="gui">Open</span>. The Import Project window opens, reads the archive, then shows what it holds.</p>
 <div class="figure"><div class="inner">
 <a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h3><span class="title">The archive, in Downloads</span></h3></div>
-<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import-archive.png" class="media media-block" alt="The window Choose an archive, in the folder Downloads of the
-            home, with DTN2hops_26_Feb_2026.vbp chosen, and the button Open
-            at the bottom right."></div></div></div></div>
+<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import-archive.png" class="media media-block" alt="The window Choose an archive, in the folder Downloads of the home, with DTN2hops_26_Feb_2026.vbp chosen, and the button Open at the bottom right."></div></div></div></div>
 </div></div>
 </li>
 </ol></div></div></div></div></div>
@@ -69,51 +51,27 @@ tar -xzf debian13.tar.gz</code></pre></div>
 <div class="region"><div class="contents pagewide">
 <div class="figure"><div class="inner">
 <a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h3><span class="title">The Import Project window, with the testbed</span></h3></div>
-<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import.png" class="media media-block" alt="The Import Project window for
-        ~/Downloads/DTN2hops_26_Feb_2026.vbp: the name DTN2hops_26_Feb_2026;
-        3 × Netemu, 5 × Switch, 1 × Switch wrapper and 4 × Virtual machine;
-        under Images, The archive doesn't have this image; the image
-        debian13, used by node1.hda to node4.hda, with Copy grey and Leave
-        unset chosen; Open the project after the import, on."></div></div></div></div>
+<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import.png" class="media media-block" alt="The Import Project window for ~/Downloads/DTN2hops_26_Feb_2026.vbp: the name DTN2hops_26_Feb_2026; 3 × Netemu, 5 × Switch, 1 × Switch wrapper and 4 × Virtual machine; under Images, The archive doesn't have this image; the image debian13, used by node1.hda to node4.hda, with Copy grey and Leave unset chosen; Open the project after the import, on."></div></div></div></div>
 </div></div>
 <div class="terms"><div class="inner"><div class="region"><dl class="terms">
 <dt class="terms"><span class="gui">Name</span></dt>
-<dd class="terms"><p class="p"><span class="sys">DTN2hops_26_Feb_2026</span>, the name of the file. If another
-        project already has this name, the window suggests
-        <span class="sys">DTN2hops_26_Feb_2026-2</span>: an import never replaces an existing
-        project. You can change it; under the input box, the window says if and
-        why a name can't be a project's: it's empty, is too long, etc.</p></dd>
+<dd class="terms"><p class="p"><span class="sys">DTN2hops_26_Feb_2026</span>, the name of the file. If another project already has this name, the window suggests <span class="sys">DTN2hops_26_Feb_2026-2</span>: an import never replaces an existing project. You can change it; under the input box, the window says if and why a name can't be a project's: it's empty, is too long, etc.</p></dd>
 <dt class="terms">The bricks</dt>
-<dd class="terms"><p class="p">Below the name, how many bricks of each kind the project has, by
-        the names of the <span class="gui">Bricks</span> tab: <span class="gui">Netemu</span> are the
-        channel emulators.</p></dd>
+<dd class="terms"><p class="p">Below the name, how many bricks of each kind the project has, by the names of the <span class="gui">Bricks</span> tab: <span class="gui">Netemu</span> are the channel emulators.</p></dd>
 <dt class="terms"><span class="gui">Images</span></dt>
 <dd class="terms">
-<p class="p"><span class="gui">The archive doesn't have this image.</span>, once the window has
-        looked through the archive. Then a row for <span class="sys">debian13</span>, used
-        by the <span class="sys">hda</span> disk of each of the four machines, with three
-        choices:</p>
+<p class="p"><span class="gui">The archive doesn't have this image.</span>, once the window has looked through the archive. Then a row for <span class="sys">debian13</span>, used by the <span class="sys">hda</span> disk of each of the four machines, with three choices:</p>
 <div class="list"><div class="inner"><div class="region"><ul class="list">
-<li class="list"><p class="p"><span class="gui">Copy</span>, from the archive to the shared images of
-          your workspace. It's grey: the archive doesn't hold the image, and
-          there is nothing to copy.</p></li>
+<li class="list"><p class="p"><span class="gui">Copy</span>, from the archive to the shared images of your workspace. It's grey: the archive doesn't hold the image, and there is nothing to copy.</p></li>
 <li class="list"><p class="p"><span class="gui">Use a file…</span> of this computer.</p></li>
-<li class="list"><p class="p"><span class="gui">Leave unset</span>: the image stays without its file,
-          until <span class="gui">Find the File…</span>, in the <span class="gui">Images</span> tab, gives
-          it one.</p></li>
+<li class="list"><p class="p"><span class="gui">Leave unset</span>: the image stays without its file, until <span class="gui">Find the File…</span>, in the <span class="gui">Images</span> tab, gives it one.</p></li>
 </ul></div></div></div>
-<p class="p"><span class="gui">Leave unset</span> is chosen: the window looked for the image
-        where the project had it,
-        <span class="file">/home/carlo/VB_images/debian13.qcow2</span> on the computer the
-        testbed was made on, and in your shared images, as
-        <span class="file">debian13.qcow2</span> or <span class="file">debian13</span>, and found it in
-        neither. It doesn't look in <span class="file">Downloads</span>.</p>
+<p class="p"><span class="gui">Leave unset</span> is chosen: the window looked for the image where the project had it, <span class="file">/home/carlo/VB_images/debian13.qcow2</span> on the computer the testbed was made on, and in your shared images, as <span class="file">debian13.qcow2</span> or <span class="file">debian13</span>, and found it in neither. It doesn't look in <span class="file">Downloads</span>.</p>
 </dd>
 <dt class="terms"><span class="gui">Open the project after the import</span></dt>
 <dd class="terms"><p class="p">On: once imported, the testbed opens in the main window.</p></dd>
 <dt class="terms"><span class="gui">Import</span></dt>
-<dd class="terms"><p class="p">Grey until the window has read the archive, and whenever something
-        stops the import; the window says what.</p></dd>
+<dd class="terms"><p class="p">Grey until the window has read the archive, and whenever something stops the import; the window says what.</p></dd>
 </dl></div></div></div>
 </div></div>
 </div></section><section id="image"><div class="inner">
@@ -122,42 +80,26 @@ tar -xzf debian13.tar.gz</code></pre></div>
 <div class="note note-warning" title="Warning">
 <svg height="24" width="24" version="1.1">
  <path class="yelp-svg-fill" d="m11.92 3.3047a1.3872 1.3872 0 0 0 -1.129 0.6933l-8.6055 14.922a1.3872 1.3872 0 0 0 1.2012 2.08l17.226-0.008a1.3872 1.3872 0 0 0 1.201 -2.08l-8.619-14.916a1.3872 1.3872 0 0 0 -1.136 -0.6913 1.3872 1.3872 0 0 0 -0.139 0zm0.08 4.6953a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1 1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1zm0 9a1 1 0 0 1 1 1 1 1 0 0 1 -1 1 1 1 0 0 1 -1 -1 1 1 0 0 1 1 -1z"></path>
-</svg><div class="inner"><div class="region"><div class="contents"><p class="p">For this tutorial, choose <span class="gui">Use a file…</span>, then
-      <span class="file">debian13.qcow2</span>: not <span class="gui">Copy</span>, nor <span class="gui">Leave
-      unset</span>.</p></div></div></div>
+</svg><div class="inner"><div class="region"><div class="contents"><p class="p">For this tutorial, choose <span class="gui">Use a file…</span>, then <span class="file">debian13.qcow2</span>: not <span class="gui">Copy</span>, nor <span class="gui">Leave unset</span>.</p></div></div></div>
 </div>
 <div class="steps"><div class="inner"><div class="region"><ol class="steps"><li class="steps">
-<p class="p">In the row of <span class="sys">debian13</span>, click <span class="gui">Use a file…</span>. In
-        the window that opens, click <span class="gui">Home</span>, double-click
-        <span class="file">Downloads</span>, choose <span class="file">debian13.qcow2</span>, the file
-        you extracted from <span class="file">debian13.tar.gz</span>, and click
-        <span class="gui">Open</span>.</p>
+<p class="p">In the row of <span class="sys">debian13</span>, click <span class="gui">Use a file…</span>. In the window that opens, click <span class="gui">Home</span>, double-click <span class="file">Downloads</span>, choose <span class="file">debian13.qcow2</span>, the file you extracted from <span class="file">debian13.tar.gz</span>, and click <span class="gui">Open</span>.</p>
 <div class="figure"><div class="inner">
 <a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h3><span class="title">The image, in Downloads</span></h3></div>
-<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import-image.png" class="media media-block" alt="The window The file of debian13, in the folder Downloads of the
-            home, with DTN2hops_26_Feb_2026.vbp and debian13.qcow2, which is
-            chosen, and the button Open at the bottom right."></div></div></div></div>
+<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import-image.png" class="media media-block" alt="The window The file of debian13, in the folder Downloads of the home, with DTN2hops_26_Feb_2026.vbp and debian13.qcow2, which is chosen, and the button Open at the bottom right."></div></div></div></div>
 </div></div>
 </li></ol></div></div></div>
 <div class="figure"><div class="inner">
 <a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h3><span class="title">The image, chosen</span></h3></div>
-<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import-ready.png" class="media media-block" alt="The Import Project window, with Use a file… chosen for debian13,
-        which uses ~/Downloads/debian13.qcow2, and the button Import at the
-        top right."></div></div></div></div>
+<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import-ready.png" class="media media-block" alt="The Import Project window, with Use a file… chosen for debian13, which uses ~/Downloads/debian13.qcow2, and the button Import at the top right."></div></div></div></div>
 </div></div>
-<p class="p">The row now says <span class="gui">Uses ~/Downloads/debian13.qcow2</span>. The import
-    points the private copies of the four machines at it, so that they keep
-    what was done in them. It must be the image the testbed was made on: a
-    private copy holds only the changes over its image. If you use a different
-    one the machine finds a damaged disk.</p>
+<p class="p">The row now says <span class="gui">Uses ~/Downloads/debian13.qcow2</span>. The import points the private copies of the four machines at it, so that they keep what was done in them. It must be the image the testbed was made on: a private copy holds only the changes over its image. If you use a different one the machine finds a damaged disk.</p>
 <p class="p">The other two choices don't do for this testbed:</p>
 <div class="terms"><div class="inner"><div class="region"><dl class="terms">
 <dt class="terms"><span class="gui">Copy</span></dt>
 <dd class="terms"><p class="p">Grey: the archive doesn't hold the image.</p></dd>
 <dt class="terms"><span class="gui">Leave unset</span></dt>
-<dd class="terms"><p class="p">The virtual machines can't start until
-        <span class="link"><a href="images.html#menu" title="The menu of an image"><span class="gui">Find the File…</span></a></span>, in the
-        <span class="gui">Images</span> tab, gives <span class="sys">debian13</span> its file.</p></dd>
+<dd class="terms"><p class="p">The virtual machines can't start until <span class="link"><a href="images.html#menu" title="The menu of an image"><span class="gui">Find the File…</span></a></span>, in the <span class="gui">Images</span> tab, gives <span class="sys">debian13</span> its file.</p></dd>
 </dl></div></div></div>
 <div class="note note-tip" title="Tip">
 <svg height="24" width="24" version="1.1">
@@ -165,47 +107,26 @@ tar -xzf debian13.tar.gz</code></pre></div>
   <path class="yelp-svg-fill" style="color-rendering:auto;text-decoration-color:#000000;color:#000000;isolation:auto;mix-blend-mode:normal;shape-rendering:auto;solid-color:#000000;block-progression:tb;text-decoration-line:none;text-decoration-style:solid;image-rendering:auto;white-space:normal;text-indent:0;text-transform:none" d="m12 2c-3.8541 0-7 3.1459-7 7 0 1.823 0.4945 3.139 1.1641 4.133 0.6695 0.994 1.4328 1.671 2.039 2.471 0.0882 0.116 0.1749 0.656 0.2071 1.32 0.016 0.332 0.0133 0.68 0.1894 1.119 0.0881 0.22 0.2439 0.478 0.5059 0.672 0.2619 0.194 0.6028 0.285 0.8945 0.285h4c0.583 0 1.204-0.478 1.402-0.908 0.199-0.43 0.217-0.793 0.244-1.137 0.056-0.688 0.138-1.319 0.211-1.441 0.549-0.916 1.304-2.009 1.94-3.114 0.636-1.104 1.203-2.199 1.203-3.4 0-3.8541-3.146-7-7-7zm0 2c2.773 0 5 2.2267 5 5 0 0.456-0.359 1.401-0.936 2.402-0.111 0.195-0.246 0.399-0.369 0.598h-7.8825c-0.4871-0.728-0.8125-1.519-0.8125-3 0-2.7733 2.2267-5 5-5z"></path>
   <path class="yelp-svg-fill" d="m9 20a0.5 0.5 0 0 0 -0.5 0.5 0.5 0.5 0 0 0 0.5 0.5h6a0.5 0.5 0 0 0 0.5 -0.5 0.5 0.5 0 0 0 -0.5 -0.5h-6zm0 2a0.5 0.5 0 0 0 -0.5 0.5 0.5 0.5 0 0 0 0.5 0.5h6a0.5 0.5 0 0 0 0.5 -0.5 0.5 0.5 0 0 0 -0.5 -0.5h-6z"></path>
  </g>
-</svg><div class="inner"><div class="region"><div class="contents"><p class="p">The project uses <span class="file">debian13.qcow2</span> where it is: keep it in
-      <span class="file">Downloads</span>. To keep it with your other images instead, move
-      it into the <span class="link"><a href="images.html#shared" title="The shared images">shared images</a></span> of your
-      workspace before the import: there, the window finds it, and chooses
-      <span class="gui">Use a file…</span> with it by itself.</p></div></div></div>
+</svg><div class="inner"><div class="region"><div class="contents"><p class="p">The project uses <span class="file">debian13.qcow2</span> where it is: keep it in <span class="file">Downloads</span>. To keep it with your other images instead, move it into the <span class="link"><a href="images.html#shared" title="The shared images">shared images</a></span> of your workspace before the import: there, the window finds it, and chooses <span class="gui">Use a file…</span> with it by itself.</p></div></div></div>
 </div>
 </div></div>
 </div></section><section id="import"><div class="inner">
 <div class="hgroup pagewide"><h2 class="title"><span class="title">Import</span></h2></div>
 <div class="region"><div class="contents pagewide">
 <div class="steps"><div class="inner"><div class="region"><ol class="steps"><li class="steps">
-<p class="p">Click <span class="gui">Import</span>. The window shows the progress, and
-        <span class="gui">Cancel</span> becomes <span class="gui">Stop</span>: an import stopped removes
-        what it wrote. You can close the window, and let the import
-        finish.</p>
+<p class="p">Click <span class="gui">Import</span>. The window shows the progress, and <span class="gui">Cancel</span> becomes <span class="gui">Stop</span>: an import stopped removes what it wrote. You can close the window, and let the import finish.</p>
 <div class="figure"><div class="inner">
 <a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h3><span class="title">The import, under way</span></h3></div>
-<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import-progress.png" class="media media-block" alt="The Import Project window during the import: Extracting the
-            archive, with the progress bar a third full, 1.0 MB of 3.2 MB, and
-            under it You can close this window: the Logs window says when
-            the import is done. The button Stop at the top left."></div></div></div></div>
+<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import-progress.png" class="media media-block" alt="The Import Project window during the import: Extracting the archive, with the progress bar a third full, 1.0 MB of 3.2 MB, and under it You can close this window: the Logs window says when the import is done. The button Stop at the top left."></div></div></div></div>
 </div></div>
 </li></ol></div></div></div>
-<p class="p">Once imported, the project opens: the main window shows
-    <span class="sys">DTN2hops_26_Feb_2026</span>, with its thirteen bricks, all
-    stopped.</p>
+<p class="p">Once imported, the project opens: the main window shows <span class="sys">DTN2hops_26_Feb_2026</span>, with its thirteen bricks, all stopped.</p>
 <div class="figure"><div class="inner">
 <a href="#" class="figure-zoom" data-zoom-in-title="View images at normal size" data-zoom-out-title="Scale images down"><svg width="10" height="10" class="figure-zoom-in"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><rect x="0" y="5" width="5" height="5" class="yelp-svg-fill"></rect></svg><svg width="10" height="10" class="figure-zoom-out"><rect x="0.5" y="0.5" width="9" height="9" class="yelp-svg-stroke" stroke-width="1" fill="none"></rect><polygon points="0,0 10,0 10,10 5,10 5,5 10,5 0,5" class="yelp-svg-fill"></polygon></svg></a><div class="title title-figure"><h3><span class="title">The project, imported</span></h3></div>
-<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import-done.png" class="media media-block" alt="The main window of the project DTN2hops_26_Feb_2026, on its tab
-        Bricks: 0 of 13 running; sw1 to sw4, switchwrapper, sw5,
-        channel_emulator, sat_channel_emulator, to_host_ch_emulator, then
-        node1, all stopped, with the start button of switchwrapper
-        grey."></div></div></div></div>
+<div class="region"><div class="contents"><div class="media media-image"><div class="inner"><img src="figures/import-done.png" class="media media-block" alt="The main window of the project DTN2hops_26_Feb_2026, on its tab Bricks: 0 of 13 running; sw1 to sw4, switchwrapper, sw5, channel_emulator, sat_channel_emulator, to_host_ch_emulator, then node1, all stopped, with the start button of switchwrapper grey."></div></div></div></div>
 </div></div>
-<p class="p">If a brick of the previous project was running before the import, the
-    project is imported but doesn't open: stop the bricks, then open it from the
-    Projects window.</p>
-<p class="p">The start button of <span class="sys">switchwrapper</span> is grey: a switch wrapper
-    is a switch that another program runs, at
-    <span class="file">/var/run/switch/sck</span>, and it runs while that program's switch
-    is there. See <span class="link"><a href="kinds.html" title="The kinds of brick">The kinds of brick</a></span>.</p>
+<p class="p">If a brick of the previous project was running before the import, the project is imported but doesn't open: stop the bricks, then open it from the Projects window.</p>
+<p class="p">The start button of <span class="sys">switchwrapper</span> is grey: a switch wrapper is a switch that another program runs, at <span class="file">/var/run/switch/sck</span>, and it runs while that program's switch is there. See <span class="link"><a href="kinds.html" title="The kinds of brick">The kinds of brick</a></span>.</p>
 </div></div>
 </div></section><section class="links" role="navigation"><div class="inner">
 <div class="hgroup pagewide"></div>

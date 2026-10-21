@@ -5041,13 +5041,14 @@ def yelp_of_the_tests(virtualbricks):
 def pages_for_yelp(virtualbricks):
     """
     Before Virtualbricks starts: help/C/virtualbricks of the data folder of
-    the user is the folder of the pages of the sources.
+    the user is the folder of the pages of the sources, those that
+    docs/build.py writes.
     """
 
     folder = os.path.join(virtualbricks.home, ".local", "share", "help", "C")
     os.makedirs(folder, exist_ok=True)
     os.symlink(
-        os.path.join(harness.ROOT, "help", "C"),
+        os.path.join(harness.ROOT, "docs", "built", "mallard"),
         os.path.join(folder, "virtualbricks"),
     )
 
@@ -5071,7 +5072,9 @@ def yelp_opens_the_file(virtualbricks, page):
     sources, as Yelp, and only it: its path, as the desktop gives a file.
     """
 
-    path = os.path.join(harness.ROOT, "help", "C", f"{page}.page")
+    path = os.path.join(
+        harness.ROOT, "docs", "built", "mallard", f"{page}.page"
+    )
     links_opened(virtualbricks, [f"yelp {path}"])
 
 

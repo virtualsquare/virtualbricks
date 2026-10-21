@@ -1,6 +1,6 @@
 @pictures
 Feature: The pictures of the user guide
-  Each scenario takes a picture of help/C/figures/, which a page of the
+  Each scenario takes a picture of docs/guide/figures/, which a page of the
   guide shows: pytest --pictures -m pictures takes them there, and any
   other run lists those that differ. They run in the default workspace, so
   that the title of the main window names the project alone.
