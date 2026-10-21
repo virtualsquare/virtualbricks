@@ -471,7 +471,7 @@ scenario from a use case in words.
 ### Code style
 
 The code is formatted with `black`, at 79 columns, and checked with `ruff`.
-`pre-commit` runs them, and four more hooks, on every commit:
+`pre-commit` runs them, and three more hooks, on every commit:
 
 ```sh
 pre-commit run --all-files     # run them without committing
@@ -480,21 +480,16 @@ pre-commit run --all-files     # run them without committing
 - **black** and **ruff**: format and check what you changed.
 - **docs**: `python docs/build.py` builds the documentation from its
   Markdown sources with pandoc: the man pages of `docs/man/` into
-  `docs/built/man/`, and the pages of the user guide, `docs/guide/`, into
-  Mallard pages for Yelp in `docs/built/mallard/`, with a copy of their
-  pictures and a page for each man page, in the Reference of the guide; what
-  it builds is committed. With `--check` it only tells whether
-  an output is out of date. [docs/README.md](docs/README.md) tells how a page
-  is written. The end-to-end tests take the pictures, `docs/guide/figures/`:
-  `pytest --pictures -m pictures`, see
-  [e2e/README.md](e2e/README.md#the-pictures-of-the-user-guide).
-- **help**: `python3 help/build.py` checks the Mallard pages of the guide,
-  `docs/built/mallard/`, with `yelp-check`, and builds their HTML into
-  `help/html/C/` with `yelp-build`, with a copy of their pictures and the
-  CSS of `help/html.xsl`, which shrinks the pictures to the window; the HTML
-  is committed. It runs when a page, a picture or `help/html.xsl` changes,
-  and needs the Yelp tools (`yelp-tools` in Debian). With `--check` it only
-  tells whether the HTML is out of date.
+  `docs/built/man/`; the pages of the user guide, `docs/guide/`, and a page
+  for each man page, the Reference of the guide, into Mallard pages for Yelp
+  in `docs/built/mallard/` and into HTML in `docs/built/html/`, with a copy
+  of their pictures. What it builds is committed. With `--check` it only
+  tells whether an output is out of date. [docs/README.md](docs/README.md)
+  tells how a page is written. The end-to-end tests take the pictures,
+  `docs/guide/figures/`: `pytest --pictures -m pictures`, see
+  [e2e/README.md](e2e/README.md#the-pictures-of-the-user-guide). The tests
+  check the Mallard pages with `yelp-check`, of the Yelp tools (`yelp-tools`
+  in Debian), where it is installed.
 - **translations**: `./l10n.sh` extracts the messages of the sources into
   `locale/virtualbricks/virtualbricks.pot`, merges them into the `.po` file of
   each language and compiles the `.mo` catalogs, which are committed too. It
@@ -594,15 +589,14 @@ To add a language, see the top of `l10n.sh`.
 - `virtualbricks/tests/`: the tests, in the layout of the package.
 - `docs/`: the documentation, written in Markdown: the user guide in
   `guide/`, with its pictures in `guide/figures/`, the manual pages in `man/`,
-  which are the Reference of the guide too;
+  which are the Reference of the guide too; the template and the stylesheet
+  of the HTML in `templates/`;
   `build.py`, which builds them into `built/`, and `README.md`, which tells
   how a page is written. The web pages of the manual pages,
   `command-line.html`, `config-files.html`, `archive-protocol.html`,
   `control-protocols.html` and `vbp-format.html`; in `redesign/`, the designs
   of the parts that were rewritten, numbered in the order of the work, from
   the conversion of the Glade files to the console.
-- `help/`: the HTML of the user guide, in `html/C/`, and `build.py`, which
-  checks the Mallard pages and builds their HTML.
 - `tools/`: the scripts of the development, as `typecoverage.py` and
   `targetsuite.py`.
 - `locale/`: the translations; `share/`: the desktop file and the icon.

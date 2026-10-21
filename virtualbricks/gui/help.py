@@ -67,11 +67,11 @@ cannot_open_help = "Cannot open the help, {uri}: {error}"
 ID = "virtualbricks"
 # The pages, under a data folder, where Yelp looks for them.
 PAGES = join("help", "C", ID)
-# The guide in the sources: its pages, which docs/build.py writes, and their
-# HTML, which help/build.py writes.
-SOURCES = dirname(dirname(dirname(abspath(__file__))))
-SOURCE_PAGES = join(SOURCES, "docs", "built", "mallard")
-SOURCE_HTML = join(SOURCES, "help", "html", "C")
+# The guide in the sources: its pages and their HTML, which docs/build.py
+# writes.
+SOURCES = join(dirname(dirname(dirname(abspath(__file__)))), "docs", "built")
+SOURCE_PAGES = join(SOURCES, "mallard")
+SOURCE_HTML = join(SOURCES, "html")
 # The pages and the HTML once installed, under a prefix.
 INSTALLED_PAGES = join("share", PAGES)
 INSTALLED_HTML = join("share", "virtualbricks", "help", "C")

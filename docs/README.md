@@ -5,9 +5,10 @@ The documentation of Virtualbricks is written in pandoc's Markdown, and
 
 | Source | Built into |
 | --- | --- |
-| `guide/<page>.md`, the user guide | `built/mallard/<page>.page`, for Yelp |
-| `guide/figures/`, its pictures | `built/mallard/figures/`, a copy |
-| `man/<page>.<section>.md`, the manual pages | `built/man/<page>.<section>`, and a page of the guide, `built/mallard/<id>.page`, in its Reference |
+| `guide/<page>.md`, the user guide | `built/mallard/<page>.page`, for Yelp, and `built/html/<page>.html` |
+| `guide/figures/`, its pictures | a copy in `built/mallard/figures/` and in `built/html/figures/` |
+| `man/<page>.<section>.md`, the manual pages | `built/man/<page>.<section>`, and a page of the guide, `<id>.page` and `<id>.html`, in its Reference |
+| `templates/page.html`, `templates/style.css` | the page and the style of the HTML |
 
 ```sh
 python docs/build.py            # build what changed
@@ -17,8 +18,14 @@ python docs/build.py --check    # only tell what is out of date
 What is in `built/` is committed, so that installing Virtualbricks needs no
 pandoc, and only the script writes it: change the sources, never the
 outputs. The `docs` hook of pre-commit runs the script on every commit that
-changes a source; then `help/build.py`, the `help` hook, builds the HTML of
-the guide from its Mallard pages, with the Yelp tools.
+changes a source.
+
+The HTML is for a computer without Yelp, where Virtualbricks opens it in the
+browser, and for the website. It has what Yelp adds to a page: the way back
+to the sections of the index that list it, See also, with the pages it names
+and those that name it, and the lists of the index, each page with the line
+of its `desc`. Its links stay in the tree, so that it works without the
+network: a link to a page names its file, `command-line.html`.
 
 The design pages of `redesign/` are written in HTML, by hand, and stay out of
 the build.

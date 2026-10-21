@@ -18,14 +18,7 @@ repos:
         # the pandoc of each machine
         additional_dependencies: [pypandoc-binary==1.17]
         pass_filenames: false
-        files: ^(docs/(build\.py|man/.*\.md|guide/.*|built/.*)|virtualbricks/__init__\.py)$
-      - id: help
-        name: update the help
-        # yelp-check and yelp-build, of the yelp-tools package
-        entry: python3 help/build.py
-        language: system
-        pass_filenames: false
-        files: ^(docs/built/mallard/.*|help/(build\.py|html\.xsl))$
+        files: ^(docs/(build\.py|man/.*\.md|guide/.*|templates/.*|built/.*)|virtualbricks/__init__\.py)$
       - id: l10n
         name: update translations
         entry: ./l10n.sh

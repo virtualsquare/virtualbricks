@@ -623,6 +623,10 @@ class TestBuild(BuildTestCase):
             self.build.build(),
             (
                 [
+                    "html/figures/lab.png",
+                    "html/index.html",
+                    "html/lab.html",
+                    "html/style.css",
                     "mallard/figures/lab.png",
                     "mallard/index.page",
                     "mallard/lab.page",
@@ -646,14 +650,21 @@ class TestBuild(BuildTestCase):
         self.build.build()
         self.write("guide/index.md", "# Virtualbricks Help\n")
         os.remove(os.path.join(self.root, "guide/figures/lab.png"))
+        # the title of the index is in those of the other pages
         self.assertEqual(
             self.build.build(),
-            (["mallard/index.page"], ["mallard/figures/lab.png"]),
+            (
+                ["html/index.html", "html/lab.html", "mallard/index.page"],
+                ["html/figures/lab.png", "mallard/figures/lab.png"],
+            ),
         )
         # the folder left empty goes too
         self.assertEqual(
             sorted(os.listdir(os.path.join(self.root, "built", "mallard"))),
             ["index.page", "lab.page"],
+        )
+        self.assertNotIn(
+            "figures", os.listdir(os.path.join(self.root, "built", "html"))
         )
 
     def test_one_id_each(self):
@@ -674,7 +685,8 @@ class TestBuild(BuildTestCase):
         self.write("man/lab.1.md", self.MAN_PAGE + "\n# BUGS\n\nNone.\n")
         # and its page in the guide
         self.assertEqual(
-            self.build.build(), (["mallard/lab.page", "man/lab.1"], [])
+            self.build.build(),
+            (["html/lab.html", "mallard/lab.page", "man/lab.1"], []),
         )
         self.assertIn('"2026\\-12\\-01"', self.read("built/man/lab.1"))
 
@@ -723,4 +735,213 @@ class TestBuild(BuildTestCase):
             err.getvalue(),
             "build.py: pandoc not found: install the dev dependency group, "
             "or pandoc\n",
+        )
+
+
+class TestHtml(BuildTestCase):
+    """The HTML of the guide and of its reference, on a site of its own."""
+
+    INDEX = textwrap.dedent("""\
+        ---
+        type: guide
+        title-text: Lab Help
+        ---
+
+        # [Lab]{.app} Help
+
+        ## Your lab {#lab style="2column"}
+
+        ## Reference {#reference}
+        """)
+
+    def setUp(self):
+        super().setUp()
+        self.root = os.path.abspath(self.mktemp())
+        for name in ("guide", "man", "built"):
+            self.patch(self.build, name.upper(), os.path.join(self.root, name))
+        os.makedirs(os.path.join(self.root, "guide", "figures"))
+        os.makedirs(os.path.join(self.root, "man"))
+        self.write("guide/index.md", self.INDEX)
+
+    def write(self, path, text):
+        with open(os.path.join(self.root, path), "w", encoding="utf-8") as fp:
+            fp.write(textwrap.dedent(text))
+
+    def html(self, name):
+        self.build.build()
+        path = os.path.join(self.root, "built", "html", f"{name}.html")
+        with open(path, encoding="utf-8") as fp:
+            # pandoc wraps lines: the text, as one line
+            return " ".join(fp.read().split())
+
+    def topic(self, name, body, **meta):
+        front = "".join(f"{key}: {value}\n" for key, value in meta.items())
+        self.write(f"guide/{name}.md", f"---\n{front}---\n\n{body}")
+
+    def test_marks(self):
+        self.topic(
+            "a",
+            "# A\n\n**Add Disk**, **Projects › Import…**, [F1]{.key}, "
+            "[Ctrl+Q]{.keyseq}, `ls`{.cmd}, [lab --run *file*]{.cmd}\n",
+        )
+        html = self.html("a")
+        for part in (
+            '<span class="gui">Add Disk</span>',
+            '<span class="guiseq"><span class="gui">Projects</span> › '
+            '<span class="gui">Import…</span></span>',
+            "<kbd>F1</kbd>",
+            "<kbd>Ctrl</kbd>+<kbd>Q</kbd>",
+            '<code class="cmd">ls</code>',
+            '<span class="cmd">lab --run <em>file</em></span>',
+        ):
+            self.assertIn(part, html)
+
+    def test_title(self):
+        self.topic("a", "# A page\n")
+        self.assertIn("<title>A page — Lab Help</title>", self.html("a"))
+        self.assertIn("<title>Lab Help</title>", self.html("index"))
+        self.assertIn(
+            '<link rel="stylesheet" href="style.css">', self.html("a")
+        )
+
+    def test_links(self):
+        self.topic("a", "# A\n\n[](b), [](b#disks), [the disks](b#disks)\n")
+        self.topic("b", "# Machines\n\n## The disks {#disks}\n")
+        self.assertIn(
+            '<a href="b.html">Machines</a>, '
+            '<a href="b.html#disks">The disks</a>, '
+            '<a href="b.html#disks">the disks</a>',
+            self.html("a"),
+        )
+
+    def test_links_to_nowhere(self):
+        self.topic("a", "# A\n\n[](b)\n")
+        error = self.assertRaises(self.build.Error, self.build.build)
+        self.assertIn("a page that isn't there: b", str(error))
+        self.topic("a", "# A\n\n[](index#disks)\n")
+        error = self.assertRaises(self.build.Error, self.build.build)
+        self.assertIn("a section that isn't there: index#disks", str(error))
+
+    def test_figure(self):
+        self.write("guide/figures/lab.png", "picture")
+        self.topic(
+            "a", '# A\n\n![The lab](figures/lab.png){alt="Two machines."}\n'
+        )
+        html = self.html("a")
+        self.assertIn(
+            '<a href="figures/lab.png"><img src="figures/lab.png" '
+            'alt="Two machines." /></a>',
+            html,
+        )
+        self.assertIn("<figcaption>The lab</figcaption>", html)
+
+    def test_blocks(self):
+        self.topic(
+            "a",
+            '# A\n\n::: {.terms title="How & why"}\nterm\n:   what\n:::\n\n'
+            "::: {.note .tip}\nA tip.\n:::\n",
+        )
+        html = self.html("a")
+        self.assertIn(
+            '<div class="terms"> <p class="title">How &amp; why</p>', html
+        )
+        self.assertIn('<div class="note tip"> <p>A tip.</p> </div>', html)
+
+    def test_index(self):
+        self.topic(
+            "a",
+            "# Bricks\n",
+            guide='"index#lab"',
+            sort="2",
+            desc="Start them.",
+        )
+        self.topic("b", "# Machines\n", guide='"index#lab"', sort="1")
+        html = self.html("index")
+        self.assertIn('<h2 class="columns" id="lab">Your lab</h2>', html)
+        self.assertIn(
+            '<div class="links"> <div class="link"> <p><a href="b.html">'
+            'Machines</a></p> </div> <div class="link"> <p><a href="a.html">'
+            'Bricks</a></p> <div class="desc"> <p>Start them.</p> </div>',
+            html,
+        )
+
+    def test_trail(self):
+        self.topic("a", "# Bricks\n", guide='"index#lab"')
+        self.assertIn(
+            '<div class="trail"> <p><a href="index.html">Lab Help</a> › '
+            '<a href="index.html#lab">Your lab</a></p> </div>',
+            self.html("a"),
+        )
+        self.assertNotIn("trail", self.html("index"))
+
+    def test_see_also_both_ways(self):
+        self.topic("a", "# Bricks\n", seealso="[b]", desc="Start them.")
+        self.topic("b", "# Machines\n\n## Disks {#disks}\n", seealso='["c#x"]')
+        self.topic("c", "# Events\n\n## X {#x}\n")
+        self.assertIn('<a href="b.html">Machines</a>', self.html("a"))
+        see_also = self.html("b").split('id="seealso"')[1]
+        self.assertIn('<a href="a.html">Bricks</a>', see_also)
+        self.assertIn("Start them.", see_also)
+        # a section, by its title
+        self.assertIn('<a href="c.html#x">X</a>', see_also)
+        self.assertIn('<a href="b.html">Machines</a>', self.html("c"))
+
+    def test_reference(self):
+        front = textwrap.dedent("""\
+            ---
+            title: LAB
+            section: {section}
+            help:
+              id: {id}
+              title: {title}
+            guide: "index#reference"
+            ---
+
+            # NAME
+
+            {name} - the **lab** of *machines*
+
+            """)
+        self.write(
+            "man/lab.1.md",
+            front.format(
+                id="line", title="The command line", name="lab", section=1
+            )
+            + "# SYNOPSIS\n\n**lab** *file*\\\n**lab** **--help**\\\n"
+            "**lab** **unix:***path***:x**\n\n"
+            "# THE JSON PROTOCOL\n\n## Hello\n\nSee **lab-config**(5).\n",
+        )
+        self.write(
+            "man/lab-config.5.md",
+            front.format(
+                id="files",
+                title="Configuration files",
+                name="lab-config",
+                section=5,
+            )
+            + "# FILES\n\nNone.\n",
+        )
+        html = self.html("line")
+        for part in (
+            "<h1>The command line</h1>",
+            '<div class="lede"> <p>the <code>lab</code> of <em>machines</em></p>',
+            f"lab(1) · Virtualbricks {self.build.version()}",
+            '<div class="synopsis"> <p><code>lab</code> <em>file</em><br />',
+            # side by side, one code
+            "<code>lab</code> <code>unix:<em>path</em>:x</code></p>",
+            '<h2 id="the-json-protocol">The JSON protocol</h2>',
+            '<h3 id="hello">Hello</h3>',
+            'See <a href="files.html">lab-config(5)</a>.',
+            '<li><a href="#synopsis">Synopsis</a></li>',
+            '<li><a href="#the-json-protocol">The JSON protocol</a></li>',
+            '<div class="page reference">',
+        ):
+            self.assertIn(part, html)
+        self.assertNotIn('href="#hello"', html)
+        self.assertNotIn("NAME", html)
+        index = self.html("index")
+        self.assertIn(
+            '<a href="line.html">The command line</a></p> <div class="desc"> '
+            "<p>lab(1): the <code>lab</code> of <em>machines</em></p>",
+            index,
         )

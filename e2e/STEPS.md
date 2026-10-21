@@ -243,7 +243,7 @@ The steps of the user guide:
 | `When I press F1 in the Settings window` | F1, once the window is active |
 | `Then Yelp opens "help:virtualbricks/settings"` | The program of the tests got the link, as Yelp, and only it |
 | `Then Yelp opens the page settings of the sources` | The program of the tests got the path of `docs/built/mallard/settings.page` of the sources, as Yelp, and only it: the desktop gives a file by its path |
-| `Then the browser opens the HTML of the page settings` | The program of the tests got the path of `help/html/C/settings.html` of the sources, as browser, and only it |
+| `Then the browser opens the HTML of the page settings` | The program of the tests got the path of `docs/built/html/settings.html` of the sources, as browser, and only it |
 | `Then the picture settings shows the Settings window` | The picture of the window for the guide, as it shows, with the menus open over it: the pointer away from the windows first, once the screen hasn't changed for half a second. With `pytest --pictures`, `docs/guide/figures/settings.png`, if it changed; else `settings.png` in the folder of the scenario, which the end of the run lists if it differs from that of `docs/guide/figures/`. The windows: `main window`, `Settings window`, `Projects window`, `Export window`, `Import window`, and `file chooser`, the one that shows |
 
 The steps of the disk images:

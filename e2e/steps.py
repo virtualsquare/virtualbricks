@@ -5086,7 +5086,7 @@ def browser_opens_html(virtualbricks, page):
     file.
     """
 
-    path = os.path.join(harness.ROOT, "help", "html", "C", f"{page}.html")
+    path = os.path.join(harness.ROOT, "docs", "built", "html", f"{page}.html")
     links_opened(virtualbricks, [f"browser {path}"])
 
 

@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The control protocols — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page reference">
+<nav class="toc" aria-label="Contents">
+<p class="toc-label">Contents</p>
+<ol>
+<li><a href="#synopsis">Synopsis</a></li>
+<li><a href="#description">Description</a></li>
+<li><a href="#the-sockets">The sockets</a></li>
+<li><a href="#the-token">The token</a></li>
+<li><a href="#the-json-protocol">The JSON protocol</a></li>
+<li><a href="#amp">AMP</a></li>
+<li><a href="#amp-protocol-1">AMP protocol 1</a></li>
+<li><a href="#amp-protocol-2">AMP protocol 2</a></li>
+<li><a href="#versions">Versions</a></li>
+<li><a href="#limits">Limits</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#files">Files</a></li>
+<li><a href="#see-also">See also</a></li>
+</ol>
+</nav>
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#reference">Reference</a></p>
+</div>
+<h1>The control protocols</h1>
+<div class="lede">
+<p>the protocols of the control sockets: JSON, AMP 1 and AMP 2</p>
+</div>
+<div class="meta">
+<p>virtualbricks-control(7) · Virtualbricks 3.0.0.dev7</p>
+</div>
+<h2 id="synopsis">Synopsis</h2>
+<div class="synopsis">
+<p><code>virtualbricks</code> <code>--listen</code>
+<code>unix:<em>path</em>:protocol=json</code></p>
+<p><code>virtualbricks</code> <code>--listen</code>
+[<code>unix:<em>path</em></code>]</p>
+<p><code>virtualbricks</code> <code>--listen</code>
+<code>tcp:<em>port</em></code>[<code>:protocol=json</code>]</p>
+</div>
+<h2 id="description">Description</h2>
+<p>A Virtualbricks started with <code>--listen</code> answers on control
+sockets: the commands of its console, from <code>virtualbricks
+--command</code> or from any program, and what the windows of another
+Virtualbricks ask. A socket carries lines of JSON or the boxes of AMP,
+Twisted's Asynchronous Messaging Protocol, and on them three
+protocols:</p>
+<dl>
+<dt><code>JSON</code></dt>
+<dd>
+Lines of JSON, on a socket of <code>protocol=json</code>: a line of the
+console in each request, the lines it prints in each answer. Any
+language that reads and writes JSON speaks it, and a shell with
+<code>socat</code>(1).
+</dd>
+<dt><code>AMP 1</code></dt>
+<dd>
+On an AMP socket, as a socket is without <code>protocol=json</code>:
+<code>Hello</code>, who answers, and <code>Run</code>, a line of the
+console and its lines. <code>virtualbricks --command</code> speaks it,
+and so can a program written with Twisted.
+</dd>
+<dt><code>AMP 2</code></dt>
+<dd>
+On the same connection, once <code>Hello</code> agrees on it: a typed
+command for each command of the console, as <code>BrickStart</code> with
+its names, and the commands of the windows of <code>virtualbricks
+--connect</code>: <code>Follow</code>, which sends the project, then
+each change, and the others. Still in development: its commands may
+change in any way, without notice, see <code>VERSIONS</code>.
+</dd>
+</dl>
+<pre><code>  +--------------+  +-------------+---------------------------+
+  |     JSON     |  |    AMP 1    |           AMP 2           |
+  |  line, cwd   |  | Hello, Run  | typed commands, Follow    |
+  |  -&gt; lines    |  |             | and its pushes, Attach    |
+  +--------------+  +-------------+---------------------------+
+  |  the token,  |  |  the token, if asked: Challenge and     |
+  |  if asked    |  |  Authenticate                           |
+  +--------------+  +-----------------------------------------+
+  |  JSON lines  |  |  AMP boxes                              |
+  +--------------+--+-----------------------------------------+
+  |  a unix, tcp or ssl socket of --listen                    |
+  +-----------------------------------------------------------+
+     protocol=json      protocol=amp, the default</code></pre>
+<p>A <code>tcp</code> socket answers only a client that proves first
+that it knows the token of Virtualbricks, in either format. This page
+describes the protocols for whoever writes a client: the sockets
+(<code>THE SOCKETS</code>), the proof of the token (<code>THE
+TOKEN</code>), the JSON protocol (<code>THE JSON PROTOCOL</code>), the
+boxes of AMP (<code>AMP</code>) and the commands of its two protocols
+(<code>AMP PROTOCOL 1</code>, <code>AMP PROTOCOL 2</code>), how they
+change (<code>VERSIONS</code>) and how much they carry
+(<code>LIMITS</code>). How to open the sockets, and which, is in
+<code>THE CONTROL SOCKET</code> of <a
+href="command-line.html">virtualbricks(1)</a>.</p>
+<h2 id="the-sockets">The sockets</h2>
+<p>The protocols are the same on each type of socket: <code>unix</code>,
+a path that only its user can connect to; <code>tcp</code>, a port of
+this machine; and <code>ssl</code>, a port inside TLS. Each
+<code>tcp</code> socket asks a client for the token, and so may an
+<code>ssl</code> socket, see <a
+href="command-line.html">virtualbricks(1)</a>; a <code>unix</code>
+socket never does. The first message tells the client which, see
+<code>THE TOKEN</code>. The socket of <code>--listen</code> alone,
+<em>$XDG_RUNTIME_DIR</em>/virtualbricks/<em>key</em>/.control, speaks
+AMP.</p>
+<p>Each connection runs its requests one after the other, in the order
+they came: a client may send the next request before the answer to the
+one before, and the answers come in the same order. Over AMP, the
+commands that only read the machine answer at once, beside those that
+wait, see <code>AMP PROTOCOL 2</code>. Connections don't wait for each
+other, nor for the terminal or the events of Virtualbricks.</p>
+<p>The paths of a command, as that of <code>source</code> <em>file</em>,
+are read from <code>cwd</code>, an absolute path that a request may
+give, or else from the folder where Virtualbricks runs. A client on
+another machine leaves <code>cwd</code> out: its folders aren't those of
+Virtualbricks. Virtualbricks answers in its own language, and logs each
+command it gets, with the address of the client on a network socket.</p>
+<p>When Virtualbricks quits, it closes each connection once the answers
+it owes are written; a client that doesn't read them within 2 seconds is
+cut off. <code>quit</code> answers too, and a connection that follows
+Virtualbricks gets <code>Quitting</code> first.</p>
+<h2 id="the-token">The token</h2>
+<p>The token is a line of text of at least 16 characters, in a file:
+<em>$XDG_CONFIG_HOME</em>/virtualbricks/token, or the file of
+<code>tokenFile=</code> in the description of the socket. The first
+start of a socket that needs it makes the file, with 43 random
+characters. The file must be a regular file of the user that nobody else
+can read or change, mode 0600; the spaces around the line don't count. A
+client reads the same token: copy the file to its machine.</p>
+<p>Neither end sends the token. Each proves that it knows it, over two
+nonces, a random number of each end in lowercase hex digits:
+Virtualbricks sends one of 64 digits, and the client's has from 32 to
+128. The proof of a <em>side</em>, <code>client</code> or
+<code>server</code>, is the HMAC-SHA256, under the token in UTF-8, of
+the text</p>
+<pre><code>virtualbricks side S C</code></pre>
+<p>where <em>S</em> is the nonce of Virtualbricks and <em>C</em> that of
+the client, one space between the words, written in lowercase hex
+digits:</p>
+<pre><code>  client                               Virtualbricks
+    |                                        |
+    |&lt;-- nonce S ----------------------------|
+    |                                        |
+    |    nonce C, HMAC(token,                |
+    |    &quot;virtualbricks client S C&quot;)         |
+    |---------------------------------------&gt;|  checks it: if
+    |                                        |  wrong, closes
+    |                                        |  the connection
+    |&lt;---------------------------------------|
+    |    HMAC(token,                         |
+    |    &quot;virtualbricks server S C&quot;)         |
+  checks it: if wrong,
+  closes the connection</code></pre>
+<p>The client proves first, and Virtualbricks then proves it to the
+client: a program that took the port in place of Virtualbricks doesn't
+know the token, so it can't, and the client doesn't send it any command.
+With new nonces each time, a proof is good for one connection only, and
+nobody who reads it learns the token. A client has 10 seconds from
+connecting to give a right proof; then the connection is closed.</p>
+<p>In a shell, <code>openssl</code>(1) computes the proof of the
+client:</p>
+<pre><code>printf &#39;virtualbricks client %s %s&#39; &quot;$nonce&quot; &quot;$mine&quot; |
+    openssl dgst -sha256 -hmac &quot;$token&quot;</code></pre>
+<h2 id="the-json-protocol">The JSON protocol</h2>
+<h3 id="lines">Lines</h3>
+<p>Each message is a JSON object on a line of its own, in UTF-8, ended
+by a newline, LF. Virtualbricks skips the empty lines it gets, and
+closes the connection on a line longer than 64 KiB, 65536 bytes. A key
+that a message doesn't need is ignored: a client ignores the keys it
+doesn't know too, so that a later version can add some.</p>
+<h3 id="the-greeting">The greeting</h3>
+<p>Virtualbricks writes the first line as soon as a client connects:</p>
+<pre><code>{&quot;protocol&quot;: 1, &quot;version&quot;: &quot;3.0.0&quot;, &quot;pid&quot;: 4200,
+ &quot;project&quot;: &quot;lab1&quot;}</code></pre>
+<dl>
+<dt><code>protocol</code></dt>
+<dd>
+1, the version of the JSON protocol. A client that doesn't know it sends
+nothing, and closes the connection.
+</dd>
+<dt><code>version</code></dt>
+<dd>
+The version of Virtualbricks.
+</dd>
+<dt><code>pid</code></dt>
+<dd>
+Its process.
+</dd>
+<dt><code>project</code></dt>
+<dd>
+The name of the open project, or <code>null</code>.
+</dd>
+</dl>
+<h3 id="requests-and-answers">Requests and answers</h3>
+<p>A request has the command, <code>line</code>, a line of the console
+as it is typed, and <code>cwd</code>, optional, the folder of its paths.
+Its answer has <code>ok</code>, whether the command was done,
+<code>lines</code>, what it printed, a text for each line, without
+newlines, and <code>error</code>, why it failed, when <code>ok</code> is
+<code>false</code>; <code>lines</code> is then what it printed before it
+failed:</p>
+<pre><code>{&quot;line&quot;: &quot;brick start sw1&quot;, &quot;cwd&quot;: &quot;/home/alice/labs&quot;}
+{&quot;ok&quot;: true, &quot;lines&quot;: [&quot;sw1 runs, process 4242&quot;]}
+{&quot;line&quot;: &quot;brick start vm9&quot;}
+{&quot;ok&quot;: false, &quot;lines&quot;: [], &quot;error&quot;: &quot;No brick named vm9&quot;}</code></pre>
+<p>A line that isn't a request gets an answer with <code>ok</code>
+<code>false</code> and why, as "Not a request: "cwd" is not an absolute
+path", and the connection goes on.</p>
+<h3 id="with-the-token">With the token</h3>
+<p>On a socket that asks for the token, the first line asks for the
+proof, with the nonce of Virtualbricks, and the client answers with its
+own nonce and its proof. The greeting follows a right proof, with the
+proof of Virtualbricks:</p>
+<pre><code>{&quot;protocol&quot;: 1, &quot;auth&quot;: &quot;token&quot;, &quot;nonce&quot;: &quot;3f9a...&quot;}
+{&quot;nonce&quot;: &quot;c41d...&quot;, &quot;proof&quot;: &quot;8e02...&quot;}
+{&quot;protocol&quot;: 1, &quot;version&quot;: &quot;3.0.0&quot;, &quot;pid&quot;: 4200,
+ &quot;project&quot;: &quot;lab1&quot;, &quot;proof&quot;: &quot;51b7...&quot;}</code></pre>
+<p>A wrong proof, a line that isn't one, or none in 10 seconds gets an
+answer with <code>ok</code> <code>false</code> and why, as "Wrong
+token", and the connection closes.</p>
+<pre><code>  client                               Virtualbricks
+    |                                        |
+    |&lt;-- {&quot;protocol&quot;: 1, &quot;auth&quot;: &quot;token&quot;, ---|  if it asks
+    |    &quot;nonce&quot;: S}                         |  for the token
+    |--- {&quot;nonce&quot;: C, &quot;proof&quot;: ...} --------&gt;|
+    |                                        |
+    |&lt;-- {&quot;protocol&quot;: 1, &quot;version&quot;: ..., ----|  the greeting
+    |    &quot;pid&quot;: ..., &quot;project&quot;: ...          |
+    |    [, &quot;proof&quot;: ...]}                   |
+    |                                        |
+    |--- {&quot;line&quot;: &quot;brick start sw1&quot;} -------&gt;|
+    |--- {&quot;line&quot;: &quot;status&quot;} ----------------&gt;|
+    |&lt;-- {&quot;ok&quot;: true, &quot;lines&quot;: [...]} -------|  in the same
+    |&lt;-- {&quot;ok&quot;: true, &quot;lines&quot;: [...]} -------|  order</code></pre>
+<h2 id="amp">AMP</h2>
+<h3 id="boxes">Boxes</h3>
+<p>AMP carries boxes: a key and its value, then another, and so on, up
+to a key of no bytes. Each key and each value has its length first, in
+two bytes, the high byte first: a key has from 1 to 255 bytes, a value
+from 0 to 65535. A request of <code>Hello</code>, and its answer:</p>
+<pre><code>   length  key         length  value
+  +-------+-----------+-------+-----------------------+
+  | 00 04 | _ask      | 00 01 | 1                     |
+  | 00 08 | _command  | 00 05 | Hello                 |
+  | 00 09 | protocols | 00 06 | 00 01 &quot;1&quot; 00 01 &quot;2&quot;   |
+  | 00 00 |              the end of the box           |
+  +-------+-----------+-------+-----------------------+
+  | 00 07 | _answer   | 00 01 | 1                     |
+  | 00 08 | protocol  | 00 01 | 2                     |
+  | 00 07 | version   | 00 05 | 3.0.0                 |
+  | 00 03 | pid       | 00 04 | 4200                  |
+  | 00 07 | project   | 00 04 | lab1                  |
+  | 00 00 |              the end of the box           |
+  +-------+-----------+-------+-----------------------+</code></pre>
+<p>A request has <code>_ask</code>, a tag that the program chooses,
+different from those of its requests that wait, and
+<code>_command</code>, the name of the command; then its arguments, in
+any order. Its answer has <code>_answer</code>, the same tag, and the
+values of the answer; or, if the command failed, <code>_error</code>,
+the tag, <code>_error_code</code> and <code>_error_description</code>,
+why. The tags pair the answers with the requests, which may be answered
+in another order. A request without <code>_ask</code> wants no answer:
+the pushes of <code>Follow</code> are such. A program written with
+Twisted has all this in <code>twisted.protocols.amp</code>; in Python
+without Twisted, <code>virtualbricks.console.ampbox</code> reads and
+writes the boxes.</p>
+<h3 id="values">Values</h3>
+<p>A value is bytes, read as the command says:</p>
+<dl>
+<dt><code>str</code></dt>
+<dd>
+A text, in UTF-8.
+</dd>
+<dt><code>int</code></dt>
+<dd>
+An integer, in decimal digits, with <code>-</code> before it if
+negative.
+</dd>
+<dt><code>bool</code></dt>
+<dd>
+<code>True</code> or <code>False</code>.
+</dd>
+<dt><code>bytes</code></dt>
+<dd>
+Bytes, as they are.
+</dd>
+<dt><code>[str]</code>, <code>[int]</code></dt>
+<dd>
+A list: each item with its length in two bytes, one after the other.
+</dd>
+<dt><code>pairs</code></dt>
+<dd>
+A list of records, each with <code>key</code> and <code>value</code>,
+both <code>str</code>: each record a box, with its end, one after the
+other.
+</dd>
+</dl>
+<p>An optional argument, written <code>?</code> after its kind, is left
+out of the box when it has no value, and so is an optional value of an
+answer.</p>
+<h3 id="errors">Errors</h3>
+<p><code>_error_code</code> is one of the codes of the command, which
+name what went wrong; each protocol below lists its own. Twisted adds
+two: <code>UNHANDLED</code>, there is no command of that name, as a
+command of a later version or of a protocol that the connection doesn't
+speak, see <code>VERSIONS</code>; and <code>UNKNOWN</code>, a failure
+that Virtualbricks didn't expect, after which the connection closes. A
+box that isn't one closes the connection too.</p>
+<h2 id="amp-protocol-1">AMP protocol 1</h2>
+<p>The commands of protocol 1 are in the module
+<code>virtualbricks.console.ampwire</code>, which loads nothing but
+Twisted's <code>amp</code>: a program imports it, or copies it, as
+<code>THE CONTROL SOCKET</code> of <a
+href="command-line.html">virtualbricks(1)</a> does. They are written
+here as in <em>tests/data/amp-protocol-2.txt</em> of the sources: each
+argument as <em>name</em>:<em>kind</em>, then <code>-&gt;</code> and
+what the answer has:</p>
+<pre><code>Hello         protocols:[int]?
+              -&gt; protocol:int version:str pid:int project:str?
+Run           line:str cwd:str? -&gt; lines:[str]
+Challenge     -&gt; nonce:str
+Authenticate  nonce:str proof:str -&gt; proof:str</code></pre>
+<dl>
+<dt><code>Hello</code></dt>
+<dd>
+Who answers, and the protocol of the connection from then on.
+<code>protocols</code> are those the program speaks;
+<code>protocol</code> is the highest that Virtualbricks speaks too, 1
+without them or when it speaks none of them. Then the
+<code>version</code> of Virtualbricks, its <code>pid</code>, and the
+open <code>project</code>, left out if none is. A connection that
+doesn't call <code>Hello</code> speaks protocol 1.
+</dd>
+<dt><code>Run</code></dt>
+<dd>
+A line of the console and its <code>cwd</code>, as in a request of the
+JSON protocol; the answer is the lines it printed. If the command fails,
+the error says why, and what it printed before is lost.
+</dd>
+<dt><code>Challenge</code></dt>
+<dd>
+The nonce of Virtualbricks, for the proof of the token.
+</dd>
+<dt><code>Authenticate</code></dt>
+<dd>
+The nonce of the program and its proof; the answer is the proof of
+Virtualbricks, which the program checks, see <code>THE TOKEN</code>.
+</dd>
+</dl>
+<p>Their errors:</p>
+<dl>
+<dt><code>COMMAND_FAILED</code></dt>
+<dd>
+<code>Run</code>: the command failed, or its <code>cwd</code> isn't an
+absolute path.
+</dd>
+<dt><code>ANSWER_TOO_LONG</code></dt>
+<dd>
+<code>Run</code>: the command was done, but its lines are longer than
+the 65535 bytes of a value; a JSON socket carries them.
+</dd>
+<dt><code>TOKEN_NEEDED</code></dt>
+<dd>
+<code>Hello</code>, <code>Run</code> and the commands of protocol 2: on
+a socket that asks for the token, each fails until the program proves
+that it knows it.
+</dd>
+<dt><code>WRONG_TOKEN</code></dt>
+<dd>
+<code>Challenge</code> and <code>Authenticate</code>: the socket takes
+no token, and the connection goes on; or the proof is wrong, or
+<code>Authenticate</code> came without a <code>Challenge</code> before
+it, and the connection closes.
+</dd>
+</dl>
+<pre><code>  program                              Virtualbricks
+    |                                        |
+    |--- Challenge -------------------------&gt;|  if it asks
+    |&lt;-- nonce S ----------------------------|  for the token
+    |--- Authenticate nonce C, proof -------&gt;|
+    |&lt;-- proof of Virtualbricks -------------|
+    |                                        |
+    |--- Hello protocols [1, 2] ------------&gt;|
+    |&lt;-- protocol 2, version, pid, ... ------|
+    |                                        |
+    |--- Run line &quot;brick start sw1&quot; --------&gt;|  protocol 1
+    |&lt;-- lines [...] ------------------------|
+    |--- BrickStart name [&quot;vm1&quot;] -----------&gt;|  protocol 2
+    |&lt;-- lines [...] ------------------------|</code></pre>
+<h2 id="amp-protocol-2">AMP protocol 2</h2>
+<p>Protocol 2 is still in development: a later Virtualbricks may change
+its commands in any way, without notice, see <code>VERSIONS</code>.</p>
+<p>Once <code>Hello</code> has agreed on 2, a connection speaks the
+commands of protocol 1 and those of protocol 2; before, these fail with
+<code>PROTOCOL_NEEDED</code>. They are in two modules that load nothing
+else of Virtualbricks but <code>ampwire</code>:
+<code>virtualbricks.console.ampcommands</code>, the typed commands, and
+<code>virtualbricks.remote.commands</code>, those of the windows; a
+program imports them, or copies them. Each command of protocol 2 has the
+same errors:</p>
+<dl>
+<dt><code>NOT_FOUND</code></dt>
+<dd>
+A name of the command names nothing there: a brick, an event, an image,
+a project, a program or a file. Nothing was done.
+</dd>
+<dt><code>BAD_ARGUMENT</code></dt>
+<dd>
+An argument isn't one the command takes; or the box has a key that the
+command doesn't have, or lacks one it needs, which Twisted would drop,
+or close the connection on. Nothing was done.
+</dd>
+<dt><code>PROTOCOL_NEEDED</code></dt>
+<dd>
+<code>Hello</code> hasn't agreed on protocol 2.
+</dd>
+<dt><code>COMMAND_FAILED</code></dt>
+<dd>
+The command failed on the way: a program or a file said no. Part of it
+may be done.
+</dd>
+<dt><code>ANSWER_TOO_LONG</code></dt>
+<dd>
+The command was done, but its answer is longer than the 65535 bytes of a
+value.
+</dd>
+<dt><code>TOKEN_NEEDED</code></dt>
+<dd>
+As in protocol 1.
+</dd>
+</dl>
+<p>In the modules, <code>NotFound</code> and <code>BadArgument</code>
+are subclasses of <code>CommandFailed</code>: a program that catches
+<code>CommandFailed</code> catches the three.</p>
+<h3 id="the-typed-commands">The typed commands</h3>
+<p>A typed command for each command of the console. Its name is the
+words of the command, each with a capital letter: <code>brick card
+add</code> is <code>BrickCardAdd</code>, <code>status</code> is
+<code>Status</code>. Its arguments are named after those of the command
+in <code>COMMANDS</code> of <a
+href="command-line.html">virtualbricks(1)</a>, in lower case, with
+<code>_</code> for what isn't a letter or a digit: <em>NAME</em> is
+<code>name</code>, <em>KEY</em>=<em>VALUE</em> is
+<code>key_value</code>, <code>--at</code> is <code>at</code>. A number
+is an <code>int</code>, an argument that repeats a list,
+<em>KEY</em>=<em>VALUE</em>... a list of <code>pairs</code>, an option
+without a value a <code>bool</code>, the rest a <code>str</code>; what
+is optional in the console is optional here. Each takes <code>cwd</code>
+too, as <code>Run</code> does, and answers <code>lines:[str]</code>, the
+lines of the console:</p>
+<pre><code>BrickTypes
+BrickList
+BrickNew           kind:str name:str?
+BrickShow          name:str
+BrickKeys          kind_name:str key:str?
+BrickSet           name:str key_value:pairs
+BrickUnset         name:str key:[str]
+BrickStart         name:[str]
+BrickStop          name:[str]
+BrickKill          name:[str]
+BrickRestart       name:[str]
+BrickPause         name:[str]
+BrickContinue      name:[str]
+BrickSuspend       vm:str
+BrickResume        vm:str
+BrickReset         vm:str
+BrickMonitor       name:str
+BrickConnect       name:str target:[str]
+BrickDisconnect    name:str end:str?
+BrickCardAdd       vm:str kind:str options:[str]?
+BrickCardSet       vm:str card:str key_value:pairs
+BrickCardRemove    vm:str card:[str]
+BrickRename        name:str new:str
+BrickDuplicate     name:str new:str?
+BrickDelete        name:[str]
+EventList
+EventNew           name:str?
+EventShow          name:str
+EventSet           name:str key_value:pairs
+EventActionAdd     name:str what:str subject:str? at:int?
+EventActionRemove  name:str n:[int]
+EventActionMove    name:str n:int to:int
+EventStart         name:[str]
+EventStop          name:[str]
+EventRun           name:[str]
+EventRename        name:str new:str
+EventDuplicate     name:str new:str?
+EventDelete        name:[str]
+ProjectList
+ProjectShow
+ProjectOpen        name:str
+ProjectNew         name:str
+ProjectSave
+ProjectRename      name:str new:str
+ProjectDuplicate   name:str new:str
+ProjectDelete      name:str force:bool?
+Help               topic:[str]?
+Status
+Quit
+Source             file:str
+ImageList
+ImageAdd           name:str path:str key_value:pairs?
+ImageShow          name:str
+ImageSet           name:str key_value:pairs
+ImageRename        name:str new:str
+ImageDelete        name:str
+SettingShow        key:str?
+SettingSet         key_value:pairs
+SettingUnset       key:[str]</code></pre>
+<p>What each does and prints is what <a
+href="command-line.html">virtualbricks(1)</a> says of its command.
+<code>BrickSet</code>(name="vm1", key_value=[{"key": "memory", "value":
+"1024"}]) is <code>brick set vm1 memory=1024</code>;
+<code>BrickStart</code>(name=["sw1", "vm1"]) is <code>brick start sw1
+vm1</code>.</p>
+<h3 id="the-commands-of-the-windows">The commands of the windows</h3>
+<p>What the windows of <code>virtualbricks --connect</code> need that
+the console has no command for. A table, a state and the other JSON of
+this section are JSON in a <code>str</code>, since AMP has no
+tables:</p>
+<pre><code>Follow             -&gt; project:str? version:str
+Apply              kind:str name:str changes:str links:str
+                   extras:str -&gt;
+Connect            source:str target:str -&gt; connected:bool
+QemuFacts          program:str -&gt; path:str version:str
+                   options:str machines:str cpus:str devices:str
+                   displays:str audio_drivers:str netdevs:str
+                   accelerators:str
+MachineProperties  program:str machine:str -&gt; text:str
+UsbDevices         -&gt; devices:str
+ImageFacts         path:str -&gt; file:str info:str others:str
+MakeImage          path:str format:str size:int -&gt;
+StartOver          vm:str device:str -&gt; trashed:bool
+TrashFile          path:str -&gt; trashed:bool
+Relink             name:str path:str -&gt;
+ProjectNames       -&gt; names:[str]
+ProjectSummary     name:str -&gt; summary:str
+DiskUsage          name:str -&gt; private_disks:int other_files:int
+Readme             -&gt; text:str
+SetReadme          text:str -&gt;
+ReadmePicture      name:str path:str offset:int
+                   -&gt; data:bytes size:int
+SetKsm             enable:bool -&gt; enabled:bool
+Folder             path:str -&gt; entries:[str] more:bool
+ProgramsFound      vde_path:str qemu_path:str
+                   -&gt; vde:str qemu:str
+Attach             brick:str console:str -&gt;</code></pre>
+<dl>
+<dt><code>Follow</code></dt>
+<dd>
+Send the project, then each change, see <code>Follow and the
+pushes</code>; the answer is the open project, and the version of
+Virtualbricks.
+</dd>
+<dt><code>Apply</code></dt>
+<dd>
+The OK of the panel of a brick, an event or an image, <em>kind</em>
+<code>brick</code>, <code>event</code> or <code>image</code>: what the
+panel changed, all or nothing. <code>changes</code> is an object of the
+settings changed, by their names and with their values as the project
+file writes them, see <a
+href="config-files.html">virtualbricks-config(5)</a>;
+<code>links</code>, a list of the plugs moved, each [<em>index</em>,
+<em>target</em>], the target written as in the project file,
+<code>""</code> for none; <code>extras</code>, what a brick has beyond
+its settings, only when it changed: the <code>cards</code> of a machine,
+each {<code>kind</code>, <code>model</code>, <code>mac</code>,
+<code>connect</code>, <code>link</code>}, and the <code>states</code>,
+<code>transitions</code> and <code>period</code> of a Netemu. Only the
+keys given change: the last OK wins for them, and the rest keeps what
+another window set.
+</dd>
+<dt><code>Connect</code></dt>
+<dd>
+Connect brick <em>source</em> to brick <em>target</em>, as a drop does:
+a free plug, or a new card of a machine. Whether it could.
+</dd>
+<dt><code>QemuFacts</code></dt>
+<dd>
+What the QEMU program <em>program</em>, as
+<code>qemu-system-x86_64</code>, prints: its <code>path</code>, and for
+each question a JSON list [<em>out</em>, <em>err</em>, <em>status</em>],
+a value each, since all of them are more than a value carries.
+</dd>
+<dt><code>MachineProperties</code></dt>
+<dd>
+What <code>-machine</code> <code><em>type</em>,help</code> prints, for
+<em>machine</em>, or for the default type if it is <code>""</code>.
+</dd>
+<dt><code>UsbDevices</code></dt>
+<dd>
+The USB devices of the machine: a JSON list of {<code>id</code>,
+<code>description</code>}.
+</dd>
+<dt><code>ImageFacts</code></dt>
+<dd>
+What the file <em>path</em> is: <code>file</code>, {<code>size</code>,
+<code>mtime</code>, <code>taken</code>}, the time in nanoseconds and the
+space it takes in bytes; <code>info</code>, what <code>qemu-img info
+--output=json</code> prints; <code>others</code>, a JSON list of
+[<em>project</em>, <em>image</em>], the images of the other projects of
+the workspace with that file.
+</dd>
+<dt><code>MakeImage</code></dt>
+<dd>
+Make the file of an empty disk, of <em>format</em> <code>qcow2</code> or
+<code>raw</code>, and of <em>size</em> bytes. <code>BAD_ARGUMENT</code>
+if the file is there already.
+</dd>
+<dt><code>StartOver</code></dt>
+<dd>
+The private copy of disk <em>device</em> of machine <em>vm</em> goes to
+the trash, or is deleted without one: whether it went to the trash.
+</dd>
+<dt><code>TrashFile</code></dt>
+<dd>
+A file of the workspace that no image uses goes to the trash, or is
+deleted without one: whether it went to the trash.
+</dd>
+<dt><code>Relink</code></dt>
+<dd>
+Give image <em>name</em> the file <em>path</em>, and the private copies
+made on the image with it.
+</dd>
+<dt><code>ProjectNames</code></dt>
+<dd>
+The names of the projects of the workspace, sorted.
+</dd>
+<dt><code>ProjectSummary</code></dt>
+<dd>
+What the list of the projects shows of one, as a JSON object:
+<code>name</code>, <code>path</code>, <code>description</code>,
+<code>modified</code>, <code>bricks</code> (a count for each type),
+<code>events</code> (a count), <code>images</code> (each
+{<code>name</code>, <code>path</code>, <code>found</code>}) and
+<code>problem</code>, <code>null</code> unless the project file can't be
+read.
+</dd>
+<dt><code>DiskUsage</code></dt>
+<dd>
+The space that a project takes, in bytes: its private disks, and the
+other files.
+</dd>
+<dt><code>Readme</code>, <code>SetReadme</code></dt>
+<dd>
+The README of the open project; the new one is written when the project
+is saved.
+</dd>
+<dt><code>ReadmePicture</code></dt>
+<dd>
+A picture of the README of project <em>name</em>, <em>path</em> relative
+to its folder, see <a
+href="config-files.html">virtualbricks-config(5)</a>: its
+<code>data</code> from byte <em>offset</em>, as much as a value carries,
+and the <code>size</code> of the file. A program asks again from the end
+of what came, until it has <code>size</code> bytes.
+<code>BAD_ARGUMENT</code> for a path that leads out of the folder, a
+file that isn't one or that is larger than 10 MB.
+</dd>
+<dt><code>SetKsm</code></dt>
+<dd>
+Turn KSM on or off; whether it runs afterwards.
+</dd>
+<dt><code>Folder</code></dt>
+<dd>
+What completes <em>path</em> as it is typed: the entries of its folder
+that start with its last part, a folder with a <code>/</code> after it,
+at most 200, and whether there are more.
+</dd>
+<dt><code>ProgramsFound</code></dt>
+<dd>
+What the folders <em>vde_path</em> and <em>qemu_path</em> hold, before
+they are the settings, as the Settings window shows them: for each,
+<code>vde</code> and <code>qemu</code>, an object <code>{folder, exists,
+found, missing}</code>, whether the folder is there, the programs found,
+by name, with their path, in the folder or else in <code>PATH</code>,
+and those missing, each a pair of the program and its package,
+<code>null</code> if no package has it.
+</dd>
+<dt><code>Attach</code></dt>
+<dd>
+Join the program to a console of a running brick, see
+<code>Attach</code>.
+</dd>
+</dl>
+<p><code>QemuFacts</code>, <code>MachineProperties</code>,
+<code>UsbDevices</code>, <code>ImageFacts</code>,
+<code>DiskUsage</code>, <code>ReadmePicture</code>, <code>Folder</code>
+and <code>ProgramsFound</code> change nothing: they answer as soon as
+they can, beside the requests that wait. The others wait for their turn,
+as the typed commands do, and Virtualbricks logs them.</p>
+<h3 id="follow-and-the-pushes">Follow and the pushes</h3>
+<p><code>Follow</code> asks Virtualbricks for its project and its
+changes. It sends them as <em>pushes</em>: commands that it calls on the
+program, without <code>_ask</code>, that want no answer. A program that
+follows declares the eight of them, and has a responder for each:
+Twisted closes the connection on a command it has no responder for.</p>
+<pre><code>Opened             project:str? settings:str machine:str
+Changed            kind:str name:str table:str state:str
+Renamed            kind:str old:str new:str
+Removed            kind:str name:str
+Synced
+SettingsChanged    settings:str
+Logged             message:str
+Quitting</code></pre>
+<dl>
+<dt><code>Opened</code></dt>
+<dd>
+A project is open, and the copy starts over: its name, left out if none
+is; <code>settings</code>, a JSON object of the settings of
+Virtualbricks and of the project, by their names in <a
+href="config-files.html">virtualbricks-config(5)</a>; and
+<code>machine</code>, a JSON object of what the machine of Virtualbricks
+has: <code>version</code>, <code>workspace</code>,
+<code>project_folder</code>, <code>trash</code> (whether what is removed
+goes to a trash), <code>runtime_dir</code>,
+<code>workspace_runtime_dir</code>, <code>missing</code> (the programs
+it lacks), <code>qemu_programs</code> (the names of its QEMU programs),
+<code>lacks</code> (for each type of brick, <code>null</code> or the
+programs it lacks, {<code>line</code>, <code>text</code>}) and
+<code>ksm</code> (whether KSM runs).
+</dd>
+<dt><code>Changed</code></dt>
+<dd>
+An image, a brick or an event, <em>kind</em> <code>image</code>,
+<code>brick</code> or <code>event</code>, is new or changed: its
+<code>table</code>, as the project file writes it, and its
+<code>state</code>, what the project file doesn't write:
+{<code>file</code>}, the <code>size</code>, <code>mtime</code> and
+<code>taken</code> of the file of an image, <code>null</code> if it
+isn't there; {<code>running</code>, <code>pid</code>,
+<code>copies</code>}, whether a brick runs, its process,
+<code>null</code> if it doesn't run or isn't known, as that of a switch
+wrapper whose switch is another user's, and the private copies of a
+machine, as <code>file</code>, by device; {<code>left</code>}, the
+seconds that an event still waits, <code>null</code> if it doesn't.
+</dd>
+<dt><code>Renamed</code></dt>
+<dd>
+An image, a brick or an event has a new name.
+</dd>
+<dt><code>Removed</code></dt>
+<dd>
+A brick or an event is deleted, an image removed.
+</dd>
+<dt><code>Synced</code></dt>
+<dd>
+The whole project has been sent.
+</dd>
+<dt><code>SettingsChanged</code></dt>
+<dd>
+The settings changed: all of them, as in <code>Opened</code>.
+</dd>
+<dt><code>Logged</code></dt>
+<dd>
+A message of the log, info and above, as a JSON object:
+<code>time</code>, in seconds since 1970, <code>level</code>,
+<code>text</code>, <code>traceback</code> or <code>null</code>,
+<code>namespace</code>, <code>source</code> and
+<code>source_type</code>, the brick it is about or <code>null</code>,
+<code>pid</code>, and <code>stream</code>, <code>stdout</code> or
+<code>stderr</code> for what the process of a brick printed.
+</dd>
+<dt><code>Quitting</code></dt>
+<dd>
+Virtualbricks quits.
+</dd>
+</dl>
+<p><code>Follow</code> sends <code>Opened</code>, a <code>Changed</code>
+for each image, brick and event, then <code>Synced</code>: the images
+first, then the bricks, each after those it plugs into, then the events.
+Then the last 500 messages of the log, and the answer. After that,
+Virtualbricks gathers what changes and sends it once a turn of its loop,
+each object once, as it is then: the renames and the deletes first, in
+the order they came, then what changed, in the order above, the
+settings, the messages of the log, and <code>Quitting</code>. Before it
+answers a command of the connection, it sends what waits: once a command
+is answered, the program has what it changed. When another project
+opens, the copy starts over, with <code>Opened</code>;
+<code>Follow</code> again does the same. A push longer than a value
+carries isn't sent, and the log says so.</p>
+<pre><code>  program                              Virtualbricks
+    |                                        |
+    |--- Follow ----------------------------&gt;|
+    |&lt;-- Opened project &quot;lab1&quot; --------------|  the project
+    |&lt;-- Changed image debian ---------------|
+    |&lt;-- Changed brick sw1 ------------------|
+    |&lt;-- Changed brick vm1 ------------------|
+    |&lt;-- Synced -----------------------------|
+    |&lt;-- Logged, the last 500 ---------------|
+    |&lt;-- project, version -------------------|  the answer
+    |                                        |
+    |--- BrickStart name [&quot;vm1&quot;] -----------&gt;|
+    |&lt;-- Changed brick vm1 ------------------|  what it
+    |&lt;-- Changed image debian ---------------|  changed
+    |&lt;-- lines [...] ------------------------|  the answer
+    |                                        |
+    |&lt;-- Changed brick vm1 ------------------|  once a turn
+    |&lt;-- Logged -----------------------------|
+    |                                        |
+    |&lt;-- Quitting ---------------------------|  at the end</code></pre>
+<h3 id="attach">Attach</h3>
+<p><code>Attach</code> joins the program to a console of a running
+brick: <code>monitor</code>, its control monitor, or
+<code>serial</code>, the serial socket of a machine. Virtualbricks
+connects to the console, then answers; from then on, the connection
+carries the bytes of the console both ways, and nothing else: AMP's
+<code>ProtocolSwitchCommand</code>. When either end closes, so does the
+other. So a program opens a new connection for each console, proves the
+token if asked, agrees on protocol 2 with <code>Hello</code>, then calls
+<code>Attach</code>. <code>NOT_FOUND</code> says there is no such brick,
+<code>BAD_ARGUMENT</code> that it doesn't run or has no such console,
+<code>COMMAND_FAILED</code> that Virtualbricks can't reach the console.
+The windows of <code>virtualbricks --connect</code> join the connection
+to a terminal of their own, as <code>vdeterm</code>(1):</p>
+<pre><code>  terminal     program            Virtualbricks     console
+     |            |                     |              |
+     |            |-- Attach brick vm1, |              |
+     |            |   console monitor -&gt;|-- connects -&gt;|
+     |            |&lt;----------- answer -|              |
+     |&lt;= bytes ==&gt;|&lt;====== bytes ======&gt;|&lt;== bytes ===&gt;|</code></pre>
+<h2 id="versions">Versions</h2>
+<p>The JSON protocol is 1, in the greeting; another would have another
+number. Over AMP, <code>Hello</code> agrees on the protocol: the highest
+that both ends speak. 1 is always one of them.</p>
+<p>Protocol 2 is still in development. Until it is stable, a later
+Virtualbricks may change its commands in any way, without notice and
+without a new number: rename a command or an argument, change a type,
+make an argument needed, add an error, or take a command away. A program
+that speaks protocol 2 wants the same version of Virtualbricks at both
+ends, as the windows of <code>virtualbricks --connect</code> do: the
+<code>version</code> in the answer of <code>Hello</code>.</p>
+<p>Once it is stable, protocol 2 will keep its commands as they are. A
+later Virtualbricks will add commands to it, and optional arguments to
+its commands, and nothing else: an older one answers a command it
+doesn't have with <code>UNHANDLED</code>, and an argument it doesn't
+know with <code>BAD_ARGUMENT</code>, so a program that sends them knows
+that they weren't done. A change of any other kind will make protocol 3,
+which would take the place of 2: a program that speaks both calls
+<code>Hello</code> with <code>protocols</code> [1, 2, 3]. The sources
+keep the commands of protocol 2 in
+<em>tests/data/amp-protocol-2.txt</em>, which the tests compare with the
+modules.</p>
+<h2 id="limits">Limits</h2>
+<dl>
+<dt>A line of the JSON protocol</dt>
+<dd>
+64 KiB, 65536 bytes; a longer one closes the connection.
+</dd>
+<dt>A key of AMP</dt>
+<dd>
+255 bytes.
+</dd>
+<dt>A value of AMP</dt>
+<dd>
+65535 bytes. A longer answer is <code>ANSWER_TOO_LONG</code>, after the
+command was done; a longer push isn't sent.
+</dd>
+<dt>The proof of the token</dt>
+<dd>
+10 seconds from connecting.
+</dd>
+<dt>The last answers, at the end</dt>
+<dd>
+2 seconds for the client to read them.
+</dd>
+<dt>The log, for a program that follows</dt>
+<dd>
+The last 500 messages, then each new one.
+</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<p>A shell on a JSON socket, with <code>socat</code>(1); the lines it
+prints are the greeting and the answers:</p>
+<pre><code>virtualbricks --no-gui --listen \
+    unix:~/labs/lab1.json:protocol=json &amp;
+socat - UNIX-CONNECT:$HOME/labs/lab1.json
+{&quot;protocol&quot;: 1, &quot;version&quot;: &quot;3.0.0&quot;, &quot;pid&quot;: 4200, ...}
+{&quot;line&quot;: &quot;brick new switch sw1&quot;}
+{&quot;ok&quot;: true, &quot;lines&quot;: [&quot;sw1&quot;]}
+{&quot;line&quot;: &quot;brick start sw1&quot;}
+{&quot;ok&quot;: true, &quot;lines&quot;: [&quot;sw1 runs, process 4242&quot;]}</code></pre>
+<p>A client of the JSON protocol in Python, without anything else, for a
+Virtualbricks started with <code>--listen
+tcp:8765:protocol=json</code>:</p>
+<pre><code>import hmac, json, os, secrets, socket, sys
+
+
+def proof(token, side, nonce, mine):
+    text = f&quot;virtualbricks {side} {nonce} {mine}&quot;
+    key = token.encode()
+    return hmac.new(key, text.encode(), &quot;sha256&quot;).hexdigest()
+
+
+def send(lines, **message):
+    lines.write(json.dumps(message).encode() + b&quot;\n&quot;)
+    lines.flush()
+
+
+def receive(lines):
+    return json.loads(lines.readline())
+
+
+def connect(port, token):
+    sock = socket.create_connection((&quot;127.0.0.1&quot;, port))
+    lines = sock.makefile(&quot;rwb&quot;)
+    first = receive(lines)
+    if first.get(&quot;auth&quot;) == &quot;token&quot;:
+        nonce, mine = first[&quot;nonce&quot;], secrets.token_hex(32)
+        send(lines, nonce=mine,
+             proof=proof(token, &quot;client&quot;, nonce, mine))
+        first = receive(lines)
+        expected = proof(token, &quot;server&quot;, nonce, mine)
+        given = first.get(&quot;proof&quot;, &quot;&quot;)
+        if not hmac.compare_digest(given, expected):
+            sys.exit(first.get(&quot;error&quot;, &quot;Wrong token&quot;))
+    if first.get(&quot;protocol&quot;) != 1:
+        sys.exit(&quot;It doesn&#39;t speak the JSON protocol 1&quot;)
+    return lines
+
+
+def ask(lines, line):
+    send(lines, line=line)
+    answer = receive(lines)
+    print(&quot;\n&quot;.join(answer[&quot;lines&quot;]))
+    if not answer[&quot;ok&quot;]:
+        sys.exit(answer[&quot;error&quot;])
+
+
+path = os.path.expanduser(&quot;~/.config/virtualbricks/token&quot;)
+with open(path) as file:
+    token = file.read().strip()
+lines = connect(8765, token)
+ask(lines, &quot;status&quot;)
+ask(lines, &quot;brick list&quot;)</code></pre>
+<p>A program written with Twisted that speaks protocol 2, for a
+Virtualbricks started with <code>--listen tcp:8765</code>: it starts
+<code>sw1</code>, and prints what changes until Virtualbricks quits:</p>
+<pre><code>import json, os
+
+from twisted.internet import defer, endpoints, task
+from twisted.protocols import amp
+
+from virtualbricks.console.ampcommands import BrickStart
+from virtualbricks.console.ampwire import Hello, authenticate
+from virtualbricks.remote import commands
+
+
+class Follower(amp.AMP):
+    &quot;&quot;&quot;Prints what changes; a responder for each push.&quot;&quot;&quot;
+
+    def __init__(self):
+        super().__init__()
+        self.lost = defer.Deferred()
+
+    def connectionLost(self, reason):
+        super().connectionLost(reason)
+        self.lost.callback(None)
+
+    @commands.Opened.responder
+    def opened(self, project, settings, machine):
+        print(&quot;Project&quot;, project)
+        return {}
+
+    @commands.Changed.responder
+    def changed(self, kind, name, table, state):
+        print(kind, name, json.loads(state))
+        return {}
+
+    @commands.Renamed.responder
+    def renamed(self, kind, old, new):
+        print(kind, old, &quot;is now&quot;, new)
+        return {}
+
+    @commands.Removed.responder
+    def removed(self, kind, name):
+        print(kind, name, &quot;is gone&quot;)
+        return {}
+
+    @commands.Synced.responder
+    def synced(self):
+        return {}
+
+    @commands.SettingsChanged.responder
+    def settings_changed(self, settings):
+        return {}
+
+    @commands.Logged.responder
+    def logged(self, message):
+        print(json.loads(message)[&quot;text&quot;])
+        return {}
+
+    @commands.Quitting.responder
+    def quitting(self):
+        print(&quot;Virtualbricks quits&quot;)
+        return {}
+
+
+async def main(reactor):
+    endpoint = endpoints.TCP4ClientEndpoint(
+        reactor, &quot;127.0.0.1&quot;, 8765
+    )
+    vb = await endpoints.connectProtocol(endpoint, Follower())
+    path = os.path.expanduser(&quot;~/.config/virtualbricks/token&quot;)
+    with open(path) as file:
+        await authenticate(vb, file.read().strip())
+    hello = await vb.callRemote(Hello, protocols=[1, 2])
+    if hello[&quot;protocol&quot;] != 2:
+        raise SystemExit(&quot;It doesn&#39;t speak protocol 2&quot;)
+    await vb.callRemote(commands.Follow)
+    await vb.callRemote(BrickStart, name=[&quot;sw1&quot;])
+    await vb.lost
+
+
+task.react(lambda reactor: defer.ensureDeferred(main(reactor)))</code></pre>
+<h2 id="files">Files</h2>
+<dl>
+<dt><em>$XDG_CONFIG_HOME</em>/virtualbricks/token</dt>
+<dd>
+The token of the <code>tcp</code> and <code>ssl</code> sockets, see
+<code>THE TOKEN</code>.
+</dd>
+<dt><em>$XDG_RUNTIME_DIR</em>/virtualbricks/<em>key</em>/.control</dt>
+<dd>
+The socket of <code>--listen</code> alone of the workspace of
+<em>key</em>, which speaks AMP.
+</dd>
+</dl>
+<h2 id="see-also">See also</h2>
+<p><a href="command-line.html">virtualbricks(1)</a>, <a
+href="config-files.html">virtualbricks-config(5)</a>, <a
+href="vbp-format.html">virtualbricks-vbp(5)</a>, <a
+href="archive-protocol.html">virtualbricks-archive(7)</a>,
+<code>socat</code>(1), <code>openssl</code>(1)</p>
+<p>AMP: <a href="https://amp-protocol.net/"
+class="uri">https://amp-protocol.net/</a>, and Twisted's howto: <a
+href="https://docs.twisted.org/en/stable/core/howto/amp.html"
+class="uri">https://docs.twisted.org/en/stable/core/howto/amp.html</a></p>
+<p>JSON Lines: <a href="https://jsonlines.org/"
+class="uri">https://jsonlines.org/</a></p>
+<p>HMAC: RFC 2104, <a href="https://www.rfc-editor.org/rfc/rfc2104"
+class="uri">https://www.rfc-editor.org/rfc/rfc2104</a></p>
+</main>
+</div>
+</body>
+</html>

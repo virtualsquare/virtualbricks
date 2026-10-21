@@ -2,10 +2,10 @@ include COPYING LICENCE
 include l10n.sh
 include docs/*.html docs/redesign/*.html
 include docs/build.py docs/README.md docs/man/*.md docs/guide/*.md
-include docs/guide/figures/*.png docs/built/man/*.[1-9]
+include docs/guide/figures/*.png docs/templates/* docs/built/man/*.[1-9]
 include docs/built/mallard/*.page docs/built/mallard/figures/*.png
-include help/build.py help/html.xsl help/html/C/*
-include help/html/C/figures/*.png
+include docs/built/html/*.html docs/built/html/*.css
+include docs/built/html/figures/*.png
 include tools/*.py
 include locale/virtualbricks/virtualbricks.pot locale/virtualbricks/*.po
 recursive-include share *

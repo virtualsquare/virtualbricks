@@ -102,12 +102,11 @@ include = ["virtualbricks*"]
 # figures/, the pictures
 "share/help/C/virtualbricks" = ["docs/built/mallard/*.page"]
 "share/virtualbricks/help/C" = [
-    "help/html/C/*.html",
-    "help/html/C/*.css",
-    "help/html/C/*.js",
+    "docs/built/html/*.html",
+    "docs/built/html/*.css",
 ]
 "share/help/C/virtualbricks/figures" = ["docs/built/mallard/figures/*.png"]
-"share/virtualbricks/help/C/figures" = ["help/html/C/figures/*.png"]
+"share/virtualbricks/help/C/figures" = ["docs/built/html/figures/*.png"]
 "share/locale/de/LC_MESSAGES" = ["locale/de/LC_MESSAGES/virtualbricks.mo"]
 "share/locale/es/LC_MESSAGES" = ["locale/es/LC_MESSAGES/virtualbricks.mo"]
 "share/locale/fr/LC_MESSAGES" = ["locale/fr/LC_MESSAGES/virtualbricks.mo"]

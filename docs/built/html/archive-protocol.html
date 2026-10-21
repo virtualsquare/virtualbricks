@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The archive protocol — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page reference">
+<nav class="toc" aria-label="Contents">
+<p class="toc-label">Contents</p>
+<ol>
+<li><a href="#synopsis">Synopsis</a></li>
+<li><a href="#description">Description</a></li>
+<li><a href="#the-archive">The archive</a></li>
+<li><a href="#the-process">The process</a></li>
+<li><a href="#jobs">Jobs</a></li>
+<li><a href="#progress">Progress</a></li>
+<li><a href="#archive-tools">Archive tools</a></li>
+<li><a href="#the-applications-side">The application's side</a></li>
+<li><a href="#files">Files</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#bugs">Bugs</a></li>
+<li><a href="#see-also">See also</a></li>
+</ol>
+</nav>
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#reference">Reference</a></p>
+</div>
+<h1>The archive protocol</h1>
+<div class="lede">
+<p>the process that reads and writes project archives</p>
+</div>
+<div class="meta">
+<p>virtualbricks-archive(7) · Virtualbricks 3.0.0.dev7</p>
+</div>
+<h2 id="synopsis">Synopsis</h2>
+<div class="synopsis">
+<p><em>project</em>.vbp</p>
+<p><code>python -m virtualbricks.config.archive</code> <code>&lt;</code>
+<em>job.toml</em></p>
+</div>
+<h2 id="description">Description</h2>
+<p>Virtualbricks exports a project to an archive, a <em>.vbp</em> file,
+and imports a project from one, on the same computer or on another. The
+archive holds the project file, its README, the private disks of the
+virtual machines and, if you choose, the disk images they are based on:
+often gigabytes.</p>
+<p>So the application never reads or writes an archive itself. For each
+job, inspecting an archive, exporting a project or importing one, it
+starts a process of its own, the <em>archive process</em>. It writes the
+job to the process's standard input, as TOML, and follows the job on the
+process's standard output, one JSON object a line, while the interface
+stays responsive. The process runs one job and exits. It runs at a lower
+priority, <code>nice</code> 10, and it can be stopped at any time with
+SIGTERM.</p>
+<pre><code>  application                         archive process
+ +------------+                      +-------------+
+ |            |-- stdin: the job ---&gt;|             |
+ | ArchiveJob |   TOML, then EOF     |   main()    |-&gt; bsdtar
+ |            |                      |             |   or tar
+ |            |&lt;- stdout: messages --|             |
+ |            |   JSON, one a line   |             |-&gt; qemu-img
+ |            |&lt;- stderr ------------|             |
+ |            |   kept for errors    |             |
+ |            |-- SIGTERM: cancel --&gt;|             |
+ |            |&lt;- exit status -------|             |
+ +------------+                      +-------------+</code></pre>
+<p>This page sums up the archives (<code>THE ARCHIVE</code>), and
+describes the protocol between the application and the process
+(<code>THE PROCESS</code>), the three jobs (<code>JOBS</code>), the
+progress they report (<code>PROGRESS</code>), the tools they run
+(<code>ARCHIVE TOOLS</code>) and how the application drives them
+(<code>THE APPLICATION'S SIDE</code>). It's for whoever works on that
+code, and for anyone who wants to run the process by hand, to look into
+an archive or to script an export.</p>
+<h2 id="the-archive">The archive</h2>
+<p>An archive, a <em>.vbp</em> file, is a tar file in the pax format,
+which <a href="vbp-format.html">virtualbricks-vbp(5)</a> describes in
+full. This page needs only what follows.</p>
+<p>Each member is a file of the project's folder, under its path in the
+folder, or an image of the project, under <em>IMAGES/</em>, named after
+the image in the project file. The name of a member gives its
+<em>kind</em>, the word that the messages of the process use:</p>
+<dl>
+<dt><code>contents</code></dt>
+<dd>
+<code>contents.toml</code>, the list of the other members.
+</dd>
+<dt><code>project</code>, <code>legacy project</code></dt>
+<dd>
+<code>project.toml</code>, the project file; <code>.project</code> or
+<code>.project~</code>, the project file of Virtualbricks 2.1 and older.
+</dd>
+<dt><code>readme</code></dt>
+<dd>
+<code>README.md</code>, or <code>README</code> before 3.0.
+</dd>
+<dt><code>disk</code></dt>
+<dd>
+<em>vm</em>_<em>device</em>.cow, the private disk of a virtual machine.
+</dd>
+<dt><code>image</code></dt>
+<dd>
+IMAGES/<em>image</em>, a disk image; <em>.images/image</em> in older
+archives.
+</dd>
+<dt><code>other</code></dt>
+<dd>
+Any other file of the folder.
+</dd>
+</dl>
+<p>A new archive starts with its <em>head</em>:
+<code>contents.toml</code>, then the project file and the README. An
+inspection reads the head and stops there. The archives of older
+versions have no <code>contents.toml</code>, and an inspection reads
+them to their end.</p>
+<p>When <code>qemu-img</code> is installed, the export compresses each
+disk and each image in the qcow2 format on its own, and
+<code>contents.toml</code> marks it <em>packed</em>, with its size
+before, its <em>real_size</em>; the import turns them back into normal
+qcow2 files. Without <code>qemu-img</code>, the export compresses the
+whole archive with gzip instead.</p>
+<p>Disks are sparse files, and the archive keeps their holes: a disk of
+20 GB can take 2 GB.</p>
+<h2 id="the-process">The process</h2>
+<h3 id="starting">Starting</h3>
+<p>The application starts the process with its own Python interpreter
+and its own environment:</p>
+<pre><code>python -m virtualbricks.config.archive</code></pre>
+<p>The process lowers its priority to <code>nice</code> 10, and handles
+SIGTERM.</p>
+<p>The process always comes from the same installation as the
+application, so the protocol has no version: it changes with the code,
+and this page with it.</p>
+<h3 id="the-job">The job</h3>
+<p>The process reads its standard input to the end, then parses it as a
+TOML table. The key <code>job</code> says which job it is,
+<code>inspect</code>, <code>export</code> or <code>import</code>; the
+other keys depend on the job, and are described in
+<code>JOBS</code>.</p>
+<pre><code>job = &quot;inspect&quot;
+archive = &quot;/home/user/lab.vbp&quot;</code></pre>
+<p>An unknown job is an error, as the other errors of the job. A missing
+key, or one of the wrong type, is a bug of the caller: the process
+reports it with its traceback.</p>
+<h3 id="messages">Messages</h3>
+<p>The process writes to its standard output one JSON object a line, and
+flushes each one. Every object has one key, which says what it is:</p>
+<dl>
+<dt><code>progress</code></dt>
+<dd>
+{"step": <em>step</em>, "done": <em>bytes</em>, "total":
+<em>bytes</em>}: how far a step of the job has gone; see
+<code>PROGRESS</code>.
+</dd>
+<dt><code>created</code></dt>
+<dd>
+<em>path</em>: the process created a file or a folder outside the job's
+folder, which it removes if the job doesn't end well; see <code>Cleaning
+up</code>.
+</dd>
+<dt><code>head</code></dt>
+<dd>
+<em>contents</em>: what an inspection knows of an older archive before
+reaching its end; see <code>inspect</code>.
+</dd>
+<dt><code>result</code></dt>
+<dd>
+<em>result</em>: the job is done. It depends on the job.
+</dd>
+<dt><code>error</code></dt>
+<dd>
+<em>message</em>: the job failed.
+</dd>
+</dl>
+<p>The messages come in this order:</p>
+<pre><code>messages = *( progress / created / head ) [ result / error ]</code></pre>
+<p><code>result</code> or <code>error</code> is the last message; there
+is none when the job is cancelled or the process dies. A reader ignores
+anything else: an empty line, a line that isn't JSON, a value that isn't
+an object, an object with none of these keys.</p>
+<p>An import, for one, says:</p>
+<pre><code> application                                  process
+   |                                            |
+   |  job = &quot;import&quot; ... EOF                    |
+   |-------------------------------------------&gt;|
+   |                                            | extract
+   |  {&quot;progress&quot;: {&quot;step&quot;: &quot;extract&quot;, ...}}    |
+   |&lt;-------------------------------------------|
+   |  {&quot;created&quot;: &quot;.../debian.qcow2&quot;}           | copy
+   |&lt;-------------------------------------------|
+   |  {&quot;progress&quot;: {&quot;step&quot;: &quot;unpack&quot;, ...}}     | unpack
+   |&lt;-------------------------------------------|
+   |  {&quot;result&quot;: {&quot;name&quot;: &quot;lab&quot;, ...}}          |
+   |&lt;-------------------------------------------|
+   |  exit status 0                             |
+   |&lt;- - - - - - - - - - - - - - - - - - - - - -|</code></pre>
+<h3 id="ending">Ending</h3>
+<p>The process exits when its job ends, with:</p>
+<dl>
+<dt><code>0</code></dt>
+<dd>
+The job is done: the last message is <code>result</code>.
+</dd>
+<dt><code>1</code></dt>
+<dd>
+SIGTERM cancelled the job. The process removed what it wrote, and sent
+nothing more.
+</dd>
+<dt><code>2</code></dt>
+<dd>
+The job failed: the last message is <code>error</code>, with a message
+for the user, as "the archive has no project file" or the error of
+<code>bsdtar</code> or <code>qemu-img</code>.
+</dd>
+<dt><code>3</code></dt>
+<dd>
+A bug: the last message is <code>error</code>, with the Python
+traceback.
+</dd>
+</dl>
+<p>A process killed by another signal sends nothing more, and may leave
+files behind: see <code>Cleaning up</code>. The messages tell the
+outcome, not the exit status: a job is done when <code>result</code>
+came.</p>
+<h3 id="cancelling">Cancelling</h3>
+<p>SIGTERM stops the job wherever it is. The process stops its
+<code>tar</code> or <code>qemu-img</code>, removes the files it wrote,
+and exits with 1:</p>
+<ul>
+<li>An export removes its unfinished archive and its folder. An archive
+that was already there under the same name is left as it was.</li>
+<li>An import removes its folder in the workspace and the images it
+copied to the shared images.</li>
+<li>An inspection writes nothing.</li>
+</ul>
+<h3 id="cleaning-up">Cleaning up</h3>
+<p>A job writes its files where they end up, under a temporary name, and
+renames them at the end, so that a job that doesn't end leaves nothing
+behind. When the job fails or is cancelled, the process removes them.
+When the process dies before it can, the application removes them: the
+job's folder, when it made it, and every path that the process sent with
+<code>created</code>.</p>
+<dl>
+<dt>.<em>name</em>.vbp.<em>XXXXXXXX</em>.part,
+.virtualbricks-export-<em>XXXXXXXX</em>/</dt>
+<dd>
+The unfinished archive and its folder, next to the archive, which the
+export makes and sends with <code>created</code>.
+</dd>
+<dt><em>workspace</em>/.importing-<em>name</em>-<em>XXXXXXXX</em>/</dt>
+<dd>
+The folder of an import, which the application makes before it starts
+the process.
+</dd>
+<dt><em>workspace</em>/shared_images/<em>file</em></dt>
+<dd>
+An image that the import copied to the shared images, and sent with
+<code>created</code>.
+</dd>
+</dl>
+<p>The application removes them only when the process ended without a
+<code>result</code>.</p>
+<h2 id="jobs">Jobs</h2>
+<h3 id="inspect">inspect</h3>
+<p>Read what an archive holds: its project file, its README and the list
+of its members.</p>
+<dl>
+<dt><code>archive</code> = <em>path</em></dt>
+<dd>
+The archive to read.
+</dd>
+</dl>
+<p>The result is an object:</p>
+<dl>
+<dt><code>path</code> = <em>string</em></dt>
+<dd>
+The archive.
+</dd>
+<dt><code>data</code> = <em>object</em></dt>
+<dd>
+The project file, in the current format: converted from
+<code>.project</code>, or upgraded from an older
+<code>project.toml</code>.
+</dd>
+<dt><code>description</code> = <em>string</em></dt>
+<dd>
+The README, or "" when there is none. Bytes that aren't UTF-8 are
+replaced.
+</dd>
+<dt><code>members</code> = <em>array</em></dt>
+<dd>
+[<em>name</em>, <em>size</em>, <em>kind</em>, <em>packed</em>,
+<em>real_size</em>] for each member, in the order of the archive: from
+<code>contents.toml</code> when the archive has one, otherwise from the
+tar headers, with <em>packed</em> false and <em>real_size</em> 0.
+</dd>
+<dt><code>complete</code> = <em>boolean</em></dt>
+<dd>
+Whether <code>members</code> lists every member of the archive.
+</dd>
+<dt><code>report</code> = <em>array</em></dt>
+<dd>
+[<em>level</em>, <em>text</em>, <em>where</em>] for each problem found
+in the project file; <em>level</em> is <code>info</code>,
+<code>warning</code> or <code>error</code>, <em>where</em> the key it's
+about, or "".
+</dd>
+<dt><code>converted</code> = <em>boolean</em></dt>
+<dd>
+Whether <code>data</code> was converted from <code>.project</code>.
+</dd>
+</dl>
+<p>An inspection sends the progress of the step <code>read</code>. A new
+archive is read up to the end of its head: the result comes with
+<code>complete</code> true, and the progress stops early. An archive
+without <code>contents.toml</code> is read to its end; as soon as its
+project file is read, the inspection sends a <code>head</code> message,
+an object as the result with <code>complete</code> false and the members
+read so far. The Import window shows its form from the head, and
+completes it with the result.</p>
+<pre><code>  new archive, with contents.toml
+  +----------+---------+--------+ - - - - - - - - - - - - +
+  | contents | project | README |   disks, images...      |
+  +----------+---------+--------+ - - - - - - - - - - - - +
+  &#39;------------ read -----------&#39;  not read
+                                &#39;-&gt; result, complete
+
+  older archive, without contents.toml
+  +---------+---------+------------------------------------+
+  |   ...   | project |   README, disks, images...         |
+  +---------+---------+------------------------------------+
+  &#39;------ read -------&#39;-&gt; head, not complete
+  &#39;------------------------- read -------------------------&#39;
+                                        result, complete &lt;-&#39;</code></pre>
+<p>The inspection fails when the archive has no project file, when the
+project file can't be read or converted, or when
+<code>contents.toml</code> comes from a newer Virtualbricks.</p>
+<h3 id="export">export</h3>
+<p>Write an archive of a project:</p>
+<pre><code>job = &quot;export&quot;
+project = &quot;/home/user/.virtualbricks/lab&quot;
+output = &quot;/home/user/lab.vbp&quot;
+files = [&quot;project.toml&quot;, &quot;README.md&quot;, &quot;vm1_hda.cow&quot;]
+images = [[&quot;debian&quot;, &quot;/srv/vm/debian-12.qcow2&quot;]]
+compression = &quot;none&quot;
+qemu_img = &quot;/usr/bin/qemu-img&quot;</code></pre>
+<dl>
+<dt><code>project</code> = <em>path</em></dt>
+<dd>
+The folder of the project.
+</dd>
+<dt><code>output</code> = <em>path</em></dt>
+<dd>
+The archive to write. A file with that name is replaced when the export
+ends.
+</dd>
+<dt><code>files</code> = <em>array of strings</em></dt>
+<dd>
+The files of the project to store, relative to its folder. The Export
+window always stores <code>project.toml</code> and the README,
+<code>README.md</code> or, in a project not opened since 3.0,
+<code>README</code>, and lets you choose the private disks, the other
+files and the images; it never stores what older versions left in the
+folder: the <em>.images</em> folder and the <em>.project</em> files. The
+export leaves out a folder <em>IMAGES</em> of the project, as an import
+would take its files for images, and reports it.
+</dd>
+<dt><code>images</code> = <em>array</em> of [<em>name</em>,
+<em>path</em>]</dt>
+<dd>
+The images to store, as <em>IMAGES/name</em>.
+</dd>
+<dt><code>compression</code> = <code>"gzip"</code> |
+<code>"none"</code>, default <code>"gzip"</code></dt>
+<dd>
+Whether to compress the archive with gzip. The application asks for
+<code>"none"</code> when it gives <code>qemu_img</code>.
+</dd>
+<dt><code>qemu_img</code> = <em>path</em>, default <code>""</code></dt>
+<dd>
+The <code>qemu-img</code> that packs the disks, or "" not to pack them.
+</dd>
+</dl>
+<p>The export takes these steps:</p>
+<ol type="1">
+<li>It creates the unfinished archive,
+.<em>name</em>.vbp.<em>XXXXXXXX</em>.part, and a folder,
+.virtualbricks-export-<em>XXXXXXXX</em>, both next to the archive
+because the packed disks can be large, and sends them with
+<code>created</code>.</li>
+<li>It puts in the folder each member under its name in the archive: a
+qcow2 disk or image packed by <code>qemu-img</code>, in the step
+<code>pack</code>, and any other file as a symbolic link to it.</li>
+<li>It writes <code>contents.toml</code> in the folder.</li>
+<li>It writes the folder into the unfinished archive with the archive
+tool, following the links, through gzip if asked, in the step
+<code>write</code>.</li>
+<li>It renames the unfinished archive to <em>output</em>, and removes
+the folder.</li>
+</ol>
+<pre><code> lab/project.toml  -- link --&gt;  +---------------------------+
+ lab/README.md     -- link --&gt;  | .virtualbricks-export-*/  |
+ lab/vm1_hda.cow   -- pack --&gt;  |   contents.toml           |
+ debian-12.qcow2   -- pack --&gt;  |   project.toml  README.md |
+                                |   vm1_hda.cow             |
+                                |   IMAGES/debian           |
+                                +---------------------------+
+                                     | tar, in order
+                                     v
+                                .lab.vbp.XXXXXXXX.part
+                                     | rename, at the end
+                                     v
+                                lab.vbp</code></pre>
+<p>The result is an object:</p>
+<dl>
+<dt><code>output</code> = <em>string</em></dt>
+<dd>
+The archive.
+</dd>
+<dt><code>size</code> = <em>integer</em></dt>
+<dd>
+Its size, in bytes.
+</dd>
+<dt><code>report</code> = <em>array</em></dt>
+<dd>
+[<em>level</em>, <em>text</em>, <em>where</em>] for each problem, as a
+disk stored as it is.
+</dd>
+</dl>
+<h3 id="import">import</h3>
+<p>Make a project of an archive. The application reads the archive with
+<code>inspect</code> first, and asks the user what to do with each
+image; this job does the rest:</p>
+<pre><code>job = &quot;import&quot;
+archive = &quot;/home/user/lab.vbp&quot;
+staging = &quot;/home/user/.virtualbricks/.importing-lab-k2x9q1ab&quot;
+destination = &quot;/home/user/.virtualbricks/lab&quot;
+qemu_img = &quot;/usr/bin/qemu-img&quot;
+
+[[images]]
+name = &quot;debian&quot;
+choice = &quot;copy&quot;
+path = &quot;/home/user/.virtualbricks/shared_images/debian-12.qcow2&quot;
+fallback = &quot;&quot;
+
+[settings]
+qemu_path = &quot;/usr/bin&quot;</code></pre>
+<dl>
+<dt><code>archive</code> = <em>path</em></dt>
+<dd>
+The archive to import.
+</dd>
+<dt><code>staging</code> = <em>path</em></dt>
+<dd>
+An empty folder of the workspace,
+.importing-<em>name</em>-<em>XXXXXXXX</em>, that the application creates
+and the list of projects ignores. The archive is extracted there.
+</dd>
+<dt><code>destination</code> = <em>path</em></dt>
+<dd>
+The folder of the new project, <em>workspace</em>/<em>name</em>. If a
+folder with that name appeared meanwhile, the import takes the next free
+name, <em>name</em>-2, <em>name</em>-3... and says so in its report. An
+import never replaces a project.
+</dd>
+<dt><code>images</code> = <em>array of tables</em></dt>
+<dd>
+What to do with each image of the project file:
+<dl>
+<dt><code>name</code> = <em>string</em></dt>
+<dd>
+The name of the image in the project file.
+</dd>
+<dt><code>choice</code> = <code>"copy"</code> | <code>"use"</code> |
+<code>"skip"</code> | <code>"auto"</code></dt>
+<dd>
+<code>copy</code> moves the image from the archive to <code>path</code>,
+or to the next free name, <em>debian-12.1.qcow2</em>,
+<em>debian-12.2.qcow2</em>... <code>use</code> uses the file
+<code>path</code> of this computer. <code>skip</code> leaves the image
+unset: it keeps its path of the project file, and its private disks
+their backing file, until Find the File..., in the Images tab, gives it
+a file of this computer. <code>auto</code> copies the image if the
+archive has it, otherwise uses <code>fallback</code>, otherwise skips
+it; the application sends it for the images of an older archive that the
+inspection hadn't seen yet when the import started.
+</dd>
+<dt><code>path</code> = <em>path</em></dt>
+<dd>
+Where the copy goes, or the file used.
+</dd>
+<dt><code>fallback</code> = <em>path</em></dt>
+<dd>
+For <code>auto</code>: the file to use if the archive doesn't have the
+image, or "".
+</dd>
+</dl>
+</dd>
+<dt><code>settings</code> = <em>table</em></dt>
+<dd>
+The settings of the project to replace with this computer's:
+<code>qemu_path</code> and <code>vde_path</code>, the folders of QEMU
+and VDE.
+</dd>
+<dt><code>qemu_img</code> = <em>path</em></dt>
+<dd>
+The <code>qemu-img</code> that unpacks and rebases the disks, or "".
+</dd>
+</dl>
+<p>The application gives every image a default. An image that the
+archive has is copied into the shared images,
+<em>workspace</em>/shared_images, unless they have a file with the same
+file name and size, which is used. An image that the archive doesn't
+have uses its file if this computer has it at the same path, or a file
+of the shared images with its name, and is left unset otherwise. A
+setting is replaced, unless you say otherwise, when its folder doesn't
+exist on this computer.</p>
+<p>The import takes these steps:</p>
+<pre><code> workspace/
+ |
+ +-- .importing-lab-k2x9q1ab/   1  extract the archive here
+ |     contents.toml            2  note what&#39;s packed, remove
+ |     project.toml             3  read, or convert .project
+ |     README.md
+ |     IMAGES/debian  ----.     4  copy, use or skip images
+ |     vm1_hda.cow        |     5  rewrite project.toml
+ |                        |     6  rebase -u the private
+ |                        |        disks on their images
+ +-- shared_images/       |     7  unpack the packed disks
+ |     debian-12.qcow2 &lt;--&#39;     8  turn zeros into holes
+ |
+ +-- lab/  &lt;------------------  9  rename into place</code></pre>
+<ol type="1">
+<li>Extract the archive into <code>staging</code>, in the step
+<code>extract</code>.</li>
+<li>Read which members are packed from <code>contents.toml</code>, and
+remove it: it isn't a file of the project. Rename <code>README</code>,
+the README of before 3.0, to <code>README.md</code>, unless there is
+one.</li>
+<li>Read the project file and upgrade it, or convert
+<code>.project</code>.</li>
+<li>Move each copied image to the shared images, sending it with
+<code>created</code>; then remove the <em>IMAGES</em> folder, or
+<em>.images</em> in an older archive, with the images that aren't
+copied.</li>
+<li>Rewrite <code>project.toml</code> with the path of each image but
+those left unset, which keep theirs, and with
+<code>settings</code>.</li>
+<li>Point each private disk at its image, in the format of the image:
+<code>qemu-img rebase -u -b</code> <em>image</em> <code>-F</code>
+<em>format</em> <em>disk</em>.</li>
+<li>Unpack the packed disks and images, in the step
+<code>unpack</code>.</li>
+<li>After GNU <code>tar</code> or <code>tarfile</code>, turn the runs of
+zeros of the private disks and of the copied images into holes.</li>
+<li>Rename <code>staging</code> to the project's folder, with the
+permissions of a normal folder.</li>
+</ol>
+<p>The result is an object:</p>
+<dl>
+<dt><code>name</code> = <em>string</em></dt>
+<dd>
+The name of the new project: the name of <code>destination</code>, or
+the next free one.
+</dd>
+<dt><code>report</code> = <em>array</em></dt>
+<dd>
+[<em>level</em>, <em>text</em>, <em>where</em>] for each problem: an
+image left unset, a disk left compressed or not rebased, what the
+conversion of <code>.project</code> found.
+</dd>
+</dl>
+<h2 id="progress">Progress</h2>
+<p>Each step counts bytes, <em>done</em> of <em>total</em>:</p>
+<dl>
+<dt><code>read</code>, in <code>inspect</code></dt>
+<dd>
+The bytes of the archive read, of its size.
+</dd>
+<dt><code>pack</code>, in <code>export</code></dt>
+<dd>
+The bytes of the disks and images packed, of their data without holes.
+</dd>
+<dt><code>write</code>, in <code>export</code></dt>
+<dd>
+The bytes of the tar written, before gzip, of the data of the members
+without holes.
+</dd>
+<dt><code>extract</code>, in <code>import</code></dt>
+<dd>
+The bytes of the archive given to the archive tool, of its size.
+</dd>
+<dt><code>unpack</code>, in <code>import</code></dt>
+<dd>
+The bytes of the packed disks and images unpacked, of their size.
+</dd>
+</dl>
+<p>A step sends its progress at most ten times a second, and when it
+ends; a step with nothing to do sends nothing. The steps of
+<code>pack</code> and <code>unpack</code> follow the percentage that
+<code>qemu-img</code> prints. The <em>done</em> of a step can stay below
+its <em>total</em>, as when an inspection stops at the head of an
+archive, or go past it, as in <code>write</code>, which counts the tar
+headers too: a progress bar shows the smaller of the two.</p>
+<h2 id="archive-tools">Archive tools</h2>
+<p>The process runs the first archive tool it finds:
+<code>bsdtar</code>; otherwise <code>tar</code>, if the first line of
+<code>tar --version</code> says it's GNU tar, as the <code>tar</code> of
+BusyBox doesn't keep holes; otherwise Python's <code>tarfile</code>.</p>
+<dl>
+<dt>Reading the head</dt>
+<dd>
+Always with <code>tarfile</code>, reading the archive as a stream. If
+<code>tarfile</code> finds a member that it would read wrong (see
+<code>BUGS</code>), the process lists the archive with the tool instead,
+<code>bsdtar -t -v -f</code> <em>archive</em> or <code>tar -t -v
+--quoting-style=literal -f</code> <em>archive</em>, and extracts the
+files of the head with <code>-x -O -f</code> <em>archive</em>
+<em>member</em>.
+</dd>
+<dt>Writing</dt>
+<dd>
+<code>bsdtar -c -L --format pax -f - -C</code> <em>folder</em>
+<code>--</code> <em>members</em>, or <code>tar -c --sparse --dereference
+--format=posix -f - -C</code> <em>folder</em> <code>--</code>
+<em>members</em>, or <code>tarfile</code> with the sparse members
+written by Virtualbricks. The process compresses the output with gzip
+itself, so the archive is the same whatever the tool.
+</dd>
+<dt>Extracting</dt>
+<dd>
+The process feeds the archive to the tool through a pipe, so that the
+progress is the same with every tool: <code>bsdtar -x -S -f - -C</code>
+<em>folder</em>, or <code>tar -x -f - -C</code> <em>folder</em> with
+<code>--gzip</code>, <code>--bzip2</code>, <code>--xz</code> or
+<code>--zstd</code>, as GNU tar doesn't recognize the compression of a
+pipe. With <code>tarfile</code>, members with an absolute name, with
+<em>..</em> in their name, links and devices are skipped.
+</dd>
+</dl>
+<h2 id="the-applications-side">The application's side</h2>
+<p>The module <em>virtualbricks/config/archive.py</em> has both sides of
+the protocol. In the application, an <code>ArchiveJob</code> runs a
+job:</p>
+<ul>
+<li><code>start</code>(<em>reactor</em>) starts the process with
+<code>reactor.spawnProcess</code>, writes the job as TOML and closes the
+standard input.</li>
+<li>A <code>progress</code> message calls
+<em>on_progress</em>(<em>step</em>, <em>done</em>, <em>total</em>), a
+<code>head</code> calls <em>on_head</em>(<em>table</em>), and a
+<code>created</code> adds its path to the leftovers.</li>
+<li>When the process ends, the Deferred <code>done</code> fires with the
+result, if one came, whatever the exit status. Otherwise the leftovers
+are removed, and <code>done</code> fails with
+<code>ArchiveCancelled</code> after <code>cancel</code>(), or else with
+<code>ArchiveError</code>, whose message is the <code>error</code>
+message, or the standard error of the process, or "the process
+stopped".</li>
+<li><code>cancel</code>() sends SIGTERM to the process.</li>
+</ul>
+<p>Three functions make the jobs, the first two in
+<code>virtualbricks.config.archive</code> and the last in
+<code>virtualbricks.config.importing</code>, and <code>done</code> fires
+with what they make of the result:</p>
+<dl>
+<dt><code>inspect_archive</code>(<em>path</em>, <em>on_head</em>,
+<em>on_progress</em>)</dt>
+<dd>
+Fires with an <code>ArchiveContents</code>; <em>on_head</em> gets one
+too.
+</dd>
+<dt><code>export_project</code>(<em>project</em>, <em>output</em>,
+<em>files</em>, <em>images</em>, <em>on_progress</em>,
+<em>qemu_img</em>)</dt>
+<dd>
+Fires with the result object. Asks for <code>"none"</code> compression
+when <em>qemu_img</em> is given.
+</dd>
+<dt><code>import_project</code>(<em>plan</em>, <em>workspace</em>,
+<em>on_progress</em>, <em>qemu_img</em>)</dt>
+<dd>
+Creates the <code>staging</code> folder, a leftover from the start, and
+fires with an <code>ImportResult</code>, its name and its report.
+<code>plan_import</code> makes the <em>plan</em>, with the default of
+every choice, from an <code>ArchiveContents</code>;
+<code>update_plan</code> settles it with the result of the inspection
+when the head came first.
+</dd>
+</dl>
+<p>The Import window runs an inspection as soon as an archive is chosen,
+and cancels it when another is chosen or when the import starts, which
+reads the whole archive anyway. Closing the Import window cancels its
+inspection, but closing either window lets an import or an export go on
+to its end, and the application logs its result.</p>
+<pre><code>from virtualbricks.config.archive import inspect_archive
+
+def show(contents):
+    print(contents.description)
+    for member in contents.members:
+        print(member.kind, member.name, member.size)
+
+job = inspect_archive(
+    &quot;/home/user/lab.vbp&quot;,
+    on_progress=lambda step, done, total: print(step, done),
+)
+job.done.addCallback(show)</code></pre>
+<h2 id="files">Files</h2>
+<dl>
+<dt><em>name</em>.vbp</dt>
+<dd>
+An archive.
+</dd>
+<dt>.<em>name</em>.vbp.<em>XXXXXXXX</em>.part</dt>
+<dd>
+An archive being written, next to it.
+</dd>
+<dt>.virtualbricks-export-<em>XXXXXXXX</em>/</dt>
+<dd>
+The members of an archive being written, next to it.
+</dd>
+<dt><em>workspace</em>/.importing-<em>name</em>-<em>XXXXXXXX</em>/</dt>
+<dd>
+A project being imported.
+</dd>
+<dt><em>workspace</em>/shared_images/</dt>
+<dd>
+The shared images, where the import copies the images.
+</dd>
+<dt><em>workspace</em>/<em>name</em>/</dt>
+<dd>
+An imported project.
+</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<p>Run the process by hand. Inspect an archive:</p>
+<pre><code>$ printf &#39;job = &quot;inspect&quot;\narchive = &quot;/home/user/lab.vbp&quot;\n&#39; |
+&gt;     python -m virtualbricks.config.archive
+{&quot;progress&quot;: {&quot;step&quot;: &quot;read&quot;, &quot;done&quot;: 512, &quot;total&quot;: 409600}}
+{&quot;result&quot;: {&quot;path&quot;: &quot;/home/user/lab.vbp&quot;, &quot;data&quot;: ...}}</code></pre>
+<p>The result, laid out:</p>
+<pre><code>{
+  &quot;path&quot;: &quot;/home/user/lab.vbp&quot;,
+  &quot;data&quot;: {
+    &quot;format&quot;: 1,
+    &quot;images&quot;: {
+      &quot;debian&quot;: {&quot;path&quot;: &quot;/srv/vm/debian-12.qcow2&quot;, ...}
+    },
+    &quot;bricks&quot;: {&quot;vm1&quot;: {&quot;type&quot;: &quot;qemu&quot;, ...}}
+  },
+  &quot;description&quot;: &quot;A two-host lab.\n&quot;,
+  &quot;members&quot;: [
+    [&quot;project.toml&quot;, 255, &quot;project&quot;, false, 0],
+    [&quot;README.md&quot;, 16, &quot;readme&quot;, false, 0],
+    [&quot;vm1_hda.cow&quot;, 197120, &quot;disk&quot;, true, 196616],
+    [&quot;IMAGES/debian&quot;, 197120, &quot;image&quot;, true, 196616]
+  ],
+  &quot;complete&quot;: true,
+  &quot;report&quot;: [],
+  &quot;converted&quot;: false
+}</code></pre>
+<p>Export a project, with the job of <code>export</code> in
+<em>export.toml</em>:</p>
+<pre><code>$ python -m virtualbricks.config.archive &lt; export.toml
+{&quot;created&quot;: &quot;/home/user/.lab.vbp.hsp68v_7.part&quot;}
+{&quot;created&quot;: &quot;/home/user/.virtualbricks-export-chcr2_tb&quot;}
+{&quot;progress&quot;: {&quot;step&quot;: &quot;pack&quot;, &quot;done&quot;: 0, &quot;total&quot;: 393232}}
+{&quot;progress&quot;: {&quot;step&quot;: &quot;pack&quot;, &quot;done&quot;: 393232, &quot;total&quot;: 393232}}
+{&quot;progress&quot;: {&quot;step&quot;: &quot;write&quot;, &quot;done&quot;: 409600, &quot;total&quot;: 394772}}
+{&quot;progress&quot;: {&quot;step&quot;: &quot;write&quot;, &quot;done&quot;: 394772, &quot;total&quot;: 394772}}
+{&quot;result&quot;: {&quot;output&quot;: &quot;/home/user/lab.vbp&quot;, &quot;size&quot;: 409600, ...}}
+$ echo $?
+0</code></pre>
+<p>Stop a long export: the process removes the unfinished archive and
+its folder.</p>
+<pre><code>$ python -m virtualbricks.config.archive \
+&gt;     &lt; export.toml &gt; messages &amp;
+$ sleep 2; kill $!; wait $!; echo $?
+1
+$ tail -n 1 messages
+{&quot;progress&quot;: {&quot;step&quot;: &quot;write&quot;, &quot;done&quot;: 48234496, ...}}</code></pre>
+<p>A job that fails:</p>
+<pre><code>$ printf &#39;job = &quot;inspect&quot;\narchive = &quot;notes.txt&quot;\n&#39; |
+&gt;     python -m virtualbricks.config.archive
+{&quot;progress&quot;: {&quot;step&quot;: &quot;read&quot;, &quot;done&quot;: 512, &quot;total&quot;: 5383}}
+{&quot;error&quot;: &quot;notes.txt: invalid header&quot;}
+$ echo $?
+2</code></pre>
+<h2 id="bugs">Bugs</h2>
+<p>An inspection that has to read the archive with the tool sends no
+progress, and no head.</p>
+<p>Python's <code>tarfile</code>, from 3.10 to 3.13, misreads a GNU
+sparse 1.0 member whose size is in a pax record, as <code>bsdtar</code>
+and GNU <code>tar</code> write the members larger than 8 GiB, and loses
+the member after it. The process then reads the archive with the tool;
+without <code>bsdtar</code> or GNU <code>tar</code>, it can't read it,
+and says "install bsdtar or GNU tar to read this archive".</p>
+<h2 id="see-also">See also</h2>
+<p><a href="vbp-format.html">virtualbricks-vbp(5)</a>, <a
+href="config-files.html">virtualbricks-config(5)</a>,
+<code>bsdtar</code>(1), <code>tar</code>(1), <code>tar</code>(5),
+<code>qemu-img</code>(1)</p>
+<p>GNU tar, sparse formats: <a
+href="https://www.gnu.org/software/tar/manual/html_node/Sparse-Formats.html"
+class="uri">https://www.gnu.org/software/tar/manual/html_node/Sparse-Formats.html</a></p>
+<p>TOML 1.0: <a href="https://toml.io/en/v1.0.0"
+class="uri">https://toml.io/en/v1.0.0</a></p>
+</main>
+</div>
+</body>
+</html>

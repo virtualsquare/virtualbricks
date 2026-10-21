@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Virtual machines — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#lab">Your lab</a></p>
+</div>
+<h1>Virtual machines</h1>
+<p>A virtual machine is a brick that QEMU runs. Its settings have a
+section for each part of it: <span class="gui">Machine</span>, the QEMU
+program, the type of machine, its processors and its memory; <span
+class="gui">Disks</span>; <span class="gui">CD-ROM and boot</span>;
+<span class="gui">Network</span>; <span class="gui">Display</span>;
+<span class="gui">Sound and USB</span>; <span class="gui">Kernel</span>,
+to boot a kernel of your own; and <span class="gui">Advanced</span>. The
+line at the top says which QEMU will run it.</p>
+<figure>
+<a href="figures/machine-settings.png"><img
+src="figures/machine-settings.png"
+alt="The settings of vm1: the line at the top names its QEMU, the sections are at the left, and the section Machine shows Program, Machine type, CPU model, KVM, Virtual CPUs and Memory." /></a>
+<figcaption>The settings of a virtual machine</figcaption>
+</figure>
+<h2 id="disks">Disks</h2>
+<p><span class="gui">Add Disk</span> adds a disk on the first free
+device. Each disk chooses its image in a list of the images of the
+project, which says what each is and who uses it. The list also has
+<span class="gui">Add an Existing Image…</span>, <span class="gui">New
+Empty Disk…</span> and <span class="gui">Manage Images…</span>, which
+shows the <span class="gui">Images</span> tab.</p>
+<div class="terms">
+<p class="title">How a disk uses its image</p>
+<dl>
+<dt><span class="gui">Private copy</span></dt>
+<dd>
+<p>The default. The machine writes its changes to a file of its own in
+the folder of the project, made at its next start, as <code
+class="file">vm1_hda.cow</code>, and the image stays as it is. Several
+machines can share one image this way.</p>
+</dd>
+<dt><span class="gui">The image itself</span></dt>
+<dd>
+The machine writes to the image.
+</dd>
+</dl>
+</div>
+<p>The line under a disk says what it does. The menu of a disk has <span
+class="gui">Save as a New Image…</span>, which keeps the changes of the
+machine as an image of their own; <span class="gui">Merge into</span>
+the image, which writes them into it, and lists first what else uses it;
+<span class="gui">Start Over from</span> the image, which throws the
+changes away; <span class="gui">Show in Files</span> and <span
+class="gui">Remove Disk</span>. Saving and merging run in the
+background, with their progress, and can be stopped.</p>
+<h2 id="network">Network cards</h2>
+<p><span class="gui">Add Card</span> adds a network card after the
+others. The cards are in the order the machine sees them, the first one
+first. Each has a <span class="gui">Model</span>, a <span
+class="gui">MAC address</span>, and what it is <span class="gui">Plugged
+into</span>:</p>
+<ul>
+<li><p>a switch of the lab;</p></li>
+<li><p><span class="gui">The host only, on QEMU's user network</span>:
+QEMU joins the machine to this computer, and through it to the networks
+this computer reaches, with no switch;</p></li>
+<li><p><span class="gui">Other bricks plug into it</span>: the card is a
+socket, and a wire can plug into it when the setting <span
+class="gui">Plugs into machines</span> of the project allows
+it;</p></li>
+<li><p><span class="gui">Nothing</span>.</p></li>
+</ul>
+<h2 id="console">The console of a machine</h2>
+<p>While the machine runs, <span class="guiseq"><span
+class="gui">Process</span> › <span class="gui">Open Control
+Monitor</span></span>, in its menu, opens the monitor of QEMU in a
+terminal, the one of the <span class="gui">Terminal</span> setting.
+There you type the commands of QEMU, as <code
+class="cmd">info network</code>.</p>
+<h2 id="state">Stop, suspend, resume</h2>
+<p><span class="gui">Stop</span> asks the system of the machine to shut
+down. <span class="gui">Suspend</span>, under <span
+class="gui">Process</span>, saves the state of the machine in its first
+disk and stops it; <span class="gui">Resume</span> starts it again from
+there. <span class="gui">Reset</span> is the reset button of the
+machine.</p>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="bricks.html">Bricks</a></p>
+<div class="desc">
+<p>Start, stop, configure, connect, rename and delete the bricks of a
+lab.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="images.html">Disk images</a></p>
+<div class="desc">
+<p>Add, make, share and find the disk images of a project.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="first-lab.html">Make your first lab</a></p>
+<div class="desc">
+<p>A switch and a machine plugged into it, started.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>
