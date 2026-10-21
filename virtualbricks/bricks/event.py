@@ -36,21 +36,25 @@ from virtualbricks.bricks.eventaction import (
     StoredAction,
     describe,
 )
-from virtualbricks.console.command import CommandError
 from virtualbricks.config.schema import Int, ListOf, define, field
+from virtualbricks.console.command import CommandError
 
 if TYPE_CHECKING:  # pragma: no cover
     from typing_extensions import TypeIs
 
 process_ended = "Process ended with exit code {code}"
 action_failed = "Event {event}, action {number}, {action}: {error}"
+# The longest delay, in seconds: the most a spin button holds.
+MAX_DELAY = 2**31 - 1
 
 
 @define
 class EventConfig(BaseConfig):
 
     delay: int = field(
-        Int(), default=0, help="Seconds to wait before the actions run"
+        Int(0, MAX_DELAY),
+        default=0,
+        help="Seconds to wait before the actions run",
     )
     actions: list[StoredAction] = field(
         ListOf(EventAction()),

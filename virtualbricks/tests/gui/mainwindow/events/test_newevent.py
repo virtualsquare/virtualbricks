@@ -17,13 +17,13 @@
 
 """The window of New Event: the name checked, the delay, Create."""
 
+from virtualbricks.bricks.event import MAX_DELAY
 from virtualbricks.engine import LocalEngine
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
     from gi.repository import Gtk
 
-    from virtualbricks.gui.mainwindow.events.eventeditor import MAX_DELAY
     from virtualbricks.gui.mainwindow.events.newevent import (
         NewEvent,
         NewEventDialog,

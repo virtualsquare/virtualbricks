@@ -295,7 +295,7 @@ word, and dropped at the next save.
 :   An image file to show instead of the icon of events. Nothing shows it
     yet.
 
-**delay** = *integer*, default `0`
+**delay** = *integer* 0-2147483647, default `0`
 :   Seconds to wait before running the actions.
 
 **actions** = *array*, default `[]`

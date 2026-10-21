@@ -45,6 +45,7 @@ from gi.repository import Gtk
 
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks import eventinfo
+from virtualbricks.bricks.event import MAX_DELAY
 from virtualbricks.bricks.eventinfo import (
     Action,
     Kind,
@@ -57,8 +58,6 @@ from virtualbricks.i18n import _
 
 # Between the widgets, in pixels.
 GAP = 8
-# The longest delay, in seconds: the most a spin button holds.
-MAX_DELAY = 2**31 - 1
 
 # The kinds of actions in their menu, None for a separator.
 KINDS = (

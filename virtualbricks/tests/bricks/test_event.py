@@ -20,14 +20,14 @@
 from twisted.internet import task
 
 from virtualbricks import errors
+from virtualbricks.bricks import event as event_module
+from virtualbricks.bricks.event import MAX_DELAY, Event, EventConfig, is_event
 from virtualbricks.bricks.eventaction import (
     ConsoleAction,
     ShellAction,
     StartAction,
 )
 from virtualbricks.config.schema import ListOf, field_names, kind_of
-from virtualbricks.bricks import event as event_module
-from virtualbricks.bricks.event import Event, EventConfig, is_event
 from virtualbricks.tests import BrickTestCase, FakeLogger
 
 
@@ -73,6 +73,19 @@ class TestEventConfig(BrickTestCase):
         self.assertRaises(ValueError, setattr, event_config, "delay", "5")
         self.assertRaises(ValueError, setattr, event_config, "delay", 1.5)
         self.assertEqual(event_config.delay, 5)
+
+    def test_the_limits_of_the_delay(self):
+        # callLater() takes no delay below 0, a spin button none above
+        event_config = EventConfig()
+        for delay in (-1, MAX_DELAY + 1):
+            with self.subTest(delay=delay):
+                with self.assertRaisesRegex(
+                    ValueError, f"^delay: {delay} is outside 0–{MAX_DELAY}$"
+                ):
+                    event_config.delay = delay
+        for delay in (0, MAX_DELAY):
+            event_config.delay = delay
+            self.assertEqual(event_config.delay, delay)
 
     def test_actions_are_commands(self):
         self.assertRaises(ValueError, EventConfig, actions=["a on"])

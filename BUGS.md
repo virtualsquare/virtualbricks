@@ -31,20 +31,6 @@ in 3.0: they wait until after it.
   windows of `--connect` can show a stopped brick as running for a
   moment.
 
-## Events
-
-- [ ] **An event takes a negative delay, and then doesn't start.** The
-  `delay` of `EventConfig` is `Int()` with no minimum
-  (`virtualbricks/bricks/event.py`): the spin of the event editor stops at
-  0, the console doesn't. Seen on 3.0.0.dev6, on 21 October 2026, with
-  `--no-gui`: `event set ev delay=-5` was taken and `project.toml` kept
-  it. With the action `start sw1`, `event start ev` answered "-5 is not
-  greater than or equal to 0 seconds; the messages have the details", the
-  `AssertionError` of Twisted's `callLater()`, and sw1 didn't start.
-  `Int(0)` is likely the whole fix: an older project's negative delay
-  would be read as the default, 0, with a warning, and such an event
-  never started.
-
 ## Machines
 
 - [ ] **A plug card added after a socket card moves it.** The cards of a
@@ -79,6 +65,21 @@ in 3.0: they wait until after it.
   Ubuntu 26.04 and Debian testing with their packages
   (`tools/targetsuite.py`), and passed in those of Ubuntu 24.04 and Debian
   13. A large picture in the Readme tab wasn't tried.
+
+## Project files
+
+- [ ] **An integer with no maximum can be too large for TOML.** A Netemu's
+  bandwidth, delay and buffer size, both ways, and its
+  `transition_period` have a minimum and no maximum
+  (`virtualbricks/bricks/netemu.py`), so the console and AMP take any
+  integer and `project.toml` keeps it. TOML holds integers from -2^63 to
+  2^63-1, and a reader must refuse others; `tomllib` and `tomlkit` take
+  them all the same. Seen on 3.0.0.dev6, on 21 October 2026, with
+  `--no-gui`: `brick set ne1 delay=100000000000000000000` was taken, and
+  `project.toml` had `delay = 100000000000000000000`. Smaller ones are
+  wrong for the programs too: wirefilter casts the bandwidth to a 32-bit
+  `unsigned int`. A maximum needs a choice per field, and a word on how an
+  older value is read.
 
 ## Remote windows
 

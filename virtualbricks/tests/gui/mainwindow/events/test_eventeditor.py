@@ -21,25 +21,23 @@ back, the kinds and their subjects, adding and removing actions; all on a
 draft, which OK applies.
 """
 
-from virtualbricks.bricks.eventaction import (
-    StopAction,
-    StartAction,
-    ConsoleAction,
-    describe,
-    ShellAction,
-)
 from virtualbricks.bricks.draft import Draft, apply
+from virtualbricks.bricks.event import MAX_DELAY
+from virtualbricks.bricks.eventaction import (
+    ConsoleAction,
+    ShellAction,
+    StartAction,
+    StopAction,
+    describe,
+)
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
     from gi.repository import Gtk
 
-    from virtualbricks.gui.mainwindow.events import eventeditor
-    from virtualbricks.gui.mainwindow.events.eventeditor import (
-        MAX_DELAY,
-        EventEditor,
-    )
     from virtualbricks.bricks.eventinfo import Action, Kind
+    from virtualbricks.gui.mainwindow.events import eventeditor
+    from virtualbricks.gui.mainwindow.events.eventeditor import EventEditor
 
 
 def vb(command):
