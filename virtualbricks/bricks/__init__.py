@@ -69,7 +69,7 @@ from virtualbricks.config.schema import (
 from virtualbricks.config.settings import get_setting
 from virtualbricks.config.tomlfile import Notes, Table
 from virtualbricks.i18n import N_, _
-from virtualbricks.programs import programs
+from virtualbricks.programs import vde_info
 from virtualbricks.sudo import sudo_command
 from virtualbricks.vde import which
 
@@ -519,8 +519,8 @@ class Brick(Base):
     summary = ""
     # How the plugs are saved: "connect", "endpoints", "nics" or None.
     connections: str | None = None
-    # The programs it runs, each a choice of names: any one of them will do.
-    programs: tuple[tuple[str, ...], ...] = ()
+    # The programs it runs.
+    programs: tuple[str, ...] = ()
     # Whether Virtualbricks runs and stops the program of the brick, or
     # another program does: a switch wrapper.
     runs_program: ClassVar[bool] = True
@@ -735,8 +735,8 @@ class Brick(Base):
         Return a Deferred of a Prepared. resume is for a virtual machine.
         """
 
-        deferred = programs.vde(str(get_setting("vde_path")))
-        return deferred.addCallback(lambda vde: Prepared(vde=vde))
+        vde = vde_info(str(get_setting("vde_path")))
+        return defer.succeed(Prepared(vde=vde))
 
     def command(self, prepared: Prepared) -> Command:
         """Return the Command of the brick's program."""

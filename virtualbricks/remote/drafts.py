@@ -39,7 +39,7 @@ from typing import TYPE_CHECKING, Any
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks.draft import Draft, apply
 from virtualbricks.bricks.event import is_event
-from virtualbricks.bricks.netemu import NetemuConfig, NetemuDraft
+from virtualbricks.bricks.netemu import NetemuConfig, NetemuDraft, NetemuTable
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.sock import Sock
 from virtualbricks.bricks.virtualmachine import (
@@ -211,7 +211,12 @@ def apply_changes(
             for i, state in enumerate(extras["states"])
         ]
         draft.weights = [list(row) for row in extras["transitions"]]
-        draft.period = extras["period"]
+        period = extras["period"]
+        try:
+            kind_of(NetemuTable, "transition_period").check(period)
+        except ValueError as exc:
+            raise ValueError(f"period: {exc}") from None
+        draft.period = period
     if report.messages:
         message = report.messages[0]
         raise ValueError(f"{message.where}: {message.text}")

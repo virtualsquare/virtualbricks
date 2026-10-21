@@ -570,6 +570,19 @@ class TestNetemu(ConvertTestCase):
             ],
         )
 
+    def test_a_period_too_long(self):
+        # more than vde-netemu takes as it is written
+        text = f"[Netemu:wan]\ntransperiod={10**20}\n"
+        data, _, report = self.convert(text)
+        self.assertEqual(data["bricks"]["wan"]["transition_period"], 100)
+        self.assertEqual(
+            messages(report),
+            [
+                f".project:2: [Netemu:wan] transperiod: {10**20} is outside"
+                " 1–2^53-1, ignored"
+            ],
+        )
+
     def test_negatives_read_as_zero(self):
         # 2.1 took them, and the programs took them for 0
         text = (

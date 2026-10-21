@@ -17,6 +17,7 @@
 
 """The panel of a Netemu: its ends, its states, their values and the chances."""
 
+from virtualbricks.bricks.netemu import MOST
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 
 if has_display:
@@ -150,6 +151,13 @@ class TestItsParts(NetemuPanelTestCase):
         self.rows["period"].control.set_value(250)
         self.assertEqual(self.panel.draft.period, 250)
         self.assertEqual(self.calls, [self.panel])
+
+    def test_the_longest_period(self):
+        # above the C int of get_value_as_int()
+        period = self.rows["period"].control
+        self.assertEqual(period.get_range(), (1, MOST))
+        period.set_value(MOST)
+        self.assertEqual(self.panel.draft.period, MOST)
 
     def test_running(self):
         self.assertEqual(

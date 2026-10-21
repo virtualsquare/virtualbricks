@@ -48,10 +48,11 @@ sudo apt install qemu-system-x86 qemu-system-gui qemu-utils vde2 \
   `qemu-system-aarch64` and `qemu-system-arm`, and `qemu-system-riscv64` of
   QEMU 11, have no default machine type: a machine of theirs needs one, as
   `virt`, chosen in its settings;
-- VDE 2: `vde_switch`, `vde_plug`, `wirefilter`, `vde_plug2tap`,
-  `vde_pcapplug`, `dpipe`, `vdeterm` and `unixterm`, and `vde_cryptcab`, in
-  its own package; the router brick needs `vde_router`, which no distribution
-  ships;
+- VDE 2: `vde_switch`, `vde_plug`, `vde_plug2tap`, `vde_pcapplug`, `dpipe`,
+  `vdeterm` and `unixterm`, and `vde_cryptcab`, in its own package; the
+  Netemu brick needs `vde-netemu`, in its own package, which Debian and
+  Ubuntu don't ship; the router brick needs `vde_router`, which no
+  distribution ships;
 - a terminal, that of your desktop by default, `x-terminal-emulator`, and
   `sudo`, which runs the bricks that need root, a tap and a capture (see
   [Configuration](#configuration)).

@@ -20,7 +20,7 @@
     <tbody>
       <tr><td><p><sys>vde2</sys></p></td><td><p><cmd>vde_switch</cmd>,
       <cmd>vde_plug</cmd>, <cmd>dpipe</cmd>, <cmd>vde_plug2tap</cmd>,
-      <cmd>vde_pcapplug</cmd>, <cmd>wirefilter</cmd>, <cmd>vdeterm</cmd>,
+      <cmd>vde_pcapplug</cmd>, <cmd>vdeterm</cmd>,
       <cmd>unixterm</cmd></p></td></tr>
       <tr><td><p><sys>vde2-cryptcab</sys></p></td><td><p><cmd>vde_cryptcab</cmd>,
       for the tunnels</p></td></tr>

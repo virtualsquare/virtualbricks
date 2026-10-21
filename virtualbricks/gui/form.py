@@ -371,10 +371,9 @@ class Form:
         spin.set_value(value)
 
         def on_changed(widget: Gtk.SpinButton) -> None:
-            number = (
-                widget.get_value() if is_float else widget.get_value_as_int()
-            )
-            self._set(name, number)
+            # get_value_as_int() is a C int: it stops at 2**31 - 1
+            value = widget.get_value()
+            self._set(name, value if is_float else round(value))
 
         spin.connect("value-changed", on_changed)
         return spin

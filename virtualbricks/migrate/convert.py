@@ -569,6 +569,8 @@ class _Converter:
             )
 
     def netemu(self, brick: Netemu, section: legacy.Section) -> None:
+        from virtualbricks.bricks.netemu import BRICK_KEYS, NetemuTable
+
         label = section.label()
         flat: list[legacy.Item] = []
         states: list[legacy.Item] = []
@@ -588,8 +590,16 @@ class _Converter:
                     continue
                 if item.key == "states":
                     count = value
-                else:
-                    brick.transPeriod = value
+                    continue
+                try:
+                    kind_of(NetemuTable, "transition_period").check(value)
+                except ValueError as exc:
+                    self.report.warning(
+                        f"{label} {item.key}: {exc}, ignored",
+                        self.where(item.lineno),
+                    )
+                    continue
+                brick.transPeriod = value
             elif STATE_KEY.match(item.key) or PROBABILITY_KEY.match(item.key):
                 states.append(item)
             else:
@@ -601,8 +611,6 @@ class _Converter:
             markov.add(index)
         for item in states:
             self.state_item(markov, item, count, label)
-        from virtualbricks.bricks.netemu import BRICK_KEYS
-
         # the events and the icon are the brick's, the same in every state
         for state in markov.states:
             for name in BRICK_KEYS:

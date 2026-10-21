@@ -118,7 +118,7 @@ class TunnelListenConfig(TunnelConfig):
 class Tunnel(bricks.Brick):
     """An end of an encrypted tunnel: vde_cryptcab, plugged into a switch."""
 
-    programs = (("vde_cryptcab",),)
+    programs = ("vde_cryptcab",)
     config: TunnelConfig
     connections = "connect"
 

@@ -51,13 +51,13 @@ from virtualbricks.config.workspace import projects
 RUNNING = 2.0
 # How long a brick has to stop.
 STOPPING = 10.0
-# The programs that each brick of the sample runs; any one of a tuple does.
+# The programs that each brick of the sample runs.
 PROGRAMS: dict[str, tuple[str, ...]] = {
     "sw1": ("vde_switch",),
     "sw2": ("vde_switch",),
     "sw3": ("vde_switch",),
     "vm1": ("qemu-system-x86_64",),
-    "wan": ("vde-netemu", "wirefilter"),
+    "wan": ("vde-netemu",),
     "w0": ("dpipe",),
     "tl0": ("vde_cryptcab",),
     "tc0": ("vde_cryptcab",),
@@ -88,7 +88,7 @@ def installed(name: str) -> bool:
     """Whether the programs of a brick of the sample are installed."""
 
     programs = PROGRAMS[name]
-    return not programs or any(shutil.which(p) for p in programs)
+    return all(shutil.which(p) for p in programs)
 
 
 def _image(folder: str, name: str, fmt: str) -> str:

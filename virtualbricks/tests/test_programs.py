@@ -32,7 +32,6 @@ from virtualbricks.programs import (
     PACKAGES,
     QEMU_QUESTIONS,
     REQUIRED,
-    VDE_QUESTIONS,
     Answer,
     Device,
     Entry,
@@ -53,7 +52,6 @@ from virtualbricks.programs import (
     parse_machines,
     parse_names,
     parse_options,
-    parse_vde_options,
     parse_version,
     qemu_found,
     qemu_info,
@@ -84,7 +82,6 @@ TARGETS = {
     "debian-testing": Target(True, frozenset()),
 }
 # What Netemu passes to its program.
-NETEMU_OPTIONS = ("-v", "-b", "-d", "-c", "-l", "--nofifo", "-M")
 # The other architectures recorded, as record.py has them.
 QEMU = "qemu-system-x86_64"
 EMULATORS = (
@@ -287,17 +284,11 @@ class TestRecordings(unittest.SynchronousTestCase):
 
     def test_vde(self):
         for target in TARGETS:
-            data = load(target)
-            found = {
-                name: path
-                for name, path in data["vde"]["programs"].items()
-                if path
-            }
-            info = vde_info("/usr/bin", found, answers(data["vde"]["answers"]))
-            self.assertLessEqual(set(REQUIRED), set(info.programs), target)
-            self.assertNotIn("vde_router", info.programs, target)
-            for option in NETEMU_OPTIONS:
-                self.assertIn(option, info.options["wirefilter"], target)
+            programs = load(target)["vde"]["programs"]
+            found = {name for name, path in programs.items() if path}
+            # only the repository of cnrl.deis.unibo.it has vde-netemu
+            self.assertEqual(set(REQUIRED) - found, {"vde-netemu"}, target)
+            self.assertNotIn("vde_router", found, target)
 
 
 class TestParse(unittest.SynchronousTestCase):
@@ -536,21 +527,6 @@ class TestParse(unittest.SynchronousTestCase):
             parse_machine_properties(text), {"acpi", "x-oem-id", "boot"}
         )
 
-    def test_vde_options(self):
-        text = (
-            "Usage: wirefilter OPTIONS\n"
-            "\t--help|-h\n"
-            "\t--band|-b bandwidth(bytes/s)\n"
-            "\t--vde-plug plug1:plug2 | -v plug1:plug2\n"
-            "\t--RED |-r min,max,probability,limit\n"
-            "\t--TCPADV| -A\n"
-        )
-        self.assertEqual(
-            parse_vde_options(text),
-            {"--help", "-h", "--band", "-b", "--vde-plug", "-v"}
-            | {"--RED", "-r", "--TCPADV", "-A"},
-        )
-
     def test_device_unknown(self):
         self.assertIsNone(recorded_info("debian-13").device("no-such-card"))
 
@@ -777,7 +753,6 @@ class FakeRun:
     """Answers the questions from a recording, and counts them."""
 
     def __init__(self, target="debian-13", wait=False, program=QEMU):
-        data = load(target)
         recorded = recording(target, program)
         self.answers = {
             QEMU_QUESTIONS[name]: Answer(**answer)
@@ -792,12 +767,6 @@ class FakeRun:
                 machine_question(default.default_machine),
                 self.answers[machine_question("pc")],
             )
-        for name, answer in data["vde"]["answers"].items():
-            self.answers[(name,) + VDE_QUESTIONS[name]] = Answer(**answer)
-        # no target ships vde-netemu, a fork of wirefilter with its help
-        wirefilter = ("wirefilter",) + VDE_QUESTIONS["wirefilter"]
-        netemu = ("vde-netemu",) + VDE_QUESTIONS["vde-netemu"]
-        self.answers.setdefault(netemu, self.answers[wirefilter])
         self.calls = []
         self.wait = wait
         self.pending = []
@@ -808,14 +777,11 @@ class FakeRun:
         self.calls.append((path, args))
         if self.fail is not None:
             return defer.fail(self.fail)
-        key = args
-        if os.path.basename(path) in VDE_QUESTIONS:
-            key = (os.path.basename(path),) + args
         if self.wait:
             deferred = defer.Deferred()
-            self.pending.append((deferred, self.answers[key]))
+            self.pending.append((deferred, self.answers[args]))
             return deferred
-        return defer.succeed(self.answers[key])
+        return defer.succeed(self.answers[args])
 
     def fire(self):
         pending, self.pending = self.pending, []
@@ -952,54 +918,16 @@ class TestQemu(ProgramsTestCase):
         self.assertIsInstance(failure.value, ProgramError)
 
 
-class TestVde(ProgramsTestCase):
-
-    def setUp(self):
-        super().setUp()
-        self.run = FakeRun()
-        self.programs = Programs(self.run)
+class TestVdeInfo(ProgramsTestCase):
 
     def test_found(self):
         switch = executable(self.bin, "vde_switch")
-        wirefilter = executable(self.path, "wirefilter")
-        info = self.successResultOf(self.programs.vde(self.bin))
+        netemu = executable(self.path, "vde-netemu")
+        info = vde_info(self.bin)
         self.assertEqual(info.folder, self.bin)
         self.assertEqual(
-            info.programs, {"vde_switch": switch, "wirefilter": wirefilter}
+            info.programs, {"vde_switch": switch, "vde-netemu": netemu}
         )
-        self.assertEqual(list(info.options), ["wirefilter"])
-        self.assertIn("--nofifo", info.options["wirefilter"])
-        self.assertEqual(self.run.calls, [(wirefilter, ("--help",))])
-
-    def test_asks_once(self):
-        executable(self.bin, "wirefilter")
-        first = self.successResultOf(self.programs.vde(self.bin))
-        self.assertIs(first, self.successResultOf(self.programs.vde(self.bin)))
-        self.assertEqual(len(self.run.calls), 1)
-
-    def test_asks_again_after_an_install(self):
-        executable(self.bin, "wirefilter")
-        self.successResultOf(self.programs.vde(self.bin))
-        executable(self.bin, "vde_switch")
-        info = self.successResultOf(self.programs.vde(self.bin))
-        self.assertIn("vde_switch", info.programs)
-        self.assertEqual(len(self.run.calls), 2)
-
-    def test_failure(self):
-        executable(self.bin, "wirefilter")
-        self.run.fail = ProgramError("killed by signal 9")
-        failure = self.failureResultOf(self.programs.vde(self.bin))
-        self.assertIsInstance(failure.value, ProgramError)
-
-    def test_removed_meanwhile(self):
-        executable(self.bin, "wirefilter")
-
-        def gone(name, folder):
-            return os.path.join(folder, "gone")
-
-        self.patch(programs_module, "find_program", gone)
-        failure = self.failureResultOf(self.programs.vde(self.bin))
-        self.assertIsInstance(failure.value, ProgramError)
 
 
 class TestRun(unittest.TestCase):

@@ -26,6 +26,9 @@
   targets (32 §9)
 - [ ] Try the terminal of the Settings window before OK, with a button that
   opens it on a short program (32 §9)
+- [ ] Refuse in an `Int` of the schemas what TOML can't hold, below -2**63
+  or above 2**63 - 1, also when the field has no limit of its own; today
+  every `Int` field has both
 
 ## Projects
 

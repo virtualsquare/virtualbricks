@@ -45,16 +45,15 @@ from virtualbricks.programs import (
     VDE_PROGRAMS,
     ProgramError,
     Programs,
+    VdeInfo,
     parse_machine_properties,
 )
-from virtualbricks.programs import vde_info as make_vde_info
 from virtualbricks.tests import BrickTestCase, CommandTestCase, FakeLogger
 from virtualbricks.tests.test_programs import (
     EMULATORS,
     QEMU,
     TARGETS,
     FakeRun,
-    answers,
     load,
     recorded_info,
     recording,
@@ -68,7 +67,7 @@ def vde_info(target="debian-13"):
     found = {
         name: path for name, path in data["vde"]["programs"].items() if path
     }
-    return make_vde_info("/usr/bin", found, answers(data["vde"]["answers"]))
+    return VdeInfo("/usr/bin", found)
 
 
 def prepared_vde(target="debian-13", **programs):
@@ -289,12 +288,9 @@ class TestPrograms(LinesTestCase):
         return {os.path.basename(arg) for arg in argv if arg.startswith("/v/")}
 
     def assertRuns(self, brick, vde):
-        names = self.runs(brick, vde)
-        # one program of each choice, and nothing else
-        for choice in brick.programs:
-            self.assertEqual(len(names & set(choice)), 1, (brick.name, choice))
-        declared = {name for choice in brick.programs for name in choice}
-        self.assertLessEqual(names, declared, brick.name)
+        self.assertEqual(
+            self.runs(brick, vde), set(brick.programs), brick.name
+        )
 
     def test_the_vde_bricks(self):
         everything = {name: f"/v/{name}" for name in VDE_PROGRAMS}
@@ -316,11 +312,6 @@ class TestPrograms(LinesTestCase):
         ]
         for brick in tried:
             self.assertRuns(brick, vde)
-        # the other program of Netemu's choice
-        del everything["vde-netemu"]
-        wirefilter = attr.evolve(vde, programs=everything)
-        self.assertRuns(netemu, wirefilter)
-        self.assertEqual(self.runs(netemu, wirefilter), {"wirefilter"})
         # every kind that runs a program of VDE
         kinds = {
             kind
@@ -331,7 +322,7 @@ class TestPrograms(LinesTestCase):
 
     def test_a_new_machine(self):
         vm = self.factory.new_brick("qemu", "vm1")
-        self.assertEqual(vm.programs, ((vm.config.qemu_program,),))
+        self.assertEqual(vm.programs, (vm.config.qemu_program,))
 
     def test_a_switch_wrapper_runs_nothing(self):
         wrapper = self.factory.new_brick("switchwrapper", "wr1")
@@ -343,21 +334,21 @@ class TestNetemu(LinesTestCase):
     def setUp(self):
         super().setUp()
         self.netemu = self.brick("netemu", "ne1", self.sw1, self.sw2)
-
-    def test_wirefilter_in_its_place(self):
         # no target ships vde-netemu
-        self.assertLine(
-            self.netemu,
-            ["/usr/bin/wirefilter", "-v", f"{RUN}/sw1.ctl:{RUN}/sw2.ctl"]
-            + ["-b", "125000", "-d", "0", "-c", "75000", "-l", "0.0"]
-            + ["--nofifo", "-M", f"{RUN}/ne1.mgmt"],
-            [
-                "ne1: vde-netemu (vde-netemu) isn't installed: wirefilter runs"
-                " in its place"
-            ],
+        self.prepared = prepared_vde(**{"vde-netemu": "/usr/bin/vde-netemu"})
+
+    def test_both_ways(self):
+        self.assertEqual(
+            self.line(self.netemu, self.prepared),
+            (
+                ["/usr/bin/vde-netemu", "-v", f"{RUN}/sw1.ctl:{RUN}/sw2.ctl"]
+                + ["-b", "125000", "-d", "0", "-c", "75000", "-l", "0.0"]
+                + ["--nofifo", "-M", f"{RUN}/ne1.mgmt"],
+                [],
+            ),
         )
 
-    def test_vde_netemu(self):
+    def test_each_way(self):
         self.netemu.update_config(
             {
                 "bandwidth_symmetric": False,
@@ -372,9 +363,8 @@ class TestNetemu(LinesTestCase):
                 "loss_right_to_left": 2.5,
             }
         )
-        prepared = prepared_vde(**{"vde-netemu": "/usr/bin/vde-netemu"})
         self.assertEqual(
-            self.line(self.netemu, prepared),
+            self.line(self.netemu, self.prepared),
             (
                 ["/usr/bin/vde-netemu", "-v", f"{RUN}/sw1.ctl:{RUN}/sw2.ctl"]
                 + ["-b", "LR 125000", "-b", "RL 1000"]
@@ -391,41 +381,25 @@ class TestNetemu(LinesTestCase):
         card = vm.add_sock()
         self.netemu.plugs[1].disconnect()
         self.netemu.plugs[1].connect(card)
-        argv, _ = self.line(self.netemu, prepared_vde())
+        argv, _ = self.line(self.netemu, self.prepared)
         self.assertIn(f"{RUN}/sw1.ctl:ptp://{RUN}/vm_sock_eth0", argv)
         # -v can't take it on the left
         self.netemu.plugs[0].disconnect()
         self.netemu.plugs[0].connect(card)
         with self.assertRaises(errors.BadConfigError) as caught:
-            self.netemu.command(prepared_vde())
+            self.netemu.command(self.prepared)
         self.assertEqual(
             str(caught.exception),
             "ne1: the socket card of a machine can only be the right end of a"
             " Netemu (endpoints)",
         )
 
-    def test_neither(self):
-        vde = vde_info()
-        programs = dict(vde.programs)
-        del programs["wirefilter"]
-        prepared = Prepared(vde=attr.evolve(vde, programs=programs))
+    def test_not_installed(self):
+        # wirefilter doesn't stand in
         with self.assertRaises(ProgramError) as caught:
-            self.netemu.command(prepared)
+            self.netemu.command(prepared_vde(wirefilter="/usr/bin/wirefilter"))
         self.assertEqual(
-            str(caught.exception),
-            "vde-netemu (vde-netemu) isn't installed, nor wirefilter (vde2)",
-        )
-
-    def test_wirefilter_without_the_options(self):
-        vde = vde_info()
-        options = {"wirefilter": vde.options["wirefilter"] - {"-M", "-l"}}
-        prepared = Prepared(vde=attr.evolve(vde, options=options))
-        with self.assertRaises(ProgramError) as caught:
-            self.netemu.command(prepared)
-        self.assertEqual(
-            str(caught.exception),
-            "vde-netemu (vde-netemu) isn't installed, and wirefilter has no"
-            " -l, -M",
+            str(caught.exception), "vde-netemu (vde-netemu) isn't installed"
         )
 
 
@@ -885,9 +859,7 @@ class TestPrepare(CommandTestCase):
     def setUp(self):
         super().setUp()
         self.run = FakeRun()
-        fake = Programs(self.run)
-        self.patch(bricks, "programs", fake)
-        self.patch(virtualmachine, "programs", fake)
+        self.patch(virtualmachine, "programs", Programs(self.run))
 
     def test_vde(self):
         sw = self.factory.new_brick("switch", "sw")
@@ -1028,7 +1000,6 @@ class TestStart(CommandTestCase):
 
     def setUp(self):
         super().setUp()
-        self.patch(bricks, "programs", Programs(FakeRun()))
         self.reactor = FakeReactor()
         self.patch(bricks, "reactor", self.reactor)
 
@@ -1053,34 +1024,12 @@ class TestStart(CommandTestCase):
         self.assertEqual(self.reactor.environments, [os.environ])
         self.assertEqual(netemu.logger.levels(), ["info"])
 
-    def test_warnings(self):
-        os.remove(os.path.join(self.bin, "vde-netemu"))
-        wirefilter = os.path.join(self.bin, "wirefilter")
-        with open(wirefilter, "w") as fp:
-            fp.write("#!/bin/sh\n")
-        os.chmod(wirefilter, 0o755)
-        self.patch(os, "environ", dict(os.environ, PATH=self.bin))
-        netemu = self.netemu()
-        netemu.start()
-        [(executable, _)] = self.reactor.spawned
-        self.assertEqual(executable, wirefilter)
-        self.assertEqual(netemu.logger.levels(), ["warn", "info"])
-        self.assertEqual(
-            netemu.logger.formatted()[0],
-            "ne: vde-netemu (vde-netemu) isn't installed: wirefilter runs in"
-            " its place",
-        )
-
     def test_warnings_to_the_old_observers(self):
         # those of twisted.python.log, which take a field named warning for
         # a warning of Python
-        os.remove(os.path.join(self.bin, "vde-netemu"))
-        wirefilter = os.path.join(self.bin, "wirefilter")
-        with open(wirefilter, "w") as fp:
-            fp.write("#!/bin/sh\n")
-        os.chmod(wirefilter, 0o755)
-        self.patch(os, "environ", dict(os.environ, PATH=self.bin))
-        netemu = self.netemu()
+        sw = self.factory.new_brick("switch", "sw")
+        command = Command("/usr/bin/vde_switch")
+        command.warn("sw: left out")
         texts = []
 
         def observer(event):
@@ -1088,14 +1037,8 @@ class TestStart(CommandTestCase):
 
         log.addObserver(observer)
         self.addCleanup(log.removeObserver, observer)
-        # the logger of the bricks, not the fake one
-        del netemu.logger
-        netemu.start()
-        self.assertIn(
-            "ne: vde-netemu (vde-netemu) isn't installed: wirefilter runs in"
-            " its place",
-            texts,
-        )
+        sw.spawn(command)
+        self.assertIn("sw: left out", texts)
 
     def test_sudo(self):
         self.patch(os, "geteuid", lambda: 1000)
@@ -1132,7 +1075,7 @@ class TestStart(CommandTestCase):
         self.assertEqual(self.reactor.spawned, [])
 
     def test_resume(self):
-        self.patch(virtualmachine, "programs", bricks.programs)
+        self.patch(virtualmachine, "programs", Programs(FakeRun()))
         vm = self.factory.new_brick("qemu", "vm")
         locks = []
         vm.acquire = lambda: locks.append("acquire")

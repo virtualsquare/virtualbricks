@@ -45,7 +45,7 @@ Feature: Migration
       Then the main window shows the project DTN2hops_26_Feb_2026
       And the migration window doesn't show
 
-    @needs-vde_switch @needs-wirefilter
+    @needs-vde_switch @needs-vde-netemu
     Scenario: Two switches of a migrated project and the link between them run
       Given Virtualbricks migrated DTN2hops_26_Feb_2026 at its first start
       When I start sw1

@@ -27,8 +27,8 @@ devices, displays, audio drivers, network backends and accelerators. The
 answers are kept for the session, for each program file: a program that an
 update replaces is asked again.
 
-The VDE programs change little. What matters is which of them are installed
-and, for a Netemu, the options of ``vde-netemu`` or of ``wirefilter``.
+The VDE programs change little. What matters is which of them are
+installed.
 
 Nothing here imports GTK.
 """
@@ -50,7 +50,6 @@ __all__ = [
     "EMPTY_MACHINE",
     "QEMU_QUESTIONS",
     "VDE_PROGRAMS",
-    "VDE_QUESTIONS",
     "Answer",
     "Device",
     "Entry",
@@ -70,6 +69,7 @@ __all__ = [
     "qemu_info",
     "qemu_links",
     "qemu_programs",
+    "vde_info",
 ]
 
 # The machine type of every QEMU, which has nothing: a program without a
@@ -89,12 +89,6 @@ QEMU_QUESTIONS: dict[str, tuple[str, ...]] = {
     "accelerators": ("-accel", "help"),
 }
 
-# The VDE programs whose options matter, and how to ask for them.
-VDE_QUESTIONS: dict[str, tuple[str, ...]] = {
-    "vde-netemu": ("--help",),
-    "wirefilter": ("--help",),
-}
-
 # The programs of the bricks, and the package of Debian and Ubuntu that has
 # each; None for a program that no distribution ships. A program that moved to
 # another package has both, the newer first.
@@ -105,7 +99,6 @@ PACKAGES: dict[str, str | tuple[str, ...] | None] = {
     "dpipe": "vde2",
     "vde_plug2tap": "vde2",
     "vde_pcapplug": "vde2",
-    "wirefilter": "vde2",
     "vdeterm": "vde2",
     "unixterm": "vde2",
     "vde_cryptcab": "vde2-cryptcab",
@@ -253,13 +246,11 @@ class QemuInfo:
 
 @attr.define(frozen=True)
 class VdeInfo:
-    """Which VDE programs there are, and the options of some of them."""
+    """Which VDE programs there are."""
 
     folder: str
     # the programs found, by name: their path
     programs: Mapping[str, str]
-    # the options of the programs of VDE_QUESTIONS, among those found
-    options: Mapping[str, frozenset[str]]
 
 
 @attr.define(frozen=True)
@@ -283,7 +274,6 @@ _OPTION = re.compile(r"^(-[\w-]+)(?: or (-[\w-]+))?")
 _DEVICE = re.compile(r'^name "([^"]+)"(.*)$')
 _DEVICE_FIELD = re.compile(r', (\w+) (?:"([^"]*)"|([^,]*))')
 _PROPERTY = re.compile(r"^\s+([\w.-]+)=")
-_VDE_OPTION = re.compile(r"(?:^|[\s|])(--?[A-Za-z][\w-]*)")
 _DEFAULT = "(default)"
 
 
@@ -440,16 +430,6 @@ def parse_machine_properties(text: str) -> frozenset[str]:
     )
 
 
-def parse_vde_options(text: str) -> frozenset[str]:
-    """The options in the help of a VDE program, as "--nofifo" and "-N"."""
-
-    return frozenset(
-        option
-        for line in text.splitlines()
-        for option in _VDE_OPTION.findall(line)
-    )
-
-
 def qemu_info(path: str, answers: Mapping[str, Answer]) -> QemuInfo:
     """What the answers to QEMU_QUESTIONS say about the program."""
 
@@ -466,26 +446,6 @@ def qemu_info(path: str, answers: Mapping[str, Answer]) -> QemuInfo:
         audio_drivers=parse_names(answers["audio_drivers"].out),
         netdevs=parse_names(answers["netdevs"].out),
         accelerators=parse_names(answers["accelerators"].out),
-    )
-
-
-def vde_info(
-    folder: str, found: Mapping[str, str], answers: Mapping[str, Answer]
-) -> VdeInfo:
-    """
-    What the VDE programs found and their answers say.
-
-    The programs write their help to stdout or to stderr, and exit with 0 or
-    not: both streams are read.
-    """
-
-    return VdeInfo(
-        folder,
-        dict(found),
-        {
-            name: parse_vde_options(answer.out + answer.err)
-            for name, answer in answers.items()
-        },
     )
 
 
@@ -559,14 +519,14 @@ def qemu_links(folder: str) -> list[str]:
 
 
 # The programs that Virtualbricks warns about at start when they're missing:
-# vde-netemu has wirefilter to stand in, and vde_router no package.
+# all but vde_router, which no package has.
 REQUIRED = (
     "vde_switch",
     "vde_plug",
     "dpipe",
     "vde_plug2tap",
     "vde_pcapplug",
-    "wirefilter",
+    "vde-netemu",
     "vdeterm",
     "unixterm",
     "vde_cryptcab",
@@ -648,6 +608,12 @@ def _found(folder: str, names: Iterable[str]) -> dict[str, str]:
 
 def _exists(folder: str) -> bool:
     return not folder or os.path.isdir(folder)
+
+
+def vde_info(folder: str) -> VdeInfo:
+    """Which VDE programs there are, in folder and else in PATH."""
+
+    return VdeInfo(folder, _found(folder, VDE_PROGRAMS))
 
 
 def vde_found(folder: str) -> FolderPrograms:
@@ -867,34 +833,6 @@ class Programs:
         return deferred.addCallback(
             lambda answer: parse_machine_properties(answer.out)
         )
-
-    def vde(self, folder: str) -> defer.Deferred[VdeInfo]:
-        """Which VDE programs there are, in folder and else in PATH."""
-
-        found = {}
-        for name in VDE_PROGRAMS:
-            path = find_program(name, folder)
-            if path is not None:
-                found[name] = path
-        try:
-            key = ("vde", folder, tuple(_key(path) for path in found.values()))
-        except OSError as exc:
-            return defer.fail(ProgramError(f"{folder}: {exc.strerror}"))
-        asked = [name for name in VDE_QUESTIONS if name in found]
-
-        def ask() -> defer.Deferred[VdeInfo]:
-            deferreds = [
-                self._run(found[name], VDE_QUESTIONS[name]) for name in asked
-            ]
-            deferred = defer.gatherResults(deferreds, consumeErrors=True)
-            answered = deferred.addCallback(
-                lambda answers: vde_info(
-                    folder, found, dict(zip(asked, answers))
-                )
-            )
-            return answered.addErrback(_first_error)
-
-        return self._once(key, ask)
 
 
 programs = Programs()

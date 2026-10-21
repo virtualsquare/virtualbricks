@@ -40,7 +40,7 @@ import enum
 import ipaddress
 import itertools
 import os
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any
 
 import attr
@@ -59,7 +59,7 @@ from virtualbricks.bricks.tunnellisten import TunnelListen
 from virtualbricks.bricks.virtualmachine import VirtualMachine
 from virtualbricks.bricks.wire import Wire
 from virtualbricks.i18n import _, ngettext
-from virtualbricks.programs import Missing, find_program, package_of
+from virtualbricks.programs import find_program, package_of
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
@@ -488,17 +488,14 @@ def issue(kind: Kind, vde_folder: str, qemu_folder: str) -> Issue | None:
     """The programs of kind that this computer lacks, in words; or None."""
 
     lacking = [
-        choice
-        for choice in kind.brick.programs
-        if not any(
-            find_program(name, _folder(name, vde_folder, qemu_folder))
-            for name in choice
-        )
+        name
+        for name in kind.brick.programs
+        if not find_program(name, _folder(name, vde_folder, qemu_folder))
     ]
     if not lacking:
         return None
-    line = _("{program} isn't installed").format(program=lacking[0][0])
-    sentences = [_not_installed(choice) for choice in lacking]
+    line = _("{program} isn't installed").format(program=lacking[0])
+    sentences = [_not_installed(name) for name in lacking]
     sentences.append(
         ngettext(
             "The brick can be made now, and starts once it is installed.",
@@ -513,13 +510,7 @@ def _folder(name: str, vde_folder: str, qemu_folder: str) -> str:
     return qemu_folder if name.startswith("qemu-") else vde_folder
 
 
-def _not_installed(choice: Sequence[str]) -> str:
-    if len(choice) > 1:
-        names = [str(Missing(name, package_of(name))) for name in choice]
-        return _("Neither {programs} nor {last} is installed.").format(
-            programs=", ".join(names[:-1]), last=names[-1]
-        )
-    name = choice[0]
+def _not_installed(name: str) -> str:
     package = package_of(name)
     if package is None:
         return _(

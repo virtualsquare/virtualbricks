@@ -295,7 +295,7 @@ word, and dropped at the next save.
 :   An image file to show instead of the icon of events. Nothing shows it
     yet.
 
-**delay** = *integer* 0-2147483647, default `0`
+**delay** = *integer* 0-2^31-1, default `0`
 :   Seconds to wait before running the actions.
 
 **actions** = *array*, default `[]`
@@ -656,15 +656,14 @@ Connects two sockets, through **dpipe**(1) and **vde_plug**(1).
 
 A wire that emulates a network link: bandwidth, delay, buffer and loss, which
 can change over time between the states of a Markov chain. It runs
-**vde-netemu**, or the **wirefilter**(1) of VDE, which it's a fork of, where
-vde-netemu isn't installed.
+**vde-netemu**.
 
 **endpoints** = *array*, default `["", ""]`
 :   The two sockets, left and right. The values of a state apply from left
     to right, the ones that end in **_right_to_left** from right to left. A
     socket card of a virtual machine can only be the right one.
 
-**transition_period** = *integer* >= 1, default `100`
+**transition_period** = *integer* 1-2^53-1, default `100`
 :   How often the emulator may change state, in milliseconds.
 
 **transitions** = *array*, default `[[0.0]]`
@@ -678,31 +677,31 @@ the emulator starts in. Each state has these keys:
 **name** = *string*, default `"default name"`
 :   The name of the state.
 
-**bandwidth** = *integer* >= 0, default `125000`
+**bandwidth** = *integer* 0-2^53-1, default `125000`
 :   The bandwidth, in bytes per second, or 0 for no limit; from left to
     right when **bandwidth_symmetric** is false.
 
-**bandwidth_right_to_left** = *integer* >= 0, default `125000`
+**bandwidth_right_to_left** = *integer* 0-2^53-1, default `125000`
 :   The bandwidth from right to left.
 
 **bandwidth_symmetric** = *boolean*, default `true`
 :   Use **bandwidth** in both directions.
 
-**delay** = *integer* >= 0, default `0`
+**delay** = *integer* 0-2^53-1, default `0`
 :   The propagation delay, one way, in milliseconds; from left to right when
     **delay_symmetric** is false.
 
-**delay_right_to_left** = *integer* >= 0, default `0`
+**delay_right_to_left** = *integer* 0-2^53-1, default `0`
 :   The delay from right to left.
 
 **delay_symmetric** = *boolean*, default `true`
 :   Use **delay** in both directions.
 
-**buffer_size** = *integer* >= 0, default `75000`
+**buffer_size** = *integer* 0-2^31-1, default `75000`
 :   The size of the channel buffer, in bytes, or 0 for no limit; from left
     to right when **buffer_size_symmetric** is false.
 
-**buffer_size_right_to_left** = *integer* >= 0, default `75000`
+**buffer_size_right_to_left** = *integer* 0-2^31-1, default `75000`
 :   The size of the channel buffer from right to left.
 
 **buffer_size_symmetric** = *boolean*, default `true`

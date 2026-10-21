@@ -436,13 +436,6 @@
  "recorded": "2026-10-16",
  "target": "ubuntu-25.04",
  "vde": {
-  "answers": {
-   "wirefilter": {
-    "err": "Usage: wirefilter OPTIONS\n\t--help|-h\n\t--rcfile|-f Configuration file\n\t--loss|-l loss_percentage\n\t--lostburst|-L lost_packet_burst_len\n\t--delay|-d delay_ms\n\t--dup|-D dup_percentage\n\t--band|-b bandwidth(bytes/s)\n\t--speed|-s interface_speed(bytes/s)\n\t--chanbufsize|-c channel_bufsize\n\t--noise|-n noise_bits/megabye\n\t--mtu|-m mtu_size\n\t--nofifo|-N\n\t--mgmt|-M management_socket\n\t--mgmtmode management_permission(octal)\n\t--vde-plug plug1:plug2 | -v plug1:plug2\n\t--daemon\n\t--pidfile pidfile\n\t--blink blinksocket\n\t--blinkid blink_id_string\n",
-    "out": "",
-    "status": 1
-   }
-  },
   "programs": {
    "dpipe": "/usr/bin/dpipe",
    "unixterm": "/usr/bin/unixterm",
@@ -453,8 +446,7 @@
    "vde_plug2tap": "/usr/bin/vde_plug2tap",
    "vde_router": null,
    "vde_switch": "/usr/bin/vde_switch",
-   "vdeterm": "/usr/bin/vdeterm",
-   "wirefilter": "/usr/bin/wirefilter"
+   "vdeterm": "/usr/bin/vdeterm"
   }
  }
 }

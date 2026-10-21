@@ -39,7 +39,7 @@ class Wire(bricks.Brick):
     type = "Wire"
     summary = "A wire between two sockets"
     # dpipe joins two vde_plug
-    programs: tuple[tuple[str, ...], ...] = (("dpipe",), ("vde_plug",))
+    programs: tuple[str, ...] = ("dpipe", "vde_plug")
     connections = "endpoints"
 
     def __init__(self, factory: BrickFactory, name: str) -> None:

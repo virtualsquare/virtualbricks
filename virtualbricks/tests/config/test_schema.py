@@ -48,6 +48,7 @@ from virtualbricks.config.schema import (
     info_of,
     key_of,
     kind_of,
+    limit_text,
     load_record,
     notes,
     parse_value,
@@ -158,6 +159,13 @@ class TestInt(unittest.TestCase):
             Int(max=4).check(5)
         Int(1).check(100)
         Int(max=4).check(-100)
+
+    def test_a_big_limit(self):
+        # a power of two, as the documentation writes it
+        with self.assertRaisesRegex(ValueError, r"^-1 is outside 0–2\^31-1$"):
+            Int(0, 2**31 - 1).check(-1)
+        with self.assertRaisesRegex(ValueError, r"^0 is less than 2\^20$"):
+            Int(2**20).check(0)
 
     def test_parse(self):
         self.assertEqual(Int(1, 10).parse(" 7 "), 7)
@@ -535,12 +543,24 @@ class Emulator:
 class TestNotes(unittest.TestCase):
     """The comments of the keys, from the schemas."""
 
+    def test_limit_text(self):
+        self.assertEqual(limit_text(2**31 - 1), "2^31-1")
+        self.assertEqual(limit_text(2**53), "2^53")
+        self.assertEqual(limit_text(-(2**31)), "-2^31")
+        # small, or not of a power of two: as they are
+        self.assertEqual(limit_text(65535), "65535")
+        self.assertEqual(limit_text(10**6), "1000000")
+        self.assertEqual(limit_text(1 - 2**31), str(1 - 2**31))
+        self.assertEqual(limit_text(100.0), "100.0")
+
     def test_describe(self):
         self.assertEqual(Int(1, 128).describe(), "1-128")
         self.assertEqual(Int(1).describe(), "1 or more")
         self.assertEqual(Int(max=5).describe(), "5 or less")
         self.assertEqual(Int().describe(), "")
         self.assertEqual(Float(0, 100).describe(), "0-100")
+        self.assertEqual(Int(0, 2**53 - 1).describe(), "0-2^53-1")
+        self.assertEqual(Int(1, 65535).describe(), "1-65535")
         self.assertEqual(Choice("a", "b", "c").describe(), "a, b or c")
         self.assertEqual(Choice("a", "b").describe(), "a or b")
         self.assertEqual(Choice("a").describe(), "a")

@@ -157,6 +157,25 @@ class Bool(Kind[bool]):
         return "true" if value else "false"
 
 
+# The smallest limit written as a power of two, where it is one or one less.
+BIG = 10**6
+
+
+def limit_text(limit: float) -> str:
+    """
+    A limit of a number as the files, the console and the errors write it: a
+    big one that is a power of two, or one less, as 2^53-1; others as they
+    are.
+    """
+
+    if isinstance(limit, int) and abs(limit) >= BIG:
+        for power, text in ((abs(limit), ""), (limit + 1, "-1")):
+            if power > 0 and power & (power - 1) == 0:
+                sign = "-" if limit < 0 else ""
+                return f"{sign}2^{power.bit_length() - 1}{text}"
+    return str(limit)
+
+
 class _Number(Kind[N]):
 
     types: ClassVar[tuple[type[int] | type[float], ...]] = (int,)
@@ -171,11 +190,12 @@ class _Number(Kind[N]):
             raise ValueError(f"{value!r} is not {self.type_name}")
         if self.min is not None and self.max is not None:
             if not self.min <= value <= self.max:
-                raise ValueError(f"{value} is outside {self.min}–{self.max}")
+                low, high = limit_text(self.min), limit_text(self.max)
+                raise ValueError(f"{value} is outside {low}–{high}")
         elif self.min is not None and value < self.min:
-            raise ValueError(f"{value} is less than {self.min}")
+            raise ValueError(f"{value} is less than {limit_text(self.min)}")
         elif self.max is not None and value > self.max:
-            raise ValueError(f"{value} is more than {self.max}")
+            raise ValueError(f"{value} is more than {limit_text(self.max)}")
 
     def parse(self, text: str) -> N:
         try:
@@ -191,11 +211,11 @@ class _Number(Kind[N]):
 
     def describe(self) -> str:
         if self.min is not None and self.max is not None:
-            return f"{self.min}-{self.max}"
+            return f"{limit_text(self.min)}-{limit_text(self.max)}"
         if self.min is not None:
-            return f"{self.min} or more"
+            return f"{limit_text(self.min)} or more"
         if self.max is not None:
-            return f"{self.max} or less"
+            return f"{limit_text(self.max)} or less"
         return ""
 
 

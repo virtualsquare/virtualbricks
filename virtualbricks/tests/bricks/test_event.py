@@ -80,7 +80,7 @@ class TestEventConfig(BrickTestCase):
         for delay in (-1, MAX_DELAY + 1):
             with self.subTest(delay=delay):
                 with self.assertRaisesRegex(
-                    ValueError, f"^delay: {delay} is outside 0–{MAX_DELAY}$"
+                    ValueError, rf"^delay: {delay} is outside 0–2\^31-1$"
                 ):
                     event_config.delay = delay
         for delay in (0, MAX_DELAY):

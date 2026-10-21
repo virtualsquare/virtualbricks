@@ -308,7 +308,7 @@ A description, which can span several lines.
 An image file to show instead of the icon of events.
 Nothing shows it yet.
 .TP
-\f[B]delay\f[R] = \f[I]integer\f[R] 0\-2147483647, default \f[CR]0\f[R]
+\f[B]delay\f[R] = \f[I]integer\f[R] 0\-2\(ha31\-1, default \f[CR]0\f[R]
 Seconds to wait before running the actions.
 .TP
 \f[B]actions\f[R] = \f[I]array\f[R], default \f[CR][]\f[R]
@@ -687,8 +687,7 @@ The two sockets, left and right.
 .SS netemu
 A wire that emulates a network link: bandwidth, delay, buffer and loss,
 which can change over time between the states of a Markov chain.
-It runs \f[B]vde\-netemu\f[R], or the \f[B]wirefilter\f[R](1) of VDE,
-which it\(aqs a fork of, where vde\-netemu isn\(aqt installed.
+It runs \f[B]vde\-netemu\f[R].
 .TP
 \f[B]endpoints\f[R] = \f[I]array\f[R], default \f[CR][\(dq\(dq, \(dq\(dq]\f[R]
 The two sockets, left and right.
@@ -696,7 +695,7 @@ The values of a state apply from left to right, the ones that end in
 **_right_to_left** from right to left.
 A socket card of a virtual machine can only be the right one.
 .TP
-\f[B]transition_period\f[R] = \f[I]integer\f[R] >= 1, default \f[CR]100\f[R]
+\f[B]transition_period\f[R] = \f[I]integer\f[R] 1\-2\(ha53\-1, default \f[CR]100\f[R]
 How often the emulator may change state, in milliseconds.
 .TP
 \f[B]transitions\f[R] = \f[I]array\f[R], default \f[CR][[0.0]]\f[R]
@@ -712,31 +711,31 @@ Each state has these keys:
 \f[B]name\f[R] = \f[I]string\f[R], default \f[CR]\(dqdefault name\(dq\f[R]
 The name of the state.
 .TP
-\f[B]bandwidth\f[R] = \f[I]integer\f[R] >= 0, default \f[CR]125000\f[R]
+\f[B]bandwidth\f[R] = \f[I]integer\f[R] 0\-2\(ha53\-1, default \f[CR]125000\f[R]
 The bandwidth, in bytes per second, or 0 for no limit; from left to
 right when \f[B]bandwidth_symmetric\f[R] is false.
 .TP
-\f[B]bandwidth_right_to_left\f[R] = \f[I]integer\f[R] >= 0, default \f[CR]125000\f[R]
+\f[B]bandwidth_right_to_left\f[R] = \f[I]integer\f[R] 0\-2\(ha53\-1, default \f[CR]125000\f[R]
 The bandwidth from right to left.
 .TP
 \f[B]bandwidth_symmetric\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
 Use \f[B]bandwidth\f[R] in both directions.
 .TP
-\f[B]delay\f[R] = \f[I]integer\f[R] >= 0, default \f[CR]0\f[R]
+\f[B]delay\f[R] = \f[I]integer\f[R] 0\-2\(ha53\-1, default \f[CR]0\f[R]
 The propagation delay, one way, in milliseconds; from left to right when
 \f[B]delay_symmetric\f[R] is false.
 .TP
-\f[B]delay_right_to_left\f[R] = \f[I]integer\f[R] >= 0, default \f[CR]0\f[R]
+\f[B]delay_right_to_left\f[R] = \f[I]integer\f[R] 0\-2\(ha53\-1, default \f[CR]0\f[R]
 The delay from right to left.
 .TP
 \f[B]delay_symmetric\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
 Use \f[B]delay\f[R] in both directions.
 .TP
-\f[B]buffer_size\f[R] = \f[I]integer\f[R] >= 0, default \f[CR]75000\f[R]
+\f[B]buffer_size\f[R] = \f[I]integer\f[R] 0\-2\(ha31\-1, default \f[CR]75000\f[R]
 The size of the channel buffer, in bytes, or 0 for no limit; from left
 to right when \f[B]buffer_size_symmetric\f[R] is false.
 .TP
-\f[B]buffer_size_right_to_left\f[R] = \f[I]integer\f[R] >= 0, default \f[CR]75000\f[R]
+\f[B]buffer_size_right_to_left\f[R] = \f[I]integer\f[R] 0\-2\(ha31\-1, default \f[CR]75000\f[R]
 The size of the channel buffer from right to left.
 .TP
 \f[B]buffer_size_symmetric\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]

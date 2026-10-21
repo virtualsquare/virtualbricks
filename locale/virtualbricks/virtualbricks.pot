@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 3.0.0.dev6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-20 23:29+0200\n"
+"POT-Creation-Date: 2026-10-21 09:56+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -329,11 +329,6 @@ msgid "The brick can be made now, and starts once it is installed."
 msgid_plural "The brick can be made now, and starts once they are installed."
 msgstr[0] ""
 msgstr[1] ""
-
-#: virtualbricks/bricks/brickinfo.py
-#, python-brace-format
-msgid "Neither {programs} nor {last} is installed."
-msgstr ""
 
 #: virtualbricks/bricks/brickinfo.py
 #, python-brace-format

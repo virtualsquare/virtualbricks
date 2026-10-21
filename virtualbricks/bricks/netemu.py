@@ -16,7 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""A network emulator: wirefilter, a wire with a Markov chain of states."""
+"""A network emulator: vde-netemu, a wire with a Markov chain of states."""
 
 from __future__ import annotations
 
@@ -28,7 +28,12 @@ import attr
 from twisted.internet import defer
 
 from virtualbricks import bricks, errors
-from virtualbricks.bricks.command import Command, Prepared, socket_path
+from virtualbricks.bricks.command import (
+    Command,
+    Prepared,
+    socket_path,
+    vde_program,
+)
 from virtualbricks.bricks.draft import Draft, Problem
 from virtualbricks.bricks.virtualmachine import is_virtualmachine
 from virtualbricks.bricks.wire import Wire
@@ -52,13 +57,15 @@ from virtualbricks.config.schema import (
 )
 from virtualbricks.config.tomlfile import Notes, Table, Value
 from virtualbricks.i18n import N_, _
-from virtualbricks.programs import ProgramError, VdeInfo
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
 
-# The options that Netemu passes to its program.
-OPTIONS = ("-v", "-b", "-d", "-c", "-l", "--nofifo", "-M")
+# The most that vde-netemu takes as it is written: it reads each value as a
+# double, which holds every integer up to 2**53, and holds the buffer size in
+# an int.
+MOST = 2**53 - 1
+MOST_BUFFER = 2**31 - 1
 
 
 @define
@@ -79,7 +86,7 @@ class NetemuConfig(bricks.BrickConfig):
     )
     # each value both ways, or from left to right and from right to left
     bandwidth: int = field(
-        Int(0),
+        Int(0, MOST),
         default=125000,
         label=N_("Bandwidth"),
         help=N_(
@@ -88,7 +95,7 @@ class NetemuConfig(bricks.BrickConfig):
         ),
     )
     bandwidth_right_to_left: int = field(
-        Int(0),
+        Int(0, MOST),
         default=125000,
         label=N_("Bandwidth from right to left"),
         help=N_("Bytes per second from right to left"),
@@ -101,7 +108,7 @@ class NetemuConfig(bricks.BrickConfig):
         help=N_("Use bandwidth both ways"),
     )
     delay: int = field(
-        Int(0),
+        Int(0, MOST),
         default=0,
         label=N_("Delay"),
         help=N_(
@@ -110,7 +117,7 @@ class NetemuConfig(bricks.BrickConfig):
         ),
     )
     delay_right_to_left: int = field(
-        Int(0),
+        Int(0, MOST),
         default=0,
         label=N_("Delay from right to left"),
         help=N_("Delay in ms from right to left"),
@@ -123,7 +130,7 @@ class NetemuConfig(bricks.BrickConfig):
         help=N_("Use delay both ways"),
     )
     buffer_size: int = field(
-        Int(0),
+        Int(0, MOST_BUFFER),
         default=75000,
         label=N_("Buffer"),
         help=N_(
@@ -132,7 +139,7 @@ class NetemuConfig(bricks.BrickConfig):
         ),
     )
     buffer_size_right_to_left: int = field(
-        Int(0),
+        Int(0, MOST_BUFFER),
         default=75000,
         label=N_("Buffer from right to left"),
         help=N_("Channel buffer in bytes from right to left"),
@@ -188,7 +195,7 @@ class NetemuTable(bricks.BrickConfig):
     """The table of a Netemu in the project file."""
 
     transition_period: int = field(
-        Int(1),
+        Int(1, MOST),
         default=100,
         help="How often the emulator may change state, in ms",
     )
@@ -421,8 +428,7 @@ class Netemu(Wire):
 
     type = "Netemu"
     summary = "A wire that emulates a network link"
-    # wirefilter runs in place of vde-netemu
-    programs = (("vde-netemu", "wirefilter"),)
+    programs = ("vde-netemu",)
     config_factory = NetemuConfig
     config: NetemuConfig
     draft_factory = NetemuDraft
@@ -446,43 +452,9 @@ class Netemu(Wire):
         self.update()
         return d
 
-    def program(self, vde: VdeInfo | None) -> tuple[str, str | None]:
-        """
-        The program: vde-netemu, or wirefilter of VDE, which it's a fork of.
-
-        Return the path and a warning, or None.
-        """
-
-        assert vde is not None, "prepare() gathers the VDE programs"
-        if "vde-netemu" in vde.programs:
-            return vde.programs["vde-netemu"], None
-        path = vde.programs.get("wirefilter")
-        if path is None:
-            raise ProgramError(
-                "vde-netemu (vde-netemu) isn't installed, nor wirefilter (vde2)"
-            )
-        lacks = [
-            option
-            for option in OPTIONS
-            if option not in vde.options.get("wirefilter", ())
-        ]
-        if lacks:
-            raise ProgramError(
-                "vde-netemu (vde-netemu) isn't installed, and wirefilter has"
-                f" no {', '.join(lacks)}"
-            )
-        warning = (
-            f"{self.name}: vde-netemu (vde-netemu) isn't installed:"
-            " wirefilter runs in its place"
-        )
-        return path, warning
-
     def command(self, prepared: Prepared) -> Command:
         config = self.config
-        path, warning = self.program(prepared.vde)
-        cmd = Command(path)
-        if warning is not None:
-            cmd.warn(warning)
+        cmd = Command(vde_program(prepared.vde, "vde-netemu"))
         left, right = (socket_path(plug) for plug in self.plugs)
         # -v splits its value at the first colon, that of ptp:// on the left
         if "://" in left:

@@ -101,7 +101,7 @@ class Switch(bricks.Brick):
 
     type = "Switch"
     summary = "A VDE switch"
-    programs = (("vde_switch",),)
+    programs = ("vde_switch",)
     config_factory = SwitchConfig
     config: SwitchConfig
     draft_factory = SwitchDraft

@@ -18,6 +18,7 @@
 """The rows of a panel: what they show of a draft, and what they write."""
 
 from virtualbricks.bricks.draft import Draft, Problem
+from virtualbricks.bricks.netemu import MOST
 from virtualbricks.bricks.switch import SwitchConfig, SwitchDraft
 from virtualbricks.config.schema import (
     Int,
@@ -66,10 +67,11 @@ class HubDraft(SwitchDraft):
 class OffsetSettings(SwitchConfig):
 
     offset = field(Int(), default=0, label="Offset", help="Any number")
+    count = field(Int(0), default=0, label="Count", help="Not below 0")
 
 
 class OffsetDraft(SwitchDraft):
-    """A number with no limits."""
+    """A number with no limits, and one with a lowest only."""
 
     def read(self):
         return OffsetSettings(**field_values(self.brick.config))
@@ -315,12 +317,16 @@ class TestTheWidgets(FormTestCase):
         self.assertEqual(loss.get_range(), (0, 100))
         loss.set_value(1.5)
         self.assertEqual(draft.get("loss"), 1.5)
-        # a lowest only
+        # above the C int of get_value_as_int()
         bandwidth = made.spin("bandwidth")
-        self.assertEqual(bandwidth.get_range(), (0, form.HIGHEST))
-        # no limits
+        self.assertEqual(bandwidth.get_range(), (0, MOST))
+        bandwidth.set_value(MOST)
+        self.assertEqual(draft.get("bandwidth"), MOST)
+        # a lowest only, and no limits
         other = self.make(OffsetDraft(self.switch))
         other.section("Values")
+        count = other.spin("count")
+        self.assertEqual(count.get_range(), (0, form.HIGHEST))
         offset = other.spin("offset")
         self.assertEqual(offset.get_range(), (form.LOWEST, form.HIGHEST))
 

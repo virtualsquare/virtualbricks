@@ -65,6 +65,7 @@ from virtualbricks.config.schema import (
     field_info,
     field_names,
     fields,
+    limit_text,
 )
 from virtualbricks.config.settings import (
     AppSettings,
@@ -165,9 +166,9 @@ def kind_range(kind):
     if not isinstance(kind, (Int, Float)):
         return None
     if kind.min is not None and kind.max is not None:
-        return f"{kind.min}-{kind.max}"
+        return f"{limit_text(kind.min)}-{limit_text(kind.max)}"
     if kind.min is not None:
-        return f">= {kind.min}"
+        return f">= {limit_text(kind.min)}"
     return None
 
 

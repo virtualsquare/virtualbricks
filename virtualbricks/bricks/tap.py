@@ -87,7 +87,7 @@ class Tap(bricks.PrivilegedBrick):
 
     type = "Tap"
     summary = "A tap interface of the host, plugged into a switch"
-    programs = (("vde_plug2tap",),)
+    programs = ("vde_plug2tap",)
     config_factory = TapConfig
     config: TapConfig
     draft_factory = TapDraft

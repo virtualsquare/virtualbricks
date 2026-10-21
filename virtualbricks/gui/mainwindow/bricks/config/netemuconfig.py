@@ -33,8 +33,8 @@ from collections.abc import Callable
 
 from gi.repository import Gtk, Pango
 
-from virtualbricks.bricks.netemu import NetemuConfig, NetemuDraft
-from virtualbricks.gui.form import HIGHEST, Form
+from virtualbricks.bricks.netemu import MOST, NetemuConfig, NetemuDraft
+from virtualbricks.gui.form import Form
 from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
@@ -200,7 +200,7 @@ class NetemuPanel(Panel):
 
         form.section(_("Transitions"))
         self.period = Gtk.SpinButton(visible=True, numeric=True)
-        self.period.set_range(1, HIGHEST)
+        self.period.set_range(1, MOST)
         self.period.set_increments(10, 100)
         self.period.set_value(self.draft.period)
         self.period.connect("value-changed", self.on_period_changed)
@@ -273,7 +273,8 @@ class NetemuPanel(Panel):
         self._show_another()
 
     def on_period_changed(self, spin: Gtk.SpinButton) -> None:
-        self.draft.period = spin.get_value_as_int()
+        # get_value_as_int() is a C int: it stops at 2**31 - 1
+        self.draft.period = round(spin.get_value())
         self.on_changed()
 
     def running_words(self) -> str:

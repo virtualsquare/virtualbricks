@@ -16,13 +16,15 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Record what the QEMU and VDE programs of each target distribution answer.
+Record what the QEMU programs of each target distribution answer, and which
+VDE programs it has.
 
-Each target runs in a podman container: its packages are installed, its
+Each target runs in a podman container: its packages are installed, its QEMU
 programs are asked the questions of virtualbricks.programs, and the answers
 are written to <target>.json next to this script, for the tests: those of
 qemu-system-x86_64 under "qemu", those of the other architectures under
-"emulators", by program. Run it again
+"emulators", by program, and the paths of the VDE programs under "vde". Run
+it again
 for a new distribution, or when a distribution updates its QEMU:
 
     python virtualbricks/tests/data/programs/record.py [TARGET...]
@@ -43,7 +45,6 @@ import tempfile
 from virtualbricks.programs import (
     QEMU_QUESTIONS,
     VDE_PROGRAMS,
-    VDE_QUESTIONS,
     machine_question,
 )
 
@@ -152,11 +153,6 @@ def script() -> str:
             f"printf '%s\\t%s\\n' {program} \"$(command -v {program})\""
             " >>/out/vde.tsv"
         )
-    for program, args in VDE_QUESTIONS.items():
-        lines.append(
-            f"command -v {program} >/dev/null && "
-            + _ask(f"vde.{program}", program, *args)
-        )
     return "\n".join(lines) + "\n"
 
 
@@ -231,14 +227,7 @@ def record(target: str) -> None:
                 },
             },
             "emulators": _emulators(out),
-            "vde": {
-                "programs": programs,
-                "answers": {
-                    program: _answer(out, f"vde.{program}")
-                    for program in VDE_QUESTIONS
-                    if programs.get(program)
-                },
-            },
+            "vde": {"programs": programs},
         }
     with open(os.path.join(HERE, f"{target}.json"), "w") as fp:
         json.dump(data, fp, indent=1, sort_keys=True)

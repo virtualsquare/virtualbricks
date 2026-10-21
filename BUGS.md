@@ -66,21 +66,6 @@ in 3.0: they wait until after it.
   (`tools/targetsuite.py`), and passed in those of Ubuntu 24.04 and Debian
   13. A large picture in the Readme tab wasn't tried.
 
-## Project files
-
-- [ ] **An integer with no maximum can be too large for TOML.** A Netemu's
-  bandwidth, delay and buffer size, both ways, and its
-  `transition_period` have a minimum and no maximum
-  (`virtualbricks/bricks/netemu.py`), so the console and AMP take any
-  integer and `project.toml` keeps it. TOML holds integers from -2^63 to
-  2^63-1, and a reader must refuse others; `tomllib` and `tomlkit` take
-  them all the same. Seen on 3.0.0.dev6, on 21 October 2026, with
-  `--no-gui`: `brick set ne1 delay=100000000000000000000` was taken, and
-  `project.toml` had `delay = 100000000000000000000`. Smaller ones are
-  wrong for the programs too: wirefilter casts the bandwidth to a 32-bit
-  `unsigned int`. A maximum needs a choice per field, and a word on how an
-  older value is read.
-
 ## Remote windows
 
 - [ ] *Later.* **The windows of `--connect` turn KSM on in this

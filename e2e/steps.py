@@ -632,10 +632,11 @@ def stop_starting(virtualbricks, name):
     virtualbricks.find("label", "Starting", within=row)
 
 
-# wirefilter, which a brick's first start asks, waits for this file in the
-# folder of the scenario: at most a minute, in tenths of a second
-VDE_ANSWERS = "vde-programs-answer"
-WAITING_WIREFILTER = """\
+# qemu-system-i386, which a machine's settings and its first start ask, waits
+# for this file in the folder of the scenario: at most a minute, in tenths of
+# a second
+QEMU_ANSWERS = "qemu-programs-answer"
+WAITING_QEMU = """\
 #!/bin/sh
 i=0
 while [ ! -e {gate} ] && [ $i -lt 600 ]; do sleep 0.1; i=$((i + 1)); done
@@ -643,38 +644,37 @@ exec {real} "$@"
 """
 
 
-@given("the VDE programs wait to answer until I let them")
-def vde_programs_wait(virtualbricks):
+@given("the QEMU programs wait to answer until I let them")
+def qemu_programs_wait(virtualbricks):
     """
-    A wirefilter of its own in the folder of the VDE programs of the
+    A qemu-system-i386 of its own in the folder of the QEMU programs of the
     project that Virtualbricks opens at its first start, new_project: it
-    runs that of this computer once the scenario lets it. The first start
-    of a brick asks it, before its program runs.
+    runs that of this computer once the scenario lets it. The settings of a
+    machine and its first start ask it, before its program runs: the
+    machine says Starting until then.
     """
 
     assert virtualbricks.process is None, "Virtualbricks runs already"
-    real = shutil.which("wirefilter")
-    assert real is not None, "no wirefilter: tag the scenario"
-    folder = os.path.join(virtualbricks.home, "vde")
+    real = shutil.which("qemu-system-i386")
+    assert real is not None, "no qemu-system-i386: tag the scenario"
+    folder = os.path.join(virtualbricks.home, "qemu")
     os.makedirs(folder)
-    program = os.path.join(folder, "wirefilter")
-    gate = os.path.join(virtualbricks.folder, VDE_ANSWERS)
+    program = os.path.join(folder, "qemu-system-i386")
+    gate = os.path.join(virtualbricks.folder, QEMU_ANSWERS)
     with open(program, "w") as file:
         file.write(
-            WAITING_WIREFILTER.format(
-                gate=shlex.quote(gate), real=shlex.quote(real)
-            )
+            WAITING_QEMU.format(gate=shlex.quote(gate), real=shlex.quote(real))
         )
     os.chmod(program, 0o755)
     project = os.path.join(virtualbricks.workspace, "new_project")
     os.makedirs(project)
     with open(os.path.join(project, "project.toml"), "w") as file:
-        file.write(f"format = 1\n\n[settings]\nvde_path = {folder!r}\n")
+        file.write(f"format = 1\n\n[settings]\nqemu_path = {folder!r}\n")
 
 
-@when("I let the VDE programs answer")
-def vde_programs_answer(virtualbricks):
-    open(os.path.join(virtualbricks.folder, VDE_ANSWERS), "w").close()
+@when("I let the QEMU programs answer")
+def qemu_programs_answer(virtualbricks):
+    open(os.path.join(virtualbricks.folder, QEMU_ANSWERS), "w").close()
 
 
 @when(

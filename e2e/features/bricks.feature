@@ -237,23 +237,23 @@ Feature: Bricks
     Then Virtualbricks hasn't quit
     And sw1 is still running
 
-  @needs-vde_switch @needs-wirefilter
-  Scenario: A switch that is starting keeps Virtualbricks open, and a stop calls its start off
-    Given the VDE programs wait to answer until I let them
+  @needs-qemu-system-i386
+  Scenario: A machine that is starting keeps Virtualbricks open, and a stop calls its start off
+    Given the QEMU programs wait to answer until I let them
     And Virtualbricks is running
-    When I add the switch sw1
-    And I try to start sw1
+    When I add the virtual machine vm1
+    And I try to start vm1
     Then the list of bricks has
-      | Brick | Detail            | State    |
-      | sw1   | Switch · 32 ports | Starting |
-    And Rename… and Delete… are disabled in the menu of sw1
+      | Brick | Detail                                            | State    |
+      | vm1   | Virtual machine · i386 · 64 MiB · no network card | Starting |
+    And Rename… and Delete… are disabled in the menu of vm1
     When I quit Virtualbricks
     Then an error says "Cannot close virtualbricks: there are running bricks"
     When I close the error
     Then Virtualbricks hasn't quit
-    When I stop sw1, which is starting
-    And I let the VDE programs answer
-    Then sw1 is stopped
+    When I stop vm1, which is starting
+    And I let the QEMU programs answer
+    Then vm1 is stopped
     When I quit Virtualbricks
     Then Virtualbricks has quit
 

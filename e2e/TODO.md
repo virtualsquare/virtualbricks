@@ -112,11 +112,12 @@ that the tests can't do yet: those needs come first.
 - [x] Quit while a switch runs
   "Quit is refused while a switch runs, and the switch still runs",
   `bricks.feature`
-- [x] Quit, then stop, while a switch starts
+- [x] Quit, then stop, while a machine starts
   its row says Starting, Rename… and Delete… are disabled, Quit is
-  refused; Stop calls the start off, and no `vde_switch` runs after;
-  `@needs-wirefilter`, a `wirefilter` that waits for the scenario
-  "A switch that is starting keeps Virtualbricks open, and a stop calls
+  refused; Stop calls the start off, and no QEMU runs after;
+  `@needs-qemu-system-i386`, a `qemu-system-i386` that waits for the
+  scenario before it answers the questions of the start
+  "A machine that is starting keeps Virtualbricks open, and a stop calls
   its start off", `bricks.feature`
 - [x] Add a switch, quit and start again
   "A switch added is in the project after a quit, and shows at the next

@@ -88,7 +88,7 @@ class Capture(bricks.PrivilegedBrick):
 
     type = "Capture"
     summary = "An interface of the host, whose packets go to a switch"
-    programs = (("vde_pcapplug",),)
+    programs = ("vde_pcapplug",)
     config_factory = CaptureConfig
     config: CaptureConfig
     draft_factory = CaptureDraft

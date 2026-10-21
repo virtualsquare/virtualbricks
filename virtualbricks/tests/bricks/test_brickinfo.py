@@ -440,17 +440,15 @@ class TestIssue(BrickInfoTestCase):
             ),
         )
 
-    def test_either_program(self):
+    def test_no_program_stands_in(self):
+        self.install(self.vde, "wirefilter")
         self.uninstall("vde-netemu")
-        self.assertIsNone(self.issue(Netemu))
-        self.uninstall("wirefilter")
         self.assertEqual(
             self.issue(Netemu),
             Issue(
                 "vde-netemu isn't installed",
-                "Neither vde-netemu (vde-netemu) nor wirefilter (vde2) is"
-                " installed. The brick can be made now, and starts once it is"
-                " installed.",
+                "vde-netemu isn't installed: the package vde-netemu has it."
+                " The brick can be made now, and starts once it is installed.",
             ),
         )
 

@@ -64,7 +64,7 @@
         <title><gui>Netemu</gui></title>
         <p>A cable between two switches that emulates a network link: its
         bandwidth, delay, loss and more, in states that change over time. It
-        runs <cmd>vde-netemu</cmd>, or <cmd>wirefilter</cmd>.</p>
+        runs <cmd>vde-netemu</cmd>.</p>
       </item>
       <item>
         <title><gui>Tunnel server</gui></title>

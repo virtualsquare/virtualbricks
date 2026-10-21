@@ -21,8 +21,8 @@ The steps of a user:
 | `When I try to start wr1` | A click on its Start, also when it is disabled, as a user may click it |
 | `When I stop sw1` | Its Stop button; it must stop |
 | `When I stop sw1, which is starting` | Its Stop button, while its row says Starting; the row still says so after, as the stop waits for the start to end |
-| `Given the VDE programs wait to answer until I let them` | Before Virtualbricks starts: a `wirefilter` of its own in the folder of the VDE programs of the project that Virtualbricks opens at its first start, `new_project`, which runs that of this computer once the scenario lets it, at most a minute later. The first start of a brick asks it, before its program runs: the brick says Starting until then |
-| `When I let the VDE programs answer` | That `wirefilter` runs that of this computer, and the start goes on |
+| `Given the QEMU programs wait to answer until I let them` | Before Virtualbricks starts: a `qemu-system-i386` of its own in the folder of the QEMU programs of the project that Virtualbricks opens at its first start, `new_project`, which runs that of this computer once the scenario lets it, at most a minute later. The settings of a machine and its first start ask it, before its program runs: the machine says Starting until then |
+| `When I let the QEMU programs answer` | That `qemu-system-i386` runs that of this computer, and the start goes on |
 | `When I give sw1 34 ports and hub mode, with the buttons of its settings` | Configure… in its menu, the + or the - of Ports until it says 34, Hub mode turned on, then OK |
 | `When I give sw1 34 ports and hub mode in its settings, then cancel` | The same, then Cancel |
 | `When I give sw1 34 ports and hub mode in its settings, then press Escape` | The same, then Escape |

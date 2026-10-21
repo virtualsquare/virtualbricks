@@ -18,9 +18,13 @@
 
 """The network emulator."""
 
+import re
+
 from virtualbricks.bricks.draft import Problem, apply
 from virtualbricks.bricks.netemu import (
     BRICK_KEYS,
+    MOST,
+    MOST_BUFFER,
     NOT_NEGATIVE,
     STATE_KEYS,
     NetemuConfig,
@@ -172,7 +176,7 @@ class TestNetemu(BrickTestCase):
         for name in NOT_NEGATIVE:
             with self.subTest(name=name):
                 with self.assertRaisesRegex(
-                    ValueError, f"^{name}: -1 is less than 0$"
+                    ValueError, rf"^{name}: -1 is outside 0–2\^(31|53)-1$"
                 ):
                     netemu.update_config({name: -1})
                 netemu.update_config({name: 0})
@@ -207,6 +211,53 @@ class TestNetemu(BrickTestCase):
         # the others are read as they are
         self.assertEqual(second.buffer_size, 75000)
         self.assertEqual(repr(table), before)
+
+    def test_the_most(self):
+        # what vde-netemu takes as it is written
+        netemu = self.factory.new_brick("netemu", "wan")
+        most = {name: (MOST, "2^53-1") for name in NOT_NEGATIVE}
+        buffer = (MOST_BUFFER, "2^31-1")
+        most.update(buffer_size=buffer, buffer_size_right_to_left=buffer)
+        self.assertEqual(MOST, 2**53 - 1)
+        self.assertEqual(MOST_BUFFER, 2**31 - 1)
+        for name, (highest, text) in most.items():
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    f"^{name}: {highest + 1} is outside 0–{re.escape(text)}$",
+                ):
+                    netemu.update_config({name: highest + 1})
+                netemu.update_config({name: highest})
+                self.assertEqual(getattr(netemu.config, name), highest)
+        period = kind_of(NetemuTable, "transition_period")
+        with self.assertRaisesRegex(
+            ValueError, rf"^{MOST + 1} is outside 1–2\^53-1$"
+        ):
+            period.check(MOST + 1)
+        period.check(MOST)
+
+    def test_older_values_above_the_most(self):
+        # the usual reading: a warning, and the default
+        netemu = self.factory.new_brick("netemu", "wan")
+        table = netemu.config_table()
+        table["transition_period"] = 10**20
+        table["states"][0].update(delay=10**20, buffer_size=MOST_BUFFER + 1)
+        report = Report()
+        netemu.load_config_table(table, report, "bricks.wan", set())
+        self.assertEqual(
+            [str(m) for m in report],
+            [
+                f"bricks.wan.transition_period: {10**20} is outside"
+                " 1–2^53-1, using the default 100",
+                f"bricks.wan.states[0].delay: {10**20} is outside 0–2^53-1,"
+                " using the default 0",
+                f"bricks.wan.states[0].buffer_size: {2**31} is outside"
+                " 0–2^31-1, using the default 75000",
+            ],
+        )
+        self.assertEqual(netemu.transPeriod, 100)
+        self.assertEqual(netemu.config.delay, 0)
+        self.assertEqual(netemu.config.buffer_size, 75000)
 
 
 class TestStates(CommandTestCase):

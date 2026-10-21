@@ -28,6 +28,7 @@ from virtualbricks.bricks.virtualmachine import (
     UsbDevice,
     hostonly_sock,
 )
+from virtualbricks.config.schema import dump_record
 from virtualbricks.remote.drafts import apply_changes, draft_of, what_changed
 from virtualbricks.tests.remote.test_mirror import MirrorTestCase
 
@@ -167,6 +168,22 @@ class TestRefused(DraftTestCase):
                 {"changes": {"ports": "many", "hub_mode": True}},
             )
         self.assertFalse(self.sw1.config.hub_mode)
+
+    def test_a_period_it_refuses(self):
+        # vde-netemu takes no more as it is written
+        data = what_changed(self.draft("brick", "ne1"))
+        data["extras"] = {
+            "states": [dump_record(self.netemu.config)],
+            "transitions": [[0.0]],
+            "period": 2**53,
+        }
+        with self.assertRaises(ValueError) as cm:
+            apply_changes(self.factory, "brick", "ne1", data)
+        self.assertEqual(
+            str(cm.exception),
+            f"period: {2**53} is outside 1–2^53-1",
+        )
+        self.assertEqual(self.netemu.transPeriod, 100)
 
     def test_no_such_socket(self):
         with self.assertRaises(ValueError) as cm:
