@@ -924,10 +924,10 @@ class VirtualMachineDraft(Draft):
 
     def __init__(self, brick: VirtualMachine) -> None:
         super().__init__(brick)
-        # the cards are the draft's own, and not links
-        self.links = []
-        self.original_links = []
-        self.cards: list[Card] = [card_of(link) for link in brick.cards]
+        # the cards are the draft's own, and not targets
+        self.targets = []
+        self.original_targets = []
+        self.cards: list[Card] = [card_of(link) for link in brick.links]
         self.qemu: QemuInfo | None = None
         self.machine_properties: frozenset[str] = frozenset()
 
@@ -1078,7 +1078,7 @@ class VirtualMachineDraft(Draft):
             if card.link is not None and card.kind == _kind(brick, card.link)
         }
         changed = False
-        before = list(brick.cards)
+        before = list(brick.links)
         for gone in before:
             if id(gone) not in kept:
                 if isinstance(gone, Plug) and gone.sock is not None:
@@ -1105,7 +1105,7 @@ class VirtualMachineDraft(Draft):
                         link.connect(card.sock)
                     changed = True
             links.append(link)
-        brick.order_cards(links)
+        brick.order_links(links)
         # a card gone, new or moved
         return changed or links != before
 
@@ -1152,9 +1152,6 @@ class VirtualMachine(bricks.Brick):
 
     def __init__(self, factory: BrickFactory, name: str) -> None:
         bricks.Brick.__init__(self, factory, name)
-        # the network cards, in the order the guest sees them: plugs and
-        # socks are the same cards by kind, in this order
-        self.cards: list[Plug | Sock] = []
         self._disks = {dev: Disk(self, dev) for dev in DISK_DEVICES}
 
     def set_name(self, name: str) -> None:
@@ -1308,7 +1305,7 @@ class VirtualMachine(bricks.Brick):
         qemu = prepared.qemu
         assert qemu is not None, "prepare() asks the QEMU program"
         cmd = Command(qemu.path)
-        links = list(self.cards)
+        links = list(self.links)
         found = lacks(
             config,
             [(link.model, needs_vde(link)) for link in links],
@@ -1490,8 +1487,7 @@ class VirtualMachine(bricks.Brick):
         sock.mac = mac or random_mac()
         sock.path = self.runtime_path(f"{self.name}_{name}[]")
         sock.nickname = f"{self.name}_{name}"
-        self.socks.append(sock)
-        self.cards.append(sock)
+        self.links.append(sock)
         return sock
 
     def add_plug(
@@ -1503,8 +1499,7 @@ class VirtualMachine(bricks.Brick):
         plug = Plug(self)
         plug.model = model or DEFAULT_MODEL
         plug.mac = mac or random_mac()
-        self.plugs.append(plug)
-        self.cards.append(plug)
+        self.links.append(plug)
         if sock:
             plug.connect(sock)
         return plug
@@ -1518,25 +1513,20 @@ class VirtualMachine(bricks.Brick):
     def remove_plug(self, plug: Plug | Sock) -> None:
         """Take a card out: a socket card is unplugged and forgotten."""
 
-        if plug not in (self.socks if isinstance(plug, Sock) else self.plugs):
+        if plug not in self.links:
             self.logger.error(own_err, plug=plug, brick=self)
             return
-        self.cards.remove(plug)
+        self.links.remove(plug)
         if isinstance(plug, Sock):
-            self.socks.remove(plug)
             self.factory.remove_sock(plug)
-        else:
-            self.plugs.remove(plug)
 
-    def order_cards(self, cards: Sequence[Plug | Sock]) -> None:
+    def order_links(self, links: Sequence[Plug | Sock]) -> None:
         """Put the cards in this order, which has all of them."""
 
-        assert sorted(map(id, cards)) == sorted(
-            map(id, self.cards)
+        assert sorted(map(id, links)) == sorted(
+            map(id, self.links)
         ), "the cards of the machine"
-        self.cards[:] = cards
-        self.plugs[:] = [card for card in cards if isinstance(card, Plug)]
-        self.socks[:] = [card for card in cards if isinstance(card, Sock)]
+        self.links[:] = links
 
     def acquire(self) -> None:
         """Acquire locks on images if needed."""

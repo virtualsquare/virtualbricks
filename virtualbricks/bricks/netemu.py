@@ -390,7 +390,7 @@ class NetemuDraft(Draft):
                     "From {state} the chances add up to more than 100 %"
                 ).format(state=state.name)
                 problems.append(Problem("transitions", text))
-        left = self.links[0]
+        left = self.targets[0]
         if left is not None and is_virtualmachine(left.brick):
             text = _("A machine's socket card can only be the right end")
             problems.append(Problem("plug0", text))

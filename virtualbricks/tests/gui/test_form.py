@@ -493,10 +493,10 @@ class TestTheWidgets(FormTestCase):
         )
         self.assertEqual(combo.get_active_id(), "1")
         combo.set_active_id("0")
-        self.assertIs(draft.links[0], self.switch.socks[0])
+        self.assertIs(draft.targets[0], self.switch.socks[0])
         self.assertEqual(self.changes, 1)
         combo.set_active_id("")
-        self.assertIsNone(draft.links[0])
+        self.assertIsNone(draft.targets[0])
         # the brick waits for OK
         self.assertIs(tap.plugs[0].sock, sw2.socks[0])
 

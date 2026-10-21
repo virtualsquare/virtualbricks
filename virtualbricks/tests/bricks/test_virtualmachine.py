@@ -132,24 +132,20 @@ class TestVirtualMachine(BrickTestCase):
         sock = vm.add_sock()
         plug = vm.add_plug(sw.socks[0])
         other = vm.add_sock()
-        self.assertEqual(vm.cards, [sock, plug, other])
+        self.assertEqual(vm.links, [sock, plug, other])
         self.assertEqual(vm.plugs, [plug])
         self.assertEqual(vm.socks, [sock, other])
         vm.remove_plug(sock)
         vm.remove_plug(plug)
-        self.assertEqual(vm.cards, [other])
+        self.assertEqual(vm.links, [other])
         self.assertEqual((vm.plugs, vm.socks), ([], [other]))
 
-    def test_order_the_cards(self):
+    def test_order_the_links(self):
         vm = self.factory.new_brick("qemu", "vm")
         first, second = vm.add_plug(None), vm.add_plug(None)
         sock = vm.add_sock()
-        plugs, socks = vm.plugs, vm.socks
-        vm.order_cards([sock, second, first])
-        self.assertEqual(vm.cards, [sock, second, first])
-        # the same lists, in the order of the cards
-        self.assertIs(vm.plugs, plugs)
-        self.assertIs(vm.socks, socks)
+        vm.order_links([sock, second, first])
+        self.assertEqual(vm.links, [sock, second, first])
         self.assertEqual(vm.plugs, [second, first])
         self.assertEqual(vm.socks, [sock])
 
@@ -863,7 +859,7 @@ class TestTheCards(DraftTestCase):
                 ),
             ],
         )
-        self.assertEqual(draft.links, [])
+        self.assertEqual(draft.targets, [])
         self.assertTrue(draft.cards[0].needs_vde())
         self.assertTrue(draft.cards[1].needs_vde())
         self.assertFalse(draft.cards[2].needs_vde())
@@ -948,7 +944,7 @@ class TestTheCards(DraftTestCase):
         self.assertEqual(self.vm.socks, [self.sock])
         # the new card after the socket
         self.assertEqual(
-            self.vm.cards, [self.eth0, self.sock, self.vm.plugs[1]]
+            self.vm.links, [self.eth0, self.sock, self.vm.plugs[1]]
         )
         # moved out of sw1, the new one in it
         self.assertEqual(
@@ -964,7 +960,7 @@ class TestTheCards(DraftTestCase):
         self.assertEqual(len(self.vm.socks), 2)
         # in the place of the plug, the first card
         sock = self.vm.socks[0]
-        self.assertEqual(self.vm.cards, [sock, self.sock, self.eth2])
+        self.assertEqual(self.vm.links, [sock, self.sock, self.eth2])
         self.assertEqual(sock.mac, "52:54:00:00:00:01")
         self.assertEqual(sock.nickname, "vm1_sock_eth1")
         self.assertEqual(self.sw1.socks[0].plugs, [])
@@ -975,8 +971,8 @@ class TestTheCards(DraftTestCase):
         draft.set_card(1, kind="plug", sock=self.sw2.socks[0])
         apply(draft)
         self.assertEqual(self.vm.socks, [])
-        plug = self.vm.cards[1]
-        self.assertEqual(self.vm.cards, [self.eth0, plug, self.eth2])
+        plug = self.vm.links[1]
+        self.assertEqual(self.vm.links, [self.eth0, plug, self.eth2])
         self.assertEqual(self.vm.plugs, [self.eth0, plug, self.eth2])
         self.assertIs(plug.sock, self.sw2.socks[0])
         self.assertEqual(plug.mac, "52:54:00:00:00:02")
@@ -986,7 +982,7 @@ class TestTheCards(DraftTestCase):
         apply(VirtualMachineDraft(self.vm))
         self.assertEqual(self.changed, [])
         self.assertEqual(self.vm.plugs, [self.eth0, self.eth2])
-        self.assertEqual(self.vm.cards, [self.eth0, self.sock, self.eth2])
+        self.assertEqual(self.vm.links, [self.eth0, self.sock, self.eth2])
 
 
 class TestApply(DraftTestCase):

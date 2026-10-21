@@ -215,7 +215,7 @@ class CardArg(ArgKind):
         vm = done.get("vm")
         if vm is None:
             return []
-        return [f"eth{n}" for n in range(len(vm.cards))]
+        return [f"eth{n}" for n in range(len(vm.links))]
 
 
 def _config(done: dict) -> object | None:
@@ -324,7 +324,7 @@ def _links(brick: Brick) -> list[str]:
 
     if is_virtualmachine(brick):
         return [
-            _card_line(brick, n, link) for n, link in enumerate(brick.cards)
+            _card_line(brick, n, link) for n, link in enumerate(brick.links)
         ]
     lines = []
     ends = (_("left"), _("right")) if len(brick.plugs) == 2 else None
@@ -766,7 +766,7 @@ def connect(context: Context, name: Brick, target: list[Sock]) -> list[str]:
     if len(target) == len(brick.plugs):
         indexes = list(range(len(target)))
     else:
-        indexes = [i for i, sock in enumerate(draft.links) if sock is None]
+        indexes = [i for i, sock in enumerate(draft.targets) if sock is None]
         if len(indexes) < len(target):
             raise CommandError(
                 _("{name} has no free plug: brick disconnect {name}").format(
@@ -860,7 +860,7 @@ def _check_cards(vm: VirtualMachine, draft: Draft) -> None:
 
 
 def _card_index(vm: VirtualMachine, number: int) -> int:
-    if number >= len(vm.cards):
+    if number >= len(vm.links):
         raise CommandError(
             _("{name} has no eth{number}").format(name=vm.name, number=number)
         )
@@ -892,9 +892,9 @@ def card_add(
         values["kind"] = "socket"
     draft.set_card(index, **values)
     _check_cards(vm, draft)
-    before = {id(link) for link in vm.cards}
+    before = {id(link) for link in vm.links}
     apply(draft)
-    for number, link in enumerate(vm.cards):
+    for number, link in enumerate(vm.links):
         if id(link) not in before:
             return [f"{vm.name} {_card_line(vm, number, link)}"]
     return []
@@ -934,7 +934,7 @@ def card_set(
     draft.set_card(index, **values)
     _check_cards(vm, draft)
     apply(draft)
-    return [f"{vm.name} {_card_line(vm, index, vm.cards[index])}"]
+    return [f"{vm.name} {_card_line(vm, index, vm.links[index])}"]
 
 
 @command(

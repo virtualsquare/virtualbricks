@@ -36,7 +36,7 @@ import locale
 import os
 import re
 import shlex
-from collections.abc import Collection
+from collections.abc import Collection, Sequence
 from contextlib import AbstractContextManager
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, TypeVar, cast
 
@@ -535,10 +535,24 @@ class Brick(Base):
             return -1
         return self.proc.pid
 
+    @property
+    def plugs(self) -> Sequence[Plug]:
+        """The plugs among the links, in their order."""
+
+        return [link for link in self.links if isinstance(link, Plug)]
+
+    @property
+    def socks(self) -> Sequence[Sock]:
+        """The sockets among the links, in their order."""
+
+        # a link that isn't a plug is a socket
+        return [link for link in self.links if not isinstance(link, Plug)]
+
     def __init__(self, factory: BrickFactory, name: str) -> None:
         Base.__init__(self, factory, name)
-        self.plugs: list[Plug] = []
-        self.socks: list[Sock] = []
+        # its plugs and its sockets, in their order: the network cards of a
+        # machine are in the order the guest sees them
+        self.links: list[Plug | Sock] = []
 
     def start(
         self, resume: str = "", *, chain: tuple[Brick, ...] = ()

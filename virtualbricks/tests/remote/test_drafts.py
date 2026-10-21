@@ -111,7 +111,7 @@ class TestWhatChanged(DraftTestCase):
         self.assertEqual(self.vm1.config.memory, 2048)
         self.assertEqual(self.vm1.config.hda_image, "pc")
         self.assertEqual(len(self.vm1.socks), 2)
-        cards = self.vm1.cards
+        cards = self.vm1.links
         self.assertEqual(
             [type(card) for card in cards], [Sock, Plug, Plug, Sock]
         )

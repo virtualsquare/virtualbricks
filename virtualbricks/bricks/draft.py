@@ -29,8 +29,8 @@ at once those it can, through its ``cbset_`` methods, and says it changed
 once. An object without a record of settings, as a disk image, has a draft
 that makes one in ``read()`` and gives the changes back in ``give()``.
 
-The links of a draft are the sockets that the plugs of the brick join, None
-for a plug in nothing; ``sockets()`` are those a plug can join. ``apply()``
+The targets of a draft are the sockets that the plugs of the brick join,
+None for a plug in nothing; ``sockets()`` are those a plug can join. ``apply()``
 moves the plugs whose socket changed. What a brick has beyond its record, as
 the states of a Netemu, its draft gives it in ``apply_extras()``.
 
@@ -98,10 +98,10 @@ class Draft:
         # the values that their kind refused, as typed, and why
         self.refused: dict[str, tuple[object, str]] = {}
         # the socket that each plug joins, or None; an event has no plugs
-        self.original_links = [
+        self.original_targets = [
             plug.sock for plug in getattr(brick, "plugs", ())
         ]
-        self.links = list(self.original_links)
+        self.targets = list(self.original_targets)
 
     def read(self) -> Any:
         """The record of the settings, which the draft copies."""
@@ -173,7 +173,7 @@ class Draft:
                 ),
                 error=False,
             )
-            for index, sock in enumerate(self.links)
+            for index, sock in enumerate(self.targets)
             if sock is None
         ]
 
@@ -214,7 +214,7 @@ class Draft:
     def link(self, index: int, sock: Any) -> None:
         """Plug the plug of index into sock, or into nothing."""
 
-        self.links[index] = sock
+        self.targets[index] = sock
 
     def moved(self) -> dict[int, Any]:
         """The plugs whose socket changed, by index: their new socket."""
@@ -222,7 +222,7 @@ class Draft:
         return {
             index: sock
             for index, (sock, before) in enumerate(
-                zip(self.links, self.original_links)
+                zip(self.targets, self.original_targets)
             )
             if sock is not before
         }

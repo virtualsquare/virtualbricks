@@ -42,6 +42,17 @@ from virtualbricks.tests import (
 
 class TestBase(BrickTestCase):
 
+    def test_plugs_and_socks_of_the_links(self):
+        switch = self.factory.new_brick("switch", "sw")
+        wire = self.factory.new_brick("wire", "w")
+        self.assertEqual(len(switch.links), 1)
+        self.assertEqual((switch.plugs, switch.socks), ([], switch.links))
+        self.assertEqual(len(wire.links), 2)
+        self.assertEqual((wire.plugs, wire.socks), (wire.links, []))
+        # each time a new list: the brick keeps its links
+        wire.plugs.clear()
+        self.assertEqual(len(wire.plugs), 2)
+
     def test_update_config(self):
         switch = self.factory.new_brick("switch", "sw")
         calls = []

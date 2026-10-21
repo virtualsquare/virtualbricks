@@ -161,7 +161,7 @@ class SwitchWrapper(bricks.Brick):
         sock = factory.new_sock(self, self.name + "_port")
         # the control folder, once the brick has one
         sock.path = ""
-        self.socks.append(sock)
+        self.links.append(sock)
 
     def look(self, follow: bool = True) -> None:
         """

@@ -96,7 +96,7 @@ class Capture(bricks.PrivilegedBrick):
 
     def __init__(self, factory: BrickFactory, name: str) -> None:
         bricks.Brick.__init__(self, factory, name)
-        self.plugs.append(Plug(self))
+        self.links.append(Plug(self))
 
     def command(self, prepared: Prepared) -> Command:
         cmd = Command(vde_program(prepared.vde, "vde_pcapplug"))

@@ -74,7 +74,7 @@ def _plugged(plug: Plug) -> str:
     brick = plug.brick
     if not is_virtualmachine(brick):
         return brick.name
-    number = brick.cards.index(plug)
+    number = brick.links.index(plug)
     return _("{vm} (eth{n})").format(vm=brick.name, n=number)
 
 

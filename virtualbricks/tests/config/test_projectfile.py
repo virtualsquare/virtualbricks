@@ -257,7 +257,7 @@ class TestRoundTrip(ProjectFileTestCase):
         factory, project_settings = self.restore(data)
         vm, vm2 = factory.get_brick("vm"), factory.get_brick("vm2")
         self.assertEqual(
-            [card.mac for card in vm.cards],
+            [card.mac for card in vm.links],
             [f"00:aa:00:00:00:0{n}" for n in range(1, 6)],
         )
         self.assertEqual(

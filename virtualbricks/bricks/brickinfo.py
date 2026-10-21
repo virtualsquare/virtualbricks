@@ -250,9 +250,9 @@ def _virtual_machine(brick: VirtualMachine) -> list[str]:
     if config.use_kvm:
         parts.append("KVM")
     parts.append(_("{size} MiB").format(size=config.memory))
-    if not brick.cards:
+    if not brick.links:
         parts.append(_("no network card"))
-    for number, link in enumerate(brick.cards):
+    for number, link in enumerate(brick.links):
         parts.append(_card(brick, number, link))
     return parts
 

@@ -117,7 +117,7 @@ class Switch(bricks.Brick):
         bricks.Brick.__init__(self, factory, name)
         sock = factory.new_sock(self, self.name + "_port")
         sock.path = self.path()
-        self.socks.append(sock)
+        self.links.append(sock)
 
     def command(self, prepared: Prepared) -> Command:
         config = self.config

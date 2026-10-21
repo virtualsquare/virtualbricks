@@ -124,7 +124,7 @@ class Tunnel(bricks.Brick):
 
     def __init__(self, factory: BrickFactory, name: str) -> None:
         bricks.Brick.__init__(self, factory, name)
-        self.plugs.append(Plug(self))
+        self.links.append(Plug(self))
 
     def key_path(self) -> str:
         """The key of the tunnel, in the runtime folder."""

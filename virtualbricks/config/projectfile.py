@@ -320,7 +320,7 @@ def brick_table(brick: Brick) -> Table:
     elif style == "endpoints":
         table["endpoints"] = [_plug_target(plug) for plug in brick.plugs]
     elif is_virtualmachine(brick):
-        table["nics"] = [_nic_table(link) for link in brick.cards]
+        table["nics"] = [_nic_table(link) for link in brick.links]
     return table
 
 

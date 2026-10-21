@@ -371,7 +371,7 @@ class MirrorFactory(BrickFactory):
             vm.remove_plug(plug)
         self._waiting = [(p, t) for p, t in self._waiting if p.brick is not vm]
         by_name = {sock.nickname: sock for sock in vm.socks}
-        cards: list[Plug | Sock] = []
+        links: list[Plug | Sock] = []
         for nic in nics:
             if nic.get("kind") == "socket":
                 sock = by_name.pop(f"{vm.name}_{nic['name']}", None)
@@ -379,17 +379,17 @@ class MirrorFactory(BrickFactory):
                     sock = vm.add_sock(nic["mac"], nic["model"], nic["name"])
                 else:
                     sock.mac, sock.model = nic["mac"], nic["model"]
-                cards.append(sock)
+                links.append(sock)
                 continue
             plug = vm.add_plug(None, nic["mac"], nic["model"])
             if nic.get("kind") == "hostonly":
                 plug.connect(hostonly_sock)
             else:
                 self._plug(plug, nic.get("connect", ""))
-            cards.append(plug)
+            links.append(plug)
         for sock in by_name.values():
             vm.remove_plug(sock)
-        vm.order_cards(cards)
+        vm.order_links(links)
 
     def _plug(self, plug: Plug, target: str) -> None:
         """Plug plug into the socket of target; later, if it hasn't come."""

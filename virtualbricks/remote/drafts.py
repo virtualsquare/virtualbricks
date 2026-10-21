@@ -119,9 +119,10 @@ def what_changed(draft: Draft) -> dict[str, Any]:
     extras: dict[str, object] = {}
     brick = draft.brick
     if isinstance(draft, VirtualMachineDraft):
-        links_now = brick.cards
-        cards = [_card_data(card, links_now) for card in draft.cards]
-        before = [_card_data(card_of(link), links_now) for link in brick.cards]
+        cards = [_card_data(card, brick.links) for card in draft.cards]
+        before = [
+            _card_data(card_of(link), brick.links) for link in brick.links
+        ]
         if cards != before:
             extras["cards"] = cards
     if isinstance(draft, NetemuDraft):
@@ -178,13 +179,13 @@ def apply_changes(
             raise ValueError(f"{key}: {exc}") from None
         draft.set(key, value)
     for index, target in data.get("links", []):
-        if not 0 <= index < len(draft.links):
+        if not 0 <= index < len(draft.targets):
             raise ValueError(f"{name} has no plug {index}")
         draft.link(index, _socket(factory, target, f"plug {index}"))
     extras = data.get("extras", {})
     if "cards" in extras and isinstance(draft, VirtualMachineDraft):
         assert is_virtualmachine(item), "a machine's draft is of a machine"
-        links = item.cards
+        links = item.links
         draft.cards = [
             Card(
                 card["kind"],

@@ -44,8 +44,8 @@ class Wire(bricks.Brick):
 
     def __init__(self, factory: BrickFactory, name: str) -> None:
         bricks.Brick.__init__(self, factory, name)
-        self.plugs.append(Plug(self))
-        self.plugs.append(Plug(self))
+        self.links.append(Plug(self))
+        self.links.append(Plug(self))
 
     def configured(self) -> bool:
         return len(self.plugs) == 2 and all(p.sock for p in self.plugs)

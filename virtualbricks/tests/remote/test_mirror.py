@@ -400,17 +400,17 @@ class TestChanges(MirrorTestCase):
         # a plug before the socket card kept
         vm1 = self.copy.get_brick("vm1")
         sock = vm1.socks[0]
-        self.vm1.order_cards(
+        self.vm1.order_links(
             [self.vm1.plugs[0], self.vm1.socks[0], self.vm1.plugs[1]]
         )
         self.vm1.changed.notify(self.vm1)
         self.turn()
         self.assertSame()
         self.assertEqual(
-            [card.mac for card in vm1.cards],
-            [card.mac for card in self.vm1.cards],
+            [card.mac for card in vm1.links],
+            [card.mac for card in self.vm1.links],
         )
-        self.assertIs(vm1.cards[1], sock)
+        self.assertIs(vm1.links[1], sock)
         self.assertEqual(
             [plug.mac for plug in vm1.plugs],
             [plug.mac for plug in self.vm1.plugs],

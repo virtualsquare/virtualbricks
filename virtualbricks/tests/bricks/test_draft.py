@@ -249,7 +249,7 @@ class TestAnEvent(DraftTestCase):
         changed = []
         event.changed.connect(changed.append)
         draft = Draft(event)
-        self.assertEqual(draft.links, [])
+        self.assertEqual(draft.targets, [])
         draft.set("delay", 7)
         self.assertEqual(draft.problems(), [])
         self.assertEqual(event.config.delay, 0)
@@ -291,9 +291,9 @@ class TestLinks(DraftTestCase):
 
     def test_a_copy(self):
         draft = Draft(self.tap)
-        self.assertEqual(draft.links, [self.switch.socks[0]])
+        self.assertEqual(draft.targets, [self.switch.socks[0]])
         draft.link(0, self.sw2.socks[0])
-        self.assertEqual(draft.links, [self.sw2.socks[0]])
+        self.assertEqual(draft.targets, [self.sw2.socks[0]])
         self.assertIs(self.tap.plugs[0].sock, self.switch.socks[0])
         self.assertEqual(draft.moved(), {0: self.sw2.socks[0]})
         draft.link(0, self.switch.socks[0])
@@ -332,7 +332,7 @@ class TestLinks(DraftTestCase):
     def test_into_a_socket_from_nothing(self):
         wire = self.factory.new_brick("wire", "w1")
         draft = Draft(wire)
-        self.assertEqual(draft.links, [None, None])
+        self.assertEqual(draft.targets, [None, None])
         draft.link(1, self.sw2.socks[0])
         apply(draft)
         self.assertIsNone(wire.plugs[0].sock)

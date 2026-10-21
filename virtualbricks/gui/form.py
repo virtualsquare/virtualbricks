@@ -556,7 +556,7 @@ class Form:
         """What the plug of index joins: one of the draft's sockets, or none."""
 
         sockets = self.draft.sockets()
-        current = self.draft.links[index]
+        current = self.draft.targets[index]
         if current is not None and current not in sockets:
             sockets.append(current)
         combo = Gtk.ComboBoxText(visible=True)
