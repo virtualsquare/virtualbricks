@@ -4,6 +4,11 @@ section: 1
 header: Virtualbricks Manual
 footer: virtualbricks VERSION
 date: DATE
+help:
+  id: command-line
+  title: The command line
+guide: "index#reference"
+sort: 1
 ---
 
 # NAME

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<page xmlns="http://projectmallard.org/1.0/" xmlns:if="http://projectmallard.org/if/1.0/" type="topic" id="settings">
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="settings">
   <info>
     <link type="guide" xref="index#beyond"/>
     <link type="seealso" xref="programs"/>
@@ -15,8 +15,7 @@
     </media>
   </figure>
   <p>The windows of another Virtualbricks, opened with <cmd>virtualbricks --connect</cmd>, have a third page, for the computer where the bricks run; see <link xref="remote"/>.</p>
-  <p if:test="!target:html">Every setting of the files is in <link href="man:virtualbricks-config(5)">virtualbricks-config(5)</link>.</p>
-  <p if:test="target:html">Every setting of the files is in <link href="https://www.virtualbricks.it/documentation/config-files.html">virtualbricks-config(5)</link>.</p>
+  <p>Every setting of the files is in <link xref="config-files">virtualbricks-config(5)</link>.</p>
   <section id="computer">
     <title>This computer</title>
     <p>The settings of this computer, for every project, in <file>~/.config/virtualbricks/settings.toml</file>:</p>

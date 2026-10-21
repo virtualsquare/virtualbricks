@@ -4,6 +4,11 @@ section: 7
 header: Virtualbricks Manual
 footer: virtualbricks VERSION
 date: DATE
+help:
+  id: archive-protocol
+  title: The archive protocol
+guide: "index#reference"
+sort: 4
 ---
 
 # NAME

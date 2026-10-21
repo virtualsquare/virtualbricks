@@ -26,14 +26,7 @@ The nouns are `brick`{.cmd}, `event`{.cmd}, `image`{.cmd}, `setting`{.cmd} and
 explains one. [Tab]{.key} completes the words, the names and the keys, and the
 history is kept between runs.
 
-::: {test="!target:html"}
-Every command and option is in [virtualbricks(1)](man:virtualbricks(1)).
-:::
-
-::: {test="target:html"}
-Every command and option is in
-[virtualbricks(1)](https://www.virtualbricks.it/documentation/command-line.html).
-:::
+Every command and option is in [virtualbricks(1)](command-line).
 
 ## Scripts {#scripts}
 

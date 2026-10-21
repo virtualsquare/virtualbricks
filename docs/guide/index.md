@@ -19,4 +19,6 @@ event or a disk image, and the **Settings** window, have a **Help** button too.
 
 ## Settings and beyond {#beyond style="2column"}
 
+## Reference {#reference style="2column"}
+
 ## Tutorials {#tutorials style="2column"}

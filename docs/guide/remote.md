@@ -25,18 +25,9 @@ desktop; or the lab machine asks for the certificate of your desktop instead.
 `virtualbricks --connect`{.cmd} alone opens the windows of a Virtualbricks of
 yours on this computer, started with `--listen`{.cmd}.
 
-::: {test="!target:html"}
 How to listen and connect, the token and the certificates are in
-[virtualbricks(1)](man:virtualbricks(1)), and the protocols in
-[virtualbricks-control(7)](man:virtualbricks-control(7)).
-:::
-
-::: {test="target:html"}
-How to listen and connect, the token and the certificates are in
-[virtualbricks(1)](https://www.virtualbricks.it/documentation/command-line.html),
-and the protocols in
-[virtualbricks-control(7)](https://www.virtualbricks.it/documentation/control-protocols.html).
-:::
+[virtualbricks(1)](command-line), and the protocols in
+[virtualbricks-control(7)](control-protocols).
 
 ## What the windows do {#windows}
 

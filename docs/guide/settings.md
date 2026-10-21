@@ -19,15 +19,7 @@ The windows of another Virtualbricks, opened with
 `virtualbricks --connect`{.cmd}, have a third page, for the computer where the
 bricks run; see [](remote).
 
-::: {test="!target:html"}
-Every setting of the files is in
-[virtualbricks-config(5)](man:virtualbricks-config(5)).
-:::
-
-::: {test="target:html"}
-Every setting of the files is in
-[virtualbricks-config(5)](https://www.virtualbricks.it/documentation/config-files.html).
-:::
+Every setting of the files is in [virtualbricks-config(5)](config-files).
 
 ## This computer {#computer}
 

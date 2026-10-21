@@ -12,15 +12,7 @@ sort: 2
 An archive, a `.vbp`{.file} file, holds a project, to copy it to another
 computer, send it to a student, or keep it.
 
-::: {test="!target:html"}
-The format of the archives is in
-[virtualbricks-vbp(5)](man:virtualbricks-vbp(5)).
-:::
-
-::: {test="target:html"}
-The format of the archives is in
-[virtualbricks-vbp(5)](https://www.virtualbricks.it/documentation/vbp-format.html).
-:::
+The format of the archives is in [virtualbricks-vbp(5)](vbp-format).
 
 ## Exporting a project {#export}
 

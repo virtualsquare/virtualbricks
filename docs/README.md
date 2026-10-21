@@ -7,7 +7,7 @@ The documentation of Virtualbricks is written in pandoc's Markdown, and
 | --- | --- |
 | `guide/<page>.md`, the user guide | `built/mallard/<page>.page`, for Yelp |
 | `guide/figures/`, its pictures | `built/mallard/figures/`, a copy |
-| `man/<page>.<section>.md`, the manual pages | `built/man/<page>.<section>` |
+| `man/<page>.<section>.md`, the manual pages | `built/man/<page>.<section>`, and a page of the guide, `built/mallard/<id>.page`, in its Reference |
 
 ```sh
 python docs/build.py            # build what changed
@@ -79,6 +79,7 @@ its title. There is no third level. A section of the index can have
 | `` `vm1_hda` `` | `<code>` | any other literal text |
 | `[Virtualbricks]{.app}` | `<app>` | the name of a program |
 | `[the images](images#shared)` | `<link xref>` | a page, or a section of it |
+| `[virtualbricks(1)](command-line)` | `<link xref>` | a page of the Reference, by its id |
 | `[](images)` | `<link xref>` | a page, by its title |
 | `[issues](https://…)` | `<link href>` | anything else, with its scheme |
 
@@ -95,7 +96,6 @@ Bold is always a label in the guide: there is no other strong emphasis.
 | `::: note`, `::: {.note .tip}`, `::: {.note .warning}` | `<note>` |
 | a code block | `<screen>` |
 | a table | `<table>` |
-| `::: {test="target:html"}` around paragraphs | `if:test`: for one output only |
 
 A picture is a paragraph of its own:
 
@@ -115,11 +115,57 @@ a part of a page.
 
 ## The manual pages
 
-A manual page is the Markdown of a man page as pandoc reads it: its front
-matter gives `title`, `section`, `header` and `footer`; VERSION and DATE in
-it become the version of Virtualbricks and the date of the page. Bold is
-literal text, typed as it is; italics a part to replace. A code block is at
-most 64 columns wide, since `man` indents it by 14 in an 80-column terminal:
-check with `COLUMNS=80 man -l docs/built/man/virtualbricks.1`. The tests of
-`virtualbricks/tests/test_docs.py` read the pages and compare them with the
-code.
+A manual page is the Markdown of a man page as pandoc reads it, and a page of
+the guide too, in its Reference section: Yelp shows it as it shows the guide,
+and opens no other program for it.
+
+```markdown
+---
+title: VIRTUALBRICKS-CONFIG
+section: 5
+header: Virtualbricks Manual
+footer: virtualbricks VERSION
+date: DATE
+help:
+  id: config-files
+  title: Configuration files
+guide: "index#reference"
+sort: 2
+---
+
+# NAME
+
+virtualbricks-config - settings, state and project files of Virtualbricks
+
+# SYNOPSIS
+
+*\$XDG_CONFIG_HOME*/virtualbricks/settings.toml\
+*\$XDG_STATE_HOME*/virtualbricks/state.toml
+```
+
+`title`, `section`, `header`, `footer` and `date` are those of the man page;
+VERSION and DATE become the version of Virtualbricks and the date of the
+page. `help` names the page of the guide: its id, which is also the name of
+its web page, and its title; `guide` and `sort` place it in the index, as for
+a page of the guide.
+
+In the guide:
+
+- NAME, `name - what it is`, is the line under the title in the index:
+  virtualbricks-config(5): settings, state and project files of Virtualbricks.
+- SYNOPSIS is a synopsis, a line for each line of the man page; a line
+  ends with `\`, which is a line break nowhere else.
+- A heading in capitals is in sentence case: `# COMMON RULES` is *Common
+  rules*; AMP, JSON, README, TOML and Virtualbricks keep their capitals
+  (`CAPITALS` in `build.py`). Any other title is given:
+  `# CONTENTS.TOML {title="contents.toml"}`. The sections nest, up to `###`.
+- Bold is literal text, typed as it is, `<code>`; italics a part to replace,
+  `<var>`.
+- `**virtualbricks-config**(5)`, a man page of the Reference, is a link to its
+  page; the man pages of other programs, as `**tar**(1)`, stay text.
+- A numbered list is a list, not a procedure.
+
+A code block is at most 64 columns wide, since `man` indents it by 14 in an
+80-column terminal: check with `COLUMNS=80 man -l
+docs/built/man/virtualbricks.1`. The tests of `virtualbricks/tests/test_docs.py`
+read the pages and compare them with the code.

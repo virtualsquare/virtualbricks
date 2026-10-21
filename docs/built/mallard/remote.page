@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<page xmlns="http://projectmallard.org/1.0/" xmlns:if="http://projectmallard.org/if/1.0/" type="topic" id="remote">
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="remote">
   <info>
     <link type="guide" xref="index#beyond"/>
     <link type="seealso" xref="console"/>
@@ -14,8 +14,7 @@ virtualbricks --no-gui --no-term --listen \
 # on your desktop
 virtualbricks --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab'</screen>
   <p>A connection over the network proves that it knows the token of the lab machine, the file <file>~/.config/virtualbricks/token</file>, so copy it to your desktop; or the lab machine asks for the certificate of your desktop instead. <cmd>virtualbricks --connect</cmd> alone opens the windows of a Virtualbricks of yours on this computer, started with <cmd>--listen</cmd>.</p>
-  <p if:test="!target:html">How to listen and connect, the token and the certificates are in <link href="man:virtualbricks(1)">virtualbricks(1)</link>, and the protocols in <link href="man:virtualbricks-control(7)">virtualbricks-control(7)</link>.</p>
-  <p if:test="target:html">How to listen and connect, the token and the certificates are in <link href="https://www.virtualbricks.it/documentation/command-line.html">virtualbricks(1)</link>, and the protocols in <link href="https://www.virtualbricks.it/documentation/control-protocols.html">virtualbricks-control(7)</link>.</p>
+  <p>How to listen and connect, the token and the certificates are in <link xref="command-line">virtualbricks(1)</link>, and the protocols in <link xref="control-protocols">virtualbricks-control(7)</link>.</p>
   <section id="windows">
     <title>What the windows do</title>
     <list>

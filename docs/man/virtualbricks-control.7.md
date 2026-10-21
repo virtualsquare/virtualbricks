@@ -4,6 +4,11 @@ section: 7
 header: Virtualbricks Manual
 footer: virtualbricks VERSION
 date: DATE
+help:
+  id: control-protocols
+  title: The control protocols
+guide: "index#reference"
+sort: 5
 ---
 
 # NAME

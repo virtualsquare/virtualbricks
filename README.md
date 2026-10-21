@@ -78,11 +78,12 @@ pip install --user .
 
 It installs the `virtualbricks` command, the `virtualbricks-migrate` window,
 the manual pages of the configuration files and of the archives of the
-projects, the user guide, and the translations. Yelp shows the guide from
-`~/.local/share/help/`, where `pip install --user` puts it; in a virtualenv,
-or from the sources, where Yelp doesn't look, Virtualbricks gives Yelp the
-files of the pages. Without Yelp, the guide opens in your browser, from the
-HTML installed with it. To work on the code, follow
+projects, the user guide, with the manual pages in its Reference, and the
+translations. Yelp shows the guide from `~/.local/share/help/`, where
+`pip install --user` puts it; in a virtualenv, or from the sources, where
+Yelp doesn't look, Virtualbricks gives Yelp the files of the pages. Without
+Yelp, the guide opens in your browser, from the HTML installed with it. To
+work on the code, follow
 [Development](#development) instead.
 
 ## Running
@@ -481,7 +482,8 @@ pre-commit run --all-files     # run them without committing
   Markdown sources with pandoc: the man pages of `docs/man/` into
   `docs/built/man/`, and the pages of the user guide, `docs/guide/`, into
   Mallard pages for Yelp in `docs/built/mallard/`, with a copy of their
-  pictures; what it builds is committed. With `--check` it only tells whether
+  pictures and a page for each man page, in the Reference of the guide; what
+  it builds is committed. With `--check` it only tells whether
   an output is out of date. [docs/README.md](docs/README.md) tells how a page
   is written. The end-to-end tests take the pictures, `docs/guide/figures/`:
   `pytest --pictures -m pictures`, see
@@ -591,7 +593,8 @@ To add a language, see the top of `l10n.sh`.
   `messages.py` the messages of the Logs window.
 - `virtualbricks/tests/`: the tests, in the layout of the package.
 - `docs/`: the documentation, written in Markdown: the user guide in
-  `guide/`, with its pictures in `guide/figures/`, the manual pages in `man/`;
+  `guide/`, with its pictures in `guide/figures/`, the manual pages in `man/`,
+  which are the Reference of the guide too;
   `build.py`, which builds them into `built/`, and `README.md`, which tells
   how a page is written. The web pages of the manual pages,
   `command-line.html`, `config-files.html`, `archive-protocol.html`,

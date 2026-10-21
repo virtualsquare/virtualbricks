@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<page xmlns="http://projectmallard.org/1.0/" xmlns:if="http://projectmallard.org/if/1.0/" type="topic" id="archives">
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="archives">
   <info>
     <link type="guide" xref="index#projects"/>
     <link type="seealso" xref="projects"/>
@@ -9,8 +9,7 @@
   </info>
   <title>Import and export</title>
   <p>An archive, a <file>.vbp</file> file, holds a project, to copy it to another computer, send it to a student, or keep it.</p>
-  <p if:test="!target:html">The format of the archives is in <link href="man:virtualbricks-vbp(5)">virtualbricks-vbp(5)</link>.</p>
-  <p if:test="target:html">The format of the archives is in <link href="https://www.virtualbricks.it/documentation/vbp-format.html">virtualbricks-vbp(5)</link>.</p>
+  <p>The format of the archives is in <link xref="vbp-format">virtualbricks-vbp(5)</link>.</p>
   <section id="export">
     <title>Exporting a project</title>
     <p>Choose <guiseq><gui>Projects</gui><gui>Export…</gui></guiseq>, or <gui>Export…</gui> in the Projects window. The window asks where to save the archive and what to put in it, each with its size:</p>

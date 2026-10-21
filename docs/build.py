@@ -25,7 +25,8 @@ Build the documentation from its Markdown sources with pandoc.
     docs/man/<page>.<section>.md    the man pages, pandoc's Markdown
     docs/built/man/                 the man pages
     docs/built/mallard/             the guide in Mallard, for Yelp, with a
-                                    copy of its pictures in figures/
+                                    copy of its pictures in figures/, and a
+                                    page for each man page, its Reference
 
 The outputs are committed like the catalogs, and written only by this script.
 docs/README.md says how a page is written.
@@ -67,9 +68,23 @@ MARKDOWN = "markdown-smart-implicit_header_references"
 # made from its title
 GUIDE_MARKDOWN = MARKDOWN + "-auto_identifiers"
 MALLARD_NS = "http://projectmallard.org/1.0/"
-IF_NS = "http://projectmallard.org/if/1.0/"
 # The keys of the front matter of a page of the guide
 GUIDE_META = {"type", "guide", "seealso", "sort", "desc", "title-text"}
+# Those of a man page: pandoc's, then those of its page in the guide
+REFERENCE_META = {"title", "section", "header", "footer", "date"} | {
+    "help",
+    "guide",
+    "sort",
+}
+# The words that keep their capitals in a heading of a man page, which is in
+# capitals there and in sentence case in the guide
+CAPITALS = {
+    "amp": "AMP",
+    "json": "JSON",
+    "readme": "README",
+    "toml": "TOML",
+    "virtualbricks": "Virtualbricks",
+}
 MIME = {".png": "image/png", ".svg": "image/svg+xml"}
 # A label of a menu, then the next one: Projects › Import…
 MENU_STEP = " › "
@@ -183,6 +198,17 @@ def text(inlines):
     return "".join(parts)
 
 
+def words(value):
+    """The pandoc inlines of a plain text, as a title given as attribute."""
+
+    result = []
+    for index, word in enumerate(value.split()):
+        if index:
+            result.append({"t": "Space"})
+        result.append({"t": "Str", "c": word})
+    return result
+
+
 def meta_text(value):
     """The text of a value of the front matter."""
 
@@ -194,6 +220,12 @@ def meta_text(value):
     if kind == "MetaBlocks" and len(value["c"]) == 1:
         return text(value["c"][0]["c"])
     raise Error(f"a {kind} where a text should be")
+
+
+def meta_list(value):
+    if value["t"] == "MetaList":
+        return [meta_text(item) for item in value["c"]]
+    return [meta_text(value)]
 
 
 def keys(sequence):
@@ -208,10 +240,16 @@ def keys(sequence):
     return result
 
 
-def meta_list(value):
-    if value["t"] == "MetaList":
-        return [meta_text(item) for item in value["c"]]
-    return [meta_text(value)]
+def sentence_case(title):
+    """A heading in capitals, COMMON RULES, as Common rules."""
+
+    result = []
+    for index, word in enumerate(title.split(" ")):
+        word = CAPITALS.get(word.lower(), word.lower())
+        if index == 0:
+            word = word[:1].upper() + word[1:]
+        result.append(word)
+    return " ".join(result)
 
 
 class Element:
@@ -252,8 +290,13 @@ class Element:
         yield f"{indent}</{self.tag}>"
 
 
-def para(tag, inlines, attrs=None):
-    return Element(tag, attrs, MallardWriter.inlines(inlines), inline=True)
+def append(result, item):
+    """Add text or an element to mixed content, joining texts."""
+
+    if isinstance(item, str) and result and isinstance(result[-1], str):
+        result[-1] += item
+    else:
+        result.append(item)
 
 
 class MallardWriter:
@@ -263,38 +306,49 @@ class MallardWriter:
     error: the writer never drops a part of a page.
     """
 
+    # the pages, in the errors
+    WHERE = "the guide"
+
     def __init__(self, name, document):
         self.name = name
         self.document = document
-        self.uses_if = False
+
+    def para(self, tag, inlines, attrs=None):
+        """An element of text and marks, as a paragraph or a title."""
+
+        return Element(tag, attrs, self.inlines(inlines), inline=True)
 
     # Inlines
 
-    @classmethod
-    def inlines(cls, inlines):
+    def inlines(self, inlines):
         """Text and elements, the spaces collapsed."""
 
         result = []
         for inline in inlines:
-            for item in cls.inline(inline):
-                if (
-                    isinstance(item, str)
-                    and result
-                    and isinstance(result[-1], str)
-                ):
-                    result[-1] += item
-                else:
-                    result.append(item)
+            for item in self.inline(inline):
+                append(result, item)
         return result
 
-    @classmethod
-    def inline(cls, inline):
+    def inline(self, inline):
         kind = inline["t"]
         content = inline.get("c")
         if kind == "Str":
             return [content]
         if kind in ("Space", "SoftBreak"):
             return [" "]
+        if kind == "Emph":
+            return [Element("var", children=self.inlines(content))]
+        if kind == "Link":
+            _attr, linked, (target, _title) = content
+            attr = (
+                "href" if re.match(r"^[a-z][a-z0-9+.-]*:", target) else "xref"
+            )
+            return [Element("link", {attr: target}, self.inlines(linked))]
+        return self.mark(kind, content)
+
+    def mark(self, kind, content):
+        """The marks of the guide: labels, commands, keys."""
+
         if kind == "Strong":
             label = text(content)
             if MENU_STEP in label:
@@ -308,8 +362,6 @@ class MallardWriter:
                     )
                 ]
             return [Element("gui", children=[label])]
-        if kind == "Emph":
-            return [Element("var", children=cls.inlines(content))]
         if kind == "Code":
             (_id, classes, _attrs), code = content
             if classes == []:
@@ -332,17 +384,11 @@ class MallardWriter:
                     )
                 ]
             if classes in (["app"], ["cmd"]):
-                return [Element(classes[0], children=cls.inlines(spanned))]
+                return [Element(classes[0], children=self.inlines(spanned))]
             raise Error(
                 f"a span of class {' '.join(classes)}: {text(spanned)}"
             )
-        if kind == "Link":
-            _attr, linked, (target, _title) = content
-            attr = (
-                "href" if re.match(r"^[a-z][a-z0-9+.-]*:", target) else "xref"
-            )
-            return [Element("link", {attr: target}, cls.inlines(linked))]
-        raise Error(f"{kind}, which the guide doesn't use")
+        raise Error(f"{kind}, which {self.WHERE} doesn't use")
 
     # Blocks
 
@@ -356,11 +402,11 @@ class MallardWriter:
         kind = block["t"]
         content = block.get("c")
         if kind in ("Para", "Plain"):
-            return [para("p", content)]
+            return [self.para("p", content)]
         if kind == "BulletList":
             return [Element("list", children=self.items(content))]
         if kind == "OrderedList":
-            return [Element("steps", children=self.items(content[1]))]
+            return [self.numbered(self.items(content[1]))]
         if kind == "DefinitionList":
             return [Element("terms", children=self.terms(content))]
         if kind == "CodeBlock":
@@ -374,7 +420,12 @@ class MallardWriter:
             return [self.table(content)]
         if kind == "Div":
             return self.div(content)
-        raise Error(f"{kind}, which the guide doesn't use")
+        raise Error(f"{kind}, which {self.WHERE} doesn't use")
+
+    def numbered(self, items):
+        """A numbered list of the guide: a procedure."""
+
+        return Element("steps", children=items)
 
     def items(self, items):
         return [
@@ -384,7 +435,7 @@ class MallardWriter:
     def terms(self, items):
         result = []
         for term, definitions in items:
-            children = [para("title", term)]
+            children = [self.para("title", term)]
             for definition in definitions:
                 children.extend(self.blocks(definition))
             result.append(Element("item", children=children))
@@ -407,10 +458,10 @@ class MallardWriter:
         media = Element(
             "media",
             {"type": "image", "mime": mime, "src": src},
-            [para("p", alt)],
+            [self.para("p", alt)],
         )
         return Element(
-            "figure", children=[para("title", caption[0]["c"]), media]
+            "figure", children=[self.para("title", caption[0]["c"]), media]
         )
 
     def table(self, content):
@@ -437,7 +488,7 @@ class MallardWriter:
             inner = self.blocks(blocks)
             if len(inner) != 1 or inner[0].tag != "terms":
                 raise Error("a div of class terms holds a list of terms")
-            title = para("title", self.markdown_inlines(attrs["title"]))
+            title = self.para("title", words(attrs["title"]))
             inner[0].children.insert(0, title)
             return inner
         if classes[:1] == ["note"] and not attrs and len(classes) <= 2:
@@ -445,25 +496,7 @@ class MallardWriter:
             if len(classes) == 2:
                 note.attrs["style"] = classes[1]
             return [note]
-        if not classes and set(attrs) == {"test"}:
-            # the conditions of Mallard: a part for one output only
-            self.uses_if = True
-            inner = self.blocks(blocks)
-            for element in inner:
-                element.attrs["if:test"] = attrs["test"]
-            return inner
         raise Error(f"a div of class {' '.join(classes)} {attrs}")
-
-    @staticmethod
-    def markdown_inlines(value):
-        """A title given as an attribute: its text, as words."""
-
-        words = []
-        for index, word in enumerate(value.split()):
-            if index:
-                words.append({"t": "Space"})
-            words.append({"t": "Str", "c": word})
-        return words
 
     # The page
 
@@ -471,9 +504,7 @@ class MallardWriter:
         unknown = set(meta) - GUIDE_META
         if unknown:
             raise Error(f"unknown keys in the front matter: {sorted(unknown)}")
-        children = []
-        for xref in meta_list(meta["guide"]) if "guide" in meta else []:
-            children.append(Element("link", {"type": "guide", "xref": xref}))
+        children = self.guide_links(meta)
         for xref in meta_list(meta["seealso"]) if "seealso" in meta else []:
             children.append(Element("link", {"type": "seealso", "xref": xref}))
         if "title-text" in meta:
@@ -485,22 +516,29 @@ class MallardWriter:
                     inline=True,
                 )
             )
-        if "sort" in meta:
-            children.append(
-                Element(
-                    "title",
-                    {"type": "sort"},
-                    [meta_text(meta["sort"])],
-                    inline=True,
-                )
-            )
+        children.extend(self.sort_title(meta))
         if "desc" in meta:
             value = meta["desc"]
-            inlines = value["c"] if value["t"] == "MetaInlines" else None
-            if inlines is None:
-                inlines = self.markdown_inlines(meta_text(value))
-            children.append(para("desc", inlines))
+            if value["t"] == "MetaInlines":
+                inlines = value["c"]
+            else:
+                inlines = words(meta_text(value))
+            children.append(self.para("desc", inlines))
         return Element("info", children=children)
+
+    @staticmethod
+    def guide_links(meta):
+        return [
+            Element("link", {"type": "guide", "xref": xref})
+            for xref in (meta_list(meta["guide"]) if "guide" in meta else [])
+        ]
+
+    @staticmethod
+    def sort_title(meta):
+        if "sort" not in meta:
+            return []
+        sort = meta_text(meta["sort"])
+        return [Element("title", {"type": "sort"}, [sort], inline=True)]
 
     def page(self):
         meta = self.document["meta"]
@@ -510,7 +548,7 @@ class MallardWriter:
         kind = meta_text(meta["type"]) if "type" in meta else "topic"
         if kind not in ("topic", "guide"):
             raise Error(f"a page of type {kind}")
-        children = [self.info(meta), para("title", blocks[0]["c"][2])]
+        children = [self.info(meta), self.para("title", blocks[0]["c"][2])]
         section = None
         for block in blocks[1:]:
             if block["t"] == "Header":
@@ -526,15 +564,15 @@ class MallardWriter:
                         f"the heading {text(title)} has {classes} {attrs}"
                     )
                 section = Element("section", {"id": ident, **dict(attrs)})
-                section.children.append(para("title", title))
+                section.children.append(self.para("title", title))
                 children.append(section)
             else:
                 target = children if section is None else section.children
                 target.extend(self.block(block))
-        attrs = {"xmlns": MALLARD_NS}
-        if self.uses_if:
-            attrs["xmlns:if"] = IF_NS
-        attrs.update({"type": kind, "id": self.name})
+        return self.xml(kind, children)
+
+    def xml(self, kind, children):
+        attrs = {"xmlns": MALLARD_NS, "type": kind, "id": self.name}
         root = Element("page", attrs, children)
         return (
             '<?xml version="1.0" encoding="utf-8"?>\n'
@@ -543,18 +581,219 @@ class MallardWriter:
         )
 
 
-def mallard_page(pandoc_bin, source):
-    tree = pandoc(
-        pandoc_bin,
-        ["--standalone", f"--from={GUIDE_MARKDOWN}", "--to=json"],
-        read(source),
-        source,
+class ReferenceWriter(MallardWriter):
+    """
+    A page of the reference, from pandoc's tree of a man page: bold is
+    literal text, italics a part to replace; NAME is the description of the
+    page and SYNOPSIS a synopsis; a heading in capitals is in sentence case;
+    a man page of the reference, as **virtualbricks-config**(5), is a link
+    to its page.
+    """
+
+    WHERE = "the reference"
+
+    def __init__(self, name, document, references):
+        super().__init__(name, document)
+        # the pages of the reference by the names of their man pages, as
+        # {"virtualbricks-config": ("5", "config-files")}
+        self.references = references
+
+    def inlines(self, inlines):
+        result = []
+        index = 0
+        while index < len(inlines):
+            inline = inlines[index]
+            following = (
+                inlines[index + 1] if index + 1 < len(inlines) else None
+            )
+            link = self.cross_reference(inline, following)
+            if link is None:
+                items = self.inline(inline)
+                index += 1
+            else:
+                items = link
+                index += 2
+            for item in items:
+                append(result, item)
+        return result
+
+    def cross_reference(self, inline, following):
+        """**name**(5): a link to the page of that man page, and the rest."""
+
+        if inline["t"] != "Strong" or following is None:
+            return None
+        if following["t"] != "Str":
+            return None
+        name = text(inline["c"])
+        if name not in self.references:
+            return None
+        section, page = self.references[name]
+        mark = f"({section})"
+        if page == self.name or not following["c"].startswith(mark):
+            return None
+        rest = following["c"][len(mark) :]
+        link = Element("link", {"xref": page}, [name + mark])
+        return [link, rest] if rest else [link]
+
+    def mark(self, kind, content):
+        """The marks of a man page: literal text, as typed."""
+
+        if kind == "Strong":
+            return [Element("code", children=self.inlines(content))]
+        if kind == "Code":
+            (_id, classes, _attrs), code = content
+            if classes:
+                raise Error(f"code of class {' '.join(classes)}: {code}")
+            return [Element("code", children=[code])]
+        if kind == "LineBreak":
+            raise Error("a line break, which only the synopsis has")
+        raise Error(f"{kind}, which {self.WHERE} doesn't use")
+
+    def numbered(self, items):
+        """A numbered list of the reference, not a procedure."""
+
+        return Element("list", {"type": "numbered"}, items)
+
+    def synopsis(self, block):
+        """The lines of the synopsis: a paragraph for each."""
+
+        if block["t"] != "Para":
+            raise Error(f"a {block['t']} in the synopsis")
+        lines = [[]]
+        for inline in block["c"]:
+            if inline["t"] == "LineBreak":
+                lines.append([])
+            else:
+                lines[-1].append(inline)
+        return [self.para("p", line) for line in lines]
+
+    def description(self, blocks):
+        """
+        The description of the page, from NAME, "name - what it is": the
+        name of the man page, then what it is.
+        """
+
+        if len(blocks) != 1 or blocks[0]["t"] != "Para":
+            raise Error("NAME is a paragraph, name - what it is")
+        inlines = blocks[0]["c"]
+        dash = {"t": "Str", "c": "-"}
+        if dash not in inlines:
+            raise Error("NAME is a paragraph, name - what it is")
+        index = inlines.index(dash)
+        name = text(inlines[:index]).strip()
+        what = inlines[index + 1 :]
+        while what and what[0]["t"] in ("Space", "SoftBreak"):
+            what = what[1:]
+        section = meta_text(self.document["meta"]["section"])
+        children = [f"{name}({section}): "]
+        for item in self.inlines(what):
+            append(children, item)
+        return Element("desc", children=children, inline=True)
+
+    def heading(self, inlines, attrs):
+        """The title of a section."""
+
+        if "title" in attrs:
+            return self.para("title", words(attrs["title"]))
+        heading = text(inlines)
+        if heading == heading.upper():
+            return Element(
+                "title", children=[sentence_case(heading)], inline=True
+            )
+        return self.para("title", inlines)
+
+    def page(self):
+        meta = self.document["meta"]
+        unknown = set(meta) - REFERENCE_META
+        if unknown:
+            raise Error(f"unknown keys in the front matter: {sorted(unknown)}")
+        info = Element("info", children=self.guide_links(meta))
+        info.children.extend(self.sort_title(meta))
+        title = meta_text(meta["help"]["c"]["title"])
+        children = [
+            info,
+            Element("title", children=[title], inline=True),
+            Element("links", {"type": "section"}),
+        ]
+        # the sections open at each level: (level, their children)
+        open_sections = [(0, children)]
+        # the blocks of NAME, while they come, and once they came
+        name = None
+        name_blocks = None
+        synopsis = None
+        for block in self.document["blocks"]:
+            if block["t"] != "Header":
+                if name is not None:
+                    name.append(block)
+                elif synopsis is not None:
+                    synopsis.children.extend(self.synopsis(block))
+                else:
+                    open_sections[-1][1].extend(self.block(block))
+                continue
+            level, (ident, classes, attrs), inlines = block["c"]
+            attrs = dict(attrs)
+            heading = text(inlines)
+            if classes or set(attrs) - {"title"}:
+                raise Error(f"the heading {heading} has {classes} {attrs}")
+            while open_sections[-1][0] >= level:
+                open_sections.pop()
+            if open_sections[-1][0] != level - 1 or level > 3:
+                raise Error(f"a heading of level {level} there: {heading}")
+            name = [] if (level, heading) == (1, "NAME") else None
+            synopsis = None
+            if name is not None:
+                name_blocks = name
+                continue
+            section = Element("section", {"id": ident})
+            section.children.append(self.heading(inlines, attrs))
+            if (level, heading) == (1, "SYNOPSIS"):
+                synopsis = Element("synopsis")
+                section.children.append(synopsis)
+            open_sections[-1][1].append(section)
+            open_sections.append((level, section.children))
+        if name_blocks is None:
+            raise Error("a man page has its NAME")
+        info.children.append(self.description(name_blocks))
+        return self.xml("topic", children)
+
+
+def tree(pandoc_bin, source, markdown):
+    """pandoc's tree of a page."""
+
+    return json.loads(
+        pandoc(
+            pandoc_bin,
+            ["--standalone", f"--from={markdown}", "--to=json"],
+            read(source),
+            source,
+        )
     )
-    name = os.path.basename(source)[: -len(".md")]
+
+
+def written(writer, source):
     try:
-        return MallardWriter(name, json.loads(tree)).page()
+        return writer.page()
     except Error as exc:
         raise Error(f"{source}: {exc}") from None
+
+
+def mallard_page(pandoc_bin, source):
+    """A page of the guide, in Mallard."""
+
+    name = os.path.basename(source)[: -len(".md")]
+    document = tree(pandoc_bin, source, GUIDE_MARKDOWN)
+    return written(MallardWriter(name, document), source)
+
+
+def reference_id(document, source):
+    """The id of the page of a man page: the id of help in its front matter."""
+
+    value = document["meta"].get("help")
+    if value is None or value["t"] != "MetaMap":
+        raise Error(f"{source}: no help: {{id: …, title: …}}")
+    if set(value["c"]) != {"id", "title"}:
+        raise Error(f"{source}: help has an id and a title, and only those")
+    return meta_text(value["c"]["id"])
 
 
 # The outputs
@@ -567,27 +806,43 @@ def outputs(pandoc_bin, date):
     """
 
     result = {}
+
+    def add(path, data):
+        result[path] = (data, data.__eq__)
+
+    references = {}
+    documents = {}
     for name in sorted(os.listdir(MAN)):
         match = MAN_SOURCE.match(name)
-        if match:
-            page = man_page(pandoc_bin, os.path.join(MAN, name), date)
-            result[os.path.join("man", name[: -len(".md")])] = (
-                page.encode("utf-8"),
-                lambda current, page=page: unchanged_man(
-                    current.decode("utf-8"), page
-                ),
-            )
+        if not match:
+            continue
+        source = os.path.join(MAN, name)
+        page = man_page(pandoc_bin, source, date)
+        result[os.path.join("man", name[: -len(".md")])] = (
+            page.encode("utf-8"),
+            lambda current, page=page: unchanged_man(
+                current.decode("utf-8"), page
+            ),
+        )
+        document = tree(pandoc_bin, source, MARKDOWN)
+        page_id = reference_id(document, source)
+        references[match["page"]] = (match["section"], page_id)
+        documents[page_id] = (source, document)
+    for page_id, (source, document) in documents.items():
+        writer = ReferenceWriter(page_id, document, references)
+        page = written(writer, source)
+        add(os.path.join("mallard", page_id + ".page"), page.encode("utf-8"))
     for name in sorted(os.listdir(GUIDE)):
         if name.endswith(".md"):
+            if name[: -len(".md")] in documents:
+                raise Error(f"{name}: a page of the reference has its id")
             page = mallard_page(pandoc_bin, os.path.join(GUIDE, name))
             path = os.path.join("mallard", name[: -len(".md")] + ".page")
-            data = page.encode("utf-8")
-            result[path] = (data, data.__eq__)
+            add(path, page.encode("utf-8"))
     figures = os.path.join(GUIDE, "figures")
     for name in sorted(os.listdir(figures)) if os.path.isdir(figures) else []:
         with open(os.path.join(figures, name), "rb") as fp:
-            data = fp.read()
-        result[os.path.join("mallard", "figures", name)] = (data, data.__eq__)
+            add(os.path.join("mallard", "figures", name), fp.read())
     return result
 
 

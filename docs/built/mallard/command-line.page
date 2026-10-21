@@ -1,0 +1,732 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="command-line">
+  <info>
+    <link type="guide" xref="index#reference"/>
+    <title type="sort">1</title>
+    <desc>virtualbricks(1): labs of QEMU machines and VDE networks, and their console</desc>
+  </info>
+  <title>The command line</title>
+  <links type="section"/>
+  <section id="synopsis">
+    <title>Synopsis</title>
+    <synopsis>
+      <p><code>virtualbricks</code> [<var>options</var>]</p>
+      <p><code>virtualbricks --no-gui</code> [<var>options</var>]</p>
+      <p><code>virtualbricks --connect</code> [<var>description</var>] [<code>--workspace</code> <var>directory</var>] [<var>options</var>]</p>
+      <p><code>virtualbricks</code> [<code>--connect</code> [<var>description</var>]] [<code>--workspace</code> <var>directory</var>] <code>--command</code> [<var>word</var>...]</p>
+      <p><code>virtualbricks --connect</code> [<var>description</var>] [<code>--workspace</code> <var>directory</var>] <code>--run</code> <var>file</var></p>
+    </synopsis>
+  </section>
+  <section id="description">
+    <title>Description</title>
+    <p>Virtualbricks makes and runs labs of virtual machines, run by QEMU, and of the VDE switches, cables, taps and tunnels between them. It opens the project that was open last in its workspace, a folder of projects; see <link xref="config-files">virtualbricks-config(5)</link>. Started with <code>--workspace</code>, one runs in each workspace, side by side.</p>
+    <p>Started from a terminal, it reads the commands of its console there, beside the windows. With <code>--no-gui</code> it runs without them, and the console is the way in: a lab on a machine without a display.</p>
+    <p>Started with <code>--listen</code>, it listens on control sockets, on this machine or across the network: <code>virtualbricks --command</code> sends it a command of the console from any terminal or script, and prints its answer, <code>virtualbricks --connect --run</code> sends it the commands of a file, and a program written with Twisted can drive it through AMP. See <code>THE CONTROL SOCKET</code>.</p>
+    <p>Started with <code>--connect</code> and neither <code>--command</code> nor <code>--run</code>, it opens the windows of a Virtualbricks that listens: the one of the socket of its description, on this machine or another, or without one, a Virtualbricks of yours here. The bricks run there, the windows here. See <code>THE WINDOWS OF ANOTHER VIRTUALBRICKS</code>.</p>
+  </section>
+  <section id="options">
+    <title>Options</title>
+    <terms>
+      <item>
+        <title><code>-v</code>, <code>--verbose</code></title>
+        <p>Log more; it can be repeated.</p>
+      </item>
+      <item>
+        <title><code>-q</code>, <code>--quiet</code></title>
+        <p>Log less; it can be repeated.</p>
+      </item>
+      <item>
+        <title><code>-b</code>, <code>--debug</code></title>
+        <p>Log everything.</p>
+      </item>
+      <item>
+        <title><code>-l</code> <var>file</var>, <code>--logfile</code> <var>file</var></title>
+        <p>Write the log messages to <var>file</var>; <code>-</code> for the standard output.</p>
+      </item>
+      <item>
+        <title><code>--logger</code> <var>name</var></title>
+        <p>The fully qualified name of a log observer, instead of <code>--logfile</code>.</p>
+      </item>
+      <item>
+        <title><code>--no-term</code></title>
+        <p>Don't read the console in the terminal.</p>
+      </item>
+      <item>
+        <title><code>--no-gui</code></title>
+        <p>Run without the windows: no GTK is loaded, and the console is the way in. With <code>--no-term</code> too, nothing is read: the lab runs until Virtualbricks gets <code>SIGTERM</code> or <code>SIGINT</code>.</p>
+      </item>
+      <item>
+        <title><code>--run</code> <var>file</var></title>
+        <p>Run the commands of <var>file</var> once the project is open, as <code>source</code> does, then read the console. With <code>--connect</code>, send them to the Virtualbricks that runs instead, up to the first error, and exit. See <code>THE CONTROL SOCKET</code>.</p>
+      </item>
+      <item>
+        <title><code>--workspace</code> <var>directory</var></title>
+        <p>Use the projects of <var>directory</var> for this run, instead of the <code>workspace</code> setting; it's made if it isn't there. Without <code>--lock</code>, the single-instance mode is then <code>workspace</code>. With <code>--command</code> or <code>--connect</code>, the Virtualbricks that runs in <var>directory</var>.</p>
+      </item>
+      <item>
+        <title><code>--lock</code> <var>mode</var></title>
+        <p>The single-instance mode: <code>system</code>, one Virtualbricks on the machine, the default without <code>--workspace</code>; <code>user</code>, one for each user; <code>workspace</code>, one for each workspace, the default with <code>--workspace</code>; <code>none</code>, no limit. Each mode but <code>none</code> holds the lock of its workspace too, so two never share one. See <code>FILES</code>.</p>
+      </item>
+      <item>
+        <title><code>--command</code> [<var>word</var>...]</title>
+        <p>Send the command of the words that follow to the Virtualbricks that runs, and print its answer; without words, send the lines of the standard input. It takes no lock, and no other option but <code>--connect</code> or <code>--workspace</code>. See <code>THE CONTROL SOCKET</code>.</p>
+      </item>
+      <item>
+        <title><code>--listen</code> [<var>description</var>]</title>
+        <p>Listen on a control socket: alone, the socket <var>.control</var> in the runtime folder of the workspace; with a <var>description</var>, as <code>unix:~/labs/lab1.sock</code> or <code>tcp:8765</code>, the socket it describes. It speaks AMP, or the JSON protocol with <code>protocol=json</code>. It can be given more than once. The next word is the description when it starts with a type and a colon, as <code>unix:</code>; after <code>=</code> it is too. See <code>THE CONTROL SOCKET</code>.</p>
+      </item>
+      <item>
+        <title><code>--connect</code> [<var>description</var>]</title>
+        <p>The Virtualbricks that runs that <code>--command</code> and <code>--run</code> talk to: alone, the one of the socket <var>.control</var> of its workspace, that of <code>--workspace</code> or the only one that listens; with a <var>description</var>, the one of the socket it describes, as <code>unix:~/labs/lab1.sock</code> or <code>tcp:lab.example:8765</code>. It speaks AMP, or the JSON protocol with <code>protocol=json</code>. The next word is its description as for <code>--listen</code>. With <code>--command</code> or <code>--run</code>, it takes no <code>--listen</code>, no other option of a start, and no <code>--workspace</code> with a description. See <code>THE CONTROL SOCKET</code>.</p>
+        <p>Without them, it opens the windows of that Virtualbricks, which speak AMP, so it takes no <code>protocol=json</code>; nor <code>--no-gui</code>, <code>--lock</code> or <code>--listen</code>, which are for the Virtualbricks that runs the bricks, nor <code>--workspace</code> with a description. See <code>THE WINDOWS OF ANOTHER VIRTUALBRICKS</code>.</p>
+      </item>
+      <item>
+        <title><code>--version</code></title>
+        <p>Print the version and exit.</p>
+      </item>
+      <item>
+        <title><code>-h</code>, <code>--help</code></title>
+        <p>Print the options and exit.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="the-console">
+    <title>The console</title>
+    <section id="commands">
+      <title>Commands</title>
+      <p>A command is a noun, a verb, then its arguments: <code>brick start sw1</code>. The nouns are <code>brick</code>, <code>event</code>, <code>image</code>, <code>setting</code> and <code>project</code>, and a few words stand alone: <code>help</code>, <code>status</code>, <code>source</code>, <code>python</code> and <code>quit</code>. A name is always an argument, never a command, so a brick can be called <code>list</code>.</p>
+      <p>The words are split as the shell splits them: quotes keep spaces, a backslash escapes, and <code>#</code> starts a comment. A key and its value are <var>KEY</var>=<var>VALUE</var>, as many as needed in one command; they are all checked before any is set, so a command changes all of them or none:</p>
+      <screen>brick set vm1 memory=1024 "kernel_command_line=quiet ro"</screen>
+      <p>The keys are those of the project file, see <link xref="config-files">virtualbricks-config(5)</link>, but for the disks, whose keys are <var>device</var>_<code>image</code> and <var>device</var>_<code>private</code>, as <code>hda_image</code>, and the network cards, which have commands of their own. Options, as <code>--force</code>, go anywhere after the verb.</p>
+    </section>
+    <section id="answers">
+      <title>Answers</title>
+      <p>A command answers when there is something to say: the name given to a new brick, the process of a started one, a table. When it can't be done, it says why in one line, which starts with <code>Error:</code>, and changes nothing; a command that starts several bricks says which started before the one that failed. <code>start</code>, <code>stop</code>, <code>restart</code> and <code>suspend</code> wait until they are done, or fail.</p>
+    </section>
+    <section id="typing">
+      <title>Typing</title>
+      <p>On a terminal the line can be edited, and Tab completes the nouns, the verbs, the names of the bricks, events, images and projects, the kinds of brick, the keys, and the values of a key that has a few. The prompt is the name of the open project.</p>
+      <terms>
+        <item>
+          <title>Up and Down</title>
+          <p>Go through the history, which is kept between runs.</p>
+        </item>
+        <item>
+          <title>Ctrl+R, Ctrl+S</title>
+          <p>Search the history backwards or forwards as you type. Ctrl+R or Ctrl+S again finds the next match, Backspace takes back a character, Ctrl+G gives the line back as it was, and any other key keeps the line found: Enter runs it.</p>
+        </item>
+        <item>
+          <title>Ctrl+A, Ctrl+E</title>
+          <p>Go to the start or the end of the line.</p>
+        </item>
+        <item>
+          <title>Ctrl+B, Ctrl+F</title>
+          <p>Go back or forward a character.</p>
+        </item>
+        <item>
+          <title>Alt+B, Alt+F, Ctrl+Left, Ctrl+Right</title>
+          <p>Go back or forward a word. Here a word is letters and digits, so <code>memory=512</code> is two.</p>
+        </item>
+        <item>
+          <title>Ctrl+D</title>
+          <p>Delete the character under the cursor; on an empty line, quit, as <code>quit</code> does.</p>
+        </item>
+        <item>
+          <title>Ctrl+W</title>
+          <p>Delete the word before the cursor, up to a space.</p>
+        </item>
+        <item>
+          <title>Alt+Backspace, Alt+D</title>
+          <p>Delete the word before or after the cursor, letters and digits.</p>
+        </item>
+        <item>
+          <title>Ctrl+U, Ctrl+K</title>
+          <p>Delete the line before or after the cursor.</p>
+        </item>
+        <item>
+          <title>Ctrl+Y</title>
+          <p>Put back what was deleted last; what keys deleted one after the other comes back together.</p>
+        </item>
+        <item>
+          <title>Ctrl+T, Alt+T</title>
+          <p>Swap the character before the cursor with the one under it, or the word before it with the word after it; at the end of the line, the last two.</p>
+        </item>
+        <item>
+          <title>Ctrl+C</title>
+          <p>Clear the line; while a command runs, stop waiting for it, but not what it does: its answer comes when it's done.</p>
+        </item>
+        <item>
+          <title>Ctrl+L</title>
+          <p>Clear the screen.</p>
+        </item>
+      </terms>
+      <p>The Alt keys need a terminal that sends Escape before the key, as most do; xterm does with its <code>metaSendsEscape</code> resource. Escape and then the key works everywhere.</p>
+      <p><code>python</code> opens a Python shell, where <code>factory</code> is the factory of the bricks and the line has the same keys, but for Tab, which indents; Ctrl+D on an empty line comes back to the console.</p>
+      <p>When the input isn't a terminal, as a pipe, each line is a command, run once the one before is done, the last one too without its new line. An error doesn't stop the lines after it; <code>--run</code> stops at the first. The end of the input quits, once the last command is done.</p>
+    </section>
+    <section id="scripts">
+      <title>Scripts</title>
+      <p>A file of commands, one a line, runs with <code>source</code> <var>file</var> in the console or <code>--run</code> <var>file</var> at start. Empty lines and comments are skipped, and the first error stops the file, saying where, as <var>lab.vb</var>:7.</p>
+    </section>
+  </section>
+  <section id="the-control-socket">
+    <title>The control socket</title>
+    <p>A Virtualbricks started with <code>--listen</code>, with the windows or without, listens on control sockets once its project is open; without it, on none. <code>--listen</code> alone is the socket of the workspace, <var>$XDG_RUNTIME_DIR</var>/virtualbricks/<var>key</var>/.control, where <var>key</var> is named after the path of the workspace, and <var>.workspace</var> beside it links to the workspace. A description, in the syntax of Twisted's endpoints, names another: its type, <code>unix</code>, <code>tcp</code> or <code>ssl</code>; the path of a <code>unix</code> socket, or <code>address=</code><var>path</var>; the port of the others, or <code>port=</code><var>port</var>; and <code>protocol=amp</code>, the default, or <code>protocol=json</code>. <code>:</code> separates the parts, and a backslash makes the next character plain. The option can be given more than once:</p>
+    <screen>virtualbricks --no-gui --listen
+virtualbricks --no-gui --listen unix:~/labs/lab1.sock
+virtualbricks --no-gui --listen \
+    --listen unix:~/labs/lab1.json:protocol=json
+virtualbricks --no-gui --listen tcp:8765</screen>
+    <p><code>--command</code> sends a command, as typed in the console, to the socket of <code>--connect</code>, in the protocol of its description. Without it, it sends it to the socket <var>.control</var> of the workspace of <code>--workspace</code>, or else of the only Virtualbricks of yours that listens on one; when several do, it names them and sends nothing:</p>
+    <screen>virtualbricks --command brick start sw1 vm1
+virtualbricks --command brick set vm1 memory=1024
+virtualbricks --workspace ~/labs/bgp --command status
+virtualbricks --connect unix:~/labs/lab1.sock --command status
+virtualbricks --connect tcp:8765 --command status
+virtualbricks --connect unix:~/labs/lab1.json:protocol=json \
+    --command status</screen>
+    <p>The words after <code>--command</code> are those of the command, as the shell split them; they reach the console quoted again, so a value with spaces is quoted once, as in the console. The options of <code>virtualbricks</code> end at the first word. Without words, the lines of the standard input are the commands, each sent after the answer to the one before, up to the first error, which names its line.</p>
+    <p><code>--connect --run</code> <var>file</var> sends the lines of <var>file</var> in the same way, and the first error names the file and its line, as <var>lab.vb</var>:7, as <code>source</code> says it. Empty lines aren't sent; comments are, and do nothing.</p>
+    <screen>virtualbricks --connect --run ~/labs/traffic.vb
+virtualbricks --connect tcp:lab.example:8765 --run traffic.vb</screen>
+    <p>The answer goes to the standard output. When a command fails, the error, <code>Error:</code> and why, goes to the standard error; see <code>EXIT STATUS</code>. A relative path, as that of <code>source</code> <var>file</var>, is read from the folder where <code>virtualbricks</code> runs. Ctrl+C stops waiting, not the command. Virtualbricks logs each command it gets, and answers in its own language. Over AMP, what a command did before it failed doesn't come, and an answer longer than 65535 bytes is an error; a JSON socket carries both, and what a command did first goes to the standard output before its error.</p>
+    <p>Only you can connect to a <code>unix</code> socket: each is yours alone, and Virtualbricks doesn't listen in a runtime folder that isn't yours, or that others can write in. One Virtualbricks has each socket: the first to start, which holds the lock <var>path</var>.lock beside it; with <code>--lock none</code>, another one with the same <code>--listen</code> runs without that socket. Each workspace has its own socket <var>.control</var>, so two Virtualbricks side by side both listen with <code>--listen</code> alone. A socket left by a crash is removed at the next start; nothing else at the path is.</p>
+    <section id="sockets-on-the-network">
+      <title>Sockets on the network</title>
+      <p>A <code>tcp</code> socket listens on this machine: on <code>127.0.0.1</code>, or on another loopback address of <code>interface=</code>, as <code>'interface=\:\:1'</code>, whose colons are escaped. Across the network, what passes on <code>tcp</code> could be read, so it is refused there. An <code>ssl</code> socket encrypts, and listens on <code>127.0.0.1</code> too, or on the address of <code>interface=</code>, as <code>0.0.0.0</code> for every IPv4 address of the machine. It needs the certificate of Virtualbricks: <code>privateKey=</code><var>file</var>, its key, and <code>certKey=</code><var>file</var>, the certificate, unless the key's file holds it too, both in PEM; <code>extraCertChain=</code><var>file</var> holds the certificates between it and the authority that issued it. A port has no lock: the first Virtualbricks takes it, and another one runs without that socket.</p>
+      <p>Whoever reaches a port can connect, and a connection can do all that the console does, the shell commands of an event's actions included. So each client proves first that it knows the token of Virtualbricks: the line of <var>$XDG_CONFIG_HOME</var>/virtualbricks/token, which the first start with such a socket makes, or of the file of <code>tokenFile=</code>. Neither end sends it: each proves that it knows it, and a client without a proof in 10 seconds is cut off. The file must be yours, and nobody else may read it; copy it to the machines of the clients. With <code>caCertsDir=</code><var>directory</var>, an <code>ssl</code> socket asks each client for a certificate in place of the token: one that a .pem file of <var>directory</var> issued, or is. The files are read at start. The log names each client, by its address or by its certificate:</p>
+      <screen>virtualbricks --no-gui --listen \
+    'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.key'
+virtualbricks --no-gui --listen \
+    'ssl:8765:privateKey=~/vb/lab.key:caCertsDir=~/vb/clients'</screen>
+      <p><code>--connect</code> names the machine as <code>tcp:</code><var>host</var><code>:</code><var>port</var>, or with <code>host=</code> and <code>port=</code>; <code>tcp:</code><var>port</var> alone is this machine. Over <code>ssl</code>, <code>caCertsDir=</code><var>directory</var> holds the certificate of Virtualbricks, or that of its authority; without it, the authorities of the system are trusted. <code>privateKey=</code> and <code>certKey=</code> are the certificate of the client, for a Virtualbricks that asks for one. The token is that of <code>tokenFile=</code>, or the default one. To another machine, <code>virtualbricks</code> doesn't send its folder: a relative path is read from the folder of that Virtualbricks.</p>
+      <screen>virtualbricks \
+    --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
+    --command status</screen>
+      <p>The certificates, made with <code>openssl</code>(1): that of the machine of Virtualbricks, for its name and address, and that of a client, whose .pem goes into the directory of <code>caCertsDir=</code>. A .pem holds a certificate alone, for the other end; <code>lab.key</code>, the file of <code>privateKey=</code> above, holds the key of Virtualbricks, and its certificate too:</p>
+      <screen>openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+    -nodes -days 3650 -subj /CN=lab.example \
+    -addext subjectAltName=DNS:lab.example,IP:192.0.2.7 \
+    -keyout lab.key -out lab.pem
+cat lab.pem &gt;&gt; lab.key
+openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+    -nodes -days 3650 -subj /CN=alice-laptop \
+    -keyout alice.key -out alice.pem</screen>
+    </section>
+    <section id="the-json-protocol">
+      <title>The JSON protocol</title>
+      <p><link xref="control-protocols">virtualbricks-control(7)</link> describes the protocols in full, for whoever writes a client: the JSON protocol, and protocols 1 and 2 of AMP, with the proof of the token. In short, any program can talk to a JSON socket, one of <code>protocol=json</code>: UTF-8 JSON, an object on each line. Virtualbricks greets with the <code>protocol</code>, 1, its <code>version</code>, its <code>pid</code> and the open <code>project</code>; then it answers each request in turn. A request's <code>cwd</code>, the folder of its paths, is optional:</p>
+      <screen>{"line": "brick start sw1", "cwd": "/home/alice/labs"}
+{"ok": true, "lines": ["sw1 runs, process 4242"]}
+{"line": "brick start vm9"}
+{"ok": false, "lines": [], "error": "No brick named vm9"}</screen>
+      <p>On a socket that asks for the token, the first line asks for the proof, with a <code>nonce</code> of 64 hex digits. The client answers with a nonce of its own and its <code>proof</code>: the HMAC-SHA256 under the token of <code>virtualbricks client</code> <var>nonce</var> <var>its-nonce</var>, in hex. The greeting follows, with the proof of Virtualbricks, that of <code>virtualbricks server</code> <var>nonce</var> <var>its-nonce</var>, which the client checks. A wrong proof is refused, and the connection closed:</p>
+      <screen>{"protocol": 1, "auth": "token", "nonce": "3f9a..."}
+{"nonce": "c41d...", "proof": "8e02..."}
+{"protocol": 1, "version": "3.0.0", "pid": 4200,
+ "project": "lab1", "proof": "51b7..."}</screen>
+      <p>In a shell, <code>openssl</code> computes a proof:</p>
+      <screen>printf 'virtualbricks client %s %s' "$nonce" "$mine" |
+    openssl dgst -sha256 -hmac "$token"</screen>
+    </section>
+    <section id="the-amp-protocol">
+      <title>The AMP protocol</title>
+      <p>A program written with Twisted drives an AMP socket, as one is without <code>protocol=json</code>, with the commands of protocol 1, and with the typed commands of protocol 2 too. <code>Hello</code> agrees on the protocol of the connection: it takes <code>protocols</code>, those the program speaks, optional, and answers in <code>protocol</code> the highest that Virtualbricks speaks too, 1 without them; and the <code>version</code>, the <code>pid</code> and the <code>project</code>. <code>Run</code> takes a <code>line</code> of the console and its <code>cwd</code>, optional, and answers its <code>lines</code>. A command that fails raises <code>CommandFailed</code>, with its error; <code>AnswerTooLong</code> says that a command was done, but its answer is longer than the 65535 bytes of an AMP value. The requests of a connection run in turn. On a socket that asks for the token, <code>Hello</code> and <code>Run</code> fail with <code>TokenNeeded</code> until the program proves it: <code>authenticate</code>(<var>vb</var>, <var>token</var>) calls <code>Challenge</code>, then <code>Authenticate</code>, and raises <code>WrongToken</code> if either end doesn't know the token. The module <code>virtualbricks.console.ampwire</code> has the commands; a program that can't import it declares them:</p>
+      <screen>class CommandFailed(Exception):
+    pass
+
+class AnswerTooLong(Exception):
+    pass
+
+class TokenNeeded(Exception):
+    pass
+
+class WrongToken(Exception):
+    pass
+
+class Hello(amp.Command):
+    arguments = [
+        (
+            b"protocols",
+            amp.ListOf(amp.Integer(), optional=True),
+        ),
+    ]
+    response = [
+        (b"protocol", amp.Integer()),
+        (b"version", amp.Unicode()),
+        (b"pid", amp.Integer()),
+        (b"project", amp.Unicode(optional=True)),
+    ]
+    errors = {TokenNeeded: b"TOKEN_NEEDED"}
+
+class Run(amp.Command):
+    arguments = [
+        (b"line", amp.Unicode()),
+        (b"cwd", amp.Unicode(optional=True)),
+    ]
+    response = [(b"lines", amp.ListOf(amp.Unicode()))]
+    errors = {
+        CommandFailed: b"COMMAND_FAILED",
+        AnswerTooLong: b"ANSWER_TOO_LONG",
+        TokenNeeded: b"TOKEN_NEEDED",
+    }
+
+class Challenge(amp.Command):
+    response = [(b"nonce", amp.Unicode())]
+    errors = {WrongToken: b"WRONG_TOKEN"}
+
+class Authenticate(amp.Command):
+    arguments = [
+        (b"nonce", amp.Unicode()),
+        (b"proof", amp.Unicode()),
+    ]
+    response = [(b"proof", amp.Unicode())]
+    errors = {WrongToken: b"WRONG_TOKEN"}
+
+def proof(token, side, nonce, mine):
+    text = f"virtualbricks {side} {nonce} {mine}"
+    key = token.encode()
+    return hmac.new(key, text.encode(), "sha256").hexdigest()
+
+async def authenticate(vb, token):
+    mine = secrets.token_hex(32)
+    nonce = (await vb.callRemote(Challenge))["nonce"]
+    answer = await vb.callRemote(
+        Authenticate,
+        nonce=mine,
+        proof=proof(token, "client", nonce, mine),
+    )
+    expected = proof(token, "server", nonce, mine)
+    if not hmac.compare_digest(answer["proof"], expected):
+        raise WrongToken("The other end doesn't know the token")</screen>
+      <p>Then a program, for the socket of the second example above:</p>
+      <screen>async def main(reactor):
+    path = os.path.expanduser("~/labs/lab1.sock")
+    endpoint = endpoints.UNIXClientEndpoint(reactor, path)
+    vb = await endpoints.connectProtocol(endpoint, amp.AMP())
+    answer = await vb.callRemote(Run, line="brick start sw1")
+    print("\n".join(answer["lines"]))
+
+task.react(lambda reactor: ensureDeferred(main(reactor)))</screen>
+      <p>Over <code>tcp</code>, the endpoint is <code>tcp:127.0.0.1:</code><var>port</var>, and the program calls <code>authenticate</code>() before the other commands. Over <code>ssl</code>, Twisted's <code>tls:</code><var>host</var><code>:</code><var>port</var><code>:trustRoots=</code><var>directory</var> checks the certificate of Virtualbricks and its name; <code>certificate=</code> and <code>privateKey=</code> add the program's own.</p>
+    </section>
+    <section id="the-typed-commands">
+      <title>The typed commands</title>
+      <p>Protocol 2, still in development, adds a typed AMP command for each command of the console, in the module <code>virtualbricks.console.ampcommands</code>, which loads nothing else of Virtualbricks but <code>ampwire</code>; a program imports it, or copies it. A connection speaks them once <code>Hello</code> has agreed on 2; before, they fail with <code>ProtocolNeeded</code>. The name of a command is its words, each with a capital: <code>brick card add</code> is <code>BrickCardAdd</code>, <code>status</code> is <code>Status</code>. Its arguments are named after those of <code>COMMANDS</code>, in lower case, with **_** for what isn't a letter or a digit: <code>NAME</code> is <code>name</code>, <code>KEY=VALUE</code> is <code>key_value</code>, <code>--at</code> is <code>at</code>. A number is an <code>Integer</code>, an argument that repeats a <code>ListOf</code>, <code>KEY=VALUE</code> a list of records of <code>key</code> and <code>value</code>, both text, an option without a value a <code>Boolean</code>; the rest is text, and what is in brackets is optional. Each command takes <code>cwd</code> too, as <code>Run</code> does, and answers the <code>lines</code> of the console.</p>
+      <p><code>NotFound</code> says that a name of the command names nothing of the project, <code>BadArgument</code> that an argument isn't one the command takes, or that the program sent a key the command doesn't have, or left out one it needs: nothing was done. Both are kinds of <code>CommandFailed</code>, which says that the command failed on the way. The typed commands run in turn with <code>Run</code>, and on a socket that asks for the token they wait for the proof too.</p>
+      <screen>async def main(reactor):
+    path = os.path.expanduser("~/labs/lab1.sock")
+    endpoint = endpoints.UNIXClientEndpoint(reactor, path)
+    vb = await endpoints.connectProtocol(endpoint, amp.AMP())
+    hello = await vb.callRemote(Hello, protocols=[2])
+    if hello["protocol"] != 2:
+        raise SystemExit("It knows protocol 1 only")
+    memory = {"key": "memory", "value": "1024"}
+    await vb.callRemote(
+        BrickSet, name="vm1", key_value=[memory]
+    )
+    try:
+        await vb.callRemote(BrickStart, name=["sw1", "vm1"])
+    except NotFound as exc:
+        print(exc)</screen>
+      <p>Protocol 2 is still in development: until it is stable, a later Virtualbricks may change its commands in any way, without notice and without a new number, so a program wants the same <code>version</code> of Virtualbricks, in the answer of <code>Hello</code>. Once it is stable, protocol 2 will keep its commands. A later Virtualbricks will add commands to it, or optional arguments, which an older one refuses with <code>UnhandledCommand</code> or <code>BadArgument</code>; a change of any other kind will be protocol 3, and a program that asks for 2 will then get 1, with <code>Run</code>.</p>
+    </section>
+    <section id="the-commands-of-the-windows">
+      <title>The commands of the windows</title>
+      <p>Protocol 2 has the commands of the windows of another Virtualbricks too, in the module <code>virtualbricks.remote.commands</code>, which a program may import as <code>ampcommands</code>. They pass the checks of the typed commands. <code>Follow</code> asks for the project and its changes: Virtualbricks then calls on the program, without waiting for an answer, <code>Opened</code> when a project opens, <code>Changed</code> for each image, brick and event, then <code>Synced</code>; after that, <code>Changed</code>, <code>Renamed</code> and <code>Removed</code> for each change, gathered once a turn, <code>SettingsChanged</code>, <code>Logged</code> for each message of its log, the last 500 first, and <code>Quitting</code>. A table, a state, the settings and a message are JSON in a text. What waits for the program goes before the answer of each of its commands, so that once a command is answered the program has what it changed.</p>
+      <p>The others are what the windows do that the console has no command for: <code>Apply</code>, the OK of a panel, the keys it changed only; <code>Connect</code>, a drop; <code>MakeImage</code>, <code>StartOver</code>, <code>TrashFile</code> and <code>Relink</code>, the files of the images; <code>ProjectNames</code>, <code>ProjectSummary</code>, <code>Readme</code>, <code>SetReadme</code> and <code>SetKsm</code>. The facts of the machine answer beside the requests that wait: <code>QemuFacts</code>, the texts that a QEMU program prints; <code>MachineProperties</code>, <code>UsbDevices</code>, <code>ImageFacts</code>, <code>DiskUsage</code>, <code>ReadmePicture</code>, a picture of a README in pieces, and <code>Folder</code>, the entries of a folder, for a path being typed. <code>Attach</code> switches the connection to the bytes of the console of a brick, AMP's <code>ProtocolSwitchCommand</code>.</p>
+    </section>
+  </section>
+  <section id="the-windows-of-another-virtualbricks">
+    <title>The windows of another Virtualbricks</title>
+    <p><code>virtualbricks --connect</code> <var>description</var> opens the windows of the Virtualbricks of the socket of <var>description</var>: the lab machine, which runs the bricks, this machine or another, and the desktop, which shows them. The Virtualbricks there listens with <code>--listen</code>, on a socket that speaks AMP, as one does without <code>protocol=json</code>, with its own windows or with <code>--no-gui</code>, and both run the same version:</p>
+    <screen>virtualbricks --no-gui --no-term --listen \
+    'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.key'
+virtualbricks --connect \
+    'ssl:lab.example:8765:caCertsDir=~/vb/lab'</screen>
+    <p><code>virtualbricks --connect</code> alone opens the windows of a Virtualbricks of yours on this machine, the one that listens on the socket of <code>--listen</code> alone of its workspace: that of <code>--workspace</code>, or else the only one that listens; when several do, it names them and opens nothing. The windows call it <var>this computer</var>:</p>
+    <screen>virtualbricks --no-gui --no-term --listen --workspace ~/labs/a &amp;
+virtualbricks --connect
+virtualbricks --connect --workspace ~/labs/a</screen>
+    <p>The windows follow the project open there: its bricks, events and images, their processes, the settings and the messages of its log; what the console or other windows change there shows at once. What the windows do goes there: a start, a new brick, the OK of a panel, which sends only the keys that the panel changed, so that two windows that change different keys of a brick keep both. The title names the project and where it runs.</p>
+    <p>What they show of the lab machine is its own: its QEMU programs and what they can do, its USB devices, the files of its images and of the private copies, its projects and the README of the open one. A path is a path there: the windows have no file chooser for it, but an entry that completes from the folders there. Settings has three pages: <var>This computer</var>, the settings of the windows, as the terminal; the lab machine, its KSM and the audio driver of QEMU, with its workspace shown; and the project's. <code>Open Control Monitor</code> starts the terminal of this computer, with <code>vdeterm</code> or <code>unixterm</code> of VDE, on a socket of its own, and the windows join it to the console there over another connection.</p>
+    <p>The windows start no program of a brick here, and the files they work on are those of the lab machine. Some items wait for a later version, greyed: <code>Import</code> and <code>Export</code>, saving or merging the private copy of a disk, copying an image to the shared images, <code>Show in Files</code>, and <code>Terminate</code>, which stops a machine with <code>SIGTERM</code>.</p>
+    <p>When the connection is lost, a bar says why, and the windows wait: <code>Reconnect</code> connects again, and the copy starts over. When the Virtualbricks there quits, the bar says so. <code>Quit</code> closes the windows; the Virtualbricks there goes on.</p>
+    <p>A <code>tcp</code> or <code>ssl</code> socket asks for the token, as for <code>--command</code>: that of <code>tokenFile=</code>, or the default one. Over <code>ssl</code>, <code>caCertsDir=</code> holds the certificate of the lab machine, or that of its authority, and <code>privateKey=</code> and <code>certKey=</code> are the windows' own, for a Virtualbricks that asks for one. See <code>Sockets on the network</code>.</p>
+  </section>
+  <section id="commands-1">
+    <title>Commands</title>
+    <section id="bricks">
+      <title>Bricks</title>
+      <terms>
+        <item>
+          <title><code>brick types</code></title>
+          <p>The kinds of brick, and what this computer lacks for each.</p>
+        </item>
+        <item>
+          <title><code>brick list</code></title>
+          <p>The bricks, their state and settings.</p>
+        </item>
+        <item>
+          <title><code>brick new</code> <var>KIND</var> [<var>NAME</var>]</title>
+          <p>Make a brick; without a name, the kind's and the first free number. For example, <code>brick new switch</code>.</p>
+        </item>
+        <item>
+          <title><code>brick show</code> <var>NAME</var></title>
+          <p>A brick's state, links and keys.</p>
+        </item>
+        <item>
+          <title><code>brick keys</code> <var>KIND</var>|<var>NAME</var> [<var>KEY</var>]</title>
+          <p>The keys of a kind of brick or of a brick, or one, with what each is for. For example, <code>brick keys vm memory</code>.</p>
+        </item>
+        <item>
+          <title><code>brick set</code> <var>NAME</var> <var>KEY</var>=<var>VALUE</var>...</title>
+          <p>Change keys of a brick, all or none. For example, <code>brick set sw1 ports=16 hub_mode=true</code>.</p>
+        </item>
+        <item>
+          <title><code>brick unset</code> <var>NAME</var> <var>KEY</var>...</title>
+          <p>Put keys of a brick back to their defaults. For example, <code>brick unset sw1 ports</code>.</p>
+        </item>
+        <item>
+          <title><code>brick start</code> <var>NAME</var>...</title>
+          <p>Start bricks, after those they plug into, and wait for them. For example, <code>brick start router</code>.</p>
+        </item>
+        <item>
+          <title><code>brick stop</code> <var>NAME</var>...</title>
+          <p>Stop bricks, and wait until their programs end.</p>
+        </item>
+        <item>
+          <title><code>brick kill</code> <var>NAME</var>...</title>
+          <p>Kill the programs of bricks.</p>
+        </item>
+        <item>
+          <title><code>brick restart</code> <var>NAME</var>...</title>
+          <p>Stop bricks, killing them after two seconds, and start them.</p>
+        </item>
+        <item>
+          <title><code>brick pause</code> <var>NAME</var>...</title>
+          <p>Pause the programs of bricks.</p>
+        </item>
+        <item>
+          <title><code>brick continue</code> <var>NAME</var>...</title>
+          <p>Let paused bricks go on.</p>
+        </item>
+        <item>
+          <title><code>brick suspend</code> <var>VM</var></title>
+          <p>Save a machine's state in its first disk, and stop it.</p>
+        </item>
+        <item>
+          <title><code>brick resume</code> <var>VM</var></title>
+          <p>Start a machine from the state that suspend saved.</p>
+        </item>
+        <item>
+          <title><code>brick reset</code> <var>VM</var></title>
+          <p>Reset a running machine, as its reset button.</p>
+        </item>
+        <item>
+          <title><code>brick monitor</code> <var>NAME</var></title>
+          <p>Open the control monitor of a running brick in a terminal.</p>
+        </item>
+        <item>
+          <title><code>brick connect</code> <var>NAME</var> <var>TARGET</var>...</title>
+          <p>Plug a brick into switches: a wire or a Netemu's ends, left then right. For example, <code>brick connect w1 sw1 sw2</code>.</p>
+        </item>
+        <item>
+          <title><code>brick disconnect</code> <var>NAME</var> [<var>END</var>]</title>
+          <p>Unplug a brick, or one end of a wire or a Netemu.</p>
+        </item>
+        <item>
+          <title><code>brick card add</code> <var>VM</var> <var>KIND</var> [<var>OPTIONS</var>...]</title>
+          <p>Add a network card after the others: plug and its target, socket, or hostonly; model= and mac= are its own. For example, <code>brick card add vm1 plug sw1 model=virtio-net-pci</code>.</p>
+        </item>
+        <item>
+          <title><code>brick card set</code> <var>VM</var> <var>CARD</var> <var>KEY</var>=<var>VALUE</var>...</title>
+          <p>Change a card's model, mac, or target: a switch, hostonly, or nothing. For example, <code>brick card set vm1 eth0 model=e1000 target=sw2</code>.</p>
+        </item>
+        <item>
+          <title><code>brick card remove</code> <var>VM</var> <var>CARD</var>...</title>
+          <p>Take network cards out of a machine.</p>
+        </item>
+        <item>
+          <title><code>brick rename</code> <var>NAME</var> <var>NEW</var></title>
+          <p>Rename a brick.</p>
+        </item>
+        <item>
+          <title><code>brick duplicate</code> <var>NAME</var> [<var>NEW</var>]</title>
+          <p>Copy a brick, with its links; without a new name, its name with the next free number.</p>
+        </item>
+        <item>
+          <title><code>brick delete</code> <var>NAME</var>...</title>
+          <p>Delete bricks that don't run, and the actions that start or stop them.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="events">
+      <title>Events</title>
+      <terms>
+        <item>
+          <title><code>event list</code></title>
+          <p>The events, their state and actions.</p>
+        </item>
+        <item>
+          <title><code>event new</code> [<var>NAME</var>]</title>
+          <p>Make an event; without a name, new_event or the next free one.</p>
+        </item>
+        <item>
+          <title><code>event show</code> <var>NAME</var></title>
+          <p>An event's delay, its actions numbered, what starts it.</p>
+        </item>
+        <item>
+          <title><code>event set</code> <var>NAME</var> <var>KEY</var>=<var>VALUE</var>...</title>
+          <p>Change an event's delay or icon. For example, <code>event set boot delay=10</code>.</p>
+        </item>
+        <item>
+          <title><code>event action add</code> <var>NAME</var> <var>WHAT</var> [<var>SUBJECT</var>] [<code>--at</code> <var>N</var>]</title>
+          <p>Add an action: start or stop a brick or an event, or a command of the console or the shell. For example, <code>event action add boot console "brick set vm1 memory=1024"</code>.</p>
+        </item>
+        <item>
+          <title><code>event action remove</code> <var>NAME</var> <var>N</var>...</title>
+          <p>Remove actions of an event, by their numbers.</p>
+        </item>
+        <item>
+          <title><code>event action move</code> <var>NAME</var> <var>N</var> <var>TO</var></title>
+          <p>Move an action of an event to another place.</p>
+        </item>
+        <item>
+          <title><code>event start</code> <var>NAME</var>...</title>
+          <p>Start events: each waits its delay, then runs its actions.</p>
+        </item>
+        <item>
+          <title><code>event stop</code> <var>NAME</var>...</title>
+          <p>Stop events that wait.</p>
+        </item>
+        <item>
+          <title><code>event run</code> <var>NAME</var>...</title>
+          <p>Run the actions of events now, and wait for them.</p>
+        </item>
+        <item>
+          <title><code>event rename</code> <var>NAME</var> <var>NEW</var></title>
+          <p>Rename an event, and every brick and action that names it.</p>
+        </item>
+        <item>
+          <title><code>event duplicate</code> <var>NAME</var> [<var>NEW</var>]</title>
+          <p>Copy an event; without a new name, its name with the next free number.</p>
+        </item>
+        <item>
+          <title><code>event delete</code> <var>NAME</var>...</title>
+          <p>Delete events, the actions that start or stop them, and the on_start and on_stop that name them.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="images">
+      <title>Images</title>
+      <terms>
+        <item>
+          <title><code>image list</code></title>
+          <p>The disk images and their users.</p>
+        </item>
+        <item>
+          <title><code>image add</code> <var>NAME</var> <var>PATH</var> [<var>KEY</var>=<var>VALUE</var>...]</title>
+          <p>Add an image file to the project; description= says what it is. For example, <code>image add debian ~/images/debian.qcow2 description="Debian 13"</code>.</p>
+        </item>
+        <item>
+          <title><code>image show</code> <var>NAME</var></title>
+          <p>An image's file, description and users.</p>
+        </item>
+        <item>
+          <title><code>image set</code> <var>NAME</var> <var>KEY</var>=<var>VALUE</var>...</title>
+          <p>Change the description of an image.</p>
+        </item>
+        <item>
+          <title><code>image rename</code> <var>NAME</var> <var>NEW</var></title>
+          <p>Rename an image, in the disks that use it too.</p>
+        </item>
+        <item>
+          <title><code>image delete</code> <var>NAME</var></title>
+          <p>Remove an image from the project; its file and the private copies stay.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="settings">
+      <title>Settings</title>
+      <terms>
+        <item>
+          <title><code>setting show</code> [<var>KEY</var>]</title>
+          <p>The settings of Virtualbricks and of the open project.</p>
+        </item>
+        <item>
+          <title><code>setting set</code> <var>KEY</var>=<var>VALUE</var>...</title>
+          <p>Change settings, all or none. For example, <code>setting set terminal="gnome-terminal -- {command}"</code>.</p>
+        </item>
+        <item>
+          <title><code>setting unset</code> <var>KEY</var>...</title>
+          <p>Put settings back to their defaults.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="projects">
+      <title>Projects</title>
+      <terms>
+        <item>
+          <title><code>project list</code></title>
+          <p>The projects of the workspace.</p>
+        </item>
+        <item>
+          <title><code>project show</code></title>
+          <p>The open project.</p>
+        </item>
+        <item>
+          <title><code>project open</code> <var>NAME</var></title>
+          <p>Save the open project and open another.</p>
+        </item>
+        <item>
+          <title><code>project new</code> <var>NAME</var></title>
+          <p>Save the open project, make a new one and open it.</p>
+        </item>
+        <item>
+          <title><code>project save</code></title>
+          <p>Save the open project now.</p>
+        </item>
+        <item>
+          <title><code>project rename</code> <var>NAME</var> <var>NEW</var></title>
+          <p>Rename a project.</p>
+        </item>
+        <item>
+          <title><code>project duplicate</code> <var>NAME</var> <var>NEW</var></title>
+          <p>Copy a project, its disks included.</p>
+        </item>
+        <item>
+          <title><code>project delete</code> <var>NAME</var> [<code>--force</code>]</title>
+          <p>Move a project to the trash; without one, --force deletes it for good.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="other-commands">
+      <title>Other commands</title>
+      <terms>
+        <item>
+          <title><code>help</code> [<var>TOPIC</var>...]</title>
+          <p>The commands, a noun's verbs, or one command. For example, <code>help brick set</code>.</p>
+        </item>
+        <item>
+          <title><code>status</code></title>
+          <p>What runs: the bricks with their processes, the events that wait.</p>
+        </item>
+        <item>
+          <title><code>quit</code></title>
+          <p>Quit Virtualbricks; refused while bricks run.</p>
+        </item>
+        <item>
+          <title><code>source</code> <var>FILE</var></title>
+          <p>Run the commands of a file, one a line, up to the first error. For example, <code>source ~/labs/start.vb</code>.</p>
+        </item>
+      </terms>
+    </section>
+  </section>
+  <section id="events-1">
+    <title>Events</title>
+    <p>An event, started, waits its delay, then runs its actions, all at once: an action doesn't wait for the one before. An action starts or stops a brick, with the bricks it plugs into, or an event, or runs a command of the console or of the shell, as <code>event action add</code> makes them. A command of the console in an event is any command of this page, and one that fails is logged with the event, the number of the action and the reason. The project file keeps the actions as <link xref="config-files">virtualbricks-config(5)</link> says.</p>
+  </section>
+  <section id="exit-status">
+    <title>Exit status</title>
+    <p>With <code>--command</code>, and with <code>--connect --run</code>:</p>
+    <terms>
+      <item>
+        <title><code>0</code></title>
+        <p>The command was done, or every command of the file.</p>
+      </item>
+      <item>
+        <title><code>1</code></title>
+        <p>The command failed, its answer was too long for AMP, an option is wrong, or the file of <code>--run</code> can't be read.</p>
+      </item>
+      <item>
+        <title><code>2</code></title>
+        <p>No Virtualbricks answered: none listens there, several listen and none is named, it ended before it answered, it speaks another protocol, or it refused the token or the certificate. The error says which.</p>
+      </item>
+      <item>
+        <title><code>130</code></title>
+        <p>Ctrl+C stopped the wait.</p>
+      </item>
+    </terms>
+    <p>With the windows of <code>--connect</code>, <code>1</code>: none listens there, several listen and none is named, they couldn't reach it, it refused them, or it runs another version.</p>
+  </section>
+  <section id="files">
+    <title>Files</title>
+    <terms>
+      <item>
+        <title><var>$XDG_STATE_HOME</var>/virtualbricks/history</title>
+        <p>The history of the console, the last 500 lines.</p>
+      </item>
+      <item>
+        <title><var>/tmp/virtualbricks.lock</var>, <var>$XDG_RUNTIME_DIR</var>/virtualbricks/.lock</title>
+        <p>The locks of the single-instance mode, see <code>--lock</code>.</p>
+      </item>
+      <item>
+        <title><var>workspace</var>/.virtualbricks.lock</title>
+        <p>The lock of a workspace, held by the Virtualbricks that runs there in each mode but <code>none</code>, see <code>--lock</code>.</p>
+      </item>
+      <item>
+        <title><var>$XDG_RUNTIME_DIR</var>/virtualbricks/<var>key</var>/.control, .control.lock</title>
+        <p>The socket of <code>--listen</code> alone of the workspace of <var>key</var> and its lock, see <code>THE CONTROL SOCKET</code>.</p>
+      </item>
+      <item>
+        <title><var>$XDG_CONFIG_HOME</var>/virtualbricks/token</title>
+        <p>The token of the <code>tcp</code> and <code>ssl</code> sockets, see <code>THE CONTROL SOCKET</code>.</p>
+      </item>
+      <item>
+        <title><var>$XDG_RUNTIME_DIR</var>/virtualbricks/.connect-<var>pid</var></title>
+        <p>The sockets of the terminals of the consoles that the windows of <code>--connect</code> open, see <code>THE WINDOWS OF ANOTHER VIRTUALBRICKS</code>.</p>
+      </item>
+      <item>
+        <title><var>prefix</var>/share/help/C/virtualbricks/</title>
+        <p>The user guide, the pages that Yelp shows: <code>Contents</code> of the menu <code>Help</code> opens its index, and F1 the page about the window in view. <var>prefix</var> is where Virtualbricks is installed. Under <var>/usr</var> or <var>~/.local</var>, where Yelp looks, they are <var>help:virtualbricks</var>; elsewhere, as in a virtualenv, or in the sources, Yelp gets the files of the pages.</p>
+      </item>
+      <item>
+        <title><var>prefix</var>/share/virtualbricks/help/C/</title>
+        <p>The user guide in HTML, which the browser shows where Yelp isn't installed; without it, the copy of <var>https://www.virtualbricks.it/help/C/</var>.</p>
+      </item>
+    </terms>
+    <p>The settings, the state and the projects are described in <link xref="config-files">virtualbricks-config(5)</link>.</p>
+  </section>
+  <section id="examples">
+    <title>Examples</title>
+    <p>A switch and a machine plugged into it, started:</p>
+    <screen>brick new switch
+brick new vm router
+brick set router memory=512 use_kvm=true
+brick card add router plug sw1 model=virtio-net-pci
+brick start router</screen>
+    <p>The machine, with its switch, for ten minutes, and a line in the system log:</p>
+    <screen>event new up
+event action add up start router
+event action add up shell "logger the lab is up"
+event new down
+event set down delay=600
+event action add down stop router
+event start up down</screen>
+    <p>A lab on a server, from a file, without windows or console, with the socket of its workspace:</p>
+    <screen>virtualbricks --no-gui --no-term --listen --run ~/labs/ospf.vb</screen>
+    <p>The machine of that lab, from another terminal, and the commands of a file, sent to it one after the other:</p>
+    <screen>virtualbricks --command brick start router
+virtualbricks --connect --run ~/labs/traffic.vb</screen>
+    <p>Its windows, on the same machine:</p>
+    <screen>virtualbricks --connect</screen>
+    <p>The same lab, open to the network over <code>ssl</code>, and its machine, started from a laptop that has a copy of the token and of <code>lab.pem</code>, in <var>~/vb/lab</var>:</p>
+    <screen>virtualbricks --no-gui --no-term --run ~/labs/ospf.vb --listen \
+    'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.key'
+virtualbricks \
+    --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab' \
+    --command brick start router</screen>
+    <p>The windows of that lab, on the same laptop:</p>
+    <screen>virtualbricks --connect \
+    'ssl:lab.example:8765:caCertsDir=~/vb/lab'</screen>
+    <p>Two labs side by side, each in its workspace, both listening, and a command to one of them:</p>
+    <screen>virtualbricks --no-gui --no-term --listen --workspace ~/labs/a &amp;
+virtualbricks --no-gui --no-term --listen --workspace ~/labs/b &amp;
+virtualbricks --workspace ~/labs/b --command status</screen>
+  </section>
+  <section id="see-also">
+    <title>See also</title>
+    <p><link xref="config-files">virtualbricks-config(5)</link>, <link xref="vbp-format">virtualbricks-vbp(5)</link>, <link xref="archive-protocol">virtualbricks-archive(7)</link>, <link xref="control-protocols">virtualbricks-control(7)</link>, <code>qemu</code>(1), <code>vde_switch</code>(1), <code>openssl</code>(1)</p>
+  </section>
+</page>

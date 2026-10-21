@@ -40,7 +40,8 @@ that works:
    that a virtualenv has its own;
 3. else the copy of the website.
 
-A page is named as its source in ``docs/guide/``, without ``.md``. A failure to
+A page is named as its source in ``docs/guide/``, without ``.md``; a page
+of the Reference, a man page, by the id in its front matter. A failure to
 open is logged. The windows, the tabs and the panels of the settings name
 their page in ``help_page``, which F1 opens: see
 :class:`virtualbricks.gui.dialogs.base.Window`.

@@ -1,0 +1,986 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="config-files">
+  <info>
+    <link type="guide" xref="index#reference"/>
+    <title type="sort">2</title>
+    <desc>virtualbricks-config(5): settings, state and project files of Virtualbricks</desc>
+  </info>
+  <title>Configuration files</title>
+  <links type="section"/>
+  <section id="synopsis">
+    <title>Synopsis</title>
+    <synopsis>
+      <p><var>$XDG_CONFIG_HOME</var>/virtualbricks/settings.toml</p>
+      <p><var>$XDG_STATE_HOME</var>/virtualbricks/state.toml</p>
+      <p><var>workspace</var>/<var>project</var>/project.toml</p>
+    </synopsis>
+  </section>
+  <section id="description">
+    <title>Description</title>
+    <p>Virtualbricks keeps its configuration in three kinds of file, all written in TOML 1.0:</p>
+    <terms>
+      <item>
+        <title><code>settings.toml</code></title>
+        <p>Your preferences, which aren't about a project: the workspace, the terminal, KSM and the tray icon.</p>
+      </item>
+      <item>
+        <title><code>state.toml</code></title>
+        <p>What Virtualbricks remembers between runs: the project that was open last in each workspace.</p>
+      </item>
+      <item>
+        <title><code>project.toml</code></title>
+        <p>One in each project: its bricks, events and disk images, how they are connected, and its settings, such as the folders of QEMU and VDE.</p>
+      </item>
+    </terms>
+    <p>Virtualbricks writes these files itself. They can also be edited by hand, but never while Virtualbricks is running: it rewrites <code>settings.toml</code> when it quits and the open project's <code>project.toml</code> every three minutes, and your changes would be lost.</p>
+    <p>The files of Virtualbricks 2.1 and older, <var>~/.virtualbricks.conf</var> and the <var>.project</var> file of each project, are converted once by the migration (see <code>MIGRATION</code>). Virtualbricks doesn't read them any more.</p>
+  </section>
+  <section id="common-rules">
+    <title>Common rules</title>
+    <section id="format-version">
+      <title>Format version</title>
+      <p>Every file starts with a <code>format</code> key, the version of its layout, now <code>1</code> for each of them. A file written by a newer Virtualbricks, with a higher <code>format</code>, is not read: its settings are not used and the file is never overwritten, and a project in that format doesn't open. A missing or invalid <code>format</code> is reported, and the file is read as the current version.</p>
+    </section>
+    <section id="every-value-is-written">
+      <title>Every value is written</title>
+      <p>Virtualbricks writes every key, including the ones at their default value, so a file shows the whole configuration. When a default changes in a new version of Virtualbricks, existing files keep their value.</p>
+    </section>
+    <section id="reading-is-lenient">
+      <title>Reading is lenient</title>
+      <p>A file edited by hand doesn't have to be complete or tidy. Each problem is reported in the messages window and in the log, with the key it's about, and Virtualbricks carries on:</p>
+      <list>
+        <item>
+          <p>A missing key takes its default value.</p>
+        </item>
+        <item>
+          <p>A key with a value of the wrong type or out of range takes its default value. A delay, a bandwidth or a buffer size below 0 in a state of a <code>netemu</code>, which older versions took, is read as 0, as the programs took it.</p>
+        </item>
+        <item>
+          <p>An unknown key is ignored, and dropped at the next save.</p>
+        </item>
+        <item>
+          <p>A brick of an unknown type, or with an invalid name, is dropped.</p>
+        </item>
+        <item>
+          <p>A connection to a socket that doesn't exist is left unconnected.</p>
+        </item>
+      </list>
+      <p>A file that isn't valid TOML is not read at all: Virtualbricks uses the default settings and doesn't overwrite the file, and a project in that state doesn't open.</p>
+    </section>
+    <section id="writing">
+      <title>Writing</title>
+      <p>Virtualbricks writes a new file next to the old one and renames it over the old one once it's complete, so a crash never leaves a half-written file. It writes the whole file each time, with its own comments: the comments, key order and formatting of a hand edit are not kept.</p>
+    </section>
+    <section id="comments">
+      <title>Comments</title>
+      <p>Each file starts with a few lines of comments that say what it is, then a blank line. Above each key, a comment says what the key is for, and ends in parentheses with its range or its choices and its default. A value at its default has <code># default</code> beside it; a value without it was set:</p>
+      <screen># Number of ports (1-128; default 32)
+ports = 16
+# Send every packet to every port, as a hub (default false)
+hub_mode = false  # default</screen>
+      <p>The mark compares the value with the default when the file is written, so a value you set to its default is marked too. A key that counts only while another key has a given value says so last in the parentheses, as <code>(0-500; default 1; used when use_vnc is true)</code>: otherwise the brick does without it, and the key keeps its value. The keys that belong to the layout of the file, as <code>format</code>, <code>type</code> and the connections, have a comment and never the mark; tables have none. The comments are in English, and at most 79 columns wide.</p>
+    </section>
+    <section id="names">
+      <title>Names</title>
+      <p>Images, events and bricks are tables keyed by their name. A name starts with a letter and contains only letters, digits, underscores, hyphens and dots, and no two of them can share a name, even of different kinds. A name with a dot must be quoted in TOML, as in <code>[bricks."vm.1"]</code>.</p>
+    </section>
+    <section id="types">
+      <title>Types</title>
+      <p>The values have these types:</p>
+      <terms>
+        <item>
+          <title><var>boolean</var></title>
+          <p><code>true</code> or <code>false</code>.</p>
+        </item>
+        <item>
+          <title><var>integer</var>, <var>number</var></title>
+          <p>A whole number, or any number. Some have a range, given as <var>min</var>-<var>max</var>.</p>
+        </item>
+        <item>
+          <title><var>string</var>, <var>path</var></title>
+          <p>A string. A path is the path of a file or a directory; an empty string means none.</p>
+        </item>
+        <item>
+          <title><var>event</var>, <var>image</var></title>
+          <p>The name of an event or of a disk image of the project, or an empty string for none.</p>
+        </item>
+        <item>
+          <title><var>address</var></title>
+          <p>An IPv4 address, as <code>"10.0.0.1"</code>.</p>
+        </item>
+        <item>
+          <title><var>choice</var></title>
+          <p>One of the strings listed with the key.</p>
+        </item>
+      </terms>
+    </section>
+  </section>
+  <section id="settings">
+    <title>Settings</title>
+    <p>The file <var>$XDG_CONFIG_HOME</var>/virtualbricks/settings.toml, or <var>~/.config/virtualbricks/settings.toml</var> when <code>XDG_CONFIG_HOME</code> is not set. Virtualbricks creates it with the default values at its first start, and rewrites it when OK in the Settings window changes one of its settings, and when Virtualbricks quits. Two that run side by side, in two workspaces, each write all the settings they have: the last one to write wins.</p>
+    <terms>
+      <item>
+        <title><code>workspace</code> = <var>path</var>, default <code>"~/.virtualbricks"</code></title>
+        <p>The directory of the projects, <var>.virtualbricks</var> in your home directory by default. <code>~</code> is your home directory, a relative path starts in the directory Virtualbricks starts in, and an empty string is the default. <code>virtualbricks --workspace</code> <var>directory</var> uses another directory for one run, made if it isn't there, and leaves this setting as it is. Each workspace has its shared images, in its <var>shared_images</var> directory, and the project that opens at start in it (see <code>STATE</code>). A Virtualbricks stays in the workspace it started in, whose lock it holds: a new value is for the next start.</p>
+      </item>
+      <item>
+        <title><code>terminal</code> = <var>string</var>, default <code>"x-terminal-emulator -e {command}"</code></title>
+        <p>The terminal that opens the console of a brick, as a command: its words are split as the shell splits them, and it runs without a shell. Its program is a program in <code>PATH</code> or a path to one. <code>{command}</code> is the console: as a word of its own, it is the program of the console and its socket, two words; inside a longer word or in quotes, the two as one string, quoted for the shell. <code>{name}</code> is the name of the brick. A command without <code>{command}</code> gets <code>-e {command}</code> at its end, so a terminal named alone runs as <var>terminal</var> <code>-e</code> <var>program</var> <var>socket</var>, as <code>xterm</code>(1) and <code>konsole</code>(1) take it. For example, <code>gnome-terminal -- {command}</code>, <code>xfce4-terminal -x {command}</code>, or <code>xterm -T {name} -hold -e {command}</code>, which puts the name of the brick in the title and keeps the window open when the console ends. The default is the terminal of your desktop on Debian and Ubuntu, through a wrapper for one that takes <code>-e</code> otherwise, as GNOME Terminal does. A quote that isn't closed is an error.</p>
+      </item>
+      <item>
+        <title><code>kernel_samepage_merging</code> = <var>boolean</var>, default <code>false</code></title>
+        <p>Turn Kernel Samepage Merging on at start, so that virtual machines share identical memory pages. If this Linux has no KSM, or KSM is still off once Virtualbricks has tried, the warning at start says so; the setting stays as it is.</p>
+      </item>
+      <item>
+        <title><code>tray_icon</code> = <var>boolean</var>, default <code>true</code></title>
+        <p>Show an icon in the system tray.</p>
+      </item>
+      <item>
+        <title><code>warn_missing_programs</code> = <var>boolean</var>, default <code>true</code></title>
+        <p>Warn at start about the programs that Virtualbricks needs and can't find, with the package that has each.</p>
+      </item>
+      <item>
+        <title><code>audio_driver</code> = <var>string</var>, default <code>"alsa"</code></title>
+        <p>The audio driver of QEMU that plays the sound cards of the virtual machines, as <code>"alsa"</code>, <code>"pa"</code> or <code>"pipewire"</code>. It's about this computer, not about a project. A driver that the installed QEMU doesn't have leaves the machines without a sound card, with a warning.</p>
+      </item>
+    </terms>
+    <p>The <code>settings.toml</code> of an older version also has the settings of the projects, described under <code>Project settings</code>: they're reported, ignored, and dropped at the next save. Each project has its own.</p>
+  </section>
+  <section id="state">
+    <title>State</title>
+    <p>The file <var>$XDG_STATE_HOME</var>/virtualbricks/state.toml, or <var>~/.local/state/virtualbricks/state.toml</var> when <code>XDG_STATE_HOME</code> is not set. Virtualbricks rewrites it whenever it opens a project; of two that run side by side, the last one to write it wins.</p>
+    <terms>
+      <item>
+        <title><code>workspaces</code> = <var>array</var>, default <code>[]</code></title>
+        <p>The workspaces used, the last used first: a table for each, with the keys of <code>Workspaces</code>. A workspace that isn't in the list opens its <code>new_project</code>.</p>
+      </item>
+    </terms>
+    <section id="workspaces">
+      <title>Workspaces</title>
+      <terms>
+        <item>
+          <title><code>path</code> = <var>path</var></title>
+          <p>The directory of the workspace, as an absolute path. A table without it is reported and dropped.</p>
+        </item>
+        <item>
+          <title><code>current_project</code> = <var>string</var>, default <code>"new_project"</code></title>
+          <p>The project that opens at start in this workspace. A missing <code>new_project</code> is created. Any other project that can't be opened is reported, and Virtualbricks creates and opens <code>new_project_0</code>, or the next free number, instead.</p>
+        </item>
+      </terms>
+    </section>
+  </section>
+  <section id="projects">
+    <title>Projects</title>
+    <p>A project is a directory of the workspace that contains a <code>project.toml</code>. The name of the directory is the name of the project, so renaming a project renames its directory. The directory also holds:</p>
+    <terms>
+      <item>
+        <title><var>README.md</var></title>
+        <p>The description of the project: plain text, read as Markdown, see <code>README</code> below. Before 3.0 it was <var>README</var>: Virtualbricks renames it to <var>README.md</var> when it opens the project, imports it or migrates it.</p>
+      </item>
+      <item>
+        <title><var>vm</var>_<var>device</var>.cow</title>
+        <p>The private copy-on-write disk of a virtual machine, for example <var>router1_hda.cow</var> (see <code>disks</code> under <code>qemu</code>).</p>
+      </item>
+    </terms>
+    <p>The file has these top-level keys:</p>
+    <terms>
+      <item>
+        <title><code>format</code> = <var>integer</var></title>
+        <p>The version of the layout, see <code>COMMON RULES</code>.</p>
+      </item>
+      <item>
+        <title><code>[settings]</code></title>
+        <p>The settings of the project, see <code>Project settings</code>.</p>
+      </item>
+      <item>
+        <title><code>[images.<code><var>name</var></code>]</code></title>
+        <p>A disk image that virtual machines can use.</p>
+      </item>
+      <item>
+        <title><code>[events.<code><var>name</var></code>]</code></title>
+        <p>An event: commands to run, after a delay.</p>
+      </item>
+      <item>
+        <title><code>[bricks.<code><var>name</var></code>]</code></title>
+        <p>A brick. Its <code>type</code> key says which kind; the other keys depend on it.</p>
+      </item>
+    </terms>
+    <section id="project-settings">
+      <title>Project settings</title>
+      <p>The <code>[settings]</code> table. While the project is open, these are the settings in effect, and the Settings window changes them for this project only. A new project starts with a copy of the settings of the project that is open, or with the defaults when none is. An imported project brings the paths of the machine it comes from; the import dialog offers to replace them with those of the open project.</p>
+      <terms>
+        <item>
+          <title><code>allow_female_plugs</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Allow plugs to connect to the socket cards of virtual machines, not only to switches.</p>
+        </item>
+        <item>
+          <title><code>qemu_path</code> = <var>path</var>, default <code>"/usr/bin"</code></title>
+          <p>The directory of the QEMU programs.</p>
+        </item>
+        <item>
+          <title><code>vde_path</code> = <var>path</var>, default <code>"/usr/bin"</code></title>
+          <p>The directory of the VDE programs, such as <code>vde_switch</code>(1).</p>
+        </item>
+      </terms>
+      <p>Older project files have a <code>cow_format</code> key, the format of the private copies of the disks, which are always qcow2 now, and a <code>log_link_loops</code> key, which decided whether a loop in the links was logged, while the bricks on a loop never started: an error says so now. Both are read without a word, and dropped at the next save.</p>
+    </section>
+    <section id="images">
+      <title>Images</title>
+      <terms>
+        <item>
+          <title><code>path</code> = <var>path</var>, default <code>""</code></title>
+          <p>The image file. A relative path is relative to the project directory. An image without a path is dropped; an image whose file is missing is kept, and reported. Two images can't use the same file.</p>
+        </item>
+        <item>
+          <title><code>description</code> = <var>string</var>, default <code>""</code></title>
+          <p>A description, which can span several lines.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="events">
+      <title>Events</title>
+      <terms>
+        <item>
+          <title><code>icon</code> = <var>path</var>, default <code>""</code></title>
+          <p>An image file to show instead of the icon of events. Nothing shows it yet.</p>
+        </item>
+        <item>
+          <title><code>delay</code> = <var>integer</var> 0-2^31-1, default <code>0</code></title>
+          <p>Seconds to wait before running the actions.</p>
+        </item>
+        <item>
+          <title><code>actions</code> = <var>array</var>, default <code>[]</code></title>
+          <p>What the event does after its delay, all at once: an action doesn't wait for the one before. Each is an inline table whose <code>kind</code> says what it does. <code>"start"</code> and <code>"stop"</code> start or stop their <code>target</code>, the name of a brick, with the bricks it plugs into, or of an event. <code>"console"</code> runs its <code>command</code> in the console, see <link xref="command-line">virtualbricks(1)</link>, and <code>"shell"</code> runs it with <code>sh</code>(1). A brick or an event renamed is renamed in the targets, not in the commands. For example:</p>
+          <screen>actions = [
+    {kind = "start", target = "sw1"},
+    {kind = "console", command = "brick set vm1 memory=1024"},
+    {kind = "shell", command = "logger lab started"},
+]</screen>
+        </item>
+      </terms>
+    </section>
+    <section id="bricks">
+      <title>Bricks</title>
+      <p>Every brick table has a <code>type</code>, which is one of <code>qemu</code>, <code>switch</code>, <code>switchwrapper</code>, <code>tap</code>, <code>capture</code>, <code>wire</code>, <code>netemu</code>, <code>tunnellisten</code>, <code>tunnelconnect</code> and <code>router</code>, and these three keys:</p>
+      <terms>
+        <item>
+          <title><code>icon</code> = <var>path</var>, default <code>""</code></title>
+          <p>An image file to show instead of the icon of the type. Only virtual machines show it, for now.</p>
+        </item>
+        <item>
+          <title><code>on_start</code> = <var>event</var>, default <code>""</code></title>
+          <p>The event that runs when the brick starts.</p>
+        </item>
+        <item>
+          <title><code>on_stop</code> = <var>event</var>, default <code>""</code></title>
+          <p>The event that runs when the brick stops.</p>
+        </item>
+      </terms>
+      <p>The other keys are described below for each type.</p>
+    </section>
+    <section id="connections">
+      <title>Connections</title>
+      <p>A connection goes from a plug of a brick to a socket of another. It's written in the brick that owns the plug, as a string that names the socket:</p>
+      <terms>
+        <item>
+          <title><var>brick</var></title>
+          <p>The only socket of a switch or a switch wrapper, for example <code>"sw1"</code>.</p>
+        </item>
+        <item>
+          <title><var>vm</var>:<var>card</var></title>
+          <p>A socket card of a virtual machine, for example <code>"router1:lan"</code>.</p>
+        </item>
+      </terms>
+      <p>An empty string leaves the plug unconnected. Depending on its type, a brick has one plug in <code>connect</code>, two in <code>endpoints</code>, or network cards in <code>nics</code>.</p>
+    </section>
+    <section id="readme">
+      <title>README</title>
+      <p>The <var>README.md</var> of a project is plain text in UTF-8, which Virtualbricks reads as Markdown. The Readme tab shows it rendered, and its pencil button edits the text; the details of the Projects window show it rendered too. The list of projects shows its first line, and the import window its first paragraph that isn't a heading. The syntax is a subset of CommonMark, the part that most editors and forges share:</p>
+      <terms>
+        <item>
+          <title><code># Title</code>, <code>## Title</code></title>
+          <p>A heading, with up to six <code>#</code>. A line underlined with <code>===</code> or <code>---</code> is a heading too.</p>
+        </item>
+        <item>
+          <title><var>a new line</var></title>
+          <p>A line break, so a README written as plain text keeps its lines. An empty line starts a new paragraph.</p>
+        </item>
+        <item>
+          <title><code>*italic*</code>, <code>**bold**</code>, <code>~~struck~~</code></title>
+          <p>Emphasis.</p>
+        </item>
+        <item>
+          <title><code>`code`</code></title>
+          <p>Code. A line of three backquotes, <code>```</code>, above and below some lines makes a block of code.</p>
+        </item>
+        <item>
+          <title><code>- item</code>, <code>1. item</code></title>
+          <p>An item of a list. An item indented under another is in a list inside it.</p>
+        </item>
+        <item>
+          <title><code>&gt; text</code></title>
+          <p>A quote.</p>
+        </item>
+        <item>
+          <title><code>[text](https://...)</code>, <code>&lt;https://...&gt;</code></title>
+          <p>A link. A URL written as it is, starting with <code>http://</code> or <code>https://</code>, is a link too. Only <code>http</code>, <code>https</code> and <code>mailto</code> links open, in the browser or the mail client.</p>
+        </item>
+        <item>
+          <title><code>![text](path)</code></title>
+          <p>A picture: a file of the folder of the project, <var>path</var> relative to the folder, as <code>pictures/map.png</code>. The Readme tab shows it, narrower if it's wider than the tab. Any other picture shows as its text: a URL, an absolute path, a path or a link that leads out of the folder, a file larger than 10 MB or than 32 million pixels, one that isn't a picture; and so do all the pictures in the Projects window and in the import window. A picture is a PNG, a JPEG, a GIF, an SVG or another format that GdkPixbuf reads.</p>
+        </item>
+        <item>
+          <title><code>---</code></title>
+          <p>A rule, between empty lines.</p>
+        </item>
+        <item>
+          <title><code>\</code></title>
+          <p>A backslash before a mark keeps the mark: <code>\*</code> is a star.</p>
+        </item>
+      </terms>
+      <p>Anything else shows as it's written: a table, HTML, a line indented by four spaces.</p>
+    </section>
+  </section>
+  <section id="brick-types">
+    <title>Brick types</title>
+    <section id="qemu">
+      <title>qemu</title>
+      <p>A QEMU virtual machine. Most keys become an option of the QEMU command line, given in bold. Before a machine starts, Virtualbricks asks its QEMU program what it has, and writes each option the way that version takes it. What the program lacks is left out, and the machine starts with a warning that says so, as a machine type or a CPU model that it doesn't know, which leaves QEMU's default in its place.</p>
+      <terms>
+        <item>
+          <title><code>qemu_program</code> = <var>string</var>, default <code>"qemu-system-i386"</code></title>
+          <p>The QEMU program, in the <code>qemu_path</code> directory, for example <code>"qemu-system-x86_64"</code>. It can't be empty.</p>
+        </item>
+        <item>
+          <title><code>machine_type</code> = <var>string</var>, default <code>""</code></title>
+          <p>The machine type, as in <code>-machine type=</code>. Empty means the default of QEMU. A program without a default one, as <code>qemu-system-aarch64</code>, doesn't start the machine until it has a type of the program.</p>
+        </item>
+        <item>
+          <title><code>cpu_model</code> = <var>string</var>, default <code>""</code></title>
+          <p>The CPU model: <code>-cpu</code>.</p>
+        </item>
+        <item>
+          <title><code>use_kvm</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Use KVM when the host supports it: <code>-accel kvm -accel tcg</code>.</p>
+        </item>
+        <item>
+          <title><code>cpus</code> = <var>integer</var> 1-64, default <code>1</code></title>
+          <p>The number of CPUs: <code>-smp</code>.</p>
+        </item>
+        <item>
+          <title><code>memory</code> = <var>integer</var> 1-99999, default <code>64</code></title>
+          <p>The memory, in MiB: <code>-m</code>.</p>
+        </item>
+        <item>
+          <title><code>use_kvm_shadow_memory</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Set the size of the KVM shadow memory to <code>kvm_shadow_memory</code>.</p>
+        </item>
+        <item>
+          <title><code>kvm_shadow_memory</code> = <var>integer</var> 0-99999, default <code>1</code></title>
+          <p>The size of the KVM shadow memory, in MiB: <code>-accel kvm,kvm-shadow-mem=</code>, which takes it in bytes.</p>
+        </item>
+        <item>
+          <title><code>boot_order</code> = <var>string</var>, default <code>""</code></title>
+          <p>The boot order: <code>-boot</code>, for example <code>"c"</code> for the first disk or <code>"d"</code> for the CD-ROM. Empty means the QEMU default.</p>
+        </item>
+        <item>
+          <title><code>forget_disk_changes</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Write to temporary files instead of the disk images, forgotten when the machine stops: <code>-snapshot</code>.</p>
+        </item>
+        <item>
+          <title><code>virtio_disks</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Attach the disks as virtio devices.</p>
+        </item>
+        <item>
+          <title><code>cdrom</code> = <var>choice</var>, default <code>"none"</code></title>
+          <p>The CD-ROM: <code>"none"</code>, <code>"image"</code> for the file <code>cdrom_image</code>, or <code>"device"</code> for the drive <code>cdrom_device</code> of the host: <code>-cdrom</code>.</p>
+        </item>
+        <item>
+          <title><code>cdrom_image</code> = <var>path</var>, default <code>""</code></title>
+          <p>An image file for the CD-ROM.</p>
+        </item>
+        <item>
+          <title><code>cdrom_device</code> = <var>string</var>, default <code>""</code></title>
+          <p>A CD-ROM drive of the host, for example <code>"/dev/cdrom"</code>.</p>
+        </item>
+        <item>
+          <title><code>headless</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>No display: <code>-display none</code>. It leaves out <code>use_vnc</code> and <code>sdl_window</code>.</p>
+        </item>
+        <item>
+          <title><code>standard_vga</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>A standard VGA card: <code>-vga std</code>.</p>
+        </item>
+        <item>
+          <title><code>use_vnc</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Show the display over VNC, on display <code>vnc_display</code>.</p>
+        </item>
+        <item>
+          <title><code>vnc_display</code> = <var>integer</var> 0-500, default <code>1</code></title>
+          <p>The VNC display: <code>-vnc :</code><var>N</var>.</p>
+        </item>
+        <item>
+          <title><code>sdl_window</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Show the display in an SDL window: <code>-display sdl</code>. QEMU has it with the package <code>qemu-system-gui</code>.</p>
+        </item>
+        <item>
+          <title><code>sound_card</code> = <var>string</var>, default <code>""</code></title>
+          <p>The sound card, as <code>"ac97"</code>, <code>"es1370"</code> or <code>"sb16"</code>: <code>-audiodev</code>, with the <code>audio_driver</code> setting, and <code>-device</code>. <code>"pcspk"</code> is the speaker of the PC: <code>-machine pcspk-audiodev=</code>.</p>
+        </item>
+        <item>
+          <title><code>use_usb</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Enable USB, <code>-usb</code>, and pass the devices of <code>usb_devices</code> to the guest.</p>
+        </item>
+        <item>
+          <title><code>usb_devices</code> = <var>array</var>, default <code>[]</code></title>
+          <p>USB devices of the host, each an inline table with an <code>id</code>, the vendor and product id as <code>"046d:c52b"</code>, and a <code>description</code>. Each device becomes <code>-device usb-host,vendorid=0x046d,productid=0xc52b</code>.</p>
+        </item>
+        <item>
+          <title><code>keyboard_layout</code> = <var>string</var>, default <code>""</code></title>
+          <p>The keyboard layout, a code of two letters such as <code>"it"</code>: <code>-k</code>.</p>
+        </item>
+        <item>
+          <title><code>clock_local_time</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Set the clock of the guest to the local time: <code>-rtc base=localtime</code>.</p>
+        </item>
+        <item>
+          <title><code>clock_drift_fix</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Correct the drift of the clock: <code>-rtc driftfix=slew</code>.</p>
+        </item>
+        <item>
+          <title><code>serial_socket</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Connect the serial port to a socket in the runtime directory: <code>-serial unix:</code>...**_serial**.</p>
+        </item>
+        <item>
+          <title><code>use_kernel</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Boot the kernel <code>kernel</code> directly.</p>
+        </item>
+        <item>
+          <title><code>kernel</code> = <var>path</var>, default <code>""</code></title>
+          <p>A kernel image: <code>-kernel</code>.</p>
+        </item>
+        <item>
+          <title><code>use_initrd</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Use the initial ramdisk <code>initrd</code>, with <code>use_kernel</code>.</p>
+        </item>
+        <item>
+          <title><code>initrd</code> = <var>path</var>, default <code>""</code></title>
+          <p>An initial ramdisk: <code>-initrd</code>.</p>
+        </item>
+        <item>
+          <title><code>kernel_command_line</code> = <var>string</var>, default <code>""</code></title>
+          <p>The kernel command line, with <code>use_kernel</code>: <code>-append</code>.</p>
+        </item>
+        <item>
+          <title><code>use_gdb</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Wait for a GDB connection on port <code>gdb_port</code>.</p>
+        </item>
+        <item>
+          <title><code>gdb_port</code> = <var>integer</var> 1-65535, default <code>1234</code></title>
+          <p>The port of the GDB server: <code>-gdb tcp::</code><var>port</var>.</p>
+        </item>
+        <item>
+          <title><code>acpi</code> = <var>boolean</var>, default <code>true</code></title>
+          <p>Give the machine ACPI. False turns it off: <code>-machine acpi=off</code>, or <code>-no-acpi</code> for a machine type without that property.</p>
+        </item>
+      </terms>
+      <section id="disks">
+        <title>Disks</title>
+        <p>The disks are in the subtables <code>disks.hda</code>, <code>disks.hdb</code>, <code>disks.hdc</code>, <code>disks.hdd</code>, <code>disks.fda</code>, <code>disks.fdb</code> and <code>disks.mtdblock</code>, one for each device, all of them always written:</p>
+        <terms>
+          <item>
+            <title><code>disks.</code><var>device</var><code>.image</code> = <var>image</var>, default <code>""</code></title>
+            <p>The image of the device, by name.</p>
+          </item>
+          <item>
+            <title><code>disks.</code><var>device</var><code>.private</code> = <var>boolean</var>, default <code>false</code></title>
+            <p>Write to a private copy-on-write file, <var>vm</var>_<var>device</var>.cow in the project directory, instead of the image, which then stays unchanged. Virtualbricks makes the file in the qcow2 format; one in another format, made by an older version, is still used.</p>
+          </item>
+        </terms>
+      </section>
+      <section id="network-cards">
+        <title>Network cards</title>
+        <p><code>nics</code> is an array of tables, the network cards in the order the guest sees them. Each card has these keys:</p>
+        <terms>
+          <item>
+            <title><code>kind</code> = <var>choice</var></title>
+            <p><code>"plug"</code> for a card plugged into a socket, <code>"socket"</code> for a card that other bricks plug into, or <code>"hostonly"</code> for a card on QEMU's user networking. A plug and a socket card need the <code>vde</code> network backend of QEMU, which Ubuntu builds its QEMU without: with a QEMU that lacks it, the card is there but unplugged, with a warning.</p>
+          </item>
+          <item>
+            <title><code>connect</code> = <var>string</var></title>
+            <p>With <code>"plug"</code>, the socket the card is plugged into; see <code>Connections</code>.</p>
+          </item>
+          <item>
+            <title><code>name</code> = <var>string</var></title>
+            <p>With <code>"socket"</code>, the name of the socket card, made of letters, digits, underscores, hyphens and dots. Other bricks connect to it as <var>vm</var>:<var>name</var>. When it's missing, or a card before it has the same, the card gets the first <code>sock_eth</code><var>N</var> that no socket card of the machine has, with a warning.</p>
+          </item>
+          <item>
+            <title><code>model</code> = <var>string</var>, default <code>"rtl8139"</code></title>
+            <p>The model of the card, for example <code>"e1000"</code> or <code>"virtio-net-pci"</code>. A model that the installed QEMU doesn't have becomes <code>"rtl8139"</code>, with a warning.</p>
+          </item>
+          <item>
+            <title><code>mac</code> = <var>string</var></title>
+            <p>The MAC address, as <code>"52:54:00:12:34:56"</code>. A missing or invalid address is replaced with a random one.</p>
+          </item>
+        </terms>
+      </section>
+    </section>
+    <section id="switch">
+      <title>switch</title>
+      <p>A VDE switch, <code>vde_switch</code>(1). Plugs connect to it by its name.</p>
+      <terms>
+        <item>
+          <title><code>ports</code> = <var>integer</var> 1-128, default <code>32</code></title>
+          <p>The number of ports.</p>
+        </item>
+        <item>
+          <title><code>hub_mode</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Send every packet to every port, like a hub.</p>
+        </item>
+        <item>
+          <title><code>fast_spanning_tree</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>Enable the fast spanning tree protocol.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="switchwrapper">
+      <title>switchwrapper</title>
+      <p>A VDE switch that Virtualbricks doesn't start, run by another program. Plugs connect to it by its name. It runs while a switch listens in its control directory, on the socket <code>ctl</code> there: Virtualbricks looks every second. Its <code>on_start</code> and <code>on_stop</code> run when the switch comes and goes, not for the switch already there when the project opens. Start and Stop are refused, as the other program starts and stops its switch; a brick that plugs into it starts only while that switch is there. A switch wrapper that runs keeps neither Virtualbricks from quitting, nor its project from closing, nor itself from being deleted.</p>
+      <terms>
+        <item>
+          <title><code>socket_path</code> = <var>path</var>, default <code>""</code></title>
+          <p>The control directory of the switch; without one, the switch wrapper isn't configured.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="tap">
+      <title>tap</title>
+      <p>A tap interface of the host, plugged into a switch through <code>vde_plug2tap</code>(1). It needs root, see <code>PRIVILEGES</code>. The interface takes the name of the brick, which Linux limits to 15 characters: New Brick, Rename and the console's <code>brick new</code> and <code>brick rename</code> refuse a longer one.</p>
+      <terms>
+        <item>
+          <title><code>connect</code> = <var>string</var>, default <code>""</code></title>
+          <p>The socket the tap is plugged into.</p>
+        </item>
+        <item>
+          <title><code>address_mode</code> = <var>choice</var>, default <code>"off"</code></title>
+          <p>How the interface gets its address: <code>"off"</code> for not at all, <code>"dhcp"</code>, or <code>"manual"</code> for <code>ip_address</code>, <code>netmask</code> and <code>gateway</code>.</p>
+        </item>
+        <item>
+          <title><code>ip_address</code> = <var>address</var>, default <code>"10.0.0.1"</code></title>
+          <p>The address of the interface.</p>
+        </item>
+        <item>
+          <title><code>netmask</code> = <var>address</var>, default <code>"255.255.255.0"</code></title>
+          <p>The netmask.</p>
+        </item>
+        <item>
+          <title><code>gateway</code> = <var>address</var>, default <code>""</code></title>
+          <p>The default gateway, or empty for none.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="capture">
+      <title>capture</title>
+      <p>Captures the packets of an interface of the host into a switch, through <code>vde_pcapplug</code>. It needs root, see <code>PRIVILEGES</code>.</p>
+      <terms>
+        <item>
+          <title><code>connect</code> = <var>string</var>, default <code>""</code></title>
+          <p>The socket the capture is plugged into.</p>
+        </item>
+        <item>
+          <title><code>interface</code> = <var>string</var>, default <code>""</code></title>
+          <p>The interface of the host, for example <code>"eth0"</code>.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="wire">
+      <title>wire</title>
+      <p>Connects two sockets, through <code>dpipe</code>(1) and <code>vde_plug</code>(1).</p>
+      <terms>
+        <item>
+          <title><code>endpoints</code> = <var>array</var>, default <code>["", ""]</code></title>
+          <p>The two sockets, left and right.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="netemu">
+      <title>netemu</title>
+      <p>A wire that emulates a network link: bandwidth, delay, buffer and loss, which can change over time between the states of a Markov chain. It runs <code>vde-netemu</code>.</p>
+      <terms>
+        <item>
+          <title><code>endpoints</code> = <var>array</var>, default <code>["", ""]</code></title>
+          <p>The two sockets, left and right. The values of a state apply from left to right, the ones that end in **_right_to_left** from right to left. A socket card of a virtual machine can only be the right one.</p>
+        </item>
+        <item>
+          <title><code>transition_period</code> = <var>integer</var> 1-2^53-1, default <code>100</code></title>
+          <p>How often the emulator may change state, in milliseconds.</p>
+        </item>
+        <item>
+          <title><code>transitions</code> = <var>array</var>, default <code>[[0.0]]</code></title>
+          <p>The transition matrix: the number in row <var>i</var> and column <var>j</var> is the probability of going from state <var>i</var> to state <var>j</var> at each period. It has a row and a column for each state.</p>
+        </item>
+      </terms>
+      <p><code>states</code> is an array of tables, at least one, and the first one is the state the emulator starts in. Each state has these keys:</p>
+      <terms>
+        <item>
+          <title><code>name</code> = <var>string</var>, default <code>"default name"</code></title>
+          <p>The name of the state.</p>
+        </item>
+        <item>
+          <title><code>bandwidth</code> = <var>integer</var> 0-2^53-1, default <code>125000</code></title>
+          <p>The bandwidth, in bytes per second, or 0 for no limit; from left to right when <code>bandwidth_symmetric</code> is false.</p>
+        </item>
+        <item>
+          <title><code>bandwidth_right_to_left</code> = <var>integer</var> 0-2^53-1, default <code>125000</code></title>
+          <p>The bandwidth from right to left.</p>
+        </item>
+        <item>
+          <title><code>bandwidth_symmetric</code> = <var>boolean</var>, default <code>true</code></title>
+          <p>Use <code>bandwidth</code> in both directions.</p>
+        </item>
+        <item>
+          <title><code>delay</code> = <var>integer</var> 0-2^53-1, default <code>0</code></title>
+          <p>The propagation delay, one way, in milliseconds; from left to right when <code>delay_symmetric</code> is false.</p>
+        </item>
+        <item>
+          <title><code>delay_right_to_left</code> = <var>integer</var> 0-2^53-1, default <code>0</code></title>
+          <p>The delay from right to left.</p>
+        </item>
+        <item>
+          <title><code>delay_symmetric</code> = <var>boolean</var>, default <code>true</code></title>
+          <p>Use <code>delay</code> in both directions.</p>
+        </item>
+        <item>
+          <title><code>buffer_size</code> = <var>integer</var> 0-2^31-1, default <code>75000</code></title>
+          <p>The size of the channel buffer, in bytes, or 0 for no limit; from left to right when <code>buffer_size_symmetric</code> is false.</p>
+        </item>
+        <item>
+          <title><code>buffer_size_right_to_left</code> = <var>integer</var> 0-2^31-1, default <code>75000</code></title>
+          <p>The size of the channel buffer from right to left.</p>
+        </item>
+        <item>
+          <title><code>buffer_size_symmetric</code> = <var>boolean</var>, default <code>true</code></title>
+          <p>Use <code>buffer_size</code> in both directions.</p>
+        </item>
+        <item>
+          <title><code>loss</code> = <var>number</var> 0-100, default <code>0.0</code></title>
+          <p>The percentage of packets lost; from left to right when <code>loss_symmetric</code> is false.</p>
+        </item>
+        <item>
+          <title><code>loss_right_to_left</code> = <var>number</var> 0-100, default <code>0.0</code></title>
+          <p>The percentage of packets lost from right to left.</p>
+        </item>
+        <item>
+          <title><code>loss_symmetric</code> = <var>boolean</var>, default <code>true</code></title>
+          <p>Use <code>loss</code> in both directions.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="tunnellisten">
+      <title>tunnellisten</title>
+      <p>The server end of an encrypted tunnel between two machines, through <code>vde_cryptcab</code>(1).</p>
+      <terms>
+        <item>
+          <title><code>connect</code> = <var>string</var>, default <code>""</code></title>
+          <p>The socket the tunnel is plugged into.</p>
+        </item>
+        <item>
+          <title><code>listen_port</code> = <var>integer</var> 1-65535, default <code>7667</code></title>
+          <p>The UDP port to listen on.</p>
+        </item>
+        <item>
+          <title><code>password</code> = <var>string</var>, default <code>""</code></title>
+          <p>The password of the tunnel. It's stored in clear text.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="tunnelconnect">
+      <title>tunnelconnect</title>
+      <p>The client end of an encrypted tunnel, through <code>vde_cryptcab</code>(1).</p>
+      <terms>
+        <item>
+          <title><code>connect</code> = <var>string</var>, default <code>""</code></title>
+          <p>The socket the tunnel is plugged into.</p>
+        </item>
+        <item>
+          <title><code>server_host</code> = <var>string</var>, default <code>""</code></title>
+          <p>The host that runs the server end.</p>
+        </item>
+        <item>
+          <title><code>server_port</code> = <var>integer</var> 1-65535, default <code>7667</code></title>
+          <p>The UDP port of the server end.</p>
+        </item>
+        <item>
+          <title><code>local_port</code> = <var>integer</var> 1-65535, default <code>10771</code></title>
+          <p>The local UDP port.</p>
+        </item>
+        <item>
+          <title><code>password</code> = <var>string</var>, default <code>""</code></title>
+          <p>The password of the tunnel. It's stored in clear text.</p>
+        </item>
+      </terms>
+    </section>
+    <section id="router">
+      <title>router</title>
+      <p>A router. It has only the two event keys.</p>
+    </section>
+  </section>
+  <section id="privileges">
+    <title>Privileges</title>
+    <p>A <code>tap</code> and a <code>capture</code> open interfaces of the host, and the <code>kernel_samepage_merging</code> setting writes to <var>/sys</var>: they need root. When Virtualbricks doesn't run as root, it runs them with <code>sudo</code>(8), in one of two ways:</p>
+    <terms>
+      <item>
+        <title><code>sudo -A</code></title>
+        <p>When an askpass helper is configured: the program of <code>SUDO_ASKPASS</code>, or of a <code>Path askpass</code> line of <var>/etc/sudo.conf</var>, as <code>ssh-askpass</code>(1). sudo runs it to ask for your password in a window, so it needs a display.</p>
+      </item>
+      <item>
+        <title><code>sudo -n</code></title>
+        <p>Otherwise. sudo never asks for a password: when it would have to, it fails at once, and the brick doesn't start. This is the way on a machine without a display, with a rule of <code>sudoers</code>(5) that lets you run the programs of the bricks, from the folder of the <code>vde_path</code> setting, without a password:</p>
+        <screen>alice ALL=(root) NOPASSWD: /usr/bin/vde_plug2tap, \
+    /usr/bin/vde_pcapplug</screen>
+      </item>
+    </terms>
+    <p>The <code>kernel_samepage_merging</code> setting runs <code>tee</code>(1) as root, which writes to <var>/sys/kernel/mm/ksm/run</var> what Virtualbricks gives it: 1 to turn KSM on, 0 to turn it off. A rule of <code>sudoers</code>(5) that names the file lets you run it without a password, and lets <code>tee</code> write to that file alone:</p>
+    <screen>alice ALL=(root) NOPASSWD: /usr/bin/tee /sys/kernel/mm/ksm/run</screen>
+    <p>Or turn KSM on at boot, with a <code>tmpfiles.d</code>(5) line, and leave <code>kernel_samepage_merging</code> false:</p>
+    <screen>w /sys/kernel/mm/ksm/run - - - - 1</screen>
+    <p>The settings of older versions have a <code>sudo</code> key, the program that did this: it's reported, ignored, and dropped at the next save.</p>
+  </section>
+  <section id="migration">
+    <title>Migration</title>
+    <p>The first time Virtualbricks starts after an upgrade from 2.1 or older, it converts <var>~/.virtualbricks.conf</var> into <code>settings.toml</code> and <code>state.toml</code>, and the <var>.project</var> file of each project into a <code>project.toml</code> next to it, and shows what it converted in a window. The settings of <var>~/.virtualbricks.conf</var> that are now a project's, as <code>qemupath</code>, go into each converted project. The keys get the names of this page, as <code>qemupath</code> becomes <code>qemu_path</code> and <code>numports</code> becomes <code>ports</code>, and so do the commands of the events become actions, as <code>sw1 config numports=16</code> becomes <code>brick set sw1 ports=16</code>. The old files are left as they were.</p>
+    <p>The same conversion can be tried on copies, into a new folder laid out like the XDG directories:</p>
+    <screen>python -m virtualbricks.migrate --settings ~/.virtualbricks.conf \
+    ~/vb-copy /tmp/vb-test</screen>
+    <p>Started with <code>--workspace</code>, Virtualbricks converts the projects of that directory in the same way.</p>
+    <p><code>virtualbricks-migrate</code> opens the same conversion in a window, and <code>python -m virtualbricks.migrate --help</code> lists every option. An archive of an old project is converted when it's imported.</p>
+  </section>
+  <section id="files">
+    <title>Files</title>
+    <terms>
+      <item>
+        <title><var>$XDG_CONFIG_HOME</var>/virtualbricks/settings.toml</title>
+        <p>The settings.</p>
+      </item>
+      <item>
+        <title><var>$XDG_STATE_HOME</var>/virtualbricks/state.toml</title>
+        <p>The state.</p>
+      </item>
+      <item>
+        <title><var>$XDG_STATE_HOME</var>/virtualbricks/migration-report.txt</title>
+        <p>The report of the last migration.</p>
+      </item>
+      <item>
+        <title><var>workspace</var>/<var>project</var>/project.toml</title>
+        <p>A project.</p>
+      </item>
+      <item>
+        <title><var>workspace</var>/shared_images/</title>
+        <p>The shared images: the images that the projects of the workspace share, which stay when a project is removed. The import copies the images of an archive there, and so does the Add Image of the Images tab, by default. Virtualbricks 2.1 had them in <var>workspace</var>/vimages/, which stays as it was: the projects that use its images keep their paths.</p>
+      </item>
+      <item>
+        <title><var>workspace</var>/.virtualbricks.lock</title>
+        <p>The lock of the workspace: the Virtualbricks that runs there holds it alone, in each single-instance mode but <code>none</code>, so two never share a workspace, even a directory that two users share.</p>
+      </item>
+      <item>
+        <title><var>$XDG_RUNTIME_DIR</var>/virtualbricks/<var>key</var>/</title>
+        <p>The runtime directory of a workspace, named by a key of eight letters and digits made from its path, so that two projects of the same name in two workspaces are apart. <var>.workspace</var> in it links to the workspace.</p>
+      </item>
+      <item>
+        <title><var>$XDG_RUNTIME_DIR</var>/virtualbricks/<var>key</var>/<var>project</var>/</title>
+        <p>The sockets and consoles of the running bricks, removed when you log out.</p>
+      </item>
+      <item>
+        <title><var>/tmp/virtualbricks.lock</var></title>
+        <p>The system lock. In the single-instance mode <code>system</code>, the default without <code>--workspace</code>, Virtualbricks holds it alone: one runs on the machine, whoever runs it and whatever its workspace. In the modes <code>user</code> and <code>workspace</code> it shares it with the others in those modes, so it doesn't start while one holds it alone. The mode is set by <code>virtualbricks --lock</code> <var>mode</var>.</p>
+      </item>
+      <item>
+        <title><var>$XDG_RUNTIME_DIR</var>/virtualbricks/.lock</title>
+        <p>The lock of your user, held alone in the single-instance mode <code>user</code>: one Virtualbricks for each user. In the mode <code>workspace</code>, the default with <code>--workspace</code>, the Virtualbricks of your workspaces share it: one for each workspace. The migration of your files holds it alone too. In the mode <code>none</code> Virtualbricks takes no lock, and the others don't see it. The system releases the locks when Virtualbricks ends, even on a crash.</p>
+      </item>
+      <item>
+        <title><var>$XDG_RUNTIME_DIR</var>/virtualbricks/<var>key</var>/.control</title>
+        <p>The control socket of a workspace, where a Virtualbricks started with <code>--listen</code> answers <code>virtualbricks --command</code> in Twisted's AMP; <var>.control.lock</var> beside it is held by the one that listens. A description after <code>--listen</code> puts a socket elsewhere, and with <code>protocol=json</code> it speaks the JSON protocol; see <link xref="command-line">virtualbricks(1)</link>.</p>
+      </item>
+      <item>
+        <title><var>$XDG_RUNTIME_DIR</var>/virtualbricks/.connect-<var>pid</var>/</title>
+        <p>The sockets of the terminals of the consoles that the windows of another Virtualbricks, <code>virtualbricks --connect</code>, process <var>pid</var>, open; removed when they close. The folders without a dot are those of the workspaces.</p>
+      </item>
+      <item>
+        <title><var>$XDG_CONFIG_HOME</var>/virtualbricks/token</title>
+        <p>The token of the <code>tcp</code> and <code>ssl</code> control sockets: a client proves that it knows it before its first command. The first Virtualbricks started with such a socket makes it, readable by you alone; copy it to the machines of the clients. See <link xref="command-line">virtualbricks(1)</link>.</p>
+      </item>
+      <item>
+        <title><var>/etc/sudo.conf</var></title>
+        <p>Its <code>Path askpass</code> line makes Virtualbricks run sudo with <code>-A</code>, as <code>SUDO_ASKPASS</code> does; see <code>PRIVILEGES</code>.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="environment">
+    <title>Environment</title>
+    <terms>
+      <item>
+        <title><code>XDG_CONFIG_HOME</code>, <code>XDG_STATE_HOME</code></title>
+        <p>Where the settings and the state are, <var>~/.config</var> and <var>~/.local/state</var> when they are not set. Relative paths are ignored, as the XDG Base Directory specification says.</p>
+      </item>
+      <item>
+        <title><code>XDG_RUNTIME_DIR</code></title>
+        <p>Where the sockets are. When it's not set, they are in a directory <var>virtualbricks-</var>uid of the temporary directory, readable only by you.</p>
+      </item>
+      <item>
+        <title><code>SUDO_ASKPASS</code></title>
+        <p>The askpass helper of <code>sudo</code>(8): when it's set, Virtualbricks runs sudo with <code>-A</code>; see <code>PRIVILEGES</code>.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="examples">
+    <title>Examples</title>
+    <p>A <code>settings.toml</code> as Virtualbricks writes it at its first start, without its comments:</p>
+    <screen>format = 1
+workspace = "/home/alice/.virtualbricks"
+terminal = "x-terminal-emulator -e {command}"
+kernel_samepage_merging = false
+tray_icon = true
+warn_missing_programs = true
+audio_driver = "alsa"</screen>
+    <p>A <code>state.toml</code> after projects were opened in two workspaces, the last in <var>~/net101</var>, without its comments:</p>
+    <screen>format = 1
+workspaces = [
+    {path = "/home/alice/net101", current_project = "ospf"},
+    {path = "/srv/labs", current_project = "lab"},
+]</screen>
+    <p>A <code>project.toml</code> with a virtual machine, two switches connected by a network emulator with two states, a tap and an event, without its comments. The virtual machine is shortened: Virtualbricks writes all of its keys, and the six empty disks.</p>
+    <screen>format = 1
+
+[settings]
+allow_female_plugs = false
+qemu_path = "/usr/bin"
+vde_path = "/usr/bin"
+
+[images.debian]
+path = "/home/alice/.virtualbricks/shared_images/debian.qcow2"
+description = "Debian 12\nbase image"
+
+[events.start_lab]
+icon = ""
+delay = 5
+actions = [
+    {kind = "start", target = "router1"},
+    {kind = "shell", command = "logger lab started"},
+]
+
+[bricks.sw1]
+type = "switch"
+icon = ""
+on_start = "start_lab"
+on_stop = ""
+ports = 16
+hub_mode = false
+fast_spanning_tree = true
+
+[bricks.sw2]
+type = "switch"
+icon = ""
+on_start = ""
+on_stop = ""
+ports = 32
+hub_mode = false
+fast_spanning_tree = false
+
+[bricks.router1]
+type = "qemu"
+icon = ""
+on_start = ""
+on_stop = ""
+qemu_program = "qemu-system-x86_64"
+machine_type = ""
+cpu_model = ""
+use_kvm = true
+cpus = 2
+memory = 1024
+# ... and the other keys of a qemu brick
+
+[bricks.router1.disks.hda]
+image = "debian"
+private = true
+
+# ... and hdb to mtdblock, with image = "" and private = false
+
+[[bricks.router1.nics]]
+kind = "plug"
+connect = "sw1"
+model = "e1000"
+mac = "52:54:00:12:34:01"
+
+[[bricks.router1.nics]]
+kind = "hostonly"
+model = "virtio-net-pci"
+mac = "52:54:00:12:34:02"
+
+[[bricks.router1.nics]]
+kind = "socket"
+name = "lan"
+model = "e1000"
+mac = "52:54:00:12:34:03"
+
+[bricks.tap0]
+type = "tap"
+icon = ""
+on_start = ""
+on_stop = ""
+address_mode = "manual"
+ip_address = "10.0.0.1"
+netmask = "255.255.255.0"
+gateway = ""
+connect = "sw2"
+
+[bricks.wan]
+type = "netemu"
+icon = ""
+on_start = ""
+on_stop = ""
+transition_period = 100
+transitions = [[0.0, 0.2], [0.5, 0.0]]
+endpoints = ["sw1", "sw2"]
+
+[[bricks.wan.states]]
+name = "good"
+bandwidth = 125000
+bandwidth_right_to_left = 125000
+bandwidth_symmetric = true
+delay = 10
+delay_right_to_left = 0
+delay_symmetric = true
+buffer_size = 75000
+buffer_size_right_to_left = 75000
+buffer_size_symmetric = true
+loss = 0.0
+loss_right_to_left = 0.0
+loss_symmetric = true
+
+[[bricks.wan.states]]
+name = "congested"
+bandwidth = 125000
+bandwidth_right_to_left = 125000
+bandwidth_symmetric = true
+delay = 200
+delay_right_to_left = 50
+delay_symmetric = false
+buffer_size = 75000
+buffer_size_right_to_left = 75000
+buffer_size_symmetric = true
+loss = 2.5
+loss_right_to_left = 0.0
+loss_symmetric = true</screen>
+  </section>
+  <section id="bugs">
+    <title>Bugs</title>
+    <p>The <code>address_mode</code>, <code>ip_address</code>, <code>netmask</code> and <code>gateway</code> of a tap are stored but not applied: the interface gets no address from Virtualbricks.</p>
+  </section>
+  <section id="see-also">
+    <title>See also</title>
+    <p><link xref="command-line">virtualbricks(1)</link>, <link xref="vbp-format">virtualbricks-vbp(5)</link>, <link xref="archive-protocol">virtualbricks-archive(7)</link>, <code>qemu</code>(1), <code>vde_switch</code>(1), <code>vde_plug2tap</code>(1), <code>vde_cryptcab</code>(1), <code>dpipe</code>(1), <code>sudo</code>(8), <code>sudoers</code>(5), <code>sudo.conf</code>(5), <code>tmpfiles.d</code>(5)</p>
+    <p>TOML 1.0: <link href="https://toml.io/en/v1.0.0">https://toml.io/en/v1.0.0</link></p>
+    <p>XDG Base Directory Specification: <link href="https://specifications.freedesktop.org/basedir-spec/latest/">https://specifications.freedesktop.org/basedir-spec/latest/</link></p>
+  </section>
+</page>

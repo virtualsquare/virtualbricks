@@ -4,6 +4,11 @@ section: 5
 header: Virtualbricks Manual
 footer: virtualbricks VERSION
 date: DATE
+help:
+  id: config-files
+  title: Configuration files
+guide: "index#reference"
+sort: 2
 ---
 
 # NAME

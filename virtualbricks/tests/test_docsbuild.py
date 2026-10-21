@@ -375,24 +375,196 @@ class TestMallard(BuildTestCase):
             '# Lab\n\n![The lab](lab.gif){alt="A lab."}\n', "unknown type"
         )
 
-    def test_for_one_output(self):
-        page = self.page("""\
-            # Lab
-
-            ::: {test="target:html"}
-            On the web.
-            :::
-            """)
-        self.assertIn(
-            'xmlns:if="http://projectmallard.org/if/1.0/" type="topic"', page
-        )
-        self.assertIn('<p if:test="target:html">On the web.</p>', page)
-
     def test_nothing_dropped(self):
         # what the guide doesn't use stops the build
         self.assertError("# Lab\n\n> A quote.\n", "BlockQuote")
         self.assertError("# Lab\n\n~~gone~~\n", "Strikeout")
         self.assertError("# Lab\n\n::: aside\nA.\n:::\n", "div of class aside")
+        # the conditions of Mallard: the reference is in the guide
+        self.assertError(
+            '# Lab\n\n::: {test="target:html"}\nA.\n:::\n', "div of class"
+        )
+
+
+class TestReference(BuildTestCase):
+    """A man page, as a page of the reference in the guide."""
+
+    FRONT = textwrap.dedent("""\
+        ---
+        title: LAB
+        section: 1
+        footer: lab VERSION
+        date: DATE
+        help:
+          id: lab-line
+          title: The lab line
+        guide: "index#reference"
+        sort: 1
+        ---
+
+        # NAME
+
+        lab - labs of machines, and their *console*
+
+        """)
+    # the man pages of the reference, by their names
+    REFERENCES = {"lab": ("1", "lab-line"), "lab-config": ("5", "lab-files")}
+
+    def document(self, markdown, front=None):
+        folder = self.mktemp()
+        os.makedirs(folder)
+        path = os.path.join(folder, "lab.1.md")
+        with open(path, "w", encoding="utf-8") as fp:
+            fp.write(self.FRONT if front is None else front)
+            fp.write(textwrap.dedent(markdown))
+        return path, self.build.tree(self.pandoc, path, self.build.MARKDOWN)
+
+    def page(self, markdown, front=None):
+        path, document = self.document(markdown, front)
+        page_id = self.build.reference_id(document, path)
+        writer = self.build.ReferenceWriter(page_id, document, self.REFERENCES)
+        return self.build.written(writer, path)
+
+    def body(self, markdown):
+        """The lines of the page after its list of sections."""
+
+        lines = [line.strip() for line in self.page(markdown).splitlines()]
+        return lines[lines.index('<links type="section"/>') + 1 : -1]
+
+    def p(self, markdown):
+        """The paragraph of this text, in a section."""
+
+        lines = self.body("# DESCRIPTION\n\n" + markdown)
+        (line,) = lines[2:-1]
+        return line
+
+    def assertError(self, markdown, message, front=None):
+        error = self.assertRaises(self.build.Error, self.page, markdown, front)
+        self.assertIn(message, str(error))
+
+    def test_page(self):
+        self.assertEqual(
+            self.page("# DESCRIPTION\n\nA lab.\n"),
+            textwrap.dedent("""\
+                <?xml version="1.0" encoding="utf-8"?>
+                <page xmlns="http://projectmallard.org/1.0/" type="topic" id="lab-line">
+                  <info>
+                    <link type="guide" xref="index#reference"/>
+                    <title type="sort">1</title>
+                    <desc>lab(1): labs of machines, and their <var>console</var></desc>
+                  </info>
+                  <title>The lab line</title>
+                  <links type="section"/>
+                  <section id="description">
+                    <title>Description</title>
+                    <p>A lab.</p>
+                  </section>
+                </page>
+                """),  # noqa: E501
+        )
+
+    def test_synopsis(self):
+        self.assertEqual(
+            self.body("# SYNOPSIS\n\n**lab** *file*\\\n**lab** **--help**\n"),
+            [
+                '<section id="synopsis">',
+                "<title>Synopsis</title>",
+                "<synopsis>",
+                "<p><code>lab</code> <var>file</var></p>",
+                "<p><code>lab</code> <code>--help</code></p>",
+                "</synopsis>",
+                "</section>",
+            ],
+        )
+
+    def test_line_break_elsewhere(self):
+        self.assertError("# DESCRIPTION\n\nOne\\\ntwo\n", "line break")
+
+    def test_marks(self):
+        # bold is literal text, italics a part to replace
+        self.assertEqual(
+            self.p("**--listen** **unix:***path***:protocol=json**, `ls`"),
+            "<p><code>--listen</code> <code>unix:</code><var>path</var>"
+            "<code>:protocol=json</code>, <code>ls</code></p>",
+        )
+
+    def test_headings(self):
+        self.assertEqual(
+            [line for line in self.body("""\
+                    # THE JSON PROTOCOL
+
+                    ## The **Hello** box
+
+                    ### TOML OF VIRTUALBRICKS
+
+                    # CONTENTS.TOML {title="contents.toml"}
+                    """) if line.startswith(("<title>", "<section"))],
+            [
+                '<section id="the-json-protocol">',
+                "<title>The JSON protocol</title>",
+                '<section id="the-hello-box">',
+                "<title>The <code>Hello</code> box</title>",
+                '<section id="toml-of-virtualbricks">',
+                "<title>TOML of Virtualbricks</title>",
+                '<section id="contents.toml">',
+                "<title>contents.toml</title>",
+            ],
+        )
+
+    def test_sections_nest(self):
+        body = self.body("# ONE\n\n## Two\n\n### Three\n\n# FOUR\n")
+        self.assertEqual(
+            [line for line in body if "section" in line],
+            [
+                '<section id="one">',
+                '<section id="two">',
+                '<section id="three">',
+                "</section>",
+                "</section>",
+                "</section>",
+                '<section id="four">',
+                "</section>",
+            ],
+        )
+
+    def test_levels(self):
+        self.assertError("## Two\n", "level 2 there: Two")
+        self.assertError("# ONE\n\n### Three\n", "level 3 there")
+        self.assertError(
+            "# ONE\n\n## Two\n\n### Three\n\n#### Four\n", "level 4"
+        )
+
+    def test_cross_references(self):
+        self.assertEqual(
+            self.p(
+                "**lab-config**(5), **lab**(1), **lab-config**(7), "
+                "**tar**(1)."
+            ),
+            '<p><link xref="lab-files">lab-config(5)</link>, '
+            "<code>lab</code>(1), <code>lab-config</code>(7), "
+            "<code>tar</code>(1).</p>",
+        )
+
+    def test_numbered(self):
+        # not a procedure
+        self.assertIn(
+            '<list type="numbered">', self.body("# ORDER\n\n1. one\n2. two\n")
+        )
+
+    def test_front_matter(self):
+        front = self.FRONT.replace("sort: 1\n", "sort: 1\nseealso: lab\n")
+        self.assertError("", "['seealso']", front)
+
+    def test_help_in_front_matter(self):
+        front = self.FRONT.replace("  id: lab-line\n", "")
+        self.assertError("", "an id and a title", front)
+        front = self.FRONT.replace("help:\n  id: lab-line\n", "x:\n  i: l\n")
+        self.assertError("", "no help", front)
+
+    def test_name(self):
+        front = self.FRONT.split("# NAME")[0]
+        self.assertError("# DESCRIPTION\n\nA lab.\n", "has its NAME", front)
+        self.assertError("# NAME\n\nlab, a lab\n", "name - what it is", front)
 
 
 class TestBuild(BuildTestCase):
@@ -404,6 +576,9 @@ class TestBuild(BuildTestCase):
         section: 1
         footer: lab VERSION
         date: DATE
+        help:
+          id: lab
+          title: The lab
         ---
 
         # NAME
@@ -450,6 +625,7 @@ class TestBuild(BuildTestCase):
                 [
                     "mallard/figures/lab.png",
                     "mallard/index.page",
+                    "mallard/lab.page",
                     "man/lab.1",
                 ],
                 [],
@@ -457,6 +633,9 @@ class TestBuild(BuildTestCase):
         )
         self.assertIn(
             "<title>Help</title>", self.read("built/mallard/index.page")
+        )
+        self.assertIn(
+            "<title>The lab</title>", self.read("built/mallard/lab.page")
         )
         self.assertEqual(self.read("built/mallard/figures/lab.png"), "picture")
         self.assertIn('"2026\\-10\\-21"', self.read("built/man/lab.1"))
@@ -473,8 +652,17 @@ class TestBuild(BuildTestCase):
         )
         # the folder left empty goes too
         self.assertEqual(
-            os.listdir(os.path.join(self.root, "built", "mallard")),
-            ["index.page"],
+            sorted(os.listdir(os.path.join(self.root, "built", "mallard"))),
+            ["index.page", "lab.page"],
+        )
+
+    def test_one_id_each(self):
+        """A page of the guide can't take the id of one of the reference."""
+
+        self.write("guide/lab.md", "# A lab\n")
+        error = self.assertRaises(self.build.Error, self.build.build)
+        self.assertEqual(
+            str(error), "lab.md: a page of the reference has its id"
         )
 
     def test_man_date(self):
@@ -484,7 +672,10 @@ class TestBuild(BuildTestCase):
         self.patch(self.build, "today", lambda: "2026-12-01")
         self.assertEqual(self.build.build(), ([], []))
         self.write("man/lab.1.md", self.MAN_PAGE + "\n# BUGS\n\nNone.\n")
-        self.assertEqual(self.build.build(), (["man/lab.1"], []))
+        # and its page in the guide
+        self.assertEqual(
+            self.build.build(), (["mallard/lab.page", "man/lab.1"], [])
+        )
         self.assertIn('"2026\\-12\\-01"', self.read("built/man/lab.1"))
 
     def test_man_date_of_a_release(self):

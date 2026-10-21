@@ -4,6 +4,11 @@ section: 5
 header: Virtualbricks Manual
 footer: virtualbricks VERSION
 date: DATE
+help:
+  id: vbp-format
+  title: The archive format
+guide: "index#reference"
+sort: 3
 ---
 
 # NAME
@@ -209,7 +214,7 @@ The order is the writer's promise; a reader accepts any order. With
 members of the head that the list names, and stops there, whatever the size
 of the archive. Without **contents.toml**, it reads the archive to its end.
 
-# CONTENTS.TOML
+# CONTENTS.TOML {title="contents.toml"}
 
 The list of the other members, in the order of the archive, in TOML 1.0 and
 UTF-8. The list of the example:

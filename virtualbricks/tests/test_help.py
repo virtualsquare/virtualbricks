@@ -109,6 +109,39 @@ class TestThePages(PagesTestCase):
             self.assertIn(guides[0], sections, name)
 
 
+class TestTheReference(PagesTestCase):
+    """The man pages, as pages of the guide."""
+
+    def test_a_page_for_each_man_page(self):
+        man = os.path.join(ROOT, "docs", "man")
+        sources = glob.glob(os.path.join(man, "*.[1-9].md"))
+        index = ET.parse(os.path.join(PAGES, "index.page")).getroot()
+        self.assertIn(
+            "reference",
+            [section.get("id") for section in index.iter(f"{MALLARD}section")],
+        )
+        in_reference = [
+            name
+            for name in page_names()
+            if any(
+                link.get("xref") == "index#reference"
+                for link in ET.parse(os.path.join(PAGES, f"{name}.page"))
+                .getroot()
+                .iter(f"{MALLARD}link")
+            )
+        ]
+        self.assertEqual(len(in_reference), len(sources))
+
+    def test_no_link_leaves_yelp(self):
+        # the man pages are pages of the guide: Yelp opens no other program
+        for name in page_names():
+            root = ET.parse(os.path.join(PAGES, f"{name}.page")).getroot()
+            for link in root.iter(f"{MALLARD}link"):
+                self.assertFalse(
+                    (link.get("href") or "").startswith("man:"), name
+                )
+
+
 class TestTheFigures(PagesTestCase):
     """The pictures of docs/guide/figures/, which the end-to-end tests take."""
 
