@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""F1 in a window opens its page of the guide."""
+"""F1 in a window opens its page of the guide; a file chooser calls back."""
 
 from twisted.trial import unittest
 
@@ -38,6 +38,35 @@ if has_display:
 
     class Named(Plain):
         help_page = "settings"
+
+
+class FakeChooser:
+    """A file chooser that never shows: respond() answers as its user."""
+
+    def __init__(self, filename):
+        self.filename = filename
+        self.modal = self.shown = self.destroyed = False
+        self.handlers = []
+
+    def set_modal(self, modal):
+        self.modal = modal
+
+    def connect(self, signal, handler):
+        assert signal == "response", signal
+        self.handlers.append(handler)
+
+    def show(self):
+        self.shown = True
+
+    def get_filename(self):
+        return self.filename
+
+    def destroy(self):
+        self.destroyed = True
+
+    def respond(self, response):
+        for handler in self.handlers:
+            handler(self, response)
 
 
 class TestF1(unittest.TestCase):
@@ -93,3 +122,32 @@ class TestF1(unittest.TestCase):
     def test_another_key(self):
         self.assertFalse(self.press(Named(), Gdk.KEY_F2))
         self.assertEqual(self.opened, [])
+
+
+class TestAskFile(unittest.TestCase):
+
+    if not has_display:  # pragma: no cover
+        skip = "GTK can't open a display"
+
+    def ask(self, response):
+        """What ask_file() gives once its chooser has response."""
+
+        chooser = FakeChooser("/lab/deb.qcow2")
+        answers = []
+        base.ask_file(chooser, answers.append)
+        self.assertTrue(chooser.shown)
+        self.assertTrue(chooser.modal)
+        # kept while it shows
+        self.assertIn(chooser, base._choosers)
+        self.assertEqual(answers, [])
+        chooser.respond(response)
+        self.assertTrue(chooser.destroyed)
+        self.assertNotIn(chooser, base._choosers)
+        return answers
+
+    def test_chosen(self):
+        self.assertEqual(self.ask(Gtk.ResponseType.ACCEPT), ["/lab/deb.qcow2"])
+
+    def test_cancelled(self):
+        self.assertEqual(self.ask(Gtk.ResponseType.CANCEL), [None])
+        self.assertEqual(self.ask(Gtk.ResponseType.DELETE_EVENT), [None])

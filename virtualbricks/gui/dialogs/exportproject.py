@@ -45,7 +45,7 @@ from virtualbricks.config.archive import (
     member_kind,
     report_from_list,
 )
-from virtualbricks.gui.dialogs.base import Window
+from virtualbricks.gui.dialogs.base import Window, ask_file
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _, ngettext
 
@@ -362,12 +362,14 @@ class ExportProjectDialog(Window):
         self.export_button.set_sensitive(bool(output) and problem is None)
 
     def on_choose_clicked(self, button: Gtk.Button) -> None:
-        path = self.choose_file()
-        if path:
+        self.choose_file(self.on_file_chosen)
+
+    def on_file_chosen(self, path: str | None) -> None:
+        if path and not self.destroyed:
             self.filename_entry.set_text(archive_filename(path))
 
-    def choose_file(self) -> str | None:
-        """Ask where to save; None if cancelled."""
+    def choose_file(self, done: Callable[[str | None], None]) -> None:
+        """Ask where to save: done(the file), done(None) if cancelled."""
 
         chooser = Gtk.FileChooserNative.new(
             _("Export Project"),
@@ -385,17 +387,17 @@ class ExportProjectDialog(Window):
         vbp.set_name(_("Virtualbricks archives"))
         vbp.add_pattern("*.vbp")
         chooser.add_filter(vbp)
-        try:
-            if chooser.run() == Gtk.ResponseType.ACCEPT:
-                return chooser.get_filename()
-            return None
-        finally:
-            chooser.destroy()
+        ask_file(chooser, done)
 
-    def confirm_overwrite(self, path: str) -> bool:
+    def confirm_overwrite(
+        self, path: str, replace: Callable[[str], None]
+    ) -> None:
+        """Ask whether to replace the archive at path: replace(path) if so."""
+
         dialog = Gtk.MessageDialog(
             transient_for=self.window,
             modal=True,
+            destroy_with_parent=True,
             message_type=Gtk.MessageType.QUESTION,
             text=_('"{name}" already exists. Replace it?').format(
                 name=os.path.basename(path)
@@ -407,12 +409,16 @@ class ExportProjectDialog(Window):
             ).format(folder=os.path.dirname(path))
         )
         dialog.add_button(_("Cancel"), Gtk.ResponseType.CANCEL)
-        replace = dialog.add_button(_("Replace"), Gtk.ResponseType.ACCEPT)
-        replace.get_style_context().add_class("destructive-action")
-        try:
-            return dialog.run() == Gtk.ResponseType.ACCEPT
-        finally:
+        button = dialog.add_button(_("Replace"), Gtk.ResponseType.ACCEPT)
+        button.get_style_context().add_class("destructive-action")
+
+        def on_response(dialog: Gtk.MessageDialog, response: int) -> None:
             dialog.destroy()
+            if response == Gtk.ResponseType.ACCEPT and not self.destroyed:
+                replace(path)
+
+        dialog.connect("response", on_response)
+        dialog.show()
 
     # Running the export
 
@@ -420,9 +426,10 @@ class ExportProjectDialog(Window):
         output = self.output()
         if not output:
             return
-        if os.path.exists(output) and not self.confirm_overwrite(output):
-            return
-        self.start(output)
+        if os.path.exists(output):
+            self.confirm_overwrite(output, self.start)
+        else:
+            self.start(output)
 
     def start(self, output: str) -> None:
         self.progress_bar.set_fraction(0.0)

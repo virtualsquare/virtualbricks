@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 13:06+0200\n"
+"POT-Creation-Date: 2026-10-21 16:22+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -3061,6 +3061,24 @@ msgstr ""
 #: virtualbricks/gui/dialogs/importdialog.py
 #, python-brace-format
 msgid "Use this computer's {key}, {ours}, instead of {theirs}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "The archive doesn't have this image."
+msgid_plural "The archive has none of these images."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, fuzzy
+msgid "The archive has this image."
+msgid_plural "The archive has all these images."
+msgstr[0] "Guardar proyecto como"
+msgstr[1] "Guardar proyecto como"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, python-brace-format
+msgid "The archive has {found} of these {total} images."
 msgstr ""
 
 #: virtualbricks/gui/dialogs/importdialog.py

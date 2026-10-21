@@ -225,6 +225,28 @@ class TestPlan(ImportingTestCase):
         )
         self.assertEqual((gone.known, gone.choice), (True, "skip"))
 
+    def test_a_choice_before_the_end_of_the_archive(self):
+        mine = self.file(self.path("mine.qcow2"))
+        plan = self.plan({"deb": "/gone", "late": "/gone"}, {}, complete=False)
+        deb, late = plan.images
+        # while the archive is read: deb left unset, mine used for late
+        deb.choice, deb.path = "skip", ""
+        late.choice, late.path = "use", mine
+        job = plan.job(self.workspace, "/ws/.importing-x", "")
+        self.assertEqual(
+            [(i["name"], i["choice"], i["path"]) for i in job["images"]],
+            [("deb", "skip", ""), ("late", "use", mine)],
+        )
+        # the archive had deb, not late: both choices stay
+        update_plan(plan, self.contents(plan.contents.data, {"deb": 7}))
+        self.assertEqual(
+            (deb.known, deb.choice, deb.in_archive), (True, "skip", 7)
+        )
+        self.assertEqual(
+            (late.known, late.choice, late.path, late.in_archive),
+            (True, "use", mine, None),
+        )
+
     def test_update_a_plan_that_knew(self):
         plan = self.plan({"deb": "/gone"}, {"deb": 5})
         update_plan(plan, self.contents(plan.contents.data, {"deb": 9}))

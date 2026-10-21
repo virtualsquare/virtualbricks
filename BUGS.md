@@ -128,17 +128,3 @@ in 3.0: they wait until after it.
   writes only the keys that changed, which may need a design page; with
   it, the write at quit of the windows of `--connect`, under Remote
   windows.
-
-## Tests
-
-- [ ] **"The file chooser of the image of DTN2hops, on its file" fails
-  under load.** The scenario of `e2e/features/pictures.feature` fails at
-  `And in the file chooser, I select debian13.qcow2 of my Downloads
-  folder`: "Not in 10 s: a file chooser shows". Alone it passes, in about
-  40 s, much longer than the others. Seen on 3.0.0.dev6, on 20 October
-  2026, with `pytest --count 10 -n 5 -k
-  test_the_file_chooser_of_the_image_of_dtn2hops_on_its_file`: 8 of 10
-  failed on a2602080, 4 of 10 with the fix of "A brick that is starting
-  counts as stopped" in the tree; once in a run of every scenario with
-  `-n 8`. What makes it slow, and the file chooser late, wasn't looked
-  into.

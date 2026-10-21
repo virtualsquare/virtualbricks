@@ -60,7 +60,9 @@
         <gui>Leave unset</gui>: the image stays without its file, until
         <link xref="images#menu"><gui>Find the File…</gui></link>, in the
         <gui>Images</gui> tab, gives it one. Each has a choice made already, so
-        <gui>Import</gui> works at once.</p>
+        <gui>Import</gui> works at once. Above them, a bar while the window
+        looks through the archive, then a line that says which images it has.
+        A choice you make meanwhile stays.</p>
       </item>
       <item>
         <title><gui>This computer's paths</gui></title>

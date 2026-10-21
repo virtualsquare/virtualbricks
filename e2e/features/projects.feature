@@ -101,6 +101,15 @@ Feature: Projects
       | Image    | Detail                                                             | State      |
       | debian13 | qcow2 · 1.0 GB disk · node1, node2, node3 and node4, private copies | Not in use |
 
+  Scenario: The system ends Virtualbricks while the file chooser of an image of the Import window shows
+    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my home folder
+    And Virtualbricks is running
+    When I choose the archive DTN2hops_26_Feb_2026.vbp of my home folder in the Import window, which suggests the name DTN2hops_26_Feb_2026
+    And I click the radio button "Use a file…"
+    Then the file chooser "The file of debian13" shows
+    When the system ends Virtualbricks, with SIGTERM
+    Then Virtualbricks has quit
+
   @needs-qemu-img @needs-vde_switch @needs-qemu-system-x86_64
   Scenario: An archive without its image, imported with the image left unset, keeps it missing, and its private copies follow the file found for it
     Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, with the private disks of its machines, in my Downloads folder

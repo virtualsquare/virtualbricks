@@ -60,7 +60,7 @@ from virtualbricks.config.importing import (
 )
 from virtualbricks.config.tomlfile import Table
 from virtualbricks.config.workspace import Workspace, projects
-from virtualbricks.gui.dialogs.base import Window
+from virtualbricks.gui.dialogs.base import Window, ask_file
 from virtualbricks.gui.markdownview import MarkdownLabel
 from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _, ngettext
@@ -241,18 +241,24 @@ class ImageRow:
         if self._updating or not button.get_active():
             return
         if choice == USE:
-            path = self.dialog.choose_image(self.image)
-            if not path:
-                self.update()
-                return
-            self.image.path = path
-        elif choice == COPY:
+            self.dialog.choose_image(self.image, self.use_file)
+            return
+        if choice == COPY:
             self.image.path = (
                 self.image.path
                 if self.image.choice == COPY
                 else (self.dialog.copy_destination(self.image))
             )
         self.image.choice = choice
+        self.update()
+        self.dialog.check()
+
+    def use_file(self, path: str | None) -> None:
+        """Use the file chosen for the image; None keeps the choice."""
+
+        if path:
+            self.image.path = path
+            self.image.choice = USE
         self.update()
         self.dialog.check()
 
@@ -394,6 +400,8 @@ class ImportDialog(Window):
 
         self.images_heading = _label(_("Images"), bold=True)
         box.pack_start(self.images_heading, False, False, 0)
+        # While the archive is read, its bar; then, in the same room, what
+        # it has: the rows below never move under a click.
         self.scan_box = Gtk.Box(visible=False, spacing=12)
         self.scan_label = _label(_("Looking in the archive…"), dim=True)
         self.scan_bar = Gtk.ProgressBar(visible=True, hexpand=True)
@@ -568,6 +576,7 @@ class ImportDialog(Window):
         self.rows = [ImageRow(self, image) for image in plan.images]
         for row in self.rows:
             self.images_list.add(row.row)
+        self.scan_box.set_visible(bool(self.rows))
         self.images_frame.set_visible(bool(self.rows))
         self.no_images_label.set_visible(not self.rows)
         for child in self.paths_box.get_children():
@@ -590,10 +599,34 @@ class ImportDialog(Window):
         self.refresh()
 
     def refresh(self) -> None:
-        self.scan_box.set_visible(self.scanning)
+        self.scan_bar.set_visible(self.scanning)
+        self.scan_label.set_text(
+            _("Looking in the archive…") if self.scanning else self.found()
+        )
         for row in self.rows:
             row.update()
         self.check()
+
+    def found(self) -> str:
+        """What the archive has of the images of the project."""
+
+        total = len(self.rows)
+        found = sum(row.image.in_archive is not None for row in self.rows)
+        if not found:
+            return ngettext(
+                "The archive doesn't have this image.",
+                "The archive has none of these images.",
+                total,
+            )
+        if found == total:
+            return ngettext(
+                "The archive has this image.",
+                "The archive has all these images.",
+                total,
+            )
+        return _("The archive has {found} of these {total} images.").format(
+            found=found, total=total
+        )
 
     def check(self) -> None:
         """Show what stops the import; Import waits for none."""
@@ -630,8 +663,10 @@ class ImportDialog(Window):
         name = os.path.basename(image.original) or image.name
         return free_file(os.path.join(self.plan.library, name))
 
-    def choose_image(self, image: ImageUse) -> str | None:
-        """Ask for the file of an image; None if cancelled."""
+    def choose_image(
+        self, image: ImageUse, done: Callable[[str | None], None]
+    ) -> None:
+        """Ask for the file of an image: done(it), done(None) if cancelled."""
 
         chooser = Gtk.FileChooserNative.new(
             _("The file of {name}").format(name=image.name),
@@ -643,12 +678,12 @@ class ImportDialog(Window):
         folder = os.path.dirname(image.path or image.original)
         if folder and os.path.isdir(folder):
             chooser.set_current_folder(folder)
-        try:
-            if chooser.run() == Gtk.ResponseType.ACCEPT:
-                return chooser.get_filename()
-            return None
-        finally:
-            chooser.destroy()
+
+        def chosen(path: str | None) -> None:
+            if not self.destroyed:
+                done(path)
+
+        ask_file(chooser, chosen)
 
     # Running the import
 

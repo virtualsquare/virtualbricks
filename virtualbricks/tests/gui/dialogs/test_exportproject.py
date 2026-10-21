@@ -27,6 +27,8 @@ from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
+    from gi.repository import Gtk
+
     from virtualbricks.gui.dialogs import exportproject
 
 
@@ -157,11 +159,19 @@ class TestChoices(ExportTestCase):
 
     def test_choose(self):
         dialog = self.dialog()
-        answers = [None, os.path.join(self.root, "chosen")]
-        self.patch(dialog, "choose_file", lambda: answers.pop(0))
+        asked = []
+        self.patch(
+            exportproject,
+            "ask_file",
+            lambda chooser, done: asked.append((chooser, done)),
+        )
         dialog.choose_button.clicked()
+        [(chooser, done)] = asked
+        self.assertEqual(chooser.get_title(), "Export Project")
+        # cancelled
+        done(None)
         self.assertTrue(dialog.filename_entry.get_text().endswith("lab.vbp"))
-        dialog.choose_button.clicked()
+        done(os.path.join(self.root, "chosen"))
         self.assertEqual(
             dialog.filename_entry.get_text(),
             os.path.join(self.root, "chosen.vbp"),
@@ -210,14 +220,26 @@ class TestExport(ExportTestCase):
 
     def test_replace_an_archive(self):
         dialog = self.dialog()
-        self.write(os.path.join(self.root, "out.vbp"), 1)
-        answers = [False, True]
-        self.patch(dialog, "confirm_overwrite", lambda path: answers.pop(0))
-        dialog.filename_entry.set_text(os.path.join(self.root, "out.vbp"))
+        output = self.write(os.path.join(self.root, "out.vbp"), 1)
+        questions = []
+        # shown, it would wait on the screen of the tests
+        self.patch(
+            Gtk.MessageDialog,
+            "show",
+            lambda question: questions.append(question),
+        )
+        dialog.filename_entry.set_text(output)
         dialog.export_button.clicked()
+        [question] = questions
+        self.assertEqual(
+            question.get_property("text"),
+            '"out.vbp" already exists. Replace it?',
+        )
+        question.response(Gtk.ResponseType.CANCEL)
         self.assertEqual(self.runs, [])
         dialog.export_button.clicked()
-        self.assertEqual(len(self.runs), 1)
+        questions[-1].response(Gtk.ResponseType.ACCEPT)
+        self.assertEqual([run[1] for run in self.runs], [output])
 
     def test_stop(self):
         dialog, job = self.start()

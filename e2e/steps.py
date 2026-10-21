@@ -398,6 +398,16 @@ def quit_virtualbricks(virtualbricks):
     virtualbricks.choose("Quit", "File")
 
 
+@when("the system ends Virtualbricks, with SIGTERM")
+def terminate_virtualbricks(virtualbricks):
+    """
+    SIGTERM to its process, as at the end of the session or at shutdown,
+    whatever its windows show.
+    """
+
+    virtualbricks.process.terminate()
+
+
 @then("Virtualbricks has quit")
 def virtualbricks_quit(virtualbricks):
     """
@@ -2352,7 +2362,8 @@ def choose_with(virtualbricks, choose, name):
     """
     Import…, in the menu Projects; in the window, the button of the file,
     then choose(chooser) in the file chooser, which closes; the name it
-    suggests is name. Return the window.
+    suggests is name, once it has looked through the whole archive. Return
+    the window.
     """
 
     window = open_import(virtualbricks)
@@ -2361,6 +2372,8 @@ def choose_with(virtualbricks, choose, name):
     choose(virtualbricks.find("file chooser", CHOOSE_ARCHIVE))
     virtualbricks.gone("file chooser", CHOOSE_ARCHIVE)
     suggests(virtualbricks, window, "Name", name)
+    # then the line under Images says what the archive has
+    virtualbricks.gone("label", "Looking in the archive…", within=window)
     return window
 
 

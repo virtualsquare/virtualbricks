@@ -69,8 +69,9 @@ tar -xzf debian13.tar.gz</screen>
         <p>The Import Project window for
         ~/Downloads/DTN2hops_26_Feb_2026.vbp: the name DTN2hops_26_Feb_2026;
         3 × Netemu, 5 × Switch, 1 × Switch wrapper and 4 × Virtual machine;
-        the image debian13, used by node1.hda to node4.hda, with Copy grey and
-        Leave unset chosen; Open the project after the import, on.</p>
+        under Images, The archive doesn't have this image; the image
+        debian13, used by node1.hda to node4.hda, with Copy grey and Leave
+        unset chosen; Open the project after the import, on.</p>
       </media>
     </figure>
     <terms>
@@ -90,8 +91,10 @@ tar -xzf debian13.tar.gz</screen>
       </item>
       <item>
         <title><gui>Images</gui></title>
-        <p>A row for <sys>debian13</sys>, used by the <sys>hda</sys> disk of
-        each of the four machines, with three choices:</p>
+        <p><gui>The archive doesn't have this image.</gui>, once the window has
+        looked through the archive. Then a row for <sys>debian13</sys>, used
+        by the <sys>hda</sys> disk of each of the four machines, with three
+        choices:</p>
         <list>
           <item><p><gui>Copy</gui>, from the archive to the shared images of
           your workspace. It's grey: the archive doesn't hold the image, and

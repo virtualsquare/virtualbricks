@@ -119,6 +119,15 @@ class ImageUse:
     # For an image not known yet: the default if the archive doesn't have it.
     fallback: str = ""
 
+    def waits(self) -> bool:
+        """
+        Whether its choice waits for the archive: Copy, of an image not known
+        yet, copies it if the archive has it, else gives it the default. A
+        file, or leaving it unset, is what the user chose, and stays.
+        """
+
+        return not self.known and self.choice == COPY
+
 
 @dataclasses.dataclass
 class MachinePath:
@@ -167,7 +176,7 @@ class ImportPlan:
             "images": [
                 {
                     "name": image.name,
-                    "choice": image.choice if image.known else "auto",
+                    "choice": "auto" if image.waits() else image.choice,
                     "path": image.path,
                     "fallback": image.fallback,
                 }
@@ -298,16 +307,20 @@ def machine_paths(data: Table) -> list[MachinePath]:
 
 
 def update_plan(plan: ImportPlan, contents: ArchiveContents) -> None:
-    """The archive was read to its end: settle the images not known yet."""
+    """
+    The archive was read to its end: settle the images that wait for it, and
+    keep the choice of the others.
+    """
 
     plan.contents = contents
     in_archive = contents.images
     for image in plan.images:
         member = in_archive.get(image.name)
-        if image.known:
-            image.in_archive = member.size if member else None
-        else:
+        if image.waits():
             plan_image(image, plan.library, True, member)
+        else:
+            image.known = True
+            image.in_archive = member.size if member else None
 
 
 def import_project(

@@ -132,6 +132,14 @@ class ImportTestCase(GuiTestCase):
     def rows(self):
         return self.dialog.rows
 
+    def mine(self):
+        """A file of the home, for Use a file…"""
+
+        mine = os.path.join(self.folder("images"), "mine.qcow2")
+        with open(mine, "w"):
+            pass
+        return mine
+
 
 class TestReading(ImportTestCase):
 
@@ -185,7 +193,12 @@ class TestReading(ImportTestCase):
             dialog.facts_label.get_text(),
             "2 × Switch · 1 × Virtual machine · 1 event",
         )
-        self.assertFalse(dialog.scan_box.get_visible())
+        # what the archive has, without the bar of the scan
+        self.assertTrue(dialog.scan_box.get_visible())
+        self.assertFalse(dialog.scan_bar.get_visible())
+        self.assertEqual(
+            dialog.scan_label.get_text(), "The archive has this image."
+        )
         [row] = self.rows()
         self.assertEqual(row.used_label.get_text(), "Used by vm.hda")
         self.assertTrue(row.copy_button.get_active())
@@ -214,6 +227,7 @@ class TestReading(ImportTestCase):
         self.read(contents)
         self.assertFalse(self.dialog.images_frame.get_visible())
         self.assertTrue(self.dialog.no_images_label.get_visible())
+        self.assertFalse(self.dialog.scan_box.get_visible())
         self.assertFalse(self.dialog.description_label.get_visible())
         self.assertFalse(self.dialog.paths_heading.get_visible())
 
@@ -223,6 +237,10 @@ class TestReading(ImportTestCase):
         job.on_head(self.contents(complete=False, in_archive=()))
         self.assertEqual(self.dialog.page(), "form")
         self.assertTrue(self.dialog.scan_box.get_visible())
+        self.assertTrue(self.dialog.scan_bar.get_visible())
+        self.assertEqual(
+            self.dialog.scan_label.get_text(), "Looking in the archive…"
+        )
         [row] = self.rows()
         self.assertTrue(row.copy_button.get_sensitive())
         self.assertIn("Looking in the archive", row.path_label.get_text())
@@ -231,12 +249,42 @@ class TestReading(ImportTestCase):
         self.assertEqual(len(self.rows()), 1)
         # the end of the archive: deb isn't there
         job.done.callback(self.contents(in_archive=()))
-        self.assertFalse(self.dialog.scan_box.get_visible())
+        # the line stays, the rows don't move
+        self.assertTrue(self.dialog.scan_box.get_visible())
+        self.assertFalse(self.dialog.scan_bar.get_visible())
+        self.assertEqual(
+            self.dialog.scan_label.get_text(),
+            "The archive doesn't have this image.",
+        )
         self.assertFalse(row.copy_button.get_sensitive())
         self.assertEqual(
             row.copy_button.get_tooltip_text(), "Not in the archive"
         )
         self.assertTrue(row.skip_button.get_active())
+
+    def test_what_the_archive_has(self):
+        images = {"deb": "/other/deb.qcow2", "frr": "/other/frr.qcow2"}
+        for in_archive, line in (
+            ((), "The archive has none of these images."),
+            (("deb",), "The archive has 1 of these 2 images."),
+            (("deb", "frr"), "The archive has all these images."),
+        ):
+            self.read(self.contents(in_archive=in_archive, **images))
+            self.assertEqual(self.dialog.scan_label.get_text(), line)
+
+    def test_a_choice_during_the_scan_stays(self):
+        self.dialog.choose(self.archive)
+        path, job = self.inspected[0]
+        job.on_head(self.contents(complete=False, in_archive=()))
+        [row] = self.rows()
+        mine = self.mine()
+        self.patch(self.dialog, "choose_image", lambda image, done: done(mine))
+        row.use_button.set_active(True)
+        # the end of the archive: deb isn't there
+        job.done.callback(self.contents(in_archive=()))
+        self.assertTrue(row.use_button.get_active())
+        self.assertEqual((row.image.choice, row.image.path), ("use", mine))
+        self.assertEqual(row.path_label.get_text(), "Uses ~/images/mine.qcow2")
 
     def test_reading_fails(self):
         self.dialog.choose(self.archive)
@@ -296,11 +344,13 @@ class TestChoices(ImportTestCase):
     def test_use_a_file(self):
         self.read()
         [row] = self.rows()
-        mine = os.path.join(self.folder("images"), "mine.qcow2")
-        with open(mine, "w"):
-            pass
+        mine = self.mine()
         answers = [None, mine]
-        self.patch(self.dialog, "choose_image", lambda image: answers.pop(0))
+        self.patch(
+            self.dialog,
+            "choose_image",
+            lambda image, done: done(answers.pop(0)),
+        )
         # cancelled: the choice stays
         row.use_button.set_active(True)
         self.assertEqual(row.image.choice, "copy")
@@ -320,6 +370,31 @@ class TestChoices(ImportTestCase):
             row.image.path,
             os.path.join(self.manager.path, "shared_images", "deb.qcow2"),
         )
+
+    def test_the_file_chooser(self):
+        self.read()
+        [row] = self.rows()
+        asked = []
+        self.patch(
+            importdialog,
+            "ask_file",
+            lambda chooser, done: asked.append((chooser, done)),
+        )
+        row.use_button.set_active(True)
+        [(chooser, done)] = asked
+        self.assertEqual(chooser.get_title(), "The file of deb")
+        # the choice waits for the file
+        self.assertEqual(row.image.choice, "copy")
+        mine = self.mine()
+        done(mine)
+        self.assertEqual((row.image.choice, row.image.path), ("use", mine))
+        # an answer once the window is gone changes nothing
+        row.skip_button.set_active(True)
+        row.use_button.set_active(True)
+        chooser, done = asked[-1]
+        self.dialog.window.destroy()
+        done(mine)
+        self.assertEqual(row.image.choice, "skip")
 
     def test_machine_paths_and_open(self):
         self.read()

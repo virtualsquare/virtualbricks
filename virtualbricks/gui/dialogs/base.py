@@ -28,10 +28,14 @@ instead, of :mod:`virtualbricks.gui.mainwindow.bricks.config.panel`.
 
 The small dialogs that ask before an action, as Rename, Delete and Remove
 Image, are an ``action_dialog()`` of ``text_label()`` lines.
+
+A file chooser shows with ``ask_file()``, which calls back with the file:
+its ``run()`` runs a loop of its own, and a quit waits until it closes.
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from gi.repository import Gdk, Gtk, Pango
@@ -44,6 +48,9 @@ from virtualbricks.i18n import _
 WIDTH = 440
 MARGIN = 18
 GAP = 8
+
+# The file choosers that show: GTK doesn't keep a native dialog alive.
+_choosers: set[Gtk.FileChooserNative] = set()
 
 
 class Window:
@@ -122,6 +129,27 @@ def text_label(
             pango_attr_list(Pango.attr_weight_new(Pango.Weight.BOLD))
         )
     return label
+
+
+def ask_file(
+    chooser: Gtk.FileChooserNative, done: Callable[[str | None], None]
+) -> None:
+    """
+    Show chooser, modal; once it closes, done(the file chosen), or
+    done(None) if cancelled.
+    """
+
+    def on_response(chooser: Gtk.FileChooserNative, response: int) -> None:
+        _choosers.discard(chooser)
+        accepted = response == Gtk.ResponseType.ACCEPT
+        path = chooser.get_filename() if accepted else None
+        chooser.destroy()
+        done(path)
+
+    chooser.set_modal(True)
+    chooser.connect("response", on_response)
+    _choosers.add(chooser)
+    chooser.show()
 
 
 def action_dialog(
