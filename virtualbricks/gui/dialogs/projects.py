@@ -213,7 +213,9 @@ class ProjectsWindow(Window):
         new_project: Callable[[str, str], defer.Deferred[Report]],
         save_project: Callable[[], defer.Deferred[None]],
         set_title: Callable[[], None],
-        import_project: Callable[[Callable[[], object], str | None], object],
+        import_project: Callable[
+            [Callable[[], object], str | None, Gtk.Window], object
+        ],
         export_project: Callable[[ProjectSummary, Gtk.Window], object],
     ) -> None:
         self.engine = engine
@@ -679,13 +681,13 @@ class ProjectsWindow(Window):
         self.name_dialog(projectname.NEW)
 
     def on_import_clicked(self, button: Gtk.Button) -> None:
-        self.import_project(self.on_import_closed, None)
+        self.import_project(self.on_import_closed, None, self.window)
 
     def import_files(self, files: list[str], others: list[str]) -> None:
         """Import the files dropped, each in its own Import window."""
 
         for path in files:
-            self.import_project(self.on_import_closed, path)
+            self.import_project(self.on_import_closed, path, self.window)
         if others:
             self.show_problem(drop.refusal(others))
 

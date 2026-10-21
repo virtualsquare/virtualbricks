@@ -239,6 +239,11 @@ that the tests can't do yet: those needs come first.
   private disks yet, which need a virtual machine
   "A project exported to an archive, then imported with the name it
   suggests, has its bricks", `projects.feature`
+- [x] Import from the Projects window
+  Import… asks for the archive first, in a file chooser, then the Import
+  window opens on it, above the Projects window
+  "Import… of the Projects window asks for the archive, then imports it",
+  `projects.feature`
 - [ ] Rename a project
   its folder has the new name; needs typing
 

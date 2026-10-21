@@ -109,12 +109,11 @@ Feature: The pictures of the user guide
     Then the picture import-menu shows the main window
 
   @needs-qemu-img
-  Scenario: The file chooser of the Import window, on the archive of DTN2hops
+  Scenario: The file chooser of Import…, on the archive of DTN2hops
     Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, with the private disks of its machines, in my Downloads folder
     And the files of my Downloads folder were last changed on 2024-08-02
     And Virtualbricks is running
-    When I open the Import window
-    And I click the button "(None)"
+    When I choose Import… in the menu Projects
     And in the file chooser, I select DTN2hops_26_Feb_2026.vbp of my Downloads folder
     Then the picture import-archive shows the file chooser
 

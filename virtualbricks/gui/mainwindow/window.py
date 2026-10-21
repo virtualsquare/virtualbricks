@@ -50,7 +50,7 @@ from virtualbricks.gui.dialogs import projectname
 from virtualbricks.gui.dialogs.about import AboutDialog
 from virtualbricks.gui.dialogs.base import Window
 from virtualbricks.gui.dialogs.exportproject import ExportProjectDialog
-from virtualbricks.gui.dialogs.importdialog import ImportDialog
+from virtualbricks.gui.dialogs.importdialog import ImportDialog, ask_archive
 from virtualbricks.gui.dialogs.logging import LoggingWindow
 from virtualbricks.gui.dialogs.projects import ProjectsWindow
 from virtualbricks.gui.dialogs.settings import SettingsWindow
@@ -729,11 +729,30 @@ class MainWindow(Window):
         self,
         on_closed: Callable[[], object] | None = None,
         path: str | None = None,
-    ) -> ImportDialog:
+        parent: Gtk.Window | None = None,
+    ) -> None:
         """
         Import a project, from the archive at path if given, else from the
-        one chosen; on_closed is called when the window closes.
+        one chosen in a file chooser; both windows show above parent, the
+        main window if None. on_closed is called when the Import window
+        closes.
         """
+
+        if path is not None:
+            self.import_archive(path, on_closed, parent)
+        else:
+            ask_archive(
+                parent or self.window,
+                lambda path: self.import_archive(path, on_closed, parent),
+            )
+
+    def import_archive(
+        self,
+        path: str,
+        on_closed: Callable[[], object] | None = None,
+        parent: Gtk.Window | None = None,
+    ) -> ImportDialog:
+        """The Import window, on the archive at path: see import_project."""
 
         dialog = ImportDialog(self.brickfactory)
 
@@ -742,17 +761,16 @@ class MainWindow(Window):
             if on_closed is not None:
                 on_closed()
 
-        dialog.show(self.window)
+        dialog.show(parent or self.window)
         dialog.get_root_widget().connect("destroy", destroyed)
-        if path is not None:
-            dialog.choose(path)
+        dialog.choose(path)
         return dialog
 
     def import_files(self, files: list[str], others: list[str]) -> None:
         """Import the files dropped, each in its own Import window."""
 
         for path in files:
-            self.import_project(path=path)
+            self.import_archive(path)
         if others:
             logger.error(files_refused, error=drop.refusal(others))
 

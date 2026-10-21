@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 16:49+0200\n"
+"POT-Creation-Date: 2026-10-21 17:17+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -3039,6 +3039,11 @@ msgstr ""
 
 #: virtualbricks/gui/dialogs/importdialog.py
 #, fuzzy
+msgid "Choose an archive"
+msgstr "Scegli un nuovo nome:"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, fuzzy
 msgid "Import Project"
 msgstr "Apertura progetto"
 
@@ -3046,15 +3051,6 @@ msgstr "Apertura progetto"
 #, fuzzy
 msgid "Import"
 msgstr "porta:"
-
-#: virtualbricks/gui/dialogs/importdialog.py
-msgid "Choose a Virtualbricks project file."
-msgstr ""
-
-#: virtualbricks/gui/dialogs/importdialog.py
-#, fuzzy
-msgid "Choose an archive"
-msgstr "Scegli un nuovo nome:"
 
 #: virtualbricks/gui/dialogs/importdialog.py
 msgid "Reading the archive…"

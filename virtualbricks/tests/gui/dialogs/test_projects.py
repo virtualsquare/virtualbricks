@@ -462,7 +462,9 @@ class TestActions(ProjectsTestCase):
     def test_import(self):
         window = self.window()
         window.import_button.clicked()
+        # the archive is asked for above the window
         self.assertEqual(self.gui.calls, [("import", None)])
+        self.assertIs(self.gui.import_parent, window.window)
         self.lab("imported")
         self.gui.import_closed()
         self.assertIn("imported", self.names(window))

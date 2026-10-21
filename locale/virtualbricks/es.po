@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 16:49+0200\n"
+"POT-Creation-Date: 2026-10-21 17:17+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -3004,6 +3004,11 @@ msgstr ""
 
 #: virtualbricks/gui/dialogs/importdialog.py
 #, fuzzy
+msgid "Choose an archive"
+msgstr "_Crear nueva imagen"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, fuzzy
 msgid "Import Project"
 msgstr "Importar bricks"
 
@@ -3011,15 +3016,6 @@ msgstr "Importar bricks"
 #, fuzzy
 msgid "Import"
 msgstr "Importar bricks"
-
-#: virtualbricks/gui/dialogs/importdialog.py
-msgid "Choose a Virtualbricks project file."
-msgstr ""
-
-#: virtualbricks/gui/dialogs/importdialog.py
-#, fuzzy
-msgid "Choose an archive"
-msgstr "_Crear nueva imagen"
 
 #: virtualbricks/gui/dialogs/importdialog.py
 msgid "Reading the archive…"

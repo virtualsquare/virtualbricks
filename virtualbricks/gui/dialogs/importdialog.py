@@ -19,7 +19,8 @@
 """
 Import a project from an archive, on one page.
 
-Choosing a file reads the archive in the archive process. The page shows
+The archive is chosen first, in a file chooser of its own, ask_archive().
+The window opens on it, and reads it in the archive process. The page shows
 the project, a name, and a choice for each image the project uses, each with
 a default: copy it from the archive, use a file of this computer, or leave it
 unset. The import runs in the archive process too; the window follows its
@@ -264,6 +265,29 @@ class ImageRow:
         self.dialog.check()
 
 
+def ask_archive(parent: Gtk.Window, done: Callable[[str], object]) -> None:
+    """Ask for the archive to import, above parent: done(it), if chosen."""
+
+    chooser = Gtk.FileChooserNative.new(
+        _("Choose an archive"),
+        parent,
+        Gtk.FileChooserAction.OPEN,
+        None,
+        None,
+    )
+    file_filter = Gtk.FileFilter()
+    file_filter.set_name(_("Virtualbricks archives"))
+    for pattern in PATTERNS:
+        file_filter.add_pattern(pattern)
+    chooser.add_filter(file_filter)
+
+    def chosen(path: str | None) -> None:
+        if path is not None:
+            done(path)
+
+    ask_file(chooser, chosen)
+
+
 class ImportDialog(Window):
     """Import a project from an archive (board I1)."""
 
@@ -312,7 +336,6 @@ class ImportDialog(Window):
         self.window.set_titlebar(header)
 
         self.stack = Gtk.Stack(visible=True)
-        self.stack.add_named(self._build_choose(), "choose")
         self.stack.add_named(self._build_reading(), "reading")
         self.stack.add_named(self._build_form(), "form")
         self.stack.add_named(self._build_running(), "running")
@@ -323,7 +346,6 @@ class ImportDialog(Window):
         self.cancel_button.connect("clicked", self.on_cancel_clicked)
         self.import_button.connect("clicked", self.on_import_clicked)
         self.close_button.connect("clicked", self.on_close_clicked)
-        self.file_button.connect("file-set", self.on_file_set)
         self.name_entry.connect("changed", self.on_name_changed)
         self.open_check.connect("toggled", self.on_open_toggled)
 
@@ -334,33 +356,6 @@ class ImportDialog(Window):
             spacing=12,
             margin=MARGIN,
         )
-
-    def _build_choose(self) -> Gtk.Box:
-        box = self._page()
-        box.set_valign(Gtk.Align.CENTER)
-        box.pack_start(
-            _label(
-                _("Choose a Virtualbricks project file."),
-                xalign=0.5,
-            ),
-            False,
-            False,
-            0,
-        )
-        file_filter = Gtk.FileFilter()
-        file_filter.set_name(_("Virtualbricks archives"))
-        for pattern in PATTERNS:
-            file_filter.add_pattern(pattern)
-        self.file_button = Gtk.FileChooserButton(
-            visible=True,
-            title=_("Choose an archive"),
-            action=Gtk.FileChooserAction.OPEN,
-            halign=Gtk.Align.CENTER,
-            width_chars=30,
-        )
-        self.file_button.add_filter(file_filter)
-        box.pack_start(self.file_button, False, False, 0)
-        return box
 
     def _build_reading(self) -> Gtk.Box:
         box = self._page()
@@ -480,7 +475,7 @@ class ImportDialog(Window):
         self.stack.set_visible_child_name(name)
         running = name == "running"
         failed = name == "failed"
-        self.import_button.set_visible(name in ("choose", "reading", "form"))
+        self.import_button.set_visible(name in ("reading", "form"))
         self.close_button.set_visible(failed)
         self.cancel_button.set_visible(not failed)
         self.cancel_button.set_label(_("Stop") if running else _("Cancel"))
@@ -737,11 +732,6 @@ class ImportDialog(Window):
         self.show_page("failed")
 
     # Signals
-
-    def on_file_set(self, button: Gtk.FileChooserButton) -> None:
-        path = button.get_filename()
-        if path:
-            self.choose(path)
 
     def on_import_clicked(self, button: Gtk.Button) -> None:
         if self.plan is not None and not self.plan.problems(self.workspace):

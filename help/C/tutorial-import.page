@@ -32,8 +32,8 @@ tar -xzf debian13.tar.gz</screen>
     <title>Open the archive</title>
     <steps>
       <item>
-        <p>Choose <guiseq><gui>Projects</gui><gui>Import…</gui></guiseq>. The
-        Import Project window opens, and asks for the archive.</p>
+        <p>Choose <guiseq><gui>Projects</gui><gui>Import…</gui></guiseq>. A
+        window opens, and asks for the archive.</p>
         <figure>
           <title>The menu Projects</title>
           <media type="image" mime="image/png" src="figures/import-menu.png">
@@ -44,12 +44,10 @@ tar -xzf debian13.tar.gz</screen>
         </figure>
       </item>
       <item>
-        <p>Click the button of the file, which says <gui>(None)</gui>. In the
-        window that opens, click <gui>Home</gui>, double-click
-        <file>Downloads</file>, choose
-        <file>DTN2hops_26_Feb_2026.vbp</file>, and click <gui>Open</gui>. The
-        Import Project window reads the archive, then shows what it
-        holds.</p>
+        <p>In it, click <gui>Home</gui>, double-click <file>Downloads</file>,
+        choose <file>DTN2hops_26_Feb_2026.vbp</file>, and click
+        <gui>Open</gui>. The Import Project window opens, reads the archive,
+        then shows what it holds.</p>
         <figure>
           <title>The archive, in Downloads</title>
           <media type="image" mime="image/png" src="figures/import-archive.png">

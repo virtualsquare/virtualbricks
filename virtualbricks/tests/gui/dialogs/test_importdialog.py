@@ -37,6 +37,8 @@ from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
+    from gi.repository import Gtk
+
     from virtualbricks.gui.dialogs import importdialog
 
     find_qemu_img = importdialog.find_qemu_img
@@ -141,24 +143,45 @@ class ImportTestCase(GuiTestCase):
         return mine
 
 
+class TestAskArchive(GuiTestCase):
+    """The archive is chosen before the window opens."""
+
+    def setUp(self):
+        super().setUp()
+        self.parent = Gtk.Window()
+        self.addCleanup(self.parent.destroy)
+        self.asked = []
+        self.patch(
+            importdialog,
+            "ask_file",
+            lambda chooser, done: self.asked.append((chooser, done)),
+        )
+        self.chosen = []
+        importdialog.ask_archive(self.parent, self.chosen.append)
+
+    def test_the_chooser(self):
+        [(chooser, done)] = self.asked
+        self.assertEqual(chooser.get_title(), "Choose an archive")
+        self.assertIs(chooser.get_transient_for(), self.parent)
+        self.assertEqual(chooser.get_action(), Gtk.FileChooserAction.OPEN)
+        [archives] = chooser.list_filters()
+        self.assertEqual(archives.get_name(), "Virtualbricks archives")
+
+    def test_chosen(self):
+        [(chooser, done)] = self.asked
+        done("/home/lab.vbp")
+        self.assertEqual(self.chosen, ["/home/lab.vbp"])
+
+    def test_cancelled(self):
+        [(chooser, done)] = self.asked
+        done(None)
+        self.assertEqual(self.chosen, [])
+
+
 class TestReading(ImportTestCase):
 
-    def test_first_the_file(self):
-        self.assertEqual(self.dialog.page(), "choose")
+    def test_nothing_to_import_yet(self):
         self.assertFalse(self.dialog.import_button.get_sensitive())
-
-    def test_the_file_button(self):
-        class Button:
-            def __init__(self, filename):
-                self.filename = filename
-
-            def get_filename(self):
-                return self.filename
-
-        self.dialog.on_file_set(Button(None))
-        self.assertEqual(self.inspected, [])
-        self.dialog.on_file_set(Button(self.archive))
-        self.assertEqual(self.inspected[0][0], self.archive)
 
     def test_reading(self):
         self.dialog.choose(self.archive)

@@ -152,6 +152,17 @@ Feature: Projects
       | Brick | Detail            | State   |
       | sw1   | Switch · 32 ports | Stopped |
 
+  Scenario: Import… of the Projects window asks for the archive, then imports it
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I export the project to new_project.vbp of my home folder
+    And I open the Projects window
+    And I import the archive new_project.vbp of my home folder from the Projects window, with the name it suggests, new_project-2
+    Then the main window shows the project new_project-2
+    And the list of bricks has
+      | Brick | Detail            | State   |
+      | sw1   | Switch · 32 ports | Stopped |
+
   Scenario: A project removed from the Projects window goes to the trash, once confirmed
     Given Virtualbricks is running
     When I open the Projects window

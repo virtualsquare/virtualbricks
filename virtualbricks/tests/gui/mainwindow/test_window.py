@@ -35,6 +35,7 @@ if has_display:
     from gi.repository import Gdk, Gtk
 
     from virtualbricks.gui.dialogs import base
+    from virtualbricks.gui.dialogs.importdialog import ImportDialog
     from virtualbricks.gui.mainwindow import window
     from virtualbricks.gui.mainwindow.readme import ReadmeTab
     from virtualbricks.gui.mainwindow.rowtab import RowsTab
@@ -76,21 +77,81 @@ class TestImport(GuiTestCase):
         super().setUp()
         self.gui = FakeGui(self.factory)
         self.closed = []
+        self.chosen = []
+        self.patch(
+            ImportDialog, "choose", lambda dialog, p: self.chosen.append(p)
+        )
+
+    def on_closed(self):
+        self.closed.append(True)
 
     def test_closed(self):
-        dialog = MainWindow.import_project(
-            self.gui, lambda: self.closed.append(True)
-        )
+        dialog = MainWindow.import_archive(self.gui, "/a.vbp", self.on_closed)
         self.assertTrue(dialog.get_root_widget().get_visible())
+        self.assertEqual(self.chosen, ["/a.vbp"])
+        self.assertIs(dialog.get_root_widget().get_transient_for(), None)
         self.assertEqual((self.closed, self.gui.titles), ([], 0))
         dialog.get_root_widget().destroy()
         # the title names the project imported and opened, if one was
         self.assertEqual((self.closed, self.gui.titles), ([True], 1))
 
     def test_nobody_to_tell(self):
-        dialog = MainWindow.import_project(self.gui)
+        dialog = MainWindow.import_archive(self.gui, "/a.vbp")
         dialog.get_root_widget().destroy()
         self.assertEqual(self.gui.titles, 1)
+
+    def test_above_another_window(self):
+        # as the Projects window, which a file chooser leaves on top
+        other = Gtk.Window()
+        self.addCleanup(other.destroy)
+        dialog = MainWindow.import_archive(self.gui, "/a.vbp", None, other)
+        self.assertIs(dialog.get_root_widget().get_transient_for(), other)
+        dialog.get_root_widget().destroy()
+
+
+class TestImportProject(GuiTestCase):
+    """The archive first: the Import window opens on the one chosen."""
+
+    def setUp(self):
+        super().setUp()
+        self.gui = FakeGui(self.factory)
+        self.gui.window = Gtk.Window()
+        self.addCleanup(self.gui.window.destroy)
+        self.imported = []
+        self.gui.import_archive = lambda *args: self.imported.append(args)
+        self.asked = []
+        self.patch(
+            window,
+            "ask_archive",
+            lambda parent, done: self.asked.append((parent, done)),
+        )
+
+    def on_closed(self):
+        pass
+
+    def test_asked_above_the_main_window(self):
+        MainWindow.import_project(self.gui, self.on_closed)
+        [(parent, done)] = self.asked
+        self.assertIs(parent, self.gui.window)
+        # no window until it's chosen; none if the chooser is cancelled
+        self.assertEqual(self.imported, [])
+        done("/a.vbp")
+        self.assertEqual(self.imported, [("/a.vbp", self.on_closed, None)])
+
+    def test_asked_above_another_window(self):
+        other = Gtk.Window()
+        self.addCleanup(other.destroy)
+        MainWindow.import_project(self.gui, None, None, other)
+        [(parent, done)] = self.asked
+        self.assertIs(parent, other)
+        # the Import window above it too
+        done("/a.vbp")
+        self.assertEqual(self.imported, [("/a.vbp", None, other)])
+
+    def test_an_archive_given(self):
+        MainWindow.import_project(self.gui, self.on_closed, "/a.vbp")
+        self.assertEqual(self.asked, [])
+        self.assertEqual(self.imported, [("/a.vbp", self.on_closed, None)])
 
 
 class TestStartUpProblem(GuiTestCase):
@@ -224,7 +285,7 @@ class TestDrop(GuiTestCase):
         self.logger = FakeLogger()
         self.patch(window, "logger", self.logger)
         self.imported = []
-        self.gui.import_project = lambda path: self.imported.append(path)
+        self.gui.import_archive = lambda path: self.imported.append(path)
 
     def test_the_window_takes_files(self):
         # its content, menus and tabs, all of it
