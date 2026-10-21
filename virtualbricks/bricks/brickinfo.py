@@ -85,6 +85,8 @@ KINDS = {
 
 class State(enum.Enum):
     RUNNING = "running"
+    # its program will run once the bricks it plugs into run
+    STARTING = "starting"
     STOPPED = "stopped"
     # a plug is free
     NOT_CONNECTED = "not-connected"
@@ -94,6 +96,7 @@ class State(enum.Enum):
 
 LABELS = {
     State.RUNNING: _("Running"),
+    State.STARTING: _("Starting"),
     State.STOPPED: _("Stopped"),
     State.NOT_CONNECTED: _("Not connected"),
     State.NOT_CONFIGURED: _("Not configured"),
@@ -109,6 +112,8 @@ def kind(brick: Brick) -> str:
 def state(brick: Brick) -> State:
     if is_running(brick):
         return State.RUNNING
+    if brick.starting():
+        return State.STARTING
     if not all(plug.configured() for plug in brick.plugs):
         return State.NOT_CONNECTED
     if not brick.configured():

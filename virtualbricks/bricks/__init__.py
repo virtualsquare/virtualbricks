@@ -38,7 +38,7 @@ import re
 import shlex
 from collections.abc import Collection
 from contextlib import AbstractContextManager
-from typing import TYPE_CHECKING, Any, ClassVar, Protocol, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol, TypeVar, cast
 
 from twisted.internet import defer, error, protocol, reactor
 from twisted.internet.interfaces import (
@@ -92,6 +92,7 @@ __all__ = [
 
 
 system_encoding = locale.getpreferredencoding(do_setlocale=True)
+_T = TypeVar("_T")
 
 logger = Logger(__name__)
 process_started = "Process started"
@@ -104,6 +105,7 @@ event_without_actions = (
     "The event {name} of the brick {brick} has no actions: skipping it."
 )
 shutdown_brick = "Shutting down {name} (pid: {pid})"
+calling_off = "Stopping {name} before its program runs"
 attribute_set = "Attribute {attr} set in {brick} with value {value}."
 start_brick = "Starting: {args}"
 # not {warning}: twisted.python.log takes that field for a warning of Python
@@ -475,12 +477,13 @@ def is_running(brick: Brick | Event) -> bool:
 
 def must_stop(brick: Brick) -> bool:
     """
-    Whether brick runs a program of Virtualbricks, which has to stop before
-    the brick is deleted or renamed, the project closes or Virtualbricks
-    quits. A switch wrapper runs while another program runs its switch.
+    Whether brick runs a program of Virtualbricks, or is starting one, which
+    has to stop before the brick is deleted or renamed, the project closes or
+    Virtualbricks quits. A switch wrapper runs while another program runs its
+    switch.
     """
 
-    return brick.runs_program and brick.is_running()
+    return brick.runs_program and (brick.is_running() or brick.starting())
 
 
 @define
@@ -502,6 +505,8 @@ class Brick(Base):
     # While a start is under way, the Deferreds of those who wait for it:
     # the first is that of the call that began it.
     _waiting: list[defer.Deferred[Brick]] | None = None
+    # Whether a stop came during the start under way: its program won't run.
+    _called_off = False
     # While it runs: fires with the brick and how its program ended.
     _exited_d: defer.Deferred[tuple[Brick, object]] | None = None
     _last_status: object = None
@@ -547,7 +552,8 @@ class Brick(Base):
         command() writes it, and spawn() starts the program; once it runs,
         the event of the brick's start runs. A call while a start is under
         way waits for it, as when Start All starts a switch and the wire that
-        plugs into it.
+        plugs into it; a stop calls it off. The brick says it changed when the
+        start begins, when its program runs and when the start fails.
 
         resume is the saved state that a virtual machine starts from; the
         other bricks have none. chain is the bricks whose starts led to this
@@ -583,13 +589,20 @@ class Brick(Base):
 
         started: defer.Deferred[Brick] = defer.Deferred()
         self._waiting = [started]
+        self._called_off = False
         self._exited_d = defer.Deferred()
+        self.changed.notify(self)
         chain += (self,)
         d = defer.DeferredList(
             [plug.connected(chain) for plug in self.plugs],
             fireOnOneErrback=True,
             consumeErrors=True,
         )
+
+        def go_on(passthru: _T) -> _T:
+            if self._called_off:
+                raise errors.StartCalledOffError(self.name)
+            return passthru
 
         def start_related_events(_: None) -> Brick:
             self._start_related_events(on=True)
@@ -604,12 +617,21 @@ class Brick(Base):
             if waiting is None:
                 # the program runs, and the event of its start failed
                 return failure
+            # stopped, before those who wait hear of it
+            self.changed.notify(self)
             for waiter in waiting:
                 waiter.errback(failure)
             return None
 
-        prepared = d.addCallback(lambda _: self.prepare(resume))
-        spawned = prepared.addCallback(self.command).addCallback(self.spawn)
+        # a stop that comes while the start waits calls it off
+        prepared = d.addCallback(go_on).addCallback(
+            lambda _: self.prepare(resume)
+        )
+        spawned = (
+            prepared.addCallback(go_on)
+            .addCallback(self.command)
+            .addCallback(self.spawn)
+        )
         spawned.addCallback(start_related_events).addErrback(eb)
         return started
 
@@ -619,7 +641,18 @@ class Brick(Base):
         return self._waiting is not None
 
     def stop(self, kill: bool = False) -> defer.Deferred[tuple[Brick, object]]:
+        """
+        Stop the program of the brick, with SIGTERM, or SIGKILL if kill.
+
+        A brick that is starting doesn't run its program: the start fails
+        with StartCalledOffError once it has waited for the bricks it plugs
+        into and for prepare(). Return a Deferred that fires with the brick
+        and how its program ended, once it ended or the start did.
+        """
+
         if self.proc is None:
+            if self._waiting is not None:
+                return self._call_off(self._waiting, kill)
             return defer.succeed((self, self._last_status))
         self.logger.info(shutdown_brick, name=self.name, pid=self.proc.pid)
         try:
@@ -630,6 +663,18 @@ class Brick(Base):
             pass
         assert self._exited_d is not None, "the start made it"
         return self._exited_d
+
+    def _call_off(
+        self, waiting: list[defer.Deferred[Brick]], kill: bool
+    ) -> defer.Deferred[tuple[Brick, object]]:
+        self.logger.info(calling_off, name=self.name)
+        self._called_off = True
+        waiter: defer.Deferred[Brick] = defer.Deferred()
+        waiting.append(waiter)
+        # the start fails, as it should; a program that ran is stopped
+        return waiter.addCallbacks(
+            lambda _: self.stop(kill), lambda _: (self, self._last_status)
+        )
 
     def config_table(self) -> Table:
         """Return the configuration as saved in the project file."""

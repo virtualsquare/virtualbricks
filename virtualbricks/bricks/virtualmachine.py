@@ -1202,7 +1202,8 @@ class VirtualMachine(bricks.Brick):
         self, kill: bool = False, term: bool = False
     ) -> defer.Deferred[tuple[bricks.Brick, object]]:
         if not self.is_running():
-            return defer.succeed((self, self._last_status))
+            # a start under way is called off
+            return bricks.Brick.stop(self, kill)
         elif not any((kill, term)):
             self.logger.info(powerdown, vm=self)
             self.send(b"system_powerdown\n")

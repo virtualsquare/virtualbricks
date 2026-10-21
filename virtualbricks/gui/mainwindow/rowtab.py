@@ -336,11 +336,13 @@ class Row(Gtk.ListBoxRow, Generic[T]):
         warning: bool,
         tooltip: str | None,
         dot: str = "running",
+        stops: bool | None = None,
     ) -> None:
         """
         Show detail under the name, and the state in words, with a dot of
         the colour dot while running, or a warning sign. A warning means that
-        the object can't start. tooltip explains the state.
+        the object can't start. tooltip explains the state. The button stops
+        the object if stops, by default while it runs.
         """
 
         name = self.item.name
@@ -365,7 +367,9 @@ class Row(Gtk.ListBoxRow, Generic[T]):
         self.state_label.set_text(state)
         self.state.set_tooltip_text(tooltip)
 
-        if running:
+        if stops is None:
+            stops = running
+        if stops:
             icon, what = "media-playback-stop-symbolic", _("Stop {name}")
         else:
             icon, what = "media-playback-start-symbolic", _("Start {name}")

@@ -200,6 +200,7 @@ class DiskUse:
     # loads; and the space it takes, None until it's made
     copy: str | None
     copy_size: int | None
+    # its machine runs, or starts: QEMU has the disk, or will have it
     running: bool
 
 
@@ -224,6 +225,7 @@ def uses(
     space a copy takes, where the machine is.
     """
 
+    from virtualbricks.bricks import must_stop
     from virtualbricks.bricks.virtualmachine import is_virtualmachine
 
     found = []
@@ -243,7 +245,7 @@ def uses(
                     private=private,
                     copy=copy,
                     copy_size=None if copy is None else taken(copy),
-                    running=brick.is_running(),
+                    running=must_stop(brick),
                 )
             )
     return found
@@ -373,11 +375,13 @@ def start_over(
 ) -> bool:
     """
     The private copy of a disk of vm goes, with its changes: the next start
-    makes an empty one. Fail with ``RunningError`` while vm runs. True if
-    the copy went to the trash.
+    makes an empty one. Fail with ``RunningError`` while vm runs or starts.
+    True if the copy went to the trash.
     """
 
-    if vm.is_running():
+    from virtualbricks.bricks import must_stop
+
+    if must_stop(vm):
         raise RunningError([vm.name])
     return discard(vm.disk(device).get_cow_path(), trasher)
 

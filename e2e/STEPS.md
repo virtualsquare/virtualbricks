@@ -20,6 +20,9 @@ The steps of a user:
 | `When I start sw1` | Its Start button, the list scrolled to it if it doesn't show; it must run, with new processes |
 | `When I try to start wr1` | A click on its Start, also when it is disabled, as a user may click it |
 | `When I stop sw1` | Its Stop button; it must stop |
+| `When I stop sw1, which is starting` | Its Stop button, while its row says Starting; the row still says so after, as the stop waits for the start to end |
+| `Given the VDE programs wait to answer until I let them` | Before Virtualbricks starts: a `wirefilter` of its own in the folder of the VDE programs of the project that Virtualbricks opens at its first start, `new_project`, which runs that of this computer once the scenario lets it, at most a minute later. The first start of a brick asks it, before its program runs: the brick says Starting until then |
+| `When I let the VDE programs answer` | That `wirefilter` runs that of this computer, and the start goes on |
 | `When I give sw1 34 ports and hub mode, with the buttons of its settings` | Configure… in its menu, the + or the - of Ports until it says 34, Hub mode turned on, then OK |
 | `When I give sw1 34 ports and hub mode in its settings, then cancel` | The same, then Cancel |
 | `When I give sw1 34 ports and hub mode in its settings, then press Escape` | The same, then Escape |
@@ -84,6 +87,7 @@ The steps of a user:
 | `Then the Delete dialog says "The event new_event will no longer start sw1."` | A line of the dialog that asks to delete is the text |
 | `Then the Rename dialog says "sw1 is the name of a brick", and Rename is disabled` | The line under its field is the text, and its Rename is disabled |
 | `Then the Rename dialog refuses it, saying "The project folder has web_hda.cow already, a private copy named after web: move it away first"` | The dialog is still open, and a line under its field is the text |
+| `Then Rename… and Delete… are disabled in the menu of sw1` | Its menu opens, with both disabled; then Escape closes it |
 | `Then Delete… is disabled in the menu of sw1, and nothing asks to delete it` | Its menu opens, which it wouldn't under a dialog, with Delete… disabled, and no dialog shows; then Escape closes the menu |
 | `Then wr1 can't start: "Configure wr1 first"` | Its Start is disabled, and the state in its row says why, in its tooltip, which the screen readers read |
 | `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |

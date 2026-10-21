@@ -341,6 +341,21 @@ class TestTheRowAboveTheList(BricksTestCase):
         self.tab.stop_button.clicked()
         self.assertEqual(self.done, [("off", "sw")])
 
+    def test_stop_all_calls_starts_off(self):
+        # and Start All says nothing of a brick stopped before it ran
+        sw2 = self.factory.new_brick("switch", "sw2")
+        prepared = defer.Deferred()
+        sw2.prepare = lambda resume="": prepared
+        started = self.tab.start_all()
+        self.assertTrue(self.tab.stop_button.get_sensitive())
+        stopped = self.tab.stop_all()
+        prepared.callback(None)
+        self.successResultOf(started)
+        self.successResultOf(stopped)
+        self.assertIsNone(sw2.proc)
+        self.assertFalse(self.tab.stop_button.get_sensitive())
+        self.assertEqual(self.logger.formatted(), [])
+
     def test_what_fails_is_logged(self):
         self.sw.start = lambda: defer.fail(RuntimeError("no vde_switch"))
         self.successResultOf(self.tab.start_all())

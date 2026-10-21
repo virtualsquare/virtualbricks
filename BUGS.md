@@ -33,21 +33,6 @@ in 3.0: they wait until after it.
 
 ## Bricks
 
-- [ ] **A brick that is starting counts as stopped.** `must_stop()`
-  (`virtualbricks/bricks/__init__.py`) asks `is_running()`, which is
-  `proc is not None`, and a start sets `proc` only once it spawns the
-  program: after the bricks it plugs into are up and `prepare()` is done.
-  In between, `quit` isn't refused: Virtualbricks says "Bye!", and the
-  program is spawned while it shuts down, with nothing to stop it.
-  `must_stop()` also guards deleting and renaming a brick and closing the
-  project; `Brick.starting()` tells a start under way. Seen on
-  3.0.0.dev6, on 19 October 2026, with `--no-gui --workspace FOLDER -l
-  FILE` and `brick start sw1`, `brick list`, `brick stop sw1` and `brick
-  list` read from a file, before the console ran piped lines one after
-  the other: the log had "Bye!", then "Starting: /usr/bin/vde_switch …",
-  and no "Process terminated". No `vde_switch` was left after; what ended
-  it wasn't looked into, nor what a virtual machine would do.
-
 - [ ] **A Netemu takes a negative delay, bandwidth or buffer size.**
   `delay`, `bandwidth` and `buffer_size`, and their `_right_to_left`, are
   `Int()` with no minimum (`virtualbricks/bricks/netemu.py`). With one,
@@ -140,6 +125,19 @@ in 3.0: they wait until after it.
   `store_settings()` of the quit wrote `"xterm"` back. Likely fix, a small
   one: no `store_settings` at quit for the windows, which write their
   settings as they change; best fixed with the one under Settings.
+- [ ] *Later.* **The windows of `--connect` show a brick that is starting
+  as stopped.** Here a starting brick reads Starting, with Rename… and
+  Delete… disabled and a Stop that calls its start off. The facts that
+  the follower pushes of a brick are `running` and `pid` alone
+  (`virtualbricks/remote/follower.py`), and a brick of the copy has no
+  start of its own (`virtualbricks/remote/mirror.py`), so `starting()`
+  is false there: the row says Stopped, its button Start, and Rename…
+  and Delete… are enabled. The Virtualbricks that runs the bricks
+  refuses a delete or a rename all the same, and its stop calls the
+  start off. Seen on 3.0.0.dev6, on 20 October 2026, reading the code
+  while fixing "A brick that is starting counts as stopped"; not run.
+  Likely fix: a `starting` fact, pushed when a start begins and ends, and
+  the copy's `starting()` reading it.
 
 ## Settings
 
@@ -191,3 +189,15 @@ in 3.0: they wait until after it.
   `virtualbricks/tests/config/test_workspace.py`, two in
   `virtualbricks/tests/test_locks.py`, and one in
   `virtualbricks/tests/gui/dialogs/test_projectname.py`.
+
+- [ ] **"The file chooser of the image of DTN2hops, on its file" fails
+  under load.** The scenario of `e2e/features/pictures.feature` fails at
+  `And in the file chooser, I select debian13.qcow2 of my Downloads
+  folder`: "Not in 10 s: a file chooser shows". Alone it passes, in about
+  40 s, much longer than the others. Seen on 3.0.0.dev6, on 20 October
+  2026, with `pytest --count 10 -n 5 -k
+  test_the_file_chooser_of_the_image_of_dtn2hops_on_its_file`: 8 of 10
+  failed on a2602080, 4 of 10 with the fix of "A brick that is starting
+  counts as stopped" in the tree; once in a run of every scenario with
+  `-n 8`. What makes it slow, and the file chooser late, wasn't looked
+  into.

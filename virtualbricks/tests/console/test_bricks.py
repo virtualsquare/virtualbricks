@@ -336,6 +336,28 @@ class TestStartAndStop(BricksTestCase):
             self.done, [("off", "sw1", False), ("off", "tap1", True)]
         )
 
+    def test_stop_while_it_starts(self):
+        # the start is called off, and quit waits for it
+        sw = self.brick("switch", "sw1")
+        sw.configured = lambda: True
+        prepared = defer.Deferred()
+        sw.prepare = lambda resume="": prepared
+        starting = run(self.factory, "brick start sw1", self.clock())
+        self.assertEqual(
+            self.run_line("brick list")[1].split()[:3],
+            ["sw1", "Switch", "Starting"],
+        )
+        self.assertEqual(self.fails("quit"), "sw1 is running: stop it first")
+        stopping = run(self.factory, "brick stop sw1", self.clock())
+        self.assertNoResult(stopping)
+        prepared.callback(None)
+        self.assertEqual(self.successResultOf(stopping), ["sw1 stopped"])
+        self.assertEqual(
+            self.failureResultOf(starting).getErrorMessage(),
+            "Cannot start 'sw1': stopped before it ran",
+        )
+        self.assertEqual(self.logger.formatted(), [])
+
     def test_restart(self):
         sw = self.running(self.brick("switch", "sw1"))
         restarted = []

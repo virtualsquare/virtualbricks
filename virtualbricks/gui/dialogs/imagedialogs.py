@@ -53,6 +53,7 @@ from twisted.python.failure import Failure
 
 from virtualbricks import errors, locations
 from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks import must_stop
 from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
 from virtualbricks.config import archive, images
 from virtualbricks.config.archive import ArchiveJob
@@ -567,7 +568,7 @@ class SaveImageDialog(_JobDialog):
         message = check_name(self.factory, name) if name else None
         self.name_message.set_text(message or "")
         self.name_message.set_visible(message is not None)
-        running = self.vm.is_running()
+        running = must_stop(self.vm)
         if running and self.job is None:
             self._say(_stop_first([self.vm.name]))
         ready = bool(name) and message is None and not running
@@ -772,7 +773,7 @@ class StartOverDialog(Window):
             False,
             0,
         )
-        running = self.vm.is_running()
+        running = must_stop(self.vm)
         if running:
             box.pack_start(
                 text_label(_stop_first([vm]), dim=True), False, False, 0

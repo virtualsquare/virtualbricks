@@ -11,8 +11,8 @@
   <file>debian.qcow2</file>. The <gui>Images</gui> tab has a row for each
   image of the project: its format, the size of the disk that the machine
   sees, the space that the file takes, and which disks use it, on a private
-  copy or the image itself. Its state is <gui>In use</gui> while a running
-  machine reads it.</p>
+  copy or the image itself. Its state is <gui>In use</gui> while a machine
+  that reads it runs or starts.</p>
   <figure>
     <title>The Images tab</title>
     <media type="image" mime="image/png" src="figures/images.png">

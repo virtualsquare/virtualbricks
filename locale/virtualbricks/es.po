@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-20 11:11+0200\n"
+"POT-Creation-Date: 2026-10-20 23:29+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -101,6 +101,12 @@ msgstr "<b> Icono de Maquina Virtual </b>"
 #: virtualbricks/gui/mainwindow/images/imagedetails.py
 msgid "Running"
 msgstr "En ejecución"
+
+#: virtualbricks/bricks/brickinfo.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#, fuzzy
+msgid "Starting"
+msgstr "_Preferencias"
 
 #: virtualbricks/bricks/brickinfo.py
 #: virtualbricks/gui/mainwindow/images/imagedetails.py
@@ -2397,6 +2403,11 @@ msgstr "<b> Icono de Maquina Virtual </b>"
 #: virtualbricks/errors.py
 #, python-brace-format
 msgid "Cannot start '{name}': its links make a loop, {loop}"
+msgstr ""
+
+#: virtualbricks/errors.py
+#, python-brace-format
+msgid "Cannot start '{name}': stopped before it ran"
 msgstr ""
 
 #: virtualbricks/errors.py

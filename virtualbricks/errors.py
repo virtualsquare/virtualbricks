@@ -81,6 +81,19 @@ class LinkLoopError(Error):
         ).format(name=self.loop[0], loop=" → ".join(self.loop))
 
 
+class StartCalledOffError(Error):
+    """A stop came while the brick started: its program didn't run."""
+
+    def __init__(self, name: str) -> None:
+        Error.__init__(self, name)
+        self.name = name
+
+    def __str__(self) -> str:
+        return _("Cannot start '{name}': stopped before it ran").format(
+            name=self.name
+        )
+
+
 class LockedImageError(Error):
 
     def __init__(self, image: Image, master: Disk | None) -> None:

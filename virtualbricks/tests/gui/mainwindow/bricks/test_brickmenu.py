@@ -20,7 +20,7 @@
 import os
 import signal
 
-from twisted.internet import error
+from twisted.internet import defer, error
 
 from virtualbricks.engine import LocalEngine
 from virtualbricks.tests import FakeLogger
@@ -112,6 +112,14 @@ class BrickMenuTestCase(GuiTestCase):
         brick.proc = FakeProcess()
         return brick
 
+    def starting(self, brick):
+        """brick starts, and waits for prepare() until the test ends."""
+
+        self.prepared = defer.Deferred()
+        brick.prepare = lambda resume="": self.prepared
+        brick.start()
+        return brick
+
     def events(self):
         return list(self.factory.events)
 
@@ -187,6 +195,23 @@ class TestTheMenu(BrickMenuTestCase):
                             ["Kill"],
                         ],
                     )
+                ],
+                ["Delete…"],
+            ],
+        )
+
+    def test_a_brick_that_starts(self):
+        # Stop calls the start off; no process yet
+        sw = self.starting(self.brick("switch", "sw"))
+        self.assertEqual(
+            self.menu(sw),
+            [
+                ["Stop", "Configure…"],
+                [
+                    "Rename…",
+                    "Duplicate",
+                    ("When It Starts", [["No Event"]]),
+                    ("When It Stops", [["No Event"]]),
                 ],
                 ["Delete…"],
             ],
@@ -313,6 +338,21 @@ class TestWhatIsEnabled(BrickMenuTestCase):
             ],
         )
 
+    def test_a_brick_that_starts(self):
+        # Rename and Delete wait, and the process isn't there yet
+        sw = self.starting(self.brick("switch", "sw"))
+        self.assertEqual(
+            self.enabled(sw),
+            [
+                "configure",
+                "connect",
+                "duplicate",
+                "startstop",
+                "when-starts",
+                "when-stops",
+            ],
+        )
+
     def test_a_virtual_machine(self):
         vm = self.brick("qemu", "vm")
         self.assertEqual(self.enabled(vm), sorted(self.STOPPED + ["resume"]))
@@ -364,6 +404,24 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
         self.assertEqual(
             self.engine.calls, [("start", self.sw), ("stop", self.sw)]
         )
+
+    def test_stop_while_it_starts(self):
+        actions = self.recording(self.starting(self.sw))
+        actions.activate_action("startstop", None)
+        self.assertEqual(self.engine.calls, [("stop", self.sw)])
+
+    def test_a_start_called_off_isnt_logged(self):
+        # the user stopped it; another failure is
+        prepared = defer.Deferred()
+        self.sw.prepare = lambda resume="": prepared
+        self.activate("startstop")
+        self.activate("startstop")
+        prepared.callback(None)
+        self.assertIsNone(self.sw.proc)
+        self.assertEqual(self.logger.formatted(), [])
+        self.sw.prepare = lambda resume="": defer.fail(RuntimeError("gone"))
+        self.activate("startstop")
+        self.assertEqual(self.logger.formatted(), ["Error on starting brick."])
 
     def test_rename(self):
         shown = []

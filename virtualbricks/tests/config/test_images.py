@@ -249,6 +249,10 @@ class ImagesTestCase(BrickTestCase):
         vm.is_running = lambda: True
         return vm
 
+    def starting(self, vm):
+        vm.starting = lambda: True
+        return vm
+
 
 class TestUses(ImagesTestCase):
 
@@ -268,6 +272,12 @@ class TestUses(ImagesTestCase):
         # the image itself: no copy
         self.assertIsNone(found[1].copy)
         self.assertIsNone(found[1].copy_size)
+
+    def test_a_machine_that_starts(self):
+        # QEMU will have its disks
+        self.starting(self.vm("r1"))
+        [use] = uses(self.factory, self.image)
+        self.assertTrue(use.running)
 
     def test_a_copy_not_made_yet(self):
         r1 = self.vm("r1")
@@ -565,6 +575,13 @@ class TestPrivateCopies(ImagesTestCase):
         with self.assertRaises(RunningError) as cm:
             start_over(vm, "hda")
         self.assertEqual(cm.exception.names, ["r1"])
+        self.assertTrue(os.path.exists(path))
+
+    def test_not_while_it_starts(self):
+        # its start makes the copy the machine runs on
+        vm = self.starting(self.vm("r1"))
+        path = self.copy(vm)
+        self.assertRaises(RunningError, start_over, vm, "hda")
         self.assertTrue(os.path.exists(path))
 
     def test_adopt(self):

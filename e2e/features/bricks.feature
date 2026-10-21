@@ -237,6 +237,26 @@ Feature: Bricks
     Then Virtualbricks hasn't quit
     And sw1 is still running
 
+  @needs-vde_switch @needs-wirefilter
+  Scenario: A switch that is starting keeps Virtualbricks open, and a stop calls its start off
+    Given the VDE programs wait to answer until I let them
+    And Virtualbricks is running
+    When I add the switch sw1
+    And I try to start sw1
+    Then the list of bricks has
+      | Brick | Detail            | State    |
+      | sw1   | Switch · 32 ports | Starting |
+    And Rename… and Delete… are disabled in the menu of sw1
+    When I quit Virtualbricks
+    Then an error says "Cannot close virtualbricks: there are running bricks"
+    When I close the error
+    Then Virtualbricks hasn't quit
+    When I stop sw1, which is starting
+    And I let the VDE programs answer
+    Then sw1 is stopped
+    When I quit Virtualbricks
+    Then Virtualbricks has quit
+
   Scenario: A switch added is in the project after a quit, and shows at the next start
     Given Virtualbricks is running
     When I add the switch sw1

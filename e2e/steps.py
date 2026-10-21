@@ -597,7 +597,9 @@ def start_brick(virtualbricks, brick_processes, name):
     before = virtualbricks.children()
     in_view(virtualbricks, "button", f"Start {name}")
     virtualbricks.click("button", f"Start {name}")
-    virtualbricks.find("button", f"Stop {name}")
+    # not its Stop, which shows while it starts, as the programs that its
+    # start asks run and quit
+    virtualbricks.find("label", "Running", within=virtualbricks.row(name))
     brick_processes[name] = virtualbricks.wait_for(
         lambda: virtualbricks.children() - before, f"a process of {name} runs"
     )
@@ -615,6 +617,64 @@ def try_start(virtualbricks, name):
 
     row = virtualbricks.row(name)
     virtualbricks.click("button", f"Start {name}", within=row, enabled=False)
+
+
+@when(words("I stop {name:Brick}, which is starting"))
+def stop_starting(virtualbricks, name):
+    """
+    Its Stop, while its row says Starting; the row says so until the start
+    ends, which the stop waits for.
+    """
+
+    row = virtualbricks.row(name)
+    virtualbricks.find("label", "Starting", within=row)
+    virtualbricks.click("button", f"Stop {name}", within=row)
+    virtualbricks.find("label", "Starting", within=row)
+
+
+# wirefilter, which a brick's first start asks, waits for this file in the
+# folder of the scenario: at most a minute, in tenths of a second
+VDE_ANSWERS = "vde-programs-answer"
+WAITING_WIREFILTER = """\
+#!/bin/sh
+i=0
+while [ ! -e {gate} ] && [ $i -lt 600 ]; do sleep 0.1; i=$((i + 1)); done
+exec {real} "$@"
+"""
+
+
+@given("the VDE programs wait to answer until I let them")
+def vde_programs_wait(virtualbricks):
+    """
+    A wirefilter of its own in the folder of the VDE programs of the
+    project that Virtualbricks opens at its first start, new_project: it
+    runs that of this computer once the scenario lets it. The first start
+    of a brick asks it, before its program runs.
+    """
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    real = shutil.which("wirefilter")
+    assert real is not None, "no wirefilter: tag the scenario"
+    folder = os.path.join(virtualbricks.home, "vde")
+    os.makedirs(folder)
+    program = os.path.join(folder, "wirefilter")
+    gate = os.path.join(virtualbricks.folder, VDE_ANSWERS)
+    with open(program, "w") as file:
+        file.write(
+            WAITING_WIREFILTER.format(
+                gate=shlex.quote(gate), real=shlex.quote(real)
+            )
+        )
+    os.chmod(program, 0o755)
+    project = os.path.join(virtualbricks.workspace, "new_project")
+    os.makedirs(project)
+    with open(os.path.join(project, "project.toml"), "w") as file:
+        file.write(f"format = 1\n\n[settings]\nvde_path = {folder!r}\n")
+
+
+@when("I let the VDE programs answer")
+def vde_programs_answer(virtualbricks):
+    open(os.path.join(virtualbricks.folder, VDE_ANSWERS), "w").close()
 
 
 @when(
@@ -926,6 +986,17 @@ def delete_disabled(virtualbricks, name):
     virtualbricks.click("button", f"Menu of {name}")
     virtualbricks.disabled("button", "Delete…")
     assert virtualbricks.shows("dialog") is None, "a dialog shows"
+    virtualbricks.key("Escape", virtualbricks.find("frame"))
+    virtualbricks.gone("button", "Delete…")
+
+
+@then(words("Rename… and Delete… are disabled in the menu of {name:Brick}"))
+def rename_delete_disabled(virtualbricks, name):
+    """Its menu opens, with both disabled; then Escape closes it."""
+
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.disabled("button", "Rename…")
+    virtualbricks.disabled("button", "Delete…")
     virtualbricks.key("Escape", virtualbricks.find("frame"))
     virtualbricks.gone("button", "Delete…")
 

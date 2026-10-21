@@ -111,6 +111,8 @@ class BrickRow(Row[Brick]):
             running,
             state in WARNINGS,
             state_tooltip(brick, state),
+            # a stop calls a start off
+            stops=running or state is State.STARTING,
         )
         if not brick.runs_program:
             # a switch wrapper: another program starts and stops its switch

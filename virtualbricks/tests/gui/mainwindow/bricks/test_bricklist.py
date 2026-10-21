@@ -22,6 +22,8 @@ running bricks, and a brick dropped on another.
 
 import os
 
+from twisted.internet import defer
+
 from virtualbricks.engine import LocalEngine
 from virtualbricks.tests.gui import GuiTestCase, RecordingEngine, has_display
 
@@ -277,6 +279,23 @@ class TestTheRows(BrickListTestCase):
         # what the menu allows follows
         self.assertFalse(row.actions.get_action_enabled("rename"))
 
+    def test_a_brick_that_starts(self):
+        # its program runs once prepare() is done: the button stops it
+        self.sw.prepare = lambda resume="": defer.Deferred()
+        self.sw.start()
+        row = self.row(self.sw)
+        self.assertEqual(row.state_label.get_text(), "Starting")
+        self.assertIsNone(row.state.get_tooltip_text())
+        self.assertFalse(row.dot.get_style_context().has_class("running"))
+        self.assertEqual(
+            row.startstop.get_image().get_icon_name()[0],
+            "media-playback-stop-symbolic",
+        )
+        self.assertEqual(row.startstop.get_tooltip_text(), "Stop sw")
+        self.assertTrue(row.startstop.get_sensitive())
+        for name in ("rename", "delete", "kill"):
+            self.assertFalse(row.actions.get_action_enabled(name), name)
+
     def test_a_stopped_brick(self):
         row = self.row(self.sw)
         self.assertTrue(row.dot.get_visible())
@@ -316,6 +335,14 @@ class TestTheRows(BrickListTestCase):
         self.running(self.sw)
         self.row(self.sw).startstop.clicked()
         self.assertEqual(engine.calls, [("start", self.sw), ("stop", self.sw)])
+
+    def test_stop_while_it_starts(self):
+        engine = RecordingEngine(self.factory)
+        self.list = self.make_list(engine)
+        self.sw.prepare = lambda resume="": defer.Deferred()
+        self.sw.start()
+        self.row(self.sw).startstop.clicked()
+        self.assertEqual(engine.calls, [("stop", self.sw)])
 
     def test_the_actions_of_the_menu(self):
         row = self.row(self.sw)

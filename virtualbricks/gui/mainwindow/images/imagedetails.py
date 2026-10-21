@@ -293,7 +293,12 @@ class ImageDetails(Panel):
             )
             return
         for row, use in enumerate(uses):
-            state = _("Running") if use.running else _("Stopped")
+            if not use.running:
+                state = _("Stopped")
+            elif use.vm.starting():
+                state = _("Starting")
+            else:
+                state = _("Running")
             for column, label in enumerate(
                 (
                     _label(use.vm.name, bold=True),

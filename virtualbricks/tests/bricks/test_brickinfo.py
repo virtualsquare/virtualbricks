@@ -22,20 +22,10 @@ import subprocess
 import sys
 from unittest import mock
 
+from twisted.internet import defer
 from twisted.trial import unittest
 
 from virtualbricks.brickfactory import BRICK_CLASSES
-from virtualbricks.bricks.netemu import Netemu
-from virtualbricks.bricks.router import Router
-from virtualbricks.bricks.switch import Switch
-from virtualbricks.bricks.switchwrapper import SwitchWrapper
-from virtualbricks.bricks.tunnelconnect import TunnelConnect
-from virtualbricks.bricks.tunnellisten import TunnelListen
-from virtualbricks.bricks.virtualmachine import VirtualMachine, hostonly_sock
-from virtualbricks.bricks.wire import Wire
-from virtualbricks.programs import VDE_PROGRAMS
-from virtualbricks.tests import BrickTestCase
-
 from virtualbricks.bricks import brickinfo
 from virtualbricks.bricks.brickinfo import (
     HOST,
@@ -54,6 +44,16 @@ from virtualbricks.bricks.brickinfo import (
     state,
     summary,
 )
+from virtualbricks.bricks.netemu import Netemu
+from virtualbricks.bricks.router import Router
+from virtualbricks.bricks.switch import Switch
+from virtualbricks.bricks.switchwrapper import SwitchWrapper
+from virtualbricks.bricks.tunnelconnect import TunnelConnect
+from virtualbricks.bricks.tunnellisten import TunnelListen
+from virtualbricks.bricks.virtualmachine import VirtualMachine, hostonly_sock
+from virtualbricks.bricks.wire import Wire
+from virtualbricks.programs import VDE_PROGRAMS
+from virtualbricks.tests import BrickTestCase
 
 
 def new_kind(brick_class):
@@ -129,6 +129,14 @@ class TestState(BrickInfoTestCase):
         self.assertIs(state(sw), State.RUNNING)
         self.assertEqual(process(sw), 41301)
 
+    def test_starting(self):
+        # the start waits for prepare(), with no process yet
+        sw = self.switch()
+        sw.prepare = lambda resume="": defer.Deferred()
+        sw.start()
+        self.assertIs(state(sw), State.STARTING)
+        self.assertIsNone(process(sw))
+
     def test_not_connected(self):
         tap = self.brick("tap", "tap")
         self.assertIs(state(tap), State.NOT_CONNECTED)
@@ -150,7 +158,13 @@ class TestState(BrickInfoTestCase):
     def test_each_has_a_label(self):
         self.assertEqual(
             [brickinfo.LABELS[s] for s in State],
-            ["Running", "Stopped", "Not connected", "Not configured"],
+            [
+                "Running",
+                "Starting",
+                "Stopped",
+                "Not connected",
+                "Not configured",
+            ],
         )
 
 

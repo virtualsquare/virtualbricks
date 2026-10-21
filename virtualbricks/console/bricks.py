@@ -37,7 +37,7 @@ from twisted.python.failure import Failure
 from virtualbricks import bricks as bricks_module
 from virtualbricks import errors
 from virtualbricks.brickfactory import BrickFactory
-from virtualbricks.bricks import Brick, brickinfo
+from virtualbricks.bricks import Brick, brickinfo, is_running, must_stop
 from virtualbricks.bricks.brickinfo import (
     LABELS,
     NEW_KINDS,
@@ -54,11 +54,17 @@ from virtualbricks.bricks.virtualmachine import (
     VirtualMachine,
     hostonly_sock,
     is_virtualmachine,
+)
+from virtualbricks.bricks.virtualmachine import (
     resume as resume_vm,
+)
+from virtualbricks.bricks.virtualmachine import (
     suspend as suspend_vm,
 )
 from virtualbricks.config.schema import (
     Kind as FieldKind,
+)
+from virtualbricks.config.schema import (
     field_default,
     field_help,
     field_names,
@@ -82,7 +88,6 @@ from virtualbricks.console.command import (
 )
 from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _
-from virtualbricks.bricks import is_running, must_stop
 
 logger = Logger()
 start_failed = "Starting {name} failed"
@@ -563,7 +568,8 @@ def _stop(
 ) -> Generator[defer.Deferred[Any], Any, list[str]]:
     lines: list[str] = []
     for brick in bricks:
-        if not is_running(brick):
+        # a start under way is called off
+        if not is_running(brick) and not brick.starting():
             lines.append(_("{name} isn't running").format(name=brick.name))
             continue
         try:

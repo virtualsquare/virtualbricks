@@ -24,7 +24,13 @@ from twisted.internet import defer, task
 from twisted.trial import unittest
 
 from virtualbricks import bricks, errors
-from virtualbricks.bricks import BaseConfig, BrickConfig, terminal_command
+from virtualbricks.bricks import (
+    BaseConfig,
+    BrickConfig,
+    brickinfo,
+    terminal_command,
+)
+from virtualbricks.bricks.brickinfo import State
 from virtualbricks.bricks.eventaction import StartAction
 from virtualbricks.config import settings
 from virtualbricks.config.report import Report
@@ -282,6 +288,203 @@ class TestLoop(BrickTestCase):
         # started again while the switch starts: no loop, still no switch
         self.assertTrue(sw1.starting())
         self.failureResultOf(wire.start(), errors.BadConfigError)
+
+
+class FakeProcess:
+    pid = 41301
+
+    def __init__(self, brick):
+        self.brick = brick
+        self.signals = []
+
+    def signal_process(self, signal):
+        self.signals.append(signal)
+
+
+class TestCallOff(BrickTestCase):
+    """A stop that comes while the brick starts."""
+
+    def setUp(self):
+        super().setUp()
+        # a switch can start once the folder of its socket is there
+        os.makedirs(self.factory.runtime_dir)
+        self.spawned = []
+        self.prepared = []
+
+    def slow(self, kind, name):
+        """A brick whose start waits for the Deferred of each prepare()."""
+
+        brick = self.factory.new_brick(kind, name)
+
+        def prepare(resume=""):
+            self.prepared.append(name)
+            deferred = defer.Deferred()
+            brick.waits_for = deferred
+            return deferred
+
+        brick.prepare = prepare
+        brick.command = lambda prepared: name
+        brick.spawn = lambda command: self.spawn(brick)
+        return brick
+
+    def quick(self, kind, name):
+        brick = self.slow(kind, name)
+        brick.prepare = lambda resume="": defer.succeed(None)
+        return brick
+
+    def spawn(self, brick):
+        self.spawned.append(brick.name)
+        brick.proc = FakeProcess(brick)
+        brick.process_started(brick.proc)
+
+    def test_its_program_doesnt_run(self):
+        sw = self.slow("switch", "sw1")
+        started = sw.start()
+        stopped = sw.stop()
+        self.assertTrue(sw.starting())
+        # the stop answers once the start ended
+        self.assertNoResult(stopped)
+        sw.waits_for.callback(None)
+        error = self.failureResultOf(started, errors.StartCalledOffError)
+        self.assertEqual(
+            error.getErrorMessage(),
+            "Cannot start 'sw1': stopped before it ran",
+        )
+        self.assertEqual(self.successResultOf(stopped), (sw, None))
+        self.assertEqual(self.spawned, [])
+        self.assertFalse(sw.starting())
+        self.assertFalse(bricks.must_stop(sw))
+
+    def test_kill(self):
+        sw = self.slow("switch", "sw1")
+        started = sw.start()
+        stopped = sw.stop(kill=True)
+        sw.waits_for.callback(None)
+        self.failureResultOf(started, errors.StartCalledOffError)
+        self.assertEqual(self.successResultOf(stopped), (sw, None))
+        self.assertEqual(self.spawned, [])
+
+    def test_the_bricks_it_plugs_into_start(self):
+        # and its own prepare() is skipped
+        sw1 = self.slow("switch", "sw1")
+        sw2 = self.quick("switch", "sw2")
+        wire = self.slow("wire", "wire1")
+        wire.connect(sw1.socks[0])
+        wire.connect(sw2.socks[0])
+        started = wire.start()
+        stopped = wire.stop()
+        self.assertEqual(self.spawned, ["sw2"])
+        sw1.waits_for.callback(None)
+        self.failureResultOf(started, errors.StartCalledOffError)
+        self.successResultOf(stopped)
+        self.assertEqual(self.spawned, ["sw2", "sw1"])
+        self.assertEqual(self.prepared, ["sw1"])
+
+    def test_a_start_after_the_stop_fails_too(self):
+        # the stop wins: a start then waits for the start under way
+        sw = self.slow("switch", "sw1")
+        first = sw.start()
+        stopped = sw.stop()
+        again = sw.start()
+        sw.waits_for.callback(None)
+        self.failureResultOf(first, errors.StartCalledOffError)
+        self.failureResultOf(again, errors.StartCalledOffError)
+        self.successResultOf(stopped)
+        self.assertEqual(self.spawned, [])
+
+    def test_the_next_start_runs(self):
+        sw = self.slow("switch", "sw1")
+        self.failureResultOf(self.called_off(sw), errors.StartCalledOffError)
+        started = sw.start()
+        sw.waits_for.callback(None)
+        self.assertIs(self.successResultOf(started), sw)
+        self.assertEqual(self.spawned, ["sw1"])
+
+    def called_off(self, brick):
+        started = brick.start()
+        brick.stop()
+        brick.waits_for.callback(None)
+        return started
+
+    def test_a_start_that_fails_on_its_own(self):
+        # the stop answers all the same: nothing runs
+        sw = self.slow("switch", "sw1")
+        started = sw.start()
+        stopped = sw.stop()
+        sw.waits_for.errback(errors.BadConfigError("no vde_switch"))
+        self.failureResultOf(started, errors.BadConfigError)
+        self.assertEqual(self.successResultOf(stopped), (sw, None))
+
+    def test_a_program_that_runs_all_the_same_stops(self):
+        # a stop that comes after the last look at the flag
+        sw = self.slow("switch", "sw1")
+
+        def command(prepared):
+            stopped.append(sw.stop())
+            return "sw1"
+
+        stopped = []
+        sw.command = command
+        started = sw.start()
+        sw.waits_for.callback(None)
+        self.successResultOf(started)
+        self.assertEqual(sw.proc.signals, ["TERM"])
+        sw.process_ended(sw.proc, "TERM")
+        self.assertEqual(self.successResultOf(stopped[0]), (sw, "TERM"))
+
+    def test_a_machine_gets_no_powerdown(self):
+        vm = self.slow("qemu", "vm1")
+        sent = []
+        vm.send = sent.append
+        started = vm.start()
+        stopped = vm.stop()
+        vm.waits_for.callback(None)
+        self.failureResultOf(started, errors.StartCalledOffError)
+        self.assertEqual(self.successResultOf(stopped), (vm, None))
+        self.assertEqual((self.spawned, sent), ([], []))
+
+    def test_changes(self):
+        # the windows see the start begin, and end
+        sw = self.slow("switch", "sw1")
+        states = []
+        sw.changed.connect(lambda brick: states.append(brickinfo.state(brick)))
+        self.failureResultOf(self.called_off(sw))
+        self.assertEqual(states, [State.STARTING, State.STOPPED])
+        del states[:]
+        sw.start()
+        sw.waits_for.callback(None)
+        self.assertEqual(states, [State.STARTING, State.RUNNING])
+        # a start refused doesn't begin
+        del states[:]
+        wire = self.factory.new_brick("wire", "wire1")
+        wire.changed.connect(states.append)
+        self.failureResultOf(wire.start(), errors.BadConfigError)
+        self.assertEqual(states, [])
+
+
+class TestStarting(BrickTestCase):
+    """A brick that is starting has to stop, as one that runs."""
+
+    def setUp(self):
+        super().setUp()
+        os.makedirs(self.factory.runtime_dir)
+        self.sw = self.factory.new_brick("switch", "sw1")
+        self.sw.prepare = lambda resume="": defer.Deferred()
+        self.sw.start()
+
+    def test_must_stop(self):
+        self.assertTrue(bricks.must_stop(self.sw))
+        self.assertFalse(bricks.is_running(self.sw))
+
+    def test_quit_and_close_are_refused(self):
+        self.assertRaises(errors.BrickRunningError, self.factory.quit)
+        self.assertRaises(errors.BrickRunningError, self.factory.reset)
+
+    def test_delete_is_refused(self):
+        self.assertRaises(
+            errors.BrickRunningError, self.factory.remove_brick, self.sw
+        )
+        self.assertIs(self.factory.get_brick("sw1"), self.sw)
 
 
 class TestRestart(BrickTestCase):

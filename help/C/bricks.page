@@ -20,6 +20,12 @@
       <p>Its program runs, or not.</p>
     </item>
     <item>
+      <title><gui>Starting</gui></title>
+      <p>Its program runs once the bricks it plugs into run, and a virtual
+      machine has its disks ready. Meanwhile it counts as running: you can't
+      rename it or delete it, nor quit Virtualbricks.</p>
+    </item>
+    <item>
       <title><gui>Not connected</gui></title>
       <p>A plug of the brick goes nowhere, as a wire with a free end: it can't
       start until you connect it.</p>
@@ -44,7 +50,9 @@
     <title>Starting and stopping</title>
     <p>The button of a row starts the brick, or stops it. Starting a brick
     starts first the bricks it plugs into. Stopping a virtual machine asks its
-    system to shut down.</p>
+    system to shut down. Stopping a brick that is starting calls its start
+    off: its program doesn't run, and the bricks it plugs into start all the
+    same.</p>
   </section>
   <section id="settings">
     <title>The settings of a brick</title>
@@ -79,10 +87,11 @@
       </item>
       <item>
         <title><gui>Rename…</gui>, <gui>Delete…</gui></title>
-        <p>Greyed while the brick runs; <key>F2</key> and <key>Delete</key> in
-        the list. Before a brick goes, the dialog says what goes with it: the
-        bricks plugged into it are unplugged, the events no longer start or
-        stop it, and the private copies of a machine go to the trash.</p>
+        <p>Greyed while the brick runs or starts; <key>F2</key> and
+        <key>Delete</key> in the list. Before a brick goes, the dialog says
+        what goes with it: the bricks plugged into it are unplugged, the events
+        no longer start or stop it, and the private copies of a machine go to
+        the trash.</p>
       </item>
       <item>
         <title><gui>Duplicate</gui></title>

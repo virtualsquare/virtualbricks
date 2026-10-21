@@ -26,7 +26,7 @@ brick can plug into or take, When It Starts and When It Stops, and Delete;
 a virtual machine has Resume. While the brick runs, Process slides to the
 actions on its process: the control monitor, pause and continue, restart
 and kill, and for a virtual machine suspend, reset and terminate; Rename
-and Delete wait until it stops.
+and Delete wait until it stops. While it starts, Stop calls the start off.
 
 When It Starts and When It Stops choose the event that the brick starts,
 one or none: No Event, then every event of the project. An event that
@@ -43,7 +43,9 @@ from typing import Any
 from gi.repository import Gdk, Gio, GLib, Gtk
 from twisted.internet import defer
 from twisted.logger import Logger
+from twisted.python.failure import Failure
 
+from virtualbricks import errors
 from virtualbricks.bricks import Brick, brickinfo, is_running, must_stop
 from virtualbricks.bricks.brickinfo import NO_CONSOLE, State
 from virtualbricks.bricks.event import Event
@@ -95,15 +97,28 @@ def _label(name: str) -> str:
     return name.replace("_", "__")
 
 
-def startstop(engine: Engine, brick: Brick) -> defer.Deferred[Any]:
-    """Stop brick if it runs, or else start it; a failure is logged."""
+def called_off(failure: Failure) -> Failure | None:
+    """None for the failure of a start that a stop called off."""
 
-    if is_running(brick):
+    if failure.check(errors.StartCalledOffError):
+        # the user stopped it
+        return None
+    return failure
+
+
+def startstop(engine: Engine, brick: Brick) -> defer.Deferred[Any]:
+    """
+    Stop brick if it runs or starts, or else start it; a failure is logged.
+    """
+
+    if is_running(brick) or brick.starting():
         return engine.stop(brick).addErrback(
             lambda f: logger.failure(stop_error, f)
         )
-    return engine.start(brick).addErrback(
-        lambda f: logger.failure(start_error, f)
+    return (
+        engine.start(brick)
+        .addErrback(called_off)
+        .addErrback(lambda f: logger.failure(start_error, f))
     )
 
 
@@ -140,15 +155,19 @@ def menu(
         for action, setting, label in WHEN
     ]
     process = None
-    # what is done to a process of Virtualbricks: none to another's
-    if must_stop(brick):
+    # what is done to a process of Virtualbricks: none to another's, none
+    # before it runs
+    if running and brick.runs_program:
         process = Gio.MenuItem.new_submenu(
             _("Process {pid}").format(pid=brickinfo.process(brick)),
             _process_menu(brick, console_lacks),
         )
     return menu_of(
         menu_section(
-            _item(_("Stop") if running else _("Start"), "startstop"),
+            _item(
+                _("Stop") if running or brick.starting() else _("Start"),
+                "startstop",
+            ),
             _item(_("Configure…"), "configure", keys=key("Return")),
         ),
         menu_section(
@@ -262,15 +281,17 @@ class BrickActions(MenuActions):
 
         state = brickinfo.state(self.brick)
         running = state is State.RUNNING
-        # a program of Virtualbricks, not another's, as a switch wrapper has
+        # a program of Virtualbricks, not another's, as a switch wrapper has;
+        # it runs, or starts
         program = must_stop(self.brick)
+        process = program and running
         vm = isinstance(self.brick, VirtualMachine)
         # over a connection, SIGTERM waits; the console needs a terminal
         # program here
         local = self.engine.local
         enabled = {
             "startstop": self.brick.runs_program
-            and state in (State.STOPPED, State.RUNNING),
+            and state in (State.STOPPED, State.STARTING, State.RUNNING),
             "configure": self.brick.get_type() not in NO_PANEL,
             "rename": not program,
             "delete": not program,
@@ -278,13 +299,13 @@ class BrickActions(MenuActions):
             "console": running
             and self.brick.get_type() not in NO_CONSOLE
             and self.engine.console_lacks(self.brick) is None,
-            "pause": program,
-            "continue": program,
+            "pause": process,
+            "continue": process,
             "suspend": running and vm,
             "reset": running and vm,
-            "restart": program,
+            "restart": process,
             "terminate": running and vm and local,
-            "kill": program,
+            "kill": process,
         }
         for name, value in enabled.items():
             self.action(name).set_enabled(value)

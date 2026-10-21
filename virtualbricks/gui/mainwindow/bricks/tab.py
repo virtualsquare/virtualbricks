@@ -128,7 +128,8 @@ class BricksTab(RowsTab[Brick]):
 
         engine = self.engine
         deferreds = [
-            engine.start(brick)
+            # a brick stopped before it ran isn't a failure
+            engine.start(brick).addErrback(brickmenu.called_off)
             for brick in self.items()
             if self.can_start(brick)
         ]

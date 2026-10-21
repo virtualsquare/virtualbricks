@@ -29,6 +29,10 @@ document.addEventListener('DOMContentLoaded', function() {
 <span class="gui">Running</span>, <span class="gui">Stopped</span>
 </dt>
 <dd class="terms"><p class="p">Its program runs, or not.</p></dd>
+<dt class="terms"><span class="gui">Starting</span></dt>
+<dd class="terms"><p class="p">Its program runs once the bricks it plugs into run, and a virtual
+      machine has its disks ready. Meanwhile it counts as running: you can't
+      rename it or delete it, nor quit Virtualbricks.</p></dd>
 <dt class="terms"><span class="gui">Not connected</span></dt>
 <dd class="terms"><p class="p">A plug of the brick goes nowhere, as a wire with a free end: it can't
       start until you connect it.</p></dd>
@@ -51,7 +55,9 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="hgroup pagewide"><h2 class="title"><span class="title">Starting and stopping</span></h2></div>
 <div class="region"><div class="contents pagewide"><p class="p">The button of a row starts the brick, or stops it. Starting a brick
     starts first the bricks it plugs into. Stopping a virtual machine asks its
-    system to shut down.</p></div></div>
+    system to shut down. Stopping a brick that is starting calls its start
+    off: its program doesn't run, and the bricks it plugs into start all the
+    same.</p></div></div>
 </div></section><section id="settings"><div class="inner">
 <div class="hgroup pagewide"><h2 class="title"><span class="title">The settings of a brick</span></h2></div>
 <div class="region"><div class="contents pagewide">
@@ -85,10 +91,11 @@ document.addEventListener('DOMContentLoaded', function() {
 <dt class="terms">
 <span class="gui">Rename…</span>, <span class="gui">Delete…</span>
 </dt>
-<dd class="terms"><p class="p">Greyed while the brick runs; <span class="key"><kbd>F2</kbd></span> and <span class="key"><kbd>Delete</kbd></span> in
-        the list. Before a brick goes, the dialog says what goes with it: the
-        bricks plugged into it are unplugged, the events no longer start or
-        stop it, and the private copies of a machine go to the trash.</p></dd>
+<dd class="terms"><p class="p">Greyed while the brick runs or starts; <span class="key"><kbd>F2</kbd></span> and
+        <span class="key"><kbd>Delete</kbd></span> in the list. Before a brick goes, the dialog says
+        what goes with it: the bricks plugged into it are unplugged, the events
+        no longer start or stop it, and the private copies of a machine go to
+        the trash.</p></dd>
 <dt class="terms"><span class="gui">Duplicate</span></dt>
 <dd class="terms"><p class="p">A copy of the brick, with its links, named after it with the next
         free number.</p></dd>
