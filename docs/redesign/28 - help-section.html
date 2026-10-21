@@ -276,12 +276,12 @@
 </style>
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 28 &middot; Design &middot; revision 12, implemented</div>
+    <div class="eyebrow">Step 28 &middot; Design &middot; revision 13, implemented</div>
     <h1>Virtualbricks Help</h1>
     <p class="lede">A user guide for the windows of Virtualbricks: Help &rarr; Contents, or F1 in any window, opens the page about that window. The pages are written once, in Mallard, the format of the GNOME help. Yelp shows them where it is installed, and anywhere else the browser shows the same pages as HTML.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 2de30a6</li>
-      <li>revision 12 &middot; 21 October 2026</li>
+      <li>revision 13 &middot; 21 October 2026</li>
       <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> your questions of today, &ldquo;what is the standard way to add an help section to the application?&rdquo; and &ldquo;Does mallard works if I don&rsquo;t have yelp installed?&rdquo;, then your request, &ldquo;write the design page for the help section&rdquo;. The eight questions, H1 to H8 in <a href="#decisions">&sect;11</a>, are decided.</p>
@@ -297,6 +297,7 @@
     <p class="revision">Then, on 21 October, step 1 of <a href="33%20-%20markdown-documentation.html">page 33</a>: the pages are written in Markdown, in <code>docs/guide/</code>, and <code>docs/build.py</code> writes their Mallard into <code>docs/built/mallard/</code>, the same pages as those of <a href="#guide">&sect;3</a>, element by element; <code>help/C/</code> is gone. <code>help/build.py</code> builds the HTML of <a href="#build">&sect;6</a> from the built pages, and <code>gui/help.py</code> gives Yelp those of the sources from there. The next steps of page 33 put the man pages in the guide, as pages of Yelp, and make the HTML with pandoc in place of yelp-build.</p>
     <p class="revision">The same day, step 2 of page 33: the guide has a <i>Reference</i> section, before <i>Tutorials</i>, with a page for each of the five man pages, which Yelp shows as it shows the others. The links of <a href="#guide">&sect;3</a> to the man pages, <code>man:</code> in Yelp and the website in the HTML, are links to those pages, and no page has <code>if:test</code> any more.</p>
     <p class="revision">The same day, step 3 of page 33: the HTML of <a href="#build">&sect;6</a> is written by <code>docs/build.py</code> with pandoc, in <code>docs/built/html/</code>, in place of yelp-build&rsquo;s: <code>help/build.py</code>, <code>help/html.xsl</code> and the hook <code>help</code> are gone, and the Yelp tools are needed only by the tests. The HTML has the look of the reference pages, and what Yelp adds to a page: the way back to the index, See also, the lists of the index. <code>gui/help.py</code> opens it from there, and it is installed where it was.</p>
+    <p class="revision">Then step 5 of page 33, on <code>website</code>, 0fa857ee: <code>invoke sync-docs</code> of <a href="#website">&sect;7</a> copies <code>docs/built/html/</code> in place of <code>help/html/C/</code>, the reference pages with the guide, and fills the pages of the Documentation from the same HTML, not from <code>docs/NAME.html</code>, which is gone; a350dc4a is the first copy. The addresses of the site stay.</p>
   </header>
 
   <div class="layout">
