@@ -174,6 +174,14 @@ Feature: Projects
     And the folder of DTN2hops_26_Feb_2026 isn't in the workspace
     And the main window shows the project new_project
 
+  Scenario: Escape closes the Export window, which exports nothing
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I open the Export window
+    And I press Escape in the Export window
+    Then the Export window doesn't show
+    And my home folder has no new_project.vbp
+
   Scenario: Import… of the Projects window asks for the archive, then imports it
     Given Virtualbricks is running
     When I add the switch sw1

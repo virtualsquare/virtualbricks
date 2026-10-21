@@ -78,6 +78,9 @@ The steps of a user:
 | `When I let the extraction go on` | The extraction that waits goes on |
 | `When I export the project to new_project.vbp of my home folder` | Export…, in the menu Projects, for the open project; the window suggests the archive in the home, `~/new_project.vbp`; then Export, and Close once it says where it exported it |
 | `When I open the Export window` | Export…, in the menu Projects, for the open project; then the window shows |
+| `When I press Escape in the Export window` | A click in the entry of the archive, which takes the keys there, then Escape |
+| `Then the Export window doesn't show` | Waits until it doesn't |
+| `Then my home folder has no new_project.vbp` | The home has no file or folder of that name |
 | `Then sw1 is running` | Its row says Running, and the processes of its start run; when no step started it, as with `--command`, the process its row tells, which has its sockets |
 | `Then sw1 is still running` | The same |
 | `Then w1 runs with the sockets of sw1 and sw2` | It runs, and a `vde_plug` of its start is in the socket of each switch: the one its `vde_switch` listens on |

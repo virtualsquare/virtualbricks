@@ -27,7 +27,7 @@ from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
-    from gi.repository import Gtk
+    from gi.repository import Gdk, Gtk
 
     from virtualbricks.gui.dialogs import exportproject
 
@@ -274,6 +274,43 @@ class TestExport(ExportTestCase):
         dialog.window.connect("destroy", lambda window: closed.append(True))
         dialog.cancel_button.clicked()
         self.assertEqual(closed, [True])
+
+    def press(self, dialog, keyval, state=0):
+        """Whether the window took the key."""
+
+        event = Gdk.Event.new(Gdk.EventType.KEY_PRESS)
+        event.key.keyval = keyval
+        event.key.state = Gdk.ModifierType(state)
+        return dialog.window.emit("key-press-event", event)
+
+    def test_escape_closes(self):
+        dialog = self.dialog()
+        self.assertTrue(self.press(dialog, Gdk.KEY_Escape))
+        self.assertTrue(dialog.destroyed)
+
+    def test_escape_stops_the_export(self):
+        # as Cancel, which is Stop then
+        dialog, job = self.start()
+        self.assertTrue(self.press(dialog, Gdk.KEY_Escape))
+        self.assertTrue(job.cancelled)
+        self.assertEqual(dialog.stack.get_visible_child_name(), "form")
+        self.assertFalse(dialog.destroyed)
+        # then it closes the window
+        self.assertTrue(self.press(dialog, Gdk.KEY_Escape))
+        self.assertTrue(dialog.destroyed)
+
+    def test_escape_at_the_end(self):
+        dialog, job = self.start()
+        job.done.errback(ArchiveError("disk full"))
+        self.assertTrue(self.press(dialog, Gdk.KEY_Escape))
+        self.assertTrue(dialog.destroyed)
+
+    def test_other_keys(self):
+        dialog = self.dialog()
+        control = Gdk.ModifierType.CONTROL_MASK
+        self.assertFalse(self.press(dialog, Gdk.KEY_Escape, control))
+        self.assertFalse(self.press(dialog, Gdk.KEY_F2))
+        self.assertFalse(dialog.destroyed)
 
     def test_no_file_name(self):
         dialog = self.dialog()

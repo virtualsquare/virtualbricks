@@ -247,6 +247,11 @@ that the tests can't do yet: those needs come first.
   the window shows the form again, and the workspace has nothing of it
   "Escape during the import stops it, as Stop, which removes what it
   wrote", `projects.feature`
+- [x] Escape closes the Export window
+  before the export, which exports nothing; Escape during the export, as
+  Stop, needs an export held as heldtar.py holds an extraction
+  "Escape closes the Export window, which exports nothing",
+  `projects.feature`
 - [x] Import from the Projects window
   Import… asks for the archive first, in a file chooser, then the Import
   window opens on it, above the Projects window

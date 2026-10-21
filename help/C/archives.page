@@ -38,7 +38,8 @@
     </figure>
     <p>The export runs in the background, with its progress. You can stop it,
     or close the window and let it finish: the <gui>Logs</gui> window says
-    when it's done. With <cmd>qemu-img</cmd> installed, the disks are
+    when it's done. <key>Esc</key> does as <gui>Cancel</gui>, which is
+    <gui>Stop</gui> during the export. With <cmd>qemu-img</cmd> installed, the disks are
     compressed, and stay disks that QEMU can run.</p>
   </section>
   <section id="import">

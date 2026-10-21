@@ -2467,6 +2467,29 @@ def open_export(virtualbricks):
     return virtualbricks.find("frame", EXPORT_WINDOW)
 
 
+@when("I press Escape in the Export window")
+def escape_export(virtualbricks):
+    """
+    A click in the entry of the archive, which takes the keys there, then
+    Escape.
+    """
+
+    window = virtualbricks.find("frame", EXPORT_WINDOW)
+    virtualbricks.click("text", within=window)
+    virtualbricks.key("Escape", window)
+
+
+@then("the Export window doesn't show")
+def no_export_window(virtualbricks):
+    virtualbricks.gone("frame", EXPORT_WINDOW)
+
+
+@then(words("my home folder has no {archive}"))
+def no_archive(virtualbricks, archive):
+    path = os.path.join(virtualbricks.home, archive)
+    assert not os.path.exists(path), f"{path} exists"
+
+
 @then(words("the archive {archive} of my home folder has the bricks"))
 def archive_bricks(virtualbricks, archive, datatable):
     """
