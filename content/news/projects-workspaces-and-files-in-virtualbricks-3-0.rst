@@ -371,8 +371,7 @@ each private disk at its new image, unpacks the packed disks, and renames
 the folder into place. If you stop it, or if it fails, it removes what it
 wrote, the copied images included. At the end, the Logs window says what
 needs your attention: an image left unset, a disk that couldn't be rebased.
-The Import window closes once the project opens; for a project imported
-without opening it, it shows the same in a *To check* list.
+The Import window closes then, whether the project opens or not.
 
 The archives of 2.1 import too: their project file is converted on the fly,
 with the same code as the migration. Since they have no list of their
