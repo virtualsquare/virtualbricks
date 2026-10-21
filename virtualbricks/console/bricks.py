@@ -215,7 +215,7 @@ class CardArg(ArgKind):
         vm = done.get("vm")
         if vm is None:
             return []
-        return [f"eth{n}" for n in range(len(vm.plugs) + len(vm.socks))]
+        return [f"eth{n}" for n in range(len(vm.cards))]
 
 
 def _config(done: dict) -> object | None:
@@ -323,8 +323,9 @@ def _links(brick: Brick) -> list[str]:
     """The lines of a brick's links: its cards, ends or plug."""
 
     if is_virtualmachine(brick):
-        links = list(brick.plugs) + list(brick.socks)
-        return [_card_line(brick, n, link) for n, link in enumerate(links)]
+        return [
+            _card_line(brick, n, link) for n, link in enumerate(brick.cards)
+        ]
     lines = []
     ends = (_("left"), _("right")) if len(brick.plugs) == 2 else None
     for index, plug in enumerate(brick.plugs):
@@ -859,8 +860,7 @@ def _check_cards(vm: VirtualMachine, draft: Draft) -> None:
 
 
 def _card_index(vm: VirtualMachine, number: int) -> int:
-    count = len(vm.plugs) + len(vm.socks)
-    if number >= count:
+    if number >= len(vm.cards):
         raise CommandError(
             _("{name} has no eth{number}").format(name=vm.name, number=number)
         )
@@ -874,8 +874,8 @@ def _card_index(vm: VirtualMachine, number: int) -> int:
     Arg("KIND", Choice("plug", "socket", "hostonly")),
     Arg("OPTIONS", Text(), many=True, optional=True),
     help=N_(
-        "Add a network card: plug and its target, socket, or hostonly;"
-        " model= and mac= are its own"
+        "Add a network card after the others: plug and its target, socket,"
+        " or hostonly; model= and mac= are its own"
     ),
     example="brick card add vm1 plug sw1 model=virtio-net-pci",
 )
@@ -892,10 +892,9 @@ def card_add(
         values["kind"] = "socket"
     draft.set_card(index, **values)
     _check_cards(vm, draft)
-    before = {id(link) for link in list(vm.plugs) + list(vm.socks)}
+    before = {id(link) for link in vm.cards}
     apply(draft)
-    links = list(vm.plugs) + list(vm.socks)
-    for number, link in enumerate(links):
+    for number, link in enumerate(vm.cards):
         if id(link) not in before:
             return [f"{vm.name} {_card_line(vm, number, link)}"]
     return []
@@ -935,8 +934,7 @@ def card_set(
     draft.set_card(index, **values)
     _check_cards(vm, draft)
     apply(draft)
-    links = list(vm.plugs) + list(vm.socks)
-    return [f"{vm.name} {_card_line(vm, index, links[index])}"]
+    return [f"{vm.name} {_card_line(vm, index, vm.cards[index])}"]
 
 
 @command(

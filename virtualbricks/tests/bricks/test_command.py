@@ -696,6 +696,23 @@ class TestMachine(LinesTestCase):
             ],
         )
 
+    def test_cards_in_their_order(self):
+        # a plug added after a socket card comes after it
+        vm = self.brick("qemu", "vm")
+        vm.add_sock("00:aa:00:00:00:01", "e1000")
+        vm.add_plug(hostonly_sock, "00:aa:00:00:00:02", "rtl8139")
+        argv, _ = self.line(vm, prepared_qemu("debian-13"))
+        devices = [
+            argv[i + 1] for i, arg in enumerate(argv) if arg == "-device"
+        ]
+        self.assertEqual(
+            devices,
+            [
+                "e1000,mac=00:aa:00:00:00:01,id=vx0,netdev=vx0",
+                "rtl8139,mac=00:aa:00:00:00:02,id=vx1,netdev=vx1",
+            ],
+        )
+
     def test_card_on_the_user_network(self):
         vm = self.brick("qemu", "vm")
         plug = vm.add_plug(None, "00:aa:00:00:00:01", "e1000")

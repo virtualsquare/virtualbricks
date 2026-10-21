@@ -133,9 +133,11 @@ class TestWhatItSays(DeleteTestCase):
 
     def test_the_card_of_a_machine(self):
         sw2 = self.factory.new_brick("switch", "sw2")
+        # after a socket card, which counts
+        self.vm1.add_sock()
         self.vm1.connect(sw2.socks[0])
         self.assertEqual(
-            self.lines(sw2)[1], "vm1 (eth1) will be plugged into nothing."
+            self.lines(sw2)[1], "vm1 (eth2) will be plugged into nothing."
         )
 
     def test_events_that_start_or_stop_it(self):

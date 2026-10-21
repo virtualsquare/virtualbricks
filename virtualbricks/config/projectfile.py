@@ -310,6 +310,8 @@ def _nic_table(link: Plug | Sock) -> Table:
 
 
 def brick_table(brick: Brick) -> Table:
+    from virtualbricks.bricks.virtualmachine import is_virtualmachine
+
     table: Table = {"type": brick.get_type().lower()}
     table.update(brick.config_table())
     style = brick.connections
@@ -317,9 +319,8 @@ def brick_table(brick: Brick) -> Table:
         table["connect"] = _plug_target(brick.plugs[0])
     elif style == "endpoints":
         table["endpoints"] = [_plug_target(plug) for plug in brick.plugs]
-    elif style == "nics":
-        links = list(brick.plugs) + list(brick.socks)
-        table["nics"] = [_nic_table(link) for link in links]
+    elif is_virtualmachine(brick):
+        table["nics"] = [_nic_table(link) for link in brick.cards]
     return table
 
 
@@ -555,7 +556,10 @@ def _read_nic(table: Value, report: Report, where: str) -> Nic | None:
 def _read_connections(
     brick: Brick, table: Table, report: Report, where: str
 ) -> Targets:
-    """Return the targets of the plugs and create the socket cards."""
+    """
+    Return the targets of the plugs; a machine gets its cards in their
+    order, the plugs in nothing until every socket exists.
+    """
 
     from virtualbricks.bricks.virtualmachine import is_virtualmachine
 
@@ -580,19 +584,22 @@ def _read_connections(
         if not isinstance(nics, list):
             report.warning("nics: is not a list, cards dropped", where)
             nics = []
-        plugs: list[Nic] = []
-        socks: list[tuple[Nic, str]] = []
+        cards: list[tuple[Nic, str]] = []
         for index, item in enumerate(nics):
             at = f"{where}.nics[{index}]"
             nic = _read_nic(item, report, at)
-            if nic is None:
-                continue
-            if nic["kind"] == "socket":
-                socks.append((nic, at))
-            else:
+            if nic is not None:
+                cards.append((nic, at))
+        # the names of the socket cards, in their order
+        socks = [nic for nic, at in cards if nic["kind"] == "socket"]
+        names = iter(unique_sock_names([nic.get("name") for nic in socks]))
+        plugs: list[Nic] = []
+        for nic, at in cards:
+            if nic["kind"] != "socket":
+                brick.add_plug(None, nic["mac"], nic["model"])
                 plugs.append(nic)
-        names = unique_sock_names([nic.get("name") for nic, at in socks])
-        for (nic, at), name in zip(socks, names):
+                continue
+            name = next(names)
             if "name" not in nic:
                 report.warning(f"name: missing or invalid, using {name}", at)
             elif nic["name"] != name:
@@ -615,12 +622,13 @@ def _connect(
 
     # the targets are network cards if the brick has them, else sockets
     if is_virtualmachine(brick):
-        for nic in cast("list[Nic]", targets):
+        for plug, nic in zip(brick.plugs, cast("list[Nic]", targets)):
             if nic["kind"] == "hostonly":
                 sock = factory.get_sock(HOSTONLY)
             else:
                 sock = _find_socket(factory, nic["connect"], report, where)
-            brick.add_plug(sock, nic["mac"], nic["model"])
+            if sock is not None:
+                plug.connect(sock)
         return
     for plug, target in zip(brick.plugs, cast("list[str]", targets)):
         sock = _find_socket(factory, target, report, where)

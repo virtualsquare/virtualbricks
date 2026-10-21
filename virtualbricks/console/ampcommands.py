@@ -311,8 +311,8 @@ class BrickDisconnect(amp.Command):
 
 class BrickCardAdd(amp.Command):
     """
-    brick card add VM KIND [OPTIONS…]: Add a network card: plug and its
-    target, socket, or hostonly; model= and mac= are its own.
+    brick card add VM KIND [OPTIONS…]: Add a network card after the others:
+    plug and its target, socket, or hostonly; model= and mac= are its own.
     """
 
     arguments = [

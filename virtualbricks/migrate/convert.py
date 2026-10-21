@@ -779,6 +779,10 @@ class _Converter:
                 )
             elif sock is not None:
                 brick.plugs[index].connect(sock)
+        # 2.1 gave QEMU the plug cards of a machine first, then its sockets
+        for brick in self.factory.bricks:
+            if is_virtualmachine(brick):
+                brick.order_cards([*brick.plugs, *brick.socks])
 
     def follow_image_aliases(self) -> None:
         for brick in self.factory.bricks:

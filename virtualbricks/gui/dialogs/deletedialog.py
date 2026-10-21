@@ -29,7 +29,6 @@ start from them. A running brick doesn't get here: its Delete is greyed.
 
 from __future__ import annotations
 
-import itertools
 import os
 from collections.abc import Iterable, Sequence
 from typing import Any
@@ -75,7 +74,7 @@ def _plugged(plug: Plug) -> str:
     brick = plug.brick
     if not is_virtualmachine(brick):
         return brick.name
-    number = list(itertools.chain(brick.plugs, brick.socks)).index(plug)
+    number = brick.cards.index(plug)
     return _("{vm} (eth{n})").format(vm=brick.name, n=number)
 
 

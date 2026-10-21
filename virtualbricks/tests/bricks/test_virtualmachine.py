@@ -126,6 +126,33 @@ class TestVirtualMachine(BrickTestCase):
             os.path.join(self.factory.runtime_dir, "vm2_sock_eth0[]"),
         )
 
+    def test_the_cards_in_their_order(self):
+        vm = self.factory.new_brick("qemu", "vm")
+        sw = self.factory.new_brick("switch", "sw")
+        sock = vm.add_sock()
+        plug = vm.add_plug(sw.socks[0])
+        other = vm.add_sock()
+        self.assertEqual(vm.cards, [sock, plug, other])
+        self.assertEqual(vm.plugs, [plug])
+        self.assertEqual(vm.socks, [sock, other])
+        vm.remove_plug(sock)
+        vm.remove_plug(plug)
+        self.assertEqual(vm.cards, [other])
+        self.assertEqual((vm.plugs, vm.socks), ([], [other]))
+
+    def test_order_the_cards(self):
+        vm = self.factory.new_brick("qemu", "vm")
+        first, second = vm.add_plug(None), vm.add_plug(None)
+        sock = vm.add_sock()
+        plugs, socks = vm.plugs, vm.socks
+        vm.order_cards([sock, second, first])
+        self.assertEqual(vm.cards, [sock, second, first])
+        # the same lists, in the order of the cards
+        self.assertIs(vm.plugs, plugs)
+        self.assertIs(vm.socks, socks)
+        self.assertEqual(vm.plugs, [second, first])
+        self.assertEqual(vm.socks, [sock])
+
     def test_a_new_socket_card_takes_a_free_name(self):
         vm = self.factory.new_brick("qemu", "vm")
         first, second = vm.add_sock(), vm.add_sock()
@@ -807,11 +834,12 @@ class TestTheCards(DraftTestCase):
             self.sw1.socks[0], "52:54:00:00:00:01", "e1000"
         )
         self.sock = self.vm.add_sock("52:54:00:00:00:02", "rtl8139")
-        self.eth1 = self.vm.add_plug(
+        self.eth2 = self.vm.add_plug(
             hostonly_sock, "52:54:00:00:00:03", "e1000"
         )
 
     def test_the_cards(self):
+        # in the order of the machine, plugs and sockets mixed
         draft = VirtualMachineDraft(self.vm)
         self.assertEqual(
             draft.cards,
@@ -824,26 +852,27 @@ class TestTheCards(DraftTestCase):
                     self.eth0,
                 ),
                 Card(
+                    "socket", "rtl8139", "52:54:00:00:00:02", None, self.sock
+                ),
+                Card(
                     "plug",
                     "e1000",
                     "52:54:00:00:00:03",
                     hostonly_sock,
-                    self.eth1,
-                ),
-                Card(
-                    "socket", "rtl8139", "52:54:00:00:00:02", None, self.sock
+                    self.eth2,
                 ),
             ],
         )
         self.assertEqual(draft.links, [])
         self.assertTrue(draft.cards[0].needs_vde())
-        self.assertFalse(draft.cards[1].needs_vde())
-        self.assertTrue(draft.cards[2].needs_vde())
+        self.assertTrue(draft.cards[1].needs_vde())
+        self.assertFalse(draft.cards[2].needs_vde())
 
     def test_add_and_remove(self):
         draft = VirtualMachineDraft(self.vm)
-        self.assertEqual(draft.add_card(), 2)
-        card = draft.cards[2]
+        # after the others, the socket too
+        self.assertEqual(draft.add_card(), 3)
+        card = draft.cards[3]
         self.assertEqual(
             (card.kind, card.model, card.sock, card.link),
             ("plug", "rtl8139", None, None),
@@ -851,11 +880,11 @@ class TestTheCards(DraftTestCase):
         self.assertRegex(card.mac, "^[0-9a-f:]{17}$")
         self.assertEqual(
             draft.problems(),
-            [Problem("card2", "In nothing: vm1 can't start", error=False)],
+            [Problem("card3", "In nothing: vm1 can't start", error=False)],
         )
         draft.remove_card(0)
         self.assertEqual(
-            [c.link for c in draft.cards], [self.eth1, None, self.sock]
+            [c.link for c in draft.cards], [self.sock, self.eth2, None]
         )
         # the machine waits for OK
         self.assertEqual(len(self.vm.plugs), 2)
@@ -882,15 +911,17 @@ class TestTheCards(DraftTestCase):
         )
 
     def test_a_socket_becomes_a_plug(self):
+        # each keeps its place
         draft = VirtualMachineDraft(self.vm)
-        draft.set_card(2, kind="plug", sock=self.sw2.socks[0])
+        draft.set_card(1, kind="plug", sock=self.sw2.socks[0])
         self.assertEqual([c.kind for c in draft.cards], ["plug"] * 3)
+        self.assertIs(draft.cards[1].link, self.sock)
         draft.set_card(0, kind="socket")
         self.assertEqual(
-            [c.kind for c in draft.cards], ["plug", "plug", "socket"]
+            [c.kind for c in draft.cards], ["socket", "plug", "plug"]
         )
-        self.assertIsNone(draft.cards[2].sock)
-        self.assertIs(draft.cards[2].link, self.eth0)
+        self.assertIsNone(draft.cards[0].sock)
+        self.assertIs(draft.cards[0].link, self.eth0)
 
     def test_a_wrong_mac(self):
         draft = VirtualMachineDraft(self.vm)
@@ -902,7 +933,7 @@ class TestTheCards(DraftTestCase):
     def test_apply(self):
         draft = VirtualMachineDraft(self.vm)
         draft.set_card(0, model="virtio-net-pci", sock=self.sw2.socks[0])
-        draft.remove_card(1)
+        draft.remove_card(2)
         index = draft.add_card()
         draft.set_card(index, sock=self.sw1.socks[0], mac="52:54:00:00:00:04")
         apply(draft)
@@ -915,6 +946,10 @@ class TestTheCards(DraftTestCase):
         )
         self.assertIs(self.vm.plugs[0], self.eth0)
         self.assertEqual(self.vm.socks, [self.sock])
+        # the new card after the socket
+        self.assertEqual(
+            self.vm.cards, [self.eth0, self.sock, self.vm.plugs[1]]
+        )
         # moved out of sw1, the new one in it
         self.assertEqual(
             [plug.brick for plug in self.sw1.socks[0].plugs], [self.vm]
@@ -925,15 +960,33 @@ class TestTheCards(DraftTestCase):
         draft = VirtualMachineDraft(self.vm)
         draft.set_card(0, kind="socket")
         apply(draft)
-        self.assertEqual(self.vm.plugs, [self.eth1])
+        self.assertEqual(self.vm.plugs, [self.eth2])
         self.assertEqual(len(self.vm.socks), 2)
-        self.assertEqual(self.vm.socks[1].mac, "52:54:00:00:00:01")
+        # in the place of the plug, the first card
+        sock = self.vm.socks[0]
+        self.assertEqual(self.vm.cards, [sock, self.sock, self.eth2])
+        self.assertEqual(sock.mac, "52:54:00:00:00:01")
+        self.assertEqual(sock.nickname, "vm1_sock_eth1")
         self.assertEqual(self.sw1.socks[0].plugs, [])
+        self.assertEqual(self.changed, [self.vm])
+
+    def test_a_socket_becomes_a_plug_in_its_place(self):
+        draft = VirtualMachineDraft(self.vm)
+        draft.set_card(1, kind="plug", sock=self.sw2.socks[0])
+        apply(draft)
+        self.assertEqual(self.vm.socks, [])
+        plug = self.vm.cards[1]
+        self.assertEqual(self.vm.cards, [self.eth0, plug, self.eth2])
+        self.assertEqual(self.vm.plugs, [self.eth0, plug, self.eth2])
+        self.assertIs(plug.sock, self.sw2.socks[0])
+        self.assertEqual(plug.mac, "52:54:00:00:00:02")
+        self.assertIsNone(self.factory.get_sock("vm1_sock_eth0"))
 
     def test_nothing_changed(self):
         apply(VirtualMachineDraft(self.vm))
         self.assertEqual(self.changed, [])
-        self.assertEqual(self.vm.plugs, [self.eth0, self.eth1])
+        self.assertEqual(self.vm.plugs, [self.eth0, self.eth2])
+        self.assertEqual(self.vm.cards, [self.eth0, self.sock, self.eth2])
 
 
 class TestApply(DraftTestCase):

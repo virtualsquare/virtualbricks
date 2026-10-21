@@ -728,6 +728,28 @@ class TestConnections(ConvertTestCase):
             ],
         )
 
+    def test_plugs_first(self):
+        # as 2.1 gave them to QEMU, whatever the order of the lines
+        text = (
+            "[Qemu:vm]\n"
+            "link|vm||e1000|00:11:22:33:44:55\n"
+            "sock|vm|vm_sock_eth0|e1000|00:11:22:33:44:56\n"
+            "link|vm|||00:11:22:33:44:57\n"
+        )
+        data, _, report = self.convert(text)
+        self.assertEqual(len(report), 0)
+        self.assertEqual(
+            [
+                (nic["kind"], nic["mac"])
+                for nic in data["bricks"]["vm"]["nics"]
+            ],
+            [
+                ("plug", "00:11:22:33:44:55"),
+                ("plug", "00:11:22:33:44:57"),
+                ("socket", "00:11:22:33:44:56"),
+            ],
+        )
+
     def test_the_model_of_a_plug(self):
         text = "[Qemu:vm]\nlink|vm||e1000|00:11:22:33:44:55\n"
         data, _, report = self.convert(text)

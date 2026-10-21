@@ -33,21 +33,16 @@ in 3.0: they wait until after it.
 
 ## Machines
 
-- [ ] **A plug card added after a socket card moves it.** The cards of a
-  machine are kept in two lists, the plug cards first, then the socket
-  cards, and numbered by their place: `eth0`, `eth1`… in the console and
-  in the summary of the brick (`_card()` in
-  `virtualbricks/bricks/brickinfo.py`), and in that order on QEMU's
-  command line (`command()` in `virtualbricks/bricks/virtualmachine.py`).
-  A draft keeps the same order: `add_card()` there puts a new card after
-  the other plugs. So a plug card added after a socket card moves the
-  socket card one place on, and its number changes; the order of the
-  cards that the guest sees would change too, which is from the code, not
-  tried. The name of the socket card, which other bricks plug into,
-  stays. Seen on 3.0.0.dev5, on 18 October 2026, in the console: `brick
-  card add vm1 socket` answered `vm1 eth0: socket vm1:sock_eth0`, then
-  `brick card add vm1 plug vm2:sock_eth0` answered `vm1 eth0: plugged into
-  vm2:sock_eth0`, and `brick list` had `eth0 on vm2 · eth1 as a socket`.
+- [ ] **A duplicate of a machine has only its plugged cards, of the
+  default model.** The help says that Duplicate makes "a copy of the
+  brick, with its links". `duplicate_brick()` in
+  `virtualbricks/brickfactory.py` copies the settings, then calls
+  `connect()` for each plug in a socket, which adds a card of the default
+  model: the copy loses the socket cards, the cards in nothing and the
+  models. Seen on 3.0.0.dev6, on 21 October 2026, in the console: vm1 had
+  `eth0: plugged into sw1, e1000`, `eth1: in nothing, rtl8139` and `eth2:
+  socket vm1:sock_eth0, rtl8139`; `brick duplicate vm1` made vm2 with
+  only `eth0: plugged into sw1, rtl8139`, with a new MAC address.
 
 ## Platforms
 

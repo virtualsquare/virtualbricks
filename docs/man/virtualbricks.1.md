@@ -737,7 +737,7 @@ for a Virtualbricks that asks for one. See **Sockets on the network**.
 :   Unplug a brick, or one end of a wire or a Netemu.
 
 **brick card add** *VM* *KIND* [*OPTIONS*...]
-:   Add a network card: plug and its target, socket, or hostonly; model= and mac= are its own.
+:   Add a network card after the others: plug and its target, socket, or hostonly; model= and mac= are its own.
     For example, **brick card add vm1 plug sw1 model=virtio-net-pci**.
 
 **brick card set** *VM* *CARD* *KEY*=*VALUE*...

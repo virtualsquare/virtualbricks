@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import datetime
 import errno
-import itertools
 import os
 import re
 import shutil
@@ -928,13 +927,7 @@ class VirtualMachineDraft(Draft):
         # the cards are the draft's own, and not links
         self.links = []
         self.original_links = []
-        self.cards: list[Card] = [
-            Card("plug", plug.model, plug.mac, plug.sock, plug)
-            for plug in brick.plugs
-        ] + [
-            Card("socket", sock.model, sock.mac, None, sock)
-            for sock in brick.socks
-        ]
+        self.cards: list[Card] = [card_of(link) for link in brick.cards]
         self.qemu: QemuInfo | None = None
         self.machine_properties: frozenset[str] = frozenset()
 
@@ -942,17 +935,16 @@ class VirtualMachineDraft(Draft):
 
     def add_card(self) -> int:
         """
-        A new card in nothing, after the other plugs; its index. Its model
-        is the one that stands in for a model the program lacks, once the
-        program answered.
+        A new card in nothing, after the others; its index. Its model is the
+        one that stands in for a model the program lacks, once the program
+        answered.
         """
 
-        index = sum(1 for card in self.cards if card.kind == "plug")
         model = DEFAULT_MODEL
         if self.qemu is not None:
             model = stand_in(self.qemu) or DEFAULT_MODEL
-        self.cards.insert(index, Card("plug", model, random_mac(), None))
-        return index
+        self.cards.append(Card("plug", model, random_mac(), None))
+        return len(self.cards) - 1
 
     def remove_card(self, index: int) -> None:
         del self.cards[index]
@@ -960,7 +952,7 @@ class VirtualMachineDraft(Draft):
     def set_card(self, index: int, **values: object) -> None:
         """
         Change a card: its model, mac, kind or sock. A plug that becomes a
-        socket, or back, moves among the plugs or the sockets.
+        socket, or back, keeps its place.
         """
 
         card = self.cards[index]
@@ -968,7 +960,6 @@ class VirtualMachineDraft(Draft):
             setattr(card, name, value)
         if card.kind == "socket":
             card.sock = None
-        self.cards.sort(key=lambda card: card.kind == "socket")
 
     # what is wrong
 
@@ -1087,37 +1078,48 @@ class VirtualMachineDraft(Draft):
             if card.link is not None and card.kind == _kind(brick, card.link)
         }
         changed = False
-        links: list[Plug | Sock] = [*brick.plugs, *brick.socks]
-        for gone in links:
+        before = list(brick.cards)
+        for gone in before:
             if id(gone) not in kept:
                 if isinstance(gone, Plug) and gone.sock is not None:
                     gone.disconnect()
                 brick.remove_plug(gone)
-                changed = True
+        links: list[Plug | Sock] = []
         for card in self.cards:
             link = card.link
             if link is None or id(link) not in kept:
+                # a new card, or one of another kind: in the place of the card
                 if card.kind == "socket":
-                    brick.add_sock(card.mac, card.model)
+                    link = brick.add_sock(card.mac, card.model)
                 else:
-                    brick.add_plug(card.sock, card.mac, card.model)
-                changed = True
-                continue
-            if (link.model, link.mac) != (card.model, card.mac):
-                link.model = card.model
-                link.mac = card.mac
-                changed = True
-            if isinstance(link, Plug) and link.sock is not card.sock:
-                if link.sock is not None:
-                    link.disconnect()
-                if card.sock is not None:
-                    link.connect(card.sock)
-                changed = True
-        return changed
+                    link = brick.add_plug(card.sock, card.mac, card.model)
+            else:
+                if (link.model, link.mac) != (card.model, card.mac):
+                    link.model = card.model
+                    link.mac = card.mac
+                    changed = True
+                if isinstance(link, Plug) and link.sock is not card.sock:
+                    if link.sock is not None:
+                        link.disconnect()
+                    if card.sock is not None:
+                        link.connect(card.sock)
+                    changed = True
+            links.append(link)
+        brick.order_cards(links)
+        # a card gone, new or moved
+        return changed or links != before
 
 
 def _kind(brick: VirtualMachine, link: Plug | Sock) -> str:
     return "socket" if link in brick.socks else "plug"
+
+
+def card_of(link: Plug | Sock) -> Card:
+    """The card of a draft for a card of the machine."""
+
+    if isinstance(link, Sock):
+        return Card("socket", link.model, link.mac, None, link)
+    return Card("plug", link.model, link.mac, link.sock, link)
 
 
 class QemuProcess(bricks.Process):
@@ -1150,6 +1152,9 @@ class VirtualMachine(bricks.Brick):
 
     def __init__(self, factory: BrickFactory, name: str) -> None:
         bricks.Brick.__init__(self, factory, name)
+        # the network cards, in the order the guest sees them: plugs and
+        # socks are the same cards by kind, in this order
+        self.cards: list[Plug | Sock] = []
         self._disks = {dev: Disk(self, dev) for dev in DISK_DEVICES}
 
     def set_name(self, name: str) -> None:
@@ -1303,9 +1308,7 @@ class VirtualMachine(bricks.Brick):
         qemu = prepared.qemu
         assert qemu is not None, "prepare() asks the QEMU program"
         cmd = Command(qemu.path)
-        links: list[Plug | Sock] = list(
-            itertools.chain(self.plugs, self.socks)
-        )
+        links = list(self.cards)
         found = lacks(
             config,
             [(link.model, needs_vde(link)) for link in links],
@@ -1488,6 +1491,7 @@ class VirtualMachine(bricks.Brick):
         sock.path = self.runtime_path(f"{self.name}_{name}[]")
         sock.nickname = f"{self.name}_{name}"
         self.socks.append(sock)
+        self.cards.append(sock)
         return sock
 
     def add_plug(
@@ -1500,6 +1504,7 @@ class VirtualMachine(bricks.Brick):
         plug.model = model or DEFAULT_MODEL
         plug.mac = mac or random_mac()
         self.plugs.append(plug)
+        self.cards.append(plug)
         if sock:
             plug.connect(sock)
         return plug
@@ -1516,11 +1521,22 @@ class VirtualMachine(bricks.Brick):
         if plug not in (self.socks if isinstance(plug, Sock) else self.plugs):
             self.logger.error(own_err, plug=plug, brick=self)
             return
+        self.cards.remove(plug)
         if isinstance(plug, Sock):
             self.socks.remove(plug)
             self.factory.remove_sock(plug)
         else:
             self.plugs.remove(plug)
+
+    def order_cards(self, cards: Sequence[Plug | Sock]) -> None:
+        """Put the cards in this order, which has all of them."""
+
+        assert sorted(map(id, cards)) == sorted(
+            map(id, self.cards)
+        ), "the cards of the machine"
+        self.cards[:] = cards
+        self.plugs[:] = [card for card in cards if isinstance(card, Plug)]
+        self.socks[:] = [card for card in cards if isinstance(card, Sock)]
 
     def acquire(self) -> None:
         """Acquire locks on images if needed."""

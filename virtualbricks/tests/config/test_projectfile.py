@@ -237,6 +237,55 @@ class TestRoundTrip(ProjectFileTestCase):
         self.assertIsNone(wire.plugs[0].sock)
         self.assertEqual(wire.plugs[1].sock.nickname, "vm_sock_eth3")
 
+    def test_the_cards_in_their_order(self):
+        data = project_document(build_lab(self.factory), ProjectSettings())
+        data["bricks"]["vm"]["nics"] = [
+            {"kind": "socket", "name": "lan", "mac": "00:aa:00:00:00:01"},
+            {"kind": "plug", "connect": "vm2:dmz", "mac": "00:aa:00:00:00:02"},
+            {"kind": "hostonly", "mac": "00:aa:00:00:00:03"},
+            {"kind": "socket", "name": "dmz", "mac": "00:aa:00:00:00:04"},
+            {"kind": "plug", "connect": "sw1", "mac": "00:aa:00:00:00:05"},
+        ]
+        data["bricks"]["w"]["endpoints"] = ["vm:lan", "vm:dmz"]
+        # read after vm
+        data["bricks"]["vm2"] = {
+            "type": "qemu",
+            "nics": [
+                {"kind": "socket", "name": "dmz", "mac": "00:aa:00:00:00:06"}
+            ],
+        }
+        factory, project_settings = self.restore(data)
+        vm, vm2 = factory.get_brick("vm"), factory.get_brick("vm2")
+        self.assertEqual(
+            [card.mac for card in vm.cards],
+            [f"00:aa:00:00:00:0{n}" for n in range(1, 6)],
+        )
+        self.assertEqual(
+            [plug.sock for plug in vm.plugs],
+            [
+                vm2.socks[0],
+                factory.get_sock("_hostonly"),
+                factory.get_brick("sw1").socks[0],
+            ],
+        )
+        self.assertEqual(
+            [sock.nickname for sock in vm.socks], ["vm_lan", "vm_dmz"]
+        )
+        self.assertEqual(
+            [plug.sock for plug in factory.get_brick("w").plugs], vm.socks
+        )
+        saved = project_document(factory, project_settings)
+        self.assertEqual(
+            [
+                (nic["kind"], nic["mac"])
+                for nic in saved["bricks"]["vm"]["nics"]
+            ],
+            [
+                (nic["kind"], nic["mac"])
+                for nic in data["bricks"]["vm"]["nics"]
+            ],
+        )
+
     def test_announced_once_restored(self):
         data = project_document(build_lab(self.factory), ProjectSettings())
         factory = make_factory(self)

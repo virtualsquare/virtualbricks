@@ -47,8 +47,8 @@ from virtualbricks.bricks.virtualmachine import (
     Card,
     HostonlySock,
     ImageDraft,
-    VirtualMachine,
     VirtualMachineDraft,
+    card_of,
     hostonly_sock,
     is_disk_image,
     is_virtualmachine,
@@ -85,16 +85,6 @@ def _target(sock: Sock | HostonlySock | None) -> str:
     return socket_target(sock)
 
 
-def _cards_of(brick: VirtualMachine) -> list[Card]:
-    return [
-        Card("plug", plug.model, plug.mac, plug.sock, plug)
-        for plug in brick.plugs
-    ] + [
-        Card("socket", sock.model, sock.mac, None, sock)
-        for sock in brick.socks
-    ]
-
-
 def _card_data(card: Card, links: list[Plug | Sock]) -> dict[str, object]:
     index = next(
         (i for i, link in enumerate(links) if link is card.link), None
@@ -129,9 +119,9 @@ def what_changed(draft: Draft) -> dict[str, Any]:
     extras: dict[str, object] = {}
     brick = draft.brick
     if isinstance(draft, VirtualMachineDraft):
-        links_now = list(brick.plugs) + list(brick.socks)
+        links_now = brick.cards
         cards = [_card_data(card, links_now) for card in draft.cards]
-        before = [_card_data(card, links_now) for card in _cards_of(brick)]
+        before = [_card_data(card_of(link), links_now) for link in brick.cards]
         if cards != before:
             extras["cards"] = cards
     if isinstance(draft, NetemuDraft):
@@ -194,7 +184,7 @@ def apply_changes(
     extras = data.get("extras", {})
     if "cards" in extras and isinstance(draft, VirtualMachineDraft):
         assert is_virtualmachine(item), "a machine's draft is of a machine"
-        links = list(item.plugs) + list(item.socks)
+        links = item.cards
         draft.cards = [
             Card(
                 card["kind"],

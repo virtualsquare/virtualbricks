@@ -54,9 +54,10 @@
   </section>
   <section id="network">
     <title>Network cards</title>
-    <p><gui>Add Card</gui> adds a network card. The cards are in the order the
-    machine sees them, the first one first. Each has a <gui>Model</gui>, a
-    <gui>MAC address</gui>, and what it is <gui>Plugged into</gui>:</p>
+    <p><gui>Add Card</gui> adds a network card after the others. The cards are
+    in the order the machine sees them, the first one first. Each has a
+    <gui>Model</gui>, a <gui>MAC address</gui>, and what it is <gui>Plugged
+    into</gui>:</p>
     <list>
       <item><p>a switch of the lab;</p></item>
       <item><p><gui>The host only, on QEMU's user network</gui>: QEMU joins the

@@ -23,6 +23,8 @@ to a draft of the object of the Virtualbricks of the bricks.
 import json
 
 from virtualbricks.bricks.eventaction import ShellAction
+from virtualbricks.bricks.plug import Plug
+from virtualbricks.bricks.sock import Sock
 from virtualbricks.bricks.virtualmachine import (
     Card,
     UsbDevice,
@@ -96,10 +98,11 @@ class TestWhatChanged(DraftTestCase):
         draft.set("memory", 2048)
         draft.set("hda_image", "pc")
         draft.set("usb_devices", [UsbDevice("1d6b:0002", "hub")])
+        # the socket card, then the plugs
         draft.set_card(
-            0, model="e1000", sock=self.copy.get_brick("sw2").socks[0]
+            1, model="e1000", sock=self.copy.get_brick("sw2").socks[0]
         )
-        draft.remove_card(1)
+        draft.remove_card(2)
         index = draft.add_card()
         draft.set_card(index, sock=hostonly_sock)
         draft.cards.append(Card("socket", "e1000", "52:54:00:00:00:01"))
@@ -108,6 +111,14 @@ class TestWhatChanged(DraftTestCase):
         self.assertEqual(self.vm1.config.memory, 2048)
         self.assertEqual(self.vm1.config.hda_image, "pc")
         self.assertEqual(len(self.vm1.socks), 2)
+        cards = self.vm1.cards
+        self.assertEqual(
+            [type(card) for card in cards], [Sock, Plug, Plug, Sock]
+        )
+        self.assertEqual(
+            (cards[1].model, cards[1].sock, cards[2].sock),
+            ("e1000", self.sw2.socks[0], hostonly_sock),
+        )
         # the socket card that vm2 plugs into stays
         self.assertIs(
             self.factory.get_brick("vm2").plugs[0].sock.brick, self.vm1

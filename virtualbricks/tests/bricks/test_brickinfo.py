@@ -274,6 +274,15 @@ class TestSummary(BrickInfoTestCase):
             "eth2 host only · eth3 as a socket",
         )
 
+    def test_the_cards_in_their_order(self):
+        vm = self.brick("qemu", "vm")
+        vm.add_sock()
+        vm.add_plug(None)
+        self.assertEqual(
+            summary(vm),
+            "i386 · 64 MiB · eth0 as a socket · eth1 not connected",
+        )
+
 
 class TestConnection(BrickInfoTestCase):
 

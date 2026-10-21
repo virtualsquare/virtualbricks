@@ -250,10 +250,9 @@ def _virtual_machine(brick: VirtualMachine) -> list[str]:
     if config.use_kvm:
         parts.append("KVM")
     parts.append(_("{size} MiB").format(size=config.memory))
-    links: list[Plug | Sock] = list(itertools.chain(brick.plugs, brick.socks))
-    if not links:
+    if not brick.cards:
         parts.append(_("no network card"))
-    for number, link in enumerate(links):
+    for number, link in enumerate(brick.cards):
         parts.append(_card(brick, number, link))
     return parts
 

@@ -101,7 +101,13 @@ class TestTheCards(MachinePanelTestCase):
         self.panel.cards.rebuild()
         row = self.rows()[0]
         row.plugged.set_active_id("socket")
+        # in its place
         self.assertEqual(
-            [card.kind for card in self.panel.draft.cards], ["plug", "socket"]
+            [card.kind for card in self.panel.draft.cards], ["socket", "plug"]
         )
-        self.assertEqual(self.rows()[1].plugged.get_active_id(), "socket")
+        self.assertEqual(self.rows()[0].plugged.get_active_id(), "socket")
+        self.panel.cards.add_button.clicked()
+        self.assertEqual(
+            [row.plugged.get_active_id() for row in self.rows()],
+            ["socket", "host", ""],
+        )

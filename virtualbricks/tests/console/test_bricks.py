@@ -541,15 +541,25 @@ class TestCards(BricksTestCase):
                 "vm1 eth1: socket vm1:sock_eth0, rtl8139, 52:54:00:00:00:03",
             ],
         )
-        # a plug goes before the sockets
+        # after the others, the socket too, which keeps eth1
         self.assertEqual(
             self.run_line("brick card add vm1 hostonly mac=52:54:00:00:00:02"),
-            ["vm1 eth1: host only, rtl8139, 52:54:00:00:00:02"],
+            ["vm1 eth2: host only, rtl8139, 52:54:00:00:00:02"],
         )
         self.assertIs(self.vm.plugs[1].sock, hostonly_sock)
         self.assertEqual(
             self.run_line("brick card add vm1 plug"),
-            [f"vm1 eth2: in nothing, rtl8139, {self.vm.plugs[2].mac}"],
+            [f"vm1 eth3: in nothing, rtl8139, {self.vm.plugs[2].mac}"],
+        )
+        shown = self.run_line("brick show vm1")
+        self.assertEqual(
+            [line for line in shown if line.startswith("eth")],
+            [
+                "eth0: plugged into sw1, e1000, 52:54:00:00:00:01",
+                "eth1: socket vm1:sock_eth0, rtl8139, 52:54:00:00:00:03",
+                "eth2: host only, rtl8139, 52:54:00:00:00:02",
+                f"eth3: in nothing, rtl8139, {self.vm.plugs[2].mac}",
+            ],
         )
 
     def test_a_new_socket_takes_a_free_name(self):
@@ -575,6 +585,14 @@ class TestCards(BricksTestCase):
             "sw1 is not a virtual machine",
         )
         self.assertEqual(self.vm.plugs + self.vm.socks, [])
+
+    def test_set_a_card_after_a_socket(self):
+        self.run_line("brick card add vm1 socket mac=52:54:00:00:00:01")
+        self.run_line("brick card add vm1 plug mac=52:54:00:00:00:02")
+        self.assertEqual(
+            self.run_line("brick card set vm1 eth1 target=sw1"),
+            ["vm1 eth1: plugged into sw1, rtl8139, 52:54:00:00:00:02"],
+        )
 
     def test_set_and_remove(self):
         self.run_line("brick card add vm1 plug sw1 mac=52:54:00:00:00:01")
