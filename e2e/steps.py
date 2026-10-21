@@ -2340,6 +2340,26 @@ def asks_archive(virtualbricks):
     return chooser
 
 
+@when("I press Escape in the Import window")
+def escape_import(virtualbricks):
+    """
+    A click in the entry of the name, which takes the keys there, or on the
+    title of the window during the import; then Escape.
+    """
+
+    window = virtualbricks.find("frame", IMPORT_WINDOW)
+    if virtualbricks.shows("text", "Name", within=window):
+        virtualbricks.click("text", "Name", within=window)
+    else:
+        virtualbricks.click("label", IMPORT_WINDOW, within=window)
+    virtualbricks.key("Escape", window)
+
+
+@then("the Import window doesn't show")
+def no_import_window(virtualbricks):
+    virtualbricks.gone("frame", IMPORT_WINDOW)
+
+
 @when("I import the archive chosen in the Import window")
 def import_chosen(virtualbricks):
     """Import, in the Import window, which closes once the project opens."""
@@ -2464,6 +2484,21 @@ def archive_bricks(virtualbricks, archive, datatable):
 def projects_window_says(virtualbricks, text):
     window = virtualbricks.find("frame", PROJECTS_WINDOW)
     virtualbricks.find("label", text, within=window)
+
+
+@then(words("the folder of {name:Project} isn't in the workspace"))
+def no_project_folder(virtualbricks, name):
+    """
+    The workspace has no folder of the project, nor the hidden one of its
+    import, once a stopped import has removed it.
+    """
+
+    def none():
+        return not [
+            n for n in os.listdir(virtualbricks.workspace) if name in n
+        ]
+
+    virtualbricks.wait_for(none, f"the workspace has no folder of {name}")
 
 
 @then(words("the folder of {name:Project} has project.toml"))

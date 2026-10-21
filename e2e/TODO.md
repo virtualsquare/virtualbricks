@@ -239,6 +239,14 @@ that the tests can't do yet: those needs come first.
   private disks yet, which need a virtual machine
   "A project exported to an archive, then imported with the name it
   suggests, has its bricks", `projects.feature`
+- [x] Escape closes the Import window
+  before the import, which imports nothing
+  "Escape closes the Import window, which imports nothing",
+  `projects.feature`
+- [x] Escape during the import stops it, as Stop
+  the window shows the form again, and the workspace has nothing of it
+  "Escape during the import stops it, as Stop, which removes what it
+  wrote", `projects.feature`
 - [x] Import from the Projects window
   Import… asks for the archive first, in a file chooser, then the Import
   window opens on it, above the Projects window

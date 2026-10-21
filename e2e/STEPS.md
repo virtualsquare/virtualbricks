@@ -71,6 +71,8 @@ The steps of a user:
 | `Then the Import window leaves the image debian13 unset` | In the row of the image, Leave unset is on: the choice of the window for an image that neither the archive nor the shared images have |
 | `When I choose Import… in the menu Projects` | Import…, in the menu Projects; then the file chooser asks for the archive, and the Import window doesn't show yet |
 | `When in the file chooser, I select debian13.qcow2 of my Downloads folder` | In the file chooser that shows, Home, then Downloads and Open, which goes into it, then the file, which is selected: Open isn't clicked. Also `of my home folder` |
+| `When I press Escape in the Import window` | A click in the entry of the name, which takes the keys there, or on the title of the window during the import; then Escape |
+| `Then the Import window doesn't show` | Waits until it doesn't |
 | `When I import the archive chosen in the Import window` | Import, in the Import window, which closes once the project opens |
 | `Given the extraction of an archive stops after its first 1 MiB, until I let it go on` | Before Virtualbricks starts: `bsdtar` and `tar` of its `PATH` are scripts that run `heldtar.py` with those of the tests. An extraction from the input reads that much of the archive, then waits, at most a minute, for the next step. The Import window shows the progress of the first MiB, the same each time |
 | `When I let the extraction go on` | The extraction that waits goes on |
@@ -98,6 +100,7 @@ The steps of a user:
 | `Then the main window shows the project lab on this computer` | The windows of another Virtualbricks: their title names the project and where it runs |
 | `Then the Projects window says "Cannot open new_project: …"` | A label of the window has the text, as the bar over its list |
 | `Then the Projects window doesn't list new_project` | No row of its list has the project |
+| `Then the folder of DTN2hops_26_Feb_2026 isn't in the workspace` | The workspace has no folder of the project, nor the hidden `.importing-` one of its import, once a stopped import has removed it |
 | `Then the folder of new_project-2 has project.toml` | The folder of the project in the workspace has the file of a project, which TOML reads, with its format |
 | `Then the folder of new_project-copy is a copy of that of new_project` | It has project.toml, and the two folders of the workspace have the same files, with the same bytes |
 | `Then the archive new_project.vbp of my home folder has the bricks`, with a table under it | The bricks of the project.toml of the archive, all of them and in order: the name of each and its type |

@@ -74,7 +74,9 @@
         <p>On at first.</p>
       </item>
     </terms>
-    <p>If you stop an import, or it fails, it removes what it wrote. At the
+    <p>If you stop an import, or it fails, it removes what it wrote.
+    <key>Esc</key> does as <gui>Cancel</gui>, which is <gui>Stop</gui> during
+    the import. At the
     end, the <gui>Logs</gui> window says what needs your attention, as an
     image left unset. The archives of Virtualbricks 2.1 import too.</p>
   </section>

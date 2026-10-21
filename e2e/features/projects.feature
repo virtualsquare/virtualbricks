@@ -152,6 +152,28 @@ Feature: Projects
       | Brick | Detail            | State   |
       | sw1   | Switch · 32 ports | Stopped |
 
+  Scenario: Escape closes the Import window, which imports nothing
+    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my home folder
+    And Virtualbricks is running
+    When I choose the archive DTN2hops_26_Feb_2026.vbp of my home folder in the Import window, which suggests the name DTN2hops_26_Feb_2026
+    And I press Escape in the Import window
+    Then the Import window doesn't show
+    And the main window shows the project new_project
+    And the folder of DTN2hops_26_Feb_2026 isn't in the workspace
+
+  @needs-qemu-img
+  Scenario: Escape during the import stops it, as Stop, which removes what it wrote
+    Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, with the private disks of its machines, in my home folder
+    And the extraction of an archive stops after its first 1 MiB, until I let it go on
+    And Virtualbricks is running
+    When I choose the archive DTN2hops_26_Feb_2026.vbp of my home folder in the Import window, which suggests the name DTN2hops_26_Feb_2026
+    And I click the button "Import"
+    Then the label "Extracting the archive" shows
+    When I press Escape in the Import window
+    Then the button "Import" shows
+    And the folder of DTN2hops_26_Feb_2026 isn't in the workspace
+    And the main window shows the project new_project
+
   Scenario: Import… of the Projects window asks for the archive, then imports it
     Given Virtualbricks is running
     When I add the switch sw1

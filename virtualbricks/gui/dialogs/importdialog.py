@@ -35,7 +35,7 @@ import os
 from collections.abc import Callable
 from typing import Any
 
-from gi.repository import Gtk, Pango
+from gi.repository import Gdk, Gtk, Pango
 from twisted.logger import Logger
 from twisted.python.failure import Failure
 
@@ -343,6 +343,7 @@ class ImportDialog(Window):
         self.window.add(self.stack)
 
         self.window.connect("destroy", self.on_destroyed)
+        self.window.connect("key-press-event", self.on_key_press)
         self.cancel_button.connect("clicked", self.on_cancel_clicked)
         self.import_button.connect("clicked", self.on_import_clicked)
         self.close_button.connect("clicked", self.on_close_clicked)
@@ -745,6 +746,18 @@ class ImportDialog(Window):
 
     def on_close_clicked(self, button: Gtk.Button) -> None:
         self.window.destroy()
+
+    def on_key_press(self, window: Gtk.Window, event: Gdk.EventKey) -> bool:
+        """
+        Escape does as Cancel: during the import, Stop; else it closes the
+        window, as Close does after a failure.
+        """
+
+        modifiers = event.state & Gtk.accelerator_get_default_mod_mask()
+        if event.keyval != Gdk.KEY_Escape or modifiers:
+            return False
+        self.on_cancel_clicked(self.cancel_button)
+        return True
 
     def on_destroyed(self, window: Gtk.Window) -> None:
         self.destroyed = True
