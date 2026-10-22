@@ -42,22 +42,47 @@ def run_idle_calls():
         Gtk.main_iteration()
 
 
+def allocate(widget, width, height):
+    # GTK asks the size first
+    widget.get_preferred_width()
+    widget.get_preferred_height()
+    allocation = Gdk.Rectangle()
+    allocation.width = width
+    allocation.height = height
+    widget.size_allocate(allocation)
+
+
 class FakeProcess:
     pid = 41301
+
+
+class FakeEvent:
+    def __init__(self, x, y, button=1):
+        self.x = x
+        self.y = y
+        self.button = button
 
 
 class FakeDrag:
     """What the list asks GTK during a drag, and what it tells it."""
 
-    def __init__(self, test, source):
-        self.source = source
+    def __init__(self, test, bricks):
+        self.bricks = bricks
+        self.source = bricks
+        self.begun = []
         self.statuses = []
         self.finished = []
         self.icons = []
+        test.patch(bricks, "drag_begin_with_coordinates", self.begin)
         test.patch(Gtk, "drag_get_source_widget", lambda context: self.source)
         test.patch(Gdk, "drag_status", self.status)
         test.patch(Gtk, "drag_finish", self.finish)
         test.patch(Gtk, "drag_set_icon_widget", self.set_icon)
+
+    def begin(self, targets, actions, button, event, x, y):
+        self.begun.append((targets, actions, button, event, x, y))
+        # GTK says so before it returns
+        self.bricks.on_drag_begin(self.bricks, None)
 
     def status(self, context, action, time):
         self.statuses.append((action, time))
@@ -454,21 +479,76 @@ class TestDragAndDrop(BrickListTestCase):
 
     def setUp(self):
         super().setUp()
-        self.drag = FakeDrag(self, self.row(self.tap))
+        self.drag = FakeDrag(self, self.list)
+        allocate(self.list, 400, 300)
 
-    def test_every_row_drags_and_takes_bricks(self):
+    def press(self, brick, button=1):
+        """A press on the row of brick, and where it was."""
+
+        # the rows of the bricks made since
+        allocate(self.list, 400, 300)
+        allocation = self.row(brick).get_allocation()
+        x, y = 40, allocation.y + allocation.height // 2
+        self.assertIs(
+            self.list.on_button_press(self.list, FakeEvent(x, y, button)),
+            False,
+        )
+        return x, y
+
+    def move(self, x, y):
+        return self.list.on_motion_notify(self.list, FakeEvent(x, y))
+
+    def drag_from(self, brick):
+        x, y = self.press(brick)
+        self.assertTrue(self.move(x + 20, y))
+
+    def test_the_rows_take_bricks(self):
         target = Gdk.Atom.intern("virtualbricks/brick", False)
         for row in self.list.get_children():
-            for targets in (
-                row.drag_source_get_target_list(),
-                row.drag_dest_get_target_list(),
-            ):
-                found, _info = targets.find(target)
-                self.assertTrue(found)
+            found, _info = row.drag_dest_get_target_list().find(target)
+            self.assertTrue(found)
+            # the list starts the drag: a row never sees the press
+            self.assertIsNone(row.drag_source_get_target_list())
+
+    def test_the_list_starts_the_drag(self):
+        x, y = self.press(self.tap)
+        # not before the threshold
+        self.assertIs(self.move(x + 3, y), False)
+        self.assertEqual(self.drag.begun, [])
+        self.assertTrue(self.move(x + 20, y + 1))
+        [(targets, actions, button, event, x0, y0)] = self.drag.begun
+        target = Gdk.Atom.intern("virtualbricks/brick", False)
+        self.assertTrue(targets.find(target)[0])
+        self.assertEqual(actions, Gdk.DragAction.LINK)
+        self.assertEqual(button, 1)
+        self.assertEqual((event.x, event.y), (x + 20, y + 1))
+        # from where the press was
+        self.assertEqual((x0, y0), (x, y))
+        self.assertIs(self.list.dragged(None), self.tap)
+        # once
+        self.assertIs(self.move(x + 40, y), False)
+        self.assertEqual(len(self.drag.begun), 1)
+
+    def test_not_after_the_release(self):
+        x, y = self.press(self.tap)
+        self.list.on_button_release(self.list, FakeEvent(x, y))
+        self.assertIs(self.move(x + 20, y), False)
+        self.assertEqual(self.drag.begun, [])
+
+    def test_not_from_below_the_last_row(self):
+        self.assertIsNone(self.list.get_row_at_y(290))
+        self.list.on_button_press(self.list, FakeEvent(40, 290))
+        self.assertIs(self.move(60, 290), False)
+        self.assertEqual(self.drag.begun, [])
+
+    def test_not_with_another_button(self):
+        x, y = self.press(self.tap, button=3)
+        self.assertIs(self.move(x + 20, y), False)
+        self.assertEqual(self.drag.begun, [])
 
     def test_the_icon_of_the_drag(self):
         row = self.row(self.tap)
-        self.list.on_drag_begin(row, None)
+        self.drag_from(self.tap)
         [icon] = self.drag.icons
         image, label = icon.get_children()
         self.assertIs(label, self.list._drag_label)
@@ -480,18 +560,19 @@ class TestDragAndDrop(BrickListTestCase):
         self.assertAlmostEqual(row.get_opacity(), 0.45, places=2)
         destroyed = []
         icon.connect("destroy", destroyed.append)
-        self.list.on_drag_end(row, None)
+        self.list.on_drag_end(self.list, None)
         self.assertEqual(row.get_opacity(), 1.0)
         self.assertIsNone(self.list._drag_label)
         self.assertEqual(destroyed, [icon])
+        self.assertIsNone(self.list.dragged(None))
         # and once more, without a drag
-        self.list.on_drag_end(row, None)
+        self.list.on_drag_end(self.list, None)
 
     def test_the_icon_of_a_brick_without_one(self):
         vm = self.brick("qemu", "vm")
         vm.config.icon = "/nowhere.png"
         vm.changed.notify(vm)
-        self.list.on_drag_begin(self.row(vm), None)
+        self.drag_from(vm)
         image, label = self.drag.icons[0].get_children()
         self.assertIsNone(image.get_pixbuf())
 
@@ -503,7 +584,7 @@ class TestDragAndDrop(BrickListTestCase):
         return highlights
 
     def test_over_a_brick_that_takes_it(self):
-        self.list.on_drag_begin(self.row(self.tap), None)
+        self.drag_from(self.tap)
         self.assertEqual(self.motion(self.row(self.sw)), ["on"])
         self.assertEqual(self.drag.statuses, [(Gdk.DragAction.LINK, 42)])
         self.assertEqual(self.list._drag_label.get_text(), "Connect tap to sw")
@@ -515,7 +596,7 @@ class TestDragAndDrop(BrickListTestCase):
 
     def test_over_a_brick_that_doesnt(self):
         tap2 = self.brick("tap", "tap2")
-        self.list.on_drag_begin(self.row(self.tap), None)
+        self.drag_from(self.tap)
         self.motion(self.row(self.sw))
         self.assertEqual(self.motion(self.row(tap2)), ["off"])
         self.assertEqual(self.drag.statuses[-1], (Gdk.DragAction(0), 42))
@@ -531,6 +612,7 @@ class TestDragAndDrop(BrickListTestCase):
         self.assertEqual(self.drag.finished, [])
 
     def test_the_drop(self):
+        self.drag_from(self.tap)
         self.assertTrue(
             self.list.on_drag_drop(self.row(self.sw), None, 1, 2, 44)
         )
@@ -539,21 +621,47 @@ class TestDragAndDrop(BrickListTestCase):
 
     def test_a_drop_that_connects_nothing(self):
         tap2 = self.brick("tap", "tap2")
+        self.drag_from(self.tap)
         self.assertTrue(self.list.on_drag_drop(self.row(tap2), None, 1, 2, 44))
         self.assertIsNone(self.tap.plugs[0].sock)
         self.assertEqual(self.drag.finished, [(False, False, 44)])
 
-    def test_the_signals(self):
+    def test_a_brick_deleted_during_the_drag(self):
+        self.drag_from(self.tap)
+        self.factory.remove_brick(self.tap)
+        self.assertIsNone(self.list.dragged(None))
         row = self.row(self.sw)
-        for signal in (
-            "drag-begin",
-            "drag-end",
-            "drag-motion",
-            "drag-leave",
-            "drag-drop",
+        self.assertIs(self.list.on_drag_motion(row, None, 1, 2, 42), False)
+        self.assertIs(self.list.on_drag_drop(row, None, 1, 2, 44), False)
+        self.assertEqual(self.drag.finished, [])
+        self.list.on_drag_end(self.list, None)
+
+    def test_the_signals(self):
+        for widget, signals in (
+            (
+                self.list,
+                (
+                    "button-press-event",
+                    "motion-notify-event",
+                    "button-release-event",
+                    "drag-begin",
+                    "drag-end",
+                ),
+            ),
+            (self.row(self.sw), ("drag-motion", "drag-leave", "drag-drop")),
         ):
-            signal_id = GObject.signal_lookup(signal, Gtk.Widget)
-            self.assertTrue(
-                GObject.signal_has_handler_pending(row, signal_id, 0, True),
-                signal,
-            )
+            for signal in signals:
+                signal_id = GObject.signal_lookup(signal, Gtk.Widget)
+                self.assertTrue(
+                    GObject.signal_has_handler_pending(
+                        widget, signal_id, 0, True
+                    ),
+                    signal,
+                )
+        mask = self.list.get_events()
+        for event in (
+            Gdk.EventMask.BUTTON_PRESS_MASK,
+            Gdk.EventMask.BUTTON_RELEASE_MASK,
+            Gdk.EventMask.BUTTON1_MOTION_MASK,
+        ):
+            self.assertTrue(mask & event, event)

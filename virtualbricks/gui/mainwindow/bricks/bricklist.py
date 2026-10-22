@@ -25,7 +25,9 @@ list shows only the running bricks; its state; and why it can't start, if it
 can't. The search finds a brick by its name or its kind.
 
 A row dropped on another connects the two bricks when one can plug into the
-other, and only then is the row under the pointer framed.
+other, and only then is the row under the pointer framed. The list starts the
+drag, with the row under the press: a row has no window of its own, so the
+press never reaches it.
 """
 
 from __future__ import annotations
@@ -140,8 +142,22 @@ class BrickList(RowList[Brick]):
         configure: Callable[[Brick], None],
     ) -> None:
         super().__init__(engine, window, factory, configure)
+        # the row under the press of the left button, and where it was
+        self._pressed: tuple[BrickRow, float, float] | None = None
+        # the row dragged
+        self._dragging: BrickRow | None = None
         self._drag_icon: Gtk.Widget | None = None
         self._drag_label: Gtk.Label | None = None
+        self.add_events(
+            Gdk.EventMask.BUTTON_PRESS_MASK
+            | Gdk.EventMask.BUTTON_RELEASE_MASK
+            | Gdk.EventMask.BUTTON1_MOTION_MASK
+        )
+        self.connect("button-press-event", self.on_button_press)
+        self.connect("motion-notify-event", self.on_motion_notify)
+        self.connect("button-release-event", self.on_button_release)
+        self.connect("drag-begin", self.on_drag_begin)
+        self.connect("drag-end", self.on_drag_end)
 
     def signals(self) -> tuple[Signal, Signal, Signal]:
         factory = self.factory
@@ -174,12 +190,7 @@ class BrickList(RowList[Brick]):
         return is_running(item)
 
     def prepare(self, row: Row[Brick]) -> None:
-        row.drag_source_set(
-            Gdk.ModifierType.BUTTON1_MASK, TARGETS, Gdk.DragAction.LINK
-        )
         row.drag_dest_set(Gtk.DestDefaults(0), TARGETS, Gdk.DragAction.LINK)
-        row.connect("drag-begin", self.on_drag_begin)
-        row.connect("drag-end", self.on_drag_end)
         row.connect("drag-motion", self.on_drag_motion)
         row.connect("drag-leave", self.on_drag_leave)
         row.connect("drag-drop", self.on_drag_drop)
@@ -191,9 +202,58 @@ class BrickList(RowList[Brick]):
         """The brick dragged, if it comes from a row."""
 
         source = Gtk.drag_get_source_widget(context)
-        return source.item if isinstance(source, BrickRow) else None
+        if not isinstance(source, BrickList) or source._dragging is None:
+            return None
+        row = source._dragging
+        if source.row_of(row.item) is not row:
+            # its brick was deleted since
+            return None
+        return row.item
 
-    def on_drag_begin(self, row: BrickRow, context: Gdk.DragContext) -> None:
+    def on_button_press(
+        self, listbox: BrickList, event: Gdk.EventButton
+    ) -> bool:
+        self._pressed = None
+        if event.button == Gdk.BUTTON_PRIMARY:
+            row = self.get_row_at_y(int(event.y))
+            if isinstance(row, BrickRow):
+                self._pressed = (row, event.x, event.y)
+        # the list selects the row, or opens its menu
+        return False
+
+    def on_motion_notify(
+        self, listbox: BrickList, event: Gdk.EventMotion
+    ) -> bool:
+        if self._pressed is None:
+            return False
+        row, x, y = self._pressed
+        if not self.drag_check_threshold(
+            int(x), int(y), int(event.x), int(event.y)
+        ):
+            return False
+        self._pressed = None
+        self._dragging = row
+        self.drag_begin_with_coordinates(
+            Gtk.TargetList.new(TARGETS),
+            Gdk.DragAction.LINK,
+            Gdk.BUTTON_PRIMARY,
+            event,
+            int(x),
+            int(y),
+        )
+        return True
+
+    def on_button_release(
+        self, listbox: BrickList, event: Gdk.EventButton
+    ) -> bool:
+        self._pressed = None
+        return False
+
+    def on_drag_begin(
+        self, listbox: BrickList, context: Gdk.DragContext
+    ) -> None:
+        row = self._dragging
+        assert row is not None, "the list starts every drag"
         icon = Gtk.Box(visible=True, spacing=8, margin=4)
         image = Gtk.Image(visible=True, pixel_size=DRAG_ICON_SIZE)
         pixbuf = row.icon.get_pixbuf()
@@ -212,10 +272,14 @@ class BrickList(RowList[Brick]):
         Gtk.drag_set_icon_widget(context, icon, -8, -8)
         row.set_opacity(0.45)
 
-    def on_drag_end(self, row: BrickRow, context: Gdk.DragContext) -> None:
-        row.set_opacity(1.0)
+    def on_drag_end(
+        self, listbox: BrickList, context: Gdk.DragContext
+    ) -> None:
+        if self._dragging is not None:
+            self._dragging.set_opacity(1.0)
         if self._drag_icon is not None:
             self._drag_icon.destroy()
+        self._dragging = None
         self._drag_icon = self._drag_label = None
 
     def _say(self, words: str) -> None:

@@ -41,7 +41,7 @@ that the tests can't do yet: those needs come first.
   | Find the widgets | AT-SPI | AT-SPI, the same |
   | Clicks, wheel, drags | the browser of `broadway.py` | XTest |
   | Text | through AT-SPI: GTK's Broadway backend takes some keys for accelerators | keys, as typed |
-  | A row dropped on another | out of reach: no drag and drop | can be tested, once a row starts a drag |
+  | A row dropped on another | out of reach: no drag and drop | can be tested |
   | Screenshot and video | `recording.py` decodes what `broadwayd` sends | `ffmpeg -f x11grab` records the display |
   | Window manager | none needed | none: GTK focuses its windows itself, but places them otherwise |
   | Tray icon | none | none either: Xvfb has no tray |
@@ -447,9 +447,10 @@ that the tests can't do yet: those needs come first.
   and `mouseup`
 - A row of bricks dropped on another, which connects the two: GTK 3 on
   Broadway has no drag and drop (`gdkdnd-broadway.c` finds no window under
-  the pointer). Besides, the rows never start a drag: a `GtkListBoxRow` has
-  no window of its own, so its `drag_source_set` never gets the press, on
-  X11 too; on Xvfb, a scenario could check it, see the needs
+  the pointer). On X11 it works since 22 Oct 2026, tried by hand on Xvfb
+  with `xdotool`: the list starts the drag, with the row under the press,
+  since a `GtkListBoxRow` has no window of its own and never gets the
+  press; on Xvfb, a scenario could check it, see the needs
 
 # Conventions
 

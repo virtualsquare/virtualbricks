@@ -97,7 +97,9 @@ The button at the end of the row, the right button of the mouse, the
 
 **Connect To**
 
-:   The bricks that this one can plug into.
+:   The bricks that this one can plug into. Dragging the row of a brick onto
+    the row of another does the same: when one of the two can plug into the
+    other, that row is framed, and they connect when you let go.
 
 **When It Starts**, **When It Stops**
 
