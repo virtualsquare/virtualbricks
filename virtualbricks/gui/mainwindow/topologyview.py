@@ -33,6 +33,13 @@ The picture is drawn by :mod:`virtualbricks.gui.mainwindow.picture` in the
 colours of the theme, on the view's background; the brick under the pointer
 sits on a disc of the selection colour, with its name, type and state in a
 tooltip.
+
+A brick pressed with the left button and moved by the drag threshold is
+dragged: a line follows the pointer, and ends on a brick that the one
+dragged connects to, as a drop on the Bricks list would, with what a release
+does under it. A release there says brick-dropped; anywhere else, Escape, or
+a lost grab end the drag with nothing. Near an edge of the view, the view
+scrolls.
 """
 
 from __future__ import annotations
@@ -43,13 +50,15 @@ from typing import Any
 import cairo
 from gi.repository import Gdk, GLib, GObject, Gtk
 
-from virtualbricks.bricks import Brick
+from virtualbricks.bricks import Brick, brickinfo
 from virtualbricks.gui.mainwindow.picture import (
     MARGIN,
     Icons,
+    Line,
     Palette,
     draw,
 )
+from virtualbricks.i18n import _
 from virtualbricks.topology import Layout, Node
 
 # The zooms of zoom in and zoom out, the first and the last also the limits.
@@ -58,6 +67,17 @@ LEVELS = (0.1, 0.25, 0.33, 0.5, 0.67, 0.8, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0)
 ARROW_STEP = 40
 # Two zooms this close are the same level.
 EPSILON = 0.001
+# A drag scrolls the view while the pointer is this near one of its edges,
+# in pixels: every EDGE_DELAY milliseconds, by up to EDGE_STEP pixels, more
+# the nearer the edge.
+EDGE = 32
+EDGE_STEP = 20
+EDGE_DELAY = 30
+# The words of a drag, in pixels: the padding and the corners of their box,
+# and its gap under the brick.
+WORDS_PADDING = 6
+WORDS_RADIUS = 5
+WORDS_GAP = 6
 
 
 def clamp(zoom: float) -> float:
@@ -108,12 +128,43 @@ def tooltip_text(brick: Brick) -> str:
     return f"{brick.name} · {brick.get_type()} · {brick.get_state()}"
 
 
+def edge_step(position: float, size: float) -> int:
+    """
+    How far a drag scrolls along a side of the view, size pixels long, with
+    the pointer at position: back near its start, on near its end, else 0.
+    """
+
+    if position < EDGE:
+        return -math.ceil(EDGE_STEP * min(1.0, (EDGE - position) / EDGE))
+    if position > size - EDGE:
+        return math.ceil(EDGE_STEP * min(1.0, (position - size + EDGE) / EDGE))
+    return 0
+
+
+def rounded_rectangle(
+    cr: cairo.Context[Any], x: float, y: float, width: float, height: float
+) -> None:
+    r = WORDS_RADIUS
+    cr.new_sub_path()
+    cr.arc(x + width - r, y + r, r, -math.pi / 2, 0)
+    cr.arc(x + width - r, y + height - r, r, 0, math.pi / 2)
+    cr.arc(x + r, y + height - r, r, math.pi / 2, math.pi)
+    cr.arc(x + r, y + r, r, math.pi, 3 * math.pi / 2)
+    cr.close_path()
+
+
 class TopologyView(Gtk.ScrolledWindow):
     """A layout, drawn at a zoom, and the zoom's controls."""
 
     __gsignals__ = {
         # the zoom, or fitting, changed
         "zoom-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        # a brick dropped on another that it connects to: both
+        "brick-dropped": (
+            GObject.SignalFlags.RUN_FIRST,
+            None,
+            (object, object),
+        ),
     }
 
     def __init__(self) -> None:
@@ -133,6 +184,12 @@ class TopologyView(Gtk.ScrolledWindow):
         self._size = (0, 0)
         # where a drag of the background started: pointer and scroll
         self._drag: tuple[float, float, float, float] | None = None
+        # the brick under a press of the left button, and where it was
+        self._pressed: tuple[Brick, float, float] | None = None
+        # the brick dragged, and the pointer in the view
+        self.dragging: Brick | None = None
+        self._pointer = (0.0, 0.0)
+        self._edge_scroll: int | None = None
         self._wheel = 0.0
         self._pinch_zoom = 1.0
         self._pinch_anchor: tuple[float, float] | None = (0.0, 0.0)
@@ -167,6 +224,8 @@ class TopologyView(Gtk.ScrolledWindow):
         self.area.connect("scroll-event", self.on_scroll)
         self.area.connect("key-press-event", self.on_key_press)
         self.area.connect("query-tooltip", self.on_query_tooltip)
+        self.area.connect("grab-broken-event", self.on_grab_broken)
+        self.area.connect("grab-notify", self.on_grab_notify)
         self.pinch.connect("begin", self.on_pinch_begin)
         self.pinch.connect("scale-changed", self.on_pinch)
         self.connect("size-allocate", self.on_allocated)
@@ -177,6 +236,14 @@ class TopologyView(Gtk.ScrolledWindow):
     def set_layout(self, layout: Layout) -> None:
         self.layout = layout
         self.hover = None
+        # a drag holds the bricks, not their places
+        if (
+            self._pressed is not None
+            and self.node_of(self._pressed[0]) is None
+        ):
+            self._pressed = None
+        if self.dragging is not None and self.node_of(self.dragging) is None:
+            self._end_drag()
         if self.fitting:
             self.fit()
         else:
@@ -309,6 +376,78 @@ class TopologyView(Gtk.ScrolledWindow):
         node = self.node_at(x, y)
         return None if node is None else node.brick
 
+    def node_of(self, brick: Brick) -> Node | None:
+        return next((n for n in self.layout.nodes if n.brick is brick), None)
+
+    def pointer(self) -> tuple[float, float]:
+        """Where the pointer of a drag is, in the area."""
+
+        x, y = self._pointer
+        return (
+            x + self.get_hadjustment().get_value(),
+            y + self.get_vadjustment().get_value(),
+        )
+
+    def drop_target(self) -> Node | None:
+        """The node under the pointer that the brick dragged connects to."""
+
+        if self.dragging is None:
+            return None
+        node = self.node_at(*self.pointer())
+        if (
+            node is None
+            or brickinfo.connection(self.dragging, node.brick) is None
+        ):
+            return None
+        return node
+
+    # Dragging a brick
+
+    def _start_drag(self, brick: Brick) -> None:
+        self.dragging = brick
+        self.hover = None
+        self._set_cursor("grabbing")
+        # the tooltips wait for the end
+        self.area.set_has_tooltip(False)
+
+    def _call_off(self) -> None:
+        """No drag of a brick, now or after the press."""
+
+        self._pressed = None
+        if self.dragging is not None:
+            self._end_drag()
+
+    def _end_drag(self) -> None:
+        self.dragging = None
+        self._pressed = None
+        if self._edge_scroll is not None:
+            GLib.source_remove(self._edge_scroll)
+            self._edge_scroll = None
+        self._set_cursor(None)
+        self.area.set_has_tooltip(True)
+        self.area.queue_draw()
+
+    def _edge_steps(self) -> tuple[int, int]:
+        width, height = self.room()
+        x, y = self._pointer
+        return edge_step(x, width), edge_step(y, height)
+
+    def _scroll_edges(self) -> bool:
+        dx, dy = self._edge_steps()
+        hadjustment, vadjustment = (
+            self.get_hadjustment(),
+            self.get_vadjustment(),
+        )
+        before = (hadjustment.get_value(), vadjustment.get_value())
+        hadjustment.set_value(before[0] + dx)
+        vadjustment.set_value(before[1] + dy)
+        if (hadjustment.get_value(), vadjustment.get_value()) == before:
+            # away from the edges, or at the end of the picture
+            self._edge_scroll = None
+            return GLib.SOURCE_REMOVE
+        self.area.queue_draw()
+        return GLib.SOURCE_CONTINUE
+
     # Drawing
 
     def on_draw(self, area: Gtk.DrawingArea, cr: cairo.Context[Any]) -> bool:
@@ -325,6 +464,13 @@ class TopologyView(Gtk.ScrolledWindow):
             (ink.red, ink.green, ink.blue),
             (selection.red, selection.green, selection.blue),
         )
+        line = None
+        if self.dragging is not None:
+            node = self.node_of(self.dragging)
+            assert node is not None, "a brick gone ends its drag"
+            line = Line(
+                node, self.to_layout(*self.pointer()), self.drop_target()
+            )
         draw(
             cr,
             self.layout,
@@ -335,8 +481,42 @@ class TopologyView(Gtk.ScrolledWindow):
             area.create_pango_layout,
             self.icons,
             self.hover,
+            line,
         )
+        if line is not None and line.target is not None:
+            self._draw_words(cr, line.target)
         return False
+
+    def _draw_words(self, cr: cairo.Context[Any], node: Node) -> None:
+        """Under node, in sight, what a release does, in a box like the bar's."""
+
+        assert self.dragging is not None, "words for a drag"
+        words = _("Connect {brick} to {other}").format(
+            brick=self.dragging.name, other=node.brick.name
+        )
+        # the style of a label of the bar; kept, or the style is no one's
+        label = Gtk.Label()
+        style = label.get_style_context()
+        style.add_class("osd")
+        text = self.area.create_pango_layout(words)
+        text_width, text_height = text.get_pixel_size()
+        width = text_width + 2 * WORDS_PADDING
+        height = text_height + 2 * WORDS_PADDING
+        ox, oy = self.origin()
+        h = self.get_hadjustment().get_value()
+        v = self.get_vadjustment().get_value()
+        room_width, room_height = self.room()
+        x = ox + node.x * self.zoom - width / 2
+        y = oy + (node.y + node.height / 2) * self.zoom + WORDS_GAP
+        x = max(min(x, h + room_width - width - WORDS_GAP), h + WORDS_GAP)
+        y = max(min(y, v + room_height - height - WORDS_GAP), v + WORDS_GAP)
+        background = style.get_property("background-color", style.get_state())
+        rounded_rectangle(cr, x, y, width, height)
+        Gdk.cairo_set_source_rgba(cr, background)
+        cr.fill()
+        Gtk.render_layout(
+            style, cr, x + WORDS_PADDING, y + WORDS_PADDING, text
+        )
 
     # Signals
 
@@ -370,8 +550,16 @@ class TopologyView(Gtk.ScrolledWindow):
         self, area: Gtk.DrawingArea, event: Gdk.EventButton
     ) -> bool:
         area.grab_focus()
-        if event.button != 1 or self.node_at(event.x, event.y) is not None:
-            # the bricks are the tab's
+        if event.button != 1:
+            return False
+        node = self.node_at(event.x, event.y)
+        if node is not None:
+            # the bricks are the tab's, but one moved is dragged; not after a
+            # double click, which configures it
+            if event.type == Gdk.EventType.DOUBLE_BUTTON_PRESS:
+                self._pressed = None
+            else:
+                self._pressed = (node.brick, event.x, event.y)
             return False
         self._drag = (
             event.x_root,
@@ -385,6 +573,15 @@ class TopologyView(Gtk.ScrolledWindow):
     def on_button_release(
         self, area: Gtk.DrawingArea, event: Gdk.EventButton
     ) -> bool:
+        if event.button == 1:
+            self._pressed = None
+        if event.button == 1 and self.dragging is not None:
+            self._follow(event)
+            source, target = self.dragging, self.drop_target()
+            self._end_drag()
+            if target is not None:
+                self.emit("brick-dropped", source, target.brick)
+            return True
         if event.button == 1 and self._drag is not None:
             self._drag = None
             self._set_cursor(None)
@@ -397,6 +594,21 @@ class TopologyView(Gtk.ScrolledWindow):
             self.get_hadjustment().set_value(h - (event.x_root - x0))
             self.get_vadjustment().set_value(v - (event.y_root - y0))
             return True
+        if self._pressed is not None:
+            brick, x, y = self._pressed
+            if area.drag_check_threshold(
+                int(x), int(y), int(event.x), int(event.y)
+            ):
+                self._pressed = None
+                self._start_drag(brick)
+        if self.dragging is not None:
+            self._follow(event)
+            if self._edge_scroll is None and any(self._edge_steps()):
+                self._edge_scroll = GLib.timeout_add(
+                    EDGE_DELAY, self._scroll_edges
+                )
+            area.queue_draw()
+            return True
         node = self.node_at(event.x, event.y)
         if node is not self.hover:
             self.hover = node
@@ -404,6 +616,14 @@ class TopologyView(Gtk.ScrolledWindow):
             area.trigger_tooltip_query()
             area.queue_draw()
         return False
+
+    def _follow(self, event: Gdk.EventMotion | Gdk.EventButton) -> None:
+        """The pointer of a drag, in the view."""
+
+        self._pointer = (
+            event.x - self.get_hadjustment().get_value(),
+            event.y - self.get_vadjustment().get_value(),
+        )
 
     def on_leave(
         self, area: Gtk.DrawingArea, event: Gdk.EventCrossing
@@ -432,7 +652,7 @@ class TopologyView(Gtk.ScrolledWindow):
             event.x - self.get_hadjustment().get_value(),
             event.y - self.get_vadjustment().get_value(),
         )
-        for _ in range(abs(steps)):
+        for _step in range(abs(steps)):
             if steps < 0:
                 self.zoom_in(anchor)
             else:
@@ -440,6 +660,9 @@ class TopologyView(Gtk.ScrolledWindow):
         return True
 
     def on_key_press(self, area: Gtk.DrawingArea, event: Gdk.EventKey) -> bool:
+        if self.dragging is not None and event.keyval == Gdk.KEY_Escape:
+            self._end_drag()
+            return True
         modifiers = event.state & Gtk.accelerator_get_default_mod_mask()
         control = modifiers & ~Gdk.ModifierType.SHIFT_MASK
         key = event.keyval
@@ -490,6 +713,17 @@ class TopologyView(Gtk.ScrolledWindow):
         tooltip.set_text(tooltip_text(node.brick))
         return True
 
+    def on_grab_broken(
+        self, area: Gtk.DrawingArea, event: Gdk.EventGrabBroken
+    ) -> bool:
+        self._call_off()
+        return False
+
+    def on_grab_notify(self, area: Gtk.DrawingArea, was_grabbed: bool) -> None:
+        # another widget takes the input, as a dialog that opens
+        if not was_grabbed:
+            self._call_off()
+
     def on_pinch_begin(
         self, gesture: Gtk.GestureZoom, sequence: Gdk.EventSequence | None
     ) -> None:
@@ -510,6 +744,9 @@ class TopologyView(Gtk.ScrolledWindow):
         if self._fitting_later is not None:
             GLib.source_remove(self._fitting_later)
             self._fitting_later = None
+        if self._edge_scroll is not None:
+            GLib.source_remove(self._edge_scroll)
+            self._edge_scroll = None
 
     def _set_cursor(self, name: str | None) -> None:
         window = self.area.get_window()

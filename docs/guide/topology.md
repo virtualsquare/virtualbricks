@@ -31,6 +31,16 @@ zoom.
 
 - Dragging the background moves the picture.
 
+## Connecting two bricks {#connect}
+
+Drag a brick onto another, as in the **Bricks** tab: a line follows the
+pointer. Over a brick that it can plug into, or that can plug into it, the
+line ends on that brick, which lights up, and the words under it say what
+letting go does, as **Connect tap1 to sw2**. Let go there, and the two connect,
+as with **Connect To** in the menu of the brick; let go anywhere else, or press
+[Esc]{.key}, and nothing changes. Near an edge of the tab, the picture
+scrolls, to reach a brick out of view.
+
 ## Layout and export {#export}
 
 The menu of the bar has the **Layout**, **Left to Right** or **Top to Bottom**,

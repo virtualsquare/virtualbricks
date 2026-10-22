@@ -29,6 +29,10 @@
       </item>
     </list>
   </section>
+  <section id="connect">
+    <title>Connecting two bricks</title>
+    <p>Drag a brick onto another, as in the <gui>Bricks</gui> tab: a line follows the pointer. Over a brick that it can plug into, or that can plug into it, the line ends on that brick, which lights up, and the words under it say what letting go does, as <gui>Connect tap1 to sw2</gui>. Let go there, and the two connect, as with <gui>Connect To</gui> in the menu of the brick; let go anywhere else, or press <key>Esc</key>, and nothing changes. Near an edge of the tab, the picture scrolls, to reach a brick out of view.</p>
+  </section>
   <section id="export">
     <title>Layout and export</title>
     <p>The menu of the bar has the <gui>Layout</gui>, <gui>Left to Right</gui> or <gui>Top to Bottom</gui>, and <gui>Export as Image…</gui>: a PNG, an SVG or a PDF file of the picture at 100%, on white, whatever the zoom and the theme. Exported to the folder of the project, the picture can show in its README; see <link xref="readme"/>.</p>

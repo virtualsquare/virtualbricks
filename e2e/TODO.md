@@ -375,6 +375,12 @@ that the tests can't do yet: those needs come first.
   the file is a PNG; needs typing for the path
   "The picture of the lab exported as an image is a PNG file",
   `topology.feature`
+- [ ] Connect two bricks by dropping one on the other in the picture
+  the row of the brick dragged says "on sw1"; out of reach: AT-SPI sees
+  the drawing area but no brick in it, and PyGObject can't give it an
+  accessible child for each brick (Atk's `ref_child` can't be overridden,
+  PyGObject 3.58.1); a step that finds a brick by its pixels was left
+  out (page 34, C5 A). Tried by hand on Xvfb with `xdotool`, 22 Oct 2026
 
 # Readme
 

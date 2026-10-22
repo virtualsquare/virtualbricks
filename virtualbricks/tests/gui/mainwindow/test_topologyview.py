@@ -15,7 +15,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The picture of a lab: the zoom, where things are, drawing, the input."""
+"""
+The picture of a lab: the zoom, where things are, drawing, the input, and a
+brick dragged on another.
+"""
 
 import cairo
 from twisted.trial import unittest
@@ -24,13 +27,17 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 from virtualbricks.topology import ICON, Layout, layout
 
 if has_display:
-    from gi.repository import Gdk, Gtk
+    from gi.repository import Gdk, GLib, Gtk
 
-    from virtualbricks.gui.mainwindow import picture
+    from virtualbricks.gui.mainwindow import picture, topologyview
     from virtualbricks.gui.mainwindow.topologyview import (
+        EDGE,
+        EDGE_STEP,
         LEVELS,
         MARGIN,
+        WORDS_GAP,
         TopologyView,
+        edge_step,
         fit_zoom,
         origin,
         tooltip_text,
@@ -56,6 +63,7 @@ class FakeEvent:
         self.x_root = x
         self.y_root = y
         self.button = 1
+        self.type = None
         self.state = 0
         self.direction = None
         self.delta_y = 0.0
@@ -104,6 +112,23 @@ class TestZoomLevels(unittest.TestCase):
         self.assertEqual(origin(100, 2.0, 400), 100)
         self.assertEqual(origin(100, 2.0, 220), MARGIN)
         self.assertEqual(origin(100, 1.0, 50), MARGIN)
+
+    def test_the_scroll_near_the_edges(self):
+        self.assertEqual((EDGE, EDGE_STEP), (32, 20))
+        # back near the start
+        self.assertEqual(edge_step(0, 400), -20)
+        self.assertEqual(edge_step(16, 400), -10)
+        self.assertEqual(edge_step(31, 400), -1)
+        # not in the middle
+        self.assertEqual(edge_step(32, 400), 0)
+        self.assertEqual(edge_step(368, 400), 0)
+        # on near the end
+        self.assertEqual(edge_step(369, 400), 1)
+        self.assertEqual(edge_step(384, 400), 10)
+        self.assertEqual(edge_step(400, 400), 20)
+        # past the edges, as fast as at them
+        self.assertEqual(edge_step(-50, 400), -20)
+        self.assertEqual(edge_step(450, 400), 20)
 
 
 class ViewTestCase(GuiTestCase):
@@ -532,6 +557,158 @@ class TestDrawing(ViewTestCase):
         for got, want in zip(darkest, expected):
             self.assertGreaterEqual(got, want - 10)
 
+    def drag(self, name, over=None, to=None):
+        """A drag of a brick, over another or to a point of the area."""
+
+        area = self.view.area
+        x, y = self.in_area(self.node(name))
+        self.view.on_button_press(area, FakeEvent(x, y))
+        if over is not None:
+            to = self.in_area(self.node(over))
+        self.view.on_motion(area, FakeEvent(*to))
+
+    def test_the_line_of_a_drag(self):
+        self.show(1000, 1000)
+        background = self.pixel(self.draw(), 2, 2)
+        sw1, vm = self.in_area(self.node("sw1")), self.in_area(self.node("vm"))
+        # halfway between sw1 and vm, the icons on one line
+        self.assertEqual(sw1[1], vm[1])
+        middle = (sw1[0] + vm[0]) / 2
+        self.drag("sw1", to=(middle, sw1[1]))
+        surface = self.draw()
+        # dashed, from the brick to the pointer
+        row = [
+            self.pixel(surface, x, sw1[1])
+            for x in range(int(sw1[0] + 40), int(middle) - 2)
+        ]
+        lit = [p for p in row if p != background]
+        self.assertGreater(len(lit), len(row) * 0.4)
+        self.assertIn(background, row)
+        r, g, b = min(lit, key=sum)
+        self.assertGreater(b, r + 10)
+        # not past it
+        self.assertEqual(
+            {
+                self.pixel(surface, x, sw1[1])
+                for x in range(int(middle) + 3, int(vm[0] - 40))
+            },
+            {background},
+        )
+        # solid to a brick it connects to
+        self.drag("sw1", over="vm")
+        surface = self.draw()
+        row = {
+            self.pixel(surface, x, sw1[1])
+            for x in range(int(sw1[0] + 40), int(vm[0] - 40))
+        }
+        self.assertNotIn(background, row)
+        self.assertTrue(all(b > r + 10 for r, g, b in row), row)
+
+    def beside(self, name, side):
+        """In the disc of a brick, left (-1) or right (1) of its icon."""
+
+        x, y = self.in_area(self.node(name))
+        return x + side * (ICON / 2 + 3), y
+
+    def test_the_discs_of_a_drag(self):
+        self.show(1000, 1000)
+        surface = self.draw()
+        background = self.pixel(surface, 2, 2)
+        # away from the line, which goes from sw1 on its right to vm on its
+        # left
+        dragged, target, other = (
+            self.beside("sw1", -1),
+            self.beside("vm", 1),
+            self.beside("sw2", 1),
+        )
+        for spot in (dragged, target, other):
+            self.assertEqual(self.pixel(surface, *spot), background)
+        self.drag("sw1", over="vm")
+        surface = self.draw()
+        for spot in (dragged, target):
+            r, g, b = self.pixel(surface, *spot)
+            self.assertGreater(b, r + 10)
+        self.assertEqual(self.pixel(surface, *other), background)
+        # over a brick that it doesn't connect to: only the brick dragged
+        self.view.on_motion(
+            self.view.area, FakeEvent(*self.in_area(self.node("sw2")))
+        )
+        surface = self.draw()
+        self.assertEqual(self.pixel(surface, *other), background)
+        r, g, b = self.pixel(surface, *dragged)
+        self.assertGreater(b, r + 10)
+
+    def boxes(self):
+        """The boxes of the words, as drawn: x, y, width, height."""
+
+        boxes = []
+        self.patch(
+            topologyview,
+            "rounded_rectangle",
+            lambda cr, *box: boxes.append(box),
+        )
+        return boxes
+
+    def test_the_words_of_a_drag(self):
+        self.show(1000, 1000)
+        words = []
+        make_layout = self.view.area.create_pango_layout
+
+        def create_pango_layout(text):
+            words.append(text)
+            return make_layout(text)
+
+        self.patch(self.view.area, "create_pango_layout", create_pango_layout)
+        boxes = self.boxes()
+        self.drag("sw1", to=(5, 5))
+        self.draw()
+        self.assertNotIn("Connect sw1 to vm", words)
+        self.assertEqual(boxes, [])
+        self.drag("sw1", over="vm")
+        self.draw()
+        self.assertIn("Connect sw1 to vm", words)
+        # centred under the brick
+        [(x, y, width, height)] = boxes
+        node = self.node("vm")
+        ox, oy = self.view.origin()
+        self.assertAlmostEqual(x + width / 2, ox + node.x)
+        self.assertAlmostEqual(y, oy + node.y + node.height / 2 + WORDS_GAP)
+
+    def test_the_box_of_the_words(self):
+        self.show(1000, 1000)
+        self.drag("sw1", over="vm")
+        surface = self.draw()
+        x, y = self.in_area(self.node("vm"))
+        node = self.node("vm")
+        top = y - ICON / 2 + node.height + WORDS_GAP
+        # dark, as the bar of the tab, with lighter words in it
+        inside = [
+            self.pixel(surface, x + dx, top + dy)
+            for dx in range(-40, 40)
+            for dy in range(2, 14)
+        ]
+        self.assertLess(self.luminance(inside), 3 * 100)
+        self.assertGreater(max(sum(p) for p in inside), 3 * 150)
+
+    def test_the_words_in_sight(self):
+        self.show(200, 150)
+        self.view.set_zoom(2.0)
+        allocate(self.view, 200, 150)
+        boxes = self.boxes()
+        for h, v in ((0, 0), (10000, 10000)):
+            self.view.get_hadjustment().set_value(h)
+            self.view.get_vadjustment().set_value(v)
+            h, v = self.scroll()
+            del boxes[:]
+            self.drag("sw1", over="vm")
+            self.draw()
+            [(x, y, width, height)] = boxes
+            self.assertGreaterEqual(x, h + WORDS_GAP)
+            self.assertLessEqual(x + width, h + 200 - WORDS_GAP)
+            self.assertGreaterEqual(y, v + WORDS_GAP)
+            self.assertLessEqual(y + height, v + 150 - WORDS_GAP)
+            self.view.on_button_release(self.view.area, FakeEvent(1, 1))
+
     def test_nothing_to_draw(self):
         self.show(200, 200, lab=Layout())
         surface = self.draw(200, 200)
@@ -783,6 +960,8 @@ class TestInput(ViewTestCase):
             "on_scroll",
             "on_key_press",
             "on_query_tooltip",
+            "on_grab_broken",
+            "on_grab_notify",
             "on_pinch_begin",
             "on_pinch",
         ):
@@ -801,9 +980,11 @@ class TestInput(ViewTestCase):
             ("leave-notify-event", Gdk.EventType.LEAVE_NOTIFY),
             ("scroll-event", Gdk.EventType.SCROLL),
             ("key-press-event", Gdk.EventType.KEY_PRESS),
+            ("grab-broken-event", Gdk.EventType.GRAB_BROKEN),
         ):
             area.emit(signal, Gdk.Event.new(event_type))
         area.emit("query-tooltip", 1, 1, False, Gtk.Tooltip())
+        area.emit("grab-notify", False)
         area.emit(
             "draw",
             cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)),
@@ -822,6 +1003,8 @@ class TestInput(ViewTestCase):
                 "on_scroll",
                 "on_key_press",
                 "on_query_tooltip",
+                "on_grab_broken",
+                "on_grab_notify",
                 "on_draw",
                 "on_pinch_begin",
                 "on_pinch",
@@ -842,3 +1025,271 @@ class TestInput(ViewTestCase):
         self.assertTrue(area.get_has_tooltip())
         self.assertTrue(area.get_visible())
         self.assertTrue(area.get_style_context().has_class("view"))
+
+
+class TestDraggingABrick(ViewTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.show(1000, 1000)
+        self.dropped = []
+        self.view.connect(
+            "brick-dropped",
+            lambda view, brick, other: self.dropped.append((brick, other)),
+        )
+        self.cursors = []
+        self.patch(self.view, "_set_cursor", self.cursors.append)
+
+    def press(self, name, **attrs):
+        x, y = self.in_area(self.node(name))
+        # the tab's: the menu, the settings
+        self.assertIs(
+            self.view.on_button_press(
+                self.view.area, FakeEvent(x, y, **attrs)
+            ),
+            False,
+        )
+        return x, y
+
+    def move(self, x, y):
+        return self.view.on_motion(self.view.area, FakeEvent(x, y))
+
+    def over(self, name):
+        return self.move(*self.in_area(self.node(name)))
+
+    def release(self, x=1, y=1):
+        return self.view.on_button_release(self.view.area, FakeEvent(x, y))
+
+    def drag(self, name):
+        x, y = self.press(name)
+        self.assertTrue(self.move(x + 20, y))
+        self.assertIs(self.view.dragging, getattr(self, name))
+
+    def test_past_the_threshold(self):
+        x, y = self.press("sw1")
+        self.assertIs(self.move(x + 3, y), False)
+        self.assertIsNone(self.view.dragging)
+        self.assertTrue(self.view.area.get_has_tooltip())
+        self.assertTrue(self.move(x + 20, y))
+        self.assertIs(self.view.dragging, self.sw1)
+        # the closed hand; the tooltips wait
+        self.assertEqual(self.cursors, ["pointer", "grabbing"])
+        self.assertFalse(self.view.area.get_has_tooltip())
+        self.assertIsNone(self.view.hover)
+
+    def test_a_click(self):
+        x, y = self.press("sw1")
+        self.assertIs(self.release(x, y), False)
+        self.assertIs(self.move(x + 20, y), False)
+        self.assertIsNone(self.view.dragging)
+
+    def test_not_with_another_button(self):
+        x, y = self.press("sw1", button=3)
+        self.move(x + 20, y)
+        self.assertIsNone(self.view.dragging)
+
+    def test_not_after_a_double_click(self):
+        x, y = self.press("sw1", type=Gdk.EventType.DOUBLE_BUTTON_PRESS)
+        self.move(x + 20, y)
+        self.assertIsNone(self.view.dragging)
+
+    def test_the_target(self):
+        self.drag("sw1")
+        self.assertIsNone(self.view.drop_target())
+        # a machine takes a plug into the switch
+        self.over("vm")
+        self.assertIs(self.view.drop_target(), self.node("vm"))
+        # two switches don't connect, nor a brick to itself
+        self.over("sw2")
+        self.assertIsNone(self.view.drop_target())
+        self.over("sw1")
+        self.assertIsNone(self.view.drop_target())
+        self.move(1, 1)
+        self.assertIsNone(self.view.drop_target())
+
+    def test_the_drop(self):
+        self.drag("sw1")
+        self.over("vm")
+        x, y = self.in_area(self.node("vm"))
+        self.assertTrue(self.release(x, y))
+        self.assertEqual(self.dropped, [(self.sw1, self.vm)])
+        self.assertIsNone(self.view.dragging)
+        self.assertEqual(self.cursors[-1], None)
+        self.assertTrue(self.view.area.get_has_tooltip())
+        # the other way round
+        self.drag("vm")
+        self.over("sw2")
+        self.release(*self.in_area(self.node("sw2")))
+        self.assertEqual(self.dropped[-1], (self.vm, self.sw2))
+
+    def test_where_the_release_is(self):
+        self.drag("sw1")
+        self.over("vm")
+        # released elsewhere, with no move before
+        self.assertTrue(self.release(1, 1))
+        self.assertEqual(self.dropped, [])
+
+    def test_a_drop_on_nothing(self):
+        self.drag("sw1")
+        self.over("sw2")
+        self.assertTrue(self.release(*self.in_area(self.node("sw2"))))
+        self.assertEqual(self.dropped, [])
+        self.assertIsNone(self.view.dragging)
+        # and nothing after
+        self.assertIs(self.release(), False)
+
+    def key(self, keyval):
+        event = FakeEvent(keyval=keyval)
+        return self.view.on_key_press(self.view.area, event)
+
+    def test_escape(self):
+        self.assertIs(self.key(Gdk.KEY_Escape), False)
+        self.drag("sw1")
+        self.over("vm")
+        self.assertTrue(self.key(Gdk.KEY_Escape))
+        self.assertIsNone(self.view.dragging)
+        self.assertEqual(self.cursors[-1], None)
+        self.assertIs(self.release(*self.in_area(self.node("vm"))), False)
+        self.assertEqual(self.dropped, [])
+
+    def test_the_keys_zoom_while_dragging(self):
+        self.drag("sw1")
+        self.assertTrue(self.key(Gdk.KEY_f))
+        self.assertIs(self.view.dragging, self.sw1)
+
+    def test_a_lost_grab(self):
+        area = self.view.area
+        self.drag("sw1")
+        self.assertIs(self.view.on_grab_broken(area, None), False)
+        self.assertIsNone(self.view.dragging)
+        x, y = self.press("sw1")
+        self.view.on_grab_broken(area, None)
+        self.move(x + 20, y)
+        self.assertIsNone(self.view.dragging)
+        self.release()
+        # another widget takes the input, then gives it back
+        self.drag("sw1")
+        self.view.on_grab_notify(area, True)
+        self.assertIs(self.view.dragging, self.sw1)
+        self.view.on_grab_notify(area, False)
+        self.assertIsNone(self.view.dragging)
+        x, y = self.press("sw1")
+        self.view.on_grab_notify(area, False)
+        self.move(x + 20, y)
+        self.assertIsNone(self.view.dragging)
+        self.assertEqual(self.dropped, [])
+
+    def test_a_new_layout(self):
+        self.drag("sw1")
+        self.view.set_layout(layout(self.factory.bricks, "TB"))
+        allocate(self.view, 1000, 1000)
+        # the same bricks, in their new places
+        self.assertIs(self.view.dragging, self.sw1)
+        self.over("vm")
+        self.release(*self.in_area(self.node("vm")))
+        self.assertEqual(self.dropped, [(self.sw1, self.vm)])
+
+    def test_the_brick_dragged_deleted(self):
+        self.drag("sw2")
+        self.factory.remove_brick(self.sw2)
+        others = layout(self.factory.bricks)
+        self.view.set_layout(others)
+        self.assertIsNone(self.view.dragging)
+        self.assertEqual(self.cursors[-1], None)
+        self.view.set_layout(self.lab)
+        # deleted after the press
+        x, y = self.press("sw2")
+        self.view.set_layout(others)
+        self.move(x + 20, y)
+        self.assertIsNone(self.view.dragging)
+
+    def at_the_edge(self):
+        """
+        Zoomed in, the picture scrolled to the middle; the timers of the
+        view, by their sources, and the sources removed.
+        """
+
+        allocate(self.view, 200, 150)
+        self.view.set_zoom(3.0)
+        allocate(self.view, 200, 150)
+        for adjustment in (
+            self.view.get_vadjustment(),
+            self.view.get_hadjustment(),
+        ):
+            adjustment.set_value(
+                (adjustment.get_upper() - adjustment.get_page_size()) / 2
+            )
+        timers, removed = {}, []
+        source_remove = GLib.source_remove
+
+        def timeout_add(delay, call):
+            source = 10**9 + len(timers)
+            timers[source] = (delay, call)
+            return source
+
+        def remove(source):
+            if source in timers:
+                removed.append(source)
+            else:
+                source_remove(source)
+
+        self.patch(GLib, "timeout_add", timeout_add)
+        self.patch(GLib, "source_remove", remove)
+        return timers, removed
+
+    def test_the_scroll_near_an_edge(self):
+        timers, removed = self.at_the_edge()
+        h, v = self.scroll()
+        self.drag("vm")
+        self.assertEqual(timers, {})
+        # 5 pixels from the right edge of the view
+        self.move(h + 195, v + 75)
+        [(source, (delay, scroll))] = timers.items()
+        self.assertEqual((self.view._edge_scroll, delay), (source, 30))
+        self.assertIs(scroll(), GLib.SOURCE_CONTINUE)
+        step = edge_step(195, 200)
+        self.assertEqual(self.scroll(), (h + step, v))
+        # the pointer stays in the view, the picture moves under it
+        self.assertEqual(self.view.pointer(), (h + step + 195, v + 75))
+        # one timer while it scrolls
+        self.move(h + step + 196, v + 75)
+        self.assertEqual(len(timers), 1)
+        # away from the edges: it stops
+        self.move(h + step + 100, v + 75)
+        self.assertIs(scroll(), GLib.SOURCE_REMOVE)
+        self.assertIsNone(self.view._edge_scroll)
+        self.assertEqual(self.scroll(), (h + step, v))
+        # and again near an edge, the top one
+        self.move(h + step + 100, v + 2)
+        self.assertEqual(len(timers), 2)
+        self.release()
+
+    def test_no_scroll_past_the_end(self):
+        timers, removed = self.at_the_edge()
+        self.drag("vm")
+        hadjustment = self.view.get_hadjustment()
+        end = hadjustment.get_upper() - hadjustment.get_page_size()
+        hadjustment.set_value(end)
+        h, v = self.scroll()
+        self.move(h + 195, v + 75)
+        [(delay, scroll)] = timers.values()
+        self.assertIs(scroll(), GLib.SOURCE_REMOVE)
+        self.assertEqual(self.scroll(), (end, v))
+        self.assertIsNone(self.view._edge_scroll)
+
+    def test_the_scroll_ends_with_the_drag(self):
+        timers, removed = self.at_the_edge()
+        h, v = self.scroll()
+        for end in (self.release, lambda: self.key(Gdk.KEY_Escape)):
+            self.drag("vm")
+            self.move(h + 195, v + 75)
+            source = self.view._edge_scroll
+            end()
+            self.assertIsNone(self.view._edge_scroll)
+            self.assertEqual(removed[-1], source)
+        self.drag("vm")
+        self.move(h + 195, v + 75)
+        source = self.view._edge_scroll
+        self.view.destroy()
+        self.assertEqual(removed[-1], source)
+        self.assertEqual(len(removed), 3)

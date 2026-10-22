@@ -249,16 +249,18 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 34 &middot; Design &middot; revision 2, decided</div>
+    <div class="eyebrow">Step 34 &middot; Design &middot; revision 3, implemented</div>
     <h1>Drop to connect, in the picture</h1>
     <p class="lede">In the Bricks list, a brick dropped on another connects the two when one can plug into the other. This page brings the same drop to the picture of the Topology tab: press a brick and move, and a line follows the pointer to the brick it will plug into. On the way it mends the list, whose rows never start a drag with a real mouse.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 69541b5b</li>
-      <li>revision 2 &middot; 22 October 2026</li>
-      <li><span class="status">decided</span></li>
+      <li>revision 3 &middot; 22 October 2026</li>
+      <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> the item of IDEAS, Topology, &ldquo;Connect two bricks by dropping one on the other in the picture, as in the Bricks list&rdquo;, left for later by &sect;9 of <a href="06%20-%20topology-redesign.html#later">page 6</a>. The facts of <a href="#today">&sect;2</a> were checked today, the drop of the list with a real mouse, on Xvfb with xdotool. The boards of <a href="#drag">&sect;3</a> are drawn by <code>picture.draw()</code>, the code of the tab, with each option&rsquo;s drag drawn over them. The five questions, C1 to C5 in <a href="#decisions">&sect;8</a>, are decided.</p>
     <p class="revision"><strong>What changed:</strong> revision 2 records your answer of today: &ldquo;The recommendations are fine&rdquo;. C1 to C5 are A, as recommended: the view drags a brick by itself, with a line; the list is mended first; the view scrolls near its edges; and no end-to-end scenario.</p>
+    <p class="revision"><strong>Implemented</strong> on 22 October 2026 on <code>develop</code>, from 69541b5b, in the two steps of <a href="#plan">&sect;7</a>: 3d8f0948 step 1, the list; and one more, step 2, the picture. Both were tried with a real mouse on Xvfb, in the whole application: the drop of a row, then in the picture the dashed line, the line to a brick with its words, the drop, Escape, and the scroll at the bottom edge at 300%.</p>
+    <p class="revision">The differences from the plan. The list drops nothing when the brick dragged was deleted during the drag, as from the console. The box of the words takes the colours of the theme&rsquo;s <code>osd</code> style, the bar&rsquo;s. The line has square ends, so that its dashes and gaps stay sharp. Besides a lost grab, a window that takes the input, as a dialog that opens, ends the drag too. The line goes under the bricks, but the icon of a stopped brick is faded, so the line shows through it.</p>
   </header>
 
   <div class="layout">

@@ -164,8 +164,6 @@
 - [ ] Redesign the icons / use freely available icons
 - [ ] Name the plugs on the links, as a virtual machine's network cards
   (06 §9)
-- [ ] Connect two bricks by dropping one on the other in the picture,
-  as in the Bricks list (06 §9)
 - [ ] Move bricks by hand, and keep where they are in the project
   (06 §9)
 - [ ] Show a small overview of a big lab in a corner, with where the
@@ -174,6 +172,19 @@
   (08 §10)
 - [ ] Export the picture as if all the bricks were running, an option of
   Export as Image: no brick grey and faded
+- [ ] Say why two bricks don't connect, in the words of a drag: "tap1 is
+  plugged into sw1 already", "two machines connect through a switch"
+  (34 §9)
+- [ ] Choose the socket or the network card at the drop when there are
+  several; today it is the first socket, and a new card for a virtual
+  machine (34 §9)
+- [ ] Unplug a brick by dragging the end of its link away (34 §9)
+- [ ] Connect from the keyboard in the picture: a brick with the focus,
+  and its menu from the Menu key, which has Connect To (34 §9)
+- [ ] Give the bricks of the picture to the screen readers, an
+  accessible object each; PyGObject can't override Atk's `ref_child`, so
+  it needs another way. With it, a scenario finds a brick as it finds a
+  row (34 §9)
 
 ## Readme
 
@@ -329,9 +340,16 @@
   killed, with the parent-death signal
 - [ ] Run the end-to-end scenarios on X11 too, on Xvfb, beside Broadway:
   real keys, and drag and drop; `e2e/TODO.md` compares the two
+- [ ] Play a row of the Bricks list dropped on another in a scenario,
+  once the scenarios run on Xvfb (34 §9)
 
 # DONE
 
+- [x] Connect two bricks by dropping one on the other in the picture, as
+  in the Bricks list: a line follows the pointer, and ends on a brick that
+  the one dragged connects to, with the words of the drop under it; the
+  view scrolls near its edges. On the way, the list's own drop works with a
+  mouse: its rows never started a drag (page 34; 06 §9, 07 Since then)
 - [x] Give a switch wrapper an error state when its control folder isn't
   a switch's: a connection to `ctl` tells, at each look, as a plug would
   make; a folder that isn't there is Stopped, any other where a plug can't

@@ -20,6 +20,8 @@ The Topology tab: when it lays the lab out, its bar and menu, the clicks
 on the bricks, and the export.
 """
 
+from twisted.internet import defer
+
 from virtualbricks import topology as layouts
 from virtualbricks.config.workspace import projects
 from virtualbricks.tests import FakeLogger
@@ -56,9 +58,22 @@ def run_idle_calls():
 
 
 class FakeEngine:
-    """The engine of the main window, as the tab reads it: the workspace."""
+    """
+    The engine of the main window, as the tab reads it: the workspace; and
+    what it connects.
+    """
 
     workspace = projects
+
+    def __init__(self):
+        self.connected = []
+        self.refused = None
+
+    def connect(self, brick, other):
+        self.connected.append((brick, other))
+        if self.refused is not None:
+            return defer.fail(self.refused)
+        return defer.succeed(True)
 
 
 class FakeMenus:
@@ -430,6 +445,21 @@ class TestClicks(TopologyTestCase):
         event.button.x = event.button.y = 1
         self.assertFalse(self.tab.on_button_press(self.view.area, event))
         self.assertEqual(self.menus.shown, [])
+
+
+class TestDrops(TopologyTestCase):
+
+    def test_a_drop_connects(self):
+        tap = self.factory.new_brick("tap", "tap")
+        self.view.emit("brick-dropped", tap, self.sw1)
+        self.assertEqual(self.engine.connected, [(tap, self.sw1)])
+        self.assertEqual(self.logger.events, [])
+
+    def test_a_failure(self):
+        self.engine.refused = RuntimeError("the connection is gone")
+        self.view.emit("brick-dropped", self.vm, self.sw1)
+        self.assertEqual(self.logger.levels(), ["failure"])
+        self.assertEqual(self.logger.formatted(), ["Cannot connect vm to sw1"])
 
 
 class TestExport(TopologyTestCase):

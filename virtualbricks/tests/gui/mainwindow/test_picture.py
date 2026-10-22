@@ -15,7 +15,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The picture of a lab: the icons, the names' font, and the export."""
+"""
+The picture of a lab: the icons, the names' font, the line of a brick
+dragged, and the export.
+"""
 
 import os
 import re
@@ -27,13 +30,17 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 from virtualbricks.topology import ICON, layout
 
 if has_display:
-    from gi.repository import Pango
+    from gi.repository import Gtk, Pango
 
     from virtualbricks.gui.mainwindow.picture import (
         FORMATS,
+        LIGHT,
         MARGIN,
         Icons,
+        Line,
+        draw,
         export,
+        icon_centre,
         scaled_font,
     )
 
@@ -103,6 +110,127 @@ class TestTheFontOfTheNames(PictureTestCase):
         self.assertEqual(big.get_size(), 6 * Pango.SCALE)
         # never nothing
         self.assertEqual(scaled_font(font, 0.0).get_size(), 1)
+
+
+class TestTheLineOfADrag(PictureTestCase):
+    """sw1, vm and sw2 in a row, in this order, vm plugged into both."""
+
+    def draw(self, hover=None, line=None):
+        width = round(self.lab.width + 2 * MARGIN)
+        height = round(self.lab.height + 2 * MARGIN)
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        cr = cairo.Context(surface)
+        cr.set_source_rgb(1, 1, 1)
+        cr.paint()
+        draw(
+            cr,
+            self.lab,
+            1.0,
+            (MARGIN, MARGIN),
+            LIGHT,
+            self.font,
+            # the names as the tab lays them out
+            Gtk.Label().create_pango_layout,
+            Icons(),
+            hover,
+            line,
+        )
+        surface.flush()
+        return surface
+
+    def pixel(self, surface, x, y):
+        data = surface.get_data()
+        offset = int(y) * surface.get_stride() + int(x) * 4
+        b, g, r, a = data[offset : offset + 4]
+        return r, g, b
+
+    def node(self, name):
+        return next(n for n in self.lab.nodes if n.brick.name == name)
+
+    def centre(self, name):
+        """The middle of the icon of a brick, in the picture."""
+
+        x, y = icon_centre(self.node(name))
+        return MARGIN + x, MARGIN + y
+
+    def row(self, surface, start, end, y):
+        return [self.pixel(surface, x, y) for x in range(start, end)]
+
+    def blue(self, pixel):
+        r, g, b = pixel
+        return b > r + 10
+
+    def test_dashed_to_a_point(self):
+        (x0, y), (x1, _y) = self.centre("sw1"), self.centre("vm")
+        self.assertEqual(_y, y)
+        middle = (x0 + x1) // 2
+        surface = self.draw(line=Line(self.node("sw1"), (middle - MARGIN, 32)))
+        # beyond the disc of sw1, to the point
+        row = self.row(surface, int(x0) + 40, int(middle) - 1, y)
+        dashes = [p for p in row if self.blue(p)]
+        gaps = [p for p in row if p == (255, 255, 255)]
+        self.assertGreater(len(dashes), len(row) * 0.4)
+        self.assertGreater(len(gaps), len(row) * 0.2)
+        # no further
+        self.assertEqual(
+            set(self.row(surface, int(middle) + 2, int(x1) - 40, y)),
+            {(255, 255, 255)},
+        )
+
+    def test_solid_to_a_brick(self):
+        (x0, y), (x1, _y) = self.centre("sw1"), self.centre("vm")
+        line = Line(self.node("sw1"), (0, 0), self.node("vm"))
+        surface = self.draw(line=line)
+        row = self.row(surface, int(x0) + 40, int(x1) - 40, y)
+        self.assertTrue(all(self.blue(p) for p in row), row)
+
+    def test_under_the_bricks(self):
+        # from vm into the icon of sw1, opaque as sw1 runs; the icons sit
+        # above their middle
+        x0, y0 = icon_centre(self.node("vm"))
+        x1, y1 = 40, 14
+        surface = self.draw(line=Line(self.node("vm"), (x1, y1)))
+        plain = self.draw()
+        spots = [
+            (MARGIN + x, MARGIN + y0 + (y1 - y0) * (x - x0) / (x1 - x0))
+            for x in range(44, 60)
+        ]
+        # the icon is there, and hides the line: nearly opaque, a little of
+        # it shows through, but no blue
+        for spot in spots:
+            self.assertNotEqual(self.pixel(plain, *spot), (255, 255, 255))
+            self.assertFalse(self.blue(self.pixel(surface, *spot)), spot)
+        # and the line is there, out of the icon
+        x = int(x0) - 50
+        y = y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+        self.assertTrue(
+            any(
+                self.blue(self.pixel(surface, MARGIN + x + dx, MARGIN + y))
+                for dx in range(10)
+            )
+        )
+
+    def test_the_discs_of_both(self):
+        def beside(name, side):
+            x, y = self.centre(name)
+            return x + side * (ICON / 2 + 3), y
+
+        # sw1 on the left of vm: away from the line
+        spots = beside("sw1", -1), beside("vm", 1), beside("sw2", 1)
+        plain = self.draw()
+        for spot in spots:
+            self.assertEqual(self.pixel(plain, *spot), (255, 255, 255))
+        line = Line(self.node("sw1"), (0, 0), self.node("vm"))
+        surface = self.draw(line=line)
+        dragged, target, other = (self.pixel(surface, *s) for s in spots)
+        self.assertTrue(self.blue(dragged))
+        self.assertTrue(self.blue(target))
+        self.assertEqual(other, (255, 255, 255))
+        # to a point: the brick dragged only
+        surface = self.draw(line=Line(self.node("sw1"), (0, 0)))
+        dragged, target, other = (self.pixel(surface, *s) for s in spots)
+        self.assertTrue(self.blue(dragged))
+        self.assertEqual(target, (255, 255, 255))
 
 
 class TestExport(PictureTestCase):

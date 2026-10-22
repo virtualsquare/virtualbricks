@@ -26,7 +26,8 @@ lab out when it shows, and again when a brick changes while it shows; a
 project without bricks shows a hint instead.
 
 A click on a brick works as in the list of the bricks: the right button
-opens its menu, a double click configures it.
+opens its menu, a double click configures it. A brick dropped on another
+connects the two, as in the list.
 """
 
 from __future__ import annotations
@@ -61,6 +62,7 @@ drawing_topology = "drawing topology"
 top_invalid_format = "Error saving topology: Invalid image format"
 top_write_error = "Error saving topology: Could not write file"
 top_unknown = "Error saving topology: Unknown error"
+connect_error = "Cannot connect {brick} to {other}"
 
 # Between the bar and the corner, and between the bar's groups, in pixels.
 GAP = 6
@@ -203,6 +205,7 @@ class TopologyTab(Tab, Gtk.Overlay):
         self.level_button.connect("clicked", lambda b: self.view.zoom_to_100())
         self._fit_clicked = self.fit_button.connect("clicked", self.on_fit)
         self.view.connect("zoom-changed", self.on_zoom_changed)
+        self.view.connect("brick-dropped", self.on_brick_dropped)
         self.view.area.connect("button-press-event", self.on_button_press)
         self.bar.connect("size-allocate", self.on_bar_allocated)
         self.connect("destroy", self.on_destroy)
@@ -277,6 +280,15 @@ class TopologyTab(Tab, Gtk.Overlay):
 
     def on_zoom_changed(self, view: TopologyView) -> None:
         self._update()
+
+    def on_brick_dropped(
+        self, view: TopologyView, brick: Brick, other: Brick
+    ) -> None:
+        self.engine.connect(brick, other).addErrback(
+            lambda failure: logger.failure(
+                connect_error, failure, brick=brick.name, other=other.name
+            )
+        )
 
     def on_fit(self, button: Gtk.ToggleButton) -> None:
         # a click fits, even on the button that is on; the zoom says after

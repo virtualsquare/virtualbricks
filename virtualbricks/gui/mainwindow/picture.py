@@ -22,8 +22,10 @@ cairo in the Topology tab or in a file.
 
 The same drawing serves both. The links are in the text colour, fainter; a
 stopped brick is grey and faded, its name too; the brick under the pointer
-sits on a disc of the selection colour. The tab draws at its zoom in the
-colours of the theme. A file gets the lab at 100%, on white, in the colours
+sits on a disc of the selection colour. A brick dragged in the tab keeps its
+disc, with a line in the selection colour under the bricks: dashed to the
+pointer, or solid to the brick it connects to, on a disc too. The tab draws
+at its zoom in the colours of the theme. A file gets the lab at 100%, on white, in the colours
 of a light theme, as PNG, SVG or PDF by the extension of its name.
 """
 
@@ -59,6 +61,10 @@ HOVER_ALPHA = 0.18
 # disc of the brick under the pointer, in points.
 LINE_WIDTH = 1.6
 DISC_GAP = 6
+# The line of a brick dragged, in pixels: its width, and the dashes and the
+# gaps of the line that goes nowhere.
+DRAG_WIDTH = 2.0
+DASHES = (6.0, 4.0)
 # The formats of an exported picture, by the extension of the file.
 FORMATS = {
     ".png": _("PNG image"),
@@ -73,6 +79,22 @@ class Palette:
 
     ink: tuple[float, float, float]
     selection: tuple[float, float, float]
+
+
+@dataclasses.dataclass(frozen=True)
+class Line:
+    """
+    The line of a brick dragged: from its node to end, a point of the lab,
+    or to target, the node of the brick it connects to.
+    """
+
+    node: Node
+    end: tuple[float, float]
+    target: Node | None = None
+
+
+def icon_centre(node: Node) -> tuple[float, float]:
+    return node.x, node.y - node.height / 2 + ICON / 2
 
 
 # Adwaita's text and selection: an exported picture's, on white.
@@ -145,12 +167,14 @@ def draw(
     text: Callable[[str], Pango.Layout],
     icons: Icons,
     hover: Node | None = None,
+    line: Line | None = None,
 ) -> None:
     """
     Draw a layout at a zoom, from origin, a point (x, y) of cr.
 
     font is the names' at 100%; text(name) gives a Pango layout of a name
-    to draw with cr. hover is the node on a disc, if any.
+    to draw with cr. hover is the node on a disc, if any; line, the line of
+    a brick dragged, whose ends are on discs too.
     """
 
     ox, oy = origin
@@ -165,10 +189,24 @@ def draw(
         for i in range(0, len(rest) - 2, 3):
             cr.curve_to(*rest[i], *rest[i + 1], *rest[i + 2])
         cr.stroke()
+    discs = [hover]
+    if line is not None:
+        discs += [line.node, line.target]
+        cr.save()
+        cr.set_source_rgb(*palette.selection)
+        cr.set_line_width(DRAG_WIDTH / zoom)
+        if line.target is None:
+            cr.set_dash([length / zoom for length in DASHES])
+        cr.move_to(*icon_centre(line.node))
+        cr.line_to(
+            *(line.end if line.target is None else icon_centre(line.target))
+        )
+        cr.stroke()
+        cr.restore()
     for node in layout.nodes:
         running = is_running(node.brick)
         top = node.y - node.height / 2
-        if node is hover:
+        if any(node is disc for disc in discs):
             cr.set_source_rgba(*palette.selection, HOVER_ALPHA)
             cr.arc(node.x, top + ICON / 2, ICON / 2 + DISC_GAP, 0, 2 * math.pi)
             cr.fill()
