@@ -15,6 +15,9 @@ PATH = 'content'
 STATIC_PATHS = ['images', 'help']
 ARTICLE_EXCLUDES = ['help']
 PAGE_EXCLUDES = ['help']
+# ...and each of its pages gets the bar of the site on top
+PLUGIN_PATHS = [joinpath(curdir, 'plugins')]
+PLUGINS = ['help_bar']
 
 TIMEZONE = 'Europe/Rome'
 

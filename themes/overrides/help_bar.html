@@ -1,0 +1,31 @@
+{# Virtualbricks: the bar of the site on top of each page of the user guide,
+   which plugins/help_bar.py puts there: the style goes into the head, the
+   nav after <body>. The menu is that of base.html, User guide active; the
+   colours are the tokens of the guide's stylesheet, so they follow its dark
+   mode. #}
+<style>
+  .site { max-width: 860px; margin: 0 auto; padding: 16px 16px 0; }
+  .site.reference { max-width: 1180px; }
+  .site-bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 24px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+  .site-name { font: 600 1.15rem/1.2 var(--font-head); color: var(--ink); text-decoration: none; }
+  .site ul { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0; padding: 0; list-style: none; font-size: 15px; }
+  .site ul a { color: var(--muted); text-decoration: none; }
+  .site ul a:hover, .site ul .active a { color: var(--accent); }
+</style>
+<nav class="site {{ kind }}" aria-label="{{ SITENAME|striptags }}">
+  <div class="site-bar">
+    <a class="site-name" href="{{ SITEURL }}/">{{ SITENAME }}</a>
+    <ul>
+      <li><a href="{{ SITEURL }}/">Home</a></li>
+    {% if DISPLAY_PAGES_ON_MENU %}
+    {% for p in pages %}
+      <li><a href="{{ SITEURL }}/{{ p.url }}">{{ p.title }}</a></li>
+    {% endfor %}
+    {% endif %}
+    {% for cat, null in categories %}
+      <li><a href="{{ SITEURL }}/{{ cat.url }}">{{ cat }}</a></li>
+    {% endfor %}
+      <li class="active"><a href="{{ SITEURL }}/help/C/">User guide</a></li>
+    </ul>
+  </div>
+</nav>
