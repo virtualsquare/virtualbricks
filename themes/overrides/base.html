@@ -79,8 +79,8 @@
                                 <li {% if p == page %} class="active"{% endif %}><a href="{{ SITEURL }}/{{ p.url }}">{{ p.title }}</a></li>
                                 {% endfor %}
                                 {% endif %}
-                                {# Virtualbricks: the categories, News and Documentation, in place
-                                   of Categories, Tags, Archives and the search #}
+                                {# Virtualbricks: the categories, News, in place of Categories,
+                                   Tags, Archives and the search #}
                                 {% for cat, null in categories %}
                                 <li {% if cat == category or (article and cat == article.category) %} class="active"{% endif %}><a href="{{ SITEURL }}/{{ cat.url }}">{{ cat }}</a></li>
                                 {% endfor %}

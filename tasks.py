@@ -8,7 +8,6 @@ import subprocess
 import sys
 import datetime
 import tarfile
-import re
 
 from invoke import task
 from invoke.exceptions import Exit
@@ -148,17 +147,16 @@ def gh_pages(c):
           '-m {commit_message} '
           '{deploy_path} -p'.format(**CONFIG))
 
-# The help, the HTML of the user guide and of its reference, and the pages of
-# the Documentation are copies of those of a commit of develop, made by
-# sync-docs: page 28 of develop's docs/redesign, section 7, and page 33, which
-# made the HTML in docs/built/html.
+# The help, the HTML of the user guide and of its reference, is a copy of that
+# of a commit of develop, made by sync-docs: page 28 of develop's
+# docs/redesign, section 7, and page 33, which made the HTML in
+# docs/built/html.
 ROOT = os.path.dirname(os.path.abspath(__file__))
 HELP_SOURCE = 'docs/built/html'
 HELP_PATH = os.path.join('content', 'help', 'C')
-DOCUMENTATION_PATH = os.path.join('content', 'documentation')
-# The address of the site, which the help and the pages of docs/ link in
-# full, as the help installed with Virtualbricks needs; the copies here link
-# within the site, so that a local build stays local.
+# The address of the site, which the help links in full, as the help
+# installed with Virtualbricks needs; the copy here links within the site,
+# so that a local build stays local.
 SITE = 'https://www.virtualbricks.it/'
 
 
@@ -168,27 +166,6 @@ def git(*args):
     if result.returncode:
         raise Exit(result.stderr.decode().strip(), code=1)
     return result.stdout
-
-
-def documentation_page(source, page, names):
-    """
-    A page of the Documentation from the page of the reference in develop's
-    docs/built/html, source, and the page of the site: its head, the metadata
-    of Pelican, kept; the body of source, its links to the pages of the guide,
-    which aren't among names, those of the Documentation, made links to the
-    help of the site.
-    """
-    head = page[:page.index('<body>\n') + len('<body>\n')]
-    start = source.index('<body>\n') + len('<body>\n')
-    body = source[start:source.index('</body>')]
-
-    def to_help(match):
-        if match.group(1) in names:
-            return match.group(0)
-        return 'href="../help/C/' + match.group(1)
-
-    body = re.sub(r'href="([a-z0-9-]+\.html)', to_help, body)
-    return head + body + '</body>\n</html>\n'
 
 
 def within_site(data, path):
@@ -214,15 +191,11 @@ def read(path):
 
 def docs_of(ref):
     """
-    The files of the help and of the Documentation as ref has them, by their
-    path in the site: every file of docs/built/html, the guide and its
-    reference; for each page of the Documentation of the site, NAME.html, the
-    page of the reference of the same name, and the stylesheet of the guide
-    as NAME.css. Their links to the site are relative.
+    The files of the help as ref has them, by their path in the site: every
+    file of docs/built/html, the guide and its reference. Their links to the
+    site are relative.
     """
     files = {}
-    # the pages as develop has them, before within_site
-    sources = {}
     try:
         tar = git('archive', '--format=tar', ref, HELP_SOURCE)
     except Exit:
@@ -233,17 +206,7 @@ def docs_of(ref):
                 name = os.path.relpath(member.name, HELP_SOURCE)
                 path = os.path.join(HELP_PATH, name)
                 data = archive.extractfile(member).read()
-                sources[name] = data
                 files[path] = within_site(data, path)
-    names = sorted(name for name in os.listdir(os.path.join(ROOT, DOCUMENTATION_PATH))
-                   if name.endswith('.html'))
-    style = sources['style.css']
-    for name in names:
-        path = os.path.join(DOCUMENTATION_PATH, name)
-        source = sources[name].decode('utf-8')
-        page = documentation_page(source, read(path).decode('utf-8'), names)
-        files[path] = within_site(page.encode('utf-8'), path)
-        files[path[:-len('.html')] + '.css'] = style
     return files
 
 
@@ -261,7 +224,7 @@ def help_files():
     'check': 'change nothing: exit with 1 if the site differs from REF',
 })
 def sync_docs(c, ref, check=False):
-    """Copy the help and the Documentation of a commit of develop"""
+    """Copy the help of a commit of develop"""
     try:
         commit = git('rev-parse', '--short', ref + '^{commit}').decode().strip()
     except Exit:
@@ -277,10 +240,9 @@ def sync_docs(c, ref, check=False):
         for path in gone:
             print('{}: not in {} {}'.format(path, ref, commit))
         if changed or gone:
-            raise Exit('The help and the Documentation differ from {} {}: '
-                       'invoke sync-docs {}'.format(ref, commit, ref), code=1)
-        print('The help and the Documentation are those of {} {}'.format(
-            ref, commit))
+            raise Exit('The help differs from {} {}: invoke sync-docs '
+                       '{}'.format(ref, commit, ref), code=1)
+        print('The help is that of {} {}'.format(ref, commit))
         return
     for path in changed:
         print('{} {}'.format('added' if read(path) is None else 'updated', path))
@@ -296,7 +258,7 @@ def sync_docs(c, ref, check=False):
             os.rmdir(folder)
     print('{} is {} in this repository: git fetch first for the published '
           'one.'.format(ref, commit))
-    print('Commit as: Help and Documentation of {} {}'.format(ref, commit))
+    print('Commit as: Help of {} {}'.format(ref, commit))
 
 
 def pelican_run(cmd):

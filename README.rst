@@ -50,39 +50,33 @@ release V5.4.0. After a clone, fetch it with:
 The templates in *themes/overrides* replace or add to those of Elegant:
 the menu (*base.html*), the pages with their translations and, on the
 home page, the social links and the recent news (*page.html*), the page
-of a category (*category.html*), the social links in the footer
-(*_includes/footer.html*) and the pages of the Documentation category,
-which keep their own design (*doc.html*).
+of a category (*category.html*) and the social links in the footer
+(*_includes/footer.html*).
 
 The home page is *content/pages/home.rst*, a hidden page with the slug
 *home*, saved as *index.html*: Elegant's own home page, the *index*
 template, is not built.
 
-The help and the Documentation
-==============================
+The help
+========
 
-The user guide, *content/help/C/*, and the pages of the Documentation,
-*content/documentation/*, are copies of what a commit of **develop** has:
-the HTML of the guide and of its reference, the man pages, that
-*docs/build.py* writes into *docs/built/html/*. They are never edited here. The task *sync-docs*, of *tasks.py*, makes them, and
-says how to commit them:
+The user guide, *content/help/C/*, is a copy of what a commit of
+**develop** has: the HTML of the guide and of its reference, the man
+pages, that *docs/build.py* writes into *docs/built/html/*. It is never
+edited here. The task *sync-docs*, of *tasks.py*, makes it, and says how
+to commit it:
 
 .. code::
 
    $ git fetch virtualsquare
    $ invoke sync-docs virtualsquare/develop
-   $ git add content && git commit -m "Help and Documentation of develop 1234abcd"
+   $ git add content && git commit -m "Help of develop 1234abcd"
 
 The guide is copied as it is, with its reference and its style, and Pelican
 doesn't read it: *help* is in *STATIC_PATHS*, *ARTICLE_EXCLUDES* and
 *PAGE_EXCLUDES*. One thing changes on the way: a link to the site in full,
 *https://www.virtualbricks.it/*, links within the site, relative to its
-folder, so that a local build doesn't lead to the published site. A page of
-the Documentation keeps its head here, the metadata of Pelican; its body is
-that of the page of the reference with its name, *NAME.html*, whose links to
-the guide lead to *help/C/*; its style, *NAME.css*, is the style of the
-guide. A new page starts as a head with an empty body, which the next sync
-fills.
+folder, so that a local build doesn't lead to the published site.
 
 *make publish*, and so *make github*, first runs ``invoke sync-docs --check
 $(DOCS_REF)``, *develop* unless the command line says otherwise, and stops

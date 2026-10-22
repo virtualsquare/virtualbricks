@@ -12,8 +12,8 @@ GITHUB_PAGES_BRANCH=gh-pages
 GITHUB_PAGES_REMOTE=virtualsquare
 GITHUB_PAGES_CNAME=www.virtualbricks.it
 
-# The commit of develop whose help and Documentation the site has: publish
-# stops while they differ (invoke sync-docs)
+# The commit of develop whose help the site has: publish stops while the
+# help differs from it (invoke sync-docs)
 INVOKE?=invoke
 DOCS_REF?=develop
 

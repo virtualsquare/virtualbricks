@@ -10,10 +10,9 @@ SITEURL = ''
 
 PATH = 'content'
 
-# The documents of the Documentation category bring their stylesheets; the
-# help, the HTML of the user guide that invoke sync-docs copies from develop,
-# is copied as it is, not read as articles or pages
-STATIC_PATHS = ['images', 'documentation', 'help']
+# The help, the HTML of the user guide that invoke sync-docs copies from
+# develop, is copied as it is, not read as articles or pages
+STATIC_PATHS = ['images', 'help']
 ARTICLE_EXCLUDES = ['help']
 PAGE_EXCLUDES = ['help']
 
@@ -63,8 +62,6 @@ DEFAULT_PAGINATION = False
 
 # Ordering content
 PAGE_ORDER_BY = 'page-order'
-# Categories sort by name: reversed, News comes before Documentation
-REVERSE_CATEGORY_ORDER = True
 
 # Theme: Elegant, a git submodule
 THEME = joinpath(curdir, "themes/elegant")
