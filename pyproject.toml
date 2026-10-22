@@ -48,7 +48,7 @@ dev = [
     "pre-commit>=4.0",
     # tox.ini: the tests on the Python libraries of each distribution
     "tox>=4.67",
-    # pandoc, for docs/man/build.py
+    # pandoc, for docs/build.py
     "pypandoc-binary==1.17",
     "pyflakes>=3.0",
     "ruff>=0.16",
@@ -94,20 +94,19 @@ include = ["virtualbricks*"]
 [tool.setuptools.data-files]
 "share/applications" = ["share/virtualbricks.desktop"]
 "share/pixmaps" = ["share/virtualbricks.xpm"]
-"share/man/man1" = ["docs/man/*.1"]
-"share/man/man5" = ["docs/man/*.5"]
-"share/man/man7" = ["docs/man/*.7"]
+"share/man/man1" = ["docs/built/man/*.1"]
+"share/man/man5" = ["docs/built/man/*.5"]
+"share/man/man7" = ["docs/built/man/*.7"]
 # the user guide: its pages, where Yelp looks, and their HTML, for the
 # browser where Yelp isn't (virtualbricks.gui.help); beside each, in
 # figures/, the pictures
-"share/help/C/virtualbricks" = ["help/C/*.page"]
+"share/help/C/virtualbricks" = ["docs/built/mallard/*.page"]
 "share/virtualbricks/help/C" = [
-    "help/html/C/*.html",
-    "help/html/C/*.css",
-    "help/html/C/*.js",
+    "docs/built/html/*.html",
+    "docs/built/html/*.css",
 ]
-"share/help/C/virtualbricks/figures" = ["help/C/figures/*.png"]
-"share/virtualbricks/help/C/figures" = ["help/html/C/figures/*.png"]
+"share/help/C/virtualbricks/figures" = ["docs/built/mallard/figures/*.png"]
+"share/virtualbricks/help/C/figures" = ["docs/built/html/figures/*.png"]
 "share/locale/de/LC_MESSAGES" = ["locale/de/LC_MESSAGES/virtualbricks.mo"]
 "share/locale/es/LC_MESSAGES" = ["locale/es/LC_MESSAGES/virtualbricks.mo"]
 "share/locale/fr/LC_MESSAGES" = ["locale/fr/LC_MESSAGES/virtualbricks.mo"]

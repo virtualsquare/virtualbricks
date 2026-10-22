@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="remote">
+  <info>
+    <link type="guide" xref="index#beyond"/>
+    <link type="seealso" xref="console"/>
+    <title type="sort">3</title>
+    <desc>A lab on another computer, with its windows on your desktop.</desc>
+  </info>
+  <title>Another computer</title>
+  <p>The bricks can run on one computer, the lab machine, and the windows on another, your desktop. The lab machine runs Virtualbricks with <cmd>--listen</cmd>, with its own windows or without, and your desktop opens its windows with <cmd>--connect</cmd>. Both run the same version of Virtualbricks.</p>
+  <screen># on the lab machine
+virtualbricks --no-gui --no-term --listen \
+    'ssl:8765:interface=0.0.0.0:privateKey=~/vb/lab.key'
+# on your desktop
+virtualbricks --connect 'ssl:lab.example:8765:caCertsDir=~/vb/lab'</screen>
+  <p>A connection over the network proves that it knows the token of the lab machine, the file <file>~/.config/virtualbricks/token</file>, so copy it to your desktop; or the lab machine asks for the certificate of your desktop instead. <cmd>virtualbricks --connect</cmd> alone opens the windows of a Virtualbricks of yours on this computer, started with <cmd>--listen</cmd>.</p>
+  <p>How to listen and connect, the token and the certificates are in <link xref="command-line">virtualbricks(1)</link>, and the protocols in <link xref="control-protocols">virtualbricks-control(7)</link>.</p>
+  <section id="windows">
+    <title>What the windows do</title>
+    <list>
+      <item>
+        <p>They follow the project open there, whoever changes it, and what you do goes there: a start, a new brick, the <gui>OK</gui> of the settings of a brick.</p>
+      </item>
+      <item>
+        <p>What they show is the lab machine's: its QEMU programs, its USB devices, its files and its projects. A path is a path there, typed with the completion of its folders.</p>
+      </item>
+      <item>
+        <p>The consoles of the bricks open in a terminal of your desktop.</p>
+      </item>
+      <item>
+        <p><gui>Settings</gui> has a page for your desktop, one for the lab machine, and one for the project.</p>
+      </item>
+      <item>
+        <p>Import, export, the long work on images and <gui>Show in Files</gui> wait for a later version, greyed.</p>
+      </item>
+    </list>
+    <p>When the connection is lost, a bar says why, and <gui>Reconnect</gui> connects again. <gui>Quit</gui> closes the windows: the Virtualbricks on the lab machine goes on.</p>
+  </section>
+</page>

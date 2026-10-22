@@ -10,22 +10,15 @@ repos:
         args: [--fix]
   - repo: local
     hooks:
-      - id: man
-        name: update the man pages
-        entry: python docs/man/build.py
+      - id: docs
+        name: update the documentation
+        entry: python docs/build.py
         language: python
         # pandoc 3.9, the same for everyone, so the pages don't change with
         # the pandoc of each machine
         additional_dependencies: [pypandoc-binary==1.17]
         pass_filenames: false
-        files: ^(docs/man/.*\.md|docs/man/build\.py|virtualbricks/__init__\.py)$
-      - id: help
-        name: update the help
-        # yelp-check and yelp-build, of the yelp-tools package
-        entry: python3 help/build.py
-        language: system
-        pass_filenames: false
-        files: ^help/(C/.*\.page|C/figures/.*\.png|build\.py|html\.xsl)$
+        files: ^(docs/(build\.py|man/.*\.md|guide/.*|templates/.*|built/.*)|virtualbricks/__init__\.py)$
       - id: l10n
         name: update translations
         entry: ./l10n.sh

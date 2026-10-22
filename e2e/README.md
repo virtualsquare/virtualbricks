@@ -340,22 +340,22 @@ is only the screenshot.
 
 ## The pictures of the user guide
 
-The pages of the user guide, in `help/C/`, show pictures of the windows,
-in `help/C/figures/`. The scenarios of `features/pictures.feature`, tagged
+The pages of the user guide, in `docs/guide/`, show pictures of the windows,
+in `docs/guide/figures/`. The scenarios of `features/pictures.feature`, tagged
 `@pictures`, take them, each with the step `Then the picture NAME shows
 the WINDOW`: the window as GTK drew it, its shadow transparent, with the
 menus open over it, without the pointer.
 
 ```sh
-pytest --pictures -m pictures   # the pictures that changed, in help/C/figures/
-pytest -m pictures              # which differ from those of help/C/figures/
+pytest --pictures -m pictures   # the pictures that changed, in docs/guide/figures/
+pytest -m pictures              # which differ from those of docs/guide/figures/
 ```
 
 With `--pictures`, each picture whose pixels changed goes in
-`help/C/figures/`, and the end of the run lists it, under "pictures of the
+`docs/guide/figures/`, and the end of the run lists it, under "pictures of the
 user guide": commit it with the change of the window. Without it, a
 picture goes in the folder of its scenario, and the list has those that
-differ from the pictures of `help/C/figures/`, or are new; the run doesn't
+differ from the pictures of `docs/guide/figures/`, or are new; the run doesn't
 fail for them. A picture has the fonts and the GTK of the computer that
 takes it: on another computer, they all differ.
 

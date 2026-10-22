@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="console">
+  <info>
+    <link type="guide" xref="index#beyond"/>
+    <link type="seealso" xref="remote"/>
+    <title type="sort">2</title>
+    <desc>Type commands, run a file of them, or send them from another terminal.</desc>
+  </info>
+  <title>The console and scripts</title>
+  <p>Started from a terminal, Virtualbricks reads the commands of its console there, beside the windows, unless you give <cmd>--no-term</cmd>. With <cmd>--no-gui</cmd> it runs without the windows, and the console is the way in: a lab on a computer without a display.</p>
+  <p>A command is a noun, a verb, then its arguments:</p>
+  <screen>brick new switch
+brick set vm1 memory=1024 cpus=2
+brick start sw1 vm1
+event start lab
+status</screen>
+  <p>The nouns are <cmd>brick</cmd>, <cmd>event</cmd>, <cmd>image</cmd>, <cmd>setting</cmd> and <cmd>project</cmd>. <cmd>help</cmd> lists the commands, and <cmd>help brick set</cmd> explains one. <key>Tab</key> completes the words, the names and the keys, and the history is kept between runs.</p>
+  <p>Every command and option is in <link xref="command-line">virtualbricks(1)</link>.</p>
+  <section id="scripts">
+    <title>Scripts</title>
+    <p>A file of commands, one a line, runs with <cmd>source <var>file</var></cmd> in the console, or with <cmd>virtualbricks --run <var>file</var></cmd> at start: a lab set up the same way every time. The first error stops the file and says which line. An event can run a command of the console too; see <link xref="events"/>.</p>
+  </section>
+  <section id="command">
+    <title>From another terminal</title>
+    <p>Started with <cmd>--listen</cmd>, Virtualbricks takes commands from other terminals and scripts:</p>
+    <screen>virtualbricks --listen
+virtualbricks --command brick start sw1
+virtualbricks --connect --run start-lab.vb</screen>
+    <p>The answer goes to the standard output, and the exit status says if the command was done.</p>
+  </section>
+</page>

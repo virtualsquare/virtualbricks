@@ -276,7 +276,7 @@
 
       <section id="today">
         <h2><span class="num">&sect;2</span>Today</h2>
-        <p><code>contents.toml</code> lists the members in the order of the archive: the name and size of each, and, for a disk packed by <code>qemu-img</code>, <code>packed</code> and <code>real_size</code>, its size before (<a href="../vbp-format.html">vbp-format.html</a>, <code>virtualbricks-vbp(5)</code>). There is no hash.</p>
+        <p><code>contents.toml</code> lists the members in the order of the archive: the name and size of each, and, for a disk packed by <code>qemu-img</code>, <code>packed</code> and <code>real_size</code>, its size before (<a href="../built/html/vbp-format.html">vbp-format.html</a>, <code>virtualbricks-vbp(5)</code>). There is no hash.</p>
         <h3>What checks the bytes</h3>
         <div class="scroll">
         <table>
@@ -394,7 +394,7 @@
           <li><strong><code>sha256</code> of a member</strong> is the hash of its bytes as the archive holds them, packed for a packed disk. The import checks it right after extracting, before unpacking.</li>
           <li><strong><code>[images.<i>name</i>]</code></strong> is there for each image the project uses, in the archive or not: the size and hash of its file on the computer the archive comes from (or the remembered hash, <a class="ref" href="#decisions">H2</a>). A packed image has two hashes, which differ: its member&rsquo;s and its file&rsquo;s.</li>
           <li><strong>The order.</strong> <code>contents.toml</code> is the first member, so that the import knows what the archive holds from its first blocks (<a href="04%20-%20projects-redesign.html">page 04</a>, P10). The hashes must then be known before the archive is written: the export hashes each member in its staging folder after packing, while the packed files are still in the page cache, and the images before.</li>
-          <li><strong>Compatibility.</strong> A reader of format 1 ignores the keys it doesn&rsquo;t know, so the new keys stay in format 1. A format 2 would make every Virtualbricks that reads format 1 refuse the archive (<i>written by a newer Virtualbricks</i>). An archive without hashes imports as today. The list of members that the archive protocol sends, [<i>name</i>, <i>size</i>, <i>kind</i>, <i>packed</i>, <i>real_size</i>], would get a field (<a href="../archive-protocol.html">archive-protocol.html</a>).</li>
+          <li><strong>Compatibility.</strong> A reader of format 1 ignores the keys it doesn&rsquo;t know, so the new keys stay in format 1. A format 2 would make every Virtualbricks that reads format 1 refuse the archive (<i>written by a newer Virtualbricks</i>). An archive without hashes imports as today. The list of members that the archive protocol sends, [<i>name</i>, <i>size</i>, <i>kind</i>, <i>packed</i>, <i>real_size</i>], would get a field (<a href="../built/html/archive-protocol.html">archive-protocol.html</a>).</li>
         </ul>
       </section>
 

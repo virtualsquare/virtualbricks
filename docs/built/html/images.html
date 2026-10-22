@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disk images — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#lab">Your lab</a></p>
+</div>
+<h1>Disk images</h1>
+<p>A disk image is a file that holds the disk of a virtual machine, as
+<code class="file">debian.qcow2</code>. The <span
+class="gui">Images</span> tab has a row for each image of the project:
+its format, the size of the disk that the machine sees, the space that
+the file takes, and which disks use it, on a private copy or the image
+itself. Its state is <span class="gui">In use</span> while a machine
+that reads it runs or starts.</p>
+<figure>
+<a href="figures/images.png"><img src="figures/images.png"
+alt="The Images tab with the image debian: qcow2, a disk of 1.0 GB, the space that its file takes, and no disk uses it." /></a>
+<figcaption>The Images tab</figcaption>
+</figure>
+<h2 id="add">Adding an image</h2>
+<p><span class="gui">Add Image</span> offers two ways:</p>
+<dl>
+<dt><span class="gui">Existing Image…</span></dt>
+<dd>
+<p>A file you have. Virtualbricks reads it with <code
+class="cmd">qemu-img</code> and copies it to the shared images of the
+workspace, unless you choose <span class="gui">Use it where it
+is</span>.</p>
+</dd>
+<dt><span class="gui">New Empty Disk…</span></dt>
+<dd>
+<p>A new file, of the <span class="gui">Size</span> and <span
+class="gui">Format</span> you choose, qcow2 or raw, in a <span
+class="gui">Folder</span>.</p>
+</dd>
+</dl>
+<p>The same two are in the list of images of each disk of a machine.</p>
+<h2 id="shared">The shared images</h2>
+<p>Each workspace has a folder of images that its projects share, <code
+class="file">shared_images</code>. An image there can be used by several
+projects, and by several machines of each, each machine on a private
+copy of its own.</p>
+<h2 id="menu">The menu of an image</h2>
+<dl>
+<dt><span class="gui">Details…</span></dt>
+<dd>
+<p>The name and the description, which you can change, then what <code
+class="cmd">qemu-img</code> says of the file, each disk that uses it,
+and the other projects that use the same file.</p>
+</dd>
+<dt><span class="gui">Rename…</span></dt>
+<dd>
+<p>A new name, in the disks that use it too.</p>
+</dd>
+<dt><span class="gui">Show in Files</span></dt>
+<dd>
+<p>The file, in the file manager.</p>
+</dd>
+<dt><span class="gui">Remove…</span></dt>
+<dd>
+<p>The image leaves the project. The dialog says which disks lose their
+image, and offers to move the file to the trash only when it is in the
+shared images and no other project uses it.</p>
+</dd>
+<dt><span class="gui">Find the File…</span></dt>
+<dd>
+<p>For an image whose file is missing, as one left unset at the import
+of an archive: choose where it is now. The private copies made on it
+follow it.</p>
+</dd>
+</dl>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="machines.html#disks">Disks</a></p>
+</div>
+<div class="link">
+<p><a href="tutorial-import.html">Import DTN2hops</a></p>
+<div class="desc">
+<p>The DTN2hops testbed, from its archive and its disk image, downloaded
+apart.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="machines.html">Virtual machines</a></p>
+<div class="desc">
+<p>The disks, network cards and consoles of a virtual machine.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>

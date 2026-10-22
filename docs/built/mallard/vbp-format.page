@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="vbp-format">
+  <info>
+    <link type="guide" xref="index#reference"/>
+    <title type="sort">3</title>
+    <desc>virtualbricks-vbp(5): the archive of a Virtualbricks project</desc>
+  </info>
+  <title>The archive format</title>
+  <links type="section"/>
+  <section id="synopsis">
+    <title>Synopsis</title>
+    <synopsis>
+      <p><var>project</var>.vbp</p>
+    </synopsis>
+  </section>
+  <section id="description">
+    <title>Description</title>
+    <p>A <var>.vbp</var> file is a project of Virtualbricks in one file, to move it to another computer, to keep it or to share it. The Export window writes it, and the Import window makes a new project of it; both leave the work to the archive process, described in <link xref="archive-protocol">virtualbricks-archive(7)</link>.</p>
+    <p>It is a tar archive of the project's folder: the project file, its README, the private disks of the virtual machines, the other files of the folder that you chose and, if you chose them too, the disk images that the disks use, under <var>IMAGES/</var>. Its first member, <code>contents.toml</code>, lists the others.</p>
+    <p>The format follows from four aims:</p>
+    <list>
+      <item>
+        <p>Any <code>tar</code>(1) reads and writes it: an archive can be looked into, or made, without Virtualbricks.</p>
+      </item>
+      <item>
+        <p>An archive can take gigabytes, but its first kilobytes say what it holds: the list and the project file come first.</p>
+      </item>
+      <item>
+        <p>The disks keep their holes, and are compressed one by one, in a format that QEMU runs as it is.</p>
+      </item>
+      <item>
+        <p>The project names its images, and the archive stores each one under its name, not under its file: the computer that imports the archive chooses where each image goes.</p>
+      </item>
+    </list>
+    <p>The archive of a project with one virtual machine, whose disk <code>hda</code> is a private disk on top of the image <code>debian</code>, and whose disk <code>hdb</code> is the image <code>scratch</code>:</p>
+    <screen>$ tar -tvf lab.vbp
+-rw-r--r-- alice/alice     318 2026-10-07 22:57 contents.toml
+-rw-r--r-- alice/alice    6247 2026-10-07 21:19 project.toml
+-rw-r--r-- alice/alice      31 2026-10-07 21:19 README.md
+-rw-r--r-- alice/alice  328192 2026-10-07 22:57 vm1_hda.cow
+-rw-r--r-- alice/alice  328192 2026-10-07 22:57 IMAGES/debian
+-rw-r--r-- alice/alice 33554432 2026-10-07 21:19 IMAGES/scratch</screen>
+    <p>The examples of this page come from that archive.</p>
+  </section>
+  <section id="the-container">
+    <title>The container</title>
+    <section id="tar">
+      <title>Tar</title>
+      <p>An archive is a tar file in the POSIX.1-2001 format, <var>pax</var>: a sequence of 512-byte blocks. Each member is a header block followed by its data, padded with zeros to a whole block. Before a member whose attributes don't fit its header, as times with fractions of a second or the records of a sparse file, comes a pax extended header: a member of type <code>x</code> whose data are records of the form <var>length</var> <var>key</var>=<var>value</var>, each ending with a newline. Two blocks of zeros end the archive, which is then padded with zeros to a multiple of 10240 bytes, the record of tar.</p>
+      <p>The blocks of the example:</p>
+      <listing>
+        <desc>The 563200 bytes of the example archive, <var>lab.vbp</var>, in file order: the head takes 12 KB; a real disk or image takes gigabytes.</desc>
+        <screen> offset  type  header name                       size
+      0  x     PaxHeader/contents.toml             90
+   1024  0     contents.toml                      318
+   2048  x     PaxHeader/project.toml              90
+   3072  0     project.toml                      6247
+  10240  x     PaxHeader/README.md                 90
+  11264  0     README.md                           31
+  12288  x     PaxHeader/vm1_hda.cow              195
+  13312  0     GNUSparseFile.0/vm1_hda.cow     267264
+ 281088  x     IMAGES/PaxHeader/debian            197
+ 282112  0     IMAGES/GNUSparseFile.0/debian   267264
+ 549888  x     IMAGES/PaxHeader/scratch           200
+ 550912  0     IMAGES/GNUSparseFile.0/scratch    4608
+ 556032        14 blocks of zeros, to 563200</screen>
+      </listing>
+      <p>The members with holes are GNU sparse members, whose header name is a placeholder; see <code>HOLES</code>.</p>
+    </section>
+    <section id="compression">
+      <title>Compression</title>
+      <p>When <code>qemu-img</code> is installed, the archive is not compressed as a whole: its disks are compressed one by one inside it (see <code>PACKED DISKS</code>), and the rest is a few kilobytes. Without <code>qemu-img</code>, the whole archive is compressed with gzip, whose header then has neither a time nor a name.</p>
+      <p>Virtualbricks reads an archive that is not compressed or compressed with gzip, bzip2 or xz, which it recognizes by its first bytes, whatever its extension.</p>
+    </section>
+    <section id="the-name-of-the-file">
+      <title>The name of the file</title>
+      <p>An archive has the extension <var>.vbp</var>, compressed or not. The Import window offers the files <var>*.vbp</var>, <var>*.tar.gz</var>, <var>*.tgz</var> and <var>*.tar</var>. The name of the file suggests the name of the project: without <var>.vbp</var>, <var>.tar.gz</var>, <var>.tgz</var>, <var>.tar.xz</var>, <var>.tar.bz2</var> or its last extension, at most 38 bytes, without leading dots, and the next free name, <var>lab-2</var>, <var>lab-3</var>... when the workspace has a project with that name. The archive itself doesn't name the project.</p>
+    </section>
+    <section id="names-and-attributes">
+      <title>Names and attributes</title>
+      <p>Every member is a regular file, named by its path relative to the project's folder, with <var>/</var> between folders. A name has no leading <var>/</var> and no <var>..</var>; a reader drops a leading <var>./</var> and a trailing <var>/</var>, so that an archive made with <code>tar -C</code> <var>folder</var> <code>.</code> works too. The members that aren't regular files, such as the folders of such an archive, are skipped by an inspection; links and devices are never written, and the import skips them when it extracts the archive with Python's <code>tarfile</code>.</p>
+      <p>The owner, the group, the permissions and the times of the members are those that the writer found; Virtualbricks gives them no meaning. The writers differ in details that a reader mustn't depend on:</p>
+      <terms>
+        <item>
+          <title><code>bsdtar</code></title>
+          <p>Pax headers named <var>folder</var>/PaxHeader/<var>name</var>, with the records <code>ctime</code>, <code>atime</code> and <code>mtime</code>; sparse members named <var>folder</var>/GNUSparseFile.0/<var>name</var>.</p>
+        </item>
+        <item>
+          <title>GNU <code>tar</code></title>
+          <p>Pax headers named <var>folder</var>/PaxHeaders/<var>name</var>, with <code>mtime</code>, <code>atime</code> and <code>ctime</code>; sparse members named <var>folder</var>/GNUSparseFile.<var>pid</var>/<var>name</var>, after the process number of <code>tar</code>.</p>
+        </item>
+        <item>
+          <title>Python's <code>tarfile</code>, in Virtualbricks</title>
+          <p>Pax headers named <var>././@PaxHeader</var>, with <code>mtime</code> only; sparse members named as by <code>bsdtar</code>; no owner and group names.</p>
+        </item>
+      </terms>
+    </section>
+  </section>
+  <section id="members">
+    <title>Members</title>
+    <p>The name of a member gives its <var>kind</var>, the word in italics, which the archive process uses in its messages:</p>
+    <terms>
+      <item>
+        <title><code>contents.toml</code></title>
+        <p><var>contents</var>: the list of the other members; see <code>CONTENTS.TOML</code>.</p>
+      </item>
+      <item>
+        <title><code>project.toml</code></title>
+        <p><var>project</var>: the project file, described in <link xref="config-files">virtualbricks-config(5)</link>; see <code>THE PROJECT FILE</code>.</p>
+      </item>
+      <item>
+        <title><code>.project</code>, <code>.project~</code></title>
+        <p><var>legacy project</var>: the project file of Virtualbricks 2.1 and older; see <code>OLDER ARCHIVES</code>. An archive with both project files is read from <code>project.toml</code>.</p>
+      </item>
+      <item>
+        <title><code>README.md</code>, <code>README</code></title>
+        <p><var>readme</var>: the description of the project, plain text in UTF-8 that Virtualbricks reads as Markdown (see <code>README</code> in <link xref="config-files">virtualbricks-config(5)</link>). Before 3.0 it was <code>README</code>, which the import renames to <code>README.md</code>; in an archive with both, <code>README.md</code> is the README.</p>
+      </item>
+      <item>
+        <title><var>vm</var>_<var>device</var>.cow</title>
+        <p><var>disk</var>: the private disk of the device <var>device</var> of the virtual machine <var>vm</var>, where <var>device</var> is <code>hda</code>, <code>hdb</code>, <code>hdc</code>, <code>hdd</code>, <code>fda</code>, <code>fdb</code> or <code>mtdblock</code>: the part after the last underscore, so <var>router_1_hda.cow</var> is the disk <code>hda</code> of <code>router_1</code>. Only at the top of the archive. See <code>PRIVATE DISKS</code>.</p>
+      </item>
+      <item>
+        <title>IMAGES/<var>image</var></title>
+        <p><var>image</var>: the disk image that the project file calls <var>image</var>, in <code>[images.<code><var>image</var></code>]</code>. The member is named after the image, not after its file: the image <code>debian</code> whose file is <var>/srv/vm/debian-12.qcow2</var> is the member <var>IMAGES/debian</var>. See <code>IMAGES AND DISKS</code>. The archives of Virtualbricks 2.1 and of the development versions of 3.0 have it in <var>.images/</var>, which is read the same way.</p>
+      </item>
+      <item>
+        <title>any other name</title>
+        <p><var>other</var>: a file of the project's folder that you chose to export, as a picture of the README, <var>pictures/map.png</var>. The import puts it back where it was.</p>
+      </item>
+    </terms>
+    <p>An archive never holds what older versions left in a project's folder: its <var>.images</var> folder and its <var>.project</var> files. Nor does it hold a folder <var>IMAGES</var> of the project, whose files an import would take for images: the export leaves it out, and says so.</p>
+  </section>
+  <section id="order">
+    <title>Order</title>
+    <p>A new archive starts with <code>contents.toml</code>, then the project file and the README: together, the <var>head</var> of the archive. The other files, the private disks and the images follow, in this order, each group from the smallest file to the largest:</p>
+    <listing>
+      <desc>A new archive in file order, not to scale.</desc>
+      <screen> +----------+---------+--------+-------+-------+----------+
+ | contents | project | README | other | disks | IMAGES/  |
+ |   .toml  |  .toml  |  .md   | files |       |          |
+ +----------+---------+--------+-------+-------+----------+
+ |&lt;---------- head -----------&gt;|&lt;- smallest to largest --&gt;|
+     read by an inspection          read by the import</screen>
+    </listing>
+    <p>The order is the writer's promise; a reader accepts any order. With <code>contents.toml</code> first, Virtualbricks reads the archive until it has the members of the head that the list names, and stops there, whatever the size of the archive. Without <code>contents.toml</code>, it reads the archive to its end.</p>
+  </section>
+  <section id="contents.toml">
+    <title>contents.toml</title>
+    <p>The list of the other members, in the order of the archive, in TOML 1.0 and UTF-8. The list of the example:</p>
+    <screen>format = 1
+
+[[members]]
+name = "project.toml"
+size = 6247
+
+[[members]]
+name = "README.md"
+size = 31
+
+[[members]]
+name = "vm1_hda.cow"
+size = 328192
+packed = true
+real_size = 851968
+
+[[members]]
+name = "IMAGES/debian"
+size = 328192
+packed = true
+real_size = 1376256
+
+[[members]]
+name = "IMAGES/scratch"
+size = 33554432</screen>
+    <terms>
+      <item>
+        <title><code>format</code> = <var>integer</var></title>
+        <p>The version of the layout, <code>1</code>. An archive with a higher <code>format</code> is not read: "contents.toml: written by a newer Virtualbricks (format 2)". The format changes only for what an older reader can't ignore: keys it doesn't know are ignored.</p>
+      </item>
+      <item>
+        <title><code>members</code> = <var>array of tables</var></title>
+        <p>One table for each member but <code>contents.toml</code> itself:</p>
+        <terms>
+          <item>
+            <title><code>name</code> = <var>string</var></title>
+            <p>The name of the member, as in its header.</p>
+          </item>
+          <item>
+            <title><code>size</code> = <var>integer</var></title>
+            <p>The size of the file that the member holds, holes included: what <code>ls -l</code> says once it's extracted. A sparse member takes fewer bytes in the archive: <code>IMAGES/scratch</code> takes 4608 bytes for its 32 MiB.</p>
+          </item>
+          <item>
+            <title><code>packed</code> = <var>boolean</var></title>
+            <p>Present, and <code>true</code>, only when <code>qemu-img</code> compressed the member; see <code>PACKED DISKS</code>.</p>
+          </item>
+          <item>
+            <title><code>real_size</code> = <var>integer</var></title>
+            <p>Only with <code>packed</code>: the size of the disk before it was compressed, the size it has on the computer it comes from.</p>
+          </item>
+        </terms>
+      </item>
+    </terms>
+    <p>The kind of a member comes from its name and is not written. An item of <code>members</code> that isn't a table is skipped, a size that isn't an integer is read as 0, a <code>packed</code> that isn't <code>true</code> is false, and other keys are ignored.</p>
+  </section>
+  <section id="the-project-file">
+    <title>The project file</title>
+    <p>The <code>project.toml</code> of an archive is the project file as the project had it, in the format of the Virtualbricks that exported it: 2 today. The import upgrades an older one, and refuses a newer one: "project.toml: written by a newer Virtualbricks (format 3)". An archive carries the paths of the computer it comes from, in these keys, which the import changes:</p>
+    <terms>
+      <item>
+        <title><code>[images.<code><var>name</var></code>]</code> <code>path</code></title>
+        <p>The file of the image on the computer it comes from: absolute, or relative to the project's folder. The import writes the file that the image uses on this computer; an image left unset keeps this path, and has no file until Find the File..., in the Images tab, gives it one.</p>
+      </item>
+      <item>
+        <title><code>[bricks.<code><var>vm</var></code>.disks.<code><var>device</var></code>]</code> <code>image</code>, <code>private</code></title>
+        <p>The image of a disk, by name, and whether the disk writes to its private disk, <var>vm</var>_<var>device</var>.cow. The import changes neither.</p>
+      </item>
+      <item>
+        <title><code>[settings]</code> <code>qemu_path</code>, <code>vde_path</code></title>
+        <p>The folders of QEMU and VDE on the computer it comes from. The import replaces each with this computer's when the folder doesn't exist here, unless you choose otherwise.</p>
+      </item>
+    </terms>
+    <p>The rest of the file is imported as it is. The private disks carry a path too: see <code>PRIVATE DISKS</code>.</p>
+  </section>
+  <section id="images-and-disks">
+    <title>Images and disks</title>
+    <p>A disk doesn't name a file: it names an image of the project, and the image has the path of its file. The archive stores the image under that name, so the name ties the three together:</p>
+    <listing>
+      <desc>The name ties the disk, the table of the image and the member. The path of the image appears twice, in the table and as the backing file of the private disk; the import replaces both with the file of this computer.</desc>
+      <screen> project.toml                          the archive
+ +-----------------------------------+
+ | [bricks.vm1.disks.hda]            |
+ | image = "debian" --.              |
+ | private = true     |              |
+ |                    v              |  the name
+ | [images.debian] &lt;--+--------------+--&gt; IMAGES/debian
+ | path = "/srv/vm/debian-12.qcow2"  |
+ +-----------------------------------+
+            ^
+            '----- backing file ------ vm1_hda.cow</screen>
+    </listing>
+    <p>The import plans an image for each table <code>[images.<code><var>name</var></code>]</code> of the project file. Its disks are those whose <code>image</code> is <var>name</var>, and its copy in the archive is the member <var>IMAGES/name</var>, if the archive has it. The Import window gives each image a choice, with a default:</p>
+    <list>
+      <item>
+        <p>An image that the archive has is copied into the shared images, <var>workspace</var>/shared_images, under the name of its file on the computer it comes from, <var>debian-12.qcow2</var>, or the next free one, <var>debian-12.1.qcow2</var>... When the shared images have a file with that name and the size of the image, the <code>real_size</code> of a packed one, that file is used instead.</p>
+      </item>
+      <item>
+        <p>An image that the archive doesn't have uses its file if this computer has it at the same path, otherwise a file of the shared images with the name of its file or of the image; otherwise it's left unset: it keeps its path, and Find the File..., in the Images tab, gives it a file later.</p>
+      </item>
+    </list>
+    <p>Then the import writes the path of each image into <code>[images.<code><var>name</var></code>]</code>, points the private disks at it (see <code>PRIVATE DISKS</code>), and removes the <var>IMAGES</var> folder. A member of <var>IMAGES/</var> that no table of the project file names is dropped. By default, a file of the shared images with the file name and the size of an image is taken for it: nothing compares their contents.</p>
+    <p>The Export window stores every image of the project whose file exists, or none; it stores none by default, as images are large and often already on the other computer.</p>
+  </section>
+  <section id="private-disks">
+    <title>Private disks</title>
+    <p>A disk with <code>private</code> = <code>true</code> writes to <var>vm</var>_<var>device</var>.cow in the project's folder, a qcow2 file on top of the image, which stays unchanged. The private disk names its image by the image's file, as its <var>backing file</var>: a path of the computer it comes from, kept in the archive, packed or not:</p>
+    <screen>$ qemu-img info vm1_hda.cow
+image: vm1_hda.cow
+file format: qcow2
+virtual size: 64 MiB (67108864 bytes)
+disk size: 264 KiB
+cluster_size: 65536
+backing file: /srv/vm/debian-12.qcow2
+backing file format: qcow2
+Format specific information:
+    compat: 1.1
+    compression type: zstd
+...</screen>
+    <p>The import points each private disk at the file that its image uses on this computer, in the format of that file:</p>
+    <screen>qemu-img rebase -u -b image -F format disk</screen>
+    <p><code>-u</code>, the unsafe mode, changes only the name of the backing file: the image must hold the same data as the one the disk was made on. A private disk whose image is left unset keeps its backing file as it is, and the import says so; Find the File..., in the Images tab, points it at the file it gives the image. A private disk made by an older version may be in another format than qcow2: it's stored as it is, and the import points it at its image as the others.</p>
+  </section>
+  <section id="packed-disks">
+    <title>Packed disks</title>
+    <p>When <code>qemu-img</code> is installed, the export compresses each private disk and each image that is in the qcow2 format:</p>
+    <screen>qemu-img convert -p -O qcow2 -m 8 -W \
+    -c -o compression_type=zstd \
+    [-B backing -F backing-format] disk packed-disk</screen>
+    <p>with zlib, without <code>-o compression_type=zstd</code>, when QEMU is older than 5.1. A packed disk is a valid qcow2 file whose clusters are compressed, and QEMU runs it as it is; a private disk keeps its backing file. The member is marked <code>packed</code> in <code>contents.toml</code>, with its <code>real_size</code>. A disk or an image in another format, as raw, is stored as it is; so is one that <code>qemu-img</code> can't read, as a private disk whose image is gone, and the export says so.</p>
+    <p>The import converts the packed members back into normal qcow2 files, with <code>qemu-img convert</code> without <code>-c</code>: the images it copies, and the private disks on top of their new image. The others stay compressed, and work as they are: a private disk whose image is left unset, any packed member when <code>qemu-img</code> isn't installed. An archive without <code>contents.toml</code> has no packed member.</p>
+  </section>
+  <section id="holes">
+    <title>Holes</title>
+    <p>A disk is a sparse file: a disk of 20 GB can take 2 GB of space. The archive keeps the holes of its members, as GNU sparse 1.0 members, which <code>bsdtar</code>, GNU <code>tar</code> with <code>--sparse</code> and Virtualbricks itself write. A sparse member is:</p>
+    <list>
+      <item>
+        <p>a pax extended header with the records <code>GNU.sparse.major=1</code>, <code>GNU.sparse.minor=0</code>, <code>GNU.sparse.name</code>, the name of the member, and <code>GNU.sparse.realsize</code>, the size of the file with its holes;</p>
+      </item>
+      <item>
+        <p>a header whose name is a placeholder, <var>GNUSparseFile.0/name</var> or the like, which a reader replaces with <code>GNU.sparse.name</code>, and whose size is that of the data that follow;</p>
+      </item>
+      <item>
+        <p>the map of the data: decimal numbers, each ending with a newline, the number of regions, then the offset and the length of each, padded with zeros to a whole block;</p>
+      </item>
+      <item>
+        <p>the data of the regions, one after the other.</p>
+      </item>
+    </list>
+    <p>A file that ends with a hole has a last region of length 0, at its size. The member <var>IMAGES/scratch</var> of the example, a file of 32 MiB with 4096 bytes of data at 4 MiB, takes 4608 bytes: one block of map, then the data. Its map:</p>
+    <listing>
+      <desc>The member <var>IMAGES/scratch</var> of the example, from offset 549888 of the archive: 2048 bytes of headers and map for 4096 bytes of data, which stand for a file of 32 MiB. The last region, 0 bytes at the size of the file, says that it ends with a hole.</desc>
+      <screen>2
+4194304
+4096
+33554432
+0</screen>
+    </listing>
+    <p>A reader that doesn't know the format extracts <var>IMAGES/GNUSparseFile.0/scratch</var>, a file with the map and the data, which isn't the image.</p>
+    <p>A header holds sizes up to 8 GiB, in octal. <code>bsdtar</code> and GNU <code>tar</code> write a larger size as a <code>size</code> record of the pax header; Virtualbricks, when it writes the archive itself, writes it in the header, in base 256: the first byte 0x80, then the size, big-endian. Python's <code>tarfile</code> misreads a sparse member with a <code>size</code> record; see <code>BUGS</code>.</p>
+    <p>When the import extracts an archive, <code>bsdtar -S</code> turns runs of zeros into holes, also those that the archive didn't keep. After GNU <code>tar</code> or <code>tarfile</code>, the import does the same for the private disks and the copied images: blocks of 64 KiB of zeros become holes, if they add up to 1 MiB at least.</p>
+  </section>
+  <section id="older-archives">
+    <title>Older archives</title>
+    <p>Virtualbricks 2.1 exported a project with <code>bsdtar</code> or <code>tar</code>, <code>cfzh</code>: a tar of the project's folder compressed with gzip, without <code>contents.toml</code>. It holds the files you chose, then the project file, <code>.project</code>, and the <code>README</code>, then the images, under <var>.images/image</var>: the export made a folder of links named after the images, which tar followed. The private disks are <var>vm</var>_<var>device</var>.cow, as today.</p>
+    <p>The <code>.project</code> file is the project file of those versions, which the import converts as the migration does (see <code>MIGRATION</code> in <link xref="config-files">virtualbricks-config(5)</link>):</p>
+    <screen>[Image:debian]
+path=/srv/vm/debian-12.qcow2
+
+[Qemu:vm1]
+hda=debian
+privatehda=*</screen>
+    <p>As the project file comes near the end, an inspection reads such an archive to its end. It sends what it knows as soon as it has read the project file, and the full list of members at the end; the Import window shows its form from the first, and the import starts without waiting for the second.</p>
+  </section>
+  <section id="reading-an-archive">
+    <title>Reading an archive</title>
+    <p>Virtualbricks reads an archive as a stream, once, from its start:</p>
+    <list type="numbered">
+      <item>
+        <p>It recognizes the compression from the first bytes: gzip, bzip2, xz, or none.</p>
+      </item>
+      <item>
+        <p>It skips the members that aren't regular files. It takes the name of a sparse member from <code>GNU.sparse.name</code>, drops a leading <var>./</var> and a trailing <var>/</var>, and gets the kind of the member from its name.</p>
+      </item>
+      <item>
+        <p>It reads the members of the head: <code>contents.toml</code>, the project file, the README. It refuses a <code>contents.toml</code> of a newer format.</p>
+      </item>
+      <item>
+        <p>With <code>contents.toml</code>, it stops when it has every member of the head that the list names. Without it, it reads on to the end, and lists the members from their headers.</p>
+      </item>
+      <item>
+        <p>It reads <code>project.toml</code>, or converts <code>.project</code>, and fails when there is neither. <code>README.md</code> comes before <code>README</code>.</p>
+      </item>
+    </list>
+    <p>To import an archive, it extracts it whole, into a hidden folder of the workspace, and goes on as <link xref="archive-protocol">virtualbricks-archive(7)</link> describes.</p>
+  </section>
+  <section id="writing-an-archive">
+    <title>Writing an archive</title>
+    <p>A file that Virtualbricks imports needs only a project file. An archive that it reads as well as its own:</p>
+    <list>
+      <item>
+        <p>is a pax tar file, not compressed when its disks are packed, otherwise compressed with gzip;</p>
+      </item>
+      <item>
+        <p>starts with <code>contents.toml</code>, of format 1, listing every other member, then has the project file and the README;</p>
+      </item>
+      <item>
+        <p>names the members after their path in the project's folder, the images <var>IMAGES/name</var> after their name in the project file;</p>
+      </item>
+      <item>
+        <p>keeps the holes of the disks;</p>
+      </item>
+      <item>
+        <p>packs the qcow2 disks, keeping their backing files, and marks them <code>packed</code>, with their <code>real_size</code>.</p>
+      </item>
+    </list>
+    <p>The backing file of a private disk can be any path: the import replaces it, and its format, with the file that the image uses on this computer.</p>
+  </section>
+  <section id="examples">
+    <title>Examples</title>
+    <p>Look into an archive without extracting it:</p>
+    <screen>$ tar -xOf lab.vbp contents.toml
+$ tar -xOf lab.vbp README.md
+$ tar -xOf lab.vbp project.toml |
+&gt;     grep -e '^\[images' -e '^path ='
+[images.debian]
+path = "/srv/vm/debian-12.qcow2"
+[images.scratch]
+path = "/srv/vm/scratch.img"</screen>
+    <p>Extract a private disk, and see its image and its compression:</p>
+    <screen>$ tar -xf lab.vbp vm1_hda.cow
+$ qemu-img info vm1_hda.cow | grep -e backing -e compression
+backing file: /srv/vm/debian-12.qcow2
+backing file format: qcow2
+    compression type: zstd</screen>
+    <p>Point it at the image of this computer, by hand, as the import does:</p>
+    <screen>$ qemu-img rebase -u -F qcow2 \
+&gt;     -b ~/.virtualbricks/shared_images/debian-12.qcow2 \
+&gt;     vm1_hda.cow</screen>
+    <p>Make an archive by hand with GNU <code>tar</code>, keeping the holes, with the image <code>debian</code> under its name. Virtualbricks imports it, after reading it to its end, as it has no <code>contents.toml</code>:</p>
+    <screen>$ tar -c --sparse --format=posix -f lab.vbp \
+&gt;     -C ~/.virtualbricks/lab \
+&gt;     project.toml README.md vm1_hda.cow \
+&gt;     -C /srv/vm \
+&gt;     --transform 's,^debian-12\.qcow2$,IMAGES/debian,' \
+&gt;     debian-12.qcow2
+$ tar -tf lab.vbp
+project.toml
+README.md
+vm1_hda.cow
+IMAGES/debian</screen>
+    <p>The archive of the whole folder of a project, compressed with gzip, which doesn't keep the holes of its disks:</p>
+    <screen>$ tar -czf ~/lab.vbp -C ~/.virtualbricks/lab .</screen>
+  </section>
+  <section id="files">
+    <title>Files</title>
+    <terms>
+      <item>
+        <title><var>name</var>.vbp</title>
+        <p>An archive.</p>
+      </item>
+      <item>
+        <title><var>workspace</var>/shared_images/</title>
+        <p>The shared images, where the import copies the images.</p>
+      </item>
+      <item>
+        <title><var>workspace</var>/<var>name</var>/</title>
+        <p>The project that the import makes of an archive.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="bugs">
+    <title>Bugs</title>
+    <p>Python's <code>tarfile</code>, from 3.10 to 3.13, misreads a GNU sparse 1.0 member whose size is in a pax record, as <code>bsdtar</code> and GNU <code>tar</code> write the members larger than 8 GiB, and loses the member after it. Virtualbricks then reads the archive with <code>bsdtar</code> or GNU <code>tar</code>; with neither, it can't read it.</p>
+  </section>
+  <section id="see-also">
+    <title>See also</title>
+    <p><link xref="archive-protocol">virtualbricks-archive(7)</link>, <link xref="config-files">virtualbricks-config(5)</link>, <link xref="command-line">virtualbricks(1)</link>, <code>tar</code>(5), <code>tar</code>(1), <code>bsdtar</code>(1), <code>qemu-img</code>(1)</p>
+    <p>The pax format, POSIX.1-2024: <link href="https://pubs.opengroup.org/onlinepubs/9799919799/utilities/pax.html">https://pubs.opengroup.org/onlinepubs/9799919799/utilities/pax.html</link></p>
+    <p>GNU tar, sparse formats: <link href="https://www.gnu.org/software/tar/manual/html_node/Sparse-Formats.html">https://www.gnu.org/software/tar/manual/html_node/Sparse-Formats.html</link></p>
+    <p>The qcow2 format: <link href="https://www.qemu.org/docs/master/interop/qcow2.html">https://www.qemu.org/docs/master/interop/qcow2.html</link></p>
+    <p>TOML 1.0: <link href="https://toml.io/en/v1.0.0">https://toml.io/en/v1.0.0</link></p>
+  </section>
+</page>

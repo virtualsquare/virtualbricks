@@ -4,6 +4,11 @@ section: 5
 header: Virtualbricks Manual
 footer: virtualbricks VERSION
 date: DATE
+help:
+  id: config-files
+  title: Configuration files
+guide: "index#reference"
+sort: 2
 ---
 
 # NAME
@@ -349,7 +354,7 @@ An empty string leaves the plug unconnected. Depending on its type, a brick
 has one plug in **connect**, two in **endpoints**, or network cards in
 **nics**.
 
-## README
+## README {#projects-readme}
 
 The *README.md* of a project is plain text in UTF-8, which Virtualbricks
 reads as Markdown. The Readme tab shows it rendered, and its pencil button

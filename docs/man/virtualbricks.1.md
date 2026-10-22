@@ -4,6 +4,11 @@ section: 1
 header: Virtualbricks Manual
 footer: virtualbricks VERSION
 date: DATE
+help:
+  id: command-line
+  title: The command line
+guide: "index#reference"
+sort: 1
 ---
 
 # NAME
@@ -239,7 +244,7 @@ A file of commands, one a line, runs with **source** *file* in the console
 or **--run** *file* at start. Empty lines and comments are skipped, and the
 first error stops the file, saying where, as *lab.vb*:7.
 
-# THE CONTROL SOCKET
+# THE CONTROL SOCKET {#control-socket}
 
 A Virtualbricks started with **--listen**, with the windows or without,
 listens on control sockets once its project is open; without it, on none.
@@ -605,7 +610,7 @@ entries of a folder, for a path being typed. **Attach**
 switches the connection to the bytes of the console of a brick, AMP's
 **ProtocolSwitchCommand**.
 
-# THE WINDOWS OF ANOTHER VIRTUALBRICKS
+# THE WINDOWS OF ANOTHER VIRTUALBRICKS {#windows}
 
 **virtualbricks --connect** *description* opens the windows of the
 Virtualbricks of the socket of *description*: the lab machine, which

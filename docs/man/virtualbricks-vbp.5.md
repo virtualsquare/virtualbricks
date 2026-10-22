@@ -4,6 +4,11 @@ section: 5
 header: Virtualbricks Manual
 footer: virtualbricks VERSION
 date: DATE
+help:
+  id: vbp-format
+  title: The archive format
+guide: "index#reference"
+sort: 3
 ---
 
 # NAME
@@ -70,6 +75,7 @@ of zeros end the archive, which is then padded with zeros to a multiple of
 
 The blocks of the example:
 
+::: {.diagram .listing svg="figures/vbp-layout.svg"}
 ```
  offset  type  header name                       size
       0  x     PaxHeader/contents.toml             90
@@ -86,6 +92,10 @@ The blocks of the example:
  550912  0     IMAGES/GNUSparseFile.0/scratch    4608
  556032        14 blocks of zeros, to 563200
 ```
+
+The 563200 bytes of the example archive, *lab.vbp*, in file order: the head
+takes 12 KB; a real disk or image takes gigabytes.
+:::
 
 The members with holes are GNU sparse members, whose header name is a
 placeholder; see **HOLES**.
@@ -195,6 +205,7 @@ README: together, the *head* of the archive. The other files, the private
 disks and the images follow, in this order, each group from the smallest
 file to the largest:
 
+::: {.diagram svg="figures/vbp-order.svg"}
 ```
  +----------+---------+--------+-------+-------+----------+
  | contents | project | README | other | disks | IMAGES/  |
@@ -204,12 +215,15 @@ file to the largest:
      read by an inspection          read by the import
 ```
 
+A new archive in file order, not to scale.
+:::
+
 The order is the writer's promise; a reader accepts any order. With
 **contents.toml** first, Virtualbricks reads the archive until it has the
 members of the head that the list names, and stops there, whatever the size
 of the archive. Without **contents.toml**, it reads the archive to its end.
 
-# CONTENTS.TOML
+# CONTENTS.TOML {title="contents.toml"}
 
 The list of the other members, in the order of the archive, in TOML 1.0 and
 UTF-8. The list of the example:
@@ -306,6 +320,7 @@ A disk doesn't name a file: it names an image of the project, and the image
 has the path of its file. The archive stores the image under that name, so
 the name ties the three together:
 
+::: {.diagram svg="figures/vbp-images.svg"}
 ```
  project.toml                          the archive
  +-----------------------------------+
@@ -319,6 +334,11 @@ the name ties the three together:
             ^
             '----- backing file ------ vm1_hda.cow
 ```
+
+The name ties the disk, the table of the image and the member. The path of
+the image appears twice, in the table and as the backing file of the private
+disk; the import replaces both with the file of this computer.
+:::
 
 The import plans an image for each table **[images.***name***]** of the
 project file. Its disks are those whose **image** is *name*, and its copy
@@ -435,6 +455,7 @@ The member *IMAGES/scratch* of the example, a file of 32 MiB with 4096
 bytes of data at 4 MiB, takes 4608 bytes: one block of map, then the data.
 Its map:
 
+::: {.diagram .listing svg="figures/vbp-holes.svg"}
 ```
 2
 4194304
@@ -442,6 +463,12 @@ Its map:
 33554432
 0
 ```
+
+The member *IMAGES/scratch* of the example, from offset 549888 of the
+archive: 2048 bytes of headers and map for 4096 bytes of data, which stand
+for a file of 32 MiB. The last region, 0 bytes at the size of the file, says
+that it ends with a hole.
+:::
 
 A reader that doesn't know the format extracts
 *IMAGES/GNUSparseFile.0/scratch*, a file with the map and the data, which
