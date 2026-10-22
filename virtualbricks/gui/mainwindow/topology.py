@@ -21,9 +21,13 @@ The Topology tab of the main window: the picture of the lab.
 
 The picture takes the whole tab. A bar floats over its top right corner:
 zoom out, the zoom level, which goes back to 100%, zoom in and fit all, then
-a menu with the direction of the layout and the export. The tab lays the
-lab out when it shows, and again when a brick changes while it shows; a
-project without bricks shows a hint instead.
+a menu with the layout and the export. The tab lays the lab out when it
+shows, and again when a brick changes while it shows; a project without
+bricks shows a hint instead.
+
+The layout is Graphviz's, left to right or top to bottom, or by hand once a
+brick has a place (page 35). By Hand gives every brick the place it has in
+the picture; Left to Right and Top to Bottom take the places away.
 
 A click on a brick works as in the list of the bricks: the right button
 opens its menu, a double click configures it. A brick dropped on another
@@ -33,13 +37,13 @@ connects the two, as in the list.
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
 from gi.repository import Gdk, Gio, GLib, GObject, Gtk
 from twisted.logger import Logger
 
 from virtualbricks.brickfactory import BrickFactory
-from virtualbricks.bricks import Brick
+from virtualbricks.bricks import Brick, Point
 from virtualbricks.engine import Engine
 from virtualbricks.gui.mainwindow import picture
 from virtualbricks.gui.mainwindow.bricks import brickmenu
@@ -55,7 +59,7 @@ from virtualbricks.gui.mainwindow.topologyview import (
     TopologyView,
 )
 from virtualbricks.i18n import _
-from virtualbricks.topology import layout
+from virtualbricks.topology import arrange, by_hand, layout, places
 
 logger = Logger()
 drawing_topology = "drawing topology"
@@ -63,22 +67,26 @@ top_invalid_format = "Error saving topology: Invalid image format"
 top_write_error = "Error saving topology: Could not write file"
 top_unknown = "Error saving topology: Unknown error"
 connect_error = "Cannot connect {brick} to {other}"
+places_error = "Cannot change the places of the bricks"
 
 # Between the bar and the corner, and between the bar's groups, in pixels.
 GAP = 6
 ACTIONS = "topology"
+# The layout of a lab whose bricks have places.
+HAND = "hand"
 
 
 def menu() -> Gio.Menu:
     """The menu at the end of the bar: the layout, and the export."""
 
-    directions = Gio.Menu()
-    directions.append(_("Left to Right"), f"{ACTIONS}.direction::LR")
-    directions.append(_("Top to Bottom"), f"{ACTIONS}.direction::TB")
+    layouts = Gio.Menu()
+    layouts.append(_("Left to Right"), f"{ACTIONS}.layout::LR")
+    layouts.append(_("Top to Bottom"), f"{ACTIONS}.layout::TB")
+    layouts.append(_("By Hand"), f"{ACTIONS}.layout::{HAND}")
     export = Gio.Menu()
     export.append(_("Export as Image…"), f"{ACTIONS}.export")
     result = Gio.Menu()
-    result.append_section(_("Layout"), directions)
+    result.append_section(_("Layout"), layouts)
     result.append_section(None, export)
     return result
 
@@ -125,6 +133,7 @@ class TopologyTab(Tab, Gtk.Overlay):
         # the settings of a brick, which the Bricks tab shows
         self.configure = configure
         self._menu: Gtk.Menu | None = None
+        # Graphviz's, when the bricks have no places
         self.direction = "LR"
         self._shown = False
         self._should_draw = True
@@ -188,13 +197,13 @@ class TopologyTab(Tab, Gtk.Overlay):
         self.add_overlay(self.bar)
 
         actions = Gio.SimpleActionGroup()
-        self.direction_action = Gio.SimpleAction.new_stateful(
-            "direction",
+        self.layout_action = Gio.SimpleAction.new_stateful(
+            "layout",
             GLib.VariantType.new("s"),
             GLib.Variant.new_string(self.direction),
         )
-        self.direction_action.connect("change-state", self.on_direction)
-        actions.add_action(self.direction_action)
+        self.layout_action.connect("change-state", self.on_layout)
+        actions.add_action(self.layout_action)
         self.export_action = Gio.SimpleAction.new("export", None)
         self.export_action.connect("activate", self.on_export)
         actions.add_action(self.export_action)
@@ -224,15 +233,21 @@ class TopologyTab(Tab, Gtk.Overlay):
 
     def _draw(self) -> None:
         logger.debug(drawing_topology)
-        self.view.set_layout(
-            layout(self.factory.bricks, self.direction, self.view.measure)
-        )
+        bricks = list(self.factory.bricks)
+        if by_hand(bricks):
+            new = arrange(bricks, self.view.measure)
+        else:
+            new = layout(bricks, self.direction, self.view.measure)
+        self.view.set_layout(new)
         self._should_draw = False
         self._update()
 
     def _update(self) -> None:
-        """The bar and the hint, for the zoom and the lab."""
+        """The bar, the hint and the layout of the menu, for the lab."""
 
+        state = HAND if by_hand(self.factory.bricks) else self.direction
+        # the same state says nothing
+        self.layout_action.set_state(GLib.Variant.new_string(state))
         empty = not self.view.layout.nodes
         zoom = self.view.zoom
         self.level_button.set_label(level(zoom))
@@ -294,12 +309,28 @@ class TopologyTab(Tab, Gtk.Overlay):
         # a click fits, even on the button that is on; the zoom says after
         self.view.fit()
 
-    def on_direction(
-        self, action: Gio.SimpleAction, value: GLib.Variant
-    ) -> None:
-        action.set_state(value)
-        self.direction = value.get_string()
-        self.lay_out()
+    def on_layout(self, action: Gio.SimpleAction, value: GLib.Variant) -> None:
+        choice = value.get_string()
+        bricks = list(self.factory.bricks)
+        if choice == HAND:
+            # in a lab without bricks, nothing to place
+            if bricks and not by_hand(bricks):
+                # the places that the picture shows
+                laid_out = layout(bricks, self.direction, self.view.measure)
+                self._place(places(laid_out))
+        elif by_hand(bricks):
+            self.direction = choice
+            self._place({brick: None for brick in bricks})
+        else:
+            action.set_state(value)
+            self.direction = choice
+            self.lay_out()
+
+    def _place(self, places: Mapping[Brick, Point | None]) -> None:
+        # the bricks that change lay the lab out again
+        self.engine.place(places).addErrback(
+            lambda failure: logger.failure(places_error, failure)
+        )
 
     def on_export(
         self, action: Gio.SimpleAction, parameter: GLib.Variant | None

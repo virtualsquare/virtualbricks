@@ -23,6 +23,7 @@ on the bricks, and the export.
 from twisted.internet import defer
 
 from virtualbricks import topology as layouts
+from virtualbricks.bricks import Point, set_places
 from virtualbricks.config.workspace import projects
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
@@ -60,13 +61,14 @@ def run_idle_calls():
 class FakeEngine:
     """
     The engine of the main window, as the tab reads it: the workspace; and
-    what it connects.
+    what it connects and places.
     """
 
     workspace = projects
 
     def __init__(self):
         self.connected = []
+        self.placed = []
         self.refused = None
 
     def connect(self, brick, other):
@@ -74,6 +76,13 @@ class FakeEngine:
         if self.refused is not None:
             return defer.fail(self.refused)
         return defer.succeed(True)
+
+    def place(self, places):
+        self.placed.append(places)
+        if self.refused is not None:
+            return defer.fail(self.refused)
+        set_places(places)
+        return defer.succeed(None)
 
 
 class FakeMenus:
@@ -144,6 +153,14 @@ class TopologyTestCase(GuiTestCase):
         run_idle_calls()
         allocate(self.tab, width, height)
 
+    def choose(self, layout):
+        """A layout from the menu."""
+
+        self.tab.layout_action.change_state(GLib.Variant.new_string(layout))
+
+    def state(self):
+        return self.tab.layout_action.get_state().get_string()
+
     def in_area(self, brick):
         node = next(n for n in self.view.layout.nodes if n.brick is brick)
         ox, oy = self.view.origin()
@@ -187,17 +204,93 @@ class TestLayingOut(TopologyTestCase):
 
     def test_the_direction(self):
         self.tab.on_shown()
-        self.tab.direction_action.change_state(GLib.Variant.new_string("TB"))
+        self.choose("TB")
         self.assertEqual(self.laid_out[-1], (["sw1", "vm"], "TB"))
-        self.assertEqual(
-            self.tab.direction_action.get_state().get_string(), "TB"
-        )
+        self.assertEqual(self.state(), "TB")
         # hidden, it waits
         self.tab.on_left()
-        self.tab.direction_action.change_state(GLib.Variant.new_string("LR"))
+        self.choose("LR")
         self.assertEqual(len(self.laid_out), 2)
         self.tab.on_shown()
         self.assertEqual(self.laid_out[-1], (["sw1", "vm"], "LR"))
+
+    def test_by_hand(self):
+        self.sw1.place = Point(0, 0)
+        self.tab.on_shown()
+        # no Graphviz: the places
+        self.assertEqual(self.laid_out, [])
+        self.assertEqual(
+            layouts.places(self.view.layout)[self.sw1], Point(0, 0)
+        )
+        self.assertEqual(self.state(), "hand")
+        self.assertEqual(self.engine.placed, [])
+
+    def test_a_project_by_hand(self):
+        self.sw1.place = Point(0, 0)
+        tab = TopologyTab(
+            self.engine, self.window, self.factory, self.configured.append
+        )
+        self.addCleanup(tab.destroy)
+        self.assertEqual(tab.layout_action.get_state().get_string(), "hand")
+
+
+class TestByHand(TopologyTestCase):
+    """The layout of the menu, by hand or by Graphviz (page 35)."""
+
+    def setUp(self):
+        super().setUp()
+        self.show()
+
+    def test_by_hand_keeps_the_picture(self):
+        self.choose("TB")
+        before = {
+            node.brick: (node.x, node.y) for node in self.view.layout.nodes
+        }
+        self.choose("hand")
+        # every brick at the place that the picture shows
+        [placed] = self.engine.placed
+        self.assertEqual(
+            placed,
+            layouts.places(layouts.layout([self.sw1, self.vm], "TB")),
+        )
+        self.assertEqual(set(placed), {self.sw1, self.vm})
+        self.assertEqual(self.state(), "hand")
+        for node in self.view.layout.nodes:
+            x, y = before[node.brick]
+            # whole points
+            self.assertLessEqual(abs(node.x - x), 0.5)
+            self.assertLessEqual(abs(node.y - y), 0.5)
+
+    def test_by_hand_again(self):
+        self.choose("hand")
+        self.choose("hand")
+        self.assertEqual(len(self.engine.placed), 1)
+
+    def test_by_hand_without_bricks(self):
+        for brick in list(self.factory.bricks):
+            self.factory.remove_brick(brick)
+        self.choose("hand")
+        self.assertEqual(self.engine.placed, [])
+        self.assertEqual(self.state(), "LR")
+
+    def test_graphviz_again(self):
+        self.choose("hand")
+        self.choose("TB")
+        # at once, without a question
+        self.assertEqual(
+            self.engine.placed[-1], {self.sw1: None, self.vm: None}
+        )
+        self.assertIsNone(self.sw1.place)
+        self.assertEqual(self.laid_out[-1], (["sw1", "vm"], "TB"))
+        self.assertEqual(self.state(), "TB")
+
+    def test_a_refusal(self):
+        self.engine.refused = ValueError("no")
+        self.choose("hand")
+        self.assertEqual(
+            self.logger.formatted(), ["Cannot change the places of the bricks"]
+        )
+        self.assertEqual(self.state(), "LR")
 
 
 class TestTheBar(TopologyTestCase):
@@ -368,8 +461,9 @@ class TestTheMenu(TopologyTestCase):
                     None,
                     None,
                     [
-                        ("Left to Right", "topology.direction", "LR", None),
-                        ("Top to Bottom", "topology.direction", "TB", None),
+                        ("Left to Right", "topology.layout", "LR", None),
+                        ("Top to Bottom", "topology.layout", "TB", None),
+                        ("By Hand", "topology.layout", "hand", None),
                     ],
                 ),
                 (
@@ -387,10 +481,8 @@ class TestTheMenu(TopologyTestCase):
 
     def test_the_actions_of_the_tab(self):
         group = self.tab.get_action_group("topology")
-        self.assertEqual(sorted(group.list_actions()), ["direction", "export"])
-        self.assertEqual(
-            group.get_action_state("direction").get_string(), "LR"
-        )
+        self.assertEqual(sorted(group.list_actions()), ["export", "layout"])
+        self.assertEqual(group.get_action_state("layout").get_string(), "LR")
 
 
 class TestClicks(TopologyTestCase):
