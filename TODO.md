@@ -37,7 +37,6 @@
   new workspace and releases the old one's (21 §14)
 - [ ] Open several projects at once (04 §11: D6 rules it out for now)
 - [ ] Make new projects from templates (04 §11)
-- [ ] Open a project by dropping its file on the main window
 - [ ] Switch projects from a popover on the main window's title, once
   the main window has a header bar (04 §3, direction B)
 - [ ] Let the Projects window get narrower once a project with a README
