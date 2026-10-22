@@ -42,6 +42,6 @@
     <title>Layout and export</title>
     <p>The menu of the bar has the <gui>Layout</gui>: <gui>Left to Right</gui> or <gui>Top to Bottom</gui>, where Graphviz places the bricks again after each change, or <gui>By Hand</gui>, where each brick stays at its place. <gui>By Hand</gui> gives every brick the place it has in the picture; <gui>Left to Right</gui> and <gui>Top to Bottom</gui> take the places away.</p>
     <p>The <gui>Links</gui> of the menu draw them <gui>Straight</gui>, <gui>Curved</gui> or at <gui>Right Angles</gui>, in every layout; the project keeps the choice, curved at first. A straight line can pass behind a brick in its way; Graphviz routes the curves and the right angles around the bricks. In a lab laid out by hand it moves no brick to do so, and two bricks too close for a link to pass between them have their links routed around their icons, across their names. Where Graphviz can't draw right angles, the links are curved.</p>
-    <p>The menu also has <gui>Export as Image…</gui>: a PNG, an SVG or a PDF file of the picture at 100%, on white, whatever the zoom and the theme. Exported to the folder of the project, the picture can show in its README; see <link xref="readme"/>.</p>
+    <p>The menu also has <gui>Export as Image…</gui>: a PNG, an SVG or a PDF file of the picture at 100%, on white, whatever the zoom and the theme. It saves in the folder of the project unless you choose another, and there the picture can show in its README; see <link xref="readme"/>.</p>
   </section>
 </page>

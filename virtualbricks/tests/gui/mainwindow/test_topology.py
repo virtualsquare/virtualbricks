@@ -20,6 +20,8 @@ The Topology tab: when it lays the lab out, its bar and menu, the clicks
 on the bricks, and the export.
 """
 
+import os
+
 from twisted.internet import defer
 
 from virtualbricks import topology as layouts
@@ -138,8 +140,9 @@ class FakeDialog:
 
 
 class FakeProject:
-    def __init__(self, name):
+    def __init__(self, name, path=""):
         self.name = name
+        self.path = path
 
 
 class TopologyTestCase(GuiTestCase):
@@ -952,9 +955,20 @@ class TestExport(TopologyTestCase):
         chooser = self.chooser()
         self.assertEqual(chooser.get_current_name(), "topology.png")
         chooser.destroy()
-        self.patch(projects, "current", FakeProject("ospf-lab"))
+        folder = os.path.realpath(self.mktemp())
+        os.mkdir(folder)
+        self.patch(projects, "current", FakeProject("ospf-lab", folder))
         chooser = self.chooser()
         self.assertEqual(chooser.get_current_name(), "ospf-lab.png")
+        # in the folder of the project, once the chooser has read it
+        run_idle_calls()
+        self.assertEqual(chooser.get_current_folder(), folder)
+        chooser.destroy()
+        # not there, when the project is in another Virtualbricks
+        self.patch(self.engine, "local", False)
+        chooser = self.chooser()
+        run_idle_calls()
+        self.assertNotEqual(chooser.get_current_folder(), folder)
 
     def test_the_name_follows_the_format(self):
         self.patch(projects, "current", None)

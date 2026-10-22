@@ -455,6 +455,9 @@ class TopologyTab(Tab, Gtk.Overlay):
             formats[kind] = extension
         current = self.engine.workspace.current
         name = current.name if current is not None else "topology"
+        # in the folder of the project, when it is here
+        if current is not None and current.path and self.engine.local:
+            chooser.set_current_folder(current.path)
         chooser.set_current_name(f"{name}.png")
         chooser.connect("notify::filter", self.on_export_format, formats)
         chooser.connect("response", self.on_export_response, formats)

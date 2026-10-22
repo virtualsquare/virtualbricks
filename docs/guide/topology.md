@@ -69,5 +69,6 @@ their links routed around their icons, across their names. Where Graphviz
 can't draw right angles, the links are curved.
 
 The menu also has **Export as Image…**: a PNG, an SVG or a PDF file of the
-picture at 100%, on white, whatever the zoom and the theme. Exported to the folder of the
-project, the picture can show in its README; see [](readme).
+picture at 100%, on white, whatever the zoom and the theme. It saves in the
+folder of the project unless you choose another, and there the picture can
+show in its README; see [](readme).
