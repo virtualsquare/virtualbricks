@@ -1,9 +1,5 @@
 # TODO
 
-## Projects
-
-- [ ] Drop the import message window
-
 # IDEAS
 
 ## Config
@@ -345,6 +341,10 @@
 
 # DONE
 
+- [x] Drop the import message window: the Import window closes at the end
+  of every import, opened or not, and its result page, with "Imported as"
+  and what to check, is gone; the Logs window names the project and lists
+  its report (06341aab; 04 Since then)
 - [x] Connect two bricks by dropping one on the other in the picture, as
   in the Bricks list: a line follows the pointer, and ends on a brick that
   the one dragged connects to, with the words of the drop under it; the
