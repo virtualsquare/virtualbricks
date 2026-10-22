@@ -543,6 +543,7 @@ Follow             \-> project:str? version:str
 Apply              kind:str name:str changes:str links:str
                    extras:str \->
 Connect            source:str target:str \-> connected:bool
+Place              places:str \->
 QemuFacts          program:str \-> path:str version:str
                    options:str machines:str cpus:str devices:str
                    displays:str audio_drivers:str netdevs:str
@@ -593,6 +594,13 @@ keeps what another window set.
 Connect brick \f[I]source\f[R] to brick \f[I]target\f[R], as a drop
 does: a free plug, or a new card of a machine.
 Whether it could.
+.TP
+\f[B]Place\f[R]
+Give bricks their places in the picture of the Topology tab, laid out by
+hand, as a brick moved there does: \f[B]places\f[R] is an object of the
+names of the bricks to [\f[I]x\f[R], \f[I]y\f[R]], the \f[B]place\f[R]
+of the project file, or \f[B]null\f[R] to take a place away.
+All or nothing.
 .TP
 \f[B]QemuFacts\f[R]
 What the QEMU program \f[I]program\f[R], as

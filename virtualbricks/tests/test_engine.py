@@ -24,7 +24,7 @@ from twisted.internet import defer, error, task
 from twisted.trial import unittest
 
 from virtualbricks import errors, ksm
-from virtualbricks.bricks import FakeProcess
+from virtualbricks.bricks import FakeProcess, Point
 from virtualbricks.bricks.brickinfo import NEW_KINDS
 from virtualbricks.bricks.eventaction import ShellAction
 from virtualbricks.bricks.virtualmachine import UsbDevice
@@ -182,6 +182,25 @@ class TestBricks(EngineTestCase):
         self.assertIs(tap.plugs[0].sock, switch.socks[0])
         other = self.factory.new_brick("tap", "tap2")
         self.assertFalse(self.successResultOf(self.engine.connect(tap, other)))
+
+    def test_place(self):
+        switch = self.factory.new_brick("switch", "sw1")
+        tap = self.factory.new_brick("tap", "tap1")
+        self.assertIsNone(
+            self.successResultOf(
+                self.engine.place({switch: Point(32, 230), tap: Point(0, 0)})
+            )
+        )
+        self.assertEqual(
+            (switch.place, tap.place), (Point(32, 230), Point(0, 0))
+        )
+        self.successResultOf(self.engine.place({tap: None}))
+        self.assertIsNone(tap.place)
+        # all or none
+        self.failureResultOf(
+            self.engine.place({tap: Point(1, 2), switch: (1.5, 2)}), ValueError
+        )
+        self.assertEqual((switch.place, tap.place), (Point(32, 230), None))
 
     def test_update_config(self):
         switch = self.factory.new_brick("switch", "sw1")

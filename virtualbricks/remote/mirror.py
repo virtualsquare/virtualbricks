@@ -24,7 +24,7 @@ another machine (page 19 §5).
 the pushes of ``Follow`` build and keep up to date: the windows read it as
 they read the factory of their own process. ``Opened`` empties it, and the
 tables of ``Changed`` make each object, or change it in place: its settings,
-its plugs, its state. A running brick has a stand-in process, which has its
+its plugs, its place in the picture, its state. A running brick has a stand-in process, which has its
 number; a waiting event a timer of the copy's own clock, which counts down
 the seconds left. A rename renames, and the objects whose references moved
 come as changes after it; a VM renamed here renames no file.
@@ -64,6 +64,7 @@ from virtualbricks.bricks.virtualmachine import (
 )
 from virtualbricks.config.projectfile import (
     CONNECTION_KEYS,
+    read_place,
     resolve,
 )
 from virtualbricks.config.report import Report
@@ -342,8 +343,11 @@ class MirrorFactory(BrickFactory):
             brick = self.new_brick(table.get("type", ""), name)
         where = f"bricks.{name}"
         with brick.muted():
-            ignore = {"type"} | CONNECTION_KEYS[brick.connections]
+            ignore = {"type", "place"} | CONNECTION_KEYS[brick.connections]
             brick.load_config_table(table, report, where, ignore)
+            brick.place = read_place(
+                table.get("place", []), report, f"{where}.place"
+            )
             self._links(brick, table)
             pid = state.get("pid")
             # with no running, a Virtualbricks that sends the pid alone

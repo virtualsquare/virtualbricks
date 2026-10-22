@@ -19,11 +19,12 @@
 """
 The answers of the Virtualbricks of the bricks to the commands of the
 windows of another machine that the console has none for (page 19 §7):
-``Apply``, the OK of a panel, ``Connect``, a drop, the commands of the
-files of the images: ``MakeImage``, ``StartOver``, ``TrashFile`` and
-``Relink``, those of the projects and the README: ``ProjectNames``,
-``ProjectSummary``, ``Readme`` and ``SetReadme``, and ``SetKsm``. The reads
-go to the log only if they fail.
+``Apply``, the OK of a panel, ``Connect``, a drop, ``Place``, a brick
+moved in the picture, the commands of the files of the images:
+``MakeImage``, ``StartOver``, ``TrashFile`` and ``Relink``, those of the
+projects and the README: ``ProjectNames``, ``ProjectSummary``, ``Readme``
+and ``SetReadme``, and ``SetKsm``. The reads go to the log only if they
+fail.
 
 The AMP connections of the control sockets take them on, beside Follow.
 Like the typed commands, they run in the order they came, their line goes to
@@ -49,7 +50,7 @@ from twisted.protocols import amp
 from twisted.python.failure import Failure
 
 from virtualbricks import errors, ksm, locations
-from virtualbricks.bricks import Brick, brickinfo
+from virtualbricks.bricks import Brick, brickinfo, set_places
 from virtualbricks.bricks.virtualmachine import (
     DISK_DEVICES,
     VirtualMachine,
@@ -79,7 +80,7 @@ FORMATS = ("qcow2", "raw")
 
 class Answers(_Base):
     """
-    The answers to Apply, Connect and the commands of the files; the
+    The answers to Apply, Connect, Place and the commands of the files; the
     connection has brickfactory, requests, pushes_first(), _log_line() and
     _log_failed().
     """
@@ -149,6 +150,29 @@ class Answers(_Base):
         return self._answer_in_order(
             f"connect {source} {target}", source, call
         )
+
+    @commands.Place.responder
+    def place(self, places: str) -> defer.Deferred[Any]:
+        try:
+            named = json.loads(places)
+        except ValueError:
+            named = None
+
+        def call() -> dict[str, object]:
+            if not isinstance(named, dict):
+                raise ValueError(f"{places!r} is not an object of places")
+            bricks: dict[Brick, Any] = {}
+            for name, place in named.items():
+                brick = self.brickfactory.get_brick(name)
+                if brick is None:
+                    raise LookupError(f"No brick named {name}")
+                bricks[brick] = place
+            set_places(bricks)
+            return {}
+
+        # the bricks, not their places
+        names = " ".join(named) if isinstance(named, dict) else places
+        return self._answer_in_order(f"place {names}", names, call)
 
     # The files of the images
 

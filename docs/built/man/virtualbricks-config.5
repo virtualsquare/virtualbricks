@@ -339,7 +339,7 @@ Every brick table has a \f[B]type\f[R], which is one of \f[B]qemu\f[R],
 \f[B]switch\f[R], \f[B]switchwrapper\f[R], \f[B]tap\f[R],
 \f[B]capture\f[R], \f[B]wire\f[R], \f[B]netemu\f[R],
 \f[B]tunnellisten\f[R], \f[B]tunnelconnect\f[R] and \f[B]router\f[R],
-and these three keys:
+and these four keys:
 .TP
 \f[B]icon\f[R] = \f[I]path\f[R], default \f[CR]\(dq\(dq\f[R]
 An image file to show instead of the icon of the type.
@@ -350,6 +350,17 @@ The event that runs when the brick starts.
 .TP
 \f[B]on_stop\f[R] = \f[I]event\f[R], default \f[CR]\(dq\(dq\f[R]
 The event that runs when the brick stops.
+.TP
+\f[B]place\f[R] = \f[I]array\f[R], default \f[CR][]\f[R]
+Where the brick is in the picture of the \f[B]Topology\f[R] tab, laid
+out by hand: the middle of its icon, [\f[I]x\f[R], \f[I]y\f[R]] in
+points at 100%, \f[I]y\f[R] going down, each a whole number from
+\-10\(ha5 to 10\(ha5.
+Where [0, 0] is doesn\(aqt matter: the picture starts at the bricks.
+\f[CR][]\f[R] is no place: Graphviz lays out a lab whose bricks have
+none, and a brick without one, in a lab laid out by hand, waits in a row
+under it.
+Written after the connections.
 .PP
 The other keys are described below for each type.
 .SS Connections

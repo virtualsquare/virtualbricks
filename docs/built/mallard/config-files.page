@@ -261,7 +261,7 @@ hub_mode = false  # default</screen>
     </section>
     <section id="bricks">
       <title>Bricks</title>
-      <p>Every brick table has a <code>type</code>, which is one of <code>qemu</code>, <code>switch</code>, <code>switchwrapper</code>, <code>tap</code>, <code>capture</code>, <code>wire</code>, <code>netemu</code>, <code>tunnellisten</code>, <code>tunnelconnect</code> and <code>router</code>, and these three keys:</p>
+      <p>Every brick table has a <code>type</code>, which is one of <code>qemu</code>, <code>switch</code>, <code>switchwrapper</code>, <code>tap</code>, <code>capture</code>, <code>wire</code>, <code>netemu</code>, <code>tunnellisten</code>, <code>tunnelconnect</code> and <code>router</code>, and these four keys:</p>
       <terms>
         <item>
           <title><code>icon</code> = <var>path</var>, default <code>""</code></title>
@@ -274,6 +274,10 @@ hub_mode = false  # default</screen>
         <item>
           <title><code>on_stop</code> = <var>event</var>, default <code>""</code></title>
           <p>The event that runs when the brick stops.</p>
+        </item>
+        <item>
+          <title><code>place</code> = <var>array</var>, default <code>[]</code></title>
+          <p>Where the brick is in the picture of the <code>Topology</code> tab, laid out by hand: the middle of its icon, [<var>x</var>, <var>y</var>] in points at 100%, <var>y</var> going down, each a whole number from -10^5 to 10^5. Where [0, 0] is doesn't matter: the picture starts at the bricks. <code>[]</code> is no place: Graphviz lays out a lab whose bricks have none, and a brick without one, in a lab laid out by hand, waits in a row under it. Written after the connections.</p>
         </item>
       </terms>
       <p>The other keys are described below for each type.</p>

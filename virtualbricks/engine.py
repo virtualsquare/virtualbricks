@@ -39,7 +39,7 @@ from __future__ import annotations
 
 import os
 import signal
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from twisted.internet import defer, error, reactor, threads
@@ -47,7 +47,13 @@ from twisted.internet.interfaces import IReactorTime
 
 from virtualbricks import ksm, locations
 from virtualbricks.brickfactory import BrickFactory
-from virtualbricks.bricks import Brick, brickinfo, restart
+from virtualbricks.bricks import (
+    Brick,
+    Point,
+    brickinfo,
+    restart,
+    set_places,
+)
 from virtualbricks.bricks.draft import Draft, apply
 from virtualbricks.bricks.event import Event, is_event
 from virtualbricks.bricks.virtualmachine import (
@@ -295,6 +301,16 @@ class LocalEngine:
         """Connect source to destination, as a drop does; False if it can't."""
 
         return defer.maybeDeferred(brickinfo.connect, source, destination)
+
+    def place(
+        self, places: Mapping[Brick, Point | None]
+    ) -> defer.Deferred[None]:
+        """
+        Give bricks their places in the picture, or take them away with
+        None: all or none.
+        """
+
+        return defer.maybeDeferred(set_places, places)
 
     # The bricks, the events and the images
 

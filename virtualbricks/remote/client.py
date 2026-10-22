@@ -29,18 +29,18 @@ socket of ``--connect`` alone, where a Virtualbricks of yours listens.
 
 ``RemoteEngine`` is the engine of the windows over it: what the console
 does goes as the typed commands of protocol 2, ``BrickStart(name=["vm1"])``;
-the OK of a panel as ``Apply``, a drop as ``Connect``. What the pushes bring
-answers first, so once a call is answered the copy has what it changed. A
-refusal is the failure of the call, with the message of the Virtualbricks
-of the bricks. What it can't do yet over a connection fails with
-``NotYet``; the windows grey most of it.
+the OK of a panel as ``Apply``, a drop as ``Connect``, a brick moved in the
+picture as ``Place``. What the pushes bring answers first, so once a call
+is answered the copy has what it changed. A refusal is the failure of the
+call, with the message of the Virtualbricks of the bricks. What it can't do
+yet over a connection fails with ``NotYet``; the windows grey most of it.
 """
 
 from __future__ import annotations
 
 import json
 import os
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from typing import TYPE_CHECKING, Any, Literal, NoReturn, TypeVar
 
 from twisted.internet import defer, endpoints, error
@@ -52,7 +52,7 @@ from twisted.python.failure import Failure
 
 from virtualbricks import __version__, locations, sockets
 from virtualbricks.brickfactory import normalize_name
-from virtualbricks.bricks import Brick
+from virtualbricks.bricks import Brick, Point
 from virtualbricks.bricks.brickinfo import NEW_KINDS, Issue, Kind
 from virtualbricks.bricks.draft import Draft
 from virtualbricks.bricks.event import Event
@@ -648,6 +648,12 @@ class RemoteEngine:
             commands.Connect, source=source.name, target=destination.name
         )
         return connecting.addCallback(lambda answer: answer["connected"])
+
+    def place(
+        self, places: Mapping[Brick, Point | None]
+    ) -> defer.Deferred[Any]:
+        named = {brick.name: place for brick, place in places.items()}
+        return self.call(commands.Place, places=json.dumps(named))
 
     # The bricks, the events and the images
 

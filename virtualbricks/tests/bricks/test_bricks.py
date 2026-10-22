@@ -27,7 +27,10 @@ from virtualbricks import bricks, errors
 from virtualbricks.bricks import (
     BaseConfig,
     BrickConfig,
+    Point,
     brickinfo,
+    check_place,
+    set_places,
     terminal_command,
 )
 from virtualbricks.bricks.brickinfo import State
@@ -539,6 +542,72 @@ class TestRestart(BrickTestCase):
         self.assertEqual(self.done, [("off", {}), ("off", {"kill": True})])
         self.stopped.callback(None)
         self.assertEqual(self.done[-1], "on")
+
+
+class TestPlaces(BrickTestCase):
+    """Where the bricks are in the picture, laid out by hand (page 35)."""
+
+    def setUp(self):
+        super().setUp()
+        self.sw1 = self.factory.new_brick("switch", "sw1")
+        self.sw2 = self.factory.new_brick("switch", "sw2")
+        self.changed = []
+        self.factory.brick_changed.connect(self.changed.append)
+
+    def test_none_at_first(self):
+        self.assertIsNone(self.sw1.place)
+
+    def test_check_place(self):
+        place = check_place([32, -230])
+        self.assertIsInstance(place, Point)
+        self.assertEqual((place.x, place.y), (32, -230))
+        self.assertEqual(
+            check_place((-(10**5), 10**5)), Point(-(10**5), 10**5)
+        )
+        for wrong in (
+            [1.5, 2],
+            [True, 0],
+            [1],
+            [1, 2, 3],
+            "12",
+            None,
+            [10**5 + 1, 0],
+            [0, -(10**5) - 1],
+        ):
+            self.assertRaises(ValueError, check_place, wrong)
+
+    def test_set_places(self):
+        set_places({self.sw1: [32, 230], self.sw2: (0, 0)})
+        self.assertEqual(self.sw1.place, Point(32, 230))
+        self.assertIsInstance(self.sw2.place, Point)
+        self.assertEqual(self.sw2.place, Point(0, 0))
+        self.assertEqual(self.changed, [self.sw1, self.sw2])
+        set_places({self.sw1: None})
+        self.assertIsNone(self.sw1.place)
+        self.assertEqual(self.sw2.place, (0, 0))
+
+    def test_only_the_bricks_moved_say_so(self):
+        self.sw1.place = Point(32, 230)
+        set_places({self.sw1: (32, 230), self.sw2: None})
+        self.assertEqual(self.changed, [])
+        set_places({self.sw1: (40, 230), self.sw2: None})
+        self.assertEqual(self.changed, [self.sw1])
+
+    def test_all_or_none(self):
+        self.assertRaises(
+            ValueError, set_places, {self.sw1: (1, 2), self.sw2: (1.5, 2)}
+        )
+        self.assertEqual((self.sw1.place, self.sw2.place), (None, None))
+        self.assertEqual(self.changed, [])
+
+    def test_the_bricks_are_heard_once_placed(self):
+        seen = []
+        self.factory.brick_changed.connect(
+            lambda brick: seen.append((self.sw1.place, self.sw2.place))
+        )
+        set_places({self.sw1: (1, 2), self.sw2: (3, 4)})
+        # each says it changed once every place is set
+        self.assertEqual(seen, [((1, 2), (3, 4))] * 2)
 
 
 VDETERM = ["/usr/bin/vdeterm", "/run/vb/lab/sw1.mgmt"]

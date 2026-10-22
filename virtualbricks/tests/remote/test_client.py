@@ -28,7 +28,7 @@ from twisted.test import iosim
 from twisted.trial import unittest
 
 from virtualbricks import __version__, locations, locks, sockets
-from virtualbricks.bricks import FakeProcess
+from virtualbricks.bricks import FakeProcess, Point
 from virtualbricks.bricks.brickinfo import NEW_KINDS
 from virtualbricks.bricks.eventaction import ShellAction
 from virtualbricks.bricks.virtualmachine import UsbDevice
@@ -299,6 +299,21 @@ class TestEngine(ClientTestCase):
         self.assertTrue(connected)
         self.assertIs(self.tap.plugs[0].sock, self.sw1.socks[0])
         self.assertIsNotNone(self.copy.get_brick("tap1").plugs[0].sock)
+
+    def test_place(self):
+        copy, tap = self.copy.get_brick("sw1"), self.copy.get_brick("tap1")
+        self.done(self.engine.place({copy: Point(32, 230), tap: Point(0, 0)}))
+        self.assertEqual(
+            (self.sw1.place, self.tap.place), (Point(32, 230), Point(0, 0))
+        )
+        # the copy has them, from the tables that came back
+        self.assertEqual(
+            (copy.place, tap.place), (Point(32, 230), Point(0, 0))
+        )
+        self.assertIsInstance(copy.place, Point)
+        self.done(self.engine.place({copy: None}))
+        self.assertIsNone(self.sw1.place)
+        self.assertIsNone(copy.place)
 
     def test_rename(self):
         copy = self.copy.get_brick("sw1")

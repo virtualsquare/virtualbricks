@@ -181,6 +181,17 @@
   accessible object each; PyGObject can't override Atk's `ref_child`, so
   it needs another way. With it, a scenario finds a brick as it finds a
   row (34 §9)
+- [ ] Keep the direction of the layout in the project, with the places
+  of the bricks (35 §9)
+- [ ] Move several bricks at once: a selection, framed by a drag on the
+  background with Shift, or picked with Ctrl and clicks (35 §9)
+- [ ] Move a brick with the keyboard: the arrows, on a brick with the
+  focus (35 §9)
+- [ ] Undo a move with Ctrl+Z (35 §9)
+- [ ] Draw Graphviz's curves around the bricks in a lab laid out by hand,
+  as a choice (35 §9)
+- [ ] Tidy a lab laid out by hand: Graphviz places only the bricks of the
+  row, near the bricks they link to (35 §9)
 
 ## Readme
 

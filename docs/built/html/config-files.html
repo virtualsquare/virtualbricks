@@ -481,7 +481,7 @@ in the targets, not in the commands. For example:
 <code>qemu</code>, <code>switch</code>, <code>switchwrapper</code>,
 <code>tap</code>, <code>capture</code>, <code>wire</code>,
 <code>netemu</code>, <code>tunnellisten</code>,
-<code>tunnelconnect</code> and <code>router</code>, and these three
+<code>tunnelconnect</code> and <code>router</code>, and these four
 keys:</p>
 <table class="keys">
 <thead>
@@ -511,6 +511,19 @@ machines show it, for now.</td>
 <td><em>event</em></td>
 <td><code>""</code></td>
 <td>The event that runs when the brick stops.</td>
+</tr>
+<tr>
+<td><code>place</code></td>
+<td><em>array</em></td>
+<td><code>[]</code></td>
+<td>Where the brick is in the picture of the <code>Topology</code> tab,
+laid out by hand: the middle of its icon, [<em>x</em>, <em>y</em>] in
+points at 100%, <em>y</em> going down, each a whole number from
+-10<sup>5</sup> to 10<sup>5</sup>. Where [0, 0] is doesn't matter: the
+picture starts at the bricks. <code>[]</code> is no place: Graphviz lays
+out a lab whose bricks have none, and a brick without one, in a lab laid
+out by hand, waits in a row under it. Written after the
+connections.</td>
 </tr>
 </tbody>
 </table>

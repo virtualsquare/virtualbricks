@@ -15,10 +15,14 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""Apply and Connect, the commands of the windows that the console lacks."""
+"""
+Apply, Connect and Place, the commands of the windows that the console
+lacks.
+"""
 
 import json
 
+from virtualbricks.bricks import Point
 from virtualbricks.console import ampcommands, ampwire
 from virtualbricks.remote import answers, commands
 from virtualbricks.tests import FakeLogger
@@ -130,3 +134,59 @@ class TestConnect(FollowTestCase):
         )
         self.assertEqual(failure.getErrorMessage(), "No brick named sw9")
         self.assertIsNone(self.tap.plugs[0].sock)
+
+
+class TestPlace(FollowTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.switch = self.factory.new_brick("switch", "sw1")
+        self.tap = self.factory.new_brick("tap", "tap1")
+        self.follow()
+        self.got()
+
+    def place(self, places):
+        return self.call(commands.Place, places=json.dumps(places))
+
+    def test_place(self):
+        answer = self.place({"sw1": [32, 230], "tap1": [0, 0]})
+        self.assertEqual(self.successResultOf(answer), {})
+        self.assertEqual(self.switch.place, Point(32, 230))
+        self.assertEqual(self.tap.place, Point(0, 0))
+        self.assertEqual(self.names(), ["Changed", "Changed", "answer"])
+        # the bricks, not their places
+        self.assertIn("place sw1 tap1", " ".join(self.logger.formatted()))
+
+    def test_no_place(self):
+        self.switch.place = Point(32, 230)
+        self.successResultOf(self.place({"sw1": None}))
+        self.assertIsNone(self.switch.place)
+
+    def test_no_such_brick(self):
+        failure = self.failureResultOf(
+            self.place({"sw1": [1, 2], "sw9": [3, 4]}), ampcommands.NotFound
+        )
+        self.assertEqual(failure.getErrorMessage(), "No brick named sw9")
+        self.assertIsNone(self.switch.place)
+
+    def test_not_a_place(self):
+        failure = self.failureResultOf(
+            self.place({"sw1": [1, 2], "tap1": [1.5, 2]}),
+            ampcommands.BadArgument,
+        )
+        self.assertIn("[1.5, 2] is not a place", failure.getErrorMessage())
+        # all or nothing
+        self.assertIsNone(self.switch.place)
+        self.turn()
+        self.assertEqual(self.names(), [])
+
+    def test_not_an_object(self):
+        for places in ("[]", "{", '"sw1"'):
+            failure = self.failureResultOf(
+                self.call(commands.Place, places=places),
+                ampcommands.BadArgument,
+            )
+            self.assertEqual(
+                failure.getErrorMessage(),
+                f"{places!r} is not an object of places",
+            )

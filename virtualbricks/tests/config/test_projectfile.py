@@ -21,6 +21,7 @@ import os
 from twisted.trial import unittest
 
 from virtualbricks.brickfactory import BRICK_CLASSES
+from virtualbricks.bricks import Point
 from virtualbricks.bricks.eventaction import (
     ShellAction,
     StartAction,
@@ -80,6 +81,7 @@ def build_lab(factory, image_path="/images/deb.qcow2"):
     )
     sw1 = factory.new_brick("switch", "sw1")
     sw1.update_config({"ports": 16, "on_start": "boot"})
+    sw1.place = Point(32, -230)
     sw2 = factory.new_brick("switch", "sw2")
     vm = factory.new_brick("qemu", "vm")
     vm.update_config(
@@ -198,8 +200,13 @@ class TestDocument(ProjectFileTestCase):
         self.assertEqual(bricks["cap"]["connect"], "")
         self.assertNotIn("connect", bricks["wr"])
         self.assertEqual(
-            set(bricks["r"]), {"type", "icon", "on_start", "on_stop"}
+            set(bricks["r"]), {"type", "icon", "on_start", "on_stop", "place"}
         )
+        self.assertEqual(bricks["sw1"]["place"], [32, -230])
+        # none: Graphviz places it
+        self.assertEqual(bricks["r"]["place"], [])
+        # after the connections, with the bricks' own keys first
+        self.assertEqual(list(bricks["tap0"])[-2:], ["connect", "place"])
 
     def test_socket_target(self):
         vm = self.factory.new_brick("qemu", "vm_1")
@@ -376,6 +383,16 @@ class TestNotes(ProjectFileTestCase):
         )
         self.assertNotIn(("bricks", "vm", "nics", 3, "connect"), notes)
         self.assertNotIn(("bricks", "vm", "nics"), notes)
+        self.assertEqual(
+            notes[("bricks", "sw1", "place")],
+            Note(
+                "Where it is in the picture of the Topology tab, laid out by"
+                " hand: the middle of its icon, x and y in points, y going"
+                " down",
+                "default empty",
+            ),
+        )
+        self.assertTrue(notes[("bricks", "sw2", "place")].default)
 
     def test_every_type_says_what_it_is(self):
         for name, cls in BRICK_CLASSES.items():
@@ -649,6 +666,33 @@ class TestLenientReading(ProjectFileTestCase):
         sw1 = factory.get_brick("sw1")
         sw1.changed.notify(sw1)
         self.assertEqual(changed, [sw1])
+
+    def test_places(self):
+        data = self.lab()
+        bricks = data["bricks"]
+        bricks["sw1"]["place"] = [1.5, 2]
+        bricks["sw2"]["place"] = [True, 0]
+        bricks["vm"]["place"] = [3]
+        bricks["tap0"]["place"] = "here"
+        bricks["wan"]["place"] = [-(10**5), 10**5 + 1]
+        bricks["w"]["place"] = [-(10**5), 10**5]
+        # written before the places
+        del bricks["cap"]["place"]
+        factory, _ = self.restore(data)
+        for name in ("sw1", "sw2", "vm", "tap0", "wan", "cap"):
+            self.assertIsNone(factory.get_brick(name).place, name)
+        self.assertEqual(factory.get_brick("w").place, Point(-(10**5), 10**5))
+        limits = "two whole numbers from -100000 to 100000, the brick has none"
+        self.assertEqual(
+            [m for m in self.messages() if "place" in m],
+            [
+                f"bricks.sw1.place: [1.5, 2] is not a place: {limits}",
+                f"bricks.sw2.place: [True, 0] is not a place: {limits}",
+                f"bricks.vm.place: [3] is not a place: {limits}",
+                f"bricks.tap0.place: 'here' is not a place: {limits}",
+                f"bricks.wan.place: [-100000, 100001] is not a place: {limits}",
+            ],
+        )
 
     def test_bricks_heard_after_a_failure(self):
         data = self.lab()

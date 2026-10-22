@@ -547,6 +547,7 @@ Follow             -> project:str? version:str
 Apply              kind:str name:str changes:str links:str
                    extras:str ->
 Connect            source:str target:str -> connected:bool
+Place              places:str ->
 QemuFacts          program:str -> path:str version:str
                    options:str machines:str cpus:str devices:str
                    displays:str audio_drivers:str netdevs:str
@@ -593,6 +594,12 @@ Attach             brick:str console:str ->
 **Connect**
 :   Connect brick *source* to brick *target*, as a drop does: a free plug,
     or a new card of a machine. Whether it could.
+
+**Place**
+:   Give bricks their places in the picture of the Topology tab, laid out
+    by hand, as a brick moved there does: **places** is an object of the
+    names of the bricks to [*x*, *y*], the **place** of the project file,
+    or **null** to take a place away. All or nothing.
 
 **QemuFacts**
 :   What the QEMU program *program*, as **qemu-system-x86_64**, prints:

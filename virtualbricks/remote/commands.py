@@ -89,6 +89,18 @@ class Connect(amp.Command):
     errors = ERRORS
 
 
+class Place(amp.Command):
+    """
+    Give bricks their places in the picture of the Topology tab, laid out by
+    hand, or take them away: ``places``, JSON, an object of the names of the
+    bricks to ``[x, y]``, or ``null`` for no place. All or nothing.
+    """
+
+    arguments = [(b"places", amp.Unicode())]
+    response = []
+    errors = ERRORS
+
+
 # The questions of programs.QEMU_QUESTIONS, whose answers QemuFacts gives.
 QEMU_ANSWERS: Final[tuple[str, ...]] = (
     "version",
@@ -386,6 +398,7 @@ FROM_PROGRAM: tuple[type[amp.Command], ...] = (
     Follow,
     Apply,
     Connect,
+    Place,
     QemuFacts,
     MachineProperties,
     UsbDevices,

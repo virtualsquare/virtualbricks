@@ -325,7 +325,7 @@ word, and dropped at the next save.
 
 Every brick table has a **type**, which is one of **qemu**, **switch**,
 **switchwrapper**, **tap**, **capture**, **wire**, **netemu**,
-**tunnellisten**, **tunnelconnect** and **router**, and these three keys:
+**tunnellisten**, **tunnelconnect** and **router**, and these four keys:
 
 **icon** = *path*, default `""`
 :   An image file to show instead of the icon of the type. Only virtual
@@ -336,6 +336,15 @@ Every brick table has a **type**, which is one of **qemu**, **switch**,
 
 **on_stop** = *event*, default `""`
 :   The event that runs when the brick stops.
+
+**place** = *array*, default `[]`
+:   Where the brick is in the picture of the **Topology** tab, laid out by
+    hand: the middle of its icon, [*x*, *y*] in points at 100%, *y* going
+    down, each a whole number from -10^5 to 10^5. Where [0, 0] is doesn't
+    matter: the picture starts at the bricks. `[]` is no place: Graphviz
+    lays out a lab whose bricks have none, and a brick without one, in a
+    lab laid out by hand, waits in a row under it. Written after the
+    connections.
 
 The other keys are described below for each type.
 

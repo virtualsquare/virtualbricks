@@ -27,6 +27,9 @@ A connection names the socket a plug is in: ``"sw1"`` is the only socket of
 the brick sw1 and ``"vm2:sock_eth1"`` is the socket card sock_eth1 of the
 virtual machine vm2.
 
+A brick laid out by hand in the picture of the Topology tab has its
+``place``: the middle of its icon, ``[x, y]`` in points; ``[]`` is none.
+
 The file starts with a header and has a comment above every key, see
 :func:`project_notes`.
 """
@@ -82,7 +85,7 @@ from virtualbricks.nic import random_mac
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
-    from virtualbricks.bricks import Brick
+    from virtualbricks.bricks import Brick, Point
     from virtualbricks.bricks.event import Event
     from virtualbricks.bricks.plug import Plug
     from virtualbricks.bricks.sock import Sock
@@ -116,6 +119,10 @@ CONNECTION_NOTES = {
     "connect": Note("The socket it's plugged into"),
     "endpoints": Note("The sockets of its two ends, left and right"),
 }
+PLACE_NOTE = (
+    "Where it is in the picture of the Topology tab, laid out by hand: the"
+    " middle of its icon, x and y in points, y going down"
+)
 NIC_NOTES = {
     "kind": Note("The kind of card: plug, socket or hostonly"),
     "connect": Note("The socket it's plugged into"),
@@ -321,6 +328,7 @@ def brick_table(brick: Brick) -> Table:
         table["endpoints"] = [_plug_target(plug) for plug in brick.plugs]
     elif is_virtualmachine(brick):
         table["nics"] = [_nic_table(link) for link in brick.links]
+    table["place"] = [] if brick.place is None else list(brick.place)
     return table
 
 
@@ -385,6 +393,10 @@ def _brick_notes(table: Table) -> Notes:
         result[(key,)] = CONNECTION_NOTES[key]
     elif cls.connections == "nics":
         result.update(_nics_notes(table))
+    if "place" in table:
+        result[("place",)] = Note(
+            PLACE_NOTE, "default empty", table["place"] == []
+        )
     return result
 
 
@@ -511,6 +523,20 @@ def _read_target(value: Value, report: Report, where: str) -> str:
         )
         return ""
     return value
+
+
+def read_place(value: Value, report: Report, where: str) -> Point | None:
+    """The place of a brick, from its table; None if [] or wrong."""
+
+    from virtualbricks.bricks import check_place
+
+    if value == []:
+        return None
+    try:
+        return check_place(value)
+    except ValueError as exc:
+        report.warning(f"{exc}, the brick has none", where)
+        return None
 
 
 def _read_nic(table: Value, report: Report, where: str) -> Nic | None:
@@ -701,8 +727,12 @@ def _read_bricks(factory: BrickFactory, data: Table, report: Report) -> None:
                 report.warning(f"{exc}, brick dropped", where)
                 continue
             quiet.enter_context(brick.muted())
-            ignore = {"type"} | CONNECTION_KEYS[brick.connections]
+            ignore = {"type", "place"} | CONNECTION_KEYS[brick.connections]
             brick.load_config_table(table, report, where, ignore)
+            # a file of format 1 written before the places has none
+            brick.place = read_place(
+                table.get("place", []), report, f"{where}.place"
+            )
             targets = _read_connections(brick, table, report, where)
             connections.append((brick, targets, where))
         # Connect once every socket exists.

@@ -376,6 +376,7 @@ SettingUnset       key:[str]</screen>
 Apply              kind:str name:str changes:str links:str
                    extras:str -&gt;
 Connect            source:str target:str -&gt; connected:bool
+Place              places:str -&gt;
 QemuFacts          program:str -&gt; path:str version:str
                    options:str machines:str cpus:str devices:str
                    displays:str audio_drivers:str netdevs:str
@@ -411,6 +412,10 @@ Attach             brick:str console:str -&gt;</screen>
         <item>
           <title><code>Connect</code></title>
           <p>Connect brick <var>source</var> to brick <var>target</var>, as a drop does: a free plug, or a new card of a machine. Whether it could.</p>
+        </item>
+        <item>
+          <title><code>Place</code></title>
+          <p>Give bricks their places in the picture of the Topology tab, laid out by hand, as a brick moved there does: <code>places</code> is an object of the names of the bricks to [<var>x</var>, <var>y</var>], the <code>place</code> of the project file, or <code>null</code> to take a place away. All or nothing.</p>
         </item>
         <item>
           <title><code>QemuFacts</code></title>

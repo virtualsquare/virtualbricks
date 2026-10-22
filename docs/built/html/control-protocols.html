@@ -503,6 +503,7 @@ tables:</p>
 Apply              kind:str name:str changes:str links:str
                    extras:str -&gt;
 Connect            source:str target:str -&gt; connected:bool
+Place              places:str -&gt;
 QemuFacts          program:str -&gt; path:str version:str
                    options:str machines:str cpus:str devices:str
                    displays:str audio_drivers:str netdevs:str
@@ -555,6 +556,14 @@ another window set.
 <dd>
 Connect brick <em>source</em> to brick <em>target</em>, as a drop does:
 a free plug, or a new card of a machine. Whether it could.
+</dd>
+<dt><code>Place</code></dt>
+<dd>
+Give bricks their places in the picture of the Topology tab, laid out by
+hand, as a brick moved there does: <code>places</code> is an object of
+the names of the bricks to [<em>x</em>, <em>y</em>], the
+<code>place</code> of the project file, or <code>null</code> to take a
+place away. All or nothing.
 </dd>
 <dt><code>QemuFacts</code></dt>
 <dd>

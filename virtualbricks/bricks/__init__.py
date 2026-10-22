@@ -36,9 +36,17 @@ import locale
 import os
 import re
 import shlex
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from contextlib import AbstractContextManager
-from typing import TYPE_CHECKING, Any, ClassVar, Protocol, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    NamedTuple,
+    Protocol,
+    TypeVar,
+    cast,
+)
 
 from twisted.internet import defer, error, protocol, reactor
 from twisted.internet.interfaces import (
@@ -84,9 +92,12 @@ __all__ = [
     "BaseConfig",
     "Brick",
     "BrickConfig",
+    "Point",
     "PrivilegedBrick",
+    "check_place",
     "is_running",
     "must_stop",
+    "set_places",
     "terminal_command",
 ]
 
@@ -120,6 +131,8 @@ console_terminated = (
     "\n{out}\nProcess stderr:\n{err}\n"
 )
 invalid_ack = "ACK received but no command sent."
+# How far a place in the picture goes from (0, 0), either way, in points.
+PLACE_LIMIT = 10**5
 
 
 def _decode(data: bytes | str) -> str:
@@ -475,6 +488,57 @@ def is_running(brick: Brick | Event) -> bool:
     return brick.is_running()
 
 
+class Point(NamedTuple):
+    """
+    A place of a brick in the picture of the Topology tab: the middle of its
+    icon, in points, y going down.
+    """
+
+    x: int
+    y: int
+
+
+def check_place(value: object) -> Point:
+    """
+    A place of a brick in the picture, from a sequence of two whole
+    numbers; ValueError if value isn't one.
+    """
+
+    if (
+        isinstance(value, Sequence)
+        and not isinstance(value, str)
+        and len(value) == 2
+    ):
+        x, y = value
+        # a bool is an int too
+        if all(
+            type(n) is int and -PLACE_LIMIT <= n <= PLACE_LIMIT for n in (x, y)
+        ):
+            return Point(x, y)
+    raise ValueError(
+        f"{value!r} is not a place: two whole numbers from {-PLACE_LIMIT}"
+        f" to {PLACE_LIMIT}"
+    )
+
+
+def set_places(places: Mapping[Brick, Sequence[int] | None]) -> None:
+    """
+    Give bricks their places in the picture, or take them away with None:
+    all or none, ValueError if one isn't a place. Then each brick whose place
+    changed says so.
+    """
+
+    checked = {
+        brick: None if place is None else check_place(place)
+        for brick, place in places.items()
+    }
+    moved = [brick for brick, place in checked.items() if brick.place != place]
+    for brick in moved:
+        brick.place = checked[brick]
+    for brick in moved:
+        brick.changed.notify(brick)
+
+
 def must_stop(brick: Brick) -> bool:
     """
     Whether brick runs a program of Virtualbricks, or is starting one, which
@@ -524,6 +588,9 @@ class Brick(Base):
     # Whether Virtualbricks runs and stops the program of the brick, or
     # another program does: a switch wrapper.
     runs_program: ClassVar[bool] = True
+    # Where it is in the picture of the Topology tab, laid out by hand; None,
+    # it has no place.
+    place: Point | None = None
 
     @classmethod
     def check_name(cls, name: str) -> None:
