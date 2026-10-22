@@ -207,7 +207,7 @@ hub_mode = false  # default</screen>
     </terms>
     <section id="project-settings">
       <title>Project settings</title>
-      <p>The <code>[settings]</code> table. While the project is open, these are the settings in effect, and the Settings window changes them for this project only. A new project starts with a copy of the settings of the project that is open, or with the defaults when none is. An imported project brings the paths of the machine it comes from; the import dialog offers to replace them with those of the open project.</p>
+      <p>The <code>[settings]</code> table. While the project is open, these are the settings in effect, and the Settings window changes them for this project only, as the menu of the Topology tab does <code>curved_links</code>. A new project starts with a copy of the settings of the project that is open, or with the defaults when none is. An imported project brings the paths of the machine it comes from; the import dialog offers to replace them with those of the open project.</p>
       <terms>
         <item>
           <title><code>allow_female_plugs</code> = <var>boolean</var>, default <code>false</code></title>
@@ -223,7 +223,7 @@ hub_mode = false  # default</screen>
         </item>
         <item>
           <title><code>curved_links</code> = <var>boolean</var>, default <code>false</code></title>
-          <p>In a lab laid out by hand, draw the links of the picture as curves that Graphviz routes around the bricks, instead of straight lines.</p>
+          <p>In a lab laid out by hand, draw the links of the picture as curves that Graphviz routes around the bricks, instead of straight lines. The <code>Curved Links</code> item of the menu of the Topology tab changes it.</p>
         </item>
       </terms>
       <p>Older project files have a <code>cow_format</code> key, the format of the private copies of the disks, which are always qcow2 now, and a <code>log_link_loops</code> key, which decided whether a loop in the links was logged, while the bricks on a loop never started: an error says so now. Both are read without a word, and dropped at the next save.</p>

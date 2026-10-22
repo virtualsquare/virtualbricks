@@ -59,6 +59,13 @@ The menu of the bar has the **Layout**: **Left to Right** or **Top to Bottom**,
 where Graphviz places the bricks again after each change, or **By Hand**, where
 each brick stays at its place. **By Hand** gives every brick the place it has
 in the picture; **Left to Right** and **Top to Bottom** take the places away.
+
+In a lab laid out by hand, the links are straight lines, and a line can pass
+behind a brick in its way. **Curved Links**, in the menu, has Graphviz route
+them around the bricks instead, as in the layouts of Graphviz, and moves no
+brick; the project keeps the choice. Two bricks too close for a link to pass
+between them have their links routed around their icons, across their names.
+
 The menu also has **Export as Image…**: a PNG, an SVG or a PDF file of the
 picture at 100%, on white, whatever the zoom and the theme. Exported to the folder of the
 project, the picture can show in its README; see [](readme).

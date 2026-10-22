@@ -186,10 +186,13 @@
 - [ ] Move a brick with the keyboard: the arrows, on a brick with the
   focus (35 §9)
 - [ ] Undo a move with Ctrl+Z (35 §9)
-- [ ] Draw Graphviz's curves around the bricks in a lab laid out by hand,
-  as a choice (35 §9)
 - [ ] Tidy a lab laid out by hand: Graphviz places only the bricks of the
   row, near the bricks they link to (35 §9)
+- [ ] Route the curved links of a big lab in a process of its own, with
+  the old routes shown until the new ones come: 100 bricks wait 0.3 s
+  after each move (36 §10)
+- [ ] Show the curved links that a brick will have during its drag, at
+  the faded copy, before the release (36 §10)
 
 ## Readme
 
@@ -350,6 +353,11 @@
 
 # DONE
 
+- [x] Draw Graphviz's curves around the bricks in a lab laid out by hand,
+  as a choice: Curved Links, in the menu of the Topology tab, kept as
+  curved_links in the settings of the project; Graphviz routes the links
+  and moves no brick, and two bricks too close are routed around their
+  icons (page 36; 35 §9)
 - [x] Move bricks by hand, and keep where they are in the project: the
   drag of a brick in the picture, released over free room, leaves it
   there, lined up with the column or the row of another nearby; the first

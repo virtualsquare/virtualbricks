@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 17:27+0200\n"
+"POT-Creation-Date: 2026-10-22 18:09+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -4770,6 +4770,10 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
 msgid "By Hand"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Curved Links"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py

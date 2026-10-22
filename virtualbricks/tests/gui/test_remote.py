@@ -513,6 +513,8 @@ class TestTheMainWindow(GuiTestCase):
         self.patch(Gtk.Window, "show", lambda widget: None)
         self.copy = MirrorFactory(task.Clock())
         self.copy.project = "ospf"
+        # whole, as after Follow
+        self.copy.settings = follower.settings_table()
         self.quits = []
         self.engine = RemoteEngine(
             self.copy, None, "lab", quit=lambda: self.quits.append(True)

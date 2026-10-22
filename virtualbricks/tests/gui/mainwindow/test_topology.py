@@ -24,7 +24,14 @@ from twisted.internet import defer
 
 from virtualbricks import topology as layouts
 from virtualbricks.bricks import Point, set_places
+from virtualbricks.config.settings import (
+    ProjectSettings,
+    get_setting,
+    set_setting,
+    use_project,
+)
 from virtualbricks.config.workspace import projects
+from virtualbricks.observable import Observable, Signal
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
@@ -58,18 +65,36 @@ def run_idle_calls():
         Gtk.main_iteration()
 
 
+class FakeMachine:
+    """The machine of the bricks, as the tab reads it: the settings."""
+
+    def setting(self, name):
+        return get_setting(name)
+
+
 class FakeEngine:
     """
-    The engine of the main window, as the tab reads it: the workspace; and
-    what it connects and places.
+    The engine of the main window, as the tab reads it: the workspace and
+    the settings; and what it connects, places and sets.
     """
 
     workspace = projects
+    local = True
+    machine = FakeMachine()
 
     def __init__(self):
         self.connected = []
         self.placed = []
+        self.set = []
         self.refused = None
+
+    def set_settings(self, values):
+        self.set.append(values)
+        if self.refused is not None:
+            return defer.fail(self.refused)
+        for name, value in values.items():
+            set_setting(name, value)
+        return defer.succeed(None)
 
     def connect(self, brick, other):
         self.connected.append((brick, other))
@@ -133,6 +158,7 @@ class TopologyTestCase(GuiTestCase):
             return layouts.layout(bricks, direction, measure)
 
         self.patch(topology, "layout", layout)
+        use_project(ProjectSettings())
         self.sw1 = self.factory.new_brick("switch", "sw1")
         self.vm = self.factory.new_brick("qemu", "vm")
         self.vm.connect(self.sw1.socks[0])
@@ -320,6 +346,183 @@ class TestByHand(TopologyTestCase):
         self.assertEqual(self.state(), "LR")
 
 
+class TestCurvedLinks(TopologyTestCase):
+    """Curved Links, in a lab laid out by hand (page 36)."""
+
+    def setUp(self):
+        super().setUp()
+        self.routed = []
+
+        def curved(lab):
+            self.routed.append(lab)
+            return layouts.curved(lab)
+
+        self.patch(topology, "curved", curved)
+        # sw2 in the way of the link from sw1 to vm
+        self.sw2 = self.factory.new_brick("switch", "sw2")
+        self.sw1.place, self.sw2.place = Point(0, 0), Point(200, 0)
+        self.vm.place = Point(400, 0)
+        self.show()
+
+    def curved(self):
+        return self.tab.curved_action.get_state().get_boolean()
+
+    def link(self):
+        [link] = self.view.layout.links
+        return link
+
+    def test_straight_by_default(self):
+        self.assertFalse(self.curved())
+        self.assertTrue(self.tab.curved_action.get_enabled())
+        self.assertEqual(len(self.link().points), 4)
+        self.assertEqual(self.routed, [])
+
+    def test_curved(self):
+        self.tab.curved_action.change_state(GLib.Variant.new_boolean(True))
+        self.assertEqual(self.engine.set, [{"curved_links": True}])
+        self.assertIs(get_setting("curved_links"), True)
+        self.assertTrue(self.curved())
+        # around sw2
+        self.assertGreater(len(self.link().points), 4)
+        self.tab.curved_action.change_state(GLib.Variant.new_boolean(False))
+        self.assertIs(get_setting("curved_links"), False)
+        self.assertFalse(self.curved())
+        self.assertEqual(len(self.link().points), 4)
+
+    def test_greyed_while_graphviz_lays_out(self):
+        set_setting("curved_links", True)
+        self.choose("TB")
+        self.assertFalse(self.tab.curved_action.get_enabled())
+        # it keeps its state for a lab by hand
+        self.assertTrue(self.curved())
+        self.choose("hand")
+        self.assertTrue(self.tab.curved_action.get_enabled())
+        # the places of Top to Bottom, routed
+        self.assertEqual(len(self.routed), 2)
+        self.assertEqual(
+            self.view.layout.links, layouts.curved(self.routed[-1]).links
+        )
+
+    def test_refused(self):
+        self.engine.refused = ValueError("no")
+        self.tab.curved_action.change_state(GLib.Variant.new_boolean(True))
+        self.assertEqual(
+            self.logger.formatted(), ["Cannot change curved_links"]
+        )
+        self.assertFalse(self.curved())
+        self.assertEqual(len(self.link().points), 4)
+
+    def test_changed_elsewhere(self):
+        # as the console changes it
+        set_setting("curved_links", True)
+        self.assertTrue(self.curved())
+        self.assertGreater(len(self.link().points), 4)
+        # another setting changes nothing
+        set_setting("qemu_path", "/opt")
+        self.assertEqual(len(self.routed), 1)
+
+    def test_hidden(self):
+        self.tab.on_left()
+        set_setting("curved_links", True)
+        self.assertTrue(self.curved())
+        self.assertEqual(self.routed, [])
+        self.tab.on_shown()
+        self.assertGreater(len(self.link().points), 4)
+
+    def test_not_after_quit(self):
+        self.tab.on_quit()
+        set_setting("curved_links", True)
+        self.assertFalse(self.curved())
+        self.assertEqual(self.routed, [])
+
+    def test_routed_again_only_when_the_lab_changes(self):
+        set_setting("curved_links", True)
+        self.assertEqual(len(self.routed), 1)
+        routes = self.view.layout.links
+        # as when a brick starts or stops
+        self.factory.brick_changed.notify(self.vm)
+        self.assertEqual(len(self.routed), 1)
+        self.assertEqual(self.view.layout.links, routes)
+        # a move
+        set_places({self.vm: Point(400, 200)})
+        self.assertEqual(len(self.routed), 2)
+        # a link
+        self.vm.connect(self.sw2.socks[0])
+        self.assertEqual(len(self.routed), 3)
+        self.assertEqual(len(self.view.layout.links), 2)
+
+
+class Copy:
+    """The copy of the project there: its settings."""
+
+    def __init__(self):
+        self.settings = {"curved_links": False}
+        self.settings_changed = Signal(Observable(), "settings-changed")
+
+    def take_settings(self, values):
+        self.settings = values
+        self.settings_changed.notify(self)
+
+
+class Machine:
+    def __init__(self, copy):
+        self.copy = copy
+
+    def setting(self, name):
+        return self.copy.settings[name]
+
+
+class EngineThere(FakeEngine):
+    """The engine of the windows of --connect: what it sends there."""
+
+    local = False
+
+    def __init__(self):
+        super().__init__()
+        self.factory = Copy()
+        self.machine = Machine(self.factory)
+
+    def set_settings(self, values):
+        self.set.append(values)
+        return defer.succeed(None)
+
+
+class TestCurvedLinksThere(TopologyTestCase):
+    """Curved Links in the windows of --connect (page 36)."""
+
+    def setUp(self):
+        super().setUp()
+        self.there = EngineThere()
+        self.tab = TopologyTab(
+            self.there, self.window, self.factory, self.configured.append
+        )
+        self.addCleanup(self.tab.destroy)
+        self.view = self.tab.view
+        self.sw1.place = Point(0, 0)
+        self.show()
+
+    def curved(self):
+        return self.tab.curved_action.get_state().get_boolean()
+
+    def test_sent_there(self):
+        self.tab.curved_action.change_state(GLib.Variant.new_boolean(True))
+        self.assertEqual(self.there.set, [{"curved_links": True}])
+        # until it comes back
+        self.assertFalse(self.curved())
+
+    def test_follows_there(self):
+        self.there.factory.take_settings({"curved_links": True})
+        self.assertTrue(self.curved())
+        # the settings here are not those there
+        set_setting("curved_links", False)
+        self.assertTrue(self.curved())
+
+    def test_not_after_quit(self):
+        self.tab.on_quit()
+        self.there.factory.take_settings({"curved_links": True})
+        self.assertFalse(self.curved())
+
+
 class TestTheBar(TopologyTestCase):
 
     def test_the_level(self):
@@ -497,6 +700,12 @@ class TestTheMenu(TopologyTestCase):
                     None,
                     None,
                     None,
+                    [("Curved Links", "topology.curved", None, None)],
+                ),
+                (
+                    None,
+                    None,
+                    None,
                     [("Export as Image…", "topology.export", None, None)],
                 ),
             ],
@@ -508,7 +717,9 @@ class TestTheMenu(TopologyTestCase):
 
     def test_the_actions_of_the_tab(self):
         group = self.tab.get_action_group("topology")
-        self.assertEqual(sorted(group.list_actions()), ["export", "layout"])
+        self.assertEqual(
+            sorted(group.list_actions()), ["curved", "export", "layout"]
+        )
         self.assertEqual(group.get_action_state("layout").get_string(), "LR")
 
 

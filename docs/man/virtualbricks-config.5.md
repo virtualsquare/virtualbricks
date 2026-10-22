@@ -262,11 +262,11 @@ The file has these top-level keys:
 ## Project settings
 
 The **[settings]** table. While the project is open, these are the settings
-in effect, and the Settings window changes them for this project only. A new
-project starts with a copy of the settings of the project that is open, or
-with the defaults when none is. An imported project brings the paths of the
-machine it comes from; the import dialog offers to replace them with those of
-the open project.
+in effect, and the Settings window changes them for this project only, as
+the menu of the Topology tab does **curved_links**. A new project starts with
+a copy of the settings of the project that is open, or with the defaults when
+none is. An imported project brings the paths of the machine it comes from;
+the import dialog offers to replace them with those of the open project.
 
 **allow_female_plugs** = *boolean*, default `false`
 :   Allow plugs to connect to the socket cards of virtual machines, not only
@@ -281,6 +281,7 @@ the open project.
 **curved_links** = *boolean*, default `false`
 :   In a lab laid out by hand, draw the links of the picture as curves
     that Graphviz routes around the bricks, instead of straight lines.
+    The **Curved Links** item of the menu of the Topology tab changes it.
 
 Older project files have a **cow_format** key, the format of the private
 copies of the disks, which are always qcow2 now, and a **log_link_loops**
