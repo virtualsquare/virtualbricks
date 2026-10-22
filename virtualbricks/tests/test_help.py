@@ -186,6 +186,23 @@ class TestTheDiagrams(PagesTestCase):
             for line in ascii.splitlines():
                 self.assertLessEqual(len(line), 64, f"{page}, {svg}: {line}")
 
+    def test_yelp_shows_each_as_a_listing(self):
+        # Yelp centers each line of what a figure holds, which breaks the
+        # columns of the ASCII: a listing keeps them
+        listings = []
+        for name in page_names():
+            root = ET.parse(os.path.join(PAGES, f"{name}.page")).getroot()
+            for figure in root.iter(f"{MALLARD}figure"):
+                self.assertIsNone(figure.find(f"{MALLARD}screen"), name)
+            listings += [
+                listing.findtext(f"{MALLARD}screen")
+                for listing in root.iter(f"{MALLARD}listing")
+            ]
+        self.assertEqual(
+            sorted(listings),
+            sorted(ascii for _page, _svg, ascii in self.diagrams()),
+        )
+
 
 class TestTheKeys(PagesTestCase):
     """The keys of virtualbricks-config(5), in its web page."""
@@ -218,13 +235,12 @@ class TestTheFigures(PagesTestCase):
     """The pictures of docs/guide/figures/, which the end-to-end tests take."""
 
     def figures(self):
-        """(page, figure) of each picture of the pages, not a diagram."""
+        """(page, figure) of each picture of the pages."""
 
         for name in page_names():
             root = ET.parse(os.path.join(PAGES, f"{name}.page")).getroot()
             for figure in root.iter(f"{MALLARD}figure"):
-                if figure.find(f"{MALLARD}screen") is None:
-                    yield name, figure
+                yield name, figure
 
     def test_each_picture_is_shown_once(self):
         shown = sorted(

@@ -192,8 +192,10 @@ the token.
 :::
 ````
 
-  The man page and Yelp show the ASCII, then the paragraph, the caption of
-  the drawing in the HTML: it says what both show. The drawing is an SVG
+  The man page shows the ASCII, then the paragraph, the caption of the
+  drawing in the HTML: it says what both show. Yelp shows the paragraph
+  above the ASCII, as a listing, not a figure: Yelp centers each line of
+  what a figure holds, which would break the columns. The drawing is an SVG
   file of `man/figures/`, put inline in the page, so that it takes the
   colours of the page, light or dark, from the classes of `.dg` in
   `templates/style.css`. With `.listing` too, as

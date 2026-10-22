@@ -1043,8 +1043,8 @@ class TestReferenceHtml(BuildTestCase):
         self.assertNotIn("+-----+", html)
         page = self.built(markdown, "mallard")
         self.assertIn(
-            "<figure> <desc>The <code>lab</code>, drawn.</desc> "
-            "<screen>+-----+ | lab | +-----+</screen> </figure>",
+            "<listing> <desc>The <code>lab</code>, drawn.</desc> "
+            "<screen>+-----+ | lab | +-----+</screen> </listing>",
             page,
         )
 

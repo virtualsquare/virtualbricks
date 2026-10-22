@@ -32,7 +32,7 @@
         <p>On the same connection, once <code>Hello</code> agrees on it: a typed command for each command of the console, as <code>BrickStart</code> with its names, and the commands of the windows of <code>virtualbricks --connect</code>: <code>Follow</code>, which sends the project, then each change, and the others. Still in development: its commands may change in any way, without notice, see <code>VERSIONS</code>.</p>
       </item>
     </terms>
-    <figure>
+    <listing>
       <desc>One socket speaks lines of JSON or the boxes of AMP, as its description says. On AMP, a connection starts in protocol 1, and <code>Hello</code> takes it to protocol 2.</desc>
       <screen>  +--------------+  +-------------+---------------------------+
   |     JSON     |  |    AMP 1    |           AMP 2           |
@@ -47,7 +47,7 @@
   |  a unix, tcp or ssl socket of --listen                    |
   +-----------------------------------------------------------+
      protocol=json      protocol=amp, the default</screen>
-    </figure>
+    </listing>
     <p>A <code>tcp</code> socket answers only a client that proves first that it knows the token of Virtualbricks, in either format. This page describes the protocols for whoever writes a client: the sockets (<code>THE SOCKETS</code>), the proof of the token (<code>THE TOKEN</code>), the JSON protocol (<code>THE JSON PROTOCOL</code>), the boxes of AMP (<code>AMP</code>) and the commands of its two protocols (<code>AMP PROTOCOL 1</code>, <code>AMP PROTOCOL 2</code>), how they change (<code>VERSIONS</code>) and how much they carry (<code>LIMITS</code>). How to open the sockets, and which, is in <code>THE CONTROL SOCKET</code> of <link xref="command-line">virtualbricks(1)</link>.</p>
   </section>
   <section id="the-sockets">
@@ -63,7 +63,7 @@
     <p>Neither end sends the token. Each proves that it knows it, over two nonces, a random number of each end in lowercase hex digits: Virtualbricks sends one of 64 digits, and the client's has from 32 to 128. The proof of a <var>side</var>, <code>client</code> or <code>server</code>, is the HMAC-SHA256, under the token in UTF-8, of the text</p>
     <screen>virtualbricks side S C</screen>
     <p>where <var>S</var> is the nonce of Virtualbricks and <var>C</var> that of the client, one space between the words, written in lowercase hex digits:</p>
-    <figure>
+    <listing>
       <desc>The messages of the proof come before any other on a socket that asks for the token.</desc>
       <screen>  client                               Virtualbricks
     |                                        |
@@ -79,7 +79,7 @@
     |    "virtualbricks server S C")         |
   checks it: if wrong,
   closes the connection</screen>
-    </figure>
+    </listing>
     <p>The client proves first, and Virtualbricks then proves it to the client: a program that took the port in place of Virtualbricks doesn't know the token, so it can't, and the client doesn't send it any command. With new nonces each time, a proof is good for one connection only, and nobody who reads it learns the token. A client has 10 seconds from connecting to give a right proof; then the connection is closed.</p>
     <p>In a shell, <code>openssl</code>(1) computes the proof of the client:</p>
     <screen>printf 'virtualbricks client %s %s' "$nonce" "$mine" |
@@ -132,7 +132,7 @@
 {"protocol": 1, "version": "3.0.0", "pid": 4200,
  "project": "lab1", "proof": "51b7..."}</screen>
       <p>A wrong proof, a line that isn't one, or none in 10 seconds gets an answer with <code>ok</code> <code>false</code> and why, as "Wrong token", and the connection closes.</p>
-      <figure>
+      <listing>
         <desc>The JSON protocol: the proof first, on a socket that asks for it; the greeting; then each request gets its answer, in the order the requests came.</desc>
         <screen>  client                               Virtualbricks
     |                                        |
@@ -148,7 +148,7 @@
     |--- {"line": "status"} ----------------&gt;|
     |&lt;-- {"ok": true, "lines": [...]} -------|  in the same
     |&lt;-- {"ok": true, "lines": [...]} -------|  order</screen>
-      </figure>
+      </listing>
     </section>
   </section>
   <section id="amp">
@@ -156,7 +156,7 @@
     <section id="boxes">
       <title>Boxes</title>
       <p>AMP carries boxes: a key and its value, then another, and so on, up to a key of no bytes. Each key and each value has its length first, in two bytes, the high byte first: a key has from 1 to 255 bytes, a value from 0 to 65535. A request of <code>Hello</code>, and its answer:</p>
-      <figure>
+      <listing>
         <desc>The boxes of a request of <code>Hello</code> and of its answer, byte by byte: the lengths in hex, the keys and the values as text.</desc>
         <screen>   length  key         length  value
   +-------+-----------+-------+-----------------------+
@@ -172,7 +172,7 @@
   | 00 07 | project   | 00 04 | lab1                  |
   | 00 00 |              the end of the box           |
   +-------+-----------+-------+-----------------------+</screen>
-      </figure>
+      </listing>
       <p>A request has <code>_ask</code>, a tag that the program chooses, different from those of its requests that wait, and <code>_command</code>, the name of the command; then its arguments, in any order. Its answer has <code>_answer</code>, the same tag, and the values of the answer; or, if the command failed, <code>_error</code>, the tag, <code>_error_code</code> and <code>_error_description</code>, why. The tags pair the answers with the requests, which may be answered in another order. A request without <code>_ask</code> wants no answer: the pushes of <code>Follow</code> are such. A program written with Twisted has all this in <code>twisted.protocols.amp</code>; in Python without Twisted, <code>virtualbricks.console.ampbox</code> reads and writes the boxes.</p>
     </section>
     <section id="values">
@@ -256,7 +256,7 @@ Authenticate  nonce:str proof:str -&gt; proof:str</screen>
         <p><code>Challenge</code> and <code>Authenticate</code>: the socket takes no token, and the connection goes on; or the proof is wrong, or <code>Authenticate</code> came without a <code>Challenge</code> before it, and the connection closes.</p>
       </item>
     </terms>
-    <figure>
+    <listing>
       <desc>A session over AMP: the proof of the token, <code>Hello</code>, then the commands of protocols 1 and 2 on the same connection.</desc>
       <screen>  program                              Virtualbricks
     |                                        |
@@ -272,7 +272,7 @@ Authenticate  nonce:str proof:str -&gt; proof:str</screen>
     |&lt;-- lines [...] ------------------------|
     |--- BrickStart name ["vm1"] -----------&gt;|  protocol 2
     |&lt;-- lines [...] ------------------------|</screen>
-    </figure>
+    </listing>
   </section>
   <section id="amp-protocol-2">
     <title>AMP protocol 2</title>
@@ -529,7 +529,7 @@ Quitting</screen>
         </item>
       </terms>
       <p><code>Follow</code> sends <code>Opened</code>, a <code>Changed</code> for each image, brick and event, then <code>Synced</code>: the images first, then the bricks, each after those it plugs into, then the events. Then the last 500 messages of the log, and the answer. After that, Virtualbricks gathers what changes and sends it once a turn of its loop, each object once, as it is then: the renames and the deletes first, in the order they came, then what changed, in the order above, the settings, the messages of the log, and <code>Quitting</code>. Before it answers a command of the connection, it sends what waits: once a command is answered, the program has what it changed. When another project opens, the copy starts over, with <code>Opened</code>; <code>Follow</code> again does the same. A push longer than a value carries isn't sent, and the log says so.</p>
-      <figure>
+      <listing>
         <desc><code>Follow</code> and its pushes, which want no answer. What a command changed comes before its answer.</desc>
         <screen>  program                              Virtualbricks
     |                                        |
@@ -551,12 +551,12 @@ Quitting</screen>
     |&lt;-- Logged -----------------------------|
     |                                        |
     |&lt;-- Quitting ---------------------------|  at the end</screen>
-      </figure>
+      </listing>
     </section>
     <section id="attach">
       <title>Attach</title>
       <p><code>Attach</code> joins the program to a console of a running brick: <code>monitor</code>, its control monitor, or <code>serial</code>, the serial socket of a machine. Virtualbricks connects to the console, then answers; from then on, the connection carries the bytes of the console both ways, and nothing else: AMP's <code>ProtocolSwitchCommand</code>. When either end closes, so does the other. So a program opens a new connection for each console, proves the token if asked, agrees on protocol 2 with <code>Hello</code>, then calls <code>Attach</code>. <code>NOT_FOUND</code> says there is no such brick, <code>BAD_ARGUMENT</code> that it doesn't run or has no such console, <code>COMMAND_FAILED</code> that Virtualbricks can't reach the console. The windows of <code>virtualbricks --connect</code> join the connection to a terminal of their own, as <code>vdeterm</code>(1):</p>
-      <figure>
+      <listing>
         <desc><code>Attach</code>: once it answers, the connection carries only the bytes of the console.</desc>
         <screen>  terminal     program            Virtualbricks     console
      |            |                     |              |
@@ -564,7 +564,7 @@ Quitting</screen>
      |            |   console monitor -&gt;|-- connects -&gt;|
      |            |&lt;----------- answer -|              |
      |&lt;= bytes ==&gt;|&lt;====== bytes ======&gt;|&lt;== bytes ===&gt;|</screen>
-      </figure>
+      </listing>
     </section>
   </section>
   <section id="versions">

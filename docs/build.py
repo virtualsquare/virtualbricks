@@ -751,7 +751,9 @@ class ReferenceWriter(MallardWriter):
             raise Error(f"a div of class {' '.join(classes)} {attrs}")
         code, caption, _path = drawing(attrs, blocks)
         desc = self.para("desc", caption)
-        return [Element("figure", children=[desc] + self.block(code))]
+        # a listing, not a figure: Yelp centers each line of what a figure
+        # holds, which breaks the columns of the ASCII
+        return [Element("listing", children=[desc] + self.block(code))]
 
     def synopsis(self, block):
         """The lines of the synopsis: a paragraph for each."""
