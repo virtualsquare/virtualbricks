@@ -124,9 +124,10 @@ class FakeMenus:
 
 
 class FakeDialog:
-    def __init__(self, filename, kind=None):
+    def __init__(self, filename, kind=None, faded="false"):
         self.filename = filename
         self.kind = kind
+        self.faded = faded
         self.destroyed = False
 
     def get_filename(self):
@@ -134,6 +135,10 @@ class FakeDialog:
 
     def get_filter(self):
         return self.kind
+
+    def get_choice(self, choice):
+        assert choice == "faded", choice
+        return self.faded
 
     def destroy(self):
         self.destroyed = True
@@ -838,10 +843,10 @@ class TestExport(TopologyTestCase):
         self.exports = []
         self.error = None
 
-        def export(lab, filename, font):
+        def export(lab, filename, font, faded):
             if self.error is not None:
                 raise self.error
-            self.exports.append((lab, filename, font.to_string()))
+            self.exports.append((lab, filename, font.to_string(), faded))
 
         self.patch(picture, "export", export)
         self.tab.on_shown()
@@ -852,8 +857,13 @@ class TestExport(TopologyTestCase):
 
     def test_export(self):
         self.tab.export("lab.svg")
+        self.tab.export("lab.pdf", faded=True)
         self.assertEqual(
-            self.exports, [(self.view.layout, "lab.svg", self.font())]
+            self.exports,
+            [
+                (self.view.layout, "lab.svg", self.font(), False),
+                (self.view.layout, "lab.pdf", self.font(), True),
+            ],
         )
         self.assertEqual(self.logger.formatted(), [])
 
@@ -887,13 +897,29 @@ class TestExport(TopologyTestCase):
             dialog, Gtk.ResponseType.OK, {kind: ".pdf"}
         )
         self.assertEqual(
-            [filename for _, filename, _ in self.exports],
+            [filename for _, filename, _, _ in self.exports],
             ["lab.png", "lab.pdf"],
         )
         dialog = FakeDialog("other.png")
         self.tab.on_export_response(dialog, Gtk.ResponseType.CANCEL, {})
         self.assertTrue(dialog.destroyed)
         self.assertEqual(len(self.exports), 2)
+
+    def test_the_stopped_bricks_of_the_dialog(self):
+        self.assertFalse(self.tab.faded)
+        dialog = FakeDialog("lab.png", faded="true")
+        self.tab.on_export_response(dialog, Gtk.ResponseType.OK, {})
+        self.assertTrue(self.tab.faded)
+        # a Cancel keeps the choice of the last export
+        dialog = FakeDialog("lab.png", faded="false")
+        self.tab.on_export_response(dialog, Gtk.ResponseType.CANCEL, {})
+        self.assertTrue(self.tab.faded)
+        dialog = FakeDialog("lab.png", faded="false")
+        self.tab.on_export_response(dialog, Gtk.ResponseType.OK, {})
+        self.assertFalse(self.tab.faded)
+        self.assertEqual(
+            [faded for _, _, _, faded in self.exports], [True, False]
+        )
 
     def chooser(self):
         self.tab.export_action.activate(None)
@@ -933,6 +959,31 @@ class TestExport(TopologyTestCase):
             [kind.get_name() for kind in chooser.list_filters()],
             ["PNG image", "SVG image", "PDF document"],
         )
+
+    def check_boxes(self, widget):
+        if isinstance(widget, Gtk.CheckButton):
+            yield widget
+        if isinstance(widget, Gtk.Container):
+            for child in widget.get_children():
+                yield from self.check_boxes(child)
+
+    def test_fade_stopped_bricks(self):
+        chooser = self.chooser()
+        [box] = [
+            box
+            for box in self.check_boxes(chooser)
+            if box.get_label() == "Fade stopped bricks"
+        ]
+        # every brick in colour at first
+        self.assertFalse(box.get_active())
+        self.assertEqual(chooser.get_choice("faded"), "false")
+        box.set_active(True)
+        self.assertEqual(chooser.get_choice("faded"), "true")
+        chooser.destroy()
+        # the choice of the last export
+        self.tab.faded = True
+        chooser = self.chooser()
+        self.assertEqual(chooser.get_choice("faded"), "true")
 
     def test_what_each_format_shows(self):
         chooser = self.chooser()

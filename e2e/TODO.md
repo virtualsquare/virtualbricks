@@ -375,6 +375,11 @@ that the tests can't do yet: those needs come first.
   the file is a PNG; needs typing for the path
   "The picture of the lab exported as an image is a PNG file",
   `topology.feature`
+- [x] Export the picture with the stopped bricks in colour, then grey
+  with Fade stopped bricks, which the chooser keeps ticked; the colour
+  read in the pixels of the file
+  "The stopped bricks of the picture exported are in colour, or grey with
+  Fade stopped bricks, which stays ticked", `topology.feature`
 - [ ] Connect two bricks by dropping one on the other in the picture
   the row of the brick dragged says "on sw1"; AT-SPI sees the drawing
   area but no brick in it, and PyGObject can't give it an accessible

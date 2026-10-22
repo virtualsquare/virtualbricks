@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 19:12+0200\n"
+"POT-Creation-Date: 2026-10-22 22:19+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -4660,6 +4660,10 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
 msgid "Export as Image"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Fade stopped bricks"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/window.py

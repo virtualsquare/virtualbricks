@@ -313,10 +313,10 @@ class TestExport(PictureTestCase):
     def path(self, name):
         return os.path.join(self.mktemp() + "-dir", name)
 
-    def export(self, name):
+    def export(self, name, faded=False):
         path = self.path(name)
         os.makedirs(os.path.dirname(path))
-        export(self.lab, path, self.font)
+        export(self.lab, path, self.font, faded)
         return path
 
     def start(self, path, size):
@@ -374,27 +374,50 @@ class TestExport(PictureTestCase):
             for dy in range(-ICON // 2 + 2, ICON // 2 - 2, 2)
         }
 
+    def coloured(self, colours):
+        return any(len({r, g, b}) > 1 for r, g, b in colours)
+
+    def grey(self, colours):
+        return all(abs(r - g) <= 2 and abs(g - b) <= 2 for r, g, b in colours)
+
+    def darkest_of_name(self, surface, name):
+        node = next(n for n in self.lab.nodes if n.brick.name == name)
+        top = MARGIN + node.y - node.height / 2 + ICON
+        return sum(
+            min(
+                (
+                    self.pixel(surface, MARGIN + node.x + dx, top + dy)
+                    for dx in range(-15, 15)
+                    for dy in range(0, 20)
+                ),
+                key=sum,
+            )
+        )
+
     def test_on_white_in_light_colours(self):
         surface = cairo.ImageSurface.create_from_png(self.export("lab.png"))
         self.assertEqual(self.pixel(surface, 1, 1), (255, 255, 255))
-        coloured = self.icon_colours(surface, "sw1")
-        self.assertTrue(any(len({r, g, b}) > 1 for r, g, b in coloured))
-        grey = self.icon_colours(surface, "sw2")
-        self.assertTrue(
-            all(abs(r - g) <= 2 and abs(g - b) <= 2 for r, g, b in grey)
+        self.assertTrue(self.coloured(self.icon_colours(surface, "sw1")))
+        # stopped, in colour too
+        self.assertTrue(self.coloured(self.icon_colours(surface, "sw2")))
+        # the names in dark text, both
+        self.assertLess(self.darkest_of_name(surface, "sw1"), 3 * 120)
+        self.assertEqual(
+            self.darkest_of_name(surface, "sw2"),
+            self.darkest_of_name(surface, "sw1"),
         )
-        # the names in dark text
-        node = next(n for n in self.lab.nodes if n.brick.name == "sw1")
-        top = MARGIN + node.y - node.height / 2 + ICON
-        darkest = min(
-            (
-                self.pixel(surface, MARGIN + node.x + dx, top + dy)
-                for dx in range(-15, 15)
-                for dy in range(0, 20)
-            ),
-            key=sum,
+
+    def test_the_stopped_bricks_faded(self):
+        surface = cairo.ImageSurface.create_from_png(
+            self.export("lab.png", faded=True)
         )
-        self.assertLess(sum(darkest), 3 * 120)
+        self.assertTrue(self.coloured(self.icon_colours(surface, "sw1")))
+        self.assertTrue(self.grey(self.icon_colours(surface, "sw2")))
+        # the name of the stopped brick lighter
+        self.assertGreater(
+            self.darkest_of_name(surface, "sw2"),
+            self.darkest_of_name(surface, "sw1") + 3 * 40,
+        )
 
     def test_a_folder_not_there(self):
         for name in ("lab.png", "lab.svg", "lab.pdf"):

@@ -203,8 +203,11 @@ The steps of the picture of the lab, in the tab Topology:
 | `When I zoom the picture of the lab back to 100%` | The tab Topology, then its zoom level, whose tooltip says Zoom to 100% |
 | `Then the zoom level of the picture of the lab is 150%` | The zoom level of the tab says it, as the screen readers read it: AT-SPI can't see the drawing itself |
 | `When I export the picture of the lab to lab.png of my home folder, typing its path` | The tab Topology, More, then Export as Image…; in the file chooser, the path typed in Name in place of the name it suggests, then Save, and it closes |
+| `When I export the picture of the lab to faded.png of my home folder, typing its path, with Fade stopped bricks ticked` | The same, with the check box Fade stopped bricks of the file chooser ticked before Save, if it isn't |
 | `When I choose Right Angles for the links in the menu of the picture of the lab` | The tab Topology, More, then the item of Links, a radio button in the menu: Straight, Curved or Right Angles |
 | `Then the file lab.png of my home folder is a PNG image, not blank` | The file has the bytes of a PNG at its start, cairo reads it, and its pixels aren't all alike |
+| `Then the picture in lab.png of my home folder is in colour` | A hundred of its pixels at least have their red, green and blue 40 apart or more |
+| `Then the picture in faded.png of my home folder is grey` | Each of its pixels has its red, green and blue 12 apart at most: the ink of the links and the names is 8 apart |
 | `When I drag the picture of the lab 100 pixels to the left` | A press on the background, under the bricks, which are a row in the middle of its height, a move to the left or to the right, and a release; the picture must be wider than the tab |
 | `Then the picture of the lab moved 100 pixels to the left` | Its horizontal scroll bar moved as much the other way |
 | `Given the project new_project has the bricks, laid out by hand`, with a table under it | The folder of the project in the workspace, with a `project.toml` of the bricks of the table: the name of each, its type and its place, as `project.toml` writes it; before Virtualbricks starts, which opens `new_project` at its first start |

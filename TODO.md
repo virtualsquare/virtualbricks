@@ -164,8 +164,6 @@
   view is (06 §9)
 - [ ] Show the events in the picture, next to the bricks they start
   (08 §10)
-- [ ] Export the picture as if all the bricks were running, an option of
-  Export as Image: no brick grey and faded
 - [ ] Say why two bricks don't connect, in the words of a drag: "tap1 is
   plugged into sw1 already", "two machines connect through a switch"
   (34 §9)
@@ -353,6 +351,10 @@
 
 # DONE
 
+- [x] Export the picture as if all the bricks were running: every brick
+  in colour by default, or the stopped ones grey and faded with Fade
+  stopped bricks, a check box of the chooser of Export as Image, kept
+  until the quit (page 6, Since then)
 - [x] Choose the lines of the links in the picture of the lab: Straight,
   Curved or Right Angles, the Links of the menu of the Topology tab, in
   every layout, kept as link_lines in the settings of the project, curved

@@ -32,6 +32,18 @@ Feature: Topology
     And I export the picture of the lab to lab.png of my home folder, typing its path
     Then the file lab.png of my home folder is a PNG image, not blank
 
+  Scenario: The stopped bricks of the picture exported are in colour, or grey with Fade stopped bricks, which stays ticked
+    Given Virtualbricks is running
+    When I add the switch sw1
+    And I add the switch sw2
+    And I join sw1 and sw2 with the wire w1
+    And I export the picture of the lab to lab.png of my home folder, typing its path
+    Then the picture in lab.png of my home folder is in colour
+    When I export the picture of the lab to faded.png of my home folder, typing its path, with Fade stopped bricks ticked
+    Then the picture in faded.png of my home folder is grey
+    When I export the picture of the lab to again.png of my home folder, typing its path
+    Then the picture in again.png of my home folder is grey
+
   Scenario: A brick moved in the picture of the lab keeps its new place in the project
     Given the project new_project has the bricks, laid out by hand
       | Name | Type   | Place    |

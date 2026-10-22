@@ -28,7 +28,8 @@ pointer, or solid to the brick it connects to, on a disc too; or dashed to
 a faded copy of the brick on a disc, over the bricks, where a move puts it,
 with thin guides to the bricks it lines up with. The tab draws at its zoom
 in the colours of the theme. A file gets the lab at 100%, on white, in the
-colours of a light theme, as PNG, SVG or PDF by the extension of its name.
+colours of a light theme, as PNG, SVG or PDF by the extension of its name;
+its stopped bricks are in colour too, unless they are asked faded.
 """
 
 from __future__ import annotations
@@ -187,13 +188,15 @@ def draw(
     icons: Icons,
     hover: Node | None = None,
     line: Line | None = None,
+    faded: bool = True,
 ) -> None:
     """
     Draw a layout at a zoom, from origin, a point (x, y) of cr.
 
     font is the names' at 100%; text(name) gives a Pango layout of a name
     to draw with cr. hover is the node on a disc, if any; line, the line of
-    a brick dragged, whose ends are on discs too.
+    a brick dragged, whose ends are on discs too. Without faded, the stopped
+    bricks are drawn as the running ones.
     """
 
     ox, oy = origin
@@ -228,7 +231,7 @@ def draw(
             _guide(cr, guide)
         cr.restore()
     for node in layout.nodes:
-        running = is_running(node.brick)
+        running = is_running(node.brick) or not faded
         top = node.y - node.height / 2
         if any(node is disc for disc in discs):
             cr.set_source_rgba(*palette.selection, HOVER_ALPHA)
@@ -250,7 +253,8 @@ def draw(
     # the names at the size of the zoom, laid out by Pango at that size
     font = scaled_font(font, zoom)
     for node in layout.nodes:
-        alpha = 1.0 if is_running(node.brick) else STOPPED_ALPHA
+        running = is_running(node.brick) or not faded
+        alpha = 1.0 if running else STOPPED_ALPHA
         name = text(node.brick.name)
         name.set_font_description(font)
         name.set_width(round(node.width * zoom * Pango.SCALE))
@@ -300,10 +304,16 @@ def _ghost(
     cr.restore()
 
 
-def export(layout: Layout, filename: str, font: Pango.FontDescription) -> None:
+def export(
+    layout: Layout,
+    filename: str,
+    font: Pango.FontDescription,
+    faded: bool = False,
+) -> None:
     """
-    Write the lab at 100%, on white, in a light theme's colours. The
-    extension of filename chooses the format; another raises ValueError.
+    Write the lab at 100%, on white, in a light theme's colours, its stopped
+    bricks grey and faded only if faded. The extension of filename chooses
+    the format; another raises ValueError.
     """
 
     extension = os.path.splitext(filename)[1].lower()
@@ -327,7 +337,17 @@ def export(layout: Layout, filename: str, font: Pango.FontDescription) -> None:
         result.set_text(name, -1)
         return result
 
-    draw(cr, layout, 1.0, (MARGIN, MARGIN), LIGHT, font, text, Icons())
+    draw(
+        cr,
+        layout,
+        1.0,
+        (MARGIN, MARGIN),
+        LIGHT,
+        font,
+        text,
+        Icons(),
+        faded=faded,
+    )
     if extension == ".png":
         surface.write_to_png(filename)
     surface.finish()

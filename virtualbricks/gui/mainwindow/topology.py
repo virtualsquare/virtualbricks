@@ -33,6 +33,10 @@ project says; Links, in the menu, sets it (page 36). In a lab laid out by
 hand, Graphviz routes the curves and the right angles around the bricks; the
 routes stay while the boxes and the links do, as when a brick starts.
 
+Export as Image saves the picture in a file, every brick in colour unless
+Fade stopped bricks, a check box of its chooser, asks the stopped ones grey
+and faded, as the tab draws them; the tab keeps the choice while it lives.
+
 A click on a brick works as in the list of the bricks: the right button
 opens its menu, a double click configures it. A brick dropped on another
 connects the two, as in the list. A brick moved over free room stays there:
@@ -101,6 +105,9 @@ ACTIONS = "topology"
 HAND = "hand"
 # The setting of the project that chooses the lines of the links.
 LINES = "link_lines"
+# The check box of the chooser of the export, and its values.
+FADED = "faded"
+ON, OFF = "true", "false"
 
 
 def menu() -> Gio.Menu:
@@ -172,6 +179,8 @@ class TopologyTab(Tab, Gtk.Overlay):
         self._measuring: int | None = None
         # the links of the last lines, boxes and links routed
         self._routes: tuple[Hashable, tuple[Link, ...]] | None = None
+        # the stopped bricks of the last export, in colour or faded
+        self.faded = False
 
         self.view = TopologyView()
         self.add(self.view)
@@ -330,13 +339,16 @@ class TopologyTab(Tab, Gtk.Overlay):
         self.hint.set_visible(empty)
         self.export_action.set_enabled(not empty)
 
-    def export(self, filename: str) -> None:
-        """Save the picture of the lab in a file: PNG, SVG or PDF."""
+    def export(self, filename: str, faded: bool = False) -> None:
+        """
+        Save the picture of the lab in a file: PNG, SVG or PDF, its stopped
+        bricks grey and faded only if faded.
+        """
 
         context = self.view.area.get_style_context()
         font = context.get_property("font", context.get_state())
         try:
-            picture.export(self.view.layout, filename, font)
+            picture.export(self.view.layout, filename, font, faded)
         except ValueError:
             logger.failure(top_invalid_format)
         except IOError:
@@ -459,6 +471,9 @@ class TopologyTab(Tab, Gtk.Overlay):
         if current is not None and current.path and self.engine.local:
             chooser.set_current_folder(current.path)
         chooser.set_current_name(f"{name}.png")
+        # a check box, without options
+        chooser.add_choice(FADED, _("Fade stopped bricks"), None, None)
+        chooser.set_choice(FADED, ON if self.faded else OFF)
         chooser.connect("notify::filter", self.on_export_format, formats)
         chooser.connect("response", self.on_export_response, formats)
         chooser.show()
@@ -486,7 +501,8 @@ class TopologyTab(Tab, Gtk.Overlay):
                 extension = extension_of(dialog, formats)
                 filename = dialog.get_filename()
                 assert filename is not None, "Save has a file name"
-                self.export(with_extension(filename, extension))
+                self.faded = dialog.get_choice(FADED) == ON
+                self.export(with_extension(filename, extension), self.faded)
         finally:
             dialog.destroy()
 

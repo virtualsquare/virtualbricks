@@ -3632,6 +3632,15 @@ ZOOM_TO_100 = "Zoom to 100%"
 EXPORT_IMAGE = "Export as Image"
 # The first bytes of a PNG file
 PNG = b"\x89PNG\r\n\x1a\n"
+# The check box of the file chooser of Export as Image…
+FADE_STOPPED = "Fade stopped bricks"
+# How far apart the red, the green and the blue of a pixel are, at most in
+# a grey one: the ink of the links and the names, 0x2E3436, is 8 apart;
+# and at least in a pixel in colour; and how many of those make a picture
+# in colour, a few of the 64 × 64 of a switch
+GREY_SPREAD = 12
+COLOUR_SPREAD = 40
+COLOUR_PIXELS = 100
 
 
 @when(words("I zoom {way} on the picture of the lab {times:d} times"))
@@ -3694,11 +3703,11 @@ def zoom_level(virtualbricks, tab):
         " its path"
     )
 )
-def export_picture(virtualbricks, file):
+def export_picture(virtualbricks, file, faded=False):
     """
     The tab Topology, Export as Image… in its More; in the file chooser,
-    the path typed in place of the name it suggests, then Save, and the file
-    chooser closes.
+    the path typed in place of the name it suggests, with faded Fade stopped
+    bricks ticked, then Save, and the file chooser closes.
     """
 
     tab = virtualbricks.click("page tab", TOPOLOGY)
@@ -3707,8 +3716,30 @@ def export_picture(virtualbricks, file):
     chooser = virtualbricks.find("file chooser", EXPORT_IMAGE)
     path = os.path.join(virtualbricks.home, file)
     virtualbricks.type(path, "text", "Name:", within=chooser, over=True)
+    if faded:
+        box = virtualbricks.find("check box", FADE_STOPPED, within=chooser)
+        if not harness.a11y.checked(box):
+            virtualbricks.click("check box", FADE_STOPPED, within=chooser)
+        virtualbricks.wait_for(
+            lambda: harness.a11y.checked(box), f"{FADE_STOPPED} is ticked"
+        )
     virtualbricks.click("button", "Save", within=chooser)
     virtualbricks.gone("file chooser", EXPORT_IMAGE)
+
+
+@when(
+    words(
+        "I export the picture of the lab to {file} of my home folder, typing"
+        " its path, with Fade stopped bricks ticked"
+    )
+)
+def export_picture_faded(virtualbricks, file):
+    """
+    The same, with Fade stopped bricks, the check box of the file chooser,
+    ticked before Save.
+    """
+
+    export_picture(virtualbricks, file, faded=True)
 
 
 @when(
@@ -3743,6 +3774,46 @@ def png_image(virtualbricks, file):
     pixels = {data[i : i + 4] for i in range(0, len(data), 4)}
     width, height = surface.get_width(), surface.get_height()
     assert len(pixels) > 1, f"{file} is blank, {width} × {height}"
+
+
+def spreads(virtualbricks, file):
+    """
+    How far apart the red, the green and the blue are, in each pixel of the
+    PNG image file of the home, once it is there.
+    """
+
+    path = os.path.join(virtualbricks.home, file)
+    virtualbricks.wait_for(lambda: os.path.isfile(path), f"{path} is there")
+    surface = cairo.ImageSurface.create_from_png(path)
+    data = bytes(surface.get_data())
+    return [
+        max(data[i : i + 3]) - min(data[i : i + 3])
+        for i in range(0, len(data), 4)
+    ]
+
+
+@then(words("the picture in {file} of my home folder is in colour"))
+def picture_in_colour(virtualbricks, file):
+    """
+    A hundred of its pixels at least are in colour, their red, green and
+    blue 40 apart or more: the icons of the bricks, stopped or not.
+    """
+
+    coloured = sum(
+        spread >= COLOUR_SPREAD for spread in spreads(virtualbricks, file)
+    )
+    assert coloured >= COLOUR_PIXELS, f"{file} has {coloured} pixels in colour"
+
+
+@then(words("the picture in {file} of my home folder is grey"))
+def picture_grey(virtualbricks, file):
+    """
+    Its pixels are all grey, their red, green and blue 12 apart at most:
+    the icons of the stopped bricks and the ink of the links and the names.
+    """
+
+    widest = max(spreads(virtualbricks, file))
+    assert widest <= GREY_SPREAD, f"{file} has a pixel {widest} apart"
 
 
 @when(words("I drag the picture of the lab {pixels:d} pixels to the {side}"))

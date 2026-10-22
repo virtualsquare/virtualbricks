@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 19:12+0200\n"
+"POT-Creation-Date: 2026-10-22 22:19+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -4826,6 +4826,11 @@ msgstr ""
 msgid "Export as Image"
 msgstr "Exportar como imagen"
 
+#: virtualbricks/gui/mainwindow/topology.py
+#, fuzzy
+msgid "Fade stopped bricks"
+msgstr "Nuevo Brick"
+
 #: virtualbricks/gui/mainwindow/window.py
 #, fuzzy, python-brace-format
 msgid "Virtualbricks on {where}"
@@ -5599,10 +5604,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Select a directory"
 #~ msgstr "Guardar proyecto como"
-
-#, fuzzy
-#~ msgid "Master brick"
-#~ msgstr "Nuevo Brick"
 
 #, fuzzy
 #~ msgid "<b>Start event selection</b>"
