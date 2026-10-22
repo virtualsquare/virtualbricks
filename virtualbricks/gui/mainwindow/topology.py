@@ -27,9 +27,10 @@ without bricks shows a hint instead.
 
 The layout is Graphviz's, left to right or top to bottom, or by hand once a
 brick has a place (page 35). By Hand gives every brick the place it has in
-the picture; Left to Right and Top to Bottom take the places away. In a lab
-laid out by hand, Curved Links has Graphviz route the links around the
-bricks, as the setting curved_links of the project says (page 36); the
+the picture; Left to Right and Top to Bottom take the places away. The links
+are straight, curved or at right angles, as the setting link_lines of the
+project says; Links, in the menu, sets it (page 36). In a lab laid out by
+hand, Graphviz routes the curves and the right angles around the bricks; the
 routes stay while the boxes and the links do, as when a brick starts.
 
 A click on a brick works as in the list of the bricks: the right button
@@ -68,13 +69,16 @@ from virtualbricks.gui.mainwindow.topologyview import (
 )
 from virtualbricks.i18n import _
 from virtualbricks.topology import (
+    CURVED,
+    RIGHT_ANGLES,
+    STRAIGHT,
     Layout,
     Link,
     arrange,
     by_hand,
-    curved,
     layout,
     places,
+    route,
 )
 
 if TYPE_CHECKING:
@@ -88,15 +92,15 @@ top_unknown = "Error saving topology: Unknown error"
 connect_error = "Cannot connect {brick} to {other}"
 places_error = "Cannot change the places of the bricks"
 move_error = "Cannot move {brick}"
-curves_error = "Cannot change curved_links"
+lines_error = "Cannot change link_lines"
 
 # Between the bar and the corner, and between the bar's groups, in pixels.
 GAP = 6
 ACTIONS = "topology"
 # The layout of a lab whose bricks have places.
 HAND = "hand"
-# The setting of the project that curves the links of a lab by hand.
-CURVED = "curved_links"
+# The setting of the project that chooses the lines of the links.
+LINES = "link_lines"
 
 
 def menu() -> Gio.Menu:
@@ -107,12 +111,14 @@ def menu() -> Gio.Menu:
     layouts.append(_("Top to Bottom"), f"{ACTIONS}.layout::TB")
     layouts.append(_("By Hand"), f"{ACTIONS}.layout::{HAND}")
     links = Gio.Menu()
-    links.append(_("Curved Links"), f"{ACTIONS}.curved")
+    links.append(_("Straight"), f"{ACTIONS}.lines::{STRAIGHT}")
+    links.append(_("Curved"), f"{ACTIONS}.lines::{CURVED}")
+    links.append(_("Right Angles"), f"{ACTIONS}.lines::{RIGHT_ANGLES}")
     export = Gio.Menu()
     export.append(_("Export as Image…"), f"{ACTIONS}.export")
     result = Gio.Menu()
     result.append_section(_("Layout"), layouts)
-    result.append_section(None, links)
+    result.append_section(_("Links"), links)
     result.append_section(None, export)
     return result
 
@@ -164,7 +170,7 @@ class TopologyTab(Tab, Gtk.Overlay):
         self._shown = False
         self._should_draw = True
         self._measuring: int | None = None
-        # the curved links of the last boxes and links routed
+        # the links of the last lines, boxes and links routed
         self._routes: tuple[Hashable, tuple[Link, ...]] | None = None
 
         self.view = TopologyView()
@@ -232,11 +238,13 @@ class TopologyTab(Tab, Gtk.Overlay):
         )
         self.layout_action.connect("change-state", self.on_layout)
         actions.add_action(self.layout_action)
-        self.curved_action = Gio.SimpleAction.new_stateful(
-            "curved", None, GLib.Variant.new_boolean(self._curved())
+        self.lines_action = Gio.SimpleAction.new_stateful(
+            "lines",
+            GLib.VariantType.new("s"),
+            GLib.Variant.new_string(self._lines()),
         )
-        self.curved_action.connect("change-state", self.on_curved)
-        actions.add_action(self.curved_action)
+        self.lines_action.connect("change-state", self.on_lines)
+        actions.add_action(self.lines_action)
         self.export_action = Gio.SimpleAction.new("export", None)
         self.export_action.connect("activate", self.on_export)
         actions.add_action(self.export_action)
@@ -255,7 +263,7 @@ class TopologyTab(Tab, Gtk.Overlay):
         # the lab is laid out again after a brick comes, goes or changes
         for signal in brick_signals(factory):
             signal.connect(self.on_brick_changed)
-        # and when its links are curved, or no more, here or there
+        # and when the lines of its links change, here or there
         settings.changed.connect(self.on_settings_changed)
         if not engine.local:
             engine.factory.settings_changed.connect(self.on_settings_changed)
@@ -272,41 +280,44 @@ class TopologyTab(Tab, Gtk.Overlay):
     def _draw(self) -> None:
         logger.debug(drawing_topology)
         bricks = list(self.factory.bricks)
+        lines = self._lines()
         if by_hand(bricks):
             new = arrange(bricks, self.view.measure)
-            if self._curved():
-                new = self._curve(new)
+            if lines != STRAIGHT:
+                new = self._route(new, lines)
         else:
-            new = layout(bricks, self.direction, self.view.measure)
+            new = layout(bricks, self.direction, self.view.measure, lines)
         self.view.set_layout(new)
         self._should_draw = False
         self._update()
 
-    def _curved(self) -> bool:
-        return bool(self.engine.machine.setting(CURVED))
+    def _lines(self) -> str:
+        return str(self.engine.machine.setting(LINES))
 
-    def _curve(self, lab: Layout) -> Layout:
-        """lab with curved links, routed again only if its geometry changed."""
+    def _route(self, lab: Layout, lines: str) -> Layout:
+        """
+        lab with its links routed with lines, again only if they or its
+        geometry changed.
+        """
 
         boxes = tuple(
             (node.brick, node.x, node.y, node.width, node.height)
             for node in lab.nodes
         )
         ends = tuple((link.tail, link.head) for link in lab.links)
-        if self._routes is None or self._routes[0] != (boxes, ends):
-            self._routes = (boxes, ends), curved(lab).links
+        key = (lines, boxes, ends)
+        if self._routes is None or self._routes[0] != key:
+            self._routes = key, route(lab, lines).links
         return dataclasses.replace(lab, links=self._routes[1])
 
     def _update(self) -> None:
-        """The bar, the hint and the layout of the menu, for the lab."""
+        """The bar, the hint, and the layout and links of the menu."""
 
         hand = by_hand(self.factory.bricks)
         state = HAND if hand else self.direction
         # the same state says nothing
         self.layout_action.set_state(GLib.Variant.new_string(state))
-        # Graphviz's own layouts have curves
-        self.curved_action.set_enabled(hand)
-        self.curved_action.set_state(GLib.Variant.new_boolean(self._curved()))
+        self.lines_action.set_state(GLib.Variant.new_string(self._lines()))
         empty = not self.view.layout.nodes
         zoom = self.view.zoom
         self.level_button.set_label(level(zoom))
@@ -408,10 +419,10 @@ class TopologyTab(Tab, Gtk.Overlay):
             self.direction = choice
             self.lay_out()
 
-    def on_curved(self, action: Gio.SimpleAction, value: GLib.Variant) -> None:
+    def on_lines(self, action: Gio.SimpleAction, value: GLib.Variant) -> None:
         # the picture follows the setting, here or there
-        self.engine.set_settings({CURVED: value.get_boolean()}).addErrback(
-            lambda failure: logger.failure(curves_error, failure)
+        self.engine.set_settings({LINES: value.get_string()}).addErrback(
+            lambda failure: logger.failure(lines_error, failure)
         )
 
     def _place(self, places: Mapping[Brick, Point | None]) -> None:

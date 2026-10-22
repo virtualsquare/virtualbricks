@@ -363,7 +363,7 @@ depend on it.
 <p>The <code>[settings]</code> table. While the project is open, these
 are the settings in effect, and the Settings window changes them for
 this project only, as the menu of the Topology tab does
-<code>curved_links</code>. A new project starts with a copy of the
+<code>link_lines</code>. A new project starts with a copy of the
 settings of the project that is open, or with the defaults when none is.
 An imported project brings the paths of the machine it comes from; the
 import dialog offers to replace them with those of the open project.</p>
@@ -398,13 +398,14 @@ only to switches.</td>
 <code>vde_switch</code>(1).</td>
 </tr>
 <tr>
-<td><code>curved_links</code></td>
-<td><em>boolean</em></td>
-<td><code>false</code></td>
-<td>In a lab laid out by hand, draw the links of the picture as curves
-that Graphviz routes around the bricks, instead of straight lines. The
-<code>Curved Links</code> item of the menu of the Topology tab changes
-it.</td>
+<td><code>link_lines</code></td>
+<td><em>choice</em></td>
+<td><code>"curved"</code></td>
+<td>How the picture of the lab draws the links, in every layout:
+<code>"straight"</code> lines from brick to brick, <code>"curved"</code>
+for Graphviz's curves around the bricks, or <code>"right-angles"</code>
+for its lines across and down. The <code>Links</code> of the menu of the
+Topology tab change it.</td>
 </tr>
 </tbody>
 </table>
@@ -1560,7 +1561,7 @@ writes all of its keys, and the six empty disks.</p>
 allow_female_plugs = false
 qemu_path = &quot;/usr/bin&quot;
 vde_path = &quot;/usr/bin&quot;
-curved_links = false
+link_lines = &quot;curved&quot;
 
 [images.debian]
 path = &quot;/home/alice/.virtualbricks/shared_images/debian.qcow2&quot;

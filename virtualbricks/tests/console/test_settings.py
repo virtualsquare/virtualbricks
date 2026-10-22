@@ -50,14 +50,16 @@ class TestSettings(ConsoleTestCase):
         written = load_toml(locations.settings_file())
         self.assertFalse(written["tray_icon"])
 
-    def test_curved_links(self):
+    def test_link_lines(self):
         # a setting of the project, as the menu of the picture sets it
         self.assertEqual(
-            self.run_line("setting show curved_links"),
-            ["curved_links = false"],
+            self.run_line("setting show link_lines"),
+            ['link_lines = "curved"'],
         )
-        self.assertEqual(self.run_line("setting set curved_links=true"), [])
-        self.assertIs(get_setting("curved_links"), True)
+        self.assertEqual(
+            self.run_line("setting set link_lines=right-angles"), []
+        )
+        self.assertEqual(get_setting("link_lines"), "right-angles")
 
     def test_all_or_none(self):
         self.assertEqual(

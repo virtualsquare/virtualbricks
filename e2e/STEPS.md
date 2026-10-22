@@ -203,7 +203,7 @@ The steps of the picture of the lab, in the tab Topology:
 | `When I zoom the picture of the lab back to 100%` | The tab Topology, then its zoom level, whose tooltip says Zoom to 100% |
 | `Then the zoom level of the picture of the lab is 150%` | The zoom level of the tab says it, as the screen readers read it: AT-SPI can't see the drawing itself |
 | `When I export the picture of the lab to lab.png of my home folder, typing its path` | The tab Topology, More, then Export as Image…; in the file chooser, the path typed in Name in place of the name it suggests, then Save, and it closes |
-| `When I choose Curved Links in the menu of the picture of the lab` | The tab Topology, More, then Curved Links, a check box in the menu |
+| `When I choose Right Angles for the links in the menu of the picture of the lab` | The tab Topology, More, then the item of Links, a radio button in the menu: Straight, Curved or Right Angles |
 | `Then the file lab.png of my home folder is a PNG image, not blank` | The file has the bytes of a PNG at its start, cairo reads it, and its pixels aren't all alike |
 | `When I drag the picture of the lab 100 pixels to the left` | A press on the background, under the bricks, which are a row in the middle of its height, a move to the left or to the right, and a release; the picture must be wider than the tab |
 | `Then the picture of the lab moved 100 pixels to the left` | Its horizontal scroll bar moved as much the other way |

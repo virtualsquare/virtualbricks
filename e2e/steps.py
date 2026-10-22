@@ -3711,13 +3711,20 @@ def export_picture(virtualbricks, file):
     virtualbricks.gone("file chooser", EXPORT_IMAGE)
 
 
-@when("I choose Curved Links in the menu of the picture of the lab")
-def curved_links(virtualbricks):
-    """The tab Topology, More, then Curved Links, which is a check box."""
+@when(
+    words(
+        "I choose {item} for the links in the menu of the picture of the lab"
+    )
+)
+def link_lines(virtualbricks, item):
+    """
+    The tab Topology, More, then the item of Links, a radio button in the
+    menu: Straight, Curved or Right Angles.
+    """
 
     tab = virtualbricks.click("page tab", TOPOLOGY)
     virtualbricks.click("toggle button", "More", within=tab)
-    virtualbricks.click("check box", "Curved Links")
+    virtualbricks.click("radio button", item)
 
 
 @then(words("the file {file} of my home folder is a PNG image, not blank"))

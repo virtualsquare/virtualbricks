@@ -29,6 +29,10 @@ pygraphviz wheels have, would lay it out with a second Pango in a process
 where GTK loaded the system's. A link is a curve of cubic Bézier segments, its points as
 Graphviz gives them: the start, then three points for each segment.
 
+The links are straight, curved or at right angles, as the project chooses
+(LINES); Graphviz draws them so in its own layouts. Its program in Graphviz
+2.42 fails on some labs at right angles: their links are curved.
+
 The links go from the bricks' plugs to the sockets they are connected to,
 and their order places the bricks: a tap before its switch, a wire between
 its two ends, and a virtual machine after the switches of its first plugs,
@@ -42,10 +46,10 @@ straight, from the edge of a box to the edge of the other, aimed at their
 middles; a brick plugged into itself has none. The layout keeps where its
 top left corner is among the places, to give a point of the lab its place.
 
-Its links can be curved instead (page 36): Graphviz routes them around the
-boxes, and moves no brick. Two boxes too close for a link between them have
-their links routed around their icons; when two icons are that close, the
-links stay straight.
+Its links can be curved or at right angles instead (page 36): Graphviz
+routes them around the boxes, and moves no brick. Two boxes too close for a
+link between them have their links routed around their icons; when two
+icons are that close, the links stay straight.
 """
 
 from __future__ import annotations
@@ -71,13 +75,21 @@ RANK_GAP = 1.0
 BRICK_GAP = 0.4
 # Left to right, and top to bottom.
 DIRECTIONS = ("LR", "TB")
+# The lines of the links, as the setting link_lines of a project has them:
+# straight, Graphviz's curves around the bricks, or its right angles.
+STRAIGHT = "straight"
+CURVED = "curved"
+RIGHT_ANGLES = "right-angles"
+LINES = (STRAIGHT, CURVED, RIGHT_ANGLES)
+_SPLINES = {STRAIGHT: "false", CURVED: "true", RIGHT_ANGLES: "ortho"}
 
 POINTS_PER_INCH = 72
 
 # Graphviz routes curved links this far around a box, in points. Two boxes
 # closer than twice that touch, a point more in Graphviz 14, which counts
 # the outline of a box, and then it draws every link straight: bricks this
-# close are routed around their icons. TOUCH has a point to spare.
+# close are routed around their icons. TOUCH has a point to spare. Right
+# angles touch only when the boxes do, but the same bricks go round.
 MARGIN = 3.2
 TOUCH = 2 * MARGIN + 2
 
@@ -166,25 +178,50 @@ def estimate(name: str) -> float:
     return len(name) * CHAR_WIDTH
 
 
+def _check_lines(lines: str) -> None:
+    if lines not in LINES:
+        raise ValueError(f"Unknown lines {lines!r}")
+
+
+def _lay_out(graph: pygraphviz.AGraph, program: str, lines: str) -> None:
+    """Lay graph out with program; right angles it can't route, as curves."""
+
+    try:
+        graph.layout(program)
+    except OSError:
+        # the program of Graphviz 2.42 fails an assertion on a lab now and
+        # then; pygraphviz 2 runs a later Graphviz, without the program
+        if lines != RIGHT_ANGLES:
+            raise
+        graph.graph_attr["splines"] = _SPLINES[CURVED]
+        graph.layout(program)
+
+
 def layout(
     bricks: Iterable[Brick],
     direction: str = "LR",
     measure: Callable[[str], float] = estimate,
+    lines: str = CURVED,
 ) -> Layout:
     """
-    Lay the bricks out, left to right ("LR") or top to bottom ("TB").
-    measure(name) is the width of a name at 100%, in points.
+    Lay the bricks out, left to right ("LR") or top to bottom ("TB"), their
+    links drawn with lines, one of LINES. measure(name) is the width of a
+    name at 100%, in points.
     """
 
     if direction not in DIRECTIONS:
         raise ValueError(f"Unknown direction {direction!r}")
+    _check_lines(lines)
     bricks = list(bricks)
     if not bricks:
         return Layout()
     # strict: one link between two bricks
     graph = pygraphviz.AGraph(strict=True, directed=False)
     graph.graph_attr.update(
-        rankdir=direction, ranksep=RANK_GAP, nodesep=BRICK_GAP
+        rankdir=direction,
+        ranksep=RANK_GAP,
+        nodesep=BRICK_GAP,
+        splines=_SPLINES[lines],
     )
     for brick in bricks:
         width = max(ICON, math.ceil(measure(brick.name)))
@@ -198,7 +235,7 @@ def layout(
         )
     for tail, head in links(bricks):
         graph.add_edge(tail.name, head.name)
-    graph.layout("dot")
+    _lay_out(graph, "dot", lines)
 
     left, bottom, right, top = (
         float(value) for value in graph.graph_attr["bb"].split(",")
@@ -373,13 +410,15 @@ def _touch(
     )
 
 
-def curved(layout: Layout) -> Layout:
+def route(layout: Layout, lines: str = CURVED) -> Layout:
     """
     A layout by hand with its links routed around the bricks by Graphviz,
-    or as it is if it has no link or two icons touch.
+    as curves or at right angles; or as it is if its lines are straight, it
+    has no link, or two icons touch.
     """
 
-    if not layout.links:
+    _check_lines(lines)
+    if lines == STRAIGHT or not layout.links:
         return layout
     close: set[Brick] = set()
     for node, other in itertools.combinations(layout.nodes, 2):
@@ -394,7 +433,7 @@ def curved(layout: Layout) -> Layout:
     graph = pygraphviz.AGraph(strict=True, directed=False)
     # the places in points, and the bricks pinned to them
     graph.graph_attr.update(
-        splines="true",
+        splines=_SPLINES[lines],
         inputscale=POINTS_PER_INCH,
         notranslate="true",
         esep=f"+{MARGIN}",
@@ -412,7 +451,7 @@ def curved(layout: Layout) -> Layout:
         )
     for link in layout.links:
         graph.add_edge(link.tail.name, link.head.name)
-    graph.layout("neato")
+    _lay_out(graph, "neato", lines)
 
     # Graphviz moves the whole drawing, as far as it moves any brick
     first = layout.nodes[0].brick

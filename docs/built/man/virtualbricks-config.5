@@ -270,7 +270,7 @@ Its \f[B]type\f[R] key says which kind; the other keys depend on it.
 The \f[B][settings]\f[R] table.
 While the project is open, these are the settings in effect, and the
 Settings window changes them for this project only, as the menu of the
-Topology tab does \f[B]curved_links\f[R].
+Topology tab does \f[B]link_lines\f[R].
 A new project starts with a copy of the settings of the project that is
 open, or with the defaults when none is.
 An imported project brings the paths of the machine it comes from; the
@@ -286,11 +286,12 @@ The directory of the QEMU programs.
 \f[B]vde_path\f[R] = \f[I]path\f[R], default \f[CR]\(dq/usr/bin\(dq\f[R]
 The directory of the VDE programs, such as \f[B]vde_switch\f[R](1).
 .TP
-\f[B]curved_links\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
-In a lab laid out by hand, draw the links of the picture as curves that
-Graphviz routes around the bricks, instead of straight lines.
-The \f[B]Curved Links\f[R] item of the menu of the Topology tab changes
-it.
+\f[B]link_lines\f[R] = \f[I]choice\f[R], default \f[CR]\(dqcurved\(dq\f[R]
+How the picture of the lab draws the links, in every layout:
+\f[B]\(dqstraight\(dq\f[R] lines from brick to brick,
+\f[B]\(dqcurved\(dq\f[R] for Graphviz\(aqs curves around the bricks, or
+\f[B]\(dqright\-angles\(dq\f[R] for its lines across and down.
+The \f[B]Links\f[R] of the menu of the Topology tab change it.
 .PP
 Older project files have a \f[B]cow_format\f[R] key, the format of the
 private copies of the disks, which are always qcow2 now, and a
@@ -1025,7 +1026,7 @@ format = 1
 allow_female_plugs = false
 qemu_path = \(dq/usr/bin\(dq
 vde_path = \(dq/usr/bin\(dq
-curved_links = false
+link_lines = \(dqcurved\(dq
 
 [images.debian]
 path = \(dq/home/alice/.virtualbricks/shared_images/debian.qcow2\(dq

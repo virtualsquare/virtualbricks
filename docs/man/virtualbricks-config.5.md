@@ -263,7 +263,7 @@ The file has these top-level keys:
 
 The **[settings]** table. While the project is open, these are the settings
 in effect, and the Settings window changes them for this project only, as
-the menu of the Topology tab does **curved_links**. A new project starts with
+the menu of the Topology tab does **link_lines**. A new project starts with
 a copy of the settings of the project that is open, or with the defaults when
 none is. An imported project brings the paths of the machine it comes from;
 the import dialog offers to replace them with those of the open project.
@@ -278,10 +278,11 @@ the import dialog offers to replace them with those of the open project.
 **vde_path** = *path*, default `"/usr/bin"`
 :   The directory of the VDE programs, such as **vde_switch**(1).
 
-**curved_links** = *boolean*, default `false`
-:   In a lab laid out by hand, draw the links of the picture as curves
-    that Graphviz routes around the bricks, instead of straight lines.
-    The **Curved Links** item of the menu of the Topology tab changes it.
+**link_lines** = *choice*, default `"curved"`
+:   How the picture of the lab draws the links, in every layout:
+    **"straight"** lines from brick to brick, **"curved"** for Graphviz's
+    curves around the bricks, or **"right-angles"** for its lines across
+    and down. The **Links** of the menu of the Topology tab change it.
 
 Older project files have a **cow_format** key, the format of the private
 copies of the disks, which are always qcow2 now, and a **log_link_loops**
@@ -978,7 +979,7 @@ format = 1
 allow_female_plugs = false
 qemu_path = "/usr/bin"
 vde_path = "/usr/bin"
-curved_links = false
+link_lines = "curved"
 
 [images.debian]
 path = "/home/alice/.virtualbricks/shared_images/debian.qcow2"

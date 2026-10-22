@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 18:09+0200\n"
+"POT-Creation-Date: 2026-10-22 19:12+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -225,6 +225,7 @@ msgid "Machines and switches"
 msgstr "Tipo de máquina"
 
 #: virtualbricks/bricks/brickinfo.py virtualbricks/gui/dialogs/settings.py
+#: virtualbricks/gui/mainwindow/topology.py
 msgid "Links"
 msgstr ""
 
@@ -1175,11 +1176,11 @@ msgid "The folder of the VDE programs"
 msgstr ""
 
 #: virtualbricks/config/settings.py
-msgid "Curved links"
+msgid "Link lines"
 msgstr ""
 
 #: virtualbricks/config/settings.py
-msgid "Links around the bricks, in a picture laid out by hand"
+msgid "How the picture of the lab draws the links"
 msgstr ""
 
 #: virtualbricks/config/settings.py
@@ -4773,8 +4774,18 @@ msgid "By Hand"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
-msgid "Curved Links"
+#, fuzzy
+msgid "Straight"
+msgstr "Vertical"
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Curved"
 msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+#, fuzzy
+msgid "Right Angles"
+msgstr "De derecha a izquierda"
 
 #: virtualbricks/gui/mainwindow/topology.py
 #, fuzzy
@@ -5528,9 +5539,6 @@ msgstr ""
 
 #, fuzzy
 #~ msgid "Port:"
-#~ msgstr "Vertical"
-
-#~ msgid "Portrait"
 #~ msgstr "Vertical"
 
 #~ msgid "_View"

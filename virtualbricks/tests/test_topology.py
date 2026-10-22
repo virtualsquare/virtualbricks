@@ -29,22 +29,28 @@ from twisted.trial import unittest
 
 from virtualbricks import topology
 from virtualbricks.bricks import Point
+from virtualbricks.config.schema import field_default, kind_of
+from virtualbricks.config.settings import ProjectSettings
 from virtualbricks.tests import make_factory
 from virtualbricks.topology import (
     BRICK_GAP,
     CHAR_WIDTH,
+    CURVED,
     ICON,
+    LINES,
     NAME,
     POINTS_PER_INCH,
     RANK_GAP,
+    RIGHT_ANGLES,
+    STRAIGHT,
     Layout,
     arrange,
     by_hand,
-    curved,
     layout,
     links,
     place_of,
     places,
+    route,
 )
 
 
@@ -52,6 +58,18 @@ class TopologyTestCase(unittest.TestCase):
 
     def setUp(self):
         self.factory = make_factory(self)
+
+    def no_right_angles(self):
+        """A Graphviz that fails at right angles, as 2.42's program can."""
+
+        lay_out = pygraphviz.AGraph.layout
+
+        def failing(graph, *args, **kwargs):
+            if graph.graph_attr["splines"] == "ortho":
+                raise OSError("dot: maze.c:313: chkSgraph: Assertion failed")
+            return lay_out(graph, *args, **kwargs)
+
+        self.patch(pygraphviz.AGraph, "layout", failing)
 
     def brick(self, kind, name, *socks):
         brick = self.factory.new_brick(kind, name)
@@ -184,6 +202,64 @@ class TestLayout(TopologyTestCase):
 
     def test_an_unknown_direction(self):
         self.assertRaises(ValueError, layout, [], "RL")
+
+    def slanted(self):
+        """
+        The lab, and a machine after both switches: its links slant, and
+        the one from sw1 goes past w1 and sw2.
+        """
+
+        bricks = self.lab()
+        socks = self.sw1.socks[0], self.sw2.socks[0], self.sw2.socks[0]
+        return [*bricks, self.brick("qemu", "vm", *socks)]
+
+    def test_right_angles(self):
+        bricks = self.slanted()
+        curves = layout(bricks)
+        self.assertFalse(all(at_right_angles(link) for link in curves.links))
+        result = layout(bricks, lines=RIGHT_ANGLES)
+        # the same places, the links across and down
+        self.assertEqual(result.nodes, curves.nodes)
+        self.assertEqual(
+            {(link.tail, link.head) for link in result.links},
+            {(link.tail, link.head) for link in curves.links},
+        )
+        for link in result.links:
+            self.assertTrue(at_right_angles(link), link)
+
+    def test_straight(self):
+        bricks = self.slanted()
+        curves = layout(bricks, "TB")
+        # vm's link from sw1 bends around w1 and sw2
+        self.assertFalse(all(map(straight_line, curves.links)))
+        result = layout(bricks, "TB", lines=STRAIGHT)
+        self.assertEqual(result.nodes, curves.nodes)
+        for link in result.links:
+            self.assertTrue(straight_line(link), link)
+
+    def test_unknown_lines(self):
+        self.assertRaises(ValueError, layout, [], "LR", lines="dotted")
+
+    def test_right_angles_graphviz_cannot_route(self):
+        bricks = self.slanted()
+        self.no_right_angles()
+        # curved instead
+        self.assertEqual(
+            layout(bricks, lines=RIGHT_ANGLES), layout(bricks, lines=CURVED)
+        )
+
+    def test_curves_graphviz_cannot_route(self):
+        bricks = self.lab()
+        ran = []
+
+        def failing(graph, *args, **kwargs):
+            ran.append(graph.graph_attr["splines"])
+            raise OSError("dot failed")
+
+        self.patch(pygraphviz.AGraph, "layout", failing)
+        self.assertRaises(OSError, layout, bricks)
+        # not again
+        self.assertEqual(ran, ["true"])
 
     def test_the_places(self):
         bricks = self.lab()
@@ -371,7 +447,37 @@ def outside(point, node):
     )
 
 
-class TestCurved(TopologyTestCase):
+def straight_line(link):
+    """Whether link is one segment, its points on a line."""
+
+    if len(link.points) != 4:
+        return False
+    (x0, y0), (x1, y1) = link.points[0], link.points[-1]
+    return all(
+        abs((x1 - x0) * (y - y0) - (y1 - y0) * (x - x0)) < 1
+        for x, y in link.points[1:3]
+    )
+
+
+def at_right_angles(link):
+    """Whether each segment of link goes across or down."""
+
+    for i in range(0, len(link.points) - 3, 3):
+        xs, ys = zip(*link.points[i : i + 4])
+        if max(xs) - min(xs) > 0.1 and max(ys) - min(ys) > 0.1:
+            return False
+    return True
+
+
+class TestLines(unittest.TestCase):
+
+    def test_the_setting(self):
+        # the choices of the setting of a project, curved by default
+        self.assertEqual(kind_of(ProjectSettings, "link_lines").choices, LINES)
+        self.assertEqual(field_default(ProjectSettings, "link_lines"), CURVED)
+
+
+class TestRoute(TopologyTestCase):
     """The links of a lab by hand, routed by Graphviz (page 36)."""
 
     def lab(self):
@@ -403,8 +509,8 @@ class TestCurved(TopologyTestCase):
         [node] = [node for node in result.nodes if node.brick.name == name]
         return node
 
-    def routed(self, lab):
-        """lab curved, and what Graphviz wrote on standard error."""
+    def routed(self, lab, lines=CURVED):
+        """lab routed, and what Graphviz wrote on standard error."""
 
         with tempfile.TemporaryFile() as said:
             stderr = os.dup(2)
@@ -413,7 +519,7 @@ class TestCurved(TopologyTestCase):
                 # a Graphviz program's: pygraphviz 1 warns with them
                 with warnings.catch_warnings(record=True) as caught:
                     warnings.simplefilter("always")
-                    result = curved(lab)
+                    result = route(lab, lines)
             finally:
                 os.dup2(stderr, 2)
                 os.close(stderr)
@@ -531,13 +637,66 @@ class TestCurved(TopologyTestCase):
         lab = arrange(self.factory.bricks)
         self.no_graphviz()
         # straight, as they are
-        self.assertIs(curved(lab), lab)
+        self.assertIs(route(lab), lab)
+        self.assertIs(route(lab, RIGHT_ANGLES), lab)
 
     def test_no_link(self):
         sw1, sw2 = self.switch("sw1"), self.switch("sw2")
         sw1.place, sw2.place = Point(0, 0), Point(200, 0)
         lab = arrange([sw1, sw2])
         self.no_graphviz()
-        self.assertIs(curved(lab), lab)
+        self.assertIs(route(lab), lab)
         empty = Layout()
-        self.assertIs(curved(empty), empty)
+        self.assertIs(route(empty), empty)
+
+    def test_straight(self):
+        lab = self.lab()
+        self.no_graphviz()
+        self.assertIs(route(lab, STRAIGHT), lab)
+
+    def test_unknown_lines(self):
+        self.assertRaises(ValueError, route, self.lab(), "dotted")
+
+    def test_right_angles(self):
+        lab = self.lab()
+        result, said = self.routed(lab, RIGHT_ANGLES)
+        self.assertEqual(said, "")
+        self.assertEqual(result.nodes, lab.nodes)
+        self.assertEqual(
+            [(link.tail, link.head) for link in result.links],
+            [(link.tail, link.head) for link in lab.links],
+        )
+        # sw1's link to vm3 turns around w1 and sw2
+        self.assertGreater(len(self.link(result, "sw1", "vm3").points), 4)
+        for link in result.links:
+            self.assertTrue(at_right_angles(link), link)
+            ends = [self.node(result, link.tail.name)]
+            ends.append(self.node(result, link.head.name))
+            for node in result.nodes:
+                if node in ends:
+                    continue
+                for point in bezier(link.points):
+                    self.assertGreater(outside(point, node), 0)
+            # from box to box, back where the bricks are
+            first, last = link.points[0], link.points[-1]
+            if abs(outside(first, ends[0])) > 1:
+                ends.reverse()
+            self.assertLess(abs(outside(first, ends[0])), 1, link)
+            self.assertLess(abs(outside(last, ends[1])), 1, link)
+
+    def test_right_angles_two_boxes_that_touch(self):
+        lab = self.touching(6)
+        result, said = self.routed(lab, RIGHT_ANGLES)
+        self.assertEqual(said, "")
+        # routed around sw2's icon: its link from under it ends there
+        sw2 = self.node(result, "sw2")
+        icon = sw2.y - sw2.height / 2 + ICON
+        points = self.link(result, "tap0", "sw2").points
+        end = min(points[0], points[-1], key=lambda point: point[1])
+        self.assertLess(abs(end[1] - icon), 1)
+
+    def test_right_angles_graphviz_cannot_route(self):
+        lab = self.lab()
+        self.no_right_angles()
+        # curved instead
+        self.assertEqual(route(lab, RIGHT_ANGLES), route(lab, CURVED))

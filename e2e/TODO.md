@@ -387,10 +387,10 @@ that the tests can't do yet: those needs come first.
   the brick found by its place in project.toml, not by its pixels
   "A brick moved in the picture of the lab keeps its new place in the
   project", `topology.feature`
-- [x] Choose Curved Links, and find it in the project
-  "Curved Links, chosen in the menu of the picture of a lab laid out by
-  hand, is kept in the project", `topology.feature`; the curves
-  themselves are pixels, out of reach as the bricks are
+- [x] Choose the lines of the links, and find them in the project
+  "Right Angles, chosen in the menu of the picture of the lab, is kept in
+  the project", `topology.feature`, in a lab laid out by Graphviz; the
+  lines themselves are pixels, out of reach as the bricks are
 
 # Readme
 

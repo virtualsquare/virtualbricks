@@ -149,13 +149,16 @@ class TopologyTestCase(GuiTestCase):
         self.logger = FakeLogger()
         self.patch(topology, "logger", self.logger)
         self.laid_out = []
+        # the lines of each layout
+        self.lines = []
 
-        def layout(bricks, direction, measure):
+        def layout(bricks, direction, measure, lines=layouts.CURVED):
             bricks = list(bricks)
             # the names measured by the view
             self.assertEqual(measure, self.view.measure)
             self.laid_out.append(([b.name for b in bricks], direction))
-            return layouts.layout(bricks, direction, measure)
+            self.lines.append(lines)
+            return layouts.layout(bricks, direction, measure, lines)
 
         self.patch(topology, "layout", layout)
         use_project(ProjectSettings())
@@ -346,97 +349,111 @@ class TestByHand(TopologyTestCase):
         self.assertEqual(self.state(), "LR")
 
 
-class TestCurvedLinks(TopologyTestCase):
-    """Curved Links, in a lab laid out by hand (page 36)."""
+def at_right_angles(link):
+    """Whether each segment of link goes across or down."""
+
+    for i in range(0, len(link.points) - 3, 3):
+        xs, ys = zip(*link.points[i : i + 4])
+        if max(xs) - min(xs) > 0.1 and max(ys) - min(ys) > 0.1:
+            return False
+    return True
+
+
+class TestLinks(TopologyTestCase):
+    """The lines of the links, from Links in the menu (page 36)."""
 
     def setUp(self):
         super().setUp()
         self.routed = []
 
-        def curved(lab):
-            self.routed.append(lab)
-            return layouts.curved(lab)
+        def route(lab, lines):
+            self.routed.append((lab, lines))
+            return layouts.route(lab, lines)
 
-        self.patch(topology, "curved", curved)
+        self.patch(topology, "route", route)
         # sw2 in the way of the link from sw1 to vm
         self.sw2 = self.factory.new_brick("switch", "sw2")
         self.sw1.place, self.sw2.place = Point(0, 0), Point(200, 0)
         self.vm.place = Point(400, 0)
         self.show()
 
-    def curved(self):
-        return self.tab.curved_action.get_state().get_boolean()
+    def choose_lines(self, lines):
+        self.tab.lines_action.change_state(GLib.Variant.new_string(lines))
+
+    def lines_state(self):
+        return self.tab.lines_action.get_state().get_string()
 
     def link(self):
         [link] = self.view.layout.links
         return link
 
-    def test_straight_by_default(self):
-        self.assertFalse(self.curved())
-        self.assertTrue(self.tab.curved_action.get_enabled())
-        self.assertEqual(len(self.link().points), 4)
-        self.assertEqual(self.routed, [])
-
-    def test_curved(self):
-        self.tab.curved_action.change_state(GLib.Variant.new_boolean(True))
-        self.assertEqual(self.engine.set, [{"curved_links": True}])
-        self.assertIs(get_setting("curved_links"), True)
-        self.assertTrue(self.curved())
+    def test_curved_by_default(self):
+        self.assertEqual(self.lines_state(), "curved")
+        self.assertTrue(self.tab.lines_action.get_enabled())
         # around sw2
         self.assertGreater(len(self.link().points), 4)
-        self.tab.curved_action.change_state(GLib.Variant.new_boolean(False))
-        self.assertIs(get_setting("curved_links"), False)
-        self.assertFalse(self.curved())
-        self.assertEqual(len(self.link().points), 4)
+        self.assertFalse(at_right_angles(self.link()))
+        self.assertEqual([lines for _, lines in self.routed], ["curved"])
 
-    def test_greyed_while_graphviz_lays_out(self):
-        set_setting("curved_links", True)
+    def test_right_angles(self):
+        self.choose_lines("right-angles")
+        self.assertEqual(self.engine.set, [{"link_lines": "right-angles"}])
+        self.assertEqual(get_setting("link_lines"), "right-angles")
+        self.assertEqual(self.lines_state(), "right-angles")
+        self.assertGreater(len(self.link().points), 4)
+        self.assertTrue(at_right_angles(self.link()))
+
+    def test_straight(self):
+        self.choose_lines("straight")
+        self.assertEqual(get_setting("link_lines"), "straight")
+        self.assertEqual(self.lines_state(), "straight")
+        self.assertEqual(len(self.link().points), 4)
+        # Graphviz doesn't route straight lines
+        self.assertEqual(len(self.routed), 1)
+
+    def test_in_every_layout(self):
+        self.choose_lines("right-angles")
         self.choose("TB")
-        self.assertFalse(self.tab.curved_action.get_enabled())
-        # it keeps its state for a lab by hand
-        self.assertTrue(self.curved())
-        self.choose("hand")
-        self.assertTrue(self.tab.curved_action.get_enabled())
-        # the places of Top to Bottom, routed
-        self.assertEqual(len(self.routed), 2)
-        self.assertEqual(
-            self.view.layout.links, layouts.curved(self.routed[-1]).links
-        )
+        self.assertTrue(self.tab.lines_action.get_enabled())
+        self.assertEqual(self.lines[-1], "right-angles")
+        for link in self.view.layout.links:
+            self.assertTrue(at_right_angles(link), link)
+        self.choose_lines("straight")
+        self.assertEqual(self.lines[-1], "straight")
+        self.assertEqual(self.laid_out[-1][1], "TB")
+        self.assertEqual(self.lines_state(), "straight")
 
     def test_refused(self):
         self.engine.refused = ValueError("no")
-        self.tab.curved_action.change_state(GLib.Variant.new_boolean(True))
-        self.assertEqual(
-            self.logger.formatted(), ["Cannot change curved_links"]
-        )
-        self.assertFalse(self.curved())
-        self.assertEqual(len(self.link().points), 4)
+        self.choose_lines("right-angles")
+        self.assertEqual(self.logger.formatted(), ["Cannot change link_lines"])
+        self.assertEqual(self.lines_state(), "curved")
+        self.assertFalse(at_right_angles(self.link()))
 
     def test_changed_elsewhere(self):
         # as the console changes it
-        set_setting("curved_links", True)
-        self.assertTrue(self.curved())
-        self.assertGreater(len(self.link().points), 4)
+        set_setting("link_lines", "right-angles")
+        self.assertEqual(self.lines_state(), "right-angles")
+        self.assertTrue(at_right_angles(self.link()))
         # another setting changes nothing
         set_setting("qemu_path", "/opt")
-        self.assertEqual(len(self.routed), 1)
+        self.assertEqual(len(self.routed), 2)
 
     def test_hidden(self):
         self.tab.on_left()
-        set_setting("curved_links", True)
-        self.assertTrue(self.curved())
-        self.assertEqual(self.routed, [])
+        set_setting("link_lines", "right-angles")
+        self.assertEqual(self.lines_state(), "right-angles")
+        self.assertEqual(len(self.routed), 1)
         self.tab.on_shown()
-        self.assertGreater(len(self.link().points), 4)
+        self.assertTrue(at_right_angles(self.link()))
 
     def test_not_after_quit(self):
         self.tab.on_quit()
-        set_setting("curved_links", True)
-        self.assertFalse(self.curved())
-        self.assertEqual(self.routed, [])
+        set_setting("link_lines", "right-angles")
+        self.assertEqual(self.lines_state(), "curved")
+        self.assertEqual(len(self.routed), 1)
 
     def test_routed_again_only_when_the_lab_changes(self):
-        set_setting("curved_links", True)
         self.assertEqual(len(self.routed), 1)
         routes = self.view.layout.links
         # as when a brick starts or stops
@@ -450,13 +467,18 @@ class TestCurvedLinks(TopologyTestCase):
         self.vm.connect(self.sw2.socks[0])
         self.assertEqual(len(self.routed), 3)
         self.assertEqual(len(self.view.layout.links), 2)
+        # the lines
+        set_setting("link_lines", "right-angles")
+        self.assertEqual(len(self.routed), 4)
+        set_setting("link_lines", "curved")
+        self.assertEqual(len(self.routed), 5)
 
 
 class Copy:
     """The copy of the project there: its settings."""
 
     def __init__(self):
-        self.settings = {"curved_links": False}
+        self.settings = {"link_lines": "curved"}
         self.settings_changed = Signal(Observable(), "settings-changed")
 
     def take_settings(self, values):
@@ -487,8 +509,8 @@ class EngineThere(FakeEngine):
         return defer.succeed(None)
 
 
-class TestCurvedLinksThere(TopologyTestCase):
-    """Curved Links in the windows of --connect (page 36)."""
+class TestLinksThere(TopologyTestCase):
+    """Links in the windows of --connect (page 36)."""
 
     def setUp(self):
         super().setUp()
@@ -501,26 +523,28 @@ class TestCurvedLinksThere(TopologyTestCase):
         self.sw1.place = Point(0, 0)
         self.show()
 
-    def curved(self):
-        return self.tab.curved_action.get_state().get_boolean()
+    def lines_state(self):
+        return self.tab.lines_action.get_state().get_string()
 
     def test_sent_there(self):
-        self.tab.curved_action.change_state(GLib.Variant.new_boolean(True))
-        self.assertEqual(self.there.set, [{"curved_links": True}])
+        self.tab.lines_action.change_state(
+            GLib.Variant.new_string("right-angles")
+        )
+        self.assertEqual(self.there.set, [{"link_lines": "right-angles"}])
         # until it comes back
-        self.assertFalse(self.curved())
+        self.assertEqual(self.lines_state(), "curved")
 
     def test_follows_there(self):
-        self.there.factory.take_settings({"curved_links": True})
-        self.assertTrue(self.curved())
+        self.there.factory.take_settings({"link_lines": "right-angles"})
+        self.assertEqual(self.lines_state(), "right-angles")
         # the settings here are not those there
-        set_setting("curved_links", False)
-        self.assertTrue(self.curved())
+        set_setting("link_lines", "straight")
+        self.assertEqual(self.lines_state(), "right-angles")
 
     def test_not_after_quit(self):
         self.tab.on_quit()
-        self.there.factory.take_settings({"curved_links": True})
-        self.assertFalse(self.curved())
+        self.there.factory.take_settings({"link_lines": "right-angles"})
+        self.assertEqual(self.lines_state(), "curved")
 
 
 class TestTheBar(TopologyTestCase):
@@ -697,10 +721,19 @@ class TestTheMenu(TopologyTestCase):
                     ],
                 ),
                 (
+                    "Links",
                     None,
                     None,
-                    None,
-                    [("Curved Links", "topology.curved", None, None)],
+                    [
+                        ("Straight", "topology.lines", "straight", None),
+                        ("Curved", "topology.lines", "curved", None),
+                        (
+                            "Right Angles",
+                            "topology.lines",
+                            "right-angles",
+                            None,
+                        ),
+                    ],
                 ),
                 (
                     None,
@@ -718,9 +751,12 @@ class TestTheMenu(TopologyTestCase):
     def test_the_actions_of_the_tab(self):
         group = self.tab.get_action_group("topology")
         self.assertEqual(
-            sorted(group.list_actions()), ["curved", "export", "layout"]
+            sorted(group.list_actions()), ["export", "layout", "lines"]
         )
         self.assertEqual(group.get_action_state("layout").get_string(), "LR")
+        self.assertEqual(
+            group.get_action_state("lines").get_string(), "curved"
+        )
 
 
 class TestClicks(TopologyTestCase):

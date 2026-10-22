@@ -193,7 +193,7 @@ class TestProjectSettings(SettingsTestCase):
     def test_project_keys(self):
         self.assertEqual(
             PROJECT_KEYS,
-            {"allow_female_plugs", "qemu_path", "vde_path", "curved_links"},
+            {"allow_female_plugs", "qemu_path", "vde_path", "link_lines"},
         )
         # none of them is a setting of the application
         self.assertFalse(PROJECT_KEYS & set(field_names(AppSettings)))
@@ -205,16 +205,19 @@ class TestProjectSettings(SettingsTestCase):
         )
         self.assertFalse(RETIRED_PROJECT_KEYS & PROJECT_KEYS)
 
-    def test_curved_links(self):
-        # straight links, until the project chooses curves
-        self.assertIs(get_setting("curved_links"), False)
+    def test_link_lines(self):
+        # curved links, until the project chooses others
+        self.assertEqual(get_setting("link_lines"), "curved")
         project = ProjectSettings()
         use_project(project)
-        self.assertIs(project.curved_links, False)
-        set_setting("curved_links", True)
-        self.assertIs(project.curved_links, True)
-        self.assertIs(new_project_settings().curved_links, True)
-        self.assertRaises(ValueError, set_setting, "curved_links", "round")
+        self.assertEqual(project.link_lines, "curved")
+        set_setting("link_lines", "right-angles")
+        self.assertEqual(project.link_lines, "right-angles")
+        self.assertEqual(new_project_settings().link_lines, "right-angles")
+        set_setting("link_lines", "straight")
+        self.assertEqual(project.link_lines, "straight")
+        self.assertRaises(ValueError, set_setting, "link_lines", "round")
+        self.assertRaises(ValueError, set_setting, "link_lines", True)
 
 
 class TestLabels(unittest.TestCase):

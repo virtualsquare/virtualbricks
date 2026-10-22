@@ -48,13 +48,13 @@ Feature: Topology
       | Setting | Value  |
       | place   | [0, 0] |
 
-  Scenario: Curved Links, chosen in the menu of the picture of a lab laid out by hand, is kept in the project
-    Given the project new_project has the bricks, laid out by hand
-      | Name | Type   | Place    |
-      | sw1  | switch | [0, 0]   |
-      | sw2  | switch | [200, 0] |
-    And Virtualbricks is running
-    When I choose Curved Links in the menu of the picture of the lab
+  Scenario: Right Angles, chosen in the menu of the picture of the lab, is kept in the project
+    Given Virtualbricks is running
+    When I add the switch sw1
     Then project.toml has the settings
-      | Setting      | Value |
-      | curved_links | true  |
+      | Setting    | Value    |
+      | link_lines | "curved" |
+    When I choose Right Angles for the links in the menu of the picture of the lab
+    Then project.toml has the settings
+      | Setting    | Value          |
+      | link_lines | "right-angles" |

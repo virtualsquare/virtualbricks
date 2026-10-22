@@ -244,13 +244,14 @@ class TestRoundTrip(ProjectFileTestCase):
         self.assertIsNone(wire.plugs[0].sock)
         self.assertEqual(wire.plugs[1].sock.nickname, "vm_sock_eth3")
 
-    def test_curved_links(self):
-        settings = ProjectSettings(curved_links=True)
+    def test_link_lines(self):
+        settings = ProjectSettings(link_lines="right-angles")
         data = project_document(self.factory, settings)
         text = dumps_toml(data, project_notes(data))
         self.assertIn(
-            "# Links around the bricks, in a picture laid out by hand"
-            " (default false)\ncurved_links = true\n",
+            "# How the picture of the lab draws the links\n"
+            '# (straight, curved or right-angles; default "curved")\n'
+            'link_lines = "right-angles"\n',
             text,
         )
         _, project_settings = self.restore(loads_toml(text))

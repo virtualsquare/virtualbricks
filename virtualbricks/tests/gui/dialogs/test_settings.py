@@ -522,7 +522,7 @@ class TestOverAConnection(WindowTestCase):
                 "vde_path": "/opt/vde/bin",
                 "qemu_path": "/opt/qemu/bin",
                 "allow_female_plugs": True,
-                "curved_links": False,
+                "link_lines": "curved",
             }
         )
         self.engine = EngineThere(values, self.facts)

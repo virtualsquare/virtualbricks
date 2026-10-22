@@ -41,6 +41,7 @@ from virtualbricks import locations
 from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
     Bool,
+    Choice,
     Command,
     Kind,
     ListOf,
@@ -132,14 +133,15 @@ class ProjectSettings:
         label=N_("VDE folder"),
         help=N_("The folder of the VDE programs"),
     )
-    # Graphviz's curves for the links of a lab laid out by hand, around the
-    # bricks, instead of straight lines (page 36); the menu of the Topology
-    # tab sets it, the Settings window doesn't show it
-    curved_links: bool = field(
-        Bool(),
-        default=False,
-        label=N_("Curved links"),
-        help=N_("Links around the bricks, in a picture laid out by hand"),
+    # The lines of the links in the picture of the lab, in every layout:
+    # Graphviz's curves or right angles around the bricks, or straight lines
+    # (page 36); the menu of the Topology tab sets it, the Settings window
+    # doesn't show it
+    link_lines: str = field(
+        Choice("straight", "curved", "right-angles"),
+        default="curved",
+        label=N_("Link lines"),
+        help=N_("How the picture of the lab draws the links"),
     )
 
 

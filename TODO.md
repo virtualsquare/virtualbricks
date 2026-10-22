@@ -190,9 +190,9 @@
   row, near the bricks they link to (35 §9)
 - [ ] Route the curved links of a big lab in a process of its own, with
   the old routes shown until the new ones come: 100 bricks wait 0.3 s
-  after each move (36 §10)
-- [ ] Show the curved links that a brick will have during its drag, at
-  the faded copy, before the release (36 §10)
+  after each move, 3.8 s at right angles (36 §10)
+- [ ] Show the curved links, or those at right angles, that a brick will
+  have during its drag, at the faded copy, before the release (36 §10)
 
 ## Readme
 
@@ -353,6 +353,11 @@
 
 # DONE
 
+- [x] Choose the lines of the links in the picture of the lab: Straight,
+  Curved or Right Angles, the Links of the menu of the Topology tab, in
+  every layout, kept as link_lines in the settings of the project, curved
+  by default; where the program of Graphviz 2.42 can't draw right angles,
+  the links are curved (page 36, Since then)
 - [x] Draw Graphviz's curves around the bricks in a lab laid out by hand,
   as a choice: Curved Links, in the menu of the Topology tab, kept as
   curved_links in the settings of the project; Graphviz routes the links

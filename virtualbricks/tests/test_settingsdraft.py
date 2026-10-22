@@ -109,7 +109,7 @@ class TestDraft(unittest.TestCase):
         self.assertEqual(draft.get("qemu_path"), "/opt/qemu")
         self.assertEqual(
             draft.keys,
-            ("allow_female_plugs", "qemu_path", "vde_path", "curved_links"),
+            ("allow_female_plugs", "qemu_path", "vde_path", "link_lines"),
         )
         self.assertEqual(draft.changes(), {})
         self.assertEqual(draft.problems(), [])
