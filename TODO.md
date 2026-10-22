@@ -194,7 +194,11 @@
 
 ## Readme
 
-- [ ] Give every button of the Readme tab a tooltip
+- [ ] Give every button of the Readme tab a tooltip. They have one, but
+  GTK 3 doesn't show it: over a button that floats in an overlay, it asks
+  the view under it, then the overlay, never the button (every target,
+  3.24.41 to 3.24.52). The overlay answering query-tooltip for what floats
+  over it works, and was turned down (22 Oct)
 - [ ] Make the buttons semi-transparent, and opaque under the pointer
 - [ ] Round the corners of the buttons
 - [ ] Render GFM's tables and task lists, if READMEs need them (05 §10)
