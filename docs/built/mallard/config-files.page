@@ -221,6 +221,10 @@ hub_mode = false  # default</screen>
           <title><code>vde_path</code> = <var>path</var>, default <code>"/usr/bin"</code></title>
           <p>The directory of the VDE programs, such as <code>vde_switch</code>(1).</p>
         </item>
+        <item>
+          <title><code>curved_links</code> = <var>boolean</var>, default <code>false</code></title>
+          <p>In a lab laid out by hand, draw the links of the picture as curves that Graphviz routes around the bricks, instead of straight lines.</p>
+        </item>
       </terms>
       <p>Older project files have a <code>cow_format</code> key, the format of the private copies of the disks, which are always qcow2 now, and a <code>log_link_loops</code> key, which decided whether a loop in the links was logged, while the bricks on a loop never started: an error says so now. Both are read without a word, and dropped at the next save.</p>
     </section>
@@ -860,6 +864,7 @@ workspaces = [
 allow_female_plugs = false
 qemu_path = "/usr/bin"
 vde_path = "/usr/bin"
+curved_links = false
 
 [images.debian]
 path = "/home/alice/.virtualbricks/shared_images/debian.qcow2"

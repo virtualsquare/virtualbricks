@@ -132,6 +132,15 @@ class ProjectSettings:
         label=N_("VDE folder"),
         help=N_("The folder of the VDE programs"),
     )
+    # Graphviz's curves for the links of a lab laid out by hand, around the
+    # bricks, instead of straight lines (page 36); the menu of the Topology
+    # tab sets it, the Settings window doesn't show it
+    curved_links: bool = field(
+        Bool(),
+        default=False,
+        label=N_("Curved links"),
+        help=N_("Links around the bricks, in a picture laid out by hand"),
+    )
 
 
 # The settings that projects had once and have no more: a project file

@@ -284,6 +284,10 @@ The directory of the QEMU programs.
 .TP
 \f[B]vde_path\f[R] = \f[I]path\f[R], default \f[CR]\(dq/usr/bin\(dq\f[R]
 The directory of the VDE programs, such as \f[B]vde_switch\f[R](1).
+.TP
+\f[B]curved_links\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+In a lab laid out by hand, draw the links of the picture as curves that
+Graphviz routes around the bricks, instead of straight lines.
 .PP
 Older project files have a \f[B]cow_format\f[R] key, the format of the
 private copies of the disks, which are always qcow2 now, and a
@@ -1018,6 +1022,7 @@ format = 1
 allow_female_plugs = false
 qemu_path = \(dq/usr/bin\(dq
 vde_path = \(dq/usr/bin\(dq
+curved_links = false
 
 [images.debian]
 path = \(dq/home/alice/.virtualbricks/shared_images/debian.qcow2\(dq

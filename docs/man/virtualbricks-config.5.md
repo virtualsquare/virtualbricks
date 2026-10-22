@@ -278,6 +278,10 @@ the open project.
 **vde_path** = *path*, default `"/usr/bin"`
 :   The directory of the VDE programs, such as **vde_switch**(1).
 
+**curved_links** = *boolean*, default `false`
+:   In a lab laid out by hand, draw the links of the picture as curves
+    that Graphviz routes around the bricks, instead of straight lines.
+
 Older project files have a **cow_format** key, the format of the private
 copies of the disks, which are always qcow2 now, and a **log_link_loops**
 key, which decided whether a loop in the links was logged, while the bricks
@@ -973,6 +977,7 @@ format = 1
 allow_female_plugs = false
 qemu_path = "/usr/bin"
 vde_path = "/usr/bin"
+curved_links = false
 
 [images.debian]
 path = "/home/alice/.virtualbricks/shared_images/debian.qcow2"
