@@ -1,115 +1,134 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>The programs it needs</title>
-<link rel="stylesheet" type="text/css" href="C.css">
-<script type="text/javascript" src="highlight.pack.js"></script><script>
-document.addEventListener('DOMContentLoaded', function() {
-  var matches = document.querySelectorAll('code.syntax')
-  for (var i = 0; i < matches.length; i++) {
-    hljs.highlightBlock(matches[i]);
-  }
-}, false);</script><script type="text/javascript" src="yelp.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The programs it needs — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
 </head>
-<body><main><div class="page">
-<header><div class="inner pagewide"><div class="trails" role="navigation"><div class="trail">
-<a class="trail" href="index.html" title="Virtualbricks Help"><span class="app">Virtualbricks</span> Help</a> › <a class="trail" href="index.html#start" title="Getting started">Getting started</a> » </div></div></div></header><article><div class="hgroup pagewide"><h1 class="title"><span class="title">The programs it needs</span></h1></div>
-<div class="region">
-<div class="contents pagewide">
-<p class="p">The bricks are programs that Virtualbricks runs: the VDE programs for
-  the switches, the links and the interfaces of this computer, and QEMU for
-  the virtual machines. On Debian and Ubuntu they come in these
-  packages:</p>
-<div class="table"><div class="inner"><div class="region"><table class="table" style="border-style: solid;">
-<thead><tr>
-<td><p class="p">Package</p></td>
-<td><p class="p">Programs</p></td>
-</tr></thead>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#start">Getting started</a></p>
+</div>
+<h1>The programs it needs</h1>
+<p>The bricks are programs that Virtualbricks runs: the VDE programs for
+the switches, the links and the interfaces of this computer, and QEMU
+for the virtual machines. On Debian and Ubuntu they come in these
+packages:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Package</th>
+<th style="text-align: left;">Programs</th>
+</tr>
+</thead>
 <tbody>
 <tr>
-<td style="border-top-style: solid;"><p class="p"><span class="sys">vde2</span></p></td>
-<td style="border-top-style: solid;"><p class="p"><span class="cmd">vde_switch</span>,
-      <span class="cmd">vde_plug</span>, <span class="cmd">dpipe</span>, <span class="cmd">vde_plug2tap</span>,
-      <span class="cmd">vde_pcapplug</span>, <span class="cmd">wirefilter</span>, <span class="cmd">vdeterm</span>,
-      <span class="cmd">unixterm</span></p></td>
+<td style="text-align: left;"><code class="sys">vde2</code></td>
+<td style="text-align: left;"><code class="cmd">vde_switch</code>, <code
+class="cmd">vde_plug</code>, <code class="cmd">dpipe</code>, <code
+class="cmd">vde_plug2tap</code>, <code class="cmd">vde_pcapplug</code>,
+<code class="cmd">vdeterm</code>, <code class="cmd">unixterm</code></td>
 </tr>
 <tr>
-<td style="border-top-style: solid;"><p class="p"><span class="sys">vde2-cryptcab</span></p></td>
-<td style="border-top-style: solid;"><p class="p"><span class="cmd">vde_cryptcab</span>,
-      for the tunnels</p></td>
+<td style="text-align: left;"><code
+class="sys">vde2-cryptcab</code></td>
+<td style="text-align: left;"><code class="cmd">vde_cryptcab</code>, for
+the tunnels</td>
 </tr>
 <tr>
-<td style="border-top-style: solid;"><p class="p"><span class="sys">vde-netemu</span></p></td>
-<td style="border-top-style: solid;"><p class="p"><span class="cmd">vde-netemu</span>,
-      for the Netemu links</p></td>
+<td style="text-align: left;"><code class="sys">vde-netemu</code></td>
+<td style="text-align: left;"><code class="cmd">vde-netemu</code>, for
+the Netemu links</td>
 </tr>
 <tr>
-<td style="border-top-style: solid;"><p class="p"><span class="sys">qemu-system-x86</span></p></td>
-<td style="border-top-style: solid;"><p class="p"><span class="cmd">qemu-system-x86_64</span>
-      and <span class="cmd">qemu-system-i386</span></p></td>
+<td style="text-align: left;"><code
+class="sys">qemu-system-x86</code></td>
+<td style="text-align: left;"><code
+class="cmd">qemu-system-x86_64</code> and <code
+class="cmd">qemu-system-i386</code></td>
 </tr>
 <tr>
-<td style="border-top-style: solid;"><p class="p"><span class="sys">qemu-utils</span></p></td>
-<td style="border-top-style: solid;"><p class="p"><span class="cmd">qemu-img</span>,
-      which reads and makes the disk images</p></td>
+<td style="text-align: left;"><code class="sys">qemu-system-arm</code>,
+<code class="sys">qemu-system-mips</code>, <code
+class="sys">qemu-system-ppc</code>, <code
+class="sys">qemu-system-riscv</code>, <code
+class="sys">qemu-system-s390x</code>, <code
+class="sys">qemu-system-sparc</code>, <code
+class="sys">qemu-system-misc</code></td>
+<td style="text-align: left;">The other architectures, as <code
+class="cmd">qemu-system-aarch64</code> in <code
+class="sys">qemu-system-arm</code>; on Ubuntu 24.04, <code
+class="sys">qemu-system-misc</code> has those of RISC-V</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code class="sys">qemu-utils</code></td>
+<td style="text-align: left;"><code class="cmd">qemu-img</code>, which
+reads and makes the disk images</td>
 </tr>
 </tbody>
-</table></div></div></div>
-<p class="p">No distribution ships <span class="cmd">vde_router</span>, the program of the
-  router.</p>
+</table>
+<p>The menu of the programs shows each once, by the name QEMU gives it:
+Debian's other names, as <code class="cmd">qemu-system-arm64</code> for
+<code class="cmd">qemu-system-aarch64</code>, only where a machine uses
+one. Some programs have no default machine type, as <code
+class="cmd">qemu-system-aarch64</code> and <code
+class="cmd">qemu-system-arm</code>: choose one in the section <span
+class="gui">Machine</span>, as <code class="sys">virt</code>, or the
+machine doesn't start.</p>
+<p>No distribution ships <code class="cmd">vde_router</code>, the
+program of the router.</p>
+<h2 id="where">Where Virtualbricks looks</h2>
+<p>Each project has a folder for the QEMU programs and one for the VDE
+programs, in its settings: choose <span class="guiseq"><span
+class="gui">File</span> › <span class="gui">Settings</span></span>, then
+the page of the project. A program that isn't in its folder is looked
+for in the folders of <code class="sys">PATH</code>.</p>
+<p>Under each folder, the <span class="gui">Settings</span> window says
+what it holds: the version of QEMU and its programs, and whether the
+programs of the bricks are there, or which one is missing and the
+package that has it. A folder that doesn't exist is an error, and <span
+class="gui">OK</span> stays greyed until it is fixed.</p>
+<h2 id="missing">When a program is missing</h2>
+<ul>
+<li><p><span class="gui">New Brick</span> shows a warning sign on the
+kinds whose program is missing, and says which one.</p></li>
+<li><p>At start, Virtualbricks warns about the programs it can't find.
+<span class="gui">Missing programs</span>, in the settings of this
+computer, turns the warning off.</p></li>
+<li><p>A brick whose program is missing doesn't start, and the <span
+class="gui">Logs</span> window says why. Install the package, and start
+it again.</p></li>
+</ul>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="settings.html">Settings</a></p>
+<div class="desc">
+<p>The terminal, KSM, the folders of the programs, and the other
+settings.</p>
 </div>
-<section id="where"><div class="inner">
-<div class="hgroup pagewide"><h2 class="title"><span class="title">Where Virtualbricks looks</span></h2></div>
-<div class="region"><div class="contents pagewide">
-<p class="p">Each project has a folder for the QEMU programs and one for the VDE
-    programs, in its settings: choose <span class="guiseq"><span class="gui">File</span> ▸ <span class="gui">Settings</span></span>, then the page of the project. A program that
-    isn't in its folder is looked for in the folders of <span class="sys">PATH</span>.</p>
-<p class="p">Under each folder, the <span class="gui">Settings</span> window says what it holds:
-    the version of QEMU and its programs, and whether the programs of the
-    bricks are there, or which one is missing and the package that has it. A
-    folder that doesn't exist is an error, and <span class="gui">OK</span> stays greyed
-    until it is fixed.</p>
-</div></div>
-</div></section><section id="missing"><div class="inner">
-<div class="hgroup pagewide"><h2 class="title"><span class="title">When a program is missing</span></h2></div>
-<div class="region"><div class="contents pagewide"><div class="list"><div class="inner"><div class="region"><ul class="list">
-<li class="list"><p class="p"><span class="gui">New Brick</span> shows a warning sign on the kinds whose
-      program is missing, and says which one.</p></li>
-<li class="list"><p class="p">At start, Virtualbricks warns about the programs it can't
-      find. <span class="gui">Missing programs</span>, in the settings of this computer,
-      turns the warning off.</p></li>
-<li class="list"><p class="p">A brick whose program is missing doesn't start, and the
-      <span class="gui">Logs</span> window says why. Install the package, and start it
-      again.</p></li>
-</ul></div></div></div></div></div>
-</div></section><section class="links" role="navigation"><div class="inner">
-<div class="hgroup pagewide"></div>
-<div class="contents pagewide">
-<div class="links guidelinks"><div class="inner">
-<div class="title"><h2><span class="title">More Information</span></h2></div>
-<div class="region"><ul><li class="links "><a href="index.html#start" title="Getting started">Getting started</a></li></ul></div>
-</div></div>
-<div class="links seealsolinks"><div class="inner">
-<div class="title"><h2><span class="title">See Also</span></h2></div>
-<div class="region"><ul>
-<li class="links ">
-<a href="settings.html" title="Settings">Settings</a><span class="desc"> — The terminal, KSM, the folders of the programs, and the other
-    settings.</span>
-</li>
-<li class="links ">
-<a href="kinds.html" title="The kinds of brick">The kinds of brick</a><span class="desc"> — What each brick is for, and the program that runs it.</span>
-</li>
-<li class="links ">
-<a href="problems.html" title="When something goes wrong">When something goes wrong</a><span class="desc"> — The messages, a brick that doesn't start, a refused start, a
-    project that can't be read.</span>
-</li>
-</ul></div>
-</div></div>
 </div>
-</div></section>
+<div class="link">
+<p><a href="kinds.html">The kinds of brick</a></p>
+<div class="desc">
+<p>What each brick is for, and the program that runs it.</p>
 </div>
-<div class="clear"></div></article><footer><div class="inner pagewide"></div></footer>
-</div></main></body>
+</div>
+<div class="link">
+<p><a href="problems.html">When something goes wrong</a></p>
+<div class="desc">
+<p>The messages, a brick that doesn't start, a refused start, a project
+that can't be read.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
 </html>
