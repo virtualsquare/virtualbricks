@@ -86,6 +86,7 @@ class TestReadmeTab(unittest.TestCase):
         self.assertTrue(self.tab.preview_button.get_active())
         self.assertFalse(self.tab.edit_button.get_active())
         self.assertEqual(self.showing(), "empty")
+        self.assertTrue(self.tab.edit_button.get_visible())
         self.assertFalse(self.tab.syntax_button.get_visible())
 
     def test_a_text_loaded_is_rendered(self):
@@ -103,6 +104,8 @@ class TestReadmeTab(unittest.TestCase):
         self.assertEqual(self.showing(), "editor")
         self.assertTrue(self.tab.editor.get_mapped())
         self.assertIs(self.window.get_focus(), self.tab.editor)
+        # the pencil gives way to the syntax
+        self.assertFalse(self.tab.edit_button.get_visible())
         self.assertTrue(self.tab.syntax_button.get_visible())
         # rendered when the preview shows again
         self.buffer.set_text(README)
@@ -110,6 +113,7 @@ class TestReadmeTab(unittest.TestCase):
         self.tab.preview_button.set_active(True)
         self.assertEqual(self.showing(), "preview")
         self.assertEqual(self.rendered(), RENDERED)
+        self.assertTrue(self.tab.edit_button.get_visible())
         self.assertFalse(self.tab.syntax_button.get_visible())
 
     def test_show_the_preview(self):
@@ -135,7 +139,9 @@ class TestReadmeTab(unittest.TestCase):
         for button in (tab.edit_button, tab.preview_button):
             self.assertTrue(button.get_mapped())
         tab.edit_button.set_active(True)
-        self.assertTrue(tab.syntax_button.get_mapped())
+        self.assertFalse(tab.edit_button.get_mapped())
+        for button in (tab.preview_button, tab.syntax_button):
+            self.assertTrue(button.get_mapped())
         # an overlay gives each of its children a window: where in the tab
         x, y = tab.buttons.translate_coordinates(tab, 0, 0)
         self.assertEqual(y, GAP)
@@ -146,7 +152,7 @@ class TestReadmeTab(unittest.TestCase):
         _, width = self.tab.buttons.get_preferred_width()
         self.assertEqual(self.tab.preview.get_right_margin(), width)
         self.assertEqual(self.tab.empty_label.get_margin_end(), width)
-        # three buttons over the editor
+        # the eye and the syntax over the editor, a gap apart
         self.tab.edit_button.set_active(True)
         _, wider = self.tab.buttons.get_preferred_width()
         self.assertGreater(wider, width)

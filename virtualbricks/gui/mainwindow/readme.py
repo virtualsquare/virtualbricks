@@ -21,10 +21,10 @@ The Readme tab of the main window: the README rendered, or its text to edit.
 
 The tab opens on the preview. Two icon buttons float over its top right
 corner: the pencil shows the editor, the eye the preview, drawn again from
-the text of the editor. While the editor shows, a third icon opens the
-syntax. The views keep a margin as wide as the buttons, so no text goes
-under them; it's measured again when the buttons get their room, as a new
-theme can change them.
+the text of the editor. While the editor shows, the pencil hides and an
+icon opens the syntax. The views keep a margin as wide as the buttons, so
+no text goes under them; it's measured again when the buttons get their
+room, as a new theme can change them.
 
 The editor holds the README of the open project, which the engine reads and
 writes: the tab loads it when a project opens and when it shows, and saves
@@ -235,6 +235,7 @@ class ReadmeTab(Tab, Gtk.Overlay):
         else:
             self.stack.set_visible_child_name("editor")
             self.editor.grab_focus()
+        self.edit_button.set_visible(self.showing_preview())
         self.syntax_button.set_visible(not self.showing_preview())
         self._set_margin()
 
