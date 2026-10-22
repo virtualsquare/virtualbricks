@@ -602,13 +602,18 @@ A VDE switch, **vde_switch**(1). Plugs connect to it by its name.
 
 A VDE switch that Virtualbricks doesn't start, run by another program. Plugs
 connect to it by its name. It runs while a switch listens in its control
-directory, on the socket **ctl** there: Virtualbricks looks every second.
-Its **on_start** and **on_stop** run when the switch comes and goes, not
-for the switch already there when the project opens. Start and Stop are
-refused, as the other program starts and stops its switch; a brick that
-plugs into it starts only while that switch is there. A switch wrapper that
-runs keeps neither Virtualbricks from quitting, nor its project from
-closing, nor itself from being deleted.
+directory, on the socket **ctl** there: Virtualbricks looks every second,
+with a connection to **ctl** that it closes at once, as a plug would make.
+A directory that isn't there is a switch that quit, as **vde_switch**(1)
+removes its own: the switch wrapper is stopped. Any other directory where a
+plug can't connect puts it in error, and a warning says why: a directory
+without **ctl**, the **ctl** that a killed switch leaves, or that of another
+user's switch that you may not use. Its **on_start** and **on_stop** run
+when the switch comes and goes, not for the switch already there when the
+project opens. Start and Stop are refused, as the other program starts and
+stops its switch; a brick that plugs into it starts only while that switch
+is there. A switch wrapper that runs keeps neither Virtualbricks from
+quitting, nor its project from closing, nor itself from being deleted.
 
 **socket_path** = *path*, default `""`
 :   The control directory of the switch; without one, the switch wrapper

@@ -22,12 +22,14 @@ import socket
 
 from virtualbricks import errors
 from virtualbricks.bricks import must_stop, switchwrapper
+from virtualbricks.bricks.brickinfo import State, state
 from virtualbricks.bricks.eventaction import StartAction
 from virtualbricks.bricks.switchwrapper import (
     ExternalSwitch,
+    SwitchWrapper,
     is_switchwrapper,
-    listens,
     look_all,
+    probe,
     switch_pid,
 )
 from virtualbricks.config.projectfile import project_document, restore_project
@@ -42,19 +44,27 @@ from virtualbricks.tests import (
 
 
 class Switch:
-    """The control folder of a switch, as vde_switch makes it: its ctl."""
+    """
+    The control folder of a switch, as vde_switch makes it: its ctl, and the
+    folder, both gone once it quits.
+    """
 
     def __init__(self, test, folder=None):
-        self.folder = short_folder(test) if folder is None else folder
+        if folder is None:
+            folder = os.path.join(short_folder(test), "sw")
+        self.folder = folder
         self.ctl = os.path.join(self.folder, "ctl")
         self.socket = None
         test.addCleanup(self.quit)
 
-    def listen(self):
+    def listen(self, backlog=5):
         os.makedirs(self.folder, exist_ok=True)
+        if os.path.lexists(self.ctl):
+            # the socket of a killed switch, which the new one takes
+            os.unlink(self.ctl)
         self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.socket.bind(self.ctl)
-        self.socket.listen()
+        self.socket.listen(backlog)
         return self
 
     def quit(self):
@@ -62,23 +72,93 @@ class Switch:
             self.socket.close()
             self.socket = None
             os.unlink(self.ctl)
+            os.rmdir(self.folder)
+
+    def kill(self):
+        """Its socket stays, with nothing listening, as after a SIGKILL."""
+
+        self.socket.close()
+        self.socket = None
 
 
-class TestListens(BrickTestCase):
+class TestProbe(BrickTestCase):
 
     def test_a_switch(self):
-        self.assertTrue(listens(Switch(self).listen().folder))
+        self.assertEqual(probe(Switch(self).listen().folder), (True, None))
+
+    def test_a_busy_switch(self):
+        # its queue is full of connections it hasn't taken yet
+        switch = Switch(self).listen(backlog=0)
+        waiting = []
+        self.addCleanup(lambda: [sock.close() for sock in waiting])
+        while True:
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            waiting.append(sock)
+            sock.setblocking(False)
+            try:
+                sock.connect(switch.ctl)
+            except BlockingIOError:
+                break
+        self.assertEqual(probe(switch.folder), (True, None))
 
     def test_no_folder(self):
-        self.assertFalse(listens(""))
-        self.assertFalse(listens(os.path.join(short_folder(self), "none")))
+        # as a switch that quits leaves it
+        switch = Switch(self).listen()
+        switch.quit()
+        self.assertEqual(probe(switch.folder), (False, None))
 
-    def test_a_folder_without_a_switch(self):
-        switch = Switch(self)
-        self.assertFalse(listens(switch.folder))
-        with open(switch.ctl, "w"):
+    def test_a_folder_without_ctl(self):
+        folder = short_folder(self)
+        self.assertEqual(probe(folder), (False, f"No socket ctl in {folder}"))
+
+    def test_a_killed_switch(self):
+        switch = Switch(self).listen()
+        switch.kill()
+        self.assertEqual(
+            probe(switch.folder),
+            (
+                False,
+                f"Nothing listens on {switch.ctl}, left by a switch that ended",
+            ),
+        )
+
+    def test_not_a_socket(self):
+        folder = short_folder(self)
+        ctl = os.path.join(folder, "ctl")
+        with open(ctl, "w"):
             pass
-        self.assertFalse(listens(switch.folder))
+        self.assertEqual(probe(folder), (False, f"{ctl} isn't a socket"))
+        os.unlink(ctl)
+        os.mkdir(ctl)
+        self.assertEqual(probe(folder), (False, f"{ctl} isn't a socket"))
+
+    def test_not_a_folder(self):
+        path = os.path.join(short_folder(self), "sw")
+        with open(path, "w"):
+            pass
+        self.assertEqual(probe(path), (False, f"{path} isn't a folder"))
+
+    def test_no_permission(self):
+        if os.geteuid() == 0:
+            self.skipTest("root connects to any socket")
+        switch = Switch(self).listen()
+        os.chmod(switch.ctl, 0)
+        self.assertEqual(
+            probe(switch.folder),
+            (False, f"Cannot connect to {switch.ctl}: Permission denied"),
+        )
+
+    def test_a_path_too_long(self):
+        # no switch can listen there
+        folder = os.path.join(short_folder(self), "x" * 120)
+        os.mkdir(folder)
+        self.assertEqual(
+            probe(folder),
+            (
+                False,
+                f"Cannot connect to {folder}/ctl: AF_UNIX path too long",
+            ),
+        )
 
 
 class TestSwitchPid(BrickTestCase):
@@ -212,6 +292,68 @@ class TestTheState(SwitchWrapperTestCase):
         self.wrapper.update_config({"socket_path": short_folder(self)})
         self.assertEqual(started, ["down", "up"])
 
+    def test_error(self):
+        started = []
+        for name in ("up", "down"):
+            event = self.factory.new_event(name)
+            event.update_config({"actions": [StartAction("wr")]})
+            event.start = lambda name=name: started.append(name)
+        self.wrapper.update_config({"on_start": "up", "on_stop": "down"})
+        self.switch.listen()
+        self.wrap()
+        self.switch.kill()
+        self.wrapper.look()
+        self.assertFalse(self.wrapper.is_running())
+        self.assertIs(state(self.wrapper), State.ERROR)
+        self.assertEqual(
+            self.wrapper.error,
+            f"Nothing listens on {self.switch.ctl}, left by a switch that"
+            " ended",
+        )
+        self.assertEqual(self.changed, [self.wrapper])
+        self.assertEqual(started, ["down"])
+        self.wrapper.look()
+        self.assertEqual(self.changed, [self.wrapper])
+        # another error
+        os.unlink(self.switch.ctl)
+        self.wrapper.look()
+        self.assertEqual(
+            self.wrapper.error, f"No socket ctl in {self.switch.folder}"
+        )
+        self.assertEqual(self.changed, [self.wrapper] * 2)
+        self.switch.listen()
+        self.wrapper.look()
+        self.assertTrue(self.wrapper.is_running())
+        self.assertIsNone(self.wrapper.error)
+        self.assertEqual(self.changed, [self.wrapper] * 3)
+        self.assertEqual(started, ["down", "up"])
+        self.switch.quit()
+        self.wrapper.look()
+        self.assertIs(state(self.wrapper), State.STOPPED)
+        self.assertIsNone(self.wrapper.error)
+
+    def test_a_new_error_is_logged(self):
+        logger = FakeLogger()
+        self.patch(SwitchWrapper, "logger", logger)
+        folder = short_folder(self)
+        self.wrapper.update_config({"socket_path": folder})
+        self.wrapper.look()
+        no_ctl = f"No socket ctl in {folder}"
+        self.assertEqual(
+            logger.events, [("warn", "{reason}", {"reason": no_ctl})]
+        )
+        Switch(self, folder).listen().kill()
+        self.wrapper.look()
+        self.wrapper.look()
+        stale = f"Nothing listens on {folder}/ctl, left by a switch that ended"
+        self.assertEqual(
+            logger.events,
+            [
+                ("warn", "{reason}", {"reason": no_ctl}),
+                ("warn", "{reason}", {"reason": stale}),
+            ],
+        )
+
     def test_loaded(self):
         self.switch.listen()
         self.wrap()
@@ -239,6 +381,16 @@ class TestStartAndStop(SwitchWrapperTestCase):
         self.assertEqual(
             failure.getErrorMessage(),
             f"No switch listens in {self.switch.folder}",
+        )
+
+    def test_error(self):
+        # a brick that plugs into it gets its error
+        folder = short_folder(self)
+        self.wrapper.update_config({"socket_path": folder})
+        failure = self.failureResultOf(self.wrapper.start())
+        failure.trap(errors.BadConfigError)
+        self.assertEqual(
+            failure.getErrorMessage(), f"No socket ctl in {folder}"
         )
 
     def test_start_looks(self):

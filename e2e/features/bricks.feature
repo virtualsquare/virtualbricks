@@ -86,6 +86,20 @@ Feature: Bricks
     When the switch that another program runs starts again
     Then wr1 is running, with the process of that switch
 
+  @needs-vde_switch
+  Scenario: A switch wrapper whose switch was killed is in error, and runs once the switch is back
+    Given a switch that another program runs
+    And Virtualbricks is running
+    When I add the switch wrapper wr1
+    And I give wr1 the control folder of that switch
+    Then wr1 is running, with the process of that switch
+    When the switch that another program runs is killed
+    Then wr1 is in error: "Nothing listens on {folder}/ctl, left by a switch that ended"
+    When the socket that the switch left is removed
+    Then wr1 is in error: "No socket ctl in {folder}"
+    When the switch that another program runs starts again
+    Then wr1 is running, with the process of that switch
+
   Scenario: A switch wrapper without a control folder can't start, and its row says why
     Given Virtualbricks is running
     When I add the switch wrapper wr1

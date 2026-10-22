@@ -55,6 +55,7 @@ from virtualbricks.bricks import Brick
 from virtualbricks.bricks.event import Event, EventConfig, is_event
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.sock import Sock
+from virtualbricks.bricks.switchwrapper import is_switchwrapper
 from virtualbricks.bricks.virtualmachine import (
     VirtualMachine,
     hostonly_sock,
@@ -167,6 +168,9 @@ class MirrorFactory(BrickFactory):
             brick.project_folder = (  # type: ignore[method-assign]
                 lambda: self.machine.get("project_folder")
             )
+        elif is_switchwrapper(brick):
+            # its folder is there: the state sent says what is in it
+            brick.look = lambda follow=True: None  # type: ignore[method-assign]
         return brick
 
     def state(self, kind: str, name: str) -> Json:
@@ -345,6 +349,9 @@ class MirrorFactory(BrickFactory):
             # with no running, a Virtualbricks that sends the pid alone
             running = state.get("running", pid is not None)
             brick.proc = StandIn(brick, pid) if running else None
+            if is_switchwrapper(brick):
+                # an older Virtualbricks sends no error
+                brick.error = state.get("error")
         brick.changed.notify(brick)
         self._connect_waiting()
 

@@ -41,6 +41,11 @@ mail program, with the messages attached.
 
 - **Not configured**: a setting it needs is missing; its settings say which.
 
+- **Error**, on the switch wrapper it plugs into: the switch of that folder
+  isn't there; the tooltip of the state of the switch wrapper says why. Start
+  the switch again, or give the switch wrapper the folder of a switch that
+  runs.
+
 - A warning sign in **New Brick**, or a message about a program: the program
   isn't installed; see [](programs).
 

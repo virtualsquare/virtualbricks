@@ -56,7 +56,7 @@ DRAG_ICON_SIZE = 24
 TARGETS = [
     Gtk.TargetEntry.new("virtualbricks/brick", Gtk.TargetFlags.SAME_APP, 0)
 ]
-WARNINGS = frozenset((State.NOT_CONNECTED, State.NOT_CONFIGURED))
+WARNINGS = frozenset((State.NOT_CONNECTED, State.NOT_CONFIGURED, State.ERROR))
 
 
 def state_tooltip(brick: Brick, state: State) -> str | None:
@@ -70,6 +70,8 @@ def state_tooltip(brick: Brick, state: State) -> str | None:
         return _("Connect {name} first").format(name=brick.name)
     if state is State.NOT_CONFIGURED:
         return _("Configure {name} first").format(name=brick.name)
+    if state is State.ERROR:
+        return brickinfo.error(brick)
     return None
 
 

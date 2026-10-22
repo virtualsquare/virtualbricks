@@ -710,11 +710,13 @@ An image, a brick or an event, <em>kind</em> <code>image</code>,
 {<code>file</code>}, the <code>size</code>, <code>mtime</code> and
 <code>taken</code> of the file of an image, <code>null</code> if it
 isn't there; {<code>running</code>, <code>pid</code>,
-<code>copies</code>}, whether a brick runs, its process,
-<code>null</code> if it doesn't run or isn't known, as that of a switch
-wrapper whose switch is another user's, and the private copies of a
-machine, as <code>file</code>, by device; {<code>left</code>}, the
-seconds that an event still waits, <code>null</code> if it doesn't.
+<code>error</code>, <code>copies</code>}, whether a brick runs, its
+process, <code>null</code> if it doesn't run or isn't known, as that of
+a switch wrapper whose switch is another user's, why no plug can connect
+in the control directory of a switch wrapper, <code>null</code> if one
+can or the directory isn't there, and the private copies of a machine,
+as <code>file</code>, by device; {<code>left</code>}, the seconds that
+an event still waits, <code>null</code> if it doesn't.
 </dd>
 <dt><code>Renamed</code></dt>
 <dd>

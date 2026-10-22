@@ -39,8 +39,16 @@ start until you connect it.</p>
 </dd>
 <dt><span class="gui">Not configured</span></dt>
 <dd>
-A setting that it needs is missing, as the host of a tunnel client: it
-can't start until you set it.
+<p>A setting that it needs is missing, as the host of a tunnel client:
+it can't start until you set it.</p>
+</dd>
+<dt><span class="gui">Error</span></dt>
+<dd>
+A switch wrapper whose folder has no switch to plug into, though the
+folder is there: it has no socket <code class="file">ctl</code>, or the
+one that a killed switch leaves. The tooltip of the state says what is
+wrong, and so does the <span class="gui">Logs</span> window. It runs
+again once a switch listens there.
 </dd>
 </dl>
 </div>

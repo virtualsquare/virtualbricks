@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 17:17+0200\n"
+"POT-Creation-Date: 2026-10-22 09:09+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -119,6 +119,10 @@ msgstr ""
 
 #: virtualbricks/bricks/brickinfo.py virtualbricks/bricks/eventinfo.py
 msgid "Not configured"
+msgstr ""
+
+#: virtualbricks/bricks/brickinfo.py virtualbricks/gui/dialogs/logging.py
+msgid "Error"
 msgstr ""
 
 #: virtualbricks/bricks/brickinfo.py virtualbricks/console/bricks.py
@@ -660,6 +664,31 @@ msgstr[1] ""
 #: virtualbricks/bricks/switch.py
 #, python-brace-format
 msgid "{switch} needs {count} ports, one for each plug"
+msgstr ""
+
+#: virtualbricks/bricks/switchwrapper.py
+#, fuzzy, python-brace-format
+msgid "No socket ctl in {folder}"
+msgstr "_Crear nueva imagen"
+
+#: virtualbricks/bricks/switchwrapper.py virtualbricks/console/wire.py
+#, python-brace-format
+msgid "{folder} isn't a folder"
+msgstr ""
+
+#: virtualbricks/bricks/switchwrapper.py
+#, fuzzy, python-brace-format
+msgid "Nothing listens on {ctl}, left by a switch that ended"
+msgstr "Virtualbricks"
+
+#: virtualbricks/bricks/switchwrapper.py
+#, fuzzy, python-brace-format
+msgid "{ctl} isn't a socket"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/bricks/switchwrapper.py
+#, python-brace-format
+msgid "Cannot connect to {ctl}: {reason}"
 msgstr ""
 
 #: virtualbricks/bricks/switchwrapper.py
@@ -2357,11 +2386,6 @@ msgstr ""
 
 #: virtualbricks/console/wire.py
 #, python-brace-format
-msgid "{folder} isn't a folder"
-msgstr ""
-
-#: virtualbricks/console/wire.py
-#, python-brace-format
 msgid "The runtime folder {folder} isn't yours"
 msgstr ""
 
@@ -3111,10 +3135,6 @@ msgstr ""
 
 #: virtualbricks/gui/dialogs/logging.py
 msgid "Warning"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/logging.py
-msgid "Error"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/logging.py

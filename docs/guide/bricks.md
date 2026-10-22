@@ -35,6 +35,13 @@ button of its menu.
 
 :   A setting that it needs is missing, as the host of a tunnel client: it
     can't start until you set it.
+
+**Error**
+
+:   A switch wrapper whose folder has no switch to plug into, though the
+    folder is there: it has no socket `ctl`{.file}, or the one that a killed
+    switch leaves. The tooltip of the state says what is wrong, and so does
+    the **Logs** window. It runs again once a switch listens there.
 :::
 
 ## Above the list {#row}

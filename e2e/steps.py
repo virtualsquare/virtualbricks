@@ -172,9 +172,21 @@ class OtherSwitch:
                 stderr=log,
             )
         harness.a11y.wait_for(
-            lambda: os.path.exists(os.path.join(self.path, "ctl")),
-            "the switch of another program listens",
+            self.listens, "the switch of another program listens"
         )
+
+    def listens(self):
+        """
+        Whether a plug connects to its socket ctl: the socket of a killed
+        switch is there too.
+        """
+
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+            try:
+                sock.connect(os.path.join(self.path, "ctl"))
+            except OSError:
+                return False
+        return True
 
     def quit(self):
         """The end of its input, then it quits; killed if it doesn't."""
@@ -185,6 +197,13 @@ class OtherSwitch:
         except subprocess.TimeoutExpired:
             self.process.kill()
             self.process.wait()
+
+    def kill(self):
+        """SIGKILL: it quits at once, and leaves its folder and its ctl."""
+
+        self.process.kill()
+        self.process.wait()
+        self.process = None
 
 
 @pytest.fixture
@@ -1446,6 +1465,12 @@ def cant_start(virtualbricks, name, why):
     Its Start is disabled, and the state in its row says why, in its
     tooltip, which the screen readers read.
     """
+
+    says_why(virtualbricks, name, why)
+
+
+def says_why(virtualbricks, name, why):
+    """Its Start is disabled, and the tooltip of its state is why."""
 
     row = virtualbricks.row(name)
     virtualbricks.disabled("button", f"Start {name}", within=row)
@@ -4446,6 +4471,35 @@ def other_switch_starts_again(other_switch):
     """That program starts it again, in the same folder, until it listens."""
 
     other_switch.start()
+
+
+@when("the switch that another program runs is killed")
+def other_switch_killed(other_switch):
+    """SIGKILL: it quits at once, and its socket ctl stays in its folder."""
+
+    other_switch.kill()
+    ctl = os.path.join(other_switch.path, "ctl")
+    assert os.path.exists(ctl), "its socket went"
+
+
+@when("the socket that the switch left is removed")
+def stale_socket_removed(other_switch):
+    """Its socket ctl goes, and its folder stays, empty."""
+
+    os.unlink(os.path.join(other_switch.path, "ctl"))
+
+
+@then(words('{name:Brick} is in error: "{why}"'))
+def wrapper_in_error(virtualbricks, other_switch, name, why):
+    """
+    Its row says Error, its Start is disabled, and the state says why in
+    its tooltip, which the screen readers read; {folder} is the control
+    folder of that switch.
+    """
+
+    row = virtualbricks.row(name)
+    virtualbricks.find("label", "Error", within=row)
+    says_why(virtualbricks, name, why.replace("{folder}", other_switch.path))
 
 
 @then(words("{name:Brick} is running, with the process of that switch"))

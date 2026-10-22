@@ -154,8 +154,11 @@ The steps of a switch that another program runs, for a switch wrapper:
 | `Given a switch that another program runs` | A `vde_switch` that the tests run, not Virtualbricks, in the runtime folder of the tests; it quits at the end of the scenario |
 | `When I give wr1 the control folder of that switch` | Configure… in its menu, the folder typed in Control folder, then OK; its row says the folder |
 | `When the switch that another program runs quits` | That program stops it: it quits at the end of its input, and its folder goes |
-| `When the switch that another program runs starts again` | That program starts it again, in the same folder, until it listens |
+| `When the switch that another program runs is killed` | SIGKILL: it quits at once, and its socket `ctl` stays in its folder |
+| `When the socket that the switch left is removed` | Its `ctl` goes, and its folder stays, empty |
+| `When the switch that another program runs starts again` | That program starts it again, in the same folder, until a plug connects to it: the socket of a killed switch is there too |
 | `Then wr1 is running, with the process of that switch` | Its row says Running, and its state tells the process of that switch, which runs; its Stop is disabled, as that program stops it. Virtualbricks looks at the folder every second |
+| `Then wr1 is in error: "No socket ctl in {folder}"` | Its row says Error, its Start is disabled, and the tooltip of its state says why; `{folder}` is the control folder of that switch |
 
 The steps of another Virtualbricks, of the same user, with the same home and
 workspace:

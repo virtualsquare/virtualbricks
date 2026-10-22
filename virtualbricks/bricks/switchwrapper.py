@@ -19,12 +19,15 @@
 """
 A switch wrapper: a switch that Virtualbricks doesn't run, by its control
 folder. It runs while a switch listens there: Virtualbricks looks at the
-folder, every LOOK_EVERY seconds, with look_all().
+folder, every LOOK_EVERY seconds, with look_all(). A folder where no plug
+could connect, as the socket that a killed switch leaves, is an error.
 """
 
 from __future__ import annotations
 
+import errno
 import os
+import socket
 import stat
 from collections.abc import Collection
 from typing import TYPE_CHECKING
@@ -45,21 +48,59 @@ if TYPE_CHECKING:  # pragma: no cover
 
 logger = Logger()
 look_failed = "Cannot look at the control folder of {name}"
+no_switch = "{reason}"
 
 # How often the control folders are looked at, in seconds.
 LOOK_EVERY = 1.0
 
 
-def listens(folder: str) -> bool:
-    """Whether a VDE switch listens in its control folder: its ctl socket."""
+def probe(folder: str) -> tuple[bool, str | None]:
+    """
+    Whether a VDE switch listens in its control folder, as a plug finds out:
+    a connection to its socket ctl, closed at once. Without a switch, why
+    no plug can connect there; None if the folder isn't there, as a switch
+    that quits leaves it.
+    """
 
-    if not folder:
-        return False
+    ctl = os.path.join(folder, "ctl")
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+        # a switch slow to take the connection keeps no look waiting
+        sock.setblocking(False)
+        try:
+            sock.connect(ctl)
+        except BlockingIOError:
+            # its queue is full of connections it hasn't taken yet
+            return True, None
+        except OSError as error:
+            return False, _why(folder, ctl, error)
+    return True, None
+
+
+def _why(folder: str, ctl: str, error: OSError) -> str | None:
+    if error.errno == errno.ENOENT:
+        if not os.path.isdir(folder):
+            return None
+        return _("No socket ctl in {folder}").format(folder=folder)
+    if error.errno == errno.ENOTDIR:
+        return _("{folder} isn't a folder").format(folder=folder)
+    if error.errno == errno.ECONNREFUSED:
+        if _is_socket(ctl):
+            return _(
+                "Nothing listens on {ctl}, left by a switch that ended"
+            ).format(ctl=ctl)
+        return _("{ctl} isn't a socket").format(ctl=ctl)
+    # as AF_UNIX path too long, without a number
+    reason = error.strerror or str(error)
+    return _("Cannot connect to {ctl}: {reason}").format(
+        ctl=ctl, reason=reason
+    )
+
+
+def _is_socket(path: str) -> bool:
     try:
-        mode = os.stat(os.path.join(folder, "ctl")).st_mode
+        return stat.S_ISSOCK(os.stat(path).st_mode)
     except OSError:
         return False
-    return stat.S_ISSOCK(mode)
 
 
 def switch_pid(folder: str, proc: str = "/proc") -> int | None:
@@ -162,21 +203,30 @@ class SwitchWrapper(bricks.Brick):
         # the control folder, once the brick has one
         sock.path = ""
         self.links.append(sock)
+        # why no plug can connect in the folder; None while a switch listens
+        # there, or while the folder isn't there
+        self.error: str | None = None
 
     def look(self, follow: bool = True) -> None:
         """
         Look at the control folder: the brick runs while a switch listens
-        there, and says so when that changes. follow runs the events of its
-        start and its stop then; the first look at a folder runs none.
+        there, is in error while no plug could connect there, and says so
+        when that changes; a new error is logged. follow runs the events of
+        its start and its stop then; the first look at a folder runs none.
         """
 
         folder = self.socks[0].path
-        running = listens(folder)
-        if running == self.is_running():
+        running, error = probe(folder) if folder else (False, None)
+        if running == self.is_running() and error == self.error:
             return
-        self.proc = ExternalSwitch(self, folder) if running else None
-        if follow:
-            self._start_related_events(on=running, off=not running)
+        if error is not None:
+            # a new one: an error never runs
+            self.logger.warn(no_switch, reason=error)
+        self.error = error
+        if running != self.is_running():
+            self.proc = ExternalSwitch(self, folder) if running else None
+            if follow:
+                self._start_related_events(on=running, off=not running)
         self.changed.notify(self)
 
     def start(
@@ -184,9 +234,10 @@ class SwitchWrapper(bricks.Brick):
     ) -> defer.Deferred[bricks.Brick]:
         """
         Look at the control folder now, for a brick that plugs into it: the
-        brick runs if a switch listens there, else it can't start. Users
-        can't start it: another program starts its switch. It plugs into
-        nothing, so no chain of starts goes on from it.
+        brick runs if a switch listens there, else it can't start, with its
+        error if it has one. Users can't start it: another program starts
+        its switch. It plugs into nothing, so no chain of starts goes on
+        from it.
         """
 
         if not self.configured():
@@ -195,7 +246,7 @@ class SwitchWrapper(bricks.Brick):
         self.look()
         if self.is_running():
             return defer.succeed(self)
-        msg = _("No switch listens in %s") % self.socks[0].path
+        msg = self.error or _("No switch listens in %s") % self.socks[0].path
         return defer.fail(errors.BadConfigError(msg))
 
     def stop(

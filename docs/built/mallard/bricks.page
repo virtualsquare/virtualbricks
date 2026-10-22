@@ -27,6 +27,10 @@
       <title><gui>Not configured</gui></title>
       <p>A setting that it needs is missing, as the host of a tunnel client: it can't start until you set it.</p>
     </item>
+    <item>
+      <title><gui>Error</gui></title>
+      <p>A switch wrapper whose folder has no switch to plug into, though the folder is there: it has no socket <file>ctl</file>, or the one that a killed switch leaves. The tooltip of the state says what is wrong, and so does the <gui>Logs</gui> window. It runs again once a switch listens there.</p>
+    </item>
   </terms>
   <section id="row">
     <title>Above the list</title>

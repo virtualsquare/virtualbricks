@@ -413,6 +413,9 @@ def show(context: Context, name: Brick) -> list[str]:
     process = brickinfo.process(brick)
     if process is not None:
         head.append(_("process {pid}").format(pid=process))
+    error = brickinfo.error(brick)
+    if error is not None:
+        head.append(error)
     lines = ["  ".join(head)] + _links(brick)
     for key, value in field_values(brick.config).items():
         line = f"{key} = {kind_of(brick.config, key).format(value)}"

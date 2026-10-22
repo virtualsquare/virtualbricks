@@ -52,7 +52,7 @@ from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.router import Router
 from virtualbricks.bricks.sock import Sock
 from virtualbricks.bricks.switch import Switch
-from virtualbricks.bricks.switchwrapper import SwitchWrapper
+from virtualbricks.bricks.switchwrapper import SwitchWrapper, is_switchwrapper
 from virtualbricks.bricks.tap import Tap
 from virtualbricks.bricks.tunnelconnect import TunnelConnect
 from virtualbricks.bricks.tunnellisten import TunnelListen
@@ -92,6 +92,8 @@ class State(enum.Enum):
     NOT_CONNECTED = "not-connected"
     # a setting it needs is missing, and it can't start
     NOT_CONFIGURED = "not-configured"
+    # a switch wrapper whose control folder no plug could connect in
+    ERROR = "error"
 
 
 LABELS = {
@@ -100,6 +102,7 @@ LABELS = {
     State.STOPPED: _("Stopped"),
     State.NOT_CONNECTED: _("Not connected"),
     State.NOT_CONFIGURED: _("Not configured"),
+    State.ERROR: _("Error"),
 }
 
 
@@ -118,7 +121,15 @@ def state(brick: Brick) -> State:
         return State.NOT_CONNECTED
     if not brick.configured():
         return State.NOT_CONFIGURED
+    if error(brick) is not None:
+        return State.ERROR
     return State.STOPPED
+
+
+def error(brick: Brick) -> str | None:
+    """Why a brick is in error: a switch wrapper's; None for the others."""
+
+    return brick.error if is_switchwrapper(brick) else None
 
 
 def process(brick: Brick) -> int | None:

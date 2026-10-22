@@ -37,6 +37,7 @@ from virtualbricks.bricks.brickinfo import (
     connect,
     connectable,
     connection,
+    error,
     issue,
     kind,
     new_name,
@@ -53,7 +54,7 @@ from virtualbricks.bricks.tunnellisten import TunnelListen
 from virtualbricks.bricks.virtualmachine import VirtualMachine, hostonly_sock
 from virtualbricks.bricks.wire import Wire
 from virtualbricks.programs import VDE_PROGRAMS
-from virtualbricks.tests import BrickTestCase
+from virtualbricks.tests import BrickTestCase, short_folder
 
 
 def new_kind(brick_class):
@@ -149,6 +150,22 @@ class TestState(BrickInfoTestCase):
         capture.config.interface = "eth0"
         self.assertIs(state(capture), State.STOPPED)
 
+    def test_error(self):
+        # a switch wrapper whose folder has no switch's socket
+        wrapper = self.brick("switchwrapper", "wr")
+        self.assertIs(state(wrapper), State.NOT_CONFIGURED)
+        self.assertIsNone(error(wrapper))
+        folder = os.path.join(short_folder(self), "sw")
+        os.mkdir(folder)
+        wrapper.update_config({"socket_path": folder})
+        self.assertIs(state(wrapper), State.ERROR)
+        self.assertEqual(error(wrapper), f"No socket ctl in {folder}")
+        os.rmdir(folder)
+        wrapper.look()
+        self.assertIs(state(wrapper), State.STOPPED)
+        self.assertIsNone(error(wrapper))
+        self.assertIsNone(error(self.switch()))
+
     def test_a_free_plug_comes_first(self):
         # a wire with a free end is not configured either
         wire = self.brick("wire", "w", self.switch().socks[0])
@@ -164,6 +181,7 @@ class TestState(BrickInfoTestCase):
                 "Stopped",
                 "Not connected",
                 "Not configured",
+                "Error",
             ],
         )
 

@@ -66,10 +66,6 @@
   wants `-cpu host` or `max`, and `-accel tcg` doesn't save a CPU that KVM
   refuses; `virt` defaults to GICv2, a GICv3-only host needs
   `gic-version=3` or `host`
-- [ ] Give a switch wrapper an error state when its control folder isn't
-  a switch's: a folder without the socket `ctl`, now Stopped, or the `ctl`
-  that a killed switch leaves, now Running; a connection to `ctl` would
-  tell
 - [ ] Give the router settings and a panel: it has neither (07 §10,
   10 §13, 11 §11, 12 §9)
 - [ ] Decide how an icon is chosen for any brick or event, and where it
@@ -336,6 +332,14 @@
 
 # DONE
 
+- [x] Give a switch wrapper an error state when its control folder isn't
+  a switch's: a connection to `ctl` tells, at each look, as a plug would
+  make; a folder that isn't there is Stopped, any other where a plug can't
+  connect is Error, as one without `ctl` or with the `ctl` that a killed
+  switch leaves, which was Running. The tooltip of the state, `brick show`
+  and a warning in the Logs window say why, as the refusal of a brick
+  plugged into it; the remote windows get it beside `running` (W1–W5 A;
+  07 Since then)
 - [x] Let the terminal be a command line with a place for the console, so
   that any terminal works: `{command}` is the console and `{name}` the name
   of the brick, as in `gnome-terminal -- {command}` and `xterm -T {name} -e
