@@ -249,17 +249,18 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 36 &middot; Design &middot; revision 3, decided</div>
+    <div class="eyebrow">Step 36 &middot; Design &middot; revision 4, decided</div>
     <h1>Curved links in a lab laid out by hand</h1>
     <p class="lede">In a lab laid out by hand, the links of the Topology tab are straight lines, and a straight line goes behind any brick in its way. This page lets you choose Graphviz&rsquo;s curves instead: Graphviz routes each link around the bricks and moves none of them. The choice is kept in the project.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 3c469d66, with step 3 of page 35</li>
-      <li>revision 3 &middot; 22 October 2026</li>
+      <li>revision 4 &middot; 22 October 2026</li>
       <li><span class="status">decided</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> the item of IDEAS, Topology, &ldquo;Draw Graphviz&rsquo;s curves around the bricks in a lab laid out by hand, as a choice&rdquo;, left for later by &sect;9 of <a href="35%20-%20move-by-hand.html#later">page 35</a> (its M5 B). The facts of <a href="#today">&sect;2</a> are those of the code on <code>develop</code> with step 3 of page 35, not yet committed. Those of <a href="#graphviz">&sect;3</a> were found today on this machine. The boards are drawn by <code>picture.draw()</code>, the code of the tab, on a lab laid out by hand: two switches, a wire, three virtual machines and a tap. Graphviz routed their curves as &sect;3 describes. The seven questions, L1 to L7 in <a href="#decisions">&sect;9</a>, are decided.</p>
     <p class="revision"><strong>What changed:</strong> revision 2 records your answer of today: &ldquo;recommended answers are fine&rdquo;. L1 to L7 take the recommended option: a check item <i>Curved Links</i> in the menu of the bar, greyed out while Graphviz lays the lab out; the choice kept as <code>curved_links</code> in the settings of the project, and not in the Settings window; Graphviz&rsquo;s curves; the two bricks whose boxes touch routed around their icons; straight links by default; and one end-to-end scenario. Step 1 starts, on <code>develop</code>: steps 1 and 2 touch none of the files of step 3 of page 35, which is still waiting for your review.</p>
     <p class="revision"><strong>What changed:</strong> revision 3 records your change of today, during step 1: &ldquo;drop NEWER_PROJECT_KEYS, we are still in a development phase and so it is fine to break the configuration files&rdquo;. A <code>project.toml</code> without <code>curved_links</code> is reported as for any other setting missing: &ldquo;missing, using the default false&rdquo; (<a href="#project">&sect;6</a>).</p>
+    <p class="revision"><strong>What changed:</strong> revision 4 corrects <a href="#graphviz">&sect;3</a>, after a test of step 2: two boxes touch below 6.4 points with Graphviz 2.42, the program of the targets, but below 7.4 with Graphviz 14, in the pygraphviz 2 wheel, which counts the outline of a box too. Virtualbricks takes boxes closer than 8.4 points as touching, with a point to spare. Step 1, the setting, is db341f00.</p>
   </header>
 
   <div class="layout">
@@ -313,7 +314,7 @@
           <li><b>Pinned bricks.</b> <code>neato</code> with every brick pinned where it is (<code>pos="x,y!"</code>, in points with <code>inputscale=72</code>) and <code>splines=true</code> routes each link around the boxes of the other bricks, and moves none of them. It shifts the whole drawing by one offset, which one brick gives back.</li>
           <li><b>Not <code>neato -n2</code>.</b> Page 35 suggested <code>neato -n2</code>. That works only through the program. pygraphviz 2.0 lays out inside the process and takes only the program (<code>-K</code>) and attributes (<code>-G</code>, <code>-N</code>, <code>-E</code>) from its arguments: it would ignore <code>-n2</code> and lay the lab out anew.</li>
           <li><b>Other kinds of lines.</b> Graphviz can also draw polylines, straight pieces that bend around the boxes, and right angles (<code>splines=ortho</code>); boards P and O in &sect;5.</li>
-          <li><b>Boxes that touch.</b> Graphviz keeps a margin of 3.2 points around each box, so two boxes closer than 6.4 points touch. Then it writes &ldquo;Warning: some nodes with margin (3.20,3.20) touch - falling back to straight line edges&rdquo; on standard error, and every link of the lab is straight (board T). Page 35 lets boxes come that close, and even overlap: a box is 84 points high, so two bricks lined up in a column 90 points apart already touch.</li>
+          <li><b>Boxes that touch.</b> Graphviz keeps a margin of 3.2 points around each box, so two boxes closer than 6.4 points touch; 7.4 with Graphviz 14, which counts the outline of a box too, half a point on each side. Then it writes &ldquo;Warning: some nodes with margin (3.20,3.20) touch - falling back to straight line edges&rdquo; on standard error, and every link of the lab is straight (board T). Page 35 lets boxes come that close, and even overlap: a box is 84 points high, so two bricks lined up in a column 90 points apart already touch.</li>
           <li><b>Time.</b> Routing grows faster than the lab. The labs timed had a switch for every four bricks and about one link per brick; the best of three runs:</li>
         </ul>
         <div class="scroll">

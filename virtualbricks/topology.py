@@ -41,11 +41,17 @@ in a row under the others, from the left, in their order. Its links are
 straight, from the edge of a box to the edge of the other, aimed at their
 middles; a brick plugged into itself has none. The layout keeps where its
 top left corner is among the places, to give a point of the lab its place.
+
+Its links can be curved instead (page 36): Graphviz routes them around the
+boxes, and moves no brick. Two boxes too close for a link between them have
+their links routed around their icons; when two icons are that close, the
+links stay straight.
 """
 
 from __future__ import annotations
 
 import dataclasses
+import itertools
 import math
 from collections.abc import Callable, Iterable
 
@@ -67,6 +73,13 @@ BRICK_GAP = 0.4
 DIRECTIONS = ("LR", "TB")
 
 POINTS_PER_INCH = 72
+
+# Graphviz routes curved links this far around a box, in points. Two boxes
+# closer than twice that touch, a point more in Graphviz 14, which counts
+# the outline of a box, and then it draws every link straight: bricks this
+# close are routed around their icons. TOUCH has a point to spare.
+MARGIN = 3.2
+TOUCH = 2 * MARGIN + 2
 
 
 @dataclasses.dataclass(frozen=True)
@@ -337,3 +350,78 @@ def arrange(
         left,
         top,
     )
+
+
+def _box(node: Node, icon: bool = False) -> tuple[float, float, float, float]:
+    """The middle of node's box, its width and its height; or its icon's."""
+
+    if icon:
+        return node.x, node.y - node.height / 2 + ICON / 2, ICON, ICON
+    return node.x, node.y, node.width, node.height
+
+
+def _touch(
+    box: tuple[float, float, float, float],
+    other: tuple[float, float, float, float],
+) -> bool:
+    """Whether two boxes are too close for Graphviz to route between."""
+
+    (x0, y0, width0, height0), (x1, y1, width1, height1) = box, other
+    return (
+        abs(x0 - x1) < (width0 + width1) / 2 + TOUCH
+        and abs(y0 - y1) < (height0 + height1) / 2 + TOUCH
+    )
+
+
+def curved(layout: Layout) -> Layout:
+    """
+    A layout by hand with its links routed around the bricks by Graphviz,
+    or as it is if it has no link or two icons touch.
+    """
+
+    if not layout.links:
+        return layout
+    close: set[Brick] = set()
+    for node, other in itertools.combinations(layout.nodes, 2):
+        if _touch(_box(node), _box(other)):
+            close.update((node.brick, other.brick))
+    boxes = {
+        node.brick: _box(node, node.brick in close) for node in layout.nodes
+    }
+    for icon, other_icon in itertools.combinations(close, 2):
+        if _touch(boxes[icon], boxes[other_icon]):
+            return layout
+    graph = pygraphviz.AGraph(strict=True, directed=False)
+    # the places in points, and the bricks pinned to them
+    graph.graph_attr.update(
+        splines="true",
+        inputscale=POINTS_PER_INCH,
+        notranslate="true",
+        esep=f"+{MARGIN}",
+    )
+    for brick, (x, y, width, height) in boxes.items():
+        graph.add_node(
+            brick.name,
+            label="",
+            shape="box",
+            fixedsize="true",
+            width=width / POINTS_PER_INCH,
+            height=height / POINTS_PER_INCH,
+            # y going up
+            pos=f"{x},{-y}!",
+        )
+    for link in layout.links:
+        graph.add_edge(link.tail.name, link.head.name)
+    graph.layout("neato")
+
+    # Graphviz moves the whole drawing, as far as it moves any brick
+    first = layout.nodes[0].brick
+    x, y = boxes[first][:2]
+    [(gx, gy)] = _points(graph.get_node(first.name).attr["pos"].rstrip("!"))
+    dx, dy = x - gx, -y - gy
+    links = []
+    for link in layout.links:
+        route = graph.get_edge(link.tail.name, link.head.name).attr["pos"]
+        points = tuple((px + dx, -(py + dy)) for px, py in _points(route))
+        links.append(dataclasses.replace(link, points=points))
+    return dataclasses.replace(layout, links=tuple(links))

@@ -20,9 +20,14 @@ The layout of a lab: where Graphviz puts the bricks and their links, or
 their places.
 """
 
+import os
+import tempfile
+import warnings
+
 import pygraphviz
 from twisted.trial import unittest
 
+from virtualbricks import topology
 from virtualbricks.bricks import Point
 from virtualbricks.tests import make_factory
 from virtualbricks.topology import (
@@ -35,6 +40,7 @@ from virtualbricks.topology import (
     Layout,
     arrange,
     by_hand,
+    curved,
     layout,
     links,
     place_of,
@@ -338,3 +344,200 @@ class TestByHand(TopologyTestCase):
         sw.place = Point(0, 0)
         tap = self.brick("tap", "tap0", sw.socks[0])
         self.assertEqual(len(arrange([sw, tap]).nodes), 2)
+
+
+def bezier(points, steps=24):
+    """Points along a curve of cubic Bézier segments."""
+
+    for i in range(0, len(points) - 3, 3):
+        p0, p1, p2, p3 = points[i : i + 4]
+        for step in range(steps + 1):
+            t = step / steps
+            yield tuple(
+                (1 - t) ** 3 * a
+                + 3 * (1 - t) ** 2 * t * b
+                + 3 * (1 - t) * t**2 * c
+                + t**3 * d
+                for a, b, c, d in zip(p0, p1, p2, p3)
+            )
+
+
+def outside(point, node):
+    """How far point is out of node's box: less than 0 inside it."""
+
+    return max(
+        abs(point[0] - node.x) - node.width / 2,
+        abs(point[1] - node.y) - node.height / 2,
+    )
+
+
+class TestCurved(TopologyTestCase):
+    """The links of a lab by hand, routed by Graphviz (page 36)."""
+
+    def lab(self):
+        """The lab of the boards of page 36."""
+
+        def brick(kind, name, x, y, *socks):
+            brick = self.brick(kind, name, *socks)
+            brick.place = Point(x, y)
+            return brick
+
+        sw1 = brick("switch", "sw1", 60, 60)
+        sw2 = brick("switch", "sw2", 360, 60)
+        brick("wire", "w1", 210, 60, sw1.socks[0], sw2.socks[0])
+        brick("qemu", "vm1", 60, 220, sw1.socks[0])
+        brick("qemu", "vm2", 210, 220, sw1.socks[0], sw2.socks[0])
+        brick("tap", "tap1", 360, 220, sw2.socks[0])
+        brick("qemu", "vm3", 520, 60, sw1.socks[0])
+        return arrange(self.factory.bricks)
+
+    def link(self, result, *names):
+        [link] = [
+            link
+            for link in result.links
+            if {link.tail.name, link.head.name} == set(names)
+        ]
+        return link
+
+    def node(self, result, name):
+        [node] = [node for node in result.nodes if node.brick.name == name]
+        return node
+
+    def routed(self, lab):
+        """lab curved, and what Graphviz wrote on standard error."""
+
+        with tempfile.TemporaryFile() as said:
+            stderr = os.dup(2)
+            os.dup2(said.fileno(), 2)
+            try:
+                # a Graphviz program's: pygraphviz 1 warns with them
+                with warnings.catch_warnings(record=True) as caught:
+                    warnings.simplefilter("always")
+                    result = curved(lab)
+            finally:
+                os.dup2(stderr, 2)
+                os.close(stderr)
+            said.seek(0)
+            text = said.read().decode()
+        return result, text + "".join(str(w.message) for w in caught)
+
+    def no_graphviz(self):
+        def no(*args, **kwargs):
+            raise AssertionError("Graphviz ran")
+
+        self.patch(pygraphviz, "AGraph", no)
+
+    def test_no_brick_moved(self):
+        lab = self.lab()
+        result, said = self.routed(lab)
+        self.assertEqual(said, "")
+        self.assertEqual(result.nodes, lab.nodes)
+        self.assertEqual(
+            (result.width, result.height, result.left, result.top),
+            (lab.width, lab.height, lab.left, lab.top),
+        )
+        self.assertEqual(
+            [(link.tail, link.head) for link in result.links],
+            [(link.tail, link.head) for link in lab.links],
+        )
+
+    def test_around_the_bricks_in_the_way(self):
+        lab = self.lab()
+        # straight, sw1's link to vm3 goes behind w1 and sw2
+        straight = list(bezier(self.link(lab, "sw1", "vm3").points))
+        for name in ("w1", "sw2"):
+            node = self.node(lab, name)
+            self.assertTrue(any(outside(p, node) < 0 for p in straight))
+        result, _ = self.routed(lab)
+        self.assertGreater(len(self.link(result, "sw1", "vm3").points), 4)
+        for link in result.links:
+            for node in result.nodes:
+                if node.brick in (link.tail, link.head):
+                    continue
+                for point in bezier(link.points):
+                    self.assertGreater(
+                        outside(point, node),
+                        0,
+                        (link.tail.name, link.head.name, node.brick.name),
+                    )
+
+    def test_nothing_in_the_way(self):
+        # sw1 and vm1, one over the other, have nothing between them
+        result, _ = self.routed(self.lab())
+        link = self.link(result, "sw1", "vm1")
+        x = self.node(result, "sw1").x
+        for point in link.points:
+            self.assertLess(abs(point[0] - x), 0.5)
+
+    def test_from_box_to_box(self):
+        # Graphviz moves the drawing: back where the bricks are
+        result, _ = self.routed(self.lab())
+        for link in result.links:
+            ends = [self.node(result, link.tail.name)]
+            ends.append(self.node(result, link.head.name))
+            first, last = link.points[0], link.points[-1]
+            # either way round
+            if abs(outside(first, ends[0])) > 1:
+                ends.reverse()
+            self.assertLess(abs(outside(first, ends[0])), 1, link)
+            self.assertLess(abs(outside(last, ends[1])), 1, link)
+
+    def touching(self, gap):
+        """Two switches, one over the other, and a tap linked from under."""
+
+        sw1, sw2 = self.switch("sw1"), self.switch("sw2")
+        tap = self.brick("tap", "tap0", sw2.socks[0])
+        sw1.place = Point(0, 0)
+        # sw2's box gap points under sw1's
+        sw2.place = Point(0, ICON + NAME + gap)
+        tap.place = Point(0, 400)
+        self.brick("tap", "tap1", sw1.socks[0]).place = Point(-200, 0)
+        return arrange(self.factory.bricks)
+
+    def test_two_boxes_that_touch(self):
+        lab = self.touching(6)
+        result, said = self.routed(lab)
+        self.assertEqual(said, "")
+        # routed around sw2's icon: its link from under it ends there
+        sw2 = self.node(result, "sw2")
+        icon = sw2.y - sw2.height / 2 + ICON
+        points = self.link(result, "tap0", "sw2").points
+        end = min(points[0], points[-1], key=lambda point: point[1])
+        self.assertLess(abs(end[1] - icon), 1)
+        # straight, it would end under the name
+        straight = self.link(lab, "tap0", "sw2").points
+        self.assertEqual(min(y for _, y in straight), sw2.y + sw2.height / 2)
+
+    def test_two_boxes_that_touch_with_the_pen(self):
+        # a newer Graphviz draws a pen around each box, half a point wide
+        lab = self.touching(7)
+        result, said = self.routed(lab)
+        self.assertEqual(said, "")
+        self.assertNotEqual(result.links, lab.links)
+
+    def test_the_margin_given_to_graphviz(self):
+        # Graphviz's own is 3.2 points: closer with a smaller one
+        self.patch(topology, "MARGIN", 2)
+        self.patch(topology, "TOUCH", 2 * 2 + 2)
+        lab = self.touching(6.5)
+        result, said = self.routed(lab)
+        self.assertEqual(said, "")
+        self.assertNotEqual(result.links, lab.links)
+
+    def test_two_icons_that_touch(self):
+        sw1, sw2 = self.switch("sw1"), self.switch("sw2")
+        self.brick("tap", "tap0", sw2.socks[0]).place = Point(0, 300)
+        sw1.place, sw2.place = Point(0, 0), Point(ICON + 5, 0)
+        lab = arrange(self.factory.bricks)
+        self.no_graphviz()
+        # straight, as they are
+        self.assertIs(curved(lab), lab)
+
+    def test_no_link(self):
+        sw1, sw2 = self.switch("sw1"), self.switch("sw2")
+        sw1.place, sw2.place = Point(0, 0), Point(200, 0)
+        lab = arrange([sw1, sw2])
+        self.no_graphviz()
+        self.assertIs(curved(lab), lab)
+        empty = Layout()
+        self.assertIs(curved(empty), empty)
