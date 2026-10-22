@@ -376,11 +376,17 @@ that the tests can't do yet: those needs come first.
   "The picture of the lab exported as an image is a PNG file",
   `topology.feature`
 - [ ] Connect two bricks by dropping one on the other in the picture
-  the row of the brick dragged says "on sw1"; out of reach: AT-SPI sees
-  the drawing area but no brick in it, and PyGObject can't give it an
-  accessible child for each brick (Atk's `ref_child` can't be overridden,
-  PyGObject 3.58.1); a step that finds a brick by its pixels was left
-  out (page 34, C5 A). Tried by hand on Xvfb with `xdotool`, 22 Oct 2026
+  the row of the brick dragged says "on sw1"; AT-SPI sees the drawing
+  area but no brick in it, and PyGObject can't give it an accessible
+  child for each brick (Atk's `ref_child` can't be overridden, PyGObject
+  3.58.1); a step that finds a brick by its pixels was left out (page 34,
+  C5 A). Tried by hand on Xvfb with `xdotool`, 22 Oct 2026. Since page
+  35, a lab laid out by hand puts its bricks where their places say: the
+  step that moves a brick finds it so, and a drop could too
+- [x] Move a brick in the picture, and find its new place in the project
+  the brick found by its place in project.toml, not by its pixels
+  "A brick moved in the picture of the lab keeps its new place in the
+  project", `topology.feature`
 
 # Readme
 

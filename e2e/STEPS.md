@@ -57,7 +57,7 @@ The steps of a user:
 | `When the projects were last saved on 2024-08-02` | The file of each project of the workspace last changed on the day, at noon: the Projects window says that day, not the time of the scenario |
 | `Given the files of my Downloads folder were last changed on 2024-08-02` | Each file of the folder of the home last changed on the day, at noon: a file chooser says that day, not the time of the scenario. Also `of my home folder` |
 | `When I make a new project with the name it suggests, new_project-2` | New…, in the Projects window: its name must be the one the dialog suggests; then Create, and the dialog closes |
-| `When I save the project` | Save, in the menu Projects: the open project, with its README |
+| `When I save the project` | Save, in the menu Projects: the open project, with its README; then its `project.toml` is written |
 | `When I open the project new_project` | In the Projects window, its row, then Open in its details; the window closes |
 | `When I try to open the project new_project` | The same, without waiting for the window to close |
 | `When I duplicate the project new_project with the name it suggests, new_project-copy` | In the Projects window, its row, then Duplicate… in its details: the name of the copy must be the one the dialog suggests; then Duplicate, with Open the copy as it is, and the dialog closes |
@@ -206,6 +206,8 @@ The steps of the picture of the lab, in the tab Topology:
 | `Then the file lab.png of my home folder is a PNG image, not blank` | The file has the bytes of a PNG at its start, cairo reads it, and its pixels aren't all alike |
 | `When I drag the picture of the lab 100 pixels to the left` | A press on the background, under the bricks, which are a row in the middle of its height, a move to the left or to the right, and a release; the picture must be wider than the tab |
 | `Then the picture of the lab moved 100 pixels to the left` | Its horizontal scroll bar moved as much the other way |
+| `Given the project new_project has the bricks, laid out by hand`, with a table under it | The folder of the project in the workspace, with a `project.toml` of the bricks of the table: the name of each, its type and its place, as `project.toml` writes it; before Virtualbricks starts, which opens `new_project` at its first start |
+| `When I move sw2 100 pixels to the right in the picture of the lab` | The tab Topology, at 100%: a press on the brick, a move to the right, and a release over free room, where the brick goes. The brick is found by its place in `project.toml` and the rules of the picture: the boxes of the bricks in the middle of the tab, under the bar of the zoom, as long as the lab fits; the names narrower than the icons. Not by its pixels |
 
 The steps of the tab Readme:
 

@@ -24,9 +24,11 @@ The same drawing serves both. The links are in the text colour, fainter; a
 stopped brick is grey and faded, its name too; the brick under the pointer
 sits on a disc of the selection colour. A brick dragged in the tab keeps its
 disc, with a line in the selection colour under the bricks: dashed to the
-pointer, or solid to the brick it connects to, on a disc too. The tab draws
-at its zoom in the colours of the theme. A file gets the lab at 100%, on white, in the colours
-of a light theme, as PNG, SVG or PDF by the extension of its name.
+pointer, or solid to the brick it connects to, on a disc too; or dashed to
+a faded copy of the brick on a disc, over the bricks, where a move puts it,
+with thin guides to the bricks it lines up with. The tab draws at its zoom
+in the colours of the theme. A file gets the lab at 100%, on white, in the
+colours of a light theme, as PNG, SVG or PDF by the extension of its name.
 """
 
 from __future__ import annotations
@@ -46,7 +48,7 @@ from gi.repository import (
     PangoCairo,
 )
 
-from virtualbricks.bricks import Base, is_running
+from virtualbricks.bricks import Base, Brick, is_running
 from virtualbricks.gui import graphics
 from virtualbricks.i18n import _
 from virtualbricks.topology import ICON, Layout, Node
@@ -65,6 +67,12 @@ DISC_GAP = 6
 # gaps of the line that goes nowhere.
 DRAG_WIDTH = 2.0
 DASHES = (6.0, 4.0)
+# The copy of a brick moved this opaque, and its guides: their width in
+# pixels, and how far they go past their ends, in points.
+GHOST_ALPHA = 0.45
+GUIDE_WIDTH = 1.0
+GUIDE_ALPHA = 0.8
+GUIDE_PAST = ICON / 2 + DISC_GAP
 # The formats of an exported picture, by the extension of the file.
 FORMATS = {
     ".png": _("PNG image"),
@@ -82,15 +90,26 @@ class Palette:
 
 
 @dataclasses.dataclass(frozen=True)
+class Guide:
+    """A guide from the middle of an icon to the middle of another's."""
+
+    start: tuple[float, float]
+    end: tuple[float, float]
+
+
+@dataclasses.dataclass(frozen=True)
 class Line:
     """
     The line of a brick dragged: from its node to end, a point of the lab,
-    or to target, the node of the brick it connects to.
+    or to target, the node of the brick it connects to. With ghost, a copy
+    of the brick has the middle of its icon at end, and guides go to it.
     """
 
     node: Node
     end: tuple[float, float]
     target: Node | None = None
+    ghost: bool = False
+    guides: tuple[Guide, ...] = ()
 
 
 def icon_centre(node: Node) -> tuple[float, float]:
@@ -202,6 +221,11 @@ def draw(
             *(line.end if line.target is None else icon_centre(line.target))
         )
         cr.stroke()
+        cr.set_dash([])
+        cr.set_line_width(GUIDE_WIDTH / zoom)
+        cr.set_source_rgba(*palette.selection, GUIDE_ALPHA)
+        for guide in line.guides:
+            _guide(cr, guide)
         cr.restore()
     for node in layout.nodes:
         running = is_running(node.brick)
@@ -219,6 +243,8 @@ def draw(
             cr.get_source().set_filter(cairo.FILTER_GOOD)
             cr.paint_with_alpha(1.0 if running else STOPPED_ALPHA)
             cr.restore()
+    if line is not None and line.ghost:
+        _ghost(cr, line.node.brick, line.end, palette, icons)
     cr.restore()
 
     # the names at the size of the zoom, laid out by Pango at that size
@@ -234,6 +260,44 @@ def draw(
         cr.move_to(ox + (node.x - node.width / 2) * zoom, oy + top * zoom + 2)
         cr.set_source_rgba(*palette.ink, alpha)
         PangoCairo.show_layout(cr, name)
+
+
+def _guide(cr: cairo.Context[Any], guide: Guide) -> None:
+    """A guide, past both its ends."""
+
+    (x0, y0), (x1, y1) = guide.start, guide.end
+    length = math.hypot(x1 - x0, y1 - y0)
+    if length == 0:
+        return
+    dx, dy = (x1 - x0) / length * GUIDE_PAST, (y1 - y0) / length * GUIDE_PAST
+    cr.move_to(x0 - dx, y0 - dy)
+    cr.line_to(x1 + dx, y1 + dy)
+    cr.stroke()
+
+
+def _ghost(
+    cr: cairo.Context[Any],
+    brick: Brick,
+    centre: tuple[float, float],
+    palette: Palette,
+    icons: Icons,
+) -> None:
+    """A faded copy of the icon of brick, on a disc, its middle at centre."""
+
+    x, y = centre
+    cr.set_source_rgba(*palette.selection, HOVER_ALPHA)
+    cr.arc(x, y, ICON / 2 + DISC_GAP, 0, 2 * math.pi)
+    cr.fill()
+    icon = icons.get(brick, is_running(brick))
+    if icon is None:
+        return
+    cr.save()
+    cr.translate(x - ICON / 2, y - ICON / 2)
+    cr.scale(ICON / icon.get_width(), ICON / icon.get_height())
+    Gdk.cairo_set_source_pixbuf(cr, icon, 0, 0)
+    cr.get_source().set_filter(cairo.FILTER_GOOD)
+    cr.paint_with_alpha(GHOST_ALPHA)
+    cr.restore()
 
 
 def export(layout: Layout, filename: str, font: Pango.FontDescription) -> None:

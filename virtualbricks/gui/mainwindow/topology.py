@@ -31,7 +31,9 @@ the picture; Left to Right and Top to Bottom take the places away.
 
 A click on a brick works as in the list of the bricks: the right button
 opens its menu, a double click configures it. A brick dropped on another
-connects the two, as in the list.
+connects the two, as in the list. A brick moved over free room stays there:
+in a lab laid out by Graphviz, the first move gives every other brick the
+place it has in the picture too.
 """
 
 from __future__ import annotations
@@ -68,6 +70,7 @@ top_write_error = "Error saving topology: Could not write file"
 top_unknown = "Error saving topology: Unknown error"
 connect_error = "Cannot connect {brick} to {other}"
 places_error = "Cannot change the places of the bricks"
+move_error = "Cannot move {brick}"
 
 # Between the bar and the corner, and between the bar's groups, in pixels.
 GAP = 6
@@ -215,6 +218,7 @@ class TopologyTab(Tab, Gtk.Overlay):
         self._fit_clicked = self.fit_button.connect("clicked", self.on_fit)
         self.view.connect("zoom-changed", self.on_zoom_changed)
         self.view.connect("brick-dropped", self.on_brick_dropped)
+        self.view.connect("brick-moved", self.on_brick_moved)
         self.view.area.connect("button-press-event", self.on_button_press)
         self.bar.connect("size-allocate", self.on_bar_allocated)
         self.connect("destroy", self.on_destroy)
@@ -302,6 +306,19 @@ class TopologyTab(Tab, Gtk.Overlay):
         self.engine.connect(brick, other).addErrback(
             lambda failure: logger.failure(
                 connect_error, failure, brick=brick.name, other=other.name
+            )
+        )
+
+    def on_brick_moved(
+        self, view: TopologyView, brick: Brick, place: Point
+    ) -> None:
+        moved: dict[Brick, Point | None] = {brick: place}
+        if not by_hand(self.factory.bricks):
+            # the others stay where the picture shows them
+            moved = {**places(self.view.layout), **moved}
+        self.engine.place(moved).addErrback(
+            lambda failure: logger.failure(
+                move_error, failure, brick=brick.name
             )
         )
 

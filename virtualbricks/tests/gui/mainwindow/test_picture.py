@@ -33,9 +33,12 @@ if has_display:
     from gi.repository import Gtk, Pango
 
     from virtualbricks.gui.mainwindow.picture import (
+        DISC_GAP,
         FORMATS,
+        GUIDE_PAST,
         LIGHT,
         MARGIN,
+        Guide,
         Icons,
         Line,
         draw,
@@ -112,7 +115,7 @@ class TestTheFontOfTheNames(PictureTestCase):
         self.assertEqual(scaled_font(font, 0.0).get_size(), 1)
 
 
-class TestTheLineOfADrag(PictureTestCase):
+class DragTestCase(PictureTestCase):
     """sw1, vm and sw2 in a row, in this order, vm plugged into both."""
 
     def draw(self, hover=None, line=None):
@@ -159,6 +162,9 @@ class TestTheLineOfADrag(PictureTestCase):
     def blue(self, pixel):
         r, g, b = pixel
         return b > r + 10
+
+
+class TestTheLineOfADrag(DragTestCase):
 
     def test_dashed_to_a_point(self):
         (x0, y), (x1, _y) = self.centre("sw1"), self.centre("vm")
@@ -231,6 +237,75 @@ class TestTheLineOfADrag(PictureTestCase):
         dragged, target, other = (self.pixel(surface, *s) for s in spots)
         self.assertTrue(self.blue(dragged))
         self.assertEqual(target, (255, 255, 255))
+
+
+class TestTheCopyOfAMove(DragTestCase):
+    """The copy of a brick moved, and its guides (page 35)."""
+
+    def test_at_the_end_of_the_line(self):
+        (x0, y), (x1, _y) = self.centre("sw1"), self.centre("vm")
+        middle = (x0 + x1) / 2
+        end = (middle - MARGIN, y - MARGIN)
+        line = self.draw(line=Line(self.node("sw1"), end))
+        copy = self.draw(line=Line(self.node("sw1"), end, ghost=True))
+        # its disc, under it and around it
+        below = (middle, y + ICON / 2 + DISC_GAP - 2)
+        self.assertEqual(self.pixel(line, *below), (255, 255, 255))
+        self.assertTrue(self.blue(self.pixel(copy, *below)))
+        # its icon, where the line was: the switch in the top half
+        self.assertNotEqual(
+            self.pixel(copy, middle, y - 14), self.pixel(line, middle, y - 14)
+        )
+
+    def test_faded(self):
+        x, y = self.centre("sw1")
+        dx = self.centre("vm")[0] - x
+        copy = self.draw(
+            line=Line(
+                self.node("sw1"), (x + dx / 2 - MARGIN, y - MARGIN), ghost=True
+            )
+        )
+        # the same spots of both icons, each on its disc: the copy's nearer
+        # the colour of the disc; the switch is in the top half of its icon
+        disc = self.pixel(copy, x, y + ICON / 2 + 2)
+        self.assertTrue(self.blue(disc))
+
+        def away(dx):
+            return sum(
+                abs(a - b)
+                for i in range(-20, 20)
+                for a, b in zip(self.pixel(copy, x + dx + i, y - 14), disc)
+            )
+
+        self.assertLess(away(dx / 2), away(0) * 0.7)
+
+    def test_over_the_bricks(self):
+        x, y = self.centre("sw2")
+        end = (x - MARGIN, y - MARGIN)
+        line = self.draw(line=Line(self.node("sw1"), end))
+        copy = self.draw(line=Line(self.node("sw1"), end, ghost=True))
+        # on the icon of sw2
+        self.assertNotEqual(
+            self.row(line, int(x) - 20, int(x) + 20, y - 14),
+            self.row(copy, int(x) - 20, int(x) + 20, y - 14),
+        )
+
+    def test_a_guide(self):
+        (x0, y), (x2, _y) = self.centre("sw1"), self.centre("sw2")
+        middle = (x0 + self.centre("vm")[0]) / 2
+        end = (middle - MARGIN, y - MARGIN)
+        guide = Guide((x2 - MARGIN, y - MARGIN), end)
+        plain = self.draw(line=Line(self.node("sw1"), end, ghost=True))
+        surface = self.draw(
+            line=Line(self.node("sw1"), end, ghost=True, guides=(guide,))
+        )
+        # past sw2, on the side away from the copy, as far as a disc
+        past = (x2 + GUIDE_PAST - 2, y)
+        self.assertEqual(self.pixel(plain, *past), (255, 255, 255))
+        self.assertTrue(self.blue(self.pixel(surface, *past)))
+        self.assertEqual(
+            self.pixel(surface, x2 + GUIDE_PAST + 2, y), (255, 255, 255)
+        )
 
 
 class TestExport(PictureTestCase):

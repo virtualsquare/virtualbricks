@@ -23,22 +23,26 @@ brick dragged on another.
 import cairo
 from twisted.trial import unittest
 
+from virtualbricks.bricks import Point
 from virtualbricks.tests.gui import GuiTestCase, has_display
-from virtualbricks.topology import ICON, Layout, layout
+from virtualbricks.topology import ICON, Layout, arrange, layout, places
 
 if has_display:
     from gi.repository import Gdk, GLib, Gtk
 
     from virtualbricks.gui.mainwindow import picture, topologyview
+    from virtualbricks.gui.mainwindow.picture import Guide, icon_centre
     from virtualbricks.gui.mainwindow.topologyview import (
         EDGE,
         EDGE_STEP,
         LEVELS,
         MARGIN,
+        SNAP,
         WORDS_GAP,
         TopologyView,
         edge_step,
         fit_zoom,
+        line_up,
         origin,
         tooltip_text,
         zoom_in,
@@ -129,6 +133,52 @@ class TestZoomLevels(unittest.TestCase):
         # past the edges, as fast as at them
         self.assertEqual(edge_step(-50, 400), -20)
         self.assertEqual(edge_step(450, 400), 20)
+
+
+class TestLineUp(unittest.TestCase):
+    """A brick moved lines up with the others (page 35)."""
+
+    if not has_display:  # pragma: no cover
+        skip = "GTK can't open a display"
+
+    def test_nothing_near(self):
+        self.assertEqual(
+            line_up((100, 100), [(0, 0), (200, 50)], 8), ((100, 100), ())
+        )
+        self.assertEqual(line_up((100, 100), [], 8), ((100, 100), ()))
+
+    def test_a_column(self):
+        self.assertEqual(
+            line_up((105, 100), [(0, 0), (100, 300)], 8),
+            ((100, 100), (Guide((100, 300), (100, 100)),)),
+        )
+
+    def test_a_row(self):
+        self.assertEqual(
+            line_up((100, 92), [(300, 100)], 8),
+            ((100, 100), (Guide((300, 100), (100, 100)),)),
+        )
+
+    def test_both_ways(self):
+        self.assertEqual(
+            line_up((103, 207), [(100, 0), (300, 200)], 8),
+            (
+                (100, 200),
+                (
+                    Guide((100, 0), (100, 200)),
+                    Guide((300, 200), (100, 200)),
+                ),
+            ),
+        )
+
+    def test_the_nearest(self):
+        point, guides = line_up((104, 0), [(100, 300), (106, 600)], 8)
+        self.assertEqual(point, (106, 0))
+        self.assertEqual(guides, (Guide((106, 600), (106, 0)),))
+
+    def test_the_reach(self):
+        self.assertEqual(line_up((108, 0), [(100, 300)], 8)[0], (100, 0))
+        self.assertEqual(line_up((108.5, 0), [(100, 300)], 8)[0], (108.5, 0))
 
 
 class ViewTestCase(GuiTestCase):
@@ -571,26 +621,30 @@ class TestDrawing(ViewTestCase):
         self.show(1000, 1000)
         background = self.pixel(self.draw(), 2, 2)
         sw1, vm = self.in_area(self.node("sw1")), self.in_area(self.node("vm"))
-        # halfway between sw1 and vm, the icons on one line
+        # the icons on one line
         self.assertEqual(sw1[1], vm[1])
-        middle = (sw1[0] + vm[0]) / 2
-        self.drag("sw1", to=(middle, sw1[1]))
+        # over free room, under sw1, in no row and no column: the copy there
+        x, copy = sw1[0], sw1[1] + 200
+        self.drag("sw1", to=(x, copy))
         surface = self.draw()
-        # dashed, from the brick to the pointer
-        row = [
-            self.pixel(surface, x, sw1[1])
-            for x in range(int(sw1[0] + 40), int(middle) - 2)
+        disc = ICON / 2 + picture.DISC_GAP
+        # dashed, from the brick to its copy
+        column = [
+            self.pixel(surface, x, y)
+            for y in range(int(sw1[1] + 60), int(copy - disc - 2))
         ]
-        lit = [p for p in row if p != background]
-        self.assertGreater(len(lit), len(row) * 0.4)
-        self.assertIn(background, row)
+        lit = [p for p in column if p != background]
+        self.assertGreater(len(lit), len(column) * 0.4)
+        self.assertIn(background, column)
         r, g, b = min(lit, key=sum)
         self.assertGreater(b, r + 10)
-        # not past it
+        # the disc of the copy, and nothing past it
+        r, g, b = self.pixel(surface, x - 10, copy + disc - 4)
+        self.assertGreater(b, r + 10)
         self.assertEqual(
             {
-                self.pixel(surface, x, sw1[1])
-                for x in range(int(middle) + 3, int(vm[0] - 40))
+                self.pixel(surface, x, y)
+                for y in range(int(copy + disc + 2), int(copy + 100))
             },
             {background},
         )
@@ -1037,6 +1091,11 @@ class TestDraggingABrick(ViewTestCase):
             "brick-dropped",
             lambda view, brick, other: self.dropped.append((brick, other)),
         )
+        self.moved = []
+        self.view.connect(
+            "brick-moved",
+            lambda view, brick, place: self.moved.append((brick, place)),
+        )
         self.cursors = []
         self.patch(self.view, "_set_cursor", self.cursors.append)
 
@@ -1125,9 +1184,156 @@ class TestDraggingABrick(ViewTestCase):
     def test_where_the_release_is(self):
         self.drag("sw1")
         self.over("vm")
-        # released elsewhere, with no move before
+        # released elsewhere, with no move before: a move
         self.assertTrue(self.release(1, 1))
         self.assertEqual(self.dropped, [])
+        self.assertEqual([brick for brick, place in self.moved], [self.sw1])
+
+    # Moving a brick (page 35)
+
+    def icon(self, name):
+        """The middle of the icon of a brick, in the lab."""
+
+        return icon_centre(self.node(name))
+
+    def test_the_copy_over_free_room(self):
+        self.assertEqual(self.view.zoom, 1.0)
+        x, y = self.press("sw1")
+        self.assertIsNone(self.view.ghost())
+        # under sw1, in no row and no column
+        self.move(x, y + 150)
+        ix, iy = self.icon("sw1")
+        self.assertEqual(self.view.ghost(), ((ix, iy + 150), ()))
+
+    def test_held_as_pressed(self):
+        x, y = self.in_area(self.node("sw1"))
+        # pressed off the middle of the icon
+        self.view.on_button_press(self.view.area, FakeEvent(x + 10, y + 5))
+        self.move(x + 10, y + 155)
+        ix, iy = self.icon("sw1")
+        # the copy as the brick was held, not centred on the pointer
+        self.assertEqual(self.view.ghost()[0], (ix, iy + 150))
+
+    def test_over_its_own_box(self):
+        self.drag("sw1")
+        ix, iy = self.icon("sw1")
+        self.assertEqual(self.view.ghost()[0], (ix + 20, iy))
+
+    def test_no_copy_over_another_brick(self):
+        self.drag("sw1")
+        self.over("sw2")
+        self.assertIsNone(self.view.ghost())
+        # nor over one it connects to: the line ends there
+        self.over("vm")
+        self.assertIsNone(self.view.ghost())
+        self.assertIsNotNone(self.view.drop_target())
+
+    def test_the_move(self):
+        x, y = self.press("sw1")
+        self.move(x, y + 150)
+        self.assertTrue(self.release(x, y + 150))
+        ix, iy = self.icon("sw1")
+        self.assertEqual(
+            self.moved, [(self.sw1, Point(round(ix), round(iy + 150)))]
+        )
+        self.assertIsInstance(self.moved[0][1], Point)
+        self.assertEqual(self.dropped, [])
+        self.assertIsNone(self.view.dragging)
+        self.assertEqual(self.cursors[-1], None)
+
+    def test_no_move(self):
+        self.drag("sw1")
+        self.over("sw2")
+        self.release(*self.in_area(self.node("sw2")))
+        self.drag("sw1")
+        self.over("vm")
+        self.release(*self.in_area(self.node("vm")))
+        x, y = self.press("sw1")
+        self.move(x, y + 150)
+        self.key(Gdk.KEY_Escape)
+        self.release(x, y + 150)
+        x, y = self.press("sw1")
+        self.move(x, y + 150)
+        self.view.on_grab_broken(self.view.area, None)
+        self.release(x, y + 150)
+        self.assertEqual(self.moved, [])
+        self.assertEqual(self.dropped, [(self.sw1, self.vm)])
+
+    def test_lining_up(self):
+        x, y = self.press("sw1")
+        vx, vy = self.in_area(self.node("vm"))
+        # a little right of the column of vm
+        self.move(vx + SNAP, y + 150)
+        ix, iy = self.icon("sw1")
+        column = self.icon("vm")[0]
+        self.assertEqual(
+            self.view.ghost(),
+            (
+                (column, iy + 150),
+                (Guide(self.icon("vm"), (column, iy + 150)),),
+            ),
+        )
+        self.release(vx + SNAP, y + 150)
+        self.assertEqual(
+            self.moved[-1][1], Point(round(column), round(iy + 150))
+        )
+        # a little further
+        x, y = self.press("sw1")
+        self.move(vx + SNAP + 1, y + 150)
+        self.assertEqual(
+            self.view.ghost(), ((column + SNAP + 1, iy + 150), ())
+        )
+
+    def test_lining_up_on_the_screen(self):
+        self.view.set_zoom(2.0)
+        allocate(self.view, 1000, 1000)
+        x, y = self.press("sw1")
+        vx, vy = self.in_area(self.node("vm"))
+        # 8 pixels are 4 points
+        self.move(vx + SNAP, y + 150)
+        self.assertEqual(self.view.ghost()[0][0], self.icon("vm")[0])
+        self.move(vx + SNAP + 1, y + 150)
+        self.assertEqual(
+            self.view.ghost()[0][0], self.icon("vm")[0] + (SNAP + 1) / 2
+        )
+
+    def test_the_place_of_a_point(self):
+        self.assertEqual(self.view.place_at(10.4, 20.6), Point(10, 21))
+        for brick, place in places(self.view.layout).items():
+            brick.place = Point(place.x - 500, place.y + 40)
+        self.view.set_layout(arrange(self.factory.bricks))
+        ix, iy = self.icon("sw1")
+        self.assertEqual(self.view.place_at(ix, iy), self.sw1.place)
+        # the corner of the lab: the boxes of the leftmost and the highest
+        xs = [brick.place.x for brick in self.factory.bricks]
+        ys = [brick.place.y for brick in self.factory.bricks]
+        self.assertEqual(
+            self.view.place_at(0, 0),
+            Point(min(xs) - ICON // 2, min(ys) - ICON // 2),
+        )
+
+    def test_steady_after_a_move(self):
+        allocate(self.view, 200, 150)
+        self.view.set_zoom(3.0)
+        allocate(self.view, 200, 150)
+        for brick, place in places(self.view.layout).items():
+            brick.place = place
+        self.view.set_layout(arrange(self.factory.bricks))
+        allocate(self.view, 200, 150)
+
+        def on_screen(name):
+            x, y = self.in_area(self.node(name))
+            h, v = self.scroll()
+            return round(x - h), round(y - v)
+
+        before = on_screen("vm"), on_screen("sw2")
+        left = self.view.layout.left
+        # sw1 moved left: the lab grows that way
+        self.sw1.place = Point(self.sw1.place.x - 300, self.sw1.place.y)
+        self.view.set_layout(arrange(self.factory.bricks))
+        allocate(self.view, 200, 150)
+        self.assertEqual(self.view.layout.left, left - 300)
+        self.assertEqual((on_screen("vm"), on_screen("sw2")), before)
 
     def test_a_drop_on_nothing(self):
         self.drag("sw1")

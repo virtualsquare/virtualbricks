@@ -31,3 +31,19 @@ Feature: Topology
     And I join sw1 and sw2 with the wire w1
     And I export the picture of the lab to lab.png of my home folder, typing its path
     Then the file lab.png of my home folder is a PNG image, not blank
+
+  Scenario: A brick moved in the picture of the lab keeps its new place in the project
+    Given the project new_project has the bricks, laid out by hand
+      | Name | Type   | Place    |
+      | sw1  | switch | [0, 0]   |
+      | sw2  | switch | [200, 0] |
+    And Virtualbricks is running
+    When I zoom the picture of the lab back to 100%
+    And I move sw2 100 pixels to the right in the picture of the lab
+    And I save the project
+    Then project.toml has sw2 with
+      | Setting | Value    |
+      | place   | [300, 0] |
+    And project.toml has sw1 with
+      | Setting | Value  |
+      | place   | [0, 0] |

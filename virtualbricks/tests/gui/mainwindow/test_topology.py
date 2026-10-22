@@ -284,6 +284,33 @@ class TestByHand(TopologyTestCase):
         self.assertEqual(self.laid_out[-1], (["sw1", "vm"], "TB"))
         self.assertEqual(self.state(), "TB")
 
+    def test_the_first_move(self):
+        shown = layouts.places(self.view.layout)
+        self.view.emit("brick-moved", self.sw1, Point(5, 300))
+        # every other brick where the picture shows it
+        self.assertEqual(
+            self.engine.placed,
+            [{self.sw1: Point(5, 300), self.vm: shown[self.vm]}],
+        )
+        self.assertEqual(self.vm.place, shown[self.vm])
+        self.assertEqual(self.state(), "hand")
+        self.assertEqual(
+            layouts.places(self.view.layout)[self.sw1], Point(5, 300)
+        )
+
+    def test_a_move_by_hand(self):
+        self.choose("hand")
+        self.view.emit("brick-moved", self.sw1, Point(5, 300))
+        self.assertEqual(self.engine.placed[-1], {self.sw1: Point(5, 300)})
+        self.assertEqual(self.sw1.place, Point(5, 300))
+
+    def test_a_move_refused(self):
+        self.engine.refused = ValueError("no")
+        self.view.emit("brick-moved", self.sw1, Point(5, 300))
+        self.assertEqual(self.logger.formatted(), ["Cannot move sw1"])
+        self.assertIsNone(self.sw1.place)
+        self.assertEqual(self.state(), "LR")
+
     def test_a_refusal(self):
         self.engine.refused = ValueError("no")
         self.choose("hand")

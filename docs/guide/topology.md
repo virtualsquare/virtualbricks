@@ -37,13 +37,28 @@ Drag a brick onto another, as in the **Bricks** tab: a line follows the
 pointer. Over a brick that it can plug into, or that can plug into it, the
 line ends on that brick, which lights up, and the words under it say what
 letting go does, as **Connect tap1 to sw2**. Let go there, and the two connect,
-as with **Connect To** in the menu of the brick; let go anywhere else, or press
-[Esc]{.key}, and nothing changes. Near an edge of the tab, the picture
+as with **Connect To** in the menu of the brick; let go over another brick, or
+press [Esc]{.key}, and nothing changes. Near an edge of the tab, the picture
 scrolls, to reach a brick out of view.
+
+## Moving bricks {#move}
+
+Drag a brick and let go over free room: the brick stays there. On the way, a
+faded copy of it at the end of the line shows where it goes. Near the column
+or the row of another brick, the copy lines up with it, and a thin line shows
+it.
+
+The first move keeps every other brick where it shows: the lab is laid out by
+hand from then on, and the project keeps the place of each brick, so the
+picture stays as you arranged it, after a restart and in an exported archive.
+A new brick waits in a row under the others until you move it.
 
 ## Layout and export {#export}
 
-The menu of the bar has the **Layout**, **Left to Right** or **Top to Bottom**,
-and **Export as Image…**: a PNG, an SVG or a PDF file of the picture at 100%,
-on white, whatever the zoom and the theme. Exported to the folder of the
+The menu of the bar has the **Layout**: **Left to Right** or **Top to Bottom**,
+where Graphviz places the bricks again after each change, or **By Hand**, where
+each brick stays at its place. **By Hand** gives every brick the place it has
+in the picture; **Left to Right** and **Top to Bottom** take the places away.
+The menu also has **Export as Image…**: a PNG, an SVG or a PDF file of the
+picture at 100%, on white, whatever the zoom and the theme. Exported to the folder of the
 project, the picture can show in its README; see [](readme).

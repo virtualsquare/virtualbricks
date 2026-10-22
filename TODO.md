@@ -160,8 +160,6 @@
 - [ ] Redesign the icons / use freely available icons
 - [ ] Name the plugs on the links, as a virtual machine's network cards
   (06 §9)
-- [ ] Move bricks by hand, and keep where they are in the project
-  (06 §9)
 - [ ] Show a small overview of a big lab in a corner, with where the
   view is (06 §9)
 - [ ] Show the events in the picture, next to the bricks they start
@@ -352,6 +350,11 @@
 
 # DONE
 
+- [x] Move bricks by hand, and keep where they are in the project: the
+  drag of a brick in the picture, released over free room, leaves it
+  there, lined up with the column or the row of another nearby; the first
+  move keeps the others where they show, the places go in project.toml,
+  and the Layout of the menu says By Hand (page 35; 06 §9)
 - [x] Drop the import message window: the Import window closes at the end
   of every import, opened or not, and its result page, with "Imported as"
   and what to check, is gone; the Logs window names the project and lists

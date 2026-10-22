@@ -37,9 +37,16 @@ tooltip.
 A brick pressed with the left button and moved by the drag threshold is
 dragged: a line follows the pointer, and ends on a brick that the one
 dragged connects to, as a drop on the Bricks list would, with what a release
-does under it. A release there says brick-dropped; anywhere else, Escape, or
-a lost grab end the drag with nothing. Near an edge of the view, the view
-scrolls.
+does under it. A release there says brick-dropped. Over free room, a faded
+copy of the brick ends the line, where the brick goes, held as the brick was
+pressed; near the column or the row of another brick, it lines up with it,
+along a guide. A release there says brick-moved, with the place (page 35).
+Over another brick, Escape or a lost grab end the drag with nothing. Near
+an edge of the view, the view scrolls.
+
+Zoomed and not fitted, a new layout keeps the point of the lab in the
+middle of the view where it was, by its place: the bricks that kept their
+places stay where they were, as long as the lab is larger than the view.
 """
 
 from __future__ import annotations
@@ -50,13 +57,15 @@ from typing import Any
 import cairo
 from gi.repository import Gdk, GLib, GObject, Gtk
 
-from virtualbricks.bricks import Brick, brickinfo
+from virtualbricks.bricks import Brick, Point, brickinfo
 from virtualbricks.gui.mainwindow.picture import (
     MARGIN,
+    Guide,
     Icons,
     Line,
     Palette,
     draw,
+    icon_centre,
 )
 from virtualbricks.i18n import _
 from virtualbricks.topology import Layout, Node
@@ -78,6 +87,9 @@ EDGE_DELAY = 30
 WORDS_PADDING = 6
 WORDS_RADIUS = 5
 WORDS_GAP = 6
+# A brick moved lines up with the column or the row of another this near,
+# in pixels.
+SNAP = 8
 
 
 def clamp(zoom: float) -> float:
@@ -141,6 +153,35 @@ def edge_step(position: float, size: float) -> int:
     return 0
 
 
+def line_up(
+    point: tuple[float, float],
+    others: list[tuple[float, float]],
+    reach: float,
+) -> tuple[tuple[float, float], tuple[Guide, ...]]:
+    """
+    point lined up with the nearest of others, each way, if it is within
+    reach: the point, and a guide from each one it lined up with to it.
+    """
+
+    x, y = point
+    guides = []
+    column = min(others, key=lambda other: abs(other[0] - x), default=None)
+    if column is not None and abs(column[0] - x) <= reach:
+        x = column[0]
+    else:
+        column = None
+    row = min(others, key=lambda other: abs(other[1] - y), default=None)
+    if row is not None and abs(row[1] - y) <= reach:
+        y = row[1]
+    else:
+        row = None
+    if column is not None:
+        guides.append(Guide((x, column[1]), (x, y)))
+    if row is not None:
+        guides.append(Guide((row[0], y), (x, y)))
+    return (x, y), tuple(guides)
+
+
 def rounded_rectangle(
     cr: cairo.Context[Any], x: float, y: float, width: float, height: float
 ) -> None:
@@ -161,6 +202,12 @@ class TopologyView(Gtk.ScrolledWindow):
         "zoom-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
         # a brick dropped on another that it connects to: both
         "brick-dropped": (
+            GObject.SignalFlags.RUN_FIRST,
+            None,
+            (object, object),
+        ),
+        # a brick moved over free room: the brick and its place
+        "brick-moved": (
             GObject.SignalFlags.RUN_FIRST,
             None,
             (object, object),
@@ -189,6 +236,9 @@ class TopologyView(Gtk.ScrolledWindow):
         # the brick dragged, and the pointer in the view
         self.dragging: Brick | None = None
         self._pointer = (0.0, 0.0)
+        # where the brick dragged was pressed, from the middle of its icon,
+        # in points
+        self._grab = (0.0, 0.0)
         self._edge_scroll: int | None = None
         self._wheel = 0.0
         self._pinch_zoom = 1.0
@@ -234,6 +284,14 @@ class TopologyView(Gtk.ScrolledWindow):
     # The layout and the zoom
 
     def set_layout(self, layout: Layout) -> None:
+        old = self.layout
+        width, height = self.room()
+        # the point in the middle, by its place
+        x, y = self.to_layout(
+            self.get_hadjustment().get_value() + width / 2,
+            self.get_vadjustment().get_value() + height / 2,
+        )
+        x, y = x + old.left - layout.left, y + old.top - layout.top
         self.layout = layout
         self.hover = None
         # a drag holds the bricks, not their places
@@ -247,7 +305,7 @@ class TopologyView(Gtk.ScrolledWindow):
         if self.fitting:
             self.fit()
         else:
-            self._resize()
+            self._show((x, y), (width / 2, height / 2))
 
     def set_top(self, top: int) -> None:
         """Keep top pixels free at the top."""
@@ -300,10 +358,23 @@ class TopologyView(Gtk.ScrolledWindow):
             self.get_vadjustment(),
         )
         # the point of the lab under the anchor stays there
-        x, y = self.to_layout(
+        point = self.to_layout(
             hadjustment.get_value() + ax, vadjustment.get_value() + ay
         )
         self.zoom = zoom
+        self._show(point, (ax, ay))
+        self.emit("zoom-changed")
+
+    def _show(
+        self, point: tuple[float, float], anchor: tuple[float, float]
+    ) -> None:
+        """
+        Show point, of the lab, at anchor, of the view, once the area has its
+        size.
+        """
+
+        width, height = self.room()
+        (x, y), (ax, ay), zoom = point, anchor, self.zoom
         area_width = max(self.layout.width * zoom + 2 * MARGIN, width)
         area_height = max(
             self.layout.height * zoom + 2 * MARGIN + self.top, height
@@ -316,7 +387,6 @@ class TopologyView(Gtk.ScrolledWindow):
             - ay,
         )
         self._resize()
-        self.emit("zoom-changed")
 
     def _resize(self) -> None:
         if self.layout.nodes:
@@ -350,11 +420,18 @@ class TopologyView(Gtk.ScrolledWindow):
         ox, oy = self.origin()
         return (x - ox) / self.zoom, (y - oy) / self.zoom
 
-    def node_at(self, x: float, y: float) -> Node | None:
-        """The node whose box holds a point of the area, or None."""
+    def node_at(
+        self, x: float, y: float, skip: Brick | None = None
+    ) -> Node | None:
+        """
+        The node whose box holds a point of the area, or None; never the
+        node of skip.
+        """
 
         lx, ly = self.to_layout(x, y)
         for node in reversed(self.layout.nodes):
+            if node.brick is skip:
+                continue
             if (
                 abs(lx - node.x) <= node.width / 2
                 and abs(ly - node.y) <= node.height / 2
@@ -401,9 +478,42 @@ class TopologyView(Gtk.ScrolledWindow):
             return None
         return node
 
+    def ghost(self) -> tuple[tuple[float, float], tuple[Guide, ...]] | None:
+        """
+        Where the brick dragged goes, the middle of its icon in the lab, and
+        the guides it lines up along; None over another brick.
+        """
+
+        if self.dragging is None:
+            return None
+        x, y = self.pointer()
+        if self.node_at(x, y, skip=self.dragging) is not None:
+            return None
+        lx, ly = self.to_layout(x, y)
+        others = [
+            icon_centre(node)
+            for node in self.layout.nodes
+            if node.brick is not self.dragging
+        ]
+        return line_up(
+            (lx - self._grab[0], ly - self._grab[1]), others, SNAP / self.zoom
+        )
+
+    def place_at(self, x: float, y: float) -> Point:
+        """The place of a point of the lab."""
+
+        return Point(round(x + self.layout.left), round(y + self.layout.top))
+
     # Dragging a brick
 
-    def _start_drag(self, brick: Brick) -> None:
+    def _start_drag(self, brick: Brick, x: float, y: float) -> None:
+        """Drag brick, pressed at x, y of the area."""
+
+        node = self.node_of(brick)
+        assert node is not None, "a brick pressed is in the picture"
+        lx, ly = self.to_layout(x, y)
+        cx, cy = icon_centre(node)
+        self._grab = (lx - cx, ly - cy)
         self.dragging = brick
         self.hover = None
         self._set_cursor("grabbing")
@@ -468,9 +578,13 @@ class TopologyView(Gtk.ScrolledWindow):
         if self.dragging is not None:
             node = self.node_of(self.dragging)
             assert node is not None, "a brick gone ends its drag"
-            line = Line(
-                node, self.to_layout(*self.pointer()), self.drop_target()
-            )
+            target = self.drop_target()
+            ghost = None if target is not None else self.ghost()
+            if ghost is not None:
+                end, guides = ghost
+                line = Line(node, end, ghost=True, guides=guides)
+            else:
+                line = Line(node, self.to_layout(*self.pointer()), target)
         draw(
             cr,
             self.layout,
@@ -578,9 +692,12 @@ class TopologyView(Gtk.ScrolledWindow):
         if event.button == 1 and self.dragging is not None:
             self._follow(event)
             source, target = self.dragging, self.drop_target()
+            ghost = None if target is not None else self.ghost()
             self._end_drag()
             if target is not None:
                 self.emit("brick-dropped", source, target.brick)
+            elif ghost is not None:
+                self.emit("brick-moved", source, self.place_at(*ghost[0]))
             return True
         if event.button == 1 and self._drag is not None:
             self._drag = None
@@ -600,7 +717,7 @@ class TopologyView(Gtk.ScrolledWindow):
                 int(x), int(y), int(event.x), int(event.y)
             ):
                 self._pressed = None
-                self._start_drag(brick)
+                self._start_drag(brick, x, y)
         if self.dragging is not None:
             self._follow(event)
             if self._edge_scroll is None and any(self._edge_steps()):

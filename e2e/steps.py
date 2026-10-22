@@ -1920,9 +1920,19 @@ def open_projects(virtualbricks):
 
 @when("I save the project")
 def save_project(virtualbricks):
-    """Save, in the menu Projects."""
+    """Save, in the menu Projects; then the file of the project is written."""
 
+    path = project_path(virtualbricks)
+
+    def written():
+        try:
+            return os.stat(path).st_mtime_ns
+        except FileNotFoundError:
+            return None
+
+    before = written()
     virtualbricks.choose("Save", "Projects")
+    virtualbricks.wait_for(lambda: written() != before, f"{path} is written")
 
 
 @when(words("I make a new project with the name it suggests, {name:Project}"))
@@ -3608,6 +3618,13 @@ TOPOLOGY = "Topology"
 UNDER_THE_BRICKS = 30
 
 
+# A brick in the picture of the lab, at 100%, in pixels: its icon, and the
+# box of its icon and of its name under it, for a name narrower than the
+# icon; the margin around the lab, and the gap around the bar of the zoom
+ICON = 64
+BOX_HEIGHT = 84
+LAB_MARGIN = 20
+BAR_GAP = 6
 # The tooltip of the zoom level of the tab Topology, which the screen
 # readers say after the level
 ZOOM_TO_100 = "Zoom to 100%"
@@ -3753,6 +3770,76 @@ def picture_moved(virtualbricks, picture_scroll, pixels, side):
         raise AssertionError(
             f"the picture is scrolled to {now}, from {before}, not {wanted}"
         ) from None
+
+
+@given(words("the project {name:Project} has the bricks, laid out by hand"))
+def project_by_hand(virtualbricks, name, datatable):
+    """
+    The folder of the project, in the workspace, has the file of the
+    project, with the bricks of the table under the step: the name of each,
+    its type and its place in the picture of the lab, as project.toml
+    writes it; before Virtualbricks starts, which opens new_project at its
+    first start.
+    """
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    project = os.path.join(virtualbricks.workspace, name)
+    os.makedirs(project, exist_ok=True)
+    lines = ["format = 1", ""]
+    for brick, kind, place in datatable[1:]:
+        lines += [f"[bricks.{brick}]", f'type = "{kind}"', f"place = {place}"]
+        lines.append("")
+    with open(os.path.join(project, "project.toml"), "w") as file:
+        file.write("\n".join(lines))
+
+
+@when(
+    words(
+        "I move {name:Brick} {pixels:d} pixels to the right in the picture of"
+        " the lab"
+    )
+)
+def move_brick(virtualbricks, name, pixels):
+    """
+    The tab Topology, at 100%: a press on the brick, a move of pixels to
+    the right, and a release over free room, where the brick goes. The brick
+    is found on the screen by its place in project.toml and the rules of the
+    picture, not by its pixels: the lab is the boxes of its bricks, in the
+    middle of the tab under the bar of the zoom, as long as it fits; the
+    names of the bricks are narrower than their icons.
+    """
+
+    tab = virtualbricks.click("page tab", TOPOLOGY)
+    level = zoom_level(virtualbricks, tab)
+    assert level.get_name() == "100%", f"the zoom is {level.get_name()}"
+    pane = virtualbricks.find("scroll pane", within=tab)
+    x, y, width, height = harness.a11y.extents(pane)
+    places = {
+        brick: table["place"]
+        for brick, table in project_file(virtualbricks)["bricks"].items()
+    }
+    assert all(places.values()), f"a brick without a place: {places}"
+    xs = [place[0] for place in places.values()]
+    ys = [place[1] for place in places.values()]
+    # the box of each brick: its icon, the middle of which is its place,
+    # and its name under it
+    left, right = min(xs) - ICON / 2, max(xs) + ICON / 2
+    top, bottom = min(ys) - ICON / 2, max(ys) - ICON / 2 + BOX_HEIGHT
+    assert (
+        right - left + 2 * LAB_MARGIN <= width
+    ), "the lab is wider than the tab"
+    # the room that the bar of the zoom keeps free at the top
+    _bx, by, _bw, bh = harness.a11y.extents(level)
+    room = by + bh + BAR_GAP - y
+    ox = max(LAB_MARGIN, (width - (right - left)) / 2)
+    oy = room + max(LAB_MARGIN, (height - room - (bottom - top)) / 2)
+    px, py = places[name]
+    # the middle of its box
+    start = (
+        round(x + ox + px - left),
+        round(y + oy + py - ICON / 2 + BOX_HEIGHT / 2 - top),
+    )
+    virtualbricks.drag(start, (start[0] + pixels, start[1]))
 
 
 def picture_pane(virtualbricks):
