@@ -87,10 +87,12 @@ Virtualbricks of yours here. The bricks run there, the windows here. See
     programs beside it; **colour**, the same in the colours of the
     terminal; **3d**, the name in large letters with their shadow, and the
     same lines below it; **rainbow**, the same in the colours of the
-    rainbow; **pixel**, the icon in blocks of colour; **emoji**, the lines
-    alone, each with an emoji. **3d**, **rainbow**, **pixel** and
-    **emoji** need a terminal of 24-bit colour, as most are, and **emoji**
-    a font with emoji. See **THE CONSOLE**.
+    rainbow; **pixel**, the icon in blocks of colour; **drop**, the same,
+    its bricks falling into place, the last one onto its mortar, in a
+    second: a key ends it at once; **emoji**, the lines alone, each with
+    an emoji. **3d**, **rainbow**, **pixel**, **drop** and **emoji** need a
+    terminal of 24-bit colour, as most are, and **emoji** a font with
+    emoji. See **THE CONSOLE**.
 
 **--run** *file*
 :   Run the commands of *file* once the project is open, as **source**

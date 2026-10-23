@@ -31,10 +31,19 @@ from twisted.trial import unittest
 from virtualbricks import __version__, sockets
 from virtualbricks.console import command as command_module
 from virtualbricks.console import terminal
-from virtualbricks.console.banner import LOGO, NONE, PLAIN, Banner
+from virtualbricks.console.banner import (
+    DROP,
+    LOGO,
+    NONE,
+    PLAIN,
+    Banner,
+    banner,
+    drop,
+)
 from virtualbricks.console.command import CommandError, command
 from virtualbricks.console.lineedit import CTRL_D
 from virtualbricks.console.terminal import (
+    FRAME,
     ConsoleLine,
     PlainConsole,
     RawTerminal,
@@ -359,6 +368,70 @@ class TestSwitcher(TerminalTestCase):
         transport.clear()
         self.successResultOf(switcher.close())
         self.assertEqual(transport.value(), b"")
+
+
+class TestABannerThatMoves(TerminalTestCase):
+
+    UP = b"\x1b[11A"
+    PROMPT = b"virtualbricks> "
+
+    def server(self, lines=40):
+        """The console of a terminal 100 columns wide, with the drop."""
+
+        self.reactor = self.clock()
+        server = insults.ServerProtocol(
+            Switcher, self.factory, {}, self.reactor, Banner(DROP)
+        )
+        server.termSize = insults.Vector(100, lines)
+        self.transport = StringTransport()
+        server.makeConnection(self.transport)
+        return server
+
+    def last_frame(self):
+        lines = banner(self.factory, DROP, columns=100)
+        return "\r\n".join(lines).encode()
+
+    def test_frame_by_frame(self):
+        self.server()
+        # the first frame, without the prompt: each next one over it
+        self.assertNotIn(self.PROMPT, self.transport.value())
+        for frame in range(1, len(drop())):
+            self.assertNotIn(self.PROMPT, self.transport.value())
+            self.reactor.advance(FRAME)
+            self.assertEqual(self.transport.value().count(self.UP), frame)
+        # the prompt after the last
+        value = self.transport.value()
+        self.assertGreater(value.rindex(self.PROMPT), value.rindex(self.UP))
+        self.assertEqual(self.reactor.getDelayedCalls(), [])
+
+    def test_a_key_ends_it(self):
+        server = self.server()
+        self.reactor.pump([FRAME] * 10)
+        server.dataReceived(b"status\r")
+        value = self.transport.value()
+        # the last frame at once, then the prompt, and the key is typed
+        self.assertEqual(value.count(self.UP), 11)
+        after = value[value.rindex(self.UP) :]
+        self.assertIn(self.last_frame(), after.replace(b"\r\x1b[2K", b""))
+        self.assertIn(b"Nothing runs", after)
+        self.assertEqual(self.reactor.getDelayedCalls(), [])
+
+    def test_a_short_terminal(self):
+        # a frame goes back up to the first line of the one before
+        self.server(lines=11)
+        value = self.transport.value()
+        self.assertNotIn(self.UP, value)
+        self.assertIn(self.last_frame(), value)
+        self.assertIn(self.PROMPT, value)
+
+    def test_without_a_clock(self):
+        self.connect(ConsoleLine(self.factory, None, None, Banner(DROP), 100))
+        self.assertEqual(self.shown()[-1], "virtualbricks>")
+
+    def test_the_end_of_the_terminal(self):
+        server = self.server()
+        server.connectionLost(None)
+        self.assertEqual(self.reactor.getDelayedCalls(), [])
 
 
 class TestPlain(ConsoleTestCase):

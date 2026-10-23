@@ -22,11 +22,11 @@ The console in the terminal that started Virtualbricks.
 On a terminal, :class:`ConsoleLine` is a line to type commands in, with
 editing, a history kept between runs and Tab completion; the prompt is the
 name of the open project, and it starts with the banner of --banner,
-:mod:`virtualbricks.console.banner`. A command runs to its end before the
-next: Ctrl+C stops waiting for it, not what it does. ``python`` opens the
-Python shell, and Ctrl+D comes back; Ctrl+D on an empty line quits, as
-``quit`` does.
-Both lines have the keys of readline, :mod:`virtualbricks.console.lineedit`.
+:mod:`virtualbricks.console.banner`; a key ends one that moves at once.
+A command runs to its end before the next: Ctrl+C stops waiting for it,
+not what it does. ``python`` opens the Python shell, and Ctrl+D comes back;
+Ctrl+D on an empty line quits, as ``quit`` does. Both lines have the keys
+of readline, :mod:`virtualbricks.console.lineedit`.
 
 When the input is not a terminal, as a pipe, :class:`PlainConsole` reads it
 a line at a time, each once the one before is done, and quits at its end.
@@ -51,7 +51,11 @@ from twisted.conch import manhole, recvline
 from twisted.conch.insults import insults
 from twisted.internet import defer, stdio
 from twisted.internet.base import ReactorBase
-from twisted.internet.interfaces import IHalfCloseableProtocol, IReactorTime
+from twisted.internet.interfaces import (
+    IDelayedCall,
+    IHalfCloseableProtocol,
+    IReactorTime,
+)
 from twisted.internet.protocol import connectionDone
 from twisted.logger import Logger
 from twisted.protocols import basic
@@ -61,7 +65,7 @@ from zope.interface import implementer
 from virtualbricks import locations
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.config.workspace import projects
-from virtualbricks.console.banner import Banner
+from virtualbricks.console.banner import Banner, Frame
 from virtualbricks.console.command import CommandError, Context
 from virtualbricks.console.dispatch import run
 from virtualbricks.console.lineedit import ReadlineKeys
@@ -75,6 +79,8 @@ CTRL_C = b"\x03"
 CTRL_L = b"\x0c"
 # The lines of the history kept between runs.
 HISTORY_SIZE = 500
+# The seconds between two frames of a banner that moves.
+FRAME = 0.02
 
 
 def history_file() -> str:
@@ -121,17 +127,22 @@ class ConsoleLine(ReadlineKeys, recvline.HistoricRecvLine):
         reactor: IReactorTime | None = None,
         banner: Banner = Banner(),
         width: int = 80,
+        height: int = 24,
     ) -> None:
         super().__init__()
         self.brickfactory = factory
         self.switcher = switcher
         self.reactor = reactor
         self.banner = banner
-        # the columns of the terminal, as recvline has them
+        # the columns and lines of the terminal, as recvline has them
         self.width = width
+        self.height = height
         # the Deferred of the command that runs, None if none does
         self.waiting: defer.Deferred[list[str]] | None = None
         self.greeted = False
+        # the frames of the banner still to show, and the call of the next
+        self.frames: list[Frame] = []
+        self.next_frame: IDelayedCall | None = None
 
     # the terminal
 
@@ -148,9 +159,63 @@ class ConsoleLine(ReadlineKeys, recvline.HistoricRecvLine):
         # the screen isn't cleared: what the terminal shows stays
         if not self.greeted:
             self.greeted = True
-            self.write_lines(self.banner.lines(self.brickfactory, self.width))
+            frames = self.banner.frames(self.brickfactory, self.width)
+            # each frame goes back up to the first line of the one before:
+            # all its lines must be on the screen
+            if self.reactor is None or len(frames[0]) >= self.height:
+                frames = frames[-1:]
+            self.write_lines(frames[0])
+            if len(frames) > 1:
+                assert self.reactor is not None, "frames need a clock"
+                self.frames = frames[1:]
+                self.next_frame = self.reactor.callLater(
+                    FRAME, self.show_frame
+                )
+                return
+        self.show_prompt()
+
+    def show_prompt(self) -> None:
         self.terminal.write(self.ps[self.pn])
         self.setInsertMode()
+
+    # the banner that moves
+
+    def show_frame(self) -> None:
+        """The next frame of the banner; after the last, the prompt."""
+
+        assert self.reactor is not None, "frames need a clock"
+        self.draw_frame(self.frames.pop(0))
+        if self.frames:
+            self.next_frame = self.reactor.callLater(FRAME, self.show_frame)
+        else:
+            self.next_frame = None
+            self.show_prompt()
+
+    def draw_frame(self, frame: Frame) -> None:
+        """A frame over the one before, which has as many lines."""
+
+        self.terminal.cursorUp(len(frame))
+        for line in frame:
+            self.terminal.write(b"\r")
+            self.terminal.eraseLine()
+            self.write_lines([line])
+
+    def end_banner(self) -> None:
+        """The last frame of the banner at once, then the prompt."""
+
+        if self.next_frame is None:
+            return
+        self.next_frame.cancel()
+        self.next_frame = None
+        self.draw_frame(self.frames[-1])
+        self.frames = []
+        self.show_prompt()
+
+    def connectionLost(self, reason: Failure = connectionDone) -> None:
+        if self.next_frame is not None:
+            self.next_frame.cancel()
+            self.next_frame = None
+        super().connectionLost(reason)
 
     def resume(self) -> None:
         """Show the prompt again, back from the Python shell."""
@@ -189,6 +254,8 @@ class ConsoleLine(ReadlineKeys, recvline.HistoricRecvLine):
     # the keys
 
     def keystrokeReceived(self, keyID: bytes, modifier: bytes | None) -> None:
+        # a key ends the banner that moves: the prompt is there for it
+        self.end_banner()
         if self.waiting is not None:
             # a command runs: Ctrl+C stops waiting for it
             if keyID == CTRL_C:
@@ -338,9 +405,9 @@ class Switcher(insults.TerminalProtocol):
 
     def connectionMade(self) -> None:
         # the size start() read
-        columns = self.terminal.termSize.x
+        size = self.terminal.termSize
         self.console = ConsoleLine(
-            self.brickfactory, self, self.reactor, self.banner, columns
+            self.brickfactory, self, self.reactor, self.banner, size.x, size.y
         )
         self.current = self.console
         self.console.makeConnection(self.terminal)

@@ -72,7 +72,9 @@ RUN_OPTIONS = (
     "logger",
 )
 # The styles of --banner, as virtualbricks.console.banner draws them.
-Style = Literal["none", "plain", "colour", "3d", "rainbow", "pixel", "emoji"]
+Style = Literal[
+    "none", "plain", "colour", "3d", "rainbow", "pixel", "drop", "emoji"
+]
 BANNERS: tuple[Style, ...] = get_args(Style)
 
 DESCRIPTION_TEXT = """\
@@ -155,7 +157,8 @@ def parser() -> argparse.ArgumentParser:
         " version, the default; plain, the icon in characters, with the"
         " version, the project, the workspace and the programs; colour, the"
         " same in colour; 3d or rainbow, the name in large letters; pixel,"
-        " the icon in blocks of colour; emoji, the text alone, with emoji.",
+        " the icon in blocks of colour; drop, the same, its bricks falling"
+        " into place; emoji, the text alone, with emoji.",
     )
     parser.add_argument(
         "--command",

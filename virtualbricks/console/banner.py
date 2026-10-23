@@ -26,8 +26,9 @@ that are missing and the control sockets listened on.
 ``plain`` draws the icon in characters, ``colour`` paints them in the 16
 colours of the terminal. ``3d`` and ``rainbow`` write the name in letters
 of blocks with their shadow, ``pixel`` draws the icon in blocks of colour,
-and ``emoji`` goes without a picture: they need a terminal of 24-bit
-colour, as most are, and ``emoji`` a font with emoji.
+``drop`` the same frame by frame, its bricks falling into place, and
+``emoji`` goes without a picture: they need a terminal of 24-bit colour, as
+most are, and ``emoji`` a font with emoji.
 
 A terminal too narrow for the picture has the text alone.
 """
@@ -56,7 +57,7 @@ from virtualbricks.programs import (
 )
 from virtualbricks.sockets import Socket
 
-NONE, PLAIN, COLOUR, THREE_D, RAINBOW, PIXEL, EMOJI = BANNERS
+NONE, PLAIN, COLOUR, THREE_D, RAINBOW, PIXEL, DROP, EMOJI = BANNERS
 
 # The icon: a V of bricks, the last one coming down on its mortar.
 LOGO = [
@@ -97,6 +98,13 @@ SPRITE = [
     "...aaaaaaa...............",
 ]
 SPRITE_WIDTH = len(SPRITE[0])
+# The drop: a row of bricks every DROP_DELAY frames, from the bottom up, each
+# falling a pixel a frame; the last brick hovers over its mortar for HOVER
+# frames, as the icon has it, then lands at LANDING, the row of pixels of
+# the gap it fills.
+DROP_DELAY = 6
+HOVER = 12
+LANDING = 2
 # The letters of the name, after the ANSI Shadow font of figlet: the full
 # blocks are their faces, the lines of the boxes their shadow.
 LETTERS = {
@@ -238,6 +246,10 @@ RESET = "\x1b[0m"
 ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
 
 
+# A frame of the banner: its lines, as the console writes them.
+Frame = list[str]
+
+
 class Fact(NamedTuple):
     """A line of the banner: its kind, its label and its value."""
 
@@ -257,6 +269,11 @@ class Banner:
         """The lines the console starts with, in a terminal columns wide."""
 
         return banner(factory, self.style, self.listening, columns)
+
+    def frames(self, factory: BrickFactory, columns: int = 80) -> list[Frame]:
+        """The lines, frame by frame: one frame but for the drop."""
+
+        return frames(factory, self.style, self.listening, columns)
 
 
 # The colours
@@ -480,10 +497,16 @@ def _text(
     return lines
 
 
-def _beside(left: Sequence[str], right: Sequence[str]) -> list[str]:
-    """The lines of a picture, with the text on its right."""
+def _beside(
+    left: Sequence[str], right: Sequence[str], indent: int | None = None
+) -> list[str]:
+    """
+    The lines of a picture, with the text on its right: indent columns
+    from the left, GAP after the picture if None.
+    """
 
-    indent = max(map(visible, left)) + GAP
+    if indent is None:
+        indent = max(map(visible, left)) + GAP
     height = max(len(left), len(right))
     left = list(left) + [""] * (height - len(left))
     right = list(right) + [""] * (height - len(right))
@@ -505,15 +528,15 @@ def logo(palette: Palette) -> list[str]:
     return [painted([(c, codes(c)) for c in line]) for line in LOGO]
 
 
-def pixels() -> list[str]:
+def pixels(sprite: Sequence[str] = SPRITE) -> list[str]:
     """
-    SPRITE in blocks of 24-bit colour, two pixels to a character: the top
-    one in the colour of the character, the bottom one in that of its
-    background; nothing is painted where a pixel is empty.
+    A picture drawn as SPRITE in blocks of 24-bit colour, two pixels to a
+    character: the top one in the colour of the character, the bottom one
+    in that of its background; nothing is painted where a pixel is empty.
     """
 
     lines = []
-    for top_row, bottom_row in zip(SPRITE[::2], SPRITE[1::2]):
+    for top_row, bottom_row in zip(sprite[::2], sprite[1::2]):
         cells = []
         for top, bottom in zip(top_row, bottom_row):
             up, down = PIXELS.get(top), PIXELS.get(bottom)
@@ -530,6 +553,73 @@ def pixels() -> list[str]:
                 cells.append(("▀", f"{fg(up)};{bg(down)}"))
         lines.append(painted(cells).rstrip())
     return lines
+
+
+class Piece(NamedTuple):
+    """
+    A brick of SPRITE, or half of one that is split: the row of its top
+    pixels, its first column and the one past its last.
+    """
+
+    y: int
+    start: int
+    end: int
+
+
+def pieces() -> list[Piece]:
+    """The bricks of SPRITE, each a run of light pixels over dark ones."""
+
+    return [
+        Piece(y, found.start(), found.end())
+        for y, row in enumerate(SPRITE)
+        for found in re.finditer("A+", row)
+    ]
+
+
+def drop() -> list[list[str]]:
+    """
+    The frames of the drop, each drawn as SPRITE: the bricks fall in from
+    the top, a row every DROP_DELAY frames from the bottom up, a pixel a
+    frame; the mortar shows once the brick under it is down. Then the last
+    brick, the top one, hovers over its mortar for HOVER frames and lands
+    on it, filling the V: the mortar is gone.
+    """
+
+    bricks = pieces()
+    last = min(bricks)
+    bricks.remove(last)
+    rows = sorted({brick.y for brick in bricks}, reverse=True)
+    # a brick starts at the top, and falls to its row
+    starts = {brick: rows.index(brick.y) * DROP_DELAY for brick in bricks}
+    lands = {brick: starts[brick] + brick.y for brick in bricks}
+    mortar = [
+        (y, x)
+        for y, row in enumerate(SPRITE)
+        for x, pixel in enumerate(row)
+        if pixel == "m"
+    ]
+    under = mortar[0][0] + 1
+    spread = max(lands[brick] for brick in bricks if brick.y == under)
+    appears = max(lands.values())
+    down = appears + HOVER + LANDING
+    frames = []
+    for frame in range(down + 1):
+        grid = [["."] * SPRITE_WIDTH for _ in SPRITE]
+
+        def place(brick: Piece, y: int) -> None:
+            for x in range(brick.start, brick.end):
+                grid[y][x], grid[y + 1][x] = "A", "a"
+
+        for brick in bricks:
+            if frame >= starts[brick]:
+                place(brick, min(brick.y, frame - starts[brick]))
+        if frame >= appears:
+            place(last, max(0, min(LANDING, frame - appears - HOVER)))
+        if spread <= frame < down:
+            for y, x in mortar:
+                grid[y][x] = "m"
+        frames.append(["".join(row) for row in grid])
+    return frames
 
 
 def big(words: Sequence[str], face: Callable[[int, int], str]) -> list[str]:
@@ -600,14 +690,50 @@ def banner(
         return _letters(rows, style, columns)
     if style == PIXEL:
         picture, palette = pixels(), TRUE_PALETTE
+    elif style == DROP:
+        picture, palette = pixels(drop()[-1]), TRUE_PALETTE
     else:
         palette = COLOUR_PALETTE if style == COLOUR else PLAIN_PALETTE
         picture = logo(palette)
+    return _pictured([picture], rows, palette, columns)[-1]
+
+
+def frames(
+    factory: BrickFactory,
+    style: Style = NONE,
+    listening: Sequence[Socket] = (),
+    columns: int = 80,
+) -> list[Frame]:
+    """
+    The lines of banner(), frame by frame: those of the drop, if its
+    picture fits; else a frame alone.
+    """
+
+    if style != DROP:
+        return [banner(factory, style, listening, columns)]
+    pictures = [pixels(frame) for frame in drop()]
+    rows = facts(factory, listening)
+    return _pictured(pictures, rows, TRUE_PALETTE, columns)
+
+
+def _pictured(
+    pictures: Sequence[Sequence[str]],
+    rows: Sequence[Fact],
+    palette: Palette,
+    columns: int,
+) -> list[Frame]:
+    """
+    Each picture with the text beside it; the text alone, once, if the
+    widest picture doesn't fit with it.
+    """
+
     heading = paint(title(), palette.title)
-    indent = max(map(visible, picture)) + GAP
+    indent = max(visible(line) for picture in pictures for line in picture)
+    indent += GAP
     if columns < indent + TEXT_WIDTH:
-        return _text(rows, columns, palette, heading)
-    return _beside(picture, _text(rows, columns - indent, palette, heading))
+        return [_text(rows, columns, palette, heading)]
+    text = _text(rows, columns - indent, palette, heading)
+    return [_beside(picture, text, indent) for picture in pictures]
 
 
 def _letters(rows: list[Fact], style: Style, columns: int) -> list[str]:

@@ -26,8 +26,11 @@ from virtualbricks.console.banner import (
     BRICK_DARK,
     BRICK_LIGHT,
     COLOUR,
+    DROP,
+    DROP_DELAY,
     EMOJI,
     GAP,
+    HOVER,
     LETTERS,
     LOGO,
     LOGO_WIDTH,
@@ -36,15 +39,18 @@ from virtualbricks.console.banner import (
     PLAIN,
     RAINBOW,
     SHADOW,
+    SPRITE,
     SPRITE_WIDTH,
     THREE_D,
     Banner,
     Fact,
     banner,
     bg,
+    drop,
     emulators,
     facts,
     fg,
+    frames,
     mix,
     paint,
     painted,
@@ -307,6 +313,95 @@ class TestPixel(BannerTestCase):
         self.assertNotIn("▀", "".join(lines))
         lines = banner(self.factory, PIXEL, columns=SPRITE_WIDTH + GAP + 40)
         self.assertIn("▀", "".join(lines))
+
+
+class TestDrop(BannerTestCase):
+
+    def column(self, frame, x):
+        """The rows of pixels of a column of a frame that a brick is on."""
+
+        return [y for y, row in enumerate(frame) if row[x] in "Aa"]
+
+    def test_a_brick_falls_a_pixel_a_frame(self):
+        # the bottom brick first, from the top: column 7 is its own
+        pixels = drop()
+        for frame in range(21):
+            self.assertEqual(self.column(pixels[frame], 7), [frame, frame + 1])
+        self.assertEqual(self.column(pixels[-1], 7), [20, 21])
+
+    def test_a_row_at_a_time_from_the_bottom_up(self):
+        pixels = drop()
+        # the next row starts DROP_DELAY frames after
+        self.assertEqual(self.column(pixels[DROP_DELAY - 1], 0), [])
+        self.assertEqual(self.column(pixels[DROP_DELAY], 0), [0, 1])
+        self.assertEqual(self.column(pixels[DROP_DELAY], 11), [0, 1])
+
+    def test_the_last_brick_hovers_then_lands(self):
+        pixels = drop()
+        # all the others down, it hovers over its mortar, as in the icon
+        hover = [n for n, frame in enumerate(pixels) if frame == SPRITE]
+        self.assertEqual(len(hover), HOVER + 1)
+        # then falls a pixel a frame
+        self.assertEqual(
+            pixels[hover[-1] + 1][:3],
+            [
+                "." * 25,
+                "." * 18 + "AAAAAAA",
+                "AAAAAAA" + "." * 11 + "aaaaaaa",
+            ],
+        )
+        landed = pixels[-1]
+        self.assertEqual(len(pixels), hover[-1] + 3)
+        self.assertEqual(landed[2], "AAAAAAA" + "." * 11 + "AAAAAAA")
+        self.assertEqual(landed[3], "aaaaaaa" + "." * 11 + "aaaaaaa")
+        # the mortar under it is gone, the rest as in the icon
+        self.assertEqual(landed[:2], ["." * 25] * 2)
+        self.assertEqual(landed[4], "." * 25)
+        self.assertEqual(landed[5:], SPRITE[5:])
+
+    def test_the_mortar_once_its_brick_is_down(self):
+        pixels = drop()
+        mortar = [n for n, frame in enumerate(pixels) if "m" in frame[4]]
+        # its brick lands on row 5, from the sixth start
+        down = 5 * DROP_DELAY + 5
+        self.assertEqual(mortar, list(range(down, len(pixels) - 1)))
+        self.assertEqual(self.column(pixels[down], 22), [5, 6])
+        self.assertEqual(self.column(pixels[down - 1], 22), [4, 5])
+
+    def test_the_frames_of_the_banner(self):
+        shown = frames(self.factory, DROP)
+        self.assertEqual(len(shown), len(drop()))
+        self.assertEqual({len(frame) for frame in shown}, {11})
+        # the text beside each, the same
+        indent = SPRITE_WIDTH + GAP
+        texts = {
+            tuple(line[indent:] for line in stripped(frame)) for frame in shown
+        }
+        self.assertEqual(len(texts), 1)
+        # the first, with the bottom brick at the top
+        self.assertEqual(
+            stripped(shown[0])[0],
+            "   "
+            + "▀" * 7
+            + " " * (indent - 10)
+            + f"Virtualbricks {__version__}",
+        )
+        # the last one is the banner
+        self.assertEqual(shown[-1], banner(self.factory, DROP))
+        self.assertEqual(Banner(DROP).frames(self.factory), shown)
+
+    def test_alone_in_a_narrow_terminal(self):
+        columns = SPRITE_WIDTH + GAP + 39
+        self.assertEqual(
+            frames(self.factory, DROP, columns=columns),
+            [banner(self.factory, PIXEL, columns=columns)],
+        )
+
+    def test_the_others_stay(self):
+        for style in (PLAIN, PIXEL, RAINBOW):
+            self.assertEqual(
+                frames(self.factory, style), [banner(self.factory, style)]
+            )
 
 
 class TestEmoji(BannerTestCase):
