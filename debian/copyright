@@ -3,7 +3,7 @@ Upstream-Name: Virtualbricks
 Source: https://github.com/virtualsquare/virtualbricks
 
 Files: *
-Copyright: Copyright (C) 2019 Virtualbricks team
+Copyright: Copyright (C) 2019-2026 Virtualbricks team
            Copyright (C) 2011 Carlo Caini, Daniele Lacamera, Francesco Apollonio, Pierre-Louis Bonicoli, Simone Abbati
            Copyright (C) 2006 Raineer Haage
 License: GPL-2+
@@ -19,21 +19,13 @@ Comment:
  Icons 'Connect' and 'Disconnect' are fairly based on 'plug' icon created
  by cablout (http://openclipart.org/user-detail/caboulot) (Public Domain)
  .
- Icons 'Wire' and 'Wirefilter' are fairly based on 'tango network wired'
- icon created by warszawianka
+ Icons 'Wire' and 'Netemu' ('Wirefilter' in Virtualbricks 2.1 and older)
+ are fairly based on 'tango network wired' icon created by warszawianka
  (http://openclipart.org/user-detail/warszawianka) (Public+Domain)
  .
  Icon 'Event' is fairly based on 'tango appointment new' icon created by
  warszawianka (http://openclipart.org/user-detail/warszawianka) (Public
  Domain)
-
-Files: virtualbricks/_backport.py
-Copyright: Copyright (c) Twisted Matrix Laboratories.
-License: MIT
-
-Files: virtualbricks/_log.py
-Copyright: Copyright (c) 2005-2017 Apple Inc. All rights reserved.
-License: Apache-2.0
 
 License: GPL-2+
  This program is free software; you can redistribute it
@@ -49,49 +41,12 @@ License: GPL-2+
  details.
  .
  You should have received a copy of the GNU General Public
- License along with this package; if not, write to the Free
- Software Foundation, Inc., 51 Franklin St, Fifth Floor,
- Boston, MA  02110-1301 USA
+ License along with this package.  If not, see
+ <https://www.gnu.org/licenses/>.
  .
  On Debian systems, the full text of the GNU General Public
  License version 2 can be found in the file
  `/usr/share/common-licenses/GPL-2'.
-
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
- .
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-License: Apache-2.0
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
- .
-     http://www.apache.org/licenses/LICENSE-2.0
- .
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the full text of the Apache License version 2 can be
- found in the file `/usr/share/common-licenses/Apache-2'.
 
 License: CC-BY-NC-SA-3.0
  Except where otherwise noted, this work is licensed under Creative

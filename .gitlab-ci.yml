@@ -5,7 +5,8 @@ stages:
 
 variables:
     DEBIAN_FRONTEND: noninteractive
-    DEBEMAIL: Marco Giusti <marco.giusti3@studio.unibo.it>
+    # the address of Maintainer in debian/control, for the changelog
+    DEBEMAIL: Marco Giusti <marco.giusti@posteo.de>
 
 # The upstream tarball, the same for every distribution: the sdist, which
 # has what MANIFEST.in lists and nothing else of the checkout.
@@ -33,6 +34,10 @@ source:
         - gpg --import .secure_files/private.key
         # the key is in the keyring now: nothing else reads the file
         - rm -rf .secure_files
+        # dpkg-buildpackage signs with this key, whatever the address of the
+        # changelog
+        - |
+            export DEB_SIGN_KEYID="$(gpg --list-secret-keys --with-colons | awk -F: '$1 == "fpr" {print $10; exit}')"
         # install the build dependencies
         - apt-get install -y build-essential debhelper devscripts dh-python python3-all python3-setuptools pybuild-plugin-pyproject
         # pyproject.toml needs setuptools 77 or newer, with packaging 24.2 or
