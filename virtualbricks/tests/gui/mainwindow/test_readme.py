@@ -96,6 +96,7 @@ class TestReadmeTab(unittest.TestCase):
         self.assertFalse(self.tab.edit_button.get_active())
         self.assertEqual(self.showing(), "empty")
         self.assertTrue(self.tab.edit_button.get_visible())
+        self.assertFalse(self.tab.preview_button.get_visible())
         self.assertFalse(self.tab.syntax_button.get_visible())
 
     def test_a_text_loaded_is_rendered(self):
@@ -113,8 +114,9 @@ class TestReadmeTab(unittest.TestCase):
         self.assertEqual(self.showing(), "editor")
         self.assertTrue(self.tab.editor.get_mapped())
         self.assertIs(self.window.get_focus(), self.tab.editor)
-        # the pencil gives way to the syntax
+        # the pencil gives way to the eye and the syntax
         self.assertFalse(self.tab.edit_button.get_visible())
+        self.assertTrue(self.tab.preview_button.get_visible())
         self.assertTrue(self.tab.syntax_button.get_visible())
         # rendered when the preview shows again
         self.buffer.set_text(README)
@@ -123,7 +125,15 @@ class TestReadmeTab(unittest.TestCase):
         self.assertEqual(self.showing(), "preview")
         self.assertEqual(self.rendered(), RENDERED)
         self.assertTrue(self.tab.edit_button.get_visible())
+        self.assertFalse(self.tab.preview_button.get_visible())
         self.assertFalse(self.tab.syntax_button.get_visible())
+
+    def test_the_key_stays_on_the_buttons(self):
+        self.tab.edit_button.set_active(True)
+        # the eye pressed with a key, it hides
+        self.tab.preview_button.grab_focus()
+        self.tab.preview_button.set_active(True)
+        self.assertIs(self.window.get_focus(), self.tab.edit_button)
 
     def test_show_the_preview(self):
         self.tab.edit_button.set_active(True)
@@ -145,8 +155,9 @@ class TestReadmeTab(unittest.TestCase):
 
     def test_the_buttons_in_the_corner(self):
         tab = self.tab
-        for button in (tab.edit_button, tab.preview_button):
-            self.assertTrue(button.get_mapped())
+        self.assertTrue(tab.edit_button.get_mapped())
+        for button in (tab.preview_button, tab.syntax_button):
+            self.assertFalse(button.get_mapped())
         tab.edit_button.set_active(True)
         self.assertFalse(tab.edit_button.get_mapped())
         for button in (tab.preview_button, tab.syntax_button):

@@ -19,12 +19,12 @@
 """
 The Readme tab of the main window: the README rendered, or its text to edit.
 
-The tab opens on the preview. Two icon buttons float over its top right
-corner: the pencil shows the editor, the eye the preview, drawn again from
-the text of the editor. While the editor shows, the pencil hides and an
-icon opens the syntax. The buttons are faded, and opaque while the
-pointer is over them or the syntax shows; the text goes under them, with
-the same margin on each side.
+The tab opens on the preview. Icon buttons float over its top right
+corner: over the preview, the pencil shows the editor; over the editor,
+the eye shows the preview, drawn again from the text of the editor, and an
+icon opens the syntax. The buttons are faded, and opaque while the pointer
+is over them or the syntax shows; the text goes under them, with the same
+margin on each side.
 
 The editor holds the README of the open project, which the engine reads and
 writes: the tab loads it when a project opens and when it shows, and saves
@@ -245,6 +245,10 @@ class ReadmeTab(Tab, Gtk.Overlay):
             self.stack.set_visible_child_name("editor")
             self.editor.grab_focus()
         self.edit_button.set_visible(self.showing_preview())
+        # pressed with a key, the eye hides: the key on the pencil
+        if self.showing_preview() and self.preview_button.is_focus():
+            self.edit_button.grab_focus()
+        self.preview_button.set_visible(not self.showing_preview())
         self.syntax_button.set_visible(not self.showing_preview())
 
     def _picture(self, path: str) -> defer.Deferred[bytes]:
