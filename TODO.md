@@ -199,7 +199,6 @@
   the view under it, then the overlay, never the button (every target,
   3.24.41 to 3.24.52). The overlay answering query-tooltip for what floats
   over it works, and was turned down (22 Oct)
-- [ ] Make the buttons semi-transparent, and opaque under the pointer
 - [ ] Round the corners of the buttons
 - [ ] Render GFM's tables and task lists, if READMEs need them (05 §10)
 - [ ] Add buttons for bold, italic and lists to the editor (05 §10)
@@ -355,6 +354,10 @@
 
 # DONE
 
+- [x] Make the buttons of the Readme tab semi-transparent, and opaque
+  under the pointer: faded at opacity 0.3, opaque while the pointer is
+  over them or the syntax shows; the text goes under them, with the same
+  margin on each side (page 5, Since then)
 - [x] Export the picture as if all the bricks were running: every brick
   in colour by default, or the stopped ones grey and faded with Fade
   stopped bricks, a check box of the chooser of Export as Image, kept
