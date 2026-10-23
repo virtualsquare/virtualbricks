@@ -11,10 +11,3 @@ include locale/virtualbricks/virtualbricks.pot locale/virtualbricks/*.po
 recursive-include share *
 recursive-include virtualbricks/tests/data *.json *.py *.txt
 recursive-include virtualbricks/tests/data/tls *.pem *.key *.md
-# include Debian files
-include debian/changelog
-include debian/compat
-include debian/control
-include debian/copyright
-include debian/rules
-include debian/source/format
