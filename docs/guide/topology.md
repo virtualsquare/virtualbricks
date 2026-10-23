@@ -18,10 +18,10 @@ tab](figures/topology.png){alt="The Topology tab: sw1 and vm1, joined by a line,
 
 ## Zooming {#zoom}
 
-A bar over the top right corner has **Zoom Out**, the zoom level, **Zoom In**,
-**Fit All** and a menu. A click on the level goes back to 100%. The tab opens
-with the whole lab in view, and keeps it in view as the lab changes, until you
-zoom.
+A bar over the top right corner, faded until you point at it, has **Zoom
+Out**, the zoom level, **Zoom In**, **Fit All** and a menu. A click on the
+level goes back to 100%. The tab opens with the whole lab in view, and keeps
+it in view as the lab changes, until you zoom.
 
 - [Ctrl++]{.keyseq}, [Ctrl+-]{.keyseq}: zoom in and out; [Ctrl+0]{.keyseq}:
   100%; [F]{.key}: fit all.

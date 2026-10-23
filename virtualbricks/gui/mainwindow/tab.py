@@ -24,8 +24,9 @@ in its notebook under its title, and tells it when a project opens, is
 saved, or Virtualbricks quits, and when it shows or another tab does. F1
 opens the page of the user guide about the tab in view, its ``help_page``.
 
-The tabs share the helpers after it: a button with an icon, and the menus
-of the bricks and the events, their items and where they open.
+The tabs share the helpers after it: a button with an icon, the bar of
+buttons that floats over a tab, and the menus of the bricks and the events,
+their items and where they open.
 """
 
 from __future__ import annotations
@@ -38,6 +39,12 @@ from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.observable import Signal
 
 B = TypeVar("B", bound=Gtk.Button)
+
+# The buttons that float over a tab, this opaque while the pointer is
+# elsewhere.
+FADED_OPACITY = 0.3
+# Their dark box, with the rounded corners of a button.
+FLOATING_CSS = b".osd { border-radius: 5px; }"
 
 
 class Tab:
@@ -105,6 +112,57 @@ def icon_button(button: B, icon: str, name: str) -> B:
     button.set_tooltip_text(name)
     button.get_accessible().set_name(name)
     return button
+
+
+class FloatingBar(Gtk.EventBox):
+    """
+    Buttons that float over the top right corner of a tab, on a dark box
+    with rounded corners: faded, and opaque while the pointer is over them
+    or the menu of one of them shows.
+    """
+
+    def __init__(self, spacing: int, margin: int) -> None:
+        super().__init__(
+            visible=True,
+            halign=Gtk.Align.END,
+            valign=Gtk.Align.START,
+            margin=margin,
+        )
+        # the event box has a window of its own, around the windows of the
+        # buttons: from its edge to a button, the pointer is still over it
+        self.box = Gtk.Box(visible=True, spacing=spacing)
+        rounded = Gtk.CssProvider()
+        rounded.load_from_data(FLOATING_CSS)
+        style = self.box.get_style_context()
+        style.add_class("osd")
+        style.add_provider(rounded, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        self.add(self.box)
+        self._pointed = False
+        self._menus: list[Gtk.MenuButton] = []
+        self._fade()
+        self.connect("enter-notify-event", self.on_crossing)
+        self.connect("leave-notify-event", self.on_crossing)
+
+    def pack(self, widget: Gtk.Widget) -> None:
+        """widget at the end of the bar; a menu button's menu is watched."""
+
+        self.box.pack_start(widget, False, False, 0)
+        if isinstance(widget, Gtk.MenuButton):
+            self._menus.append(widget)
+            # the menu shows while the button is down
+            widget.connect("toggled", lambda button: self._fade())
+
+    def _fade(self) -> None:
+        opaque = self._pointed or any(m.get_active() for m in self._menus)
+        self.set_opacity(1.0 if opaque else FADED_OPACITY)
+
+    def on_crossing(self, bar: FloatingBar, event: Gdk.EventCrossing) -> bool:
+        # to a button and back, the pointer stays over the bar; a menu that
+        # shows takes the pointer away, still over a button
+        if event.detail != Gdk.NotifyType.INFERIOR:
+            self._pointed = event.type == Gdk.EventType.ENTER_NOTIFY
+            self._fade()
+        return False
 
 
 # The menus of the bricks and the events

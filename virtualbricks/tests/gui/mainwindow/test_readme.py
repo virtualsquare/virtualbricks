@@ -29,17 +29,17 @@ from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import has_display
 
 if has_display:
-    from gi.repository import Gdk, GdkPixbuf, Gtk
+    from gi.repository import GdkPixbuf, Gtk
 
     from virtualbricks.gui.mainwindow import readme
     from virtualbricks.gui.mainwindow.readme import (
-        FADED_OPACITY,
         GAP,
         MARGIN,
         SAVE_AFTER,
         SYNTAX,
         ReadmeTab,
     )
+    from virtualbricks.gui.mainwindow.tab import FADED_OPACITY
 
 README = "# OSPF lab\n\nThree **routers**."
 RENDERED = "OSPF lab\nThree routers."
@@ -68,28 +68,6 @@ class TestReadmeTab(unittest.TestCase):
     def rendered(self):
         preview = self.tab.preview.get_buffer()
         return preview.get_text(*preview.get_bounds(), False)
-
-    def pointer(self, signal, detail=None):
-        """The pointer in or out of the buttons, from or to detail."""
-
-        kind = (
-            Gdk.EventType.ENTER_NOTIFY
-            if signal == "enter-notify-event"
-            else Gdk.EventType.LEAVE_NOTIFY
-        )
-        event = Gdk.Event.new(kind)
-        event.crossing.detail = (
-            Gdk.NotifyType.NONLINEAR if detail is None else detail
-        )
-        self.tab.over_buttons.emit(signal, event)
-
-    def assertFaded(self):
-        opacity = self.tab.over_buttons.get_opacity()
-        # GTK keeps it in a byte
-        self.assertAlmostEqual(opacity, FADED_OPACITY, places=2)
-
-    def assertOpaque(self):
-        self.assertEqual(self.tab.over_buttons.get_opacity(), 1.0)
 
     def test_the_preview_first(self):
         self.assertTrue(self.tab.preview_button.get_active())
@@ -168,35 +146,14 @@ class TestReadmeTab(unittest.TestCase):
         width = tab.buttons.get_allocated_width()
         self.assertEqual(x + width + GAP, tab.get_allocated_width())
 
-    def test_rounded_corners(self):
-        # a dark box behind the buttons, with rounded corners
-        style = self.tab.buttons.get_style_context()
-        self.assertTrue(style.has_class("osd"))
-        radius = style.get_property("border-radius", style.get_state())
-        self.assertGreater(radius, 0)
-
-    def test_the_buttons_fade_away_from_the_pointer(self):
-        self.assertFaded()
-        self.pointer("enter-notify-event")
-        self.assertOpaque()
-        # from the edge to a button and back, the pointer stays over them
-        self.pointer("leave-notify-event", Gdk.NotifyType.INFERIOR)
-        self.assertOpaque()
-        self.pointer("enter-notify-event", Gdk.NotifyType.INFERIOR)
-        self.assertOpaque()
-        # out from a button
-        self.pointer("leave-notify-event", Gdk.NotifyType.VIRTUAL)
-        self.assertFaded()
-
     def test_opaque_while_the_syntax_shows(self):
+        buttons = self.tab.buttons
+        self.assertAlmostEqual(buttons.get_opacity(), FADED_OPACITY, places=2)
         self.tab.edit_button.set_active(True)
-        self.pointer("enter-notify-event")
         self.tab.syntax_button.set_active(True)
-        # the popover takes the pointer
-        self.pointer("leave-notify-event", Gdk.NotifyType.VIRTUAL)
-        self.assertOpaque()
+        self.assertEqual(buttons.get_opacity(), 1.0)
         self.tab.syntax_button.set_active(False)
-        self.assertFaded()
+        self.assertAlmostEqual(buttons.get_opacity(), FADED_OPACITY, places=2)
 
     def test_the_same_margin_on_each_side(self):
         # the text goes under the buttons, the editor's as the preview's

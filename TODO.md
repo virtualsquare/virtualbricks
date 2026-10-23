@@ -353,6 +353,9 @@
 
 # DONE
 
+- [x] Fade the bar of the Topology tab, and round its corners, as the
+  buttons of the Readme tab: one FloatingBar for both (page 6, Since
+  then)
 - [x] Round the corners of the buttons of the Readme tab: the dark box
   behind them has the rounded corners of a button, 5 pixels, where it was
   square (page 5, Since then)

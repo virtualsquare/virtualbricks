@@ -16,7 +16,7 @@
   </figure>
   <section id="zoom">
     <title>Zooming</title>
-    <p>A bar over the top right corner has <gui>Zoom Out</gui>, the zoom level, <gui>Zoom In</gui>, <gui>Fit All</gui> and a menu. A click on the level goes back to 100%. The tab opens with the whole lab in view, and keeps it in view as the lab changes, until you zoom.</p>
+    <p>A bar over the top right corner, faded until you point at it, has <gui>Zoom Out</gui>, the zoom level, <gui>Zoom In</gui>, <gui>Fit All</gui> and a menu. A click on the level goes back to 100%. The tab opens with the whole lab in view, and keeps it in view as the lab changes, until you zoom.</p>
     <list>
       <item>
         <p><keyseq><key>Ctrl</key><key>+</key></keyseq>, <keyseq><key>Ctrl</key><key>-</key></keyseq>: zoom in and out; <keyseq><key>Ctrl</key><key>0</key></keyseq>: 100%; <key>F</key>: fit all.</p>

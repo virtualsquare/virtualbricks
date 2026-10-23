@@ -15,16 +15,25 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The tabs of the main window: which pages they are, and their switch."""
+"""
+The tabs of the main window: which pages they are, their switch, and the
+bar that floats over them.
+"""
 
 from twisted.trial import unittest
 
 from virtualbricks.tests.gui import has_display
 
 if has_display:
-    from gi.repository import Gtk
+    from gi.repository import Gdk, Gtk
 
-    from virtualbricks.gui.mainwindow.tab import Tab, switch, tabs
+    from virtualbricks.gui.mainwindow.tab import (
+        FADED_OPACITY,
+        FloatingBar,
+        Tab,
+        switch,
+        tabs,
+    )
 
     class FakeTab(Tab, Gtk.Box):
         def __init__(self, name, heard):
@@ -91,3 +100,73 @@ class TestTabs(unittest.TestCase):
             plain.on_left,
         ):
             self.assertIsNone(hook())
+
+
+class TestFloatingBar(unittest.TestCase):
+
+    if not has_display:  # pragma: no cover
+        skip = "GTK can't open a display"
+
+    def setUp(self):
+        self.bar = FloatingBar(spacing=6, margin=6)
+        self.addCleanup(self.bar.destroy)
+
+    def pointer(self, signal, detail=None):
+        """The pointer in or out of the bar, from or to detail."""
+
+        kind = (
+            Gdk.EventType.ENTER_NOTIFY
+            if signal == "enter-notify-event"
+            else Gdk.EventType.LEAVE_NOTIFY
+        )
+        event = Gdk.Event.new(kind)
+        event.crossing.detail = (
+            Gdk.NotifyType.NONLINEAR if detail is None else detail
+        )
+        self.bar.emit(signal, event)
+
+    def assertFaded(self):
+        # GTK keeps it in a byte
+        self.assertAlmostEqual(self.bar.get_opacity(), FADED_OPACITY, places=2)
+
+    def assertOpaque(self):
+        self.assertEqual(self.bar.get_opacity(), 1.0)
+
+    def test_a_dark_box_with_rounded_corners(self):
+        style = self.bar.box.get_style_context()
+        self.assertTrue(style.has_class("osd"))
+        radius = style.get_property("border-radius", style.get_state())
+        self.assertGreater(radius, 0)
+        button = Gtk.Button(visible=True)
+        self.bar.pack(button)
+        self.assertEqual(self.bar.box.get_children(), [button])
+
+    def test_faded_away_from_the_pointer(self):
+        self.assertFaded()
+        self.pointer("enter-notify-event")
+        self.assertOpaque()
+        # from the edge to a button and back, the pointer stays over it
+        self.pointer("leave-notify-event", Gdk.NotifyType.INFERIOR)
+        self.assertOpaque()
+        self.pointer("enter-notify-event", Gdk.NotifyType.INFERIOR)
+        self.assertOpaque()
+        # out from a button
+        self.pointer("leave-notify-event", Gdk.NotifyType.VIRTUAL)
+        self.assertFaded()
+
+    def test_opaque_while_a_menu_shows(self):
+        menu = Gtk.MenuButton(visible=True)
+        self.bar.pack(menu)
+        self.pointer("enter-notify-event")
+        menu.set_active(True)
+        # the menu takes the pointer
+        self.pointer("leave-notify-event", Gdk.NotifyType.VIRTUAL)
+        self.assertOpaque()
+        menu.set_active(False)
+        self.assertFaded()
+
+    def test_a_toggle_button_is_no_menu(self):
+        toggle = Gtk.ToggleButton(visible=True)
+        self.bar.pack(toggle)
+        toggle.set_active(True)
+        self.assertFaded()

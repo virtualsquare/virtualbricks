@@ -37,7 +37,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from gi.repository import Gdk, GLib, Gtk
+from gi.repository import GLib, Gtk
 from twisted.internet import defer, reactor
 from twisted.internet.interfaces import (
     IDelayedCall,
@@ -47,7 +47,7 @@ from twisted.logger import Logger
 from twisted.python.failure import Failure
 
 from virtualbricks.engine import Engine
-from virtualbricks.gui.mainwindow.tab import Tab, icon_button
+from virtualbricks.gui.mainwindow.tab import FloatingBar, Tab, icon_button
 from virtualbricks.gui.markdownview import MarkdownView
 from virtualbricks.i18n import _
 
@@ -58,10 +58,6 @@ readme_not_saved = "Cannot save the README: {error}"
 
 MARGIN = 12
 GAP = 6
-# The buttons, this opaque while the pointer is elsewhere.
-FADED_OPACITY = 0.3
-# The dark box behind the buttons, with the rounded corners of a button.
-BUTTONS_CSS = b".osd { border-radius: 5px; }"
 # The seconds from an edit to its save.
 SAVE_AFTER = 30
 # The syntax, as the popover shows it: what to write, and what it does.
@@ -154,21 +150,7 @@ class ReadmeTab(Tab, Gtk.Overlay):
         self.stack.add_named(_scrolled(self.editor), "editor")
         self.add(self.stack)
 
-        # a window of its own, around the windows of the buttons: from its
-        # edge to a button, the pointer is still over it
-        self.over_buttons = Gtk.EventBox(
-            visible=True,
-            halign=Gtk.Align.END,
-            valign=Gtk.Align.START,
-            margin=GAP,
-        )
-        self.buttons = Gtk.Box(visible=True, spacing=GAP)
-        rounded = Gtk.CssProvider()
-        rounded.load_from_data(BUTTONS_CSS)
-        style = self.buttons.get_style_context()
-        style.add_class("osd")
-        style.add_provider(rounded, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-        self.over_buttons.add(self.buttons)
+        self.buttons = FloatingBar(spacing=GAP, margin=GAP)
         self.edit_button = icon_button(
             Gtk.RadioButton(visible=True, draw_indicator=False),
             "document-edit-symbolic",
@@ -185,13 +167,11 @@ class ReadmeTab(Tab, Gtk.Overlay):
             Gtk.MenuButton(), "dialog-question-symbolic", _("Syntax")
         )
         self.syntax_button.set_popover(_syntax_popover(self.syntax_button))
-        self.buttons.pack_start(self.edit_button, False, False, 0)
-        self.buttons.pack_start(self.preview_button, False, False, 0)
-        self.buttons.pack_start(self.syntax_button, False, False, 0)
-        self.add_overlay(self.over_buttons)
+        self.buttons.pack(self.edit_button)
+        self.buttons.pack(self.preview_button)
+        self.buttons.pack(self.syntax_button)
+        self.add_overlay(self.buttons)
 
-        self._pointed = False
-        self._fade()
         self.preview_button.set_active(True)
         self._switch()
         # the eye goes on or off at each switch
@@ -200,10 +180,6 @@ class ReadmeTab(Tab, Gtk.Overlay):
         self.editor.get_buffer().connect(
             "modified-changed", self.on_modified_changed
         )
-        self.over_buttons.connect("enter-notify-event", self.on_crossing)
-        self.over_buttons.connect("leave-notify-event", self.on_crossing)
-        # the syntax shows while the menu button is down
-        self.syntax_button.connect("toggled", lambda button: self._fade())
 
     def show_preview(self) -> None:
         self.preview_button.set_active(True)
@@ -267,10 +243,6 @@ class ReadmeTab(Tab, Gtk.Overlay):
             "preview" if text.strip() else "empty"
         )
 
-    def _fade(self) -> None:
-        opaque = self._pointed or self.syntax_button.get_active()
-        self.over_buttons.set_opacity(1.0 if opaque else FADED_OPACITY)
-
     # What the main window tells
 
     def on_open(self) -> None:
@@ -309,12 +281,3 @@ class ReadmeTab(Tab, Gtk.Overlay):
         elif self._saving is not None:
             self._saving.cancel()
             self._saving = None
-
-    def on_crossing(
-        self, area: Gtk.EventBox, event: Gdk.EventCrossing
-    ) -> bool:
-        # to a button and back, the pointer stays over the buttons
-        if event.detail != Gdk.NotifyType.INFERIOR:
-            self._pointed = event.type == Gdk.EventType.ENTER_NOTIFY
-            self._fade()
-        return False

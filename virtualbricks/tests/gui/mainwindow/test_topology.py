@@ -42,6 +42,7 @@ if has_display:
 
     from virtualbricks.gui.mainwindow import picture, topology
     from virtualbricks.gui.mainwindow.bricks import brickmenu
+    from virtualbricks.gui.mainwindow.tab import FADED_OPACITY
     from virtualbricks.gui.mainwindow.topology import (
         GAP,
         TopologyTab,
@@ -674,6 +675,19 @@ class TestTheBar(TopologyTestCase):
         self.assertEqual(y, GAP)
         width = tab.bar.get_allocated_width()
         self.assertEqual(x + width + GAP, tab.get_allocated_width())
+
+    def test_opaque_while_the_menu_shows(self):
+        window = Gtk.OffscreenWindow()
+        self.addCleanup(window.destroy)
+        self.addCleanup(self.tab.menu_button.get_popover().destroy)
+        window.add(self.tab)
+        window.show()
+        bar = self.tab.bar
+        self.assertAlmostEqual(bar.get_opacity(), FADED_OPACITY, places=2)
+        self.tab.menu_button.set_active(True)
+        self.assertEqual(bar.get_opacity(), 1.0)
+        self.tab.menu_button.set_active(False)
+        self.assertAlmostEqual(bar.get_opacity(), FADED_OPACITY, places=2)
 
     def test_room_for_the_bar(self):
         self.show()

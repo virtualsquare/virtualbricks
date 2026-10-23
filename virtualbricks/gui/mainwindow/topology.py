@@ -19,11 +19,12 @@
 """
 The Topology tab of the main window: the picture of the lab.
 
-The picture takes the whole tab. A bar floats over its top right corner:
-zoom out, the zoom level, which goes back to 100%, zoom in and fit all, then
-a menu with the layout, the links and the export. The tab lays the lab out
-when it shows, and again when a brick changes while it shows; a project
-without bricks shows a hint instead.
+The picture takes the whole tab. A bar floats over its top right corner,
+faded until the pointer comes over it: zoom out, the zoom level, which goes
+back to 100%, zoom in and fit all, then a menu with the layout, the links
+and the export. The tab lays the lab out when it shows, and again when a
+brick changes while it shows; a project without bricks shows a hint
+instead.
 
 The layout is Graphviz's, left to right or top to bottom, or by hand once a
 brick has a place (page 35). By Hand gives every brick the place it has in
@@ -61,6 +62,7 @@ from virtualbricks.engine import Engine
 from virtualbricks.gui.mainwindow import picture
 from virtualbricks.gui.mainwindow.bricks import brickmenu
 from virtualbricks.gui.mainwindow.tab import (
+    FloatingBar,
     Tab,
     brick_signals,
     icon_button,
@@ -196,14 +198,7 @@ class TopologyTab(Tab, Gtk.Overlay):
         self.add_overlay(self.hint)
         self.set_overlay_pass_through(self.hint, True)
 
-        self.bar = Gtk.Box(
-            visible=True,
-            spacing=GAP,
-            halign=Gtk.Align.END,
-            valign=Gtk.Align.START,
-            margin=GAP,
-        )
-        self.bar.get_style_context().add_class("osd")
+        self.bar = FloatingBar(spacing=GAP, margin=GAP)
         zoom = Gtk.Box(visible=True)
         zoom.get_style_context().add_class("linked")
         self.out_button = icon_button(
@@ -231,12 +226,12 @@ class TopologyTab(Tab, Gtk.Overlay):
             self.fit_button,
         ):
             zoom.pack_start(button, False, False, 0)
-        self.bar.pack_start(zoom, False, False, 0)
+        self.bar.pack(zoom)
         self.menu_button = icon_button(
             Gtk.MenuButton(visible=True), "view-more-symbolic", _("More")
         )
         self.menu_button.set_menu_model(menu())
-        self.bar.pack_start(self.menu_button, False, False, 0)
+        self.bar.pack(self.menu_button)
         self.add_overlay(self.bar)
 
         actions = Gio.SimpleActionGroup()
