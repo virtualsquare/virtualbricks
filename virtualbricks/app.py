@@ -1,144 +1,240 @@
-# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2019 Virtualbricks team
+# -*- test-case-name: virtualbricks.tests.test_app -*-
+from __future__ import annotations
 
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
-from __future__ import print_function
-
-__metaclass__ = type
-
+import shlex
 import sys
+import threading
+from typing import IO, TYPE_CHECKING, Any
 
-from twisted.python import usage, lockfile, reflect
-from twisted.internet import defer
+from twisted.internet import defer, task
+from twisted.logger import (
+    FilteringLogObserver,
+    ILogObserver,
+    Logger,
+    LogLevel,
+    LogLevelFilterPredicate,
+    globalLogBeginner,
+    textFileLogObserver,
+)
+from twisted.python import logfile, reflect
+from twisted.python.failure import Failure
 
-from virtualbricks import _backport, settings
+from virtualbricks import cli, locks, sockets
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks.switchwrapper import look_all
+from virtualbricks.config.settings import (
+    load_settings,
+    load_state,
+    store_settings,
+)
+from virtualbricks.config.workspace import projects
+from virtualbricks.console.banner import Banner
+from virtualbricks.console.control import listen
+from virtualbricks.console.dispatch import run
+from virtualbricks.console.terminal import error_lines, start
+from virtualbricks.migrate import startup_migration
+
+if TYPE_CHECKING:  # pragma: no cover
+    from types import TracebackType
+
+    from twisted.internet.posixbase import PosixReactorBase
 
 
-_log_file = sys.stdout
+LOOK_EVERY = 1.0
+
+logger = Logger("virtualbricks.main")
+uncaught_exception = "Uncaught exception: {error()}"
+shut_down = "Server Shut Down"
 
 
-def file_logger():
-    from virtualbricks import log
-
-    return log.FileLogObserver(_log_file)
-
-
-def _file_logger(filename):
-    if filename != "-":
-        from twisted.python import logfile
-        global _log_file
-        _log_file = logfile.LogFile.fromFullPath(filename)
-    return "virtualbricks.app.file_logger"
+def log_level(verbosity: int) -> LogLevel:
+    """Return the minimum level logged for the given -v/-q verbosity."""
+    if verbosity > 0:
+        return LogLevel.debug
+    if verbosity == 0:
+        return LogLevel.info
+    if verbosity == -1:
+        return LogLevel.warn
+    return LogLevel.error
 
 
-class Options(usage.Options):
+def thread_excepthook(args: threading.ExceptHookArgs) -> None:
+    # Like threading's default hook, a thread may exit silently.
+    if args.exc_type is SystemExit:
+        return
+    excepthook(args.exc_type, args.exc_value, args.exc_traceback)
 
-    longdesc = """Virtualbricks - a vde/qemu gui written in python and
-    GTK/Glade.
 
-    Copyright (C) 2019 Virtualbricks team"""
+def excepthook(
+    exc_type: type[BaseException],
+    exc_value: BaseException | None,
+    traceback: TracebackType | None,
+) -> None:
+    if exc_type in (SystemExit, KeyboardInterrupt):
+        assert exc_value is not None, "what is raised is there"
+        sys.__excepthook__(exc_type, exc_value, traceback)
+    else:
+        fail = Failure(exc_value, exc_type, traceback)
+        logger.error(
+            uncaught_exception,
+            log_failure=fail,
+            error=lambda: fail.getErrorMessage(),
+        )
 
-    optFlags = [
-        ["noterm", None, "Do not show the terminal."],
-        ["daemon", None, ""]
-    ]
-    optParameters = [
-        ["logfile", "l", None, "Write log messages to file."],
-        ["logger", None, None,
-         "A fully-qualified name to a log observer factory to use for the "
-         "initial log observer. Takes precedence over --logfile and --syslog "
-         "(when available)."],
-    ]
 
-    def __init__(self):
-        usage.Options.__init__(self)
-        self["verbosity"] = 0
+class Application:
 
-    def opt_logfile(self, arg):
-        """Write log messages to file."""
+    def __init__(self, options: cli.CommandLineOptions, workspace: str | None):
+        self.options = options
+        # the folder of the workspace, --workspace or the setting's, as
+        # take_locks() read it to lock it: the migration and the run use it,
+        # and don't read the setting again
+        self.workspace = workspace
+        # what ends the run: quit() of the factory, or the windows of
+        # --connect closing (page 31)
+        self.done: defer.Deferred[None] = defer.Deferred()
+        # the control sockets that start_listening() listens on
+        self.listening: list[sockets.Socket] = []
 
-        self["logger"] = _file_logger(arg)
-
-    def opt_verbose(self):
-        """Increase log verbosity."""
-        self["verbosity"] += 1
-
-    def opt_quiet(self):
-        """Decrease log verbosity."""
-        self["verbosity"] -= 1
-
-    def opt_debug(self):
-        """Verbose debug output"""
-        self["verbosity"] = 2
-
-    def opt_version(self):
-        """Print version and exit."""
-        from virtualbricks import __version__
-        print("Virtualbricks", __version__)
-        sys.exit(0)
-
-    def postOptions(self):
-        if self["logger"]:
+    def get_log_observers(self) -> list[ILogObserver]:
+        observers = []
+        level = log_level(self.options.verbosity)
+        if self.options.logger is not None:
             try:
-                self["logger"] = reflect.namedAny(self["logger"])
+                observer = reflect.namedAny(self.options.logger)
             except Exception as err:
-                raise usage.UsageError("Logger '%s' could not be imported: %s"
-                                       % (self['logger'], err))
+                raise SystemExit(
+                    f"Logger '{self.options.logger}' could not be imported: {err}"
+                )
+            observers.append(observer)
+        elif self.options.logfile is not None:
+            if self.options.logfile == "-":
+                text_file_observer = textFileLogObserver(sys.stdout)
+            else:
+                log_file = logfile.LogFile.fromFullPath(self.options.logfile)
+                text_file_observer = textFileLogObserver(log_file)
+            observer = FilteringLogObserver(
+                text_file_observer,
+                [LogLevelFilterPredicate(level)],
+            )
+            observers.append(observer)
 
-    opt_v = opt_verbose
-    opt_q = opt_quiet
-    opt_b = opt_debug
+        return observers
 
+    def install_logging(self) -> None:
+        observers = self.get_log_observers()
+        globalLogBeginner.beginLoggingTo(observers, redirectStandardIO=False)
 
-def run_app(Application, config):
-    try:
-        config.parseOptions()
-    except usage.error as ue:
-        raise SystemExit("%s: %s" % (sys.argv[0], ue))
-    _backport.react(Application(config).run, ())
+    def stop_logger(self) -> None:
+        logger.info(shut_down)
 
+    def migrate(self) -> defer.Deferred[Any] | None:
+        """Convert the files of older versions, once; may return a Deferred."""
+        assert self.workspace is not None, "take_locks() gives it"
+        migration = startup_migration(self.workspace)
+        if migration is None:
+            return None
+        migration.run()
+        migration.log(logger)
+        return None
 
-class _LockedApplication:
+    def share_user_lock(self, lock: locks.Lock | None) -> None:
+        """
+        Share the user lock, taken alone for the settings of 2.1, with the other
+        workspaces; nothing if take_locks() didn't take it alone.
+        """
 
-    factory = None
+        # this run migrated: the other workspaces start from now on
+        if lock is not None:
+            try:
+                lock.share_user()
+            except Exception as exc:
+                raise SystemExit(str(exc)) from None
 
-    def __init__(self, config, lock=None):
-        self.config = config
-        self.lock = lock or lockfile.FilesystemLock(settings.LOCK_FILE)
+    def install_settings(self) -> None:
+        load_settings()
+        load_state()
 
-    def run(self, reactor):
-        assert self.factory is not None, \
-                "factory attribute is not set"
-        if self.lock.lock():
-            reactor.addSystemEventTrigger("after", "shutdown",
-                                          self.lock.unlock)
-            app = self.factory(self.config)
-            return app.run(reactor)
-        else:
-            msg = ("Another Virtualbricks instance is running and you cannot "
-                   "run more than one instance of it. If this is an "
-                   "error, please delete %s to start Virtualbricks" %
-                   self.lock.name)
-            return defer.fail(SystemExit(msg))
+    def store_settings(self) -> None:
+        store_settings()
 
+    def install_workspace(self) -> None:
+        # the folder of the command line, for this run only: the setting
+        # stays as it is. Either stays for the run, whose lock is that of
+        # this folder: a new setting is for the next start.
+        assert self.workspace is not None, "take_locks() gives it"
+        projects.path = self.workspace
+        # with the link to the workspace, and room for its socket
+        projects.make_runtime_dir()
 
-def LockedApplication(factory):
-    def init(config):
-        app = _LockedApplication(config)
-        app.factory = factory
-        return app
+    def install_factory(self, reactor: PosixReactorBase) -> BrickFactory:
+        return BrickFactory(self.done)
 
-    return init
+    def open_last_project(self, factory: BrickFactory) -> None:
+        """Open the project open last, or a new new_project_N."""
+
+        projects.restore_last(factory)
+
+    def save_project(self, factory: BrickFactory) -> None:
+        projects.save(factory)
+
+    def start_listening(
+        self, factory: BrickFactory, reactor: PosixReactorBase
+    ) -> None:
+        """Answer on the control sockets of --listen; on none without it."""
+
+        for socket in self.options.listen:
+            control = listen(factory, socket, reactor)
+            if control is not None:
+                self.listening.append(control.socket)
+
+    def install_autosave_timer(
+        self, factory: BrickFactory, interval: float = 180
+    ) -> None:
+        timer = task.LoopingCall(projects.autosave, factory)
+        timer.start(interval, now=False)
+
+    def install_switch_wrapper_timer(
+        self, factory: BrickFactory, interval: float = LOOK_EVERY
+    ) -> None:
+        """Look at the control folders of the switch wrappers, at each interval."""
+
+        timer = task.LoopingCall(look_all, factory)
+        timer.start(interval, now=False)
+
+    async def create_main_window(
+        self, factory: BrickFactory, reactor: PosixReactorBase
+    ) -> None:
+        pass
+
+    def run_script(self, factory: BrickFactory) -> defer.Deferred[list[str]]:
+        """Run the commands of options.run, as the console's source does."""
+
+        assert self.options.run is not None
+        done = run(factory, f"source {shlex.quote(self.options.run)}")
+
+        def write(lines: list[str], stream: IO[str]) -> None:
+            for line in lines:
+                stream.write(line + "\n")
+            stream.flush()
+
+        done.addCallbacks(
+            write,
+            lambda failure: write(error_lines(failure), sys.stderr),
+            callbackArgs=(sys.stdout,),
+        )
+        return done
+
+    def get_console_namespace(self) -> dict[str, Any]:
+        return {}
+
+    def start_console(self, factory: BrickFactory) -> None:
+        """Read the console in the terminal that started Virtualbricks."""
+
+        banner = Banner(self.options.banner, self.listening)
+        start(factory, self.get_console_namespace(), banner=banner)
+
+    def install_sys_hooks(self) -> None:
+
+        sys.excepthook = excepthook
+        threading.excepthook = thread_excepthook

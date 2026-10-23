@@ -1,0 +1,729 @@
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2026 Virtualbricks team
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+import copy
+
+from twisted.trial import unittest
+
+from virtualbricks.config import schema
+from virtualbricks.config.report import Report
+from virtualbricks.config.schema import (
+    Bool,
+    Choice,
+    Command,
+    Float,
+    Int,
+    IPv4,
+    Kind,
+    ListOf,
+    Mac,
+    Path,
+    Record,
+    Ref,
+    Str,
+    check_value,
+    define,
+    dump_record,
+    field,
+    field_default,
+    field_help,
+    field_info,
+    field_names,
+    field_values,
+    fields,
+    info_of,
+    key_of,
+    kind_of,
+    limit_text,
+    load_record,
+    notes,
+    parse_value,
+    references,
+    rename_references,
+    why_unused,
+)
+from virtualbricks.config.tomlfile import Note
+
+
+@define
+class Disk:
+
+    image = field(Ref("image"), default="")
+    private = field(Bool(), default=False)
+
+
+@define
+class Machine:
+
+    name = field(Str(), default="vm", label="Name", help="The name")
+    ram = field(Int(1, 1024), default=64)
+    loss = field(Float(0, 100), default=0.0)
+    kvm = field(Bool(), default=False)
+    tags = field(ListOf(Str()), factory=list)
+    event = field(Ref("event"), default="")
+    hda = field(Ref("image"), default="", path=("disks", "hda", "image"))
+    hda_private = field(
+        Bool(), default=False, path=("disks", "hda", "private")
+    )
+    boot = field(Record(Disk), factory=Disk)
+
+
+class TestDescribe(unittest.TestCase):
+    """How values are described in the messages about the data."""
+
+    def test_values(self):
+        describe = schema._describe
+        self.assertEqual(describe(True), "true")
+        self.assertEqual(describe(False), "false")
+        self.assertEqual(describe("a"), '"a"')
+        self.assertEqual(describe([]), "an empty list")
+        self.assertEqual(describe([1]), "the default list")
+        self.assertEqual(describe(3), "3")
+
+
+class TestFormat(unittest.TestCase):
+    """Each kind formats its values, as the defaults in the messages."""
+
+    def test_base(self):
+        self.assertRaises(NotImplementedError, Kind().format, 1)
+
+    def test_kinds(self):
+        self.assertEqual(Bool().format(True), "true")
+        self.assertEqual(Bool().format(False), "false")
+        self.assertEqual(Int().format(3), "3")
+        self.assertEqual(Float().format(0.5), "0.5")
+        self.assertEqual(Str().format("a"), '"a"')
+        # the kinds of strings format as strings
+        self.assertEqual(Path().format("/a"), '"/a"')
+        self.assertEqual(Choice("x", "y").format("x"), '"x"')
+        self.assertEqual(Ref("event").format(""), '""')
+        self.assertEqual(ListOf(Int()).format([1, 2]), "[1, 2]")
+        self.assertEqual(Record(Disk).format(Disk()), "{…}")
+
+
+class TestKind(unittest.TestCase):
+
+    def test_base(self):
+        kind = Kind()
+        self.assertIsNone(kind.check(object()))
+        self.assertEqual(kind.to_data(1), 1)
+        self.assertEqual(kind.from_data(1, Report(), ""), 1)
+        self.assertRaises(ValueError, kind.parse, "x")
+
+
+class TestBool(unittest.TestCase):
+
+    def test_check(self):
+        Bool().check(True)
+        self.assertRaises(ValueError, Bool().check, 1)
+
+    def test_parse(self):
+        for text in ("true", " Yes ", "ON", "1"):
+            self.assertIs(Bool().parse(text), True)
+        for text in ("false", "no", "Off", "0"):
+            self.assertIs(Bool().parse(text), False)
+        self.assertRaises(ValueError, Bool().parse, "maybe")
+
+
+class TestInt(unittest.TestCase):
+
+    def test_types(self):
+        Int().check(3)
+        self.assertRaises(ValueError, Int().check, True)
+        self.assertRaises(ValueError, Int().check, 1.5)
+        self.assertRaises(ValueError, Int().check, "1")
+
+    def test_range(self):
+        kind = Int(1, 10)
+        kind.check(1)
+        kind.check(10)
+        with self.assertRaisesRegex(ValueError, "11 is outside 1–10"):
+            kind.check(11)
+        with self.assertRaisesRegex(ValueError, "0 is less than 1"):
+            Int(1).check(0)
+        with self.assertRaisesRegex(ValueError, "5 is more than 4"):
+            Int(max=4).check(5)
+        Int(1).check(100)
+        Int(max=4).check(-100)
+
+    def test_a_big_limit(self):
+        # a power of two, as the documentation writes it
+        with self.assertRaisesRegex(ValueError, r"^-1 is outside 0–2\^31-1$"):
+            Int(0, 2**31 - 1).check(-1)
+        with self.assertRaisesRegex(ValueError, r"^0 is less than 2\^20$"):
+            Int(2**20).check(0)
+
+    def test_parse(self):
+        self.assertEqual(Int(1, 10).parse(" 7 "), 7)
+        with self.assertRaisesRegex(ValueError, "is not an integer"):
+            Int().parse("seven")
+        self.assertRaises(ValueError, Int(1, 10).parse, "70")
+
+
+class TestFloat(unittest.TestCase):
+
+    def test_accepts_integers(self):
+        Float().check(3)
+        self.assertEqual(Float().to_data(3), 3.0)
+        value = Float().from_data(3, Report(), "")
+        self.assertEqual(value, 3.0)
+        self.assertIsInstance(value, float)
+
+    def test_invalid(self):
+        self.assertRaises(ValueError, Float().check, "3")
+        self.assertRaises(ValueError, Float(0, 1).from_data, 2, Report(), "")
+
+    def test_parse(self):
+        self.assertEqual(Float().parse("2.5"), 2.5)
+        self.assertRaises(ValueError, Float().parse, "x")
+
+
+class TestStrings(unittest.TestCase):
+
+    def test_str(self):
+        Str().check("")
+        self.assertRaises(ValueError, Str().check, 1)
+        self.assertEqual(Str().parse("x"), "x")
+
+    def test_required(self):
+        kind = Str(required=True)
+        kind.check("qemu-system-x86_64")
+        with self.assertRaisesRegex(ValueError, "^can't be empty$"):
+            kind.check("")
+        self.assertRaises(ValueError, kind.parse, "")
+        # with a pattern, empty is refused before it's matched
+        kind = Str(r"\d+", "a number", required=True)
+        self.assertRaisesRegex(ValueError, "empty", kind.check, "")
+        self.assertRaisesRegex(ValueError, "a number", kind.check, "x")
+
+    def test_pattern(self):
+        kind = Str(r"\d+", "a number")
+        kind.check("12")
+        kind.check("")
+        with self.assertRaisesRegex(ValueError, '"ab" is not a number'):
+            kind.check("ab")
+
+    def test_command(self):
+        kind = Command()
+        kind.check("gnome-terminal -- {command}")
+        kind.check("")
+        self.assertEqual(kind.parse("xterm -T 'a b'"), "xterm -T 'a b'")
+        with self.assertRaisesRegex(ValueError, "^a quote isn't closed$"):
+            kind.check("xterm -T 'a b")
+        with self.assertRaisesRegex(ValueError, "^it ends with a backslash$"):
+            kind.check("xterm \\")
+        self.assertRaises(ValueError, kind.check, 1)
+
+    def test_path_and_ref(self):
+        Path().check("/x")
+        self.assertEqual(Ref("image").target, "image")
+
+    def test_mac(self):
+        Mac().check("00:aa:79:71:be:61")
+        Mac().check("")
+        with self.assertRaisesRegex(ValueError, "not a MAC address"):
+            Mac().check("00:gg:79:71:be:61")
+        with self.assertRaisesRegex(ValueError, "not a MAC address"):
+            Mac().check("00:aa:79:71:be:61\n")
+
+    def test_ipv4(self):
+        IPv4().check("10.0.0.1")
+        self.assertRaises(ValueError, IPv4().check, "")
+        self.assertRaises(ValueError, IPv4().check, "10.0.0")
+        self.assertRaises(ValueError, IPv4().check, 1)
+        IPv4(optional=True).check("")
+
+    def test_choice(self):
+        kind = Choice("off", "dhcp")
+        kind.check("dhcp")
+        with self.assertRaisesRegex(ValueError, "is not one of off, dhcp"):
+            kind.check("manual")
+        self.assertRaises(ValueError, kind.check, 1)
+
+
+class TestRecord(unittest.TestCase):
+
+    def test_record(self):
+        kind = Record(Disk)
+        kind.check(Disk())
+        self.assertRaises(ValueError, kind.check, {})
+        self.assertEqual(
+            kind.to_data(Disk("a", True)), {"image": "a", "private": True}
+        )
+        self.assertEqual(
+            kind.from_data({"image": "a", "private": True}, Report(), "d"),
+            Disk("a", True),
+        )
+        with self.assertRaisesRegex(ValueError, "is not a table"):
+            kind.from_data("a", Report(), "d")
+        self.assertEqual(kind.format(Disk()), "{…}")
+
+    def test_exclude(self):
+        kind = Record(Disk, exclude={"private"})
+        self.assertEqual(kind.to_data(Disk("a", True)), {"image": "a"})
+        report = Report()
+        disk = kind.from_data({"image": "a"}, report, "d")
+        # an excluded field keeps its default, and is not expected
+        self.assertEqual(disk, Disk("a", False))
+        self.assertEqual(len(report), 0)
+        kind.from_data({"image": "a", "private": True}, report, "d")
+        self.assertEqual(
+            [str(m) for m in report], ["d.private: unknown field, dropped"]
+        )
+
+
+class TestListOf(unittest.TestCase):
+
+    def test_check(self):
+        kind = ListOf(Int(), length=2)
+        kind.check([1, 2])
+        self.assertRaises(ValueError, kind.check, (1, 2))
+        self.assertRaises(ValueError, kind.check, [1])
+        self.assertRaises(ValueError, kind.check, [1, "2"])
+        with self.assertRaisesRegex(ValueError, "at least 1 needed"):
+            ListOf(Int(), min_length=1).check([])
+
+    def test_data(self):
+        kind = ListOf(Float())
+        self.assertEqual(kind.to_data([1, 2]), [1.0, 2.0])
+        self.assertEqual(kind.format([1.0]), "[1.0]")
+
+    def test_from_data_drops_bad_items(self):
+        report = Report()
+        kind = ListOf(Int())
+        self.assertEqual(kind.from_data([1, "x", 3], report, "l"), [1, 3])
+        self.assertEqual(
+            [str(m) for m in report],
+            ["l[1]: 'x' is not an integer, item dropped"],
+        )
+
+    def test_from_data_invalid(self):
+        self.assertRaises(ValueError, ListOf(Int()).from_data, 1, Report(), "")
+        kind = ListOf(Int(), length=2)
+        self.assertRaises(ValueError, kind.from_data, [1, "x"], Report(), "")
+
+
+class TestFields(unittest.TestCase):
+
+    def test_validation_on_init_and_assignment(self):
+        with self.assertRaisesRegex(ValueError, "ram: 0 is outside 1–1024"):
+            Machine(ram=0)
+        machine = Machine()
+        with self.assertRaisesRegex(ValueError, "kvm: "):
+            machine.kvm = "yes"
+        machine.ram = 128
+        self.assertEqual(machine.ram, 128)
+
+    def test_check_value(self):
+        # as an assignment checks it, without assigning it
+        machine = Machine()
+        check_value(machine, "ram", 128)
+        check_value(Machine, "tags", ["a"])
+        self.assertEqual(machine.ram, 64)
+        with self.assertRaises(ValueError) as assigned:
+            machine.kvm = "yes"
+        with self.assertRaises(ValueError) as checked:
+            check_value(machine, "kvm", "yes")
+        self.assertEqual(str(checked.exception), str(assigned.exception))
+        self.assertRaises(KeyError, check_value, machine, "nope", 1)
+
+    def test_introspection(self):
+        self.assertEqual(
+            field_names(Machine),
+            [
+                "name",
+                "ram",
+                "loss",
+                "kvm",
+                "tags",
+                "event",
+                "hda",
+                "hda_private",
+                "boot",
+            ],
+        )
+        self.assertEqual(field_names(Machine()), field_names(Machine))
+        self.assertIsInstance(kind_of(Machine, "ram"), Int)
+        self.assertRaises(KeyError, kind_of, Machine, "nope")
+        attribute = fields(Machine)[0]
+        self.assertEqual(field_info(attribute).label, "Name")
+        self.assertEqual(field_info(attribute).help, "The name")
+        self.assertEqual(field_default(Machine, "ram"), 64)
+        self.assertEqual(field_default(Machine, "tags"), [])
+        self.assertRaises(KeyError, field_default, Machine, "nope")
+
+    def test_info_of(self):
+        info = info_of(Machine(), "name")
+        self.assertIsInstance(info.kind, Str)
+        self.assertEqual((info.label, info.help), ("Name", "The name"))
+        self.assertEqual((info_of(Machine, "ram").label), "")
+        self.assertRaises(KeyError, info_of, Machine, "nope")
+
+    def test_key_of(self):
+        self.assertEqual(key_of(Machine, "ram"), "ram")
+        self.assertEqual(key_of(Machine(), "hda"), "disks.hda.image")
+        self.assertRaises(KeyError, key_of, Machine, "nope")
+
+    def test_values(self):
+        machine = Machine(ram=100)
+        values = field_values(machine)
+        self.assertEqual(values["ram"], 100)
+        self.assertEqual(len(values), 9)
+
+    def test_copies_are_independent(self):
+        machine = Machine()
+        other = copy.deepcopy(machine)
+        other.tags.append("x")
+        self.assertEqual(machine.tags, [])
+
+
+class TestDump(unittest.TestCase):
+
+    def test_every_field_with_paths(self):
+        data = dump_record(Machine(hda="deb", hda_private=True))
+        self.assertEqual(
+            data,
+            {
+                "name": "vm",
+                "ram": 64,
+                "loss": 0.0,
+                "kvm": False,
+                "tags": [],
+                "event": "",
+                "disks": {"hda": {"image": "deb", "private": True}},
+                "boot": {"image": "", "private": False},
+            },
+        )
+
+    def test_exclude(self):
+        data = dump_record(Disk(), exclude=("private",))
+        self.assertEqual(data, {"image": ""})
+
+
+class TestLoad(unittest.TestCase):
+
+    def setUp(self):
+        self.report = Report()
+
+    def messages(self):
+        return [str(m) for m in self.report]
+
+    def test_round_trip(self):
+        machine = Machine(ram=10, tags=["a"], hda="deb", boot=Disk("x", True))
+        loaded = load_record(Machine, dump_record(machine), self.report)
+        self.assertEqual(loaded, machine)
+        self.assertEqual(self.messages(), [])
+
+    def test_missing_and_invalid(self):
+        data = dump_record(Machine())
+        del data["name"]
+        data["ram"] = 5000
+        data["kvm"] = "yes"
+        data["disks"]["hda"]["image"] = 3
+        loaded = load_record(Machine, data, self.report, "bricks.vm")
+        self.assertEqual(loaded, Machine())
+        self.assertEqual(
+            self.messages(),
+            [
+                'bricks.vm.name: missing, using the default "vm"',
+                "bricks.vm.ram: 5000 is outside 1–1024, using the default 64",
+                "bricks.vm.kvm: 'yes' is not true or false, using the default "
+                "false",
+                "bricks.vm.disks.hda.image: 3 is not a string, using the "
+                'default ""',
+            ],
+        )
+
+    def test_missing_list_default(self):
+        data = dump_record(Machine())
+        del data["tags"]
+        load_record(Machine, data, self.report)
+        self.assertEqual(
+            self.messages(), ["tags: missing, using the default []"]
+        )
+
+    def test_missing_intermediate_table(self):
+        data = dump_record(Machine())
+        data["disks"] = "none"
+        loaded = load_record(Machine, data, self.report, "vm")
+        self.assertEqual(loaded.hda, "")
+        self.assertIn("vm.disks: unknown field, dropped", self.messages())
+        self.assertIn(
+            'vm.disks.hda.image: missing, using the default ""',
+            self.messages(),
+        )
+
+    def test_unknown_fields(self):
+        data = dump_record(Machine())
+        data["color"] = "red"
+        data["disks"]["hda"]["size"] = 3
+        data["disks"]["hdb"] = {"image": "x"}
+        data["boot"]["extra"] = 1
+        data["other"] = {"a": 1}
+        load_record(Machine, data, self.report, "vm", ignore={"other"})
+        # A record reports its own unknown fields while it's loaded.
+        self.assertEqual(
+            self.messages(),
+            [
+                "vm.boot.extra: unknown field, dropped",
+                "vm.disks.hda.size: unknown field, dropped",
+                "vm.disks.hdb: unknown field, dropped",
+                "vm.color: unknown field, dropped",
+            ],
+        )
+
+    def test_ignore_is_only_for_top_level_keys(self):
+        data = dump_record(Disk())
+        data["x"] = {"private": 1}
+        load_record(Disk, data, self.report, ignore={"private"})
+        self.assertEqual(self.messages(), ["x: unknown field, dropped"])
+
+    def test_exclude(self):
+        loaded = load_record(
+            Disk, {"image": "a"}, self.report, exclude={"private"}
+        )
+        self.assertEqual(loaded, Disk("a"))
+        self.assertEqual(self.messages(), [])
+
+
+class TestParse(unittest.TestCase):
+
+    def test_parse(self):
+        self.assertEqual(parse_value(Machine, "ram", "32"), 32)
+        self.assertIs(parse_value(Machine(), "kvm", "yes"), True)
+        self.assertRaises(KeyError, parse_value, Machine, "nope", "1")
+        self.assertRaises(ValueError, parse_value, Machine, "tags", "a")
+
+
+class TestReferences(unittest.TestCase):
+
+    def test_references(self):
+        machine = Machine(event="boot", hda="deb")
+        self.assertEqual(
+            list(references(machine)),
+            [("event", "event", "boot"), ("hda", "image", "deb")],
+        )
+        self.assertEqual(list(references(Machine())), [])
+
+    def test_rename(self):
+        machine = Machine(event="boot", hda="deb")
+        self.assertTrue(rename_references(machine, "image", "deb", "ubuntu"))
+        self.assertEqual(machine.hda, "ubuntu")
+        self.assertEqual(machine.event, "boot")
+        self.assertFalse(rename_references(machine, "image", "deb", "x"))
+        self.assertFalse(rename_references(machine, "event", "deb", "x"))
+
+
+@define
+class Emulator:
+
+    period = field(Int(1), default=100, help="How often")
+    weights = field(ListOf(Float()), factory=lambda: [0.5], help="Weights")
+    states = field(
+        ListOf(Record(Machine, exclude={"boot"})),
+        factory=lambda: [Machine()],
+        help="The states",
+    )
+
+
+class TestNotes(unittest.TestCase):
+    """The comments of the keys, from the schemas."""
+
+    def test_limit_text(self):
+        self.assertEqual(limit_text(2**31 - 1), "2^31-1")
+        self.assertEqual(limit_text(2**53), "2^53")
+        self.assertEqual(limit_text(-(2**31)), "-2^31")
+        # small, or not of a power of two: as they are
+        self.assertEqual(limit_text(65535), "65535")
+        self.assertEqual(limit_text(10**6), "1000000")
+        self.assertEqual(limit_text(1 - 2**31), str(1 - 2**31))
+        self.assertEqual(limit_text(100.0), "100.0")
+
+    def test_describe(self):
+        self.assertEqual(Int(1, 128).describe(), "1-128")
+        self.assertEqual(Int(1).describe(), "1 or more")
+        self.assertEqual(Int(max=5).describe(), "5 or less")
+        self.assertEqual(Int().describe(), "")
+        self.assertEqual(Float(0, 100).describe(), "0-100")
+        self.assertEqual(Int(0, 2**53 - 1).describe(), "0-2^53-1")
+        self.assertEqual(Int(1, 65535).describe(), "1-65535")
+        self.assertEqual(Choice("a", "b", "c").describe(), "a, b or c")
+        self.assertEqual(Choice("a", "b").describe(), "a or b")
+        self.assertEqual(Choice("a").describe(), "a")
+        self.assertEqual(Str().describe(), "")
+        self.assertEqual(Bool().describe(), "")
+        self.assertEqual(Kind().notes({"a": 1}), {})
+
+    def test_notes(self):
+        data = dump_record(Machine(ram=128))
+        result = notes(Machine, data)
+        self.assertEqual(
+            result[("name",)], Note("The name", 'default "vm"', True)
+        )
+        self.assertEqual(result[("ram",)], Note("", "1-1024; default 64"))
+        self.assertEqual(
+            result[("loss",)], Note("", "0-100; default 0.0", True)
+        )
+        self.assertEqual(result[("kvm",)], Note("", "default false", True))
+        self.assertEqual(result[("tags",)], Note("", "default empty", True))
+        self.assertEqual(result[("event",)], Note("", "default empty", True))
+
+    def test_by_path(self):
+        data = dump_record(Machine(hda="deb"))
+        result = notes(Machine, data)
+        self.assertEqual(
+            result[("disks", "hda", "image")], Note("", "default empty")
+        )
+        self.assertTrue(result[("disks", "hda", "private")].default)
+        # a record has the notes of its keys, and its own without a default
+        self.assertEqual(result[("boot",)], Note("", "", True))
+        self.assertEqual(
+            result[("boot", "image")], Note("", "default empty", True)
+        )
+        self.assertEqual(len(result), 11)
+
+    def test_field_help(self):
+        # the parts of a key's comment, from the class or an instance
+        self.assertEqual(
+            field_help(Emulator, "period"),
+            ("How often", "1 or more; default 100"),
+        )
+        self.assertEqual(
+            field_help(Machine(), "ram"), ("", "1-1024; default 64")
+        )
+        self.assertEqual(
+            field_help(Display, "port"),
+            ("The port", "0-99; default 1; used when vnc is true"),
+        )
+        self.assertRaises(KeyError, field_help, Machine, "nope")
+
+    def test_list_of_records(self):
+        data = dump_record(Emulator(states=[Machine(), Machine(ram=8)]))
+        result = notes(Emulator, data)
+        self.assertEqual(
+            result[("period",)],
+            Note("How often", "1 or more; default 100", True),
+        )
+        # a default list with items isn't repeated
+        self.assertEqual(result[("weights",)], Note("Weights", "", True))
+        self.assertEqual(result[("states",)], Note("The states", "", False))
+        self.assertTrue(result[("states", 0, "ram")].default)
+        self.assertFalse(result[("states", 1, "ram")].default)
+        # the fields that the records exclude have no notes
+        self.assertNotIn(("states", 0, "boot"), result)
+        self.assertNotIn(("states", 2, "ram"), result)
+
+    def test_missing_keys_and_exclude(self):
+        data = dump_record(Machine())
+        del data["ram"]
+        del data["disks"]["hda"]
+        result = notes(Machine, data, exclude={"kvm"})
+        self.assertNotIn(("ram",), result)
+        self.assertNotIn(("kvm",), result)
+        self.assertNotIn(("disks", "hda", "image"), result)
+        self.assertIn(("name",), result)
+
+    def test_not_tables(self):
+        # nested data that isn't what its kind writes has no notes inside
+        data = {**dump_record(Emulator()), "states": "x"}
+        self.assertEqual(notes(Emulator, data)[("states",)].default, False)
+        self.assertNotIn(("states", 0, "ram"), notes(Emulator, data))
+        data = {**dump_record(Emulator()), "states": ["x"]}
+        self.assertNotIn(("states", 0, "ram"), notes(Emulator, data))
+
+
+@define
+class Display:
+    """Settings that go with others."""
+
+    headless = field(Bool(), default=False)
+    vnc = field(Bool(), default=False, when=("headless", False))
+    port = field(Int(0, 99), default=1, help="The port", when=("vnc", True))
+    cdrom = field(Choice("none", "image"), default="none")
+    cdrom_image = field(Str(), default="", when=("cdrom", "image"))
+    disk = field(Ref("image"), default="", path=("disks", "hda", "image"))
+    disk_private = field(Bool(), default=False, when=("disk", "deb"))
+    # a chain that comes back
+    left = field(Bool(), default=False, when=("right", True))
+    right = field(Bool(), default=False, when=("left", True))
+
+
+class TestWhen(unittest.TestCase):
+    """The settings that go with others."""
+
+    def test_declared(self):
+        self.assertEqual(info_of(Display, "port").when, ("vnc", True))
+        self.assertIsNone(info_of(Display, "headless").when)
+        self.assertIsNone(info_of(Machine, "ram").when)
+
+    def test_in_use(self):
+        display = Display()
+        # a setting that goes with nothing is always in use
+        self.assertIsNone(why_unused(display, "headless"))
+        self.assertIsNone(why_unused(display, "vnc"))
+        self.assertEqual(why_unused(display, "port"), "vnc")
+        display.vnc = True
+        self.assertIsNone(why_unused(display, "port"))
+        self.assertEqual(why_unused(display, "cdrom_image"), "cdrom")
+        display.cdrom = "image"
+        self.assertIsNone(why_unused(display, "cdrom_image"))
+
+    def test_along(self):
+        # port goes with vnc, which goes with no headless
+        display = Display(vnc=True, headless=True)
+        self.assertEqual(why_unused(display, "vnc"), "headless")
+        self.assertEqual(why_unused(display, "port"), "headless")
+
+    def test_a_chain_that_comes_back(self):
+        display = Display()
+        self.assertEqual(why_unused(display, "left"), "right")
+        display.right = True
+        self.assertEqual(why_unused(display, "left"), "left")
+        display.left = True
+        self.assertIsNone(why_unused(display, "left"))
+        self.assertIsNone(why_unused(display, "right"))
+
+    def test_values_read_elsewhere(self):
+        values = {"headless": False, "vnc": "yes"}
+        self.assertEqual(why_unused(Display, "port", values.get), "vnc")
+        values["vnc"] = True
+        self.assertIsNone(why_unused(Display, "port", values.get))
+
+    def test_not_a_field(self):
+        self.assertRaises(KeyError, why_unused, Display(), "nope")
+
+    def test_notes(self):
+        data = dump_record(Display())
+        result = notes(Display, data)
+        self.assertEqual(
+            result[("port",)],
+            Note("The port", "0-99; default 1; used when vnc is true", True),
+        )
+        self.assertEqual(
+            result[("vnc",)].detail,
+            "default false; used when headless is false",
+        )
+        self.assertEqual(
+            result[("cdrom_image",)].detail,
+            'default empty; used when cdrom is "image"',
+        )
+        # the key of the field it goes with, in the file
+        self.assertEqual(
+            result[("disk_private",)].detail,
+            'default false; used when disks.hda.image is "deb"',
+        )
+        self.assertEqual(result[("headless",)].detail, "default false")

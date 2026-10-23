@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2019 Virtualbricks team
+# Copyright (C) 2026 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,4 +15,4 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-__version__ = '2.1.0'
+__version__ = "3.0.0.dev8"

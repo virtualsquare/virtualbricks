@@ -1,0 +1,448 @@
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.test_brickmenu -*-
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2026 Virtualbricks team
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+"""
+The menu of a brick, in the Bricks tab and in the Topology tab.
+
+``menu()`` makes the ``Gio.Menu`` of a brick, and ``BrickActions`` the
+group of actions its items call, under the prefix ``brick``. The menu has
+Start or Stop, Configure, Rename, Duplicate, Connect To the bricks the
+brick can plug into or take, When It Starts and When It Stops, and Delete;
+a virtual machine has Resume. While the brick runs, Process slides to the
+actions on its process: the control monitor, pause and continue, restart
+and kill, and for a virtual machine suspend, reset and terminate; Rename
+and Delete wait until it stops. While it starts, Stop calls the start off.
+
+When It Starts and When It Stops choose the event that the brick starts,
+one or none: No Event, then every event of the project. An event that
+isn't there any more stays, marked missing, until another is chosen.
+"""
+
+from __future__ import annotations
+
+import functools
+import signal
+from collections.abc import Callable, Iterable
+from typing import Any
+
+from gi.repository import Gdk, Gio, GLib, Gtk
+from twisted.internet import defer
+from twisted.logger import Logger
+from twisted.python.failure import Failure
+
+from virtualbricks import errors
+from virtualbricks.bricks import Brick, brickinfo, is_running, must_stop
+from virtualbricks.bricks.brickinfo import NO_CONSOLE, State
+from virtualbricks.bricks.event import Event
+from virtualbricks.bricks.virtualmachine import (
+    VirtualMachine,
+    is_virtualmachine,
+)
+from virtualbricks.engine import Engine
+from virtualbricks.gui.dialogs.deletedialog import DeleteDialog
+from virtualbricks.gui.dialogs.renamedialog import RenameDialog
+from virtualbricks.gui.dialogs.wait import WaitWindow
+from virtualbricks.gui.mainwindow import tab
+from virtualbricks.gui.mainwindow.tab import (
+    MenuActions,
+    menu_item,
+    menu_of,
+    menu_section,
+)
+from virtualbricks.i18n import _
+
+logger = Logger()
+resuming = "Resuming virtual machine {name}"
+suspending = "Save snapshot on virtual machine {name}"
+sending_signal = "Sending to process signal {signame}!"
+sending_acpi = "send ACPI {acpievent}"
+stop_error = "Error on stopping brick."
+start_error = "Error on starting brick."
+console_error = "Cannot open the console of {name}: {error}"
+suspend_error = "Cannot suspend {name}: {error}"
+resume_error = "Cannot resume {name}: {error}"
+
+GROUP = "brick"
+# The kinds of bricks without a settings panel.
+NO_PANEL = frozenset(("Router",))
+# The choices of an event: the action, the setting of the brick it
+# changes, and the label of its submenu.
+WHEN = (
+    ("when-starts", "on_start", _("When It Starts")),
+    ("when-stops", "on_stop", _("When It Stops")),
+)
+
+
+_item = functools.partial(menu_item, GROUP)
+
+
+def _label(name: str) -> str:
+    """A name as an item of a menu shows it: an underscore isn't a mnemonic."""
+
+    return name.replace("_", "__")
+
+
+def called_off(failure: Failure) -> Failure | None:
+    """None for the failure of a start that a stop called off."""
+
+    if failure.check(errors.StartCalledOffError):
+        # the user stopped it
+        return None
+    return failure
+
+
+def startstop(engine: Engine, brick: Brick) -> defer.Deferred[Any]:
+    """
+    Stop brick if it runs or starts, or else start it; a failure is logged.
+    """
+
+    if is_running(brick) or brick.starting():
+        return engine.stop(brick).addErrback(
+            lambda f: logger.failure(stop_error, f)
+        )
+    return (
+        engine.start(brick)
+        .addErrback(called_off)
+        .addErrback(lambda f: logger.failure(start_error, f))
+    )
+
+
+def menu(
+    brick: Brick,
+    bricks: Iterable[Brick],
+    events: Iterable[Event],
+    keys: bool = False,
+    console_lacks: str | None = None,
+) -> Gio.Menu:
+    """
+    The menu of brick, among bricks and events. keys shows the keys of the
+    Bricks tab next to the items: Enter, F2 and Delete. console_lacks says
+    what this computer lacks to open the console of brick, if anything.
+    """
+
+    def key(name: str) -> str | None:
+        return name if keys else None
+
+    running = is_running(brick)
+    vm = isinstance(brick, VirtualMachine)
+    targets = brickinfo.connectable(brick, bricks)
+    connect_to = None
+    if targets:
+        submenu = menu_section(
+            *(_item(_label(t.name), "connect", t.name) for t in targets)
+        )
+        connect_to = Gio.MenuItem.new_submenu(_("Connect To"), submenu)
+    names = [event.name for event in events]
+    when = [
+        Gio.MenuItem.new_submenu(
+            label, _events_menu(action, getattr(brick.config, setting), names)
+        )
+        for action, setting, label in WHEN
+    ]
+    process = None
+    # what is done to a process of Virtualbricks: none to another's, none
+    # before it runs
+    if running and brick.runs_program:
+        process = Gio.MenuItem.new_submenu(
+            _("Process {pid}").format(pid=brickinfo.process(brick)),
+            _process_menu(brick, console_lacks),
+        )
+    return menu_of(
+        menu_section(
+            _item(
+                _("Stop") if running or brick.starting() else _("Start"),
+                "startstop",
+            ),
+            _item(_("Configure…"), "configure", keys=key("Return")),
+        ),
+        menu_section(
+            _item(_("Rename…"), "rename", keys=key("F2")),
+            _item(_("Duplicate"), "duplicate"),
+            connect_to,
+            *when,
+        ),
+        menu_section(_item(_("Resume"), "resume") if vm else None, process),
+        menu_section(_item(_("Delete…"), "delete", keys=key("Delete"))),
+    )
+
+
+def _events_menu(action: str, current: str, names: list[str]) -> Gio.Menu:
+    """No Event, then the events: a choice of one, current, for action."""
+
+    choices = [_item(_label(name), action, name) for name in names]
+    if current and current not in names:
+        label = _("{name} (missing)").format(name=_label(current))
+        choices.append(_item(label, action, current))
+    return menu_of(
+        menu_section(_item(_("No Event"), action, "")),
+        menu_section(*choices),
+    )
+
+
+def _process_menu(brick: Brick, console_lacks: str | None = None) -> Gio.Menu:
+    vm = isinstance(brick, VirtualMachine)
+    result = Gio.Menu()
+    if brick.get_type() not in NO_CONSOLE:
+        # a menu item has no tooltip: the label says what it lacks
+        label = _("Open Control Monitor")
+        if console_lacks is not None:
+            label = _("Open Control Monitor ({lacks})").format(
+                lacks=console_lacks
+            )
+        result.append_section(None, menu_section(_item(label, "console")))
+    result.append_section(
+        None,
+        menu_section(
+            _item(_("Pause"), "pause"), _item(_("Continue"), "continue")
+        ),
+    )
+    result.append_section(
+        None,
+        menu_section(
+            _item(_("Suspend"), "suspend") if vm else None,
+            _item(_("Reset"), "reset") if vm else None,
+            _item(_("Restart"), "restart"),
+        ),
+    )
+    result.append_section(
+        None,
+        menu_section(
+            _item(_("Terminate"), "terminate") if vm else None,
+            _item(_("Kill"), "kill"),
+        ),
+    )
+    return result
+
+
+class BrickActions(MenuActions):
+    """What the items of the menu of a brick do."""
+
+    def __init__(
+        self,
+        engine: Engine,
+        window: Gtk.Window,
+        brick: Brick,
+        configure: Callable[[Brick], None],
+    ) -> None:
+        super().__init__()
+        self.engine = engine
+        # what the dialogs open over: the main window
+        self.window = window
+        self.brick = brick
+        self._configure = configure
+        for name, callback in (
+            ("startstop", self.startstop),
+            ("configure", self.configure),
+            ("rename", self.rename),
+            ("duplicate", self.duplicate),
+            ("resume", self.resume),
+            ("delete", self.delete),
+            ("console", self.console),
+            ("pause", self.pause),
+            ("continue", self.cont),
+            ("suspend", self.suspend),
+            ("reset", self.reset),
+            ("restart", self.restart),
+            ("terminate", self.terminate),
+            ("kill", self.kill),
+        ):
+            action = Gio.SimpleAction.new(name, None)
+            action.connect("activate", lambda a, p, call=callback: call())
+            self.add_action(action)
+        action = Gio.SimpleAction.new("connect", GLib.VariantType.new("s"))
+        action.connect("activate", self.on_connect)
+        self.add_action(action)
+        for name, setting, _label in WHEN:
+            # the event chosen, which update() sets
+            action = Gio.SimpleAction.new_stateful(
+                name, GLib.VariantType.new("s"), GLib.Variant.new_string("")
+            )
+            action.connect("change-state", self.on_event_chosen, setting)
+            self.add_action(action)
+        self.update()
+
+    def update(self) -> None:
+        """The actions that the brick allows now."""
+
+        state = brickinfo.state(self.brick)
+        running = state is State.RUNNING
+        # a program of Virtualbricks, not another's, as a switch wrapper has;
+        # it runs, or starts
+        program = must_stop(self.brick)
+        process = program and running
+        vm = isinstance(self.brick, VirtualMachine)
+        # over a connection, SIGTERM waits; the console needs a terminal
+        # program here
+        local = self.engine.local
+        enabled = {
+            "startstop": self.brick.runs_program
+            and state in (State.STOPPED, State.STARTING, State.RUNNING),
+            "configure": self.brick.get_type() not in NO_PANEL,
+            "rename": not program,
+            "delete": not program,
+            "resume": vm,
+            "console": running
+            and self.brick.get_type() not in NO_CONSOLE
+            and self.engine.console_lacks(self.brick) is None,
+            "pause": process,
+            "continue": process,
+            "suspend": running and vm,
+            "reset": running and vm,
+            "restart": process,
+            "terminate": running and vm and local,
+            "kill": process,
+        }
+        for name, value in enabled.items():
+            self.action(name).set_enabled(value)
+        # the events chosen, as the brick has them now
+        for name, setting, _label in WHEN:
+            self.action(name).set_state(
+                GLib.Variant.new_string(getattr(self.brick.config, setting))
+            )
+
+    # The items
+
+    def _machine(self) -> VirtualMachine:
+        """The brick, of the items of a virtual machine."""
+
+        assert is_virtualmachine(self.brick), "a machine's menu has the item"
+        return self.brick
+
+    def _wait(
+        self, deferred: defer.Deferred[Any], text: str, error: str
+    ) -> None:
+        """
+        The main window waits for deferred, insensitive, under a window that
+        says text, with the name of the brick; a failure is logged as error.
+        """
+
+        name = self.brick.name
+        waiting = WaitWindow(text.format(name=name)).wait_for(
+            deferred, self.window
+        )
+        waiting.addErrback(
+            lambda failure: logger.error(
+                error, name=name, error=failure.getErrorMessage()
+            )
+        )
+
+    def startstop(self) -> None:
+        startstop(self.engine, self.brick)
+
+    def configure(self) -> None:
+        self._configure(self.brick)
+
+    def rename(self) -> None:
+        RenameDialog(self.engine, self.brick).show(self.window)
+
+    def duplicate(self) -> None:
+        self.engine.duplicate(self.brick)
+
+    def on_connect(
+        self, action: Gio.SimpleAction, target: GLib.Variant
+    ) -> None:
+        other = self.engine.factory.get_brick(target.get_string())
+        if other is not None:
+            self.engine.connect(self.brick, other)
+
+    def on_event_chosen(
+        self, action: Gio.SimpleAction, value: GLib.Variant, setting: str
+    ) -> None:
+        self.engine.update_config(self.brick, {setting: value.get_string()})
+        action.set_state(value)
+
+    def resume(self) -> None:
+        logger.debug(resuming, name=self.brick.name)
+        self._wait(
+            self.engine.resume(self._machine()),
+            _("Resuming {name}…"),
+            resume_error,
+        )
+
+    def delete(self) -> None:
+        DeleteDialog(self.engine, self.brick).show(self.window)
+
+    # The items of the process
+
+    def console(self) -> None:
+        opening = self.engine.open_console(self.brick)
+        opening.addErrback(
+            lambda failure: logger.error(
+                console_error,
+                name=self.brick.name,
+                error=failure.getErrorMessage(),
+            )
+        )
+
+    def pause(self) -> None:
+        logger.debug(sending_signal, signame=signal.SIGSTOP.name)
+        self.engine.pause(self.brick)
+
+    def cont(self) -> None:
+        logger.debug(sending_signal, signame=signal.SIGCONT.name)
+        self.engine.continue_(self.brick)
+
+    def suspend(self) -> None:
+        logger.debug(suspending, name=self.brick.name)
+        self._wait(
+            self.engine.suspend(self._machine()),
+            _("Suspending {name}…"),
+            suspend_error,
+        )
+
+    def reset(self) -> None:
+        logger.info(sending_acpi, acpievent="reset")
+        self.engine.reset(self._machine())
+
+    def restart(self) -> None:
+        self.engine.restart(self.brick)
+
+    def terminate(self) -> None:
+        logger.debug(sending_signal, signame="SIGTERM")
+        self.engine.terminate(self._machine())
+
+    def kill(self) -> None:
+        logger.debug(sending_signal, signame="SIGKILL")
+        self.engine.kill(self.brick)
+
+
+def popup(
+    widget: Gtk.Widget,
+    event: Gdk.EventButton | None,
+    engine: Engine,
+    window: Gtk.Window,
+    brick: Brick,
+    configure: Callable[[Brick], None],
+    keys: bool = False,
+) -> Gtk.Menu:
+    """
+    Open the menu of brick: at the pointer, for a click on widget, or under
+    widget when event is None, as for the Menu key. Keep the menu that it
+    returns while it shows. Its Settings call configure; its dialogs open
+    over window.
+    """
+
+    factory = engine.factory
+    lacks = engine.console_lacks(brick)
+    return tab.popup(
+        widget,
+        event,
+        menu(brick, factory.bricks, list(factory.events), keys, lacks),
+        GROUP,
+        BrickActions(engine, window, brick, configure),
+    )

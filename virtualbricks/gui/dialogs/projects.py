@@ -1,0 +1,881 @@
+# -*- test-case-name: virtualbricks.tests.gui.dialogs.test_projects -*-
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2026 Virtualbricks team
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+"""
+The Projects window: find, open and look after the projects.
+
+A searchable list of the projects, the most recently used first, and the
+details of the selected one with every action: Open, Duplicate, Export,
+Rename, Show in Files and Remove. New and Import are in the header bar, and
+the folder of the workspace under its title; an archive dropped on the window
+is imported too.
+The space a project takes is read in the background, for the selected
+project only.
+"""
+
+from __future__ import annotations
+
+import datetime
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
+
+from gi.repository import Gdk, Gio, GLib, Gtk, Pango
+from twisted.internet import defer
+from twisted.logger import Logger
+from twisted.python.failure import Failure
+
+from virtualbricks import errors
+from virtualbricks.config.report import Report
+from virtualbricks.config.workspace import DiskUsage, ProjectSummary, Workspace
+from virtualbricks.engine import Engine
+from virtualbricks.gui import drop, imageinfo
+from virtualbricks.gui.dialogs import projectname
+from virtualbricks.gui.dialogs.base import Window
+from virtualbricks.gui.markdownview import MarkdownView
+from virtualbricks.gui.pango import pango_attr_list
+from virtualbricks.i18n import _, ngettext
+from virtualbricks.markdown import first_line
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.remote.client import RemoteWorkspace
+
+logger = Logger()
+project_trashed = 'Project "{name}" moved to the trash'
+project_deleted = 'Project "{name}" deleted'
+cannot_remove = 'Cannot remove the project "{name}": {error}'
+cannot_open = 'Cannot open the project "{name}": {error}'
+
+MARGIN = 12
+# The README in the details is drawn on the pane, as the labels around it.
+README_CSS = b"textview, textview text { background-color: transparent; }"
+
+
+def _label(
+    text: str = "",
+    dim: bool = False,
+    bold: bool = False,
+    wrap: bool = False,
+    xalign: float = 0.0,
+    **props: Any,
+) -> Gtk.Label:
+    label = Gtk.Label(
+        visible=True, label=text, xalign=xalign, wrap=wrap, **props
+    )
+    if dim:
+        label.get_style_context().add_class("dim-label")
+    if bold:
+        label.set_attributes(
+            pango_attr_list(Pango.attr_weight_new(Pango.Weight.BOLD))
+        )
+    return label
+
+
+def human_size(size: float) -> str:
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1000 or unit == "GB":
+            if unit == "B":
+                return f"{size:.0f} {unit}"
+            return f"{size:.1f} {unit}"
+        size /= 1000
+    return f"{size:.1f} TB"  # pragma: no cover
+
+
+def when(timestamp: float, now: datetime.datetime | None = None) -> str:
+    """Today at 14:03, Yesterday, 12 Sep, 3 Aug 2024."""
+
+    now = datetime.datetime.now() if now is None else now
+    moment = datetime.datetime.fromtimestamp(timestamp)
+    days = (now.date() - moment.date()).days
+    if days == 0:
+        return _("Today at {time}").format(time=moment.strftime("%H:%M"))
+    if days == 1:
+        return _("Yesterday")
+    if moment.year == now.year:
+        return f"{moment.day} {moment.strftime('%b')}"
+    return f"{moment.day} {moment.strftime('%b %Y')}"
+
+
+def count_bricks(summary: ProjectSummary) -> str:
+    total = sum(summary.bricks.values())
+    return ngettext("{n} brick", "{n} bricks", total).format(n=total)
+
+
+def facts(
+    summary: ProjectSummary, now: datetime.datetime | None = None
+) -> str:
+    """The line under a project's name in the list."""
+
+    if summary.problem is not None:
+        return _("Can't be read")
+    parts = [count_bricks(summary), when(summary.modified, now)]
+    missing = sum(1 for image in summary.images if not image.found)
+    if missing:
+        parts.append(
+            ngettext(
+                "{n} image missing", "{n} images missing", missing
+            ).format(n=missing)
+        )
+    return " · ".join(parts)
+
+
+def project_of(row: Gtk.ListBoxRow) -> ProjectRow:
+    """The project of a row of the list."""
+
+    # ProjectRow sets it
+    return row.project  # type: ignore[attr-defined]
+
+
+class ProjectRow:
+    def __init__(
+        self,
+        summary: ProjectSummary,
+        is_open: bool,
+        now: datetime.datetime | None = None,
+    ) -> None:
+        self.summary = summary
+        self.row = Gtk.ListBoxRow(visible=True)
+        # the row's project, for project_of()
+        self.row.project = self  # type: ignore[attr-defined]
+        box = Gtk.Box(
+            visible=True,
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=2,
+            margin=8,
+        )
+        top = Gtk.Box(visible=True, spacing=6)
+        self.name_label = _label(
+            summary.name, bold=True, ellipsize=Pango.EllipsizeMode.END
+        )
+        top.pack_start(self.name_label, True, True, 0)
+        self.open_badge = _label(_("Open"), dim=True)
+        self.open_badge.set_visible(is_open)
+        top.pack_end(self.open_badge, False, False, 0)
+        box.pack_start(top, False, False, 0)
+        line = first_line(summary.description)
+        self.description_label = _label(
+            line, dim=True, ellipsize=Pango.EllipsizeMode.END
+        )
+        self.description_label.set_visible(bool(line))
+        box.pack_start(self.description_label, False, False, 0)
+        self.facts_label = _label(facts(summary, now), dim=True)
+        broken = summary.problem is not None or any(
+            not image.found for image in summary.images
+        )
+        if broken:
+            self.facts_label.get_style_context().add_class("warning")
+        box.pack_start(self.facts_label, False, False, 0)
+        self.row.add(box)
+
+    def matches(self, text: str) -> bool:
+        text = text.casefold()
+        return (
+            text in self.summary.name.casefold()
+            or text in self.summary.description.casefold()
+        )
+
+
+class ProjectsWindow(Window):
+    """
+    The Projects window.
+
+    Projects are opened, created and saved as the menus of the main window
+    do, with open_project, new_project and save_project, which the name
+    dialog takes too; set_title names the project open in the title of the
+    main window, and import_project and export_project run the import, of an
+    archive dropped or chosen, and the export. engine lists the projects,
+    measures them and removes them.
+    """
+
+    help_page = "projects"
+
+    def __init__(
+        self,
+        engine: Engine,
+        workspace: Workspace | RemoteWorkspace | None = None,
+        disk_usage: Callable[[str], defer.Deferred[DiskUsage]] | None = None,
+        *,
+        open_project: Callable[[str], defer.Deferred[Report]],
+        new_project: Callable[[str, str], defer.Deferred[Report]],
+        save_project: Callable[[], defer.Deferred[None]],
+        set_title: Callable[[], None],
+        import_project: Callable[
+            [Callable[[], object], str | None, Gtk.Window], object
+        ],
+        export_project: Callable[[ProjectSummary, Gtk.Window], object],
+    ) -> None:
+        self.engine = engine
+        self.open_project = open_project
+        self.new_project = new_project
+        self.save_project = save_project
+        self.set_title = set_title
+        self.import_project = import_project
+        self.export_project = export_project
+        # the workspace of the Virtualbricks of the bricks
+        self.workspace = engine.workspace if workspace is None else workspace
+        if disk_usage is None:
+            disk_usage = engine.disk_usage
+        self._disk_usage = disk_usage
+        self.rows: list[ProjectRow] = []
+        self.selected: ProjectSummary | None = None
+        self._usage_for: str | None = None
+        self.destroyed = False
+        super().__init__()
+        self.reload()
+
+    # The widgets
+
+    def build_ui(self) -> None:
+        self.window = Gtk.Window(
+            title=_("Projects"),
+            default_width=860,
+            default_height=560,
+            window_position=Gtk.WindowPosition.CENTER_ON_PARENT,
+            destroy_with_parent=True,
+        )
+        # the workspace, which the command line can change
+        header = Gtk.HeaderBar(
+            visible=True,
+            show_close_button=True,
+            title=_("Projects"),
+            subtitle=imageinfo.short_path(self.workspace.path),
+        )
+        self.new_button = Gtk.Button(visible=True, label=_("New…"))
+        header.pack_start(self.new_button)
+        self.import_button = Gtk.Button(visible=True, label=_("Import…"))
+        header.pack_start(self.import_button)
+        self.window.set_titlebar(header)
+
+        outer = Gtk.Box(visible=True, orientation=Gtk.Orientation.VERTICAL)
+        self.info_bar = Gtk.InfoBar(
+            visible=False,
+            message_type=Gtk.MessageType.WARNING,
+            show_close_button=True,
+        )
+        self.info_label = _label(wrap=True)
+        self.info_bar.get_content_area().add(self.info_label)
+        outer.pack_start(self.info_bar, False, False, 0)
+
+        self.stack = Gtk.Stack(visible=True)
+        self.stack.add_named(self._build_empty(), "empty")
+        self.stack.add_named(self._build_projects(), "projects")
+        outer.pack_start(self.stack, True, True, 0)
+        self.window.add(outer)
+
+        self.window.connect("destroy", self.on_destroy)
+        self.window.connect("key-press-event", self.on_key_press)
+        self.new_button.connect("clicked", self.on_new_clicked)
+        self.import_button.connect("clicked", self.on_import_clicked)
+        self.info_bar.connect("response", lambda bar, r: bar.hide())
+        self.search_entry.connect("search-changed", self.on_search_changed)
+        self.list.connect("row-selected", self.on_row_selected)
+        self.list.connect("row-activated", self.on_row_activated)
+        self.open_button.connect("clicked", self.on_open_clicked)
+        self.duplicate_button.connect("clicked", self.on_duplicate_clicked)
+        self.export_button.connect("clicked", self.on_export_clicked)
+        self.local = self.engine.local
+        if not self.local:
+            # the archives stay on their machine, for now (19 R12), and
+            # the file manager shows the files of this one
+            for button in (self.import_button, self.empty_import_button):
+                button.set_sensitive(False)
+                button.set_tooltip_text(_("Not over a connection, for now"))
+            self.export_button.set_tooltip_text(
+                _("Not over a connection, for now")
+            )
+            self._action("show").set_enabled(False)
+        else:
+            # an archive dropped on the window is imported (04 §3); on its
+            # content, which GTK highlights, as it doesn't a toplevel
+            drop.take_files(outer, self.import_files)
+            # it takes drops of text, and would refuse the archive
+            self.search_entry.drag_dest_unset()
+
+    def _build_empty(self) -> Gtk.Box:
+        box = Gtk.Box(
+            visible=True,
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=12,
+            valign=Gtk.Align.CENTER,
+            halign=Gtk.Align.CENTER,
+        )
+        box.pack_start(
+            _label(_("No projects yet"), bold=True, xalign=0.5),
+            False,
+            False,
+            0,
+        )
+        box.pack_start(
+            _label(
+                _("A project is a lab: its bricks, events and images."),
+                dim=True,
+                xalign=0.5,
+            ),
+            False,
+            False,
+            0,
+        )
+        buttons = Gtk.Box(visible=True, spacing=6, halign=Gtk.Align.CENTER)
+        self.empty_new_button = Gtk.Button(
+            visible=True, label=_("New Project")
+        )
+        self.empty_new_button.get_style_context().add_class("suggested-action")
+        self.empty_new_button.connect("clicked", self.on_new_clicked)
+        buttons.pack_start(self.empty_new_button, False, False, 0)
+        self.empty_import_button = Gtk.Button(
+            visible=True, label=_("Import a Project…")
+        )
+        self.empty_import_button.connect("clicked", self.on_import_clicked)
+        buttons.pack_start(self.empty_import_button, False, False, 0)
+        box.pack_start(buttons, False, False, 0)
+        return box
+
+    def _build_projects(self) -> Gtk.Paned:
+        paned = Gtk.Paned(visible=True, position=320)
+        left = Gtk.Box(visible=True, orientation=Gtk.Orientation.VERTICAL)
+        self.search_entry = Gtk.SearchEntry(
+            visible=True,
+            placeholder_text=_("Find a project"),
+            margin=6,
+        )
+        left.pack_start(self.search_entry, False, False, 0)
+        scrolled = Gtk.ScrolledWindow(
+            visible=True, hscrollbar_policy=Gtk.PolicyType.NEVER
+        )
+        # A click selects and shows the details; a double click or Enter
+        # opens.
+        self.list = Gtk.ListBox(visible=True, activate_on_single_click=False)
+        self.list.set_filter_func(self._filter)
+        scrolled.add(self.list)
+        left.pack_start(scrolled, True, True, 0)
+        paned.pack1(left, False, False)
+
+        self.details_stack = Gtk.Stack(visible=True)
+        self.details_stack.add_named(
+            _label(_("Select a project"), dim=True, xalign=0.5), "none"
+        )
+        self.details_stack.add_named(self._build_details(), "details")
+        paned.pack2(self.details_stack, True, False)
+        return paned
+
+    def _build_details(self) -> Gtk.ScrolledWindow:
+        scrolled = Gtk.ScrolledWindow(
+            visible=True, hscrollbar_policy=Gtk.PolicyType.NEVER
+        )
+        box = Gtk.Box(
+            visible=True,
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=8,
+            margin=18,
+        )
+        self.title_label = _label(
+            bold=True, selectable=True, ellipsize=Pango.EllipsizeMode.END
+        )
+        box.pack_start(self.title_label, False, False, 0)
+        self.path_label = _label(
+            dim=True, selectable=True, ellipsize=Pango.EllipsizeMode.MIDDLE
+        )
+        box.pack_start(self.path_label, False, False, 0)
+        self.problem_label = _label(wrap=True, selectable=True)
+        self.problem_label.get_style_context().add_class("warning")
+        box.pack_start(self.problem_label, False, False, 0)
+        self.readme_view = MarkdownView(visible=True)
+        style = Gtk.CssProvider()
+        style.load_from_data(README_CSS)
+        self.readme_view.get_style_context().add_provider(
+            style, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+        box.pack_start(self.readme_view, False, False, 0)
+
+        self.facts_grid = Gtk.Grid(
+            visible=True, column_spacing=18, row_spacing=6, margin_top=6
+        )
+        self.fact_values: dict[str, Gtk.Label] = {}
+        for i, (key, title) in enumerate(
+            (
+                ("bricks", _("Bricks")),
+                ("events", _("Events")),
+                ("images", _("Images")),
+                ("disks", _("Private disks")),
+                ("other", _("Other files")),
+                ("used", _("Last used")),
+            )
+        ):
+            self.facts_grid.attach(_label(title, dim=True), 0, i, 1, 1)
+            value = _label(wrap=True, selectable=True, hexpand=True)
+            self.facts_grid.attach(value, 1, i, 1, 1)
+            self.fact_values[key] = value
+        box.pack_start(self.facts_grid, False, False, 0)
+
+        actions = Gtk.Box(visible=True, spacing=6, margin_top=12)
+        self.open_button = Gtk.Button(visible=True, label=_("Open"))
+        self.open_button.get_style_context().add_class("suggested-action")
+        actions.pack_start(self.open_button, False, False, 0)
+        self.duplicate_button = Gtk.Button(visible=True, label=_("Duplicate…"))
+        actions.pack_start(self.duplicate_button, False, False, 0)
+        self.export_button = Gtk.Button(visible=True, label=_("Export…"))
+        actions.pack_start(self.export_button, False, False, 0)
+        self.menu_button = Gtk.MenuButton(
+            visible=True,
+            tooltip_text=_("More"),
+            image=Gtk.Image.new_from_icon_name(
+                "view-more-symbolic", Gtk.IconSize.BUTTON
+            ),
+        )
+        menu = Gio.Menu()
+        menu.append(_("Rename…"), "project.rename")
+        menu.append(_("Show in Files"), "project.show")
+        menu.append(_("Remove…"), "project.remove")
+        self.menu_button.set_menu_model(menu)
+        actions.pack_start(self.menu_button, False, False, 0)
+        box.pack_start(actions, False, False, 0)
+
+        self.actions = Gio.SimpleActionGroup()
+        for name, handler in (
+            ("rename", self.on_rename),
+            ("show", self.on_show),
+            ("remove", self.on_remove),
+        ):
+            action = Gio.SimpleAction.new(name, None)
+            action.connect("activate", handler)
+            self.actions.add_action(action)
+        self.window.insert_action_group("project", self.actions)
+        scrolled.add(box)
+        return scrolled
+
+    def _action(self, name: str) -> Gio.SimpleAction:
+        action = self.actions.lookup_action(name)
+        assert isinstance(action, Gio.SimpleAction), "the menu has it"
+        return action
+
+    def get_root_widget(self) -> Gtk.Window:
+        return self.window
+
+    def show(self, parent: Gtk.Window | None = None) -> None:
+        if parent is not None:
+            self.window.set_transient_for(parent)
+        self.window.present()
+
+    def show_problem(self, message: str) -> None:
+        """Say why at the top, as at start-up when a project fails."""
+
+        self.info_label.set_text(message)
+        self.info_bar.show()
+
+    # The list
+
+    def reload(self) -> None:
+        """Read the projects again, keeping the selection."""
+
+        selected = self.selected.name if self.selected else None
+        reading = self.engine.project_summaries()
+        reading.addCallbacks(
+            self._fill, self._not_listed, callbackArgs=(selected,)
+        )
+
+    def _not_listed(self, failure: Failure) -> None:
+        # over a connection: lost, or a summary more than AMP carries
+        if not self.destroyed:
+            self.show_problem(
+                _("Cannot list the projects: {error}").format(
+                    error=failure.getErrorMessage()
+                )
+            )
+
+    def _fill(
+        self, summaries: list[ProjectSummary], selected: str | None
+    ) -> None:
+        if self.destroyed:
+            return
+        for child in self.list.get_children():
+            self.list.remove(child)
+        current = self.workspace.current
+        open_name = current.name if current is not None else None
+        self.rows = [
+            ProjectRow(summary, summary.name == open_name)
+            for summary in summaries
+        ]
+        for row in self.rows:
+            self.list.add(row.row)
+        self.stack.set_visible_child_name("projects" if self.rows else "empty")
+        self.select(selected or open_name)
+
+    def select(self, name: str | None) -> None:
+        for row in self.rows:
+            if row.summary.name == name:
+                self.list.select_row(row.row)
+                return
+        self.list.unselect_all()
+        self.show_details(None)
+
+    def _filter(self, row: Gtk.ListBoxRow) -> bool:
+        return project_of(row).matches(self.search_entry.get_text())
+
+    def on_search_changed(self, entry: Gtk.SearchEntry) -> None:
+        self.list.invalidate_filter()
+
+    def on_row_selected(
+        self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow | None
+    ) -> None:
+        self.show_details(project_of(row).summary if row is not None else None)
+
+    def on_row_activated(
+        self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow
+    ) -> None:
+        self.open(project_of(row).summary.name)
+
+    # The details
+
+    def is_open(self, name: str) -> bool:
+        current = self.workspace.current
+        return current is not None and current.name == name
+
+    def show_details(self, summary: ProjectSummary | None) -> None:
+        self.selected = summary
+        if summary is None:
+            self.details_stack.set_visible_child_name("none")
+            return
+        self.details_stack.set_visible_child_name("details")
+        self.title_label.set_text(summary.name)
+        self.path_label.set_text(imageinfo.short_path(summary.path))
+        readable = summary.problem is None
+        self.problem_label.set_text(
+            _("The project file can't be read: {problem}").format(
+                problem=summary.problem
+            )
+            if not readable
+            else ""
+        )
+        self.problem_label.set_visible(not readable)
+        readme = summary.description.strip()
+        self.readme_view.set_markdown(readme)
+        self.readme_view.set_visible(bool(readme))
+        values = self.fact_values
+        values["bricks"].set_text(
+            ", ".join(
+                f"{count} {kind}"
+                for kind, count in sorted(summary.bricks.items())
+            )
+            or _("None")
+        )
+        values["events"].set_text(str(summary.events))
+        values["images"].set_text(
+            "\n".join(
+                (
+                    f"{image.name}: {image.path}"
+                    if image.found
+                    else _("{name}: {path}, not on this computer").format(
+                        name=image.name, path=image.path or '""'
+                    )
+                )
+                for image in summary.images
+            )
+            or _("None")
+        )
+        values["disks"].set_text("…")
+        values["other"].set_text("…")
+        values["used"].set_text(when(summary.modified))
+        self.facts_grid.set_visible(readable)
+        is_open = self.is_open(summary.name)
+        self.open_button.set_sensitive(readable and not is_open)
+        self.open_button.set_tooltip_text(
+            _("This project is open") if is_open else None
+        )
+        self.duplicate_button.set_sensitive(readable)
+        self.export_button.set_sensitive(readable and self.local)
+        self._action("rename").set_enabled(readable)
+        self.read_usage(summary.name)
+
+    def read_usage(self, name: str) -> None:
+        self._usage_for = name
+        deferred = self._disk_usage(name)
+        deferred.addCallbacks(
+            self.on_usage,
+            self.on_usage_failed,
+            callbackArgs=(name,),
+            errbackArgs=(name,),
+        )
+
+    def on_usage(self, usage: DiskUsage, name: str) -> None:
+        if self.destroyed or name != self._usage_for:
+            return
+        self.fact_values["disks"].set_text(human_size(usage.private_disks))
+        self.fact_values["other"].set_text(human_size(usage.other_files))
+
+    def on_usage_failed(self, failure: Failure, name: str) -> None:
+        if not self.destroyed and name == self._usage_for:
+            self.fact_values["disks"].set_text(_("Unknown"))
+            self.fact_values["other"].set_text(_("Unknown"))
+
+    # The actions
+
+    def open(self, name: str) -> None:
+        if self.is_open(name) or not self._is_readable(name):
+            return
+        opening = defer.maybeDeferred(self.open_project, name)
+        opening.addCallbacks(
+            self._opened, self._not_opened, errbackArgs=(name,)
+        )
+
+    def _opened(self, report: Report | None) -> None:
+        self.set_title()
+        self.window.destroy()
+
+    def _not_opened(self, failure: Failure, name: str) -> None:
+        failure.trap(OSError, errors.Error)
+        exc = failure.value
+        logger.error(cannot_open, name=name, error=exc)
+        self.show_problem(
+            _("Cannot open {name}: {error}").format(name=name, error=exc)
+        )
+
+    def _is_readable(self, name: str) -> bool:
+        for row in self.rows:
+            if row.summary.name == name:
+                return row.summary.problem is None
+        return False
+
+    def name_dialog(
+        self, kind: str, original: str | None = None
+    ) -> projectname.ProjectNameDialog:
+        dialog = projectname.ProjectNameDialog(
+            self.engine,
+            kind,
+            original,
+            workspace=self.workspace,
+            new_project=self.new_project,
+            save_project=self.save_project,
+            open_project=self.open_project,
+            set_title=self.set_title,
+        )
+        dialog.on_done = self.on_name_done
+        dialog.show(self.window)
+        return dialog
+
+    def on_name_done(self, name: str) -> None:
+        if self.destroyed:
+            return
+        if self.is_open(name):
+            # New and an opened copy leave nothing to do here.
+            self.window.destroy()
+            return
+        self.selected = None
+        self.reload()
+        self.select(name)
+
+    def on_new_clicked(self, button: Gtk.Button) -> None:
+        self.name_dialog(projectname.NEW)
+
+    def on_import_clicked(self, button: Gtk.Button) -> None:
+        self.import_project(self.on_import_closed, None, self.window)
+
+    def import_files(self, files: list[str], others: list[str]) -> None:
+        """Import the files dropped, each in its own Import window."""
+
+        for path in files:
+            self.import_project(self.on_import_closed, path, self.window)
+        if others:
+            self.show_problem(drop.refusal(others))
+
+    def on_import_closed(self) -> None:
+        if not self.destroyed:
+            self.reload()
+
+    def on_open_clicked(self, button: Gtk.Button) -> None:
+        if self.selected is not None:
+            self.open(self.selected.name)
+
+    def on_duplicate_clicked(self, button: Gtk.Button) -> None:
+        if self.selected is not None:
+            self.name_dialog(projectname.DUPLICATE, self.selected.name)
+
+    def on_export_clicked(self, button: Gtk.Button) -> None:
+        if self.selected is not None:
+            self.export_project(self.selected, self.window)
+
+    def on_rename(
+        self,
+        action: Gio.SimpleAction | None = None,
+        parameter: GLib.Variant | None = None,
+    ) -> None:
+        if self.selected is not None and self.selected.problem is None:
+            self.name_dialog(projectname.RENAME, self.selected.name)
+
+    def on_show(
+        self,
+        action: Gio.SimpleAction | None = None,
+        parameter: GLib.Variant | None = None,
+    ) -> None:
+        if self.selected is not None:
+            uri = Gio.File.new_for_path(self.selected.path).get_uri()
+            try:
+                Gtk.show_uri_on_window(self.window, uri, Gdk.CURRENT_TIME)
+            except Exception as exc:
+                logger.error("{error}", error=exc)
+
+    def on_remove(
+        self,
+        action: Gio.SimpleAction | None = None,
+        parameter: GLib.Variant | None = None,
+    ) -> RemoveDialog | None:
+        if self.selected is not None:
+            dialog = RemoveDialog(self.engine, self.workspace, self.selected)
+            dialog.on_done = self.on_removed
+            dialog.show(self.window)
+            return dialog
+        return None
+
+    def on_removed(self, name: str) -> None:
+        if not self.destroyed:
+            self.selected = None
+            self.reload()
+
+    def on_key_press(self, window: Gtk.Window, event: Gdk.EventKey) -> bool:
+        if self.window.get_focus() is self.search_entry:
+            return False
+        if event.keyval == Gdk.KEY_F2:
+            self.on_rename()
+            return True
+        if event.keyval == Gdk.KEY_Delete:
+            self.on_remove()
+            return True
+        # typing searches
+        return self.search_entry.handle_event(event)
+
+    def on_destroy(self, window: Gtk.Window) -> None:
+        self.destroyed = True
+
+
+class RemoveDialog(Window):
+    """Ask whether to move a project to the trash or delete it for good."""
+
+    help_page = "projects"
+
+    TRASH = 1
+    DELETE = 2
+    on_done: Callable[[str], object] | None = None
+
+    def __init__(
+        self,
+        engine: Engine,
+        workspace: Workspace | RemoteWorkspace,
+        summary: ProjectSummary,
+        disk_usage: DiskUsage | None = None,
+    ) -> None:
+        self.engine = engine
+        self.workspace = workspace
+        self.summary = summary
+        self.name = summary.name
+        self.is_open = workspace.current is not None and (
+            workspace.current.name == self.name
+        )
+        self.can_trash = not self.is_open and workspace.can_trash(self.name)
+        # the space it takes, counted by the engine if not given: there,
+        # over a connection
+        self.usage = disk_usage
+        super().__init__()
+        if not self.is_open and disk_usage is None:
+            counting = engine.disk_usage(self.name)
+            counting.addCallbacks(self._counted, lambda failure: None)
+
+    def build_ui(self) -> None:
+        self.dialog = Gtk.MessageDialog(
+            modal=True,
+            destroy_with_parent=True,
+            message_type=Gtk.MessageType.QUESTION,
+            text=_("Remove {name}?").format(name=self.name),
+        )
+        self.dialog.add_button(_("Cancel"), Gtk.ResponseType.CANCEL)
+        self.delete_button: Gtk.Widget | None
+        self.trash_button: Gtk.Widget | None
+        if self.is_open:
+            self.dialog.set_property("message-type", Gtk.MessageType.INFO)
+            self.dialog.set_property(
+                "text", _("{name} is open").format(name=self.name)
+            )
+            self.dialog.format_secondary_text(
+                _("Open another project first, then remove {name}.").format(
+                    name=self.name
+                )
+            )
+            self.delete_button = self.trash_button = None
+        else:
+            self.delete_button = self.dialog.add_button(
+                _("Delete Permanently"), self.DELETE
+            )
+            self.delete_button.get_style_context().add_class(
+                "destructive-action"
+            )
+            self.trash_button = None
+            if self.can_trash:
+                self.trash_button = self.dialog.add_button(
+                    _("Move to Trash"), self.TRASH
+                )
+                self.trash_button.get_style_context().add_class(
+                    "suggested-action"
+                )
+                self.dialog.set_default_response(self.TRASH)
+            self.dialog.format_secondary_text(self.explain(self.usage))
+        self.dialog.connect("response", self.on_response)
+
+    def get_root_widget(self) -> Gtk.MessageDialog:
+        return self.dialog
+
+    def _counted(self, usage: DiskUsage) -> None:
+        self.dialog.format_secondary_text(self.explain(usage))
+
+    def explain(self, usage: DiskUsage | None) -> str:
+        if usage is not None and usage.private_disks:
+            what = _("Its folder, with {size} of private disks, goes").format(
+                size=human_size(usage.private_disks)
+            )
+        elif usage is not None:
+            what = _("Its folder, {size}, goes").format(
+                size=human_size(usage.total)
+            )
+        else:
+            what = _("Its folder goes")
+        if self.can_trash:
+            where = _(" to the trash, where you can restore it.")
+        else:
+            where = _(" for good: the drive of the workspace has no trash.")
+        return (
+            what + where + " " + _("The images it uses stay where they are.")
+        )
+
+    def remove(self, how: int) -> defer.Deferred[None]:
+        trash = how == self.TRASH
+        removing = self.engine.remove_project(self.name, trash)
+        return removing.addCallback(self._removed, trash)
+
+    def _removed(self, result: object, trash: bool) -> None:
+        if trash:
+            logger.info(project_trashed, name=self.name)
+        else:
+            logger.info(project_deleted, name=self.name)
+        if self.on_done is not None:
+            self.on_done(self.name)
+
+    def _not_removed(self, failure: Failure) -> None:
+        failure.trap(OSError, errors.Error)
+        logger.error(cannot_remove, name=self.name, error=failure.value)
+
+    def on_response(self, dialog: Gtk.Dialog, response_id: int) -> None:
+        dialog.destroy()
+        if response_id not in (self.TRASH, self.DELETE):
+            return
+        self.remove(response_id).addErrback(self._not_removed)

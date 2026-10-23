@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="bricks">
+  <info>
+    <link type="guide" xref="index#lab"/>
+    <link type="seealso" xref="kinds"/>
+    <link type="seealso" xref="events"/>
+    <title type="sort">1</title>
+    <desc>Start, stop, configure, connect, rename and delete the bricks of a lab.</desc>
+  </info>
+  <title>Bricks</title>
+  <p>The <gui>Bricks</gui> tab has a row for each brick of the project: its icon, grey while it is stopped; its name; its kind and what matters about it, as <sys>Wire · sw1 ↔ sw2</sys>; its state; a button that starts or stops it; and the button of its menu.</p>
+  <terms>
+    <title>The states</title>
+    <item>
+      <title><gui>Running</gui>, <gui>Stopped</gui></title>
+      <p>Its program runs, or not.</p>
+    </item>
+    <item>
+      <title><gui>Starting</gui></title>
+      <p>Its program runs once the bricks it plugs into run, and a virtual machine has its disks ready. Meanwhile it counts as running: you can't rename it or delete it, nor quit Virtualbricks.</p>
+    </item>
+    <item>
+      <title><gui>Not connected</gui></title>
+      <p>A plug of the brick goes nowhere, as a wire with a free end: it can't start until you connect it.</p>
+    </item>
+    <item>
+      <title><gui>Not configured</gui></title>
+      <p>A setting that it needs is missing, as the host of a tunnel client: it can't start until you set it.</p>
+    </item>
+    <item>
+      <title><gui>Error</gui></title>
+      <p>A switch wrapper whose folder has no switch to plug into, though the folder is there: it has no socket <file>ctl</file>, or the one that a killed switch leaves. The tooltip of the state says what is wrong, and so does the <gui>Logs</gui> window. It runs again once a switch listens there.</p>
+    </item>
+  </terms>
+  <section id="row">
+    <title>Above the list</title>
+    <p><gui>New Brick</gui> adds a brick; see <link xref="kinds"/>. The search field finds a brick by name or by kind: press <keyseq><key>Ctrl</key><key>F</key></keyseq>, or start typing in the list. <gui>All</gui> and <gui>Running</gui> switch between all the bricks and only those that run, which then show the number of their process. <gui>Start All</gui> starts every brick that can start, and <gui>Stop All</gui> stops them.</p>
+  </section>
+  <section id="start">
+    <title>Starting and stopping</title>
+    <p>The button of a row starts the brick, or stops it. Starting a brick starts first the bricks it plugs into. Stopping a virtual machine asks its system to shut down. Stopping a brick that is starting calls its start off: its program doesn't run, and the bricks it plugs into start all the same.</p>
+  </section>
+  <section id="settings">
+    <title>The settings of a brick</title>
+    <p>Double-click a row, or select it and press <key>Enter</key>: the settings of the brick show in place of the list, under a line that names it. <gui>OK</gui> applies them, and is greyed while a setting is wrong, with the first problem beside it. <gui>Cancel</gui> and <key>Esc</key> go back to the list without a change. While the brick runs, a bar over its settings says which of them change at once.</p>
+    <figure>
+      <title>The settings of a switch</title>
+      <media type="image" mime="image/png" src="figures/switch-settings.png">
+        <p>The settings of sw1 in place of the list, under a line that names it: Ports, 32, and Hub mode and Fast spanning tree, off; Help, Cancel and OK at the bottom.</p>
+      </media>
+    </figure>
+  </section>
+  <section id="menu">
+    <title>The menu of a brick</title>
+    <p>The button at the end of the row, the right button of the mouse, the <key>Menu</key> key and the picture of the <gui>Topology</gui> tab open the same menu:</p>
+    <terms>
+      <item>
+        <title><gui>Start</gui>, <gui>Stop</gui></title>
+        <p>As the button of the row.</p>
+      </item>
+      <item>
+        <title><gui>Configure…</gui></title>
+        <p>The settings of the brick; <key>Enter</key> in the list.</p>
+      </item>
+      <item>
+        <title><gui>Rename…</gui>, <gui>Delete…</gui></title>
+        <p>Greyed while the brick runs or starts; <key>F2</key> and <key>Delete</key> in the list. Before a brick goes, the dialog says what goes with it: the bricks plugged into it are unplugged, the events no longer start or stop it, and the private copies of a machine go to the trash.</p>
+      </item>
+      <item>
+        <title><gui>Duplicate</gui></title>
+        <p>A copy of the brick, with its links, named after it with the next free number. The network cards of a machine get new MAC addresses.</p>
+      </item>
+      <item>
+        <title><gui>Connect To</gui></title>
+        <p>The bricks that this one can plug into. Dragging the row of a brick onto the row of another does the same: when one of the two can plug into the other, that row is framed, and they connect when you let go.</p>
+      </item>
+      <item>
+        <title><gui>When It Starts</gui>, <gui>When It Stops</gui></title>
+        <p>An event to run when the brick starts or stops; see <link xref="events"/>.</p>
+      </item>
+      <item>
+        <title><gui>Resume</gui></title>
+        <p>For a virtual machine, start it from the state that <gui>Suspend</gui> saved in its first disk.</p>
+      </item>
+      <item>
+        <title><gui>Process</gui></title>
+        <p>For a running brick, what to do with its process: <gui>Open Control Monitor</gui>, which opens the console of the brick in a terminal; <gui>Pause</gui> and <gui>Continue</gui>; <gui>Suspend</gui> and <gui>Reset</gui> for a virtual machine; <gui>Restart</gui>; <gui>Terminate</gui> and <gui>Kill</gui>, when it doesn't stop.</p>
+      </item>
+    </terms>
+  </section>
+</page>

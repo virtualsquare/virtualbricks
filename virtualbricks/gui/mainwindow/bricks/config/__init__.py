@@ -1,0 +1,84 @@
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2026 Virtualbricks team
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+"""
+The configuration panels of the bricks, shown in the Bricks tab of the main
+window: one module for each kind of brick, and the parts of the panel of a
+virtual machine, its disks and the picker of their images.
+
+The panels, on drafts, are in ``PANELS``, by the type of their brick;
+``new_panel()`` makes one on a new draft of its brick. A router has none.
+
+Only the names that code outside this package imports from it are exported;
+the tests import the others from their modules.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING
+
+from virtualbricks.bricks import Brick
+from virtualbricks.engine import Engine
+
+from .captureconfig import CapturePanel
+from .netemuconfig import NetemuPanel
+from .switchconfig import SwitchPanel
+from .switchwrapperconfig import SwitchWrapperPanel
+from .tapconfig import TapPanel
+from .tunnelcconfig import TunnelConnectPanel
+from .tunnellconfig import TunnelListenPanel
+from .vm.panel import VirtualMachinePanel
+from .wireconfig import WirePanel
+
+if TYPE_CHECKING:  # pragma: no cover
+    from .panel import Panel
+
+__all__ = [
+    "PANELS",
+    "new_panel",
+]
+
+# The panels on drafts, by the type of their brick.
+PANELS: dict[str, type[Panel]] = {
+    "Capture": CapturePanel,
+    "Netemu": NetemuPanel,
+    "Qemu": VirtualMachinePanel,
+    "Switch": SwitchPanel,
+    "SwitchWrapper": SwitchWrapperPanel,
+    "TunnelConnect": TunnelConnectPanel,
+    "Tap": TapPanel,
+    "TunnelListen": TunnelListenPanel,
+    "Wire": WirePanel,
+}
+
+
+def new_panel(
+    brick: Brick,
+    engine: Engine | None = None,
+    show_images: Callable[[], object] | None = None,
+) -> Panel | None:
+    """
+    The panel of brick on a new draft, or None if it has none yet; it asks
+    the machine through engine, and show_images shows the Images tab, for
+    the disks of a virtual machine.
+    """
+
+    panel = PANELS.get(brick.get_type())
+    if panel is None:
+        return None
+    return panel(brick.draft_factory(brick), engine, show_images)

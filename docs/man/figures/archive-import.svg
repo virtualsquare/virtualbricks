@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 256" role="img" aria-label="The import extracts the archive into a hidden folder of the workspace, moves the copied image to workspace/shared_images, points the private disk at it as its backing file, and renames the folder to workspace/lab. The numbers are the steps of the import.">
+    <defs>
+      <marker id="m-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+      <marker id="m-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+    </defs>
+    <rect x="16" y="16" width="316" height="226" rx="8" class="box"/>
+    <text x="30" y="40" class="mono small strong">workspace/.importing-lab-k2x9q1ab/</text>
+    <circle cx="312" cy="36" r="9" class="badge"/><text x="312" y="40" text-anchor="middle" class="badge-text">1</text>
+    <text x="36" y="76" class="mono small muted">contents.toml <tspan class="small">(removed)</tspan></text>
+    <circle cx="312" cy="72" r="9" class="badge"/><text x="312" y="76" text-anchor="middle" class="badge-text">2</text>
+    <text x="36" y="108" class="mono small">project.toml</text>
+    <circle cx="290" cy="104" r="9" class="badge"/><text x="290" y="108" text-anchor="middle" class="badge-text">3</text>
+    <circle cx="312" cy="104" r="9" class="badge"/><text x="312" y="108" text-anchor="middle" class="badge-text">5</text>
+    <text x="36" y="140" class="mono small">README.md</text>
+    <text x="36" y="172" class="mono small">vm1_hda.cow</text>
+    <circle cx="268" cy="168" r="9" class="badge"/><text x="268" y="172" text-anchor="middle" class="badge-text">6</text>
+    <circle cx="290" cy="168" r="9" class="badge"/><text x="290" y="172" text-anchor="middle" class="badge-text">7</text>
+    <circle cx="312" cy="168" r="9" class="badge"/><text x="312" y="172" text-anchor="middle" class="badge-text">8</text>
+    <text x="36" y="204" class="mono small">IMAGES/debian</text>
+    <circle cx="312" cy="200" r="9" class="badge"/><text x="312" y="204" text-anchor="middle" class="badge-text">4</text>
+
+    <line x1="332" y1="86" x2="456" y2="86" class="ln-accent" marker-end="url(#m-tip-acc)"/>
+    <text x="394" y="78" text-anchor="middle" class="small t-accent">9 &#183; rename</text>
+    <line x1="332" y1="200" x2="456" y2="224" class="ln" marker-end="url(#m-tip)"/>
+    <text x="394" y="200" text-anchor="middle" class="small muted">4 &#183; move</text>
+
+    <rect x="460" y="16" width="284" height="130" rx="8" class="box"/>
+    <text x="474" y="40" class="mono small strong">workspace/lab/</text>
+    <text x="480" y="76" class="mono small">project.toml</text>
+    <text x="480" y="104" class="mono small">README.md</text>
+    <text x="480" y="132" class="mono small">vm1_hda.cow</text>
+    <rect x="460" y="184" width="284" height="58" rx="8" class="box"/>
+    <text x="474" y="206" class="mono small strong">workspace/shared_images/</text>
+    <text x="480" y="230" class="mono small">debian-12.qcow2</text>
+    <path d="M564,128 H712 V226 H592" class="ln-accent dash" marker-end="url(#m-tip-acc)"/>
+    <text x="704" y="170" text-anchor="end" class="small t-accent">6 &#183; backing file, rebase -u</text>
+</svg>

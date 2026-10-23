@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 246" role="img" aria-label="The member IMAGES/scratch: a pax header with the GNU.sparse records, a header named IMAGES/GNUSparseFile.0/scratch of size 4608, a 512-byte map that says two regions, 4096 bytes at 4194304 and 0 bytes at 33554432, then 4096 bytes of data. Extracted, it is a file of 32 MiB whose only data are those 4096 bytes at 4 MiB.">
+    <defs>
+      <marker id="h-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+    </defs>
+    <text x="598" y="18" text-anchor="middle" class="small t-accent">the size in the header: 4608</text>
+    <path d="M452,34 V26 H744 V34" class="ln-accent"/>
+    <rect x="16" y="40" width="270" height="96" class="box"/>
+    <text x="28" y="60" class="small strong">pax header, type x</text>
+    <text x="28" y="80" class="mono small">GNU.sparse.major=1</text>
+    <text x="28" y="96" class="mono small">GNU.sparse.minor=0</text>
+    <text x="28" y="112" class="mono small">GNU.sparse.name=IMAGES/scratch</text>
+    <text x="28" y="128" class="mono small">GNU.sparse.realsize=33554432</text>
+    <rect x="286" y="40" width="166" height="96" class="box"/>
+    <text x="298" y="60" class="small strong">header, type 0</text>
+    <text x="298" y="80" class="mono small">IMAGES/</text>
+    <text x="298" y="96" class="mono small">GNUSparseFile.0/</text>
+    <text x="298" y="112" class="mono small">scratch</text>
+    <text x="298" y="128" class="mono small">size 4608</text>
+    <rect x="452" y="40" width="138" height="96" class="box-accent"/>
+    <text x="464" y="60" class="small strong">map, 512 bytes</text>
+    <text x="464" y="80" class="mono small">2</text>
+    <text x="464" y="96" class="mono small">4194304 4096</text>
+    <text x="464" y="112" class="mono small">33554432 0</text>
+    <text x="464" y="128" class="small muted">then zeros</text>
+    <rect x="590" y="40" width="154" height="96" class="box-accent"/>
+    <text x="602" y="60" class="small strong">data, 4096 bytes</text>
+    <text x="602" y="80" class="small muted">the regions,</text>
+    <text x="602" y="96" class="small muted">one after the other</text>
+    <!-- the file -->
+    <path d="M667,136 C 667,186 107,166 107,192" class="ln-accent" marker-end="url(#h-tip-acc)"/>
+    <rect x="16" y="196" width="728" height="22" class="box-ghost"/>
+    <rect x="105" y="196" width="4" height="22" class="badge"/>
+    <text x="16" y="238" class="mono small muted">0</text>
+    <text x="107" y="238" text-anchor="middle" class="mono small muted">4 MiB</text>
+    <text x="744" y="238" text-anchor="end" class="mono small muted">32 MiB</text>
+    <text x="420" y="238" text-anchor="middle" class="small muted">the file, extracted: holes but for 4096 bytes</text>
+</svg>

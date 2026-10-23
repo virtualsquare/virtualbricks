@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="topology">
+  <info>
+    <link type="guide" xref="index#lab"/>
+    <link type="seealso" xref="readme"/>
+    <title type="sort">5</title>
+    <desc>See how the bricks connect, and export the picture.</desc>
+  </info>
+  <title>The picture of the lab</title>
+  <p>The <gui>Topology</gui> tab draws the bricks of the project and the links between them. A stopped brick is grey. The brick under the pointer lights up, and its tooltip says its name, its kind and its state. The right button opens the menu of the brick, as in the <gui>Bricks</gui> tab, and a double click its settings.</p>
+  <figure>
+    <title>The Topology tab</title>
+    <media type="image" mime="image/png" src="figures/topology.png">
+      <p>The Topology tab: sw1 and vm1, joined by a line, with the buttons of the zoom over the top right corner.</p>
+    </media>
+  </figure>
+  <section id="zoom">
+    <title>Zooming</title>
+    <p>A bar over the top right corner, faded until you point at it, has <gui>Zoom Out</gui>, the zoom level, <gui>Zoom In</gui>, <gui>Fit All</gui> and a menu. A click on the level goes back to 100%. The tab opens with the whole lab in view, and keeps it in view as the lab changes, until you zoom.</p>
+    <list>
+      <item>
+        <p><keyseq><key>Ctrl</key><key>+</key></keyseq>, <keyseq><key>Ctrl</key><key>-</key></keyseq>: zoom in and out; <keyseq><key>Ctrl</key><key>0</key></keyseq>: 100%; <key>F</key>: fit all.</p>
+      </item>
+      <item>
+        <p><key>Ctrl</key> and the wheel of the mouse, or a pinch on a touchpad, zoom around the pointer.</p>
+      </item>
+      <item>
+        <p>Dragging the background moves the picture.</p>
+      </item>
+    </list>
+  </section>
+  <section id="connect">
+    <title>Connecting two bricks</title>
+    <p>Drag a brick onto another, as in the <gui>Bricks</gui> tab: a line follows the pointer. Over a brick that it can plug into, or that can plug into it, the line ends on that brick, which lights up, and the words under it say what letting go does, as <gui>Connect tap1 to sw2</gui>. Let go there, and the two connect, as with <gui>Connect To</gui> in the menu of the brick; let go over another brick, or press <key>Esc</key>, and nothing changes. Near an edge of the tab, the picture scrolls, to reach a brick out of view.</p>
+  </section>
+  <section id="move">
+    <title>Moving bricks</title>
+    <p>Drag a brick and let go over free room: the brick stays there. On the way, a faded copy of it at the end of the line shows where it goes. Near the column or the row of another brick, the copy lines up with it, and a thin line shows it.</p>
+    <p>The first move keeps every other brick where it shows: the lab is laid out by hand from then on, and the project keeps the place of each brick, so the picture stays as you arranged it, after a restart and in an exported archive. A new brick waits in a row under the others until you move it.</p>
+  </section>
+  <section id="export">
+    <title>Layout and export</title>
+    <p>The menu of the bar has the <gui>Layout</gui>: <gui>Left to Right</gui> or <gui>Top to Bottom</gui>, where Graphviz places the bricks again after each change, or <gui>By Hand</gui>, where each brick stays at its place. <gui>By Hand</gui> gives every brick the place it has in the picture; <gui>Left to Right</gui> and <gui>Top to Bottom</gui> take the places away.</p>
+    <p>The <gui>Links</gui> of the menu draw them <gui>Straight</gui>, <gui>Curved</gui> or at <gui>Right Angles</gui>, in every layout; the project keeps the choice, curved at first. A straight line can pass behind a brick in its way; Graphviz routes the curves and the right angles around the bricks. In a lab laid out by hand it moves no brick to do so, and two bricks too close for a link to pass between them have their links routed around their icons, across their names. Where Graphviz can't draw right angles, the links are curved.</p>
+    <p>The menu also has <gui>Export as Image…</gui>: a PNG, an SVG or a PDF file of the picture at 100%, on white, whatever the zoom and the theme. Every brick is in colour, running or not, unless you tick <gui>Fade stopped bricks</gui> in the chooser: then the stopped ones are grey and faded, as in the tab, and the chooser keeps the box ticked until you quit. It saves in the folder of the project unless you choose another, and there the picture can show in its README; see <link xref="readme"/>.</p>
+  </section>
+</page>

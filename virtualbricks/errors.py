@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2019 Virtualbricks team
+# Copyright (C) 2026 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,8 +16,15 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-if False:  # pyflakes
-    _ = str
+from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
+
+from virtualbricks.i18n import _
+
+if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.bricks.virtualmachine import Disk, Image
 
 
 class Error(Exception):
@@ -30,12 +37,22 @@ class InvalidNameError(Error):
 
 class NameAlreadyInUseError(InvalidNameError):
 
-    def __init__(self, name):
+    def __init__(self, name: str, kind: str | None = None) -> None:
         InvalidNameError.__init__(self, name)
         self.name = name
+        # what has the name: "brick", "event" or "image", if known
+        self.kind = kind
 
-    def __str__(self):
-        return _("Normalized name %s already in use") % self.name
+    def __str__(self) -> str:
+        words = {
+            "brick": _("{name} is the name of a brick"),
+            "event": _("{name} is the name of an event"),
+            "image": _("{name} is the name of an image"),
+        }
+        in_use = _("{name} is in use")
+        if self.kind is not None:
+            in_use = words.get(self.kind, in_use)
+        return in_use.format(name=self.name)
 
 
 class InvalidTypeError(Error, ValueError):
@@ -51,59 +68,81 @@ class NotConnectedError(Error):
 
 
 class LinkLoopError(Error):
-    pass
+    """The links of a brick lead back to it: the bricks on a loop don't start."""
+
+    def __init__(self, loop: Sequence[str]) -> None:
+        Error.__init__(self, tuple(loop))
+        # the names of the bricks on the loop, the first again at the end
+        self.loop = tuple(loop)
+
+    def __str__(self) -> str:
+        return _(
+            "Cannot start '{name}': its links make a loop, {loop}"
+        ).format(name=self.loop[0], loop=" → ".join(self.loop))
 
 
-class UnmanagedTypeError(Error):
-    pass
+class StartCalledOffError(Error):
+    """A stop came while the brick started: its program didn't run."""
 
+    def __init__(self, name: str) -> None:
+        Error.__init__(self, name)
+        self.name = name
 
-class InvalidActionError(Error):
-    pass
+    def __str__(self) -> str:
+        return _("Cannot start '{name}': stopped before it ran").format(
+            name=self.name
+        )
 
 
 class LockedImageError(Error):
 
-    def __init__(self, image, master):
+    def __init__(self, image: Image, master: Disk | None) -> None:
         Exception.__init__(self, image, master)
         self.image = image
         self.master = master
 
-    def __repr__(self):
-        return "Image {0} already locked by {1}".format(self.image,
-                                                        self.master)
+    def __repr__(self) -> str:
+        return "Image {0} already locked by {1}".format(
+            self.image, self.master
+        )
 
 
 class ImageAlreadyInUseError(Error):
     pass
 
 
+class PrivateCopyInTheWayError(Error):
+    """A private copy named after a machine's new name is in its folder."""
+
+    def __init__(self, filename: str, name: str) -> None:
+        Error.__init__(self, filename, name)
+        self.filename = filename
+        self.name = name
+
+    def __str__(self) -> str:
+        return _(
+            "The project folder has {file} already, a private copy named"
+            " after {name}: move it away first"
+        ).format(file=self.filename, name=self.name)
+
+
 # Project specific errors
 
-class ProjectExistsError(InvalidNameError):
-    pass
+
+class ProjectOpenError(Error):
+    """The project is open, and the action needs it closed."""
 
 
-class ProjectNotExistsError(InvalidNameError):
-    pass
-
-
-class InvalidArchiveError(Error):
-    """The archive format is not recognized."""
+class TrashNotSupportedError(Error):
+    """The file system of the path has no trash."""
 
 
 class BrickRunningError(Error):
     """There is one or more brick that is running."""
 
 
-class NoOptionError(Error):
-    '''The config file has no such option.'''
-
-
-class WidgetNotFound(Error):
-    """
-    A Gtk.Builder resource does not define a specific widget.
-    """
+class OtherProgramError(Error):
+    """The program of a brick is another's: Virtualbricks can't stop it."""
 
 
 class CommandError(Exception):
@@ -111,7 +150,7 @@ class CommandError(Exception):
     One utility command failed. Ex. qemu-img.
     """
 
-    def __init__(self, exit_code, stderr):
+    def __init__(self, exit_code: int, stderr: str) -> None:
         super().__init__(stderr)
         self.exit_code = exit_code
         self.stderr = stderr

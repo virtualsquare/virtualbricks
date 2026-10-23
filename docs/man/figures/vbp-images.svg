@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 330" role="img" aria-label="In project.toml the disk hda of vm1 names the image debian, whose table has the path /srv/vm/debian-12.qcow2. The archive stores the image as IMAGES/debian, under its name, and the private disk vm1_hda.cow, whose backing file is that path. After the import, the image is the file shared_images/debian-12.qcow2 of the workspace, the table has its path, and the private disk is rebased on it.">
+    <defs>
+      <marker id="i-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+      <marker id="i-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+    </defs>
+    <text x="16" y="22" class="title">project.toml</text>
+    <text x="16" y="40" class="small muted">on the computer it comes from</text>
+    <text x="326" y="22" class="title">the archive</text>
+    <text x="326" y="40" class="small muted">members</text>
+    <text x="536" y="22" class="title">after the import</text>
+    <text x="536" y="40" class="small muted">on this computer</text>
+    <!-- the project file -->
+    <rect x="16" y="54" width="272" height="78" rx="6" class="box"/>
+    <text x="30" y="78" class="mono small">[bricks.vm1.disks.hda]</text>
+    <text x="30" y="98" class="mono small">image = <tspan class="t-accent">"debian"</tspan></text>
+    <text x="30" y="118" class="mono small">private = true</text>
+    <rect x="16" y="168" width="272" height="60" rx="6" class="box"/>
+    <text x="30" y="192" class="mono small">[<tspan class="t-accent">images.debian</tspan>]</text>
+    <text x="30" y="212" class="mono small">path = "/srv/vm/debian-12.qcow2"</text>
+    <path d="M150,104 C 200,110 200,160 150,172" class="ln-accent" marker-end="url(#i-tip-acc)"/>
+    <text x="206" y="146" class="small t-accent">the name</text>
+    <!-- the archive -->
+    <rect x="326" y="168" width="170" height="60" rx="6" class="box-accent"/>
+    <text x="340" y="192" class="mono small">IMAGES/<tspan class="t-accent">debian</tspan></text>
+    <text x="340" y="212" class="small muted">the file, under the name</text>
+    <path d="M288,198 H322" class="ln-accent" marker-end="url(#i-tip-acc)"/>
+    <rect x="326" y="262" width="170" height="54" rx="6" class="box"/>
+    <text x="340" y="284" class="mono small">vm1_hda.cow</text>
+    <text x="340" y="302" class="small muted">backing file: that path</text>
+    <path d="M326,289 H190 V232" class="ln dash" marker-end="url(#i-tip)"/>
+    <!-- after the import -->
+    <rect x="536" y="54" width="208" height="78" rx="6" class="box"/>
+    <text x="550" y="78" class="mono small">[images.debian]</text>
+    <text x="550" y="98" class="mono small">path = "&#8230;/shared_images/</text>
+    <text x="550" y="118" class="mono small">  debian-12.qcow2"</text>
+    <rect x="536" y="168" width="208" height="60" rx="6" class="box"/>
+    <text x="550" y="186" class="mono small">shared_images/</text>
+    <text x="550" y="202" class="mono small">debian-12.qcow2</text>
+    <text x="550" y="219" class="small muted">copied into the shared images</text>
+    <path d="M496,198 H532" class="ln" marker-end="url(#i-tip)"/>
+    <rect x="536" y="262" width="208" height="54" rx="6" class="box"/>
+    <text x="550" y="284" class="mono small">lab/vm1_hda.cow</text>
+    <text x="550" y="302" class="small muted">rebased on it, then unpacked</text>
+    <path d="M496,289 H532" class="ln" marker-end="url(#i-tip)"/>
+    <path d="M640,168 V136" class="ln dash" marker-end="url(#i-tip)"/>
+    <path d="M640,262 V232" class="ln dash" marker-end="url(#i-tip)"/>
+</svg>

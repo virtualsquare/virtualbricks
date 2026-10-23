@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 760 312" role="img" aria-label="The application writes the job to the archive process's stdin, reads its messages from stdout and its errors from stderr, can send SIGTERM to cancel, and gets its exit status. The process runs bsdtar, GNU tar or tarfile, and qemu-img.">
+    <defs>
+      <marker id="a-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+      <marker id="a-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+      <marker id="a-tip-warn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-warn"/></marker>
+    </defs>
+    <!-- the application -->
+    <rect x="16" y="16" width="200" height="280" rx="8" class="box"/>
+    <text x="34" y="44" class="title">application</text>
+    <text x="34" y="63" class="small muted">Virtualbricks: GTK and Twisted</text>
+    <rect x="34" y="84" width="164" height="38" rx="6" class="box-accent"/>
+    <text x="116" y="108" text-anchor="middle" class="mono">ArchiveJob</text>
+    <text x="34" y="156" class="mono">done</text>
+    <text x="34" y="173" class="small muted">a Deferred, fired at the end</text>
+    <text x="34" y="200" class="mono">cancel()</text>
+    <text x="34" y="217" class="small muted">sends SIGTERM</text>
+    <text x="34" y="244" class="mono">leftovers</text>
+    <text x="34" y="261" class="small muted">removed if no result came</text>
+    <!-- the process -->
+    <rect x="436" y="16" width="180" height="280" rx="8" class="box"/>
+    <text x="454" y="44" class="title">archive process</text>
+    <text x="454" y="63" class="mono small muted">python -m &#8230;archive</text>
+    <rect x="454" y="84" width="144" height="38" rx="6" class="box-accent"/>
+    <text x="526" y="108" text-anchor="middle" class="mono">run_job(job)</text>
+    <text x="454" y="156" class="small">reads the job to EOF</text>
+    <text x="454" y="180" class="small">runs one job, then exits</text>
+    <text x="454" y="204" class="small">nice 10</text>
+    <!-- the channels -->
+    <line x1="224" y1="80" x2="428" y2="80" class="ln" marker-end="url(#a-tip)"/>
+    <text x="326" y="71" text-anchor="middle" class="mono strong">stdin</text>
+    <text x="326" y="97" text-anchor="middle" class="small muted">the job, TOML, then EOF</text>
+    <line x1="428" y1="128" x2="224" y2="128" class="ln-accent" marker-end="url(#a-tip-acc)"/>
+    <text x="326" y="119" text-anchor="middle" class="mono strong t-accent">stdout</text>
+    <text x="326" y="145" text-anchor="middle" class="small muted">messages, one JSON object a line</text>
+    <line x1="428" y1="176" x2="224" y2="176" class="ln" marker-end="url(#a-tip)"/>
+    <text x="326" y="167" text-anchor="middle" class="mono strong">stderr</text>
+    <text x="326" y="193" text-anchor="middle" class="small muted">kept for the error message</text>
+    <line x1="224" y1="224" x2="428" y2="224" class="ln-warn" marker-end="url(#a-tip-warn)"/>
+    <text x="326" y="215" text-anchor="middle" class="mono strong t-warn">SIGTERM</text>
+    <text x="326" y="241" text-anchor="middle" class="small muted">cancels the job</text>
+    <line x1="428" y1="272" x2="224" y2="272" class="ln dash" marker-end="url(#a-tip)"/>
+    <text x="326" y="263" text-anchor="middle" class="mono strong">exit status</text>
+    <text x="326" y="289" text-anchor="middle" class="small muted">0, 1, 2 or 3</text>
+    <!-- the tools -->
+    <line x1="616" y1="103" x2="652" y2="103" class="ln" marker-end="url(#a-tip)"/>
+    <text x="634" y="95" text-anchor="middle" class="small muted">runs</text>
+    <rect x="656" y="70" width="88" height="66" rx="6" class="box"/>
+    <text x="700" y="93" text-anchor="middle" class="mono">bsdtar</text>
+    <text x="700" y="111" text-anchor="middle" class="small muted">or GNU tar</text>
+    <text x="700" y="127" text-anchor="middle" class="small muted">or tarfile</text>
+    <line x1="616" y1="190" x2="652" y2="190" class="ln" marker-end="url(#a-tip)"/>
+    <text x="634" y="182" text-anchor="middle" class="small muted">runs</text>
+    <rect x="656" y="170" width="88" height="40" rx="6" class="box"/>
+    <text x="700" y="195" text-anchor="middle" class="mono">qemu-img</text>
+</svg>

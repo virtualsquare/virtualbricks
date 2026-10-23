@@ -1,0 +1,283 @@
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.test_readme -*-
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2026 Virtualbricks team
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+"""
+The Readme tab of the main window: the README rendered, or its text to edit.
+
+The tab opens on the preview. Icon buttons float over its top right
+corner: over the preview, the pencil shows the editor; over the editor,
+the eye shows the preview, drawn again from the text of the editor, and an
+icon opens the syntax. The buttons are faded, and opaque while the pointer
+is over them or the syntax shows; the text goes under them, with the same
+margin on each side.
+
+The editor holds the README of the open project, which the engine reads and
+writes: the tab loads it when a project opens and when it shows, and saves
+it when another tab shows, when the project is saved, and 30 seconds after
+an edit. The pictures of the preview come from the engine too, files of the
+folder of the open project.
+"""
+
+from __future__ import annotations
+
+from typing import Any, cast
+
+from gi.repository import GLib, Gtk
+from twisted.internet import defer, reactor
+from twisted.internet.interfaces import (
+    IDelayedCall,
+    IReactorTime,
+)
+from twisted.logger import Logger
+from twisted.python.failure import Failure
+
+from virtualbricks.engine import Engine
+from virtualbricks.gui.mainwindow.tab import FloatingBar, Tab, icon_button
+from virtualbricks.gui.markdownview import MarkdownView
+from virtualbricks.i18n import _
+
+# The room around the text, and between the buttons and the corner, in
+# pixels.
+logger = Logger()
+readme_not_saved = "Cannot save the README: {error}"
+
+MARGIN = 12
+GAP = 6
+# The seconds from an edit to its save.
+SAVE_AFTER = 30
+# The syntax, as the popover shows it: what to write, and what it does.
+SYNTAX = (
+    ("# Heading", _("a heading; ## for a smaller one")),
+    ("*italic* **bold**", _("emphasis; ~~struck~~")),
+    ("`code`", _("code; ``` above and below a block")),
+    ("- item", _("a list; 1. for a numbered one")),
+    ("> quote", _("a quote")),
+    ("[text](https://…)", _("a link; a bare URL is one too")),
+    ("![text](picture.png)", _("a picture in the folder of the project")),
+    ("---", _("a line across")),
+)
+
+
+def _syntax_popover(button: Gtk.Widget) -> Gtk.Popover:
+    grid = Gtk.Grid(
+        visible=True, column_spacing=18, row_spacing=6, margin=MARGIN
+    )
+    title = Gtk.Label(visible=True, xalign=0.0)
+    title.set_markup(f"<b>{GLib.markup_escape_text(_('Markdown'))}</b>")
+    grid.attach(title, 0, 0, 2, 1)
+    for row, (source, meaning) in enumerate(SYNTAX, 1):
+        code = Gtk.Label(visible=True, xalign=0.0)
+        code.set_markup(f"<tt>{GLib.markup_escape_text(source)}</tt>")
+        grid.attach(code, 0, row, 1, 1)
+        description = Gtk.Label(visible=True, label=meaning, xalign=0.0)
+        description.get_style_context().add_class("dim-label")
+        grid.attach(description, 1, row, 1, 1)
+    anything_else = Gtk.Label(
+        visible=True,
+        label=_("Anything else shows as you typed it."),
+        xalign=0.0,
+        margin_top=6,
+    )
+    grid.attach(anything_else, 0, len(SYNTAX) + 1, 2, 1)
+    popover = Gtk.Popover(relative_to=button)
+    popover.add(grid)
+    return popover
+
+
+def _scrolled(view: Gtk.Widget) -> Gtk.ScrolledWindow:
+    scrolled = Gtk.ScrolledWindow(visible=True)
+    scrolled.add(view)
+    return scrolled
+
+
+class ReadmeTab(Tab, Gtk.Overlay):
+    """The README of the open project rendered, or its text in the editor."""
+
+    title = _("Readme")
+    help_page = "readme"
+
+    def __init__(
+        self, engine: Engine, clock: IReactorTime | None = None
+    ) -> None:
+        super().__init__(visible=True)
+        self.engine = engine
+        self.clock = cast("IReactorTime", reactor) if clock is None else clock
+        # the save of an edit, on its way
+        self._saving: IDelayedCall | None = None
+        margins: dict[str, Any] = {
+            "left_margin": MARGIN,
+            "right_margin": MARGIN,
+            "top_margin": MARGIN,
+            "bottom_margin": MARGIN,
+        }
+        self.editor = Gtk.TextView(
+            visible=True, wrap_mode=Gtk.WrapMode.WORD_CHAR, **margins
+        )
+        self.preview = MarkdownView(visible=True, **margins)
+        self.empty_label = Gtk.Label(
+            visible=True,
+            label=_(
+                "No README yet. The pencil, at the top right, writes one."
+            ),
+            wrap=True,
+            xalign=0.0,
+            yalign=0.0,
+            margin=MARGIN,
+        )
+        self.empty_label.get_style_context().add_class("dim-label")
+        # on the background of the views
+        empty = Gtk.Box(visible=True)
+        empty.get_style_context().add_class("view")
+        empty.pack_start(self.empty_label, True, True, 0)
+        self.stack = Gtk.Stack(visible=True)
+        self.stack.add_named(_scrolled(self.preview), "preview")
+        self.stack.add_named(empty, "empty")
+        self.stack.add_named(_scrolled(self.editor), "editor")
+        self.add(self.stack)
+
+        self.buttons = FloatingBar(spacing=GAP, margin=GAP)
+        self.edit_button = icon_button(
+            Gtk.RadioButton(visible=True, draw_indicator=False),
+            "document-edit-symbolic",
+            _("Edit"),
+        )
+        self.preview_button = icon_button(
+            Gtk.RadioButton(
+                visible=True, draw_indicator=False, group=self.edit_button
+            ),
+            "view-reveal-symbolic",
+            _("Preview"),
+        )
+        self.syntax_button = icon_button(
+            Gtk.MenuButton(), "dialog-question-symbolic", _("Syntax")
+        )
+        self.syntax_button.set_popover(_syntax_popover(self.syntax_button))
+        self.buttons.pack(self.edit_button)
+        self.buttons.pack(self.preview_button)
+        self.buttons.pack(self.syntax_button)
+        self.add_overlay(self.buttons)
+
+        self.preview_button.set_active(True)
+        self._switch()
+        # the eye goes on or off at each switch
+        self.preview_button.connect("toggled", self.on_toggled)
+        self.editor.get_buffer().connect("changed", self.on_changed)
+        self.editor.get_buffer().connect(
+            "modified-changed", self.on_modified_changed
+        )
+
+    def show_preview(self) -> None:
+        self.preview_button.set_active(True)
+
+    def load(self) -> None:
+        """The README of the open project, in the editor: not an edit."""
+
+        # over a connection lost, it stays as it is
+        self.engine.readme().addCallbacks(self._loaded, lambda failure: None)
+
+    def _loaded(self, text: str) -> None:
+        textbuffer = self.editor.get_buffer()
+        textbuffer.set_text(text)
+        textbuffer.set_modified(False)
+
+    def save(self) -> None:
+        """Save the edits of the README, if there are any."""
+
+        textbuffer = self.editor.get_buffer()
+        if textbuffer.get_modified():
+            text = textbuffer.get_property("text")
+            saving = self.engine.set_readme(text)
+            textbuffer.set_modified(False)
+            saving.addErrback(self._not_saved, textbuffer)
+
+    def _not_saved(self, failure: Failure, textbuffer: Gtk.TextBuffer) -> None:
+        # over a connection: the edits wait for the next save
+        logger.error(readme_not_saved, error=failure.getErrorMessage())
+        textbuffer.set_modified(True)
+
+    def _save_later(self) -> None:
+        self._saving = None
+        self.save()
+
+    def showing_preview(self) -> bool:
+        return self.preview_button.get_active()
+
+    def _switch(self) -> None:
+        if self.showing_preview():
+            self._render()
+        else:
+            self.stack.set_visible_child_name("editor")
+            self.editor.grab_focus()
+        self.edit_button.set_visible(self.showing_preview())
+        # pressed with a key, the eye hides: the key on the pencil
+        if self.showing_preview() and self.preview_button.is_focus():
+            self.edit_button.grab_focus()
+        self.preview_button.set_visible(not self.showing_preview())
+        self.syntax_button.set_visible(not self.showing_preview())
+
+    def _picture(self, path: str) -> defer.Deferred[bytes]:
+        current = self.engine.workspace.current
+        if current is None:
+            raise LookupError(_("No project is open"))
+        return self.engine.picture(current.name, path)
+
+    def _render(self) -> None:
+        text = self.editor.get_buffer().get_property("text")
+        self.preview.set_markdown(text, self._picture)
+        self.stack.set_visible_child_name(
+            "preview" if text.strip() else "empty"
+        )
+
+    # What the main window tells
+
+    def on_open(self) -> None:
+        self.load()
+        self.show_preview()
+
+    def on_save(self) -> None:
+        self.save()
+
+    def on_quit(self) -> None:
+        self.save()
+
+    def on_shown(self) -> None:
+        self.load()
+
+    def on_left(self) -> None:
+        self.save()
+
+    # Signals
+
+    def on_toggled(self, button: Gtk.RadioButton) -> None:
+        self._switch()
+
+    def on_changed(self, textbuffer: Gtk.TextBuffer) -> None:
+        # loaded while the preview shows
+        if self.showing_preview():
+            self._render()
+
+    def on_modified_changed(self, textbuffer: Gtk.TextBuffer) -> None:
+        # saved a while after the first edit, unless it's saved before
+        if textbuffer.get_modified():
+            if self._saving is None:
+                self._saving = self.clock.callLater(
+                    SAVE_AFTER, self._save_later
+                )
+        elif self._saving is not None:
+            self._saving.cancel()
+            self._saving = None

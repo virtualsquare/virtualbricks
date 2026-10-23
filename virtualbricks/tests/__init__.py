@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2019 Virtualbricks team
+# Copyright (C) 2026 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,254 +16,257 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import sys
-import functools
-import difflib
+import shutil
+import socket
+import tempfile
 
+from twisted.internet import defer
 from twisted.trial import unittest
-from twisted.python import failure
 
-from virtualbricks import settings
+from virtualbricks import locks
 
-__builtins__["_"] = str
-TEST_THREADS = 0x01
-TEST_DEPLOYMENT = 0x02
-TEST_DATA_PATH = os.path.join(os.path.dirname(__file__), "data")
+# The tests of the configuration are virtualbricks.tests.config: here that
+# name is theirs, so the settings are taken by name and from their module.
+from virtualbricks.config import settings
+from virtualbricks.config.settings import AppSettings, AppState
+from virtualbricks.observable import Observable, Signal
+from virtualbricks.programs import VDE_PROGRAMS
 
-
-def should_test_threads():
-    return int(os.environ.get("VIRTUALBRICKS_TESTS", 0)) & TEST_THREADS
-
-
-def should_test_deployment():
-    return int(os.environ.get("VIRTUALBRICKS_TESTS", 0)) & TEST_DEPLOYMENT
+DATA = os.path.join(os.path.dirname(__file__), "data")
 
 
-def _id(obj):
-    return obj
+def isolate(test):
+    """Point HOME, the XDG directories and the lock at a temporary directory."""
+
+    root = os.path.abspath(test.mktemp())
+    os.makedirs(root)
+    env = dict(
+        os.environ,
+        HOME=root,
+        XDG_CONFIG_HOME=os.path.join(root, ".config"),
+        XDG_STATE_HOME=os.path.join(root, ".local", "state"),
+        XDG_RUNTIME_DIR=os.path.join(root, "run"),
+    )
+    test.patch(os, "environ", env)
+    # Never the locks of a running Virtualbricks: the user lock is in the
+    # runtime directory. The check runs after every other cleanup of the
+    # test, when the locks must be free again, and before they are restored.
+    from virtualbricks import locations
+
+    test.patch(locations, "SYSTEM_LOCK_FILE", os.path.join(root, "vb.lock"))
+    test.addCleanup(_check_released, test)
+    return root
 
 
-def Skip(reason):
-    # This decorator is camelcase because otherwise importing it cause all the
-    # tests to skip because trial look deep in test method, class, module
-    def decorator(test_item):
-        if not isinstance(test_item, type):
-            @functools.wraps(test_item)
-            def skip_wrapper(*args, **kwargs):
-                raise unittest.SkipTest(reason)
-            test_item = skip_wrapper
+def short_folder(test):
+    """A folder of the test with a path short enough for sockets."""
 
-        test_item.skip = reason
-        return test_item
-    return decorator
+    # the folders of trial are too deep for the 107 bytes of a socket
+    folder = tempfile.mkdtemp(prefix="vb-")
+    test.addCleanup(shutil.rmtree, folder)
+    return folder
 
 
-def skipIf(condition, reason):
-    if condition:
-        return Skip(reason)
-    return _id
+def make_socket(path):
+    """A socket file at path that nobody listens on, as after a crash."""
+
+    sock = socket.socket(socket.AF_UNIX)
+    sock.bind(path)
+    sock.close()
 
 
-def skipUnless(condition, reason):
-    if not condition:
-        return Skip(reason)
-    return _id
+def _check_released(test):
+    if not lock_is_free():
+        test.fail("the test left the lock held")
 
 
-# from __future__ import (twisted.trail.unittest.TestCase.successResultOf,
-#                         twisted.trail.unittest.TestCase.failureResultOf)
-def successResultOf(self, deferred):
+class FakeTrash:
+    """A desktop trash that only remembers what was moved to it."""
+
+    def __init__(self, can_trash=True, error=None):
+        self.allowed = can_trash
+        self.error = error
+        self.trashed = []
+        self.asked = []
+
+    def can_trash(self, path):
+        self.asked.append(path)
+        return self.allowed
+
+    def trash(self, path):
+        if self.error is not None:
+            raise self.error
+        self.trashed.append(path)
+
+
+def use_workspace(test, path=None):
     """
-    Return the current success result of C{deferred} or raise
-    C{self.failException}.
+    Point the workspace at path, the workspace setting if None; nothing open.
 
-    @param deferred: A L{Deferred<twisted.internet.defer.Deferred>} which
-        has a success result.  This means
-        L{Deferred.callback<twisted.internet.defer.Deferred.callback>} or
-        L{Deferred.errback<twisted.internet.defer.Deferred.errback>} has
-        been called on it and it has reached the end of its callback chain
-        and the last callback or errback returned a non-L{failure.Failure}.
-    @type deferred: L{Deferred<twisted.internet.defer.Deferred>}
-
-    @raise SynchronousTestCase.failureException: If the
-        L{Deferred<twisted.internet.defer.Deferred>} has no result or has a
-        failure result.
-
-    @return: The result of C{deferred}.
-    """
-    result = []
-    deferred.addBoth(result.append)
-    if not result:
-        self.fail(
-            "Success result expected on %r, found no result instead" % (
-                deferred,))
-    elif isinstance(result[0], failure.Failure):
-        self.fail(
-            "Success result expected on %r, "
-            "found failure result instead:\n%s" % (
-                deferred, result[0].getTraceback()))
-    else:
-        return result[0]
-
-
-def failureResultOf(self, deferred, *expectedExceptionTypes):
-    """
-    Return the current failure result of C{deferred} or raise
-    C{self.failException}.
-
-    @param deferred: A L{Deferred<twisted.internet.defer.Deferred>} which
-        has a failure result.  This means
-        L{Deferred.callback<twisted.internet.defer.Deferred.callback>} or
-        L{Deferred.errback<twisted.internet.defer.Deferred.errback>} has
-        been called on it and it has reached the end of its callback chain
-        and the last callback or errback raised an exception or returned a
-        L{failure.Failure}.
-    @type deferred: L{Deferred<twisted.internet.defer.Deferred>}
-
-    @param expectedExceptionTypes: Exception types to expect - if
-        provided, and the the exception wrapped by the failure result is
-        not one of the types provided, then this test will fail.
-
-    @raise SynchronousTestCase.failureException: If the
-        L{Deferred<twisted.internet.defer.Deferred>} has no result, has a
-        success result, or has an unexpected failure result.
-
-    @return: The failure result of C{deferred}.
-    @rtype: L{failure.Failure}
-    """
-    result = []
-    deferred.addBoth(result.append)
-    if not result:
-        self.fail(
-            "Failure result expected on %r, found no result instead" % (
-                deferred,))
-    elif not isinstance(result[0], failure.Failure):
-        self.fail(
-            "Failure result expected on %r, "
-            "found success result (%r) instead" % (deferred, result[0]))
-    elif (expectedExceptionTypes and
-          not result[0].check(*expectedExceptionTypes)):
-        expectedString = " or ".join([
-            '.'.join((t.__module__, t.__name__)) for t in
-            expectedExceptionTypes])
-
-        self.fail(
-            "Failure of type (%s) expected on %r, "
-            "found type %r instead: %s" % (
-                expectedString, deferred, result[0].type,
-                result[0].getTraceback()))
-    else:
-        return result[0]
-
-
-def patch_settings(test_case, **kwds):
-    """
-    :param unittest.TestCase test_case:
-    :param Dict[str, str]: the new settings to change.
+    Return the workspace, ``projects``, which the modules share.
     """
 
-    def restore():
-        for k, v in orig_settings.items():
-            settings.set(k, v)
+    from virtualbricks.config.workspace import projects
 
-    orig_settings = dict((k, settings.get(k)) for k in kwds.keys())
-    test_case.addCleanup(restore)
-    test_case.patch(settings, "store", lambda: None)
-    for k, v in kwds.items():
-        settings.set(k, v)
+    test.patch(projects, "_path", path)
+    test.patch(projects, "current", None)
+    test.patch(projects, "trasher", None)
+    test.patch(projects, "_summaries", {})
+    return projects
 
 
-def pformat_tree(tree, sep="", indent=2):
-    lst = []
-    n_cols = tree.get_n_columns()
-    pformat_subtree(tree, tree.get_iter_first(), lst, n_cols, sep, indent, 0)
-    return lst
+def release(lock):
+    """Unlock a lock if it is held; for cleanups."""
+
+    if lock is not None and lock.locked:
+        lock.unlock()
 
 
-def pformat_subtree(tree, itr, lst, columns, sep="", indent=2, level=0):
-    while itr:
-        row = tree.get(itr, *range(columns))
-        lst.append("{0}{1}{2}".format(indent * level * " ", sep, row))
-        pformat_subtree(tree, tree.iter_children(itr), lst, columns, sep,
-                        indent, level + 1)
-        itr = tree.iter_next(itr)
+def hold_lock(test, policy=locks.SYSTEM, user=None, workspace=None):
+    """
+    Hold the locks of policy, as a running Virtualbricks does, and that of
+    workspace, a folder, if given.
+
+    With user, the name of another user, the locks of a Virtualbricks of
+    theirs: another runtime directory. They are released when the test ends,
+    even if the test fails.
+    """
+
+    runtime = os.environ.get("XDG_RUNTIME_DIR", "")
+    if user is not None:
+        os.environ["XDG_RUNTIME_DIR"] = f"{runtime}-{user}"
+    lock = None
+    try:
+        lock = locks.acquire(policy)
+        if workspace is not None:
+            lock.take_workspace(workspace)
+    except locks.Held:
+        release(lock)
+        test.fail(f"the lock is already held ({policy}, {user}, {workspace})")
+    except BaseException:
+        release(lock)
+        raise
+    finally:
+        if user is not None:
+            os.environ["XDG_RUNTIME_DIR"] = runtime
+    test.addCleanup(release, lock)
+    return lock
 
 
-class GtkTestCase(unittest.TestCase):
+def lock_is_free():
+    """Whether the lock of the application can be taken; it is left free."""
 
-    def assert_tree_model_equal(self, tree1, tree2, msg=None):
-        self.assertEqual(tree1.get_n_columns(), tree2.get_n_columns(),
-                         "Number of columns differs")
-        for i in range(tree1.get_n_columns()):
-            type1 = tree1.get_column_type(i)
-            type2 = tree2.get_column_type(i)
-            tmsg = "Invalid type for column {0}: {1}, {2}".format(i, type1,
-                                                                  type2)
-            self.assertEqual(type1, type2, tmsg)
-        root1 = tree1.get_iter_first()
-        root2 = tree2.get_iter_first()
-        self.assert_subtree_model_equal(tree1, root1, tree2, root2, msg)
-
-    def assert_subtree_model_equal(self, tree1, itr1, tree2, itr2, msg=None):
-        if type(itr1) != type(itr2):
-            self.fail_tree(tree1, tree2, msg)
-        self.assertEqual(type(itr1), type(itr2))
-        while itr1 and itr2:
-            if tuple(tree1[itr1]) != tuple(tree2[itr2]):
-                self.fail_tree(tree1, tree2, msg)
-            self.assertEqual(tuple(tree1[itr1]), tuple(tree2[itr2]))
-            self.assert_subtree_model_equal(tree1, tree1.iter_children(itr1),
-                                            tree2, tree2.iter_children(itr2))
-            itr1 = tree1.iter_next(itr1)
-            itr2 = tree2.iter_next(itr2)
-
-    def fail_tree(self, tree1, tree2, msg=None):
-        if not msg:
-            diff = "\n".join(difflib.ndiff(pformat_tree(tree1),
-                                           pformat_tree(tree2)))
-            msg = "Trees are different:\n" + diff
-        self.fail(msg)
-
-    def assert_visible(self, widget, msg=None):
-        if not msg:
-            msg = ("widget {0} is not visible when it is expected it "
-                   "is.".format(widget))
-        self.assertTrue(widget.get_visible(), msg)
-
-    def assert_not_visible(self, widget, msg=None):
-        if not msg:
-            msg = ("widget {0} is visible when it is expected it is "
-                   "not.".format(widget))
-        self.assertFalse(widget.get_visible(), msg)
+    try:
+        locks.acquire(locks.SYSTEM).unlock()
+    except locks.Held:
+        return False
+    return True
 
 
-class LoggingObserver:
+def reset_settings(test, **values):
+    """Give the test its own settings, restored when it ends."""
+
+    test.patch(settings, "_app", AppSettings(**values))
+    test.patch(settings, "_project", None)
+    test.patch(settings, "_state", AppState())
+    test.patch(settings, "_settings_path", None)
+    test.patch(settings, "_state_path", None)
+    test.patch(settings, "_read_only", False)
+    test.patch(settings, "_ksm_start", None)
+    # and its own observers of the settings that change
+    test.patch(settings, "changed", Signal(Observable(), "changed"))
+
+
+def make_factory(test=None):
+    from virtualbricks.brickfactory import BrickFactory
+
+    factory = BrickFactory(defer.Deferred())
+    if test is not None:
+        factory.runtime_dir = os.path.abspath(test.mktemp())
+    return factory
+
+
+class FakeLogger:
+    """Collect what a module logs; each call is (level, format, kwargs).
+
+    Debug messages are diagnostics, not behaviour, and are not collected.
+    """
 
     def __init__(self):
-        self.msgs = []
+        self.events = []
 
-    def emit(self, event_dict):
-        self.msgs.append(event_dict)
+    def _emit(self, level):
+        # failure takes the failure too, as Logger.failure(format, failure)
+        def emit(format, failure=None, **kwargs):
+            self.events.append((level, format, kwargs))
 
-    def __call__(self, event_dict):
-        self.emit(event_dict)
+        return emit
 
-    def __len__(self):
-        return len(self.msgs)
+    def debug(self, format, **kwargs):
+        pass
 
-    def __getitem__(self, idx):
-        try:
-            return self.msgs[idx]
-        except IndexError:
-            raise IndexError("{0.__class__.__name__} index out of range"
-                             "".format(self))
-        except TypeError:
-            raise TypeError("{0.__class__.__name__} indices must be integers, "
-                            "not {1.__class__.__name__}".format(self, idx))
+    def __getattr__(self, name):
+        if name in ("info", "warn", "error", "failure", "critical"):
+            return self._emit(name)
+        raise AttributeError(name)
+
+    def levels(self):
+        return [level for level, _, _ in self.events]
+
+    def formatted(self):
+        return [format.format(**kwargs) for _, format, kwargs in self.events]
 
 
-def get_filename(resource):
-    mod = sys.modules["virtualbricks.tests"]
-    parts = resource.split("/")
-    parts[0:0] = [os.path.dirname(mod.__file__), "data"]
-    return os.path.join(*parts)
+# The programs that the bricks start, as fake_programs() makes them: all but
+# vde_router, which no distribution ships.
+PROGRAMS = tuple(name for name in VDE_PROGRAMS if name != "vde_router") + (
+    "qemu-system-x86_64",
+    "qemu-system-i386",
+)
+
+
+def fake_programs(test):
+    """
+    The programs of the bricks as empty executables in a folder of the test,
+    the only ones it finds, whatever this computer has: the folders of the
+    open project are there, and PATH is empty. Return the folder.
+    """
+
+    folder = os.path.abspath(test.mktemp())
+    os.makedirs(folder)
+    for name in PROGRAMS:
+        path = os.path.join(folder, name)
+        with open(path, "w") as fp:
+            fp.write("#!/bin/sh\n")
+        os.chmod(path, 0o755)
+    settings.set_setting("qemu_path", folder)
+    settings.set_setting("vde_path", folder)
+    test.patch(os, "environ", dict(os.environ, PATH=""))
+    return folder
+
+
+def pairs(args):
+    """Return the arguments as a list of (option, value) pairs."""
+
+    return list(zip(args[::2], args[1::2]))
+
+
+def adjacent(args):
+    """Return every two consecutive arguments; some options take no value."""
+
+    return list(zip(args, args[1:]))
+
+
+class BrickTestCase(unittest.TestCase):
+    """
+    A test with its own settings, home directories and brick factory, where
+    the programs of the bricks are fake executables in self.bin.
+    """
+
+    def setUp(self):
+        isolate(self)
+        reset_settings(self)
+        # the bricks are those of an open project, with its settings
+        settings.use_project(settings.ProjectSettings())
+        self.bin = fake_programs(self)
+        self.factory = make_factory(self)

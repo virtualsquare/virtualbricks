@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="events">
+  <info>
+    <link type="guide" xref="index#lab"/>
+    <link type="seealso" xref="bricks#menu"/>
+    <title type="sort">4</title>
+    <desc>Start a lab in order, after a delay, or run commands.</desc>
+  </info>
+  <title>Events</title>
+  <p>An event waits a number of seconds, then runs its actions, all at once: an action doesn't wait for the one before. An action can:</p>
+  <list>
+    <item>
+      <p><gui>Start a brick</gui> or <gui>Stop a brick</gui>;</p>
+    </item>
+    <item>
+      <p><gui>Start an event</gui> or <gui>Stop an event</gui>;</p>
+    </item>
+    <item>
+      <p>run a <gui>Console command</gui> of Virtualbricks, as <cmd>brick set vm1 memory=512</cmd>;</p>
+    </item>
+    <item>
+      <p>run a <gui>Shell command</gui> of this computer.</p>
+    </item>
+  </list>
+  <section id="tab">
+    <title>The Events tab</title>
+    <p><gui>New Event</gui> asks for a <gui>Name</gui> and the seconds to wait, then shows the settings of the event: <gui>Add Action</gui> adds an action, and the button beside an action removes it.</p>
+    <figure>
+      <title>The settings of an event</title>
+      <media type="image" mime="image/png" src="figures/event-settings.png">
+        <p>The settings of new_event: wait 5 seconds, then Start a brick, sw1, with the button that removes the action beside it, and Add Action under it.</p>
+      </media>
+    </figure>
+    <p>The row of an event and its menu have:</p>
+    <terms>
+      <item>
+        <title><gui>Start</gui>, <gui>Stop</gui></title>
+        <p>Start the event: it waits, then runs its actions. Stop an event that waits, before it runs them. <gui>Waiting</gui>, above the list, shows only the events that wait.</p>
+      </item>
+      <item>
+        <title><gui>Run Now</gui></title>
+        <p>Run the actions now, without waiting.</p>
+      </item>
+      <item>
+        <title><gui>Configure…</gui>, <gui>Rename…</gui>, <gui>Duplicate</gui>, <gui>Delete…</gui></title>
+        <p>As for a brick. Before an event goes, the dialog says what goes with it: the actions of the other events that start or stop it, and the bricks that will no longer run it.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="order">
+    <title>Starting a lab in order</title>
+    <p>Some systems need the network up before they start. Make an event that starts the switches, and one that waits a few seconds and starts the machines; then start both:</p>
+    <steps>
+      <item>
+        <p>Make the event <sys>network</sys>, which waits 0 seconds, with an action that starts each switch.</p>
+      </item>
+      <item>
+        <p>Make the event <sys>machines</sys>, which waits 10 seconds, with an action that starts each machine.</p>
+      </item>
+      <item>
+        <p>Make the event <sys>lab</sys>, which waits 0 seconds, with the actions <gui>Start an event</gui> <sys>network</sys> and <gui>Start an event</gui> <sys>machines</sys>.</p>
+      </item>
+      <item>
+        <p>Start <sys>lab</sys>.</p>
+      </item>
+    </steps>
+  </section>
+  <section id="bricks">
+    <title>An event when a brick starts or stops</title>
+    <p>In the menu of a brick, <gui>When It Starts</gui> and <gui>When It Stops</gui> choose an event to start each time the brick starts or stops, as one that runs a shell command of this computer once a tap is up.</p>
+  </section>
+</page>

@@ -1,0 +1,37 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 26.5.1
+    hooks:
+      - id: black
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.8
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+  - repo: local
+    hooks:
+      - id: docs
+        name: update the documentation
+        entry: python docs/build.py
+        language: python
+        # pandoc 3.9, the same for everyone, so the pages don't change with
+        # the pandoc of each machine
+        additional_dependencies: [pypandoc-binary==1.17]
+        pass_filenames: false
+        files: ^(docs/(build\.py|man/.*\.md|guide/.*|templates/.*|built/.*)|virtualbricks/__init__\.py)$
+      - id: l10n
+        name: update translations
+        entry: ./l10n.sh
+        language: system
+        pass_filenames: false
+        files: ^(virtualbricks/.*\.py|locale/virtualbricks/.*\.po)$
+      - id: mypy
+        name: check the types
+        # the mypy of the environment of Setting up, which has the stubs of
+        # GTK 3; it checks what pyproject.toml says, not the files staged
+        entry: .venv/bin/mypy
+        language: system
+        pass_filenames: false
+        files: ^(virtualbricks/.*\.py|tools/.*\.py|pyproject\.toml)$
+        # mypy leaves the tests out
+        exclude: ^virtualbricks/tests/

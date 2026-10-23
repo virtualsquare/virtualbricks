@@ -3,12 +3,16 @@ __pycache__/
 *.pyc
 /dist/
 /build/
-/_trial_temp/
+_trial_temp/
+/.pytest_cache/
+/.mypy_cache/
 /.coverage
 /htmlcov
 /virtualbricks.egg-info/
 # Python virtual environment
 /.venv/
+# the environments of tox
+/.tox/
 # Personal private files
 /tmp/
 # Debian package build artifacts
@@ -26,3 +30,16 @@ __pycache__/
 
 # Vim swap files
 *.sw?
+
+# Node installation
+/node_modules/
+
+# Allure: the report; the results of pytest --alluredir= and the history
+# are kept, to publish the report
+/allure-report/
+
+# pycharm
+/.idea/
+
+# Ignore python version because we should support many
+/.python-version

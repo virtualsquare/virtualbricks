@@ -1,0 +1,228 @@
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2026 Virtualbricks team
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+"""Helpers for the tests of the windows; they build no window on screen."""
+
+import builtins
+import os
+import time
+
+from twisted.internet import defer
+from twisted.logger import LogLevel
+from twisted.trial import unittest
+
+from virtualbricks import ksm
+from virtualbricks.config import workspace
+from virtualbricks.engine import LocalEngine
+from virtualbricks.tests import (
+    FakeLogger,
+    isolate,
+    make_factory,
+    reset_settings,
+    use_workspace,
+)
+
+try:
+    import gi
+
+    gi.require_version("Gtk", "3.0")
+    from gi.repository import Gtk
+
+    has_display = Gtk.init_check()[0]
+except (ImportError, ValueError):  # pragma: no cover
+    has_display = False
+
+
+class RecordingEngine:
+    """
+    An engine that remembers what it was asked, in calls, and does nothing:
+    the tests start no program. It knows the calls of LocalEngine only.
+    """
+
+    local = True
+
+    def __init__(self, factory):
+        self.factory = factory
+        self.calls = []
+
+    def console_lacks(self, brick):
+        # a read, as local: not a call
+        return None
+
+    def __getattr__(self, name):
+        if name.startswith("_") or not hasattr(LocalEngine, name):
+            raise AttributeError(name)
+
+        def call(*args, **kwargs):
+            self.calls.append((name, *args, *kwargs.items()))
+            return defer.succeed(None)
+
+        return call
+
+
+class FakeGui:
+    """The main window, as the dialogs see it."""
+
+    def __init__(self, factory):
+        self.brickfactory = factory
+        self.engine = LocalEngine(factory)
+
+
+class ProjectsGui(FakeGui):
+    """
+    What the main window does for the windows of the projects, recorded:
+    their callbacks are its methods.
+    """
+
+    window = None
+
+    def __init__(self, factory, workspace):
+        super().__init__(factory)
+        self.workspace = workspace
+        self.calls = []
+
+    def on_open(self, name):
+        self.calls.append(("open", name))
+        self.workspace.save(self.brickfactory)
+        return self.workspace.open(name, self.brickfactory)
+
+    def on_new(self, name, description=""):
+        self.calls.append(("new", name, description))
+        self.workspace.create(name, description)
+        self.workspace.open(name, self.brickfactory)
+
+    def on_save(self):
+        self.calls.append(("save",))
+        self.workspace.save(self.brickfactory)
+
+    def set_title(self):
+        self.calls.append(("title",))
+
+    def import_project(self, on_closed=None, path=None, parent=None):
+        self.calls.append(("import", path))
+        self.import_closed = on_closed
+        self.import_parent = parent
+
+    def export_project(self, summary, parent=None):
+        self.calls.append(("export", summary.name))
+
+    def name_dialog_callbacks(self):
+        """The callbacks of the name dialog, by their argument."""
+
+        return {
+            "new_project": self.on_new,
+            "save_project": self.on_save,
+            "open_project": self.on_open,
+            "set_title": self.set_title,
+        }
+
+    def projects_callbacks(self):
+        """The callbacks of the Projects window, by their argument."""
+
+        return {
+            **self.name_dialog_callbacks(),
+            "import_project": self.import_project,
+            "export_project": self.export_project,
+        }
+
+
+class GuiTestCase(unittest.TestCase):
+    """A window test with its own settings, factory and workspace."""
+
+    if not has_display:  # pragma: no cover
+        skip = "GTK can't open a display"
+
+    def setUp(self):
+        self.root = isolate(self)
+        reset_settings(self)
+        self.ksm = []
+
+        def set_ksm(enable):
+            self.ksm.append(enable)
+            return defer.succeed(enable)
+
+        self.patch(ksm, "set_ksm", set_ksm)
+        self.factory = make_factory(self)
+        self.manager = use_workspace(
+            self, os.path.join(self.root, "workspace")
+        )
+        self.patch(workspace, "logger", FakeLogger())
+
+    def folder(self, name):
+        path = os.path.join(self.root, name)
+        os.makedirs(path, exist_ok=True)
+        return path
+
+    def image(self, name):
+        path = os.path.join(self.root, name + ".qcow2")
+        with open(path, "w"):
+            pass
+        return self.factory.new_image(name, path)
+
+
+# Thursday 24 September 2026, 17:47:09.250, local time
+TIME = time.mktime((2026, 9, 24, 17, 47, 9, 0, 0, -1)) + 0.25
+
+
+def untranslated(test):
+    """Show the messages in English, whatever the locale of the tests."""
+
+    test.patch(builtins, "gettext", lambda message: message)
+    test.patch(
+        builtins,
+        "ngettext",
+        lambda singular, plural, count: singular if count == 1 else plural,
+    )
+
+
+def event(
+    text,
+    level=LogLevel.info,
+    namespace="virtualbricks.config.workspace",
+    time=TIME,
+    **values,
+):
+    """A log event with the given text."""
+
+    return dict(
+        log_format="{text}",
+        text=text,
+        log_level=level,
+        log_namespace=namespace,
+        log_time=time,
+        **values,
+    )
+
+
+def entry(number=1, level="info", stream=None, lines=("a message",), **values):
+    """An entry, with the values of a message of the project by default."""
+
+    from virtualbricks.gui import messages
+
+    fields = dict(
+        time=TIME,
+        source="Project",
+        source_type=None,
+        namespace="virtualbricks.config.workspace",
+        pid=None,
+        traceback=[],
+        text="a message",
+    )
+    fields.update(values)
+    return messages.Entry(
+        number=number, level=level, stream=stream, lines=list(lines), **fields
+    )

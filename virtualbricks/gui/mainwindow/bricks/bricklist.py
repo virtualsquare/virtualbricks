@@ -1,0 +1,341 @@
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.test_bricklist -*-
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2026 Virtualbricks team
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+"""
+The list of the Bricks tab: a row per brick, in the order they were made,
+on the rows of :mod:`virtualbricks.gui.mainwindow.rowtab`.
+
+A row says the brick's kind and a summary of it, or its process while the
+list shows only the running bricks; its state; and why it can't start, if it
+can't. The search finds a brick by its name or its kind.
+
+A row dropped on another connects the two bricks when one can plug into the
+other, and only then is the row under the pointer framed. The list starts the
+drag, with the row under the press: a row has no window of its own, so the
+press never reaches it.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+
+from gi.repository import Gdk, GdkPixbuf, Gio, Gtk
+
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks import Brick, brickinfo, is_running
+from virtualbricks.bricks.brickinfo import (
+    LABELS,
+    SEPARATOR,
+    State,
+)
+from virtualbricks.engine import Engine
+from virtualbricks.gui.mainwindow.bricks import brickmenu
+from virtualbricks.gui.mainwindow.picture import Icons
+from virtualbricks.gui.mainwindow.rowtab import (
+    ICON_SIZE,
+    Row,
+    RowList,
+)
+from virtualbricks.i18n import _
+from virtualbricks.observable import Signal
+
+DRAG_ICON_SIZE = 24
+TARGETS = [
+    Gtk.TargetEntry.new("virtualbricks/brick", Gtk.TargetFlags.SAME_APP, 0)
+]
+WARNINGS = frozenset((State.NOT_CONNECTED, State.NOT_CONFIGURED, State.ERROR))
+
+
+def state_tooltip(brick: Brick, state: State) -> str | None:
+    if state is State.RUNNING:
+        pid = brickinfo.process(brick)
+        if pid is None:
+            # a switch wrapper whose switch is another user's
+            return None
+        return _("Process {pid}").format(pid=pid)
+    if state is State.NOT_CONNECTED:
+        return _("Connect {name} first").format(name=brick.name)
+    if state is State.NOT_CONFIGURED:
+        return _("Configure {name} first").format(name=brick.name)
+    if state is State.ERROR:
+        return brickinfo.error(brick)
+    return None
+
+
+class BrickRow(Row[Brick]):
+    """A brick, what it is and what it does, and what can be done to it."""
+
+    GROUP = brickmenu.GROUP
+
+    def make_actions(self) -> brickmenu.BrickActions:
+        return brickmenu.BrickActions(
+            self.engine, self.window, self.item, self.configure
+        )
+
+    def menu_model(self) -> Gio.Menu:
+        factory = self.engine.factory
+        return brickmenu.menu(
+            self.item,
+            factory.bricks,
+            list(factory.events),
+            console_lacks=self.engine.console_lacks(self.item),
+        )
+
+    def update(self, processes: bool = False) -> None:
+        brick = self.item
+        state = brickinfo.state(brick)
+        running = state is State.RUNNING
+        kind = brickinfo.kind(brick)
+        pid = brickinfo.process(brick)
+        if processes and pid is not None:
+            process = _("process {pid}").format(pid=pid)
+            detail = SEPARATOR.join((kind, process))
+        else:
+            detail = SEPARATOR.join(
+                part for part in (kind, brickinfo.summary(brick)) if part
+            )
+        self.show_state(
+            detail,
+            LABELS[state],
+            running,
+            state in WARNINGS,
+            state_tooltip(brick, state),
+            # a stop calls a start off
+            stops=running or state is State.STARTING,
+        )
+        if not brick.runs_program:
+            # a switch wrapper: another program starts and stops its switch
+            self.startstop.set_sensitive(False)
+
+    def on_startstop_clicked(self, button: Gtk.Button) -> None:
+        brickmenu.startstop(self.engine, self.item)
+
+
+class BrickList(RowList[Brick]):
+    """The bricks of the factory, a row each."""
+
+    NONE = _("No bricks")
+    NO_MATCH = _("No brick matches “{text}”")
+    NONE_RUNNING = _("No brick is running")
+    NO_RUNNING_MATCH = _("No running brick matches “{text}”")
+
+    def __init__(
+        self,
+        engine: Engine,
+        window: Gtk.Window,
+        factory: BrickFactory,
+        configure: Callable[[Brick], None],
+    ) -> None:
+        super().__init__(engine, window, factory, configure)
+        # the row under the press of the left button, and where it was
+        self._pressed: tuple[BrickRow, float, float] | None = None
+        # the row dragged
+        self._dragging: BrickRow | None = None
+        self._drag_icon: Gtk.Widget | None = None
+        self._drag_label: Gtk.Label | None = None
+        self.add_events(
+            Gdk.EventMask.BUTTON_PRESS_MASK
+            | Gdk.EventMask.BUTTON_RELEASE_MASK
+            | Gdk.EventMask.BUTTON1_MOTION_MASK
+        )
+        self.connect("button-press-event", self.on_button_press)
+        self.connect("motion-notify-event", self.on_motion_notify)
+        self.connect("button-release-event", self.on_button_release)
+        self.connect("drag-begin", self.on_drag_begin)
+        self.connect("drag-end", self.on_drag_end)
+
+    def signals(self) -> tuple[Signal, Signal, Signal]:
+        factory = self.factory
+        return (
+            factory.brick_added,
+            factory.brick_removed,
+            factory.brick_changed,
+        )
+
+    def items(self) -> list[Brick]:
+        return list(self.factory.bricks)
+
+    def make_row(self, item: Brick) -> BrickRow:
+        return BrickRow(
+            self.engine,
+            self.window,
+            item,
+            self.configure,
+            self.icons,
+            self._sizes,
+        )
+
+    def kind(self, item: Brick) -> str:
+        return brickinfo.kind(item)
+
+    def make_icons(self) -> Icons:
+        return Icons(ICON_SIZE)
+
+    def running(self, item: Brick) -> bool:
+        return is_running(item)
+
+    def prepare(self, row: Row[Brick]) -> None:
+        row.drag_dest_set(Gtk.DestDefaults(0), TARGETS, Gdk.DragAction.LINK)
+        row.connect("drag-motion", self.on_drag_motion)
+        row.connect("drag-leave", self.on_drag_leave)
+        row.connect("drag-drop", self.on_drag_drop)
+
+    # Dragging a brick on another
+
+    @staticmethod
+    def dragged(context: Gdk.DragContext) -> Brick | None:
+        """The brick dragged, if it comes from a row."""
+
+        source = Gtk.drag_get_source_widget(context)
+        if not isinstance(source, BrickList) or source._dragging is None:
+            return None
+        row = source._dragging
+        if source.row_of(row.item) is not row:
+            # its brick was deleted since
+            return None
+        return row.item
+
+    def on_button_press(
+        self, listbox: BrickList, event: Gdk.EventButton
+    ) -> bool:
+        self._pressed = None
+        if event.button == Gdk.BUTTON_PRIMARY:
+            row = self.get_row_at_y(int(event.y))
+            if isinstance(row, BrickRow):
+                self._pressed = (row, event.x, event.y)
+        # the list selects the row, or opens its menu
+        return False
+
+    def on_motion_notify(
+        self, listbox: BrickList, event: Gdk.EventMotion
+    ) -> bool:
+        if self._pressed is None:
+            return False
+        row, x, y = self._pressed
+        if not self.drag_check_threshold(
+            int(x), int(y), int(event.x), int(event.y)
+        ):
+            return False
+        self._pressed = None
+        self._dragging = row
+        self.drag_begin_with_coordinates(
+            Gtk.TargetList.new(TARGETS),
+            Gdk.DragAction.LINK,
+            Gdk.BUTTON_PRIMARY,
+            event,
+            int(x),
+            int(y),
+        )
+        return True
+
+    def on_button_release(
+        self, listbox: BrickList, event: Gdk.EventButton
+    ) -> bool:
+        self._pressed = None
+        return False
+
+    def on_drag_begin(
+        self, listbox: BrickList, context: Gdk.DragContext
+    ) -> None:
+        row = self._dragging
+        assert row is not None, "the list starts every drag"
+        icon = Gtk.Box(visible=True, spacing=8, margin=4)
+        image = Gtk.Image(visible=True, pixel_size=DRAG_ICON_SIZE)
+        pixbuf = row.icon.get_pixbuf()
+        if pixbuf is not None:
+            image.set_from_pixbuf(
+                pixbuf.scale_simple(
+                    DRAG_ICON_SIZE,
+                    DRAG_ICON_SIZE,
+                    GdkPixbuf.InterpType.BILINEAR,
+                )
+            )
+        self._drag_label = Gtk.Label(visible=True, label=row.item.name)
+        icon.pack_start(image, False, False, 0)
+        icon.pack_start(self._drag_label, False, False, 0)
+        self._drag_icon = icon
+        Gtk.drag_set_icon_widget(context, icon, -8, -8)
+        row.set_opacity(0.45)
+
+    def on_drag_end(
+        self, listbox: BrickList, context: Gdk.DragContext
+    ) -> None:
+        if self._dragging is not None:
+            self._dragging.set_opacity(1.0)
+        if self._drag_icon is not None:
+            self._drag_icon.destroy()
+        self._dragging = None
+        self._drag_icon = self._drag_label = None
+
+    def _say(self, words: str) -> None:
+        if self._drag_label is not None:
+            self._drag_label.set_text(words)
+
+    def on_drag_motion(
+        self,
+        row: BrickRow,
+        context: Gdk.DragContext,
+        x: int,
+        y: int,
+        time: int,
+    ) -> bool:
+        source = self.dragged(context)
+        if source is None:
+            return False
+        if brickinfo.connection(source, row.item) is None:
+            Gdk.drag_status(context, Gdk.DragAction(0), time)
+            row.drag_unhighlight()
+            self._say(source.name)
+        else:
+            Gdk.drag_status(context, Gdk.DragAction.LINK, time)
+            row.drag_highlight()
+            self._say(
+                _("Connect {brick} to {other}").format(
+                    brick=source.name, other=row.item.name
+                )
+            )
+        return True
+
+    def on_drag_leave(
+        self, row: BrickRow, context: Gdk.DragContext, time: int
+    ) -> None:
+        row.drag_unhighlight()
+        source = self.dragged(context)
+        if source is not None:
+            self._say(source.name)
+
+    def on_drag_drop(
+        self,
+        row: BrickRow,
+        context: Gdk.DragContext,
+        x: int,
+        y: int,
+        time: int,
+    ) -> bool:
+        source = self.dragged(context)
+        if source is None:
+            # not a brick: for the window, which imports archives
+            return False
+
+        def finish(done: object) -> object:
+            # a failure goes on, to the log
+            Gtk.drag_finish(context, done is True, False, time)
+            return done
+
+        self.engine.connect(source, row.item).addBoth(finish)
+        return True

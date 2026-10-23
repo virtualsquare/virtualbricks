@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2019 Virtualbricks team
+# Copyright (C) 2026 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,90 +16,100 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+from __future__ import annotations
+
+import contextlib
+from collections.abc import Callable, Iterator
+from typing import TypeAlias
+
+# A callback, called with the emitter, then the arguments and the keywords
+# it was connected with.
+Callback: TypeAlias = Callable[..., object]
+Observer: TypeAlias = tuple[Callback, tuple[object, ...], dict[str, object]]
+
+
 class Observable:
     # TODO: investigate if weakref.WeakValueDictionary can be used to ease the
     # disponse of observables.
 
-    def __init__(self, *names):
-        self.__events = {}
-        self._thawed = False
-        for name in names:
-            self.add_event(name)
+    def __init__(self) -> None:
+        self._events: dict[str, list[Observer]] = {}
+        # how many muted() blocks are open: while there is one, notify()
+        # tells no one
+        self._muted = 0
 
-    def thaw(self):
-        return ThawingSignalContextManager(self)
+    @contextlib.contextmanager
+    def muted(self) -> Iterator[None]:
+        """A block in which notify() tells no one; the blocks can nest."""
 
-    def add_event(self, name):
-        if name in self.__events:
+        self._muted += 1
+        try:
+            yield
+        finally:
+            self._muted -= 1
+
+    def add_event(self, name: str) -> None:
+        if name in self._events:
             raise ValueError("Event %s already present" % name)
-        self.__events[name] = []
+        self._events[name] = []
 
-    def add_observer(self, name, callback, args, kwds):
-        assert callable(callback), f'{callable!r} is not callable'
-        assert name in self.__events, f'Event {name} not present'
-        assert (callback, args, kwds) not in self.__events[name]
-        self.__events[name].append((callback, args, kwds))
+    def add_observer(
+        self,
+        name: str,
+        callback: Callback,
+        args: tuple[object, ...],
+        kwds: dict[str, object],
+    ) -> None:
+        assert callable(callback), f"{callable!r} is not callable"
+        assert name in self._events, f"Event {name} not present"
+        assert (callback, args, kwds) not in self._events[name]
+        self._events[name].append((callback, args, kwds))
 
-    def remove_observer(self, name, callback, args, kwds):
-        assert callable(callback), f'{callable!r} is not callable'
-        assert name in self.__events, f'Event {name} not present'
-        self.__events[name].remove((callback, args, kwds))
+    def remove_observer(
+        self,
+        name: str,
+        callback: Callback,
+        args: tuple[object, ...],
+        kwds: dict[str, object],
+    ) -> None:
+        assert callable(callback), f"{callable!r} is not callable"
+        assert name in self._events, f"Event {name} not present"
+        self._events[name].remove((callback, args, kwds))
 
-    def notify(self, name, emitter):
-        assert name in self.__events, f'Event {name} not present'
-        if not self._thawed:
-            for callback, args, kwds in self.__events[name]:
+    def notify(self, name: str, emitter: object) -> None:
+        assert name in self._events, f"Event {name} not present"
+        if not self._muted:
+            for callback, args, kwds in self._events[name]:
                 callback(emitter, *args, **kwds)
 
-    def __len__(self):
-        return len(self.__events)
+    def __len__(self) -> int:
+        return len(self._events)
 
-    def __bool__(self):
-        return bool(self.__events)
+    def __bool__(self) -> bool:
+        return bool(self._events)
 
 
 class Signal:
 
-    def __init__(self, observable, name):
-        self.__observable = observable
-        self.__name = name
-        self.__thawed = False
+    def __init__(self, observable: Observable, name: str) -> None:
+        self._observable = observable
+        self._name = name
         try:
             observable.add_event(name)
         except ValueError:
             pass
 
-    def connect(self, callback, *args, **kwds):
-        assert callable(callback), f'{callable!r} is not callable'
-        self.__observable.add_observer(self.__name, callback, args, kwds)
+    def connect(
+        self, callback: Callback, *args: object, **kwds: object
+    ) -> None:
+        assert callable(callback), f"{callable!r} is not callable"
+        self._observable.add_observer(self._name, callback, args, kwds)
 
-    def disconnect(self, callback, *args, **kwds):
-        assert callable(callback), f'{callable!r} is not callable'
-        self.__observable.remove_observer(self.__name, callback, args, kwds)
+    def disconnect(
+        self, callback: Callback, *args: object, **kwds: object
+    ) -> None:
+        assert callable(callback), f"{callable!r} is not callable"
+        self._observable.remove_observer(self._name, callback, args, kwds)
 
-    def notify(self, emitter):
-        if not self.__thawed:
-            self.__observable.notify(self.__name, emitter)
-
-    def thaw(self):
-        return ThawingSignalContextManager(self)
-
-
-Event = Signal
-
-
-class ThawingSignalContextManager:
-
-    def __init__(self, signal_or_observer):
-        self.context = signal_or_observer
-        self.count = 0
-
-    def __enter__(self):
-        self.counter += 1
-        self.context._thawed = True
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if self.counter > 0:
-            self.counter -= 1
-            if self.counter == 0:
-                self.context._thawed = False
+    def notify(self, emitter: object) -> None:
+        self._observable.notify(self._name, emitter)

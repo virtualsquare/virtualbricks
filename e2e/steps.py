@@ -1,0 +1,5417 @@
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2026 Virtualbricks team
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+"""
+The steps of the scenarios: what each line of a .feature file does.
+
+A line runs the step whose words match it: ``When I start sw1`` runs
+``start()``, with sw1 for ``{name:Brick}``. The words are those of parse:
+``{seconds:d}`` takes a number, ``{name:Brick}`` the name of a brick,
+``"{name}"`` a text in quotes. Two kinds of steps:
+
+- The steps of a user say what the user does, in the words of Virtualbricks,
+  and check what really happened, the processes of the bricks too.
+- The steps of the screen click any widget, by its role and its name: for
+  what the steps of a user don't say yet. A scenario that needs them often
+  says that a step of a user is missing.
+
+See STEPS.md for the steps there are, and how to add one.
+"""
+
+import configparser
+import glob
+import json
+import os
+import random
+import re
+import shlex
+import shutil
+import socket
+import subprocess
+import sys
+import tarfile
+import tempfile
+import time
+import tomllib
+import urllib.parse
+
+import cairo
+import harness
+import pytest
+from pytest_bdd import given, parsers, step, then, when
+
+
+def brick(text):
+    """The name of a brick: one word."""
+
+    return text
+
+
+# parse matches {name:Brick} with the pattern of the type
+brick.pattern = r"[\w.-]+"
+
+
+def folder(text):
+    """
+    A folder of the home, in "my home folder" or "my Downloads folder": its
+    path in the home, "" for the home itself.
+    """
+
+    return "" if text == "home" else text
+
+
+folder.pattern = r"home|Downloads"
+
+
+def words(text):
+    """
+    The words of a step, where {name:Brick} is the name of a brick,
+    {name:Project} that of a project, {name:Image} that of a disk image,
+    {name:Picture} that of a picture of the user guide and {folder:Folder}
+    that of a folder of the home.
+    """
+
+    return parsers.parse(
+        text,
+        extra_types={
+            "Brick": brick,
+            "Project": brick,
+            "Image": brick,
+            "Picture": brick,
+            "Folder": folder,
+        },
+    )
+
+
+def in_my(virtualbricks, folder, file):
+    """The path of file in folder of the home, which is made if it isn't."""
+
+    path = os.path.join(virtualbricks.home, folder)
+    os.makedirs(path, exist_ok=True)
+    return os.path.join(path, file)
+
+
+@pytest.fixture
+def brick_processes():
+    """The processes of each brick that a step started: {name: pids}."""
+
+    return {}
+
+
+@pytest.fixture
+def tunnel_ports():
+    """The UDP port of each end of a tunnel that a step added: {name: port}."""
+
+    return {}
+
+
+@pytest.fixture
+def picture_scroll():
+    """
+    Where the picture of the lab was scrolled to before a drag, {"before":
+    the value of its horizontal scroll bar}.
+    """
+
+    return {}
+
+
+@pytest.fixture
+def old_files():
+    """
+    The files of Virtualbricks 2.1 that a step wrote in the workspace, as
+    they were: {path in the workspace: bytes}.
+    """
+
+    return {}
+
+
+@pytest.fixture
+def migrated_before():
+    """
+    The projects that a migration closed while it ran had migrated:
+    {name: the time and the bytes of its project.toml}.
+    """
+
+    return {}
+
+
+class OtherSwitch:
+    """
+    A vde_switch that the tests run, as another program would, for a switch
+    wrapper: its control folder, path, and its process, which quits at the
+    end of its input, and removes the folder.
+    """
+
+    def __init__(self, folder, log):
+        self.path = os.path.join(folder, "switch.ctl")
+        self.log = log
+        self.process = None
+
+    def start(self):
+        """Start it, until it listens in its folder."""
+
+        with open(self.log, "ab") as log:
+            self.process = subprocess.Popen(
+                ["vde_switch", "-s", self.path],
+                stdin=subprocess.PIPE,
+                stdout=log,
+                stderr=log,
+            )
+        harness.a11y.wait_for(
+            self.listens, "the switch of another program listens"
+        )
+
+    def listens(self):
+        """
+        Whether a plug connects to its socket ctl: the socket of a killed
+        switch is there too.
+        """
+
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+            try:
+                sock.connect(os.path.join(self.path, "ctl"))
+            except OSError:
+                return False
+        return True
+
+    def quit(self):
+        """The end of its input, then it quits; killed if it doesn't."""
+
+        self.process.stdin.close()
+        try:
+            self.process.wait(harness.TIMEOUT)
+        except subprocess.TimeoutExpired:
+            self.process.kill()
+            self.process.wait()
+
+    def kill(self):
+        """SIGKILL: it quits at once, and leaves its folder and its ctl."""
+
+        self.process.kill()
+        self.process.wait()
+        self.process = None
+
+
+@pytest.fixture
+def other_switch(desktop, tmp_path):
+    """
+    The OtherSwitch of the scenario, running. It is in the runtime folder of
+    the tests, out of that of Virtualbricks, and quits at the end of the
+    scenario.
+    """
+
+    folder = tempfile.mkdtemp(dir=desktop.runtime)
+    switch = OtherSwitch(folder, tmp_path / "other-switch.log")
+    try:
+        switch.start()
+        yield switch
+    finally:
+        if switch.process is not None:
+            switch.quit()
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+# A drive without a trash: a file system in memory that the system mounts,
+# where the desktop makes none
+NO_TRASH = "/dev/shm"
+
+
+@pytest.fixture
+def drive_without_trash(virtualbricks):
+    """
+    A folder on a drive without a trash, out of the home of Virtualbricks,
+    which has its trash. It is removed once Virtualbricks has stopped:
+    Virtualbricks writes in its workspace until it quits.
+    """
+
+    if not os.path.isdir(NO_TRASH):
+        pytest.skip(f"no {NO_TRASH}")
+    folder = tempfile.mkdtemp(prefix="vb-e2e-", dir=NO_TRASH)
+    try:
+        yield folder
+    finally:
+        virtualbricks.stop()
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+# Virtualbricks
+
+
+@given("Virtualbricks is running")
+def virtualbricks_running(virtualbricks):
+    virtualbricks.start()
+
+
+@given(words("{program} isn't on this computer"))
+def program_missing(virtualbricks, program):
+    """
+    Virtualbricks, once it starts, doesn't find the program: its PATH has
+    every program of that of the tests but this one.
+    """
+
+    virtualbricks.hidden.add(program)
+
+
+# A terminal of the tests: the words it gets, as JSON, in a file, written
+# whole, and no window
+TERMINAL_SCRIPT = """\
+#!/bin/sh
+exec {python} -I -c '
+import json, os, sys
+with open(sys.argv[1] + ".part", "w") as file:
+    json.dump(sys.argv[2:], file)
+os.replace(sys.argv[1] + ".part", sys.argv[1])
+' {got} "$@"
+"""
+
+
+@given(words("{program} is a terminal of the tests"))
+def terminal_of_the_tests(virtualbricks, program):
+    """
+    The program, on the PATH of Virtualbricks, is a script that writes the
+    words it gets in the file PROGRAM.argv of the folder of the scenario,
+    and opens nothing.
+    """
+
+    virtualbricks.replaced[program] = TERMINAL_SCRIPT.format(
+        python=shlex.quote(sys.executable),
+        got=shlex.quote(terminal_got_file(virtualbricks, program)),
+    )
+
+
+def terminal_got_file(virtualbricks, program):
+    """Where the terminal of the tests writes the words it gets."""
+
+    return os.path.join(virtualbricks.folder, f"{program}.argv")
+
+
+@then(words('{program} got "{before}", then the console of {switch:Brick}'))
+def terminal_got(virtualbricks, brick_processes, program, before, switch):
+    """
+    The terminal of the tests got the words of before, as the shell splits
+    them, then the console of the switch: vdeterm, as Virtualbricks finds
+    it, and the socket after -M of its vde_switch.
+    """
+
+    path = terminal_got_file(virtualbricks, program)
+    virtualbricks.wait_for(lambda: os.path.exists(path), f"{program} runs")
+    with open(path) as file:
+        got = json.load(file)
+    vdeterm = os.path.realpath(shutil.which("vdeterm"))
+    # the program by its name: Virtualbricks may find it by a link
+    shown = [
+        "vdeterm" if os.path.realpath(word) == vdeterm else word
+        for word in got
+    ]
+    console = switch_socket(virtualbricks, brick_processes, switch, "-M")
+    wanted = [*shlex.split(before), "vdeterm", console]
+    assert shown == wanted, f"{program} got {got}"
+
+
+@given(words("Virtualbricks is running with {options}"))
+def running_with(virtualbricks, request, options):
+    """
+    Started with the options, as the shell splits them, and its main window
+    shows; with --listen alone, it listens too. With --connect, the windows
+    of the other Virtualbricks, which runs the bricks.
+    """
+
+    options = shlex.split(options)
+    if "--connect" in options:
+        virtualbricks.lab = request.getfixturevalue("other_virtualbricks")
+        assert virtualbricks.lab.process is not None, "no other one runs"
+    virtualbricks.start(*options)
+
+
+@given(words("another Virtualbricks runs with {options}"))
+def other_runs(other_virtualbricks, options):
+    """
+    Another Virtualbricks of mine, in the same workspace, started with the
+    options: its main window shows, or, with --no-gui, it listens on the
+    socket of --listen alone.
+    """
+
+    other_virtualbricks.start(*shlex.split(options))
+
+
+@when(words("I start another Virtualbricks with {options}"))
+def start_other(other_virtualbricks, options):
+    """The same, without waiting for it: it may exit."""
+
+    other_virtualbricks.launch(*shlex.split(options))
+
+
+@then(words('the other Virtualbricks exits with {status:d}, saying "{text}"'))
+def other_exits(other_virtualbricks, status, text):
+    """It exits with status, and its output has text."""
+
+    try:
+        code = other_virtualbricks.process.wait(harness.QUIT_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        raise AssertionError(
+            f"the other Virtualbricks still runs after {harness.QUIT_TIMEOUT} s"
+        ) from None
+    with open(other_virtualbricks.log, errors="replace") as file:
+        output = file.read()
+    assert code == status, f"it exited with {code}: {output}"
+    assert text in output, f"it said {output!r}"
+
+
+@then("the other Virtualbricks names the process of Virtualbricks")
+def other_names(virtualbricks, other_virtualbricks):
+    """Its output says the process that holds what it needs, by its pid."""
+
+    with open(other_virtualbricks.log, errors="replace") as file:
+        output = file.read()
+    # then the user, if known
+    held = rf"\bHeld by process {virtualbricks.process.pid}\b"
+    assert re.search(held, output), f"it said {output!r}"
+
+
+@when(words("I run virtualbricks --command {command}"))
+def run_command(virtualbricks, command):
+    """
+    virtualbricks --command and the words of the command, as the shell
+    splits them, in the workspace of Virtualbricks; it exits with 0.
+    """
+
+    done = virtualbricks.run("--command", *shlex.split(command))
+    assert done.returncode == 0, (
+        f"virtualbricks --command {command} exited with {done.returncode}:"
+        f" {done.stdout}{done.stderr}"
+    )
+
+
+@when("I start Virtualbricks for the first time")
+def first_start(virtualbricks):
+    """Without its settings, as after 2.1; it shows a window."""
+
+    assert not os.path.exists(virtualbricks.settings), "it has its settings"
+    virtualbricks.start()
+
+
+@when("I start Virtualbricks again")
+def start_again(virtualbricks):
+    """With its settings, as after it ran before; it shows a window."""
+
+    assert os.path.exists(virtualbricks.settings), "it has no settings"
+    virtualbricks.start()
+
+
+@when("I quit Virtualbricks")
+def quit_virtualbricks(virtualbricks):
+    virtualbricks.choose("Quit", "File")
+
+
+@when("the system ends Virtualbricks, with SIGTERM")
+def terminate_virtualbricks(virtualbricks):
+    """
+    SIGTERM to its process, as at the end of the session or at shutdown,
+    whatever its windows show.
+    """
+
+    virtualbricks.process.terminate()
+
+
+@then("Virtualbricks has quit")
+def virtualbricks_quit(virtualbricks):
+    """
+    It exits with 0, and no brick runs any more; the windows of another
+    leave the bricks there.
+    """
+
+    try:
+        status = virtualbricks.process.wait(harness.QUIT_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        raise AssertionError(
+            f"Virtualbricks still runs after {harness.QUIT_TIMEOUT} s"
+        )
+    assert status == 0, f"Virtualbricks exited with {status}"
+    if virtualbricks.lab is virtualbricks:
+        assert virtualbricks.bricks() == [], "bricks still run"
+
+
+@then("Virtualbricks hasn't quit")
+def virtualbricks_not_quit(virtualbricks):
+    """It still runs, and its main window shows."""
+
+    status = virtualbricks.process.poll()
+    assert status is None, f"Virtualbricks exited with {status}"
+    virtualbricks.find("frame")
+
+
+def project_path(virtualbricks):
+    """The path of the file of the project, the one of the workspace."""
+
+    files = glob.glob(
+        os.path.join(virtualbricks.workspace, "*", "project.toml")
+    )
+    assert len(files) == 1, f"not one project: {files}"
+    return files[0]
+
+
+def project_file(virtualbricks):
+    """The file of the project, the one of the workspace."""
+
+    with open(project_path(virtualbricks), "rb") as file:
+        return tomllib.load(file)
+
+
+@then("project.toml has the bricks")
+def project_bricks(virtualbricks, datatable):
+    """
+    The bricks of the file of the project, all of them and in order, are
+    those of the table under the step: the name of each and its type.
+    """
+
+    has_bricks(project_file(virtualbricks), datatable, "project.toml")
+
+
+def has_bricks(project, datatable, where):
+    """
+    The bricks of project, the data of a project.toml, are those of the
+    table: the name of each and its type.
+    """
+
+    bricks = project.get("bricks", {})
+    found = datatable[:1] + [
+        [name, table["type"]] for name, table in bricks.items()
+    ]
+    assert found == datatable, f"{where} has {found}, not {datatable}"
+
+
+@then(words("project.toml has {name:Brick} with"))
+def project_brick(virtualbricks, name, datatable):
+    """
+    The brick in the file of the project has the settings of the table
+    under the step, a name and a value each, as TOML writes it.
+    """
+
+    brick = project_brick_of(virtualbricks, name)
+    for setting, value in datatable[1:]:
+        wanted = tomllib.loads(f"value = {value}")["value"]
+        assert (
+            brick[setting] == wanted
+        ), f"{name}: {setting} is {brick[setting]!r}, not {wanted!r}"
+
+
+@then(
+    words("project.toml has {name:Brick} with the settings of {other:Brick}")
+)
+def project_same(virtualbricks, name, other):
+    """The two bricks of the file of the project have the same settings."""
+
+    brick = project_brick_of(virtualbricks, name)
+    model = project_brick_of(virtualbricks, other)
+    assert brick == model, f"{name} has {brick}, {other} {model}"
+
+
+def project_brick_of(virtualbricks, name):
+    """The table of the brick name in the file of the project."""
+
+    bricks = project_file(virtualbricks).get("bricks", {})
+    assert name in bricks, f"project.toml has no {name}"
+    return bricks[name]
+
+
+@then(words("the main window shows the project {name:Project} on {where}"))
+def main_window_on(virtualbricks, name, where):
+    """
+    The windows of another Virtualbricks: their title names the project and
+    where it runs, and the workspace too, with its path there, when it isn't
+    that of the settings.
+    """
+
+    workspace = virtualbricks.workspace
+    titles = (
+        f"Virtualbricks (project: {name} on {where})",
+        f"Virtualbricks (project: {name}, workspace: {workspace} on {where})",
+    )
+    virtualbricks.wait_for(
+        lambda: any(virtualbricks.shows("frame", title) for title in titles),
+        f"the main window shows the project {name} on {where}",
+    )
+
+
+@then(words("the main window shows the project {name:Project}"))
+def main_window(virtualbricks, name):
+    """
+    Its title names the project, and the workspace too when it isn't that of
+    the settings.
+    """
+
+    workspace = shown(virtualbricks, virtualbricks.workspace)
+    titles = (
+        f"Virtualbricks (project: {name})",
+        f"Virtualbricks (project: {name}, workspace: {workspace})",
+    )
+    virtualbricks.wait_for(
+        lambda: any(virtualbricks.shows("frame", title) for title in titles),
+        f"the main window shows the project {name}",
+    )
+
+
+def shown(virtualbricks, path):
+    """The path with ~ for the home, as Virtualbricks shows it."""
+
+    if path.startswith(virtualbricks.home + os.sep):
+        return "~" + path[len(virtualbricks.home) :]
+    return path
+
+
+# Bricks
+
+
+def new_brick(virtualbricks, kind, name):
+    """New Brick, then the kind: the brick made is name, its settings show."""
+
+    virtualbricks.click("button", "New Brick")
+    # "virtual machine" is the row "Virtual machine"
+    virtualbricks.click("label", kind[:1].upper() + kind[1:])
+    virtualbricks.find("label", name)
+
+
+@when(words("I add the {kind} {name:Brick}"))
+def add_brick(virtualbricks, kind, name):
+    """New Brick, then the kind; its settings, if any, as they are."""
+
+    new_brick(virtualbricks, kind, name)
+    if virtualbricks.shows("button", "OK"):
+        virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
+@when(
+    words("I join {left:Brick} and {right:Brick} with the wire {name:Brick}")
+)
+def join(virtualbricks, left, right, name):
+    """New Brick, Wire, then its ends in its settings: left, right; OK."""
+
+    new_brick(virtualbricks, "wire", name)
+    for end, switch in (("Left end", left), ("Right end", right)):
+        row = virtualbricks.row(end)
+        # named after the end it shows
+        combo = virtualbricks.click("combo box", within=row)
+        virtualbricks.click("menu item", switch, within=combo)
+        virtualbricks.find("combo box", switch, within=row)
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
+# What the tab Bricks says in place of its list, when there are no bricks
+NO_BRICKS = "No Bricks Yet"
+
+
+@when(words("I start {name:Brick}"))
+def start_brick(virtualbricks, brick_processes, name):
+    """
+    Its button Start, the list scrolled to it if it doesn't show; then it
+    runs, with new processes.
+    """
+
+    before = virtualbricks.children()
+    in_view(virtualbricks, "button", f"Start {name}")
+    virtualbricks.click("button", f"Start {name}")
+    # not its Stop, which shows while it starts, as the programs that its
+    # start asks run and quit
+    virtualbricks.find("label", "Running", within=virtualbricks.row(name))
+    brick_processes[name] = virtualbricks.wait_for(
+        lambda: virtualbricks.children() - before, f"a process of {name} runs"
+    )
+
+
+@when(words("I stop {name:Brick}"))
+def stop_brick(virtualbricks, name):
+    virtualbricks.click("button", f"Stop {name}")
+    virtualbricks.find("button", f"Start {name}")
+
+
+@when(words("I try to start {name:Brick}"))
+def try_start(virtualbricks, name):
+    """A click on its Start, as a user may click it also when disabled."""
+
+    row = virtualbricks.row(name)
+    virtualbricks.click("button", f"Start {name}", within=row, enabled=False)
+
+
+@when(words("I stop {name:Brick}, which is starting"))
+def stop_starting(virtualbricks, name):
+    """
+    Its Stop, while its row says Starting; the row says so until the start
+    ends, which the stop waits for.
+    """
+
+    row = virtualbricks.row(name)
+    virtualbricks.find("label", "Starting", within=row)
+    virtualbricks.click("button", f"Stop {name}", within=row)
+    virtualbricks.find("label", "Starting", within=row)
+
+
+# qemu-system-i386, which a machine's settings and its first start ask, waits
+# for this file in the folder of the scenario: at most a minute, in tenths of
+# a second
+QEMU_ANSWERS = "qemu-programs-answer"
+WAITING_QEMU = """\
+#!/bin/sh
+i=0
+while [ ! -e {gate} ] && [ $i -lt 600 ]; do sleep 0.1; i=$((i + 1)); done
+exec {real} "$@"
+"""
+
+
+@given("the QEMU programs wait to answer until I let them")
+def qemu_programs_wait(virtualbricks):
+    """
+    A qemu-system-i386 of its own in the folder of the QEMU programs of the
+    project that Virtualbricks opens at its first start, new_project: it
+    runs that of this computer once the scenario lets it. The settings of a
+    machine and its first start ask it, before its program runs: the
+    machine says Starting until then.
+    """
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    real = shutil.which("qemu-system-i386")
+    assert real is not None, "no qemu-system-i386: tag the scenario"
+    folder = os.path.join(virtualbricks.home, "qemu")
+    os.makedirs(folder)
+    program = os.path.join(folder, "qemu-system-i386")
+    gate = os.path.join(virtualbricks.folder, QEMU_ANSWERS)
+    with open(program, "w") as file:
+        file.write(
+            WAITING_QEMU.format(gate=shlex.quote(gate), real=shlex.quote(real))
+        )
+    os.chmod(program, 0o755)
+    project = os.path.join(virtualbricks.workspace, "new_project")
+    os.makedirs(project)
+    with open(os.path.join(project, "project.toml"), "w") as file:
+        file.write(f"format = 1\n\n[settings]\nqemu_path = {folder!r}\n")
+
+
+@when("I let the QEMU programs answer")
+def qemu_programs_answer(virtualbricks):
+    open(os.path.join(virtualbricks.folder, QEMU_ANSWERS), "w").close()
+
+
+@when(
+    words(
+        "I give {name:Brick} {ports:d} ports and hub mode, with the buttons"
+        " of its settings"
+    )
+)
+def give_ports(virtualbricks, name, ports):
+    """
+    Configure… in its menu, + or - of Ports until it says ports, Hub mode
+    turned on, then OK.
+    """
+
+    change_ports(virtualbricks, name, ports)
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
+@when(
+    words(
+        "I give {name:Brick} {ports:d} ports and hub mode in its settings,"
+        " then cancel"
+    )
+)
+def cancel_ports(virtualbricks, name, ports):
+    """The same, then Cancel: the list shows again."""
+
+    change_ports(virtualbricks, name, ports)
+    virtualbricks.click("button", "Cancel")
+    virtualbricks.find("button", f"Start {name}")
+
+
+@when(
+    words(
+        "I give {name:Brick} {ports:d} ports and hub mode in its settings,"
+        " then press Escape"
+    )
+)
+def escape_ports(virtualbricks, name, ports):
+    """The same, then Escape: the list shows again."""
+
+    change_ports(virtualbricks, name, ports)
+    virtualbricks.key("Escape", virtualbricks.find("frame"))
+    virtualbricks.find("button", f"Start {name}")
+
+
+def change_ports(virtualbricks, name, ports):
+    """
+    Configure… in its menu, + or - of Ports until it says ports, and Hub
+    mode turned on.
+    """
+
+    configure(virtualbricks, name)
+    spin = virtualbricks.enabled("spin button", "Ports")
+    now = int(harness.a11y.position(spin)[0])
+    virtualbricks.spin("Ports", ports - now)
+    hub = virtualbricks.enabled("toggle button", "Hub mode")
+    if not harness.a11y.checked(hub):
+        virtualbricks.click("toggle button", "Hub mode")
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(hub), "Hub mode is turned on"
+    )
+
+
+def configure(virtualbricks, name):
+    """Configure…, in the menu of the brick: its settings show."""
+
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Configure…")
+
+
+@when(words("I open the settings of {name:Brick}"))
+def open_brick_settings(virtualbricks, name):
+    """Configure…, in its menu: its settings show, in place of the list."""
+
+    configure(virtualbricks, name)
+    virtualbricks.find("button", "OK")
+
+
+@when(words("I open the settings of {name:Brick}, on its page {page}"))
+def open_brick_settings_page(virtualbricks, name, page):
+    """The same, then the page, in the list at the left of its settings."""
+
+    open_brick_settings(virtualbricks, name)
+    settings_page(virtualbricks, page)
+
+
+def settings_page(virtualbricks, page):
+    """The page of the settings of a brick, in the list at their left."""
+
+    virtualbricks.click("label", page, within=virtualbricks.row(page))
+
+
+@when(
+    words(
+        'I turn {state} "{setting}" in the settings of {name:Brick}, on its'
+        " page {page}"
+    )
+)
+def turn_brick_setting(virtualbricks, state, setting, name, page):
+    """
+    Configure… in its menu; on the page of its settings, the switch of the
+    setting, which is the other way, turned on or off; then OK.
+    """
+
+    on = turned(state)
+    configure(virtualbricks, name)
+    settings_page(virtualbricks, page)
+    switch = virtualbricks.enabled("toggle button", setting)
+    assert harness.a11y.checked(switch) != on, f"{setting} is already {state}"
+    virtualbricks.click("toggle button", setting)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(switch) == on, f"{setting} is {state}"
+    )
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
+@when(
+    words(
+        'I choose "{choice}" for "{setting}" in the settings of {name:Brick},'
+        " on its page {page}"
+    )
+)
+def choose_brick_setting(virtualbricks, choice, setting, name, page):
+    """
+    Configure… in its menu; on the page of its settings, the list of the
+    setting, which shows another choice, then the choice; then OK.
+    """
+
+    configure(virtualbricks, name)
+    settings_page(virtualbricks, page)
+    row = virtualbricks.row(setting)
+    # named after what it shows
+    shown = virtualbricks.enabled("combo box", within=row).get_name()
+    assert shown != choice, f"{setting} is already {choice}"
+    choose_in_combo(virtualbricks, row, shown, choice)
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
+@when(words("I terminate {name:Brick}, from its menu"))
+def terminate(virtualbricks, brick_processes, name):
+    """
+    In its menu, Process and its number, then Terminate; then it can start
+    again, and the processes of its start have quit.
+    """
+
+    process_item(virtualbricks, name, "Terminate")
+    virtualbricks.find("button", f"Start {name}")
+    pids = brick_processes.get(name, set())
+    virtualbricks.wait_for(
+        lambda: not pids & virtualbricks.children(),
+        f"the processes of {name} quit",
+    )
+
+
+@when(words("I pause {name:Brick}, from its menu"))
+def pause(virtualbricks, name):
+    """In its menu, Process and its number, then Pause: SIGSTOP."""
+
+    process_item(virtualbricks, name, "Pause")
+
+
+@when(words("I continue {name:Brick}, from its menu"))
+def continue_(virtualbricks, name):
+    """In its menu, Process and its number, then Continue: SIGCONT."""
+
+    process_item(virtualbricks, name, "Continue")
+
+
+@when(words("I open the control monitor of {name:Brick}, from its menu"))
+def open_control_monitor(virtualbricks, name):
+    """
+    In its menu, Process and its number, then Open Control Monitor: its
+    console, in the terminal of the settings.
+    """
+
+    process_item(virtualbricks, name, "Open Control Monitor")
+
+
+def process_item(virtualbricks, name, item):
+    """
+    In the menu of the running brick, Process and its number, then item;
+    then the menu closes.
+    """
+
+    virtualbricks.click("button", f"Menu of {name}")
+    process = virtualbricks.wait_for(
+        lambda: next(
+            (
+                button
+                for button in virtualbricks.names("button")
+                if button.startswith("Process ")
+            ),
+            None,
+        ),
+        f"the menu of {name} has its process",
+    )
+    virtualbricks.click("button", process)
+    virtualbricks.click("button", item)
+    virtualbricks.gone("button", item)
+
+
+@when(words("I duplicate {name:Brick} from its menu"))
+def duplicate(virtualbricks, name):
+    """Duplicate, in its menu; then the list has one more brick."""
+
+    before = len(brick_rows(virtualbricks))
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Duplicate")
+    virtualbricks.wait_for(
+        lambda: len(brick_rows(virtualbricks)) == before + 1,
+        "the list has one more brick",
+    )
+
+
+@when(words("I delete {name:Brick} from its menu, and confirm"))
+def delete(virtualbricks, name):
+    """Delete…, in its menu, then Delete in the dialog that names it."""
+
+    ask_delete(virtualbricks, name, "brick")
+    confirm_delete(virtualbricks)
+
+
+@when(words("I ask to delete {name:Brick}, from its menu"))
+def ask_delete_brick(virtualbricks, name):
+    """Delete…, in its menu: the dialog Delete Brick names it."""
+
+    ask_delete(virtualbricks, name, "brick")
+
+
+def ask_delete(virtualbricks, name, kind):
+    """Delete…, in the menu of the brick or the event: its dialog shows."""
+
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Delete…")
+    dialog = virtualbricks.find("dialog", f"Delete {kind.title()}")
+    question = f"Delete the {kind} {name}?"
+    virtualbricks.wait_for(
+        lambda: question in virtualbricks.names("label", within=dialog),
+        f"the dialog asks to delete {name}",
+    )
+
+
+@then(words('the Delete dialog says "{text}"'))
+def delete_says(virtualbricks, text):
+    """A line of the dialog that asks to delete is the text."""
+
+    virtualbricks.find("label", text, within=virtualbricks.find("dialog"))
+
+
+@then(
+    words(
+        "the Delete dialog says that the private copy {file} goes to the"
+        " trash"
+    )
+)
+def delete_says_copy(virtualbricks, file):
+    """
+    A line of the dialog says that the private copy goes to the trash, with
+    its size, which depends on the file system.
+    """
+
+    dialog = virtualbricks.find("dialog")
+    start = (
+        "Its private copy goes to the trash, with the changes it keeps:"
+        f" {file}, "
+    )
+    virtualbricks.wait_for(
+        lambda: any(
+            label.startswith(start)
+            for label in virtualbricks.names("label", within=dialog)
+        ),
+        f"the dialog says that {file} goes to the trash",
+    )
+
+
+@when("I confirm the delete")
+def confirm_delete(virtualbricks):
+    """Delete, in the dialog that asks to delete; then it closes."""
+
+    dialog = virtualbricks.find("dialog")
+    virtualbricks.click("button", "Delete", within=dialog)
+    virtualbricks.gone("dialog")
+
+
+@when(words("I press Delete on the row of {name:Brick}"))
+def press_delete(virtualbricks, name):
+    """A click on the name in its row, which selects it, then Delete."""
+
+    select_brick(virtualbricks, name)
+    virtualbricks.key("Delete", virtualbricks.find("frame"))
+
+
+@then(
+    words(
+        "Delete… is disabled in the menu of {name:Brick}, and nothing asks to"
+        " delete it"
+    )
+)
+def delete_disabled(virtualbricks, name):
+    """
+    Its menu opens, which it wouldn't under a dialog, with Delete…
+    disabled; no dialog shows. Then Escape closes the menu.
+    """
+
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.disabled("button", "Delete…")
+    assert virtualbricks.shows("dialog") is None, "a dialog shows"
+    virtualbricks.key("Escape", virtualbricks.find("frame"))
+    virtualbricks.gone("button", "Delete…")
+
+
+@then(words("Rename… and Delete… are disabled in the menu of {name:Brick}"))
+def rename_delete_disabled(virtualbricks, name):
+    """Its menu opens, with both disabled; then Escape closes it."""
+
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.disabled("button", "Rename…")
+    virtualbricks.disabled("button", "Delete…")
+    virtualbricks.key("Escape", virtualbricks.find("frame"))
+    virtualbricks.gone("button", "Delete…")
+
+
+def select_brick(virtualbricks, name):
+    """A click on the name in the row of the brick: then it is selected."""
+
+    virtualbricks.click("label", name, within=virtualbricks.row(name))
+
+
+# The dialog of Rename, and the label of its field
+RENAME_BRICK = "Rename Brick"
+NEW_NAME = "New name"
+
+
+@when(words("I rename {name:Brick} to {new}, with F2"))
+def rename(virtualbricks, name, new):
+    """
+    F2 on its row: the dialog Rename Brick has its name, selected; the new
+    name typed in place of it, then Rename, and the dialog closes.
+    """
+
+    dialog = type_new_name(virtualbricks, name, new)
+    virtualbricks.click("button", "Rename", within=dialog)
+    virtualbricks.gone("dialog", RENAME_BRICK)
+
+
+@when(words("I try to rename {name:Brick} to {new}, with F2"))
+def try_rename(virtualbricks, name, new):
+    """The same, without waiting for the dialog to close."""
+
+    dialog = type_new_name(virtualbricks, name, new)
+    virtualbricks.click("button", "Rename", within=dialog)
+
+
+@when(words("I type {new} as the new name of {name:Brick}, with F2"))
+def type_new_name(virtualbricks, name, new):
+    """
+    F2 on its row: the dialog Rename Brick has its name, selected, as
+    typing replaces it; then the new name typed in place of it.
+    """
+
+    select_brick(virtualbricks, name)
+    virtualbricks.key("F2", virtualbricks.find("frame"))
+    dialog = virtualbricks.find("dialog", RENAME_BRICK)
+    field = virtualbricks.find("text", NEW_NAME, within=dialog)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.text(field) == name
+        and harness.a11y.selection(field) == (0, len(name)),
+        f"the field of Rename has {name}, selected",
+    )
+    virtualbricks.type(new, "text", NEW_NAME, within=dialog, over=True)
+    return dialog
+
+
+@then(words('the Rename dialog says "{text}", and Rename is disabled'))
+def rename_says(virtualbricks, text):
+    """The line under the field is the text, and Rename is disabled."""
+
+    dialog = virtualbricks.find("dialog", RENAME_BRICK)
+    virtualbricks.find("label", text, within=dialog)
+    virtualbricks.disabled("button", "Rename", within=dialog)
+
+
+@then(words('the Rename dialog refuses it, saying "{text}"'))
+def rename_refused(virtualbricks, text):
+    """The dialog is still open, and a line under its field is the text."""
+
+    dialog = virtualbricks.find("dialog", RENAME_BRICK)
+    virtualbricks.find("label", text, within=dialog)
+
+
+@when("I cancel the Rename dialog")
+def cancel_rename(virtualbricks):
+    """Its Cancel; then it closes."""
+
+    dialog = virtualbricks.find("dialog", RENAME_BRICK)
+    virtualbricks.click("button", "Cancel", within=dialog)
+    virtualbricks.gone("dialog", RENAME_BRICK)
+
+
+@when(words("I give {name:Brick} the control folder of that switch"))
+def give_folder(virtualbricks, other_switch, name):
+    """
+    Configure… in its menu, the folder of the switch of another program
+    typed in Control folder, then OK; its row says the folder.
+    """
+
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Configure…")
+    virtualbricks.type(other_switch.path, "text", "Control folder")
+    virtualbricks.click("button", "OK")
+    row = virtualbricks.row(name)
+    detail = f"Switch wrapper · {other_switch.path}"
+    virtualbricks.find("label", detail, within=row)
+
+
+@when("I start all the bricks")
+def start_all(virtualbricks, brick_processes):
+    """
+    Start All, over the list; then each brick whose row said Stopped, as
+    those that can start, runs with the process its row tells, and Start
+    All started no other.
+    """
+
+    names = [
+        row[0] for row in brick_rows(virtualbricks) if row[-1] == "Stopped"
+    ]
+    before = virtualbricks.children()
+    virtualbricks.click("button", "Start All")
+    for name in names:
+        virtualbricks.find("button", f"Stop {name}")
+        brick_processes[name] = {process(virtualbricks, name)}
+    pids = set().union(*(brick_processes[name] for name in names))
+    try:
+        virtualbricks.wait_for(
+            lambda: virtualbricks.children() - before == pids,
+            "Start All started the processes of the bricks, and no other",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"Start All started {virtualbricks.children() - before}, not"
+            f" {pids}, the processes of {names}"
+        ) from None
+
+
+@when("I stop all the bricks")
+def stop_all(virtualbricks):
+    """Stop All, over the list; then each brick that ran can start."""
+
+    names = [
+        row[0] for row in brick_rows(virtualbricks) if row[-1] == "Running"
+    ]
+    virtualbricks.click("button", "Stop All")
+    for name in names:
+        virtualbricks.find("button", f"Start {name}")
+
+
+@when("I show only the running bricks")
+def only_running(virtualbricks):
+    """Running, of the switch over the list; then it is on."""
+
+    show_bricks(virtualbricks, "Running")
+
+
+@when("I show all the bricks")
+def all_bricks(virtualbricks):
+    """All, of the switch over the list; then it is on."""
+
+    show_bricks(virtualbricks, "All")
+
+
+def show_bricks(virtualbricks, which):
+    """A button of the switch over the list of bricks; then it is on."""
+
+    tab = virtualbricks.find("page tab", "Bricks")
+    button = virtualbricks.click("radio button", which, within=tab)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(button), f"{which} is on"
+    )
+
+
+def process(virtualbricks, name):
+    """
+    The process of the running brick name, as its row tells: the tooltip
+    of its state, Process PID, which the screen readers read too.
+    """
+
+    row = virtualbricks.row(name)
+    virtualbricks.find("label", "Running", within=row)
+    state = state_of(virtualbricks, name)
+    words = virtualbricks.wait_for(
+        lambda: state.get_description(), f"the row of {name} tells its process"
+    )
+    return int(words.removeprefix("Process "))
+
+
+def state_of(virtualbricks, name):
+    """
+    The state of the brick in its row: its words, after a dot or a warning
+    sign, whose tooltip says more, as the screen readers read it.
+    """
+
+    row = virtualbricks.row(name)
+    words = virtualbricks.names("label", within=row)[-1]
+    return virtualbricks.find("label", words, within=row).get_parent()
+
+
+@then(words("{name:Brick} is running"))
+@then(words("{name:Brick} is still running"))
+def brick_running(virtualbricks, brick_processes, name):
+    """
+    Its row says so, and the processes of its start still run: those that
+    the step that started it saw, else the process its row tells, which has
+    its sockets.
+    """
+
+    row = virtualbricks.row(name)
+    virtualbricks.find("label", "Running", within=row)
+    virtualbricks.find("button", f"Stop {name}", within=row)
+    if name not in brick_processes:
+        # started by none of the steps, as by --command
+        pid = process(virtualbricks, name)
+        assert pid in virtualbricks.bricks(name), f"{pid} isn't of {name}"
+        brick_processes[name] = {pid}
+    pids = brick_processes[name]
+    assert pids <= virtualbricks.children(), f"the processes of {name} quit"
+
+
+@then(words("{name:Brick} runs in the other Virtualbricks"))
+def runs_in_other(virtualbricks, other_virtualbricks, brick_processes, name):
+    """
+    The processes of its start run, started by the other Virtualbricks, and
+    the windows of it run none.
+    """
+
+    pids = brick_processes[name]
+    lab = virtualbricks.children(other_virtualbricks.process.pid)
+    assert pids and pids <= lab, f"the other runs {lab}, not {pids}"
+    windows = virtualbricks.children(virtualbricks.process.pid)
+    assert not windows, f"the windows run {windows}"
+
+
+def in_view(virtualbricks, role, name):
+    """
+    The widget of a row of the list of bricks: if it doesn't show, the
+    wheel scrolls the list until it does (harness.Virtualbricks.reveal).
+    """
+
+    found = virtualbricks.shows(role, name)
+    if found is not None:
+        return found
+    tab = virtualbricks.find("page tab", "Bricks")
+    pane = virtualbricks.find("scroll pane", within=tab)
+    return virtualbricks.reveal(role, name, pane)
+
+
+def brick_rows(virtualbricks):
+    """
+    The rows of the list of bricks, all of them and in order: each the
+    name of a brick, its detail and its state. No rows when the tab says
+    that there are no bricks, in place of the list.
+    """
+
+    return tab_rows(virtualbricks, "Bricks", NO_BRICKS)
+
+
+def tab_rows(virtualbricks, title, empty):
+    """
+    The rows of the list of the tab title, all of them and in order, each
+    the names of its labels; no rows when the tab says empty in place of
+    the list.
+    """
+
+    tab = virtualbricks.find("page tab", title)
+    shown = virtualbricks.wait_for(
+        lambda: virtualbricks.shows("scroll pane", within=tab)
+        or virtualbricks.shows("label", empty, within=tab),
+        f"the list of the tab {title} shows, or {empty!r}",
+    )
+    if shown.get_role_name() == "label":
+        return []
+    return virtualbricks.rows(shown)
+
+
+@then(words("{name:Brick} runs with {ports:d} ports, as a hub"))
+def runs_as_hub(virtualbricks, brick_processes, name, ports):
+    """It runs, and its vde_switch has -n ports and -x, a hub."""
+
+    brick_running(virtualbricks, brick_processes, name)
+    for pid in brick_processes[name]:
+        words = virtualbricks.command_line(pid)
+        if "-n" in words:
+            assert words[words.index("-n") + 1] == str(ports), words
+            assert "-x" in words, f"not a hub: {words}"
+            return
+    raise AssertionError(f"no vde_switch of {name} runs")
+
+
+@then("the list of bricks has")
+def bricks_listed(virtualbricks, datatable):
+    """
+    Its rows, all of them and in order, once they are those of the table
+    under the step, whose first line has the titles of the columns: each
+    row has the name of the brick, its detail and its state.
+    """
+
+    has_rows(
+        virtualbricks,
+        "the list of bricks",
+        lambda: brick_rows(virtualbricks),
+        datatable,
+    )
+
+
+def has_rows(virtualbricks, what, rows, datatable):
+    """
+    rows(), the rows of a list, once they are those of the table, whose
+    first line has the titles of the columns; what says the list.
+    """
+
+    def found():
+        return datatable[:1] + rows()
+
+    try:
+        virtualbricks.wait_for(
+            lambda: found() == datatable, f"{what} has the rows of the table"
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"{what} has {found()}, not {datatable}"
+        ) from None
+
+
+@then(words("the list of bricks shows only {name:Brick}, with its process"))
+def only_listed(virtualbricks, brick_processes, name):
+    """
+    The list has its row alone, once it says Running and, in place of its
+    summary, a process of its start, which still runs.
+    """
+
+    pids = brick_processes[name]
+
+    def listed():
+        rows = brick_rows(virtualbricks)
+        if len(rows) != 1 or rows[0][0] != name or rows[0][2] != "Running":
+            return None
+        # the last part of its detail
+        process = rows[0][1].rpartition(" · ")[2]
+        for pid in pids:
+            if process == f"process {pid}":
+                return pid
+        return None
+
+    try:
+        pid = virtualbricks.wait_for(
+            listed, f"the list of bricks shows only {name}, with its process"
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the list of bricks has {brick_rows(virtualbricks)}, not only"
+            f" {name} with one of {pids}"
+        ) from None
+    assert pid in virtualbricks.children(), f"the process {pid} quit"
+
+
+@then(
+    words(
+        "{name:Brick} runs with the sockets of {left:Brick} and {right:Brick}"
+    )
+)
+def runs_with_sockets(virtualbricks, brick_processes, name, left, right):
+    """
+    It runs, and the processes of its start have a vde_plug in the socket of
+    each switch: the one its vde_switch listens on, after -s.
+    """
+
+    brick_running(virtualbricks, brick_processes, name)
+    wanted = sorted(
+        switch_socket(virtualbricks, brick_processes, switch)
+        for switch in (left, right)
+    )
+
+    def plugs():
+        found = []
+        for pid in brick_processes[name]:
+            for child in virtualbricks.children(pid):
+                words = virtualbricks.command_line(child)
+                if words and os.path.basename(words[0]) == "vde_plug":
+                    found.append(words[-1])
+        return sorted(found)
+
+    try:
+        virtualbricks.wait_for(
+            lambda: plugs() == wanted,
+            f"a vde_plug of {name} runs in the socket of {left}, another"
+            f" in that of {right}",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the vde_plug of {name} run in {plugs()}, not {wanted}"
+        ) from None
+
+
+def switch_socket(virtualbricks, brick_processes, switch, option="-s"):
+    """
+    The socket that the vde_switch of switch listens on, after -s; or, with
+    -M, that of its console.
+    """
+
+    for pid in brick_processes.get(switch, ()):
+        words = virtualbricks.command_line(pid)
+        if "-s" in words:
+            return words[words.index(option) + 1]
+    raise AssertionError(f"no vde_switch of {switch} runs")
+
+
+@then("no brick runs")
+def no_brick_runs(virtualbricks, brick_processes):
+    """
+    No row of the list says Running, and no process of a brick runs:
+    neither those that the steps started nor any with a socket of the
+    tests; Virtualbricks runs no program.
+    """
+
+    virtualbricks.wait_for(
+        lambda: all(row[-1] != "Running" for row in brick_rows(virtualbricks)),
+        "no row of the list says Running",
+    )
+    pids = set().union(*brick_processes.values())
+    virtualbricks.wait_for(
+        lambda: not pids & virtualbricks.children()
+        and not virtualbricks.bricks()
+        and not virtualbricks.children(),
+        "the processes of the bricks quit",
+    )
+
+
+@then(words("{name:Brick} is not configured"))
+def not_configured(virtualbricks, name):
+    """
+    Its row says so, its Start is disabled, and no process has its
+    sockets.
+    """
+
+    row = virtualbricks.row(name)
+    virtualbricks.find("label", "Not configured", within=row)
+    virtualbricks.disabled("button", f"Start {name}", within=row)
+    assert not virtualbricks.bricks(
+        name
+    ), f"a process has the sockets of {name}"
+
+
+@then(words('{name:Brick} can\'t start: "{why}"'))
+def cant_start(virtualbricks, name, why):
+    """
+    Its Start is disabled, and the state in its row says why, in its
+    tooltip, which the screen readers read.
+    """
+
+    says_why(virtualbricks, name, why)
+
+
+def says_why(virtualbricks, name, why):
+    """Its Start is disabled, and the tooltip of its state is why."""
+
+    row = virtualbricks.row(name)
+    virtualbricks.disabled("button", f"Start {name}", within=row)
+    state = state_of(virtualbricks, name)
+    try:
+        virtualbricks.wait_for(
+            lambda: state.get_description() == why,
+            f"the row of {name} says why it can't start",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the row of {name} says {state.get_description()!r}, not {why!r}"
+        ) from None
+
+
+@then(words("the process of {name:Brick} is paused"))
+def process_paused(virtualbricks, brick_processes, name):
+    """
+    The processes of its start are stopped, as SIGSTOP leaves them: T in
+    /proc; its row still says Running, as nothing tells it.
+    """
+
+    pids = brick_processes[name]
+    assert pids, f"{name} runs no process"
+    virtualbricks.wait_for(
+        lambda: all(process_state(pid) == "T" for pid in pids),
+        f"the processes of {name} are stopped",
+    )
+
+
+@then(words("the process of {name:Brick} runs again"))
+def process_runs_again(virtualbricks, brick_processes, name):
+    """The processes of its start run: none is stopped, none has quit."""
+
+    pids = brick_processes[name]
+    assert pids, f"{name} runs no process"
+    virtualbricks.wait_for(
+        lambda: all(
+            process_state(pid) not in ("T", "Z", None) for pid in pids
+        ),
+        f"the processes of {name} run",
+    )
+
+
+def process_state(pid):
+    """
+    The state of the process pid, as /proc says it: R, S, T when stopped,
+    Z once it has quit; None once it is gone.
+    """
+
+    try:
+        with open(f"/proc/{pid}/stat") as file:
+            stat = file.read()
+    except OSError:
+        return None
+    # after the name, which is in brackets and may have spaces
+    return stat[stat.rindex(")") + 2 :].split()[0]
+
+
+@then(words("{name:Brick} is stopped"))
+@then(words("{name:Brick} is not running"))
+def brick_stopped(virtualbricks, brick_processes, name):
+    """
+    Its row says so, and no process of it runs: neither those of its start
+    nor any with its sockets, also if no step started it.
+    """
+
+    row = virtualbricks.row(name)
+    virtualbricks.find("label", "Stopped", within=row)
+    virtualbricks.find("button", f"Start {name}", within=row)
+    pids = brick_processes.get(name, set())
+    virtualbricks.wait_for(
+        lambda: not pids & virtualbricks.children()
+        and not virtualbricks.bricks(name),
+        f"the processes of {name} quit",
+    )
+
+
+# Virtual machines
+
+
+@when(
+    words("I connect {vm:Brick} to {other:Brick}, with Connect To in its menu")
+)
+def connect_to(virtualbricks, vm, other):
+    """Connect To, in its menu, then the other brick; then the menu closes."""
+
+    virtualbricks.click("button", f"Menu of {vm}")
+    virtualbricks.click("button", "Connect To")
+    virtualbricks.click("button", other)
+    virtualbricks.gone("button", "Connect To")
+
+
+@then(words("{vm:Brick} runs {program}, with no display"))
+def runs_program(virtualbricks, brick_processes, vm, program):
+    """It runs, and a process of its start is program, with -display none."""
+
+    brick_running(virtualbricks, brick_processes, vm)
+    programs = []
+    for pid in brick_processes[vm]:
+        words = virtualbricks.command_line(pid)
+        programs.append(os.path.basename(words[0]) if words else None)
+        if programs[-1] == program:
+            options = list(zip(words, words[1:]))
+            assert ("-display", "none") in options, f"a display: {words}"
+            return
+    raise AssertionError(f"{vm} runs {programs}, not {program}")
+
+
+@then(words("{vm:Brick} runs with a card in the socket of {switch:Brick}"))
+def card_on_switch(virtualbricks, brick_processes, vm, switch):
+    """
+    It runs, and its QEMU has a VDE network card whose socket is the one
+    the vde_switch of switch listens on, after -s.
+    """
+
+    brick_running(virtualbricks, brick_processes, vm)
+    wanted = switch_socket(virtualbricks, brick_processes, switch)
+    found = []
+    for pid in brick_processes[vm]:
+        words = virtualbricks.command_line(pid)
+        for option, value in zip(words, words[1:]):
+            # vde,id=vx0,sock=PATH
+            kind, _, settings = value.partition(",")
+            if option == "-netdev" and kind == "vde":
+                found += [
+                    setting.removeprefix("sock=")
+                    for setting in settings.split(",")
+                    if setting.startswith("sock=")
+                ]
+    assert wanted in found, f"the cards of {vm} are in {found}, not {wanted}"
+
+
+@then(words('the monitor of {vm:Brick} answers "{command}" with "{answer}"'))
+def monitor_answers(virtualbricks, brick_processes, vm, command, answer):
+    """
+    The monitor of its QEMU, on the socket of its command line, answers the
+    command with a line of the answer.
+    """
+
+    said = monitor(virtualbricks, brick_processes, vm, command)
+    assert (
+        answer in said
+    ), f"the monitor of {vm} answers {said}, not {answer!r}"
+
+
+# What the monitor of QEMU writes when it waits for a command
+MONITOR_PROMPT = b"(qemu) "
+
+
+def monitor(virtualbricks, brick_processes, vm, command):
+    """
+    The lines that the monitor of the QEMU of vm answers to command, on the
+    socket of a -chardev that a -mon of its command line names.
+    """
+
+    path = monitor_socket(virtualbricks, brick_processes, vm)
+    with socket.socket(socket.AF_UNIX) as monitor:
+        # it waits for a reading, not for a time
+        monitor.settimeout(harness.TIMEOUT)
+        monitor.connect(path)
+        read_to_prompt(monitor)
+        monitor.sendall(command.encode() + b"\n")
+        said = read_to_prompt(monitor)
+    # the echo of the command, with the codes of a terminal, then the
+    # answer, then the prompt
+    return [line.strip() for line in said.split("\r\n")[1:-1]]
+
+
+def monitor_socket(virtualbricks, brick_processes, vm):
+    """The path of the socket of the monitor of the QEMU of vm."""
+
+    for pid in brick_processes[vm]:
+        words = virtualbricks.command_line(pid)
+        options = list(zip(words, words[1:]))
+        # -mon chardev=ID, and -chardev socket,id=ID,path=PATH,…
+        monitors = {
+            value.removeprefix("chardev=")
+            for option, value in options
+            if option == "-mon"
+        }
+        for option, value in options:
+            kind, _, settings = value.partition(",")
+            settings = dict(
+                setting.partition("=")[::2] for setting in settings.split(",")
+            )
+            if (
+                option == "-chardev"
+                and kind == "socket"
+                and settings.get("id") in monitors
+                and "path" in settings
+            ):
+                return settings["path"]
+    raise AssertionError(f"no QEMU of {vm} has a monitor on a socket")
+
+
+def read_to_prompt(monitor, prompt=MONITOR_PROMPT):
+    """
+    What a monitor writes until its prompt: by default the monitor of
+    QEMU.
+    """
+
+    said = b""
+    while not said.endswith(prompt):
+        data = monitor.recv(4096)
+        assert data, f"the monitor closed, after {said!r}"
+        said += data
+    return said.decode(errors="replace")
+
+
+# Tunnels
+
+
+# The server of a tunnel of this computer, for its client
+THIS_COMPUTER = "localhost"
+# What the console of a vde_switch writes when it waits for a command
+CONSOLE_PROMPT = b"vde$ "
+
+
+@when(
+    words(
+        "I add the tunnel server {name:Brick} on {switch:Brick}, on a free"
+        ' UDP port, with the password "{password}"'
+    )
+)
+def add_tunnel_server(virtualbricks, tunnel_ports, name, switch, password):
+    """
+    New Brick, Tunnel server, then in its settings the switch in Plugged
+    into, a free UDP port typed in Port, and the password; then OK, and its
+    row says the switch and the port.
+    """
+
+    port = free_udp_port()
+    new_brick(virtualbricks, "tunnel server", name)
+    plug_into(virtualbricks, switch)
+    virtualbricks.type(str(port), "spin button", "Port", over=True)
+    virtualbricks.type(password, "password text", "Password")
+    virtualbricks.click("button", "OK")
+    detail = f"Tunnel server · on {switch} · UDP port {port}"
+    virtualbricks.find("label", detail, within=virtualbricks.row(name))
+    tunnel_ports[name] = port
+
+
+@when(
+    words(
+        "I add the tunnel client {name:Brick} on {switch:Brick}, to"
+        ' {server:Brick} on this computer, with the password "{password}"'
+    )
+)
+def add_tunnel_client(
+    virtualbricks, tunnel_ports, name, switch, server, password
+):
+    """
+    New Brick, Tunnel client, then in its settings the switch in Plugged
+    into, this computer in Server, the port of the server in Server port, a
+    free UDP port in Local port, and the password; then OK, and its row
+    says the switch and the server.
+    """
+
+    port = free_udp_port(taken=tunnel_ports.values())
+    new_brick(virtualbricks, "tunnel client", name)
+    plug_into(virtualbricks, switch)
+    virtualbricks.type(THIS_COMPUTER, "text", "Server")
+    virtualbricks.type(
+        str(tunnel_ports[server]), "spin button", "Server port", over=True
+    )
+    virtualbricks.type(str(port), "spin button", "Local port", over=True)
+    virtualbricks.type(password, "password text", "Password")
+    virtualbricks.click("button", "OK")
+    detail = f"Tunnel client · on {switch} · to {THIS_COMPUTER}"
+    virtualbricks.find("label", detail, within=virtualbricks.row(name))
+    tunnel_ports[name] = port
+
+
+def free_udp_port(taken=()):
+    """A UDP port that no program has now, nor in taken."""
+
+    while True:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+            probe.bind(("", 0))
+            port = probe.getsockname()[1]
+        if port not in taken:
+            return port
+
+
+def plug_into(virtualbricks, switch):
+    """In the settings of a brick, the switch in the list Plugged into."""
+
+    row = virtualbricks.row("Plugged into")
+    # named after what it shows
+    shown = virtualbricks.enabled("combo box", within=row).get_name()
+    choose_in_combo(virtualbricks, row, shown, switch)
+
+
+@then(
+    words(
+        "{client:Brick} on {left:Brick} is connected to {server:Brick} on"
+        " {right:Brick}"
+    )
+)
+def tunnel_connected(
+    virtualbricks, brick_processes, client, left, server, right
+):
+    """
+    Both ends run, each a vde_cryptcab with the socket of its switch, the
+    client's to the UDP port of the server's; and a port of each switch has
+    the vde_cryptcab of its end, as the console of its vde_switch lists
+    them. The server plugs its client into its switch only once the client
+    has logged in, with the key of the same password.
+    """
+
+    ends = ((client, left), (server, right))
+    processes = {}
+    for name, switch in ends:
+        brick_running(virtualbricks, brick_processes, name)
+        pid, words = cryptcab(virtualbricks, brick_processes, name)
+        path = switch_socket(virtualbricks, brick_processes, switch)
+        assert after(words, "-s") == path, f"{name} isn't on {switch}: {words}"
+        processes[name] = pid, words
+    to = f"{THIS_COMPUTER}:{after(processes[server][1], '-p')}"
+    goes = after(processes[client][1], "-c")
+    assert goes == to, f"{client} goes to {goes}, not {to}"
+    for name, switch in ends:
+        pid = processes[name][0]
+        plugged_into(virtualbricks, brick_processes, name, pid, switch)
+
+
+def cryptcab(virtualbricks, brick_processes, name):
+    """The vde_cryptcab of the brick: its process, and its command line."""
+
+    for pid in brick_processes[name]:
+        words = virtualbricks.command_line(pid)
+        if words and os.path.basename(words[0]) == "vde_cryptcab":
+            return pid, words
+    raise AssertionError(f"no vde_cryptcab of {name} runs")
+
+
+def after(words, option):
+    """The word after option, in a command line."""
+
+    assert option in words, f"no {option} in {words}"
+    return words[words.index(option) + 1]
+
+
+def plugged_into(virtualbricks, brick_processes, name, pid, switch):
+    """Waits until a port of switch has pid, the process of the brick."""
+
+    try:
+        virtualbricks.wait_for(
+            lambda: pid in plugged(virtualbricks, brick_processes, switch),
+            f"a port of {switch} has the vde_cryptcab of {name}",
+        )
+    except AssertionError:
+        found = plugged(virtualbricks, brick_processes, switch)
+        raise AssertionError(
+            f"the ports of {switch} have the processes {found}, not {pid},"
+            f" the vde_cryptcab of {name}"
+        ) from None
+
+
+def plugged(virtualbricks, brick_processes, switch):
+    """
+    The processes plugged into the ports of switch, as the console of its
+    vde_switch lists them, on the socket after -M: port/allprint, with the
+    pid of the program of each end.
+    """
+
+    path = switch_socket(virtualbricks, brick_processes, switch, "-M")
+    with socket.socket(socket.AF_UNIX) as console:
+        # it waits for a reading, not for a time
+        console.settimeout(harness.TIMEOUT)
+        console.connect(path)
+        read_to_prompt(console, CONSOLE_PROMPT)
+        console.sendall(b"port/allprint\n")
+        said = read_to_prompt(console, CONSOLE_PROMPT)
+    return {int(pid) for pid in re.findall(r"\bpid=(\d+)", said)}
+
+
+# Projects
+
+PROJECTS_WINDOW = "Projects"
+
+
+@given("the workspace is on a drive without a trash")
+def workspace_without_trash(virtualbricks, drive_without_trash):
+    """The workspace of Virtualbricks in a folder of that drive."""
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    virtualbricks.workspace = os.path.join(drive_without_trash, "workspace")
+    os.makedirs(virtualbricks.workspace)
+
+
+@given("the workspace is the default one")
+def default_workspace(virtualbricks):
+    """
+    Before Virtualbricks starts: its workspace is ~/.virtualbricks, the one
+    of its settings, as for a user who never chose another; then the title
+    of the main window names the project alone.
+    """
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    virtualbricks.workspace = os.path.join(
+        virtualbricks.home, ".virtualbricks"
+    )
+    os.makedirs(virtualbricks.workspace, exist_ok=True)
+
+
+@given(
+    words("the files of my {folder:Folder} folder were last changed on {day}")
+)
+def changed_on(virtualbricks, folder, day):
+    """
+    Each file of the folder of the home last changed on the day, as
+    2024-08-02, at noon: a file chooser says that day, not the time of the
+    scenario.
+    """
+
+    moment = time.mktime(time.strptime(f"{day} 12:00", "%Y-%m-%d %H:%M"))
+    top = os.path.join(virtualbricks.home, folder)
+    for name in os.listdir(top):
+        path = os.path.join(top, name)
+        if os.path.isfile(path):
+            os.utime(path, (moment, moment))
+
+
+@when(words("the projects were last saved on {day}"))
+def saved_on(virtualbricks, day):
+    """
+    The file of each project of the workspace last changed on the day, as
+    2024-08-02, at noon: the Projects window says that day, not the time of
+    the scenario.
+    """
+
+    moment = time.mktime(time.strptime(f"{day} 12:00", "%Y-%m-%d %H:%M"))
+    pattern = os.path.join(virtualbricks.workspace, "*", "project.toml")
+    for path in glob.glob(pattern):
+        os.utime(path, (moment, moment))
+
+
+@when("I open the Projects window")
+def open_projects(virtualbricks):
+    """Projects…, in the menu Projects."""
+
+    virtualbricks.choose("Projects…", "Projects")
+    virtualbricks.find("frame", PROJECTS_WINDOW)
+
+
+@when("I save the project")
+def save_project(virtualbricks):
+    """Save, in the menu Projects; then the file of the project is written."""
+
+    path = project_path(virtualbricks)
+
+    def written():
+        try:
+            return os.stat(path).st_mtime_ns
+        except FileNotFoundError:
+            return None
+
+    before = written()
+    virtualbricks.choose("Save", "Projects")
+    virtualbricks.wait_for(lambda: written() != before, f"{path} is written")
+
+
+@when(words("I make a new project with the name it suggests, {name:Project}"))
+def new_project(virtualbricks, name):
+    """
+    New…, in the Projects window: the name it suggests is name; then Create,
+    and the dialog closes.
+    """
+
+    window = virtualbricks.find("frame", PROJECTS_WINDOW)
+    virtualbricks.click("button", "New…", within=window)
+    dialog = virtualbricks.find("dialog", "New Project")
+    suggests(virtualbricks, dialog, "Name", name)
+    virtualbricks.click("button", "Create", within=dialog)
+    virtualbricks.gone("dialog", "New Project")
+
+
+@when(
+    words(
+        "I duplicate the project {name:Project} with the name it suggests,"
+        " {copy:Project}"
+    )
+)
+def duplicate_project(virtualbricks, name, copy):
+    """
+    In the Projects window, its row, then Duplicate… in its details: the
+    name it suggests is copy; then Duplicate, with Open the copy as it is,
+    and the dialog closes.
+    """
+
+    details = select_project(virtualbricks, name)
+    virtualbricks.click("button", "Duplicate…", within=details)
+    dialog = virtualbricks.find("dialog", "Duplicate Project")
+    suggests(virtualbricks, dialog, "Name of the copy", copy)
+    virtualbricks.click("button", "Duplicate", within=dialog)
+    virtualbricks.gone("dialog", "Duplicate Project")
+
+
+def suggests(virtualbricks, dialog, field, name):
+    """The field of the name, in the dialog of a project, says name."""
+
+    entry = virtualbricks.find("text", field, within=dialog)
+    try:
+        virtualbricks.wait_for(
+            lambda: harness.a11y.text(entry) == name,
+            f"the dialog suggests {name}",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the dialog suggests {harness.a11y.text(entry)!r}, not {name!r}"
+        ) from None
+
+
+@when(words("I open the project {name:Project}"))
+def open_project(virtualbricks, name):
+    """
+    In the Projects window, its row, then Open in its details; the window
+    closes.
+    """
+
+    click_open(virtualbricks, name)
+    virtualbricks.gone("frame", PROJECTS_WINDOW)
+
+
+@when(words("I try to open the project {name:Project}"))
+def try_open_project(virtualbricks, name):
+    """The same, without waiting for the window to close."""
+
+    click_open(virtualbricks, name)
+
+
+def click_open(virtualbricks, name):
+    """
+    In the Projects window, the row of the project name, then Open in its
+    details.
+    """
+
+    details = select_project(virtualbricks, name)
+    virtualbricks.click("button", "Open", within=details)
+
+
+def select_project(virtualbricks, name):
+    """
+    In the Projects window, the row of the project name: its details, once
+    they show its folder.
+    """
+
+    window = virtualbricks.find("frame", PROJECTS_WINDOW)
+    item = virtualbricks.wait_for(
+        lambda: project_row(window, name), f"the row of {name} shows"
+    )
+    virtualbricks.click("label", name, within=item)
+    path = shown(virtualbricks, os.path.join(virtualbricks.workspace, name))
+    return virtualbricks.find("label", path, within=window).get_parent()
+
+
+def project_row(window, name):
+    """The row of the project name in the Projects window, if it shows."""
+
+    for item in harness.a11y.find_all(window, "list item"):
+        if harness.a11y.find(item, "label", name) is not None:
+            return item
+    return None
+
+
+@when(words("I remove the project {name:Project}, and move it to the trash"))
+def trash_project(virtualbricks, name):
+    """
+    In the Projects window, its row, then Remove… in the menu of its
+    details; the question, which names it, says its folder goes to the
+    trash: Move to Trash, and the question closes.
+    """
+
+    question = ask_remove(virtualbricks, name)
+    says(virtualbricks, question, " to the trash, where you can restore it.")
+    virtualbricks.click("button", "Move to Trash", within=question)
+    virtualbricks.gone("alert", QUESTION)
+
+
+@when(
+    words(
+        "I remove the project {name:Project}, which can't go to the trash,"
+        " and delete it permanently"
+    )
+)
+def delete_project(virtualbricks, name):
+    """
+    The same, where the question has no Move to Trash, and says the drive
+    of the workspace has none: Delete Permanently.
+    """
+
+    question = ask_remove(virtualbricks, name)
+    says(virtualbricks, question, " the drive of the workspace has no trash.")
+    assert (
+        virtualbricks.shows("button", "Move to Trash", within=question) is None
+    ), "the question offers the trash"
+    virtualbricks.click("button", "Delete Permanently", within=question)
+    virtualbricks.gone("alert", QUESTION)
+
+
+# A dialog that asks, as the screen readers name it
+QUESTION = "Question"
+
+
+def ask_remove(virtualbricks, name):
+    """
+    In the Projects window, the row of the project name, then Remove… in the
+    menu of its details: the question, once it names the project.
+    """
+
+    details = select_project(virtualbricks, name)
+    virtualbricks.click("toggle button", "Menu", within=details)
+    virtualbricks.click("button", "Remove…")
+    question = virtualbricks.find("alert", QUESTION)
+    virtualbricks.find("label", f"Remove {name}?", within=question)
+    return question
+
+
+def says(virtualbricks, dialog, text):
+    """A label of the dialog has text, once it shows."""
+
+    virtualbricks.wait_for(
+        lambda: any(
+            text in label
+            for label in virtualbricks.names("label", within=dialog)
+        ),
+        f"the dialog says {text!r}",
+    )
+
+
+@then(words("the Projects window doesn't list {name:Project}"))
+def projects_not_listed(virtualbricks, name):
+    window = virtualbricks.find("frame", PROJECTS_WINDOW)
+    virtualbricks.wait_for(
+        lambda: project_row(window, name) is None,
+        f"the Projects window doesn't list {name}",
+    )
+
+
+@then(words("the folder of {name:Project} is in the trash"))
+def project_in_trash(virtualbricks, name):
+    """
+    The workspace has no folder name any more, and the trash of the home
+    has it: in its folder info, a .trashinfo that says where it was, and in
+    files, the folder, with its project.toml.
+    """
+
+    path = os.path.join(virtualbricks.workspace, name)
+    virtualbricks.wait_for(
+        lambda: not os.path.exists(path), f"the workspace has no {name}"
+    )
+    trash = os.path.join(virtualbricks.home, TRASH)
+    trashed = trashed_as(trash, path)
+    assert trashed is not None, f"the trash has no {path}"
+    toml = os.path.join(trash, "files", trashed, "project.toml")
+    assert os.path.isfile(toml), f"the trash has {path} without project.toml"
+
+
+@then(words("the folder of {name:Project} is deleted, and in no trash"))
+def project_deleted(virtualbricks, name):
+    """
+    The workspace has no folder name any more, and no trash has it: neither
+    that of the home, nor those of the drive of the workspace, .Trash/UID
+    and .Trash-UID at its top.
+    """
+
+    path = os.path.join(virtualbricks.workspace, name)
+    virtualbricks.wait_for(
+        lambda: not os.path.exists(path), f"the workspace has no {name}"
+    )
+    top = virtualbricks.workspace
+    while not os.path.ismount(top):
+        top = os.path.dirname(top)
+    uid = str(os.getuid())
+    for trash, drive in (
+        (os.path.join(virtualbricks.home, TRASH), None),
+        (os.path.join(top, ".Trash", uid), top),
+        (os.path.join(top, f".Trash-{uid}"), top),
+    ):
+        assert trashed_as(trash, path, drive) is None, f"{trash} has {path}"
+
+
+# The trash of the home, in the data folder of Virtualbricks
+TRASH = os.path.join(".local", "share", "Trash")
+
+
+def trashed_as(trash, path, drive=None):
+    """
+    The name in the trash of what was at path, by the .trashinfo files of
+    its folder info; None if it isn't there. In the trash of a drive, the
+    path is relative to the top of the drive.
+    """
+
+    info = os.path.join(trash, "info")
+    if not os.path.isdir(info):
+        return None
+    for file in os.listdir(info):
+        name, extension = os.path.splitext(file)
+        if extension != ".trashinfo":
+            continue
+        parser = configparser.ConfigParser(interpolation=None)
+        parser.read(os.path.join(info, file))
+        was = urllib.parse.unquote(parser["Trash Info"]["Path"])
+        if os.path.join(drive or "/", was) == path:
+            return name
+    return None
+
+
+IMPORT_WINDOW = "Import Project"
+
+
+@when(
+    words(
+        "I import the archive {archive} of my home folder with the name it"
+        " suggests, {name:Project}"
+    )
+)
+def import_archive(virtualbricks, archive, name):
+    """
+    Import…, in the menu Projects; in the file chooser that asks for the
+    archive, Home and the archive, and Open; the Import window opens on it,
+    and the name it suggests is name; then Import, and the window closes
+    once the project opens.
+    """
+
+    import_with(virtualbricks, in_folder(virtualbricks, archive), name)
+
+
+@when(
+    words(
+        "I import the archive {archive} of my home folder from the Projects"
+        " window, with the name it suggests, {name:Project}"
+    )
+)
+def import_from_projects(virtualbricks, archive, name):
+    """The same, with Import… of the Projects window."""
+
+    import_with(
+        virtualbricks,
+        in_folder(virtualbricks, archive),
+        name,
+        start=lambda: virtualbricks.click(
+            "button",
+            "Import…",
+            within=virtualbricks.find("frame", PROJECTS_WINDOW),
+        ),
+    )
+
+
+@when(
+    words(
+        "I choose the archive {archive} of my {folder:Folder} folder in the"
+        " Import window, which suggests the name {name:Project}"
+    )
+)
+def choose_archive(virtualbricks, archive, folder, name):
+    """
+    Import…, in the menu Projects; in the file chooser that asks for the
+    archive, the archive, as the step that selects a file there does, and
+    Open; the Import window opens on it, reads it, and the name it suggests
+    is name. Import isn't clicked.
+    """
+
+    choose_with(virtualbricks, in_folder(virtualbricks, archive, folder), name)
+
+
+@when(
+    words(
+        "in the Import window, I use the file {file} of my {folder:Folder}"
+        " folder for the image {image}"
+    )
+)
+def use_image_file(virtualbricks, file, folder, image):
+    """
+    Use a file…, in the row of the image; in the file chooser it opens, the
+    file, as the step that selects a file there does, and Open; the row then
+    says that it uses it.
+    """
+
+    window = virtualbricks.find("frame", IMPORT_WINDOW)
+    row = virtualbricks.find("label", image, within=window).get_parent()
+    virtualbricks.click("radio button", "Use a file…", within=row)
+    title = f"The file of {image}"
+    choose = in_folder(virtualbricks, file, folder)
+    choose(virtualbricks.find("file chooser", title))
+    virtualbricks.gone("file chooser", title)
+    path = os.path.join("~", folder, file)
+    virtualbricks.find("label", f"Uses {path}", within=row)
+
+
+@then(words("the Import window leaves the image {image} unset"))
+def image_left_unset(virtualbricks, image):
+    """
+    In the row of the image, Leave unset is on: the choice of the window
+    for an image that neither the archive nor the shared images have.
+    """
+
+    window = virtualbricks.find("frame", IMPORT_WINDOW)
+    row = virtualbricks.find("label", image, within=window).get_parent()
+    unset = virtualbricks.find("radio button", "Leave unset", within=row)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(unset), "Leave unset is on"
+    )
+
+
+@when(
+    words("in the file chooser, I select {file} of my {folder:Folder} folder")
+)
+def select_file(virtualbricks, file, folder):
+    """
+    In the file chooser that shows, Home; for another folder, the folder and
+    Open, which goes into it; then the file, which is selected. Open isn't
+    clicked.
+    """
+
+    select_in(virtualbricks, virtualbricks.find("file chooser"), file, folder)
+
+
+def select_in(virtualbricks, chooser, file, folder):
+    """In chooser, file of folder of the home: see select_file."""
+
+    virtualbricks.click("label", "Home", within=chooser)
+    if folder:
+        virtualbricks.click("table cell", folder, within=chooser)
+        virtualbricks.click("button", "Open", within=chooser)
+    virtualbricks.click("table cell", file, within=chooser)
+
+
+def in_folder(virtualbricks, file, folder=""):
+    """
+    What chooses file of folder of the home in a file chooser: it, as
+    select_in selects it, and Open.
+    """
+
+    def choose(chooser):
+        select_in(virtualbricks, chooser, file, folder)
+        virtualbricks.click("button", "Open", within=chooser)
+
+    return choose
+
+
+@when(
+    words(
+        "I import the archive {archive} of my home folder, typing its path,"
+        " with the name it suggests, {name:Project}"
+    )
+)
+def import_typed(virtualbricks, archive, name):
+    """
+    The same, where in the file chooser, once clicked, Ctrl+L shows the
+    entry of its location: the path of the archive typed there, then Return
+    once Open is enabled.
+    """
+
+    def choose(chooser):
+        # the keys go to the window clicked last
+        virtualbricks.click("table", "Files", within=chooser)
+        virtualbricks.key("Control+l", chooser)
+        path = os.path.join(virtualbricks.home, archive)
+        virtualbricks.type(path, "text", within=chooser)
+        virtualbricks.enabled("button", "Open", within=chooser)
+        virtualbricks.key("Return", chooser)
+
+    import_with(virtualbricks, choose, name)
+
+
+CHOOSE_ARCHIVE = "Choose an archive"
+
+
+def import_with(virtualbricks, choose, name, start=None):
+    """
+    Import…, in the menu Projects, or start(); then choose(chooser) in the
+    file chooser that asks for the archive, which closes; the Import window
+    opens on it, and the name it suggests is name; then Import, and the
+    window closes once the project opens.
+    """
+
+    choose_with(virtualbricks, choose, name, start)
+    import_chosen(virtualbricks)
+
+
+@when("I choose Import… in the menu Projects")
+def ask_import(virtualbricks):
+    """
+    Import…, in the menu Projects; then the file chooser asks for the
+    archive, and the Import window doesn't show yet. Return the chooser.
+    """
+
+    virtualbricks.choose("Import…", "Projects")
+    return asks_archive(virtualbricks)
+
+
+def asks_archive(virtualbricks):
+    """The file chooser of the archive, once it shows: see ask_import."""
+
+    chooser = virtualbricks.find("file chooser", CHOOSE_ARCHIVE)
+    assert not virtualbricks.shows(
+        "frame", IMPORT_WINDOW
+    ), "the Import window shows before the archive is chosen"
+    return chooser
+
+
+@when("I press Escape in the Import window")
+def escape_import(virtualbricks):
+    """
+    A click in the entry of the name, which takes the keys there, or on the
+    title of the window during the import; then Escape.
+    """
+
+    window = virtualbricks.find("frame", IMPORT_WINDOW)
+    if virtualbricks.shows("text", "Name", within=window):
+        virtualbricks.click("text", "Name", within=window)
+    else:
+        virtualbricks.click("label", IMPORT_WINDOW, within=window)
+    virtualbricks.key("Escape", window)
+
+
+@then("the Import window doesn't show")
+def no_import_window(virtualbricks):
+    virtualbricks.gone("frame", IMPORT_WINDOW)
+
+
+@when("I import the archive chosen in the Import window")
+def import_chosen(virtualbricks):
+    """Import, in the Import window, which closes once the project opens."""
+
+    window = virtualbricks.find("frame", IMPORT_WINDOW)
+    virtualbricks.click("button", "Import", within=window)
+    virtualbricks.gone("frame", IMPORT_WINDOW)
+
+
+# heldtar.py, which holds an extraction, and the file that lets it go on
+HELDTAR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "heldtar.py"
+)
+HELD_SCRIPT = """\
+#!/bin/sh
+exec {python} -I {heldtar} {real} {gate} {size} "$@"
+"""
+UNHOLD = "extraction-goes-on"
+
+
+@given(
+    words(
+        "the extraction of an archive stops after its first {size:d} MiB,"
+        " until I let it go on"
+    )
+)
+def extraction_stops(virtualbricks, size):
+    """
+    bsdtar and tar, on the PATH of Virtualbricks, run heldtar.py with the
+    program of this computer: an extraction from the input reads size MiB
+    of the archive, then waits for UNHOLD in the folder of the scenario.
+    """
+
+    gate = os.path.join(virtualbricks.folder, UNHOLD)
+    for name in ("bsdtar", "tar"):
+        real = shutil.which(name)
+        if real is None:
+            continue
+        virtualbricks.replaced[name] = HELD_SCRIPT.format(
+            python=shlex.quote(sys.executable),
+            heldtar=shlex.quote(HELDTAR),
+            real=shlex.quote(real),
+            gate=shlex.quote(gate),
+            size=size << 20,
+        )
+
+
+@when("I let the extraction go on")
+def extraction_goes_on(virtualbricks):
+    open(os.path.join(virtualbricks.folder, UNHOLD), "w").close()
+
+
+def choose_with(virtualbricks, choose, name, start=None):
+    """
+    Import…, in the menu Projects, or start(); then choose(chooser) in the
+    file chooser that asks for the archive, which closes; the Import window
+    opens on it, and the name it suggests is name, once it has looked
+    through the whole archive. Return the window.
+    """
+
+    if start is None:
+        chooser = ask_import(virtualbricks)
+    else:
+        start()
+        chooser = asks_archive(virtualbricks)
+    choose(chooser)
+    virtualbricks.gone("file chooser", CHOOSE_ARCHIVE)
+    window = virtualbricks.find("frame", IMPORT_WINDOW)
+    suggests(virtualbricks, window, "Name", name)
+    # then the line under Images says what the archive has
+    virtualbricks.gone("label", "Looking in the archive…", within=window)
+    return window
+
+
+EXPORT_WINDOW = "Export Project"
+
+
+@when(words("I export the project to {archive} of my home folder"))
+def export_project(virtualbricks, archive):
+    """
+    Export…, in the menu Projects, for the open project; in the window, the
+    archive in the home, as it suggests; then Export, and Close once it says
+    where it exported it.
+    """
+
+    window = open_export(virtualbricks)
+    path = os.path.join(virtualbricks.home, archive)
+    suggested = shown(virtualbricks, path)
+    entry = virtualbricks.find("text", within=window)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.text(entry) == suggested,
+        f"the window suggests {suggested}",
+    )
+    virtualbricks.click("button", "Export", within=window)
+    says(virtualbricks, window, f"Exported to {path}, ")
+    virtualbricks.click("button", "Close", within=window)
+    virtualbricks.gone("frame", EXPORT_WINDOW)
+
+
+@when("I open the Export window")
+def open_export(virtualbricks):
+    """Export…, in the menu Projects, for the open project: the window."""
+
+    virtualbricks.choose("Export…", "Projects")
+    return virtualbricks.find("frame", EXPORT_WINDOW)
+
+
+@when("I press Escape in the Export window")
+def escape_export(virtualbricks):
+    """
+    A click in the entry of the archive, which takes the keys there, then
+    Escape.
+    """
+
+    window = virtualbricks.find("frame", EXPORT_WINDOW)
+    virtualbricks.click("text", within=window)
+    virtualbricks.key("Escape", window)
+
+
+@then("the Export window doesn't show")
+def no_export_window(virtualbricks):
+    virtualbricks.gone("frame", EXPORT_WINDOW)
+
+
+@then(words("my home folder has no {archive}"))
+def no_archive(virtualbricks, archive):
+    path = os.path.join(virtualbricks.home, archive)
+    assert not os.path.exists(path), f"{path} exists"
+
+
+@then(words("the archive {archive} of my home folder has the bricks"))
+def archive_bricks(virtualbricks, archive, datatable):
+    """
+    The project.toml of the archive, a tar, has the bricks of the table
+    under the step, all of them and in order: the name of each and its type.
+    """
+
+    path = os.path.join(virtualbricks.home, archive)
+    with tarfile.open(path) as tar:
+        project = tomllib.load(tar.extractfile("project.toml"))
+    has_bricks(project, datatable, f"the project.toml of {archive}")
+
+
+@then(words('the Projects window says "{text}"'))
+def projects_window_says(virtualbricks, text):
+    window = virtualbricks.find("frame", PROJECTS_WINDOW)
+    virtualbricks.find("label", text, within=window)
+
+
+@then(words("the folder of {name:Project} isn't in the workspace"))
+def no_project_folder(virtualbricks, name):
+    """
+    The workspace has no folder of the project, nor the hidden one of its
+    import, once a stopped import has removed it.
+    """
+
+    def none():
+        return not [
+            n for n in os.listdir(virtualbricks.workspace) if name in n
+        ]
+
+    virtualbricks.wait_for(none, f"the workspace has no folder of {name}")
+
+
+@then(words("the folder of {name:Project} has project.toml"))
+def project_toml(virtualbricks, name):
+    """
+    The folder of the project in the workspace has the file of a project of
+    this version, which TOML reads.
+    """
+
+    path = os.path.join(virtualbricks.workspace, name, "project.toml")
+    assert os.path.isfile(path), f"{path} is missing"
+    with open(path, "rb") as file:
+        data = tomllib.load(file)
+    assert "format" in data, f"{path} has no format: {data}"
+
+
+@then(
+    words("the folder of {copy:Project} is a copy of that of {name:Project}")
+)
+def project_copy(virtualbricks, copy, name):
+    """
+    The two folders of the workspace have the same files, with the same
+    bytes, and the copy has its project.toml.
+    """
+
+    def files(project):
+        folder = os.path.join(virtualbricks.workspace, project)
+        found = {}
+        for root, _, names in os.walk(folder):
+            for file in names:
+                path = os.path.join(root, file)
+                with open(path, "rb") as data:
+                    found[os.path.relpath(path, folder)] = data.read()
+        return found
+
+    project_toml(virtualbricks, copy)
+    try:
+        virtualbricks.wait_for(
+            lambda: files(copy) == files(name),
+            f"the folder of {copy} is a copy of that of {name}",
+        )
+    except AssertionError:
+        ours, theirs = files(copy), files(name)
+        differ = sorted(
+            path
+            for path in ours.keys() | theirs.keys()
+            if ours.get(path) != theirs.get(path)
+        )
+        raise AssertionError(
+            f"the folders of {copy} and {name} differ in {differ}"
+        ) from None
+
+
+# Disk images
+
+IMAGES = "Images"
+# The units of the sizes of the disks, as Virtualbricks counts them
+UNITS = {"MB": 1000**2, "GB": 1000**3}
+# The folder of the images, in the workspace
+IMAGE_FOLDER = "shared_images"
+ADD_IMAGE = "Add an Existing Image"
+CHOOSE_IMAGE = "Choose a Disk Image"
+NEW_DISK = "New Empty Disk"
+# What New Empty Disk has at first: the unit of the size, and the format
+NEW_DISK_UNIT = "GB"
+NEW_DISK_FORMAT = "qcow2"
+REMOVE_IMAGE = "Remove Image"
+FIND_FILE = "Find the File"
+CHOOSE_FILE = "Choose the File"
+# What the tab Images says in place of its list, when there are no images
+NO_IMAGES = "No Images Yet"
+# Between the parts of the detail of a row
+SEPARATOR = " · "
+# The fact of the details of an image that isn't of qemu-img info: when
+# the file changed
+CHANGED = "Changed"
+# The options of QEMU that give a machine a disk, before its file
+DISK_OPTIONS = ("-hda", "-hdb", "-hdc", "-hdd", "-fda", "-fdb", "-mtdblock")
+
+
+@given(
+    words(
+        "the empty disk image {file} of {size:d} {unit}, in my {folder:Folder}"
+        " folder"
+    )
+)
+def disk_image(virtualbricks, file, size, unit, folder):
+    """
+    In the folder of the home, an empty disk of size MB or GB, made with
+    qemu-img create, in the format of the extension of file: qcow2, or raw.
+    """
+
+    path = in_my(virtualbricks, folder, file)
+    fmt = os.path.splitext(file)[1].removeprefix(".")
+    subprocess.run(
+        ["qemu-img", "create", "-q", "-f", fmt, path, str(size * UNITS[unit])],
+        check=True,
+    )
+
+
+@given(
+    words(
+        "the empty disk image {file} of {size:d} {unit}, in my home folder,"
+        " with the snapshot {snapshot}"
+    )
+)
+def disk_image_snapshot(virtualbricks, file, size, unit, snapshot):
+    """The same, with a snapshot, made with qemu-img snapshot."""
+
+    disk_image(virtualbricks, file, size, unit, "")
+    path = os.path.join(virtualbricks.home, file)
+    subprocess.run(["qemu-img", "snapshot", "-c", snapshot, path], check=True)
+
+
+@when(
+    words(
+        "I add an existing image, {file} of my home folder, with the name it"
+        " suggests, {name:Image}"
+    )
+)
+def add_image(virtualbricks, file, name):
+    """
+    The tab Images, Add Image, then Existing Image…; in the dialog, the
+    button of the file, then Home and the file in the file chooser, and
+    Open; the name it suggests is name; then Add, with Copy it to the image
+    folder as it is, and the dialog closes.
+    """
+
+    add_existing(virtualbricks, file, name, copy=True)
+
+
+@when(
+    words(
+        "I add an existing image, {file} of my home folder, used where it is,"
+        " with the name it suggests, {name:Image}"
+    )
+)
+def add_image_in_place(virtualbricks, file, name):
+    """The same, with Use it where it is in place of the copy."""
+
+    add_existing(virtualbricks, file, name, copy=False)
+
+
+def add_existing(virtualbricks, file, name, copy):
+    """
+    Add Image, then Existing Image…, with the file of the home and the name
+    it suggests; the file copied to the shared images, as the dialog has it
+    at first, or used where it is.
+    """
+
+    tab = virtualbricks.click("page tab", IMAGES)
+    virtualbricks.click("button", "Add Image", within=tab)
+    virtualbricks.click("button", "Existing Image…")
+    dialog = virtualbricks.find("dialog", ADD_IMAGE)
+    choose_home_file(virtualbricks, dialog, CHOOSE_IMAGE, file)
+    suggests(virtualbricks, dialog, "Name", name)
+    # it shows once the file is read, a disk image out of the workspace
+    copies = virtualbricks.find(
+        "radio button", "Copy it to the shared images", within=dialog
+    )
+    assert harness.a11y.checked(copies), "the file is used where it is"
+    if not copy:
+        in_place = virtualbricks.click(
+            "radio button", "Use it where it is", within=dialog
+        )
+        virtualbricks.wait_for(
+            lambda: harness.a11y.checked(in_place), "Use it where it is is on"
+        )
+    virtualbricks.click("button", "Add", within=dialog)
+    virtualbricks.gone("dialog", ADD_IMAGE)
+
+
+def choose_home_file(virtualbricks, dialog, title, file):
+    """
+    In the dialog, the button of the file, which names none yet; then, in
+    the file chooser of the title, Home, the file, and Open.
+    """
+
+    virtualbricks.click("button", "(None)", within=dialog)
+    chooser = virtualbricks.find("file chooser", title)
+    virtualbricks.click("label", "Home", within=chooser)
+    virtualbricks.click("table cell", file, within=chooser)
+    virtualbricks.click("button", "Open", within=chooser)
+    virtualbricks.gone("file chooser", title)
+
+
+@when(
+    words(
+        "I add a new empty disk, {name:Image}, of {size:d} {unit} in the"
+        " format {fmt}"
+    )
+)
+def add_new_disk(virtualbricks, name, size, unit, fmt):
+    """
+    The tab Images, Add Image, then New Empty Disk…; in the dialog, the
+    name typed, the size typed and its unit chosen, the format chosen, in
+    the shared images as it is; then Create, and the dialog closes.
+    """
+
+    tab = virtualbricks.click("page tab", IMAGES)
+    virtualbricks.click("button", "Add Image", within=tab)
+    virtualbricks.click("button", "New Empty Disk…")
+    dialog = virtualbricks.find("dialog", NEW_DISK)
+    virtualbricks.type(name, "text", "Name", within=dialog)
+    virtualbricks.type(
+        str(size), "spin button", "Size", within=dialog, over=True
+    )
+    choose_in_combo(virtualbricks, dialog, NEW_DISK_UNIT, unit)
+    choose_in_combo(virtualbricks, dialog, NEW_DISK_FORMAT, fmt)
+    virtualbricks.click("button", "Create", within=dialog)
+    virtualbricks.gone("dialog", NEW_DISK)
+
+
+def choose_in_combo(virtualbricks, within, shown, choice):
+    """The combo box that shows shown, then choice in its list."""
+
+    if shown == choice:
+        return
+    # named after what it shows
+    combo = virtualbricks.click("combo box", shown, within=within)
+    virtualbricks.click("menu item", choice, within=combo)
+    virtualbricks.find("combo box", choice, within=within)
+
+
+@when(words("I give {vm:Brick} the image {name:Image}, on its disk {device}"))
+def give_image(virtualbricks, vm, name, device):
+    """
+    Configure… in its menu; on the page Disks of its settings, Add Disk and
+    the device, then the image in the picker of the new disk; then OK.
+    """
+
+    configure(virtualbricks, vm)
+    settings_page(virtualbricks, "Disks")
+    virtualbricks.click("toggle button", "Add Disk")
+    virtualbricks.click("button", device)
+    disk = virtualbricks.row(device)
+    # the picker, named after what it shows
+    virtualbricks.click("toggle button", "No image", within=disk)
+    virtualbricks.click("label", name, within=virtualbricks.row(name))
+    virtualbricks.find("toggle button", name, within=disk)
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {vm}")
+
+
+@when(words("I open the details of {name:Image}"))
+def open_details(virtualbricks, name):
+    """Details…, in its menu, in the tab Images; then they show."""
+
+    tab = on_tab(virtualbricks, IMAGES)
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Details…")
+    entry = virtualbricks.find("text", "Name", within=tab)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.text(entry) == name, f"the details of {name}"
+    )
+
+
+@when(
+    words(
+        "I remove the image {name:Image}, which {disks} loses, and move its"
+        " file to the trash"
+    )
+)
+def remove_to_trash(virtualbricks, name, disks):
+    """
+    Remove…, in its menu, in the tab Images: the dialog asks, and says
+    that the disks lose it; Also move the file to the trash turned on, then
+    Remove, and the dialog closes.
+    """
+
+    dialog = remove_image(virtualbricks, name, disks)
+    trash = virtualbricks.wait_for(
+        lambda: next(
+            (
+                check
+                for check in harness.a11y.find_all(dialog, "check box")
+                if check.get_name().startswith("Also move the file to the")
+            ),
+            None,
+        ),
+        "the dialog offers to move the file to the trash",
+    )
+    virtualbricks.click("check box", trash.get_name(), within=dialog)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(trash), "the file goes to the trash"
+    )
+    virtualbricks.click("button", "Remove", within=dialog)
+    virtualbricks.gone("dialog", REMOVE_IMAGE)
+
+
+@when(
+    words(
+        "I remove the image {name:Image}, which {disks} loses, and whose file"
+        " {project:Project} uses too"
+    )
+)
+def remove_shared(virtualbricks, name, disks, project):
+    """
+    The same, where the dialog says that the project uses the file too, and
+    that it stays, and offers nothing for it; then Remove.
+    """
+
+    dialog = remove_image(virtualbricks, name, disks)
+    stays = f"The project {project} uses the file too: it stays."
+    virtualbricks.find("label", stays, within=dialog)
+    checks = virtualbricks.names("check box", within=dialog)
+    assert not checks, f"the dialog offers {checks}"
+    virtualbricks.click("button", "Remove", within=dialog)
+    virtualbricks.gone("dialog", REMOVE_IMAGE)
+
+
+def remove_image(virtualbricks, name, disks):
+    """
+    Remove…, in the menu of the image, in the tab Images: the dialog, once
+    it asks to remove it and says that the disks, as "the disk vm1 (hda)",
+    lose it.
+    """
+
+    on_tab(virtualbricks, IMAGES)
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Remove…")
+    dialog = virtualbricks.find("dialog", REMOVE_IMAGE)
+    virtualbricks.find("label", f"Remove the image {name}?", within=dialog)
+    # then what becomes of their private copies
+    loses = f"{disks[:1].upper()}{disks[1:]} will have no image."
+    virtualbricks.wait_for(
+        lambda: any(
+            label.startswith(loses)
+            for label in virtualbricks.names("label", within=dialog)
+        ),
+        f"the dialog says: {loses}",
+    )
+    return dialog
+
+
+@when(
+    words(
+        "I find the file of {name:Image}, {file} of my {folder:Folder} folder"
+    )
+)
+def find_file(virtualbricks, name, file, folder):
+    """
+    Find the File…, in its menu, in the tab Images; in the dialog, which
+    asks where the file is, the button of the file, then the file in the
+    file chooser, as the step that selects a file there does, and Open;
+    then Use This File, and the dialog closes.
+    """
+
+    on_tab(virtualbricks, IMAGES)
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Find the File…")
+    dialog = virtualbricks.find("dialog", FIND_FILE)
+    where = f"Where is the file of {name}?"
+    virtualbricks.find("label", where, within=dialog)
+    virtualbricks.click("button", "(None)", within=dialog)
+    choose = in_folder(virtualbricks, file, folder)
+    choose(virtualbricks.find("file chooser", CHOOSE_FILE))
+    virtualbricks.gone("file chooser", CHOOSE_FILE)
+    virtualbricks.click("button", "Use This File", within=dialog)
+    virtualbricks.gone("dialog", FIND_FILE)
+
+
+def image_rows(virtualbricks):
+    """
+    The rows of the list of images, all of them and in order: each the
+    name of an image, its detail and its state. The detail is without the
+    space its file takes, "… on disk", which depends on the file system.
+    """
+
+    def detail(words):
+        parts = words.split(SEPARATOR)
+        return SEPARATOR.join(
+            part for part in parts if not part.endswith(" on disk")
+        )
+
+    return [
+        [row[0], detail(row[1]), *row[2:]]
+        for row in tab_rows(virtualbricks, IMAGES, NO_IMAGES)
+    ]
+
+
+@then("the list of images has")
+def images_listed(virtualbricks, datatable):
+    """
+    Its rows, all of them and in order, once they are those of the table
+    under the step, whose first line has the titles of the columns: each
+    row has the name of the image, its detail, without the space its file
+    takes, and its state.
+    """
+
+    has_rows(
+        virtualbricks,
+        "the list of images",
+        lambda: image_rows(virtualbricks),
+        datatable,
+    )
+
+
+def image_facts(virtualbricks):
+    """
+    The facts of the details of an image, {name: value}: each name a label,
+    its value the label beside it, in the same row of their grid.
+    """
+
+    tab = virtualbricks.find("page tab", IMAGES)
+    grid = virtualbricks.find("label", "File", within=tab).get_parent()
+    rows = {}
+    for label in harness.a11y.find_all(grid, "label"):
+        x, y, _width, _height = harness.a11y.extents(label)
+        rows.setdefault(y, []).append((x, label.get_name()))
+    # the name, then the value
+    return dict(
+        tuple(name for _x, name in sorted(row)) for row in rows.values()
+    )
+
+
+def details_say(virtualbricks, name, wanted, facts):
+    """The details of the image, once facts() of them are wanted."""
+
+    tab = virtualbricks.find("page tab", IMAGES)
+    entry = virtualbricks.find("text", "Name", within=tab)
+    assert harness.a11y.text(entry) == name, f"not the details of {name}"
+    try:
+        virtualbricks.wait_for(
+            lambda: facts() == wanted, f"the details of {name} say {wanted}"
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the details of {name} say {facts()}, not {wanted}"
+        ) from None
+
+
+@then(words("the details of {name:Image} have"))
+def details_have(virtualbricks, name, datatable):
+    """
+    The facts of the table under the step, a name and a value each, are
+    those of the details of the image, once it has read its file.
+    """
+
+    wanted = dict(datatable[1:])
+
+    def facts():
+        shown = image_facts(virtualbricks)
+        return {fact: shown.get(fact) for fact in wanted}
+
+    details_say(virtualbricks, name, wanted, facts)
+
+
+@then(
+    words(
+        "the details of {name:Image} say what qemu-img info says of {file} of"
+        " the shared images"
+    )
+)
+def details_info(virtualbricks, name, file):
+    """
+    The facts of the details of the image are those of qemu-img info of the
+    file: its path, its format, the size of its disk and the space it takes,
+    its snapshots, if any; and when the file changed, which isn't of
+    qemu-img.
+    """
+
+    path = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    info = image_info(path)
+    wanted = {
+        "File": short_path(virtualbricks, path),
+        "Format": info["format"],
+        "Size": f"{human_size(info['virtual-size'])} disk,"
+        f" {human_size(info['actual-size'])} on disk",
+    }
+    snapshots = [snapshot["name"] for snapshot in info.get("snapshots", ())]
+    if snapshots:
+        wanted["Snapshots"] = ", ".join(snapshots)
+
+    def facts():
+        # once the file is read, they say when it changed
+        shown = image_facts(virtualbricks)
+        return shown if shown.pop(CHANGED, None) else None
+
+    details_say(virtualbricks, name, wanted, facts)
+
+
+def image_info(path, shared=False):
+    """
+    What qemu-img info says of the file at path; shared, also while a
+    machine has it, which locks it.
+    """
+
+    words = ["qemu-img", "info", "--output=json", path]
+    if shared:
+        words.insert(2, "-U")
+    done = subprocess.run(words, capture_output=True, text=True, check=True)
+    return json.loads(done.stdout)
+
+
+def human_size(size):
+    """A size in bytes as Virtualbricks says it: B, KB, MB or GB of 1000."""
+
+    if size < 1000:
+        return f"{size} B"
+    for unit in ("KB", "MB", "GB"):
+        size /= 1000
+        if size < 1000 or unit == "GB":
+            return f"{size:.1f} {unit}"
+
+
+def short_path(virtualbricks, path):
+    """A path as Virtualbricks says it: with ~ for the home."""
+
+    if path.startswith(virtualbricks.home + os.sep):
+        return "~" + path[len(virtualbricks.home) :]
+    return path
+
+
+@then(words("the shared images have {file}, a copy of that of my home folder"))
+def image_copied(virtualbricks, file):
+    """
+    The shared images of the workspace have the file, with the bytes of that
+    of the home, which stays.
+    """
+
+    original = os.path.join(virtualbricks.home, file)
+    copy = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    assert os.path.isfile(original), f"{original} is gone"
+    assert os.path.isfile(copy), f"{copy} is missing"
+    with open(original, "rb") as theirs, open(copy, "rb") as ours:
+        assert ours.read() == theirs.read(), f"{copy} differs from {original}"
+
+
+@then(words("the shared images have no copy of {file}"))
+def image_not_copied(virtualbricks, file):
+    """
+    The file of the home stays, and no file of the shared images of the
+    workspace, if there is one, has its bytes.
+    """
+
+    original = os.path.join(virtualbricks.home, file)
+    assert os.path.isfile(original), f"{original} is gone"
+    folder = os.path.join(virtualbricks.workspace, IMAGE_FOLDER)
+    with open(original, "rb") as theirs:
+        data = theirs.read()
+    for copy in glob.glob(os.path.join(folder, "*")):
+        with open(copy, "rb") as ours:
+            assert ours.read() != data, f"{copy} is a copy of {original}"
+
+
+@then(words("the shared images have {file}, a {fmt} disk of {size:d} {unit}"))
+def image_made(virtualbricks, file, fmt, size, unit):
+    """
+    The shared images of the workspace have the file, which qemu-img info
+    says is of the format, with a disk of the size, up to a sector more.
+    """
+
+    path = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    assert os.path.isfile(path), f"{path} is missing"
+    info = image_info(path)
+    assert info["format"] == fmt, f"{file} is {info['format']}, not {fmt}"
+    least = size * UNITS[unit]
+    virtual = info["virtual-size"]
+    assert least <= virtual < least + 512, f"{file} has {virtual} bytes"
+
+
+@then(
+    words("{vm:Brick} runs on a private copy of {file} of the shared images")
+)
+def runs_on_copy(virtualbricks, brick_processes, vm, file):
+    """
+    It runs, and a disk of its QEMU is a file of its own above the file of
+    the shared images, as qemu-img info says: its private copy.
+    """
+
+    brick_running(virtualbricks, brick_processes, vm)
+    image = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    disks = machine_disks(virtualbricks, brick_processes, vm)
+    above = []
+    for disk in disks:
+        info = image_info(disk, shared=True)
+        backing = info.get("full-backing-filename")
+        above.append(backing)
+        if disk != image and backing == image:
+            return
+    raise AssertionError(f"the disks {disks} of {vm} are above {above}")
+
+
+def machine_disks(virtualbricks, brick_processes, vm):
+    """
+    The files of the disks of the QEMU of vm, that a step started: after
+    -hda or another device, or in the file= of a -drive, as a virtio disk.
+    """
+
+    disks = []
+    for pid in brick_processes[vm]:
+        words = virtualbricks.command_line(pid)
+        for option, value in zip(words, words[1:]):
+            if option in DISK_OPTIONS:
+                disks.append(value)
+            elif option == "-drive":
+                disks += [
+                    part.removeprefix("file=")
+                    for part in value.split(",")
+                    if part.startswith("file=")
+                ]
+    assert disks, f"{vm} runs with no disk"
+    return disks
+
+
+@then(
+    words(
+        "{vm:Brick} runs on its private copy from the archive, with what was"
+        " done in it, on {file} of my {folder:Folder} folder"
+    )
+)
+def runs_on_archive_copy(virtualbricks, brick_processes, vm, file, folder):
+    """
+    It runs, and each disk of its QEMU in the folder of a project is the
+    private copy of the archive, as VM_hda.cow: the start didn't set it
+    aside as VM_hda.cow.bak-DATE for a new one; it is above the file, as
+    qemu-img info says, and its disk still starts with the bytes that the
+    step of the archive wrote in it.
+    """
+
+    brick_running(virtualbricks, brick_processes, vm)
+    image = os.path.join(virtualbricks.home, folder, file)
+    copies = [
+        disk
+        for disk in machine_disks(virtualbricks, brick_processes, vm)
+        if os.path.samefile(
+            os.path.dirname(os.path.dirname(disk)), virtualbricks.workspace
+        )
+    ]
+    assert copies, f"no disk of {vm} is in the folder of a project"
+    for copy in copies:
+        aside = glob.glob(glob.escape(copy) + ".bak-*")
+        assert not aside, f"{copy} was set aside for a new one: {aside}"
+        backing = image_info(copy, shared=True).get("full-backing-filename")
+        assert backing == image, f"{copy} is above {backing}, not {image}"
+        start = disk_start(virtualbricks, copy, PRIVATE_DATA)
+        name = os.path.basename(copy)
+        assert start == private_data(name), f"{name} lost what it had"
+
+
+def disk_start(virtualbricks, path, size):
+    """
+    The first size bytes of the disk of the image at path, as a machine
+    reads them, with qemu-img dd; also while a machine has it, which locks
+    it.
+    """
+
+    start = os.path.join(virtualbricks.folder, "disk-start.raw")
+    subprocess.run(
+        [
+            "qemu-img",
+            "dd",
+            "-U",
+            "-O",
+            "raw",
+            f"bs={size}",
+            "count=1",
+            f"if={path}",
+            f"of={start}",
+        ],
+        check=True,
+        capture_output=True,
+    )
+    with open(start, "rb") as file:
+        data = file.read()
+    os.remove(start)
+    return data
+
+
+@then(words("the file {file} of the shared images is in the trash"))
+def image_in_trash(virtualbricks, file):
+    """
+    The shared images of the workspace have the file no more, and the trash
+    of the home has it: a .trashinfo that says where it was, and the file.
+    """
+
+    path = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    virtualbricks.wait_for(
+        lambda: not os.path.exists(path), f"the shared images have no {file}"
+    )
+    trash = os.path.join(virtualbricks.home, TRASH)
+    trashed = trashed_as(trash, path)
+    assert trashed is not None, f"the trash has no {path}"
+    assert os.path.isfile(os.path.join(trash, "files", trashed))
+
+
+@then(words("the file {file} of the project folder is in the trash"))
+def project_file_in_trash(virtualbricks, file):
+    """
+    The folder of the project has the file no more, and the trash of the
+    home has it: a .trashinfo that says where it was, and the file.
+    """
+
+    path = os.path.join(os.path.dirname(project_path(virtualbricks)), file)
+    virtualbricks.wait_for(
+        lambda: not os.path.exists(path), f"the project folder has no {file}"
+    )
+    trash = os.path.join(virtualbricks.home, TRASH)
+    trashed = trashed_as(trash, path)
+    assert trashed is not None, f"the trash has no {path}"
+    assert os.path.isfile(os.path.join(trash, "files", trashed))
+
+
+@given(
+    words(
+        "the private copy {file}, on disk.qcow2 of my {folder:Folder} folder,"
+        " left in the project folder by a machine deleted from the console"
+    )
+)
+def private_copy_left(virtualbricks, file, folder):
+    """
+    A qcow2 disk of 1 GiB in the folder of the project, made with qemu-img
+    on the image, with PRIVATE_DATA bytes at its start, random but the same
+    each time.
+    """
+
+    path = os.path.join(os.path.dirname(project_path(virtualbricks)), file)
+    private_disk(path, in_my(virtualbricks, folder, "disk.qcow2"))
+
+
+@then(words("the project folder still has {file}"))
+def project_file_kept(virtualbricks, file):
+    """The folder of the project has the file."""
+
+    path = os.path.join(os.path.dirname(project_path(virtualbricks)), file)
+    assert os.path.isfile(path), f"{path} is gone"
+
+
+@then(words("the private copy {file} still has what was written in it"))
+def private_copy_kept(virtualbricks, file):
+    """
+    The disk of the file of the project folder still starts with the
+    PRIVATE_DATA bytes written in it, as qemu-img dd reads them.
+    """
+
+    path = os.path.join(os.path.dirname(project_path(virtualbricks)), file)
+    start = disk_start(virtualbricks, path, PRIVATE_DATA)
+    assert start == private_data(file), f"{file} lost what it had"
+
+
+@then(words("the shared images still have {file}, in no trash"))
+def image_kept(virtualbricks, file):
+    """The shared images of the workspace have the file, and the trash not."""
+
+    path = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    assert os.path.isfile(path), f"{path} is gone"
+    trash = os.path.join(virtualbricks.home, TRASH)
+    assert trashed_as(trash, path) is None, f"the trash has {path}"
+
+
+@then(
+    words(
+        "project.toml has the image {name:Image}, of {file} in the shared"
+        " images"
+    )
+)
+def project_image(virtualbricks, name, file):
+    """
+    The image in the file of the project has the file of the shared images
+    of the workspace: its path, or one relative to the folder of the
+    project.
+    """
+
+    path = os.path.join(virtualbricks.workspace, IMAGE_FOLDER, file)
+    has_image_file(virtualbricks, name, path)
+
+
+@then(
+    words(
+        "project.toml has the image {name:Image}, of {file} of my home folder"
+    )
+)
+def project_image_home(virtualbricks, name, file):
+    """The same, with the file of the home."""
+
+    has_image_file(virtualbricks, name, os.path.join(virtualbricks.home, file))
+
+
+@then(
+    words("project.toml has the disk {device} of {vm:Brick}, without an image")
+)
+def disk_without_image(virtualbricks, device, vm):
+    """
+    The disk of the machine, in the file of the project, is there, with no
+    image.
+    """
+
+    disks = project_brick_of(virtualbricks, vm).get("disks", {})
+    assert device in disks, f"{vm} has no disk {device}: {disks}"
+    image = disks[device]["image"]
+    assert image == "", f"the disk {device} of {vm} has the image {image}"
+
+
+def has_image_file(virtualbricks, name, wanted):
+    """
+    The image in the file of the project has the file at wanted: its path,
+    or one relative to the folder of the project.
+    """
+
+    path = project_path(virtualbricks)
+    images = project_file(virtualbricks).get("images", {})
+    assert name in images, f"project.toml has no image {name}: {images}"
+    found = os.path.join(os.path.dirname(path), images[name]["path"])
+    assert os.path.normpath(found) == wanted, f"{name} is of {found}"
+
+
+# Events
+
+EVENTS = "Events"
+# What the tab Events says in place of its list, when there are no events
+NO_EVENTS = "No Events Yet"
+# The kind of an action that starts a brick, in the settings of an event
+START_A_BRICK = "Start a brick"
+# The state of an event in its row: waiting, before the seconds left, or
+# ready
+WAITING = "Waiting · "
+READY = "Ready"
+# The submenus of the menu of a brick that choose an event
+WHEN_IT = ("When It Starts", "When It Stops")
+
+
+@when(
+    words(
+        "I make an event that starts {brick:Brick} after {seconds:d}"
+        " seconds, with the name it suggests, {name:Brick}"
+    )
+)
+def make_event(virtualbricks, brick, seconds, name):
+    """
+    New Event, in the tab Events: the name must be the one the dialog
+    suggests; the seconds typed in Wait, then Create; in the settings of the
+    event, Add Action, Start a brick and the brick, then OK.
+    """
+
+    new_event(virtualbricks, name, seconds)
+    virtualbricks.click("button", "Add Action")
+    action = virtualbricks.find("combo box", START_A_BRICK).get_parent()
+    if virtualbricks.shows("combo box", brick, within=action) is None:
+        # the first brick, which it has at first
+        combo = next(
+            combo
+            for combo in harness.a11y.find_all(action, "combo box")
+            if combo.get_name() != START_A_BRICK
+        )
+        virtualbricks.click("combo box", combo.get_name(), within=action)
+        virtualbricks.click("menu item", brick, within=combo)
+    virtualbricks.find("combo box", brick, within=action)
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
+@when(
+    words(
+        "I make an event that starts {brick:Brick} at once, with the name it"
+        " suggests, {name:Brick}"
+    )
+)
+def make_event_at_once(virtualbricks, brick, name):
+    """The same, with 0 seconds in Wait."""
+
+    make_event(virtualbricks, brick, 0, name)
+
+
+@when(
+    words(
+        "I make an event without actions, with the name it suggests,"
+        " {name:Brick}"
+    )
+)
+def make_empty_event(virtualbricks, name):
+    """
+    New Event, in the tab Events: the name must be the one the dialog
+    suggests; then Create, and OK in the settings of the event.
+    """
+
+    new_event(virtualbricks, name)
+    virtualbricks.click("button", "OK")
+    virtualbricks.find("button", f"Start {name}")
+
+
+def new_event(virtualbricks, name, seconds=None):
+    """
+    New Event, in the tab Events: the name must be the one the dialog
+    suggests; the seconds, if given, typed in Wait; then Create, and the
+    settings of the event show.
+    """
+
+    on_tab(virtualbricks, EVENTS)
+    virtualbricks.click("button", "New Event")
+    dialog = virtualbricks.find("dialog", "New Event")
+    suggests(virtualbricks, dialog, "Name", name)
+    if seconds is not None:
+        virtualbricks.type(
+            str(seconds), "spin button", "Wait", within=dialog, over=True
+        )
+    virtualbricks.click("button", "Create", within=dialog)
+    virtualbricks.gone("dialog", "New Event")
+    virtualbricks.find("label", "Event settings")
+
+
+@when(words("I open the settings of the event {name:Brick}"))
+def open_event_settings(virtualbricks, name):
+    """
+    Configure…, in its menu, in the tab Events: its settings show, in place
+    of the list.
+    """
+
+    on_tab(virtualbricks, EVENTS)
+    configure(virtualbricks, name)
+    virtualbricks.find("label", "Event settings")
+
+
+@when(words("I start the event {name:Brick}"))
+def start_event(virtualbricks, name):
+    """Its Start, in the tab Events; then it waits: its Stop shows."""
+
+    on_tab(virtualbricks, EVENTS)
+    row = virtualbricks.row(name)
+    virtualbricks.click("button", f"Start {name}", within=row)
+    virtualbricks.find("button", f"Stop {name}", within=row)
+
+
+@when(words("I stop the event {name:Brick} while it waits"))
+def stop_event(virtualbricks, name):
+    """
+    Its Stop, in the tab Events, while its row says it waits; then its
+    Start shows, and its row says Ready.
+    """
+
+    on_tab(virtualbricks, EVENTS)
+    row = virtualbricks.row(name)
+    state = event_state(row)
+    assert state.startswith(WAITING), f"{name} doesn't wait: {state!r}"
+    virtualbricks.click("button", f"Stop {name}", within=row)
+    virtualbricks.find("button", f"Start {name}", within=row)
+    virtualbricks.find("label", READY, within=row)
+
+
+@when(words("I ask to delete the event {name:Brick}, from its menu"))
+def ask_delete_event(virtualbricks, name):
+    """Delete…, in its menu, in the tab Events: Delete Event names it."""
+
+    on_tab(virtualbricks, EVENTS)
+    ask_delete(virtualbricks, name, "event")
+
+
+@then(words("project.toml has the event {name:Brick}, without actions"))
+def project_event_without_actions(virtualbricks, name):
+    """The event is in the file of the project, with no action."""
+
+    events = project_file(virtualbricks).get("events", {})
+    assert name in events, f"project.toml has no event {name}"
+    actions = events[name].get("actions", [])
+    assert actions == [], f"{name} has the actions {actions}"
+
+
+@when(words("I run the event {name:Brick} now, from its menu"))
+def run_event_now(virtualbricks, name):
+    """Run Now, in its menu, in the tab Events; then the menu closes."""
+
+    on_tab(virtualbricks, EVENTS)
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", "Run Now")
+    virtualbricks.gone("button", "Run Now")
+
+
+@when(
+    words("I choose {event:Brick} in {submenu}, in the menu of {name:Brick}")
+)
+def choose_event(virtualbricks, event, submenu, name):
+    """
+    In the menu of the brick, When It Starts or When It Stops, then the
+    event; then Escape closes the menu, which a choice leaves open. The
+    choices of a menu of GTK 3 don't tell AT-SPI which is on: the row of
+    the event says it.
+    """
+
+    assert submenu in WHEN_IT, f"{submenu} is none of {WHEN_IT}"
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", submenu)
+    virtualbricks.click("radio button", event)
+    virtualbricks.key("Escape", virtualbricks.find("frame"))
+    virtualbricks.gone("radio button", event)
+
+
+def event_state(row):
+    """What the row of an event says of it: Ready, Waiting · 2 s, …"""
+
+    labels = list(harness.a11y.find_all(row, "label"))
+    # after the name and the detail
+    return labels[-1].get_name()
+
+
+@then(
+    words(
+        "{name:Brick} counts down from {seconds:d} seconds, then starts"
+        " {brick:Brick}"
+    )
+)
+def counts_down(virtualbricks, name, seconds, brick):
+    """
+    The row of the event says that it waits, with the seconds left, from
+    seconds down to 1, while no process of the brick runs; then it says
+    Ready, and a process of the brick runs.
+    """
+
+    row = virtualbricks.row(name)
+    said = []
+
+    def ready():
+        state = event_state(row)
+        if state.startswith(WAITING) and virtualbricks.bricks(brick):
+            # the brick starts as the row says Ready, not before
+            state = event_state(row)
+            assert not state.startswith(
+                WAITING
+            ), f"{brick} runs while the row of {name} says {state!r}"
+        if not said or said[-1] != state:
+            said.append(state)
+        return state == READY
+
+    virtualbricks.wait_for(
+        ready,
+        f"the row of {name} says {READY}",
+        timeout=seconds + harness.TIMEOUT,
+    )
+    wanted = [f"{WAITING}{left} s" for left in range(seconds, 0, -1)]
+    wanted.append(READY)
+    assert said == wanted, f"the row of {name} said {said}, not {wanted}"
+    virtualbricks.wait_for(
+        lambda: virtualbricks.bricks(brick), f"a process of {brick} runs"
+    )
+
+
+@then("the list of events has")
+def events_listed(virtualbricks, datatable):
+    """
+    The rows of the tab Events, all of them and in order, once they are
+    those of the table under the step, whose first line has the titles of
+    the columns: each row has the name of the event, its detail and its
+    state.
+    """
+
+    has_rows(
+        virtualbricks,
+        "the list of events",
+        lambda: tab_rows(virtualbricks, EVENTS, NO_EVENTS),
+        datatable,
+    )
+
+
+# Topology
+
+TOPOLOGY = "Topology"
+# How far over the bottom of the tab a drag of the picture starts: under
+# the bricks, which are a row in the middle of its height, where the
+# background is
+UNDER_THE_BRICKS = 30
+
+
+# A brick in the picture of the lab, at 100%, in pixels: its icon, and the
+# box of its icon and of its name under it, for a name narrower than the
+# icon; the margin around the lab, and the gap around the bar of the zoom
+ICON = 64
+BOX_HEIGHT = 84
+LAB_MARGIN = 20
+BAR_GAP = 6
+# The tooltip of the zoom level of the tab Topology, which the screen
+# readers say after the level
+ZOOM_TO_100 = "Zoom to 100%"
+# The title of the file chooser of Export as Image…
+EXPORT_IMAGE = "Export as Image"
+# The first bytes of a PNG file
+PNG = b"\x89PNG\r\n\x1a\n"
+# The check box of the file chooser of Export as Image…
+FADE_STOPPED = "Fade stopped bricks"
+# How far apart the red, the green and the blue of a pixel are, at most in
+# a grey one: the ink of the links and the names, 0x2E3436, is 8 apart;
+# and at least in a pixel in colour; and how many of those make a picture
+# in colour, a few of the 64 × 64 of a switch
+GREY_SPREAD = 12
+COLOUR_SPREAD = 40
+COLOUR_PIXELS = 100
+
+
+@when(words("I zoom {way} on the picture of the lab {times:d} times"))
+def zoom(virtualbricks, way, times):
+    """The tab Topology, then its Zoom In, or Zoom Out, times."""
+
+    assert way in ("in", "out"), f"zoom in or out, not {way}"
+    tab = virtualbricks.click("page tab", TOPOLOGY)
+    for _ in range(times):
+        virtualbricks.click("button", f"Zoom {way.title()}", within=tab)
+
+
+@when("I zoom the picture of the lab back to 100%")
+def zoom_back(virtualbricks):
+    """The tab Topology, then its zoom level, which zooms to 100%."""
+
+    tab = virtualbricks.click("page tab", TOPOLOGY)
+    level = zoom_level(virtualbricks, tab)
+    virtualbricks.click("button", level.get_name(), within=tab)
+
+
+@then(words("the zoom level of the picture of the lab is {level}"))
+def zoom_level_is(virtualbricks, level):
+    """The zoom level of the tab Topology says level, as 150%."""
+
+    tab = virtualbricks.find("page tab", TOPOLOGY)
+    button = zoom_level(virtualbricks, tab)
+    try:
+        virtualbricks.wait_for(
+            lambda: button.get_name() == level, f"the zoom level is {level}"
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the zoom level is {button.get_name()}, not {level}"
+        ) from None
+
+
+def zoom_level(virtualbricks, tab):
+    """
+    The zoom level of the tab Topology, once it shows: a button named by
+    the level, whose tooltip says it zooms to 100%.
+    """
+
+    return virtualbricks.wait_for(
+        lambda: next(
+            (
+                button
+                for button in harness.a11y.find_all(tab, "button")
+                if button.get_description() == ZOOM_TO_100
+            ),
+            None,
+        ),
+        "the zoom level shows",
+    )
+
+
+@when(
+    words(
+        "I export the picture of the lab to {file} of my home folder, typing"
+        " its path"
+    )
+)
+def export_picture(virtualbricks, file, faded=False):
+    """
+    The tab Topology, Export as Image… in its More; in the file chooser,
+    the path typed in place of the name it suggests, with faded Fade stopped
+    bricks ticked, then Save, and the file chooser closes.
+    """
+
+    tab = virtualbricks.click("page tab", TOPOLOGY)
+    virtualbricks.click("toggle button", "More", within=tab)
+    virtualbricks.click("button", "Export as Image…")
+    chooser = virtualbricks.find("file chooser", EXPORT_IMAGE)
+    path = os.path.join(virtualbricks.home, file)
+    virtualbricks.type(path, "text", "Name:", within=chooser, over=True)
+    if faded:
+        box = virtualbricks.find("check box", FADE_STOPPED, within=chooser)
+        if not harness.a11y.checked(box):
+            virtualbricks.click("check box", FADE_STOPPED, within=chooser)
+        virtualbricks.wait_for(
+            lambda: harness.a11y.checked(box), f"{FADE_STOPPED} is ticked"
+        )
+    virtualbricks.click("button", "Save", within=chooser)
+    virtualbricks.gone("file chooser", EXPORT_IMAGE)
+
+
+@when(
+    words(
+        "I export the picture of the lab to {file} of my home folder, typing"
+        " its path, with Fade stopped bricks ticked"
+    )
+)
+def export_picture_faded(virtualbricks, file):
+    """
+    The same, with Fade stopped bricks, the check box of the file chooser,
+    ticked before Save.
+    """
+
+    export_picture(virtualbricks, file, faded=True)
+
+
+@when(
+    words(
+        "I choose {item} for the links in the menu of the picture of the lab"
+    )
+)
+def link_lines(virtualbricks, item):
+    """
+    The tab Topology, More, then the item of Links, a radio button in the
+    menu: Straight, Curved or Right Angles.
+    """
+
+    tab = virtualbricks.click("page tab", TOPOLOGY)
+    virtualbricks.click("toggle button", "More", within=tab)
+    virtualbricks.click("radio button", item)
+
+
+@then(words("the file {file} of my home folder is a PNG image, not blank"))
+def png_image(virtualbricks, file):
+    """
+    The file is a PNG image, which cairo reads: a drawing, whose pixels
+    aren't all alike.
+    """
+
+    path = os.path.join(virtualbricks.home, file)
+    virtualbricks.wait_for(lambda: os.path.isfile(path), f"{path} is there")
+    with open(path, "rb") as image:
+        assert image.read(len(PNG)) == PNG, f"{file} isn't a PNG image"
+    surface = cairo.ImageSurface.create_from_png(path)
+    data = bytes(surface.get_data())
+    pixels = {data[i : i + 4] for i in range(0, len(data), 4)}
+    width, height = surface.get_width(), surface.get_height()
+    assert len(pixels) > 1, f"{file} is blank, {width} × {height}"
+
+
+def spreads(virtualbricks, file):
+    """
+    How far apart the red, the green and the blue are, in each pixel of the
+    PNG image file of the home, once it is there.
+    """
+
+    path = os.path.join(virtualbricks.home, file)
+    virtualbricks.wait_for(lambda: os.path.isfile(path), f"{path} is there")
+    surface = cairo.ImageSurface.create_from_png(path)
+    data = bytes(surface.get_data())
+    return [
+        max(data[i : i + 3]) - min(data[i : i + 3])
+        for i in range(0, len(data), 4)
+    ]
+
+
+@then(words("the picture in {file} of my home folder is in colour"))
+def picture_in_colour(virtualbricks, file):
+    """
+    A hundred of its pixels at least are in colour, their red, green and
+    blue 40 apart or more: the icons of the bricks, stopped or not.
+    """
+
+    coloured = sum(
+        spread >= COLOUR_SPREAD for spread in spreads(virtualbricks, file)
+    )
+    assert coloured >= COLOUR_PIXELS, f"{file} has {coloured} pixels in colour"
+
+
+@then(words("the picture in {file} of my home folder is grey"))
+def picture_grey(virtualbricks, file):
+    """
+    Its pixels are all grey, their red, green and blue 12 apart at most:
+    the icons of the stopped bricks and the ink of the links and the names.
+    """
+
+    widest = max(spreads(virtualbricks, file))
+    assert widest <= GREY_SPREAD, f"{file} has a pixel {widest} apart"
+
+
+@when(words("I drag the picture of the lab {pixels:d} pixels to the {side}"))
+def drag_picture(virtualbricks, picture_scroll, pixels, side):
+    """
+    A press on the background of the picture, under its bricks, a move of
+    pixels to the left or to the right, and a release; the picture is wider
+    than the tab, which has a horizontal scroll bar.
+    """
+
+    pane, bar = picture_pane(virtualbricks)
+
+    def ready():
+        # where the picture is before the press, once a zoom just before
+        # has scrolled it
+        picture_scroll["before"] = harness.a11y.position(bar)[0]
+
+    x, y, width, height = harness.a11y.extents(pane)
+    start = (x + width // 2, y + height - UNDER_THE_BRICKS)
+    shift = -pixels if side == "left" else pixels
+    virtualbricks.drag(start, (start[0] + shift, start[1]), ready)
+
+
+@then(words("the picture of the lab moved {pixels:d} pixels to the {side}"))
+def picture_moved(virtualbricks, picture_scroll, pixels, side):
+    """
+    Its horizontal scroll bar moved as much the other way: the tab shows
+    what was pixels further right of the picture, or further left.
+    """
+
+    _, bar = picture_pane(virtualbricks)
+    before = picture_scroll["before"]
+    wanted = before + pixels if side == "left" else before - pixels
+    try:
+        virtualbricks.wait_for(
+            lambda: harness.a11y.position(bar)[0] == wanted,
+            f"the picture of the lab moved {pixels} pixels to the {side}",
+        )
+    except AssertionError:
+        now = harness.a11y.position(bar)[0]
+        raise AssertionError(
+            f"the picture is scrolled to {now}, from {before}, not {wanted}"
+        ) from None
+
+
+@given(words("the project {name:Project} has the bricks, laid out by hand"))
+def project_by_hand(virtualbricks, name, datatable):
+    """
+    The folder of the project, in the workspace, has the file of the
+    project, with the bricks of the table under the step: the name of each,
+    its type and its place in the picture of the lab, as project.toml
+    writes it; before Virtualbricks starts, which opens new_project at its
+    first start.
+    """
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    project = os.path.join(virtualbricks.workspace, name)
+    os.makedirs(project, exist_ok=True)
+    lines = ["format = 1", ""]
+    for brick, kind, place in datatable[1:]:
+        lines += [f"[bricks.{brick}]", f'type = "{kind}"', f"place = {place}"]
+        lines.append("")
+    with open(os.path.join(project, "project.toml"), "w") as file:
+        file.write("\n".join(lines))
+
+
+@when(
+    words(
+        "I move {name:Brick} {pixels:d} pixels to the right in the picture of"
+        " the lab"
+    )
+)
+def move_brick(virtualbricks, name, pixels):
+    """
+    The tab Topology, at 100%: a press on the brick, a move of pixels to
+    the right, and a release over free room, where the brick goes. The brick
+    is found on the screen by its place in project.toml and the rules of the
+    picture, not by its pixels: the lab is the boxes of its bricks, in the
+    middle of the tab under the bar of the zoom, as long as it fits; the
+    names of the bricks are narrower than their icons.
+    """
+
+    tab = virtualbricks.click("page tab", TOPOLOGY)
+    level = zoom_level(virtualbricks, tab)
+    assert level.get_name() == "100%", f"the zoom is {level.get_name()}"
+    pane = virtualbricks.find("scroll pane", within=tab)
+    x, y, width, height = harness.a11y.extents(pane)
+    places = {
+        brick: table["place"]
+        for brick, table in project_file(virtualbricks)["bricks"].items()
+    }
+    assert all(places.values()), f"a brick without a place: {places}"
+    xs = [place[0] for place in places.values()]
+    ys = [place[1] for place in places.values()]
+    # the box of each brick: its icon, the middle of which is its place,
+    # and its name under it
+    left, right = min(xs) - ICON / 2, max(xs) + ICON / 2
+    top, bottom = min(ys) - ICON / 2, max(ys) - ICON / 2 + BOX_HEIGHT
+    assert (
+        right - left + 2 * LAB_MARGIN <= width
+    ), "the lab is wider than the tab"
+    # the room that the bar of the zoom keeps free at the top
+    _bx, by, _bw, bh = harness.a11y.extents(level)
+    room = by + bh + BAR_GAP - y
+    ox = max(LAB_MARGIN, (width - (right - left)) / 2)
+    oy = room + max(LAB_MARGIN, (height - room - (bottom - top)) / 2)
+    px, py = places[name]
+    # the middle of its box
+    start = (
+        round(x + ox + px - left),
+        round(y + oy + py - ICON / 2 + BOX_HEIGHT / 2 - top),
+    )
+    virtualbricks.drag(start, (start[0] + pixels, start[1]))
+
+
+def picture_pane(virtualbricks):
+    """
+    The scroll pane of the picture of the lab, in the tab Topology, and its
+    horizontal scroll bar, once it shows.
+    """
+
+    tab = virtualbricks.find("page tab", TOPOLOGY)
+    pane = virtualbricks.find("scroll pane", within=tab)
+    bar = virtualbricks.wait_for(
+        lambda: next(
+            (
+                bar
+                for bar in harness.a11y.find_all(pane, "scroll bar")
+                if not harness.a11y.vertical(bar)
+            ),
+            None,
+        ),
+        "the picture of the lab is wider than its tab",
+    )
+    return pane, bar
+
+
+# Readme
+
+README_TAB = "Readme"
+# The style of a run of text, as a user sees it, by its attributes as AT-SPI
+# tells them, which the screen readers tell too
+STYLES = (
+    ("large", lambda attributes: float(attributes.get("scale", 1)) > 1),
+    ("bold", lambda attributes: int(attributes.get("weight", 400)) >= 700),
+    ("italic", lambda attributes: attributes.get("style") == "italic"),
+    ("monospace", lambda attributes: attributes.get("family") == "monospace"),
+)
+
+
+@given(words("the project {name:Project} has the README"))
+def project_readme(virtualbricks, name, docstring):
+    """
+    The folder of the project, in the workspace, has the file of the
+    project, and a README.md with the text under the step; before
+    Virtualbricks starts. The project that it opens at its first start is
+    new_project.
+    """
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    project = os.path.join(virtualbricks.workspace, name)
+    os.makedirs(project, exist_ok=True)
+    path = os.path.join(project, "project.toml")
+    if not os.path.exists(path):
+        with open(path, "w") as file:
+            file.write("format = 1\n")
+    with open(os.path.join(project, "README.md"), "w") as file:
+        file.write(docstring + "\n")
+
+
+@when(words("I open the tab {title}"))
+def open_tab(virtualbricks, title):
+    """Its page tab, in the main window; then it is the one that shows."""
+
+    tab = virtualbricks.click("page tab", title)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.selected(tab), f"the tab {title} shows"
+    )
+
+
+def on_tab(virtualbricks, title):
+    """The tab title, clicked unless it is the one that shows."""
+
+    tab = virtualbricks.find("page tab", title)
+    if not harness.a11y.selected(tab):
+        open_tab(virtualbricks, title)
+    return tab
+
+
+@when("I write the README in the Readme tab")
+def write_readme(virtualbricks, docstring):
+    """
+    The tab Readme, its Edit, then the text under the step typed in its
+    editor.
+    """
+
+    tab = virtualbricks.click("page tab", README_TAB)
+    virtualbricks.click("radio button", "Edit", within=tab)
+    editor = virtualbricks.wait_for(
+        lambda: next(
+            (
+                text
+                for text in harness.a11y.find_all(tab, "text")
+                if harness.a11y.editable(text)
+            ),
+            None,
+        ),
+        "the editor of the README shows",
+    )
+    virtualbricks.type(docstring, "text", within=editor)
+
+
+@when("I show the preview of the README")
+def preview_readme(virtualbricks):
+    """The Preview of the tab Readme."""
+
+    tab = virtualbricks.find("page tab", README_TAB)
+    virtualbricks.click("radio button", "Preview", within=tab)
+
+
+@then("the Readme tab shows the README rendered")
+def readme_rendered(virtualbricks, datatable):
+    """
+    The preview of the tab Readme has the runs of text of the table under
+    the step, all of them and in order: the text of each, without the
+    spaces at its ends, and its style, as large, bold, italic or monospace.
+    """
+
+    tab = virtualbricks.find("page tab", README_TAB)
+    found = []
+
+    def rendered():
+        preview = next(
+            (
+                text
+                for text in harness.a11y.find_all(tab, "text")
+                if not harness.a11y.editable(text)
+            ),
+            None,
+        )
+        found[:] = [] if preview is None else preview_runs(preview)
+        return datatable[:1] + found == datatable
+
+    try:
+        virtualbricks.wait_for(rendered, "the README shows rendered")
+    except AssertionError:
+        raise AssertionError(
+            f"the preview has {found}, not {datatable[1:]}"
+        ) from None
+
+
+def preview_runs(preview):
+    """
+    The runs of text of a preview, a line at a time: the text of each,
+    without the spaces at its ends, and its style.
+    """
+
+    found = []
+    for text, attributes in harness.a11y.runs(preview):
+        style = ", ".join(name for name, has in STYLES if has(attributes))
+        for line in text.split("\n"):
+            if line.strip():
+                found.append([line.strip(), style])
+    return found
+
+
+@then(words("the README file of {name:Project} has"))
+def readme_file(virtualbricks, name, docstring):
+    """
+    The README.md of the folder of the project, in the workspace, has the
+    text under the step, once Virtualbricks has written it; the spaces at
+    the end aside.
+    """
+
+    path = os.path.join(virtualbricks.workspace, name, "README.md")
+
+    def text():
+        try:
+            with open(path, encoding="utf-8") as file:
+                return file.read().rstrip()
+        except FileNotFoundError:
+            return None
+
+    try:
+        virtualbricks.wait_for(
+            lambda: text() == docstring.rstrip(), f"{path} has the text"
+        )
+    except AssertionError:
+        raise AssertionError(f"README.md has {text()!r}") from None
+
+
+# Settings
+
+# The title of the Settings window
+SETTINGS_WINDOW = "Settings"
+# The audio drivers of QEMU that play sound, in the order the menu of the
+# Settings window has them; the others come after, by their names
+PLAYING = ("pipewire", "pa", "alsa", "jack", "oss", "sdl", "sndio")
+
+
+@when(
+    words(
+        'I turn {state} "{setting}" in the Settings window, on its page'
+        " {page}"
+    )
+)
+def turn_setting(virtualbricks, state, setting, page):
+    """
+    Settings, in the menu File; on the page, the switch of the setting,
+    which is the other way, turned on or off; then OK, and the window
+    closes.
+    """
+
+    dialog = turn_switch(virtualbricks, state, setting, page)
+    virtualbricks.click("button", "OK", within=dialog)
+    virtualbricks.gone("dialog", SETTINGS_WINDOW)
+
+
+@when(
+    words(
+        'I turn {state} "{setting}" on the page {page} of the Settings'
+        " window, then cancel"
+    )
+)
+def turn_setting_then_cancel(virtualbricks, state, setting, page):
+    """
+    Settings, in the menu File; on the page, the switch of the setting,
+    which is the other way, turned on or off; then Cancel, and the window
+    closes.
+    """
+
+    dialog = turn_switch(virtualbricks, state, setting, page)
+    virtualbricks.click("button", "Cancel", within=dialog)
+    virtualbricks.gone("dialog", SETTINGS_WINDOW)
+
+
+def turn_switch(virtualbricks, state, setting, page):
+    """
+    The Settings window, with the switch of the setting on the page turned
+    on or off, which was the other way.
+    """
+
+    on = turned(state)
+    dialog = open_settings(virtualbricks)
+    switch = settings_switch(virtualbricks, dialog, page, setting)
+    assert harness.a11y.checked(switch) != on, f"{setting} is already {state}"
+    virtualbricks.click("toggle button", setting, within=dialog)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(switch) == on, f"{setting} is {state}"
+    )
+    return dialog
+
+
+@when("I open the Settings window")
+def open_settings_window(virtualbricks):
+    """Settings, in the menu File."""
+
+    open_settings(virtualbricks)
+
+
+@when(
+    words(
+        'I type "{text}" as "{setting}" on the page {page} of the Settings'
+        " window"
+    )
+)
+def type_setting(virtualbricks, text, setting, page):
+    """
+    Settings, in the menu File; on the page, the text typed in the entry of
+    the setting, in place of the one it has.
+    """
+
+    type_in_settings(virtualbricks, text, setting, page)
+
+
+@when(
+    words(
+        'I type "{text}" as "{setting}" in the Settings window, on its page'
+        " {page}"
+    )
+)
+def type_setting_then_ok(virtualbricks, text, setting, page):
+    """The same, then OK, and the window closes."""
+
+    dialog = type_in_settings(virtualbricks, text, setting, page)
+    virtualbricks.click("button", "OK", within=dialog)
+    virtualbricks.gone("dialog", SETTINGS_WINDOW)
+
+
+def type_in_settings(virtualbricks, text, setting, page):
+    """
+    The Settings window, with the text typed in the entry of the setting on
+    the page, in place of the one it has.
+    """
+
+    dialog = open_settings(virtualbricks)
+    virtualbricks.click("page tab", page, within=dialog)
+    virtualbricks.type(
+        text, "text", within=virtualbricks.row(setting), over=True
+    )
+    return dialog
+
+
+@when(
+    words(
+        'I choose "{choice}" for "{setting}" in the Settings window, on its'
+        " page {page}"
+    )
+)
+def choose_setting(virtualbricks, choice, setting, page):
+    """
+    Settings, in the menu File; on the page, the menu of the setting,
+    opened with its arrow, then the choice, which its text then has; then
+    OK, and the window closes.
+    """
+
+    dialog = open_settings(virtualbricks)
+    virtualbricks.click("page tab", page, within=dialog)
+    row = virtualbricks.row(setting)
+    combo = open_text_menu(virtualbricks, row)
+    virtualbricks.click("menu item", choice, within=combo)
+    text = virtualbricks.find("text", within=row)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.text(text) == choice, f"{setting} is {choice}"
+    )
+    virtualbricks.click("button", "OK", within=dialog)
+    virtualbricks.gone("dialog", SETTINGS_WINDOW)
+
+
+def open_text_menu(virtualbricks, row):
+    """The menu of the text of the row, opened with its arrow: its combo box."""
+
+    combo = virtualbricks.find("combo box", within=row)
+    # its arrow, at its right end: the middle of it is its text
+    x, y, width, height = harness.a11y.extents(combo)
+    virtualbricks.browser.click(x + width - height // 2, y + height // 2)
+    return combo
+
+
+def open_settings(virtualbricks):
+    """Settings, in the menu File: the window, once it shows."""
+
+    virtualbricks.choose("Settings", "File")
+    return virtualbricks.find("dialog", SETTINGS_WINDOW)
+
+
+def settings_switch(virtualbricks, dialog, page, setting):
+    """The switch of the setting, on the page of the Settings window."""
+
+    virtualbricks.click("page tab", page, within=dialog)
+    return virtualbricks.enabled("toggle button", setting, within=dialog)
+
+
+def turned(state):
+    """Whether a switch said on or off is on."""
+
+    assert state in ("on", "off"), f"a switch is on or off, not {state}"
+    return state == "on"
+
+
+@then(words('the page {page} of the Settings window has "{setting}" {state}'))
+def settings_shows(virtualbricks, page, setting, state):
+    """The switch of the setting, on the page, is on or off."""
+
+    dialog = virtualbricks.find("dialog", SETTINGS_WINDOW)
+    switch = settings_switch(virtualbricks, dialog, page, setting)
+    virtualbricks.wait_for(
+        lambda: harness.a11y.checked(switch) == turned(state),
+        f"{setting} is {state}",
+    )
+
+
+@then(words('the row "{setting}" of the Settings window says "{text}"'))
+def settings_row_says(virtualbricks, setting, text):
+    """
+    The row of the setting, on the page that shows, has the text: what is
+    wrong with the setting, as the window says once it knows.
+    """
+
+    virtualbricks.find("dialog", SETTINGS_WINDOW)
+    virtualbricks.find("label", text, within=virtualbricks.row(setting))
+
+
+@then(
+    words(
+        'the menu of "{setting}" in the Settings window has the audio'
+        " drivers of {program}"
+    )
+)
+def audio_drivers_menu(virtualbricks, setting, program):
+    """
+    The menu of the setting has the audio drivers that the program lists
+    with -audiodev help: those that play sound first, in the order of
+    PLAYING, then the others, by their names.
+    """
+
+    listed = subprocess.run(
+        [program, "-audiodev", "help"],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=10,
+    ).stdout.splitlines()
+    # "Available audio drivers:", then one a line
+    drivers = [line.strip() for line in listed[1:] if line.strip()]
+    playing = [driver for driver in PLAYING if driver in drivers]
+    wanted = playing + sorted(set(drivers) - set(playing))
+    virtualbricks.find("dialog", SETTINGS_WINDOW)
+    combo = open_text_menu(virtualbricks, virtualbricks.row(setting))
+    shown = []
+
+    def has():
+        shown[:] = virtualbricks.names("menu item", within=combo)
+        return shown == wanted
+
+    try:
+        virtualbricks.wait_for(has, f"the menu of {setting} has {wanted}")
+    except AssertionError:
+        raise AssertionError(f"the menu of {setting} has {shown}") from None
+
+
+@then("settings.toml is as it was")
+def settings_toml_unchanged(virtualbricks):
+    """
+    The settings file is the one the tests wrote before the start:
+    Virtualbricks hasn't written it.
+    """
+
+    with open(virtualbricks.settings) as file:
+        written = file.read()
+    assert written == harness.SETTINGS, f"settings.toml is {written!r}"
+
+
+@then("settings.toml has")
+def settings_toml(virtualbricks, datatable):
+    """
+    The settings file has the settings of the table under the step, a name
+    and a value each, the value as TOML writes it.
+    """
+
+    toml_has(virtualbricks.settings, None, datatable)
+
+
+@then("project.toml has the settings")
+def project_settings(virtualbricks, datatable):
+    """
+    The file of the project has the settings of the table under the step, in
+    its table settings, a name and a value each, the value as TOML writes
+    it.
+    """
+
+    toml_has(project_path(virtualbricks), "settings", datatable)
+
+
+def toml_has(path, table, datatable):
+    """
+    The file of path has the settings of datatable, at its top or in table,
+    once Virtualbricks has written them.
+    """
+
+    wanted = {
+        setting: tomllib.loads(f"value = {value}")["value"]
+        for setting, value in datatable[1:]
+    }
+
+    def found():
+        with open(path, "rb") as file:
+            data = tomllib.load(file)
+        if table is not None:
+            data = data.get(table, {})
+        return {setting: data.get(setting) for setting in wanted}
+
+    name = os.path.basename(path)
+    try:
+        harness.a11y.wait_for(
+            lambda: found() == wanted, f"{name} has {wanted}"
+        )
+    except AssertionError:
+        raise AssertionError(f"{name} has {found()}, not {wanted}") from None
+
+
+# A program that fails, and what Virtualbricks says of it
+
+
+@given(words('a vde_switch that writes "{text}" and exits with {status:d}'))
+def failing_switch(virtualbricks, text, status):
+    """A vde_switch of its own, which writes text, and exits."""
+
+    fake_switch(virtualbricks, [text], status)
+
+
+@given(
+    words("a vde_switch that writes these lines, and exits with {status:d}")
+)
+def failing_switch_lines(virtualbricks, docstring, status):
+    """The same, with the lines of the text under the step."""
+
+    fake_switch(virtualbricks, docstring.splitlines(), status)
+
+
+def fake_switch(virtualbricks, lines, status):
+    """
+    A script of its own in place of vde_switch, in the folder of the VDE
+    programs of the project that Virtualbricks opens at its first start,
+    new_project: it writes the lines on its standard error, at once, and
+    exits.
+    """
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    folder = os.path.join(virtualbricks.home, "vde")
+    os.makedirs(folder)
+    program = os.path.join(folder, "vde_switch")
+    words = " ".join(shlex.quote(line) for line in lines)
+    with open(program, "w") as file:
+        file.write(f"#!/bin/sh\nprintf '%s\\n' {words} >&2\nexit {status}\n")
+    os.chmod(program, 0o755)
+    project = os.path.join(virtualbricks.workspace, "new_project")
+    os.makedirs(project)
+    with open(os.path.join(project, "project.toml"), "w") as file:
+        file.write(f"format = 1\n\n[settings]\nvde_path = {folder!r}\n")
+
+
+@then(words('an error says "{text}"'))
+def error_says(virtualbricks, text):
+    alert = virtualbricks.find("alert", "Error")
+    virtualbricks.find("label", text, within=alert)
+
+
+@when("I close the error")
+def close_error(virtualbricks):
+    alert = virtualbricks.find("alert", "Error")
+    virtualbricks.click("button", "Close", within=alert)
+    virtualbricks.gone("alert", "Error")
+
+
+@when("I open the messages window")
+def open_messages(virtualbricks):
+    """Logs, in the menu File."""
+
+    virtualbricks.choose("Logs", "File")
+    virtualbricks.find("frame", "Logs")
+
+
+@then(words('the messages window has the output of {name:Brick}: "{text}"'))
+def messages_output(virtualbricks, name, text):
+    """
+    A line of its messages comes from the brick, and has text, as its
+    program wrote it on its standard output, or on its standard error, after
+    2>.
+    """
+
+    view = console(virtualbricks)
+
+    def output():
+        for line in harness.a11y.text(view).splitlines():
+            fields = [field for field in line.split("\t") if field]
+            if name in fields and (text in fields or f"2> {text}" in fields):
+                return line
+        return None
+
+    virtualbricks.wait_for(output, f"the output of {name} is in the window")
+
+
+# The arrow of a toggle of the messages window: folded, unfolded
+FOLDED = "▸"
+UNFOLDED = "▾"
+
+
+@then(words('the messages window has the message of {name:Brick}: "{text}"'))
+def messages_message(virtualbricks, name, text):
+    """A line of its messages comes from the brick, and says text."""
+
+    virtualbricks.wait_for(
+        lambda: message_line(console(virtualbricks), name, text) is not None,
+        f"the message of {name} is in the window",
+    )
+
+
+@then(
+    words(
+        'the messages window has the output of {name:Brick}: "{text}", and'
+        " {count:d} more lines folded"
+    )
+)
+def output_folded(virtualbricks, name, text, count):
+    """
+    A line of its messages is the first line of the output of the brick,
+    text, and a toggle that says how many more lines it folds; no line of
+    them shows under it.
+    """
+
+    view = console(virtualbricks)
+    first = f"{output_of(text)}  {toggle(count, unfolded=False)}"
+
+    def folded():
+        index = message_line(view, name, first)
+        if index is None:
+            return False
+        lines = harness.a11y.text(view).split("\n")
+        # the next line, if any, is a message of its own
+        return index + 1 == len(lines) or "\t" in lines[index + 1]
+
+    virtualbricks.wait_for(folded, f"the output of {name} is folded")
+
+
+@when(words("I unfold the output of {name:Brick} in the messages window"))
+def unfold(virtualbricks, name):
+    """
+    The toggle of the output of the brick, after its first line; then it
+    says the lines are unfolded.
+    """
+
+    view = console(virtualbricks)
+    lines = harness.a11y.text(view).split("\n")
+    index = next(
+        (
+            index
+            for index, line in enumerate(lines)
+            if source_of(line) == name
+            and message_of(line).startswith(output_of(""))
+            and FOLDED in line
+        ),
+        None,
+    )
+    assert index is not None, f"no output of {name} folded"
+    line = lines[index]
+    start = sum(len(before) + 1 for before in lines[:index])
+    # the toggle: the arrow, up to the end of the line
+    arrow = line.index(FOLDED)
+    virtualbricks.click_text(view, start + arrow, len(line) - arrow)
+    virtualbricks.wait_for(
+        lambda: UNFOLDED in harness.a11y.text(view).split("\n")[index],
+        f"the output of {name} is unfolded",
+    )
+
+
+@then(words("the messages window has the output of {name:Brick}, unfolded"))
+def output_unfolded(virtualbricks, name, docstring):
+    """
+    A line of its messages is the first line of the output of the brick,
+    and a toggle that says how many more lines it unfolded, which show under
+    it: the lines of the text under the step.
+    """
+
+    view = console(virtualbricks)
+    first, *more = docstring.splitlines()
+    line = f"{output_of(first)}  {toggle(len(more), unfolded=True)}"
+
+    def unfolded():
+        index = message_line(view, name, line)
+        if index is None:
+            return False
+        lines = harness.a11y.text(view).split("\n")
+        return lines[index + 1 : index + 1 + len(more)] == more
+
+    virtualbricks.wait_for(unfolded, f"the output of {name} is unfolded")
+
+
+def console(virtualbricks):
+    """The text of the messages window, once it shows."""
+
+    window = virtualbricks.find("frame", "Logs")
+    pane = virtualbricks.find("scroll pane", within=window)
+    return virtualbricks.find("text", within=pane)
+
+
+def message_line(view, name, text):
+    """
+    The index of the line of the messages window that comes from name and
+    says text, or None. A message is a line of fields, after tabs: its time,
+    where it comes from, its text; the lines a toggle unfolds have none.
+    """
+
+    for index, line in enumerate(harness.a11y.text(view).split("\n")):
+        if source_of(line) == name and message_of(line) == text:
+            return index
+    return None
+
+
+def source_of(line):
+    """Where a message comes from, or None for a line that isn't one."""
+
+    fields = [field for field in line.split("\t") if field]
+    return fields[1] if len(fields) == 3 else None
+
+
+def message_of(line):
+    """The text of a message, after where it comes from."""
+
+    return [field for field in line.split("\t") if field][-1]
+
+
+def output_of(text):
+    """A line that a program wrote on its standard error, as it shows."""
+
+    return f"2> {text}"
+
+
+def toggle(count, unfolded):
+    """
+    The toggle of count lines of a message, as the messages window says it:
+    an arrow, to the right when folded, down when unfolded.
+    """
+
+    arrow = UNFOLDED if unfolded else FOLDED
+    lines = "line" if count == 1 else "lines"
+    # never broken over two lines
+    return f"{arrow} {count} more {lines}".replace(" ", "\u00a0")
+
+
+# A switch that another program runs: the fixture other_switch
+
+
+@given("a switch that another program runs")
+def other_switch_runs(other_switch):
+    """The tests run it, in other_switch."""
+
+
+@when("the switch that another program runs quits")
+def other_switch_quits(other_switch):
+    """That program stops it: it quits, and its folder goes."""
+
+    other_switch.quit()
+    assert not os.path.exists(other_switch.path), "its folder is still there"
+
+
+@when("the switch that another program runs starts again")
+def other_switch_starts_again(other_switch):
+    """That program starts it again, in the same folder, until it listens."""
+
+    other_switch.start()
+
+
+@when("the switch that another program runs is killed")
+def other_switch_killed(other_switch):
+    """SIGKILL: it quits at once, and its socket ctl stays in its folder."""
+
+    other_switch.kill()
+    ctl = os.path.join(other_switch.path, "ctl")
+    assert os.path.exists(ctl), "its socket went"
+
+
+@when("the socket that the switch left is removed")
+def stale_socket_removed(other_switch):
+    """Its socket ctl goes, and its folder stays, empty."""
+
+    os.unlink(os.path.join(other_switch.path, "ctl"))
+
+
+@then(words('{name:Brick} is in error: "{why}"'))
+def wrapper_in_error(virtualbricks, other_switch, name, why):
+    """
+    Its row says Error, its Start is disabled, and the state says why in
+    its tooltip, which the screen readers read; {folder} is the control
+    folder of that switch.
+    """
+
+    row = virtualbricks.row(name)
+    virtualbricks.find("label", "Error", within=row)
+    says_why(virtualbricks, name, why.replace("{folder}", other_switch.path))
+
+
+@then(words("{name:Brick} is running, with the process of that switch"))
+def wrapper_running(virtualbricks, other_switch, name):
+    """
+    Its row says Running, with the process of the switch that another
+    program runs, which runs; its Stop is disabled: that program stops it.
+    """
+
+    row = virtualbricks.row(name)
+    virtualbricks.find("label", "Running", within=row)
+    virtualbricks.disabled("button", f"Stop {name}", within=row)
+    pid = process(virtualbricks, name)
+    assert pid == other_switch.process.pid, f"{pid} isn't that switch's"
+    assert other_switch.process.poll() is None, "that switch quit"
+
+
+# Migration: the files of Virtualbricks 2.1
+
+# The projects of 2.1 of the scenarios, each a folder with its .project
+PROJECTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "projects")
+# ~/.virtualbricks.conf, as 2.1 wrote it; without the alert of missing
+# programs, as the settings of the tests
+SETTINGS_2_1 = """\
+[Main]
+show_missing = False
+workspace = {workspace}
+current_project = {project}
+"""
+MIGRATION = "Virtualbricks migration"
+
+
+@given(words("the project {name:Project} of Virtualbricks 2.1"))
+def old_project(virtualbricks, name):
+    """A copy of projects/NAME, in the workspace."""
+
+    shutil.copytree(
+        os.path.join(PROJECTS, name),
+        os.path.join(virtualbricks.workspace, name),
+    )
+
+
+@given(
+    words(
+        "the archive {name:Project}.vbp of Virtualbricks 2.1, in my"
+        " {folder:Folder} folder"
+    )
+)
+def old_archive(virtualbricks, name, folder):
+    """
+    In the folder of the home, the archive of projects/NAME as 2.1 exported
+    it: its .project, without images, in a tar compressed with gzip, as tar
+    cfz did.
+    """
+
+    path = in_my(virtualbricks, folder, f"{name}.vbp")
+    with tarfile.open(path, "w:gz") as archive:
+        archive.add(os.path.join(PROJECTS, name, ".project"), ".project")
+
+
+@given(
+    words(
+        "the archive {name:Project}.vbp of Virtualbricks 2.1, with the private"
+        " disks of its machines, in my {folder:Folder} folder"
+    )
+)
+def old_archive_with_disks(virtualbricks, name, folder):
+    """
+    The same, with the private disk of each disk of a machine that has one:
+    VM_DEVICE.cow, made with qemu-img on the path of its image in the
+    project, which needn't be there, and PRIVATE_DATA bytes written in it,
+    random but the same each time, that gzip doesn't make smaller.
+    """
+
+    project = os.path.join(PROJECTS, name, ".project")
+    staging = os.path.join(virtualbricks.folder, "private-disks")
+    os.makedirs(staging, exist_ok=True)
+    path = in_my(virtualbricks, folder, f"{name}.vbp")
+    with tarfile.open(path, "w:gz") as archive:
+        archive.add(project, ".project")
+        for vm, device, image in private_disks(project):
+            cow = f"{vm}_{device}.cow"
+            private_disk(os.path.join(staging, cow), image)
+            archive.add(os.path.join(staging, cow), cow)
+
+
+# The bytes written in each private disk of an archive: those of the four
+# of DTN2hops make an archive of 3.2 MB, which the import extracts in four
+# chunks
+PRIVATE_DATA = 768 * 1024
+# The size of a private disk, as the machine sees it
+PRIVATE_SIZE = 1 << 30
+
+
+def private_disks(project):
+    """
+    The private disks of the machines of a .project of 2.1: (the machine,
+    the device, the path of the image), for each hdX=IMAGE with privatehdX=*
+    in a [Qemu:VM] section; the path from [Image:IMAGE].
+    """
+
+    sections = {}
+    section = None
+    with open(project) as file:
+        for line in file:
+            line = line.strip()
+            if line.startswith("[") and line.endswith("]"):
+                section = sections.setdefault(line[1:-1], {})
+            elif section is not None and "=" in line:
+                key, value = line.split("=", 1)
+                section[key] = value
+    disks = []
+    for title, values in sections.items():
+        kind, _, vm = title.partition(":")
+        if kind != "Qemu":
+            continue
+        for key, value in values.items():
+            if key.startswith("private") and value == "*":
+                device = key.removeprefix("private")
+                image = sections.get(f"Image:{values.get(device)}", {})
+                disks.append((vm, device, image.get("path", "")))
+    return disks
+
+
+def private_data(name):
+    """
+    The PRIVATE_DATA bytes at the start of the private disk of that name:
+    from a random generator seeded with it, the same each time.
+    """
+
+    return random.Random(name).randbytes(PRIVATE_DATA)
+
+
+def private_disk(path, image):
+    """
+    A qcow2 disk of PRIVATE_SIZE, on image, with PRIVATE_DATA bytes at its
+    start, from a random generator seeded with its name.
+    """
+
+    raw = path + ".raw"
+    with open(raw, "wb") as file:
+        file.write(private_data(os.path.basename(path)))
+        file.truncate(PRIVATE_SIZE)
+    subprocess.run(
+        ["qemu-img", "convert", "-q", "-f", "raw", "-O", "qcow2", raw, path],
+        check=True,
+    )
+    os.remove(raw)
+    subprocess.run(
+        ["qemu-img", "rebase", "-u", "-b", image, "-F", "qcow2", path],
+        check=True,
+    )
+
+
+@given(
+    words("the settings of Virtualbricks 2.1, with {name:Project} open last")
+)
+def old_settings(virtualbricks, name):
+    """
+    Those of the workspace of the tests, in place of the settings of this
+    version: the next start is the first.
+    """
+
+    os.remove(virtualbricks.settings)
+    path = os.path.join(virtualbricks.home, ".virtualbricks.conf")
+    with open(path, "w") as file:
+        file.write(
+            SETTINGS_2_1.format(
+                workspace=virtualbricks.workspace, project=name
+            )
+        )
+
+
+@then("the migration window shows")
+def migration_window(virtualbricks):
+    virtualbricks.find("frame", MIGRATION)
+
+
+@then("the migration window doesn't show")
+def no_migration_window(virtualbricks):
+    virtualbricks.gone("frame", MIGRATION)
+
+
+@then("the migration window lists")
+def migration_lists(virtualbricks, datatable):
+    """
+    The rows of its list, all of them and in order, once they are those of
+    the table under the step, whose first line has the titles of the
+    columns.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    table = virtualbricks.find("table", within=window)
+
+    def rows():
+        titles = virtualbricks.names("table column header", within=table)
+        cells = virtualbricks.names("table cell", within=table)
+        width = len(titles)
+        return [titles] + [
+            cells[start : start + width]
+            for start in range(0, len(cells), width)
+        ]
+
+    try:
+        virtualbricks.wait_for(
+            lambda: rows() == datatable,
+            "the migration window lists the rows of the table",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the migration window lists {rows()}, not {datatable}"
+        ) from None
+
+
+@then(words("{name:Project} is migrated"))
+def migrated(virtualbricks, name):
+    """
+    The migration ends, as Save report… says, no row of the window failed,
+    and the project has the file of this version.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    virtualbricks.enabled("button", "Save report…", within=window)
+    failed = virtualbricks.shows("table cell", "✗ Failed", within=window)
+    assert failed is None, "the migration window says it failed"
+    path = os.path.join(virtualbricks.workspace, name, "project.toml")
+    assert os.path.isfile(path), f"{path} is missing"
+
+
+@when("I close the migration window")
+def close_migration(virtualbricks):
+    """
+    Its button Close, beside Save report…: that of the title bar comes
+    first.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    save = virtualbricks.find("button", "Save report…", within=window)
+    virtualbricks.click("button", "Close", within=save.get_parent())
+    virtualbricks.gone("frame", MIGRATION)
+
+
+@given(words("Virtualbricks migrated {name:Project} at its first start"))
+def migrated_at_first_start(virtualbricks, name):
+    """It starts, the migration of name ends, and its window is closed."""
+
+    first_start(virtualbricks)
+    migrated(virtualbricks, name)
+    close_migration(virtualbricks)
+
+
+@given(
+    words("the project {name:Project} of Virtualbricks 2.1, whose .project is")
+)
+def old_project_text(virtualbricks, old_files, name, docstring):
+    """A folder name in the workspace, with the text under the step."""
+
+    write_old(virtualbricks, old_files, f"{name}/.project", docstring + "\n")
+
+
+@given(
+    words(
+        "the project {name:Project} of Virtualbricks 2.1, as the single file"
+        " {file} in the workspace"
+    )
+)
+def old_single_file(virtualbricks, old_files, name, file):
+    """
+    The .project of projects/NAME, as a file of the workspace: so the
+    versions before 2.1 kept a project, and 2.1 still opened it.
+    """
+
+    with open(os.path.join(PROJECTS, name, ".project")) as project:
+        write_old(virtualbricks, old_files, file, project.read())
+
+
+def write_old(virtualbricks, old_files, path, text):
+    """The file path of the workspace has text; old_files keeps it."""
+
+    full = os.path.join(virtualbricks.workspace, path)
+    os.makedirs(os.path.dirname(full), exist_ok=True)
+    with open(full, "w") as file:
+        file.write(text)
+    with open(full, "rb") as file:
+        old_files[path] = file.read()
+
+
+@given(
+    words(
+        "the projects {first:Project} to {last:Project} of Virtualbricks 2.1,"
+        " copies of {name:Project}"
+    )
+)
+def old_copies(virtualbricks, first, last, name):
+    """
+    Copies of projects/NAME in the workspace, from first to last: a word
+    and a number, of as many digits in both.
+    """
+
+    word, start = re.fullmatch(r"(.*?)(\d+)", first).groups()
+    same, end = re.fullmatch(r"(.*?)(\d+)", last).groups()
+    assert (same, len(end)) == (word, len(start)), f"not {first} to {last}"
+    for number in range(int(start), int(end) + 1):
+        shutil.copytree(
+            os.path.join(PROJECTS, name),
+            os.path.join(
+                virtualbricks.workspace, f"{word}{number:0{len(start)}d}"
+            ),
+        )
+
+
+def old_projects(virtualbricks):
+    """The folders of the workspace with a project of 2.1, by name."""
+
+    return sorted(
+        name
+        for name in os.listdir(virtualbricks.workspace)
+        if os.path.isfile(
+            os.path.join(virtualbricks.workspace, name, ".project")
+        )
+    )
+
+
+def project_toml_of(virtualbricks, name):
+    """The time and the bytes of the project.toml of name, or None."""
+
+    path = os.path.join(virtualbricks.workspace, name, "project.toml")
+    try:
+        with open(path, "rb") as file:
+            return os.stat(file.fileno()).st_mtime_ns, file.read()
+    except FileNotFoundError:
+        return None
+
+
+@when(words("I select {name:Project} in the migration window"))
+def select_migrated(virtualbricks, name):
+    """Its row in the list; then the messages under it are those of name."""
+
+    window = virtualbricks.find("frame", MIGRATION)
+    virtualbricks.click("table cell", name, within=window)
+    virtualbricks.wait_for(
+        lambda: migration_messages(virtualbricks)[:1] == [name],
+        f"the messages of {name} show",
+    )
+
+
+def migration_messages(virtualbricks):
+    """
+    The lines under the list of the migration window: the name of the row
+    selected, then its messages.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    # after the entries of the form, over the list
+    view = list(harness.a11y.find_all(window, "text"))[-1]
+    return harness.a11y.text(view).splitlines()
+
+
+@then(
+    words('the migration window shows the {level} of {name:Project}: "{text}"')
+)
+def migration_shows(virtualbricks, level, name, text):
+    """
+    Under the list, the messages are those of name, and one is the text, of
+    level: error, warning or info.
+    """
+
+    assert level in ("error", "warning", "info"), f"no level {level}"
+    line = f"{level}  {text}"
+    try:
+        virtualbricks.wait_for(
+            lambda: migration_messages(virtualbricks)[:1] == [name]
+            and line in migration_messages(virtualbricks)[1:],
+            f"the migration window shows the {level} of {name}",
+        )
+    except AssertionError:
+        raise AssertionError(
+            f"the migration window shows {migration_messages(virtualbricks)},"
+            f" not {name} and {line!r}"
+        ) from None
+
+
+@then(words("{name:Project} isn't migrated"))
+def not_migrated(virtualbricks, name):
+    """Its folder in the workspace has no project.toml."""
+
+    path = os.path.join(virtualbricks.workspace, name, "project.toml")
+    assert not os.path.exists(path), f"{path} is there"
+
+
+@then(words("the old file {path} of the workspace stays as it was"))
+def old_file_kept(virtualbricks, old_files, path):
+    """It has the bytes that a step wrote there before Virtualbricks ran."""
+
+    with open(os.path.join(virtualbricks.workspace, path), "rb") as file:
+        data = file.read()
+    assert data == old_files[path], f"{path} has {data!r}"
+
+
+@when("I close the migration window while it migrates")
+def close_while_migrating(virtualbricks, migrated_before):
+    """
+    Its button Close, once a project has its project.toml, as its files
+    say: the window answers AT-SPI only between two projects. Then
+    migrated_before has those that it migrated.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    # the last row of the window, after its title bar: a search through
+    # the list over it would ask the window for each of its cells
+    box = last_child(window)
+    buttons = last_child(box)
+    virtualbricks.wait_for(
+        lambda: any(
+            project_toml_of(virtualbricks, name)
+            for name in old_projects(virtualbricks)
+        ),
+        "a project is migrated",
+    )
+    virtualbricks.click("button", "Close", within=buttons)
+    virtualbricks.gone("frame", MIGRATION)
+    for name in old_projects(virtualbricks):
+        done = project_toml_of(virtualbricks, name)
+        if done is not None:
+            migrated_before[name] = done
+
+
+def last_child(accessible):
+    """The last of its children, as the widgets show them."""
+
+    return accessible.get_child_at_index(accessible.get_child_count() - 1)
+
+
+@then("some of the projects are migrated, and the others not")
+def some_migrated(virtualbricks, migrated_before):
+    """
+    The old projects that have their project.toml are those migrated before
+    the window closed, as they were then: the migration stopped there; the
+    others have none.
+    """
+
+    names = old_projects(virtualbricks)
+    assert migrated_before, "no project is migrated"
+    assert len(migrated_before) < len(
+        names
+    ), f"all the {len(names)} projects are migrated: it was closed too late"
+    now = {
+        name: project_toml_of(virtualbricks, name)
+        for name in names
+        if project_toml_of(virtualbricks, name) is not None
+    }
+    after = sorted(name for name in now if name not in migrated_before)
+    assert not after, f"migrated once the window closed: {after}"
+    assert now == migrated_before, "a project.toml changed once it closed"
+
+
+@then(
+    "the projects not migrated before are migrated, and the others stay as"
+    " they were"
+)
+def rest_migrated(virtualbricks, migrated_before):
+    """
+    The migration ends, as Save report… says; each old project has its
+    project.toml, and those migrated before the same, not written again.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    virtualbricks.enabled("button", "Save report…", within=window)
+    for name in old_projects(virtualbricks):
+        done = project_toml_of(virtualbricks, name)
+        assert done is not None, f"{name} has no project.toml"
+        if name in migrated_before:
+            assert done == migrated_before[name], f"{name} migrated again"
+
+
+# The title of the file chooser of Save report…
+SAVE_REPORT = "Save report"
+
+
+@when(
+    words(
+        "I save the report of the migration to {file} of my home folder,"
+        " typing its path"
+    )
+)
+def save_report(virtualbricks, file):
+    """
+    Save report…; in the file chooser, the path typed in place of the name
+    that it suggests, then Save, and the file chooser closes.
+    """
+
+    window = virtualbricks.find("frame", MIGRATION)
+    virtualbricks.click("button", "Save report…", within=window)
+    chooser = virtualbricks.find("file chooser", SAVE_REPORT)
+    path = os.path.join(virtualbricks.home, file)
+    virtualbricks.type(path, "text", "Name:", within=chooser, over=True)
+    virtualbricks.click("button", "Save", within=chooser)
+    virtualbricks.gone("file chooser", SAVE_REPORT)
+
+
+@then(words("the file {file} of my home folder has"))
+def home_file_has(virtualbricks, file, docstring):
+    """
+    It has the text under the step, line by line; the spaces at the end of
+    a line aside.
+    """
+
+    path = os.path.join(virtualbricks.home, file)
+    virtualbricks.wait_for(lambda: os.path.isfile(path), f"{path} is there")
+    with open(path, encoding="utf-8") as text:
+        found = [line.rstrip() for line in text.read().splitlines()]
+    wanted = [line.rstrip() for line in docstring.splitlines()]
+    assert found == wanted, f"{file} has\n" + "\n".join(found)
+
+
+# The user guide
+
+# The program of the tests that opens the links, as the browser and as Yelp
+OPENER = "virtualbricks-e2e-opener.desktop"
+YELP = "virtualbricks-e2e-yelp.desktop"
+
+
+def opened(virtualbricks):
+    """
+    The file where the program of the tests writes the links it opens, a
+    line each: who opens it, browser or Yelp, and the link.
+    """
+
+    return os.path.join(virtualbricks.folder, "opened")
+
+
+def opener(virtualbricks, who, name, mime_type):
+    """
+    A desktop entry of the program of the tests, in the data folder of the
+    home, the default of its desktop for the MIME type: it writes who and
+    each link it gets on a line of opened().
+    """
+
+    script = os.path.join(virtualbricks.folder, "opener.sh")
+    if not os.path.exists(script):
+        with open(script, "w") as file:
+            file.write(
+                "#!/bin/sh\n"
+                'printf \'%s %s\\n\' "$1" "$2"'
+                f" >> {shlex.quote(opened(virtualbricks))}\n"
+            )
+        os.chmod(script, 0o755)
+    applications = os.path.join(
+        virtualbricks.home, ".local", "share", "applications"
+    )
+    os.makedirs(applications, exist_ok=True)
+    with open(os.path.join(applications, name), "w") as file:
+        file.write(
+            "[Desktop Entry]\n"
+            "Type=Application\n"
+            f"Name=The links of the tests, as {who}\n"
+            "NoDisplay=true\n"
+            f'Exec="{script}" {who} %u\n'
+            f"MimeType={mime_type};\n"
+        )
+    # the defaults of the user come first
+    path = os.path.join(virtualbricks.config, "mimeapps.list")
+    if not os.path.exists(path):
+        with open(path, "w") as file:
+            file.write("[Default Applications]\n")
+    with open(path, "a") as file:
+        file.write(f"{mime_type}={name}\n")
+
+
+@given("the browser of the desktop is a program of the tests")
+def browser_of_the_tests(virtualbricks):
+    """
+    Before Virtualbricks starts: the program of the tests is the default of
+    its desktop for web pages, as browser; the browser of this computer
+    opens nothing.
+    """
+
+    opener(virtualbricks, "browser", OPENER, "text/html")
+
+
+@given("Yelp is a program of the tests")
+def yelp_of_the_tests(virtualbricks):
+    """
+    Before Virtualbricks starts: the program of the tests is the default of
+    its desktop for help: links, as Yelp; the Yelp of this computer, if
+    any, opens nothing.
+    """
+
+    opener(virtualbricks, "yelp", YELP, "x-scheme-handler/help")
+
+
+@given("the pages of the guide are where Yelp looks")
+def pages_for_yelp(virtualbricks):
+    """
+    Before Virtualbricks starts: help/C/virtualbricks of the data folder of
+    the user is the folder of the pages of the sources, those that
+    docs/build.py writes.
+    """
+
+    folder = os.path.join(virtualbricks.home, ".local", "share", "help", "C")
+    os.makedirs(folder, exist_ok=True)
+    os.symlink(
+        os.path.join(harness.ROOT, "docs", "built", "mallard"),
+        os.path.join(folder, "virtualbricks"),
+    )
+
+
+@when("I press F1 in the Settings window")
+def f1_in_settings(virtualbricks):
+    virtualbricks.key("F1", virtualbricks.find("dialog", SETTINGS_WINDOW))
+
+
+@then(words('Yelp opens "{link}"'))
+def yelp_opens(virtualbricks, link):
+    """The program of the tests has opened the link as Yelp, and only it."""
+
+    links_opened(virtualbricks, [f"yelp {link}"])
+
+
+@then(words("Yelp opens the page {page} of the sources"))
+def yelp_opens_the_file(virtualbricks, page):
+    """
+    The program of the tests has opened the file of the page, in the
+    sources, as Yelp, and only it: its path, as the desktop gives a file.
+    """
+
+    path = os.path.join(
+        harness.ROOT, "docs", "built", "mallard", f"{page}.page"
+    )
+    links_opened(virtualbricks, [f"yelp {path}"])
+
+
+@then(words("the browser opens the HTML of the page {page}"))
+def browser_opens_html(virtualbricks, page):
+    """
+    The program of the tests has opened the HTML of the page, in the
+    sources, as browser, and only it: its path, as the desktop gives a
+    file.
+    """
+
+    path = os.path.join(harness.ROOT, "docs", "built", "html", f"{page}.html")
+    links_opened(virtualbricks, [f"browser {path}"])
+
+
+def links_opened(virtualbricks, links):
+    """Wait for the program of the tests to open these links."""
+
+    def lines():
+        try:
+            with open(opened(virtualbricks)) as file:
+                return file.read().splitlines()
+        except FileNotFoundError:
+            return []
+
+    try:
+        virtualbricks.wait_for(lambda: lines() == links, f"opened {links}")
+    except AssertionError:
+        raise AssertionError(f"opened {lines()}") from None
+
+
+# The windows of the pictures, by their words in the steps: their role and
+# their title. The title of the main window names its project.
+PICTURED = {
+    "Settings window": ("dialog", SETTINGS_WINDOW),
+    "Projects window": ("frame", PROJECTS_WINDOW),
+    "Export window": ("frame", EXPORT_WINDOW),
+    "Import window": ("frame", IMPORT_WINDOW),
+    # the one that shows
+    "file chooser": ("file chooser", None),
+}
+
+
+@then(words("the picture {name:Picture} shows the {window}"))
+def picture_shows(virtualbricks, keep_picture, name, window):
+    """
+    The picture of the window, as it shows, for the user guide: see
+    keep_picture of conftest.py for where it goes.
+    """
+
+    if window == "main window":
+        found = main_window_frame(virtualbricks)
+    else:
+        assert window in PICTURED, f"no picture of the {window}"
+        found = virtualbricks.find(*PICTURED[window])
+    keep_picture(name, virtualbricks.picture(found))
+
+
+def main_window_frame(virtualbricks):
+    """The main window, once it shows: its title starts with Virtualbricks."""
+
+    def frame():
+        for found in harness.a11y.find_all(virtualbricks.app, "frame"):
+            if found.get_name().startswith("Virtualbricks"):
+                return found
+        return None
+
+    return virtualbricks.wait_for(frame, "the main window shows")
+
+
+# Time
+
+
+@when(words("I wait {seconds:d} seconds"))
+def wait(seconds):
+    time.sleep(seconds)
+
+
+# The screen: any widget, by role and name, as the dump of the widgets
+# shows them
+
+
+@when(words('I click the {role} "{name}"'))
+def click(virtualbricks, role, name):
+    virtualbricks.click(role, name)
+
+
+@when(words('I choose "{item}" in the menu "{menu}"'))
+def choose(virtualbricks, item, menu):
+    virtualbricks.choose(item, menu)
+
+
+@when(words('I open the menu "{menu}"'))
+def open_menu(virtualbricks, menu):
+    virtualbricks.open_menu(menu)
+
+
+@then(words('the {role} "{name}" shows'))
+def shows(virtualbricks, role, name):
+    virtualbricks.find(role, name)
+
+
+@then(words('the {role} "{name}" doesn\'t show'))
+def doesnt_show(virtualbricks, role, name):
+    virtualbricks.gone(role, name)
+
+
+@step("I print the widgets")
+def print_widgets(virtualbricks):
+    """The widgets that show, for pytest -s: their roles and names."""
+
+    print(virtualbricks.describe())

@@ -1,0 +1,616 @@
+# Virtualbricks
+
+Virtualbricks is a frontend for the management of Qemu Virtual Machines
+(VMs) and VDE virtualized network devices (switches, channel emulators,
+etc.). Although it can be used to manage isolated VMs, its peculiar aim
+is to design and manage testbeds consisting of many VMs interconnected
+by VDE elements. In other words, it allows to extend the concept of VM
+to testbeds, which thanks to Virtualbricks can become entirely
+software-defined.
+
+## Requirements
+
+Virtualbricks needs Python 3.12 or newer and GTK 3.
+
+pip installs the Python libraries that Virtualbricks depends on, but two of
+them are built against libraries of your system, which pip can't install:
+PyGObject, the GTK bindings, and pygraphviz. You need, before running pip:
+
+- a C compiler, pkg-config and the headers of Python;
+- the development files of GObject Introspection and of cairo, for PyGObject;
+- GTK 3 with its GObject Introspection data, which PyGObject loads at run time;
+- Graphviz and its development files, for pygraphviz.
+
+On Debian 13 (trixie) they are:
+
+```sh
+sudo apt install python3-venv python3-dev gcc pkg-config \
+    libgirepository-2.0-dev libcairo2-dev gir1.2-gtk-3.0 \
+    graphviz libgraphviz-dev
+```
+
+The names are those of Debian; other distributions have their equivalents.
+
+To use Virtualbricks, and not only to install it, you need these programs too.
+On Debian:
+
+```sh
+sudo apt install qemu-system-x86 qemu-system-gui qemu-utils vde2 \
+    vde2-cryptcab sudo
+```
+
+- `qemu-system-*` for each architecture of your VMs, and `qemu-img`;
+  `qemu-system-gui` has the windows of the machines, SDL and GTK. QEMU 8.2
+  and newer: before a machine starts, Virtualbricks asks its QEMU what it
+  has, and a setting that this QEMU lacks is left out, with a warning in
+  *File › Logs*. Ubuntu builds its QEMU without VDE, which a machine needs to
+  plug into a switch: there, use a QEMU package built with it.
+  `qemu-system-aarch64` and `qemu-system-arm`, and `qemu-system-riscv64` of
+  QEMU 11, have no default machine type: a machine of theirs needs one, as
+  `virt`, chosen in its settings;
+- VDE 2: `vde_switch`, `vde_plug`, `vde_plug2tap`, `vde_pcapplug`, `dpipe`,
+  `vdeterm` and `unixterm`, and `vde_cryptcab`, in its own package; the
+  Netemu brick needs `vde-netemu`, in its own package, which Debian and
+  Ubuntu don't ship; the router brick needs `vde_router`, which no
+  distribution ships;
+- a terminal, that of your desktop by default, `x-terminal-emulator`, and
+  `sudo`, which runs the bricks that need root, a tap and a capture (see
+  [Configuration](#configuration)).
+
+These are optional:
+
+- `bsdtar` (`libarchive-tools`) or GNU `tar`, to export and import projects;
+  without them Virtualbricks uses Python's `tarfile`;
+- `gvfs`, so that removing a project can move it to the trash of your desktop;
+  without a trash the window offers to delete it for good;
+- `yelp`, to read the user guide, *Help › Contents* or F1 in a window; without
+  it the guide opens in your browser;
+- an askpass helper for `sudo`, as `ssh-askpass`, to type the password of root
+  in a window (see [Configuration](#configuration)).
+
+## Installing
+
+To install Virtualbricks for your user, once the libraries above are there:
+
+```sh
+pip install --user .
+```
+
+It installs the `virtualbricks` command, the `virtualbricks-migrate` window,
+the manual pages of the configuration files and of the archives of the
+projects, the user guide, with the manual pages in its Reference, and the
+translations. Yelp shows the guide from `~/.local/share/help/`, where
+`pip install --user` puts it; in a virtualenv, or from the sources, where
+Yelp doesn't look, Virtualbricks gives Yelp the files of the pages. Without
+Yelp, the guide opens in your browser, from the HTML installed with it. To
+work on the code, follow
+[Development](#development) instead.
+
+## Running
+
+```sh
+virtualbricks
+```
+
+or `python -m virtualbricks`. The window opens with the project that was open
+last in the workspace, and the terminal that started Virtualbricks reads the
+commands of its console, unless you give `--no-term`; see
+[The console](#the-console).
+
+
+The options are:
+
+- `-v`, `--verbose`, `-q`, `--quiet`: increase or decrease the log verbosity;
+  they can be repeated.
+- `--debug`: the most verbose output.
+- `-l FILE`, `--logfile FILE`: write the log messages to a file.
+- `--no-term`: don't read the console in the terminal.
+- `--no-gui`: run without the windows, and without GTK: the console is the
+  way in.
+- `--banner STYLE`: what the console shows as it starts: `none`, the line of
+  the version, the default; `plain`, the icon in characters with the
+  version, the project, the workspace and the programs; `colour`, the same in
+  colour; `3d` or `rainbow`, the name in large letters; `pixel`, the icon in
+  blocks of colour; `drop`, the same, its bricks falling into place;
+  `emoji`, the text alone, with emoji.
+- `--run FILE`: run the commands of a file once the project is open, then
+  read the console; with `--connect`, send them to the Virtualbricks that
+  runs, and exit.
+- `--workspace FOLDER`: use the projects of another folder, made if it isn't
+  there, for this run only; see [Configuration](#configuration). Without
+  `--lock`, one Virtualbricks runs in each workspace, side by side. With
+  `--command` or `--connect`, the Virtualbricks that runs there.
+- `--lock MODE`: the single-instance mode, how many Virtualbricks can run at
+  once; see below.
+- `--command WORD...`: send a command of the console to the Virtualbricks
+  that runs, and print its answer; see [The console](#the-console).
+- `--listen [DESCRIPTION]`: listen on a control socket, `.control` in the
+  runtime directory of the workspace, or the one of a description, as
+  `unix:~/labs/lab1.sock`, `tcp:8765` or `ssl:8765:privateKey=FILE`; it
+  speaks AMP, or JSON with `protocol=json`, and can be given more than
+  once.
+- `--connect [DESCRIPTION]`: the Virtualbricks that runs that `--command`
+  and `--run` talk to, the one of `.control` of its workspace or of a
+  description, as `tcp:lab.example:8765`. Without them, the windows of the
+  Virtualbricks of that socket; see below.
+- `--version`: print the version and exit.
+
+`--lock` sets the single-instance mode, one of:
+
+- `system`, the default without `--workspace`: one Virtualbricks on the
+  machine, whoever runs it and whatever its workspace. It holds the lock
+  `/tmp/virtualbricks.lock` alone.
+- `user`: one for each user, so the users of a shared machine don't stop each
+  other. It holds the lock `.lock` of the runtime directory,
+  `$XDG_RUNTIME_DIR/virtualbricks/`, and shares `/tmp/virtualbricks.lock`
+  with the others in this mode and the next: it doesn't start while one runs
+  with `system`, nor one with `system` while it runs.
+- `workspace`, the default with `--workspace`: one for each workspace, so a
+  lab of each course or client runs beside the others. It shares both locks,
+  and doesn't start beside one of yours with `user`, nor that one beside it.
+- `none`: no lock. It starts beside any other, and the others don't see it;
+  two of yours share the settings, and nothing stops both from opening the
+  same project.
+
+Each mode but `none` also holds `.virtualbricks.lock` in its workspace, so
+two Virtualbricks never share one, even a folder that two users share. The
+sockets of a project's bricks are in a folder of the workspace in the
+runtime directory, so two projects named alike in two workspaces are apart.
+
+The system releases the locks when Virtualbricks ends, even when it crashes,
+so none is ever left behind. When a lock refuses a start, the message names
+the processes that hold it and the users that started them.
+
+### The console
+
+A command of the console is a noun, a verb and its arguments:
+
+```
+brick new switch
+brick new vm router
+brick set router memory=512 use_kvm=true
+brick card add router plug sw1
+brick start router
+event new down
+event set down delay=600
+event action add down stop router
+event start down
+```
+
+The nouns are `brick`, `event`, `image`, `setting` and `project`; `help`
+lists the commands, and Tab completes them, the names and the keys. A key
+and its value are `KEY=VALUE`, with the names of the project file, and a
+command changes all of them or none. The history is kept between runs, and
+the line has the keys of readline: Ctrl+R searches the history, Alt+B and
+Alt+F go by words, Ctrl+W, Ctrl+K and the others delete, Ctrl+Y puts back.
+`python` opens a Python shell with the brick factory in it.
+
+The same commands run from a file, with `source FILE` or `--run FILE`, from a
+pipe, and in an event, as its actions. With `--no-gui --no-term --run FILE`,
+Virtualbricks sets a lab up and runs it on a machine without a display.
+
+A Virtualbricks started with `--listen`, with the windows or without,
+listens on the control socket of its workspace, `.control` in a folder of
+`$XDG_RUNTIME_DIR/virtualbricks/`, and `--command` sends it a command from
+any terminal or script, and `--connect --run` the commands of a file:
+
+```
+virtualbricks --no-gui --listen
+virtualbricks --command brick start router
+virtualbricks --connect --run start-lab.vb
+```
+
+When Virtualbricks of yours listen in several workspaces, `--workspace`
+names the one to talk to: `virtualbricks --workspace ~/labs/b --command
+status`.
+
+The answer goes to the standard output, an error to the standard error, and
+the exit status is 0 when the command was done, 1 when it failed, and 2 when
+no Virtualbricks answered. Only you can connect.
+
+The socket speaks Twisted's AMP, so a program written with Twisted can drive
+Virtualbricks: it calls `Run` with a line of the console and gets a Deferred
+of its answer; `virtualbricks/console/ampwire.py` has the commands. Once
+`Hello` agrees on protocol 2, each command of the console is an AMP command
+of its own, with typed arguments, as `BrickStart(name=["sw1", "vm1"])`:
+`virtualbricks/console/ampcommands.py` has them. Protocol 2 is still in
+development: its commands may change in any way, without notice. A
+description after `--listen`, in the syntax of Twisted's endpoints, puts a
+socket elsewhere, as `--listen unix:~/labs/lab1.sock`, and `protocol=json`
+makes it speak JSON, a line for each request and answer, so any program can
+use it. The option can be given more than once, for an AMP socket and a
+JSON one at once. `--command` talks to either: `--connect
+unix:~/labs/lab1.json:protocol=json --command status`.
+
+`--listen tcp:8765` listens on a port of this machine, and
+`--listen ssl:8765:interface=0.0.0.0:privateKey=lab.key` on a port open to
+the network, with TLS. A client proves first that it knows the token of
+`~/.config/virtualbricks/token`, which Virtualbricks makes; neither end
+sends it. With `caCertsDir=FOLDER`, an ssl socket asks each client for a
+certificate instead, and the log names it. `--command` talks to them as
+`--connect tcp:8765` on this machine, or as
+`--connect ssl:lab.example:8765:caCertsDir=FOLDER` from another.
+
+The three protocols of the sockets, the JSON one and protocols 1 and 2 of
+AMP, and the proof of the token are described for whoever writes a client in
+`man ./docs/built/man/virtualbricks-control.7` and
+[`docs/built/html/control-protocols.html`](docs/built/html/control-protocols.html).
+
+### The windows of another Virtualbricks
+
+`virtualbricks --connect DESCRIPTION` alone opens the windows of the
+Virtualbricks of a socket, on this machine or another: the bricks run
+there, the windows here. Without a description, `virtualbricks --connect`
+opens those of a Virtualbricks of yours here, the one that listens with
+`--listen` alone in the workspace of `--workspace`, or the only one that
+listens. The windows follow its project as it changes, whoever changes
+it, and what they do goes there: a start, a new brick, the OK of a panel,
+the consoles of the bricks in a terminal here. A path is a path of that
+machine, typed with the completion of its folders, and Settings has a
+page for this computer and one for that machine. Both run the same
+version of Virtualbricks:
+
+```
+virtualbricks --no-gui --no-term --listen \
+    'ssl:8765:interface=0.0.0.0:privateKey=lab.key'
+virtualbricks --connect ssl:lab.example:8765:caCertsDir=FOLDER
+```
+
+Importing and exporting an archive, the long work on images, as saving the
+private copy of a disk, and showing a file in the file manager wait for a
+later version. When the connection is lost, a bar says why, and Reconnect
+connects again. Quit closes the windows; the Virtualbricks there goes on.
+
+Every option and command is in the manual page, which you can read from the
+sources with `man ./docs/built/man/virtualbricks.1`, and in
+[`docs/built/html/command-line.html`](docs/built/html/command-line.html).
+
+## Configuration
+
+Virtualbricks keeps its files in TOML, and writes them itself:
+
+- `~/.config/virtualbricks/settings.toml`: your preferences, which aren't
+  about a project, as the terminal. It is in `$XDG_CONFIG_HOME` if that is set.
+- `~/.local/state/virtualbricks/state.toml`: what it remembers between runs,
+  as the project that was open last in each workspace. It is in
+  `$XDG_STATE_HOME` if that is set.
+- `~/.virtualbricks/`: the workspace, a folder for each project, with its
+  `project.toml`, its README and its private disks, and `shared_images/`,
+  the disk images its projects share. The `workspace` setting changes it, and
+  `virtualbricks --workspace FOLDER` uses another one for a run, as a folder
+  of projects for each course or each client; the setting stays as it is.
+
+Each file says, in a comment above each key, what the key is for, and marks
+with `# default` the values that are the defaults. Virtualbricks writes the
+files again as it saves, so comments added by hand don't last.
+
+Each project has its own settings, in its `project.toml`: the first time,
+choose in *File › Settings*, on the page *Project* and its name, where
+Virtualbricks finds the programs: `qemu_path` and `vde_path`, the folders of
+the QEMU and VDE programs. Each folder says what it holds, and what it lacks
+with the package that has it. A new project starts with a copy of the
+settings of the project that is open. The page *This computer* sets
+`terminal`, the terminal of the consoles, one of those its menu offers or
+any other, as a command line with `{command}` where the console goes:
+`xterm -T {name} -e {command}`, where `{name}` is the name of the brick.
+It also sets `audio_driver`, the audio driver of QEMU that plays the sound
+cards of the machines: `alsa` by default, or one of the others that its menu
+offers, those your QEMU has.
+
+A tap and a capture need root. Unless Virtualbricks runs as root, it runs them
+with `sudo -A` when an askpass helper is configured, in `SUDO_ASKPASS` or
+`/etc/sudo.conf`, and with `sudo -n` otherwise, which never asks for a password:
+without a display, a `NOPASSWD` rule of sudoers lets them run. The PRIVILEGES
+section of `man 5 virtualbricks-config` has the details.
+
+The `~/.virtualbricks.conf` file and the `.project` files of Virtualbricks 2.1
+and older are converted once, when the new version starts. The conversion is
+also `virtualbricks-migrate`, a window, and `python -m virtualbricks.migrate`,
+the command line.
+
+The files are described in the manual page, which you can read from the
+sources with `man ./docs/built/man/virtualbricks-config.5`, and in
+[`docs/built/html/config-files.html`](docs/built/html/config-files.html);
+the archives that export and import projects in
+`man ./docs/built/man/virtualbricks-vbp.5` and
+[`docs/built/html/vbp-format.html`](docs/built/html/vbp-format.html), and
+the process that reads and writes them in
+`man ./docs/built/man/virtualbricks-archive.7` and
+[`docs/built/html/archive-protocol.html`](docs/built/html/archive-protocol.html).
+The guide shows them too, in its Reference.
+
+## Development
+
+### Setting up
+
+Once you have the libraries of [Requirements](#requirements):
+
+```sh
+git clone https://github.com/virtualsquare/virtualbricks.git
+cd virtualbricks
+python3 -m venv .venv
+. .venv/bin/activate
+pip install --upgrade pip
+PYGOBJECT_STUB_CONFIG=Gtk3,Gdk3 pip install -e . --group dev
+pre-commit install
+```
+
+The `dev` dependency group has the tools of the project: `coverage`, `pytest`,
+`pytest-bdd` and `pytest-repeat` for the end-to-end tests, `black`, `ruff`,
+`pyflakes`, `pre-commit`, `tox`, which runs the tests on the libraries of
+each distribution, `pypandoc-binary`, which brings pandoc for the
+manual page, `mypy` and `mypy-zope`, which check the types, and
+`PyGObject-stubs`, the types of GTK. `--group` needs pip 25.1 or newer, and
+the pip of a new environment is often older, hence the upgrade. The editable
+install (`-e`) makes the `virtualbricks` command run your working copy.
+
+`PyGObject-stubs` are built at their install, of GTK 4 unless
+`PYGOBJECT_STUB_CONFIG` asks for GTK 3. pip keeps what it built in its cache,
+whatever the GTK: if it built them once without the variable, it installs
+those again. To install them again, of GTK 3:
+
+```sh
+PYGOBJECT_STUB_CONFIG=Gtk3,Gdk3 pip install --no-deps --no-cache-dir \
+    --force-reinstall PyGObject-stubs
+```
+
+With the stubs of GTK 4, mypy finds hundreds of errors such as `"Box" has no
+attribute "pack_start"`.
+
+The code has to run on Python 3.12, the oldest that is supported, so it is
+best to work with that one.
+
+To try your changes without touching your own settings and projects, give
+Virtualbricks another home, as the tests do:
+
+```sh
+H=$(mktemp -d)
+HOME=$H XDG_CONFIG_HOME=$H/.config XDG_STATE_HOME=$H/.local/state \
+    virtualbricks
+```
+
+The locks are the same for every home: add `--lock none` to run that beside
+your own Virtualbricks.
+
+### Tests
+
+The tests use Twisted's `trial`, and run from the root of the sources:
+
+```sh
+python -m twisted.trial virtualbricks                # all of them
+python -m twisted.trial -j4 virtualbricks            # on four processes
+python -m twisted.trial virtualbricks.tests.config.test_workspace
+python -m twisted.trial virtualbricks.tests.config.test_workspace.TestNames.test_free_name
+```
+
+With the coverage of the code:
+
+```sh
+coverage run -m twisted.trial virtualbricks
+coverage report
+```
+
+`trial` writes in `_trial_temp/`, which git ignores.
+
+tox runs them on each supported distribution's Python and versions of its
+Python libraries, from PyPI, as the environments of `tox.ini` have them:
+
+```sh
+tox                                  # Ubuntu 24.04, Debian 13, 26.04, testing
+tox -e ubuntu-24.04                  # the oldest
+tox -e debian-13 -- virtualbricks.tests.console.test_control
+```
+
+It needs `python3.12`, `python3.13` and `python3.14` in the `PATH`; with
+pyenv, name them in `pyenv global`, or in `PYENV_VERSION`, which tox passes
+on. PyGObject 3.48 and 3.50, of Ubuntu 24.04 and Debian 13, are built with
+the GObject Introspection of before GLib 2.80: on Debian,
+`libgirepository1.0-dev`. The C libraries, GTK, GLib and gdk-pixbuf among
+them, stay those of your computer. `tools/targetsuite.py` runs the tests in
+a container of each distribution instead, on all of its own packages and
+with the programs of the bricks, as a user that isn't root, and tells the
+versions that tox has otherwise. It needs `podman` and the network, and
+takes some minutes: it is a check before a release, with `start.py` below.
+
+- The tests don't touch your settings, your projects or the locks: each one
+  runs in a temporary home. They need neither root, nor Qemu, nor VDE: the
+  tests that make bricks find only fakes of their programs, whatever is
+  installed here. But one: `test_integration.py` makes the sample project of
+  `virtualbricks/tests/sample.py`, a brick of each kind and a machine of each
+  architecture that the recordings have, and starts it with the programs
+  installed here, the machines paused; it is skipped without
+  `qemu-system-x86_64`, `qemu-img` and `vde_switch`.
+- The command lines of the bricks are tested against what the QEMU and VDE of
+  each supported distribution answer, QEMU for x86 and for the architectures
+  that Debian releases on, recorded in
+  `virtualbricks/tests/data/programs/<target>.json`. In the same folder,
+  `record.py` records them again, for a new distribution or when one updates
+  its QEMU, and `start.py` starts the sample project in a container of each
+  distribution, as root: the check before a release. Both need `podman` and
+  the network.
+- The tests of the windows need a display, and are skipped without one. To run
+  them on a machine without, install `xvfb` and run
+  `xvfb-run -a python -m twisted.trial virtualbricks`.
+- The tests of the archives and of the packing of the disks use `bsdtar`, GNU
+  `tar`, `qemu-img` and `qemu-io`, and are skipped for the ones that aren't
+  installed.
+- `virtualbricks/tests/` has the layout of the package, a test module for each
+  module: `virtualbricks/config/workspace.py` is tested by
+  `virtualbricks/tests/config/test_workspace.py`. The helpers are in
+  `virtualbricks/tests/__init__.py` (`isolate`, `reset_settings`,
+  `make_factory`, `FakeLogger`, `use_workspace`, `fake_programs`, and
+  `BrickTestCase` for the bricks) and, for the windows, in
+  `virtualbricks/tests/gui/__init__.py` (`GuiTestCase`).
+- `test_docs.py` checks that the manual page of the files documents every
+  setting, key of the project file and kind of brick of the code, that the
+  manual page of the command has every option and every command of the
+  console as the table of the commands has them, and that the pages are up to
+  date with their sources: when you change one of them, update
+  `docs/man/virtualbricks-config.5.md` or `docs/man/virtualbricks.1.md`.
+
+### End-to-end tests
+
+The end-to-end tests, in `e2e/`, start Virtualbricks as a user does, click
+in its windows and quit it. Each is a scenario in words, in `e2e/features/`,
+which `pytest` runs with pytest-bdd:
+
+```gherkin
+Given Virtualbricks is running
+When I add the switch sw1
+And I start sw1
+Then sw1 is running
+```
+
+```sh
+pip install --group e2e      # pytest and its plugins; dev too
+pytest                       # every scenario
+pytest --count 20            # each 20 times: is one flaky?
+```
+
+They need `broadwayd` (`libgtk-3-bin`), `at-spi2-core` and
+`gir1.2-atspi-2.0`, and are skipped without them. Nothing shows on your
+screen, and they run beside your own Virtualbricks. A scenario that fails
+leaves a screenshot and, with `ffmpeg`, a video of its screen;
+`--record-all` records them all. With `--alluredir=allure-results`, Allure
+makes a report of them; the results are in git, to publish it.
+`e2e/README.md` tells how to run them and write a scenario, `e2e/STEPS.md`
+the steps there are and how to add one; with Claude Code, `/e2e` writes a
+scenario from a use case in words.
+
+### Code style
+
+The code is formatted with `black`, at 79 columns, and checked with `ruff`.
+`pre-commit` runs them, and three more hooks, on every commit:
+
+```sh
+pre-commit run --all-files     # run them without committing
+```
+
+- **black** and **ruff**: format and check what you changed.
+- **docs**: `python docs/build.py` builds the documentation from its
+  Markdown sources with pandoc: the man pages of `docs/man/` into
+  `docs/built/man/`; the pages of the user guide, `docs/guide/`, and a page
+  for each man page, the Reference of the guide, into Mallard pages for Yelp
+  in `docs/built/mallard/` and into HTML in `docs/built/html/`, with a copy
+  of their pictures. What it builds is committed. With `--check` it only
+  tells whether an output is out of date. [docs/README.md](docs/README.md)
+  tells how a page is written. The end-to-end tests take the pictures,
+  `docs/guide/figures/`: `pytest --pictures -m pictures`, see
+  [e2e/README.md](e2e/README.md#the-pictures-of-the-user-guide). The tests
+  check the Mallard pages with `yelp-check`, of the Yelp tools (`yelp-tools`
+  in Debian), where it is installed.
+- **translations**: `./l10n.sh` extracts the messages of the sources into
+  `locale/virtualbricks/virtualbricks.pot`, merges them into the `.po` file of
+  each language and compiles the `.mo` catalogs, which are committed too. It
+  needs the GNU gettext tools: `xgettext`, `msgmerge` and `msgfmt` (`gettext`
+  in Debian).
+- **types**: `mypy` checks the types of the whole project, when a module or
+  `pyproject.toml` changes, with the mypy of `.venv`, which has the stubs of
+  GTK 3 (see [Setting up](#setting-up)).
+
+When a hook changes files, as when you add a message the translations have to
+know, the commit stops: stage what it changed and commit again.
+
+The types are checked with mypy, which `pyproject.toml` configures: run
+`mypy` from the root of the sources; a hook runs it on commit. Every module
+is typed in full and checked strictly, the bodies of the functions too, so a
+function without annotations is an error; `tools/typecoverage.py` tells
+how much of each module has annotations, the most typed first (`--sort name`
+in the order of the files):
+
+```sh
+mypy                                   # virtualbricks/ and tools/
+python tools/typecoverage.py           # every module of virtualbricks/
+python tools/typecoverage.py virtualbricks/config e2e
+```
+
+The messages that the user reads go through `_()`, from `virtualbricks.i18n`.
+To add a language, see the top of `l10n.sh`.
+
+### Source layout
+
+- `virtualbricks/`: `cli.py` reads the command line, and `main.py` starts
+  Virtualbricks in the mode it asks for: `app.py` runs the bricks without
+  the windows; `sockets.py` reads the descriptions of the sockets of
+  `--listen` and `--connect`; `brickfactory.py` is the model in memory, the
+  bricks, the events and the images of the open project; `programs.py`
+  finds the installed QEMU and VDE programs and asks them what they have;
+  `vde.py` finds the VDE programs of the settings; `sudo.py` writes the
+  `sudo` command of what needs root, and `ksm.py` turns Kernel Samepage
+  Merging on and off; `markdown.py` reads the README of a project, and
+  `topology.py` lays the lab out with Graphviz; `locations.py` has the paths
+  of the files.
+- `virtualbricks/bricks/`: `__init__.py` has what bricks and events share,
+  and the base class of the bricks; a module for each kind of brick:
+  virtual machine, switch, tap, wire, and so on; each writes its command
+  line with `command.py`. `draft.py` is what the settings panels work on: a
+  copy of a brick's settings, checked as it's set, given to the brick at
+  OK; a brick with checks of its own has its draft in its module.
+  `brickinfo.py` and `eventinfo.py` say in words what a brick or an event
+  is and does, for the tabs of the main window and for the console.
+- `virtualbricks/qemu/`: what Virtualbricks knows of QEMU itself.
+  `imageformat.py` tells the format of a disk image, and its backing file,
+  from the first bytes of the file; `run.py` finds the QEMU programs and
+  runs `qemu-img`.
+- `virtualbricks/console/`: the console. `command.py` declares each command
+  with its arguments, `parser.py` reads and completes a line, `dispatch.py`
+  runs it; a module for each noun, `bricks.py`, `events.py`, `images.py`,
+  `settings.py` and `projects.py`, and `general.py` for `help`, `status`,
+  `source` and `quit`. `terminal.py` reads the terminal, or a pipe, and
+  `lineedit.py` has the keys of readline for its line. `control.py` listens
+  on the control sockets, `client.py` is `--command` and `--connect --run`,
+  with `ampbox.py`, the boxes of AMP read and written without Twisted, and
+  `wire.py` has what both share: the JSON protocol, the checks of a
+  socket's path, the token and its proof. `tls.py` has the certificates of
+  the ssl sockets, which it reads with pyOpenSSL.
+  `ampwire.py` has the commands of the AMP socket, for the programs that use
+  it. It imports no GTK, so that `--no-gui`
+  doesn't load it, and `client.py` doesn't load Twisted's reactor either.
+- `virtualbricks/remote/`: the windows of another Virtualbricks. On the
+  machine of the bricks, `follower.py` sends the project and its changes,
+  and `answers.py` and `facts.py` answer the commands of the windows,
+  `commands.py`; on the desktop, `mirror.py` is the copy of the project that
+  the windows show, and `client.py` the connection and `RemoteEngine`.
+  `drafts.py` is the OK of a panel as data, and `tunnel.py` carries the
+  consoles. What the windows do goes through an engine,
+  `virtualbricks/engine.py`: `LocalEngine` on the machine of the bricks,
+  `RemoteEngine` over a connection.
+- `virtualbricks/config/`: the settings and the state, the schemas of their
+  fields, the project file, and the projects: `workspace.py` lists, creates and
+  opens them, `archive.py` and `importing.py` read, write and import their
+  archives in a process of their own. The rest of the code imports what it
+  needs from each module, as in `from virtualbricks.config.workspace import
+  projects`; the package itself exports nothing.
+  It imports no GTK or GLib, so that it works in a console or a script: what
+  needs the desktop, as the trash, is given to it by the GUI.
+- `virtualbricks/migrate/`: the only code that reads the files of Virtualbricks
+  2.1 and older.
+- `virtualbricks/gui/`: the windows, built in Python code. `app.py` runs the
+  bricks with the windows, or shows the windows of another Virtualbricks, the
+  one of `--connect`. `mainwindow/` is the main window, with a module or a
+  package for each tab: `bricks/`, `events/`, `images/`, `topology.py` and
+  `readme.py`. The settings panel of each kind of brick is in `bricks/config/`:
+  rows made by `form.py` from the schema, on the brick's draft, and the virtual
+  machine's in `vm/`, a module for each section of its sidebar. The settings of
+  an event and the details of an image are panels on drafts too, in `events/`
+  and `images/`. `dialogs/` has the other windows and dialogs, and
+  `messages.py` the messages of the Logs window.
+- `virtualbricks/tests/`: the tests, in the layout of the package.
+- `docs/`: the documentation, written in Markdown: the user guide in
+  `guide/`, with its pictures in `guide/figures/`, the manual pages in `man/`,
+  which are the Reference of the guide too, with the drawings of their HTML
+  in `man/figures/`; the template and the stylesheet of the HTML in
+  `templates/`; `build.py`, which builds them into `built/`: the man pages,
+  the Mallard pages of Yelp and the HTML, where the web pages of the manual
+  pages are, as `built/html/config-files.html`; and `README.md`, which tells
+  how a page is written. In `redesign/`, the designs of the parts that were
+  rewritten, numbered in the order of the work, from the conversion of the
+  Glade files to the console.
+- `tools/`: the scripts of the development, as `typecoverage.py` and
+  `targetsuite.py`.
+- `locale/`: the translations; `share/`: the desktop file and the icon.
+
+## License
+
+Virtualbricks is free software, under the GNU General Public License, version
+2 or, at your option, any later version. See `COPYING`.

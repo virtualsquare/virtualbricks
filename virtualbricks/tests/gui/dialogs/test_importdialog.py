@@ -1,0 +1,618 @@
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2026 Virtualbricks team
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+"""The import window: one page, fed by the archive process."""
+
+import os
+
+from twisted.internet import defer
+
+from virtualbricks import locations
+from virtualbricks.config.archive import (
+    ArchiveCancelled,
+    ArchiveContents,
+    ArchiveError,
+)
+from virtualbricks.config.archive import (
+    Member as ArchiveMember,
+)
+from virtualbricks.config.importing import ImportResult
+from virtualbricks.config.report import Report
+from virtualbricks.config.settings import ProjectSettings, use_project
+from virtualbricks.tests import FakeLogger
+from virtualbricks.tests.gui import GuiTestCase, has_display
+
+if has_display:
+    from gi.repository import Gdk, Gtk
+
+    from virtualbricks.gui.dialogs import importdialog
+
+    find_qemu_img = importdialog.find_qemu_img
+
+
+class FakeJob:
+    def __init__(self):
+        self.done = defer.Deferred()
+        self.cancelled = False
+
+    def cancel(self):
+        self.cancelled = True
+        if not self.done.called:
+            self.done.errback(ArchiveCancelled())
+
+
+def data(**images):
+    return {
+        "format": 1,
+        "settings": {"qemu_path": "/opt/elsewhere/qemu"},
+        "images": {name: {"path": path} for name, path in images.items()},
+        "events": {"ev": {}},
+        "bricks": {
+            "vm": {
+                "type": "qemu",
+                "disks": {"hda": {"image": "deb", "private": True}},
+            },
+            "sw1": {"type": "switch"},
+            "sw2": {"type": "switch"},
+        },
+    }
+
+
+class ImportTestCase(GuiTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.logger = FakeLogger()
+        self.patch(importdialog, "logger", self.logger)
+        self.patch(importdialog, "find_qemu_img", lambda: "/usr/bin/qemu-img")
+        # as short as a real one: the test's leaves no room to the bricks;
+        # never created
+        self.patch(locations, "runtime_dir", lambda: "/run/vb-tests")
+        self.patch(locations, "ensure_private_dir", lambda path: path)
+        self.patch(self.manager, "make_runtime_dir", lambda: None)
+        self.ours = self.folder("bin")
+        # this computer's: those of the open project
+        use_project(ProjectSettings(qemu_path=self.ours, vde_path=self.ours))
+        self.inspected = []
+        self.imports = []
+        self.dialog = importdialog.ImportDialog(
+            self.factory, inspect=self.inspect, run=self.run_import
+        )
+        self.addCleanup(self.destroy)
+        self.archive = os.path.join(self.root, "ospf-lab.vbp")
+
+    def destroy(self):
+        if not self.dialog.destroyed:
+            self.dialog.window.destroy()
+
+    def inspect(self, path, on_head, on_progress):
+        job = FakeJob()
+        job.on_head = on_head
+        job.on_progress = on_progress
+        self.inspected.append((path, job))
+        return job
+
+    def run_import(self, plan, workspace, on_progress, qemu_img):
+        job = FakeJob()
+        job.on_progress = on_progress
+        self.imports.append((plan, workspace, qemu_img, job))
+        return job
+
+    def contents(self, complete=True, in_archive=("deb",), **images):
+        images = images or {"deb": "/other/deb.qcow2"}
+        members = [ArchiveMember("project.toml", 10, "project")]
+        for name in in_archive:
+            members.append(ArchiveMember(f"IMAGES/{name}", 2000, "image"))
+        return ArchiveContents(
+            self.archive,
+            data(**images),
+            "# OSPF lab\n\nOSPF between **routers**\n\nDetails.",
+            members,
+            complete,
+        )
+
+    def read(self, contents=None):
+        self.dialog.choose(self.archive)
+        path, job = self.inspected[-1]
+        job.done.callback(contents or self.contents())
+        return job
+
+    def rows(self):
+        return self.dialog.rows
+
+    def mine(self):
+        """A file of the home, for Use a file…"""
+
+        mine = os.path.join(self.folder("images"), "mine.qcow2")
+        with open(mine, "w"):
+            pass
+        return mine
+
+
+class TestAskArchive(GuiTestCase):
+    """The archive is chosen before the window opens."""
+
+    def setUp(self):
+        super().setUp()
+        self.parent = Gtk.Window()
+        self.addCleanup(self.parent.destroy)
+        self.asked = []
+        self.patch(
+            importdialog,
+            "ask_file",
+            lambda chooser, done: self.asked.append((chooser, done)),
+        )
+        self.chosen = []
+        importdialog.ask_archive(self.parent, self.chosen.append)
+
+    def test_the_chooser(self):
+        [(chooser, done)] = self.asked
+        self.assertEqual(chooser.get_title(), "Choose an archive")
+        self.assertIs(chooser.get_transient_for(), self.parent)
+        self.assertEqual(chooser.get_action(), Gtk.FileChooserAction.OPEN)
+        [archives] = chooser.list_filters()
+        self.assertEqual(archives.get_name(), "Virtualbricks archives")
+
+    def test_chosen(self):
+        [(chooser, done)] = self.asked
+        done("/home/lab.vbp")
+        self.assertEqual(self.chosen, ["/home/lab.vbp"])
+
+    def test_cancelled(self):
+        [(chooser, done)] = self.asked
+        done(None)
+        self.assertEqual(self.chosen, [])
+
+
+class TestReading(ImportTestCase):
+
+    def test_nothing_to_import_yet(self):
+        self.assertFalse(self.dialog.import_button.get_sensitive())
+
+    def test_reading(self):
+        self.dialog.choose(self.archive)
+        self.assertEqual(self.dialog.page(), "reading")
+        path, job = self.inspected[0]
+        job.on_progress("read", 500_000, 2_000_000)
+        self.assertEqual(self.dialog.reading_bar.get_fraction(), 0.25)
+        self.assertEqual(
+            self.dialog.reading_bar.get_text(), "500.0 KB / 2.0 MB"
+        )
+        job.on_progress("read", 0, 0)
+        self.assertEqual(self.dialog.reading_bar.get_fraction(), 0.0)
+
+    def test_the_form(self):
+        self.read()
+        dialog = self.dialog
+        self.assertEqual(dialog.page(), "form")
+        # with ~ for the home
+        self.assertEqual(dialog.archive_label.get_text(), "~/ospf-lab.vbp")
+        self.assertEqual(dialog.archive_label.get_tooltip_text(), self.archive)
+        self.assertEqual(dialog.name_entry.get_text(), "ospf-lab")
+        # the first paragraph, rendered
+        self.assertEqual(
+            dialog.description_label.get_text(), "OSPF between routers"
+        )
+        self.assertEqual(
+            dialog.description_label.get_label(),
+            "OSPF between <b>routers</b>",
+        )
+        self.assertEqual(dialog.description_label.get_lines(), 4)
+        self.assertEqual(
+            dialog.facts_label.get_text(),
+            "2 × Switch · 1 × Virtual machine · 1 event",
+        )
+        # what the archive has, without the bar of the scan
+        self.assertTrue(dialog.scan_box.get_visible())
+        self.assertFalse(dialog.scan_bar.get_visible())
+        self.assertEqual(
+            dialog.scan_label.get_text(), "The archive has this image."
+        )
+        [row] = self.rows()
+        self.assertEqual(row.used_label.get_text(), "Used by vm.hda")
+        self.assertTrue(row.copy_button.get_active())
+        # with ~ for the home, where the workspace of the tests is
+        self.assertEqual(
+            row.path_label.get_text(),
+            "Copied to ~/workspace/shared_images/deb.qcow2",
+        )
+        library = os.path.join(self.manager.path, "shared_images")
+        self.assertEqual(
+            row.path_label.get_tooltip_text(), f"{library}/deb.qcow2"
+        )
+        self.assertEqual(
+            row.copy_button.get_tooltip_text(), "2.0 KB in the archive"
+        )
+        self.assertEqual(list(dialog.machine_checks), ["qemu_path"])
+        self.assertTrue(dialog.machine_checks["qemu_path"].get_active())
+        self.assertTrue(dialog.import_button.get_sensitive())
+        self.assertFalse(dialog.problems_label.get_visible())
+
+    def test_no_images_and_no_description(self):
+        contents = self.contents(in_archive=())
+        contents.data["images"] = {}
+        contents.data["settings"] = {}
+        contents.description = ""
+        self.read(contents)
+        self.assertFalse(self.dialog.images_frame.get_visible())
+        self.assertTrue(self.dialog.no_images_label.get_visible())
+        self.assertFalse(self.dialog.scan_box.get_visible())
+        self.assertFalse(self.dialog.description_label.get_visible())
+        self.assertFalse(self.dialog.paths_heading.get_visible())
+
+    def test_the_head_first(self):
+        self.dialog.choose(self.archive)
+        path, job = self.inspected[0]
+        job.on_head(self.contents(complete=False, in_archive=()))
+        self.assertEqual(self.dialog.page(), "form")
+        self.assertTrue(self.dialog.scan_box.get_visible())
+        self.assertTrue(self.dialog.scan_bar.get_visible())
+        self.assertEqual(
+            self.dialog.scan_label.get_text(), "Looking in the archive…"
+        )
+        [row] = self.rows()
+        self.assertTrue(row.copy_button.get_sensitive())
+        self.assertIn("Looking in the archive", row.path_label.get_text())
+        # a second head changes nothing
+        job.on_head(self.contents(complete=False, in_archive=()))
+        self.assertEqual(len(self.rows()), 1)
+        # the end of the archive: deb isn't there
+        job.done.callback(self.contents(in_archive=()))
+        # the line stays, the rows don't move
+        self.assertTrue(self.dialog.scan_box.get_visible())
+        self.assertFalse(self.dialog.scan_bar.get_visible())
+        self.assertEqual(
+            self.dialog.scan_label.get_text(),
+            "The archive doesn't have this image.",
+        )
+        self.assertFalse(row.copy_button.get_sensitive())
+        self.assertEqual(
+            row.copy_button.get_tooltip_text(), "Not in the archive"
+        )
+        self.assertTrue(row.skip_button.get_active())
+
+    def test_what_the_archive_has(self):
+        images = {"deb": "/other/deb.qcow2", "frr": "/other/frr.qcow2"}
+        for in_archive, line in (
+            ((), "The archive has none of these images."),
+            (("deb",), "The archive has 1 of these 2 images."),
+            (("deb", "frr"), "The archive has all these images."),
+        ):
+            self.read(self.contents(in_archive=in_archive, **images))
+            self.assertEqual(self.dialog.scan_label.get_text(), line)
+
+    def test_a_choice_during_the_scan_stays(self):
+        self.dialog.choose(self.archive)
+        path, job = self.inspected[0]
+        job.on_head(self.contents(complete=False, in_archive=()))
+        [row] = self.rows()
+        mine = self.mine()
+        self.patch(self.dialog, "choose_image", lambda image, done: done(mine))
+        row.use_button.set_active(True)
+        # the end of the archive: deb isn't there
+        job.done.callback(self.contents(in_archive=()))
+        self.assertTrue(row.use_button.get_active())
+        self.assertEqual((row.image.choice, row.image.path), ("use", mine))
+        self.assertEqual(row.path_label.get_text(), "Uses ~/images/mine.qcow2")
+
+    def test_reading_fails(self):
+        self.dialog.choose(self.archive)
+        path, job = self.inspected[0]
+        job.done.errback(ArchiveError("not an archive"))
+        self.assertEqual(self.dialog.page(), "failed")
+        self.assertIn("not an archive", self.dialog.error_label.get_text())
+        self.assertTrue(self.dialog.close_button.get_visible())
+
+    def test_another_file(self):
+        self.dialog.choose(self.archive)
+        first = self.inspected[0][1]
+        self.dialog.choose(self.archive)
+        self.assertTrue(first.cancelled)
+        # the first job's end is ignored
+        self.assertEqual(self.dialog.page(), "reading")
+
+    def test_late_results_after_the_window_is_gone(self):
+        self.dialog.choose(self.archive)
+        job = self.inspected[0][1]
+        self.dialog.window.destroy()
+        self.assertTrue(job.cancelled)
+        job.on_head(self.contents())
+
+
+class TestChoices(ImportTestCase):
+
+    def test_the_name(self):
+        self.read()
+        dialog = self.dialog
+        dialog.name_entry.set_text(".lab")
+        self.assertEqual(dialog.plan.name, ".lab")
+        self.assertEqual(
+            dialog.name_message.get_text(), "The name cannot start with a dot"
+        )
+        self.assertFalse(dialog.import_button.get_sensitive())
+        self.manager.create("taken")
+        dialog.name_entry.set_text("taken")
+        self.assertEqual(
+            dialog.name_message.get_text(),
+            "A project with this name already exists",
+        )
+        dialog.name_entry.set_text("lab")
+        self.assertFalse(dialog.name_message.get_visible())
+        self.assertTrue(dialog.import_button.get_sensitive())
+
+    def test_leave_unset_and_copy_again(self):
+        self.read()
+        [row] = self.rows()
+        copied = row.image.path
+        row.skip_button.set_active(True)
+        self.assertEqual(row.image.choice, "skip")
+        self.assertIn("Unset", row.path_label.get_text())
+        row.copy_button.set_active(True)
+        self.assertEqual((row.image.choice, row.image.path), ("copy", copied))
+
+    def test_use_a_file(self):
+        self.read()
+        [row] = self.rows()
+        mine = self.mine()
+        answers = [None, mine]
+        self.patch(
+            self.dialog,
+            "choose_image",
+            lambda image, done: done(answers.pop(0)),
+        )
+        # cancelled: the choice stays
+        row.use_button.set_active(True)
+        self.assertEqual(row.image.choice, "copy")
+        self.assertTrue(row.copy_button.get_active())
+        row.use_button.set_active(True)
+        self.assertEqual((row.image.choice, row.image.path), ("use", mine))
+        self.assertEqual(row.path_label.get_text(), "Uses ~/images/mine.qcow2")
+        self.assertTrue(self.dialog.import_button.get_sensitive())
+        # and the file goes away
+        os.remove(mine)
+        self.dialog.check()
+        self.assertFalse(self.dialog.import_button.get_sensitive())
+        self.assertIn("doesn't exist", self.dialog.problems_label.get_text())
+        # copying again takes a free name in the library
+        row.copy_button.set_active(True)
+        self.assertEqual(
+            row.image.path,
+            os.path.join(self.manager.path, "shared_images", "deb.qcow2"),
+        )
+
+    def test_the_file_chooser(self):
+        self.read()
+        [row] = self.rows()
+        asked = []
+        self.patch(
+            importdialog,
+            "ask_file",
+            lambda chooser, done: asked.append((chooser, done)),
+        )
+        row.use_button.set_active(True)
+        [(chooser, done)] = asked
+        self.assertEqual(chooser.get_title(), "The file of deb")
+        # the choice waits for the file
+        self.assertEqual(row.image.choice, "copy")
+        mine = self.mine()
+        done(mine)
+        self.assertEqual((row.image.choice, row.image.path), ("use", mine))
+        # an answer once the window is gone changes nothing
+        row.skip_button.set_active(True)
+        row.use_button.set_active(True)
+        chooser, done = asked[-1]
+        self.dialog.window.destroy()
+        done(mine)
+        self.assertEqual(row.image.choice, "skip")
+
+    def test_machine_paths_and_open(self):
+        self.read()
+        plan = self.dialog.plan
+        self.dialog.machine_checks["qemu_path"].set_active(False)
+        self.assertFalse(plan.machine_paths[0].use_ours)
+        self.dialog.open_check.set_active(False)
+        self.assertFalse(plan.open)
+
+
+class TestImport(ImportTestCase):
+
+    def start(self, contents=None):
+        self.read(contents)
+        self.dialog.import_button.clicked()
+        plan, workspace, qemu_img, job = self.imports[-1]
+        return plan, job
+
+    def test_import(self):
+        plan, job = self.start()
+        self.assertIs(plan, self.dialog.plan)
+        self.assertEqual(self.imports[0][2], "/usr/bin/qemu-img")
+        self.assertEqual(self.dialog.page(), "running")
+        self.assertEqual(self.dialog.cancel_button.get_label(), "Stop")
+        self.assertFalse(self.dialog.import_button.get_visible())
+        job.on_progress("extract", 1000, 4000)
+        self.assertEqual(
+            self.dialog.step_label.get_text(), "Extracting the archive"
+        )
+        self.assertEqual(self.dialog.run_bar.get_fraction(), 0.25)
+        job.on_progress("other", 0, 0)
+        self.assertEqual(self.dialog.step_label.get_text(), "other")
+        # the process made the project, and the window opens it, then
+        # closes, its report in the logs
+        self.manager.create("ospf-lab")
+        report = Report()
+        report.warning("left unset", "images.deb")
+        job.done.callback(ImportResult("ospf-lab", report))
+        self.assertEqual(self.manager.current.name, "ospf-lab")
+        self.assertIn('Project imported as "{name}"', self.logger.events[0])
+        self.assertEqual(self.logger.levels()[1], "warn")
+        self.assertTrue(self.dialog.destroyed)
+
+    def test_import_without_opening(self):
+        self.read()
+        self.dialog.open_check.set_active(False)
+        self.dialog.import_button.clicked()
+        job = self.imports[0][3]
+        report = Report()
+        report.warning("left unset", "images.deb")
+        job.done.callback(ImportResult("ospf-lab", report))
+        # the window closes too, the name and the report in the logs
+        self.assertIsNone(self.manager.current)
+        self.assertIn('Project imported as "{name}"', self.logger.events[0])
+        self.assertEqual(self.logger.levels()[1], "warn")
+        self.assertTrue(self.dialog.destroyed)
+
+    def test_the_project_cannot_be_opened(self):
+        plan, job = self.start()
+        job.done.callback(ImportResult("gone", Report()))
+        self.assertEqual(self.logger.levels()[-1], "error")
+        self.assertTrue(self.dialog.destroyed)
+
+    def test_import_during_the_scan(self):
+        self.dialog.choose(self.archive)
+        inspection = self.inspected[0][1]
+        inspection.on_head(self.contents(complete=False, in_archive=()))
+        self.dialog.import_button.clicked()
+        self.assertTrue(inspection.cancelled)
+        plan = self.imports[0][0]
+        self.assertFalse(plan.images[0].known)
+        self.assertEqual(self.dialog.page(), "running")
+
+    def test_import_waits_for_a_good_plan(self):
+        self.read()
+        self.dialog.name_entry.set_text("")
+        self.dialog.on_import_clicked(self.dialog.import_button)
+        self.assertEqual(self.imports, [])
+
+    def test_stop(self):
+        plan, job = self.start()
+        self.dialog.cancel_button.clicked()
+        self.assertTrue(job.cancelled)
+        self.assertEqual(self.dialog.page(), "form")
+        self.assertEqual(self.dialog.cancel_button.get_label(), "Cancel")
+
+    def test_failure(self):
+        plan, job = self.start()
+        job.done.errback(ArchiveError("disk full"))
+        self.assertEqual(self.dialog.page(), "failed")
+        self.assertEqual(self.dialog.error_label.get_text(), "disk full")
+        self.assertEqual(self.logger.levels(), ["error"])
+
+    def test_the_import_goes_on_without_the_window(self):
+        plan, job = self.start()
+        self.dialog.window.destroy()
+        self.assertFalse(job.cancelled)
+        job.on_progress("extract", 1, 2)
+        self.manager.create("ospf-lab")
+        job.done.callback(ImportResult("ospf-lab", Report()))
+        self.assertIn('Project imported as "{name}"', self.logger.events[0])
+        self.assertEqual(self.manager.current.name, "ospf-lab")
+
+    def test_failures_without_the_window(self):
+        plan, job = self.start()
+        self.dialog.window.destroy()
+        job.done.errback(ArchiveError("disk full"))
+        self.assertEqual(self.logger.levels(), ["error"])
+        plan, job = self.start_again()
+        self.dialog.window.destroy()
+        job.cancel()
+
+    def start_again(self):
+        self.dialog = importdialog.ImportDialog(
+            self.factory, inspect=self.inspect, run=self.run_import
+        )
+        return self.start()
+
+    def test_cancel_closes(self):
+        self.dialog.cancel_button.clicked()
+        self.assertTrue(self.dialog.destroyed)
+
+    def press(self, keyval, state=0):
+        """Whether the window took the key."""
+
+        event = Gdk.Event.new(Gdk.EventType.KEY_PRESS)
+        event.key.keyval = keyval
+        event.key.state = Gdk.ModifierType(state)
+        return self.dialog.window.emit("key-press-event", event)
+
+    def test_escape_closes(self):
+        self.read()
+        self.assertTrue(self.press(Gdk.KEY_Escape))
+        self.assertTrue(self.dialog.destroyed)
+
+    def test_escape_stops_the_import(self):
+        # as Cancel, which is Stop then
+        plan, job = self.start()
+        self.assertTrue(self.press(Gdk.KEY_Escape))
+        self.assertTrue(job.cancelled)
+        self.assertEqual(self.dialog.page(), "form")
+        self.assertFalse(self.dialog.destroyed)
+        # then it closes the window
+        self.assertTrue(self.press(Gdk.KEY_Escape))
+        self.assertTrue(self.dialog.destroyed)
+
+    def test_escape_after_a_failure(self):
+        plan, job = self.start()
+        job.done.errback(ArchiveError("disk full"))
+        self.assertTrue(self.press(Gdk.KEY_Escape))
+        self.assertTrue(self.dialog.destroyed)
+
+    def test_other_keys(self):
+        self.read()
+        control = Gdk.ModifierType.CONTROL_MASK
+        self.assertFalse(self.press(Gdk.KEY_Escape, control))
+        self.assertFalse(self.press(Gdk.KEY_F2))
+        self.assertFalse(self.dialog.destroyed)
+
+
+class TestHelpers(ImportTestCase):
+
+    def test_sizes(self):
+        size = importdialog.human_size
+        self.assertEqual(size(999), "999 B")
+        self.assertEqual(size(1500), "1.5 KB")
+        self.assertEqual(size(3_000_000_000_000), "3000.0 GB")
+
+    def test_facts(self):
+        self.assertEqual(importdialog.facts({}), "No bricks")
+        self.assertEqual(
+            importdialog.facts({"bricks": "x", "events": {"a": {}, "b": {}}}),
+            "2 events",
+        )
+
+    def test_facts_name_the_kinds(self):
+        bricks = {
+            "a": {"type": "switchwrapper"},
+            "b": {"type": "netemu"},
+            "c": {"type": "netemu"},
+            # a type of another version, as it is
+            "d": {"type": "hub"},
+        }
+        self.assertEqual(
+            importdialog.facts({"bricks": bricks}),
+            "2 × Netemu · 1 × Switch wrapper · 1 × hub",
+        )
+
+    def test_find_qemu_img(self):
+        from virtualbricks.qemu import run
+
+        def missing(name):
+            raise FileNotFoundError(name)
+
+        self.patch(run, "which", missing)
+        self.assertEqual(find_qemu_img(), "")
+        self.patch(run, "which", lambda name: "/usr/bin/" + name)
+        self.assertEqual(find_qemu_img(), "/usr/bin/qemu-img")

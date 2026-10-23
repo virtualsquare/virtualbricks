@@ -1,0 +1,473 @@
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2026 Virtualbricks team
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+
+"""The network emulator."""
+
+import re
+
+from virtualbricks.bricks.draft import Problem, apply
+from virtualbricks.bricks.netemu import (
+    BRICK_KEYS,
+    MOST,
+    MOST_BUFFER,
+    NOT_NEGATIVE,
+    STATE_KEYS,
+    NetemuConfig,
+    NetemuDraft,
+    NetemuTable,
+)
+from virtualbricks.config.report import Report
+from virtualbricks.config.schema import Int, dump_record, field_names, kind_of
+from virtualbricks.tests import BrickTestCase
+
+
+class TestNetemu(BrickTestCase):
+
+    def test_states_share_the_events(self):
+        netemu = self.factory.new_brick("netemu", "wan")
+        netemu.markov_manager.add(1)
+        self.factory.new_event("up")
+        netemu.update_config({"on_start": "up"})
+        self.assertEqual(
+            [s.on_start for s in netemu.markov_manager.states], ["up", "up"]
+        )
+        netemu.markov_manager.add(2)
+        self.assertEqual(netemu.markov_manager.states[2].on_start, "up")
+
+    def test_event_rename_updates_every_state(self):
+        netemu = self.factory.new_brick("netemu", "wan")
+        netemu.markov_manager.add(1)
+        event = self.factory.new_event("up")
+        netemu.update_config({"on_start": "up"})
+        self.factory.rename_item(event, "start")
+        self.assertEqual(
+            [s.on_start for s in netemu.markov_manager.states],
+            ["start", "start"],
+        )
+        self.assertFalse(netemu.rename_references("event", "none", "x"))
+
+    def test_config_table_round_trip(self):
+        netemu = self.factory.new_brick("netemu", "wan")
+        netemu.markov_manager.add(1)
+        netemu.markov_manager.states[1].delay = 200
+        netemu.markov_manager.weights[0][1] = 0.3
+        netemu.transPeriod = 250
+        table = netemu.config_table()
+        self.assertEqual(table["transition_period"], 250)
+        self.assertEqual(table["transitions"], [[0.0, 0.3], [0.0, 0.0]])
+        self.assertEqual(len(table["states"]), 2)
+        self.assertNotIn("on_start", table["states"][0])
+        other = self.factory.new_brick("netemu", "wan2")
+        report = Report()
+        other.load_config_table(table, report, "w", set())
+        self.assertEqual(len(report), 0)
+        self.assertEqual(other.config_table(), table)
+        self.assertIs(other.config, other.markov_manager.states[0])
+        self.assertIsInstance(other.config, NetemuConfig)
+
+    def test_bad_matrix(self):
+        netemu = self.factory.new_brick("netemu", "wan")
+        table = netemu.config_table()
+        table["states"].append(dict(table["states"][0]))
+        report = Report()
+        netemu.load_config_table(table, report, "w", set())
+        self.assertEqual(
+            [str(m) for m in report],
+            ["w.transitions: is not a 2×2 matrix, using zeros"],
+        )
+        self.assertEqual(
+            netemu.markov_manager.weights, [[0.0, 0.0], [0.0, 0.0]]
+        )
+
+    def test_state_schema(self):
+        # a state is the config without the events of the brick
+        self.assertEqual(
+            STATE_KEYS | BRICK_KEYS, frozenset(field_names(NetemuConfig))
+        )
+        self.assertEqual(STATE_KEYS & BRICK_KEYS, frozenset())
+        self.assertEqual(len(STATE_KEYS), 13)
+        [state] = dump_record(NetemuTable())["states"]
+        self.assertEqual(frozenset(state), STATE_KEYS)
+
+    def test_update_sends_every_state(self):
+        netemu = self.factory.new_brick("netemu", "wan")
+        netemu.markov_manager.add(1)
+        sent = []
+        netemu.send = sent.append
+
+        class FakeProcess:
+            pid = 1
+
+        netemu.proc = FakeProcess()
+        netemu.update()
+        self.assertIn(b"markov-numnodes 2\n", sent)
+        self.assertIn(b"markov-time 100\n", sent)
+
+    def test_both_ways_with_the_ends(self):
+        # "the same both ways" goes with the two ends: the emulator gets the
+        # new ends the new way, and the changes given stay as they were
+        netemu = self.factory.new_brick("netemu", "wan")
+        netemu.proc = FakeProcess()
+        changes = {
+            "delay": 10,
+            "delay_right_to_left": 20,
+            "delay_symmetric": False,
+        }
+        netemu.update_config(changes)
+        config = netemu.config
+        self.assertEqual(
+            (config.delay, config.delay_right_to_left, config.delay_symmetric),
+            (10, 20, False),
+        )
+        self.assertEqual(
+            set(netemu.proc.written),
+            {b"delay LR 10[0]\n", b"delay RL 20[0]\n"},
+        )
+        self.assertEqual(
+            changes,
+            {"delay": 10, "delay_right_to_left": 20, "delay_symmetric": False},
+        )
+
+    def test_a_bad_value_changes_nothing(self):
+        netemu = self.factory.new_brick("netemu", "wan")
+        netemu.proc = FakeProcess()
+        changes = {
+            "delay": 10,
+            "delay_right_to_left": 20,
+            "delay_symmetric": False,
+            "loss_right_to_left": 150.0,
+        }
+        self.assertRaises(ValueError, netemu.update_config, changes)
+        config = netemu.config
+        self.assertEqual(
+            (config.delay, config.delay_right_to_left, config.delay_symmetric),
+            (0, 0, True),
+        )
+        self.assertEqual(netemu.proc.written, [])
+        self.assertEqual(len(changes), 4)
+
+    def test_nothing_below_zero(self):
+        # a delay, a bandwidth or a buffer size below 0 is 0 to the programs
+        integers = [
+            name
+            for name in STATE_KEYS
+            if isinstance(kind_of(NetemuConfig, name), Int)
+        ]
+        self.assertEqual(sorted(NOT_NEGATIVE), sorted(integers))
+        netemu = self.factory.new_brick("netemu", "wan")
+        for name in NOT_NEGATIVE:
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(
+                    ValueError, rf"^{name}: -1 is outside 0–2\^(31|53)-1$"
+                ):
+                    netemu.update_config({name: -1})
+                netemu.update_config({name: 0})
+                self.assertEqual(getattr(netemu.config, name), 0)
+
+    def test_older_negatives_read_as_zero(self):
+        # older versions took them, and the programs took them for 0
+        netemu = self.factory.new_brick("netemu", "wan")
+        netemu.markov_manager.add(1)
+        table = netemu.config_table()
+        table["states"][0]["delay"] = -5
+        table["states"][1].update(bandwidth=-1, buffer_size_right_to_left=-2)
+        before = repr(table)
+        report = Report()
+        netemu.load_config_table(table, report, "bricks.wan", set())
+        self.assertEqual(
+            [str(m) for m in report],
+            [
+                "bricks.wan.states[0].delay: -5 is less than 0, read as 0, as"
+                " the programs took it",
+                "bricks.wan.states[1].bandwidth: -1 is less than 0, read as 0,"
+                " as the programs took it",
+                "bricks.wan.states[1].buffer_size_right_to_left: -2 is less"
+                " than 0, read as 0, as the programs took it",
+            ],
+        )
+        first, second = netemu.markov_manager.states
+        self.assertEqual(first.delay, 0)
+        self.assertEqual(
+            (second.bandwidth, second.buffer_size_right_to_left), (0, 0)
+        )
+        # the others are read as they are
+        self.assertEqual(second.buffer_size, 75000)
+        self.assertEqual(repr(table), before)
+
+    def test_the_most(self):
+        # what vde-netemu takes as it is written
+        netemu = self.factory.new_brick("netemu", "wan")
+        most = {name: (MOST, "2^53-1") for name in NOT_NEGATIVE}
+        buffer = (MOST_BUFFER, "2^31-1")
+        most.update(buffer_size=buffer, buffer_size_right_to_left=buffer)
+        self.assertEqual(MOST, 2**53 - 1)
+        self.assertEqual(MOST_BUFFER, 2**31 - 1)
+        for name, (highest, text) in most.items():
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    f"^{name}: {highest + 1} is outside 0–{re.escape(text)}$",
+                ):
+                    netemu.update_config({name: highest + 1})
+                netemu.update_config({name: highest})
+                self.assertEqual(getattr(netemu.config, name), highest)
+        period = kind_of(NetemuTable, "transition_period")
+        with self.assertRaisesRegex(
+            ValueError, rf"^{MOST + 1} is outside 1–2\^53-1$"
+        ):
+            period.check(MOST + 1)
+        period.check(MOST)
+
+    def test_older_values_above_the_most(self):
+        # the usual reading: a warning, and the default
+        netemu = self.factory.new_brick("netemu", "wan")
+        table = netemu.config_table()
+        table["transition_period"] = 10**20
+        table["states"][0].update(delay=10**20, buffer_size=MOST_BUFFER + 1)
+        report = Report()
+        netemu.load_config_table(table, report, "bricks.wan", set())
+        self.assertEqual(
+            [str(m) for m in report],
+            [
+                f"bricks.wan.transition_period: {10**20} is outside"
+                " 1–2^53-1, using the default 100",
+                f"bricks.wan.states[0].delay: {10**20} is outside 0–2^53-1,"
+                " using the default 0",
+                f"bricks.wan.states[0].buffer_size: {2**31} is outside"
+                " 0–2^31-1, using the default 75000",
+            ],
+        )
+        self.assertEqual(netemu.transPeriod, 100)
+        self.assertEqual(netemu.config.delay, 0)
+        self.assertEqual(netemu.config.buffer_size, 75000)
+
+
+class TestStates(BrickTestCase):
+
+    def netemu(self):
+        netemu = self.factory.new_brick("netemu", "wan")
+        left = self.factory.new_brick("switch", "left")
+        right = self.factory.new_brick("switch", "right")
+        netemu.plugs[0].connect(left.socks[0])
+        netemu.plugs[1].connect(right.socks[0])
+        return netemu, left, right
+
+    def test_new_state_names(self):
+        netemu, _, _ = self.netemu()
+        markov = netemu.markov_manager
+        markov.add(1)
+        markov.add(2)
+        self.assertEqual(
+            [state.name for state in markov.states],
+            ["default name", "default name 0", "default name 1"],
+        )
+        markov.states[1].name = "busy"
+        markov.add(3)
+        self.assertEqual(markov.states[3].name, "default name 0")
+        markov.states[3].name = "default name 5"
+        markov.add(4)
+        self.assertEqual(markov.states[4].name, "default name 0")
+        markov.states[0].name = "idle"
+        markov.add(5)
+        self.assertEqual(markov.states[5].name, "default name")
+
+
+class FakeProcess:
+    def __init__(self):
+        self.written = []
+
+    def write(self, data):
+        self.written.append(data)
+
+
+class TestTheDraft(BrickTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.netemu = self.factory.new_brick("netemu", "ne1")
+        self.switch = self.factory.new_brick("switch", "sw1")
+        for plug in self.netemu.plugs:
+            plug.connect(self.switch.socks[0])
+        self.changed = []
+        self.netemu.changed.connect(self.changed.append)
+
+    def two_states(self):
+        self.netemu.markov_manager.add(1)
+        self.netemu.markov_manager.states[1].name = "congested"
+        self.netemu.markov_manager.weights[0][1] = 2.0
+        return NetemuDraft(self.netemu)
+
+    def test_a_netemu_has_one(self):
+        self.assertIsInstance(
+            self.netemu.draft_factory(self.netemu), NetemuDraft
+        )
+
+    def test_a_copy(self):
+        draft = self.two_states()
+        manager = self.netemu.markov_manager
+        self.assertEqual(draft.states, manager.states)
+        self.assertIsNot(draft.states[0], manager.states[0])
+        self.assertEqual(draft.weights, [[0.0, 2.0], [0.0, 0.0]])
+        self.assertIsNot(draft.weights[0], manager.weights[0])
+        self.assertEqual(draft.period, 100)
+        self.assertEqual(draft.selected, 0)
+        self.assertIs(draft.settings, draft.states[0])
+        draft.set("delay", 20)
+        self.assertEqual(manager.states[0].delay, 0)
+        self.assertEqual(draft.changes(), {})
+
+    def test_select(self):
+        draft = self.two_states()
+        draft.set("loss", 200)
+        draft.select(1)
+        self.assertIs(draft.settings, draft.states[1])
+        self.assertEqual(draft.get("name"), "congested")
+        # what the other state refused goes with it
+        self.assertEqual(draft.refused, {})
+
+    def test_the_directions(self):
+        draft = NetemuDraft(self.netemu)
+        self.assertFalse(draft.uses("delay_right_to_left"))
+        draft.set("delay_symmetric", False)
+        self.assertTrue(draft.uses("delay_right_to_left"))
+        self.assertTrue(draft.uses("delay"))
+
+    def test_add(self):
+        draft = self.two_states()
+        self.factory.new_event("up")
+        draft.states[0].on_start = "up"
+        draft.select(0)
+        self.assertEqual(draft.add(), 1)
+        self.assertEqual(
+            [state.name for state in draft.states],
+            ["default name", "state 3", "congested"],
+        )
+        self.assertEqual(draft.selected, 1)
+        self.assertIs(draft.settings, draft.states[1])
+        # the events are the brick's
+        self.assertEqual(draft.states[1].on_start, "up")
+        self.assertEqual(
+            draft.weights,
+            [[0.0, 0.0, 2.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+        )
+        draft.add()
+        self.assertEqual(draft.states[2].name, "state 4")
+        self.assertEqual(self.netemu.markov_manager.weights[0], [0.0, 2.0])
+
+    def test_remove(self):
+        draft = self.two_states()
+        draft.select(0)
+        draft.remove()
+        self.assertEqual([state.name for state in draft.states], ["congested"])
+        self.assertEqual(draft.weights, [[0.0]])
+        self.assertEqual(draft.selected, 0)
+        # one is left
+        draft.remove()
+        self.assertEqual(len(draft.states), 1)
+        # the last one: the one before it shows
+        draft = NetemuDraft(self.netemu)
+        draft.select(1)
+        draft.remove()
+        self.assertEqual(draft.selected, 0)
+
+    def test_the_chances(self):
+        draft = self.two_states()
+        self.assertEqual(draft.stays(0), 98.0)
+        self.assertEqual(draft.stays(1), 100.0)
+        draft.set_weight(1, 0, 60.0)
+        self.assertEqual(draft.stays(1), 40.0)
+        self.assertEqual(draft.errors(), [])
+        draft.set_weight(1, 0, 110.0)
+        self.assertEqual(
+            draft.errors(),
+            [
+                Problem(
+                    "transitions",
+                    "From congested the chances add up to more than 100 %",
+                )
+            ],
+        )
+        # what a state keeps doesn't count
+        draft.set_weight(1, 0, 60.0)
+        draft.set_weight(1, 1, 50.0)
+        self.assertEqual(draft.stays(1), 40.0)
+        self.assertEqual(draft.errors(), [])
+
+    def test_two_states_with_one_name(self):
+        draft = self.two_states()
+        draft.set("name", "congested")
+        self.assertEqual(
+            draft.errors(),
+            [Problem("name", "Two states are called congested")],
+        )
+
+    def test_a_socket_card_on_the_left(self):
+        vm = self.factory.new_brick("qemu", "vm1")
+        sock = vm.add_sock()
+        draft = NetemuDraft(self.netemu)
+        draft.link(1, sock)
+        self.assertEqual(draft.errors(), [])
+        draft.link(0, sock)
+        self.assertEqual(
+            draft.errors(),
+            [
+                Problem(
+                    "plug0",
+                    "A machine's socket card can only be the right end",
+                )
+            ],
+        )
+
+    def test_apply(self):
+        draft = self.two_states()
+        draft.select(1)
+        draft.set("delay", 80)
+        draft.set_weight(1, 0, 10.0)
+        draft.period = 250
+        apply(draft)
+        manager = self.netemu.markov_manager
+        self.assertEqual(manager.states[1].delay, 80)
+        self.assertEqual(manager.weights, [[0.0, 2.0], [10.0, 0.0]])
+        self.assertEqual(self.netemu.transPeriod, 250)
+        self.assertIs(self.netemu.config, manager.states[0])
+        self.assertEqual(self.changed, [self.netemu])
+        table = self.netemu.config_table()
+        self.assertEqual(table["transition_period"], 250)
+        self.assertEqual(table["states"][1]["delay"], 80)
+
+    def test_apply_nothing(self):
+        apply(self.two_states())
+        self.assertEqual(self.changed, [])
+
+    def test_the_current_state_removed(self):
+        draft = self.two_states()
+        self.netemu.currentState = 1
+        self.netemu.config = self.netemu.markov_manager.states[1]
+        draft.select(1)
+        draft.remove()
+        apply(draft)
+        self.assertEqual(self.netemu.currentState, 0)
+        self.assertIs(self.netemu.config, draft.states[0])
+
+    def test_a_running_emulator(self):
+        self.netemu.proc = FakeProcess()
+        draft = NetemuDraft(self.netemu)
+        draft.period = 300
+        apply(draft)
+        self.assertIn(b"markov-time 300\n", self.netemu.proc.written)
+        self.assertIn(b"markov-numnodes 1\n", self.netemu.proc.written)

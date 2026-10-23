@@ -1,0 +1,627 @@
+<title>One source for the documentation</title>
+<meta name="description" content="The documentation of Virtualbricks in one form, Markdown, built by one script into man pages, Mallard pages for Yelp and HTML with one look: the guide and the reference, both in Yelp, what each becomes, the HTML, the steps and the questions; the design pages stay as they are.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+  .status.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+  .ref.open { color: var(--decide); background: var(--decide-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+
+  table.decisions td:first-child { white-space: nowrap; }
+  table.decisions td.rec { color: var(--accent); }
+  table.decisions td.rec.decided { color: var(--ok); }
+  table.decisions p { margin: 0 0 6px; }
+  table.decisions p:last-child { margin: 0; }
+  .note { font-size: 14px; color: var(--muted); }
+  table.pages td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  table.pages td.from { color: var(--muted); font-size: 13.5px; }
+  table.pages tr.group td { font: 600 12px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); padding-top: 16px; }
+
+</style>
+
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Step 33 &middot; Design &middot; revision 10, implemented</div>
+    <h1>One source for the documentation</h1>
+    <p class="lede">The documentation is in four forms, each written by hand: the man pages in pandoc&rsquo;s Markdown, their HTML twins, the guide in Mallard for Yelp, and the design pages in HTML. This page makes the documentation of Virtualbricks Markdown, built by one script into man pages, Mallard pages for Yelp and HTML, with one look for every HTML page it builds, so that each thing is written once. The reference is in Yelp too, as pages of its own. The design pages stay as they are.</p>
+    <ul class="meta">
+      <li>branch <b>develop</b> at 18a2f147</li>
+      <li>revision 10 &middot; 22 October 2026</li>
+      <li><span class="status done">implemented</span></li>
+    </ul>
+    <p class="revision"><strong>What this covers:</strong> your request of today: &ldquo;I want to uniform all of this. I don&rsquo;t like Yelp much, but I want the documentation available in the app, so it seems the best option for now. The help should be written in Markdown, that is subsequently converted in yelp pages or html.&rdquo; The facts of <a href="#today">&sect;2</a> were checked today on <code>develop</code>, and pandoc 3.9, the one the man pages are built with, was tried on a page of the guide written in Markdown (<a href="#guide">&sect;4</a>). Seven questions in <a href="#decisions">&sect;9</a>, U1 to U6 and U8, are decided.</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 records your answer of today: &ldquo;the artifacts created by Claude can stay as they are, no need to generate them in MD and translate them in HTML&rdquo;. U5 is C: the design pages stay HTML written by hand, outside the build, and so do new ones (<a href="#design">&sect;7</a>). Their conversion, step 4 of revision 1, is gone, and the plan has four steps (<a href="#plan">&sect;8</a>); so is U7, whether to commit their HTML. The script, the template and the folders no longer have a part for them (<a href="#proposal">&sect;3</a>, <a href="#html">&sect;5</a>).</p>
+    <p class="revision"><strong>What changed:</strong> revision 3 records your request of today: &ldquo;The man Pages should be accessible from inside Yelp itself, don&rsquo;t open any other program. This means that they should be available as .page files&rdquo;. The five reference pages are built into Mallard pages too, in a new <i>Reference</i> section of the guide, with the ids of their web pages, <code>config-files</code> and the others; a link of the guide to the reference is a link to a page, in Yelp as in the HTML, and no <code>man:</code> link is left (<a href="#reference">&sect;6</a>). The man sources use few constructs, all of the guide&rsquo;s list but the breaks of their synopses (<a href="#reference">&sect;6</a>); bold and italics keep their meaning of the man pages there. A new question, U8, asks how Yelp shows the diagrams. The plan has five steps: the reference reaches Yelp in step 2, before the HTML changes (<a href="#plan">&sect;8</a>).</p>
+    <p class="revision"><strong>What changed:</strong> revision 4 records your answer of today: &ldquo;All recommendations are fine. Implement the plan&rdquo;. U1 to U4, U6 and U8 are A, as recommended; U5 is C, since revision 2. Step 1 starts on <code>mg/markdown-docs</code>, from <code>develop</code>.</p>
+    <p class="revision"><strong>Step 1</strong> on 21 October 2026, on <code>mg/markdown-docs</code>: the guide in Markdown, <code>docs/guide/</code>, built by <code>docs/build.py</code> into <code>docs/built/mallard/</code>, and the man pages into <code>docs/built/man/</code>, moved there with their dates; <code>help/build.py</code> builds the HTML from the built Mallard. A script used once and kept out of the repository wrote the 17 pages through pandoc&rsquo;s tree and its Markdown writer. The pages built from them are the old ones, element by element, with the spaces between words normalised, 17 of 17; the HTML that yelp-build makes of them has the text and the tags of before in every page, only its line breaks differ.</p>
+    <p class="revision">The differences from the plan. Italics are a part to replace in the guide too, <code>&lt;var&gt;</code>, as in the man pages: <code>*folder*</code> in place of <code>[folder]{.var}</code> of &sect;4, and a command with such a part is <code>[virtualbricks --run *file*]{.cmd}</code>. <code>[Ctrl++]{.keyseq}</code> is Ctrl and the key +. The guide is read without pandoc&rsquo;s ids made from titles, so a section without <code>{#id}</code> stops the build, and so does a picture without <code>alt</code>, which pandoc would give its caption. The links to the man pages stay as they were, for one output each, in <code>::: {test="&hellip;"}</code>, until step 2. The rules are in <code>docs/README.md</code>. <code>virtualbricks/tests/test_docsbuild.py</code> has 38 tests, one for each rule, six of them checked to fail when their rule is broken in the script; the check that the outputs are up to date moved there from <code>test_docs.py</code> and covers the Mallard too. 3327 unit tests pass; the end-to-end <code>help.feature</code>, 3 scenarios, and <code>pictures.feature</code>, 18, pass. A wheel installs the 17 pages, the 18 pictures and the 5 man pages from <code>docs/built/</code>. The picture <code>machine-settings.png</code> now differs from the one taken by its scenario, by its version line alone: this computer&rsquo;s QEMU is 10.0.13, the picture shows 10.0.11; it isn&rsquo;t taken again here.</p>
+    <p class="revision"><strong>Step 2</strong> the same day: the five man pages are pages of the guide, with the ids and titles of <a href="#reference">&sect;6</a>, in a <i>Reference</i> section of the index, before <i>Tutorials</i>; their front matter gains <code>help: {id, title}</code>, <code>guide</code> and <code>sort</code>, and the man pages don&rsquo;t change. The five links of the guide to a man page are links to its page, and <code>if:test</code> is gone, with the writer&rsquo;s blocks for one output. Yelp 42.2, on a display of its own, shows <code>help:virtualbricks/config-files</code> with the pages where Yelp looks, the file of <code>control-protocols.page</code> from the sources, and the <i>Reference</i> of the index, with the trail back, the list of sections and the synopsis; nothing else opens. yelp-check finds the 22 pages valid, their links whole, no page an orphan. The man pages name <code>virtualbricks-config(5)</code> 14 times and <code>virtualbricks(1)</code> 11 times in the others: as many links to their pages.</p>
+    <p class="revision">The differences from the plan. The line of a page in the index is the man page&rsquo;s name, then NAME: <i>virtualbricks-config(5): settings, state and project files of Virtualbricks</i>. A page doesn&rsquo;t link itself where it names its own man page. One heading needed its title, <code>contents.toml</code>; the words kept in capitals are AMP, JSON, README, TOML and Virtualbricks. The HTML is still yelp-build&rsquo;s, so the five pages have their HTML in <code>help/html/C/</code> too, until step 3. Tests: 12 for the rules of the reference and one for an id taken twice, in <code>test_docsbuild.py</code>; in <code>test_help.py</code>, a page in the <i>Reference</i> for each man page, and no <code>man:</code> link in any page; six of them checked to fail when their rule is broken. 3341 unit tests and <code>help.feature</code> pass.</p>
+    <p class="revision"><strong>Step 3</strong> the same day: the HTML is pandoc&rsquo;s, written by <code>docs/build.py</code> from the trees of the Mallard, in <code>docs/templates/page.html</code> with <code>docs/templates/style.css</code>, into <code>docs/built/html/</code>: the 22 pages, the stylesheet and the 18 pictures, installed where the HTML of yelp-build was. A page of the guide has the way back to the sections of the index that list it, and See also, with the pages it names and those that name it; the index lists each section&rsquo;s pages by their sort title, with their line, in two columns where the page is wide; a page of the reference has its contents at the left, NAME under its title, and its man page and the version of Virtualbricks. The stylesheet takes the tokens and dark mode of <code>config-files.html</code>, and the fonts of the computer: the HTML opens without the network. <code>help/</code> is gone, with <code>help/build.py</code>, <code>html.xsl</code>, the HTML of yelp-build and the hook <code>help</code>; the Yelp tools are only for the tests, which check the Mallard with yelp-check where it is installed. A link to a page or a section that isn&rsquo;t there stops the build.</p>
+    <p class="revision">The differences from the plan. pandoc&rsquo;s colours of a language are off: it took the class <code>cmd</code> of a command for Windows batch files. In a man page, bold and italics side by side, as <code>**unix:***path*</code>, are one code in the HTML, its part to replace inside; Yelp shows them as before. A See also that names a section links that section, and the way back from it goes to the page. Since the version is in the masthead of a reference page, a new version rewrites the five pages, as it doesn&rsquo;t the man pages. Tests: 10 for the HTML, on a site of their own, and 3 on the tree, that no link of it leads nowhere and that the index lists every page; eight of them checked to fail when their rule is broken. 3347 unit tests, <code>help.feature</code> and mypy pass, and a wheel installs the 22 pages, their stylesheet and the pictures. Until step 5 the website still reads <code>help/html/C/</code>, which is gone from this branch.</p>
+    <p class="revision"><strong>Step 4</strong> the same day: the five hand-written <code>docs/*.html</code> are gone; their pages are those of <code>docs/built/html/</code>. A list whose terms are all keys, <code>**name** = *type*</code>, is a table, Key, Type, Default where one has it, Meaning: 19 tables in <code>config-files</code>, 97 rows, as many as its page by hand had, 7 in <code>archive-protocol</code>, 2 in <code>vbp-format</code>. A power, <code>2^53-1</code>, is raised, and a range takes a dash. The 16 drawings of those pages are SVG files of <code>docs/man/figures/</code>, put inline in the HTML, so that they take the colours of the page; in the man pages and in Yelp, the ASCII diagram stays, with the caption that the drawing has on the web. The three anchors that the posts of the website link, and that the generated ids lacked, are given to their headings: <code>control-socket</code>, <code>windows</code>, <code>projects-readme</code>. The links of four design pages to the pages by hand lead to the generated ones.</p>
+    <p class="revision">The differences from the plan. The captions of the drawings are new text in the man pages, worded to be true of the ASCII too: no amber, no colours, no arrows that only the drawing has dashed. Two drawings of <code>vbp-format</code> are of listings, the offsets of the example and the map of a sparse member, which stay under their drawings in the HTML, as on the page by hand: a diagram of class <code>listing</code> too. The words of each page by hand, compared with its generated page, differ in the tables that the pages by hand made of lists and prose of the man page, which the generated pages don&rsquo;t make: the commands of the console in <code>command-line</code>, the AMP commands with their console commands in <code>control-protocols</code>, the outcomes of a job and the three tar tools in <code>archive-protocol</code>, the writers and the members in <code>vbp-format</code>; their facts are in the man pages. Gone too are the captions of the code examples and the footnote that said a page was the twin of its man page. Tests: 8 for the keys, the powers and the diagrams; on the tree, each key of <code>test_docs</code> in a table or a list of the page, each drawing used once, each ASCII within 64 columns; six of them checked to fail when their rule is broken. 3358 unit tests, <code>help.feature</code> and mypy pass. Pages 02, 04 and 14, which made three of the pages by hand: Since then.</p>
+    <p class="revision"><strong>Step 5</strong> the same day, on <code>website</code>: 0fa857ee, <code>invoke sync-docs</code> copies <code>docs/built/html/</code> into <code>content/help/C/</code>, the reference pages included, since the guide links them there; a page of the Documentation keeps its head, takes the body of the reference page of its name, its way back to the index made a link to <code>../help/C/</code>, and the style of the guide as <code>NAME.css</code>. a350dc4a, the copy of <code>mg/markdown-docs</code> 922c079d: the files of yelp-build, <code>C.css</code>, <code>yelp.js</code> and <code>highlight.pack.js</code>, are gone. Built with Pelican 4.12 and Elegant: 711 links, pictures and anchors of the site, those of the posts into the Documentation included, all lead somewhere. The addresses stay: <code>/help/C/</code> and <code>/documentation/NAME.html</code>. Until <code>mg/markdown-docs</code> is on <code>develop</code>, <code>make publish</code> needs <code>DOCS_REF=mg/markdown-docs</code>, as it needed <code>mg/help</code> on page 28.</p>
+    <p class="revision"><strong>Implemented</strong> on 21 October 2026, the five steps of <a href="#plan">&sect;8</a>: on <code>mg/markdown-docs</code>, from f7ebc10b of <code>develop</code>, f980e84d, 709da005, f5bea945 and 922c079d; on <code>website</code>, 0fa857ee and a350dc4a. Nothing is pushed, and <code>mg/markdown-docs</code> isn&rsquo;t merged into <code>develop</code>. The differences from the plan are in the paragraphs of each step above.</p>
+    <p class="revision"><strong>Since then:</strong> on 22 October, for your report that the diagram of <code>figures/archive-process.svg</code> was off, &ldquo;the ArchiveJob line and two others are shifted to the left&rdquo;. Yelp shows the ASCII of a diagram (U8 A), and the stylesheet of yelp-xsl centers what a figure holds, for its pictures: each line of the listing was centered on its own, and the three lines longer than the others went left by half the difference. Every diagram had lines of uneven width. A diagram is now a Mallard <code>listing</code> with its caption as the <code>desc</code>, which Yelp shows above the ASCII, in italics; the man pages and the HTML don&rsquo;t change. Checked in Yelp 42.2, and the 16 listings with the stylesheet of yelp-xsl; a test checks that each diagram is a listing and that no figure holds a screen.</p>
+    <p class="revision">Then, the same day, at your request, &ldquo;The documentation section in the website is just a repetition of the reference in the user guide. You can remove it&rdquo;: the pages of the Documentation that step 5 fills are gone, with the category, from <code>website</code> 546c36a0. Step 5 copies the reference into <code>content/help/C/</code> with the guide, so the site has each page once, at <code>/help/C/NAME.html</code>; <code>/documentation/NAME.html</code> goes with the next <code>make github</code>.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>Today</a></li>
+        <li><a href="#proposal"><span>3</span>One source, three outputs</a></li>
+        <li><a href="#guide"><span>4</span>Writing the guide</a></li>
+        <li><a href="#html"><span>5</span>The HTML</a></li>
+        <li><a href="#reference"><span>6</span>The reference</a></li>
+        <li><a href="#design"><span>7</span>The design pages</a></li>
+        <li><a href="#plan"><span>8</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>9</span>Decisions</a></li>
+        <li><a href="#later"><span>10</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">&sect;1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Sources</dt><dd>Markdown only, the flavour of pandoc that <code>docs/man/</code> uses today: the guide in <code>docs/guide/</code>, the reference in <code>docs/man/</code>, as it is (&sect;3, <a class="ref done" href="#decisions">U4</a>).</dd></div>
+          <div><dt>Outputs</dt><dd>Man pages of the reference, Mallard pages of the guide for Yelp, and HTML of both, written by one script, <code>docs/build.py</code>, into <code>docs/built/</code> and committed, so that pip, Debian and the website need no pandoc (&sect;3, <a class="ref done" href="#decisions">U4</a>).</dd></div>
+          <div><dt>Tools</dt><dd>pandoc 3.9 of <code>pypandoc-binary</code>, already pinned for the man pages, reads every page; its own writers make the man pages and the HTML; the Mallard comes from its syntax tree, written in Python. yelp-tools is no longer needed to build, only to check the Mallard, in the tests, when it is installed (<a class="ref done" href="#decisions">U1</a>, <a class="ref done" href="#decisions">U2</a>).</dd></div>
+          <div><dt>The guide</dt><dd>Yelp keeps its pages and their ids, F1 and <code>help:</code> as they are. A label of a window is written <code>**Add Disk**</code>, a menu path <code>**Projects &rsaquo; Import&hellip;**</code>; a link to the reference is a link to one of its pages, which Yelp shows itself (&sect;4, <a class="ref done" href="#decisions">U3</a>).</dd></div>
+          <div><dt>The HTML</dt><dd>One template and one stylesheet, those of <code>config-files.html</code>, which the design pages share already, for the guide and the reference; one tree, installed and on the website, whose links work offline (&sect;5).</dd></div>
+          <div><dt>Reference</dt><dd>Each man page&rsquo;s Markdown is also a page of Yelp, in the guide&rsquo;s <i>Reference</i> section, and a web page in place of its hand-written twin, with the keys as tables and the diagrams as SVG, as today (&sect;6, <a class="ref done" href="#decisions">U6</a>, <a class="ref done" href="#decisions">U8</a>).</dd></div>
+          <div><dt>Design pages</dt><dd>As they are: HTML written by hand, published online, outside the build; new pages too (&sect;7, <a class="ref done" href="#decisions">U5</a>&nbsp;C).</dd></div>
+          <div><dt>Plan</dt><dd>Five steps on a branch: the guide in Markdown with nothing visible changed, the reference in Yelp, the HTML, the reference on the web, the website (&sect;8).</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">&sect;2</span>Today</h2>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Part</th><th>Written in</th><th>Built into</th><th>By</th><th>Size</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">Man pages</td><td><code>docs/man/*.N.md</code>, pandoc&rsquo;s Markdown, 5 pages</td><td><code>docs/man/*.N</code>, committed</td><td><code>docs/man/build.py</code>, pandoc 3.9; hook <code>man</code></td><td class="num">164 KB</td></tr>
+            <tr><td class="nowrap">HTML twins</td><td><code>docs/*.html</code>, by hand, 5 pages, 16 inline SVG diagrams</td><td>&mdash;; the website cuts its Documentation pages from them (<code>invoke sync-docs</code>)</td><td>&mdash;</td><td class="num">390 KB</td></tr>
+            <tr><td class="nowrap">The guide</td><td><code>help/C/*.page</code>, Mallard, 17 pages, 18 pictures of the end-to-end tests</td><td><code>help/html/C/</code>, committed, installed for a desktop without Yelp and synced to the website</td><td><code>help/build.py</code>: yelp-check, yelp-build with <code>help/html.xsl</code>; hook <code>help</code>, which needs yelp-tools on the system</td><td class="num">65 KB</td></tr>
+            <tr><td class="nowrap">Design pages</td><td><code>docs/redesign/*.html</code>, by hand, 31 pages, each with its own copy of the stylesheet; 84 screenshots in base64, 87 SVG mock-ups</td><td>&mdash;; their online copies, with links rewritten by a script outside the repository</td><td>&mdash;</td><td class="num">3.3 MB</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <ul>
+          <li>Every change to a man page is made twice, once in its HTML twin. Compared today, word by word, the twins say what their man pages say: the words that differ are typography (<code>0-2^31-1</code> against 0&ndash;2&sup3;&sup1;&minus;1, quotes, dashes), the case of headings, and the tables of keys, which the man pages write as lists.</li>
+          <li>The guide&rsquo;s HTML is what the yelp-xsl of the building machine writes: <code>help/build.py</code> says that another version may write other HTML from the same pages, and <code>help/html.xsl</code> patches yelp-xsl&rsquo;s layout so that pictures shrink.</li>
+          <li>Four pages of the guide write their link to a man page twice, with <code>if:test</code>, since the HTML can&rsquo;t open <code>man:</code>; the HTML goes to the website for it, so the installed guide, offline, leaves the computer for the reference.</li>
+          <li>Three looks: yelp-xsl&rsquo;s for the guide, the <code>config-files.html</code> style for the twins and the design pages, the website&rsquo;s theme around the Documentation pages.</li>
+          <li>What stays as it is: <code>README.md</code>, <code>TODO.md</code>, <code>BUGS.md</code>, <code>WORKAROUNDS.md</code> and <code>e2e/*.md</code> are notes in plain Markdown, read as they are, outside the build.</li>
+        </ul>
+      </section>
+
+      <section id="proposal">
+        <h2><span class="num">&sect;3</span>One source, three outputs</h2>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Source</th><th>Man page</th><th>Mallard, for Yelp</th><th>HTML</th><th>Installed</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap"><code>docs/guide/*.md</code></td><td class="no">&mdash;</td><td class="yes">yes</td><td class="yes">yes</td><td><code>share/help/C/virtualbricks/</code> and <code>share/virtualbricks/help/C/</code>, as today</td></tr>
+            <tr><td class="nowrap"><code>docs/man/*.N.md</code></td><td class="yes">yes, as today</td><td class="yes">yes, the guide&rsquo;s <i>Reference</i></td><td class="yes">yes, in place of the twins</td><td><code>share/man/</code>, and the Mallard and the HTML with the guide&rsquo;s</td></tr>
+            <tr><td class="nowrap"><code>docs/redesign/*.html</code></td><td class="no">&mdash;</td><td class="no">&mdash;</td><td>as they are, by hand, outside the build (U5&nbsp;C)</td><td>no; in the source archive, as today</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <ul>
+          <li>One Markdown, pandoc&rsquo;s, as <code>docs/man/</code> is written today, read by one pandoc: 3.9, of <code>pypandoc-binary</code> 1.17, pinned in the <code>dev</code> group and in the hook, so that everyone builds the same files.</li>
+          <li>One script, <code>docs/build.py</code>, in place of <code>docs/man/build.py</code> and <code>help/build.py</code>. It keeps what both do: it reads every source and writes every output, a second run in a row leaves the tree untouched, the dates of the man pages change only with their text, and <code>--check</code> writes nothing and exits with 1 if an output is out of date.</li>
+          <li>Man pages: pandoc&rsquo;s man writer, as today.</li>
+          <li>Mallard: the script reads pandoc&rsquo;s syntax tree of each page (<code>pandoc -t json</code>) and writes the page with ElementTree. A construct the writer doesn&rsquo;t know stops the build: it never drops text.</li>
+          <li>HTML: pandoc&rsquo;s HTML writer with one template, after the script has changed the tree where the HTML differs from the Mallard (&sect;5). The script adds what Mallard gives Yelp for free: the lists of the index, the links back, the See also of both pages.</li>
+          <li>One hook, <code>docs</code>, in place of <code>man</code> and <code>help</code>: <code>language: python</code> with <code>pypandoc-binary</code>, so a new contributor needs nothing installed on the system. yelp-check validates the Mallard and its links in the tests, skipped where it isn&rsquo;t installed.</li>
+          <li>The outputs are committed, as the man pages, the catalogs and <code>help/html/C/</code> are today, in one folder that only the script writes (<a class="ref done" href="#decisions">U4</a>):</li>
+        </ul>
+        <figure class="code">
+          <figcaption>the layout, with U4 A</figcaption>
+<pre><code>docs/
+  build.py              <span class="c">the one script</span>
+  templates/            <span class="c">guide.html, reference.html, style.css</span>
+  guide/                <span class="c">the guide: index.md &hellip; tutorial-import.md</span>
+    figures/            <span class="c">its pictures, which pytest --pictures writes</span>
+  man/                  <span class="c">the reference: virtualbricks.1.md &hellip;, as today</span>
+    figures/            <span class="c">the SVG diagrams of the HTML</span>
+  redesign/             <span class="c">the design pages, HTML by hand, as today</span>
+  built/                <span class="c">committed, written only by build.py</span>
+    man/                <span class="c">virtualbricks.1 &hellip;            &rarr; share/man/manN</span>
+    mallard/            <span class="c">index.page &hellip;, config-files.page &hellip;, figures/
+                                                     &rarr; share/help/C/virtualbricks</span>
+    html/               <span class="c">the guide and the reference, style.css, figures/
+                                                     &rarr; share/virtualbricks/help/C</span></code></pre>
+        </figure>
+        <p><code>help/</code> goes. A page of the guide keeps its id, the name of its file, so <code>help:virtualbricks/machines</code>, the pages that F1 opens and the website&rsquo;s <code>/help/C/machines.html</code> stay as they are.</p>
+      </section>
+
+      <section id="guide">
+        <h2><span class="num">&sect;4</span>Writing the guide</h2>
+        <p>Each construct that the 17 pages use, with the number of times they use it. Mallard&rsquo;s inline elements become marks that read well as plain text: bold for a label, code with a class for the rest (<a class="ref done" href="#decisions">U3</a>&nbsp;A). Each line of the table was tried today with pandoc 3.9 on a sample page: the front matter, spans, code with a class, a figure with its alt text, a list of terms, a numbered list and a block each arrive in the syntax tree as the writer needs them.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Markdown</th><th>Mallard</th><th>Used</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap"><code>guide: index#lab</code> in the front matter</td><td><code>&lt;link type="guide" xref="index#lab"/&gt;</code></td><td class="num">16</td></tr>
+            <tr><td class="nowrap"><code>seealso: [images, bricks]</code></td><td><code>&lt;link type="seealso" &hellip;/&gt;</code> each</td><td class="num">23</td></tr>
+            <tr><td class="nowrap"><code>sort: 2</code>, <code>desc: &hellip;</code></td><td><code>&lt;title type="sort"&gt;</code>, <code>&lt;desc&gt;</code></td><td class="num">16</td></tr>
+            <tr><td class="nowrap"><code>type: guide</code></td><td><code>&lt;page type="guide"&gt;</code>; a topic otherwise</td><td class="num">1</td></tr>
+            <tr><td class="nowrap"><code># Virtual machines</code></td><td>the page&rsquo;s <code>&lt;title&gt;</code></td><td class="num">17</td></tr>
+            <tr><td class="nowrap"><code>## Disks {#disks}</code></td><td><code>&lt;section id="disks"&gt;</code>; <code>{style="2column"}</code> for the index</td><td class="num">48</td></tr>
+            <tr><td class="nowrap"><code>**Add Disk**</code></td><td><code>&lt;gui&gt;</code></td><td class="num">259</td></tr>
+            <tr><td class="nowrap"><code>**Projects &rsaquo; Import&hellip;**</code></td><td><code>&lt;guiseq&gt;</code>, a <code>&lt;gui&gt;</code> for each part</td><td class="num">11</td></tr>
+            <tr><td class="nowrap"><code>[F1]{.key}</code>, <code>[Ctrl+Q]{.keyseq}</code></td><td><code>&lt;key&gt;</code>; <code>&lt;keyseq&gt;</code>, a <code>&lt;key&gt;</code> for each part</td><td class="num">32, 10</td></tr>
+            <tr><td class="nowrap"><code>`info network`{.cmd}</code></td><td><code>&lt;cmd&gt;</code>; <code>.sys</code>, <code>.file</code> likewise</td><td class="num">65, 47, 35</td></tr>
+            <tr><td class="nowrap"><code>`vm1_hda`</code></td><td><code>&lt;code&gt;</code></td><td class="num">18</td></tr>
+            <tr><td class="nowrap"><code>[Virtualbricks]{.app}</code>, <code>[name]{.var}</code></td><td><code>&lt;app&gt;</code>, <code>&lt;var&gt;</code></td><td class="num">2, 4</td></tr>
+            <tr><td class="nowrap"><code>[the images](images#list)</code></td><td><code>&lt;link xref="images#list"&gt;</code>; <code>[](images)</code>, with no text, shows the title of the page</td><td class="num">19</td></tr>
+            <tr><td class="nowrap"><code>[virtualbricks(1)](command-line)</code></td><td><code>&lt;link xref="command-line"&gt;</code>, a page of the <i>Reference</i> (&sect;6), in place of <code>man:</code>; <code>if:test</code> goes</td><td class="num">5</td></tr>
+            <tr><td class="nowrap">a list, <code>- &hellip;</code></td><td><code>&lt;list&gt;</code></td><td class="num">10</td></tr>
+            <tr><td class="nowrap">a numbered list, <code>1. &hellip;</code></td><td><code>&lt;steps&gt;</code></td><td class="num">5</td></tr>
+            <tr><td class="nowrap">a list of terms, <code>term</code> / <code>:   &hellip;</code></td><td><code>&lt;terms&gt;</code></td><td class="num">17</td></tr>
+            <tr><td class="nowrap"><code>::: {.terms title="&hellip;"}</code></td><td>the <code>&lt;title&gt;</code> of the list inside</td><td class="num">3</td></tr>
+            <tr><td class="nowrap"><code>::: note</code>, <code>::: {.note .tip}</code></td><td><code>&lt;note&gt;</code>, <code>&lt;note style="tip"&gt;</code></td><td class="num">4</td></tr>
+            <tr><td class="nowrap">a code block</td><td><code>&lt;screen&gt;</code></td><td class="num">5</td></tr>
+            <tr><td class="nowrap">a table, <code>| &hellip; |</code></td><td><code>&lt;table&gt;</code></td><td class="num">1</td></tr>
+            <tr><td><code>![The settings of a virtual machine](figures/machine-settings.png){alt="&hellip;"}</code></td><td><code>&lt;figure&gt;</code> with the caption as its <code>&lt;title&gt;</code> and the alt text as the <code>&lt;p&gt;</code> of its <code>&lt;media&gt;</code></td><td class="num">18</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="compare">
+          <figure class="code">
+            <figcaption>help/C/machines.page today</figcaption>
+<pre><code>&lt;page xmlns="http://projectmallard.org/1.0/"
+      type="topic" id="machines"&gt;
+  &lt;info&gt;
+    &lt;link type="guide" xref="index#lab"/&gt;
+    &lt;link type="seealso" xref="images"/&gt;
+    &lt;link type="seealso" xref="bricks"/&gt;
+    &lt;title type="sort"&gt;2&lt;/title&gt;
+    &lt;desc&gt;The disks, network cards and
+    consoles of a virtual machine.&lt;/desc&gt;
+  &lt;/info&gt;
+  &lt;title&gt;Virtual machines&lt;/title&gt;
+  &hellip;
+  &lt;section id="disks"&gt;
+    &lt;title&gt;Disks&lt;/title&gt;
+    &lt;p&gt;&lt;gui&gt;Add Disk&lt;/gui&gt; adds a disk on
+    the first free device. &hellip;&lt;/p&gt;
+    &lt;terms&gt;
+      &lt;title&gt;How a disk uses its image&lt;/title&gt;
+      &lt;item&gt;
+        &lt;title&gt;&lt;gui&gt;Private copy&lt;/gui&gt;&lt;/title&gt;
+        &lt;p&gt;The default. &hellip; as
+        &lt;file&gt;vm1_hda.cow&lt;/file&gt;. &hellip;&lt;/p&gt;
+      &lt;/item&gt;
+      &hellip;
+  &lt;section id="console"&gt;
+    &lt;title&gt;The console of a machine&lt;/title&gt;
+    &lt;p&gt;While the machine runs,
+    &lt;guiseq&gt;&lt;gui&gt;Process&lt;/gui&gt;&lt;gui&gt;Open
+    Control Monitor&lt;/gui&gt;&lt;/guiseq&gt;, &hellip;</code></pre>
+          </figure>
+          <figure class="code">
+            <figcaption>docs/guide/machines.md</figcaption>
+<pre><code>---
+guide: index#lab
+seealso: [images, bricks]
+sort: 2
+desc: The disks, network cards and consoles
+  of a virtual machine.
+---
+
+# Virtual machines
+
+&hellip;
+
+## Disks {#disks}
+
+**Add Disk** adds a disk on the first free
+device. &hellip;
+
+::: {.terms title="How a disk uses its image"}
+**Private copy**
+:   The default. &hellip; as `vm1_hda.cow`{.file}. &hellip;
+
+&hellip;
+:::
+
+## The console of a machine {#console}
+
+While the machine runs, **Process &rsaquo; Open
+Control Monitor**, &hellip;</code></pre>
+          </figure>
+        </div>
+        <p>The rules of this table go into a short guide for authors, <code>docs/README.md</code>, with the example above. The guide uses no strong emphasis today, so bold is free to mean a label, as the guides of GNOME show labels in bold.</p>
+      </section>
+
+      <section id="html">
+        <h2><span class="num">&sect;5</span>The HTML</h2>
+        <ul>
+          <li>One stylesheet, <code>docs/templates/style.css</code>: the tokens, dark mode, masthead and contents of <code>config-files.html</code>, written once, which the HTML tree links. The design pages keep their own copies of it, as today.</li>
+          <li><b>A page of the guide</b>: the way back to its sections of the index (&ldquo;Virtualbricks Help &rsaquo; Your lab&rdquo;), its title, its text, then <i>See also</i>, with the pages it names and those that name it, as Yelp does. A picture shrinks to the column and opens in full when clicked.</li>
+          <li><b>The index</b>: each section lists its pages by their sort title, with their <code>desc</code>, two columns where the page is wide, as Yelp shows them. A new section, <i>Reference</i>, lists the five reference pages, in Yelp as in the HTML.</li>
+          <li><b>A reference page</b>: the masthead of the twins (the name, the line of NAME, the version), the contents from the <code>#</code> headings, sticky at the left (&sect;6).</li>
+          <li>Links stay inside the tree: the guide links <code>command-line.html</code>, not the website, so the HTML that Virtualbricks opens without Yelp works offline, and the website, which publishes the same tree, the same.</li>
+          <li>The names of the reference pages stay, and are their ids in Yelp too: <code>config-files</code>, <code>command-line</code>, <code>control-protocols</code>, <code>archive-protocol</code>, <code>vbp-format</code>, since the posts and the website&rsquo;s <code>/documentation/</code> link them.</li>
+        </ul>
+      </section>
+
+      <section id="reference">
+        <h2><span class="num">&sect;6</span>The reference</h2>
+        <p>Each of the five man pages becomes three things: its man page, as today; a page of Yelp, in the <i>Reference</i> section of the guide; a web page, in place of its twin. Yelp shows the reference itself, as it shows the guide, and opens no other program for it.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Source</th><th>Man page</th><th>Id in Yelp and HTML</th><th>Title</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap"><code>virtualbricks.1.md</code></td><td>virtualbricks(1)</td><td><code>command-line</code></td><td>The command line</td></tr>
+            <tr><td class="nowrap"><code>virtualbricks-config.5.md</code></td><td>virtualbricks-config(5)</td><td><code>config-files</code></td><td>Configuration files</td></tr>
+            <tr><td class="nowrap"><code>virtualbricks-vbp.5.md</code></td><td>virtualbricks-vbp(5)</td><td><code>vbp-format</code></td><td>The archive format</td></tr>
+            <tr><td class="nowrap"><code>virtualbricks-archive.7.md</code></td><td>virtualbricks-archive(7)</td><td><code>archive-protocol</code></td><td>The archive protocol</td></tr>
+            <tr><td class="nowrap"><code>virtualbricks-control.7.md</code></td><td>virtualbricks-control(7)</td><td><code>control-protocols</code></td><td>The control protocols</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <ul>
+          <li>The five <code>docs/man/*.N.md</code> stay where they are and as they are. Their front matter gains a block for the page: <code>help: {id: config-files, title: Configuration files}</code>, and <code>guide: index#reference</code>. The tests that read them, <code>test_docs</code>, are untouched.</li>
+          <li><b>What the writer meets</b>, counted today in pandoc&rsquo;s tree of the five: headings, paragraphs, lists of terms, lists, numbered lists, code blocks, bold, italics, code, links, and two line breaks, in a synopsis. No table, no picture: all of it is on the guide&rsquo;s list of &sect;4 but the line breaks.</li>
+          <li><b>Marks</b>: bold and italics keep their meaning of the man pages: bold is literal text, <code>&lt;code&gt;</code>, italics a part you replace, <code>&lt;var&gt;</code>. So the meaning of bold depends on the kind of page, a label in the guide, literal text in the reference; the script knows the kind by the folder.</li>
+          <li><b>Headings</b>: <code># COMMON RULES</code> is <i>Common rules</i> in Yelp and HTML, sentence case, keeping the words the script knows, JSON, AMP, TOML, QEMU, VDE, KSM; a heading that needs more says so, <code># SETTINGS {title="settings.toml"}</code>. <i>NAME</i> becomes the page&rsquo;s description, under its title in the <i>Reference</i> list; <i>SYNOPSIS</i> a Mallard <code>&lt;synopsis&gt;</code>, a line each.</li>
+          <li><b>Links</b>: a man page names another as <code>**virtualbricks-config**(5)</code>, 30 times; for the five pages of the reference it becomes a link to the page, in Yelp and HTML. The man pages of other programs, <code>vde_switch(1)</code>, <code>qemu(1)</code>, stay text.</li>
+          <li><b>Length</b>: a man page is long, 23 to 38 KB; it stays one page, and the Yelp page lists its sections at the top, <code>&lt;links type="section"/&gt;</code>, as the HTML lists them at the left.</li>
+          <li>yelp-check validates the reference pages and their links with the guide&rsquo;s.</li>
+        </ul>
+        <h3>On the web</h3>
+        <ul>
+          <li>The five <code>docs/*.html</code> go. Before they go, the text of each is compared, word by word, with the page built in its place, and each difference is either moved into the Markdown, where the man page and Yelp gain it too, or named in the commit as dropped.</li>
+          <li><b>Keys</b>: the entries of a list whose term is a key, in the form that <code>test_docs</code> already parses (<code>ENTRY</code>), become rows of a table <i>Key</i>, <i>Type</i>, <i>Default</i>, <i>Meaning</i>, as in the twins today (<a class="ref done" href="#decisions">U6</a>&nbsp;A). In Yelp they stay a list of terms.</li>
+          <li><b>Powers</b>: the man pages write a big number as <code>2^53-1</code>; the HTML writes 2<sup>53</sup>&minus;1, the rule the twins follow by hand.</li>
+          <li><b>Diagrams</b>: the man page keeps its ASCII diagram, marked with the file of its drawing, <code>```{.diagram svg=figures/amp-login.svg}</code>; the HTML puts the SVG in its place, inline, so that it takes the colours of dark mode. The 16 drawings of the twins become those files. In Yelp, the ASCII diagram, as in the man page (<a class="ref done" href="#decisions">U8</a>&nbsp;A).</li>
+        </ul>
+      </section>
+
+      <section id="design">
+        <h2><span class="num">&sect;7</span>The design pages</h2>
+        <ul>
+          <li>They stay as they are (<a class="ref done" href="#decisions">U5</a>&nbsp;C): HTML written by hand, each with its own copy of the stylesheet, in <code>docs/redesign/</code>, published online with their links rewritten to the artifacts, by the script outside the repository. A new page is written the same way.</li>
+          <li>They are outside the build: <code>docs/build.py</code> neither reads nor writes them, the hook doesn&rsquo;t look at them, and they are not installed. <code>MANIFEST.in</code> keeps them in the source archive, as today.</li>
+          <li>They are the record of how Virtualbricks was redesigned, written for this work; the guide and the reference are what a user reads. A page that names <code>help/C/</code>, <code>help/build.py</code> or a twin gets a line in its <i>Since then</i>, as for any later change.</li>
+        </ul>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">&sect;8</span>Implementation plan</h2>
+        <p>On a branch, <code>mg/markdown-docs</code>, from <code>develop</code>; a commit for each step and a stop for review after each. Your own files in the working tree stay out of every commit.</p>
+        <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Step</th><th>What</th><th>Tests</th></tr></thead>
+          <tbody>
+            <tr><td class="nowrap">1 The guide in Markdown</td><td><code>docs/build.py</code> with the man pages of <code>docs/man/build.py</code> and the Mallard writer; the 17 pages converted into <code>docs/guide/*.md</code> by a script used once; the Mallard in <code>docs/built/mallard/</code>, the man pages in <code>docs/built/man/</code>. The HTML is still yelp-build&rsquo;s, of the built Mallard, so that nothing a reader sees changes. Hook <code>docs</code> in place of <code>man</code>; <code>help</code> reads the built Mallard. <code>gui/help.py</code>&rsquo;s folders, the pictures&rsquo; folder of <code>e2e/conftest.py</code>, the data files of <code>pyproject.toml</code>, <code>MANIFEST.in</code>, the README&rsquo;s hooks and layout; <code>docs/README.md</code> with the rules of &sect;4.</td><td>The built Mallard equals today&rsquo;s pages, page by page, as XML with the spaces between words normalised; a test for each line of &sect;4; yelp-check validates the pages and their links; <code>--check</code> finds an output out of date; the install puts the pages where Yelp reads them. The end-to-end <code>help.feature</code> and <code>pictures.feature</code>.</td></tr>
+            <tr><td class="nowrap">2 The reference in Yelp</td><td>The front matter of the five man pages; the writer&rsquo;s marks, headings, synopsis and links of &sect;6; their Mallard pages; the <i>Reference</i> section of the index; the guide&rsquo;s five <code>man:</code> links become links to pages. The HTML is still yelp-build&rsquo;s, now with the reference in it. <code>gui/help.py</code> unchanged: the pages are where Yelp already reads the guide&rsquo;s.</td><td>yelp-check validates the reference pages and their links; no page of the built Mallard has a <code>man:</code> link; a test for each rule of &sect;6; the install puts the five pages beside the guide&rsquo;s. Yelp 42 opens each of them, from <code>help:</code> and from <code>file:</code>, checked once on Broadway with screenshots for your review.</td></tr>
+            <tr><td class="nowrap">3 The HTML</td><td>The template and the stylesheet; the index&rsquo;s lists, the way back, See also, the contents of a reference page; the reference pages&rsquo; HTML as pandoc writes it. <code>help/</code>, <code>html.xsl</code> and the hook <code>help</code> go; yelp-tools leaves the README&rsquo;s requirements for contributors. <code>gui/help.py</code>: the HTML&rsquo;s folder.</td><td>No link of the tree leads nowhere; every page is in the index; See also goes both ways; the HTML of every page shows its figures. Screenshots of three pages, light and dark, for your review. <code>help.feature</code>, whose browser opens the new HTML.</td></tr>
+            <tr><td class="nowrap">4 The reference on the web</td><td>The keys as tables, the powers, the diagrams; the 16 SVG files; the five <code>docs/*.html</code> replaced by the built pages, with the differences of their text listed in the commit. The README&rsquo;s mentions of the twins; the rule &ldquo;update its HTML twin&rdquo; goes from my notes.</td><td>A table has a row for each entry that <code>test_docs</code> finds; each marked diagram has its file; a diagram&rsquo;s ASCII stays within 64 columns in the man page.</td></tr>
+            <tr><td class="nowrap">5 The website</td><td>On <code>website</code>: <code>invoke sync-docs</code> reads <code>docs/built/html/</code>: the guide and the reference into <code>content/help/C/</code>, and the reference into <code>content/documentation/</code> too, at the addresses of today; <code>--check</code> as today.</td><td>The site built with Elegant, no link leading nowhere; the posts&rsquo; links to the Documentation pages still work.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>After each step: this page&rsquo;s <i>Implemented</i>, and <i>Since then</i> on the pages it changes: <a href="28%20-%20help-section.html">28</a>, which chose Mallard and <code>help/build.py</code>; <a href="29%20-%20help-pictures.html">29</a>, whose pictures move to <code>docs/guide/figures/</code>; <a href="02%20-%20config-redesign.html">02</a> and the others that made a twin.</p>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">&sect;9</span>Decisions</h2>
+        <div class="scroll">
+        <table class="decisions wide">
+          <thead><tr><th></th><th>Question</th><th>Options</th><th>Decided</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>U1</td>
+              <td>The tool that reads the Markdown</td>
+              <td>
+                <p><b>A</b> pandoc, already pinned for the man pages, and Python on its syntax tree for the Mallard and for the HTML&rsquo;s changes: one reader for the three outputs, tested with trial like the rest.</p>
+                <p><b>B</b> markdown-it-py, already a dependency for the Readme tab, with writers of our own for Mallard and HTML, and pandoc for the man pages only: two readers that may disagree on the same page.</p>
+                <p><b>C</b> pandoc with a writer for Mallard in Lua, pandoc&rsquo;s language for writers: a language new to the repository.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>U2</td>
+              <td>The HTML of the guide</td>
+              <td>
+                <p><b>A</b> pandoc&rsquo;s, with the template of every HTML page: one look, no yelp-tools to build it, the same HTML on every machine; the script makes the index&rsquo;s lists and See also.</p>
+                <p><b>B</b> yelp-build&rsquo;s, of the built Mallard, as today: Yelp&rsquo;s look in the browser too, two looks on the website, yelp-tools needed by the hook, the HTML of each machine&rsquo;s yelp-xsl.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>U3</td>
+              <td>The marks of the guide</td>
+              <td>
+                <p><b>A</b> Bold is a label, and a menu path with <code>&rsaquo;</code>; code with a class for commands, systems and files; spans for keys (&sect;4). In the reference, bold keeps its meaning of the man pages (&sect;6).</p>
+                <p><b>B</b> A span for each: <code>[Add Disk]{.gui}</code>, <code>[Projects &rsaquo; Import&hellip;]{.guiseq}</code>; bold stays free for emphasis.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>U4</td>
+              <td>Where the outputs go</td>
+              <td>
+                <p><b>A</b> One folder, <code>docs/built/</code>, written only by the script; the sources under <code>docs/</code>; <code>help/</code> goes (&sect;3).</p>
+                <p><b>B</b> Where they are today: the man pages beside their sources, the Mallard in <code>help/C/</code>, the HTML in <code>help/html/C/</code> and <code>docs/*.html</code>. Fewer paths change, but sources and outputs mix.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>U5</td>
+              <td>The design pages written so far</td>
+              <td>
+                <p><b>A</b> All 31 converted, in a step of their own: one form, and their frequent <i>Since then</i> are written in Markdown.</p>
+                <p><b>B</b> New pages in Markdown; an old page converted when it next changes.</p>
+                <p><b>C</b> They stay HTML, outside the build; new pages too.</p>
+              </td>
+              <td class="rec decided">C</td>
+            </tr>
+            <tr>
+              <td>U6</td>
+              <td>The look of the reference pages</td>
+              <td>
+                <p><b>A</b> As the twins today: keys as tables, powers raised, SVG diagrams, by the script (&sect;6).</p>
+                <p><b>B</b> pandoc&rsquo;s HTML of the Markdown as it is: keys as lists of terms, <code>2^53-1</code>, the ASCII diagrams.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+            <tr>
+              <td>U8</td>
+              <td>The diagrams of the reference in Yelp</td>
+              <td>
+                <p><b>A</b> The ASCII diagram, as in the man page, in a <code>&lt;screen&gt;</code>: it reads in any theme, and needs nothing more.</p>
+                <p><b>B</b> The SVG drawing of the HTML, as a picture: Yelp can&rsquo;t give it the page&rsquo;s colours, so the file carries its own, light and dark by a media query inside it, which Yelp&rsquo;s WebKit has to honour, to be checked.</p>
+              </td>
+              <td class="rec decided">A</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">&sect;10</span>Later</h2>
+        <ul>
+          <li>Translations: catalogs taken from the Markdown, one for each page, which translate Yelp&rsquo;s pages, the HTML and the man pages together. itstool on the Mallard, as page 28 planned, would translate Yelp&rsquo;s pages only.</li>
+          <li>The guide in a window of Virtualbricks, WebKitGTK showing the HTML, in place of Yelp and the browser: with GTK 4 (<a href="18%20-%20gtk4-migration.html">page 18</a>), when Yelp could go.</li>
+          <li>A search box in the HTML.</li>
+          <li>The man pages of other programs, <code>qemu(1)</code>, <code>vde_switch(1)</code>, as <code>man:</code> links, which Yelp shows itself when they are installed.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>

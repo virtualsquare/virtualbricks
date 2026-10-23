@@ -1,0 +1,439 @@
+# The steps of the end-to-end tests
+
+A step is what a line of a scenario does: a Python function of `steps.py`,
+under the decorator of its words. This file lists the steps there are, and
+tells how to add one; [README.md](README.md) tells how to run the scenarios
+and write one.
+
+## The steps there are
+
+The steps of a user:
+
+| Step | What it does |
+| :- | :- |
+| `Given Virtualbricks is running` | Starts Virtualbricks, and waits for its main window |
+| `Given vde_cryptcab isn't on this computer` | Before Virtualbricks starts: its `PATH` is a folder of links to the programs of that of the tests but this one, so it finds it only in a folder of its settings that has it |
+| `Given gnome-terminal is a terminal of the tests` | Before Virtualbricks starts: `gnome-terminal` of its `PATH` is a script that writes the words it gets in the file `gnome-terminal.argv` of the scenario, and opens no window; the program of this computer, if there is one, never runs |
+| `Given Virtualbricks is running with --listen` | Starts it with the options, as the shell splits them, in place of `--lock none`, and waits for its main window; with `--listen` alone, until it listens on the socket of its workspace too. With `--connect`, these are the windows of the other Virtualbricks, which runs the bricks: see the steps of another Virtualbricks |
+| `When I add the switch sw1` | New Brick, the kind, then OK on its settings; the new brick must be named `sw1`. Any kind of New Brick: `the virtual machine vm1`, `the router r1`, … |
+| `When I join sw1 and sw2 with the wire w1` | New Brick, Wire, then sw1 for its left end and sw2 for its right end, and OK; the new wire must be named `w1` |
+| `When I start sw1` | Its Start button, the list scrolled to it if it doesn't show; it must run, with new processes |
+| `When I try to start wr1` | A click on its Start, also when it is disabled, as a user may click it |
+| `When I stop sw1` | Its Stop button; it must stop |
+| `When I stop sw1, which is starting` | Its Stop button, while its row says Starting; the row still says so after, as the stop waits for the start to end |
+| `Given the QEMU programs wait to answer until I let them` | Before Virtualbricks starts: a `qemu-system-i386` of its own in the folder of the QEMU programs of the project that Virtualbricks opens at its first start, `new_project`, which runs that of this computer once the scenario lets it, at most a minute later. The settings of a machine and its first start ask it, before its program runs: the machine says Starting until then |
+| `When I let the QEMU programs answer` | That `qemu-system-i386` runs that of this computer, and the start goes on |
+| `When I give sw1 34 ports and hub mode, with the buttons of its settings` | Configure… in its menu, the + or the - of Ports until it says 34, Hub mode turned on, then OK |
+| `When I give sw1 34 ports and hub mode in its settings, then cancel` | The same, then Cancel |
+| `When I give sw1 34 ports and hub mode in its settings, then press Escape` | The same, then Escape |
+| `When I turn on "No display" in the settings of vm1, on its page Display` | Configure… in its menu; the page, in the list at the left of its settings, then the switch of the setting, which must be the other way, turned on, or off with `turn off`; then OK |
+| `When I open the settings of sw1` | Configure… in its menu: its settings show, in place of the list, as they are |
+| `When I open the settings of vm1, on its page Machine` | The same, then the page, in the list at the left of its settings |
+| `When I choose "x86_64" for "Program" in the settings of vm1, on its page Machine` | Configure… in its menu; the page, in the list at the left of its settings, then the list of the setting, which must show another choice, and the choice; then OK |
+| `When I terminate vm1, from its menu` | Process and its number, in its menu, then Terminate: SIGTERM, which a machine stops at, where its Stop asks the system of the machine to stop; then it can start again, and the processes of its start have quit |
+| `When I pause vm1, from its menu` | Process and its number, in its menu, then Pause: SIGSTOP, which stops the processes of the brick; its row still says Running |
+| `When I continue vm1, from its menu` | The same, then Continue: SIGCONT |
+| `When I open the control monitor of sw1, from its menu` | Process and its number, in its menu, then Open Control Monitor: its console, in the terminal of the settings |
+| `When I duplicate sw1 from its menu` | Duplicate, in its menu; then the list has one more brick |
+| `When I delete sw2 from its menu, and confirm` | Delete…, in its menu, then Delete in the dialog that names it |
+| `When I ask to delete sw1, from its menu` | Delete…, in its menu: the dialog Delete Brick asks to delete it, by its name |
+| `When I confirm the delete` | Delete, in the dialog that asks to delete; then it closes |
+| `When I press Delete on the row of sw1` | A click on its name, which selects its row, then the key Delete |
+| `When I rename sw1 to core, with F2` | A click on its name, then F2: the dialog Rename Brick has its name, selected, as typing replaces it; the new name typed in place of it, then Rename, and the dialog closes |
+| `When I type sw1 as the new name of sw2, with F2` | The same, without Rename: the dialog stays |
+| `When I try to rename vm1 to web, with F2` | The same as rename, without waiting for the dialog to close, as it stays open when the rename is refused |
+| `When I cancel the Rename dialog` | Its Cancel; then it closes |
+| `When I start all the bricks` | Start All; each brick whose row said Stopped must run, with the process its row tells, and Start All must start no other |
+| `When I stop all the bricks` | Stop All; each brick that ran must be able to start again |
+| `When I show only the running bricks` | Running, of the switch over the list; then it is on |
+| `When I show all the bricks` | All, of the switch over the list; then it is on |
+| `When I wait 5 seconds` | Waits |
+| `When I quit Virtualbricks` | File, then Quit |
+| `When the system ends Virtualbricks, with SIGTERM` | SIGTERM to its process, as at the end of the session or at shutdown, whatever its windows show |
+| `When I start Virtualbricks again` | Starts it with its settings, as after it ran before, on a new screen, and waits for a window |
+| `Given the workspace is on a drive without a trash` | A folder in `/dev/shm` for the workspace, before Virtualbricks starts: a file system in memory that the system mounts, where the desktop makes no trash; removed once Virtualbricks has stopped |
+| `Given the workspace is the default one` | Before Virtualbricks starts: its workspace is `~/.virtualbricks`, that of its settings, as for a user who never chose another; the title of the main window names the project alone |
+| `When I open the Projects window` | Projects…, in the menu Projects |
+| `When the projects were last saved on 2024-08-02` | The file of each project of the workspace last changed on the day, at noon: the Projects window says that day, not the time of the scenario |
+| `Given the files of my Downloads folder were last changed on 2024-08-02` | Each file of the folder of the home last changed on the day, at noon: a file chooser says that day, not the time of the scenario. Also `of my home folder` |
+| `When I make a new project with the name it suggests, new_project-2` | New…, in the Projects window: its name must be the one the dialog suggests; then Create, and the dialog closes |
+| `When I save the project` | Save, in the menu Projects: the open project, with its README; then its `project.toml` is written |
+| `When I open the project new_project` | In the Projects window, its row, then Open in its details; the window closes |
+| `When I try to open the project new_project` | The same, without waiting for the window to close |
+| `When I duplicate the project new_project with the name it suggests, new_project-copy` | In the Projects window, its row, then Duplicate… in its details: the name of the copy must be the one the dialog suggests; then Duplicate, with Open the copy as it is, and the dialog closes |
+| `When I remove the project new_project, and move it to the trash` | In the Projects window, its row, then Remove… in the menu of its details; the question that names it says its folder goes to the trash: Move to Trash, and the question closes |
+| `When I remove the project new_project, which can't go to the trash, and delete it permanently` | The same, where the question has no Move to Trash and says the drive of the workspace has no trash: Delete Permanently |
+| `When I import the archive lab.vbp of my home folder with the name it suggests, lab` | Import…, in the menu Projects; in the file chooser that asks for the archive, before any Import window shows, Home and the archive, and Open; the Import window opens on it, and the name must be the one it suggests; then Import, with Open the project as it is, and the window closes once the project opens |
+| `When I import the archive lab.vbp of my home folder from the Projects window, with the name it suggests, lab` | The same, with Import… of the Projects window, which must show |
+| `When I import the archive new_project.vbp of my home folder, typing its path, with the name it suggests, new_project-2` | The same, where in the file chooser, once clicked, Ctrl+L shows the entry of its location: the path of the archive typed there, then Return once Open is enabled |
+| `When I choose the archive lab.vbp of my home folder in the Import window, which suggests the name lab` | The same as the import, up to the name the window suggests, once it has looked through the whole archive (the line under Images no longer says `Looking in the archive…`): Import isn't clicked, and the window stays. Also `of my Downloads folder`: in the file chooser, Home, then Downloads and Open, which goes into it, before the archive |
+| `When in the Import window, I use the file debian13.qcow2 of my home folder for the image debian13` | Use a file…, in the row of the image; in the file chooser it opens, Home, the file and Open; the row then says `Uses ~/debian13.qcow2`. Also `of my Downloads folder`, as above: then `Uses ~/Downloads/debian13.qcow2` |
+| `Then the Import window leaves the image debian13 unset` | In the row of the image, Leave unset is on: the choice of the window for an image that neither the archive nor the shared images have |
+| `When I choose Import… in the menu Projects` | Import…, in the menu Projects; then the file chooser asks for the archive, and the Import window doesn't show yet |
+| `When in the file chooser, I select debian13.qcow2 of my Downloads folder` | In the file chooser that shows, Home, then Downloads and Open, which goes into it, then the file, which is selected: Open isn't clicked. Also `of my home folder` |
+| `When I press Escape in the Import window` | A click in the entry of the name, which takes the keys there, or on the title of the window during the import; then Escape |
+| `Then the Import window doesn't show` | Waits until it doesn't |
+| `When I import the archive chosen in the Import window` | Import, in the Import window, which closes once the project opens |
+| `Given the extraction of an archive stops after its first 1 MiB, until I let it go on` | Before Virtualbricks starts: `bsdtar` and `tar` of its `PATH` are scripts that run `heldtar.py` with those of the tests. An extraction from the input reads that much of the archive, then waits, at most a minute, for the next step. The Import window shows the progress of the first MiB, the same each time |
+| `When I let the extraction go on` | The extraction that waits goes on |
+| `When I export the project to new_project.vbp of my home folder` | Export…, in the menu Projects, for the open project; the window suggests the archive in the home, `~/new_project.vbp`; then Export, and Close once it says where it exported it |
+| `When I open the Export window` | Export…, in the menu Projects, for the open project; then the window shows |
+| `When I press Escape in the Export window` | A click in the entry of the archive, which takes the keys there, then Escape |
+| `Then the Export window doesn't show` | Waits until it doesn't |
+| `Then my home folder has no new_project.vbp` | The home has no file or folder of that name |
+| `Then sw1 is running` | Its row says Running, and the processes of its start run; when no step started it, as with `--command`, the process its row tells, which has its sockets |
+| `Then sw1 is still running` | The same |
+| `Then w1 runs with the sockets of sw1 and sw2` | It runs, and a `vde_plug` of its start is in the socket of each switch: the one its `vde_switch` listens on |
+| `Then the process of vm1 is paused` | The processes of its start are stopped, as SIGSTOP leaves them: `T` in `/proc` |
+| `Then the process of vm1 runs again` | None of them is stopped, and none has quit |
+| `Then sw1 is stopped` | Its row says Stopped, and no process of it runs: those of its start have quit, and none has its sockets |
+| `Then sw1 is not running` | The same |
+| `Then sw1 runs with 34 ports, as a hub` | It runs, and its `vde_switch` has `-n 34` and `-x` |
+| `Then no brick runs` | No row of the list says Running, and no process of a brick runs: neither those that the steps started nor any with a socket of the tests; Virtualbricks runs no program |
+| `Then wr1 is not configured` | Its row says Not configured, its Start is disabled, and no process has its sockets |
+| `Then the Delete dialog says "The event new_event will no longer start sw1."` | A line of the dialog that asks to delete is the text |
+| `Then the Rename dialog says "sw1 is the name of a brick", and Rename is disabled` | The line under its field is the text, and its Rename is disabled |
+| `Then the Rename dialog refuses it, saying "The project folder has web_hda.cow already, a private copy named after web: move it away first"` | The dialog is still open, and a line under its field is the text |
+| `Then Rename… and Delete… are disabled in the menu of sw1` | Its menu opens, with both disabled; then Escape closes it |
+| `Then Delete… is disabled in the menu of sw1, and nothing asks to delete it` | Its menu opens, which it wouldn't under a dialog, with Delete… disabled, and no dialog shows; then Escape closes the menu |
+| `Then wr1 can't start: "Configure wr1 first"` | Its Start is disabled, and the state in its row says why, in its tooltip, which the screen readers read |
+| `Then Virtualbricks has quit` | It exited with 0, and no brick runs any more |
+| `Then Virtualbricks hasn't quit` | It still runs, and its main window shows |
+| `Then the main window shows the project lab` | Its title names the project |
+| `Then the main window shows the project lab on this computer` | The windows of another Virtualbricks: their title names the project and where it runs |
+| `Then the Projects window says "Cannot open new_project: …"` | A label of the window has the text, as the bar over its list |
+| `Then the Projects window doesn't list new_project` | No row of its list has the project |
+| `Then the folder of DTN2hops_26_Feb_2026 isn't in the workspace` | The workspace has no folder of the project, nor the hidden `.importing-` one of its import, once a stopped import has removed it |
+| `Then the folder of new_project-2 has project.toml` | The folder of the project in the workspace has the file of a project, which TOML reads, with its format |
+| `Then the folder of new_project-copy is a copy of that of new_project` | It has project.toml, and the two folders of the workspace have the same files, with the same bytes |
+| `Then the archive new_project.vbp of my home folder has the bricks`, with a table under it | The bricks of the project.toml of the archive, all of them and in order: the name of each and its type |
+| `Then the folder of new_project is in the trash` | The workspace has no folder new_project, and the trash of the home has it: a `.trashinfo` with its path, and the folder, with its project.toml |
+| `Then the folder of new_project is deleted, and in no trash` | The workspace has no folder new_project, and no trash has its path: neither that of the home, nor `.Trash/UID` and `.Trash-UID` at the top of the drive of the workspace |
+| `Then the list of bricks has`, with a table under it | The rows of the list, all of them and in order, scrolled through, once they are those of the table: the name of each brick, its detail and its state; with only the titles of the columns, no brick, as the tab says No Bricks Yet |
+| `Then the list of bricks shows only sw1, with its process` | Its row alone, once it says Running and, in place of its summary, a process of its start, which still runs |
+| `Then project.toml has the bricks`, with a table under it | The bricks of the file of the project, all of them and in order: the name of each and its type |
+| `Then project.toml has sw1 with`, with a table under it | Its settings in the file of the project, a name and a value each, the value as TOML writes it |
+| `Then project.toml has sw2 with the settings of sw1` | The two bricks have the same settings in the file of the project |
+
+The steps of the virtual machines:
+
+| Step | What it does |
+| :- | :- |
+| `When I connect vm1 to sw1, with Connect To in its menu` | Connect To, in its menu, then the brick; then the menu closes |
+| `Then vm1 runs qemu-system-x86_64, with no display` | It runs, and a process of its start is the program, with `-display none` |
+| `Then vm1 runs with a card in the socket of sw1` | It runs, and its QEMU has a card of VDE, `-netdev vde`, whose `sock=` is the socket that the `vde_switch` of sw1 listens on |
+| `Then the monitor of vm1 answers "info status" with "VM status: running"` | The monitor of its QEMU, on the socket of a `-chardev` that a `-mon` of its command line names: a line of its answer to the command is the text |
+
+The steps of the tunnels:
+
+| Step | What it does |
+| :- | :- |
+| `When I add the tunnel server tl1 on sw1, on a free UDP port, with the password "secret"` | New Brick, Tunnel server; in its settings, the switch in Plugged into, a UDP port that no program has typed in Port, and the password; then OK, and its row says the switch and the port |
+| `When I add the tunnel client tc1 on sw2, to tl1 on this computer, with the password "secret"` | New Brick, Tunnel client; in its settings, the switch in Plugged into, `localhost` in Server, the port of the server in Server port, a free UDP port in Local port, and the password; then OK, and its row says the switch and the server |
+| `Then tc1 on sw2 is connected to tl1 on sw1` | Both run, each a `vde_cryptcab` with the socket of its switch, the client's to the port of the server's; and a port of each switch has the `vde_cryptcab` of its end, as the console of its `vde_switch` lists them (`port/allprint`, on the socket after `-M`). The server plugs its client into its switch only once the client has logged in, with the key of the same password |
+
+The steps of a program that fails:
+
+| Step | What it does |
+| :- | :- |
+| `Given a vde_switch that writes "no switch today" and exits with 3` | A script in place of `vde_switch`, in the folder of the VDE programs of the project that Virtualbricks opens at its first start, `new_project`; before Virtualbricks starts |
+| `Then an error says "Process terminated. process ended with exit code 3"` | The alert Error shows, with the text |
+| `When I close the error` | Its button Close |
+| `When I open the messages window` | Logs, in the menu File |
+| `Then the messages window has the output of sw1: "no switch today"` | A line of the messages comes from sw1 and has the text, as its program wrote it, after `2>` when on its standard error |
+| `Given a vde_switch that writes these lines, and exits with 3`, with a text under it | The same as `writes "no switch today"`, with the lines of the text, written at once |
+| `Then the messages window has the message of sw1: "Process terminated. process ended with exit code 3"` | A line of the messages comes from sw1 and says the text |
+| `Then the messages window has the output of sw1: "no switch today", and 2 more lines folded` | A line of the messages comes from sw1: the first line of the output of its program, after `2>`, and its toggle, `▸ 2 more lines`; no line of them shows under it |
+| `When I unfold the output of sw1 in the messages window` | A click on the toggle of the output of sw1, a run of the text of the window; then it says `▾` |
+| `Then the messages window has the output of sw1, unfolded`, with a text under it | The first line of the text is that of the output of sw1, with its toggle unfolded, `▾ 2 more lines`; the others show under it |
+
+The steps of a switch that another program runs, for a switch wrapper:
+
+| Step | What it does |
+| :- | :- |
+| `Given a switch that another program runs` | A `vde_switch` that the tests run, not Virtualbricks, in the runtime folder of the tests; it quits at the end of the scenario |
+| `When I give wr1 the control folder of that switch` | Configure… in its menu, the folder typed in Control folder, then OK; its row says the folder |
+| `When the switch that another program runs quits` | That program stops it: it quits at the end of its input, and its folder goes |
+| `When the switch that another program runs is killed` | SIGKILL: it quits at once, and its socket `ctl` stays in its folder |
+| `When the socket that the switch left is removed` | Its `ctl` goes, and its folder stays, empty |
+| `When the switch that another program runs starts again` | That program starts it again, in the same folder, until a plug connects to it: the socket of a killed switch is there too |
+| `Then wr1 is running, with the process of that switch` | Its row says Running, and its state tells the process of that switch, which runs; its Stop is disabled, as that program stops it. Virtualbricks looks at the folder every second |
+| `Then wr1 is in error: "No socket ctl in {folder}"` | Its row says Error, its Start is disabled, and the tooltip of its state says why; `{folder}` is the control folder of that switch |
+
+The steps of another Virtualbricks, of the same user, with the same home and
+workspace:
+
+| Step | What it does |
+| :- | :- |
+| `Given another Virtualbricks runs with --no-gui --listen` | Starts it with the options: its main window shows, or, with `--no-gui`, it listens on the socket of `--listen` alone |
+| `When I start another Virtualbricks with --lock workspace` | The same, without waiting for it: it may exit |
+| `When I run virtualbricks --command brick start sw1` | `virtualbricks --command` and the words, as the shell splits them, in the workspace of the scenario; it must exit with 0 |
+| `Then the other Virtualbricks exits with 1, saying "Another Virtualbricks is running …"` | It exits with the status, and its output has the text |
+| `Then the other Virtualbricks names the process of Virtualbricks` | Its output says `Held by process PID`, that of the first |
+| `Then sw1 runs in the other Virtualbricks` | The processes of its start are the other's, and the windows of it run none |
+
+The steps of the events, in the tab Events:
+
+| Step | What it does |
+| :- | :- |
+| `When I make an event that starts sw1 after 2 seconds, with the name it suggests, new_event` | New Event, in the tab Events: the name must be the one the dialog suggests; the seconds typed in Wait, then Create; in the settings of the event, Add Action, Start a brick and the brick, then OK |
+| `When I make an event that starts sw2 at once, with the name it suggests, new_event` | The same, with 0 seconds in Wait |
+| `When I make an event without actions, with the name it suggests, new_event` | New Event, in the tab Events, with the name it suggests: Create, then OK in the settings of the event |
+| `When I open the settings of the event new_event` | Configure… in its menu, in the tab Events: its settings show, in place of the list, as they are |
+| `When I start the event new_event` | Its Start, in the tab Events; then it waits: its Stop shows |
+| `When I stop the event new_event while it waits` | Its Stop, in the tab Events, while its row says Waiting; then its Start shows, and its row says Ready |
+| `When I ask to delete the event new_event, from its menu` | Delete…, in its menu, in the tab Events: the dialog Delete Event asks to delete it, by its name. Then the steps of the dialog: `Then the Delete dialog says …`, `When I confirm the delete` |
+| `Then project.toml has the event new_event, without actions` | The event is in the file of the project, with no action |
+| `When I run the event new_event now, from its menu` | Run Now, in its menu, in the tab Events; then the menu closes |
+| `When I choose new_event in When It Starts, in the menu of sw1` | In the menu of the brick, When It Starts or When It Stops, then the event, and Escape, as a choice leaves the menu open. The choices of a menu of GTK 3 don't tell AT-SPI which is on: the row of the event says it, `· when sw1 starts` |
+| `Then new_event counts down from 2 seconds, then starts sw1` | Its row says `Waiting · 2 s`, then `Waiting · 1 s`, each in turn, while no process of sw1 runs; then Ready, and a process of sw1 runs |
+| `Then the list of events has`, with a table under it | The rows of the tab Events, all of them and in order, once they are those of the table: the name of each event, its detail and its state; with only the titles of the columns, no event, as the tab says No Events Yet |
+
+The steps of a row of the tab Bricks that find it by its name take an event
+too, in the tab Events: `Then new_event can't start: "Add an action to
+new_event first"`, `When I try to start new_event`, `Then new_event is not
+configured`. A step of a brick needs the tab Bricks: `When I open the tab
+Bricks` first, after a step of the events.
+
+The steps of the picture of the lab, in the tab Topology:
+
+| Step | What it does |
+| :- | :- |
+| `When I zoom in on the picture of the lab 5 times` | The tab Topology, then its Zoom In, so many times; or its Zoom Out, with `zoom out` |
+| `When I zoom the picture of the lab back to 100%` | The tab Topology, then its zoom level, whose tooltip says Zoom to 100% |
+| `Then the zoom level of the picture of the lab is 150%` | The zoom level of the tab says it, as the screen readers read it: AT-SPI can't see the drawing itself |
+| `When I export the picture of the lab to lab.png of my home folder, typing its path` | The tab Topology, More, then Export as Image…; in the file chooser, the path typed in Name in place of the name it suggests, then Save, and it closes |
+| `When I export the picture of the lab to faded.png of my home folder, typing its path, with Fade stopped bricks ticked` | The same, with the check box Fade stopped bricks of the file chooser ticked before Save, if it isn't |
+| `When I choose Right Angles for the links in the menu of the picture of the lab` | The tab Topology, More, then the item of Links, a radio button in the menu: Straight, Curved or Right Angles |
+| `Then the file lab.png of my home folder is a PNG image, not blank` | The file has the bytes of a PNG at its start, cairo reads it, and its pixels aren't all alike |
+| `Then the picture in lab.png of my home folder is in colour` | A hundred of its pixels at least have their red, green and blue 40 apart or more |
+| `Then the picture in faded.png of my home folder is grey` | Each of its pixels has its red, green and blue 12 apart at most: the ink of the links and the names is 8 apart |
+| `When I drag the picture of the lab 100 pixels to the left` | A press on the background, under the bricks, which are a row in the middle of its height, a move to the left or to the right, and a release; the picture must be wider than the tab |
+| `Then the picture of the lab moved 100 pixels to the left` | Its horizontal scroll bar moved as much the other way |
+| `Given the project new_project has the bricks, laid out by hand`, with a table under it | The folder of the project in the workspace, with a `project.toml` of the bricks of the table: the name of each, its type and its place, as `project.toml` writes it; before Virtualbricks starts, which opens `new_project` at its first start |
+| `When I move sw2 100 pixels to the right in the picture of the lab` | The tab Topology, at 100%: a press on the brick, a move to the right, and a release over free room, where the brick goes. The brick is found by its place in `project.toml` and the rules of the picture: the boxes of the bricks in the middle of the tab, under the bar of the zoom, as long as the lab fits; the names narrower than the icons. Not by its pixels |
+
+The steps of the tab Readme:
+
+| Step | What it does |
+| :- | :- |
+| `Given the project new_project has the README`, with a text under it | The folder of the project in the workspace, with a `project.toml` if it has none, and the text in its `README.md`; before Virtualbricks starts, which opens `new_project` at its first start |
+| `When I open the tab Readme` | Its page tab, in the main window, until it is the one that shows; any tab, as `the tab Bricks` |
+| `When I write the README in the Readme tab`, with a text under it | The tab Readme, its Edit, then the text typed in its editor |
+| `When I show the preview of the README` | The Preview of the tab Readme |
+| `Then the Readme tab shows the README rendered`, with a table under it | The runs of text of the preview, all of them and in order, a line at a time: the text of each, without the spaces at its ends, and its style, as AT-SPI tells it: `large`, `bold`, `italic`, `monospace`, or none |
+| `Then the README file of new_project has`, with a text under it | The file `README.md` of the folder of the project has the text, once Virtualbricks has written it, as it does when it saves the project |
+
+The steps of the Settings window:
+
+| Step | What it does |
+| :- | :- |
+| `When I turn off "Tray icon" in the Settings window, on its page This computer` | Settings, in the menu File; on the page, the switch of the label, which must be the other way, turned off, or on with `turn on`; then OK, and the window closes. The page of the project is `Project new_project` |
+| `When I turn off "Tray icon" on the page This computer of the Settings window, then cancel` | The same, then Cancel, and the window closes |
+| `When I type "/usr/local/bin" as "VDE folder" on the page Project new_project of the Settings window` | Settings, in the menu File; on the page, the text typed in the entry of the label, in place of the one it has |
+| `When I type "xterm -T {name} -e {command}" as "Terminal" in the Settings window, on its page This computer` | The same, then OK, and the window closes |
+| `When I choose "gnome-terminal -- {command}" for "Terminal" in the Settings window, on its page This computer` | Settings, in the menu File; on the page, the menu of the text of the label, opened with its arrow, then the line, which the text then has; then OK, and the window closes |
+| `When I open the Settings window` | Settings, in the menu File |
+| `Then the page This computer of the Settings window has "Tray icon" off` | The page, then the switch of the label: it is off, or on |
+| `Then the row "VDE folder" of the Settings window says "Missing here and in PATH: vde_cryptcab (vde2-cryptcab)"` | The row of the label has the text, once the window says it: what is wrong with the setting |
+| `Then the menu of "Audio driver" in the Settings window has the audio drivers of qemu-system-x86_64` | The menu of the label, opened with its arrow, has the drivers that the program lists with `-audiodev help`: those that play sound first, `pipewire`, `pa`, `alsa`, `jack`, `oss`, `sdl`, `sndio`, then the others by their names |
+| `Then gnome-terminal got "--", then the console of sw1` | The terminal of the tests ran, with the words in quotes, as the shell splits them, then the console of the switch: `vdeterm`, as Virtualbricks finds it, and the socket after `-M` of its `vde_switch`, and no other word |
+| `Then settings.toml is as it was` | The settings file is the one the tests wrote before the start: Virtualbricks hasn't written it |
+| `Then settings.toml has`, with a table under it | The settings of the table in the settings file, a name and a value each, the value as TOML writes it, once Virtualbricks has written them |
+| `Then project.toml has the settings`, with a table under it | The same, in the table `settings` of the file of the project |
+
+The steps of the user guide:
+
+| Step | What it does |
+| :- | :- |
+| `Given the browser of the desktop is a program of the tests` | Before Virtualbricks starts: a desktop file in the data folder of its home, the default of its `mimeapps.list` for `text/html`, runs a script that writes `browser` and each link, or path, it gets on a line of the file `opened` of the scenario; the browser of this computer opens nothing |
+| `Given Yelp is a program of the tests` | Before Virtualbricks starts: another desktop file, the default of its `mimeapps.list` for `x-scheme-handler/help`, runs the same script, which writes `yelp` and the link; the Yelp of this computer opens nothing. Without it, and with `Given yelp isn't on this computer`, the desktop has no program for `help:` links: GIO takes a desktop file only if its program is on `PATH` |
+| `Given the pages of the guide are where Yelp looks` | Before Virtualbricks starts: `help/C/virtualbricks` of the data folder of its home is a link to `docs/built/mallard` of the sources, the pages that `docs/build.py` writes, where it finds them as installed |
+| `When I press F1 in the Settings window` | F1, once the window is active |
+| `Then Yelp opens "help:virtualbricks/settings"` | The program of the tests got the link, as Yelp, and only it |
+| `Then Yelp opens the page settings of the sources` | The program of the tests got the path of `docs/built/mallard/settings.page` of the sources, as Yelp, and only it: the desktop gives a file by its path |
+| `Then the browser opens the HTML of the page settings` | The program of the tests got the path of `docs/built/html/settings.html` of the sources, as browser, and only it |
+| `Then the picture settings shows the Settings window` | The picture of the window for the guide, as it shows, with the menus open over it: the pointer away from the windows first, once the screen hasn't changed for half a second. With `pytest --pictures`, `docs/guide/figures/settings.png`, if it changed; else `settings.png` in the folder of the scenario, which the end of the run lists if it differs from that of `docs/guide/figures/`. The windows: `main window`, `Settings window`, `Projects window`, `Export window`, `Import window`, and `file chooser`, the one that shows |
+
+The steps of the disk images:
+
+| Step | What it does |
+| :- | :- |
+| `Given the empty disk image disk.qcow2 of 1 GB, in my home folder` | Made with `qemu-img create`, of MB or GB of 1000, as Virtualbricks counts them, in the format of its extension: `qcow2` or `raw`. Also `in my Downloads folder` |
+| `Given the empty disk image disk.qcow2 of 1 GB, in my home folder, with the snapshot clean` | The same, then the snapshot, made with `qemu-img snapshot -c` |
+| `Given the private copy web_hda.cow, on disk.qcow2 of my home folder, left in the project folder by a machine deleted from the console` | Once Virtualbricks runs: in the folder of the project, a qcow2 of 1 GiB made with `qemu-img` on the image, with 768 KiB at its start, random but the same each time |
+| `When I add an existing image, disk.qcow2 of my home folder, with the name it suggests, disk` | The tab Images, Add Image, then Existing Image…; in the dialog, the button of the file, then Home and the file in the file chooser, and Open; the name must be the one the dialog suggests; then Add, with Copy it to the shared images as it is, and the dialog closes |
+| `When I add an existing image, disk.qcow2 of my home folder, used where it is, with the name it suggests, disk` | The same, with Use it where it is in place of the copy |
+| `When I add a new empty disk, disk, of 20 MB in the format raw` | The tab Images, Add Image, then New Empty Disk…; in the dialog, the name typed, the size typed in Size, its unit and the format chosen in their lists, the folder as it is, the shared images; then Create, and the dialog closes |
+| `When I give vm1 the image disk, on its disk hda` | Configure… in its menu; on the page Disks of its settings, Add Disk and the device, then the image in the picker of the new disk; then OK |
+| `When I open the details of disk` | Details…, in its menu, in the tab Images; then they show, with its name |
+| `When I remove the image disk, which the disk vm1 (hda) loses, and move its file to the trash` | Remove…, in its menu, in the tab Images: the dialog asks to remove it, and says that the disks lose it, `The disk vm1 (hda) will have no image.`; Also move the file to the trash turned on, then Remove, and the dialog closes |
+| `When I remove the image disk, which the disk vm1 (hda) loses, and whose file new_project uses too` | The same, where the dialog says `The project new_project uses the file too: it stays.`, and offers nothing for the file; then Remove |
+| `When I find the file of debian13, debian13.qcow2 of my home folder` | Find the File…, in its menu, in the tab Images; in the dialog, which asks where the file is, the button of the file, then Home and the file in the file chooser, and Open; then Use This File, and the dialog closes. Also `of my Downloads folder`: in the file chooser, Home, then Downloads and Open, which goes into it, before the file |
+| `Then the list of images has`, with a table under it | The rows of the tab Images, all of them and in order, once they are those of the table: the name of each image, its detail without the space its file takes (`… on disk`), which depends on the file system, and its state |
+| `Then the shared images have disk.qcow2, a copy of that of my home folder` | `shared_images` of the workspace has the file, with the same bytes, and the home still has it |
+| `Then project.toml has the image disk, of disk.qcow2 in the shared images` | The image in the file of the project has the file of the shared images |
+| `Then project.toml has the image disk, of disk.qcow2 of my home folder` | The same, with the file of the home |
+| `Then project.toml has the disk hda of vm1, without an image` | The disk of the machine, in the file of the project, has no image |
+| `Then the shared images have no copy of disk.qcow2` | The home still has the file, and no file of `shared_images`, if there is one, has its bytes |
+| `Then the shared images have disk.raw, a raw disk of 20 MB` | `shared_images` has the file, which `qemu-img info` says is of the format, with a disk of the size, up to a sector more |
+| `Then the details of disk have`, with a table under it | The facts of the table, a name and a value each, as File or Format, are those of the details of the image, which show, once it has read its file |
+| `Then the details of disk say what qemu-img info says of disk.qcow2 of the shared images` | The facts of the details are those of `qemu-img info` of the file: File, its path with `~` for the home; Format; Size, the disk and the space it takes, in MB and GB of 1000; Snapshots, if any; and Changed, when the file changed, which isn't of `qemu-img` |
+| `Then vm1 runs on a private copy of disk.qcow2 of the shared images` | It runs, and a disk of its QEMU, after `-hda` or another device, is a file of its own whose backing file is that of the shared images, as `qemu-img info -U` says |
+| `Then node2 runs on its private copy from the archive, with what was done in it, on debian13.qcow2 of my Downloads folder` | It runs, and each disk of its QEMU in the folder of a project, after `-hda` or in a `-drive`, is the private copy of the archive: not set aside as `node2_hda.cow.bak-DATE` for a new one, above the file, as `qemu-img info -U` says, and its disk still starts with the 768 KiB that the step of the archive wrote in it, as `qemu-img dd` reads them |
+| `Then the file disk.raw of the shared images is in the trash` | `shared_images` has it no more, and the trash of the home has it: a `.trashinfo` with its path, and the file |
+| `Then the Delete dialog says that the private copy vm1_hda.cow goes to the trash` | A line of the dialog that asks to delete the machine says so, with the size of the copy, which depends on the file system |
+| `Then the file vm1_hda.cow of the project folder is in the trash` | The folder of the project has it no more, and the trash of the home has it: a `.trashinfo` with its path, and the file |
+| `Then the project folder still has vm1_hda.cow` | The folder of the project has the file |
+| `Then the private copy web_hda.cow still has what was written in it` | The disk of the file of the project folder still starts with the 768 KiB that the step of the private copy wrote in it, as `qemu-img dd` reads them |
+| `Then the shared images still have disk.raw, in no trash` | `shared_images` has the file, and the trash of the home doesn't |
+
+The steps of the migration of Virtualbricks 2.1:
+
+| Step | What it does |
+| :- | :- |
+| `Given the project DTN2hops_26_Feb_2026 of Virtualbricks 2.1` | A copy of `projects/DTN2hops_26_Feb_2026` in the workspace |
+| `Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, in my home folder` | The archive that 2.1 exported of `projects/DTN2hops_26_Feb_2026`, in the home: its `.project`, without images, in a tar compressed with gzip. Also `in my Downloads folder` |
+| `Given the archive DTN2hops_26_Feb_2026.vbp of Virtualbricks 2.1, with the private disks of its machines, in my Downloads folder` | The same, with the private disk of each disk of a machine that has one, `node1_hda.cow`: a qcow2 of 1 GiB, made with `qemu-img`, on the path of the image in the project, which needn't be there, with 768 KiB at its start, random but the same each time. The four of DTN2hops make an archive of 3.2 MB. Also `in my home folder` |
+| `Given the settings of Virtualbricks 2.1, with DTN2hops_26_Feb_2026 open last` | `~/.virtualbricks.conf`, of the workspace of the tests, in place of the settings: the next start is the first |
+| `Given the project lab of Virtualbricks 2.1, whose .project is`, with a text under it | A folder lab in the workspace, whose `.project` has the text; the steps keep it, to check it later |
+| `Given the project DTN2hops_26_Feb_2026 of Virtualbricks 2.1, as the single file lab.vbl in the workspace` | Its `.project`, as a file of the workspace, as the versions before 2.1 kept a project |
+| `Given the projects lab01 to lab40 of Virtualbricks 2.1, copies of DTN2hops_26_Feb_2026` | So many copies of `projects/DTN2hops_26_Feb_2026` in the workspace: a word and a number, of as many digits in both |
+| `When I start Virtualbricks for the first time` | Starts it without its settings, as after 2.1, and waits for a window |
+| `When I close the migration window` | Its button Close |
+| `When I close the migration window while it migrates` | Its button Close, once a project of the workspace has its `project.toml`; the window shows until it closes. The buttons are found without a search through the list, as the window answers AT-SPI only between two projects |
+| `When I select lab in the migration window` | Its row; then the messages under the list are those of lab |
+| `When I save the report of the migration to report.txt of my home folder, typing its path` | Save report…; in the file chooser, the path typed in Name in place of the name it suggests, then Save, and it closes |
+| `Given Virtualbricks migrated DTN2hops_26_Feb_2026 at its first start` | The first start, the migration of the project, and its window closed |
+| `Then the migration window shows` | Waits until it shows |
+| `Then the migration window doesn't show` | Waits until it doesn't |
+| `Then the migration window lists`, with a table under it | The rows of its list, all of them and in order, once they are those of the table, whose first line has the titles of the columns |
+| `Then DTN2hops_26_Feb_2026 is migrated` | The migration ends, no row of the window failed, and the project has its `project.toml` |
+| `Then lab isn't migrated` | Its folder in the workspace has no `project.toml` |
+| `Then the migration window shows the error of lab: ".project:4 …"` | Under the list, the messages are those of lab, and one is the text, of that level: `error`, `warning` or `info` |
+| `Then the old file lab/.project of the workspace stays as it was` | The file, which a step gave, has the same bytes |
+| `Then some of the projects are migrated, and the others not` | The old projects that have their `project.toml` are those of the close of the window, as they were then, no other: the migration stopped there; some have none |
+| `Then the projects not migrated before are migrated, and the others stay as they were` | The migration ends; each old project has its `project.toml`, and those of before the close the same, not written again |
+| `Then the file report.txt of my home folder has`, with a text under it | The file has the text, line by line, the spaces at the end of a line aside |
+
+A step with a table under it takes all the rows of a list, in order: the
+first line of the table has the titles of the columns, each other line a
+row. The rows of the migration window, and those of the bricks:
+
+```gherkin
+Then the migration window lists
+  | Project              | Bricks | Status      |
+  | .virtualbricks.conf  | —      | ✓ Migrated  |
+  | DTN2hops_26_Feb_2026 | 13     | ⚠ 1 warning |
+```
+
+```gherkin
+Given Virtualbricks is running
+When I add the switch sw1
+Then the list of bricks has
+  | Brick | Detail            | State   |
+  | sw1   | Switch · 32 ports | Stopped |
+```
+
+The steps of the screen, for any widget, by its role and its name:
+
+| Step | What it does |
+| :- | :- |
+| `When I click the button "New Brick"` | Clicks the widget, once it shows and is enabled |
+| `When I choose "Quit" in the menu "File"` | The menu of the menu bar, then its item |
+| `When I open the menu "Projects"` | The menu of the menu bar, which stays open, once its items are under it |
+| `Then the label "No Bricks Yet" shows` | Waits until the widget shows |
+| `Then the label "No Bricks Yet" doesn't show` | Waits until it doesn't |
+| `And I print the widgets` | Prints the widgets that show, with their roles and names (`pytest -s`) |
+
+## Add a step
+
+A step is a function of `steps.py`, under the decorator of its words:
+
+```python
+@when(words("I stop {name:Brick}"))
+def stop_brick(virtualbricks, name):
+    virtualbricks.click("button", f"Stop {name}")
+    virtualbricks.find("button", f"Start {name}")
+```
+
+- `@given`, `@when` and `@then` say which lines it is for; `@step`, any of
+  them.
+- `words()` reads the words as [parse](https://github.com/r1chardj0n3s/parse)
+  does: `{name:Brick}` takes the name of a brick, `{seconds:d}` a number,
+  `"{name}"` a text in quotes. The function gets them by name.
+- A table under a line, as in Gherkin, comes to its step as `datatable`, a
+  list of rows, each a list of texts.
+- A text under a line, between two lines of `"""`, comes to its step as
+  `docstring`, without the indentation of the `"""`.
+- `virtualbricks` is the Virtualbricks of the scenario
+  (`harness.Virtualbricks`). Its methods that wait, wait ten seconds at
+  most, then fail saying what they waited for:
+
+  | Method | What it does |
+  | :- | :- |
+  | `find(role, name, within=None)` | The widget, once it shows |
+  | `shows(role, name, within=None)` | The widget if it shows now, else None |
+  | `gone(role, name, within=None)` | Waits until it doesn't show |
+  | `enabled(role, name, within=None)` | The widget, once it shows and is enabled |
+  | `disabled(role, name, within=None)` | The widget, once it shows and is disabled |
+  | `click(role, name, within=None, enabled=True)` | Clicks it, once it shows and is enabled; with `enabled=False`, also if it is disabled |
+  | `click_text(widget, index, length)` | Clicks the middle of length characters of the text of the widget, from the index of the character in `a11y.text()`: a link or a toggle of a text view, which must show. GTK 3 counts the images of a text view in the offsets of AT-SPI, not in its text: `a11y.offset()` turns one into the other |
+  | `spin(name, by, within=None)` | Clicks the + of the spin button `by` times, or its - `-by` times; after each click, its value changes |
+  | `type(text, role, name=None, within=None, over=False)` | Clicks it, once it shows and is enabled, a spin button in its text, left of its - and +, and types text at its cursor; then it has the text: see [What it can't do yet](README.md#what-it-cant-do-yet). With `over`, in place of the text it has, as a user who selects it all first. A `password text` tells AT-SPI a dot for each character, as it shows them: then it has as many more |
+  | `key(keys, window)` | Presses keys, as `Escape`, `Return`, `Delete`, `F1`, `F2` or `Control+l`, in window, a frame or a dialog, once it is active: click in it first, as the keys go to the window clicked last. Text goes with `type()` |
+  | `drag(start, end, ready=None)` | Presses at start, a point of the screen, moves to end and releases there; `ready()`, if given, right before the press, half a second after the click before |
+  | `choose(item, menu)` | A menu of the menu bar, then its item |
+  | `picture(window)` | The picture of a frame or a dialog, a surface of cairo: the window as GTK drew it, its shadow transparent, with the menus open over it; the pointer away from the windows first, once the screen is still |
+  | `row(name)` | The row of a list with that name, for `within=` |
+  | `reveal(role, name, within)` | The widget in within, a scroll pane, once it shows: if the pane has it scrolled out, the wheel scrolls the pane down, then up, until it shows |
+  | `rows(within)` | The rows of the list in a scroll pane, from the first to the last, each the names of its labels: the wheel scrolls through it |
+  | `names(role, within=None)` | The names of the widgets of that role that show now |
+  | `wait_for(get, what)` | What `get()` returns, once it is true |
+  | `children(parent=None)` | The processes that Virtualbricks, or the process `parent`, started and run; for the windows of another, those of the other |
+  | `command_line(pid)` | The words of the command line of a process; none once it has quit |
+  | `bricks(name=None)` | The processes with sockets in the run folder of the tests, as words of their command line or in one, as the `path=` of QEMU; with a name, those of that brick |
+  | `describe()` | The widgets that show, one a line |
+  | `start(*options)` | Starts it with the options of a scenario, and waits for its main window; with `--listen` alone, until it listens; with `--no-gui`, only that |
+  | `launch(*options)` | Starts it with the options, without waiting |
+  | `run(*options)` | Runs it, as with `--command`, until it exits: its exit status, its output and its errors |
+  | `listens()` | Whether a Virtualbricks listens on the socket of `--listen` alone of its workspace |
+  | `lab` | The Virtualbricks that runs the bricks it shows: itself, or the other one, for the windows of `--connect` |
+  | `home`, `workspace`, `settings` | Its home, its workspace, and its settings file, which a step can remove; a step can move the workspace before Virtualbricks starts |
+
+- `other_virtualbricks` is another Virtualbricks of the same user, not
+  started, with the same home and workspace; its files are in the folder
+  `other` of the scenario.
+- Another fixture can keep what the steps of a scenario share, as
+  `brick_processes` keeps the processes of each brick started.
+- A `Then` checks what really happened, not only what the windows say: a
+  process, a file, an exit status.
+- A step never sleeps to wait for something: it waits for it, with `find` or
+  `wait_for`. Only `When I wait 5 seconds` sleeps.
+- A step of a user says it in the words of Virtualbricks; the clicks are
+  inside.
+
+### The role and the name of a widget
+
+A step finds a widget as a screen reader does: by its role, as `button`,
+`label`, `menu`, `menu item`, `toggle button`, `list item`, `page tab`, and
+by its name, the text of its label, or the name given to the screen
+readers; a widget without a name, as the entry of a setting, has that of
+the label of it, as a screen reader says it. To see them, add
+`And I print the widgets` where the scenario is, and run it with
+`pytest -s`; a step that fails prints them too:
+
+```text
+[list item] ''
+  [filler] ''
+    [label] 'sw1'
+    [label] 'Switch · 32 ports'
+    [label] 'Stopped'
+  [button] 'Start sw1'
+  [button] 'Menu of sw1'
+```
+
+A button with only an icon needs a name: `icon_button()` of
+`virtualbricks/gui/mainwindow/tab.py` gives it one, for its tooltip and for
+the screen readers. Without a name, a widget can't be found, by the tests nor
+by a screen reader.

@@ -1,4 +1,0 @@
-Channel buffer size
-===================
-
-Maximum size of the packet queue.
