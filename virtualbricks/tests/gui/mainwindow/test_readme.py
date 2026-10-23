@@ -168,6 +168,13 @@ class TestReadmeTab(unittest.TestCase):
         width = tab.buttons.get_allocated_width()
         self.assertEqual(x + width + GAP, tab.get_allocated_width())
 
+    def test_rounded_corners(self):
+        # a dark box behind the buttons, with rounded corners
+        style = self.tab.buttons.get_style_context()
+        self.assertTrue(style.has_class("osd"))
+        radius = style.get_property("border-radius", style.get_state())
+        self.assertGreater(radius, 0)
+
     def test_the_buttons_fade_away_from_the_pointer(self):
         self.assertFaded()
         self.pointer("enter-notify-event")

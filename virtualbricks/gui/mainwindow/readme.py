@@ -60,6 +60,8 @@ MARGIN = 12
 GAP = 6
 # The buttons, this opaque while the pointer is elsewhere.
 FADED_OPACITY = 0.3
+# The dark box behind the buttons, with the rounded corners of a button.
+BUTTONS_CSS = b".osd { border-radius: 5px; }"
 # The seconds from an edit to its save.
 SAVE_AFTER = 30
 # The syntax, as the popover shows it: what to write, and what it does.
@@ -161,10 +163,12 @@ class ReadmeTab(Tab, Gtk.Overlay):
             margin=GAP,
         )
         self.buttons = Gtk.Box(visible=True, spacing=GAP)
-        self.buttons.get_style_context().add_class("osd")
+        rounded = Gtk.CssProvider()
+        rounded.load_from_data(BUTTONS_CSS)
+        style = self.buttons.get_style_context()
+        style.add_class("osd")
+        style.add_provider(rounded, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
         self.over_buttons.add(self.buttons)
-        self.switch = Gtk.Box(visible=True)
-        self.switch.get_style_context().add_class("linked")
         self.edit_button = icon_button(
             Gtk.RadioButton(visible=True, draw_indicator=False),
             "document-edit-symbolic",
@@ -177,13 +181,12 @@ class ReadmeTab(Tab, Gtk.Overlay):
             "view-reveal-symbolic",
             _("Preview"),
         )
-        self.switch.pack_start(self.edit_button, False, False, 0)
-        self.switch.pack_start(self.preview_button, False, False, 0)
-        self.buttons.pack_start(self.switch, False, False, 0)
         self.syntax_button = icon_button(
             Gtk.MenuButton(), "dialog-question-symbolic", _("Syntax")
         )
         self.syntax_button.set_popover(_syntax_popover(self.syntax_button))
+        self.buttons.pack_start(self.edit_button, False, False, 0)
+        self.buttons.pack_start(self.preview_button, False, False, 0)
         self.buttons.pack_start(self.syntax_button, False, False, 0)
         self.add_overlay(self.over_buttons)
 
