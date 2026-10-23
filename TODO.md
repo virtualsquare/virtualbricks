@@ -219,12 +219,6 @@
 - [ ] Draw the images in the buffer at the screen's scale: they are
   sharp only at scale 1 (03 §10)
 
-## Docs
-
-- [ ] Write CLAUDE.md: the rules for working on this project
-  (e.g. no re-exports for names only typing or tests use)
-- [ ] Document the project: layout, deployment, running the tests
-
 ## User guide
 
 - [ ] Pictures at scale 2, sharp on high-resolution screens: Xvfb with
