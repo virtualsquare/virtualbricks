@@ -1,3 +1,10 @@
+# The packaging branches, and pipelines run by hand from the web page
+workflow:
+    rules:
+        - if: $CI_COMMIT_BRANCH =~ /^gitlab-ci(-dev)?$/
+        - if: $CI_COMMIT_TAG
+        - if: $CI_PIPELINE_SOURCE == "web"
+
 stages:
     - source
     - build
@@ -7,6 +14,10 @@ variables:
     DEBIAN_FRONTEND: noninteractive
     # the address of Maintainer in debian/control, for the changelog
     DEBEMAIL: Marco Giusti <marco.giusti@posteo.de>
+    # the tool that fetches the secure files into .secure_files/: a release,
+    # checked against the checksum of its binary when it was chosen
+    DOWNLOAD_SECURE_FILES_URL: https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/releases/v0.1.16/downloads/download-secure-files-linux-amd64
+    DOWNLOAD_SECURE_FILES_SHA256: a26f0e3b92f40aa8ab89d2e58d06e4723c8acde6e1a1750bb5cfa30e6737322f
 
 # The upstream tarball, the same for every distribution: the sdist, which
 # has what MANIFEST.in lists and nothing else of the checkout.
@@ -14,8 +25,15 @@ source:
     stage: source
     image: debian:trixie
     script:
+        # the pictures are in Git LFS: a checkout without them has pointers
+        # in their place, which the package would install as pictures
+        - |
+            if grep -rlI --include='*.png' '^version https://git-lfs' .; then
+                echo "pictures of Git LFS missing: pointers in their place"
+                exit 1
+            fi
         - apt-get update
-        - apt-get install -y python3-build python3-setuptools
+        - apt-get install -y --no-install-recommends python3-build python3-setuptools
         - python3 -m build --sdist --no-isolation --outdir sdist .
     artifacts:
         paths:
@@ -26,9 +44,11 @@ source:
     needs: [source]
     before_script:
         - apt-get update
-        # install download-secure-file to be able to access the secure files in .secure_files/
-        - apt-get install -y curl gpg
-        - curl --silent https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
+        - apt-get install -y --no-install-recommends ca-certificates curl gpg gpg-agent
+        - curl -sSfL -o /usr/local/bin/download-secure-files "$DOWNLOAD_SECURE_FILES_URL"
+        - echo "$DOWNLOAD_SECURE_FILES_SHA256  /usr/local/bin/download-secure-files" | sha256sum -c
+        - chmod +x /usr/local/bin/download-secure-files
+        - download-secure-files
         # Import the GnuPG key necessary to sign the changes file.
         - gpg --import .secure_files/public.key
         - gpg --import .secure_files/private.key
@@ -38,14 +58,15 @@ source:
         # changelog
         - |
             export DEB_SIGN_KEYID="$(gpg --list-secret-keys --with-colons | awk -F: '$1 == "fpr" {print $10; exit}')"
-        # install the build dependencies
-        - apt-get install -y build-essential debhelper devscripts dh-python python3-all python3-setuptools pybuild-plugin-pyproject
+        # the build dependencies, those of debian/control
+        - apt-get build-dep -y --no-install-recommends ./
+        - apt-get install -y --no-install-recommends devscripts
         # pyproject.toml needs setuptools 77 or newer, with packaging 24.2 or
         # newer, which Ubuntu 24.04 doesn't have (68.1 and 24.0): there the
         # build takes them from PyPI
         - >-
             python3 -c 'import setuptools, sys; sys.exit(int(setuptools.__version__.split(".")[0]) < 77)'
-            || { apt-get install -y python3-pip && pip3 install --break-system-packages --ignore-installed 'setuptools>=77' 'packaging>=24.2'; }
+            || { apt-get install -y --no-install-recommends python3-pip && pip3 install --break-system-packages --ignore-installed 'setuptools>=77' 'packaging>=24.2'; }
         - export VB_VERSION="$(python3 -c 'import virtualbricks; print(virtualbricks.__version__)')"
         # a pre-release, as 3.0.0.dev8, comes before its release: 3.0.0~dev8
         - export VB_UPSTREAM_VERSION="$(echo "$VB_VERSION" | sed -E 's/\.?(dev|a|b|rc)([0-9]+)$/~\1\2/')"
@@ -126,6 +147,17 @@ source:
         - apt-get install -y --no-install-recommends ./dist/virtualbricks_*_all.deb
         - runuser -u tester -- sh /tmp/package.sh
         - test "${unit:-0}" = 0
+
+# The checks of Debian on the upload of Debian 13: an error or a warning
+# fails the job.
+lintian:
+    stage: test
+    image: debian:trixie
+    needs: [debian-13]
+    script:
+        - apt-get update
+        - apt-get install -y --no-install-recommends lintian
+        - lintian --fail-on error,warning --info dist/*.changes
 
 # Debian 13, trixie
 debian-13:
