@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="migration">
+  <info>
+    <link type="guide" xref="index#reference"/>
+    <title type="sort">6</title>
+    <desc>virtualbricks-migrate(1): convert the files of Virtualbricks 2.1 and older</desc>
+  </info>
+  <title>The migration</title>
+  <links type="section"/>
+  <section id="synopsis">
+    <title>Synopsis</title>
+    <synopsis>
+      <p><code>virtualbricks-migrate</code> [<code>--in-place</code>] [<code>--settings</code> <var>file</var>] [<var>input</var> [<var>output</var>]]</p>
+      <p><code>python -m virtualbricks.migrate</code> [<code>--settings</code> <var>file</var>] [<code>--copy-files</code>] [<code>--dry-run</code>] [<code>-v</code>] <var>input</var> <var>output</var></p>
+      <p><code>python -m virtualbricks.migrate --in-place</code> [<code>--settings</code> <var>file</var>] [<code>--dry-run</code>] [<code>-v</code>]</p>
+    </synopsis>
+  </section>
+  <section id="description">
+    <title>Description</title>
+    <p>Virtualbricks 2.1 and older kept their settings in <var>~/.virtualbricks.conf</var> and each project in a <var>.project</var> file; this version reads the files of <link xref="config-files">virtualbricks-config(5)</link>. The migration converts the old files into the new ones, as Virtualbricks does by itself the first time it starts after an upgrade. The old files are only read; what the conversion does to each setting, brick and event is in the MIGRATION section of <link xref="config-files">virtualbricks-config(5)</link>.</p>
+    <p><code>virtualbricks-migrate</code> opens the window of the migration, filled with what it's given: the old workspace, <var>input</var>, and the folder to write into, <var>output</var>, or with <code>--in-place</code> the files of the user. The window shows what it converted, project by project.</p>
+    <p><code>python -m virtualbricks.migrate</code> does the same without the window, and prints what it converted. Given an old workspace and a new or empty folder, it writes into the folder, laid out like the XDG directories, to try the migration out on copies:</p>
+    <terms>
+      <item>
+        <title><var>output</var>/config/virtualbricks/settings.toml</title>
+        <p>The settings, from the file of <code>--settings</code>.</p>
+      </item>
+      <item>
+        <title><var>output</var>/state/virtualbricks/state.toml</title>
+        <p>The state, with the project that was open last in the file of <code>--settings</code>.</p>
+      </item>
+      <item>
+        <title><var>output</var>/workspace/<var>project</var>/project.toml</title>
+        <p>Each project, with its README if it has one.</p>
+      </item>
+      <item>
+        <title><var>output</var>/migration-report.txt</title>
+        <p>What it converted, as it printed it.</p>
+      </item>
+    </terms>
+    <p>Given <code>--in-place</code>, it migrates the files of the user: the settings and the state go into the XDG directories, and the <code>project.toml</code> of each project next to its <var>.project</var> file, in the workspace that the old settings name.</p>
+  </section>
+  <section id="options">
+    <title>Options</title>
+    <terms>
+      <item>
+        <title><code>--gui</code></title>
+        <p>Open the window of the migration, as <code>virtualbricks-migrate</code> does. <code>--copy-files</code>, <code>--dry-run</code> and <code>--verbose</code> aren't available there.</p>
+      </item>
+      <item>
+        <title><code>--in-place</code></title>
+        <p>Migrate the files of the user, next to the old ones. It takes no folders.</p>
+      </item>
+      <item>
+        <title><code>--settings</code> <var>file</var></title>
+        <p>An old settings file to migrate too. With <code>--in-place</code>, it's <var>~/.virtualbricks.conf</var> if there is one, unless this names another.</p>
+      </item>
+      <item>
+        <title><code>--copy-files</code></title>
+        <p>Copy the disks and the other files of each project into <var>output</var> too; without it, only the converted files and the README are written. It's for a migration into a folder.</p>
+      </item>
+      <item>
+        <title><code>--dry-run</code></title>
+        <p>Convert and check everything, but write nothing.</p>
+      </item>
+      <item>
+        <title><code>-v</code>, <code>--verbose</code></title>
+        <p>Print the informational messages too, beside the warnings and the errors.</p>
+      </item>
+      <item>
+        <title><code>-h</code>, <code>--help</code></title>
+        <p>Print the options, then exit.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="exit-status">
+    <title>Exit status</title>
+    <terms>
+      <item>
+        <title><code>0</code></title>
+        <p>Every project was migrated; warnings are fine. <code>virtualbricks-migrate</code> ends with 0 once its window closes.</p>
+      </item>
+      <item>
+        <title><code>1</code></title>
+        <p>A project failed.</p>
+      </item>
+      <item>
+        <title><code>2</code></title>
+        <p>The arguments are wrong.</p>
+      </item>
+      <item>
+        <title><code>3</code></title>
+        <p>Virtualbricks is running, and the files are to be migrated in place: close it first.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="files">
+    <title>Files</title>
+    <terms>
+      <item>
+        <title><var>~/.virtualbricks.conf</var></title>
+        <p>The settings of Virtualbricks 2.1 and older, which <code>--in-place</code> migrates.</p>
+      </item>
+      <item>
+        <title><var>workspace</var>/<var>project</var>/.project</title>
+        <p>A project of Virtualbricks 2.1 and older.</p>
+      </item>
+      <item>
+        <title><var>$XDG_STATE_HOME</var>/virtualbricks/migration-report.txt</title>
+        <p>What the migration in place converted.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="examples">
+    <title>Examples</title>
+    <p>Try the migration on copies, then read what it did:</p>
+    <screen>python -m virtualbricks.migrate \
+    --settings ~/.virtualbricks.conf ~/vb-copy /tmp/vb-test
+less /tmp/vb-test/migration-report.txt</screen>
+    <p>Check the files of the user, then migrate them:</p>
+    <screen>python -m virtualbricks.migrate --in-place --dry-run
+python -m virtualbricks.migrate --in-place</screen>
+  </section>
+  <section id="see-also">
+    <title>See also</title>
+    <p><link xref="command-line">virtualbricks(1)</link>, <link xref="config-files">virtualbricks-config(5)</link></p>
+  </section>
+</page>

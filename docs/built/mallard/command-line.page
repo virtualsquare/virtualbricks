@@ -732,6 +732,6 @@ virtualbricks --workspace ~/labs/b --command status</screen>
   </section>
   <section id="see-also">
     <title>See also</title>
-    <p><link xref="config-files">virtualbricks-config(5)</link>, <link xref="vbp-format">virtualbricks-vbp(5)</link>, <link xref="archive-protocol">virtualbricks-archive(7)</link>, <link xref="control-protocols">virtualbricks-control(7)</link>, <code>qemu</code>(1), <code>vde_switch</code>(1), <code>openssl</code>(1)</p>
+    <p><link xref="config-files">virtualbricks-config(5)</link>, <link xref="vbp-format">virtualbricks-vbp(5)</link>, <link xref="archive-protocol">virtualbricks-archive(7)</link>, <link xref="control-protocols">virtualbricks-control(7)</link>, <link xref="migration">virtualbricks-migrate(1)</link>, <code>qemu</code>(1), <code>vde_switch</code>(1), <code>openssl</code>(1)</p>
   </section>
 </page>

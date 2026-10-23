@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The migration — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page reference">
+<nav class="toc" aria-label="Contents">
+<p class="toc-label">Contents</p>
+<ol>
+<li><a href="#synopsis">Synopsis</a></li>
+<li><a href="#description">Description</a></li>
+<li><a href="#options">Options</a></li>
+<li><a href="#exit-status">Exit status</a></li>
+<li><a href="#files">Files</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#see-also">See also</a></li>
+</ol>
+</nav>
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#reference">Reference</a></p>
+</div>
+<h1>The migration</h1>
+<div class="lede">
+<p>convert the files of Virtualbricks 2.1 and older</p>
+</div>
+<div class="meta">
+<p>virtualbricks-migrate(1) · Virtualbricks 3.0.0.dev8</p>
+</div>
+<h2 id="synopsis">Synopsis</h2>
+<div class="synopsis">
+<p><code>virtualbricks-migrate</code> [<code>--in-place</code>]
+[<code>--settings</code> <em>file</em>] [<em>input</em>
+[<em>output</em>]]</p>
+<p><code>python -m virtualbricks.migrate</code> [<code>--settings</code>
+<em>file</em>] [<code>--copy-files</code>] [<code>--dry-run</code>]
+[<code>-v</code>] <em>input</em> <em>output</em></p>
+<p><code>python -m virtualbricks.migrate --in-place</code>
+[<code>--settings</code> <em>file</em>] [<code>--dry-run</code>]
+[<code>-v</code>]</p>
+</div>
+<h2 id="description">Description</h2>
+<p>Virtualbricks 2.1 and older kept their settings in
+<em>~/.virtualbricks.conf</em> and each project in a <em>.project</em>
+file; this version reads the files of <a
+href="config-files.html">virtualbricks-config(5)</a>. The migration
+converts the old files into the new ones, as Virtualbricks does by
+itself the first time it starts after an upgrade. The old files are only
+read; what the conversion does to each setting, brick and event is in
+the MIGRATION section of <a
+href="config-files.html">virtualbricks-config(5)</a>.</p>
+<p><code>virtualbricks-migrate</code> opens the window of the migration,
+filled with what it's given: the old workspace, <em>input</em>, and the
+folder to write into, <em>output</em>, or with <code>--in-place</code>
+the files of the user. The window shows what it converted, project by
+project.</p>
+<p><code>python -m virtualbricks.migrate</code> does the same without
+the window, and prints what it converted. Given an old workspace and a
+new or empty folder, it writes into the folder, laid out like the XDG
+directories, to try the migration out on copies:</p>
+<dl>
+<dt><em>output</em>/config/virtualbricks/settings.toml</dt>
+<dd>
+The settings, from the file of <code>--settings</code>.
+</dd>
+<dt><em>output</em>/state/virtualbricks/state.toml</dt>
+<dd>
+The state, with the project that was open last in the file of
+<code>--settings</code>.
+</dd>
+<dt><em>output</em>/workspace/<em>project</em>/project.toml</dt>
+<dd>
+Each project, with its README if it has one.
+</dd>
+<dt><em>output</em>/migration-report.txt</dt>
+<dd>
+What it converted, as it printed it.
+</dd>
+</dl>
+<p>Given <code>--in-place</code>, it migrates the files of the user: the
+settings and the state go into the XDG directories, and the
+<code>project.toml</code> of each project next to its <em>.project</em>
+file, in the workspace that the old settings name.</p>
+<h2 id="options">Options</h2>
+<dl>
+<dt><code>--gui</code></dt>
+<dd>
+Open the window of the migration, as <code>virtualbricks-migrate</code>
+does. <code>--copy-files</code>, <code>--dry-run</code> and
+<code>--verbose</code> aren't available there.
+</dd>
+<dt><code>--in-place</code></dt>
+<dd>
+Migrate the files of the user, next to the old ones. It takes no
+folders.
+</dd>
+<dt><code>--settings</code> <em>file</em></dt>
+<dd>
+An old settings file to migrate too. With <code>--in-place</code>, it's
+<em>~/.virtualbricks.conf</em> if there is one, unless this names
+another.
+</dd>
+<dt><code>--copy-files</code></dt>
+<dd>
+Copy the disks and the other files of each project into <em>output</em>
+too; without it, only the converted files and the README are written.
+It's for a migration into a folder.
+</dd>
+<dt><code>--dry-run</code></dt>
+<dd>
+Convert and check everything, but write nothing.
+</dd>
+<dt><code>-v</code>, <code>--verbose</code></dt>
+<dd>
+Print the informational messages too, beside the warnings and the
+errors.
+</dd>
+<dt><code>-h</code>, <code>--help</code></dt>
+<dd>
+Print the options, then exit.
+</dd>
+</dl>
+<h2 id="exit-status">Exit status</h2>
+<dl>
+<dt><code>0</code></dt>
+<dd>
+Every project was migrated; warnings are fine.
+<code>virtualbricks-migrate</code> ends with 0 once its window closes.
+</dd>
+<dt><code>1</code></dt>
+<dd>
+A project failed.
+</dd>
+<dt><code>2</code></dt>
+<dd>
+The arguments are wrong.
+</dd>
+<dt><code>3</code></dt>
+<dd>
+Virtualbricks is running, and the files are to be migrated in place:
+close it first.
+</dd>
+</dl>
+<h2 id="files">Files</h2>
+<dl>
+<dt><em>~/.virtualbricks.conf</em></dt>
+<dd>
+The settings of Virtualbricks 2.1 and older, which
+<code>--in-place</code> migrates.
+</dd>
+<dt><em>workspace</em>/<em>project</em>/.project</dt>
+<dd>
+A project of Virtualbricks 2.1 and older.
+</dd>
+<dt><em>$XDG_STATE_HOME</em>/virtualbricks/migration-report.txt</dt>
+<dd>
+What the migration in place converted.
+</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<p>Try the migration on copies, then read what it did:</p>
+<pre><code>python -m virtualbricks.migrate \
+    --settings ~/.virtualbricks.conf ~/vb-copy /tmp/vb-test
+less /tmp/vb-test/migration-report.txt</code></pre>
+<p>Check the files of the user, then migrate them:</p>
+<pre><code>python -m virtualbricks.migrate --in-place --dry-run
+python -m virtualbricks.migrate --in-place</code></pre>
+<h2 id="see-also">See also</h2>
+<p><a href="command-line.html">virtualbricks(1)</a>, <a
+href="config-files.html">virtualbricks-config(5)</a></p>
+</main>
+</div>
+</body>
+</html>

@@ -839,16 +839,16 @@ The same conversion can be tried on copies, into a new folder laid out like
 the XDG directories:
 
 ```
-python -m virtualbricks.migrate --settings ~/.virtualbricks.conf \
-    ~/vb-copy /tmp/vb-test
+python -m virtualbricks.migrate \
+    --settings ~/.virtualbricks.conf ~/vb-copy /tmp/vb-test
 ```
 
 Started with **--workspace**, Virtualbricks converts the projects of
 that directory in the same way.
 
-**virtualbricks-migrate** opens the same conversion in a window, and
-**python -m virtualbricks.migrate --help** lists every option. An archive of
-an old project is converted when it's imported.
+**virtualbricks-migrate**(1) opens the same conversion in a window, and
+has every option of **python -m virtualbricks.migrate**. An archive of an
+old project is converted when it's imported.
 
 # FILES
 
@@ -1105,10 +1105,10 @@ are stored but not applied: the interface gets no address from Virtualbricks.
 
 # SEE ALSO
 
-**virtualbricks**(1), **virtualbricks-vbp**(5), **virtualbricks-archive**(7),
-**qemu**(1), **vde_switch**(1), **vde_plug2tap**(1), **vde_cryptcab**(1),
-**dpipe**(1), **sudo**(8), **sudoers**(5), **sudo.conf**(5),
-**tmpfiles.d**(5)
+**virtualbricks**(1), **virtualbricks-migrate**(1), **virtualbricks-vbp**(5),
+**virtualbricks-archive**(7), **qemu**(1), **vde_switch**(1),
+**vde_plug2tap**(1), **vde_cryptcab**(1), **dpipe**(1), **sudo**(8),
+**sudoers**(5), **sudo.conf**(5), **tmpfiles.d**(5)
 
 TOML 1.0: <https://toml.io/en/v1.0.0>
 
