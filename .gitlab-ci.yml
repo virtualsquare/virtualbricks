@@ -16,9 +16,17 @@ variables:
         - gpg --import .secure_files/public.key
         - gpg --import .secure_files/private.key
         # install the build dependencies
-        - apt-get install -y build-essential debhelper devscripts dh-python python3-all python3-setuptools imagemagick
-        - export VB_VERSION="$(python3 setup.py -V)"
-        - export "VB_DEB_VERSION=${VB_VERSION}-0~${DISTRIBUTION}1"
+        - apt-get install -y build-essential debhelper devscripts dh-python python3-all python3-setuptools pybuild-plugin-pyproject
+        # pyproject.toml needs setuptools 77 or newer, with packaging 24.2 or
+        # newer, which Ubuntu 24.04 doesn't have (68.1 and 24.0): there the
+        # build takes them from PyPI
+        - >-
+            python3 -c 'import setuptools, sys; sys.exit(int(setuptools.__version__.split(".")[0]) < 77)'
+            || { apt-get install -y python3-pip && pip3 install --break-system-packages --ignore-installed 'setuptools>=77' 'packaging>=24.2'; }
+        - export VB_VERSION="$(python3 -c 'import virtualbricks; print(virtualbricks.__version__)')"
+        # a pre-release, as 3.0.0.dev8, comes before its release: 3.0.0~dev8
+        - export VB_UPSTREAM_VERSION="$(echo "$VB_VERSION" | sed -E 's/\.?(dev|a|b|rc)([0-9]+)$/~\1\2/')"
+        - export "VB_DEB_VERSION=${VB_UPSTREAM_VERSION}-0~${DISTRIBUTION}1"
         - mkdir dist
         - cp -R . ../virtualbricks-"$VB_VERSION"
         - cd ../virtualbricks-"$VB_VERSION"
@@ -30,13 +38,6 @@ variables:
     artifacts:
         paths:
             - dist/*
-
-# Debian 12, bookworm
-debian-12:
-    <<: *build-deb
-    image: debian:bookworm
-    variables:
-      DISTRIBUTION: bookworm
 
 # Debian 13, trixie
 debian-13:
@@ -59,20 +60,6 @@ debian-sid:
     variables:
       DISTRIBUTION: sid
 
-# Ubuntu 20.04 LTS, focal
-ubuntu-20.04:
-    <<: *build-deb
-    image: ubuntu:focal
-    variables:
-      DISTRIBUTION: focal
-
-# Ubuntu 22.04 LTS, jammy
-ubuntu-22.04:
-    <<: *build-deb
-    image: ubuntu:jammy
-    variables:
-      DISTRIBUTION: jammy
-
 # Ubuntu 24.04 LTS, noble
 ubuntu-24.04:
     <<: *build-deb
@@ -80,7 +67,7 @@ ubuntu-24.04:
     variables:
       DISTRIBUTION: noble
 
-# Ubuntu 26.04, questing
+# Ubuntu 26.04, resolute
 ubuntu-26.04:
     <<: *build-deb
     image: ubuntu:resolute
