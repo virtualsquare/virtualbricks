@@ -177,6 +177,13 @@ verbs, the names of the bricks, events, images and projects, the kinds of
 brick, the keys, and the values of a key that has a few. The prompt is the
 name of the open project.
 
+The console starts with the icon of Virtualbricks drawn in characters and,
+beside it, the version, the open project with how many bricks, events and
+disk images it has, the workspace, the QEMU emulators found, the programs
+that are missing, unless the settings say not to warn about them, and the
+control sockets of **--listen**. A terminal too narrow for the icon has the
+rest alone.
+
 Up and Down
 :   Go through the history, which is kept between runs.
 

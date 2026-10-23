@@ -368,6 +368,13 @@ class TestProject(AppTestCase):
             self.assertIn("sw1", fp.read())
 
 
+class FakeControl:
+    """What listen() returns: the socket it listens on."""
+
+    def __init__(self, socket):
+        self.socket = socket
+
+
 class TestListen(AppTestCase):
 
     def setUp(self):
@@ -395,6 +402,21 @@ class TestListen(AppTestCase):
             self.listened,
             [("factory", socket, "reactor") for socket in given],
         )
+
+    def test_the_sockets_listened_on(self):
+        # those the console's banner names: not one that another answers
+        given = (
+            sockets.Socket("/srv/lab.sock"),
+            sockets.Socket("/srv/lab2.sock"),
+        )
+        listened = sockets.Socket("/srv/lab.sock", protocol=sockets.JSON)
+        controls = {given[0]: FakeControl(listened), given[1]: None}
+        self.patch(
+            app, "listen", lambda factory, socket, reactor: controls[socket]
+        )
+        application = self.application(listen=given)
+        application.start_listening("factory", "reactor")
+        self.assertEqual(application.listening, [listened])
 
 
 class TestTimers(AppTestCase):
@@ -483,7 +505,13 @@ class TestTheConsole(AppTestCase):
         self.patch(
             app,
             "start",
-            lambda factory, namespace: started.append((factory, namespace)),
+            lambda factory, namespace, listening: started.append(
+                (factory, namespace, listening)
+            ),
         )
-        self.application().start_console(self.factory)
-        self.assertEqual(started, [(self.factory, {})])
+        application = self.application()
+        application.listening = [sockets.Socket("/srv/lab.sock")]
+        application.start_console(self.factory)
+        self.assertEqual(
+            started, [(self.factory, {}, [sockets.Socket("/srv/lab.sock")])]
+        )

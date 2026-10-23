@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 22:19+0200\n"
+"POT-Creation-Date: 2026-10-23 08:39+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1205,7 +1205,7 @@ msgstr ""
 msgid "How the picture of the lab draws the links"
 msgstr ""
 
-#: virtualbricks/config/settings.py
+#: virtualbricks/config/settings.py virtualbricks/console/banner.py
 msgid "Workspace"
 msgstr ""
 
@@ -1307,6 +1307,70 @@ msgstr ""
 msgid ""
 "The name leaves {room} bytes to the names of the bricks, and the longest has "
 "{longest}"
+msgstr ""
+
+#: virtualbricks/console/banner.py
+#, fuzzy, python-brace-format
+msgid "{names} and {count} more"
+msgstr "Apri console di controllo"
+
+#: virtualbricks/console/banner.py
+#, fuzzy, python-brace-format
+msgid "{count} brick"
+msgid_plural "{count} bricks"
+msgstr[0] "_Importa Mattoni"
+msgstr[1] "_Importa Mattoni"
+
+#: virtualbricks/console/banner.py
+#, fuzzy, python-brace-format
+msgid "{count} event"
+msgid_plural "{count} events"
+msgstr[0] "Eventi"
+msgstr[1] "Eventi"
+
+#: virtualbricks/console/banner.py
+#, fuzzy, python-brace-format
+msgid "{count} disk image"
+msgid_plural "{count} disk images"
+msgstr[0] "Virtualbricks: azione in corso"
+msgstr[1] "Virtualbricks: azione in corso"
+
+#: virtualbricks/console/banner.py
+#, python-brace-format
+msgid "{name}: {bricks}, {events}, {images}"
+msgstr ""
+
+#: virtualbricks/console/banner.py virtualbricks/gui/dialogs/settings.py
+#: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "Project"
+msgstr "Nome Evento:"
+
+#: virtualbricks/console/banner.py
+msgid "QEMU"
+msgstr ""
+
+#: virtualbricks/console/banner.py
+msgid "Missing"
+msgstr ""
+
+#: virtualbricks/console/banner.py
+#, fuzzy
+msgid "Listening"
+msgstr "in ascolto su udp:"
+
+#: virtualbricks/console/banner.py
+#, fuzzy, python-brace-format
+msgid "{protocol} on {socket}"
+msgstr "Macchina Virtuale"
+
+#: virtualbricks/console/banner.py
+#, fuzzy, python-brace-format
+msgid "Virtualbricks {version}"
+msgstr "Impostazioni Virtualbricks"
+
+#: virtualbricks/console/banner.py
+msgid "Type help, or press Tab to complete."
 msgstr ""
 
 #: virtualbricks/console/bricks.py virtualbricks/remote/tunnel.py
@@ -2320,11 +2384,6 @@ msgstr ""
 
 #: virtualbricks/console/settings.py
 msgid "Put settings back to their defaults"
-msgstr ""
-
-#: virtualbricks/console/terminal.py
-#, python-brace-format
-msgid "Virtualbricks {version}. Type help, or press Tab to complete."
 msgstr ""
 
 #: virtualbricks/console/terminal.py
@@ -3620,12 +3679,6 @@ msgstr ""
 #: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/messages.py
 msgid "Windows"
 msgstr ""
-
-#: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/messages.py
-#: virtualbricks/migrate/gui.py
-#, fuzzy
-msgid "Project"
-msgstr "Nome Evento:"
 
 #: virtualbricks/gui/dialogs/settings.py
 msgid ""
@@ -5535,9 +5588,6 @@ msgstr ""
 #~ msgid ", connecting to udp://"
 #~ msgstr ", connessione a udp://"
 
-#~ msgid "listening to udp:"
-#~ msgstr "in ascolto su udp:"
-
 #, fuzzy, python-brace-format
 #~ msgid "Configured to connect {0} to {1}"
 #~ msgstr "Configurato per connettere"
@@ -5874,10 +5924,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Path"
 #~ msgstr "Percorso:"
-
-#, fuzzy
-#~ msgid "Configure disk image"
-#~ msgstr "Virtualbricks: azione in corso"
 
 #, fuzzy
 #~ msgid "Image name"

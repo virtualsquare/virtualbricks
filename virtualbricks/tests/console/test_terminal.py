@@ -28,9 +28,10 @@ from twisted.internet.testing import StringTransport
 from twisted.python.failure import Failure
 from twisted.trial import unittest
 
-from virtualbricks import __version__
+from virtualbricks import __version__, sockets
 from virtualbricks.console import command as command_module
 from virtualbricks.console import terminal
+from virtualbricks.console.banner import LOGO
 from virtualbricks.console.command import CommandError, command
 from virtualbricks.console.lineedit import CTRL_D
 from virtualbricks.console.terminal import (
@@ -40,6 +41,7 @@ from virtualbricks.console.terminal import (
     Switcher,
     history_file,
 )
+from virtualbricks.sockets import Socket
 from virtualbricks.tests import use_workspace
 from virtualbricks.tests.console import ConsoleTestCase
 
@@ -83,18 +85,17 @@ class TestTheLine(TerminalTestCase):
 
     def test_a_command_and_its_answer(self):
         console = self.console()
-        self.assertEqual(
-            self.shown(),
-            [
-                f"Virtualbricks {__version__}. Type help, or press Tab to"
-                " complete.",
-                "virtualbricks>",
-            ],
+        banner = self.shown()[:-1]
+        # the banner, then the prompt
+        self.assertIn(f"Virtualbricks {__version__}", banner[0])
+        self.assertIn(
+            "Type help, or press Tab to complete.", "\n".join(banner)
         )
+        self.assertEqual(self.shown()[-1], "virtualbricks>")
         self.enter(console, "brick new switch")
         self.enter(console, "nope")
         self.assertEqual(
-            self.shown()[1:],
+            self.shown()[len(banner) :],
             [
                 "virtualbricks> brick new switch",
                 "sw1",
@@ -291,6 +292,28 @@ class TestSwitcher(TerminalTestCase):
         transport.clear()
         server.dataReceived(b"brick new switch\r")
         self.assertIn(b"sw1", transport.value())
+
+    def banner(self, columns, listening=()):
+        """What the console starts with, in a terminal columns wide."""
+
+        server = insults.ServerProtocol(
+            Switcher, self.factory, {}, self.clock(), listening
+        )
+        # as start() reads it
+        server.termSize = insults.Vector(columns, 24)
+        transport = StringTransport()
+        server.makeConnection(transport)
+        return transport.value().decode()
+
+    def test_the_banner_fits_the_terminal(self):
+        self.assertIn(LOGO[0] + "    Virtualbricks", self.banner(100))
+        shown = self.banner(50)
+        self.assertNotIn(LOGO[0], shown)
+        self.assertIn(f"Virtualbricks {__version__}", shown)
+
+    def test_the_banner_names_the_sockets(self):
+        listening = [Socket("/srv/lab.sock", protocol=sockets.JSON)]
+        self.assertIn("json on /srv/lab.sock", self.banner(100, listening))
 
     def test_close(self):
         server = insults.ServerProtocol(

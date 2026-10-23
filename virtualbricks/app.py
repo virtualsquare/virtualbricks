@@ -19,7 +19,7 @@ from twisted.logger import (
 from twisted.python import logfile, reflect
 from twisted.python.failure import Failure
 
-from virtualbricks import cli, locks
+from virtualbricks import cli, locks, sockets
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.bricks.switchwrapper import look_all
 from virtualbricks.config.settings import (
@@ -92,6 +92,8 @@ class Application:
         # what ends the run: quit() of the factory, or the windows of
         # --connect closing (page 31)
         self.done: defer.Deferred[None] = defer.Deferred()
+        # the control sockets that start_listening() listens on
+        self.listening: list[sockets.Socket] = []
 
     def get_log_observers(self) -> list[ILogObserver]:
         observers = []
@@ -181,7 +183,9 @@ class Application:
         """Answer on the control sockets of --listen; on none without it."""
 
         for socket in self.options.listen:
-            listen(factory, socket, reactor)
+            control = listen(factory, socket, reactor)
+            if control is not None:
+                self.listening.append(control.socket)
 
     def install_autosave_timer(
         self, factory: BrickFactory, interval: float = 180
@@ -226,7 +230,7 @@ class Application:
     def start_console(self, factory: BrickFactory) -> None:
         """Read the console in the terminal that started Virtualbricks."""
 
-        start(factory, self.get_console_namespace())
+        start(factory, self.get_console_namespace(), listening=self.listening)
 
     def install_sys_hooks(self) -> None:
 

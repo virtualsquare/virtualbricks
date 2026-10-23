@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 22:19+0200\n"
+"POT-Creation-Date: 2026-10-23 08:39+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1145,7 +1145,7 @@ msgstr ""
 msgid "How the picture of the lab draws the links"
 msgstr ""
 
-#: virtualbricks/config/settings.py
+#: virtualbricks/config/settings.py virtualbricks/console/banner.py
 msgid "Workspace"
 msgstr ""
 
@@ -1244,6 +1244,68 @@ msgstr ""
 msgid ""
 "The name leaves {room} bytes to the names of the bricks, and the longest has "
 "{longest}"
+msgstr ""
+
+#: virtualbricks/console/banner.py
+#, python-brace-format
+msgid "{names} and {count} more"
+msgstr ""
+
+#: virtualbricks/console/banner.py
+#, python-brace-format
+msgid "{count} brick"
+msgid_plural "{count} bricks"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/console/banner.py
+#, python-brace-format
+msgid "{count} event"
+msgid_plural "{count} events"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/console/banner.py
+#, python-brace-format
+msgid "{count} disk image"
+msgid_plural "{count} disk images"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/console/banner.py
+#, python-brace-format
+msgid "{name}: {bricks}, {events}, {images}"
+msgstr ""
+
+#: virtualbricks/console/banner.py virtualbricks/gui/dialogs/settings.py
+#: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
+msgid "Project"
+msgstr ""
+
+#: virtualbricks/console/banner.py
+msgid "QEMU"
+msgstr ""
+
+#: virtualbricks/console/banner.py
+msgid "Missing"
+msgstr ""
+
+#: virtualbricks/console/banner.py
+msgid "Listening"
+msgstr ""
+
+#: virtualbricks/console/banner.py
+#, python-brace-format
+msgid "{protocol} on {socket}"
+msgstr ""
+
+#: virtualbricks/console/banner.py
+#, python-brace-format
+msgid "Virtualbricks {version}"
+msgstr ""
+
+#: virtualbricks/console/banner.py
+msgid "Type help, or press Tab to complete."
 msgstr ""
 
 #: virtualbricks/console/bricks.py virtualbricks/remote/tunnel.py
@@ -2235,11 +2297,6 @@ msgstr ""
 
 #: virtualbricks/console/settings.py
 msgid "Put settings back to their defaults"
-msgstr ""
-
-#: virtualbricks/console/terminal.py
-#, python-brace-format
-msgid "Virtualbricks {version}. Type help, or press Tab to complete."
 msgstr ""
 
 #: virtualbricks/console/terminal.py
@@ -3475,11 +3532,6 @@ msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/messages.py
 msgid "Windows"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/messages.py
-#: virtualbricks/migrate/gui.py
-msgid "Project"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
