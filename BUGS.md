@@ -46,7 +46,8 @@ in 3.0: they wait until after it.
   `virtualbricks/tests/gui/test_markdownview.py` failed in containers of
   Ubuntu 26.04 and Debian testing with their packages
   (`tools/targetsuite.py`), and passed in those of Ubuntu 24.04 and Debian
-  13. A large picture in the Readme tab wasn't tried.
+  13. A large picture in the Readme tab wasn't tried. Still so on
+  3.0.0.dev8, on 23 October 2026, on Debian forky and sid too.
 
 ## Remote windows
 
@@ -128,3 +129,39 @@ in 3.0: they wait until after it.
   writes only the keys that changed, which may need a design page; with
   it, the write at quit of the windows of `--connect`, under Remote
   windows.
+
+## Tests
+
+- [ ] **`TestFindLocaledir.test_installed` fails where Virtualbricks is
+  installed under `/usr`.** The test (`virtualbricks/tests/test_i18n.py`)
+  points `SOURCE_LOCALEDIR` and `sys.prefix` at empty folders and expects
+  `find_localedir()` (`virtualbricks/i18n.py`) to find no catalog; but
+  `find_localedir()` looks under `site.getuserbase()` and `sys.base_prefix`
+  too, and the catalogs of an installed Virtualbricks are there:
+  `'/usr/share/locale' is not None`. Seen on 3.0.0.dev8, on 23 October 2026,
+  in containers of Debian 13 and forky with the Debian package of the
+  `gitlab-ci-dev` branch installed; those of Ubuntu, whose images leave
+  out `/usr/share/locale`, passed. By the code, a `pip install --user`
+  fails it the same way, through the user base. Without the package the
+  test passes, and the test jobs of `.gitlab-ci.yml` run the unit tests
+  before they install it.
+
+- [ ] **`TestPictures.test_as_wide_as_the_view` failed once on Debian
+  testing.** In `virtualbricks/tests/gui/test_markdownview.py`, the
+  picture in a list came 368 pixels wide where the test expects 356, the
+  width of the view less its margins and `INDENT`: `368 != 356`. Seen on
+  3.0.0.dev8, on 23 October 2026, in one run of `tools/targetsuite.py`
+  (Debian testing: GTK 3.24.52, PyGObject 3.58.1), with the containers of
+  the other three distributions running beside it; the next runs, on sid
+  and forky, passed. The test reads the width of the view once, after the
+  first `show()`. Not looked into further.
+
+- [ ] **`TestExport.test_the_formats` found two choosers once.** `chooser()`
+  in `virtualbricks/tests/gui/mainwindow/test_topology.py` activates
+  Export as Image and expects one `Gtk.FileChooserDialog` among the
+  toplevels; once it found two: `ValueError: too many values to unpack
+  (expected 1, got 2)`. Seen on 3.0.0.dev8, on 23 October 2026, in a
+  container of Ubuntu 26.04 (`trial -j4` under xvfb, the test job of
+  `.gitlab-ci.yml` on `gitlab-ci-dev`), with four other containers running
+  beside it; the run of `tools/targetsuite.py` on Ubuntu 26.04 that day
+  passed. Where the second chooser came from wasn't looked into.
