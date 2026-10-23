@@ -1411,14 +1411,14 @@ as <code>sw1 config numports=16</code> becomes <code>brick set sw1
 ports=16</code>. The old files are left as they were.</p>
 <p>The same conversion can be tried on copies, into a new folder laid
 out like the XDG directories:</p>
-<pre><code>python -m virtualbricks.migrate --settings ~/.virtualbricks.conf \
-    ~/vb-copy /tmp/vb-test</code></pre>
+<pre><code>python -m virtualbricks.migrate \
+    --settings ~/.virtualbricks.conf ~/vb-copy /tmp/vb-test</code></pre>
 <p>Started with <code>--workspace</code>, Virtualbricks converts the
 projects of that directory in the same way.</p>
-<p><code>virtualbricks-migrate</code> opens the same conversion in a
-window, and <code>python -m virtualbricks.migrate --help</code> lists
-every option. An archive of an old project is converted when it's
-imported.</p>
+<p><a href="migration.html">virtualbricks-migrate(1)</a> opens the same
+conversion in a window, and has every option of <code>python -m
+virtualbricks.migrate</code>. An archive of an old project is converted
+when it's imported.</p>
 <h2 id="files">Files</h2>
 <dl>
 <dt><em>$XDG_CONFIG_HOME</em>/virtualbricks/settings.toml</dt>
@@ -1684,6 +1684,7 @@ loss_symmetric = true</code></pre>
 not applied: the interface gets no address from Virtualbricks.</p>
 <h2 id="see-also">See also</h2>
 <p><a href="command-line.html">virtualbricks(1)</a>, <a
+href="migration.html">virtualbricks-migrate(1)</a>, <a
 href="vbp-format.html">virtualbricks-vbp(5)</a>, <a
 href="archive-protocol.html">virtualbricks-archive(7)</a>,
 <code>qemu</code>(1), <code>vde_switch</code>(1),
