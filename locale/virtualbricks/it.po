@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 08:59+0200\n"
+"POT-Creation-Date: 2026-10-23 21:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -5066,11 +5066,6 @@ msgid "Toggle window"
 msgstr "Attiva finestra"
 
 #: virtualbricks/gui/mainwindow/window.py
-#, fuzzy
-msgid "Virtualbricks visible"
-msgstr "Virtualbricks"
-
-#: virtualbricks/gui/mainwindow/window.py
 #, fuzzy, python-brace-format
 msgid "Virtualbricks (project: {0})"
 msgstr "Lista Mattoni di Virtualbricks"
@@ -5083,6 +5078,11 @@ msgstr "Lista Mattoni di Virtualbricks"
 #: virtualbricks/gui/mainwindow/window.py
 #, fuzzy
 msgid "Virtualbricks hidden"
+msgstr "Virtualbricks"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "Virtualbricks visible"
 msgstr "Virtualbricks"
 
 #: virtualbricks/gui/messages.py

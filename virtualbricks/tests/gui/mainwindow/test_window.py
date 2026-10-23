@@ -346,8 +346,30 @@ class TestTrayIcon(GuiTestCase):
     def test_none_at_start(self):
         set_setting("tray_icon", False)
         gui = self.main_window()
-        self.assertFalse(gui.status_icon.get_visible())
+        # not even a hidden one: GTK 3 would show it as it makes it
+        self.assertIsNone(gui.status_icon)
         self.assertIn(gui.window, self.visible)
+
+    def test_made_when_wanted(self):
+        set_setting("tray_icon", False)
+        gui = self.main_window()
+        set_setting("tray_icon", True)
+        self.assertTrue(gui.status_icon.get_visible())
+        self.assertEqual(
+            gui.status_icon.get_tooltip_text(), "Virtualbricks visible"
+        )
+        # and hidden again, not made again
+        status_icon = gui.status_icon
+        set_setting("tray_icon", False)
+        self.assertIs(gui.status_icon, status_icon)
+        self.assertFalse(status_icon.get_visible())
+
+    def test_no_icon_no_tooltip(self):
+        set_setting("tray_icon", False)
+        gui = self.main_window()
+        gui.window_toggle()
+        gui.window_toggle()
+        self.assertIsNone(gui.status_icon)
 
     def test_follows_the_setting(self):
         gui = self.main_window()

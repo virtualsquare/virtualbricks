@@ -321,18 +321,9 @@ class MainWindow(Window):
         )
         self.systray_menu.append(systray_close_item)
 
-        # status_icon (Gtk.StatusIcon)
-        self.status_icon = Gtk.StatusIcon(
-            # until its setting says otherwise
-            visible=False,
-            has_tooltip=True,
-            tooltip_text=_("Virtualbricks visible"),
-        )
-        # GTK 3 has a tray only on X11: elsewhere the icon has no image to
-        # show its picture in, and a picture prints a GTK critical
-        if isinstance(self.window.get_display(), GdkX11.X11Display):
-            # Glade image "virtualbricks.png" (virtualbricks/gui/data)
-            self.status_icon.set_from_pixbuf(load_pixbuf("virtualbricks.png"))
+        # status_icon (Gtk.StatusIcon): made the first time its setting
+        # shows it, see make_status_icon()
+        self.status_icon: Gtk.StatusIcon | None = None
 
         # Need the complete widget tree:
         # accelerators.
@@ -425,8 +416,6 @@ class MainWindow(Window):
             self.on_systray_toggle_item_activate,
         )
         systray_close_item.connect("activate", self.do_quit)
-        self.status_icon.connect("activate", self.on_status_icon_activate)
-        self.status_icon.connect("popup-menu", self.on_status_icon_popup_menu)
 
     def append_tab(self, tab: Tab) -> None:
         assert isinstance(tab, Gtk.Widget), "a tab is the widget of its page"
@@ -566,7 +555,7 @@ class MainWindow(Window):
         # don't delete; hide instead
         if get_setting("tray_icon"):
             window.hide()
-            self.status_icon.set_tooltip_text(_("Virtualbricks hidden"))
+            self.set_tray_tooltip(_("Virtualbricks hidden"))
             return True
         return False
 
@@ -575,7 +564,35 @@ class MainWindow(Window):
     def set_tray_icon(self) -> None:
         """Show the tray icon, or hide it, as its setting says."""
 
-        self.status_icon.set_visible(bool(get_setting("tray_icon")))
+        visible = bool(get_setting("tray_icon"))
+        if self.status_icon is not None:
+            self.status_icon.set_visible(visible)
+        elif visible:
+            self.status_icon = self.make_status_icon()
+
+    def make_status_icon(self) -> Gtk.StatusIcon:
+        """The tray icon, shown as GTK makes it."""
+
+        # GTK 3 shows a tray icon as it makes it, before visible=False hides
+        # it: one hidden at once prints a GDK critical when it shows again
+        status_icon = Gtk.StatusIcon(
+            has_tooltip=True,
+            tooltip_text=_("Virtualbricks visible"),
+        )
+        # GTK 3 has a tray only on X11: elsewhere the icon has no image to
+        # show its picture in, and a picture prints a GTK critical
+        if isinstance(self.window.get_display(), GdkX11.X11Display):
+            # Glade image "virtualbricks.png" (virtualbricks/gui/data)
+            status_icon.set_from_pixbuf(load_pixbuf("virtualbricks.png"))
+        status_icon.connect("activate", self.on_status_icon_activate)
+        status_icon.connect("popup-menu", self.on_status_icon_popup_menu)
+        return status_icon
+
+    def set_tray_tooltip(self, text: str) -> None:
+        """Say on the tray icon, if there is one, whether the window shows."""
+
+        if self.status_icon is not None:
+            self.status_icon.set_tooltip_text(text)
 
     def on_setting_changed(self, name: str) -> None:
         """A setting changed: in the Settings window, in the console."""
@@ -583,7 +600,8 @@ class MainWindow(Window):
         if name != "tray_icon":
             return
         self.set_tray_icon()
-        if self.status_icon.get_visible() or self.window.get_visible():
+        tray = self.status_icon is not None and self.status_icon.get_visible()
+        if tray or self.window.get_visible():
             return
         # with the icon gone, nothing else would show the window again
         self.window_toggle()
@@ -591,10 +609,10 @@ class MainWindow(Window):
     def window_toggle(self) -> None:
         if self.window.get_visible():
             self.window.hide()
-            self.status_icon.set_tooltip_text(_("Virtualbricks hidden"))
+            self.set_tray_tooltip(_("Virtualbricks hidden"))
         else:
             self.window.show()
-            self.status_icon.set_tooltip_text(_("Virtualbricks visible"))
+            self.set_tray_tooltip(_("Virtualbricks visible"))
 
     def on_status_icon_activate(self, statusicon: Gtk.StatusIcon) -> None:
         self.window_toggle()

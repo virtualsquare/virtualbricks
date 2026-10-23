@@ -230,8 +230,29 @@ in the move to GTK 4 (`docs/redesign/18 - gtk4-migration.html`).
   gtk-3-24 still so). It goes with `Gtk.StatusIcon`, which GTK 4 doesn't
   have.
 - **Where:** `virtualbricks/gui/mainwindow/window.py`,
-  `MainWindow.build_ui()`, "GTK 3 has a tray only on X11".
+  `MainWindow.make_status_icon()`, "GTK 3 has a tray only on X11".
 - **Removing it:** the picture given when the icon is made, `pixbuf=`.
+
+### W19. The tray icon is made when it first shows, never hidden at once
+
+- **Why:** GTK 3 shows a `Gtk.StatusIcon` as it makes it: `visible=False`
+  is set after `constructed()`, which has shown the icon already, and
+  hides it at once. On X11 the window of the icon has asked for its size,
+  and GtkWindow counts the answer it waits for; GtkPlug, which the tray
+  icon is, unmaps it without clearing that count, as GtkWindow's unmap
+  does. The new window of the icon shown again takes one answer too many,
+  and prints `Gdk-CRITICAL **: gdk_window_thaw_toplevel_updates: assertion
+  'window->update_and_descendants_freeze_count > 0' failed`. An icon that
+  has shown a while hides and shows again without it. So the icon is made,
+  visible, only when its setting first shows it, and hidden after that.
+- **Needed on:** every target (GTK 3.24.41 to 3.24.52, and the branch
+  gtk-3-24 still so). It goes with `Gtk.StatusIcon`, which GTK 4 doesn't
+  have.
+- **Where:** `virtualbricks/gui/mainwindow/window.py`,
+  `MainWindow.set_tray_icon()` and `make_status_icon()`, "GTK 3 shows a
+  tray icon as it makes it".
+- **Removing it:** the icon made in `build_ui()` with `visible=False`,
+  shown or hidden by its setting.
 
 ## The end-to-end tests
 
@@ -302,4 +323,4 @@ no workaround, such as drag and drop.
   in `tox.ini` and a line in `TARGETS` of `tools/targetsuite.py`;
   `virtualbricks/tests/test_tools.py` checks that they agree. A version
   that changes in the table changes in `tox.ini` too.
-- When the move to GTK 4 starts, check W7 to W12, W14 and E1 to E7 again.
+- When the move to GTK 4 starts, check W7 to W12, W14, W19 and E1 to E7 again.
