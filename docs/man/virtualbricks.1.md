@@ -80,6 +80,18 @@ Virtualbricks of yours here. The bricks run there, the windows here. See
     in. With **--no-term** too, nothing is read: the lab runs until
     Virtualbricks gets **SIGTERM** or **SIGINT**.
 
+**--banner** *style*
+:   What the console shows as it starts: **none**, the default, the line
+    of the version and of help; **plain**, the icon of Virtualbricks drawn
+    in characters, with the version, the project, the workspace and the
+    programs beside it; **colour**, the same in the colours of the
+    terminal; **3d**, the name in large letters with their shadow, and the
+    same lines below it; **rainbow**, the same in the colours of the
+    rainbow; **pixel**, the icon in blocks of colour; **emoji**, the lines
+    alone, each with an emoji. **3d**, **rainbow**, **pixel** and
+    **emoji** need a terminal of 24-bit colour, as most are, and **emoji**
+    a font with emoji. See **THE CONSOLE**.
+
 **--run** *file*
 :   Run the commands of *file* once the project is open, as **source**
     does, then read the console. With **--connect**, send them to the
@@ -177,12 +189,12 @@ verbs, the names of the bricks, events, images and projects, the kinds of
 brick, the keys, and the values of a key that has a few. The prompt is the
 name of the open project.
 
-The console starts with the icon of Virtualbricks drawn in characters and,
-beside it, the version, the open project with how many bricks, events and
-disk images it has, the workspace, the QEMU emulators found, the programs
-that are missing, unless the settings say not to warn about them, and the
-control sockets of **--listen**. A terminal too narrow for the icon has the
-rest alone.
+The console starts with the line of its version and of help, or with the
+banner of **--banner**: a picture, the icon or the name, with the version,
+the open project with how many bricks, events and disk images it has, the
+workspace, the QEMU emulators found, the programs that are missing, unless
+the settings say not to warn about them, and the control sockets of
+**--listen**. A terminal too narrow for the picture has the text alone.
 
 Up and Down
 :   Go through the history, which is kept between runs.

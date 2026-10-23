@@ -62,7 +62,18 @@ DEFAULT_SOCKET = sockets.Socket(None)
 UNSET = object()
 # The options of a run, which a command sent to the Virtualbricks that runs
 # has no use for, in the order they are refused.
-RUN_OPTIONS = ("no-gui", "no-term", "run", "lock", "logfile", "logger")
+RUN_OPTIONS = (
+    "no-gui",
+    "no-term",
+    "banner",
+    "run",
+    "lock",
+    "logfile",
+    "logger",
+)
+# The styles of --banner, as virtualbricks.console.banner draws them.
+Style = Literal["none", "plain", "colour", "3d", "rainbow", "pixel", "emoji"]
+BANNERS: tuple[Style, ...] = get_args(Style)
 
 DESCRIPTION_TEXT = """\
 Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
@@ -94,6 +105,7 @@ class CommandLineOptions(NamedTuple):
     logger: str | None = None
     verbosity: int = 0
     no_term: bool = False
+    banner: Style = "none"
 
 
 class _Parser(argparse.ArgumentParser):
@@ -134,6 +146,16 @@ def parser() -> argparse.ArgumentParser:
         "--no-gui",
         action="store_true",
         help="Run without the windows: the console is the way in.",
+    )
+    parser.add_argument(
+        "--banner",
+        choices=BANNERS,
+        metavar="STYLE",
+        help="What the console shows as it starts: none, the line of the"
+        " version, the default; plain, the icon in characters, with the"
+        " version, the project, the workspace and the programs; colour, the"
+        " same in colour; 3d or rainbow, the name in large letters; pixel,"
+        " the icon in blocks of colour; emoji, the text alone, with emoji.",
     )
     parser.add_argument(
         "--command",
@@ -297,6 +319,7 @@ def parse(
         verbosity=options.verbosity,
         # the windows of another Virtualbricks read no console
         no_term=options.no_term or mode == REMOTE,
+        banner=options.banner or "none",
     )
 
 
@@ -450,6 +473,7 @@ def _given(options: argparse.Namespace) -> list[str]:
     values = {
         "no-gui": options.no_gui,
         "no-term": options.no_term,
+        "banner": options.banner,
         "run": options.run,
         "lock": options.lock,
         "logfile": options.logfile,
@@ -513,7 +537,7 @@ def _check_windows(
     """
 
     _check_target(options)
-    refused = [name for name in given if name in ("no-gui", "lock")]
+    refused = [name for name in given if name in ("no-gui", "banner", "lock")]
     if listen:
         refused.append("listen")
     if refused:

@@ -15,22 +15,59 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The banner the console starts with."""
+"""The banner the console starts with, in each style of --banner."""
 
 import os
 
 from virtualbricks import __version__, locations, sockets
 from virtualbricks.config import settings
 from virtualbricks.console.banner import (
+    AMBER,
+    BRICK_DARK,
+    BRICK_LIGHT,
+    COLOUR,
+    EMOJI,
     GAP,
+    LETTERS,
     LOGO,
     LOGO_WIDTH,
+    MORTAR,
+    PIXEL,
+    PLAIN,
+    RAINBOW,
+    SHADOW,
+    SPRITE_WIDTH,
+    THREE_D,
+    Banner,
+    Fact,
     banner,
+    bg,
     emulators,
     facts,
+    fg,
+    mix,
+    paint,
+    painted,
+    pixels,
+    visible,
 )
 from virtualbricks.sockets import Socket
 from virtualbricks.tests import BrickTestCase, use_workspace
+
+# A dark brick over a light one, as pixels() paints them
+BRICK_CODES = f"{fg(BRICK_LIGHT)};{bg(BRICK_DARK)}"
+
+
+def stripped(lines):
+    """The lines without their colours."""
+
+    from virtualbricks.console.banner import ESCAPE
+
+    return [ESCAPE.sub("", line) for line in lines]
+
+
+def big_line(word, row):
+    return "".join(LETTERS[letter][row] for letter in word).rstrip()
 
 
 class BannerTestCase(BrickTestCase):
@@ -55,17 +92,27 @@ class BannerTestCase(BrickTestCase):
         self.workspace.open(name, self.factory)
 
     def facts(self, listening=()):
-        return dict(facts(self.factory, listening))
+        return {
+            fact.label: fact.value for fact in facts(self.factory, listening)
+        }
 
 
-class TestBanner(BannerTestCase):
+class TestNone(BannerTestCase):
+
+    def test_the_line_of_before(self):
+        line = f"Virtualbricks {__version__}. Type help, or press Tab to complete."
+        self.assertEqual(banner(self.factory), [line])
+        self.assertEqual(Banner().lines(self.factory), [line])
+
+
+class TestPlain(BannerTestCase):
 
     def test_beside_the_icon(self):
         self.open("lab")
         self.factory.new_brick("switch", "sw1")
         self.factory.new_brick("switch", "sw2")
         self.assertEqual(
-            banner(self.factory),
+            Banner(PLAIN).lines(self.factory),
             [
                 f"                [_____]    Virtualbricks {__version__}",
                 "[_____]          .--.",
@@ -81,7 +128,7 @@ class TestBanner(BannerTestCase):
         )
 
     def test_alone_in_a_narrow_terminal(self):
-        lines = banner(self.factory, columns=60)
+        lines = banner(self.factory, PLAIN, columns=66)
         self.assertEqual(
             lines,
             [
@@ -93,10 +140,11 @@ class TestBanner(BannerTestCase):
                 "Type help, or press Tab to complete.",
             ],
         )
+        self.assertEqual(len(banner(self.factory, PLAIN, columns=67)), 8)
 
     def test_more_lines_than_the_icon(self):
         listening = [Socket(f"/srv/lab{n}.sock") for n in range(5)]
-        lines = banner(self.factory, listening)
+        lines = banner(self.factory, PLAIN, listening)
         self.assertGreater(len(lines), len(LOGO))
         for logo, line in zip(LOGO, lines):
             self.assertTrue(line.startswith(logo), line)
@@ -114,7 +162,7 @@ class TestBanner(BannerTestCase):
     def test_a_long_value_wraps_under_its_column(self):
         # PATH is empty: no VDE program anywhere
         settings.set_setting("vde_path", "")
-        lines = banner(self.factory, columns=50)
+        lines = banner(self.factory, PLAIN, columns=50)
         first = next(
             n for n, line in enumerate(lines) if line.startswith("Missing")
         )
@@ -129,6 +177,184 @@ class TestBanner(BannerTestCase):
             self.facts()["Missing"],
         )
         self.assertLessEqual(max(map(len, lines)), 50)
+
+
+class TestColour(BannerTestCase):
+
+    def test_the_plain_banner_in_colour(self):
+        self.open("lab")
+        lines = banner(self.factory, COLOUR)
+        self.assertEqual(stripped(lines), banner(self.factory, PLAIN))
+        # the bricks red, the mortar grey, the labels bold red
+        self.assertEqual(
+            lines[2],
+            "\x1b[31m[__|__]        [__|__]\x1b[0m"
+            "     \x1b[1;31mProject\x1b[0m    lab: 0 bricks,"
+            " 0 events, 0 disk images",
+        )
+        self.assertIn("\x1b[90m.--.\x1b[0m", lines[1])
+        self.assertIn(
+            "Type \x1b[1mhelp\x1b[0m, or press \x1b[1mTab\x1b[0m", lines[6]
+        )
+
+    def test_the_missing_programs_in_yellow(self):
+        os.remove(os.path.join(self.bin, "qemu-img"))
+        lines = banner(self.factory, COLOUR)
+        self.assertIn("\x1b[33mqemu-img (qemu-utils)\x1b[0m", "\n".join(lines))
+
+    def test_alone_in_a_narrow_terminal(self):
+        lines = banner(self.factory, COLOUR, columns=66)
+        self.assertEqual(
+            stripped(lines), banner(self.factory, PLAIN, columns=66)
+        )
+
+
+class TestLetters(BannerTestCase):
+
+    def test_the_name_on_one_line(self):
+        lines = stripped(banner(self.factory, THREE_D, columns=97))
+        self.assertEqual(
+            lines[:6], [big_line("VIRTUALBRICKS", row) for row in range(6)]
+        )
+        # the version as a fact: the name is above
+        self.assertEqual(
+            lines[6:],
+            [
+                "",
+                f"Version    {__version__}",
+                "Workspace  ~/labs",
+                "QEMU       x86_64, i386",
+                "",
+                "Type help, or press Tab to complete.",
+            ],
+        )
+
+    def test_the_name_on_two_lines(self):
+        lines = stripped(banner(self.factory, THREE_D, columns=96))
+        self.assertEqual(
+            lines[:12],
+            [big_line("VIRTUAL", row) for row in range(6)]
+            + [big_line("BRICKS", row) for row in range(6)],
+        )
+        self.assertEqual(lines[13], f"Version    {__version__}")
+        self.assertEqual(len(banner(self.factory, THREE_D, columns=54)), 18)
+
+    def test_alone_in_a_narrow_terminal(self):
+        for style in (THREE_D, RAINBOW):
+            lines = stripped(banner(self.factory, style, columns=53))
+            self.assertEqual(lines[0], f"Virtualbricks {__version__}")
+
+    def test_lit_from_above(self):
+        lines = banner(self.factory, THREE_D, columns=97)
+        # the faces darker line by line, the shadows grey
+        self.assertIn(paint("██", fg(BRICK_LIGHT)), lines[0])
+        self.assertIn(
+            paint("██", fg(mix(BRICK_LIGHT, BRICK_DARK, 0.6))), lines[3]
+        )
+        self.assertIn(paint("╗", fg(SHADOW)), lines[0])
+        self.assertIn("\x1b[1;" + fg((203, 67, 67)) + "mVersion", lines[7])
+
+    def test_the_rainbow(self):
+        lines = banner(self.factory, RAINBOW, columns=97)
+        self.assertEqual(
+            stripped(lines),
+            stripped(banner(self.factory, THREE_D, columns=97)),
+        )
+        # a colour for each column of a face, and for each label
+        faces = {
+            code
+            for code in lines[0].split("\x1b[")
+            if code.startswith("38;2;")
+        }
+        self.assertGreater(len(faces), 40)
+        labels = {line.split("m", 1)[0] for line in lines[7:10]}
+        self.assertEqual(len(labels), 3)
+
+
+class TestPixel(BannerTestCase):
+
+    def test_beside_the_text(self):
+        lines = banner(self.factory, PIXEL)
+        self.assertEqual(len(lines), 11)
+        self.assertEqual(
+            lines[0],
+            " " * 18
+            + paint("▀" * 7, BRICK_CODES)
+            + " " * GAP
+            + paint(f"Virtualbricks {__version__}", "1"),
+        )
+        self.assertEqual(
+            stripped(lines)[2][SPRITE_WIDTH + GAP :], "Workspace  ~/labs"
+        )
+
+    def test_the_pixels(self):
+        lines = pixels()
+        self.assertEqual(len(lines), 11)
+        # the floating brick, light over dark
+        self.assertEqual(lines[0], " " * 18 + paint("▀" * 7, BRICK_CODES))
+        # the mortar over the light top of a brick and its joint; then
+        # the dark bottom of the brick, over an empty row
+        self.assertEqual(stripped(lines)[2], "▄▄▄ ▄▄▄" + " " * 9 + "▄▄▄▀▀▀▄")
+        self.assertEqual(stripped(lines)[3], "▀▀▀ ▀▀▀" + " " * 9 + "▀▀▀ ▀▀▀")
+        self.assertIn(
+            paint("▀", fg(MORTAR))
+            + paint("▀▀", f"{fg(MORTAR)};{bg(BRICK_LIGHT)}"),
+            lines[2],
+        )
+
+    def test_alone_in_a_narrow_terminal(self):
+        lines = banner(self.factory, PIXEL, columns=SPRITE_WIDTH + GAP + 39)
+        self.assertNotIn("▀", "".join(lines))
+        lines = banner(self.factory, PIXEL, columns=SPRITE_WIDTH + GAP + 40)
+        self.assertIn("▀", "".join(lines))
+
+
+class TestEmoji(BannerTestCase):
+
+    def test_a_mark_on_each_line(self):
+        self.open("lab")
+        os.remove(os.path.join(self.bin, "qemu-img"))
+        listening = [Socket("/srv/a.sock"), Socket("/srv/b.sock")]
+        lines = stripped(banner(self.factory, EMOJI, listening, columns=200))
+        self.assertEqual(
+            lines,
+            [
+                f"🧱 Virtualbricks {__version__} ✨",
+                "",
+                "📂 Project    lab: 0 bricks, 0 events, 0 disk images",
+                "🏠 Workspace  ~/labs",
+                "💻 QEMU       x86_64, i386",
+                "🚧 Missing    qemu-img (qemu-utils)",
+                "📡 Listening  amp on /srv/a.sock",
+                "              amp on /srv/b.sock",
+                "",
+                "💡 Type help, or press Tab to complete.",
+            ],
+        )
+
+    def test_the_missing_programs_in_amber(self):
+        os.remove(os.path.join(self.bin, "qemu-img"))
+        lines = banner(self.factory, EMOJI)
+        self.assertIn(
+            paint("qemu-img (qemu-utils)", fg(AMBER)), "\n".join(lines)
+        )
+
+
+class TestColours(BannerTestCase):
+
+    def test_visible(self):
+        self.assertEqual(visible(paint("ab", "1;31") + "🧱"), 4)
+
+    def test_paint(self):
+        self.assertEqual(paint("ab", "31"), "\x1b[31mab\x1b[0m")
+        self.assertEqual(paint("ab", ""), "ab")
+        self.assertEqual(paint("", "31"), "")
+
+    def test_painted_runs(self):
+        self.assertEqual(
+            painted([("a", "31"), ("b", "31"), (" ", ""), ("c", "33")]),
+            "\x1b[31mab\x1b[0m \x1b[33mc\x1b[0m",
+        )
 
 
 class TestFacts(BannerTestCase):
@@ -173,8 +399,8 @@ class TestFacts(BannerTestCase):
         self.assertEqual(
             facts(self.factory, listening)[-2:],
             [
-                ("Listening", "amp on /srv/lab.sock"),
-                ("", "json on tcp 127.0.0.1 port 7000"),
+                Fact("listening", "Listening", "amp on /srv/lab.sock"),
+                Fact("listening", "", "json on tcp 127.0.0.1 port 7000"),
             ],
         )
 

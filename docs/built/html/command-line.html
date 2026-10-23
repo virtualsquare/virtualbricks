@@ -107,6 +107,20 @@ Run without the windows: no GTK is loaded, and the console is the way
 in. With <code>--no-term</code> too, nothing is read: the lab runs until
 Virtualbricks gets <code>SIGTERM</code> or <code>SIGINT</code>.
 </dd>
+<dt><code>--banner</code> <em>style</em></dt>
+<dd>
+What the console shows as it starts: <code>none</code>, the default, the
+line of the version and of help; <code>plain</code>, the icon of
+Virtualbricks drawn in characters, with the version, the project, the
+workspace and the programs beside it; <code>colour</code>, the same in
+the colours of the terminal; <code>3d</code>, the name in large letters
+with their shadow, and the same lines below it; <code>rainbow</code>,
+the same in the colours of the rainbow; <code>pixel</code>, the icon in
+blocks of colour; <code>emoji</code>, the lines alone, each with an
+emoji. <code>3d</code>, <code>rainbow</code>, <code>pixel</code> and
+<code>emoji</code> need a terminal of 24-bit colour, as most are, and
+<code>emoji</code> a font with emoji. See <code>THE CONSOLE</code>.
+</dd>
 <dt><code>--run</code> <em>file</em></dt>
 <dd>
 Run the commands of <em>file</em> once the project is open, as
@@ -216,12 +230,13 @@ or fail.</p>
 the verbs, the names of the bricks, events, images and projects, the
 kinds of brick, the keys, and the values of a key that has a few. The
 prompt is the name of the open project.</p>
-<p>The console starts with the icon of Virtualbricks drawn in characters
-and, beside it, the version, the open project with how many bricks,
-events and disk images it has, the workspace, the QEMU emulators found,
-the programs that are missing, unless the settings say not to warn about
-them, and the control sockets of <code>--listen</code>. A terminal too
-narrow for the icon has the rest alone.</p>
+<p>The console starts with the line of its version and of help, or with
+the banner of <code>--banner</code>: a picture, the icon or the name,
+with the version, the open project with how many bricks, events and disk
+images it has, the workspace, the QEMU emulators found, the programs
+that are missing, unless the settings say not to warn about them, and
+the control sockets of <code>--listen</code>. A terminal too narrow for
+the picture has the text alone.</p>
 <dl>
 <dt>Up and Down</dt>
 <dd>

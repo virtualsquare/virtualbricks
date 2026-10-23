@@ -21,7 +21,7 @@ The console in the terminal that started Virtualbricks.
 
 On a terminal, :class:`ConsoleLine` is a line to type commands in, with
 editing, a history kept between runs and Tab completion; the prompt is the
-name of the open project, and it starts with the banner of
+name of the open project, and it starts with the banner of --banner,
 :mod:`virtualbricks.console.banner`. A command runs to its end before the
 next: Ctrl+C stops waiting for it, not what it does. ``python`` opens the
 Python shell, and Ctrl+D comes back; Ctrl+D on an empty line quits, as
@@ -44,7 +44,7 @@ from __future__ import annotations
 import os
 import sys
 import termios
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable
 from typing import Any, cast
 
 from twisted.conch import manhole, recvline
@@ -61,13 +61,12 @@ from zope.interface import implementer
 from virtualbricks import locations
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.config.workspace import projects
-from virtualbricks.console.banner import banner
+from virtualbricks.console.banner import Banner
 from virtualbricks.console.command import CommandError, Context
 from virtualbricks.console.dispatch import run
 from virtualbricks.console.lineedit import ReadlineKeys
 from virtualbricks.console.parser import complete
 from virtualbricks.i18n import _
-from virtualbricks.sockets import Socket
 
 logger = Logger()
 history_error = "The history of the console can't be written"
@@ -120,15 +119,14 @@ class ConsoleLine(ReadlineKeys, recvline.HistoricRecvLine):
         factory: BrickFactory,
         switcher: Switcher | None = None,
         reactor: IReactorTime | None = None,
-        listening: Sequence[Socket] = (),
+        banner: Banner = Banner(),
         width: int = 80,
     ) -> None:
         super().__init__()
         self.brickfactory = factory
         self.switcher = switcher
         self.reactor = reactor
-        # the control sockets, for the banner
-        self.listening = listening
+        self.banner = banner
         # the columns of the terminal, as recvline has them
         self.width = width
         # the Deferred of the command that runs, None if none does
@@ -150,9 +148,7 @@ class ConsoleLine(ReadlineKeys, recvline.HistoricRecvLine):
         # the screen isn't cleared: what the terminal shows stays
         if not self.greeted:
             self.greeted = True
-            self.write_lines(
-                banner(self.brickfactory, self.listening, self.width)
-            )
+            self.write_lines(self.banner.lines(self.brickfactory, self.width))
         self.terminal.write(self.ps[self.pn])
         self.setInsertMode()
 
@@ -328,13 +324,13 @@ class Switcher(insults.TerminalProtocol):
         factory: BrickFactory,
         namespace: dict[str, object],
         reactor: IReactorTime | None = None,
-        listening: Sequence[Socket] = (),
+        banner: Banner = Banner(),
     ) -> None:
         # not factory: insults.ServerProtocol sets that of its protocol
         self.brickfactory = factory
         self.namespace = namespace
         self.reactor = reactor
-        self.listening = listening
+        self.banner = banner
         self.current: ConsoleLine | PythonShell | None = None
         self.console: ConsoleLine | None = None
         # fires once the terminal is gone
@@ -344,7 +340,7 @@ class Switcher(insults.TerminalProtocol):
         # the size start() read
         columns = self.terminal.termSize.x
         self.console = ConsoleLine(
-            self.brickfactory, self, self.reactor, self.listening, columns
+            self.brickfactory, self, self.reactor, self.banner, columns
         )
         self.current = self.console
         self.console.makeConnection(self.terminal)
@@ -532,11 +528,11 @@ def start(
     factory: BrickFactory,
     namespace: dict[str, object],
     reactor: ReactorBase | None = None,
-    listening: Sequence[Socket] = (),
+    banner: Banner = Banner(),
 ) -> stdio.StandardIO:
     """
     Read the console on the standard input; return what reads it. On a
-    terminal, its banner names the control sockets listening.
+    terminal, it starts with banner.
     """
 
     if reactor is None:
@@ -554,7 +550,7 @@ def start(
     raw.start()
     reactor.addSystemEventTrigger("after", "shutdown", raw.stop)
     protocol = insults.ServerProtocol(
-        Switcher, factory, namespace, reactor, listening
+        Switcher, factory, namespace, reactor, banner
     )
     try:
         size = os.get_terminal_size(stdin)

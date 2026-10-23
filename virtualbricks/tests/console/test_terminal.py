@@ -31,7 +31,7 @@ from twisted.trial import unittest
 from virtualbricks import __version__, sockets
 from virtualbricks.console import command as command_module
 from virtualbricks.console import terminal
-from virtualbricks.console.banner import LOGO
+from virtualbricks.console.banner import LOGO, NONE, PLAIN, Banner
 from virtualbricks.console.command import CommandError, command
 from virtualbricks.console.lineedit import CTRL_D
 from virtualbricks.console.terminal import (
@@ -85,17 +85,18 @@ class TestTheLine(TerminalTestCase):
 
     def test_a_command_and_its_answer(self):
         console = self.console()
-        banner = self.shown()[:-1]
-        # the banner, then the prompt
-        self.assertIn(f"Virtualbricks {__version__}", banner[0])
-        self.assertIn(
-            "Type help, or press Tab to complete.", "\n".join(banner)
+        self.assertEqual(
+            self.shown(),
+            [
+                f"Virtualbricks {__version__}. Type help, or press Tab to"
+                " complete.",
+                "virtualbricks>",
+            ],
         )
-        self.assertEqual(self.shown()[-1], "virtualbricks>")
         self.enter(console, "brick new switch")
         self.enter(console, "nope")
         self.assertEqual(
-            self.shown()[len(banner) :],
+            self.shown()[1:],
             [
                 "virtualbricks> brick new switch",
                 "sw1",
@@ -104,6 +105,15 @@ class TestTheLine(TerminalTestCase):
                 "virtualbricks>",
             ],
         )
+
+    def test_a_banner(self):
+        self.connect(
+            ConsoleLine(self.factory, None, self.clock(), Banner(PLAIN), 100)
+        )
+        # the banner, then the prompt
+        self.assertEqual(self.shown()[1], LOGO[1])
+        self.assertIn(LOGO[0] + "    Virtualbricks", self.shown()[0])
+        self.assertEqual(self.shown()[-1], "virtualbricks>")
 
     def test_the_prompt_is_the_project(self):
         workspace = use_workspace(self, os.path.abspath(self.mktemp()))
@@ -293,11 +303,11 @@ class TestSwitcher(TerminalTestCase):
         server.dataReceived(b"brick new switch\r")
         self.assertIn(b"sw1", transport.value())
 
-    def banner(self, columns, listening=()):
+    def banner(self, columns, listening=(), style=PLAIN):
         """What the console starts with, in a terminal columns wide."""
 
         server = insults.ServerProtocol(
-            Switcher, self.factory, {}, self.clock(), listening
+            Switcher, self.factory, {}, self.clock(), Banner(style, listening)
         )
         # as start() reads it
         server.termSize = insults.Vector(columns, 24)
@@ -310,6 +320,12 @@ class TestSwitcher(TerminalTestCase):
         shown = self.banner(50)
         self.assertNotIn(LOGO[0], shown)
         self.assertIn(f"Virtualbricks {__version__}", shown)
+
+    def test_no_banner(self):
+        self.assertIn(
+            f"Virtualbricks {__version__}. Type help",
+            self.banner(100, style=NONE),
+        )
 
     def test_the_banner_names_the_sockets(self):
         listening = [Socket("/srv/lab.sock", protocol=sockets.JSON)]

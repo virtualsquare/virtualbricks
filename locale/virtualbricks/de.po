@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 08:39+0200\n"
+"POT-Creation-Date: 2026-10-23 08:59+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1301,11 +1301,25 @@ msgstr ""
 
 #: virtualbricks/console/banner.py
 #, python-brace-format
+msgid "Virtualbricks {version}. Type help, or press Tab to complete."
+msgstr ""
+
+#: virtualbricks/console/banner.py
+#, python-brace-format
 msgid "Virtualbricks {version}"
 msgstr ""
 
 #: virtualbricks/console/banner.py
-msgid "Type help, or press Tab to complete."
+#, python-brace-format
+msgid "Type {help}, or press {tab} to complete."
+msgstr ""
+
+#: virtualbricks/console/banner.py
+msgid "Tab"
+msgstr ""
+
+#: virtualbricks/console/banner.py
+msgid "Version"
 msgstr ""
 
 #: virtualbricks/console/bricks.py virtualbricks/remote/tunnel.py

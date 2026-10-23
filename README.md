@@ -107,6 +107,11 @@ The options are:
 - `--no-term`: don't read the console in the terminal.
 - `--no-gui`: run without the windows, and without GTK: the console is the
   way in.
+- `--banner STYLE`: what the console shows as it starts: `none`, the line of
+  the version, the default; `plain`, the icon in characters with the
+  version, the project, the workspace and the programs; `colour`, the same in
+  colour; `3d` or `rainbow`, the name in large letters; `pixel`, the icon in
+  blocks of colour; `emoji`, the text alone, with emoji.
 - `--run FILE`: run the commands of a file once the project is open, then
   read the console; with `--connect`, send them to the Virtualbricks that
   runs, and exit.

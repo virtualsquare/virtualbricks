@@ -28,6 +28,7 @@ from virtualbricks.config.settings import (
     store_settings,
 )
 from virtualbricks.config.workspace import projects
+from virtualbricks.console.banner import Banner
 from virtualbricks.console.control import listen
 from virtualbricks.console.dispatch import run
 from virtualbricks.console.terminal import error_lines, start
@@ -230,7 +231,8 @@ class Application:
     def start_console(self, factory: BrickFactory) -> None:
         """Read the console in the terminal that started Virtualbricks."""
 
-        start(factory, self.get_console_namespace(), listening=self.listening)
+        banner = Banner(self.options.banner, self.listening)
+        start(factory, self.get_console_namespace(), banner=banner)
 
     def install_sys_hooks(self) -> None:
 

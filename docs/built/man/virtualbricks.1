@@ -74,6 +74,20 @@ in.
 With \f[B]\-\-no\-term\f[R] too, nothing is read: the lab runs until
 Virtualbricks gets \f[B]SIGTERM\f[R] or \f[B]SIGINT\f[R].
 .TP
+\f[B]\-\-banner\f[R] \f[I]style\f[R]
+What the console shows as it starts: \f[B]none\f[R], the default, the
+line of the version and of help; \f[B]plain\f[R], the icon of
+Virtualbricks drawn in characters, with the version, the project, the
+workspace and the programs beside it; \f[B]colour\f[R], the same in the
+colours of the terminal; \f[B]3d\f[R], the name in large letters with
+their shadow, and the same lines below it; \f[B]rainbow\f[R], the same
+in the colours of the rainbow; \f[B]pixel\f[R], the icon in blocks of
+colour; \f[B]emoji\f[R], the lines alone, each with an emoji.
+\f[B]3d\f[R], \f[B]rainbow\f[R], \f[B]pixel\f[R] and \f[B]emoji\f[R]
+need a terminal of 24\-bit colour, as most are, and \f[B]emoji\f[R] a
+font with emoji.
+See \f[B]THE CONSOLE\f[R].
+.TP
 \f[B]\-\-run\f[R] \f[I]file\f[R]
 Run the commands of \f[I]file\f[R] once the project is open, as
 \f[B]source\f[R] does, then read the console.
@@ -185,12 +199,13 @@ verbs, the names of the bricks, events, images and projects, the kinds
 of brick, the keys, and the values of a key that has a few.
 The prompt is the name of the open project.
 .PP
-The console starts with the icon of Virtualbricks drawn in characters
-and, beside it, the version, the open project with how many bricks,
-events and disk images it has, the workspace, the QEMU emulators found,
-the programs that are missing, unless the settings say not to warn about
-them, and the control sockets of \f[B]\-\-listen\f[R].
-A terminal too narrow for the icon has the rest alone.
+The console starts with the line of its version and of help, or with the
+banner of \f[B]\-\-banner\f[R]: a picture, the icon or the name, with
+the version, the open project with how many bricks, events and disk
+images it has, the workspace, the QEMU emulators found, the programs
+that are missing, unless the settings say not to warn about them, and
+the control sockets of \f[B]\-\-listen\f[R].
+A terminal too narrow for the picture has the text alone.
 .TP
 Up and Down
 Go through the history, which is kept between runs.

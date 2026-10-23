@@ -26,6 +26,7 @@ from twisted.trial import unittest
 
 from virtualbricks import __version__, locations, locks, sockets
 from virtualbricks.cli import (
+    BANNERS,
     COMMAND,
     DEFAULT_SOCKET,
     GUI,
@@ -63,6 +64,25 @@ class Base(unittest.TestCase):
     def refused(self, *args, tty=False):
         return str(
             self.assertRaises(UsageError, parse, list(args), Input(tty))
+        )
+
+
+class TestBanner(Base):
+
+    def test_none_by_default(self):
+        self.assertEqual(self.parse().banner, "none")
+        self.assertEqual(self.parse("--no-gui").banner, "none")
+
+    def test_each_style(self):
+        for style in BANNERS:
+            self.assertEqual(self.parse("--banner", style).banner, style)
+
+    def test_another_style(self):
+        # argparse's words, which change with the version of Python
+        self.assertTrue(
+            self.refused("--banner", "comic").startswith(
+                "argument --banner: invalid choice: 'comic'"
+            )
         )
 
 
@@ -597,6 +617,7 @@ class TestClient(Base):
         for args, name in [
             (["--no-gui"], "no-gui"),
             (["--no-term"], "no-term"),
+            (["--banner", "plain"], "banner"),
             (["--run", self.script], "run"),
             (["--lock", "none"], "lock"),
             (["-l", "vb.log"], "logfile"),
@@ -634,6 +655,7 @@ class TestWindows(Base):
     def test_what_is_for_the_bricks(self):
         for args, name in [
             (["--no-gui"], "no-gui"),
+            (["--banner", "colour"], "banner"),
             (["--lock", "user"], "lock"),
             (["--listen"], "listen"),
         ]:
@@ -703,6 +725,7 @@ class TestOptions(unittest.TestCase):
                 "--help",
                 "--no-term",
                 "--no-gui",
+                "--banner",
                 "--command",
                 "--listen",
                 "--connect",

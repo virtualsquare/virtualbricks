@@ -37,6 +37,7 @@ from virtualbricks.config.settings import (
     set_setting,
 )
 from virtualbricks.config.tomlfile import load_toml
+from virtualbricks.console.banner import Banner
 from virtualbricks.tests import (
     FakeLogger,
     fake_programs,
@@ -505,13 +506,13 @@ class TestTheConsole(AppTestCase):
         self.patch(
             app,
             "start",
-            lambda factory, namespace, listening: started.append(
-                (factory, namespace, listening)
+            lambda factory, namespace, banner: started.append(
+                (factory, namespace, banner)
             ),
         )
-        application = self.application()
+        # the banner of --banner, with the sockets listened on
+        application = self.application(banner="rainbow")
         application.listening = [sockets.Socket("/srv/lab.sock")]
         application.start_console(self.factory)
-        self.assertEqual(
-            started, [(self.factory, {}, [sockets.Socket("/srv/lab.sock")])]
-        )
+        banner = Banner("rainbow", [sockets.Socket("/srv/lab.sock")])
+        self.assertEqual(started, [(self.factory, {}, banner)])
