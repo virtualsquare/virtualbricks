@@ -15,10 +15,11 @@ The Projects window shows it too, and the Import window its first paragraph.
 ![The Readme
 tab](figures/readme.png){alt="The Readme tab: the README rendered, with a heading, a paragraph, a list and a link; Edit and Preview over the top right corner."}
 
-Two buttons float over the top right corner of the tab: **Edit** opens the
-text, and **Preview** goes back to the rendered README. While you write, Edit
-gives way to **Syntax**, which shows what the text can hold. The README is
-saved 30 seconds after your last change, and when you leave the tab.
+Two buttons float over the top right corner of the tab, faded until you point
+at them: **Edit** opens the text, and **Preview** goes back to the rendered
+README. While you write, Edit gives way to **Syntax**, which shows what the
+text can hold. The README is saved 30 seconds after your last change, and when
+you leave the tab.
 
 ::: {.terms title="The syntax"}
 

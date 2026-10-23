@@ -22,9 +22,9 @@ The Readme tab of the main window: the README rendered, or its text to edit.
 The tab opens on the preview. Two icon buttons float over its top right
 corner: the pencil shows the editor, the eye the preview, drawn again from
 the text of the editor. While the editor shows, the pencil hides and an
-icon opens the syntax. The views keep a margin as wide as the buttons, so
-no text goes under them; it's measured again when the buttons get their
-room, as a new theme can change them.
+icon opens the syntax. The buttons are faded, and opaque while the
+pointer is over them or the syntax shows; the text goes under them, with
+the same margin on each side.
 
 The editor holds the README of the open project, which the engine reads and
 writes: the tab loads it when a project opens and when it shows, and saves
@@ -58,6 +58,8 @@ readme_not_saved = "Cannot save the README: {error}"
 
 MARGIN = 12
 GAP = 6
+# The buttons, this opaque while the pointer is elsewhere.
+FADED_OPACITY = 0.3
 # The seconds from an edit to its save.
 SAVE_AFTER = 30
 # The syntax, as the popover shows it: what to write, and what it does.
@@ -121,6 +123,7 @@ class ReadmeTab(Tab, Gtk.Overlay):
         self._saving: IDelayedCall | None = None
         margins: dict[str, Any] = {
             "left_margin": MARGIN,
+            "right_margin": MARGIN,
             "top_margin": MARGIN,
             "bottom_margin": MARGIN,
         }
@@ -149,14 +152,17 @@ class ReadmeTab(Tab, Gtk.Overlay):
         self.stack.add_named(_scrolled(self.editor), "editor")
         self.add(self.stack)
 
-        self.buttons = Gtk.Box(
+        # a window of its own, around the windows of the buttons: from its
+        # edge to a button, the pointer is still over it
+        self.over_buttons = Gtk.EventBox(
             visible=True,
-            spacing=GAP,
             halign=Gtk.Align.END,
             valign=Gtk.Align.START,
             margin=GAP,
         )
+        self.buttons = Gtk.Box(visible=True, spacing=GAP)
         self.buttons.get_style_context().add_class("osd")
+        self.over_buttons.add(self.buttons)
         self.switch = Gtk.Box(visible=True)
         self.switch.get_style_context().add_class("linked")
         self.edit_button = icon_button(
@@ -179,9 +185,10 @@ class ReadmeTab(Tab, Gtk.Overlay):
         )
         self.syntax_button.set_popover(_syntax_popover(self.syntax_button))
         self.buttons.pack_start(self.syntax_button, False, False, 0)
-        self.add_overlay(self.buttons)
+        self.add_overlay(self.over_buttons)
 
-        self._measuring: int | None = None
+        self._pointed = False
+        self._fade()
         self.preview_button.set_active(True)
         self._switch()
         # the eye goes on or off at each switch
@@ -190,8 +197,10 @@ class ReadmeTab(Tab, Gtk.Overlay):
         self.editor.get_buffer().connect(
             "modified-changed", self.on_modified_changed
         )
-        self.buttons.connect("size-allocate", self.on_size_allocate)
-        self.connect("destroy", self.on_destroy)
+        self.over_buttons.connect("enter-notify-event", self.on_crossing)
+        self.over_buttons.connect("leave-notify-event", self.on_crossing)
+        # the syntax shows while the menu button is down
+        self.syntax_button.connect("toggled", lambda button: self._fade())
 
     def show_preview(self) -> None:
         self.preview_button.set_active(True)
@@ -237,7 +246,6 @@ class ReadmeTab(Tab, Gtk.Overlay):
             self.editor.grab_focus()
         self.edit_button.set_visible(self.showing_preview())
         self.syntax_button.set_visible(not self.showing_preview())
-        self._set_margin()
 
     def _picture(self, path: str) -> defer.Deferred[bytes]:
         current = self.engine.workspace.current
@@ -252,20 +260,9 @@ class ReadmeTab(Tab, Gtk.Overlay):
             "preview" if text.strip() else "empty"
         )
 
-    def _set_margin(self) -> None:
-        """A right margin on what shows, as wide as the buttons over it."""
-
-        _, width = self.buttons.get_preferred_width()
-        if self.showing_preview():
-            self.preview.set_right_margin(width)
-            self.empty_label.set_margin_end(width)
-        else:
-            self.editor.set_right_margin(width)
-
-    def _set_margin_later(self) -> bool:
-        self._measuring = None
-        self._set_margin()
-        return GLib.SOURCE_REMOVE
+    def _fade(self) -> None:
+        opaque = self._pointed or self.syntax_button.get_active()
+        self.over_buttons.set_opacity(1.0 if opaque else FADED_OPACITY)
 
     # What the main window tells
 
@@ -306,15 +303,11 @@ class ReadmeTab(Tab, Gtk.Overlay):
             self._saving.cancel()
             self._saving = None
 
-    def on_size_allocate(
-        self, box: Gtk.Box, allocation: Gdk.Rectangle
-    ) -> None:
-        # the buttons in another theme; not now, GTK would lose the resize
-        # of the view
-        if self._measuring is None:
-            self._measuring = GLib.idle_add(self._set_margin_later)
-
-    def on_destroy(self, tab: ReadmeTab) -> None:
-        if self._measuring is not None:
-            GLib.source_remove(self._measuring)
-            self._measuring = None
+    def on_crossing(
+        self, area: Gtk.EventBox, event: Gdk.EventCrossing
+    ) -> bool:
+        # to a button and back, the pointer stays over the buttons
+        if event.detail != Gdk.NotifyType.INFERIOR:
+            self._pointed = event.type == Gdk.EventType.ENTER_NOTIFY
+            self._fade()
+        return False

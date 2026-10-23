@@ -14,7 +14,7 @@
       <p>The Readme tab: the README rendered, with a heading, a paragraph, a list and a link; Edit and Preview over the top right corner.</p>
     </media>
   </figure>
-  <p>Two buttons float over the top right corner of the tab: <gui>Edit</gui> opens the text, and <gui>Preview</gui> goes back to the rendered README. While you write, Edit gives way to <gui>Syntax</gui>, which shows what the text can hold. The README is saved 30 seconds after your last change, and when you leave the tab.</p>
+  <p>Two buttons float over the top right corner of the tab, faded until you point at them: <gui>Edit</gui> opens the text, and <gui>Preview</gui> goes back to the rendered README. While you write, Edit gives way to <gui>Syntax</gui>, which shows what the text can hold. The README is saved 30 seconds after your last change, and when you leave the tab.</p>
   <terms>
     <title>The syntax</title>
     <item>

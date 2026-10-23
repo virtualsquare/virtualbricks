@@ -29,11 +29,13 @@ from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import has_display
 
 if has_display:
-    from gi.repository import GdkPixbuf, Gtk
+    from gi.repository import Gdk, GdkPixbuf, Gtk
 
     from virtualbricks.gui.mainwindow import readme
     from virtualbricks.gui.mainwindow.readme import (
+        FADED_OPACITY,
         GAP,
+        MARGIN,
         SAVE_AFTER,
         SYNTAX,
         ReadmeTab,
@@ -49,31 +51,16 @@ class TestReadmeTab(unittest.TestCase):
         skip = "GTK can't open a display"
 
     def setUp(self):
-        self.window, self.tab = self.tab_in_window()
-        self.buffer = self.tab.editor.get_buffer()
-
-    def tab_in_window(self, css=None):
-        window = Gtk.OffscreenWindow()
-        self.addCleanup(window.destroy)
+        self.window = Gtk.OffscreenWindow()
+        self.addCleanup(self.window.destroy)
         # the saves of the edits never come
-        tab = ReadmeTab(LocalEngine(None), clock=task.Clock())
+        self.tab = ReadmeTab(LocalEngine(None), clock=task.Clock())
         # first: a popover in an offscreen window, unlike a real one, makes
         # GTK complain when the window goes
-        self.addCleanup(tab.syntax_button.get_popover().destroy)
-        if css is not None:
-            # an offscreen window doesn't take a new style once shown
-            style = Gtk.CssProvider()
-            style.load_from_data(css)
-            tab.edit_button.get_style_context().add_provider(
-                style, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-            )
-        window.add(tab)
-        window.show()
-        return window, tab
-
-    def run_idle_calls(self):
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        self.addCleanup(self.tab.syntax_button.get_popover().destroy)
+        self.window.add(self.tab)
+        self.window.show()
+        self.buffer = self.tab.editor.get_buffer()
 
     def showing(self):
         return self.tab.stack.get_visible_child_name()
@@ -81,6 +68,28 @@ class TestReadmeTab(unittest.TestCase):
     def rendered(self):
         preview = self.tab.preview.get_buffer()
         return preview.get_text(*preview.get_bounds(), False)
+
+    def pointer(self, signal, detail=None):
+        """The pointer in or out of the buttons, from or to detail."""
+
+        kind = (
+            Gdk.EventType.ENTER_NOTIFY
+            if signal == "enter-notify-event"
+            else Gdk.EventType.LEAVE_NOTIFY
+        )
+        event = Gdk.Event.new(kind)
+        event.crossing.detail = (
+            Gdk.NotifyType.NONLINEAR if detail is None else detail
+        )
+        self.tab.over_buttons.emit(signal, event)
+
+    def assertFaded(self):
+        opacity = self.tab.over_buttons.get_opacity()
+        # GTK keeps it in a byte
+        self.assertAlmostEqual(opacity, FADED_OPACITY, places=2)
+
+    def assertOpaque(self):
+        self.assertEqual(self.tab.over_buttons.get_opacity(), 1.0)
 
     def test_the_preview_first(self):
         self.assertTrue(self.tab.preview_button.get_active())
@@ -148,32 +157,49 @@ class TestReadmeTab(unittest.TestCase):
         width = tab.buttons.get_allocated_width()
         self.assertEqual(x + width + GAP, tab.get_allocated_width())
 
-    def test_no_text_under_the_buttons(self):
-        _, width = self.tab.buttons.get_preferred_width()
-        self.assertEqual(self.tab.preview.get_right_margin(), width)
-        self.assertEqual(self.tab.empty_label.get_margin_end(), width)
-        # the eye and the syntax over the editor, a gap apart
+    def test_the_buttons_fade_away_from_the_pointer(self):
+        self.assertFaded()
+        self.pointer("enter-notify-event")
+        self.assertOpaque()
+        # from the edge to a button and back, the pointer stays over them
+        self.pointer("leave-notify-event", Gdk.NotifyType.INFERIOR)
+        self.assertOpaque()
+        self.pointer("enter-notify-event", Gdk.NotifyType.INFERIOR)
+        self.assertOpaque()
+        # out from a button
+        self.pointer("leave-notify-event", Gdk.NotifyType.VIRTUAL)
+        self.assertFaded()
+
+    def test_opaque_while_the_syntax_shows(self):
         self.tab.edit_button.set_active(True)
-        _, wider = self.tab.buttons.get_preferred_width()
-        self.assertGreater(wider, width)
-        self.assertEqual(self.tab.editor.get_right_margin(), wider)
+        self.pointer("enter-notify-event")
+        self.tab.syntax_button.set_active(True)
+        # the popover takes the pointer
+        self.pointer("leave-notify-event", Gdk.NotifyType.VIRTUAL)
+        self.assertOpaque()
+        self.tab.syntax_button.set_active(False)
+        self.assertFaded()
 
-    def test_the_margin_follows_the_theme(self):
-        before = ReadmeTab(LocalEngine(None)).preview.get_right_margin()
-        _, tab = self.tab_in_window(b"button { padding-left: 40px; }")
-        _, width = tab.buttons.get_preferred_width()
-        self.assertGreater(width, before)
-        # measured once the buttons have their room
-        self.assertEqual(tab.preview.get_right_margin(), before)
-        self.run_idle_calls()
-        self.assertEqual(tab.preview.get_right_margin(), width)
-
-    def test_not_measured_after_the_end(self):
-        before = ReadmeTab(LocalEngine(None)).preview.get_right_margin()
-        _, tab = self.tab_in_window(b"button { padding-left: 40px; }")
-        tab.destroy()
-        self.run_idle_calls()
-        self.assertEqual(tab.preview.get_right_margin(), before)
+    def test_the_same_margin_on_each_side(self):
+        # the text goes under the buttons, the editor's as the preview's
+        self.tab.edit_button.set_active(True)
+        self.tab.preview_button.set_active(True)
+        for view in (self.tab.preview, self.tab.editor):
+            margins = (
+                view.get_left_margin(),
+                view.get_right_margin(),
+                view.get_top_margin(),
+                view.get_bottom_margin(),
+            )
+            self.assertEqual(margins, (MARGIN,) * 4)
+        label = self.tab.empty_label
+        margins = (
+            label.get_margin_start(),
+            label.get_margin_end(),
+            label.get_margin_top(),
+            label.get_margin_bottom(),
+        )
+        self.assertEqual(margins, (MARGIN,) * 4)
 
     def test_the_syntax(self):
         popover = self.tab.syntax_button.get_popover()
