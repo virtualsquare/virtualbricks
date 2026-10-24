@@ -19,7 +19,7 @@
 
 """
 The Debian packages, built and checked in a container of each supported
-distribution, as the pipeline of the packaging branch builds them:
+distribution, as the pipeline of GitLab builds them:
 
     python tools/debpackage.py                          every distribution
     python tools/debpackage.py debian-13 ubuntu-24.04

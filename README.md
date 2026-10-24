@@ -530,9 +530,9 @@ To add a language, see the top of `l10n.sh`.
 ### Debian packages
 
 The `debian/` folder and the pipeline of GitLab, `.gitlab-ci.yml`, build the
-packages of each supported distribution; the pipeline runs on the packaging
-branch, `gitlab-ci-dev`. `tools/debpackage.py` builds and checks them here, in
-containers:
+packages of each supported distribution; the pipeline runs on the pushes to
+develop, on tags and by hand. `tools/debpackage.py` builds and checks them
+here, in containers:
 
 ```sh
 python tools/debpackage.py                  # every distribution
