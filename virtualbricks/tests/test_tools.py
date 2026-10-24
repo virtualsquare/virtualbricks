@@ -383,6 +383,11 @@ def write(folder, name, text):
         fp.write(text)
 
 
+def read(folder, name):
+    with open(os.path.join(folder, name), encoding="utf-8") as fp:
+        return fp.read()
+
+
 class TestTargetSuite(unittest.TestCase):
 
     def setUp(self):
@@ -841,9 +846,71 @@ class TestDebPackage(unittest.TestCase):
         self.assertEqual(
             bad, [paths["changed.dsc"], paths["unsigned.buildinfo"]]
         )
-        self.assertTrue(os.path.exists(os.path.join(self.folder, "gpgv.log")))
+        self.assertIn("gpgv.log", os.listdir(self.folder))
 
-    # main(), with fakes of podman, debsign and gpgv
+    def test_podman(self):
+        """The volumes, read-only or not; sh runs the script with its
+        arguments; the output in the log."""
+        calls = []
+
+        def run(command, stdout, **kwargs):
+            calls.append(command)
+            stdout.write("output\n")
+            return subprocess.CompletedProcess(command, 3)
+
+        self.patch(self.tool.subprocess, "run", run)
+        log = os.path.join(self.folder, "log")
+        Volume = self.tool.Volume
+        status = self.tool.podman(
+            "image",
+            [Volume("/a", "/in", True), Volume("/b", "/out")],
+            "script",
+            ["/in/x", "y"],
+            log,
+        )
+        self.assertEqual(status, 3)
+        self.assertEqual(
+            calls,
+            [
+                ["podman", "run", "--rm", "--volume=/a:/in:ro"]
+                + ["--volume=/b:/out", "image", "sh", "-c", "script"]
+                + ["sh", "/in/x", "y"]
+            ],
+        )
+        self.assertEqual(read(self.folder, "log"), "output\n")
+
+    def test_on_host(self):
+        """A path in a volume, as the path of its folder; not the others."""
+        volumes = [
+            self.tool.Volume("/a", "/in"),
+            self.tool.Volume("/b", "/out"),
+        ]
+        for arg, path in [
+            ("/out", "/b"),
+            ("/out/x/y", "/b/x/y"),
+            ("/in/x", "/a/x"),
+            ("/outside", "/outside"),
+            ("3.0.0~dev8", "3.0.0~dev8"),
+        ]:
+            self.assertEqual(self.tool.on_host(arg, volumes), path)
+
+    def test_in_this_system(self):
+        """sh runs the script here, the volumes as their folders; the output
+        in the log and on stdout."""
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            status = self.tool.in_this_system(
+                [self.tool.Volume(self.folder, "/out")],
+                'echo "$1" >"$2/file"; echo done; exit 3',
+                ["hello", "/out"],
+                os.path.join(self.folder, "log"),
+            )
+        self.assertEqual(status, 3)
+        self.assertEqual(read(self.folder, "file"), "hello\n")
+        self.assertEqual(read(self.folder, "log"), "done\n")
+        self.assertEqual(out.getvalue(), "done\n")
+
+    # main(), with fakes of the steps, debsign and gpgv
 
     def main(
         self,
@@ -857,12 +924,12 @@ class TestDebPackage(unittest.TestCase):
         signs=True,
         bad=(),
         pointer=False,
+        root=False,
     ):
         """main(argv): its code, stdout, stderr and the temporary folder;
-        the calls of the containers in self.calls, of debsign in
-        self.signs. sdist, build and install are the exit statuses of
-        their containers, install by image if a dict; lintian is a
-        warning it says."""
+        the steps in self.calls, as (here, image, step, args), debsign in
+        self.signs. sdist, build and install are the exit statuses of the
+        steps, install by image if a dict; lintian is a warning it says."""
         repo = os.path.join(self.folder, "repo")
         make_repo(repo)
         if pointer:
@@ -880,28 +947,48 @@ class TestDebPackage(unittest.TestCase):
             "which",
             lambda name: f"/usr/bin/{name}" if name in programs else None,
         )
+        self.patch(self.tool.os, "geteuid", lambda: 0 if root else 1000)
         self.calls = []
         self.signs = []
+        steps = {
+            self.tool.SDIST: "sdist",
+            self.tool.BUILD: "build",
+            self.tool.INSTALL: "install",
+        }
 
-        def podman(image, volumes, command, log):
-            folders = {}
-            for volume in volumes:
-                host, path = volume.split(":")[:2]
-                folders[path] = host
-            script = os.path.basename(command[1])
-            self.calls.append((image, script, list(command[2:])))
-            write(os.path.dirname(log), os.path.basename(log), "")
-            if script == "sdist.sh":
-                self.assertEqual(
-                    sorted(os.listdir(folders["/src"])), ["a.txt", "docs"]
+        def run(here, image, volumes, script, args, log):
+            folders = {volume.path: volume.host for volume in volumes}
+            step = steps[script]
+            self.calls.append(
+                (
+                    here,
+                    image,
+                    step,
+                    [
+                        "CHECK" if arg == self.tool.CHECK else arg
+                        for arg in args
+                    ],
                 )
+            )
+            write(os.path.dirname(log), os.path.basename(log), "")
+            if step == "sdist":
+                if here:
+                    self.assertEqual(folders["/src"], repo)
+                else:
+                    self.assertEqual(
+                        sorted(os.listdir(folders["/src"])), ["a.txt", "docs"]
+                    )
                 if sdist == 0:
                     make_sdist(folders["/out"], VERSION)
                 return sdist
-            if script == "build.sh":
+            if step == "build":
                 self.assertEqual(os.listdir(folders["/debian"]), ["control"])
+                name = args[0].removeprefix("/sdist/")
+                self.assertTrue(
+                    os.path.isfile(os.path.join(folders["/sdist"], name))
+                )
                 out = folders["/out"]
-                _, upstream, version, _ = command[2:]
+                upstream, version = args[3:5]
                 if build == 0:
                     for name in [
                         f"virtualbricks_{upstream}.orig.tar.gz",
@@ -915,8 +1002,12 @@ class TestDebPackage(unittest.TestCase):
                     write(out, "lintian.log", lintian)
                     write(out, "lintian.status", "1\n" if lintian else "0\n")
                 return build
-            self.assertEqual(script, "install.sh")
-            self.assertIn("check.sh", os.listdir(folders["/debs"]))
+            self.assertTrue(
+                any(
+                    name.endswith(".deb")
+                    for name in os.listdir(folders["/debs"])
+                )
+            )
             if isinstance(install, dict):
                 return install.get(image, 0)
             return install
@@ -933,7 +1024,7 @@ class TestDebPackage(unittest.TestCase):
             )
             return [path for path in paths if path.endswith(bad)]
 
-        self.patch(self.tool, "podman", podman)
+        self.patch(self.tool, "run", run)
         self.patch(self.tool, "sign", sign)
         self.patch(self.tool, "signatures", signatures)
         self.patch(self.tool, "has_secret_key", lambda key: key in keys)
@@ -965,13 +1056,15 @@ class TestDebPackage(unittest.TestCase):
         self.assertEqual(
             self.calls,
             [
-                (trixie, "sdist.sh", []),
+                (False, trixie, "sdist", ["/src", "/out"]),
                 (
+                    False,
                     trixie,
-                    "build.sh",
-                    [SDIST, "3.0.0~dev8", "3.0.0~dev8-0~trixie1", "trixie"],
+                    "build",
+                    [f"/sdist/{SDIST}", "/debian", "/out"]
+                    + ["3.0.0~dev8", "3.0.0~dev8-0~trixie1", "trixie"],
                 ),
-                (trixie, "install.sh", []),
+                (False, trixie, "install", ["/debs", "CHECK"]),
             ],
         )
         self.assertEqual(
@@ -993,7 +1086,7 @@ class TestDebPackage(unittest.TestCase):
         code, lines, err, tmp = self.main()
         self.assertEqual(code, 0)
         self.assertEqual(
-            [script for _, script, _ in self.calls].count("sdist.sh"), 1
+            [step for _, _, step, _ in self.calls].count("sdist"), 1
         )
         self.assertEqual(
             [line.split(":")[0] for line in lines if line[0] != " "][:-1],
@@ -1003,6 +1096,19 @@ class TestDebPackage(unittest.TestCase):
         self.assertEqual(
             sorted(os.listdir(self.out)), self.uploaded(*codenames)
         )
+
+    def test_main_with_an_sdist(self):
+        """No sdist made: the one given, from its folder."""
+        given = os.path.join(self.folder, "given")
+        os.makedirs(given)
+        path = make_sdist(given, VERSION)
+        code, lines, err, tmp = self.main("debian-13", "--sdist", path)
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            [step for _, _, step, _ in self.calls], ["build", "install"]
+        )
+        self.assertEqual(err, "building on debian-13\n")
+        self.assertEqual(sorted(os.listdir(self.out)), self.uploaded("trixie"))
 
     def test_main_signed(self):
         """debsign signs the .changes with the key; gpgv checks."""
@@ -1060,7 +1166,7 @@ class TestDebPackage(unittest.TestCase):
             code, lines, tmp, "  the build failed (2): build.log"
         )
         self.assertEqual(
-            [script for _, script, _ in self.calls], ["sdist.sh", "build.sh"]
+            [step for _, _, step, _ in self.calls], ["sdist", "build"]
         )
         self.assertEqual(self.signs, [])
 
@@ -1130,8 +1236,95 @@ class TestDebPackage(unittest.TestCase):
         self.assertEqual(lines[0], "the sdist failed (1): sdist.log")
         self.assertEqual(len(self.calls), 1)
 
+    def test_here_sdist(self):
+        """Of the checkout itself, in this system; in out, the sdist."""
+        code, lines, err, tmp = self.main(
+            "--here", "sdist", programs=(), root=True
+        )
+        self.assertEqual(code, 0)
+        trixie = "docker.io/library/debian:trixie"
+        self.assertEqual(
+            self.calls, [(True, trixie, "sdist", ["/src", "/out"])]
+        )
+        self.assertEqual(
+            lines, [f"the sdist: {os.path.join(self.out, SDIST)}"]
+        )
+        self.assertEqual(os.listdir(self.out), [SDIST])
+        self.assertEqual(os.listdir(tmp), [])
+
+    def test_here_sdist_without_lfs_pictures(self):
+        code, lines, err, tmp = self.main(
+            "--here", "sdist", programs=(), root=True, pointer=True
+        )
+        self.assertEqual(code, 1)
+        self.assertEqual(
+            lines[0],
+            "the pictures of Git LFS are missing, as figure.png:"
+            " `git lfs pull`",
+        )
+        self.assertEqual(self.calls, [])
+
+    def here_build(self, **kwargs):
+        given = os.path.join(self.folder, "given")
+        os.makedirs(given)
+        path = make_sdist(given, VERSION)
+        return self.main(
+            "--here",
+            "build",
+            "--sdist",
+            path,
+            "ubuntu-24.04",
+            programs=(),
+            root=True,
+            **kwargs,
+        )
+
+    def test_here_build(self):
+        """The package of one distribution, in this system, from the sdist;
+        not installed."""
+        code, lines, err, tmp = self.here_build()
+        self.assertEqual(code, 0)
+        noble = "docker.io/library/ubuntu:24.04"
+        self.assertEqual(
+            self.calls,
+            [
+                (
+                    True,
+                    noble,
+                    "build",
+                    [f"/sdist/{SDIST}", "/debian", "/out"]
+                    + ["3.0.0~dev8", "3.0.0~dev8-0~noble1", "noble"],
+                ),
+            ],
+        )
+        self.assertEqual(
+            lines,
+            [
+                "ubuntu-24.04: virtualbricks 3.0.0~dev8-0~noble1",
+                "  lintian: nothing",
+                f"the packages: {self.out}",
+            ],
+        )
+        self.assertEqual(sorted(os.listdir(self.out)), self.uploaded("noble"))
+        self.assertEqual(os.listdir(tmp), [])
+
+    def test_here_build_when_lintian_warns(self):
+        code, lines, err, tmp = self.here_build(
+            lintian="W: virtualbricks: a-warning\n"
+        )
+        self.assertEqual(code, 1)
+        self.assertEqual(
+            lines[1:3],
+            [
+                "  lintian: failed: lintian.log",
+                "    W: virtualbricks: a-warning",
+            ],
+        )
+        self.assertEqual(os.listdir(self.out), [])
+
     def test_refused(self):
         """Nothing runs."""
+        missing = os.path.join(self.folder, "missing.tar.gz")
         for argv, kwargs, message in [
             (
                 ["ubuntu-22.04", "debian-13"],
@@ -1154,6 +1347,28 @@ class TestDebPackage(unittest.TestCase):
                 ["debian-13", "--key", "OTHER"],
                 {},
                 "gpg has no secret key OTHER",
+            ),
+            (["debian-13", "--sdist", missing], {}, f"no sdist {missing}"),
+            (
+                ["--here", "sdist"],
+                {},
+                "--here sdist installs packages: run it as root",
+            ),
+            (
+                ["--here", "sdist", "debian-13"],
+                {"root": True},
+                "--here sdist takes no distribution and no --sdist",
+            ),
+            (
+                ["--here", "build", "debian-13"],
+                {"root": True},
+                "--here build takes one distribution and --sdist",
+            ),
+            (
+                ["--here", "build", "--sdist", missing]
+                + ["debian-13", "ubuntu-24.04"],
+                {"root": True},
+                "--here build takes one distribution and --sdist",
             ),
         ]:
             shutil.rmtree(self.folder)
