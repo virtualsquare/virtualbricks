@@ -108,11 +108,80 @@ The button at the end of the row, the right button of the mouse, the
 **Resume**
 
 :   For a virtual machine, start it from the state that **Suspend** saved in
-    its first disk.
+    its first disk. A machine that runs goes back to that state.
 
 **Process**
 
-:   For a running brick, what to do with its process: **Open Control Monitor**,
-    which opens the console of the brick in a terminal; **Pause** and
-    **Continue**; **Suspend** and **Reset** for a virtual machine; **Restart**;
-    **Terminate** and **Kill**, when it doesn't stop.
+:   While the brick runs, what to do with its program; see
+    [](bricks#process).
+
+## The process of a brick {#process}
+
+While a brick runs, its menu has **Process**, named after the number of its
+process, as **Process 4242**. Its items act on the program of this brick
+alone, never on the bricks it plugs into. A brick that is starting has no
+process yet, and a switch wrapper has none of its own: its switch is another
+program's.
+
+**Open Control Monitor**
+
+:   Opens the console of the program in a terminal, the one of the
+    **Terminal** setting (see [](settings)): the monitor of QEMU for a virtual
+    machine, the console of `vde_switch`{.cmd}, `vde_router`{.cmd} or
+    `vde-netemu`{.cmd} for a switch, a router or a netemu. There you type the
+    commands of the program, as `info network`{.cmd} in QEMU or
+    `port/print`{.cmd} in a switch; `help`{.cmd} lists them. Closing the
+    terminal leaves the program running, but `quit`{.cmd} in QEMU and
+    `shutdown`{.cmd} in a switch end it, and the brick stops. A tap and a
+    capture interface have no console.
+
+    In the windows of another computer (see [](remote)), the terminal opens on
+    your desktop. When your desktop lacks the program it needs, the item is
+    greyed and says which, as **Open Control Monitor (needs unixterm of
+    vde2)**.
+
+**Pause**, **Continue**
+
+:   **Pause** freezes the program where it is, with the signal SIGSTOP, and
+    **Continue** lets it go on, with SIGCONT. A paused switch passes no
+    traffic, and a paused machine does nothing at all. Nothing shows that a
+    brick is paused: its state stays **Running**. **Stop** may wait until it
+    continues; **Kill** doesn't.
+
+**Suspend**
+
+:   For a virtual machine: saves the state of the machine, its memory and its
+    devices, in its first disk, then asks its system to shut down, as
+    **Stop**. **Resume**, in the menu, starts it again from that state. The
+    state goes into the private copy of the disk, which takes any image, or
+    into the image itself, which must then be qcow2: on a raw one the **Logs**
+    window says that suspend isn't supported.
+
+**Reset**
+
+:   For a virtual machine: its reset button. The system of the machine starts
+    over at once, without shutting down, and what it didn't save is lost. The
+    process stays the same.
+
+**Restart**
+
+:   Stops the brick, as **Stop**, and starts it again, in a new process: the
+    settings that wait for a start take effect, and its events run, **When It
+    Stops** then **When It Starts**. A brick that hasn't stopped after two
+    seconds is killed, as **Kill**: a virtual machine has those two seconds to
+    shut its system down.
+
+**Terminate**
+
+:   For a virtual machine whose system doesn't answer **Stop**: QEMU closes
+    the disks and ends, with the signal SIGTERM, and the system of the machine
+    goes off as when the power is cut. The other bricks have no need of it,
+    since their **Stop** already sends SIGTERM. Greyed in the windows of
+    another computer.
+
+**Kill**
+
+:   The program ends at once, with the signal SIGKILL, which it can't refuse,
+    even paused. It can't clean up either: a switch leaves its socket behind,
+    and QEMU doesn't close the disks of a machine. The last resort, when
+    **Stop**, or **Terminate** for a machine, doesn't stop it.

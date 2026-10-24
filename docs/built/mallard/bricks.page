@@ -80,11 +80,46 @@
       </item>
       <item>
         <title><gui>Resume</gui></title>
-        <p>For a virtual machine, start it from the state that <gui>Suspend</gui> saved in its first disk.</p>
+        <p>For a virtual machine, start it from the state that <gui>Suspend</gui> saved in its first disk. A machine that runs goes back to that state.</p>
       </item>
       <item>
         <title><gui>Process</gui></title>
-        <p>For a running brick, what to do with its process: <gui>Open Control Monitor</gui>, which opens the console of the brick in a terminal; <gui>Pause</gui> and <gui>Continue</gui>; <gui>Suspend</gui> and <gui>Reset</gui> for a virtual machine; <gui>Restart</gui>; <gui>Terminate</gui> and <gui>Kill</gui>, when it doesn't stop.</p>
+        <p>While the brick runs, what to do with its program; see <link xref="bricks#process"/>.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="process">
+    <title>The process of a brick</title>
+    <p>While a brick runs, its menu has <gui>Process</gui>, named after the number of its process, as <gui>Process 4242</gui>. Its items act on the program of this brick alone, never on the bricks it plugs into. A brick that is starting has no process yet, and a switch wrapper has none of its own: its switch is another program's.</p>
+    <terms>
+      <item>
+        <title><gui>Open Control Monitor</gui></title>
+        <p>Opens the console of the program in a terminal, the one of the <gui>Terminal</gui> setting (see <link xref="settings"/>): the monitor of QEMU for a virtual machine, the console of <cmd>vde_switch</cmd>, <cmd>vde_router</cmd> or <cmd>vde-netemu</cmd> for a switch, a router or a netemu. There you type the commands of the program, as <cmd>info network</cmd> in QEMU or <cmd>port/print</cmd> in a switch; <cmd>help</cmd> lists them. Closing the terminal leaves the program running, but <cmd>quit</cmd> in QEMU and <cmd>shutdown</cmd> in a switch end it, and the brick stops. A tap and a capture interface have no console.</p>
+        <p>In the windows of another computer (see <link xref="remote"/>), the terminal opens on your desktop. When your desktop lacks the program it needs, the item is greyed and says which, as <gui>Open Control Monitor (needs unixterm of vde2)</gui>.</p>
+      </item>
+      <item>
+        <title><gui>Pause</gui>, <gui>Continue</gui></title>
+        <p><gui>Pause</gui> freezes the program where it is, with the signal SIGSTOP, and <gui>Continue</gui> lets it go on, with SIGCONT. A paused switch passes no traffic, and a paused machine does nothing at all. Nothing shows that a brick is paused: its state stays <gui>Running</gui>. <gui>Stop</gui> may wait until it continues; <gui>Kill</gui> doesn't.</p>
+      </item>
+      <item>
+        <title><gui>Suspend</gui></title>
+        <p>For a virtual machine: saves the state of the machine, its memory and its devices, in its first disk, then asks its system to shut down, as <gui>Stop</gui>. <gui>Resume</gui>, in the menu, starts it again from that state. The state goes into the private copy of the disk, which takes any image, or into the image itself, which must then be qcow2: on a raw one the <gui>Logs</gui> window says that suspend isn't supported.</p>
+      </item>
+      <item>
+        <title><gui>Reset</gui></title>
+        <p>For a virtual machine: its reset button. The system of the machine starts over at once, without shutting down, and what it didn't save is lost. The process stays the same.</p>
+      </item>
+      <item>
+        <title><gui>Restart</gui></title>
+        <p>Stops the brick, as <gui>Stop</gui>, and starts it again, in a new process: the settings that wait for a start take effect, and its events run, <gui>When It Stops</gui> then <gui>When It Starts</gui>. A brick that hasn't stopped after two seconds is killed, as <gui>Kill</gui>: a virtual machine has those two seconds to shut its system down.</p>
+      </item>
+      <item>
+        <title><gui>Terminate</gui></title>
+        <p>For a virtual machine whose system doesn't answer <gui>Stop</gui>: QEMU closes the disks and ends, with the signal SIGTERM, and the system of the machine goes off as when the power is cut. The other bricks have no need of it, since their <gui>Stop</gui> already sends SIGTERM. Greyed in the windows of another computer.</p>
+      </item>
+      <item>
+        <title><gui>Kill</gui></title>
+        <p>The program ends at once, with the signal SIGKILL, which it can't refuse, even paused. It can't clean up either: a switch leaves its socket behind, and QEMU doesn't close the disks of a machine. The last resort, when <gui>Stop</gui>, or <gui>Terminate</gui> for a machine, doesn't stop it.</p>
       </item>
     </terms>
   </section>
