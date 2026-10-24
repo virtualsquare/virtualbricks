@@ -28,9 +28,11 @@ import json
 import os
 import platform
 import re
+import shutil
 import signal
 import subprocess
 import sys
+import tarfile
 import tempfile
 import textwrap
 import tomllib
@@ -618,6 +620,547 @@ class TestTargetSuite(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertEqual(err, "podman isn't installed\n")
         self.assertEqual(self.calls, [])
+
+
+# What the sdist of the containers has, its version.
+VERSION = "3.0.0.dev8"
+SDIST = f"virtualbricks-{VERSION}.tar.gz"
+
+
+def make_sdist(folder, version, members=None):
+    """An sdist in folder with a PKG-INFO of version, and members, a
+    {name: text} after it."""
+    path = os.path.join(folder, f"virtualbricks-{version}.tar.gz")
+    files = {
+        f"virtualbricks-{version}/PKG-INFO": "Metadata-Version: 2.4\n"
+        f"Name: virtualbricks\nVersion: {version}\n",
+        **(members or {}),
+    }
+    with tarfile.open(path, "w:gz") as tar:
+        for name, text in files.items():
+            data = text.encode("utf-8")
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            tar.addfile(info, io.BytesIO(data))
+    return path
+
+
+def git(folder, *args):
+    subprocess.run(
+        ["git", "-C", folder, *args], check=True, capture_output=True
+    )
+
+
+def make_repo(folder):
+    """A Git repository of a.txt and docs/b.txt in folder."""
+    os.makedirs(os.path.join(folder, "docs"))
+    git(folder, "init", "-q")
+    write(folder, "a.txt", "a\n")
+    write(folder, "docs/b.txt", "b\n")
+    git(folder, "add", ".")
+    git(
+        folder,
+        "-c",
+        "user.name=Test",
+        "-c",
+        "user.email=test@example.invalid",
+        "commit",
+        "-q",
+        "-m",
+        "files",
+    )
+
+
+# A picture of Git LFS whose file the checkout has not.
+LFS_POINTER = (
+    "version https://git-lfs.github.com/spec/v1\n"
+    "oid sha256:4d7a214614ab2935c943f9e0ff69d22eadbb8f32b1258daaa5e2ca24d17e2393\n"
+    "size 12345\n"
+)
+
+
+class TestDebPackage(unittest.TestCase):
+
+    def setUp(self):
+        self.tool = load("debpackage")
+        self.folder = os.path.abspath(self.mktemp())
+        os.makedirs(self.folder)
+
+    def debian(self, version):
+        return self.tool.debian_version(version)
+
+    def test_debian_version(self):
+        """A tilde before a pre-release; the others as they are."""
+        for version, debian in [
+            ("3.0.0", "3.0.0"),
+            ("3.0.0.dev8", "3.0.0~dev8"),
+            ("3.0.0a1", "3.0.0~a1"),
+            ("3.0.0b2", "3.0.0~b2"),
+            ("3.0.0rc1", "3.0.0~rc1"),
+            ("3.0.0rc1.dev2", "3.0.0~rc1~dev2"),
+            ("3.0.0.post1", "3.0.0.post1"),
+        ]:
+            self.assertEqual(self.debian(version), debian)
+
+    def test_debian_versions_in_order(self):
+        """dpkg puts them in the order of Python; but a dev release after
+        the alphas and the betas."""
+        if shutil.which("dpkg") is None:
+            raise unittest.SkipTest("dpkg")
+        pairs = []
+        for versions in (
+            [
+                "3.0.0.dev8",
+                "3.0.0rc1.dev2",
+                "3.0.0rc1",
+                "3.0.0",
+                "3.0.0.post1",
+            ],
+            ["3.0.0a1", "3.0.0b2", "3.0.0rc1"],
+        ):
+            pairs += zip(versions, versions[1:])
+        for older, newer in pairs:
+            subprocess.run(
+                [
+                    "dpkg",
+                    "--compare-versions",
+                    self.debian(older),
+                    "lt",
+                    self.debian(newer),
+                ],
+                check=True,
+            )
+
+    def test_sdist_version(self):
+        """The PKG-INFO of the top folder, not the one of the egg-info."""
+        egg = f"virtualbricks-{VERSION}/virtualbricks.egg-info/PKG-INFO"
+        path = make_sdist(self.folder, VERSION, {egg: "Version: 9\n"})
+        self.assertEqual(self.tool.sdist_version(path), VERSION)
+
+    def test_sdist_without_version(self):
+        path = os.path.join(self.folder, "empty.tar.gz")
+        tarfile.open(path, "w:gz").close()
+        self.assertRaises(ValueError, self.tool.sdist_version, path)
+
+    def test_copy_tracked(self):
+        """What Git tracks, as it is in the folder: not what it doesn't
+        track, nor what is gone."""
+        repo = os.path.join(self.folder, "repo")
+        make_repo(repo)
+        write(repo, "a.txt", "edited\n")
+        write(repo, "untracked.txt", "u\n")
+        os.remove(os.path.join(repo, "docs/b.txt"))
+        copy = os.path.join(self.folder, "copy")
+        self.tool.copy_tracked(repo, copy)
+        self.assertEqual(os.listdir(copy), ["a.txt"])
+        with open(os.path.join(copy, "a.txt"), encoding="utf-8") as fp:
+            self.assertEqual(fp.read(), "edited\n")
+
+    def test_lfs_pointers(self):
+        """The pictures that are pointers, not the others."""
+        os.makedirs(os.path.join(self.folder, "figures"))
+        write(self.folder, "figures/pointer.png", LFS_POINTER)
+        write(self.folder, "pointer.txt", LFS_POINTER)
+        with open(os.path.join(self.folder, "picture.png"), "wb") as fp:
+            fp.write(b"\x89PNG\r\n\x1a\n")
+        self.assertEqual(
+            self.tool.lfs_pointers(self.folder), ["figures/pointer.png"]
+        )
+
+    def test_lintian_tags(self):
+        """The errors and the warnings."""
+        log = (
+            "running with root privileges is not recommended!\n"
+            "E: virtualbricks: an-error\n"
+            "W: virtualbricks source: a-warning\n"
+            "I: virtualbricks: an-information\n"
+            "N:   An explanation.\n"
+        )
+        self.assertEqual(
+            self.tool.lintian_tags(log),
+            [
+                "E: virtualbricks: an-error",
+                "W: virtualbricks source: a-warning",
+            ],
+        )
+
+    def test_scripts(self):
+        """The scripts of the containers are shell that sh reads."""
+        tool = self.tool
+        for script in (tool.SDIST, tool.BUILD, tool.INSTALL, tool.CHECK):
+            subprocess.run(["sh", "-n", "-c", script], check=True)
+
+    def test_signatures(self):
+        """gpgv takes the signatures of the key; not a file changed after,
+        nor one unsigned."""
+        for program in ("gpg", "gpgv", "gpgconf"):
+            if shutil.which(program) is None:
+                raise unittest.SkipTest(program)
+        # short: the sockets of gpg-agent may go in it
+        home = tempfile.mkdtemp(prefix="gpg.")
+        self.addCleanup(shutil.rmtree, home, True)
+        old = os.environ.get("GNUPGHOME")
+        os.environ["GNUPGHOME"] = home
+
+        def restore():
+            subprocess.run(["gpgconf", "--kill", "all"], check=False)
+            if old is None:
+                del os.environ["GNUPGHOME"]
+            else:
+                os.environ["GNUPGHOME"] = old
+
+        self.addCleanup(restore)
+        gpg = ["gpg", "--batch", "--quiet", "--pinentry-mode", "loopback"]
+        gpg += ["--passphrase", ""]
+        subprocess.run(
+            gpg
+            + ["--quick-gen-key", "Test <test@example.invalid>"]
+            + ["ed25519", "sign", "never"],
+            check=True,
+            capture_output=True,
+        )
+        paths = {}
+        for name in ("good.changes", "changed.dsc", "unsigned.buildinfo"):
+            write(self.folder, f"{name}.in", f"{name}\n")
+            paths[name] = os.path.join(self.folder, name)
+            if name == "unsigned.buildinfo":
+                os.rename(paths[name] + ".in", paths[name])
+                continue
+            subprocess.run(
+                gpg
+                + ["--clearsign", "--output", paths[name]]
+                + [paths[name] + ".in"],
+                check=True,
+            )
+        with open(paths["changed.dsc"], encoding="utf-8") as fp:
+            text = fp.read()
+        write(self.folder, "changed.dsc", text.replace("changed", "edited"))
+        bad = self.tool.signatures(
+            "test@example.invalid", list(paths.values()), self.folder
+        )
+        self.assertEqual(
+            bad, [paths["changed.dsc"], paths["unsigned.buildinfo"]]
+        )
+        self.assertTrue(os.path.exists(os.path.join(self.folder, "gpgv.log")))
+
+    # main(), with fakes of podman, debsign and gpgv
+
+    def main(
+        self,
+        *argv,
+        sdist=0,
+        build=0,
+        lintian="",
+        install=0,
+        programs=("podman", "debsign", "gpgv"),
+        keys=("KEY",),
+        signs=True,
+        bad=(),
+        pointer=False,
+    ):
+        """main(argv): its code, stdout, stderr and the temporary folder;
+        the calls of the containers in self.calls, of debsign in
+        self.signs. sdist, build and install are the exit statuses of
+        their containers, install by image if a dict; lintian is a
+        warning it says."""
+        repo = os.path.join(self.folder, "repo")
+        make_repo(repo)
+        if pointer:
+            write(repo, "figure.png", LFS_POINTER)
+            git(repo, "add", "figure.png")
+        self.patch(self.tool, "ROOT", repo)
+        debian = os.path.join(repo, "debian")
+        os.makedirs(debian)
+        write(debian, "control", "Source: virtualbricks\n")
+        tmp = os.path.join(self.folder, "tmp")
+        os.makedirs(tmp)
+        self.patch(tempfile, "tempdir", tmp)
+        self.patch(
+            self.tool.shutil,
+            "which",
+            lambda name: f"/usr/bin/{name}" if name in programs else None,
+        )
+        self.calls = []
+        self.signs = []
+
+        def podman(image, volumes, command, log):
+            folders = {}
+            for volume in volumes:
+                host, path = volume.split(":")[:2]
+                folders[path] = host
+            script = os.path.basename(command[1])
+            self.calls.append((image, script, list(command[2:])))
+            write(os.path.dirname(log), os.path.basename(log), "")
+            if script == "sdist.sh":
+                self.assertEqual(
+                    sorted(os.listdir(folders["/src"])), ["a.txt", "docs"]
+                )
+                if sdist == 0:
+                    make_sdist(folders["/out"], VERSION)
+                return sdist
+            if script == "build.sh":
+                self.assertEqual(os.listdir(folders["/debian"]), ["control"])
+                out = folders["/out"]
+                _, upstream, version, _ = command[2:]
+                if build == 0:
+                    for name in [
+                        f"virtualbricks_{upstream}.orig.tar.gz",
+                        f"virtualbricks_{version}.dsc",
+                        f"virtualbricks_{version}.debian.tar.xz",
+                        f"virtualbricks_{version}_all.deb",
+                        f"virtualbricks_{version}_amd64.buildinfo",
+                        f"virtualbricks_{version}_amd64.changes",
+                    ]:
+                        write(out, name, name)
+                    write(out, "lintian.log", lintian)
+                    write(out, "lintian.status", "1\n" if lintian else "0\n")
+                return build
+            self.assertEqual(script, "install.sh")
+            self.assertIn("check.sh", os.listdir(folders["/debs"]))
+            if isinstance(install, dict):
+                return install.get(image, 0)
+            return install
+
+        def sign(key, changes, log):
+            self.assertEqual(os.path.dirname(log), os.path.dirname(changes))
+            self.signs.append((key, os.path.basename(changes)))
+            return signs
+
+        def signatures(key, paths, folder):
+            self.assertEqual(
+                [os.path.splitext(path)[1] for path in paths],
+                [".changes", ".dsc", ".buildinfo"],
+            )
+            return [path for path in paths if path.endswith(bad)]
+
+        self.patch(self.tool, "podman", podman)
+        self.patch(self.tool, "sign", sign)
+        self.patch(self.tool, "signatures", signatures)
+        self.patch(self.tool, "has_secret_key", lambda key: key in keys)
+        self.out = os.path.join(self.folder, "out")
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = self.tool.main(list(argv) + ["--out", self.out])
+        return code, out.getvalue().splitlines(), err.getvalue(), tmp
+
+    def uploaded(self, *codenames):
+        """The files of the uploads of codenames."""
+        names = ["virtualbricks_3.0.0~dev8.orig.tar.gz"]
+        for codename in codenames:
+            version = f"3.0.0~dev8-0~{codename}1"
+            names += [
+                f"virtualbricks_{version}.debian.tar.xz",
+                f"virtualbricks_{version}.dsc",
+                f"virtualbricks_{version}_all.deb",
+                f"virtualbricks_{version}_amd64.buildinfo",
+                f"virtualbricks_{version}_amd64.changes",
+            ]
+        return sorted(names)
+
+    def test_main(self):
+        """The sdist, the package built, checked; in out, nothing left."""
+        code, lines, err, tmp = self.main("debian-13")
+        self.assertEqual(code, 0)
+        trixie = "docker.io/library/debian:trixie"
+        self.assertEqual(
+            self.calls,
+            [
+                (trixie, "sdist.sh", []),
+                (
+                    trixie,
+                    "build.sh",
+                    [SDIST, "3.0.0~dev8", "3.0.0~dev8-0~trixie1", "trixie"],
+                ),
+                (trixie, "install.sh", []),
+            ],
+        )
+        self.assertEqual(
+            lines,
+            [
+                "debian-13: virtualbricks 3.0.0~dev8-0~trixie1",
+                "  lintian: nothing",
+                "  the package: a switch made, the windows open",
+                f"the packages: {self.out}",
+            ],
+        )
+        self.assertEqual(err, "making the sdist\nbuilding on debian-13\n")
+        self.assertEqual(sorted(os.listdir(self.out)), self.uploaded("trixie"))
+        self.assertEqual(os.listdir(tmp), [])
+        self.assertEqual(self.signs, [])
+
+    def test_main_on_every_target(self):
+        """One sdist; their lines in the order of TARGETS."""
+        code, lines, err, tmp = self.main()
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            [script for _, script, _ in self.calls].count("sdist.sh"), 1
+        )
+        self.assertEqual(
+            [line.split(":")[0] for line in lines if line[0] != " "][:-1],
+            list(self.tool.TARGETS),
+        )
+        codenames = [target.codename for target in self.tool.TARGETS.values()]
+        self.assertEqual(
+            sorted(os.listdir(self.out)), self.uploaded(*codenames)
+        )
+
+    def test_main_signed(self):
+        """debsign signs the .changes with the key; gpgv checks."""
+        code, lines, err, tmp = self.main("debian-13", "--key", "KEY")
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            self.signs,
+            [("KEY", "virtualbricks_3.0.0~dev8-0~trixie1_amd64.changes")],
+        )
+        self.assertEqual(lines[-2], "  the signature: good, KEY")
+        self.assertEqual(sorted(os.listdir(self.out)), self.uploaded("trixie"))
+
+    def assertFailed(self, code, lines, tmp, *expected):
+        """Failed: the lines of debian-13 after its first, its folder kept,
+        nothing in out."""
+        self.assertEqual(code, 1)
+        self.assertEqual(lines[1:-1], list(expected))
+        [work] = os.listdir(tmp)
+        folder = os.path.join(tmp, work, "debian-13")
+        self.assertEqual(lines[-1], f"  the logs: {folder}")
+        self.assertTrue(os.path.isdir(folder))
+        self.assertEqual(os.listdir(self.out), [])
+
+    def test_main_with_a_bad_signature(self):
+        code, lines, err, tmp = self.main(
+            "debian-13", "--key", "KEY", bad=".dsc"
+        )
+        self.assertFailed(
+            code,
+            lines,
+            tmp,
+            "  lintian: nothing",
+            "  the package: a switch made, the windows open",
+            "  the signature: bad on virtualbricks_3.0.0~dev8-0~trixie1.dsc:"
+            " gpgv.log",
+        )
+
+    def test_main_when_debsign_fails(self):
+        code, lines, err, tmp = self.main(
+            "debian-13", "--key", "KEY", signs=False
+        )
+        self.assertFailed(
+            code,
+            lines,
+            tmp,
+            "  lintian: nothing",
+            "  the package: a switch made, the windows open",
+            "  the signature: debsign failed: debsign.log",
+        )
+
+    def test_main_when_the_build_fails(self):
+        """Nothing more, nothing signed."""
+        code, lines, err, tmp = self.main("debian-13", "--key", "KEY", build=2)
+        self.assertFailed(
+            code, lines, tmp, "  the build failed (2): build.log"
+        )
+        self.assertEqual(
+            [script for _, script, _ in self.calls], ["sdist.sh", "build.sh"]
+        )
+        self.assertEqual(self.signs, [])
+
+    def test_main_when_lintian_warns(self):
+        """Its tags; the package is checked all the same."""
+        code, lines, err, tmp = self.main(
+            "debian-13", lintian="W: virtualbricks: a-warning\n"
+        )
+        self.assertFailed(
+            code,
+            lines,
+            tmp,
+            "  lintian: failed: lintian.log",
+            "    W: virtualbricks: a-warning",
+            "  the package: a switch made, the windows open",
+        )
+
+    def test_main_when_the_package_fails(self):
+        """Not installed, no switch, the windows, or the container."""
+        for status, line in [
+            (self.tool.NO_INSTALL, "not installed: install.log"),
+            (self.tool.NO_CONSOLE, "no switch: install.log"),
+            (self.tool.NO_WINDOWS, "the windows failed: install.log"),
+            (125, "the container failed (125)"),
+        ]:
+            shutil.rmtree(self.folder)
+            os.makedirs(self.folder)
+            code, lines, err, tmp = self.main("debian-13", install=status)
+            self.assertFailed(
+                code,
+                lines,
+                tmp,
+                "  lintian: nothing",
+                f"  the package: {line}",
+            )
+
+    def test_main_when_one_fails(self):
+        """The packages of the other go in out."""
+        trixie = "docker.io/library/debian:trixie"
+        code, lines, err, tmp = self.main(
+            "debian-13",
+            "ubuntu-24.04",
+            install={trixie: self.tool.NO_CONSOLE},
+        )
+        self.assertEqual(code, 1)
+        self.assertEqual(lines[-1], f"the packages that passed: {self.out}")
+        self.assertEqual(sorted(os.listdir(self.out)), self.uploaded("noble"))
+
+    def test_main_without_lfs_pictures(self):
+        """No sdist."""
+        code, lines, err, tmp = self.main("debian-13", pointer=True)
+        self.assertEqual(code, 1)
+        [work] = os.listdir(tmp)
+        self.assertEqual(
+            lines,
+            [
+                "the pictures of Git LFS are missing, as figure.png:"
+                " `git lfs pull`",
+                f"the logs: {os.path.join(tmp, work)}",
+            ],
+        )
+        self.assertEqual(self.calls, [])
+
+    def test_main_when_the_sdist_fails(self):
+        code, lines, err, tmp = self.main("debian-13", sdist=1)
+        self.assertEqual(code, 1)
+        self.assertEqual(lines[0], "the sdist failed (1): sdist.log")
+        self.assertEqual(len(self.calls), 1)
+
+    def test_refused(self):
+        """Nothing runs."""
+        for argv, kwargs, message in [
+            (
+                ["ubuntu-22.04", "debian-13"],
+                {},
+                "unknown distributions: ubuntu-22.04",
+            ),
+            (["debian-13"], {"programs": ()}, "podman isn't installed"),
+            (
+                ["debian-13", "--debian", self.folder],
+                {},
+                f"no control in {self.folder}: debian/ is on the packaging"
+                " branch, gitlab-ci-dev; --debian names another folder",
+            ),
+            (
+                ["debian-13", "--key", "KEY"],
+                {"programs": ("podman", "gpgv")},
+                "debsign isn't installed",
+            ),
+            (
+                ["debian-13", "--key", "OTHER"],
+                {},
+                "gpg has no secret key OTHER",
+            ),
+        ]:
+            shutil.rmtree(self.folder)
+            os.makedirs(self.folder)
+            code, lines, err, tmp = self.main(*argv, **kwargs)
+            self.assertEqual((code, err), (2, message + "\n"))
+            self.assertEqual(self.calls, [])
 
 
 def versions_table():
