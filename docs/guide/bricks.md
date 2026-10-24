@@ -132,8 +132,9 @@ program's.
     commands of the program, as `info network`{.cmd} in QEMU or
     `port/print`{.cmd} in a switch; `help`{.cmd} lists them. Closing the
     terminal leaves the program running, but `quit`{.cmd} in QEMU and
-    `shutdown`{.cmd} in a switch end it, and the brick stops. A tap and a
-    capture interface have no console.
+    `shutdown`{.cmd} in a switch end it, and the brick stops. A wire, a
+    tunnel, a tap and a capture interface have no console: their **Process**
+    lacks this item.
 
     In the windows of another computer (see [](remote)), the terminal opens on
     your desktop. When your desktop lacks the program it needs, the item is

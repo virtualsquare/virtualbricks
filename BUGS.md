@@ -7,19 +7,6 @@ in 3.0: they wait until after it.
 
 ## Bricks
 
-- [ ] **Open Control Monitor is offered for bricks that have no console.**
-  `NO_CONSOLE` (`virtualbricks/bricks/brickinfo.py`) lists only the tap,
-  the capture interface and the switch wrapper, but a wire, a tunnel
-  server and a tunnel client have no control socket either: only the
-  switch, the router, the netemu (`-M`) and the virtual machine (its QEMU
-  monitor) make one. **Process › Open Control Monitor** of a running
-  wire is enabled and runs `vdeterm` on `wire1.mgmt`, which isn't there:
-  `vdeterm` prints "Socket connecting error: No such file or directory"
-  and exits with 255, so the terminal closes at once, or shows that with
-  `-hold`. Seen on 3.0.0.dev8, on 24 October 2026, reading the code for
-  the guide (`bricks.md`, The process of a brick); `vdeterm` on a missing
-  socket checked by hand. Likely fix: the three kinds in `NO_CONSOLE`,
-  whose comment then says "without a control socket".
 - [ ] **Pause doesn't pause a wire.** **Process › Pause** sends SIGSTOP to
   the process of the brick alone; that of a wire is `dpipe`, which only
   joins the two `vde_plug` it starts, by pipes, and waits: the frames go

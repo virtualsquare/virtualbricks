@@ -238,7 +238,13 @@ class TestTheMenu(BrickMenuTestCase):
         )
 
     def test_no_control_monitor(self):
-        for kind in ("tap", "capture"):
+        for kind in (
+            "tap",
+            "capture",
+            "wire",
+            "tunnellisten",
+            "tunnelconnect",
+        ):
             brick = self.running(self.brick(kind, kind))
             process = self.menu(brick)[2][0][1]
             self.assertEqual(process[0], ["Pause", "Continue"], kind)

@@ -324,9 +324,20 @@ def connectable(brick: Brick, bricks: Iterable[Brick]) -> list[Brick]:
 
 # New Brick
 
-# The kinds of brick without a control monitor: a switch wrapper's switch
-# has its own, if any, which Virtualbricks doesn't know.
-NO_CONSOLE = frozenset(("Tap", "Capture", "SwitchWrapper"))
+# The kinds of brick without a control socket: only the switch, the router
+# and the netemu make one (-M), and the virtual machine (its QEMU monitor).
+# A switch wrapper's switch has its own, if any, which Virtualbricks
+# doesn't know.
+NO_CONSOLE = frozenset(
+    (
+        "Tap",
+        "Capture",
+        "SwitchWrapper",
+        "Wire",
+        "TunnelListen",
+        "TunnelConnect",
+    )
+)
 
 # The groups of the kinds.
 MACHINES = _("Machines and switches")

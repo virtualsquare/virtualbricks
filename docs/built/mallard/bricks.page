@@ -94,7 +94,7 @@
     <terms>
       <item>
         <title><gui>Open Control Monitor</gui></title>
-        <p>Opens the console of the program in a terminal, the one of the <gui>Terminal</gui> setting (see <link xref="settings"/>): the monitor of QEMU for a virtual machine, the console of <cmd>vde_switch</cmd>, <cmd>vde_router</cmd> or <cmd>vde-netemu</cmd> for a switch, a router or a netemu. There you type the commands of the program, as <cmd>info network</cmd> in QEMU or <cmd>port/print</cmd> in a switch; <cmd>help</cmd> lists them. Closing the terminal leaves the program running, but <cmd>quit</cmd> in QEMU and <cmd>shutdown</cmd> in a switch end it, and the brick stops. A tap and a capture interface have no console.</p>
+        <p>Opens the console of the program in a terminal, the one of the <gui>Terminal</gui> setting (see <link xref="settings"/>): the monitor of QEMU for a virtual machine, the console of <cmd>vde_switch</cmd>, <cmd>vde_router</cmd> or <cmd>vde-netemu</cmd> for a switch, a router or a netemu. There you type the commands of the program, as <cmd>info network</cmd> in QEMU or <cmd>port/print</cmd> in a switch; <cmd>help</cmd> lists them. Closing the terminal leaves the program running, but <cmd>quit</cmd> in QEMU and <cmd>shutdown</cmd> in a switch end it, and the brick stops. A wire, a tunnel, a tap and a capture interface have no console: their <gui>Process</gui> lacks this item.</p>
         <p>In the windows of another computer (see <link xref="remote"/>), the terminal opens on your desktop. When your desktop lacks the program it needs, the item is greyed and says which, as <gui>Open Control Monitor (needs unixterm of vde2)</gui>.</p>
       </item>
       <item>
