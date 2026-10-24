@@ -529,9 +529,9 @@ To add a language, see the top of `l10n.sh`.
 
 ### Debian packages
 
-The `debian/` folder is on the packaging branch, `gitlab-ci-dev`: develop
-with `debian/` and the pipeline of GitLab, which builds the packages of each
-supported distribution. `tools/debpackage.py` builds and checks them here, in
+The `debian/` folder and the pipeline of GitLab, `.gitlab-ci.yml`, build the
+packages of each supported distribution; the pipeline runs on the packaging
+branch, `gitlab-ci-dev`. `tools/debpackage.py` builds and checks them here, in
 containers:
 
 ```sh
@@ -545,12 +545,11 @@ every distribution. A container of each builds the package, its lintian
 checks it, and another container installs it, makes a switch in its console
 and opens its windows. With `--key`, debsign signs the uploads here, with your
 key of gpg, and gpgv checks them; without, they are unsigned. The packages
-that passed go to `dist/debian/`. On develop, `--debian` names the `debian/`
-folder of a checkout of the packaging branch. It needs `podman` and the
-network. The pipeline runs the same steps with `--here`, as root in the
-container of each job: `--here sdist` makes the sdist, `--here build --sdist
-FILE DISTRIBUTION` builds the package of one distribution from it and runs
-lintian, without installing it.
+that passed go to `dist/debian/`. `--debian` names another `debian/` folder.
+It needs `podman` and the network. The pipeline runs the same steps with
+`--here`, as root in the container of each job: `--here sdist` makes the
+sdist, `--here build --sdist FILE DISTRIBUTION` builds the package of one
+distribution from it and runs lintian, without installing it.
 
 ### Source layout
 

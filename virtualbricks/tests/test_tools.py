@@ -1335,8 +1335,7 @@ class TestDebPackage(unittest.TestCase):
             (
                 ["debian-13", "--debian", self.folder],
                 {},
-                f"no control in {self.folder}: debian/ is on the packaging"
-                " branch, gitlab-ci-dev; --debian names another folder",
+                f"no control in {self.folder}",
             ),
             (
                 ["debian-13", "--key", "KEY"],

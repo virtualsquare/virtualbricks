@@ -27,14 +27,14 @@ distribution, as the pipeline of the packaging branch builds them:
 
 The upstream tarball is the sdist of the files that Git tracks, as they are
 in the folder, edits and all: one, the same for every distribution. The
-debian/ folder is on the packaging branch, gitlab-ci-dev, not on develop:
---debian names another. Each distribution builds the package, as
-virtualbricks_3.0.0~dev8-0~trixie1: the version of Virtualbricks, where a
-pre-release comes before its release. Then its lintian checks the upload, and
-an error or a warning fails it; a new container installs the package with
-what it depends on, an empty package in place of vde-netemu, which the
-distributions don't have; as a user that isn't root, the console makes a
-switch, and the windows are still open after 15 s under xvfb.
+debian/ folder is the one of the checkout: --debian names another. Each
+distribution builds the package, as virtualbricks_3.0.0~dev8-0~trixie1: the
+version of Virtualbricks, where a pre-release comes before its release. Then
+its lintian checks the upload, and an error or a warning fails it; a new
+container installs the package with what it depends on, an empty package in
+place of vde-netemu, which the distributions don't have; as a user that isn't
+root, the console makes a switch, and the windows are still open after 15 s
+under xvfb.
 
 With --key, debsign signs the .changes, the .dsc and the .buildinfo here,
 with the key of gpg, which never goes in a container, and gpgv checks the
@@ -565,10 +565,7 @@ def refused(args: argparse.Namespace, debian: str) -> str | None:
     if args.sdist is not None and not os.path.isfile(args.sdist):
         return f"no sdist {args.sdist}"
     if not os.path.exists(os.path.join(debian, "control")):
-        return (
-            f"no control in {debian}: debian/ is on the packaging branch,"
-            " gitlab-ci-dev; --debian names another folder"
-        )
+        return f"no control in {debian}"
     if args.key is not None:
         for program in ("debsign", "gpgv"):
             if shutil.which(program) is None:
