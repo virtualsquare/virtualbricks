@@ -14,10 +14,6 @@ variables:
     DEBIAN_FRONTEND: noninteractive
     # the address of Maintainer in debian/control, for the changelog
     DEBEMAIL: Marco Giusti <marco.giusti@posteo.de>
-    # the tool that fetches the secure files into .secure_files/: a release,
-    # checked against the checksum of its binary when it was chosen
-    DOWNLOAD_SECURE_FILES_URL: https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/releases/v0.1.16/downloads/download-secure-files-linux-amd64
-    DOWNLOAD_SECURE_FILES_SHA256: a26f0e3b92f40aa8ab89d2e58d06e4723c8acde6e1a1750bb5cfa30e6737322f
 
 # The upstream tarball, the same for every distribution: the sdist, which
 # has what MANIFEST.in lists and nothing else of the checkout.
@@ -44,20 +40,6 @@ source:
     needs: [source]
     before_script:
         - apt-get update
-        - apt-get install -y --no-install-recommends ca-certificates curl gpg gpg-agent
-        - curl -sSfL -o /usr/local/bin/download-secure-files "$DOWNLOAD_SECURE_FILES_URL"
-        - echo "$DOWNLOAD_SECURE_FILES_SHA256  /usr/local/bin/download-secure-files" | sha256sum -c
-        - chmod +x /usr/local/bin/download-secure-files
-        - download-secure-files
-        # Import the GnuPG key necessary to sign the changes file.
-        - gpg --import .secure_files/public.key
-        - gpg --import .secure_files/private.key
-        # the key is in the keyring now: nothing else reads the file
-        - rm -rf .secure_files
-        # dpkg-buildpackage signs with this key, whatever the address of the
-        # changelog
-        - |
-            export DEB_SIGN_KEYID="$(gpg --list-secret-keys --with-colons | awk -F: '$1 == "fpr" {print $10; exit}')"
         # the build dependencies, those of debian/control
         - apt-get build-dep -y --no-install-recommends ./
         - apt-get install -y --no-install-recommends devscripts
@@ -81,7 +63,9 @@ source:
     script:
         - debchange --newversion "$VB_DEB_VERSION" "New upstream version"
         - debchange --release --distribution "${DISTRIBUTION}" ""
-        - dpkg-buildpackage
+        # not signed: the repository checks no signature of the uploads, and
+        # signs its Release files with its own key
+        - dpkg-buildpackage --no-sign
         - cp ../virtualbricks_"$VB_UPSTREAM_VERSION".orig.tar.gz ../virtualbricks_"$VB_DEB_VERSION"* "$CI_PROJECT_DIR"/dist/
     artifacts:
         paths:
