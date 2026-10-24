@@ -1,0 +1,535 @@
+#!/usr/bin/env python3
+# -*- test-case-name: virtualbricks.tests.test_tools -*-
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2026 Virtualbricks team
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+"""
+The Debian packages, built and checked in a container of each supported
+distribution, as the pipeline of the packaging branch builds them:
+
+    python tools/debpackage.py                          every distribution
+    python tools/debpackage.py debian-13 ubuntu-24.04
+    python tools/debpackage.py --key KEYID              signed with KEYID
+
+The upstream tarball is the sdist of the files that Git tracks, as they are
+in the folder, edits and all: one, the same for every distribution. The
+debian/ folder is on the packaging branch, gitlab-ci-dev, not on develop:
+--debian names another. Each distribution builds the package, as
+virtualbricks_3.0.0~dev8-0~trixie1: the version of Virtualbricks, where a
+pre-release comes before its release. Then its lintian checks the upload, and
+an error or a warning fails it; a new container installs the package with
+what it depends on, an empty package in place of vde-netemu, which the
+distributions don't have; as a user that isn't root, the console makes a
+switch, and the windows are still open after 15 s under xvfb.
+
+With --key, debsign signs the .changes, the .dsc and the .buildinfo here,
+with the key of gpg, which never goes in a container, and gpgv checks the
+signatures; without, the packages are unsigned. The packages that passed go
+to --out, dist/debian by default. The folder of a distribution that failed
+stays, with its logs and its files. The distributions build side by side;
+the exit status is 1 if one failed. It needs podman and the network, and
+debsign (devscripts) and gpgv for --key.
+"""
+
+import argparse
+import glob
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
+from typing import NamedTuple
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+
+
+class Target(NamedTuple):
+    image: str
+    codename: str
+
+
+# The supported distributions, as the jobs of the pipeline name them, and the
+# name of each in the changelog and in the repository.
+TARGETS: dict[str, Target] = {
+    "debian-13": Target("docker.io/library/debian:trixie", "trixie"),
+    "debian-14": Target("docker.io/library/debian:forky", "forky"),
+    "debian-sid": Target("docker.io/library/debian:sid", "sid"),
+    "ubuntu-24.04": Target("docker.io/library/ubuntu:24.04", "noble"),
+    "ubuntu-26.04": Target("docker.io/library/ubuntu:26.04", "resolute"),
+}
+# The sdist is made on Debian 13, the oldest that has setuptools 77.
+SOURCE = TARGETS["debian-13"].image
+# The exit statuses of install.sh before its end.
+NO_INSTALL = 10
+NO_CONSOLE = 11
+NO_WINDOWS = 12
+
+# As root: the files of /src, read-only, copied; their sdist in /out.
+SDIST = """\
+set -eu
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y --no-install-recommends python3-build python3-setuptools
+cp -R /src /tmp/src
+cd /tmp/src
+python3 -m build --sdist --no-isolation --outdir /out .
+"""
+# As root: the sdist of /sdist as the upstream tarball, with /debian; the
+# files of the upload in /out, then what lintian says of them. $1 is the
+# sdist, $2 the upstream version, $3 the Debian one, $4 the codename.
+BUILD = """\
+set -eu
+export DEBIAN_FRONTEND=noninteractive
+sdist=$1 upstream=$2 version=$3 codename=$4
+apt-get update
+cd /tmp
+cp "/sdist/$sdist" "virtualbricks_$upstream.orig.tar.gz"
+mkdir "virtualbricks-$upstream"
+tar -xzf "virtualbricks_$upstream.orig.tar.gz" --strip-components=1 \\
+    -C "virtualbricks-$upstream"
+cp -R /debian "virtualbricks-$upstream/"
+cd "virtualbricks-$upstream"
+apt-get build-dep -y --no-install-recommends ./
+apt-get install -y --no-install-recommends devscripts lintian
+# pyproject.toml needs setuptools 77 or newer, with packaging 24.2 or newer,
+# which Ubuntu 24.04 doesn't have (68.1 and 24.0): there they come from PyPI
+python3 -c 'import setuptools, sys
+sys.exit(int(setuptools.__version__.split(".")[0]) < 77)' || {
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --break-system-packages --ignore-installed \\
+        'setuptools>=77' 'packaging>=24.2'
+}
+# the changelog by the Maintainer of debian/control
+DEBEMAIL=$(sed -n 's/^Maintainer: //p' debian/control)
+export DEBEMAIL
+debchange --newversion "$version" "New upstream version"
+debchange --release --distribution "$codename" ""
+dpkg-buildpackage --no-sign
+cp "../virtualbricks_$upstream.orig.tar.gz" "../virtualbricks_$version"* /out/
+status=0
+# a lintian older than the Standards-Version of debian/control says so: the
+# package isn't wrong for that
+lintian --fail-on error,warning --info \\
+    --suppress-tags newer-standards-version /out/*.changes \\
+    >/out/lintian.log 2>&1 || status=$?
+echo "$status" >/out/lintian.status
+"""
+# As root: the package of /debs, read-only, with what it depends on; then
+# check.sh as another user.
+INSTALL = f"""\
+set -u
+export DEBIAN_FRONTEND=noninteractive
+apt-get update || exit {NO_INSTALL}
+mkdir -p /tmp/vde-netemu/DEBIAN
+cat >/tmp/vde-netemu/DEBIAN/control <<'EOF'
+Package: vde-netemu
+Version: 0
+Architecture: all
+Maintainer: debpackage <root@localhost>
+Description: an empty package in place of vde-netemu
+EOF
+dpkg-deb --build /tmp/vde-netemu /tmp/vde-netemu.deb || exit {NO_INSTALL}
+apt-get install -y --no-install-recommends /tmp/vde-netemu.deb xvfb xauth \\
+    /debs/virtualbricks_*_all.deb || exit {NO_INSTALL}
+useradd -m tester
+runuser -u tester -- sh /debs/check.sh
+"""
+# As the user: the console makes a switch, the windows stay open.
+CHECK = f"""\
+set -u
+export HOME=/home/tester LC_ALL=C.UTF-8 XDG_RUNTIME_DIR="$(mktemp -d)"
+cd "$HOME"
+printf 'brick new switch\\nbrick list\\nquit\\n' |
+    timeout 60 virtualbricks --no-gui --workspace "$HOME/workspace" \\
+    >console.log 2>&1
+status=$?
+echo "the console ($status):"
+cat console.log
+test "$status" = 0 || exit {NO_CONSOLE}
+awk '$1 == "sw1" && $2 == "Switch" {{found = 1}} END {{exit !found}}' \\
+    console.log || exit {NO_CONSOLE}
+xvfb-run -a timeout 15 virtualbricks --no-term </dev/null >gui.log 2>&1
+status=$?
+echo "the windows ($status):"
+cat gui.log
+test "$status" = 124 || exit {NO_WINDOWS}
+if grep -q Traceback gui.log; then exit {NO_WINDOWS}; fi
+"""
+
+
+class Result(NamedTuple):
+    """What a distribution did: if it passed, the lines that say it, the
+    folder with its files."""
+
+    passed: bool
+    lines: list[str]
+    folder: str
+
+
+def debian_version(version: str) -> str:
+    """The upstream version of Debian of a version of Python: a pre-release
+    with a tilde, which comes before what has nothing after it. As in the
+    pipeline, whose versions are the same: Debian puts 3.0.0.dev8 after
+    3.0.0a1 and 3.0.0b1, not before them."""
+
+    return re.sub(r"\.?(dev|a|b|rc)(\d+)", r"~\1\2", version)
+
+
+def sdist_version(path: str) -> str:
+    """The version in the PKG-INFO of the sdist at path."""
+
+    with tarfile.open(path) as tar:
+        for member in tar.getmembers():
+            if member.name.count("/") == 1 and member.name.endswith(
+                "/PKG-INFO"
+            ):
+                fp = tar.extractfile(member)
+                assert fp is not None
+                for line in fp.read().decode("utf-8").splitlines():
+                    if line.startswith("Version: "):
+                        return line.removeprefix("Version: ").strip()
+    raise ValueError(f"no version in {path}")
+
+
+def tracked(root: str) -> list[str]:
+    """The files of root that Git tracks and that are there."""
+
+    names = subprocess.run(
+        ["git", "-C", root, "ls-files", "-z"],
+        check=True,
+        capture_output=True,
+    ).stdout.decode("utf-8")
+    return [
+        name
+        for name in names.split("\0")
+        if name and os.path.lexists(os.path.join(root, name))
+    ]
+
+
+def copy_tracked(root: str, folder: str) -> None:
+    for name in tracked(root):
+        path = os.path.join(folder, name)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        shutil.copy2(os.path.join(root, name), path, follow_symlinks=False)
+
+
+def lfs_pointers(folder: str) -> list[str]:
+    """The pictures under folder that are pointers of Git LFS: the checkout
+    has not their files."""
+
+    pointers = []
+    for path in sorted(glob.glob(f"{folder}/**/*.png", recursive=True)):
+        with open(path, "rb") as fp:
+            if fp.read(24) == b"version https://git-lfs.":
+                pointers.append(os.path.relpath(path, folder))
+    return pointers
+
+
+def lintian_tags(log: str) -> list[str]:
+    """The errors and the warnings in the log of lintian."""
+
+    return [line for line in log.splitlines() if line[:3] in ("E: ", "W: ")]
+
+
+def _write(folder: str, name: str, text: str) -> None:
+    with open(os.path.join(folder, name), "w", encoding="utf-8") as fp:
+        fp.write(text)
+
+
+def _read(folder: str, name: str) -> str:
+    try:
+        with open(os.path.join(folder, name), encoding="utf-8") as fp:
+            return fp.read()
+    except FileNotFoundError:
+        return ""
+
+
+def podman(
+    image: str,
+    volumes: Sequence[str],
+    command: Sequence[str],
+    log: str,
+) -> int:
+    """Run command in a container of image, with the volumes, as host:path,
+    its output in log: its exit status."""
+
+    with open(log, "w", encoding="utf-8") as fp:
+        return subprocess.run(
+            ["podman", "run", "--rm"]
+            + [f"--volume={volume}" for volume in volumes]
+            + [image, *command],
+            stdin=subprocess.DEVNULL,
+            stdout=fp,
+            stderr=subprocess.STDOUT,
+        ).returncode
+
+
+def source(work: str) -> tuple[str | None, list[str]]:
+    """The sdist of the files of ROOT, in work: its name, or None and the
+    lines that say why."""
+
+    src = os.path.join(work, "src")
+    copy_tracked(ROOT, src)
+    pointers = lfs_pointers(src)
+    if pointers:
+        return None, [
+            f"the pictures of Git LFS are missing, as {pointers[0]}:"
+            " `git lfs pull`"
+        ]
+    out = os.path.join(work, "sdist")
+    os.makedirs(out)
+    _write(out, "sdist.sh", SDIST)
+    status = podman(
+        SOURCE,
+        [f"{src}:/src:ro", f"{out}:/out"],
+        ["sh", "/out/sdist.sh"],
+        os.path.join(work, "sdist.log"),
+    )
+    shutil.rmtree(src)
+    made = glob.glob(os.path.join(out, "virtualbricks-*.tar.gz"))
+    if status != 0 or len(made) != 1:
+        return None, [f"the sdist failed ({status}): sdist.log"]
+    return os.path.basename(made[0]), []
+
+
+def package(
+    work: str, sdist: str, upstream: str, debian: str, target: str
+) -> Result:
+    """The package of target, built in a folder of work and checked."""
+
+    image, codename = TARGETS[target]
+    version = f"{upstream}-0~{codename}1"
+    folder = os.path.join(work, target)
+    os.makedirs(folder)
+    lines = [f"{target}: virtualbricks {version}"]
+    _write(folder, "build.sh", BUILD)
+    status = podman(
+        image,
+        [
+            f"{os.path.join(work, 'sdist')}:/sdist:ro",
+            f"{debian}:/debian:ro",
+            f"{folder}:/out",
+        ],
+        ["sh", "/out/build.sh", sdist, upstream, version, codename],
+        os.path.join(folder, "build.log"),
+    )
+    if status != 0:
+        lines.append(f"  the build failed ({status}): build.log")
+        return Result(False, lines, folder)
+    passed = _read(folder, "lintian.status").strip() == "0"
+    tags = lintian_tags(_read(folder, "lintian.log"))
+    if passed and not tags:
+        lines.append("  lintian: nothing")
+    else:
+        lines.append("  lintian: failed: lintian.log")
+        lines += [f"    {tag}" for tag in tags]
+    _write(folder, "install.sh", INSTALL)
+    _write(folder, "check.sh", CHECK)
+    status = podman(
+        image,
+        [f"{folder}:/debs:ro"],
+        ["sh", "/debs/install.sh"],
+        os.path.join(folder, "install.log"),
+    )
+    lines.append(
+        {
+            0: "  the package: a switch made, the windows open",
+            NO_INSTALL: "  the package: not installed: install.log",
+            NO_CONSOLE: "  the package: no switch: install.log",
+            NO_WINDOWS: "  the package: the windows failed: install.log",
+        }.get(status, f"  the package: the container failed ({status})")
+    )
+    return Result(passed and status == 0, lines, folder)
+
+
+def upload(folder: str) -> list[str]:
+    """The files of the upload in folder."""
+
+    return sorted(glob.glob(os.path.join(folder, "virtualbricks_*")))
+
+
+def sign(key: str, changes: str, log: str) -> bool:
+    """debsign signs the .changes, and the .dsc and the .buildinfo that it
+    lists, with key, its output in log; gpg may ask the passphrase."""
+
+    with open(log, "w", encoding="utf-8") as fp:
+        status = subprocess.run(
+            ["debsign", "--re-sign", f"-k{key}", changes],
+            stdout=fp,
+            stderr=subprocess.STDOUT,
+        ).returncode
+    return status == 0
+
+
+def signatures(key: str, paths: Sequence[str], folder: str) -> list[str]:
+    """The files of paths without a good signature of key; gpgv writes what
+    it says of each in gpgv.log in folder."""
+
+    keyring = os.path.join(folder, "key.gpg")
+    with open(keyring, "wb") as fp:
+        subprocess.run(["gpg", "--export", key], stdout=fp, check=True)
+    bad = []
+    with open(os.path.join(folder, "gpgv.log"), "w", encoding="utf-8") as fp:
+        for path in paths:
+            status = subprocess.run(
+                ["gpgv", "--keyring", keyring, path],
+                stdout=fp,
+                stderr=subprocess.STDOUT,
+            ).returncode
+            if status != 0:
+                bad.append(path)
+    return bad
+
+
+def signed(key: str, result: Result) -> Result:
+    """result, its upload signed with key and its signatures checked."""
+
+    files = upload(result.folder)
+    [changes] = [path for path in files if path.endswith(".changes")]
+    if not sign(key, changes, os.path.join(result.folder, "debsign.log")):
+        line = "  the signature: debsign failed: debsign.log"
+        return Result(False, result.lines + [line], result.folder)
+    paths = [
+        path
+        for suffix in (".changes", ".dsc", ".buildinfo")
+        for path in files
+        if path.endswith(suffix)
+    ]
+    bad = signatures(key, paths, result.folder)
+    if bad:
+        names = ", ".join(os.path.basename(path) for path in bad)
+        line = f"  the signature: bad on {names}: gpgv.log"
+        return Result(False, result.lines + [line], result.folder)
+    line = f"  the signature: good, {key}"
+    return Result(result.passed, result.lines + [line], result.folder)
+
+
+def has_secret_key(key: str) -> bool:
+    return (
+        subprocess.run(
+            ["gpg", "--list-secret-keys", key],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode
+        == 0
+    )
+
+
+def refused(args: argparse.Namespace, debian: str) -> str | None:
+    """Why the arguments can't build, or None."""
+
+    unknown = sorted(set(args.targets) - set(TARGETS))
+    if unknown:
+        return f"unknown distributions: {', '.join(unknown)}"
+    if shutil.which("podman") is None:
+        return "podman isn't installed"
+    if not os.path.exists(os.path.join(debian, "control")):
+        return (
+            f"no control in {debian}: debian/ is on the packaging branch,"
+            " gitlab-ci-dev; --debian names another folder"
+        )
+    if args.key is not None:
+        for program in ("debsign", "gpgv"):
+            if shutil.which(program) is None:
+                return f"{program} isn't installed"
+        if not has_secret_key(args.key):
+            return f"gpg has no secret key {args.key}"
+    return None
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="The Debian packages, built and checked in a container"
+        " of each supported distribution."
+    )
+    parser.add_argument(
+        "targets",
+        nargs="*",
+        metavar="DISTRIBUTION",
+        help=f"{', '.join(TARGETS)} (default: all of them)",
+    )
+    parser.add_argument(
+        "--key",
+        metavar="KEYID",
+        help="sign the uploads with this key of gpg (default: unsigned)",
+    )
+    parser.add_argument(
+        "--debian",
+        metavar="FOLDER",
+        help="the debian/ folder (default: the one of the checkout)",
+    )
+    parser.add_argument(
+        "--out",
+        metavar="FOLDER",
+        help="where the packages that passed go (default: dist/debian)",
+    )
+    args = parser.parse_args(argv)
+    args.targets = args.targets or list(TARGETS)
+    debian = os.path.abspath(args.debian or os.path.join(ROOT, "debian"))
+    out = os.path.abspath(args.out or os.path.join(ROOT, "dist", "debian"))
+    reason = refused(args, debian)
+    if reason is not None:
+        print(reason, file=sys.stderr)
+        return 2
+    work = tempfile.mkdtemp(prefix="debpackage.")
+    print("making the sdist", file=sys.stderr)
+    sdist, lines = source(work)
+    if sdist is None:
+        print("\n".join(lines + [f"the logs: {work}"]))
+        return 1
+    upstream = debian_version(
+        sdist_version(os.path.join(work, "sdist", sdist))
+    )
+    print(f"building on {', '.join(args.targets)}", file=sys.stderr)
+    with ThreadPoolExecutor(len(args.targets)) as pool:
+        results = list(
+            pool.map(
+                lambda target: package(work, sdist, upstream, debian, target),
+                args.targets,
+            )
+        )
+    if args.key is not None:
+        # one after the other: gpg may ask the passphrase
+        results = [
+            signed(args.key, result) if result.passed else result
+            for result in results
+        ]
+    os.makedirs(out, exist_ok=True)
+    for result in results:
+        if result.passed:
+            for path in upload(result.folder):
+                shutil.copy2(path, out)
+            shutil.rmtree(result.folder)
+        else:
+            result.lines.append(f"  the logs: {result.folder}")
+        print("\n".join(result.lines), flush=True)
+    if all(result.passed for result in results):
+        shutil.rmtree(work)
+        print(f"the packages: {out}")
+        return 0
+    if any(result.passed for result in results):
+        print(f"the packages that passed: {out}")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

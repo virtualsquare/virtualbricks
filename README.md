@@ -527,6 +527,28 @@ python tools/typecoverage.py virtualbricks/config e2e
 The messages that the user reads go through `_()`, from `virtualbricks.i18n`.
 To add a language, see the top of `l10n.sh`.
 
+### Debian packages
+
+The `debian/` folder is on the packaging branch, `gitlab-ci-dev`: develop
+with `debian/` and the pipeline of GitLab, which builds the packages of each
+supported distribution. `tools/debpackage.py` builds and checks them here, in
+containers:
+
+```sh
+python tools/debpackage.py                  # every distribution
+python tools/debpackage.py debian-13 ubuntu-24.04
+python tools/debpackage.py --key KEYID      # signed with your key
+```
+
+The sdist of the files of the checkout is the upstream tarball, the same for
+every distribution. A container of each builds the package, its lintian
+checks it, and another container installs it, makes a switch in its console
+and opens its windows. With `--key`, debsign signs the uploads here, with your
+key of gpg, and gpgv checks them; without, they are unsigned. The packages
+that passed go to `dist/debian/`. On develop, `--debian` names the `debian/`
+folder of a checkout of the packaging branch. It needs `podman` and the
+network.
+
 ### Source layout
 
 - `virtualbricks/`: `cli.py` reads the command line, and `main.py` starts
