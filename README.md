@@ -547,7 +547,10 @@ and opens its windows. With `--key`, debsign signs the uploads here, with your
 key of gpg, and gpgv checks them; without, they are unsigned. The packages
 that passed go to `dist/debian/`. On develop, `--debian` names the `debian/`
 folder of a checkout of the packaging branch. It needs `podman` and the
-network.
+network. The pipeline runs the same steps with `--here`, as root in the
+container of each job: `--here sdist` makes the sdist, `--here build --sdist
+FILE DISTRIBUTION` builds the package of one distribution from it and runs
+lintian, without installing it.
 
 ### Source layout
 

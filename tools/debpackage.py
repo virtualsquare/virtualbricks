@@ -42,7 +42,17 @@ signatures; without, the packages are unsigned. The packages that passed go
 to --out, dist/debian by default. The folder of a distribution that failed
 stays, with its logs and its files. The distributions build side by side;
 the exit status is 1 if one failed. It needs podman and the network, and
-debsign (devscripts) and gpgv for --key.
+debsign (devscripts) and gpgv for --key. --sdist gives the upstream tarball
+instead.
+
+The pipeline runs the steps with --here, in the container of each job, as
+root, with no podman, and shows their output:
+
+    python3 tools/debpackage.py --here sdist --out sdist
+    python3 tools/debpackage.py --here build --sdist FILE --out dist debian-13
+
+The first makes the sdist of the checkout, the second builds the package of
+one distribution from it and runs lintian; the package isn't installed.
 """
 
 import argparse
@@ -78,35 +88,37 @@ TARGETS: dict[str, Target] = {
 }
 # The sdist is made on Debian 13, the oldest that has setuptools 77.
 SOURCE = TARGETS["debian-13"].image
-# The exit statuses of install.sh before its end.
+# The exit statuses of INSTALL before its end.
 NO_INSTALL = 10
 NO_CONSOLE = 11
 NO_WINDOWS = 12
 
-# As root: the files of /src, read-only, copied; their sdist in /out.
+# As root: the files of $1 copied; their sdist in $2.
 SDIST = """\
 set -eu
 export DEBIAN_FRONTEND=noninteractive
+src=$1 out=$2
 apt-get update
 apt-get install -y --no-install-recommends python3-build python3-setuptools
-cp -R /src /tmp/src
-cd /tmp/src
-python3 -m build --sdist --no-isolation --outdir /out .
+copy=$(mktemp -d)
+cp -R "$src/." "$copy"
+cd "$copy"
+python3 -m build --sdist --no-isolation --outdir "$out" .
 """
-# As root: the sdist of /sdist as the upstream tarball, with /debian; the
-# files of the upload in /out, then what lintian says of them. $1 is the
-# sdist, $2 the upstream version, $3 the Debian one, $4 the codename.
+# As root: the sdist $1 as the upstream tarball, with the debian/ folder $2;
+# the files of the upload in $3, then what lintian says of them. $4 is the
+# upstream version, $5 the Debian one, $6 the codename.
 BUILD = """\
 set -eu
 export DEBIAN_FRONTEND=noninteractive
-sdist=$1 upstream=$2 version=$3 codename=$4
+sdist=$1 debian=$2 out=$3 upstream=$4 version=$5 codename=$6
 apt-get update
-cd /tmp
-cp "/sdist/$sdist" "virtualbricks_$upstream.orig.tar.gz"
+cd "$(mktemp -d)"
+cp "$sdist" "virtualbricks_$upstream.orig.tar.gz"
 mkdir "virtualbricks-$upstream"
 tar -xzf "virtualbricks_$upstream.orig.tar.gz" --strip-components=1 \\
     -C "virtualbricks-$upstream"
-cp -R /debian "virtualbricks-$upstream/"
+cp -R "$debian" "virtualbricks-$upstream/debian"
 cd "virtualbricks-$upstream"
 apt-get build-dep -y --no-install-recommends ./
 apt-get install -y --no-install-recommends devscripts lintian
@@ -124,20 +136,22 @@ export DEBEMAIL
 debchange --newversion "$version" "New upstream version"
 debchange --release --distribution "$codename" ""
 dpkg-buildpackage --no-sign
-cp "../virtualbricks_$upstream.orig.tar.gz" "../virtualbricks_$version"* /out/
+cp "../virtualbricks_$upstream.orig.tar.gz" "../virtualbricks_$version"* \\
+    "$out/"
 status=0
 # a lintian older than the Standards-Version of debian/control says so: the
 # package isn't wrong for that
 lintian --fail-on error,warning --info \\
-    --suppress-tags newer-standards-version /out/*.changes \\
-    >/out/lintian.log 2>&1 || status=$?
-echo "$status" >/out/lintian.status
+    --suppress-tags newer-standards-version "$out"/*.changes \\
+    >"$out/lintian.log" 2>&1 || status=$?
+echo "$status" >"$out/lintian.status"
 """
-# As root: the package of /debs, read-only, with what it depends on; then
-# check.sh as another user.
+# As root: the package in $1, with what it depends on; then the script $2 as
+# another user.
 INSTALL = f"""\
 set -u
 export DEBIAN_FRONTEND=noninteractive
+debs=$1 check=$2
 apt-get update || exit {NO_INSTALL}
 mkdir -p /tmp/vde-netemu/DEBIAN
 cat >/tmp/vde-netemu/DEBIAN/control <<'EOF'
@@ -149,9 +163,9 @@ Description: an empty package in place of vde-netemu
 EOF
 dpkg-deb --build /tmp/vde-netemu /tmp/vde-netemu.deb || exit {NO_INSTALL}
 apt-get install -y --no-install-recommends /tmp/vde-netemu.deb xvfb xauth \\
-    /debs/virtualbricks_*_all.deb || exit {NO_INSTALL}
+    "$debs"/virtualbricks_*_all.deb || exit {NO_INSTALL}
 useradd -m tester
-runuser -u tester -- sh /debs/check.sh
+runuser -u tester -- sh -c "$check"
 """
 # As the user: the console makes a switch, the windows stay open.
 CHECK = f"""\
@@ -174,6 +188,14 @@ cat gui.log
 test "$status" = 124 || exit {NO_WINDOWS}
 if grep -q Traceback gui.log; then exit {NO_WINDOWS}; fi
 """
+
+
+class Volume(NamedTuple):
+    """A folder of this computer, host, at path in a container."""
+
+    host: str
+    path: str
+    readonly: bool = False
 
 
 class Result(NamedTuple):
@@ -250,11 +272,6 @@ def lintian_tags(log: str) -> list[str]:
     return [line for line in log.splitlines() if line[:3] in ("E: ", "W: ")]
 
 
-def _write(folder: str, name: str, text: str) -> None:
-    with open(os.path.join(folder, name), "w", encoding="utf-8") as fp:
-        fp.write(text)
-
-
 def _read(folder: str, name: str) -> str:
     try:
         with open(os.path.join(folder, name), encoding="utf-8") as fp:
@@ -265,30 +282,84 @@ def _read(folder: str, name: str) -> str:
 
 def podman(
     image: str,
-    volumes: Sequence[str],
-    command: Sequence[str],
+    volumes: Sequence[Volume],
+    script: str,
+    args: Sequence[str],
     log: str,
 ) -> int:
-    """Run command in a container of image, with the volumes, as host:path,
+    """sh runs script with args in a container of image, with the volumes,
     its output in log: its exit status."""
 
     with open(log, "w", encoding="utf-8") as fp:
         return subprocess.run(
             ["podman", "run", "--rm"]
-            + [f"--volume={volume}" for volume in volumes]
-            + [image, *command],
+            + [
+                f"--volume={volume.host}:{volume.path}"
+                + (":ro" if volume.readonly else "")
+                for volume in volumes
+            ]
+            + [image, "sh", "-c", script, "sh", *args],
             stdin=subprocess.DEVNULL,
             stdout=fp,
             stderr=subprocess.STDOUT,
         ).returncode
 
 
-def source(work: str) -> tuple[str | None, list[str]]:
-    """The sdist of the files of ROOT, in work: its name, or None and the
-    lines that say why."""
+def on_host(arg: str, volumes: Sequence[Volume]) -> str:
+    """arg, if a path in a volume, as the path of its folder."""
 
-    src = os.path.join(work, "src")
-    copy_tracked(ROOT, src)
+    for volume in volumes:
+        if arg == volume.path or arg.startswith(volume.path + "/"):
+            return volume.host + arg[len(volume.path) :]
+    return arg
+
+
+def in_this_system(
+    volumes: Sequence[Volume], script: str, args: Sequence[str], log: str
+) -> int:
+    """sh runs script with args here, the paths of the volumes their
+    folders; its output in log and on stdout: its exit status."""
+
+    process = subprocess.Popen(
+        ["sh", "-c", script, "sh", *(on_host(arg, volumes) for arg in args)],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    assert process.stdout is not None
+    with open(log, "wb") as fp:
+        for line in process.stdout:
+            fp.write(line)
+            sys.stdout.write(line.decode("utf-8", "replace"))
+            sys.stdout.flush()
+    return process.wait()
+
+
+def run(
+    here: bool,
+    image: str,
+    volumes: Sequence[Volume],
+    script: str,
+    args: Sequence[str],
+    log: str,
+) -> int:
+    """A step: in a container of image, or in this system if here."""
+
+    if here:
+        return in_this_system(volumes, script, args, log)
+    return podman(image, volumes, script, args, log)
+
+
+def source(here: bool, work: str) -> tuple[str | None, list[str]]:
+    """The sdist, in a folder of work: its path, or None and the lines that
+    say why. In a container, of the files of ROOT that Git tracks; here, of
+    ROOT."""
+
+    if here:
+        src = ROOT
+    else:
+        src = os.path.join(work, "src")
+        copy_tracked(ROOT, src)
     pointers = lfs_pointers(src)
     if pointers:
         return None, [
@@ -297,44 +368,60 @@ def source(work: str) -> tuple[str | None, list[str]]:
         ]
     out = os.path.join(work, "sdist")
     os.makedirs(out)
-    _write(out, "sdist.sh", SDIST)
-    status = podman(
+    status = run(
+        here,
         SOURCE,
-        [f"{src}:/src:ro", f"{out}:/out"],
-        ["sh", "/out/sdist.sh"],
+        [Volume(src, "/src", True), Volume(out, "/out")],
+        SDIST,
+        ["/src", "/out"],
         os.path.join(work, "sdist.log"),
     )
-    shutil.rmtree(src)
+    if not here:
+        shutil.rmtree(src)
     made = glob.glob(os.path.join(out, "virtualbricks-*.tar.gz"))
     if status != 0 or len(made) != 1:
         return None, [f"the sdist failed ({status}): sdist.log"]
-    return os.path.basename(made[0]), []
+    return made[0], []
 
 
-def package(
-    work: str, sdist: str, upstream: str, debian: str, target: str
-) -> Result:
-    """The package of target, built in a folder of work and checked."""
+def build(
+    here: bool,
+    work: str,
+    sdist: str,
+    upstream: str,
+    debian: str,
+    target: str,
+) -> tuple[Result, bool]:
+    """The package of target, built in a folder of work from sdist, and what
+    lintian says: its result, and if it was built."""
 
     image, codename = TARGETS[target]
     version = f"{upstream}-0~{codename}1"
     folder = os.path.join(work, target)
     os.makedirs(folder)
     lines = [f"{target}: virtualbricks {version}"]
-    _write(folder, "build.sh", BUILD)
-    status = podman(
+    status = run(
+        here,
         image,
         [
-            f"{os.path.join(work, 'sdist')}:/sdist:ro",
-            f"{debian}:/debian:ro",
-            f"{folder}:/out",
+            Volume(os.path.dirname(sdist), "/sdist", True),
+            Volume(debian, "/debian", True),
+            Volume(folder, "/out"),
         ],
-        ["sh", "/out/build.sh", sdist, upstream, version, codename],
+        BUILD,
+        [
+            f"/sdist/{os.path.basename(sdist)}",
+            "/debian",
+            "/out",
+            upstream,
+            version,
+            codename,
+        ],
         os.path.join(folder, "build.log"),
     )
     if status != 0:
         lines.append(f"  the build failed ({status}): build.log")
-        return Result(False, lines, folder)
+        return Result(False, lines, folder), False
     passed = _read(folder, "lintian.status").strip() == "0"
     tags = lintian_tags(_read(folder, "lintian.log"))
     if passed and not tags:
@@ -342,23 +429,47 @@ def package(
     else:
         lines.append("  lintian: failed: lintian.log")
         lines += [f"    {tag}" for tag in tags]
-    _write(folder, "install.sh", INSTALL)
-    _write(folder, "check.sh", CHECK)
-    status = podman(
-        image,
-        [f"{folder}:/debs:ro"],
-        ["sh", "/debs/install.sh"],
-        os.path.join(folder, "install.log"),
+    return Result(passed, lines, folder), True
+
+
+def installed(result: Result, target: str) -> Result:
+    """result, its package installed in a new container of target, as a
+    user its console and its windows."""
+
+    status = run(
+        False,
+        TARGETS[target].image,
+        [Volume(result.folder, "/debs", True)],
+        INSTALL,
+        ["/debs", CHECK],
+        os.path.join(result.folder, "install.log"),
     )
-    lines.append(
-        {
-            0: "  the package: a switch made, the windows open",
-            NO_INSTALL: "  the package: not installed: install.log",
-            NO_CONSOLE: "  the package: no switch: install.log",
-            NO_WINDOWS: "  the package: the windows failed: install.log",
-        }.get(status, f"  the package: the container failed ({status})")
+    line = {
+        0: "  the package: a switch made, the windows open",
+        NO_INSTALL: "  the package: not installed: install.log",
+        NO_CONSOLE: "  the package: no switch: install.log",
+        NO_WINDOWS: "  the package: the windows failed: install.log",
+    }.get(status, f"  the package: the container failed ({status})")
+    return Result(
+        result.passed and status == 0, result.lines + [line], result.folder
     )
-    return Result(passed and status == 0, lines, folder)
+
+
+def package(
+    here: bool,
+    work: str,
+    sdist: str,
+    upstream: str,
+    debian: str,
+    target: str,
+) -> Result:
+    """The package of target, built and checked; in a container, installed
+    too."""
+
+    result, built = build(here, work, sdist, upstream, debian, target)
+    if here or not built:
+        return result
+    return installed(result, target)
 
 
 def upload(folder: str) -> list[str]:
@@ -440,8 +551,19 @@ def refused(args: argparse.Namespace, debian: str) -> str | None:
     unknown = sorted(set(args.targets) - set(TARGETS))
     if unknown:
         return f"unknown distributions: {', '.join(unknown)}"
-    if shutil.which("podman") is None:
-        return "podman isn't installed"
+    if args.here is None:
+        if shutil.which("podman") is None:
+            return "podman isn't installed"
+    elif os.geteuid() != 0:
+        return f"--here {args.here} installs packages: run it as root"
+    elif args.here == "sdist":
+        if args.targets or args.sdist is not None:
+            return "--here sdist takes no distribution and no --sdist"
+        return None
+    elif len(args.targets) != 1 or args.sdist is None:
+        return "--here build takes one distribution and --sdist"
+    if args.sdist is not None and not os.path.isfile(args.sdist):
+        return f"no sdist {args.sdist}"
     if not os.path.exists(os.path.join(debian, "control")):
         return (
             f"no control in {debian}: debian/ is on the packaging branch,"
@@ -473,6 +595,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="sign the uploads with this key of gpg (default: unsigned)",
     )
     parser.add_argument(
+        "--sdist",
+        metavar="FILE",
+        help="the upstream tarball (default: the sdist of the checkout)",
+    )
+    parser.add_argument(
         "--debian",
         metavar="FOLDER",
         help="the debian/ folder (default: the one of the checkout)",
@@ -480,30 +607,51 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--out",
         metavar="FOLDER",
-        help="where the packages that passed go (default: dist/debian)",
+        help="where the packages that passed go (default: dist/debian;"
+        " for --here sdist, dist)",
+    )
+    parser.add_argument(
+        "--here",
+        choices=("sdist", "build"),
+        help="one step, in this system, a container of the distribution, as"
+        " root: the sdist, or the package of one distribution from --sdist,"
+        " not installed; the pipeline runs them",
     )
     args = parser.parse_args(argv)
-    args.targets = args.targets or list(TARGETS)
+    here = args.here is not None
+    if not here:
+        args.targets = args.targets or list(TARGETS)
     debian = os.path.abspath(args.debian or os.path.join(ROOT, "debian"))
-    out = os.path.abspath(args.out or os.path.join(ROOT, "dist", "debian"))
+    folder = ["dist"] if args.here == "sdist" else ["dist", "debian"]
+    out = os.path.abspath(args.out or os.path.join(ROOT, *folder))
     reason = refused(args, debian)
     if reason is not None:
         print(reason, file=sys.stderr)
         return 2
     work = tempfile.mkdtemp(prefix="debpackage.")
-    print("making the sdist", file=sys.stderr)
-    sdist, lines = source(work)
-    if sdist is None:
-        print("\n".join(lines + [f"the logs: {work}"]))
-        return 1
-    upstream = debian_version(
-        sdist_version(os.path.join(work, "sdist", sdist))
-    )
+    if args.sdist is not None:
+        sdist = os.path.abspath(args.sdist)
+    else:
+        print("making the sdist", file=sys.stderr)
+        made, lines = source(here, work)
+        if made is None:
+            print("\n".join(lines + [f"the logs: {work}"]))
+            return 1
+        sdist = made
+    if args.here == "sdist":
+        os.makedirs(out, exist_ok=True)
+        shutil.copy2(sdist, out)
+        shutil.rmtree(work)
+        print(f"the sdist: {os.path.join(out, os.path.basename(sdist))}")
+        return 0
+    upstream = debian_version(sdist_version(sdist))
     print(f"building on {', '.join(args.targets)}", file=sys.stderr)
     with ThreadPoolExecutor(len(args.targets)) as pool:
         results = list(
             pool.map(
-                lambda target: package(work, sdist, upstream, debian, target),
+                lambda target: package(
+                    here, work, sdist, upstream, debian, target
+                ),
                 args.targets,
             )
         )
