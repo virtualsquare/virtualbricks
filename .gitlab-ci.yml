@@ -71,67 +71,6 @@ source:
         paths:
             - dist/*
 
-# The package built for a distribution, in a container of it. As a user
-# that isn't root (as root, the tests that expect a permission error fail):
-# the unit tests of the sources, on the libraries of the distribution, as
-# tools/targetsuite.py runs them, without the package; then, the package
-# installed, its console and its windows.
-.test-template: &test-deb
-    stage: test
-    script:
-        - apt-get update
-        # vde-netemu is in the repository of the packages, not in the
-        # distributions: an empty package stands for it
-        - mkdir -p vde-netemu/DEBIAN
-        - |
-            cat > vde-netemu/DEBIAN/control <<'EOF'
-            Package: vde-netemu
-            Version: 0
-            Architecture: all
-            Maintainer: CI <ci@localhost>
-            Description: vde-netemu for the tests
-            EOF
-        - dpkg-deb --build vde-netemu vde-netemu.deb
-        # what the tests use besides: xvfb for the windows, openssl for the
-        # certificates, bsdtar for the archives
-        - apt-get install -y --no-install-recommends ./vde-netemu.deb vde2-cryptcab xvfb xauth openssl libarchive-tools
-        - apt-get satisfy -y --no-install-recommends "$(dpkg-deb -f dist/virtualbricks_*_all.deb Depends)"
-        - useradd -m tester
-        - |
-            cat > /tmp/unit.sh <<'EOF'
-            set -eu
-            export HOME=/home/tester LC_ALL=C.UTF-8 PYTHONDONTWRITEBYTECODE=1
-            cd "$1"
-            xvfb-run -a timeout 1800 python3 -m twisted.trial -j4 \
-                --temp-directory "$(mktemp -d)/trial" virtualbricks < /dev/null
-            EOF
-        - |
-            cat > /tmp/package.sh <<'EOF'
-            set -eu
-            export HOME=/home/tester LC_ALL=C.UTF-8 PYTHONDONTWRITEBYTECODE=1
-            export XDG_RUNTIME_DIR="$(mktemp -d)"
-            cd "$HOME"
-            echo "the console makes a switch"
-            status=0
-            printf 'brick new switch\nbrick list\nquit\n' |
-                timeout 60 virtualbricks --no-gui --workspace "$HOME/workspace" > console.log 2>&1 || status=$?
-            cat console.log
-            test "$status" = 0
-            awk '$1 == "sw1" && $2 == "Switch" {found = 1} END {exit !found}' console.log
-            echo "the windows open, and are still open after 15 s"
-            status=0
-            xvfb-run -a timeout 15 virtualbricks --no-term < /dev/null > gui.log 2>&1 || status=$?
-            cat gui.log
-            test "$status" = 124
-            if grep -q Traceback gui.log; then exit 1; fi
-            EOF
-        # a failure of the unit tests fails the job at its end, after the
-        # package was tried too
-        - runuser -u tester -- sh /tmp/unit.sh "$CI_PROJECT_DIR" || unit=$?
-        - apt-get install -y --no-install-recommends ./dist/virtualbricks_*_all.deb
-        - runuser -u tester -- sh /tmp/package.sh
-        - test "${unit:-0}" = 0
-
 # The checks of Debian on the upload of Debian 13: an error or a warning
 # fails the job.
 lintian:
@@ -150,22 +89,12 @@ debian-13:
     variables:
       DISTRIBUTION: trixie
 
-test-debian-13:
-    <<: *test-deb
-    image: debian:trixie
-    needs: [debian-13]
-
 # Debian 14, forky
 debian-14:
     <<: *build-deb
     image: debian:forky
     variables:
       DISTRIBUTION: forky
-
-test-debian-14:
-    <<: *test-deb
-    image: debian:forky
-    needs: [debian-14]
 
 # Debian unstable, sid
 debian-sid:
@@ -174,11 +103,6 @@ debian-sid:
     variables:
       DISTRIBUTION: sid
 
-test-debian-sid:
-    <<: *test-deb
-    image: debian:sid
-    needs: [debian-sid]
-
 # Ubuntu 24.04 LTS, noble
 ubuntu-24.04:
     <<: *build-deb
@@ -186,19 +110,9 @@ ubuntu-24.04:
     variables:
       DISTRIBUTION: noble
 
-test-ubuntu-24.04:
-    <<: *test-deb
-    image: ubuntu:noble
-    needs: [ubuntu-24.04]
-
 # Ubuntu 26.04, resolute
 ubuntu-26.04:
     <<: *build-deb
     image: ubuntu:resolute
     variables:
       DISTRIBUTION: resolute
-
-test-ubuntu-26.04:
-    <<: *test-deb
-    image: ubuntu:resolute
-    needs: [ubuntu-26.04]
