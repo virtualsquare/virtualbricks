@@ -57,10 +57,14 @@ class FakeProcess:
 
 
 class FakeEvent:
-    def __init__(self, x, y, button=1):
+    def __init__(self, x, y, button=1, state=None):
         self.x = x
         self.y = y
         self.button = button
+        # of a motion: the buttons held, the left one unless told
+        if state is None:
+            state = Gdk.ModifierType.BUTTON1_MASK
+        self.state = state
 
 
 class FakeDrag:
@@ -533,6 +537,21 @@ class TestDragAndDrop(BrickListTestCase):
         x, y = self.press(self.tap)
         self.list.on_button_release(self.list, FakeEvent(x, y))
         self.assertIs(self.move(x + 20, y), False)
+        self.assertEqual(self.drag.begun, [])
+
+    def test_not_without_the_button(self):
+        # a double click shows the settings before the release, which the
+        # list never sees
+        x, y = self.press(self.tap)
+        self.assertIs(
+            self.list.on_motion_notify(
+                self.list, FakeEvent(x + 20, y, state=Gdk.ModifierType(0))
+            ),
+            False,
+        )
+        self.assertEqual(self.drag.begun, [])
+        # the press is over
+        self.assertIs(self.move(x + 40, y), False)
         self.assertEqual(self.drag.begun, [])
 
     def test_not_from_below_the_last_row(self):

@@ -226,6 +226,11 @@ class BrickList(RowList[Brick]):
     ) -> bool:
         if self._pressed is None:
             return False
+        if not event.state & Gdk.ModifierType.BUTTON1_MASK:
+            # released where the list never saw it: a double click shows the
+            # settings in its place, before the release
+            self._pressed = None
+            return False
         row, x, y = self._pressed
         if not self.drag_check_threshold(
             int(x), int(y), int(event.x), int(event.y)
