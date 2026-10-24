@@ -1,0 +1,21 @@
+Source: virtualbricks
+Maintainer: Marco Giusti <marco.giusti@posteo.de>
+Section: otherosfs
+Priority: optional
+Build-Depends: debhelper-compat (= 13), dh-python, python3-all, python3-setuptools, pybuild-plugin-pyproject
+Vcs-Browser: https://github.com/virtualsquare/virtualbricks
+Standards-Version: 4.7.2
+Rules-Requires-Root: no
+
+Package: virtualbricks
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}, python3-gi-cairo, gir1.2-gtk-3.0, python3-service-identity, qemu-system, qemu-utils, vde2, vde-netemu, xterm | x-terminal-emulator
+Recommends: qemu-system-gui, sudo, vde2-cryptcab
+Suggests: gvfs, ssh-askpass, yelp
+Homepage: https://github.com/virtualsquare/virtualbricks
+Description: labs of QEMU machines and VDE networks, and their console
+ Virtualbricks is a fully featured virtualization suite and a complete
+ GUI to manage Qemu/KVM and Virtual Distributed Ethernet. It provides
+ easy but detailed device configuration interface, programmable control
+ of the running processes and a graphical interactive view of the
+ virtual network topology.

@@ -1,0 +1,4 @@
+# HTML written by hand, the designs, and HTML built from docs/man/*.md: the
+# lintian of Ubuntu 24.04 takes their long lines for files without a source
+source-is-missing [docs/redesign/*.html]
+source-is-missing [docs/built/html/*.html]

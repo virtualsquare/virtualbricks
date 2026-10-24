@@ -1,0 +1,2 @@
+# pybuild's clean removes the egg-info of the upstream tarball, the sdist
+extend-diff-ignore = "^virtualbricks\.egg-info(/|$)"

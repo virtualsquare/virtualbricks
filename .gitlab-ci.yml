@@ -1,0 +1,62 @@
+# The packaging branches, and pipelines run by hand from the web page
+workflow:
+    rules:
+        - if: $CI_COMMIT_BRANCH =~ /^gitlab-ci(-dev)?$/
+        - if: $CI_COMMIT_TAG
+        - if: $CI_PIPELINE_SOURCE == "web"
+
+# The steps of tools/debpackage.py, which runs each with --here in the
+# container of its job, as root.
+stages:
+    - source
+    - build
+
+variables:
+    DEBIAN_FRONTEND: noninteractive
+
+# The upstream tarball, the same for every distribution: the sdist, which
+# has what MANIFEST.in lists and nothing else of the checkout.
+source:
+    stage: source
+    image: debian:trixie
+    script:
+        - apt-get update
+        - apt-get install -y --no-install-recommends python3
+        - python3 tools/debpackage.py --here sdist --out sdist
+    artifacts:
+        paths:
+            - sdist/*
+
+# The package of a distribution, built from the sdist in a container of it,
+# and its lintian: an error or a warning fails the job. The name of the job
+# is the distribution, its image the one of TARGETS, in tools/debpackage.py.
+.build-template: &build-deb
+    stage: build
+    needs: [source]
+    script:
+        - apt-get update
+        - apt-get install -y --no-install-recommends python3
+        - python3 tools/debpackage.py --here build --sdist sdist/virtualbricks-*.tar.gz --out dist "$CI_JOB_NAME"
+    artifacts:
+        paths:
+            - dist/*
+
+debian-13:
+    <<: *build-deb
+    image: debian:trixie
+
+debian-14:
+    <<: *build-deb
+    image: debian:forky
+
+debian-sid:
+    <<: *build-deb
+    image: debian:sid
+
+ubuntu-24.04:
+    <<: *build-deb
+    image: ubuntu:24.04
+
+ubuntu-26.04:
+    <<: *build-deb
+    image: ubuntu:26.04
