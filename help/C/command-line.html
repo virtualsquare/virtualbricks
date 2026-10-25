@@ -55,7 +55,7 @@ href="index.html#reference">Reference</a></p>
 <p>labs of QEMU machines and VDE networks, and their console</p>
 </div>
 <div class="meta">
-<p>virtualbricks(1) · Virtualbricks 3.0.0.dev7</p>
+<p>virtualbricks(1) · Virtualbricks 3.0.0.dev8</p>
 </div>
 <h2 id="synopsis">Synopsis</h2>
 <div class="synopsis">
@@ -96,21 +96,25 @@ VIRTUALBRICKS</code>.</p>
 <dl>
 <dt><code>-v</code>, <code>--verbose</code></dt>
 <dd>
-Log more; it can be repeated.
+Write the debug messages too in the file of <code>--logfile</code>.
 </dd>
 <dt><code>-q</code>, <code>--quiet</code></dt>
 <dd>
-Log less; it can be repeated.
+Write only the warnings and the errors in the file of
+<code>--logfile</code>; given twice, only the errors.
 </dd>
 <dt><code>-b</code>, <code>--debug</code></dt>
 <dd>
-Log everything.
+The same as <code>-v</code>.
 </dd>
 <dt><code>-l</code> <em>file</em>, <code>--logfile</code>
 <em>file</em></dt>
 <dd>
-Write the log messages to <em>file</em>; <code>-</code> for the standard
-output.
+Write the log messages to <em>file</em>, as they come: the information,
+the warnings and the errors, unless <code>-v</code> or <code>-q</code>
+says otherwise; <code>-</code> for the standard output. The Logs window
+has the information, the warnings and the errors, whatever these options
+say.
 </dd>
 <dt><code>--logger</code> <em>name</em></dt>
 <dd>
@@ -126,6 +130,23 @@ Don't read the console in the terminal.
 Run without the windows: no GTK is loaded, and the console is the way
 in. With <code>--no-term</code> too, nothing is read: the lab runs until
 Virtualbricks gets <code>SIGTERM</code> or <code>SIGINT</code>.
+</dd>
+<dt><code>--banner</code> <em>style</em></dt>
+<dd>
+What the console shows as it starts: <code>none</code>, the default, the
+line of the version and of help; <code>plain</code>, the icon of
+Virtualbricks drawn in characters, with the version, the project, the
+workspace and the programs beside it; <code>colour</code>, the same in
+the colours of the terminal; <code>3d</code>, the name in large letters
+with their shadow, and the same lines below it; <code>rainbow</code>,
+the same in the colours of the rainbow; <code>pixel</code>, the icon in
+blocks of colour; <code>drop</code>, the same, its bricks falling into
+place, the last one onto its mortar, in a second: a key ends it at once;
+<code>emoji</code>, the lines alone, each with an emoji.
+<code>3d</code>, <code>rainbow</code>, <code>pixel</code>,
+<code>drop</code> and <code>emoji</code> need a terminal of 24-bit
+colour, as most are, and <code>emoji</code> a font with emoji. See
+<code>THE CONSOLE</code>.
 </dd>
 <dt><code>--run</code> <em>file</em></dt>
 <dd>
@@ -236,6 +257,13 @@ or fail.</p>
 the verbs, the names of the bricks, events, images and projects, the
 kinds of brick, the keys, and the values of a key that has a few. The
 prompt is the name of the open project.</p>
+<p>The console starts with the line of its version and of help, or with
+the banner of <code>--banner</code>: a picture, the icon or the name,
+with the version, the open project with how many bricks, events and disk
+images it has, the workspace, the QEMU emulators found, the programs
+that are missing, unless the settings say not to warn about them, and
+the control sockets of <code>--listen</code>. A terminal too narrow for
+the picture has the text alone.</p>
 <dl>
 <dt>Up and Down</dt>
 <dd>
@@ -1126,7 +1154,8 @@ virtualbricks --workspace ~/labs/b --command status</code></pre>
 <p><a href="config-files.html">virtualbricks-config(5)</a>, <a
 href="vbp-format.html">virtualbricks-vbp(5)</a>, <a
 href="archive-protocol.html">virtualbricks-archive(7)</a>, <a
-href="control-protocols.html">virtualbricks-control(7)</a>,
+href="control-protocols.html">virtualbricks-control(7)</a>, <a
+href="migration.html">virtualbricks-migrate(1)</a>,
 <code>qemu</code>(1), <code>vde_switch</code>(1),
 <code>openssl</code>(1)</p>
 </main>

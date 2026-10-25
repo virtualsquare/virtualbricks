@@ -35,37 +35,121 @@ href="index.html#lab">Your lab</a></p>
 </div>
 <h1>The picture of the lab</h1>
 <p>The <span class="gui">Topology</span> tab draws the bricks of the
-project and the links between them. A stopped brick is grey. The brick
-under the pointer lights up, and its tooltip says its name, its kind and
-its state. The right button opens the menu of the brick, as in the <span
-class="gui">Bricks</span> tab, and a double click its settings.</p>
+project and the links between them. Each brick is its icon, with its
+name under it; a wire is a brick too, between the two bricks it joins. A
+link goes from a brick to each brick it plugs into: a tap to its switch,
+a virtual machine to the switch of each network card. Two links between
+the same two bricks are drawn as one.</p>
 <figure>
 <a href="figures/topology.png"><img src="figures/topology.png"
-alt="The Topology tab: sw1 and vm1, joined by a line, with the buttons of the zoom over the top right corner." /></a>
+alt="The Topology tab: the switches sw1 and sw2, running, in colour, joined by wire1; tap1 and vm1 on sw1, and vm2 and vm3 on sw2, stopped, in grey; the buttons of the zoom over the top right corner." /></a>
 <figcaption>The Topology tab</figcaption>
 </figure>
+<p>A brick that runs is in colour, and a stopped one grey and faded, its
+name too. The brick under the pointer lights up, on a disc, and its
+tooltip says its name, its kind and its state, as <code
+class="sys">sw1 · Switch · running</code>. The right button opens the
+menu of the brick, the same as in the <span class="gui">Bricks</span>
+tab, and a double click its settings, in the <span
+class="gui">Bricks</span> tab. A project without bricks shows a hint
+instead.</p>
+<p>The picture follows the project: a brick that comes, goes, connects,
+starts or stops shows at once.</p>
 <h2 id="zoom">Zooming</h2>
-<p>A bar over the top right corner has <span class="gui">Zoom
-Out</span>, the zoom level, <span class="gui">Zoom In</span>, <span
-class="gui">Fit All</span> and a menu. A click on the level goes back to
-100%. The tab opens with the whole lab in view, and keeps it in view as
-the lab changes, until you zoom.</p>
+<p>A bar over the top right corner, faded until you point at it, has
+<span class="gui">Zoom Out</span>, the zoom level, <span
+class="gui">Zoom In</span>, <span class="gui">Fit All</span> and a menu.
+The zoom goes from 10% to 400%, a step at a time, and a click on the
+level goes back to 100%.</p>
+<p><span class="gui">Fit All</span> shows the whole lab, never above
+100%, and stays on, pressed, until you zoom: as long as it is on, the
+picture fits again when the lab changes or the window changes size. The
+tab opens with it on.</p>
+<p>After a click on the picture, which gives it the keys:</p>
 <ul>
 <li><p><kbd>Ctrl</kbd>+<kbd>+</kbd>, <kbd>Ctrl</kbd>+<kbd>-</kbd>: zoom
 in and out; <kbd>Ctrl</kbd>+<kbd>0</kbd>: 100%; <kbd>F</kbd>: fit
 all.</p></li>
-<li><p><kbd>Ctrl</kbd> and the wheel of the mouse, or a pinch on a
-touchpad, zoom around the pointer.</p></li>
-<li><p>Dragging the background moves the picture.</p></li>
+<li><p>The arrows and <kbd>Page Up</kbd>, <kbd>Page Down</kbd> move the
+picture.</p></li>
 </ul>
-<h2 id="export">Layout and export</h2>
-<p>The menu of the bar has the <span class="gui">Layout</span>, <span
-class="gui">Left to Right</span> or <span class="gui">Top to
-Bottom</span>, and <span class="gui">Export as Image…</span>: a PNG, an
-SVG or a PDF file of the picture at 100%, on white, whatever the zoom
-and the theme. Exported to the folder of the project, the picture can
-show in its README; see <a href="readme.html">The README of a
-project</a>.</p>
+<p>With the mouse, <kbd>Ctrl</kbd> and the wheel, or a pinch on a
+touchpad, zoom around the pointer, and dragging the background moves the
+picture.</p>
+<h2 id="connect">Connecting two bricks</h2>
+<p>Drag a brick onto another, as in the <span class="gui">Bricks</span>
+tab: a line follows the pointer. Over a brick that it can plug into, or
+that can plug into it, the line ends on that brick, which lights up, and
+the words under it say what letting go does, as <span
+class="gui">Connect tap1 to sw2</span>. Let go there, and the two
+connect, as with <span class="gui">Connect To</span> in the menu of the
+brick; let go over another brick, or press <kbd>Esc</kbd>, and nothing
+changes. Near an edge of the tab, the picture scrolls, to reach a brick
+out of view.</p>
+<p>A virtual machine dropped on a switch gets a new network card plugged
+into it. A wire joins two bricks in two drops: drop the wire on one end,
+then on the other.</p>
+<h2 id="move">Moving bricks</h2>
+<p>Drag a brick and let go over free room: the brick stays there. On the
+way, a faded copy of it at the end of the line shows where it goes. Near
+the column or the row of another brick, the copy lines up with it, and a
+thin line shows it.</p>
+<p>The first move keeps every other brick where it shows: the lab is
+laid out by hand from then on, and the project keeps the place of each
+brick, so the picture stays as you arranged it, after a restart and in
+an exported archive. A new brick waits in a row under the others until
+you move it.</p>
+<h2 id="layout">The layout</h2>
+<p>The menu at the end of the bar has the layout, the links and the
+export.</p>
+<figure>
+<a href="figures/topology-menu.png"><img src="figures/topology-menu.png"
+alt="The menu open under its button, at the end of the bar: Layout, with Left to Right chosen, Top to Bottom and By Hand; Links, with Curved chosen, Straight and Right Angles; then Export as Image…" /></a>
+<figcaption>The menu of the picture</figcaption>
+</figure>
+<p>The <span class="gui">Layout</span> places the bricks:</p>
+<dl>
+<dt><span class="gui">Left to Right</span>, <span class="gui">Top to
+Bottom</span></dt>
+<dd>
+<p>Graphviz places the bricks, in columns or in rows, and again after
+each change: a brick added or connected can move the others. A lab with
+places loses them, and goes back to Graphviz. Left to Right is the
+first; the choice holds until you quit, for every project.</p>
+</dd>
+<dt><span class="gui">By Hand</span></dt>
+<dd>
+<p>Each brick stays at its place, as after a move. Choosing it gives
+every brick the place it has in the picture.</p>
+</dd>
+</dl>
+<h2 id="links">The links</h2>
+<p>The <span class="gui">Links</span> of the menu draw them <span
+class="gui">Straight</span>, <span class="gui">Curved</span> or at <span
+class="gui">Right Angles</span>, in every layout; the project keeps the
+choice, curved at first, as its setting <code>link_lines</code>. A
+straight line can pass behind a brick in its way; Graphviz routes the
+curves and the right angles around the bricks. In a lab laid out by hand
+it moves no brick to do so, and two bricks too close for a link to pass
+between them have their links routed around their icons, across their
+names. Where Graphviz can't draw right angles, the links are curved.</p>
+<h2 id="export">Exporting the picture</h2>
+<p><span class="gui">Export as Image…</span>, in the menu, saves the
+picture in a file: a PNG image, an SVG image or a PDF document, by the
+extension of its name; choosing a kind of file in the chooser changes
+the extension. The picture is the whole lab at 100%, on white, in the
+colours of a light theme, whatever the zoom and the theme of the
+tab.</p>
+<p>Every brick is in colour, running or not, unless you tick <span
+class="gui">Fade stopped bricks</span> in the chooser: then the stopped
+ones are grey and faded, as in the tab, and the chooser keeps the box
+ticked until you quit.</p>
+<p>The chooser suggests the name of the project, as <code
+class="file">new_project.png</code>, in the folder of the project. There
+the picture can show in its README, and goes into the exported archives
+with the other files of the folder; see <a
+href="readme.html#pictures">Pictures</a>. Export it again after the lab
+changes: the file is a copy of the picture of that moment.</p>
 <section id="seealso" class="seealso">
 <h2>See also</h2>
 <div class="links">
@@ -74,6 +158,9 @@ project</a>.</p>
 <div class="desc">
 <p>Notes on the lab, in Markdown, with pictures.</p>
 </div>
+</div>
+<div class="link">
+<p><a href="bricks.html#menu">The menu of a brick</a></p>
 </div>
 </div>
 </section>

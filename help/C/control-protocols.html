@@ -56,7 +56,7 @@ href="index.html#reference">Reference</a></p>
 <p>the protocols of the control sockets: JSON, AMP 1 and AMP 2</p>
 </div>
 <div class="meta">
-<p>virtualbricks-control(7) · Virtualbricks 3.0.0.dev7</p>
+<p>virtualbricks-control(7) · Virtualbricks 3.0.0.dev8</p>
 </div>
 <h2 id="synopsis">Synopsis</h2>
 <div class="synopsis">
@@ -523,6 +523,7 @@ tables:</p>
 Apply              kind:str name:str changes:str links:str
                    extras:str -&gt;
 Connect            source:str target:str -&gt; connected:bool
+Place              places:str -&gt;
 QemuFacts          program:str -&gt; path:str version:str
                    options:str machines:str cpus:str devices:str
                    displays:str audio_drivers:str netdevs:str
@@ -575,6 +576,14 @@ another window set.
 <dd>
 Connect brick <em>source</em> to brick <em>target</em>, as a drop does:
 a free plug, or a new card of a machine. Whether it could.
+</dd>
+<dt><code>Place</code></dt>
+<dd>
+Give bricks their places in the picture of the Topology tab, laid out by
+hand, as a brick moved there does: <code>places</code> is an object of
+the names of the bricks to [<em>x</em>, <em>y</em>], the
+<code>place</code> of the project file, or <code>null</code> to take a
+place away. All or nothing.
 </dd>
 <dt><code>QemuFacts</code></dt>
 <dd>
@@ -730,11 +739,13 @@ An image, a brick or an event, <em>kind</em> <code>image</code>,
 {<code>file</code>}, the <code>size</code>, <code>mtime</code> and
 <code>taken</code> of the file of an image, <code>null</code> if it
 isn't there; {<code>running</code>, <code>pid</code>,
-<code>copies</code>}, whether a brick runs, its process,
-<code>null</code> if it doesn't run or isn't known, as that of a switch
-wrapper whose switch is another user's, and the private copies of a
-machine, as <code>file</code>, by device; {<code>left</code>}, the
-seconds that an event still waits, <code>null</code> if it doesn't.
+<code>error</code>, <code>copies</code>}, whether a brick runs, its
+process, <code>null</code> if it doesn't run or isn't known, as that of
+a switch wrapper whose switch is another user's, why no plug can connect
+in the control directory of a switch wrapper, <code>null</code> if one
+can or the directory isn't there, and the private copies of a machine,
+as <code>file</code>, by device; {<code>left</code>}, the seconds that
+an event still waits, <code>null</code> if it doesn't.
 </dd>
 <dt><code>Renamed</code></dt>
 <dd>

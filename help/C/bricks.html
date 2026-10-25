@@ -59,8 +59,16 @@ start until you connect it.</p>
 </dd>
 <dt><span class="gui">Not configured</span></dt>
 <dd>
-A setting that it needs is missing, as the host of a tunnel client: it
-can't start until you set it.
+<p>A setting that it needs is missing, as the host of a tunnel client:
+it can't start until you set it.</p>
+</dd>
+<dt><span class="gui">Error</span></dt>
+<dd>
+A switch wrapper whose folder has no switch to plug into, though the
+folder is there: it has no socket <code class="file">ctl</code>, or the
+one that a killed switch leaves. The tooltip of the state says what is
+wrong, and so does the <span class="gui">Logs</span> window. It runs
+again once a switch listens there.
 </dd>
 </dl>
 </div>
@@ -122,28 +130,108 @@ free number. The network cards of a machine get new MAC addresses.</p>
 </dd>
 <dt><span class="gui">Connect To</span></dt>
 <dd>
-<p>The bricks that this one can plug into.</p>
+<p>The bricks that this one can plug into. Dragging the row of a brick
+onto the row of another does the same: when one of the two can plug into
+the other, that row is framed, and they connect when you let go.</p>
 </dd>
 <dt><span class="gui">When It Starts</span>, <span class="gui">When It
 Stops</span></dt>
 <dd>
-<p>An event to run when the brick starts or stops; see <a
-href="events.html">Events</a>.</p>
+<p>The event to start each time the brick starts, or each time it stops;
+<span class="gui">No Event</span> for none. See <a
+href="events.html#bricks">When a brick starts or stops</a>.</p>
 </dd>
 <dt><span class="gui">Resume</span></dt>
 <dd>
 <p>For a virtual machine, start it from the state that <span
-class="gui">Suspend</span> saved in its first disk.</p>
+class="gui">Suspend</span> saved in its first disk. A machine that runs
+goes back to that state.</p>
 </dd>
 <dt><span class="gui">Process</span></dt>
 <dd>
-<p>For a running brick, what to do with its process: <span
-class="gui">Open Control Monitor</span>, which opens the console of the
-brick in a terminal; <span class="gui">Pause</span> and <span
-class="gui">Continue</span>; <span class="gui">Suspend</span> and <span
-class="gui">Reset</span> for a virtual machine; <span
-class="gui">Restart</span>; <span class="gui">Terminate</span> and <span
-class="gui">Kill</span>, when it doesn't stop.</p>
+<p>While the brick runs, what to do with its program; see <a
+href="bricks.html#process">The process of a brick</a>.</p>
+</dd>
+</dl>
+<h2 id="process">The process of a brick</h2>
+<p>While a brick runs, its menu has <span class="gui">Process</span>,
+named after the number of its process, as <span class="gui">Process
+4242</span>. Its items act on the program of this brick alone, never on
+the bricks it plugs into. A brick that is starting has no process yet,
+and a switch wrapper has none of its own: its switch is another
+program's.</p>
+<dl>
+<dt><span class="gui">Open Control Monitor</span></dt>
+<dd>
+<p>Opens the console of the program in a terminal, the one of the <span
+class="gui">Terminal</span> setting (see <a
+href="settings.html">Settings</a>): the monitor of QEMU for a virtual
+machine, the console of <code class="cmd">vde_switch</code>, <code
+class="cmd">vde_router</code> or <code class="cmd">vde-netemu</code> for
+a switch, a router or a netemu. There you type the commands of the
+program, as <code class="cmd">info network</code> in QEMU or <code
+class="cmd">port/print</code> in a switch; <code class="cmd">help</code>
+lists them. Closing the terminal leaves the program running, but <code
+class="cmd">quit</code> in QEMU and <code class="cmd">shutdown</code> in
+a switch end it, and the brick stops. A wire, a tunnel, a tap and a
+capture interface have no console: their <span
+class="gui">Process</span> lacks this item.</p>
+<p>In the windows of another computer (see <a href="remote.html">Another
+computer</a>), the terminal opens on your desktop. When your desktop
+lacks the program it needs, the item is greyed and says which, as <span
+class="gui">Open Control Monitor (needs unixterm of vde2)</span>.</p>
+</dd>
+<dt><span class="gui">Pause</span>, <span
+class="gui">Continue</span></dt>
+<dd>
+<p><span class="gui">Pause</span> freezes the program where it is, with
+the signal SIGSTOP, and <span class="gui">Continue</span> lets it go on,
+with SIGCONT. A paused switch passes no traffic, and a paused machine
+does nothing at all. Nothing shows that a brick is paused: its state
+stays <span class="gui">Running</span>. <span class="gui">Stop</span>
+may wait until it continues; <span class="gui">Kill</span> doesn't.</p>
+</dd>
+<dt><span class="gui">Suspend</span></dt>
+<dd>
+<p>For a virtual machine: saves the state of the machine, its memory and
+its devices, in its first disk, then asks its system to shut down, as
+<span class="gui">Stop</span>. <span class="gui">Resume</span>, in the
+menu, starts it again from that state. The state goes into the private
+copy of the disk, which takes any image, or into the image itself, which
+must then be qcow2: on a raw one the <span class="gui">Logs</span>
+window says that suspend isn't supported.</p>
+</dd>
+<dt><span class="gui">Reset</span></dt>
+<dd>
+<p>For a virtual machine: its reset button. The system of the machine
+starts over at once, without shutting down, and what it didn't save is
+lost. The process stays the same.</p>
+</dd>
+<dt><span class="gui">Restart</span></dt>
+<dd>
+<p>Stops the brick, as <span class="gui">Stop</span>, and starts it
+again, in a new process: the settings that wait for a start take effect,
+and its events run, <span class="gui">When It Stops</span> then <span
+class="gui">When It Starts</span>. A brick that hasn't stopped after two
+seconds is killed, as <span class="gui">Kill</span>: a virtual machine
+has those two seconds to shut its system down.</p>
+</dd>
+<dt><span class="gui">Terminate</span></dt>
+<dd>
+<p>For a virtual machine whose system doesn't answer <span
+class="gui">Stop</span>: QEMU closes the disks and ends, with the signal
+SIGTERM, and the system of the machine goes off as when the power is
+cut. The other bricks have no need of it, since their <span
+class="gui">Stop</span> already sends SIGTERM. Greyed in the windows of
+another computer.</p>
+</dd>
+<dt><span class="gui">Kill</span></dt>
+<dd>
+<p>The program ends at once, with the signal SIGKILL, which it can't
+refuse, even paused. It can't clean up either: a switch leaves its
+socket behind, and QEMU doesn't close the disks of a machine. The last
+resort, when <span class="gui">Stop</span>, or <span
+class="gui">Terminate</span> for a machine, doesn't stop it.</p>
 </dd>
 </dl>
 <section id="seealso" class="seealso">
@@ -152,13 +240,20 @@ class="gui">Kill</span>, when it doesn't stop.</p>
 <div class="link">
 <p><a href="events.html">Events</a></p>
 <div class="desc">
-<p>Start a lab in order, after a delay, or run commands.</p>
+<p>Start a lab in order, start bricks along with another, run
+commands.</p>
 </div>
 </div>
 <div class="link">
 <p><a href="kinds.html">The kinds of brick</a></p>
 <div class="desc">
 <p>What each brick is for, and the program that runs it.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="topology.html">The picture of the lab</a></p>
+<div class="desc">
+<p>See how the bricks connect, arrange them, and export the picture.</p>
 </div>
 </div>
 <div class="link">

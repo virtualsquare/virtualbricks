@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Logs window — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .site { max-width: 860px; margin: 0 auto; padding: 16px 16px 0; }
+  .site.reference { max-width: 1180px; }
+  .site-bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 24px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+  .site-name { font: 600 1.15rem/1.2 var(--font-head); color: var(--ink); text-decoration: none; }
+  .site ul { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0; padding: 0; list-style: none; font-size: 15px; }
+  .site ul a { color: var(--muted); text-decoration: none; }
+  .site ul a:hover, .site ul .active a { color: var(--accent); }
+</style>
+</head>
+<body>
+<nav class="site guide" aria-label="Virtualbricks">
+  <div class="site-bar">
+    <a class="site-name" href="https://www.virtualbricks.it/">Virtualbricks</a>
+    <ul>
+      <li><a href="https://www.virtualbricks.it/">Home</a></li>
+      <li><a href="https://www.virtualbricks.it/pages/authors.html">Authors</a></li>
+      <li><a href="https://www.virtualbricks.it/category/news.html">News</a></li>
+      <li class="active"><a href="https://www.virtualbricks.it/help/C/">User guide</a></li>
+    </ul>
+  </div>
+</nav>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#beyond">Settings and beyond</a></p>
+</div>
+<h1>The Logs window</h1>
+<p><span class="guiseq"><span class="gui">File</span> › <span
+class="gui">Logs</span></span> opens the messages of this run of
+Virtualbricks: what it says as it opens a project or starts a brick,
+what the bricks and the events say, and what their programs print. When
+something goes wrong, look here first: the messages before an error
+often say why it happened.</p>
+<p>An error also opens a window of its own as it happens; the <span
+class="gui">Logs</span> window keeps it, with what came before it.</p>
+<figure>
+<a href="figures/logs.png"><img src="figures/logs.png"
+alt="The Logs window with level:warning in its filter. Under the line of the day, Friday 02 August 2024, two messages of tap1: at 10:00:02, what sudo wrote on its standard error, 2&gt; sudo: a password is required, with the symbol of a terminal; at 10:00:03, in red, the error Process terminated. process ended with exit code 1. The status bar says 2 of 9 messages, 1 error, 0 warnings, 1 line of program output, and Following the newest." /></a>
+<figcaption>The Logs window, filtered with level:warning</figcaption>
+</figure>
+<h2 id="message">Reading a message</h2>
+<p>Each message is a line:</p>
+<dl>
+<dt><span class="gui">The time</span></dt>
+<dd>
+<p>As <code class="sys">10:00:02</code>. A line with the date starts
+each day, and a time the same as the one above is fainter. Point at the
+time for the date, and the time to the millisecond.</p>
+</dd>
+<dt><span class="gui">Where it comes from</span></dt>
+<dd>
+<p>A brick or an event, in blue, after the picture of its kind; or else
+the part of Virtualbricks that speaks, in grey, as <code
+class="sys">Project</code>, <code class="sys">Settings</code> or <code
+class="sys">Main window</code>. A name longer than 14 characters ends
+with "…". Point at it for the whole name, the kind of the brick, the
+module of Virtualbricks that logged the message and the process id of
+the program.</p>
+</dd>
+<dt><span class="gui">The level</span></dt>
+<dd>
+<p>A symbol: information, a warning, an error, or a terminal for what a
+program printed. Point at it for the level in words.</p>
+</dd>
+<dt><span class="gui">The message</span></dt>
+<dd>
+<p>Its first line, orange for a warning, red for an error, bold red for
+a critical one; then what it folds.</p>
+</dd>
+</dl>
+<p>When a brick starts, its message says the command it runs, as <code
+class="sys">Starting: /usr/bin/vde_switch -n 32 -s …</code>: run it in a
+terminal to see what the program says. Select the text with the mouse,
+and copy it with <kbd>Ctrl</kbd>+<kbd>C</kbd>.</p>
+<h2 id="folds">Folded lines</h2>
+<p>A message of more than one line shows the first, then <span
+class="gui">▸ 2 more lines</span>: click it to show the others under it,
+and again to hide them. An error inside Virtualbricks may have <span
+class="gui">▸ traceback, 3 calls</span> too, where in the code it
+happened, which a bug report needs. <span class="gui">Expand all</span>
+and <span class="gui">Collapse all</span>, in the menu of the window,
+open and close them all.</p>
+<h2 id="output">What the programs print</h2>
+<p>The output of a program shows on a grey band, with <code
+class="sys">2&gt;</code> before what it writes on its standard error. It
+shows as it would in a terminal: a line that the program writes again,
+as the monitor of QEMU does with each command, shows as it ends up, and
+the colours are dropped. The lines that come together are one message,
+the first line in view and the others folded. A line the program doesn't
+end, as a prompt, shows with the next one, or when the program
+stops.</p>
+<h2 id="filter">The filter</h2>
+<p>The field at the top keeps the messages that match what you type in
+it: <kbd>Ctrl</kbd>+<kbd>F</kbd> goes there, and <kbd>Esc</kbd> empties
+it. A message must match all the words, and upper or lower case doesn't
+matter:</p>
+<dl>
+<dt><code>level:warning</code></dt>
+<dd>
+<p>The warnings and what is worse: the errors, and what the programs
+wrote on their standard error, which often explains them. Also
+<code>level:error</code>, <code>level:critical</code> and
+<code>level:info</code>, and <code>warn</code>, <code>err</code> and
+<code>crit</code> for short.</p>
+</dd>
+<dt><code>source:tap1,vm1</code></dt>
+<dd>
+<p>The messages of those bricks or events, or of a part of
+Virtualbricks, as <code>source:project</code>. A kind of brick keeps the
+messages of every brick of the kind: <code>source:qemu</code> those of
+the virtual machines; the others are <code>switch</code>,
+<code>switchwrapper</code>, <code>router</code>, <code>wire</code>,
+<code>netemu</code>, <code>tunnellisten</code>,
+<code>tunnelconnect</code>, <code>tap</code>, <code>capture</code> and
+<code>event</code>.</p>
+</dd>
+<dt>any other word</dt>
+<dd>
+<p>The messages that have it, in any of their lines, folded too, or in
+where they come from.</p>
+</dd>
+</dl>
+<p>The status bar then says how many of the messages show, as <span
+class="gui">2 of 9 messages</span>.</p>
+<h2 id="follow">Following the newest</h2>
+<p><span class="gui">Following</span>, at the top, keeps the newest
+message in view as the messages come. Scroll up to read, and it lets go:
+the status bar says <span class="gui">Paused</span>. Scroll back to the
+end, or click <span class="gui">Following</span>, and it follows again.
+Opening the folded lines of an older message pauses it too.</p>
+<p>The status bar counts the messages, then the errors, the warnings and
+the lines that the programs printed: of all the messages, whatever the
+filter.</p>
+<h2 id="keep">What the window keeps</h2>
+<ul>
+<li><p>The messages since Virtualbricks started, the latest 2,000: then
+each new message pushes out the oldest. They are gone when Virtualbricks
+quits, so save them first; or start it with <span
+class="cmd">virtualbricks --logfile <em>file</em></span>, which writes
+them in <em>file</em> as they come.</p></li>
+<li><p>The information, the warnings and the errors, never the debug
+messages: <code class="cmd">--logfile</code> writes those too with <code
+class="cmd">-v</code>; see <a
+href="command-line.html">virtualbricks(1)</a>.</p></li>
+<li><p><span class="guiseq"><span class="gui">File</span> › <span
+class="gui">Logs</span></span> opens a new window each time, with its
+own filter and folded lines. <span class="gui">Clear</span>, in the
+menu, empties them all.</p></li>
+<li><p>The windows of another computer, with <code
+class="cmd">--connect</code>, show the messages of the Virtualbricks
+there: the latest 500 it had when they connected, then the new ones,
+each with the computer after where it comes from, as <code
+class="sys">sw1 on lab.example</code>. See <a href="remote.html">Another
+computer</a>.</p></li>
+</ul>
+<h2 id="save">Saving and reporting</h2>
+<p><span class="gui">Save…</span>, in the menu, writes all the messages
+to a file, whatever the filter, with their folded lines and tracebacks.
+Each starts with its date and time, the module that logged it and its
+level, as <code
+class="sys">2024-08-02T10:00:03+0200 [virtualbricks.bricks.Process#error]</code>.</p>
+<p><span class="gui">Report a bug…</span> opens a new email in your mail
+program, with the version of Virtualbricks in it and the messages
+attached: write the address and what went wrong. Where to report a
+problem is in <a href="problems.html#report">Reporting a
+problem</a>.</p>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="problems.html">When something goes wrong</a></p>
+<div class="desc">
+<p>The messages, a brick that doesn't start, a refused start, a project
+that can't be read.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>
